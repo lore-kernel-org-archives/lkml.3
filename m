@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965024AbaCSNB0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:01:26 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34079 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964969AbaCSNBF (ORCPT
+	id S1758674AbaCSNDN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:03:13 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:53873 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750758AbaCSNDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:01:05 -0400
-Date: Wed, 19 Mar 2014 06:00:31 -0700
-From: tip-bot for Neil Horman <tipbot@zytor.com>
-Message-ID: <tip-cbceb6904f9d99d068711903fc769b84cf036689@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        mingo@kernel.org, nhorman@tuxdriver.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, nhorman@tuxdriver.com,
-        tglx@linutronix.de
-In-Reply-To: <1394649873-14913-1-git-send-email-nhorman@tuxdriver.com>
-References: <1394649873-14913-1-git-send-email-nhorman@tuxdriver.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/iommu] x86:
-  Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-Git-Commit-ID: cbceb6904f9d99d068711903fc769b84cf036689
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Mar 2014 09:03:11 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+In-Reply-To: <20140108181914.GB14082@xanatos>
+References: <20140108171548.GA16878@kroah.com>
+	<Pine.LNX.4.44L0.1401081249370.1659-100000@iolanthe.rowland.org>
+	<20140108181914.GB14082@xanatos>
+Date: Wed, 19 Mar 2014 18:33:10 +0530
+Message-ID: <CA+NduCDP-Kx4oKEACRdBGbHik+KQ5i5TLa8g8tFjVOO9vvzAyw@mail.gmail.com>
+Subject: Re: [PATCH] usb:hub set hub->change_bits when over-current happens
+From: Yuvaraj Cd <yuvaraj.lkml@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Shen Guang <shenguang10@gmail.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cbceb6904f9d99d068711903fc769b84cf036689
-Gitweb:     http://git.kernel.org/tip/cbceb6904f9d99d068711903fc769b84cf036689
-Author:     Neil Horman <nhorman@tuxdriver.com>
-AuthorDate: Wed, 12 Mar 2014 14:44:33 -0400
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 19 Mar 2014 13:57:57 +0100
+With this patch,I can see usb 3.0 device detection is failing on
+exynos5250-smdk5250 boards.
+CONFIG_USB_SUSPEND=n
 
-x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
+/ $ [   11.486922] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   13.891919] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   16.296919] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   18.701919] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   21.106919] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   23.511918] hub 2-0:1.0: connect-debounce failed, port 1 disabled
+[   25.916918] hub 2-0:1.0: connect-debounce failed, port 1 disabled
 
-Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
-remapping on 55XX chipsets) properly disables irq remapping on the
-5500/5520 chipsets that don't correctly perform that feature.
+When I revert this patch, device detection works fine.Anyone have come
+across the same on other platforms?
 
-However, when I wrote it, I followed the errata sheet linked in that
-commit too closely, and explicitly tied the activation of the quirk to
-revision 0x13 of the chip, under the assumption that earlier revisions
-were not in the field.  Recently a system was reported to be suffering
-from this remap bug and the quirk hadn't triggered, because the
-revision id register read at a lower value that 0x13, so the quirk
-test failed improperly.  Given this, it seems only prudent to adjust
-this quirk so that any revision less than 0x13 has the quirk asserted.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/early-quirks.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index bc4a088..2237b36 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -208,7 +208,7 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 	 * and should be flagged as broken.  Additionally revisions 0x12
- 	 * and 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision < 0x13)
- 		set_irq_remapping_broken();
- 	else if ((device == 0x3405) &&
- 	    ((revision == 0x12) ||
+On Wed, Jan 8, 2014 at 11:49 PM, Sarah Sharp
+<sarah.a.sharp@linux.intel.com> wrote:
+> On Wed, Jan 08, 2014 at 12:49:57PM -0500, Alan Stern wrote:
+>> On Wed, 8 Jan 2014, Greg KH wrote:
+>>
+>> > On Wed, Jan 08, 2014 at 02:45:42PM +0800, Shen Guang wrote:
+>> > > When we are doing compliance test with xHCI, we found that if we
+>> > > enable CONFIG_USB_SUSPEND and plug in a bad device which causes
+>> > > over-current condition to the root port, software will not be noticed.
+>> > > The reason is that current code don't set hub->change_bits in
+>> > > hub_activate() when over-current happens, and then hub_events() will
+>> > > not check the port status because it thinks nothing changed.
+>> > > If CONFIG_USB_SUSPEND is disabled, the interrupt pipe of the hub will
+>> > > report the change and set hub->event_bits, and then hub_events() will
+>> > > check what events happened.In this case over-current can be detected.
+>> > >
+>> > > Signed-off-by: Shen Guang <shenguang10@gmail.com>
+>> > > ---
+>> > >  drivers/usb/core/hub.c |    3 ++-
+>> > >  1 file changed, 2 insertions(+), 1 deletion(-)
+>> > >
+>> > > diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+>> > > index bd9dc35..98b5679 100644
+>> > > --- a/drivers/usb/core/hub.c
+>> > > +++ b/drivers/usb/core/hub.c
+>> > > @@ -1154,7 +1154,8 @@ static void hub_activate(struct usb_hub *hub,
+>> > > enum hub_activation_type type)
+>> > >                         /* Tell khubd to disconnect the device or
+>> > >                          * check for a new connection
+>> > >                          */
+>> > > -                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION))
+>> > > +                       if (udev || (portstatus & USB_PORT_STAT_CONNECTION) ||
+>> > > +                               (portstatus & USB_PORT_STAT_OVERCURRENT))
+>> > >                                 set_bit(port1, hub->change_bits);
+>> > >
+>> > >                 } else if (portstatus & USB_PORT_STAT_ENABLE) {
+>> > > --
+>> > > 1.7.9.5
+>> >
+>> > Alan and Sarah, any objection to this patch?
+>>
+>> It seems okay to me.
+>>
+>> Acked-by: Alan Stern <stern@rowland.harvard.edu>
+>
+> Looks fine to me as well.
+>
+> Acked-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
