@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758325AbaCSAJc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:09:32 -0400
-Received: from [216.32.180.30] ([216.32.180.30]:8708 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1755163AbaCSAJb (ORCPT
+	id S1758427AbaCSAKA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:10:00 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:47100 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758387AbaCSAJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:09:31 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z551biz98dI936eI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h1806h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh2668h1155h)
-Date: Wed, 19 Mar 2014 08:08:22 +0800
-From: Chenhui Zhao <chenhui.zhao@freescale.com>
-To: Scott Wood <scottwood@freescale.com>
-CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        <leoli@freescale.com>, <Jason.Jin@freescale.com>
-Subject: Re: [PATCH 7/9] fsl: add EPU FSM configuration for deep sleep
-Message-ID: <20140319000822.GA9735@localhost.localdomain>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
- <1394168285-32275-7-git-send-email-chenhui.zhao@freescale.com>
- <1394582923.13761.81.camel@snotra.buserror.net>
- <20140312083410.GF4706@localhost.localdomain>
- <1394837469.12479.134.camel@snotra.buserror.net>
- <20140317102727.GB6204@localhost.localdomain>
- <1395184882.12479.253.camel@snotra.buserror.net>
+	Tue, 18 Mar 2014 20:09:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1395184882.12479.253.camel@snotra.buserror.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <53284382.7080509@redhat.com>
+References: <4376102.svyTz8ADVT@daeseok-laptop.cloud.net>
+	<20140317214145.GA29105@kroah.com>
+	<CAHb8M2BwuCJEGueP+-cOatynS5QcSrJMeei_D=0-GdKGxi5N-Q@mail.gmail.com>
+	<53284382.7080509@redhat.com>
+Date: Wed, 19 Mar 2014 09:09:59 +0900
+Message-ID: <CAHb8M2A1J242RZoc49zu47HW5c0iVsJAXiu7KeBL8uFk2TJkGA@mail.gmail.com>
+Subject: Re: [PATCH] staging: unisys: use kzalloc instead of kmalloc/memset 0
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Ken Cox <jkc@redhat.com>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 06:21:22PM -0500, Scott Wood wrote:
-> On Mon, 2014-03-17 at 18:27 +0800, Chenhui Zhao wrote:
-> > On Fri, Mar 14, 2014 at 05:51:09PM -0500, Scott Wood wrote:
-> > > On Wed, 2014-03-12 at 16:34 +0800, Chenhui Zhao wrote:
-> > > > On Tue, Mar 11, 2014 at 07:08:43PM -0500, Scott Wood wrote:
-> > > > > On Fri, 2014-03-07 at 12:58 +0800, Chenhui Zhao wrote:
-> > > > > > +	/* Configure the EPU Counters */
-> > > > > > +	epu_write(EPCCR15, 0x92840000);
-> > > > > > +	epu_write(EPCCR14, 0x92840000);
-> > > > > > +	epu_write(EPCCR12, 0x92840000);
-> > > > > > +	epu_write(EPCCR11, 0x92840000);
-> > > > > > +	epu_write(EPCCR10, 0x92840000);
-> > > > > > +	epu_write(EPCCR9, 0x92840000);
-> > > > > > +	epu_write(EPCCR8, 0x92840000);
-> > > > > > +	epu_write(EPCCR5, 0x92840000);
-> > > > > > +	epu_write(EPCCR4, 0x92840000);
-> > > > > > +	epu_write(EPCCR2, 0x92840000);
-> > > > > > +
-> > > > > > +	/* Configure the SCUs Inputs */
-> > > > > > +	epu_write(EPSMCR15, 0x76000000);
-> > > > > > +	epu_write(EPSMCR14, 0x00000031);
-> > > > > > +	epu_write(EPSMCR13, 0x00003100);
-> > > > > > +	epu_write(EPSMCR12, 0x7F000000);
-> > > > > > +	epu_write(EPSMCR11, 0x31740000);
-> > > > > > +	epu_write(EPSMCR10, 0x65000030);
-> > > > > > +	epu_write(EPSMCR9, 0x00003000);
-> > > > > > +	epu_write(EPSMCR8, 0x64300000);
-> > > > > > +	epu_write(EPSMCR7, 0x30000000);
-> > > > > > +	epu_write(EPSMCR6, 0x7C000000);
-> > > > > > +	epu_write(EPSMCR5, 0x00002E00);
-> > > > > > +	epu_write(EPSMCR4, 0x002F0000);
-> > > > > > +	epu_write(EPSMCR3, 0x2F000000);
-> > > > > > +	epu_write(EPSMCR2, 0x6C700000);
-> > > > > 
-> > > > > Where do these magic numbers come from?  Which chips are they valid for?
-> > > > 
-> > > > They are for T1040. Can be found in the RCPM chapter of T1040RM.
-> > > 
-> > > Then put in a comment to that effect, including what part of the RCPM
-> > > chapter.
-> > > 
-> > > How do you plan to handle the addition of another SoC with different
-> > > values?
-> > > 
-> > > -Scott
-> > 
-> > Had thought that using an array to put these values (pairs of offset and value)
-> > and passing the array to the function.
-> 
-> Arrays are better than a long sequence of function calls in any case.
-> 
-> > However, luckily T104x and LS1 have same values for these registers
-> > according to the current Reference Manuals.
-> 
-> If it's likely that the values will remain the same on all chips for the
-> near future, then a fancy mechanism to select the array to use can wait
-> -- but you should still use an array, and have a comment acknowledging
-> the possibility of needing to accommodate different values in the
-> future.
-> 
-> -Scott
+Hi, Ken
+Thanks for review.
 
-OK. Will use an array to pass the values.
+But I have a question,  I wan to know why tracing buffer
+status(Malloc_FailuresAlloc, Malloc_BytesInUse...) for
+info_proc_read_helper() are needed.
+If it doesn't need, whole tracing stuff for memory can be removed.
 
--Chenhui
+After getting a reply from you and greg, I will make a patch.
+Regards,
+Daeseok Youn.
 
+2014-03-18 22:00 GMT+09:00 Ken Cox <jkc@redhat.com>:
+>
+> On 03/17/2014 07:26 PM, DaeSeok Youn wrote:
+>>
+>> I think vmalloc/kmalloc in uislib_malloc() can be removed and just use
+>> vmalloc/kmalloc directly.
+>> (UISMALLOC() macro is also removed.)
+>> And uislib_malloc() is renamed to "uislib_trace_buffer_status()" which
+>> is just tracing buffer status(Malloc_FailuresAlloc, Malloc_BytesInUse
+>> ...) for info_proc_read_helper().
+>>
+>> If this change is accepted, it also need to change uislib_free().
+>>
+>> Is it fine to change like this?
+>
+> This change is fine with me.  It makes the logic easier to follow.
+>
+>>
+>> Thanks.
+>> Daeseok Youn.
+>>
+>> 2014-03-18 6:41 GMT+09:00 Greg KH <gregkh@linuxfoundation.org>:
+>>>
+>>> On Wed, Mar 12, 2014 at 07:37:50PM +0900, Daeseok Youn wrote:
+>>>>
+>>>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>>>> ---
+>>>>   drivers/staging/unisys/uislib/uislib.c   |    5 +----
+>>>>   drivers/staging/unisys/uislib/uisutils.c |    2 +-
+>>>>   2 files changed, 2 insertions(+), 5 deletions(-)
+>>>>
+>>>> diff --git a/drivers/staging/unisys/uislib/uislib.c
+>>>> b/drivers/staging/unisys/uislib/uislib.c
+>>>> index d77df9a..9748fcb 100644
+>>>> --- a/drivers/staging/unisys/uislib/uislib.c
+>>>> +++ b/drivers/staging/unisys/uislib/uislib.c
+>>>> @@ -339,8 +339,6 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>>>>                return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>>>        }
+>>>>
+>>>> -     memset(bus, 0, size);
+>>>> -
+>>>>        /* Currently by default, the bus Number is the GuestHandle.
+>>>>         * Configure Bus message can override this.
+>>>>         */
+>>>> @@ -530,7 +528,6 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+>>>>                return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>>>>        }
+>>>>
+>>>> -     memset(dev, 0, sizeof(struct device_info));
+>>>>        dev->channelTypeGuid = msg->cmd.createDevice.dataTypeGuid;
+>>>>        dev->intr = msg->cmd.createDevice.intr;
+>>>>        dev->channelAddr = msg->cmd.createDevice.channelAddr;
+>>>> @@ -1437,7 +1434,7 @@ uislib_malloc(size_t siz, gfp_t gfp, U8
+>>>> contiguous, char *fn, int ln)
+>>>>                * get memory for you (like, invoke oom killer), which
+>>>>                * will probably cripple the system.
+>>>>                */
+>>>> -             p = kmalloc(siz, gfp | __GFP_NORETRY);
+>>>> +             p = kzalloc(siz, gfp | __GFP_NORETRY);
+>>>>        }
+>>>>        if (p == NULL) {
+>>>>                LOGERR("uislib_malloc failed to alloc %d bytes @%s:%d",
+>>>> diff --git a/drivers/staging/unisys/uislib/uisutils.c
+>>>> b/drivers/staging/unisys/uislib/uisutils.c
+>>>> index 208b7ea..2f05be1 100644
+>>>> --- a/drivers/staging/unisys/uislib/uisutils.c
+>>>> +++ b/drivers/staging/unisys/uislib/uisutils.c
+>>>> @@ -294,7 +294,7 @@ ReqHandlerAdd(GUID switchTypeGuid,
+>>>>        rc = UISMALLOC(sizeof(*rc), GFP_ATOMIC);
+>>>>        if (!rc)
+>>>>                return NULL;
+>>>> -     memset(rc, 0, sizeof(*rc));
+>>>> +
+>>>>        rc->switchTypeGuid = switchTypeGuid;
+>>>>        rc->controlfunc = controlfunc;
+>>>>        rc->min_channel_bytes = min_channel_bytes;
+>>>
+>>> Can you just remove the UISMALLOC() macro completly, so that it's easier
+>>> to verify that changes like this are actually correct?
+>>>
+>>> thanks,
+>>>
+>>> greg k-h
+>
+>
