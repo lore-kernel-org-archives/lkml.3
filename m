@@ -1,41 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934254AbaCSQ6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:58:55 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:64618 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933964AbaCSQ6x (ORCPT
+	id S934102AbaCSRBr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:01:47 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:41086 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933574AbaCSRBp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:58:53 -0400
+	Wed, 19 Mar 2014 13:01:45 -0400
+Date: Wed, 19 Mar 2014 17:01:38 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Vince Hsu <vinceh@nvidia.com>
+Subject: Re: [PATCH] mfd: as3722: make FUSE7_REG readable
+Message-ID: <20140319170138.GK31687@lee--X1>
+References: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org>
+ <20140305015539.GK10579@lee--X1>
+ <5329C133.60900@wwwdotorg.org>
 MIME-Version: 1.0
-In-Reply-To: <1625450.oZua1OVhNs@amdc1032>
-References: <1625450.oZua1OVhNs@amdc1032>
-Date: Wed, 19 Mar 2014 09:58:52 -0700
-Message-ID: <CAPcyv4hYFBY2GwXcF_wfigtsqT+s7Sgq9UHdH0nWGYZD7DaxcQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: iop: fix devm_ioremap_resource() return value checking
-From: Dan Williams <dan.j.williams@intel.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Lennert Buytenhek <kernel@wantstofly.org>,
-        Mikael Pettersson <mikpe@it.uu.se>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>, linux-gpio@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5329C133.60900@wwwdotorg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 2:58 AM, Bartlomiej Zolnierkiewicz
-<b.zolnierkie@samsung.com> wrote:
-> devm_ioremap_resource() returns a pointer to the remapped memory or
-> an ERR_PTR() encoded error code on failure.  Fix the check inside
-> iop3xx_gpio_probe() accordingly.
->
-> Cc: Lennert Buytenhek <kernel@wantstofly.org>
-> Cc: Dan Williams <dan.j.williams@intel.com>
-> Cc: Mikael Pettersson <mikpe@it.uu.se>
-> Cc: Aaro Koskinen <aaro.koskinen@iki.fi>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> >> From: Stephen Warren <swarren@nvidia.com>
+> >>
+> >> The FUSE7_REG register is not currently marked readable. This causes
+> >> as3722_sd0_is_low_voltage() to emit an error during boot, and assume
+> >> the range of the SD0 regulator:
+> >>
+> >> as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
+> >>
+> >> Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
+> >> [exposed the bug, by checking for readability]
+> >> Fixes: 762a8ee80897 ("regulator: as3722: detect SD0 low-voltage mode")
+> >> [left out this register from the readable list]
+> >> Cc: Mark Brown <broonie@linaro.org>
+> >> Cc: Michal Simek <michal.simek@xilinx.com>
+> >> Cc: Andrew Bresticker <abrestic@chromium.org>
+> >> Cc: Vince Hsu <vinceh@nvidia.com>
+> >> Signed-off-by: Stephen Warren <swarren@nvidia.com>
+> >> ---
+> >> Note: I believe the regmap commit mentioned above is for 3.15, whereas
+> >> the as3722 commit is in at least 3.14. So, this only needs to be applied
+> >> for 3.15, but might make sense to go into earlier kernels, at your
+> >> discretion.
+> > 
+> > Applied to MFD -next (v3.15).
+> 
+> I don't see this in next-20140319; did it get dropped somewhere, or was
+> your branch not pushed out?
 
-Acked-by: Dan Williams <dan.j.williams@intel.com>
+Ah, thanks for the reminder.
+
+I moved the MFD tree from linaro.org to kernel.org, but failed to let
+Stephen know. I'll do so now.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
