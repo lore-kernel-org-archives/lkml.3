@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673AbaCSTPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:15:34 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35773 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaCSTPa (ORCPT
+	id S1754340AbaCSTPW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:15:22 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:47467 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751818AbaCSTPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:15:30 -0400
-Message-ID: <5329ECC2.7040803@ti.com>
-Date: Wed, 19 Mar 2014 21:15:14 +0200
-From: Jyri Sarha <jsarha@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Mar 2014 15:15:17 -0400
+Date: Wed, 19 Mar 2014 15:14:26 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: Re: linux-next: build failure after merge of the final tree
+ (wireless-next tree related)
+Message-ID: <20140319191426.GA3355@tuxdriver.com>
+References: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>,
-        <devicetree@vger.kernel.org>, <alsa-devel@alsa-project.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>, <linux-kernel@vger.kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Subject: Re: [alsa-devel] [PATCH v3 4/4] ASoC: simple-card: Add DT documentation
- for multi-DAI links
-References: <cover.1394883134.git.moinejf@free.fr>	<d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>	<20140317164339.GR11706@sirena.org.uk> <20140318091728.1d2240ca@armhf> <53296CB7.1000909@ti.com> <5329E749.6070900@metafoo.de>
-In-Reply-To: <5329E749.6070900@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 08:51 PM, Lars-Peter Clausen wrote:
-> On 03/19/2014 11:08 AM, Jyri Sarha wrote:
-> [...]
->> It may sometimes be helpful to allow overwriting link level settings
->> in dai
->> level. In order to do that it should be possible to write all daifmt
->> settings explicitly like this:
->>
->> bitclock-inversion = <0>; /* <0> = no bitclock-inversion */
->
-> When does this make sense? Either the bitclock is inverted for all of
-> them or for none.
->
+On Wed, Mar 19, 2014 at 05:20:35PM +1100, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (powerpc allyesconfig)
+> failed like this:
+> 
+> drivers/net/wireless/iwlwifi/mvm/debugfs.c: In function 'iwl_dbgfs_fw_error_dump_release':
+> drivers/net/wireless/iwlwifi/mvm/debugfs.c:161:2: error: implicit declaration of function 'vfree' [-Werror=implicit-function-declaration]
+>   vfree(file->private_data);
+>   ^
+> 
+> Caused by commit 1bd3cbc1a0e9 ("iwlwifi: mvm: send udev event upon
+> firmware error to dump logs") from the wireless-next tree.  See Rule 1
+> from Documentation/SubmitChecklist.
+> 
+> I have reverted that commit (and commit cdb00563fe2c ("iwlwifi: mvm: BT
+> Coex - add debugfs hook to set BT Tx priority") that may depend on it)
+> for today.
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 
-Definition of clock signal and it's inversion varies between chip 
-manufacturers and sometimes it may not be possible to get all the dai 
-drivers to work identically in this respect. Because of this in some 
-cases there may be a need to set the inversion bit only at one end of 
-the link.
+Clearly I need to beg someone for a powerpc box, so that I can find
+more of these build failures... :-)
 
-I think there was an example of this in some mail regarding the 
-simple-card DT-bidings, but I can't find it ATM.
-
-Best regards,
-Jyri
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
