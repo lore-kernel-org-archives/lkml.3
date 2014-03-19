@@ -1,112 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757668AbaCSWf0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:35:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:57251 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754808AbaCSWfY (ORCPT
+	id S1758756AbaCSWft (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:35:49 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:35122 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758057AbaCSWfq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:35:24 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 1/2] PM: Correct whitespace errors in <linux/pm.h>
-Date: Wed, 19 Mar 2014 23:50:56 +0100
-Message-ID: <6636992.81rGEKjTqL@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1395087971-31897-1-git-send-email-geert@linux-m68k.org>
-References: <1395087971-31897-1-git-send-email-geert@linux-m68k.org>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
+	Wed, 19 Mar 2014 18:35:46 -0400
 Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+To: Nishanth Menon <nm@ti.com>, "Mark Brown" <broonie@kernel.org>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <531E11B7.6080109@ti.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Viresh Kumar" <viresh.kumar@linaro.org>,
+        "MyungJoo Ham" <myungjoo.ham@samsung.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org
+References: <1392755543-28335-1-git-send-email-nm@ti.com>
+ <1392755543-28335-4-git-send-email-nm@ti.com>
+ <20140224015826.GU25940@sirena.org.uk> <530B594F.2030500@ti.com>
+ <20140303035426.GC2411@sirena.org.uk> <531DF250.5060100@ti.com>
+ <20140310172221.GT28112@sirena.org.uk> <531DF931.1060108@ti.com>
+ <20140310180131.GZ28112@sirena.org.uk> <531E11B7.6080109@ti.com>
+Message-ID: <20140319223536.31449.32103@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC PATCH 3/6] PM / Voltagedomain: introduce voltage domain driver
+ support
+Date: Wed, 19 Mar 2014 15:35:36 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 17, 2014 09:26:10 PM Geert Uytterhoeven wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Quoting Nishanth Menon (2014-03-10 12:25:43)
+> On 03/10/2014 01:01 PM, Mark Brown wrote:
+> > On Mon, Mar 10, 2014 at 12:41:05PM -0500, Nishanth Menon wrote:
+> > 
+> >> The only other options are:
+> >> a) Abstract it at a higher level at "user drivers", since they are
+> >> aware of the sequencing needs - but this partially defeats the
+> >> purpose, unless ofcourse, we do a tricky implementation such as:
+> >> clk a, b, c -> prenotifiers in a, postnotifiers in c (which as you
+> >> mentioned is a little trickier to get right).
+> >> b) introduce a higher level generic dvfs function[1] which does not
+> >> seem very attractive either.
 
-Why exactly are they errors?
+I disagree that a higher level DVFS interface is unattractive. I think
+it has taken a while to get there but people are finally interested in
+this. A small amount of discussion about this took place at Linaro
+Connect earlier this month (just hallway talk) but we shouldn't rule out
+the idea of a general framework for managing DVFS, which frankly is
+complex enough to merit not being shoved into the clock layer.
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> ---
->  include/linux/pm.h |   32 ++++++++++++++++----------------
->  1 file changed, 16 insertions(+), 16 deletions(-)
+> > 
+> >> Any other suggestions other than limiting the usage(and documenting it
+> >> so) and hoping for a future evolution to take this into consideration?
+> > 
+> > Something might be doable with telling the clock API about maintianing
+> > ratios between clocks?  I do think we should have an idea where we'd go
+> > with such requirements, even if we don't currently handle it, so that we
+> > can hopefully avoid another round of refactoring everything but it
+> > doesn't seem 100% essential, just very nice to have.
+
+This sounds reasonable but I must point out that the clock framework
+today (based on the existing clk.h api) does not have a single instance
+of constraint-based logic. For instance there is no clk_set_min_rate or
+clk_set_max_rate or clk_set_rate_range. These have been discussed before
+but I feel that pushing something before now would have been premature
+given that the level of discussion around those features never hit
+critical mass.
+
+So the ratio thing is sensible, but it would be the first
+constraint-like mechanism in the clock framework so what that looks like
+bares careful consideration.
+
+> > 
+> Mike,
+> Any suggestions about the above? could we use composite clocks in some
+> manner here(even though I think the original intent of the same was
+> not the same)?
+
+NACK. Let's just model the hardware in the clock framework, please. If
+you need to invent fake clocks to represent other constructs then it
+means the framework is missing something (or we're missing an entire
+framework, e.g. DVFS).
+
+Regards,
+Mike
+
 > 
-> diff --git a/include/linux/pm.h b/include/linux/pm.h
-> index 8c6583a53a06..22ba7338d48c 100644
-> --- a/include/linux/pm.h
-> +++ b/include/linux/pm.h
-> @@ -379,7 +379,7 @@ const struct dev_pm_ops name = { \
->   *
->   * ON		No transition.
->   *
-> - * FREEZE 	System is going to hibernate, call ->prepare() and ->freeze()
-> + * FREEZE	System is going to hibernate, call ->prepare() and ->freeze()
->   *		for all devices.
->   *
->   * SUSPEND	System is going to suspend, call ->prepare() and ->suspend()
-> @@ -423,7 +423,7 @@ const struct dev_pm_ops name = { \
->  
->  #define PM_EVENT_INVALID	(-1)
->  #define PM_EVENT_ON		0x0000
-> -#define PM_EVENT_FREEZE 	0x0001
-> +#define PM_EVENT_FREEZE		0x0001
->  #define PM_EVENT_SUSPEND	0x0002
->  #define PM_EVENT_HIBERNATE	0x0004
->  #define PM_EVENT_QUIESCE	0x0008
-> @@ -612,11 +612,11 @@ struct dev_pm_domain {
->   * message is implicit:
->   *
->   * ON		Driver starts working again, responding to hardware events
-> - * 		and software requests.  The hardware may have gone through
-> - * 		a power-off reset, or it may have maintained state from the
-> - * 		previous suspend() which the driver will rely on while
-> - * 		resuming.  On most platforms, there are no restrictions on
-> - * 		availability of resources like clocks during resume().
-> + *		and software requests.  The hardware may have gone through
-> + *		a power-off reset, or it may have maintained state from the
-> + *		previous suspend() which the driver will rely on while
-> + *		resuming.  On most platforms, there are no restrictions on
-> + *		availability of resources like clocks during resume().
->   *
->   * Other transitions are triggered by messages sent using suspend().  All
->   * these transitions quiesce the driver, so that I/O queues are inactive.
-> @@ -626,21 +626,21 @@ struct dev_pm_domain {
->   * differ according to the message:
->   *
->   * SUSPEND	Quiesce, enter a low power device state appropriate for
-> - * 		the upcoming system state (such as PCI_D3hot), and enable
-> - * 		wakeup events as appropriate.
-> + *		the upcoming system state (such as PCI_D3hot), and enable
-> + *		wakeup events as appropriate.
->   *
->   * HIBERNATE	Enter a low power device state appropriate for the hibernation
-> - * 		state (eg. ACPI S4) and enable wakeup events as appropriate.
-> + *		state (eg. ACPI S4) and enable wakeup events as appropriate.
->   *
->   * FREEZE	Quiesce operations so that a consistent image can be saved;
-> - * 		but do NOT otherwise enter a low power device state, and do
-> - * 		NOT emit system wakeup events.
-> + *		but do NOT otherwise enter a low power device state, and do
-> + *		NOT emit system wakeup events.
->   *
->   * PRETHAW	Quiesce as if for FREEZE; additionally, prepare for restoring
-> - * 		the system from a snapshot taken after an earlier FREEZE.
-> - * 		Some drivers will need to reset their hardware state instead
-> - * 		of preserving it, to ensure that it's never mistaken for the
-> - * 		state which that earlier snapshot had set up.
-> + *		the system from a snapshot taken after an earlier FREEZE.
-> + *		Some drivers will need to reset their hardware state instead
-> + *		of preserving it, to ensure that it's never mistaken for the
-> + *		state which that earlier snapshot had set up.
->   *
->   * A minimally power-aware driver treats all messages as SUSPEND, fully
->   * reinitializes its device during resume() -- whether or not it was reset
-> 
-
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+> -- 
+> Regards,
+> Nishanth Menon
