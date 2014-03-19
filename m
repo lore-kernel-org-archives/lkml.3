@@ -1,267 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758992AbaCSDIX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 23:08:23 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:56367 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757970AbaCSDIV (ORCPT
+	id S933129AbaCSDIi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:08:38 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:50067 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756792AbaCSDIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 23:08:21 -0400
+	Tue, 18 Mar 2014 23:08:36 -0400
+Message-ID: <53290A18.704@marvell.com>
+Date: Wed, 19 Mar 2014 11:08:08 +0800
+From: Jane Li <jiel@marvell.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140317131941.297853893@bombadil.infradead.org>
-References: <20140317131827.793657833@bombadil.infradead.org>
-	<20140317131941.297853893@bombadil.infradead.org>
-Date: Wed, 19 Mar 2014 11:08:20 +0800
-Message-ID: <CACVXFVMsFzyiR5gqyGk6jc0pRZP-3CZSvxr+oi36umVWJPjWZw@mail.gmail.com>
-Subject: Re: [PATCH 3/4] blk-mq: replace blk_mq_init_commands with a
- ->init_request method
-From: Ming Lei <tom.leiming@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "joe@perches.com" <joe@perches.com>, "tj@kernel.org" <tj@kernel.org>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>, Jan Kara <jack@suse.cz>
+Subject: Re: [PATCH] printk: fix one circular lockdep warning about console_lock
+References: <1392101400-14550-1-git-send-email-jiel@marvell.com> <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+In-Reply-To: <20140211131927.f180ac29dede51b2733b92a6@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-19_01:2014-03-19,2014-03-19,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1403180171
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 9:18 PM, Christoph Hellwig <hch@infradead.org> wrote:
-> Bedides a simpler and cleared interface this also allows to initialize the
-> flush_rq properly.  The interface for that is still a bit messy as we don't
-> have a hw_ctx available for the flush request, but that's something that
-> should be fixable with a little work once the demand arises.
->
-> Signed-off-by: Christoph Hellwig <hch@lst.de>
-> ---
->  block/blk-mq.c             |   65 +++++++++++++++++++++-----------------------
->  drivers/block/virtio_blk.c |   22 +++++++--------
->  include/linux/blk-mq.h     |    9 +++++-
->  3 files changed, 50 insertions(+), 46 deletions(-)
->
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index e3284f6..c2ce99b 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -996,33 +996,6 @@ static void blk_mq_hctx_notify(void *data, unsigned long action,
->         blk_mq_put_ctx(ctx);
->  }
->
-> -static void blk_mq_init_hw_commands(struct blk_mq_hw_ctx *hctx,
-> -                                   void (*init)(void *, struct blk_mq_hw_ctx *,
-> -                                       struct request *, unsigned int),
-> -                                   void *data)
-> -{
-> -       unsigned int i;
-> -
-> -       for (i = 0; i < hctx->queue_depth; i++) {
-> -               struct request *rq = hctx->rqs[i];
-> -
-> -               init(data, hctx, rq, i);
-> -       }
-> -}
-> -
-> -void blk_mq_init_commands(struct request_queue *q,
-> -                         void (*init)(void *, struct blk_mq_hw_ctx *,
-> -                                       struct request *, unsigned int),
-> -                         void *data)
-> -{
-> -       struct blk_mq_hw_ctx *hctx;
-> -       unsigned int i;
-> -
-> -       queue_for_each_hw_ctx(q, hctx, i)
-> -               blk_mq_init_hw_commands(hctx, init, data);
-> -}
-> -EXPORT_SYMBOL(blk_mq_init_commands);
-> -
->  static void blk_mq_free_rq_map(struct blk_mq_hw_ctx *hctx)
->  {
->         struct page *page;
-> @@ -1050,10 +1023,12 @@ static size_t order_to_size(unsigned int order)
->  }
->
->  static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
-> -                             unsigned int reserved_tags, int node)
-> +               struct blk_mq_reg *reg, void *driver_data, int node)
->  {
-> +       unsigned int reserved_tags = reg->reserved_tags;
->         unsigned int i, j, entries_per_page, max_order = 4;
->         size_t rq_size, left;
-> +       int error;
->
->         INIT_LIST_HEAD(&hctx->page_list);
->
-> @@ -1102,14 +1077,23 @@ static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
->                 for (j = 0; j < to_do; j++) {
->                         hctx->rqs[i] = p;
->                         blk_mq_rq_init(hctx, hctx->rqs[i]);
-> +                       if (reg->ops->init_request) {
-> +                               error = reg->ops->init_request(driver_data,
-> +                                               hctx, hctx->rqs[i], i);
-> +                               if (error)
-> +                                       goto err_rq_map;
-> +                       }
-> +
->                         p += rq_size;
->                         i++;
->                 }
->         }
->
-> -       if (i < (reserved_tags + BLK_MQ_TAG_MIN))
-> +       if (i < (reserved_tags + BLK_MQ_TAG_MIN)) {
-> +               error = -ENOMEM;
->                 goto err_rq_map;
-> -       else if (i != hctx->queue_depth) {
-> +       }
-> +       if (i != hctx->queue_depth) {
->                 hctx->queue_depth = i;
->                 pr_warn("%s: queue depth set to %u because of low memory\n",
->                                         __func__, i);
-> @@ -1117,12 +1101,14 @@ static int blk_mq_init_rq_map(struct blk_mq_hw_ctx *hctx,
->
->         hctx->tags = blk_mq_init_tags(hctx->queue_depth, reserved_tags, node);
->         if (!hctx->tags) {
-> -err_rq_map:
-> -               blk_mq_free_rq_map(hctx);
-> -               return -ENOMEM;
-> +               error = -ENOMEM;
-> +               goto err_rq_map;
->         }
->
->         return 0;
-> +err_rq_map:
-> +       blk_mq_free_rq_map(hctx);
-> +       return error;
->  }
->
->  static int blk_mq_init_hw_queues(struct request_queue *q,
-> @@ -1155,7 +1141,7 @@ static int blk_mq_init_hw_queues(struct request_queue *q,
->                                                 blk_mq_hctx_notify, hctx);
->                 blk_mq_register_cpu_notifier(&hctx->cpu_notifier);
->
-> -               if (blk_mq_init_rq_map(hctx, reg->reserved_tags, node))
-> +               if (blk_mq_init_rq_map(hctx, reg, driver_data, node))
->                         break;
->
->                 /*
-> @@ -1334,6 +1320,17 @@ struct request_queue *blk_mq_init_queue(struct blk_mq_reg *reg,
->         if (!q->flush_rq)
->                 goto err_hw;
->
-> +       if (reg->ops->init_request) {
-> +               blk_rq_init(q, q->flush_rq);
-> +               if (reg->cmd_size)
-> +                       q->flush_rq->special =
-> +                               blk_mq_rq_to_pdu(q->flush_rq);
-> +
-> +               if (reg->ops->init_request(driver_data,
-> +                               NULL, q->flush_rq, -1))
-> +                       goto err_flush_rq;
-> +       }
+On 02/12/2014 05:19 AM, Andrew Morton wrote:
 
-The above looks a bit weird because q->flush_rq is invisible to
-driver and should always be initialized no matter if driver defines
-its .init_request callback or not.
+> On Tue, 11 Feb 2014 14:50:00 +0800<jiel@marvell.com>  wrote:
+>
+>> From: Jane Li<jiel@marvell.com>
+>>
+>> This patch tries to fix a warning about possible circular locking
+>> dependency.
+>>
+>> If do in following sequence:
+>>      enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+>> lockdep will show warning as following:
+>>
+>> ======================================================
+>> [ INFO: possible circular locking dependency detected ]
+>> 3.10.0 #2 Tainted: G           O
+>> -------------------------------------------------------
+>> sh/1271 is trying to acquire lock:
+>> (console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+>> but task is already holding lock:
+>> (cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+>> which lock already depends on the new lock.
+>>
+>> the existing dependency chain (in reverse order) is:
+>> -> #2 (cpu_hotplug.lock){+.+.+.}:
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+>> [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+>> [<c06ebfac>] _cpu_up+0x24/0x154
+>> [<c06ec140>] cpu_up+0x64/0x84
+>> [<c0981834>] smp_init+0x9c/0xd4
+>> [<c0973880>] kernel_init_freeable+0x78/0x1c8
+>> [<c06e7f40>] kernel_init+0x8/0xe4
+>> [<c010eec8>] ret_from_fork+0x14/0x2c
+>>
+>> -> #1 (cpu_add_remove_lock){+.+.+.}:
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c06f5014>] mutex_lock_nested+0x50/0x3d8
+>> [<c012b758>] disable_nonboot_cpus+0x8/0xe8
+>> [<c016b83c>] suspend_devices_and_enter+0x214/0x448
+>> [<c016bc54>] pm_suspend+0x1e4/0x284
+>> [<c016bdcc>] try_to_suspend+0xa4/0xbc
+>> [<c0143848>] process_one_work+0x1c4/0x4fc
+>> [<c0143f80>] worker_thread+0x138/0x37c
+>> [<c014aaf8>] kthread+0xa4/0xb0
+>> [<c010eec8>] ret_from_fork+0x14/0x2c
+>>
+>> -> #0 (console_lock){+.+.+.}:
+>> [<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+>> [<c017bb7c>] lock_acquire+0x98/0x12c
+>> [<c01288c4>] console_lock+0x54/0x68
+>> [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+>> [<c01501d4>] notifier_call_chain+0x44/0x84
+>> [<c012b448>] __cpu_notify+0x2c/0x48
+>> [<c012b5b0>] cpu_notify_nofail+0x8/0x14
+>> [<c06e81bc>] _cpu_down+0xf4/0x258
+>> [<c06e8344>] cpu_down+0x24/0x40
+>> [<c06e921c>] store_online+0x30/0x74
+>> [<c03b7298>] dev_attr_store+0x18/0x24
+>> [<c025fc5c>] sysfs_write_file+0x16c/0x19c
+>> [<c0207a98>] vfs_write+0xb4/0x190
+>> [<c0207e58>] SyS_write+0x3c/0x70
+>> [<c010ee00>] ret_fast_syscall+0x0/0x48
+>>
+>> Chain exists of:
+>>     console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+>>
+>> Possible unsafe locking scenario:
+>>         CPU0                    CPU1
+>>         ----                    ----
+>> lock(cpu_hotplug.lock);
+>>                                 lock(cpu_add_remove_lock);
+>>                                 lock(cpu_hotplug.lock);
+>> lock(console_lock);
+>>    *** DEADLOCK ***
+> These traces hurt my brain.
+>
+>> There are three locks involved in two sequence:
+>> a) pm suspend:
+>> 	console_lock (@suspend_console())
+>> 	cpu_add_remove_lock (@disable_nonboot_cpus())
+>> 	cpu_hotplug.lock (@_cpu_down())
+> But but but.  suspend_console() releases console_sem again.  So the
+> sequence is actually
+>
+>   	down(&console_sem) (@suspend_console())
+>   	up(&console_sem) (@suspend_console())
+>   	cpu_add_remove_lock (@disable_nonboot_cpus())
+>   	cpu_hotplug.lock (@_cpu_down())
+>
+> So console_sem *doesn't* nest outside cpu_add_remove_lock and
+> cpu_hotplug.lock.
 
-> +
->         if (blk_mq_init_hw_queues(q, reg, driver_data))
->                 goto err_flush_rq;
->
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index b1cb3f4..a2e925b 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -474,11 +474,22 @@ static const struct device_attribute dev_attr_cache_type_rw =
->         __ATTR(cache_type, S_IRUGO|S_IWUSR,
->                virtblk_cache_type_show, virtblk_cache_type_store);
->
-> +static int virtblk_init_request(void *data, struct blk_mq_hw_ctx *hctx,
-> +               struct request *rq, unsigned int nr)
-> +{
-> +       struct virtio_blk *vblk = data;
-> +       struct virtblk_req *vbr = rq->special;
-> +
-> +       sg_init_table(vbr->sg, vblk->sg_elems);
-> +       return 0;
-> +}
-> +
->  static struct blk_mq_ops virtio_mq_ops = {
->         .queue_rq       = virtio_queue_rq,
->         .map_queue      = blk_mq_map_queue,
->         .alloc_hctx     = blk_mq_alloc_single_hw_queue,
->         .free_hctx      = blk_mq_free_single_hw_queue,
-> +       .init_request   = virtblk_init_request,
->         .complete       = virtblk_request_done,
->  };
->
-> @@ -490,15 +501,6 @@ static struct blk_mq_reg virtio_mq_reg = {
->         .flags          = BLK_MQ_F_SHOULD_MERGE,
->  };
->
-> -static void virtblk_init_vbr(void *data, struct blk_mq_hw_ctx *hctx,
-> -                            struct request *rq, unsigned int nr)
-> -{
-> -       struct virtio_blk *vblk = data;
-> -       struct virtblk_req *vbr = rq->special;
-> -
-> -       sg_init_table(vbr->sg, vblk->sg_elems);
-> -}
-> -
->  static int virtblk_probe(struct virtio_device *vdev)
->  {
->         struct virtio_blk *vblk;
-> @@ -562,8 +564,6 @@ static int virtblk_probe(struct virtio_device *vdev)
->                 goto out_put_disk;
->         }
->
-> -       blk_mq_init_commands(q, virtblk_init_vbr, vblk);
-> -
->         q->queuedata = vblk;
->
->         virtblk_name_format("vd", index, vblk->disk->disk_name, DISK_NAME_LEN);
-> diff --git a/include/linux/blk-mq.h b/include/linux/blk-mq.h
-> index 2ff2e8d..cac10e1 100644
-> --- a/include/linux/blk-mq.h
-> +++ b/include/linux/blk-mq.h
-> @@ -66,6 +66,8 @@ typedef struct blk_mq_hw_ctx *(alloc_hctx_fn)(struct blk_mq_reg *,unsigned int);
->  typedef void (free_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
->  typedef int (init_hctx_fn)(struct blk_mq_hw_ctx *, void *, unsigned int);
->  typedef void (exit_hctx_fn)(struct blk_mq_hw_ctx *, unsigned int);
-> +typedef int (init_request_fn)(void *, struct blk_mq_hw_ctx *,
-> +               struct request *, unsigned int);
->
->  struct blk_mq_ops {
->         /*
-> @@ -98,6 +100,12 @@ struct blk_mq_ops {
->          */
->         init_hctx_fn            *init_hctx;
->         exit_hctx_fn            *exit_hctx;
-> +
-> +       /*
-> +        * Called for every command allocated by the block layer to allow
-> +        * the driver to set up driver specific data.
-> +        */
-> +       init_request_fn         *init_request;
->  };
->
->  enum {
-> @@ -117,7 +125,6 @@ enum {
->  struct request_queue *blk_mq_init_queue(struct blk_mq_reg *, void *);
->  int blk_mq_register_disk(struct gendisk *);
->  void blk_mq_unregister_disk(struct gendisk *);
-> -void blk_mq_init_commands(struct request_queue *, void (*init)(void *data, struct blk_mq_hw_ctx *, struct request *, unsigned int), void *data);
->
->  void blk_mq_flush_plug_list(struct blk_plug *plug, bool from_schedule);
->
-> --
-> 1.7.10.4
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+  Jan Kara and Jane have answered this question in other emails.
 
+>> b) Plug-out CPUx:
+>> 	cpu_add_remove_lock (@(cpu_down())
+>> 	cpu_hotplug.lock (@_cpu_down())
+>> 	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+>>
+>> There should be not real deadlock, as flag of console_suspended can
+>> protect this.
+> console_lock() does down(&console_sem) *before* testing
+> console_suspended, so I don't understand this sentence - a more
+> detailed description would help.
 
-Thanks,
--- 
-Ming Lei
+Jane has answered this question in another email.
+
+>> Printk registers cpu hotplug notify function. When CPUx is plug-out/in,
+>> always execute console_lock() and console_unlock(). This patch
+>> modifies that with console_trylock() and console_unlock(). Then use
+>> that instead of the unconditional console_lock/unlock pair to avoid the
+>> warning.
+>>
+>> ...
+>>
+>> --- a/kernel/printk/printk.c
+>> +++ b/kernel/printk/printk.c
+>> @@ -1893,6 +1893,20 @@ void resume_console(void)
+>>   }
+>>   
+>>   /**
+>> + * console_flush - flush dmesg if console isn't suspended
+>> + *
+>> + * console_unlock always flushes the dmesg buffer, so just try to
+>> + * grab&drop the console lock. If that fails we know that the current
+>> + * holder will eventually drop the console lock and so flush the dmesg
+>> + * buffers at the earliest possible time.
+>> + */
+> The comment should describe why we added this code, please: talk about
+> cpu_hotplug.lock and console_lock.
+
+Daniel has answered this question in another email.
+
+>> +void console_flush(void)
+>> +{
+>> +	if (console_trylock())
+>> +		console_unlock();
+>> +}
+>> +
+>> +/**
+>>    * console_cpu_notify - print deferred console messages after CPU hotplug
+>>    * @self: notifier struct
+>>    * @action: CPU hotplug event
+>> @@ -1911,8 +1925,7 @@ static int console_cpu_notify(struct notifier_block *self,
+>>   	case CPU_DEAD:
+>>   	case CPU_DOWN_FAILED:
+>>   	case CPU_UP_CANCELED:
+>> -		console_lock();
+>> -		console_unlock();
+>> +		console_flush();
+>>   	}
+>>   	return NOTIFY_OK;
+> Well, this is a bit hacky and makes the already-far-too-complex code
+> even more complex.  If it is indeed the case that the deadlock cannot
+> really occur then let's try to find a way of suppressing the lockdep
+> warning without making runtime changes.
+>
+> What I'm struggling with is what *should* the ranking of these locks be?
+>  From a conceptual high-level design standpoint, which is the
+> "innermost" lock?  I tend to think that it is console_lock, because
+> blocking CPU hotplug is a quite high-level operation.
+>
+> But console_lock is such a kooky special-case in the way it is used to
+> control the printk corking that it is hard to take general rules and
+> apply them here.
+
+Daniel and Jan Kara have answered this question in other emails.
+
+Do you agree with this solution or have other comments?
+
+Thanks!
+
+Best Regards,
+Jane
+
+   
+
