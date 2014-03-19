@@ -1,151 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757542AbaCSHv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 03:51:56 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.218]:28726 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757420AbaCSHvy convert rfc822-to-8bit (ORCPT
+	id S1757767AbaCSHxS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 03:53:18 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:61349 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756155AbaCSHxQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 03:51:54 -0400
-X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
-X-RZG-CLASS-ID: mo00
-From: Stephan Mueller <smueller@chronox.de>
-To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
-Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com
-Subject: Re: [PATCH v2 1/6] SP800-90A Deterministic Random Bit Generator
-Date: Wed, 19 Mar 2014 08:51:45 +0100
-Message-ID: <34882876.HnRfi0MJtt@myon.chronox.de>
-User-Agent: KMail/4.12.3 (Linux/3.13.6-200.fc20.x86_64; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <3662681.npTzbSq3ye@myon.chronox.de>
-References: <2396177.vxvG2ljJL8@myon.chronox.de> <5770301.bQ9lKffXf3@myon.chronox.de> <3662681.npTzbSq3ye@myon.chronox.de>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+	Wed, 19 Mar 2014 03:53:16 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-2e-53294ce8af38
+Message-id: <53294CE9.8030301@samsung.com>
+Date: Wed, 19 Mar 2014 16:53:13 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] extcon next for 3.15
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSoPvSRzPY4PB2JovmxevZLM42vWG3
+	uLxrDpvF7cYVbA4sHvvnrmH36NuyitHj8ya5AOYoLpuU1JzMstQifbsEroxbnwIL1gpWnJrw
+	iLmBcT5fFyMnh4SAicTUOR2sELaYxIV769m6GLk4hASWMkps/dTIDFN08VojO0RiEaPEtmf3
+	WSCcV4wSC05tAWvnFdCS2H38NJDNwcEioCpx84MkSJgNKLz/xQ02EFtUIExi5fQrLBDlghI/
+	Jt8Ds0UENCReHr0FZjMLtDNK/JjDCGILA8Xv77rGDhHXkdjfOo0NwpaX2LzmLTPIDRIC7ewS
+	t04cAEuwCAhIfJt8iAXkBgkBWYlNB6AekJQ4uOIGywRGkVlIVs9CMnYWkrELGJlXMYqmFiQX
+	FCelFxnqFSfmFpfmpesl5+duYgTGxOl/z3p3MN4+YH2IMRlo5URmKdHkfGBM5ZXEGxqbGVmY
+	mpgaG5lbmpEmrCTOm/QwKUhIID2xJDU7NbUgtSi+qDQntfgQIxMHp1QDo3hD14m/xw2L7euO
+	10rzB+hvu1SQ9ul2S+mESV5vDa6tuqwlrJy7+F7HwiLBWUwCy21yG+aunM5sfSD06NZdre4r
+	ivoXyqoujGeIuHs1/qTRWkd7S8G4csO79etVrqy0f6jTyL5omquPc89Bu7vu7f7hmxvd702x
+	3tDGMtH0715mDicerUOaSizFGYmGWsxFxYkAvqPQ/58CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJIsWRmVeSWpSXmKPExsVy+t9jAd0XPprBBm/WWFg0L17PZnG26Q27
+	xeVdc9gsbjeuYHNg8dg/dw27R9+WVYwenzfJBTBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7
+	x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gCtU1IoS8wpBQoFJBYXK+nbYZoQGuKmawHTGKHr
+	GxIE12NkgAYS1jBm3PoUWLBWsOLUhEfMDYzz+boYOTkkBEwkLl5rZIewxSQu3FvP1sXIxSEk
+	sIhRYtuz+ywQzitGiQWntrCCVPEKaEnsPn4ayObgYBFQlbj5QRIkzAYU3v/iBhuILSoQJrFy
+	+hUWiHJBiR+T74HZIgIaEi+P3gKzmQXaGSV+zGEEsYWB4vd3XWOHiOtI7G+dxgZhy0tsXvOW
+	eQIj3ywko2YhKZuFpGwBI/MqRtHUguSC4qT0XEO94sTc4tK8dL3k/NxNjOCIeya1g3Flg8Uh
+	RgEORiUe3gNRGsFCrIllxZW5hxglOJiVRHiF7wKFeFMSK6tSi/Lji0pzUosPMSYDPTqRWUo0
+	OR+YDPJK4g2NTcyMLI3MDS2MjM1JE1YS5z3Qah0oJJCeWJKanZpakFoEs4WJg1OqgVGn2Civ
+	aa8E+zmFuysr7oaf9ElMnbN8d4xy35HvvgutzziqXskXElXRNqp6o2Cu8CHw36Yda4MZeG/w
+	hDUZu3zX5H8r7RO7pPSaTMrl4pK9cSVMlxuij9zWU8ud3KS3VN9iMe919nO/VnK+cGHxyTGW
+	KdzJI3U107//6TKR9Y8v2wjKiW9qUWIpzkg01GIuKk4EAPDU8Wf8AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 17. März 2014, 08:34:06 schrieb Stephan Mueller:
+Dear Greg,
 
-> +static int drbg_seed(struct drbg_state *drbg, struct drbg_string *pers,
-> +		     bool reseed)
-> +{
-> +	int ret = 0;
-> +	unsigned char *entropy = NULL;
-> +	size_t entropylen = 0;
-> +	struct drbg_string data1;
-> +	struct drbg_string *data2;
-> +
-> +	/* 9.1 / 9.2 / 9.3.1 step 3 */
-> +	if (pers && pers->len > (drbg_max_addtl(drbg)))
-> +		return -EINVAL;
-> +
-> +	if (drbg->test_data) {
-> +		data1.buf = drbg->test_data->testentropy->buf;
-> +		data1.len = drbg->test_data->testentropy->len;
-> +		data1.next = NULL;
-> +	} else {
-> +		/* Gather entropy equal to the security strength of the DRBG.
-> +		 * With a derivation function, a nonce is required in addition
-> +		 * to the entropy. A nonce must be at least 1/2 of the 
-security
-> +		 * strength of the DRBG in size. Thus, entropy * nonce is 3/2
-> +		 * of the strength. The consideration of a nonce is only
-> +		 * applicable during initial seeding. */
-> +		entropylen = (drbg_sec_strength(drbg->core->flags) / 8);
+This is extcon-next full request for v3.15. I add detailed description of this
+pull request on below. Please pull extcon with following updates.
 
-drbg_sec_strength returns the strength in bytes, thus the division by 8 must 
-be removed
+This patchset is rebased on 'Linux 3-14-rc5' because char-misc-next is based on
+'Linux 3-14-rc5'.
 
-> +		if (!entropylen)
-> +			return -EFAULT;
-> +		if (!reseed)
-> +			/* make sure we round up strength/2 in
-> +			 * case it is not divisible by 2 */
-> +			entropylen = ((entropylen + 1) / 2) * 3;
-> +
-> +		entropy = kzalloc(entropylen, GFP_KERNEL);
-> +		if (!entropy)
-> +			return -ENOMEM;
-> +		get_random_bytes(entropy, entropylen);
-> +		drbg_string_fill(&data1, entropy, entropylen);
-> +	}
-> +
-> +	/* concatenation of entropy with personalization str / addtl input) */
-> +	if (pers && 0 < pers->len) {
-> +		data2 = pers;
-> +		data2->next = NULL;
-> +		data1.next = data2;
-> +	}
-> +
-> +	ret = drbg->d_ops->update(drbg, &data1, reseed);
-> +	if (ret)
-> +		goto out;
-> +
-> +	drbg->seeded = true;
-> +	/* 10.1.1.2 / 10.1.1.3 step 5 */
-> +	drbg->reseed_ctr = 1;
-> +
-> +out:
-> +	if (entropy)
-> +		kzfree(entropy);
-> +	return ret;
-> +}
-> +
+Best Regards,
+Chanwoo Choi
 
-[...] 
-> +static unsigned int drbg_generate(struct drbg_state *drbg,
-> +				  unsigned char *buf, unsigned int buflen,
-> +				  struct drbg_string *addtl)
-> +{
-> +	unsigned int len = 0;
-> +	struct drbg_state *shadow = NULL;
-> +
-> +	if (0 == buflen || !buf)
-> +		return 0;
-> +	if (addtl && NULL == addtl->buf && 0 < addtl->len)
-> +		return 0;
-> +
-> +	if (drbg_make_shadow(drbg, &shadow))
-> +		return 0;
-> +	/* 9.3.1 step 2 */
-> +	if (buflen > (drbg_max_request_bytes(shadow)))
-> +		goto err;
-> +	/* 9.3.1 step 3 is implicit with the chosen DRBG */
-> +	/* 9.3.1 step 4 */
-> +	if (addtl && addtl->len > (drbg_max_addtl(shadow)))
-> +		goto err;
-> +	/* 9.3.1 step 5 is implicit with the chosen DRBG */
-> +	/* 9.3.1 step 6 and 9 supplemented by 9.3.2 step c -- the spec is a
-> +	 * bit convoluted here, we make it simpler */
-> +	if ((drbg_max_requests(shadow)) < shadow->reseed_ctr)
-> +		shadow->seeded = false;
-> +
-> +	/* allocate cipher handle */
-> +	if (shadow->d_ops->crypto_init && shadow->d_ops->crypto_init(shadow))
-> +		goto err;
-> +
-> +	if (shadow->pr || !shadow->seeded) {
-> +		/* 9.3.1 steps 7.1 through 7.3 */
-> +		if (drbg_seed(shadow, addtl, true))
-> +			goto err;
-> +		/* 9.3.1 step 7.4 */
-> +		addtl = NULL;
-> +	}
-> +	/* 9.3.1 step 8 and 10 */
-> +	len = drbg->d_ops->generate(shadow, buf, buflen, addtl);
+The following changes since commit 0414855fdc4a40da05221fc6062cccbc0c30f169:
 
-This needs to be shadow->d_ops
-> +
-> +	/* 10.1.1.4 step 6, 10.1.2.5 step 7, 10.2.1.5.2 step 7 */
-> +	shadow->reseed_ctr++;
-> +
-> +err:
-> +	if (shadow->d_ops->crypto_fini)
-> +		shadow->d_ops->crypto_fini(shadow);
-> +	drbg_restore_shadow(drbg, &shadow);
-> +	return len;
-> +}
+  Linux 3.14-rc5 (2014-03-02 18:56:16 -0800)
 
-Ciao
-Stephan
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/chanwoo/extcon.git tags/extcon-next-for-3.15
+
+for you to fetch changes up to 1ad94ffef22c0a6e2ee6ba90a800c32fd29ffa1f:
+
+  extcon: Move OF helper function to extcon core and change function name (2014-03-19 14:41:58 +0900)
+
+----------------------------------------------------------------
+Update extcon for v3.15
+
+This patchset fix minor issue.
+
+The extcon-palmas/gpio use SIMPLE_DEV_PM_OPS macro instead of legacy method.
+OF helper function of extcon move in extcon core to remove separate of_extcon.c
+and change the name of OF helper function as following because previous function
+name is complicated and ambiguous naming.
+- of_extcon_get_extcon_dev() -> extcon_get_edev_by_phandle()
+
+----------------------------------------------------------------
+Chanwoo Choi (2):
+      extcon: of: Remove unnecessary function call by using the name of device_node
+      extcon: Move OF helper function to extcon core and change function name
+
+Jingoo Han (2):
+      extcon: palmas: Use SIMPLE_DEV_PM_OPS macro
+      extcon: gpio: Use SIMPLE_DEV_PM_OPS macro
+
+ drivers/extcon/Kconfig           |  4 ---
+ drivers/extcon/Makefile          |  2 --
+ drivers/extcon/extcon-class.c    | 42 ++++++++++++++++++++++++++
+ drivers/extcon/extcon-gpio.c     |  4 +--
+ drivers/extcon/extcon-palmas.c   |  5 +---
+ drivers/extcon/of_extcon.c       | 64 ----------------------------------------
+ drivers/usb/dwc3/dwc3-omap.c     |  3 +-
+ include/linux/extcon.h           | 12 ++++++++
+ include/linux/extcon/of_extcon.h | 31 -------------------
+ 9 files changed, 57 insertions(+), 110 deletions(-)
+ delete mode 100644 drivers/extcon/of_extcon.c
+ delete mode 100644 include/linux/extcon/of_extcon.h
