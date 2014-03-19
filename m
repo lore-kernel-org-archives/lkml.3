@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008AbaCSUcH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:32:07 -0400
-Received: from www.linutronix.de ([62.245.132.108]:36582 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaCSUcB (ORCPT
+	id S1756127AbaCSUcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:32:22 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:34438 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbaCSUcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:32:01 -0400
-Date: Wed, 19 Mar 2014 21:32:09 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-15?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH 2/2] timer: Make sure TIMER_FLAG_MASK bits are free in
- allocated base
-In-Reply-To: <CAKohpo=g4nhRUN7wJY-fpE1TiQWEDExKpZ1p4C8gUEDK8mXZ_Q@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1403192125260.18573@ionos.tec.linutronix.de>
-References: <c439f5b6bbc2047e1662f4d523350531425bcf9d.1393576981.git.viresh.kumar@linaro.org> <9144e10d7e854a0aa8a673332adec356d81a923c.1393576981.git.viresh.kumar@linaro.org> <alpine.DEB.2.02.1402281151180.18573@ionos.tec.linutronix.de>
- <CAKohpomHXLVKqzFCbp8qt7gGpdDkc-s5wASRvw1EBwuB_fpceA@mail.gmail.com> <CAKohpo=g4nhRUN7wJY-fpE1TiQWEDExKpZ1p4C8gUEDK8mXZ_Q@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Wed, 19 Mar 2014 16:32:18 -0400
+Date: Wed, 19 Mar 2014 16:32:13 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        James Bottomley <jbottomley@parallels.com>, linux-ide@vger.kernel.org,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        Jim Davis <jim.epost@gmail.com>
+Subject: Re: [PATCH -next] libata.h: add stub for ata_sas_port_resume
+Message-ID: <20140319203213.GC3656@mtj.dyndns.org>
+References: <5329D7F1.4030400@infradead.org>
+ <20140319175852.GD19874@htj.dyndns.org>
+ <1395252855.21554.1.camel@dwillia2-mobl2.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395252855.21554.1.camel@dwillia2-mobl2.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Viresh Kumar wrote:
-> On 11 March 2014 15:56, Viresh Kumar <viresh.kumar@linaro.org> wrote:
-> >
-> > Now, I was looking to migrate away the timers first but I
-> > obviously shouldn't migrate the pinned timers. One way out to
-> > identify PINNED timers is to mark them PINNED with the flag bits,
-> > which you wouldn't allow. Can you give some other idea with which
-> > I can get this solved.
+On Wed, Mar 19, 2014 at 11:14:15AM -0700, Dan Williams wrote:
+> Subject: libata: remove unused ata_sas_port_async_resume() stub
+> 
+> From: Dan Williams <dan.j.williams@intel.com>
+> 
+> Commit bc6e7c4b0d1a "libata, libsas: kill pm_result and related cleanup"
+> renamed ata_sas_port_async_resume() to ata_sas_port_resume(), but missed
+> a CONFIG_PM=n stub conversion.  Randy fixed that up in commit
+> a5a6569959fc "libata.h: add stub for ata_sas_port_resume", but missed
+> the deletion of the now unused ata_sas_port_async_resume() routine.
+> 
+> Cc: Randy Dunlap <rdunlap@infradead.org>
+> Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 
-Sigh, I really hoped to find some time to finish the rework, but then
-you get to debug bugs, solve the problem and are rewarded with a full
-inbox. Lather, rinse, repeat...
+Applied to libata/for-3.15.
 
-Go ahead and make the timer base aligned with more room for some bits
-to tweak. The new stuff will have a flags field where stuff like
-pinned is stored.
+Thanks.
 
-Thanks,
-
-	tglx
-
-
+-- 
+tejun
