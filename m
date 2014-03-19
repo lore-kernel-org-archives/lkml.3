@@ -1,96 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758388AbaCSAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:23:59 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:45970 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756851AbaCSAX5 (ORCPT
+	id S1758637AbaCSA0T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:26:19 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:10725 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354AbaCSA0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:23:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140319001826.GA13475@bbox>
-References: <1394779070-8545-1-git-send-email-minchan@kernel.org>
- <5328888C.7030402@mit.edu> <20140319001826.GA13475@bbox>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 18 Mar 2014 17:23:37 -0700
-Message-ID: <CALCETrUsgVgKDRjqY=7avbvowkNSn-CWJ3L9zti1SCOYgrY3UA@mail.gmail.com>
-Subject: Re: [RFC 0/6] mm: support madvise(MADV_FREE)
-To: Minchan Kim <minchan@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave.hansen@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Jason Evans <je@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 18 Mar 2014 20:26:15 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-96-5328e425eeea
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-f2fs-devel@lists.sourceforge.net
+Subject: [PATCH 2/5] f2fs: avoid small data writes by skipping writepages
+Date: Wed, 19 Mar 2014 09:24:22 +0900
+Message-id: <1395188665-4175-2-git-send-email-jaegeuk.kim@samsung.com>
+X-Mailer: git-send-email 1.8.4.474.g128a96c
+In-reply-to: <1395188665-4175-1-git-send-email-jaegeuk.kim@samsung.com>
+References: <1395188665-4175-1-git-send-email-jaegeuk.kim@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t8zA13VJxrBBj/m6Vlc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlfH8XSNjwTSZiqmP
+	vjM2MHaIdzFyckgImEhs2HuaDcIWk7hwbz2QzcUhJLCMUaK59SMrTNH0JxehEosYJbou/2GB
+	cDqZJO7NXwDkcHCwCWhLbN5vANIgIsAssWDqeUaQGmaBCYwS/xe9ZwFJCAt4Shz4cQlsKouA
+	qsSMnqfsIDavgJtE58n7LBDbtCW2PZ/ICGJzCrhLfLl7BiwuBFSz6/VxJpChEgLf2SQ+tMxk
+	hhgkIPFt8iGwIyQEZCU2HWCGmCMpcXDFDZYJjMILGBlWMYqmFiQXFCelF5nqFSfmFpfmpesl
+	5+duYoQE7cQdjPcPWB9iTAYaN5FZSjQ5Hxj0eSXxhsZmRhamJqbGRuaWZqQJK4nzpj9KChIS
+	SE8sSc1OTS1ILYovKs1JLT7EyMTBKdXAOF1y0SHVeclCZi9bCvn2+a3eUn55kneyVsDTz4ee
+	3Qh4KcSX0bX5Zq5gfc3Fxbabzrm/46iYuG07n2LKV6O/v7+G2iy0frjix/8s4Qvh2Wclwvjt
+	7+gdXszz5+b5h+cmLc441ybXcs10Bnva1VsV59y3Z0/P0T2beIF36aSPM1XLfogp7mZ9lajE
+	UpyRaKjFXFScCABwHaFwcAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFIsWRmVeSWpSXmKPExsVy+t9jAV3VJxrBBg+atSyu7/rLZHFpkbvF
+	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
+	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
+	JAiux8gADSSsY8x4/q6RsWCaTMXUR98ZGxg7xLsYOTkkBEwkpj+5yAZhi0lcuLceyObiEBJY
+	xCjRdfkPC4TTySRxb/4CIIeDg01AW2LzfgOQBhEBZokFU88zgtQwC0xglPi/6D0LSEJYwFPi
+	wI9LrCA2i4CqxIyep+wgNq+Am0TnyfssENu0JbY9n8gIYnMKuEt8uXsGLC4EVLPr9XGmCYy8
+	CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEx8Qz6R2MqxosDjEKcDAq8fAeiNIIFmJN
+	LCuuzD3EKMHBrCTCK3wXKMSbklhZlVqUH19UmpNafIgxGeiqicxSosn5wHjNK4k3NDYxM7I0
+	MrMwMjE3J01YSZz3YKt1oJBAemJJanZqakFqEcwWJg5OqQZGT4ZZQg5lS9Yxuh68Pincu68j
+	2NUtbcM1S/srV07usjnZq2bW98rKpWty+oPMKG7FFRrTWybVG6+5l/8tWNjIXqk0dcdEi6jv
+	rLN7Lsb2cEn37H41OTLrU+D6uSE5m+9/8/kudcHzM+d/33vc4aVuigFfsxV6O1i4+R4etRBc
+	sbOlLuWEw3QlluKMREMt5qLiRAApEZOfzQIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 5:18 PM, Minchan Kim <minchan@kernel.org> wrote:
-> Hello,
->
-> On Tue, Mar 18, 2014 at 10:55:24AM -0700, Andy Lutomirski wrote:
->> On 03/13/2014 11:37 PM, Minchan Kim wrote:
->> > This patch is an attempt to support MADV_FREE for Linux.
->> >
->> > Rationale is following as.
->> >
->> > Allocators call munmap(2) when user call free(3) if ptr is
->> > in mmaped area. But munmap isn't cheap because it have to clean up
->> > all pte entries, unlinking a vma and returns free pages to buddy
->> > so overhead would be increased linearly by mmaped area's size.
->> > So they like madvise_dontneed rather than munmap.
->> >
->> > "dontneed" holds read-side lock of mmap_sem so other threads
->> > of the process could go with concurrent page faults so it is
->> > better than munmap if it's not lack of address space.
->> > But the problem is that most of allocator reuses that address
->> > space soonish so applications see page fault, page allocation,
->> > page zeroing if allocator already called madvise_dontneed
->> > on the address space.
->> >
->> > For avoidng that overheads, other OS have supported MADV_FREE.
->> > The idea is just mark pages as lazyfree when madvise called
->> > and purge them if memory pressure happens. Otherwise, VM doesn't
->> > detach pages on the address space so application could use
->> > that memory space without above overheads.
->>
->> I must be missing something.
->>
->> If the application issues MADV_FREE and then writes to the MADV_FREEd
->> range, the kernel needs to know that the pages are no longer safe to
->> lazily free.  This would presumably happen via a page fault on write.
->> For that to happen reliably, the kernel has to write protect the pages
->> when MADV_FREE is called, which in turn requires flushing the TLBs.
->
-> It could be done by pte_dirty bit check. Of course, if some architectures
-> don't support it by H/W, pte_mkdirty would make it CoW as you said.
+This patch introduces nr_pages_to_skip(sbi, type) to determine writepages can
+be skipped.
+The dentry, node, and meta pages can be conrolled by F2FS without breaking the
+FS consistency.
 
-If the page already has dirty PTEs, then you need to clear the dirty
-bits and flush TLBs so that other CPUs notice that the PTEs are clean,
-I think.
+Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+---
+ fs/f2fs/checkpoint.c |  4 ++--
+ fs/f2fs/data.c       |  4 ++++
+ fs/f2fs/node.c       |  8 +-------
+ fs/f2fs/segment.h    | 19 +++++++++++++++++++
+ 4 files changed, 26 insertions(+), 9 deletions(-)
 
-Also, this has very odd semantics wrt reading the page after MADV_FREE
--- is reading the page guaranteed to un-free it?
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+index 4c0e98d..1f52b70 100644
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -187,7 +187,7 @@ static int f2fs_write_meta_pages(struct address_space *mapping,
+ 				struct writeback_control *wbc)
+ {
+ 	struct f2fs_sb_info *sbi = F2FS_SB(mapping->host->i_sb);
+-	int nrpages = MAX_BIO_BLOCKS(max_hw_blocks(sbi));
++	int nrpages = nr_pages_to_skip(sbi, META);
+ 	long written;
+ 
+ 	if (wbc->for_kupdate)
+@@ -682,7 +682,7 @@ retry:
+ 	inode = igrab(entry->inode);
+ 	spin_unlock(&sbi->dir_inode_lock);
+ 	if (inode) {
+-		filemap_flush(inode->i_mapping);
++		filemap_fdatawrite(inode->i_mapping);
+ 		iput(inode);
+ 	} else {
+ 		/*
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 101b4cd..e3b7cfa 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -868,6 +868,10 @@ static int f2fs_write_data_pages(struct address_space *mapping,
+ 	if (!mapping->a_ops->writepage)
+ 		return 0;
+ 
++	if (S_ISDIR(inode->i_mode) && wbc->sync_mode == WB_SYNC_NONE &&
++			get_dirty_dents(inode) < nr_pages_to_skip(sbi, DATA))
++		return 0;
++
+ 	if (wbc->nr_to_write < MAX_DESIRED_PAGES_WP) {
+ 		desired_nrtw = MAX_DESIRED_PAGES_WP;
+ 		excess_nrtw = desired_nrtw - wbc->nr_to_write;
+diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+index 3e36240..cb514f1 100644
+--- a/fs/f2fs/node.c
++++ b/fs/f2fs/node.c
+@@ -1198,12 +1198,6 @@ redirty_out:
+ 	return AOP_WRITEPAGE_ACTIVATE;
+ }
+ 
+-/*
+- * It is very important to gather dirty pages and write at once, so that we can
+- * submit a big bio without interfering other data writes.
+- * Be default, 512 pages (2MB) * 3 node types, is more reasonable.
+- */
+-#define COLLECT_DIRTY_NODES	1536
+ static int f2fs_write_node_pages(struct address_space *mapping,
+ 			    struct writeback_control *wbc)
+ {
+@@ -1214,7 +1208,7 @@ static int f2fs_write_node_pages(struct address_space *mapping,
+ 	f2fs_balance_fs_bg(sbi);
+ 
+ 	/* collect a number of dirty node pages and write together */
+-	if (get_pages(sbi, F2FS_DIRTY_NODES) < COLLECT_DIRTY_NODES)
++	if (get_pages(sbi, F2FS_DIRTY_NODES) < nr_pages_to_skip(sbi, NODE))
+ 		return 0;
+ 
+ 	/* if mounting is failed, skip writing node pages */
+diff --git a/fs/f2fs/segment.h b/fs/f2fs/segment.h
+index c3d5e36..bbd9761 100644
+--- a/fs/f2fs/segment.h
++++ b/fs/f2fs/segment.h
+@@ -664,3 +664,22 @@ static inline unsigned int max_hw_blocks(struct f2fs_sb_info *sbi)
+ 	struct request_queue *q = bdev_get_queue(bdev);
+ 	return SECTOR_TO_BLOCK(sbi, queue_max_sectors(q));
+ }
++
++/*
++ * It is very important to gather dirty pages and write at once, so that we can
++ * submit a big bio without interfering other data writes.
++ * By default, 512 pages for directory data,
++ * 512 pages (2MB) * 3 for three types of nodes, and
++ * max_bio_blocks for meta are set.
++ */
++static inline int nr_pages_to_skip(struct f2fs_sb_info *sbi, int type)
++{
++	if (type == DATA)
++		return sbi->blocks_per_seg;
++	else if (type == NODE)
++		return 3 * sbi->blocks_per_seg;
++	else if (type == META)
++		return MAX_BIO_BLOCKS(max_hw_blocks(sbi));
++	else
++		return 0;
++}
+-- 
+1.8.4.474.g128a96c
 
->>
->> How does this end up being faster than munmap?
->
-> MADV_FREE doesn't need to return back the pages into page allocator
-> compared to MADV_DONTNEED and the overhead is not small when I measured
-> that on my machine.(Roughly, MADV_FREE's cost is half of DONTNEED through
-> avoiding involving page allocator.)
->
-> But I'd like to clarify that it's not MADV_FREE's goal that syscall
-> itself should be faster than MADV_DONTNEED but major goal is to
-> avoid unnecessary page fault + page allocation + page zeroing +
-> garbage swapout.
-
-This sounds like it might be better solved by trying to make munmap or
-MADV_DONTNEED faster.  Maybe those functions should lazily give pages
-back to the buddy allocator.
-
---Andy
