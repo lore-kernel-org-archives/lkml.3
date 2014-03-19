@@ -1,127 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759441AbaCSRVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:21:51 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:39126 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759422AbaCSRVr convert rfc822-to-8bit (ORCPT
+	id S1759460AbaCSR0T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:26:19 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:59961 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755996AbaCSR0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:21:47 -0400
-Date: Wed, 19 Mar 2014 17:21:41 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-pci <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
-Message-ID: <20140319172140.GA16328@e106497-lin.cambridge.arm.com>
-Mail-Followup-To: Catalin Marinas <catalin.marinas@arm.com>,
-	Arnd Bergmann <arnd@arndb.de>,
-	linux-pci <linux-pci@vger.kernel.org>,
-	Bjorn Helgaas <bhelgaas@google.com>,
-	Will Deacon <Will.Deacon@arm.com>,
-	Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-	linaro-kernel <linaro-kernel@lists.linaro.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	"devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-	LAKML <linux-arm-kernel@lists.infradead.org>,
-	Tanmay Inamdar <tinamdar@apm.com>,
-	Grant Likely <grant.likely@secretlab.ca>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
- <1394811258-1500-4-git-send-email-Liviu.Dudau@arm.com>
- <20140314171457.GK18126@arm.com>
- <201403141838.08900.arnd@arndb.de>
- <20140314180527.GZ6457@e106497-lin.cambridge.arm.com>
- <20140317173821.GJ24070@arm.com>
- <20140317180525.GL6457@e106497-lin.cambridge.arm.com>
- <20140319135619.GC6231@localhost>
+	Wed, 19 Mar 2014 13:26:14 -0400
+Date: Wed, 19 Mar 2014 10:25:57 -0700
+From: Mark Charlebois <charlebm@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'behanw@converseincode.com'" <behanw@converseincode.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "pablo@netfilter.org" <pablo@netfilter.org>,
+        "kaber@trash.net" <kaber@trash.net>,
+        "kadlec@blackhole.kfki.hu" <kadlec@blackhole.kfki.hu>,
+        "netfilter-devel@vger.kernel.org" <netfilter-devel@vger.kernel.org>,
+        "netfilter@vger.kernel.org" <netfilter@vger.kernel.org>,
+        "coreteam@netfilter.org" <coreteam@netfilter.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "pageexec@freemail.hu" <pageexec@freemail.hu>,
+        =?iso-8859-1?Q?Vin=EDcius?= Tinti <viniciustinti@gmail.com>
+Subject: Re: [PATCH v3] net: netfilter: LLVMLinux: vlais-netfilter
+Message-ID: <20140319172557.GA31869@mcharleb3-linux.qualcomm.com>
+References: <063D6719AE5E284EB5DD2968C1650D6D0F6E0286@AcuExch.aculab.com>
+ <1395193841-2886-1-git-send-email-behanw@converseincode.com>
+ <063D6719AE5E284EB5DD2968C1650D6D0F6E0F8D@AcuExch.aculab.com>
 MIME-Version: 1.0
-In-Reply-To: <20140319135619.GC6231@localhost>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 19 Mar 2014 17:21:42.0107 (UTC) FILETIME=[B1EA2AB0:01CF4397]
-X-MC-Unique: 114031917214400501
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6E0F8D@AcuExch.aculab.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 01:56:19PM +0000, Catalin Marinas wrote:
-> On Mon, Mar 17, 2014 at 06:05:25PM +0000, Liviu Dudau wrote:
-> > On Mon, Mar 17, 2014 at 05:38:21PM +0000, Catalin Marinas wrote:
-> > > On Fri, Mar 14, 2014 at 06:05:27PM +0000, Liviu Dudau wrote:
-> > > > On Fri, Mar 14, 2014 at 05:38:08PM +0000, Arnd Bergmann wrote:
-> > > > > On Friday 14 March 2014, Catalin Marinas wrote:
-> > > > > > On Fri, Mar 14, 2014 at 03:34:18PM +0000, Liviu Dudau wrote:
-> > > > > > > --- /dev/null
-> > > > > > > +++ b/arch/arm64/kernel/pci.c
-> > > > > > [...]
-> > > > > > > +int pci_register_io_range(phys_addr_t address, resource_size_t size)
-> > > > > > [...]
-> > > > > > > +unsigned long pci_address_to_pio(phys_addr_t address)
-> > > > > > [...]
-> > > > > > > +void pcibios_fixup_bus(struct pci_bus *bus)
-> > > > > > [ actually most of this file ]
-> > > > > > 
-> > > > > > Maybe it was raised before already but can we have __weak generic
-> > > > > > definitions of these functions? They don't seem to be arm64 specific in
-> > > > > > any way.
-> > > [...]
-> > > > Catalin, if you are happy to ask for ACKs from all arch maintainers that might get
-> > > > affected by our custom version of pci_address_to_pio() before you can pull PCI support
-> > > > for arm64 then I can propose a new patchset.
-> > > 
-> > > You don't need to change the other architectures, that's the point of a
-> > > __weak definition, it will be automatically overridden. If you want, you
-> > > can even place a GENERIC_PCI or whatever config option that is only
-> > > selected by arm64 for the time being.
+On Wed, Mar 19, 2014 at 09:52:40AM +0000, David Laight wrote:
+> From: behanw@converseincode.com 
+> > From: Mark Charlebois <charlebm@gmail.com>
 > > 
-> > pci_address_to_pio() is alread __weak. My patch was adding the arm64 version of it. Adding
-> > an #ifdef GENERIC_PCI to the __weak implementation is not just a temporary solution.
+> > Replaced non-standard C use of Variable Length Arrays In Structs (VLAIS) in
+> > xt_repldata.h with a C99 compliant flexible array member and then calculated
+> > offsets to the other struct members. These other members aren't referenced by
+> > name in this code, however this patch maintains the same memory layout and
+> > padding as was previously accomplished using VLAIS.
+> > 
+> > Had the original structure been ordered differently, with the entries VLA at
+> > the end, then it could have been a flexible member, and this patch would have
+> > been a lot simpler. However since the data stored in this structure is
+> > ultimately exported to userspace, the order of this structure can't be changed.
+> > 
+> > This patch makes no attempt to change the existing behavior, merely the way in
+> > which the current layout is accomplished using standard C99 constructs. As such
+> > the code can now be compiled with either gcc or clang.
+> > 
+> > Author: Mark Charlebois <charlebm@gmail.com>
+> > Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+> > Signed-off-by: Behan Webster <behanw@converseincode.com>
+> > Signed-off-by: Vin�cius Tinti <viniciustinti@gmail.com>
+> > ---
+> >  net/netfilter/xt_repldata.h | 27 ++++++++++++++++++++++-----
+> >  1 file changed, 22 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/net/netfilter/xt_repldata.h b/net/netfilter/xt_repldata.h
+> > index 6efe4e5..343599e 100644
+> > --- a/net/netfilter/xt_repldata.h
+> > +++ b/net/netfilter/xt_repldata.h
+> > @@ -5,23 +5,40 @@
+> >   * they serve as the hanging-off data accessed through repl.data[].
+> >   */
+> > 
+> > +/* tbl has the following structure equivalent, but is C99 compliant:
+> > + * struct {
+> > + *	struct type##_replace repl;
+> > + *	struct type##_standard entries[nhooks];
+> > + *	struct type##_error term;
+> > + * } *tbl;
+> > + */
+> > +
+> >  #define xt_alloc_initial_table(type, typ2) ({ \
+> >  	unsigned int hook_mask = info->valid_hooks; \
+> >  	unsigned int nhooks = hweight32(hook_mask); \
+> >  	unsigned int bytes = 0, hooknum = 0, i = 0; \
+> >  	struct { \
+> >  		struct type##_replace repl; \
+> > -		struct type##_standard entries[nhooks]; \
+> > -		struct type##_error term; \
+> > -	} *tbl = kzalloc(sizeof(*tbl), GFP_KERNEL); \
+> > +		struct type##_standard entries[]; \
+> > +	} *tbl; \
+> > +	struct type##_error *term; \
+> > +	size_t entries_end = offsetof(typeof(*tbl), \
+> > +		entries[nhooks-1]) + sizeof(tbl->entries[0]); \
 > 
-> Ah, I start to understand what you mean, pci_address_to_pio() is already
-> defined as __weak in drivers/of/address.c. So the reason we redefine it
-> on arm64 is that it uses the io_list resources which are populated by
-> pci_register_io_range(). Do you see any other architecture using a
-> similar logic (that could be shared)?
+> Is the compiler complaining about:
+> 	offsetof(typeof(*tbl), entries[nhooks])
+> If it does it is a PITA.
+> 
+> > +	size_t term_offset = (entries_end + __alignof__(*term) - 1) \
+> > +		& ~(__alignof__(*term) - 1); \
+> 
+> You've not tested this - the () are in the wrong places.
 
-All architectures that memory map the PCI IO range should be supported by my version of
-pci_address_to_pio(). But that still leaves the x86 and those architectures that have
-separate IO space or map it 1:1 into CPU address space to carry a different version (which
-the current "generic" weak version catters for).
+I have tested it with both clang and gcc. Unit test is at http://git.linuxfoundation.org/?p=llvmlinux.git;a=blob;f=test/unit/vlais/netfilter.c;h=7adc255e47e15a252d2bda7af7ae217ac683c25e;hb=HEAD
+
+Basic calulation of a new offset is:
+
+new offset = (offset + align - 1) & ~(align - 1)
+
+The parenthesis seem correct to me.
+> 
+> > +	size_t term_end = term_offset + sizeof(*term); \
+> > +	size_t tbl_sz = (term_end + __alignof__(tbl->repl) - 1) \
+> > +		& ~(__alignof__(tbl->repl) - 1); \
+> > +	tbl = kzalloc(tbl_sz, GFP_KERNEL); \
+> 
+> The number of temporary variables make the above hard to read.
+> I'm not at all sure you need to worry about the trailing alignment.
+> It rather depends on how the final data is used.
+> If the combined buffer is copied to userspace you may not
+> be copying all of the required data.
+> It might be easier to call copytouser() twice.
+
+I can try to remove more variables if that is prefered.
+The existing memory layout was preserved exactly so that however the
+data currently used will be unaffected. I can remove the trailing
+alignment but was not 100% sure it wasn't needed.
 
 > 
-> Any other functions in this file that could be shared (and are not
-> __weak already)?
-
-A version of the pci_register_io_range() that uses part of pci_ioremap_io() (the calculation
-of io_offset part).
-
-My ultimate point is that no matter how long we argue about the shape of the functions that
-I've added into arch/arm64/kernel/pci.c I don't think we can get away without having that
-file, or at least not in the first phase if we want speedy integration into mainline.
-
-Best regards,
-Liviu
-
+> >  	if (tbl == NULL) \
+> >  		return NULL; \
+> > +	term = (struct type##_error *)&(((char *)tbl)[term_offset]); \
+> >  	strncpy(tbl->repl.name, info->name, sizeof(tbl->repl.name)); \
+> > -	tbl->term = (struct type##_error)typ2##_ERROR_INIT;  \
+> > +	*term = (struct type##_error)typ2##_ERROR_INIT;  \
 > 
-> -- 
-> Catalin
+> 	David
+> 
 
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+Mark
