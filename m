@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752684AbaCSFQE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 01:16:04 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:57269 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbaCSFQC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 01:16:02 -0400
-Date: Wed, 19 Mar 2014 01:15:43 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Minchan Kim <minchan@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>, Jason Evans <je@fb.com>
-Subject: Re: [RFC 0/6] mm: support madvise(MADV_FREE)
-Message-ID: <20140319051543.GI14688@cmpxchg.org>
-References: <1394779070-8545-1-git-send-email-minchan@kernel.org>
- <5328888C.7030402@mit.edu>
- <20140319001826.GA13475@bbox>
- <CALCETrUsgVgKDRjqY=7avbvowkNSn-CWJ3L9zti1SCOYgrY3UA@mail.gmail.com>
+	id S1753291AbaCSFUY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 01:20:24 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:40548 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751387AbaCSFUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 01:20:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUsgVgKDRjqY=7avbvowkNSn-CWJ3L9zti1SCOYgrY3UA@mail.gmail.com>
+In-Reply-To: <CAKrE-KcorYUZOpUOaU7qcBbyJ+FHUFZN_r+paMrL7gq+052RwQ@mail.gmail.com>
+References: <1395168169-28978-1-git-send-email-jaswinder.singh@linaro.org>
+	<1395168335-29119-1-git-send-email-jaswinder.singh@linaro.org>
+	<CAKrE-KcorYUZOpUOaU7qcBbyJ+FHUFZN_r+paMrL7gq+052RwQ@mail.gmail.com>
+Date: Wed, 19 Mar 2014 10:50:22 +0530
+Message-ID: <CAJe_ZhcM6d0ODTsOsuUwLwWSWE_hyCufmwW8_hxnqPdMQ2ukSg@mail.gmail.com>
+Subject: Re: [PATCHv4 2/5] mailbox: Introduce framework for mailbox
+From: Jassi Brar <jaswinder.singh@linaro.org>
+To: Girish KS <girishks2000@gmail.com>
+Cc: Jassi Brar <jassisinghbrar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Anna, Suman" <s-anna@ti.com>, Tony Lindgren <tony@atomide.com>,
+        "Omar Ramirez Luna (omar.ramirez@copitl.com)" 
+	<omar.ramirez@copitl.com>,
+        Loic Pallardy <loic.pallardy@st.com>,
+        LeyFoon Tan <lftan.linux@gmail.com>,
+        Craig McGeachie <slapdau@yahoo.com.au>,
+        Courtney Cavin <courtney.cavin@sonymobile.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        "ks.giri@samsung.com" <ks.giri@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 05:23:37PM -0700, Andy Lutomirski wrote:
-> On Tue, Mar 18, 2014 at 5:18 PM, Minchan Kim <minchan@kernel.org> wrote:
-> > Hello,
-> >
-> > On Tue, Mar 18, 2014 at 10:55:24AM -0700, Andy Lutomirski wrote:
-> >> On 03/13/2014 11:37 PM, Minchan Kim wrote:
-> >> > This patch is an attempt to support MADV_FREE for Linux.
-> >> >
-> >> > Rationale is following as.
-> >> >
-> >> > Allocators call munmap(2) when user call free(3) if ptr is
-> >> > in mmaped area. But munmap isn't cheap because it have to clean up
-> >> > all pte entries, unlinking a vma and returns free pages to buddy
-> >> > so overhead would be increased linearly by mmaped area's size.
-> >> > So they like madvise_dontneed rather than munmap.
-> >> >
-> >> > "dontneed" holds read-side lock of mmap_sem so other threads
-> >> > of the process could go with concurrent page faults so it is
-> >> > better than munmap if it's not lack of address space.
-> >> > But the problem is that most of allocator reuses that address
-> >> > space soonish so applications see page fault, page allocation,
-> >> > page zeroing if allocator already called madvise_dontneed
-> >> > on the address space.
-> >> >
-> >> > For avoidng that overheads, other OS have supported MADV_FREE.
-> >> > The idea is just mark pages as lazyfree when madvise called
-> >> > and purge them if memory pressure happens. Otherwise, VM doesn't
-> >> > detach pages on the address space so application could use
-> >> > that memory space without above overheads.
-> >>
-> >> I must be missing something.
-> >>
-> >> If the application issues MADV_FREE and then writes to the MADV_FREEd
-> >> range, the kernel needs to know that the pages are no longer safe to
-> >> lazily free.  This would presumably happen via a page fault on write.
-> >> For that to happen reliably, the kernel has to write protect the pages
-> >> when MADV_FREE is called, which in turn requires flushing the TLBs.
-> >
-> > It could be done by pte_dirty bit check. Of course, if some architectures
-> > don't support it by H/W, pte_mkdirty would make it CoW as you said.
-> 
-> If the page already has dirty PTEs, then you need to clear the dirty
-> bits and flush TLBs so that other CPUs notice that the PTEs are clean,
-> I think.
-> 
-> Also, this has very odd semantics wrt reading the page after MADV_FREE
-> -- is reading the page guaranteed to un-free it?
+On 19 March 2014 09:30, Girish KS <girishks2000@gmail.com> wrote:
+> On Wed, Mar 19, 2014 at 12:15 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
 
-MADV_FREE simply invalidates content.  Sure, you can read at a given
-address repeatedly after it.  You might see a different page every
-time you do it, but it doesn't matter; the content is undefined.
+>> +int mbox_send_message(struct mbox_chan *chan, void *mssg)
+>> +{
+>> +       int t;
+>> +
+>> +       if (!chan || !chan->cl)
+>> +               return -EINVAL;
+>> +
+>> +       t = _add_to_rbuf(chan, mssg);
+>> +       if (t < 0) {
+>> +               pr_err("Try increasing MBOX_TX_QUEUE_LEN\n");
+>> +               return t;
+>> +       }
+>> +
+>> +       _msg_submit(chan);
+>> +
+>> +       if (chan->txdone_method == TXDONE_BY_POLL)
+>> +               poll_txdone((unsigned long)chan->con);
+>
+> I came across a panic in the complete function. When i traced bact the
+> call sequence it was
+> When a client sets chan->cl->tx_block = true, and polling is enabled
+> for controller.
+> 1.Client sends the message with  mbox_send_message. This function as
+> seen above will call __msg_submit (this calls the controller specific
+> send function).
+> 2. Since the tx method is polling the above condition is satisfied and
+> calls the poll_txdone function.
+> 3. In this poll function, the tx_tick function is invoked.
+> 4. In this tick function since the client has enabled the tx_block it
+> calls the notify function complete(&chan->tx_complete);
+> 5. Here there is a panic. because the complete is called before
+> initialization. init_completion needs to be called but not called.
+>
+Are you sure you have applied the patch "[PATCHv4 4/5] mailbox: Fix TX
+completion init" ?
 
-It's no different than doing malloc() and looking at the memory before
-writing anything in it.  After MADV_FREE, the memory is like a freshly
-malloc'd chunk: the first access may result in page faults and the
-content is undefined until you write it.
+Thanks
+Jassi
