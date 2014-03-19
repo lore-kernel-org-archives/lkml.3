@@ -1,97 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571AbaCSJFb (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Wed, 19 Mar 2014 05:05:31 -0400
-Received: from f123.i.mail.ru ([94.100.178.187]:39722 "EHLO f123.i.mail.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757962AbaCSJF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 05:05:28 -0400
-From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-To: =?UTF-8?B?TGVlIEpvbmVz?= <lee.jones@linaro.org>
-Cc: =?UTF-8?B?bGttbA==?= <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?U2FtdWVsIE9ydGl6?= <sameo@linux.intel.com>,
-        =?UTF-8?B?QnJ5YW4gV3U=?= <cooloney@gmail.com>
-Subject: =?UTF-8?B?UmU6IFtQQVRDSF0gbWZkOiBtYzEzeHh4OiBNb3ZlIGRlZmluaXRpb25zIG91?=
- =?UTF-8?B?dCBvZiBzdHJ1Y3R1cmVz?=
-Mime-Version: 1.0
-X-Mailer: Mail.Ru Mailer 1.0
-X-Originating-IP: [217.119.30.118]
-Date: Wed, 19 Mar 2014 13:05:25 +0400
-Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
-X-Priority: 3 (Normal)
-Message-ID: <1395219924.503252896@f123.i.mail.ru>
-Content-Type: text/plain; charset=utf-8
-X-Mras: Ok
-X-Spam: undefined
-In-Reply-To: <20140319085144.GB31687@lee--X1>
-References: <1394867287-14074-1-git-send-email-shc_work@mail.ru>
- <CAK5ve-+RtBC33R6Kvy8b8ducXUE4=PcJtNrURAvA3fdU_7+SZA@mail.gmail.com>
- <20140319085144.GB31687@lee--X1>
+	id S965321AbaCSOeP (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Wed, 19 Mar 2014 10:34:15 -0400
+Received: from mail-db3un0251.outbound.protection.outlook.com ([157.55.234.251]:63042
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S965182AbaCSOeM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 10:34:12 -0400
+Content-Type: text/plain; charset=US-ASCII
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: Financial Service / Loan Service
+To: Recipients <finance09@finance787.onmicrosoft.com>
+From: Santander Group <finance09@finance787.onmicrosoft.com>
+Date: Wed, 19 Mar 2014 15:34:02 +0100
+Reply-To: <santafinance@aol.com>
+Message-ID: <03630828-ea5a-4ef5-975f-c1c6d2b571eb@AM3PR05MB276.eurprd05.prod.outlook.com>
+X-Originating-IP: [88.4.28.45]
+X-ClientProxiedBy: AM3PR06CA013.eurprd06.prod.outlook.com (10.242.16.33) To
+ AM3PR05MB276.eurprd05.prod.outlook.com (10.242.248.156)
+X-Forefront-PRVS: 01559F388D
+X-Forefront-Antispam-Report: SFV:SPM;SFS:(10009001)(6009001)(6039001)(428001)(189002)(199002)(50466002)(79102001)(74706001)(74316001)(558084003)(65816001)(80976001)(69226001)(81542001)(63696002)(76786001)(86632001)(76576001)(50986001)(33646001)(87266001)(83322001)(94946001)(64872006)(90146001)(51856001)(56816005)(86902001)(80022001)(59766001)(74366001)(74876001)(17643785005)(43066001)(20776003)(66066001)(54356001)(92726001)(49866001)(95666003)(19580395003)(86372001)(76482001)(85306002)(76176001)(42186004)(31696002)(87976001)(23756003)(81816001)(47976001)(54316002)(86362001)(93136001)(56776001)(97186001)(97336001)(19580405001)(94316002)(74502001)(47736001)(74662001)(93516002)(47776003)(85852003)(81342001)(46102001)(89136004)(95416001)(325944007)(86442001)(77096001)(83072002)(76796001)(81686001)(47446002)(4396001)(53256004)(77982001)(70512003);DIR:OUT;SFP:1501;SCL:5;SRVR:AM3PR05MB276;H:5715z.Home;FPR:A89B08A4.27ED4F8B.54E0DA6A.C5CF00EA.20058;MLV:spm;PTR:InfoNoRecords;MX:1;A:0;LANG:en;
+X-OriginatorOrg: finance787.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by spinics.net id s2J95jNf002291
 
-Wed, 19 Mar 2014 08:51:44 +0000 –æ—Ç Lee Jones <lee.jones@linaro.org>:
-> On Tue, 18 Mar 2014, Bryan Wu wrote:
-> 
-> > On Tue, Mar 18, 2014 at 2:40 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> > >> > > > > Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
-> > >> > > > > ---
-> > >> > > > >  include/linux/mfd/mc13xxx.h | 22 ++++++++++++----------
-> > >> > > > >  1 file changed, 12 insertions(+), 10 deletions(-)
-> > >> > > > >
-> > >> > > > > diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-> > >> > > > > index a326c85..d63b1d3 100644
-> > >> > > > > --- a/include/linux/mfd/mc13xxx.h
-> > >> > > > > +++ b/include/linux/mfd/mc13xxx.h
-> > >> > > > > @@ -117,10 +117,6 @@ struct mc13xxx_led_platform_data {
-> > >> > > > >
-> > >> > > > >  #define MAX_LED_CONTROL_REGS 6
-> > >> > > > >
-> > >> > > > > -struct mc13xxx_leds_platform_data {
-> > >> > > > > -     struct mc13xxx_led_platform_data *led;
-> > >> > > > > -     int num_leds;
-> > >> > > > > -
-> > >> > > > >  /* MC13783 LED Control 0 */
-> > >> > > > >  #define MC13783_LED_C0_ENABLE                (1 << 0)
-> > >> > > > >  #define MC13783_LED_C0_TRIODE_MD     (1 << 7)
-> > >> > > > > @@ -169,10 +165,13 @@ struct mc13xxx_leds_platform_data {
-> > >> > > > >  /* MC34708 LED Control 0 */
-> > >> > > >
-> > >> > > > I don't see the line above in the MFD tree?
-> > >> > > >
-> > >> > > > Which commit/branch/repo is this patch based on?
-> > >> > >
-> > >> > > Dependency:
-> > >> > > linux-next, a59ce6584d (leds: leds-mc13783: Add MC34708 LED support)
-> > >> > >
-> > >> > > https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/include/linux/mfd/mc13xxx.h?id=a59ce6584d566847980f9dcad5343cd9856145c8
-> > >> >
-> > >> > Ah, you can't do that, as it will cause conflicts and Linus will
-> > >> > likely get upset.
-> > >>
-> > >> So what do we do now? What is the solution?
-> > >
-> > > Don't worry about it. Bryan and I should be able to sort something out.
-> > 
-> > I lost the context here.
-> > 
-> > I merged Alexander's patch as a59ce6584d566847980f9dcad5343cd9856145c8
-> > which modified the mc13xxx.h. But all things are related to LED driver
-> > and only add several lines. Next time I will ask Lee to give an review
-> > and ack.
-> > 
-> > So probably this patch has to wait for
-> > a59ce6584d566847980f9dcad5343cd9856145c8 merged.
-> 
-> Yes, I think this is the best idea.
-> 
-> Alexander, can you re-send this patch with my Ack after the next merge
-> window please?
-
-Sure.
-
----
-
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+We offer all purpose loan at 3% interest rate. Contact Us for more details by Email:santanderfinancegroup@gmail.com
