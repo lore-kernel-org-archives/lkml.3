@@ -1,131 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139AbaCSGIa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 02:08:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:53771 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497AbaCSGI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 02:08:29 -0400
-Message-ID: <53293372.1000601@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 11:34:34 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1755562AbaCSGIt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:08:49 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:55692 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262AbaCSGIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 02:08:45 -0400
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        dietmar.eggemann@arm.com, tony.luck@intel.com, fenghua.yu@intel.com,
-        schwidefsky@de.ibm.com, james.hogan@imgtec.com, cmetcalf@tilera.com,
-        benh@kernel.crashing.org, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org
-Subject: Re: [PATCH v2 4/7] sched: powerpc: create a dedicated topology table
-References: <1395165409-18055-1-git-send-email-vincent.guittot@linaro.org> <1395165409-18055-5-git-send-email-vincent.guittot@linaro.org>
-In-Reply-To: <1395165409-18055-5-git-send-email-vincent.guittot@linaro.org>
+In-Reply-To: <532840FD.308@linux.vnet.ibm.com>
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
+	<532840FD.308@linux.vnet.ibm.com>
+Date: Wed, 19 Mar 2014 11:38:45 +0530
+Message-ID: <CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
+Subject: Re: [RFC V2] cpufreq: make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031906-7182-0000-0000-00000A16961D
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/18/2014 11:26 PM, Vincent Guittot wrote:
-> Create a dedicated topology table for handling asymetric feature of powerpc.
-> 
-> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
-> ---
->  arch/powerpc/kernel/smp.c | 31 +++++++++++++++++++++++--------
->  include/linux/sched.h     |  2 --
->  kernel/sched/core.c       |  6 ------
->  3 files changed, 23 insertions(+), 16 deletions(-)
-> 
-> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
-> index ac2621a..c9cade5 100644
-> --- a/arch/powerpc/kernel/smp.c
-> +++ b/arch/powerpc/kernel/smp.c
-> @@ -755,6 +755,28 @@ int setup_profiling_timer(unsigned int multiplier)
->  	return 0;
->  }
-> 
-> +#ifdef CONFIG_SCHED_SMT
-> +/* cpumask of CPUs with asymetric SMT dependancy */
-> +static const int powerpc_smt_flags(void)
-> +{
-> +	int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
-> +
-> +	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
-> +		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
-> +		flags |= SD_ASYM_PACKING;
-> +	}
-> +	return flags;
-> +}
-> +#endif
-> +
-> +static struct sched_domain_topology_level powerpc_topology[] = {
-> +#ifdef CONFIG_SCHED_SMT
-> +	{ cpu_smt_mask, powerpc_smt_flags, SD_INIT_NAME(SMT) },
-> +#endif
-> +	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
-> +	{ NULL, },
-> +};
-> +
->  void __init smp_cpus_done(unsigned int max_cpus)
->  {
->  	cpumask_var_t old_mask;
-> @@ -779,15 +801,8 @@ void __init smp_cpus_done(unsigned int max_cpus)
-> 
->  	dump_numa_cpu_topology();
-> 
-> -}
-> +	set_sched_topology(powerpc_topology);
-> 
-> -int arch_sd_sibling_asym_packing(void)
-> -{
-> -	if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
-> -		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
-> -		return SD_ASYM_PACKING;
-> -	}
-> -	return 0;
->  }
-> 
->  #ifdef CONFIG_HOTPLUG_CPU
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 4db592a..6479de4 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -868,8 +868,6 @@ enum cpu_idle_type {
->  #define SD_OVERLAP		0x2000	/* sched_domains of this level overlap */
->  #define SD_NUMA			0x4000	/* cross-node balancing */
-> 
-> -extern int __weak arch_sd_sibiling_asym_packing(void);
-> -
->  #ifdef CONFIG_SCHED_SMT
->  static inline const int cpu_smt_flags(void)
->  {
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index f2bfa76..0b51ee3 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -5833,11 +5833,6 @@ static void init_sched_groups_power(int cpu, struct sched_domain *sd)
->  	atomic_set(&sg->sgp->nr_busy_cpus, sg->group_weight);
->  }
-> 
-> -int __weak arch_sd_sibling_asym_packing(void)
-> -{
-> -       return 0*SD_ASYM_PACKING;
-> -}
-> -
->  /*
->   * Initializers for schedule domains
->   * Non-inlined to reduce accumulated stack pressure in build_sched_domains()
-> @@ -6018,7 +6013,6 @@ sd_init(struct sched_domain_topology_level *tl, int cpu)
->  	if (sd->flags & SD_SHARE_CPUPOWER) {
->  		sd->imbalance_pct = 110;
->  		sd->smt_gain = 1178; /* ~15% */
-> -		sd->flags |= arch_sd_sibling_asym_packing();
-> 
->  	} else if (sd->flags & SD_SHARE_PKG_RESOURCES) {
->  		sd->imbalance_pct = 117;
-> 
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+On 18 March 2014 18:20, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 03/14/2014 01:13 PM, Viresh Kumar wrote:
+>> +     if ((state != CPUFREQ_PRECHANGE) && (state != CPUFREQ_POSTCHANGE))
+>
+> Wait a min, when is this condition ever true? I mean, what else can
+> 'state' ever be, apart from CPUFREQ_PRECHANGE and POSTCHANGE?
 
+There were two more 'unused' states available:
+CPUFREQ_RESUMECHANGE and CPUFREQ_SUSPENDCHANGE
+
+I have sent a patch to remove them now and this code would go away..
+
+>> +             return notify_transition_for_each_cpu(policy, freqs, state);
+>> +
+>> +     /* Serialize pre-post notifications */
+>> +     mutex_lock(&policy->transition_lock);
+>
+> Nope, this is definitely not the way to go, IMHO. We should enforce that
+> the *callers* serialize the transitions, something like this:
+>
+>         cpufreq_transition_lock();
+>
+>         cpufreq_notify_transition(CPUFREQ_PRECHANGE);
+>
+>         //Perform the frequency change
+>
+>         cpufreq_notify_transition(CPUFREQ_POSTCHANGE);
+>
+>         cpufreq_transition_unlock();
+>
+> That's it!
+>
+> [ We can either introduce a new "transition" lock or perhaps even reuse
+> the cpufreq_driver_lock if it fits... but the point is, the _caller_ has
+> to perform the locking; trying to be smart inside cpufreq_notify_transition()
+> is a recipe for headache :-( ]
+>
+> Is there any problem with this approach due to which you didn't take
+> this route?
+
+I didn't wanted drivers to handle this as core must make sure things are in
+order. Over that it would have helped by not pasting redundant code
+everywhere..
+
+Drivers are anyway going to call cpufreq_notify_transition(), why increase
+burden on them?
+
+>> +     if (unlikely(WARN_ON(!policy->transition_ongoing &&
+>> +                             (state == CPUFREQ_POSTCHANGE)))) {
+>> +             mutex_unlock(&policy->transition_lock);
+>> +             return;
+>> +     }
+>> +
+>> +     if (state == CPUFREQ_PRECHANGE) {
+>> +             while (policy->transition_ongoing) {
+>> +                     mutex_unlock(&policy->transition_lock);
+>> +                     /* TODO: Can we do something better here? */
+>> +                     cpu_relax();
+>> +                     mutex_lock(&policy->transition_lock);
+>
+> If the caller takes care of the synchronization, we can avoid
+> these sorts of acrobatics ;-)
+
+If we are fine with taking a mutex for the entire transition, then
+we can avoid above kind of acrobatics by just taking the mutex
+from PRECHANGE and leaving it at POSTCHANGE..
+
+It will look like this then, hope this looks fine :)
+
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 2677ff1..3b9eac4 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -335,8 +335,15 @@ static void __cpufreq_notify_transition(struct
+cpufreq_policy *policy,
+ void cpufreq_notify_transition(struct cpufreq_policy *policy,
+                struct cpufreq_freqs *freqs, unsigned int state)
+ {
++       if (state == CPUFREQ_PRECHANGE)
++               mutex_lock(&policy->transition_lock);
++
++       /* Send notifications */
+        for_each_cpu(freqs->cpu, policy->cpus)
+                __cpufreq_notify_transition(policy, freqs, state);
++
++       if (state == CPUFREQ_POSTCHANGE)
++               mutex_unlock(&policy->transition_lock);
+ }
+ EXPORT_SYMBOL_GPL(cpufreq_notify_transition);
+
+@@ -983,6 +990,7 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
+
+        INIT_LIST_HEAD(&policy->policy_list);
+        init_rwsem(&policy->rwsem);
++       mutex_init(&policy->transition_lock);
+
+        return policy;
+
+diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+index 31c431e..5f9209a 100644
+--- a/include/linux/cpufreq.h
++++ b/include/linux/cpufreq.h
+@@ -104,6 +104,7 @@ struct cpufreq_policy {
+         *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+         */
+        struct rw_semaphore     rwsem;
++       struct mutex            transition_lock;
+ };
