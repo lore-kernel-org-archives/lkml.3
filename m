@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933897AbaCSNEC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:04:02 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:42068 "EHLO
+	id S964911AbaCSNEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:04:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:42144 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933739AbaCSND5 (ORCPT
+	with ESMTP id S933804AbaCSNEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:03:57 -0400
+	Wed, 19 Mar 2014 09:04:05 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-arm-kernel@lists.infradead.org,
@@ -20,105 +20,87 @@ Cc: linux-arm-kernel@lists.infradead.org,
         Jingoo Han <jg1.han@samsung.com>, linux-leds@vger.kernel.org,
         linux-pwm@vger.kernel.org, linux-fbdev@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 00/16] move at91 and avr32 to the PWM framework, remove obsolete drivers
-Date: Wed, 19 Mar 2014 14:03:13 +0100
-Message-Id: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 10/16] avr32: MRMT: use generic leds_pwm driver
+Date: Wed, 19 Mar 2014 14:03:23 +0100
+Message-Id: <1395234209-15546-11-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Switch to the generic leds_pwm driver instead of leds-atmel-pwm.
 
-This patch set swtiches the at91 and avr32 SoCs and board to the generic PWM
-framework. This allows to remove the obsolete leds-atmel-pwm, atmel-pwm-bl and
-atmel_pwm drivers.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/avr32/boards/atngw100/mrmt.c | 35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
 
-The first 6 patches take care of the AT91 boards and removes a useless function
-in the process.
-
-Patch 7 makes pwm-ateml buildable for AVR32
-
-Patch 8 allows setting the pwm polarity for pwm_bl when using platform data.
-This is required afterwards for the favr-32
-
-Patches 9-13 take care of the AVR32 boards. This has only been compile tested as
-I don't own any of those boards.
-
-And the last 3 patches are removing the now obsolete drivers.
-
-As a note, the atmel_pwm driver has two features not yet available through
-pwm-atmel:
- - it is possible to pass an IRQ handler that will get called each time one of
-   the channel period has been acheived.
- - it was possible to set clka and clkb, two clock that divided mck before
-   feeding the pwm controller.
-
-Those features are not used by anything in the mainline. I'm not sure we can
-implement the first one. We'll get back the second one once all the boards have
-swtiched to the common clock framework.
-
-
-Alexandre Belloni (16):
-  ARM: at91: at91sam9g45: switch to generic PWM framework
-  ARM: at91: sam9m10g45ek: use generic leds_pwm driver
-  ARM: at91: at91sam9263: switch to generic PWM framework
-  ARM: at91: sam9263ek: use generic leds_pwm driver
-  ARM: at91: at91sam9rl: switch to generic PWM framework
-  ARM: at91: remove useless at91_pwm_leds()
-  PWM: atmel: allow building for AVR32
-  backlight: pwm_bl: set pwm polarity when using platform data
-  avr32/at32ap: switch to the generic PWM framework
-  avr32: MRMT: use generic leds_pwm driver
-  avr32: merisc: use generic leds_pwm driver
-  avr32: favr-32: use generic pwm_bl driver
-  avr32: update defconfig to use the generic PWM framework
-  backlight: atmel-pwm-bl: remove obsolete driver
-  leds: atmel-pwm: remove obsolete driver
-  misc: atmel_pwm: remove obsolete driver
-
- arch/arm/mach-at91/at91sam9263.c           |   1 +
- arch/arm/mach-at91/at91sam9263_devices.c   |  11 +-
- arch/arm/mach-at91/at91sam9g45.c           |   1 +
- arch/arm/mach-at91/at91sam9g45_devices.c   |  11 +-
- arch/arm/mach-at91/at91sam9rl.c            |   1 +
- arch/arm/mach-at91/at91sam9rl_devices.c    |  11 +-
- arch/arm/mach-at91/board-sam9263ek.c       |  56 +++-
- arch/arm/mach-at91/board-sam9m10g45ek.c    |  43 ++-
- arch/arm/mach-at91/board.h                 |   1 -
- arch/arm/mach-at91/leds.c                  |  37 ---
- arch/avr32/boards/atngw100/mrmt.c          |  35 ++-
- arch/avr32/boards/favr-32/setup.c          |  49 ++--
- arch/avr32/boards/merisc/setup.c           |  34 ++-
- arch/avr32/configs/atngw100_mrmt_defconfig |   5 +-
- arch/avr32/configs/atstk1002_defconfig     |   5 +-
- arch/avr32/configs/atstk1003_defconfig     |   5 +-
- arch/avr32/configs/atstk1004_defconfig     |   5 +-
- arch/avr32/configs/atstk1006_defconfig     |   5 +-
- arch/avr32/configs/favr-32_defconfig       |   6 +-
- arch/avr32/configs/merisc_defconfig        |   5 +-
- arch/avr32/mach-at32ap/at32ap700x.c        |   7 +-
- drivers/leds/Kconfig                       |   8 -
- drivers/leds/Makefile                      |   1 -
- drivers/leds/leds-atmel-pwm.c              | 149 -----------
- drivers/misc/Kconfig                       |   9 -
- drivers/misc/Makefile                      |   1 -
- drivers/misc/atmel_pwm.c                   | 402 -----------------------------
- drivers/pwm/Kconfig                        |   2 +-
- drivers/video/backlight/Kconfig            |  11 -
- drivers/video/backlight/Makefile           |   1 -
- drivers/video/backlight/atmel-pwm-bl.c     | 223 ----------------
- drivers/video/backlight/pwm_bl.c           |   8 +
- include/linux/atmel-pwm-bl.h               |  43 ---
- include/linux/atmel_pwm.h                  |  70 -----
- include/linux/pwm_backlight.h              |   1 +
- 35 files changed, 199 insertions(+), 1064 deletions(-)
- delete mode 100644 drivers/leds/leds-atmel-pwm.c
- delete mode 100644 drivers/misc/atmel_pwm.c
- delete mode 100644 drivers/video/backlight/atmel-pwm-bl.c
- delete mode 100644 include/linux/atmel-pwm-bl.h
- delete mode 100644 include/linux/atmel_pwm.h
-
+diff --git a/arch/avr32/boards/atngw100/mrmt.c b/arch/avr32/boards/atngw100/mrmt.c
+index 1ba09e4c02b1..134e94c3d504 100644
+--- a/arch/avr32/boards/atngw100/mrmt.c
++++ b/arch/avr32/boards/atngw100/mrmt.c
+@@ -17,6 +17,8 @@
+ #include <linux/types.h>
+ #include <linux/fb.h>
+ #include <linux/leds.h>
++#include <linux/pwm.h>
++#include <linux/leds_pwm.h>
+ #include <linux/input.h>
+ #include <linux/gpio_keys.h>
+ #include <linux/atmel_serial.h>
+@@ -155,21 +157,29 @@ static struct platform_device rmt_ts_device = {
+ 
+ #ifdef CONFIG_BOARD_MRMT_BL_PWM
+ /* PWM LEDs: LCD Backlight, etc */
+-static struct gpio_led rmt_pwm_led[] = {
+-	/* here the "gpio" is actually a PWM channel */
+-	{ .name = "backlight",	.gpio = PWM_CH_BL, },
++static struct pwm_lookup pwm_lookup[] = {
++	PWM_LOOKUP("at91sam9rl-pwm", PWM_CH_BL, "leds_pwm", "ds1"),
+ };
+ 
+-static struct gpio_led_platform_data rmt_pwm_led_data = {
+-	.num_leds	= ARRAY_SIZE(rmt_pwm_led),
+-	.leds		= rmt_pwm_led,
++static struct led_pwm pwm_leds[] = {
++	{
++		.name = "backlight",
++		.max_brightness = 255,
++		.pwm_period_ns  = 5000,
++		.active_low = 1,
++	},
++};
++
++static struct led_pwm_platform_data pwm_data = {
++	.num_leds       = ARRAY_SIZE(pwm_leds),
++	.leds           = pwm_leds,
+ };
+ 
+-static struct platform_device rmt_pwm_led_dev = {
+-	.name		= "leds-atmel-pwm",
+-	.id		= -1,
+-	.dev		= {
+-		.platform_data	= &rmt_pwm_led_data,
++static struct platform_device leds_pwm = {
++	.name   = "leds_pwm",
++	.id     = -1,
++	.dev    = {
++		.platform_data = &pwm_data,
+ 	},
+ };
+ #endif
+@@ -325,7 +335,8 @@ static int __init mrmt1_init(void)
+ #ifdef CONFIG_BOARD_MRMT_BL_PWM
+ 	/* Use PWM for Backlight controls */
+ 	at32_add_device_pwm(1 << PWM_CH_BL);
+-	platform_device_register(&rmt_pwm_led_dev);
++	pwm_add_table(pwm_lookup, ARRAY_SIZE(pwm_lookup));
++	platform_device_register(&leds_pwm);
+ #else
+ 	/* Backlight always on */
+ 	udelay( 1 );
 -- 
 1.8.3.2
 
