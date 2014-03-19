@@ -1,141 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbaCSS3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 14:29:06 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:39725 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaCSS2c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 14:28:32 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>, Jens Axboe <axboe@fb.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 2/3] nohz: Move full nohz kick to its own IPI
-Date: Wed, 19 Mar 2014 19:28:21 +0100
-Message-Id: <1395253702-12489-3-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395253702-12489-1-git-send-email-fweisbec@gmail.com>
-References: <1395253702-12489-1-git-send-email-fweisbec@gmail.com>
+	id S1753539AbaCSScW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 14:32:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:36476 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751064AbaCSScU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 14:32:20 -0400
+Message-ID: <5329E2A6.2040605@ti.com>
+Date: Wed, 19 Mar 2014 20:32:06 +0200
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: Jean-Francois Moine <moinejf@free.fr>, <alsa-devel@alsa-project.org>,
+        <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for multi-DAI
+ links
+References: <cover.1394883134.git.moinejf@free.fr> <d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr> <20140317164339.GR11706@sirena.org.uk> <20140318091728.1d2240ca@armhf> <53296CB7.1000909@ti.com> <20140319134625.GN11706@sirena.org.uk>
+In-Reply-To: <20140319134625.GN11706@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have smp_queue_function_single() which can be used to
-safely queue IPIs when interrupts are disabled and without worrying
-about concurrent callers, lets use it for the full dynticks kick to
-notify a CPU that it's exiting single task mode.
+On 03/19/2014 03:46 PM, Mark Brown wrote:
+> On Wed, Mar 19, 2014 at 12:08:55PM +0200, Jyri Sarha wrote:
+>
+>> While we are at it we could update the bitclock-master and frame-master
+>> syntax to be like this:
+>
+>> bitclock-master = "cpu"
+>> frame-master = "codec"
+>
+>> With the above explicit definition all the daifmt settings could be defined
+>> in link level. For backwards compatibility we could still define that
+>> omitting the value equals "codec" and omitting the property equals "cpu".
+>
+> It seems it'd be a bit more idiomatic to do that with a phandle rather
+> than with a string in order to allow extensions for things like TDM (the
+> I2S to mono speaker driver use case for example).
+>
 
-This unbloats a bit the scheduler IPI that the nohz code was abusing
-for its cool "callable anywhere/anytime" properties.
+You mean a like this:
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jens Axboe <axboe@fb.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/linux/tick.h     |  2 ++
- kernel/sched/core.c      |  5 +----
- kernel/sched/sched.h     |  2 +-
- kernel/time/tick-sched.c | 20 ++++++++++++++++++++
- 4 files changed, 24 insertions(+), 5 deletions(-)
+sound {
+     compatible = "simple-audio-card";
+     simple-audio-card,name = "Simple Audio";
+     simple-audio-card,widgets = ...
+     simple-audio-card,routing = ...
 
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b84773c..9d3fcc2 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -182,6 +182,7 @@ static inline bool tick_nohz_full_cpu(int cpu)
- extern void tick_nohz_init(void);
- extern void __tick_nohz_full_check(void);
- extern void tick_nohz_full_kick(void);
-+extern void tick_nohz_full_kick_cpu(int cpu);
- extern void tick_nohz_full_kick_all(void);
- extern void __tick_nohz_task_switch(struct task_struct *tsk);
- #else
-@@ -190,6 +191,7 @@ static inline bool tick_nohz_full_enabled(void) { return false; }
- static inline bool tick_nohz_full_cpu(int cpu) { return false; }
- static inline void __tick_nohz_full_check(void) { }
- static inline void tick_nohz_full_kick(void) { }
-+static inline void tick_nohz_full_kick_cpu(int cpu) { }
- static inline void tick_nohz_full_kick_all(void) { }
- static inline void __tick_nohz_task_switch(struct task_struct *tsk) { }
- #endif
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 0cca04a..a07c3a4 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1502,9 +1502,7 @@ void scheduler_ipi(void)
- 	 */
- 	preempt_fold_need_resched();
- 
--	if (llist_empty(&this_rq()->wake_list)
--			&& !tick_nohz_full_cpu(smp_processor_id())
--			&& !got_nohz_idle_kick())
-+	if (llist_empty(&this_rq()->wake_list) && !got_nohz_idle_kick())
- 		return;
- 
- 	/*
-@@ -1521,7 +1519,6 @@ void scheduler_ipi(void)
- 	 * somewhat pessimize the simple resched case.
- 	 */
- 	irq_enter();
--	tick_nohz_full_check();
- 	sched_ttwu_pending();
- 
- 	/*
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c2119fd..3b165c1 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1233,7 +1233,7 @@ static inline void inc_nr_running(struct rq *rq)
- 		if (tick_nohz_full_cpu(rq->cpu)) {
- 			/* Order rq->nr_running write against the IPI */
- 			smp_wmb();
--			smp_send_reschedule(rq->cpu);
-+			tick_nohz_full_kick_cpu(rq->cpu);
- 		}
-        }
- #endif
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..33a0043 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -230,6 +230,26 @@ void tick_nohz_full_kick(void)
- 		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
- }
- 
-+static DEFINE_PER_CPU(struct queue_single_data, nohz_full_kick_qsd);
-+
-+static void nohz_full_kick_queue(struct queue_single_data *qsd)
-+{
-+	__tick_nohz_full_check();
-+}
-+
-+void tick_nohz_full_kick_cpu(int cpu)
-+{
-+	if (!tick_nohz_full_cpu(cpu))
-+		return;
-+
-+	if (cpu == smp_processor_id()) {
-+		irq_work_queue(&__get_cpu_var(nohz_full_kick_work));
-+	} else {
-+		smp_queue_function_single(cpu, nohz_full_kick_queue,
-+					  &per_cpu(nohz_full_kick_qsd, cpu));
-+	}
-+}
-+
- static void nohz_full_kick_ipi(void *info)
- {
- 	__tick_nohz_full_check();
--- 
-1.8.3.1
+     simple-audio-card,dai-link@0 {        /* I2S - codec */
+         format = "i2s";
+         bitclock-master = <&codec 0>
+         frame-master = <&codec 0>;
+         bitclock-inversion = <1>;
+         simple-audio-card,cpu {
+             sound-dai = <&audio1 0>;
+             bitclock-inversion = <0>;
+         };
+         simple-audio-card,codec {
+             sound-dai = <&codec 0>;
+             system-clock-frequency = <12000000>;
+         };
+     };
+...
 
+Yep, that makes sense when considering tdm setups with multiple codecs 
+on the same wires.
+
+Best regards,
+Jyri
