@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaCSUBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:01:24 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59902 "EHLO
+	id S932704AbaCSUB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:01:59 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:59882 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754827AbaCSUAT (ORCPT
+	by vger.kernel.org with ESMTP id S1754487AbaCSUAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:00:19 -0400
+	Wed, 19 Mar 2014 16:00:09 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: linux-efi@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Matt Fleming <matt.fleming@intel.com>
-Subject: [PATCH 3/5] efivars: Stop passing a struct argument to efivar_validate()
-Date: Wed, 19 Mar 2014 19:59:58 +0000
-Message-Id: <1395259200-27732-4-git-send-email-matt@console-pimps.org>
+Subject: [PATCH 1/5] efivars: Use local variables instead of a pointer dereference
+Date: Wed, 19 Mar 2014 19:59:56 +0000
+Message-Id: <1395259200-27732-2-git-send-email-matt@console-pimps.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395259200-27732-1-git-send-email-matt@console-pimps.org>
 References: <1395259200-27732-1-git-send-email-matt@console-pimps.org>
@@ -22,196 +22,130 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Matt Fleming <matt.fleming@intel.com>
 
-In preparation for compat support, we can't assume that user variable
-object is represented by a 'struct efi_variable'. Convert the validation
-functions to take the variable name as an argument, which is the only
-piece of the struct that was ever used anyway.
+In order to support a compat interface we need to stop passing pointers
+to structures around, since the type of structure is going to depend on
+whether the current task is a compat task.
 
 Signed-off-by: Matt Fleming <matt.fleming@intel.com>
 ---
- drivers/firmware/efi/efivars.c |  6 ++++--
- drivers/firmware/efi/vars.c    | 30 +++++++++++++++---------------
- include/linux/efi.h            |  6 ++++--
- 3 files changed, 23 insertions(+), 19 deletions(-)
+ drivers/firmware/efi/efivars.c | 48 ++++++++++++++++++++++++++++++------------
+ 1 file changed, 35 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/firmware/efi/efivars.c b/drivers/firmware/efi/efivars.c
-index 2c21cccc2572..5ee2cfb96698 100644
+index 50ea412a25e6..06ec6ee1c58a 100644
 --- a/drivers/firmware/efi/efivars.c
 +++ b/drivers/firmware/efi/efivars.c
-@@ -231,7 +231,7 @@ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
+@@ -197,37 +197,48 @@ static ssize_t
+ efivar_store_raw(struct efivar_entry *entry, const char *buf, size_t count)
+ {
+ 	struct efi_variable *new_var, *var = &entry->var;
++	efi_char16_t *name;
++	unsigned long size;
++	efi_guid_t vendor;
++	u32 attributes;
++	u8 *data;
+ 	int err;
+ 
+ 	if (count != sizeof(struct efi_variable))
+ 		return -EINVAL;
+ 
+ 	new_var = (struct efi_variable *)buf;
++
++	attributes = new_var->Attributes;
++	vendor = new_var->VendorGuid;
++	name = new_var->VariableName;
++	size = new_var->DataSize;
++	data = new_var->Data;
++
+ 	/*
+ 	 * If only updating the variable data, then the name
+ 	 * and guid should remain the same
+ 	 */
+-	if (memcmp(new_var->VariableName, var->VariableName, sizeof(var->VariableName)) ||
+-		efi_guidcmp(new_var->VendorGuid, var->VendorGuid)) {
++	if (memcmp(name, var->VariableName, sizeof(var->VariableName)) ||
++		efi_guidcmp(vendor, var->VendorGuid)) {
+ 		printk(KERN_ERR "efivars: Cannot edit the wrong variable!\n");
+ 		return -EINVAL;
  	}
  
- 	if ((attributes & ~EFI_VARIABLE_MASK) != 0 ||
--	    efivar_validate(new_var, data, size) == false) {
-+	    efivar_validate(name, data, size) == false) {
+-	if ((new_var->DataSize <= 0) || (new_var->Attributes == 0)){
++	if ((size <= 0) || (attributes == 0)){
+ 		printk(KERN_ERR "efivars: DataSize & Attributes must be valid!\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
+-	    efivar_validate(new_var, new_var->Data, new_var->DataSize) == false) {
++	if ((attributes & ~EFI_VARIABLE_MASK) != 0 ||
++	    efivar_validate(new_var, data, size) == false) {
  		printk(KERN_ERR "efivars: Malformed variable content\n");
  		return -EINVAL;
  	}
-@@ -339,6 +339,7 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
+ 
+ 	memcpy(&entry->var, new_var, count);
+ 
+-	err = efivar_entry_set(entry, new_var->Attributes,
+-			       new_var->DataSize, new_var->Data, NULL);
++	err = efivar_entry_set(entry, attributes, size, data, NULL);
+ 	if (err) {
+ 		printk(KERN_WARNING "efivars: set_variable() failed: status=%d\n", err);
+ 		return -EIO;
+@@ -328,13 +339,20 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
  {
  	struct efi_variable *new_var = (struct efi_variable *)buf;
  	struct efivar_entry *new_entry;
-+	efi_char16_t *name;
- 	unsigned long size;
- 	u32 attributes;
- 	u8 *data;
-@@ -351,11 +352,12 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
- 		return -EINVAL;
++	unsigned long size;
++	u32 attributes;
++	u8 *data;
+ 	int err;
  
- 	attributes = new_var->Attributes;
-+	name = new_var->VariableName;
- 	size = new_var->DataSize;
- 	data = new_var->Data;
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
  
- 	if ((attributes & ~EFI_VARIABLE_MASK) != 0 ||
--	    efivar_validate(new_var, data, size) == false) {
-+	    efivar_validate(name, data, size) == false) {
+-	if ((new_var->Attributes & ~EFI_VARIABLE_MASK) != 0 ||
+-	    efivar_validate(new_var, new_var->Data, new_var->DataSize) == false) {
++	attributes = new_var->Attributes;
++	size = new_var->DataSize;
++	data = new_var->Data;
++
++	if ((attributes & ~EFI_VARIABLE_MASK) != 0 ||
++	    efivar_validate(new_var, data, size) == false) {
  		printk(KERN_ERR "efivars: Malformed variable content\n");
  		return -EINVAL;
  	}
-diff --git a/drivers/firmware/efi/vars.c b/drivers/firmware/efi/vars.c
-index b22659cccca4..f0a43646a2f3 100644
---- a/drivers/firmware/efi/vars.c
-+++ b/drivers/firmware/efi/vars.c
-@@ -42,7 +42,7 @@ DECLARE_WORK(efivar_work, NULL);
- EXPORT_SYMBOL_GPL(efivar_work);
+@@ -345,8 +363,8 @@ static ssize_t efivar_create(struct file *filp, struct kobject *kobj,
  
- static bool
--validate_device_path(struct efi_variable *var, int match, u8 *buffer,
-+validate_device_path(efi_char16_t *var_name, int match, u8 *buffer,
- 		     unsigned long len)
+ 	memcpy(&new_entry->var, new_var, sizeof(*new_var));
+ 
+-	err = efivar_entry_set(new_entry, new_var->Attributes, new_var->DataSize,
+-			       new_var->Data, &efivar_sysfs_list);
++	err = efivar_entry_set(new_entry, attributes, size,
++			       data, &efivar_sysfs_list);
+ 	if (err) {
+ 		if (err == -EEXIST)
+ 			err = -EINVAL;
+@@ -370,14 +388,18 @@ static ssize_t efivar_delete(struct file *filp, struct kobject *kobj,
  {
- 	struct efi_generic_dev_path *node;
-@@ -75,7 +75,7 @@ validate_device_path(struct efi_variable *var, int match, u8 *buffer,
- }
+ 	struct efi_variable *del_var = (struct efi_variable *)buf;
+ 	struct efivar_entry *entry;
++	efi_char16_t *name;
++	efi_guid_t vendor;
+ 	int err = 0;
  
- static bool
--validate_boot_order(struct efi_variable *var, int match, u8 *buffer,
-+validate_boot_order(efi_char16_t *var_name, int match, u8 *buffer,
- 		    unsigned long len)
- {
- 	/* An array of 16-bit integers */
-@@ -86,18 +86,18 @@ validate_boot_order(struct efi_variable *var, int match, u8 *buffer,
- }
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EACCES;
  
- static bool
--validate_load_option(struct efi_variable *var, int match, u8 *buffer,
-+validate_load_option(efi_char16_t *var_name, int match, u8 *buffer,
- 		     unsigned long len)
- {
- 	u16 filepathlength;
- 	int i, desclength = 0, namelen;
- 
--	namelen = ucs2_strnlen(var->VariableName, sizeof(var->VariableName));
-+	namelen = ucs2_strnlen(var_name, EFI_VAR_NAME_LEN);
- 
- 	/* Either "Boot" or "Driver" followed by four digits of hex */
- 	for (i = match; i < match+4; i++) {
--		if (var->VariableName[i] > 127 ||
--		    hex_to_bin(var->VariableName[i] & 0xff) < 0)
-+		if (var_name[i] > 127 ||
-+		    hex_to_bin(var_name[i] & 0xff) < 0)
- 			return true;
- 	}
- 
-@@ -132,12 +132,12 @@ validate_load_option(struct efi_variable *var, int match, u8 *buffer,
- 	/*
- 	 * And, finally, check the filepath
- 	 */
--	return validate_device_path(var, match, buffer + desclength + 6,
-+	return validate_device_path(var_name, match, buffer + desclength + 6,
- 				    filepathlength);
- }
- 
- static bool
--validate_uint16(struct efi_variable *var, int match, u8 *buffer,
-+validate_uint16(efi_char16_t *var_name, int match, u8 *buffer,
- 		unsigned long len)
- {
- 	/* A single 16-bit integer */
-@@ -148,7 +148,7 @@ validate_uint16(struct efi_variable *var, int match, u8 *buffer,
- }
- 
- static bool
--validate_ascii_string(struct efi_variable *var, int match, u8 *buffer,
-+validate_ascii_string(efi_char16_t *var_name, int match, u8 *buffer,
- 		      unsigned long len)
- {
- 	int i;
-@@ -166,7 +166,7 @@ validate_ascii_string(struct efi_variable *var, int match, u8 *buffer,
- 
- struct variable_validate {
- 	char *name;
--	bool (*validate)(struct efi_variable *var, int match, u8 *data,
-+	bool (*validate)(efi_char16_t *var_name, int match, u8 *data,
- 			 unsigned long len);
- };
- 
-@@ -189,10 +189,10 @@ static const struct variable_validate variable_validate[] = {
- };
- 
- bool
--efivar_validate(struct efi_variable *var, u8 *data, unsigned long len)
-+efivar_validate(efi_char16_t *var_name, u8 *data, unsigned long len)
- {
- 	int i;
--	u16 *unicode_name = var->VariableName;
-+	u16 *unicode_name = var_name;
- 
- 	for (i = 0; variable_validate[i].validate != NULL; i++) {
- 		const char *name = variable_validate[i].name;
-@@ -208,7 +208,7 @@ efivar_validate(struct efi_variable *var, u8 *data, unsigned long len)
- 
- 			/* Wildcard in the matching name means we've matched */
- 			if (c == '*')
--				return variable_validate[i].validate(var,
-+				return variable_validate[i].validate(var_name,
- 							     match, data, len);
- 
- 			/* Case sensitive match */
-@@ -217,7 +217,7 @@ efivar_validate(struct efi_variable *var, u8 *data, unsigned long len)
- 
- 			/* Reached the end of the string while matching */
- 			if (!c)
--				return variable_validate[i].validate(var,
-+				return variable_validate[i].validate(var_name,
- 							     match, data, len);
- 		}
- 	}
-@@ -805,7 +805,7 @@ int efivar_entry_set_get_size(struct efivar_entry *entry, u32 attributes,
- 
- 	*set = false;
- 
--	if (efivar_validate(&entry->var, data, *size) == false)
-+	if (efivar_validate(name, data, *size) == false)
- 		return -EINVAL;
- 
- 	/*
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 6c100ff0cae4..0f5f6d54fb56 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -1033,8 +1033,10 @@ struct efivars {
-  * and we use a page for reading/writing.
-  */
- 
-+#define EFI_VAR_NAME_LEN	1024
++	name = del_var->VariableName;
++	vendor = del_var->VendorGuid;
 +
- struct efi_variable {
--	efi_char16_t  VariableName[1024/sizeof(efi_char16_t)];
-+	efi_char16_t  VariableName[EFI_VAR_NAME_LEN/sizeof(efi_char16_t)];
- 	efi_guid_t    VendorGuid;
- 	unsigned long DataSize;
- 	__u8          Data[1024];
-@@ -1116,7 +1118,7 @@ int efivar_entry_iter(int (*func)(struct efivar_entry *, void *),
- struct efivar_entry *efivar_entry_find(efi_char16_t *name, efi_guid_t guid,
- 				       struct list_head *head, bool remove);
- 
--bool efivar_validate(struct efi_variable *var, u8 *data, unsigned long len);
-+bool efivar_validate(efi_char16_t *var_name, u8 *data, unsigned long len);
- 
- extern struct work_struct efivar_work;
- void efivar_run_worker(void);
+ 	efivar_entry_iter_begin();
+-	entry = efivar_entry_find(del_var->VariableName, del_var->VendorGuid,
+-				  &efivar_sysfs_list, true);
++	entry = efivar_entry_find(name, vendor, &efivar_sysfs_list, true);
+ 	if (!entry)
+ 		err = -EINVAL;
+ 	else if (__efivar_entry_delete(entry))
 -- 
 1.8.5.3
 
