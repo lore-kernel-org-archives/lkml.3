@@ -1,62 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965393AbaCSOhH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:37:07 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:33909 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914AbaCSOhF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:37:05 -0400
-Date: Wed, 19 Mar 2014 14:36:58 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v3 2/3] mfd: sec-core: Add of_compatible strings for
- clock MFD cells
-Message-ID: <20140319143658.GJ31687@lee--X1>
-References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
- <1395047958-17953-3-git-send-email-k.kozlowski@samsung.com>
- <20140318203159.GW25478@lee--X1>
- <1395234951.7642.1.camel@AMDC1943>
+	id S965409AbaCSOii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:38:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964970AbaCSOig (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 10:38:36 -0400
+Date: Wed, 19 Mar 2014 14:38:32 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>, hhuang@redhat.com,
+        knoel@redhat.com, aarcange@redhat.com,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: numa: Recheck for transhuge pages under lock during
+ protection changes
+Message-ID: <20140319143831.GA4751@suse.de>
+References: <20140307182745.GD1931@suse.de>
+ <20140311162845.GA30604@suse.de>
+ <531F3F15.8050206@oracle.com>
+ <531F4128.8020109@redhat.com>
+ <531F48CC.303@oracle.com>
+ <20140311180652.GM10663@suse.de>
+ <531F616A.7060300@oracle.com>
+ <20140311122859.fb6c1e772d82d9f4edd02f52@linux-foundation.org>
+ <20140312103602.GN10663@suse.de>
+ <5323C5D9.2070902@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395234951.7642.1.camel@AMDC1943>
+In-Reply-To: <5323C5D9.2070902@oracle.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > Add of_compatible strings for S5M8767 and S2MPS14 clock MFD cells.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > ---
-> > >  drivers/mfd/sec-core.c |    3 +++
-> > >  1 file changed, 3 insertions(+)
-> > 
-> > Applied with Tomasz' Reviewed-by.
+On Fri, Mar 14, 2014 at 11:15:37PM -0400, Sasha Levin wrote:
+> On 03/12/2014 06:36 AM, Mel Gorman wrote:
+> >Andrew, this should go with the patches
+> >mmnuma-reorganize-change_pmd_range.patch
+> >mmnuma-reorganize-change_pmd_range-fix.patch
+> >move-mmu-notifier-call-from-change_protection-to-change_pmd_range.patch
+> >in mmotm please.
+> >
+> >Thanks.
+> >
+> >---8<---
+> >From: Mel Gorman<mgorman@suse.de>
+> >Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during protection changes
+> >
+> >Sasha Levin reported the following bug using trinity
 > 
-> Thanks! One minor thing - I see that Tomasz' Review-by got lost when the
-> patch was applied to your tree:
-> https://git.kernel.org/cgit/linux/kernel/git/lee/mfd.git/commit/?h=for-mfd-next&id=09f8c0a07044bb8ac5085fcbcf82468173a1666d.
+> I'm seeing a different issue with this patch. A NULL ptr deref occurs in the
+> pte_offset_map_lock() macro right before the new recheck code:
+> 
 
-Thanks for the prod, but I do have it applied locally. I'll push the
-branch later today.
+This on top?
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+I tried testing it but got all sorts of carnage that trinity throw up
+in the mix and ordinary testing does not trigger the race. I've no idea
+which of the current mess of trinity-exposed bugs you've encountered and
+got fixed already.
+
+---8<---
+From: Mel Gorman <mgorman@suse.de>
+Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during protection changes -fix
+
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/mprotect.c | 40 ++++++++++++++++++++++++++++++----------
+ 1 file changed, 30 insertions(+), 10 deletions(-)
+
+diff --git a/mm/mprotect.c b/mm/mprotect.c
+index 66973db..c43d557 100644
+--- a/mm/mprotect.c
++++ b/mm/mprotect.c
+@@ -36,6 +36,34 @@ static inline pgprot_t pgprot_modify(pgprot_t oldprot, pgprot_t newprot)
+ }
+ #endif
+ 
++/*
++ * For a prot_numa update we only hold mmap_sem for read so there is a
++ * potential race with faulting where a pmd was temporarily none. This
++ * function checks for a transhuge pmd under the appropriate lock. It
++ * returns a pte if it was successfully locked or NULL if it raced with
++ * a transhuge insertion.
++ */
++static pte_t *lock_pte_protection(struct vm_area_struct *vma, pmd_t *pmd,
++			unsigned long addr, int prot_numa, spinlock_t **ptl)
++{
++	pte_t *pte;
++	spinlock_t *pmdl;
++
++	/* !prot_numa is protected by mmap_sem held for write */
++	if (!prot_numa)
++		return pte_offset_map_lock(vma->vm_mm, pmd, addr, ptl);
++
++	pmdl = pmd_lock(vma->vm_mm, pmd);
++	if (unlikely(pmd_trans_huge(*pmd) || pmd_none(*pmd))) {
++		spin_unlock(pmdl);
++		return NULL;
++	}
++
++	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, ptl);
++	spin_unlock(pmdl);
++	return pte;
++}
++
+ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 		unsigned long addr, unsigned long end, pgprot_t newprot,
+ 		int dirty_accountable, int prot_numa)
+@@ -45,17 +73,9 @@ static unsigned long change_pte_range(struct vm_area_struct *vma, pmd_t *pmd,
+ 	spinlock_t *ptl;
+ 	unsigned long pages = 0;
+ 
+-	pte = pte_offset_map_lock(mm, pmd, addr, &ptl);
+-
+-	/*
+-	 * For a prot_numa update we only hold mmap_sem for read so there is a
+-	 * potential race with faulting where a pmd was temporarily none so
+-	 * recheck it under the lock and bail if we race
+-	 */
+-	if (prot_numa && unlikely(pmd_trans_huge(*pmd))) {
+-		pte_unmap_unlock(pte, ptl);
++	pte = lock_pte_protection(vma, pmd, addr, prot_numa, &ptl);
++	if (!pte)
+ 		return 0;
+-	}
+ 
+ 	arch_enter_lazy_mmu_mode();
+ 	do {
