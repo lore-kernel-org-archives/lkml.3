@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933682AbaCSDka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 23:40:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5710 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933563AbaCSDk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 23:40:29 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND -mm 1/2] mm: add !pte_present() check on existing hugetlb_entry callbacks
-Date: Tue, 18 Mar 2014 22:29:38 -0400
-Message-Id: <1395196179-4075-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1759059AbaCSDqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 23:46:55 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:61623 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758890AbaCSDqy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 23:46:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395147470-24817-1-git-send-email-k.kozlowski@samsung.com>
+References: <1395147470-24817-1-git-send-email-k.kozlowski@samsung.com>
+Date: Wed, 19 Mar 2014 09:16:53 +0530
+Message-ID: <CAK9yfHx=3KR0WyrtmZXbYJ3MXM9vAsCzh=EKORfiifzhL2Ud8Q@mail.gmail.com>
+Subject: Re: [PATCH] mfd: sec-core: Fix I2C dummy device resource leak on
+ probe failure
+From: Sachin Kamat <sachin.kamat@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Page table walker doesn't check non-present hugetlb entry in common path,
-so hugetlb_entry() callbacks must check it. The reason for this behavior
-is that some callers want to handle it in its own way.
+On 18 March 2014 18:27, Krzysztof Kozlowski <k.kozlowski@samsung.com> wrote:
+> Dummy I2C device allocated in sec_pmic_probe() leaked if
+> devm_regmap_init_i2c() failed. Unregister it before returning from
+> probe.
+>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-However, some callers don't check it now, which causes unpredictable result,
-for example when we have a race between migrating hugepage and reading
-/proc/pid/numa_maps. This patch fixes it by adding !pte_present checks on
-buggy callbacks.
+Looks good.
+Reviewed-by: Sachin Kamat <sachin.kamat@linaro.org>
 
-This bug exists for years and got visible by introducing hugepage migration.
-
-ChangeLog v2:
-- fix if condition (check !pte_present() instead of pte_present())
-
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: stable@vger.kernel.org # 3.12+
----
- fs/proc/task_mmu.c | 3 +++
- mm/mempolicy.c     | 6 +++++-
- 2 files changed, 8 insertions(+), 1 deletion(-)
-
-diff --git v3.14-rc7-mmotm-2014-03-18-16-37.orig/fs/proc/task_mmu.c v3.14-rc7-mmotm-2014-03-18-16-37/fs/proc/task_mmu.c
-index d9d9d4f41544..f75ce811d430 100644
---- v3.14-rc7-mmotm-2014-03-18-16-37.orig/fs/proc/task_mmu.c
-+++ v3.14-rc7-mmotm-2014-03-18-16-37/fs/proc/task_mmu.c
-@@ -1300,6 +1300,9 @@ static int gather_hugetlb_stats(pte_t *pte, unsigned long addr,
- 	if (pte_none(*pte))
- 		return 0;
- 
-+	if (!pte_present(*pte))
-+		return 0;
-+
- 	page = pte_page(*pte);
- 	if (!page)
- 		return 0;
-diff --git v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
-index af635c458dee..9d2ef4111a4c 100644
---- v3.14-rc7-mmotm-2014-03-18-16-37.orig/mm/mempolicy.c
-+++ v3.14-rc7-mmotm-2014-03-18-16-37/mm/mempolicy.c
-@@ -524,8 +524,12 @@ static int queue_pages_hugetlb(pte_t *pte, unsigned long addr,
- 	unsigned long flags = qp->flags;
- 	int nid;
- 	struct page *page;
-+	pte_t entry;
- 
--	page = pte_page(huge_ptep_get(pte));
-+	entry = huge_ptep_get(pte);
-+	if (!pte_present(entry))
-+		return 0;
-+	page = pte_page(entry);
- 	nid = page_to_nid(page);
- 	if (node_isset(nid, *qp->nmask) == !!(flags & MPOL_MF_INVERT))
- 		return 0;
 -- 
-1.8.5.3
-
+With warm regards,
+Sachin
