@@ -1,147 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758554AbaCSAje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 20:39:34 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:44982 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756792AbaCSAjb (ORCPT
+	id S932953AbaCSAkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 20:40:07 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:52147 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758599AbaCSAkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 20:39:31 -0400
-X-AuditID: cbfee68e-b7f566d000002344-16-5328e7424f56
-Date: Wed, 19 Mar 2014 09:39:29 +0900
-From: Cho KyongHo <pullip.cho@samsung.com>
-To: Tomasz Figa <t.figa@samsung.com>
-Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Prathyush <prathyush.k@samsung.com>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>
-Subject: Re: [PATCH v11 20/27] iommu/exynos: allow having multiple System MMUs
- for a master H/W
-Message-id: <20140319093929.d3a7cea131c626cf978e0ff1@samsung.com>
-In-reply-to: <532857A8.5060000@samsung.com>
-References: <20140314141050.c8bedcb66532d277c496796d@samsung.com>
- <53232A53.4040708@samsung.com>
- <20140318220128.564740c88d06b86c9c5c10e3@samsung.com>
- <532857A8.5060000@samsung.com>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t8zA12n5xrBBnca+C3u3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCM4rJJSc3JLEst0rdL4Mp4eecAU8FtiYop75ewNzDuEO5i5OSQEDCReLdxNiOE
-	LSZx4d56ti5GLg4hgWWMEj+WL2CCKdr8aQsTRGI6o8SlX81QVZOZJN7dOsYGUsUioCrR9vEv
-	C4jNJqAlsXrucbCxIgIqEpdPTWcEaWAWaGSVeHR/GTtIQlggUeLhp0lgK3gFHCWa+/vB4pwC
-	2hKT3j6CWrebUWLa2UPsEHdYSFxo6mCHaBCU+DH5Htg2ZqBtm7c1sULY8hKb17xlBmmWEFjI
-	IXHqwC0WiPMEJL5NPgRkcwAlZCU2HWCGmCkpcXDFDZYJjGKzkIydhWTsLCRjFzAyr2IUTS1I
-	LihOSi8y0itOzC0uzUvXS87P3cQIifi+HYw3D1gfYkwGWjmRWUo0OR+YMPJK4g2NzYwsTE1M
-	jY3MLc1IE1YS5130MClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6PEaZZ5u80SpVfuK0s+
-	7RYbyft3lcazw0+2li4+yHj/fOkih7NzX6V4lf4I7pzRvnXC6e0HdlZtEZC+oNSsVWi7gP/u
-	q/16/zfpR6x7edPp8/uEOWJWWnmS+z+uLDgqL/HhpcN1qSkCoQazY1fcmfOIq/t2c0/SgSeZ
-	YQfiVOft52wIudvzXJVRiaU4I9FQi7moOBEAiIiyzw4DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBKsWRmVeSWpSXmKPExsVy+t9jQV2n5xrBBmcaOS3u3D3HajH/CJB4
-	deQHk8WC/dYWnbM3sFv0LrjKZrHp8TVWi8u75rBZzDi/j8niwoqN7BZTFh1mtTj8pp3V4uSf
-	XkaL9TNes1jMvLWGxYHf48nBeUwesxsusnj8O9zP5HHn2h42j81L6j0m31jO6NG3ZRWjx+dN
-	ch5Xjp5hCuCMamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ
-	0HXLzAH6QEmhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQXI+RARpIWMeY8fLOAaaC2xIV
-	U94vYW9g3CHcxcjJISFgIrH50xYmCFtM4sK99WxdjFwcQgLTGSUu/WqGciYzSby7dYwNpIpF
-	QFWi7eNfFhCbTUBLYvXc44wgtoiAisTlU9MZQRqYBRpZJR7dX8YOkhAWSJR4+GkS2ApeAUeJ
-	5v5+sDingLbEpLePmCA27GaUmHb2EDvEHRYSF5o62CEaBCV+TL4Hto0ZaNvmbU2sELa8xOY1
-	b5knMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEp5Nn0jsYVzVY
-	HGIU4GBU4uE9EKURLMSaWFZcmXuIUYKDWUmEV/guUIg3JbGyKrUoP76oNCe1+BBjMjA8JjJL
-	iSbnA1NdXkm8obGJmZGlkZmFkYm5OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwVqll
-	ua84Eij5nfmPp+0Srz++6yTVGjz7Z/iLfYu6e+RltMSlNtNdR/9djm6XCyueLe6wI15lkRCb
-	UBWTaZv1BXGrrnv5k79tXGcmaznrTrrt7BLPL84FF/8c6Da6OOd/GkfdUtfpZ0N2qEsHctn4
-	v/aZma0RcTgs4R5Xqw7LBV71yd5/nc4qsRRnJBpqMRcVJwIA5su1/msDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 18 Mar 2014 20:40:04 -0400
+Date: Tue, 18 Mar 2014 17:38:38 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Dave Jones <davej@redhat.com>
+cc: Cyrill Gorcunov <gorcunov@gmail.com>, Sasha Levin <sasha.levin@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
+        Konstantin Khlebnikov <koct9i@gmail.com>
+Subject: Re: bad rss-counter message in 3.14rc5
+In-Reply-To: <20140311173917.GB4693@redhat.com>
+Message-ID: <alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
+References: <20140311045109.GB12551@redhat.com> <20140310220158.7e8b7f2a.akpm@linux-foundation.org> <20140311053017.GB14329@redhat.com> <20140311132024.GC32390@moon> <531F0E39.9020100@oracle.com> <20140311134158.GD32390@moon> <20140311142817.GA26517@redhat.com>
+ <20140311143750.GE32390@moon> <20140311171045.GA4693@redhat.com> <20140311173603.GG32390@moon> <20140311173917.GB4693@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 15:26:48 +0100, Tomasz Figa wrote:
+On Tue, 11 Mar 2014, Dave Jones wrote:
+> On Tue, Mar 11, 2014 at 09:36:03PM +0400, Cyrill Gorcunov wrote:
+>  > On Tue, Mar 11, 2014 at 01:10:45PM -0400, Dave Jones wrote:
+>  > >  > 
+>  > >  > Dave, iirc trinity can write log file pointing which exactly syscall sequence
+>  > >  > was passed, right? Share it too please.
+>  > > 
+>  > > Hm, I may have been mistaken, and the damage was done by a previous run.
+>  > > I went from being able to reproduce it almost instantly to now not being able
+>  > > to reproduce it at all.  Will keep trying.
+>  > 
+>  > Sasha already gave a link to the syscalls sequence, so no rush.
 > 
-> 
-> On 18.03.2014 14:01, Cho KyongHo wrote:
-> > On Fri, 14 Mar 2014 17:12:03 +0100, Tomasz Figa wrote:
-> >> Hi KyongHo,
-> >>
-> >> On 14.03.2014 06:10, Cho KyongHo wrote:
-> >>> Some master device descriptor like fimc-is which is an abstraction
-> >>> of very complex H/W may have multiple System MMUs. For those devices,
-> >>> the design of the link between System MMU and its master H/W is needed
-> >>> to be reconsidered.
-> >>>
-> >>> A link structure, sysmmu_list_data is introduced that provides a link
-> >>> to master H/W and that has a pointer to the device descriptor of a
-> >>> System MMU. Given a device descriptor of a master H/W, it is possible
-> >>> to traverse all System MMUs that must be controlled along with the
-> >>> master H/W.
-> >>
-> >> NAK.
-> >>
-> >> A device driver should handle particular hardware instances separately,
-> >> without abstracting a virtual hardware instance consisting of multiple
-> >> physical ones.
-> >>
-> >> If such abstraction is needed, it should be done above the exynos-iommu
-> >> driver, e.g. by something like iommu-composite driver that would
-> >> aggregate several IOMMUs. Keep in mind that such IOMMUs in a group could
-> >> be different, e.g. different Exynos SysMMU versions or even completely
-> >> different IPs handled by different drivers.
-> >>
-> >> Still, I don't think there is a real need for such abstraction. Instead,
-> >> related drivers shall be fixed to properly handle multiple memory
-> >> masters and their IOMMUs.
-> >>
-> >
-> > G2D, Scalers and FIMD of Exynos5420 has 2 System MMUs while aother SoC like
-> > Exynos5250 does not.
-> >
-> > I don't understand why you are negative to this approach.
-> > This is the simplest than the others.
-> >
-> > Let me show you an example.
-> > FIMC-IS driver just controls MCU in FIMC-IS subsystem and the firmware of
-> > the MCU controls all other peripherals in the subsystem. Each peripherals
-> > have their own System MMU. Moreover, the configuration of the peripherals
-> > varies according to the SoCs.
-> >
-> > If System MMU driver accepts multiple masters, everything is done in DT.
-> > But I worry that it is not easy if System MMU driver does not support
-> > multiple masters.
-> 
-> I believe I have stated enough reasons why this kind of implementation 
-> is bad. I'm not going to waste time repeating myself.
-> 
-> Your concerns presented above are valid, however they are not related to 
-> what is wrong with this patch. I have given you two proper ways to 
-> handle this, none should be forced upon particular IOMMU master drivers 
-> - their authors should have the chance to select the method that works 
-> best for them.
-> 
+> It'd be nice to get a more concise reproducer, his list had a little of everything in there.
 
-I don't still understand why you think this patch is wrong.
-I think this is the best way not to think for all the driver developers
-about other things than their business logic.
+I've so far failed to find any explanation for your swapops.h BUG;
+but believe I have identified one cause for "Bad rss-counter"s.
 
-This does not hurt anyone and I think this is good enough.
+My hunch is that the swapops.h BUG is "nearby", but I just cannot
+fit it together (the swapops.h BUG comes when rmap cannot find all
+all the migration entries it inserted earlier: it's a very useful
+BUG for validating rmap).
 
-If you want to provide another layer between master device and system mmu
-as you mentioned, you do that. This patch does not restrict it.
+Untested patch below: I can't quite say Reported-by, because it may
+not even be one that you and Sasha have been seeing; but I'm hopeful,
+remap_file_pages is in the list.
 
-Regards,
+Please give this a try, preferably on 3.14-rc or earlier: I've never
+seen "Bad rss-counter"s there myself (trinity uses remap_file_pages
+a lot more than most of us); but have seen them on mmotm/next, so
+some other trigger is coming up there, I'll worry about that once
+it reaches 3.15-rc.
 
-KyongHo
+(Cyrill, entirely unrelated, but in preparing this patch I noticed
+your soft_dirty work in install_file_pte(): which looked good at
+first, until I realized that it's propagating the soft_dirty of a
+pte it's about to zap completely, to the unrelated entry it's about
+to insert in its place.  Which seems very odd to me.)
 
+
+[PATCH] mm: fix bad rss-counter if remap_file_pages raced migration
+
+Fix some "Bad rss-counter state" reports on exit, arising from the
+interaction between page migration and remap_file_pages(): zap_pte()
+must count a migration entry when zapping it.
+
+And yes, it is possible (though very unusual) to find an anon page or
+swap entry in a VM_SHARED nonlinear mapping: coming from that horrid
+get_user_pages(write, force) case which COWs even in a shared mapping.
+
+Signed-off-by: Hugh Dickins <hughd@google.com>
+---
+
+ mm/fremap.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+--- 3.14-rc7/mm/fremap.c	2014-01-19 18:40:07.000000000 -0800
++++ linux/mm/fremap.c	2014-03-18 16:32:39.288612346 -0700
+@@ -23,28 +23,44 @@
+ 
+ #include "internal.h"
+ 
++static int mm_counter(struct page *page)
++{
++	return PageAnon(page) ? MM_ANONPAGES : MM_FILEPAGES;
++}
++
+ static void zap_pte(struct mm_struct *mm, struct vm_area_struct *vma,
+ 			unsigned long addr, pte_t *ptep)
+ {
+ 	pte_t pte = *ptep;
++	struct page *page;
++	swp_entry_t entry;
+ 
+ 	if (pte_present(pte)) {
+-		struct page *page;
+-
+ 		flush_cache_page(vma, addr, pte_pfn(pte));
+ 		pte = ptep_clear_flush(vma, addr, ptep);
+ 		page = vm_normal_page(vma, addr, pte);
+ 		if (page) {
+ 			if (pte_dirty(pte))
+ 				set_page_dirty(page);
++			update_hiwater_rss(mm);
++			dec_mm_counter(mm, mm_counter(page));
+ 			page_remove_rmap(page);
+ 			page_cache_release(page);
++		}
++	} else {	/* zap_pte() is not called when pte_none() */
++		if (!pte_file(pte)) {
+ 			update_hiwater_rss(mm);
+-			dec_mm_counter(mm, MM_FILEPAGES);
++			entry = pte_to_swp_entry(pte);
++			if (non_swap_entry(entry)) {
++				if (is_migration_entry(entry)) {
++					page = migration_entry_to_page(entry);
++					dec_mm_counter(mm, mm_counter(page));
++				}
++			} else {
++				free_swap_and_cache(entry);
++				dec_mm_counter(mm, MM_SWAPENTS);
++			}
+ 		}
+-	} else {
+-		if (!pte_file(pte))
+-			free_swap_and_cache(pte_to_swp_entry(pte));
+ 		pte_clear_not_present_full(mm, addr, ptep, 0);
+ 	}
+ }
