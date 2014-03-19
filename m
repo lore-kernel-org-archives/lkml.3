@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756200AbaCSVgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 17:36:35 -0400
-Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:18432 "EHLO
-	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754769AbaCSVgd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 17:36:33 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next,v3] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Topic: [PATCH net-next,v3] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Index: AQHPQvA3i6jhPyi/W0GqyTDg4sVVHZrpVkmA//+ZWUA=
-Date: Wed, 19 Mar 2014 21:36:24 +0000
-Message-ID: <96538481deb64ee0a7fd511bedfa1d55@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <1395180922-2776-1-git-send-email-haiyangz@microsoft.com>
- <20140319.164005.1815461875771862691.davem@davemloft.net>
-In-Reply-To: <20140319.164005.1815461875771862691.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756333AbaCSVhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 17:37:09 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:45139 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750934AbaCSVhG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 17:37:06 -0400
+X-Greylist: delayed 464 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Mar 2014 17:37:06 EDT
+Message-ID: <532A0C2D.9010600@semaphore.gr>
+Date: Wed, 19 Mar 2014 23:29:17 +0200
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.99;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(51704005)(199002)(189002)(164054003)(13464003)(54356001)(76482001)(46406003)(53806001)(69226001)(81686001)(87266001)(44976005)(83322001)(87936001)(50466002)(6806004)(81816001)(2656002)(74706001)(74876001)(23726002)(81342001)(81542001)(80976001)(74662001)(95666003)(90146001)(56816005)(85852003)(92566001)(83072002)(93136001)(65816001)(79102001)(51856001)(93516002)(97756001)(97736001)(2009001)(20776003)(47776003)(63696002)(76786001)(76796001)(97186001)(97336001)(77982001)(46102001)(54316002)(80022001)(59766001)(56776001)(74366001)(31966008)(74502001)(47446002)(33646001)(95416001)(50986001)(4396001)(94316002)(66066001)(85306002)(47976001)(47736001)(49866001)(86612001)(94946001)(84676001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB596;H:hybrid.exchange.microsoft.com;FPR:BC197825.CB018C6.C960AFCC.82E0EF70.20137;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Exchange-Antispam-Report-Test: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
-X-Forefront-PRVS: 01559F388D
-X-OriginatorOrg: msft.ccsctp.net
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: Fix checkpatch errors and warnings
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix 2 checkpatch errors about using assignment in if condition,
+1 checkpatch error about a required space after comma
+and 3 warnings about line over 80 characters.
 
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/cpufreq.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-> -----Original Message-----
-> > +
-> > +
-> > +/* ndis_recv_scale_cap/cap_flag */
-> 
-> One empty line is sufficient, we don't need two of them here.
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index e3aa9de..1eafd8c 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -939,8 +939,10 @@ static int cpufreq_add_policy_cpu(struct cpufreq_policy *policy,
+ 	up_write(&policy->rwsem);
+ 
+ 	if (has_target()) {
+-		if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+-			(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
++		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
++		if (!ret)
++			ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
++		if (ret) {
+ 			pr_err("%s: Failed to start governor\n", __func__);
+ 			return ret;
+ 		}
+@@ -1394,14 +1396,13 @@ static int __cpufreq_remove_dev_finish(struct device *dev,
+ 
+ 		if (!cpufreq_suspended)
+ 			cpufreq_policy_free(policy);
+-	} else {
+-		if (has_target()) {
+-			if ((ret = __cpufreq_governor(policy, CPUFREQ_GOV_START)) ||
+-					(ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))) {
+-				pr_err("%s: Failed to start governor\n",
+-				       __func__);
+-				return ret;
+-			}
++	} else if (has_target()) {
++		ret = __cpufreq_governor(policy, CPUFREQ_GOV_START);
++		if (!ret)
++			ret = __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS);
++		if (ret) {
++			pr_err("%s: Failed to start governor\n", __func__);
++			return ret;
+ 		}
+ 	}
+ 
+@@ -2086,7 +2087,7 @@ static int cpufreq_set_policy(struct cpufreq_policy *policy,
+ 	if (old_gov) {
+ 		__cpufreq_governor(policy, CPUFREQ_GOV_STOP);
+ 		up_write(&policy->rwsem);
+-		__cpufreq_governor(policy,CPUFREQ_GOV_POLICY_EXIT);
++		__cpufreq_governor(policy, CPUFREQ_GOV_POLICY_EXIT);
+ 		down_write(&policy->rwsem);
+ 	}
+ 
+-- 
+1.8.5.3
 
-I will fix this and other formats you pointed out below, also check the whole patch 
-for similar issues.
-
-> > -	net = alloc_etherdev(sizeof(struct net_device_context));
-> > +	net = alloc_etherdev_mq(sizeof(struct net_device_context),
-> > +				num_online_cpus());
-> >  	if (!net)
-> >  		return -ENOMEM;
-> >
-> 
-> num_online_cpus() can change, will your driver accomodate this?
-
-HyperV currently doesn't support hot-add/remove cpu, so this is constant for 
-this driver.
-
-Thanks,
-- Haiyang
