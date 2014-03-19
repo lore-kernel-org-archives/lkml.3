@@ -1,37 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758942AbaCSKIF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 06:08:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37401 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756193AbaCSKIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:08:01 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20140319095807.GF27632@laptop.programming.kicks-ass.net>
-References: <20140319095807.GF27632@laptop.programming.kicks-ass.net> <20140319064729.660482086@infradead.org> <13632.1395222905@warthog.procyon.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: dhowells@redhat.com, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, mingo@kernel.org, will.deacon@arm.com,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 00/31] Clean up smp_mb__ barriers
-Date: Wed, 19 Mar 2014 10:07:19 +0000
-Message-ID: <13861.1395223639@warthog.procyon.org.uk>
+	id S1759044AbaCSKJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 06:09:09 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38218 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758982AbaCSKJG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 06:09:06 -0400
+Message-ID: <53296CB7.1000909@ti.com>
+Date: Wed, 19 Mar 2014 12:08:55 +0200
+From: Jyri Sarha <jsarha@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Jean-Francois Moine <moinejf@free.fr>, Mark Brown <broonie@kernel.org>
+CC: <alsa-devel@alsa-project.org>, <devicetree@vger.kernel.org>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
+        <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: Re: [PATCH v3 4/4] ASoC: simple-card: Add DT documentation for multi-DAI
+ links
+References: <cover.1394883134.git.moinejf@free.fr>	<d054780a0edf4b2338a52e48bff9144e19aa614f.1394883134.git.moinejf@free.fr>	<20140317164339.GR11706@sirena.org.uk> <20140318091728.1d2240ca@armhf>
+In-Reply-To: <20140318091728.1d2240ca@armhf>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 03/18/2014 10:17 AM, Jean-Francois Moine wrote:
+> On Mon, 17 Mar 2014 16:43:39 +0000
+> Mark Brown <broonie@kernel.org> wrote:
+>
+>> On Sat, Mar 15, 2014 at 12:30:05PM +0100, Jean-Francois Moine wrote:
+> 	[snip]
+...
 
-> > Shouldn't the mass-conversion patch (patch 31) go first?
-> 
-> You mean; make the kernel use primitives that aren't there yet?
+>
+> I agree. I see two possible syntaxes:
+>
+> 1) keep the same definitions in the containers:
+>
+> sound {
+> 	compatible = "simple-audio-card";
+> 	simple-audio-card,name = "Cubox Audio";
+>
+> 	simple-audio-card,dai-link@0 {		/* I2S - HDMI */
+> 		simple-audio-card,cpu {
+> 			sound-dai = <&audio1 0>;
+> 			format = "i2s";
+> 		};
+> 		simple-audio-card,codec {
+> 			sound-dai = <&tda998x 0>;
+> 		};
+> 	};
+>
+> 	simple-audio-card,dai-link@1 {		/* S/PDIF - HDMI */
+> 		simple-audio-card,cpu {
+> 			sound-dai = <&audio1 1>;
+> 		};
+> 		simple-audio-card,codec {
+> 			sound-dai = <&tda998x 1>;
+> 		}
+> 	};
+> 	...
+>
 
-Never mind.  I misread the conditionals in patch 3 adding the deprecated
-versions.
+I vote for the version above. As Mark said there is need for dai 
+specific properties.
 
-David
+While we are at it we could update the bitclock-master and frame-master 
+syntax to be like this:
+
+bitclock-master = "cpu"
+frame-master = "codec"
+
+With the above explicit definition all the daifmt settings could be 
+defined in link level. For backwards compatibility we could still define 
+that omitting the value equals "codec" and omitting the property equals 
+"cpu".
+
+It may sometimes be helpful to allow overwriting link level settings in 
+dai level. In order to do that it should be possible to write all daifmt 
+settings explicitly like this:
+
+bitclock-inversion = <0>; /* <0> = no bitclock-inversion */
+
+If backward compatibility is necessary we could recognize the syntax 
+version from the existence dai-link node.
+
+sound {
+	compatible = "simple-audio-card";
+	simple-audio-card,name = "Simple Audio";
+	simple-audio-card,widgets = ...
+	simple-audio-card,routing = ...
+
+	simple-audio-card,dai-link@0 {		/* I2S - codec */
+		format = "i2s";
+		bitclock-master = "codec";
+		frame-master = "codec";
+		bitclock-inversion = <1>;
+		simple-audio-card,cpu {
+			sound-dai = <&audio1 0>;
+			bitclock-inversion = <0>;
+		};
+		simple-audio-card,codec {
+			sound-dai = <&codec 0>;
+			system-clock-frequency = <12000000>;
+		};
+	};
+...
+
+I can participate in the implementation too.
+
+Best regards,
+Jyro
