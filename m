@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758959AbaCSCQV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 22:16:21 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:5377 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757804AbaCSCQU (ORCPT
+	id S1758982AbaCSCRh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 22:17:37 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:38183 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758017AbaCSCRg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 22:16:20 -0400
-Date: Tue, 18 Mar 2014 22:16:18 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, fweisbec@gmail.com, mingo@redhat.com
-Subject: Re: [PATCH 3/3] sched: Use clamp() and clamp_val() to make it more
- readable.
-Message-ID: <20140318221618.38da4688@gandalf.local.home>
-In-Reply-To: <08e669fea4242209aa625237214410c6bbf67dba.1394619587.git.yangds.fnst@cn.fujitsu.com>
-References: <cover.1394619587.git.yangds.fnst@cn.fujitsu.com>
-	<08e669fea4242209aa625237214410c6bbf67dba.1394619587.git.yangds.fnst@cn.fujitsu.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 18 Mar 2014 22:17:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140318154724.GA5669@redhat.com>
+References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
+ <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
+ <20140318140504.GD23193@laptop.programming.kicks-ass.net> <20140318154724.GA5669@redhat.com>
+From: Peng Tao <bergwolf@gmail.com>
+Date: Wed, 19 Mar 2014 10:17:09 +0800
+Message-ID: <CA+a=Yy4WPO9FQwqzDygz6AadT6xbOMEa_puwosZ6WFN17uCncw@mail.gmail.com>
+Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 Mar 2014 18:26:44 +0800
-Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
+On Tue, Mar 18, 2014 at 11:47 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> On 03/18, Peter Zijlstra wrote:
+>>
+>> I think we can avoid the entire function if we add
+>> WQ_FLAG_LIFO and make prepare_to_wait_event() DTRT.
+>
+> Agreed, this looks very natural.
+>
+> prepare_to_wait_event(WQ_FLAG_LIFO) should probably skip all "flags == 0"
+> entries before list_add(). Given that it is supposed that the users won't
+> mix exclusive and !exclusive, perhaps the additional list_for_each() won't
+> hurt?
+>
+So please allow me to summary and define the semantics of wait/wake_up
+w.r.t. this.
 
-> As Kees suggested, I use clamp() function to replace the if and
-> else branch, making it more readable and modular.
-> 
-> Suggested-by: Kees Cook <keescook@chromium.org>
-> Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-> ---
->  kernel/sched/core.c | 11 ++---------
->  1 file changed, 2 insertions(+), 9 deletions(-)
-> 
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 259ab85..85f4231 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -3068,17 +3068,10 @@ SYSCALL_DEFINE1(nice, int, increment)
->  	 * We don't have to worry. Conceptually one call occurs first
->  	 * and we have a single winner.
->  	 */
-> -	if (increment < -NICE_WIDTH)
-> -		increment = -NICE_WIDTH;
-> -	if (increment > NICE_WIDTH)
-> -		increment = NICE_WIDTH;
-> -
+prepare_to_wait_event(0): task is added at the head of the queue.
 
-Patch 2 and 3 need to be merged into a single patch.
+prepare_to_wait_event(WQ_FLAG_LIFO): task is added at the head of
+exclusive queue head
 
--- Steve
+prepare_to_wait_event(WQ_FLAG_EXCLUSIVE): task is added at the tail of the queue
 
-> +	increment = clamp(increment, -NICE_WIDTH, NICE_WIDTH);
->  	nice = task_nice(current) + increment;
-> -	if (nice < MIN_NICE)
-> -		nice = MIN_NICE;
-> -	if (nice > MAX_NICE)
-> -		nice = MAX_NICE;
->  
-> +	nice = clamp_val(nice, MIN_NICE, MAX_NICE);
->  	if (increment < 0 && !can_nice(current, nice))
->  		return -EPERM;
->  
+Maybe we should rename the flags to WQ_FLAG_EXCLUSIVE_FIFO and
+WQ_FLAG_EXCLUSIVE_LIFO?
 
+>> Then we only need to teach ___wait() about this; and I suppose we could
+>> make .exclusive=-1 be the LIFO flag.
+>
+> Or we can change ___wait_event()
+>
+>         -       if (exclusive)                                                  \
+>         -               __wait.flags = WQ_FLAG_EXCLUSIVE;                       \
+>         -       else                                                            \
+>         -               __wait.flags = 0;                                       \
+>         +       __wait.flags = exclusive;                                       \
+>
+> and obviously change the callers. Perhaps this argument should be renamed
+> then.
+>
+Current __wait.flags allows possible extension to the existing
+interface. If we change it to __wait.flags = exclusive, we drop the
+future extensibility. Is it acceptable?
+
+Thanks,
+Tao
+
+> But I am fine either way, just I like the idea to extend the current
+> interface.
+>
+> Oleg.
+>
