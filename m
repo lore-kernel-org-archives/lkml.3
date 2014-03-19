@@ -1,306 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933072AbaCSWb4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:31:56 -0400
-Received: from pegase1.c-s.fr ([93.17.236.30]:19764 "EHLO mailhub1.si.c-s.fr"
+	id S964818AbaCSWcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:32:36 -0400
+Received: from mail.efficios.com ([78.47.125.74]:57763 "EHLO mail.efficios.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758445AbaCSWbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:31:52 -0400
-X-Greylist: delayed 2324 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Mar 2014 18:31:51 EDT
-From: Christophe Leroy <christophe.leroy@c-s.fr>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, scottwood@freescale.com
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH] powerpc 32: Provides VIRT_CPU_ACCOUNTING
-Message-Id: <20140319215241.236B21A4BDE@localhost.localdomain>
-Date: Wed, 19 Mar 2014 22:52:41 +0100 (CET)
+	id S1758020AbaCSWbo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 18:31:44 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC PATCH v6 2/3] Tracepoint API doc update: data argument
+Date: Wed, 19 Mar 2014 18:31:01 -0400
+Message-Id: <1395268262-31224-3-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1395268262-31224-1-git-send-email-mathieu.desnoyers@efficios.com>
+References: <1395268262-31224-1-git-send-email-mathieu.desnoyers@efficios.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provides VIRT_CPU_ACCOUTING to PPC32 architecture.
-Unlike PPC64, PPC32 doesn't provide the PACA register. Therefore the
-implementation is similar to the one done in the IA64 architecture.
-It is based on additional information added to the Task Info structure.
+Describe the @data argument (probe private data).
 
-Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
+Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to tracepoint callbacks"
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+CC: Ingo Molnar <mingo@kernel.org>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>
+---
+ kernel/tracepoint.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Index: b/arch/powerpc/Kconfig
-===================================================================
---- b/arch/powerpc/Kconfig	(revision 5607)
-+++ b/arch/powerpc/Kconfig	(revision 5608)
-@@ -138,6 +138,7 @@
- 	select OLD_SIGSUSPEND
- 	select OLD_SIGACTION if PPC32
- 	select HAVE_DEBUG_STACKOVERFLOW
-+	select HAVE_VIRT_CPU_ACCOUNTING
- 
- config EARLY_PRINTK
- 	bool
-Index: b/arch/powerpc/kernel/time.c
-===================================================================
---- b/arch/powerpc/kernel/time.c	(revision 5607)
-+++ b/arch/powerpc/kernel/time.c	(revision 5608)
-@@ -162,7 +162,9 @@
- 
- cputime_t cputime_one_jiffy;
- 
-+#ifdef CONFIG_PPC_SPLPAR
- void (*dtl_consumer)(struct dtl_entry *, u64);
-+#endif
- 
- static void calc_cputime_factors(void)
- {
-@@ -178,6 +180,7 @@
- 	__cputime_clockt_factor = res.result_low;
- }
- 
-+#ifdef CONFIG_PPC64
- /*
-  * Read the SPURR on systems that have it, otherwise the PURR,
-  * or if that doesn't exist return the timebase value passed in.
-@@ -190,6 +193,7 @@
- 		return mfspr(SPRN_PURR);
- 	return tb;
- }
-+#endif
- 
- #ifdef CONFIG_PPC_SPLPAR
- 
-@@ -291,6 +295,7 @@
-  * Account time for a transition between system, hard irq
-  * or soft irq state.
-  */
-+#ifdef CONFIG_PPC64
- static u64 vtime_delta(struct task_struct *tsk,
- 			u64 *sys_scaled, u64 *stolen)
- {
-@@ -377,7 +382,70 @@
- 	get_paca()->utime_sspurr = 0;
- 	account_user_time(tsk, utime, utimescaled);
- }
-+#else
- 
-+void vtime_account_user(struct task_struct *tsk)
-+{
-+	cputime_t delta_utime;
-+	struct thread_info *ti = task_thread_info(tsk);
-+
-+	if (ti->ac_utime) {
-+		delta_utime = ti->ac_utime;
-+		account_user_time(tsk, delta_utime, delta_utime);
-+		ti->ac_utime = 0;
-+	}
-+}
-+
-+/*
-+ * Called from the context switch with interrupts disabled, to charge all
-+ * accumulated times to the current process, and to prepare accounting on
-+ * the next process.
-+ */
-+void arch_vtime_task_switch(struct task_struct *prev)
-+{
-+	struct thread_info *pi = task_thread_info(prev);
-+	struct thread_info *ni = task_thread_info(current);
-+
-+	ni->ac_stamp = pi->ac_stamp;
-+	ni->ac_stime = ni->ac_utime = 0;
-+}
-+
-+/*
-+ * Account time for a transition between system, hard irq or soft irq state.
-+ * Note that this function is called with interrupts enabled.
-+ */
-+static cputime_t vtime_delta(struct task_struct *tsk)
-+{
-+	struct thread_info *ti = task_thread_info(tsk);
-+	__u32 delta_stime;
-+	__u32 now;
-+
-+	WARN_ON_ONCE(!irqs_disabled());
-+
-+	now = mftbl();
-+
-+	delta_stime = ti->ac_stime + (now - ti->ac_stamp);
-+	ti->ac_stime = 0;
-+	ti->ac_stamp = now;
-+
-+	return (cputime_t)delta_stime;
-+}
-+
-+void vtime_account_system(struct task_struct *tsk)
-+{
-+	cputime_t delta = vtime_delta(tsk);
-+
-+	account_system_time(tsk, 0, delta, delta);
-+}
-+EXPORT_SYMBOL_GPL(vtime_account_system);
-+
-+void vtime_account_idle(struct task_struct *tsk)
-+{
-+	account_idle_time(vtime_delta(tsk));
-+}
-+
-+#endif
-+
- #else /* ! CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- #define calc_cputime_factors()
- #endif
-@@ -871,6 +939,8 @@
- 		       ppc_proc_freq / 1000000, ppc_proc_freq % 1000000);
- 	}
- 
-+	mttbl(0);
-+	mttbu(0);
- 	tb_ticks_per_jiffy = ppc_tb_freq / HZ;
- 	tb_ticks_per_sec = ppc_tb_freq;
- 	tb_ticks_per_usec = ppc_tb_freq / 1000000;
-Index: b/arch/powerpc/kernel/entry_32.S
-===================================================================
---- b/arch/powerpc/kernel/entry_32.S	(revision 5607)
-+++ b/arch/powerpc/kernel/entry_32.S	(revision 5608)
-@@ -177,6 +177,12 @@
- 	addi	r12,r12,-1
- 	stw	r12,4(r11)
- #endif
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	CURRENT_THREAD_INFO(r9, r1)
-+	tophys(r9, r9)
-+	ACCOUNT_CPU_USER_ENTRY(r9, r11, r12)
-+#endif
-+
- 	b	3f
- 
- 2:	/* if from kernel, check interrupted DOZE/NAP mode and
-@@ -406,6 +412,13 @@
- 	lwarx	r7,0,r1
- END_FTR_SECTION_IFSET(CPU_FTR_NEED_PAIRED_STWCX)
- 	stwcx.	r0,0,r1			/* to clear the reservation */
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	andi.	r4,r8,MSR_PR
-+	beq	3f
-+	CURRENT_THREAD_INFO(r4, r1)
-+	ACCOUNT_CPU_USER_EXIT(r4, r5, r7)
-+3:
-+#endif
- 	lwz	r4,_LINK(r1)
- 	lwz	r5,_CCR(r1)
- 	mtlr	r4
-@@ -841,6 +854,10 @@
- 	andis.	r10,r0,DBCR0_IDM@h
- 	bnel-	load_dbcr0
- #endif
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	CURRENT_THREAD_INFO(r9, r1)
-+	ACCOUNT_CPU_USER_EXIT(r9, r10, r11)
-+#endif
- 
- 	b	restore
- 
-Index: b/arch/powerpc/kernel/asm-offsets.c
-===================================================================
---- b/arch/powerpc/kernel/asm-offsets.c	(revision 5607)
-+++ b/arch/powerpc/kernel/asm-offsets.c	(revision 5608)
-@@ -167,6 +167,10 @@
- 	DEFINE(TI_PREEMPT, offsetof(struct thread_info, preempt_count));
- 	DEFINE(TI_TASK, offsetof(struct thread_info, task));
- 	DEFINE(TI_CPU, offsetof(struct thread_info, cpu));
-+	DEFINE(TI_AC_STAMP, offsetof(struct thread_info, ac_stamp));
-+	DEFINE(TI_AC_LEAVE, offsetof(struct thread_info, ac_leave));
-+	DEFINE(TI_AC_STIME, offsetof(struct thread_info, ac_stime));
-+	DEFINE(TI_AC_UTIME, offsetof(struct thread_info, ac_utime));
- 
- #ifdef CONFIG_PPC64
- 	DEFINE(DCACHEL1LINESIZE, offsetof(struct ppc64_caches, dline_size));
-Index: b/arch/powerpc/include/asm/thread_info.h
-===================================================================
---- b/arch/powerpc/include/asm/thread_info.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/thread_info.h	(revision 5608)
-@@ -43,6 +43,12 @@
- 	int		cpu;			/* cpu we're on */
- 	int		preempt_count;		/* 0 => preemptable,
- 						   <0 => BUG */
-+#ifdef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+	__u32 ac_stamp;
-+	__u32 ac_leave;
-+	__u32 ac_stime;
-+	__u32 ac_utime;
-+#endif
- 	struct restart_block restart_block;
- 	unsigned long	local_flags;		/* private flags for thread */
- 
-@@ -58,6 +64,8 @@
- 	.task =		&tsk,			\
- 	.exec_domain =	&default_exec_domain,	\
- 	.cpu =		0,			\
-+	.ac_stime =	0,			\
-+	.ac_utime =	0,			\
- 	.preempt_count = INIT_PREEMPT_COUNT,	\
- 	.restart_block = {			\
- 		.fn = do_no_restart_syscall,	\
-Index: b/arch/powerpc/include/asm/cputime.h
-===================================================================
---- b/arch/powerpc/include/asm/cputime.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/cputime.h	(revision 5608)
-@@ -228,7 +228,11 @@
- 
- #define cputime64_to_clock_t(ct)	cputime_to_clock_t((cputime_t)(ct))
- 
-+#ifdef CONFIG_PPC64
- static inline void arch_vtime_task_switch(struct task_struct *tsk) { }
-+#else
-+extern void arch_vtime_task_switch(struct task_struct *tsk);
-+#endif
- 
- #endif /* __KERNEL__ */
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-Index: b/arch/powerpc/include/asm/ppc_asm.h
-===================================================================
---- b/arch/powerpc/include/asm/ppc_asm.h	(revision 5607)
-+++ b/arch/powerpc/include/asm/ppc_asm.h	(revision 5608)
-@@ -25,10 +25,16 @@
-  */
- 
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING_NATIVE
-+#ifdef CONFIG_PPC64
- #define ACCOUNT_CPU_USER_ENTRY(ra, rb)
- #define ACCOUNT_CPU_USER_EXIT(ra, rb)
-+#else /* CONFIG_PPC64 */
-+#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)
-+#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)
-+#endif
- #define ACCOUNT_STOLEN_TIME
--#else
-+#else /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
-+#ifdef CONFIG_PPC64
- #define ACCOUNT_CPU_USER_ENTRY(ra, rb)					\
- 	MFTB(ra);			/* get timebase */		\
- 	ld	rb,PACA_STARTTIME_USER(r13);				\
-@@ -68,7 +74,27 @@
- #define ACCOUNT_STOLEN_TIME
- 
- #endif /* CONFIG_PPC_SPLPAR */
-+#else /* CONFIG_PPC64 */
-+#define ACCOUNT_CPU_USER_ENTRY(ti, ra, rb)				\
-+	MFTB(ra);							\
-+	lwz rb, TI_AC_LEAVE(ti);					\
-+	stw ra, TI_AC_STAMP(ti);	/* AC_STAMP = NOW */		\
-+	subf rb, rb, ra;		/* R = NOW - AC_LEAVE */	\
-+	lwz ra, TI_AC_UTIME(ti);					\
-+	add ra, rb, ra;			/* AC_UTIME += R */		\
-+	stw ra, TI_AC_UTIME(ti);					\
- 
-+#define ACCOUNT_CPU_USER_EXIT(ti, ra, rb)				\
-+	MFTB(ra);							\
-+	lwz rb, TI_AC_STAMP(ti);					\
-+	stw ra, TI_AC_LEAVE(ti);					\
-+	subf rb, rb, ra;		/* R = NOW - AC_STAMP */	\
-+	lwz ra, TI_AC_STIME(ti);					\
-+	add ra, rb, ra;			/* AC_STIME += R */		\
-+	stw ra, TI_AC_STIME(ti);					\
-+
-+#endif
-+
- #endif /* CONFIG_VIRT_CPU_ACCOUNTING_NATIVE */
- 
- /*
+diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
+index f27e5f0..2e4bfcb 100644
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -370,6 +370,7 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
+  * tracepoint_probe_register -  Connect a probe to a tracepoint
+  * @name: tracepoint name
+  * @probe: probe handler
++ * @data: probe private data
+  *
+  * Returns 0 if ok, error value on error.
+  * The probe address must at least be aligned on the architecture pointer size.
+@@ -412,6 +413,7 @@ tracepoint_remove_probe(const char *name, void *probe, void *data)
+  * tracepoint_probe_unregister -  Disconnect a probe from a tracepoint
+  * @name: tracepoint name
+  * @probe: probe function pointer
++ * @data: probe private data
+  *
+  * We do not need to call a synchronize_sched to make sure the probes have
+  * finished running before doing a module unload, because the module unload
+-- 
+1.7.10.4
+
