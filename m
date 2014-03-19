@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758805AbaCSBKJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 Mar 2014 21:10:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:55365 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758552AbaCSBKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 Mar 2014 21:10:06 -0400
-Date: Wed, 19 Mar 2014 12:10:00 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nicolin Chen <Guangyu.Chen@freescale.com>,
-        "Jean-Francois Moine" <moinejf@free.fr>
-Subject: linux-next: build failure after merge of the sound-asoc tree
-Message-Id: <20140319121000.ccea7c0440649976ae722abd@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM"
+	id S1758825AbaCSBKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 Mar 2014 21:10:30 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:51343 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758552AbaCSBK1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 Mar 2014 21:10:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <5328ED25.1040900@lab.ntt.co.jp>
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com>
+ <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com>
+ <5328E802.3030901@lab.ntt.co.jp> <CAB=NE6X2eZFLWBN1acf=d75T_K2YM_OK3oaXEPu-hwpUJEmwkg@mail.gmail.com>
+ <5328ED25.1040900@lab.ntt.co.jp>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 18 Mar 2014 18:10:05 -0700
+X-Google-Sender-Auth: 1Hy3HB35fJ5iR7OVJAGYGyzmyuI
+Message-ID: <CAB=NE6VL8LCGa5aqm8qpgwHywwvVb8gjNQFKic_Dq9zdg-8hDQ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
+To: Toshiaki Makita <makita.toshiaki@lab.ntt.co.jp>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        bridge@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Mar 18, 2014 at 6:04 PM, Toshiaki Makita
+<makita.toshiaki@lab.ntt.co.jp> wrote:
+> (2014/03/19 9:50), Luis R. Rodriguez wrote:
+>> On Tue, Mar 18, 2014 at 5:42 PM, Toshiaki Makita
+>> <makita.toshiaki@lab.ntt.co.jp> wrote:
+>>> nit,
+>>> If the last detached port happens to have the same addr as
+>>> random_init_addr, this seems to call br_stp_change_bridge_id() even
+>>> though bridge_id is not changed.
+>>
+>> Ah good point.
+>>
+>>> Shouldn't the assignment of random_init_addr be done before the check of
+>>> "no change"?
+>>
+>> Good question, should we even allow two ports to have the same MAC
+>> address or should we complain and refuse to add it? If so that should
+>> mean we should also have to monitor any manual address changes or
+>> events for address changes on the ports.
+>
+> This was recently discussed by Stephen and me.
+> I'm thinking it should be allowed.
+>
+> http://marc.info/?l=linux-netdev&m=139182743919257&w=2
 
-Hi all,
+Great now that that's sorted out though I still think calling
+br_stp_change_bridge_id() is right just as calling the update features
+as the device is different. It could however be confusing when this
+situation is run and folks might report odd bugs unless we could tell
+them apart clearly. Thoughts?
 
-After merging the sound-asoc tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
-
-sound/soc/generic/simple-card.c: In function 'asoc_simple_card_parse_of':
-sound/soc/generic/simple-card.c:188:47: error: 'struct simple_card_data' ha=
-s no member named 'daifmt'
-   ret =3D asoc_simple_card_sub_parse_of(np, priv->daifmt,
-                                               ^
-sound/soc/generic/simple-card.c:201:47: error: 'struct simple_card_data' ha=
-s no member named 'daifmt'
-   ret =3D asoc_simple_card_sub_parse_of(np, priv->daifmt,
-                                               ^
-
-Caused by commit 56556f333ae3 ("ASoC: simple-card: overwrite cpu_dai->fmt
-with codec_dai->fmt"). daifmt was removed from struct simple_card_data in
-commit c56c4d74c6f9 ("ASoC: simple-card: Simplify code").
-
-I have used the sound-asoc tree from next-20140318 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTKO5sAAoJEMDTa8Ir7ZwVcn0P/3wBmaLWB6DNN6wrpc5rc1SI
-wDRBAPccWyr8wwGxgfbgiNmZw2l+b66D0ccHugU/8Hnvy8mliFv5kYvN+3NhP/lK
-I6XHsFKRtiktaIhQ+4ECvlqWCm4QSbMIUIwC+aXQujAyjGBMs2p2hVjKjv64vOH/
-p9QSvYvqlVJ1iJq2qrCtQuWgu8zYJXFyCEvkgJROhUmbKXaR8GrnXk03YpZlV7Cc
-cmobPbztuCwjR9gQgERGNwdGrAa4vo9U1GLhtjRrNHPX0j0fOIR/OiRMPyXt3Rad
-9ZcZseoYc/iDCEIPovunX9bCGp/UtjkqFGvwB7yoSQSQQLtud7CP6n4Fzcbog2Yf
-hSaBWC8ArtxOaJm3FVFkXRV8VFCuz4WP+45LLOgN8kqFWB7DeQNvjTZiTCFsh7O2
-lRSrmBG5xoknRtUcYLYF0hOZSlVJuU8h9OXsbUeVaPtb+gNJYWVxxPVGhroi9HHp
-4wdfyxoc/euSTM6ZJ+m4HwPphiDVE2qe74q+HeTgjl/lAHyUml/xbS9+wyttWNi/
-IjuIG5Xn98ZhpM3voDSPQra51ZUQRe6/H/86i/1z8CQuQGPpqfyA7MGtF9hXGDUE
-epCvpzq+thrzfmIk4RxCdH5n1EvPmb6MVyEZhIzUuqH9ACeymyZYq6Up6ZaCfqJv
-0Mbd4y+iN7R915al3nNM
-=L2li
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Mar_2014_12_10_00_+1100_pmTAvu+dtHT+U2AM--
+  Luis
