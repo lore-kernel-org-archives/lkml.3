@@ -1,68 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759168AbaCSLEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:04:40 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56856 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759105AbaCSLEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 07:04:39 -0400
-Date: Wed, 19 Mar 2014 12:04:36 +0100
-From: Jan Kara <jack@suse.cz>
-To: Hugh Dickins <hughd@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Jones <davej@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bob Liu <bob.liu@oracle.com>, Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-Message-ID: <20140319110436.GF26358@quack.suse.cz>
-References: <20140311142817.GA26517@redhat.com>
- <20140311143750.GE32390@moon>
- <20140311171045.GA4693@redhat.com>
- <20140311173603.GG32390@moon>
- <20140311173917.GB4693@redhat.com>
- <alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
- <CA+55aFx0ZyCVrkosgTongBrNX6mJM4B8+QZQE1p0okk8ubbv7g@mail.gmail.com>
- <alpine.LSU.2.11.1403181848380.3318@eggly.anvils>
- <CA+55aFxVG7HLmsvCzoiA7PBRPvX3utRfyVGrBs6gVLZ-fUCuPQ@mail.gmail.com>
- <alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
+	id S1759262AbaCSLFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:05:25 -0400
+Received: from forward12.mail.yandex.net ([95.108.130.94]:36141 "EHLO
+	forward12.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759221AbaCSLFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 07:05:24 -0400
+From: Kirill Tkhai <tkhai@yandex.ru>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Preeti Murthy <preeti.lkml@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
+Subject: Re:[PATCH 1/4] sched/rt: Sum number of all children tasks in hierarhy at rt_nr_running
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1403181928370.3499@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Message-Id: <3052261395227111@web1j.yandex.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Wed, 19 Mar 2014 15:05:11 +0400
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 18-03-14 19:37:01, Hugh Dickins wrote:
-> On Tue, 18 Mar 2014, Linus Torvalds wrote:
-> > On Tue, Mar 18, 2014 at 7:06 PM, Hugh Dickins <hughd@google.com> wrote:
-> > >
-> > > I'd love that, if we can get away with it now: depends very
-> > > much on whether we then turn out to break userspace or not.
-> > 
-> > Right. I suspect we can, though, but it's one of those "we can try it
-> > and see". Remind me early in the 3.15 merge window, and we can just
-> > turn the "force" case into an error case and see if anybody hollers.
+> On 03/18/2014 05:14 PM, Kirill Tkhai wrote:
 > 
-> Super, I'll do that, thanks.
+>> 18.03.2014, 15:08, "Preeti Murthy" <preeti.lkml@gmail.com>:
+>>
+>>> On Sat, Mar 15, 2014 at 3:44 AM, Kirill Tkhai <tkhai@yandex.ru> wrote:
+>>>
+>>>> {inc,dec}_rt_tasks used to count entities which are directly queued
+>>>> on rt_rq. If an entity was not a task (i.e., it is some queue), its
+>>>> children were not counted.
+>>>
+>>> Its always the case that a task is queued right, never a sched entity?
+>>
+>> With patch applied, when sched entity is group queue, we add number of
+>> its child tasks instead of "1".
+>>
+>>> When a task is queued, the nr_running of every rt_rq in the hierarchy
+>>> of sched entities which are parents of this task is incremented by 1.
+>>
+>> Only if they had not had a queued task before.
+>>
+>>> Similar is with dequeue of a sched_entity. If the sched_entity has
+>>> just 1 task on it, then its dequeued from its parent queue and its number
+>>> decremented for every rq in the hierarchy. But you would
+>>> never dequeue a sched_entity if it has more than 1 task in it. The
+>>> granularity of enqueue and dequeue of sched_entities is one task
+>>> at a time. You can extend this to enqueue and dequeue of a sched_entity
+>>> only if it has just one task in its queue.
+>>
+>> We do not queue entites, which are empty. In __enqueue_rt_entity():
+>>
+>> if (group_rq && (rt_rq_throttled(group_rq) || !group_rq->rt_nr_running))
+>> return;
+>>
+>> Where do you see a collision? Please explain, if so.
 > 
-> For 3.15, and probably 3.16 too, we should keep in place whatever
-> partial accommodations we have for the case (such as allowing for
-> anon and swap in fremap's zap_pte), in case we do need to revert;
-> but clean those away later on.  (Not many, I think: it was mainly
-> a guilty secret that VM accounting didn't really hold together.)
-  Different drivers actually use the 'force' argument of get_user_pages() a
-lot on userspace provided buffers (AFAIU because they want to tell the
-kernel HW is going to write to that memory so they want to prepare for it).
-It is hard to imagine someone will use this for MAP_SHARED pages (or what
-that would be supposed to achieve) but sometimes userspace is surprisingly
-inventive... Just something to be aware of...
+> Ok I went through the patchset more closely and I understand it better
+> now. So this patchset targets the throttled rt runqueues specifically. I
+> am sorry I missed this focal point. So this patch looks good to me.
+> 
+> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Thanks, Preeti!
+
+>>> Regards
+>>> Preeti U Murthy
+>>>
+>>>> There is no problem here, but now we want to count number of all tasks
+>>>> which are actually queued under the rt_rq in all the hierarhy (except
+>>>> throttled rt queues).
+>>>>
+>>>> Empty queues are not able to be queued and all of the places, which
+>>>> use rt_nr_running, just compare it with zero, so we do not break
+>>>> anything here.
+>>>>
+>>>> Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
+>>>> CC: Peter Zijlstra <peterz@infradead.org>
+>>>> CC: Ingo Molnar <mingo@kernel.org>
+>>>> ---
+>>>> kernel/sched/rt.c | 15 +++++++++++++--
+>>>> 1 file changed, 13 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+>>>> index d8cdf16..e4def13 100644
+>>>> --- a/kernel/sched/rt.c
+>>>> +++ b/kernel/sched/rt.c
+>>>> @@ -1045,12 +1045,23 @@ void dec_rt_group(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq) {}
+>>>> #endif /* CONFIG_RT_GROUP_SCHED */
+>>>>
+>>>> static inline
+>>>> +unsigned int rt_se_nr_running(struct sched_rt_entity *rt_se)
+>>>> +{
+>>>> + struct rt_rq *group_rq = group_rt_rq(rt_se);
+>>>> +
+>>>> + if (group_rq)
+>>>> + return group_rq->rt_nr_running;
+>>>> + else
+>>>> + return 1;
+>>>> +}
+>>>> +
+>>>> +static inline
+>>>> void inc_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>>>> {
+>>>> int prio = rt_se_prio(rt_se);
+>>>>
+>>>> WARN_ON(!rt_prio(prio));
+>>>> - rt_rq->rt_nr_running++;
+>>>> + rt_rq->rt_nr_running += rt_se_nr_running(rt_se);
+>>>>
+>>>> inc_rt_prio(rt_rq, prio);
+>>>> inc_rt_migration(rt_se, rt_rq);
+>>>> @@ -1062,7 +1073,7 @@ void dec_rt_tasks(struct sched_rt_entity *rt_se, struct rt_rq *rt_rq)
+>>>> {
+>>>> WARN_ON(!rt_prio(rt_se_prio(rt_se)));
+>>>> WARN_ON(!rt_rq->rt_nr_running);
+>>>> - rt_rq->rt_nr_running--;
+>>>> + rt_rq->rt_nr_running -= rt_se_nr_running(rt_se);
+>>>>
+>>>> dec_rt_prio(rt_rq, rt_se_prio(rt_se));
+>>>> dec_rt_migration(rt_se, rt_rq);
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at http://www.tux.org/lkml/
+
+
+ -- 
