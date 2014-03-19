@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478AbaCSReZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 13:34:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62332 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751038AbaCSReX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 13:34:23 -0400
-Date: Wed, 19 Mar 2014 18:33:30 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peng Tao <bergwolf@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
-Message-ID: <20140319173330.GA11923@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com> <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com> <20140318140504.GD23193@laptop.programming.kicks-ass.net> <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com> <20140318162319.GB5669@redhat.com> <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751437AbaCSRgN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 13:36:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:33528 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbaCSRgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 13:36:11 -0400
+From: Christopher Covington <cov@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: Christopher Covington <cov@codeaurora.org>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: Use 64-bit DMA addresses for LPAE+VirtIO-MMIO
+Date: Wed, 19 Mar 2014 13:35:19 -0400
+Message-Id: <1395250522-30031-1-git-send-email-cov@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19, Peng Tao wrote:
->
-> On Wed, Mar 19, 2014 at 12:23 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > Firtsly, cfs_block_sigs/cfs_block_sigsinv/etc are not exactly right,
-> > they need set_current_blocked(). And you can read "old" lockless.
-> >
-> It seems that set_current_blocked() is not exported. Can we ask to export it?
+On an LPAE system, the physical addresses used by VirtIO-MMIO may
+be larger than 32 bits, even if the header and configuration space
+addresses fit into 32 bits. For example with the Versatile Express
+memory map using 4G memory, the following error occured when trying
+to use a VirtIO-MMIO block device.
 
-Why not. If you are going to change this code to use set_current_blocked(),
-I'd suggest you to send the "export set_current_blocked" patch in series.
-Otherwise, if it is sent separately, your change will depend on another
-tree.
+EXT2-fs (vda): error: ext2_check_page: bad entry in directory #2: : unaligned directory entry - offset=0, inode=3755990991, rec_len=57311, name_len=223
 
-Or you can use sigprocmask(). Actually it should die, but this won't happen
-soon and it is already exported.
+To fix this, select ARCH_DMA_ADDR_T_64BIT when both LPAE and
+VIRTIO_MMIO are selected.
 
-> And looking at other similar places like coda_block_signals(),
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
+---
+ arch/arm/mm/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Yes, it can have much more users.
-
-But note that set_current_blocked() can't help you to really block
-SIGKILL anyway.
-
-Could you explain why __l_wait_event() can't use TASK_UNINTERRUPTIBLE
-instead of cfs_block_sigsinv(0) ?
-
-Oleg.
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 1f8fed9..a62bcc9 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -617,6 +617,7 @@ config ARM_LPAE
+ 	bool "Support for the Large Physical Address Extension"
+ 	depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && \
+ 		!CPU_32v4 && !CPU_32v3
++	select ARCH_DMA_ADDR_T_64BIT if VIRTIO_MMIO
+ 	help
+ 	  Say Y if you have an ARMv7 processor supporting the LPAE page
+ 	  table format and you would like to access memory beyond the
+-- 
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by the Linux Foundation.
 
