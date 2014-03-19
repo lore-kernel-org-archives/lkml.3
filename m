@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759514AbaCSXtF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:49:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42931 "EHLO
+	id S1759537AbaCSXtP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:49:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42941 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755438AbaCSXtB (ORCPT
+	with ESMTP id S1755438AbaCSXtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:49:01 -0400
-Date: Wed, 19 Mar 2014 16:48:47 -0700
+	Wed, 19 Mar 2014 19:49:12 -0400
+Date: Wed, 19 Mar 2014 16:48:58 -0700
 From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-bbe831de1924f56596848919f98b195ed250fd28@git.kernel.org>
+Message-ID: <tip-d31abcbca0e076f2a136d214f409b55bf149fade@git.kernel.org>
 Cc: ffusco@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, dborkman@redhat.com, jbeulich@suse.com,
         davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
@@ -18,11 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ffusco@redhat.com, dborkman@redhat.com, jbeulich@suse.com,
         davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
-References: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
+In-Reply-To: <530F09CE020000780011FBEF@nat28.tlf.novell.com>
+References: <530F09CE020000780011FBEF@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hash] x86, hash: Swap arguments passed to crc32_u32()
-Git-Commit-ID: bbe831de1924f56596848919f98b195ed250fd28
+Subject: [tip:x86/hash] x86, hash: Simplify switch, add __init annotation
+Git-Commit-ID: d31abcbca0e076f2a136d214f409b55bf149fade
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,62 +35,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bbe831de1924f56596848919f98b195ed250fd28
-Gitweb:     http://git.kernel.org/tip/bbe831de1924f56596848919f98b195ed250fd28
+Commit-ID:  d31abcbca0e076f2a136d214f409b55bf149fade
+Gitweb:     http://git.kernel.org/tip/d31abcbca0e076f2a136d214f409b55bf149fade
 Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 27 Feb 2014 08:47:34 +0000
+AuthorDate: Thu, 27 Feb 2014 08:47:58 +0000
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 19 Mar 2014 16:26:14 -0700
+CommitDate: Wed, 19 Mar 2014 16:26:44 -0700
 
-x86, hash: Swap arguments passed to crc32_u32()
+x86, hash: Simplify switch, add __init annotation
 
-... to match the function's parameters. While reportedly commutative,
-using the proper order allows for leveraging the instruction permitting
-the source operand to be in memory.
+Minor cleanups:
 
-[ hpa: This code originated in the dpdk toolkit.  This was a bug in dpdk
-  which has recently been fixed in part due to an earlier version of
-  this patch. ]
+- simplify switch statement
+- add __init annotation to setup_arch_fast_hash()
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/530F09B6020000780011FBEB@nat28.tlf.novell.com
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
+Link: http://lkml.kernel.org/r/530F09CE020000780011FBEF@nat28.tlf.novell.com
 Cc: Francesco Fusco <ffusco@redhat.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>
 Cc: Thomas Graf <tgraf@redhat.com>
 Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/lib/hash.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/lib/hash.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/arch/x86/lib/hash.c b/arch/x86/lib/hash.c
-index 060cc44..ac628aa 100644
+index ac628aa..ff4fa51 100644
 --- a/arch/x86/lib/hash.c
 +++ b/arch/x86/lib/hash.c
-@@ -53,7 +53,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
- 	u32 i, tmp = 0;
+@@ -32,6 +32,7 @@
+  */
  
+ #include <linux/hash.h>
++#include <linux/init.h>
+ 
+ #include <asm/processor.h>
+ #include <asm/cpufeature.h>
+@@ -55,17 +56,16 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
  	for (i = 0; i < len / 4; i++)
--		seed = crc32_u32(*p32++, seed);
-+		seed = crc32_u32(seed, *p32++);
+ 		seed = crc32_u32(seed, *p32++);
  
- 	switch (3 - (len & 0x03)) {
- 	case 0:
-@@ -64,7 +64,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
+-	switch (3 - (len & 0x03)) {
+-	case 0:
++	switch (len & 3) {
++	case 3:
+ 		tmp |= *((const u8 *) p32 + 2) << 16;
  		/* fallthrough */
- 	case 2:
+-	case 1:
++	case 2:
+ 		tmp |= *((const u8 *) p32 + 1) << 8;
+ 		/* fallthrough */
+-	case 2:
++	case 1:
  		tmp |= *((const u8 *) p32);
--		seed = crc32_u32(tmp, seed);
-+		seed = crc32_u32(seed, tmp);
- 	default:
+ 		seed = crc32_u32(seed, tmp);
+-	default:
  		break;
  	}
-@@ -78,7 +78,7 @@ static u32 intel_crc4_2_hash2(const u32 *data, u32 len, u32 seed)
- 	u32 i;
  
- 	for (i = 0; i < len; i++)
--		seed = crc32_u32(*p32++, seed);
-+		seed = crc32_u32(seed, *p32++);
- 
+@@ -83,7 +83,7 @@ static u32 intel_crc4_2_hash2(const u32 *data, u32 len, u32 seed)
  	return seed;
  }
+ 
+-void setup_arch_fast_hash(struct fast_hash_ops *ops)
++void __init setup_arch_fast_hash(struct fast_hash_ops *ops)
+ {
+ 	if (cpu_has_xmm4_2) {
+ 		ops->hash  = intel_crc4_2_hash;
