@@ -1,128 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaCSTI0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 15:08:26 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:62737 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751814AbaCSTHx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 15:07:53 -0400
-From: David Herrmann <dh.herrmann@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Hugh Dickins <hughd@google.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        =?UTF-8?q?Kristian=20H=C3=B8gsberg?= <krh@bitplanet.net>,
-        john.stultz@linaro.org, Greg Kroah-Hartman <greg@kroah.com>,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 1/6] fs: fix i_writecount on shmem and friends
-Date: Wed, 19 Mar 2014 20:06:46 +0100
-Message-Id: <1395256011-2423-2-git-send-email-dh.herrmann@gmail.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	id S932214AbaCSTMi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 15:12:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420AbaCSTMg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 15:12:36 -0400
+Date: Wed, 19 Mar 2014 15:12:21 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: snitzer@redhat.com, axboe@fb.com
+Subject: block: free q->flush_rq in blk_init_allocated_queue error paths.
+Message-ID: <20140319191221.GA10034@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	snitzer@redhat.com, axboe@fb.com
+References: <20140318010053.D08A2660CC5@gitolite.kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140318010053.D08A2660CC5@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-VM_DENYWRITE currently relies on i_writecount. Unless there's an active
-writable reference to an inode, VM_DENYWRITE is not allowed.
-Unfortunately, alloc_file() does not increase i_writecount, therefore,
-does not prevent a following VM_DENYWRITE even though the new file might
-have been opened with FMODE_WRITE. However, callers of alloc_file() expect
-the file object to be fully instantiated so they can call fput() on it. We
-could now either fix all callers to do an get_write_access() if opened
-with FMODE_WRITE, or simply fix alloc_file() to do that. I chose the
-latter.
+Commit 7982e90c3a ("block: fix q->flush_rq NULL pointer crash on dm-mpath flush")
+moved an allocation to blk_init_allocated_queue(), but neglected to free
+that allocation on the error paths that follow.
 
-Note that this bug allows some rather subtle misbehavior. The following
-sequence of calls should work just fine, but currently fails:
-    int p[2], orig, ro, rw;
-    char buf[128];
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
 
-    pipe(p);
-    sprintf(buf, "/proc/self/fd/%d", p[1]);
-    ro = open(buf, O_RDONLY);
-    close(p[1]);
-    sprintf(buf, "/proc/self/fd/%d", ro);
-    rw = open(buf, O_RDWR);
-
-The final open() cannot succeed as close(p[1]) caused an integer underflow
-on i_writecount, effectively causing VM_DENYWRITE on the inode. The open
-will fail with -ETXTBUSY.
-
-It's a rather odd sequence of calls and given that open() doesn't use
-alloc_file() (and thus not affected by this bug), it's rather unlikely
-that this is a serious issue. But stuff like anon_inode shares a *single*
-inode across a huge set of interfaces. If any of these is broken like
-pipe(), it will affect all of these (ranging from dma-buf to epoll).
-
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
----
-Hi
-
-This patch is only included for reference. It was submitted to fs-devel
-separately and is being worked on. However, this bug must be fixed in order to
-make use of memfd_create(), so I decided to include it here.
-
-David
-
- fs/file_table.c | 27 ++++++++++++++++++---------
- 1 file changed, 18 insertions(+), 9 deletions(-)
-
-diff --git a/fs/file_table.c b/fs/file_table.c
-index 5b24008..8059d68 100644
---- a/fs/file_table.c
-+++ b/fs/file_table.c
-@@ -168,6 +168,7 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 		const struct file_operations *fop)
- {
- 	struct file *file;
-+	int error;
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 4cd5ffc18442..bfe16d5af9f9 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -713,7 +713,7 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 		return NULL;
  
- 	file = get_empty_filp();
- 	if (IS_ERR(file))
-@@ -179,15 +180,23 @@ struct file *alloc_file(struct path *path, fmode_t mode,
- 	file->f_mode = mode;
- 	file->f_op = fop;
+ 	if (blk_init_rl(&q->root_rl, q, GFP_KERNEL))
+-		return NULL;
++		goto fail;
  
--	/*
--	 * These mounts don't really matter in practice
--	 * for r/o bind mounts.  They aren't userspace-
--	 * visible.  We do this for consistency, and so
--	 * that we can do debugging checks at __fput()
--	 */
--	if ((mode & FMODE_WRITE) && !special_file(path->dentry->d_inode->i_mode)) {
--		file_take_write(file);
--		WARN_ON(mnt_clone_write(path->mnt));
-+	if (mode & FMODE_WRITE) {
-+		error = get_write_access(path->dentry->d_inode);
-+		if (error) {
-+			put_filp(file);
-+			return ERR_PTR(error);
-+		}
-+
-+		/*
-+		 * These mounts don't really matter in practice
-+		 * for r/o bind mounts.  They aren't userspace-
-+		 * visible.  We do this for consistency, and so
-+		 * that we can do debugging checks at __fput()
-+		 */
-+		if (!special_file(path->dentry->d_inode->i_mode)) {
-+			file_take_write(file);
-+			WARN_ON(mnt_clone_write(path->mnt));
-+		}
+ 	q->request_fn		= rfn;
+ 	q->prep_rq_fn		= NULL;
+@@ -737,12 +737,16 @@ blk_init_allocated_queue(struct request_queue *q, request_fn_proc *rfn,
+ 	/* init elevator */
+ 	if (elevator_init(q, NULL)) {
+ 		mutex_unlock(&q->sysfs_lock);
+-		return NULL;
++		goto fail;
  	}
- 	if ((mode & (FMODE_READ | FMODE_WRITE)) == FMODE_READ)
- 		i_readcount_inc(path->dentry->d_inode);
--- 
-1.9.0
-
+ 
+ 	mutex_unlock(&q->sysfs_lock);
+ 
+ 	return q;
++
++fail:
++	kfree(q->flush_rq);
++	return NULL;
+ }
+ EXPORT_SYMBOL(blk_init_allocated_queue);
+ 
