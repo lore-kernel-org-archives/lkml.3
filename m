@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965595AbaCSQEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:04:45 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:46021 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933574AbaCSQEm (ORCPT
+	id S965631AbaCSQFK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:05:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42802 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965600AbaCSQFE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:04:42 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: penberg@iki.fi
-Cc: mingo@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] kvm tools: treat uids and gids in stat structure properly
-Date: Wed, 19 Mar 2014 12:04:18 -0400
-Message-Id: <1395245058-11154-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 19 Mar 2014 12:05:04 -0400
+Date: Wed, 19 Mar 2014 09:07:07 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, fes@google.com,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [PATCH] virtio-blk: make the queue depth configurable
+Message-ID: <20140319160707.GA19820@kroah.com>
+References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
+ <1394818720.3253.1.camel@joe-AO722>
+ <20140314180258.GA29201@thunk.org>
+ <87y509scl3.fsf@rustcorp.com.au>
+ <1395032434.2556.10.camel@joe-AO722>
+ <1395041214.2556.17.camel@joe-AO722>
+ <87zjkmr8w1.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87zjkmr8w1.fsf@rustcorp.com.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Upstream commit "9p: Modify the stat structures to use kuid_t and kgid_t"
-has modified the type of uid and gid in the stat structure, which breaks
-build for us.
+On Wed, Mar 19, 2014 at 05:07:50PM +1030, Rusty Russell wrote:
+> Joe Perches <joe@perches.com> writes:
+> > On Sun, 2014-03-16 at 22:00 -0700, Joe Perches wrote:
+> >> On Mon, 2014-03-17 at 14:25 +1030, Rusty Russell wrote:
+> >> 
+> >> > Erk, our tests are insufficient.  Testbuilding an allmodconfig with this
+> >> > now:
+> >> 
+> >> Good idea.
+> >> 
+> >> > diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+> >> []
+> >> > @@ -188,6 +188,9 @@ struct kparam_array
+> >> >  	/* Default value instead of permissions? */			\
+> >> >  	static int __param_perm_check_##name __attribute__((unused)) =	\
+> >> >  	BUILD_BUG_ON_ZERO((perm) < 0 || (perm) > 0777 || ((perm) & 2))	\
+> >> > +	/* User perms >= group perms >= other perms. */			\
+> >> > +	+ BUILD_BUG_ON_ZERO(((perm) >> 6) < (((perm) >> 3) & 7))	\
+> >> > +	+ BUILD_BUG_ON_ZERO((((perm) >> 3) & 7) < ((perm) & 7))		\
+> >> >  	+ BUILD_BUG_ON_ZERO(sizeof(""prefix) > MAX_PARAM_PREFIX_LEN);	\
+> >> >  	static const char __param_str_##name[] = prefix #name;		\
+> >> >  	static struct kernel_param __moduleparam_const __param_##name	\
+> >> 
+> >> It might make sense to separate this octal permissions
+> >> test into a new macro for other checks in macros like
+> >> CLASS_ATTR, DEVICE_ATTR, SENSOR_ATTR and SENSOR_ATTR_2.
+> 
+> OK, I took your bikeshed and re-painted it below.
+> 
+> > #define VERIFY_OCTAL_PERMISSIONS(perms)					\
+> > ({									\
+> > 	if (__builtin_constant_p(perms)) {				\
+> > 		BUILD_BUG_ON((perms) < 0);				\
+> > 		BUILD_BUG_ON((perms) > 0777);				\
+> > 		/* User perms >= group perms >= other perms */		\
+> > 		BUILD_BUG_ON(((perms) >> 6) < (((perms) >> 3) & 7));	\
+> > 		BUILD_BUG_ON((((perms) >> 3) & 7) < ((perms) & 7));	\
+> > 	}								\
+> > 	;								\
+> > })
+> 
+> Subject: VERIFY_OCTAL_PERMISSIONS: stricter checking for sysfs perms.
+> 
+> Summary of http://lkml.org/lkml/2014/3/14/363 :
+> 
+>   Ted: module_param(queue_depth, int, 444)
+>   Joe: 0444!
+>   Rusty: User perms >= group perms >= other perms?
+>   Joe: CLASS_ATTR, DEVICE_ATTR, SENSOR_ATTR and SENSOR_ATTR_2?
+> 
+> Side effect of stricter permissions means removing the unnecessary
+> S_IFREG from drivers/pci/slot.c.
+> 
+> Suggested-by: Joe Perches <joe@perches.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-This is a rather trivial conversion from u32 to kuid_t and kgid_t.
-
-Reported-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- tools/kvm/virtio/9p-pdu.c |    4 +++-
- tools/kvm/virtio/9p.c     |   11 ++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
-
-diff --git a/tools/kvm/virtio/9p-pdu.c b/tools/kvm/virtio/9p-pdu.c
-index 9e95f3b..cc2e871 100644
---- a/tools/kvm/virtio/9p-pdu.c
-+++ b/tools/kvm/virtio/9p-pdu.c
-@@ -129,7 +129,9 @@ static int virtio_p9_decode(struct p9_pdu *pdu, const char *fmt, va_list ap)
- 		{
- 			struct p9_wstat *stbuf = va_arg(ap, struct p9_wstat *);
- 			memset(stbuf, 0, sizeof(struct p9_wstat));
--			stbuf->n_uid = stbuf->n_gid = stbuf->n_muid = -1;
-+			stbuf->n_uid = KUIDT_INIT(-1);
-+			stbuf->n_gid = KGIDT_INIT(-1);
-+			stbuf->n_muid = KUIDT_INIT(-1);
- 			retval = virtio_p9_pdu_readf(pdu, "wwdQdddqssss",
- 						&stbuf->size, &stbuf->type,
- 						&stbuf->dev, &stbuf->qid,
-diff --git a/tools/kvm/virtio/9p.c b/tools/kvm/virtio/9p.c
-index 25cdd8c..847eddb 100644
---- a/tools/kvm/virtio/9p.c
-+++ b/tools/kvm/virtio/9p.c
-@@ -441,8 +441,8 @@ static void virtio_p9_fill_stat(struct p9_dev *p9dev,
- 	memset(statl, 0, sizeof(*statl));
- 	statl->st_mode		= st->st_mode;
- 	statl->st_nlink		= st->st_nlink;
--	statl->st_uid		= st->st_uid;
--	statl->st_gid		= st->st_gid;
-+	statl->st_uid		= KUIDT_INIT(st->st_uid);
-+	statl->st_gid		= KGIDT_INIT(st->st_gid);
- 	statl->st_rdev		= st->st_rdev;
- 	statl->st_size		= st->st_size;
- 	statl->st_blksize	= st->st_blksize;
-@@ -668,12 +668,13 @@ static void virtio_p9_setattr(struct p9_dev *p9dev,
- 	    ((p9attr.valid & ATTR_CTIME)
- 	     && !((p9attr.valid & ATTR_MASK) & ~ATTR_CTIME))) {
- 		if (!(p9attr.valid & ATTR_UID))
--			p9attr.uid = -1;
-+			p9attr.uid = KUIDT_INIT(-1);
- 
- 		if (!(p9attr.valid & ATTR_GID))
--			p9attr.gid = -1;
-+			p9attr.gid = KGIDT_INIT(-1);
- 
--		ret = lchown(fid->abs_path, p9attr.uid, p9attr.gid);
-+		ret = lchown(fid->abs_path, __kuid_val(p9attr.uid),
-+				__kgid_val(p9attr.gid));
- 		if (ret < 0)
- 			goto err_out;
- 	}
--- 
-1.7.2.5
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
