@@ -1,119 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758837AbaCSJKx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 05:10:53 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:37516 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758802AbaCSJKt (ORCPT
+	id S1758699AbaCSJOO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 05:14:14 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:46328 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349AbaCSJOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 05:10:49 -0400
-Message-ID: <53295ECE.5020303@gmail.com>
-Date: Wed, 19 Mar 2014 10:09:34 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 19 Mar 2014 05:14:10 -0400
+Date: Wed, 19 Mar 2014 09:14:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>, broonie@kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: sec-core: Fix uninitialized 'regmap_rtc' on S2MPA01
+Message-ID: <20140319091404.GF31687@lee--X1>
+References: <20140318110947.GR25478@lee--X1>
+ <1395148286-32002-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: mtk.manpages@gmail.com, Christoph Hellwig <hch@infradead.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Andreas Dilger <adilger@dilger.ca>
-Subject: Re: For review: open_by_name_at(2) man page
-References: <53271B69.3000305@gmail.com>	<20140318090007.3adee3d0@notabene.brown>	<20140318094321.GA17024@infradead.org>	<53283DFB.6040105@gmail.com> <20140319092427.0812263c@notabene.brown>
-In-Reply-To: <20140319092427.0812263c@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395148286-32002-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Neil,
+> Initialize the 'regmap_rtc' on S2MPA01 to some sane value. Sane at least
+> for S5M87X chipsets, not S2MPS/S2MPA but it won't be used because
+> rtc-s5m driver does not support S2MPA01.
+> 
+> This fixes following error:
+> drivers/mfd/sec-core.c:342:45: warning: ‘regmap_rtc’ may be used uninitialized in this function [-Wuninitialized]
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/sec-core.c |    7 +++++++
+>  1 file changed, 7 insertions(+)
 
-On 03/18/2014 11:24 PM, NeilBrown wrote:
-> On Tue, 18 Mar 2014 13:37:15 +0100 "Michael Kerrisk (man-pages)"
-> <mtk.manpages@gmail.com> wrote:
-> 
->> On 03/18/2014 10:43 AM, Christoph Hellwig wrote:
->>> On Tue, Mar 18, 2014 at 09:00:07AM +1100, NeilBrown wrote:
->>>> ESTALE is also returned if the filesystem does not support file-handle ->
->>>> file mappings.
->>>> On filesystems which don't provide export_operations (/sys /proc ubifs
->>>> romfs cramfs nfs coda ... several others) name_to_handle_at will produce a
->>>> generic handle using the 32 bit inode and 32 bit i_generation.
->>>
->>> Do we?  Seems like the code is erroring out early if there are no
->>> export_ops?
->>
->> It appears to me that Neil's statement isn't correct, at least for /proc
->> and /sys (see my other mail, to Neil). I'm unsure about whether it is true
->> for some of those other FSes thought.
-> 
-> 
-> Indeed, I was wrong.
-> 
-> I was looking at
-> 
-> int exportfs_encode_inode_fh(struct inode *inode, struct fid *fid,
-> 			     int *max_len, struct inode *parent)
-> {
-> 	const struct export_operations *nop = inode->i_sb->s_export_op;
-> 
-> 	if (nop && nop->encode_fh)
-> 		return nop->encode_fh(inode, fid->raw, max_len, parent);
-> 
-> 	return export_encode_fh(inode, fid, max_len, parent);
-> }
-> 
-> 
-> which uses a default if there is no 'nop'.
-> 
-> However do_sys_name_to_handle() contains
-> 
-> 	if (!path->dentry->d_sb->s_export_op ||
-> 	    !path->dentry->d_sb->s_export_op->fh_to_dentry)
-> 		return -EOPNOTSUPP;
-> 
-> long before export_encode_inode_fh() gets called.  So the default isn't used.
+Please don't send patches in the middle of threads like this (v2's are
+a different story as it saves on re-sending entire patch-sets), as I
+very nearly missed it.
 
-Okay.
-
-> I would have thought that exportfs_encode_inode_fh would never get called if
-> there were no s_export_op pointer - certainly name_to_handle_at and nfsd
-> would never call it in that case.
-> However it seems that
-> 
->     This routine will be used to generate a file handle in fdinfo output for
->     inotify subsystem, where if no s_export_op present the general
->     export_encode_fh should be used.  Thus add a test if s_export_op present
->     inside exportfs_encode_fh itself.
-> 
-> according to
-> 
-> commit ab49bdecc3ebb46ab661f5f05d5c5ea9606406c6
-> Author: Cyrill Gorcunov <gorcunov@openvz.org>
-> Date:   Mon Dec 17 16:05:06 2012 -0800
-> 
-> 
-> I guess that means that you can extract filehandles from /proc/self/fdinfo/$FD
-> when $FD is an inotify fd which is watching the particular file.....  I
-> wouldn't have expected that, but maybe it is a good idea.
-
-Yes, it does--I tested it, and it works! I was unaware of this feature,
-though I'm not sure that I'll add anything to a man page just yet.
-
-> So yes: if the filesystem doesn't support filehandles you get EOPNOTSUPP.
-> So if you get ESTALE from open_by_handle_at(), then it really is a stale
-> handle.  Sorry for the confusion.
-
-Yup, I've updated the page now.
-
-Cheers,
-
-Michael
-
+We already have drivers doing similar things so I'll apply this as a
+temporary fix, but please find something a little less 'hacky' to
+supersede it _soon_.
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
