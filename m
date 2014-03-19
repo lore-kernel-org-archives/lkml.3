@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964791AbaCSK1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 06:27:38 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46820 "EHLO
+	id S964820AbaCSK17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 06:27:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:46838 "EHLO
 	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933682AbaCSK1g (ORCPT
+	by vger.kernel.org with ESMTP id S933772AbaCSK1i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 06:27:36 -0400
+	Wed, 19 Mar 2014 06:27:38 -0400
 From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 To: broonie@kernel.org
 Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
         ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
         sameo@linux.intel.com, lee.jones@linaro.org, lgirdwood@gmail.com,
         ckeepax@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/5] mfd: arizona: Fix and factor out read of device tree GPIOs
-Date: Wed, 19 Mar 2014 10:18:55 +0000
-Message-Id: <1395224338-3709-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 4/5] regulator: arizona-ldo1: Add processing of init_data from device tree
+Date: Wed, 19 Mar 2014 10:18:57 +0000
+Message-Id: <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
@@ -23,78 +23,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On non-DT systems with device tree built in the current device tree GPIO
-reads will overwrite the pdata with zero when they fail. This patch
-factors out the reading of GPIOs for the Arizona devices into a helper
-function, and ensures that the pdata version will be preserved if the
-device tree read fails.
-
 Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 ---
- drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
- include/linux/mfd/arizona/core.h |    3 +++
- 2 files changed, 27 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++
+ drivers/regulator/arizona-ldo1.c                  |   46 +++++++++++++++++++-
+ 2 files changed, 50 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-index a45aab9..333621e 100644
---- a/drivers/mfd/arizona-core.c
-+++ b/drivers/mfd/arizona-core.c
-@@ -512,19 +512,34 @@ int arizona_of_get_type(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(arizona_of_get_type);
+diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+index 36a0c3d..9d54c70 100644
+--- a/Documentation/devicetree/bindings/mfd/arizona.txt
++++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+@@ -42,6 +42,13 @@ Optional properties:
+     the chip default will be used.  If present exactly five values must
+     be specified.
  
-+int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
-+			      bool mandatory, int *gpio)
-+{
-+	int ret;
++  - ldo1 : Initial data for the LDO1 regulator, as covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
 +
-+	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
-+	if (ret >= 0) {
-+		*gpio = ret;
-+		return ret;
++  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
++    externally supplied. As covered in
++    Documentation/devicetree/bindings/regulator/regulator.txt
++
+ Example:
+ 
+ codec: wm5102@1a {
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 3ac4b95..7a0d8e4 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/of_regulator.h>
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
+ 
+@@ -179,19 +180,56 @@ static const struct regulator_init_data arizona_ldo1_default = {
+ };
+ 
+ #ifdef CONFIG_OF
+-static int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
++				     struct regulator_config *config)
+ {
+ 	struct arizona_pdata *pdata = &arizona->pdata;
++	struct arizona_ldo1 *ldo1 = config->driver_data;
++	struct device_node *init_node, *dcvdd_node;
++	struct regulator_init_data *init_data;
+ 
+ 	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+ 
++	init_node = of_get_child_by_name(arizona->dev->of_node, "ldo1");
++	dcvdd_node = of_parse_phandle(arizona->dev->of_node, "DCVDD-supply", 0);
++
++	if (init_node) {
++		config->of_node = init_node;
++
++		init_data = of_get_regulator_init_data(arizona->dev, init_node);
++
++		if (init_data) {
++			init_data->consumer_supplies = &ldo1->supply;
++			init_data->num_consumer_supplies = 1;
++
++			if (dcvdd_node && dcvdd_node != init_node)
++				arizona->external_dcvdd = true;
++
++			pdata->ldo1 = init_data;
++		}
++	} else if (dcvdd_node) {
++		arizona->external_dcvdd = true;
 +	}
 +
-+	/* Warn if GPIO is mandatory and not specified */
-+	if (mandatory && *gpio <= 0)
-+		dev_err(arizona->dev,
-+				"Mandatory DT gpio %s missing/malformed: %d\n",
-+				prop, ret);
++	of_node_put(dcvdd_node);
 +
-+	return ret;
+ 	return 0;
+ }
++
++static void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++	of_node_put(config->of_node);
 +}
-+EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
-+
- static int arizona_of_get_core_pdata(struct arizona *arizona)
+ #else
+-static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona)
++static inline int arizona_ldo1_of_get_pdata(struct arizona *arizona,
++					    struct regulator_config *config)
  {
-+	struct arizona_pdata *pdata = &arizona->pdata;
- 	int ret, i;
- 
--	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
--						 "wlf,reset", 0);
--	if (arizona->pdata.reset < 0)
--		arizona->pdata.reset = 0;
--
--	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
--						  "wlf,ldoena", 0);
--	if (arizona->pdata.ldoena < 0)
--		arizona->pdata.ldoena = 0;
-+	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
-+	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
- 
- 	ret = of_property_read_u32_array(arizona->dev->of_node,
- 					 "wlf,gpio-defaults",
-diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
-index 5cf8b91..16150cc 100644
---- a/include/linux/mfd/arizona/core.h
-+++ b/include/linux/mfd/arizona/core.h
-@@ -124,4 +124,7 @@ int wm5102_patch(struct arizona *arizona);
- int wm5110_patch(struct arizona *arizona);
- int wm8997_patch(struct arizona *arizona);
- 
-+extern int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
-+				     bool mandatory, int *gpio);
+ 	return 0;
+ }
 +
++static inline void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++}
  #endif
+ 
+ static int arizona_ldo1_probe(struct platform_device *pdev)
+@@ -235,7 +273,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	config.driver_data = ldo1;
+ 	config.regmap = arizona->regmap;
+ 
+-	ret = arizona_ldo1_of_get_pdata(arizona);
++	ret = arizona_ldo1_of_get_pdata(arizona, &config);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -261,6 +299,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
++	arizona_ldo1_of_put_pdata(&config);
++
+ 	platform_set_drvdata(pdev, ldo1);
+ 
+ 	return 0;
 -- 
 1.7.2.5
 
