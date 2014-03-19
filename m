@@ -1,68 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027AbaCSIdd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 04:33:33 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:44695 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757060AbaCSIda (ORCPT
+	id S932538AbaCSIg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 04:36:56 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:54711 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752713AbaCSIgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 04:33:30 -0400
-Message-ID: <53295654.5080009@codethink.co.uk>
-Date: Wed, 19 Mar 2014 09:33:24 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Wed, 19 Mar 2014 04:36:54 -0400
+Date: Wed, 19 Mar 2014 09:36:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
+        tglx@linutronix.de, heiko.carstens@de.ibm.com
+Subject: Re: [PATCH 00/17 for-tip V3] A series patches about sched priority.
+Message-ID: <20140319083644.GL22095@laptop.programming.kicks-ass.net>
+References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Alexandre Courbot <gnurou@gmail.com>
-CC: linux-kernel@lists.codethink.co.uk,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpiolib: check if gpio_desc pointer is error or NULL
-References: <1395139290-4207-1-git-send-email-ben.dooks@codethink.co.uk> <CAAVeFuLJOSikb3pXffbC7Y4LDKXd-PQ_cadtT1q=TLCyWVh=MA@mail.gmail.com>
-In-Reply-To: <CAAVeFuLJOSikb3pXffbC7Y4LDKXd-PQ_cadtT1q=TLCyWVh=MA@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/14 02:48, Alexandre Courbot wrote:
-> On Tue, Mar 18, 2014 at 7:41 PM, Ben Dooks <ben.dooks@codethink.co.uk> wrote:
->> Some of the gpiod_ calls take a pointer to a gpio_desc as their
->> argument but only check to see if it is NULL to validate the
->> input.
->>
->> Calls such as devm_gpiod_get() return an error-pointer if they
->> fail, so doing the following will not work:
->>
->>          gpio = devm_gpiod_get(...);
->>          gpiod_direction_output(gpio, 0);
->>
->> The sequence produces an OOPS like:
->>
->>          Unable to handle kernel paging request at virtual address fffffffe
->>
->> Change all calls that check for !desc to use IS_ERR_OR_NULL() to
->> avoid these issues.
->
-> This change is certainly correct from a semantics point of view. Maybe
-> I'd argue that the burden is on the caller to check that gpiod_get()
-> returns a valid GPIO descriptor, but having extra security doesn't
-> hurt. However my problem with this change in its current form is that
-> it will hide such forgetfulnesses by making functions like
-> gpiod_get_value() fail silently instead of triggering a oops.
 
-On the other hand, it means that we do not have to keep checking
-the validity of the pointer in the caller.
+I picked up all except:
 
-> Could you make sure that any call of a gpiolib function on a non-valid
-> descriptor raises at least a message in the console, and while you are
-> at it harmonize the way these messages are output? Right now we are
-> using pr_debug(), pr_warn() or WARN_ON() depending on the location. I
-> would say that using an invalid GPIO descriptor is offending enough
-> that it should trigger a stack dump at every attempt.
+ 2 - whcih I don't think should go through a scheduler tree
+ 6 - its tools/ bits, the changelog wasn't clear if the MIN/MAX_NICE
+      macros were uapi visible and I couldn't be bothered to figure it out.
+ 8 - I don't like the pointless macro
 
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
