@@ -1,132 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933813AbaCSLuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 07:50:05 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:53650 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932602AbaCSLuD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 07:50:03 -0400
-X-Nat-Received: from [202.181.97.72]:52681 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1395229769.17789
-To: oleg@redhat.com, joseph.salisbury@canonical.com
-Cc: JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
-Subject: Re: [v3.13][v3.14][Regression] kthread:makekthread_create()killable
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140316162512.GA9467@redhat.com>
-	<201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp>
-	<20140317142246.GA27453@redhat.com>
-	<201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
-	<20140318171620.GA10636@redhat.com>
-In-Reply-To: <20140318171620.GA10636@redhat.com>
-Message-Id: <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 19 Mar 2014 20:49:25 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 19032014 #7558797, status: clean
+	id S933836AbaCSLvV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 07:51:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933380AbaCSLvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 07:51:20 -0400
+Message-ID: <532984A9.8080001@redhat.com>
+Date: Wed, 19 Mar 2014 07:51:05 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130108 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
+        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
+Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
+References: <1394720720-8484-1-git-send-email-imammedo@redhat.com> <53283A3F.6040302@redhat.com> <20140318194951.17fd61ea@thinkpad>
+In-Reply-To: <20140318194951.17fd61ea@thinkpad>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> > > If we need the urgent hack to fix the regression, then I suggest to change
-> > > scsi_host_alloc() temporary until mptsas (or whatever) is fixed.
-> >
-> > Device initialization taking longer than 30 seconds is possible and is not a
-> > hang up. It is systemd which needs to be fixed.
+
+
+On 03/18/2014 02:49 PM, Igor Mammedov wrote:
+> On Tue, 18 Mar 2014 08:21:19 -0400
+> Prarit Bhargava <prarit@redhat.com> wrote:
 > 
-> Perhaps systemd needs the fix too, I do not know. But this is irrelevant,
-> I think. Or at least this should be discussed separately.
+>>
+>>
+>> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
+>>> Hang is observed on virtual machines during CPU hotplug,
+>>> especially in big guests with many CPUs. (It happens more
+>>> often if host is over-committed).
+>>>
+>>
+>> Hey Igor, I like this better than the previous version.  Thanks for taking into
+>> account the possible races in this code.
+>>
+>> A quick question on system behaviour.  As you know I've been more concerned
+>> lately with error handling, etc., through the cpu hotplug code as we've seen
+>> several customer reports of silent failures or cascading failures in the cpu
+>> hotplug code when users have been attempting to perform physical hotplug.
+>>
+>> After your patches have been applied, in theory the following can happen:
+>>
+>> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
+>> for the cut-and-paste),
+>>
+>> void cpu_init(void)
+>> {
+>>         int cpu = smp_processor_id();
+>>         struct task_struct *curr = current;
+>>         struct tss_struct *t = &per_cpu(init_tss, cpu);
+>>         struct thread_struct *thread = &curr->thread;
+>>
+>>         /*
+>>          * wait till the master CPU completes it's STARTUP sequence,
+>>          * and decides to wait till this AP boots
+>>          */
+>>         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
+>>                 cpu_relax();
+>>                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
+>>                         halt();
+>>         }
+>>
+>> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
+>> watchdog fires on the AP cpu:
+>>
+>> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
+>> I'm being really lazy and not looking at the code ;)
+> It shouldn't, CPU is in pristine state and just came from boot trampoline at
+> this point without interrupts configured yet.
 
-I confirmed that this problem goes away if systemd-udevd supports longer
-timeout.
+Okay, not a big problem.
 
 > 
-> kthread_run() can fail anyway, mptsas_probe() should not crash the kernel.
+>>
+>> 2.  Is there anything we can do in this code to notify the user of a problem?
+>> Even a pr_crit() here I think would help to indicate what went wrong; it might
+>> be useful for future debugging in this area to have some sort of output.  I
+>> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
+> Do you mean something like this:
+> 
+> +		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
+> +                       WARN(1);
+> +			halt();
+> +               }
 
-Right. But mptsas_probe() triggering an OOPS is irrelevant to kthread_run()
-( comment #27 ).
+Yeah, maybe WARN_ON(1, "some comment") though.
 
 > 
-> And btw, it is not clear to me if in this case device initialization really
-> needs more than 30 seconds... My understanding is probably wrong, so please
-> correct me. But it seems that before your "make kthread_create() killable"
+>>
+>> 3.  Change this comment:
+>>
+>>          * wait till the master CPU completes it's STARTUP sequence,
+>>          * and decides to wait till this AP boots
+>>
+>> to
+>>
+>> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
+> well, that is not quite the same as above, comment should underline that
+> AP waits for ACK from master CPU before continuing with this AP initialization.
 > 
-> 	- probe hangs
+> How about:
+> /* wait for ACK from master CPU before continuing with AP initialization */
+
+Awesome :)
+
+P.
+
 > 
-> 	- SIGKILL wakes it up
+>>
+>> Apologies for the late review,
+>>
+>> P.
 > 
-> 	- so I assume that the probe was interrupted and didn't finish
-> 	  correctly ???
 > 
-> 	- initialization continues, does scsi_host_alloc(), etc, and
-> 	  everything works fine even if probe was interrupted?
-> 
-
-I confirmed that device initialization really took more than 30 seconds
-( comments #51 and #52 ).
-
-> So perhaps that probe should not hang and this should be fixed too ?
-> Do you know where exactly it hangs? And where it is woken up by SIGKILL ?
-> Or I totally misunderstood ?
-
-The probe did not hang. SIGKILL affected only wait_for_completion_killable()
-in kthread_create_on_node() called by mptsas_probe() via scsi_host_alloc().
-Thus, the probe was interrupted because kthread_run() returned an error.
-
-> > I think we need a bit different version, in order to take TIF_MEMDIE flag into
-> > account at the caller of kthread_create(), for the purpose of commit 786235ee
-> > is "try to die as soon as possible if chosen by the OOM killer".
-> >
-> > 	for (;;) {
-> > 		shost->ehandler = kthread_run(scsi_error_handler, shost,
-> > 					      "scsi_eh_%d", shost->host_no);
-> > 		if (PTR_ERR(shost->ehandler) != -EINTR ||
-> > 		    test_thread_flag(TIF_MEMDIE))
-> 
-> Well, personally I do not care about TIF_MEMDIE/oom at all. We need the
-> temporary hack (unless we have the "right" fix right now) which should be
-> reverted later.
-
-I do seriously care about TIF_MEMDIE/oom. Last week I respond to a trouble
-which hit "kernel: request_module() OOM local DoS" (RHBZ #853474) without
-any malice.
-
-> Not sure I understand... Yes, wait_for_completion_killable() can return
-> immediately if TIF_SIGPENDING will be set again for any reason. Say, another
-> signal. But the next iteration will clear TIF_SIGPENDING ?
-> 
-> >      As I think it is difficult to prove that kmalloc(GFP_KERNEL) never sets
-> >      TIF_SIGPENDING flag
-> 
-> Ah, I see, you mean that kmalloc() can do this every time. No, this should
-> not happen or we have another problem.
-
-Then, what happens if somebody does
-
-  while (1)
-      kill(pid, SIGKILL);
-
-where pid is the process calling kthread_run() from the "for (;;)" loop in
-scsi_host_alloc()? Theoretically, it will form an infinite retry loop.
-Clearing TIF_SIGPENDING does not guarantee that next
-wait_for_completion_killable() does not return immediately.
-Doing retry decision at scsi_host_alloc() will make things worse than
-doing it at kthread_create_on_node().
-
-> Anyway. I agree with any hack in scsi_host_alloc/etc, this is up to
-> maintainers. I still think that your change uncovered the problems in
-> drivers/message/fusion/, these problems should be fixed somehow.
-> 
-> Dear maintainers, we need your help.
-> 
-
-Right. We found that we can fix this problem by updating systemd-udevd to
-support longer timeout ( comment #53 ). Joseph, would you consult systemd
-maintainers?
