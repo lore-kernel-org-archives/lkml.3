@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933973AbaCSN35 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 09:29:57 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:50237 "EHLO
+	id S934068AbaCSNaQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 09:30:16 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:50243 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932996AbaCSN3y (ORCPT
+	with ESMTP id S933933AbaCSNaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 09:29:54 -0400
+	Wed, 19 Mar 2014 09:30:13 -0400
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
@@ -16,9 +16,9 @@ To: Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Shawn Guo <shawn.guo@freescale.com>, devicetree@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH 2/5] ARM: dts: tx53: sort the i2c subnodes by I2C address
-Date: Wed, 19 Mar 2014 14:28:38 +0100
-Message-Id: <1395235721-13847-2-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCH 5/5] ARM: dts: tx53: Add IPU DI ports and endpoints
+Date: Wed, 19 Mar 2014 14:28:41 +0100
+Message-Id: <1395235721-13847-5-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1395235721-13847-1-git-send-email-LW@KARO-electronics.de>
 References: <1395235721-13847-1-git-send-email-LW@KARO-electronics.de>
@@ -32,43 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 ---
- arch/arm/boot/dts/imx53-tx53-x13x.dts |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ arch/arm/boot/dts/imx53-tx53-x03x.dts |    7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arm/boot/dts/imx53-tx53-x13x.dts b/arch/arm/boot/dts/imx53-tx53-x13x.dts
-index c8a3473..cd3476b 100644
---- a/arch/arm/boot/dts/imx53-tx53-x13x.dts
-+++ b/arch/arm/boot/dts/imx53-tx53-x13x.dts
-@@ -108,14 +108,6 @@
- 	pinctrl-0 = <&pinctrl_i2c3>;
- 	status = "okay";
+diff --git a/arch/arm/boot/dts/imx53-tx53-x03x.dts b/arch/arm/boot/dts/imx53-tx53-x03x.dts
+index 0217dde3..43b4b7b 100644
+--- a/arch/arm/boot/dts/imx53-tx53-x03x.dts
++++ b/arch/arm/boot/dts/imx53-tx53-x03x.dts
+@@ -25,12 +25,17 @@
+ 	soc {
+ 		display: display@di0 {
+ 			compatible = "fsl,imx-parallel-display";
+-			crtcs = <&ipu 0>;
+ 			interface-pix-fmt = "rgb24";
+ 			pinctrl-names = "default";
+ 			pinctrl-0 = <&pinctrl_rgb24_vga1>;
+ 			status = "okay";
  
--	sgtl5000: codec@0a {
--		compatible = "fsl,sgtl5000";
--		reg = <0x0a>;
--		VDDA-supply = <&reg_2v5>;
--		VDDIO-supply = <&reg_3v3>;
--		clocks = <&mclk>;
--	};
--
- 	touchscreen1: eeti@04 {
- 		compatible = "eeti,egalax_ts";
- 		reg = <0x04>;
-@@ -126,6 +118,14 @@
- 		wakeup-gpios = <&gpio3 22 GPIO_ACTIVE_HIGH>;
- 		linux,wakeup;
- 	};
++			port {
++				display0_in: endpoint {
++					remote-endpoint = <&ipu_di0_disp0>;
++				};
++			};
 +
-+	sgtl5000: codec@0a {
-+		compatible = "fsl,sgtl5000";
-+		reg = <0x0a>;
-+		VDDA-supply = <&reg_2v5>;
-+		VDDIO-supply = <&reg_3v3>;
-+		clocks = <&mclk>;
-+	};
- };
- 
- &iomuxc {
+ 			display-timings {
+ 				VGA {
+ 					clock-frequency = <25200000>;
 -- 
 1.7.10.4
 
