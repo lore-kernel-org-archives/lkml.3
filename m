@@ -1,59 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755639AbaCSUjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 16:39:41 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:7923 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755379AbaCSUji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 16:39:38 -0400
-X-IronPort-AV: E=Sophos;i="4.97,688,1389744000"; 
-   d="scan'208";a="113045791"
-Message-ID: <532A0085.6070104@citrix.com>
-Date: Wed, 19 Mar 2014 20:39:33 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
-        <dev@openvswitch.org>, <pablo@netfilter.org>, <kaber@trash.net>,
-        <kadlec@blackhole.kfki.hu>, <edumazet@google.com>,
-        <dborkman@redhat.com>, <therbert@google.com>, <jasowang@redhat.com>,
-        <fw@strlen.de>, <joe@perches.com>, <horms@verge.net.au>,
-        <jiri@resnulli.us>, <mst@redhat.com>, <Paul.Durrant@citrix.com>,
-        <JBeulich@suse.com>, <herbert@gondor.apana.org.au>, <mszeredi@suse.cz>,
-        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <coreteam@netfilter.org>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>
-Subject: Re: [PATCH] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
- and handle errors
-References: <1395177455-2077-1-git-send-email-zoltan.kiss@citrix.com> <20140319.162459.897793286761249454.davem@davemloft.net>
-In-Reply-To: <20140319.162459.897793286761249454.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1756226AbaCSUkL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 16:40:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38882 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755806AbaCSUkH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 16:40:07 -0400
+Date: Wed, 19 Mar 2014 16:40:05 -0400 (EDT)
+Message-Id: <20140319.164005.1815461875771862691.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v3] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395180922-2776-1-git-send-email-haiyangz@microsoft.com>
+References: <1395180922-2776-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 19 Mar 2014 13:40:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/14 20:24, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Tue, 18 Mar 2014 21:17:35 +0000
->
->> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
->> orphan them. Also, it doesn't handle errors, so this patch takes care of that
->> as well.
->>
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->> ---
->>   net/openvswitch/datapath.c |    6 ++++++
->
-> Something is seriously wrong with the diffstat generated for
-> your submission, please fix this and resubmit.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Tue, 18 Mar 2014 15:15:22 -0700
 
-Sorry, I've turned off diffstat in guilt a while ago, but this patch had 
-an old version of it. I've resent it.
+> +struct ndis_obj_header {
+> +	u8 type;
+> +	u8 rev;
+> +	u16 size;
+> +} __packed;
+> +
+> +
+> +/* ndis_recv_scale_cap/cap_flag */
 
-Zoli
+One empty line is sufficient, we don't need two of them here.
 
+> +extern u8 netvsc_hash_key[];
+
+We no longer use extern in header file function declarations.
+
+> +	u32 processor_masks_offset;
+> +	u32 num_processor_masks;
+> +	u32 processor_masks_entry_size;
+> +};
+> +
+> +
+>  /* Fwd declaration */
+
+Again, one empty line is enough.
+
+> @@ -120,6 +217,7 @@ void netvsc_linkstatus_callback(struct hv_device *device_obj,
+>  int netvsc_recv_callback(struct hv_device *device_obj,
+>  			struct hv_netvsc_packet *packet,
+>  			struct ndis_tcp_ip_checksum_info *csum_info);
+> +extern void netvsc_channel_cb(void *context);
+
+Again, please remove this extern in function declarations.
+
+> +		if (netif_tx_queue_stopped(netdev_get_tx_queue(ndev, q_idx)) &&
+> +			!net_device->start_remove &&
+> +			(hv_ringbuf_avail_percent(&channel->outbound) >
+> +			RING_AVAIL_PERCENT_HIWATER || queue_sends < 1))
+
+For the second time, this is not properly indented.  Multi-line
+conditionals should be formatted like this:
+
+	if (CONDITION1 OPERATOR
+	    CONDITION2 OPERATOR
+	    ...)
+
+etc.  For example, this specifically should be:
+
+		if (netif_tx_queue_stopped(netdev_get_tx_queue(ndev, q_idx)) &&
+		    !net_device->start_remove &&
+		    (hv_ringbuf_avail_percent(&channel->outbound) >
+		     RING_AVAIL_PERCENT_HIWATER || queue_sends < 1))
+
+Generally speaking, if you are only using TAB characters to indent,
+you are probably doing it wrong.
+
+You should use the appropriate number of TAB _and_ SPACE characters
+necessary to start the line at exactly the first column after the
+openning parenthesis of the appropriate construct.
+
+> @@ -668,9 +756,11 @@ static int netvsc_probe(struct hv_device *dev,
+>  	struct net_device *net = NULL;
+>  	struct net_device_context *net_device_ctx;
+>  	struct netvsc_device_info device_info;
+> +	struct netvsc_device *nvdev;
+>  	int ret;
+>  
+> -	net = alloc_etherdev(sizeof(struct net_device_context));
+> +	net = alloc_etherdev_mq(sizeof(struct net_device_context),
+> +				num_online_cpus());
+>  	if (!net)
+>  		return -ENOMEM;
+>  
+
+num_online_cpus() can change, will your driver accomodate this?
+
+> +}
+> +
+> +
+>  static int rndis_filter_query_device_link_status(struct rndis_device *dev)
+
+One empty line is sufficient.
+
+>  }
+>  
+> +
+> +static void netvsc_sc_open(struct vmbus_channel *new_sc)
+
+Likewise.
+
+> +	ret = vmbus_open(new_sc, nvscdev->ring_size * PAGE_SIZE,
+> +		nvscdev->ring_size * PAGE_SIZE, NULL, 0,
+> +		netvsc_channel_cb, new_sc);
+
+When function arguments span multiple lines the function call
+shall be indented as:
+
+	func(A, B, C,
+	     D, E, F);
+
+That is, the second and subsequent lines are indented, using
+the appropriate number of TAB _and_ SPACE characters, necessary
+to reach exactly the first column after the openning parenthesis.
+
+There are several other cases of this, please audit your entire
+submission for this problem.
+
+If proper indentation causes lines to significantly exceed 80
+columns, consider helper functions or local variables to
+allieve the problem.
+
+> +	ret = rndis_filter_query_device(rndis_device,
+> +		OID_GEN_RECEIVE_SCALE_CAPABILITIES, &rsscap, &rsscap_size);
+
+Same problem.
