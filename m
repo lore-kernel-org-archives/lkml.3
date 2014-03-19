@@ -1,88 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965459AbaCSP0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 11:26:33 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:50778 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965071AbaCSP0b (ORCPT
+	id S965489AbaCSP0y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 11:26:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42149 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965071AbaCSP0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 11:26:31 -0400
-Date: Wed, 19 Mar 2014 20:56:19 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: davidlohr@hp.com
-Cc: torvalds@linux-foundation.org, tglx@linutronix.de, peterz@infradead.org,
-        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
-        paulus@samba.org
-Subject: Tasks stuck in futex code (in 3.14-rc6)
-Message-ID: <20140319152619.GB10406@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+	Wed, 19 Mar 2014 11:26:52 -0400
+Date: Wed, 19 Mar 2014 08:28:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: devel@driverdev.osuosl.org, sparmaintainer@unisys.com,
+        linux-kernel@vger.kernel.org, benjamin.romer@unisys.com,
+        david.kershner@unisys.com
+Subject: Re: [PATCH] staging: unisys: replace kzalloc/kfree with
+ UISMALLOC/UISFREE
+Message-ID: <20140319152855.GB31293@kroah.com>
+References: <2899750.XG86R9S8KF@daeseok-laptop.cloud.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14031915-7014-0000-0000-000004896E48
+In-Reply-To: <2899750.XG86R9S8KF@daeseok-laptop.cloud.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+On Wed, Mar 19, 2014 at 04:58:52PM +0900, Daeseok Youn wrote:
+> 
+> It doesn't need to trace status of buffer when buffers are
+> allocated/deallocated. So stuff of tracing memory status
+> are removed. And also UISMALLOC/UISFREE macro are removed
+> completetly. just use kzalloc/kfree.
+> 
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+> ---
+>  drivers/staging/unisys/include/uisutils.h |    6 --
+>  drivers/staging/unisys/uislib/uislib.c    |  109 +++-------------------------
+>  drivers/staging/unisys/uislib/uisutils.c  |    5 +-
+>  3 files changed, 14 insertions(+), 106 deletions(-)
+> 
+> diff --git a/drivers/staging/unisys/include/uisutils.h b/drivers/staging/unisys/include/uisutils.h
+> index 81b5d9b..1c6d872 100644
+> --- a/drivers/staging/unisys/include/uisutils.h
+> +++ b/drivers/staging/unisys/include/uisutils.h
+> @@ -340,12 +340,6 @@ static inline unsigned int Issue_VMCALL_FATAL_BYE_BYE(void)
+>  }
+>  
+>  #define UIS_DAEMONIZE(nam)
+> -void *uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln);
+> -#define UISMALLOC(siz, gfp) uislib_malloc(siz, gfp, 1, __FILE__, __LINE__)
+> -#define UISVMALLOC(siz) uislib_malloc(siz, 0, 0, __FILE__, __LINE__)
+> -void uislib_free(void *p, size_t siz, U8 contiguous, char *fn, int ln);
+> -#define UISFREE(p, siz) uislib_free(p, siz, 1, __FILE__, __LINE__)
+> -#define UISVFREE(p, siz) uislib_free(p, siz, 0, __FILE__, __LINE__)
+>  void *uislib_cache_alloc(struct kmem_cache *cur_pool, char *fn, int ln);
+>  #define UISCACHEALLOC(cur_pool) uislib_cache_alloc(cur_pool, __FILE__, __LINE__)
+>  void uislib_cache_free(struct kmem_cache *cur_pool, void *p, char *fn, int ln);
+> diff --git a/drivers/staging/unisys/uislib/uislib.c b/drivers/staging/unisys/uislib/uislib.c
+> index 1737f3a..c0eaa15 100644
+> --- a/drivers/staging/unisys/uislib/uislib.c
+> +++ b/drivers/staging/unisys/uislib/uislib.c
+> @@ -316,7 +316,7 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>  	size =
+>  	    sizeof(struct bus_info) +
+>  	    (deviceCount * sizeof(struct device_info *));
+> -	bus = UISMALLOC(size, GFP_ATOMIC);
+> +	bus = kzalloc(size, GFP_ATOMIC | __GFP_NORETRY);
 
-When running specjbb on a power7 numa box, I am seeing java threads
-getting stuck in futex 
+All of the crazy __GFP_NORETRY stuff can be removed, no driver should
+ever be using that.
 
-#  ps -Ao pid,tt,user,fname,tmout,f,wchan | grep futex
- 14808 pts/0    root     java         - 0 futex_wait_queue_me
- 14925 pts/0    root     java         - 0 futex_wait_queue_me
-#
 
-stack traces, I see
-[ 1843.426591] Call Trace:
-[ 1843.426595] [c0000017101d74d0] [0000000000000020] 0x20 (unreliable)
-[ 1843.426601] [c0000017101d76a0] [c000000000014c50] .__switch_to+0x1e0/0x390
-[ 1843.426607] [c0000017101d7750] [c0000000006ed314] .__schedule+0x364/0x8c0
-[ 1843.426613] [c0000017101d79d0] [c000000000139c28] .futex_wait_queue_me+0xf8/0x1a0
-[ 1843.426619] [c0000017101d7a60] [c00000000013afbc] .futex_wait+0x17c/0x2a0
-[ 1843.426626] [c0000017101d7c10] [c00000000013cee4] .do_futex+0x254/0xd80
-[ 1843.426631] [c0000017101d7d60] [c00000000013db2c] .SyS_futex+0x11c/0x1d0
-[ 1843.426638] [c0000017101d7e30] [c000000000009efc] syscall_exit+0x0/0x7c
-[ 1843.426643] java            S 00003fffa08b16a0     0 14812  14203 0x00000080
-[ 1843.426650] Call Trace:
-[ 1843.426653] [c00000170c6034d0] [c000001710b09cf8] 0xc000001710b09cf8 (unreliable)
-[ 1843.426660] [c00000170c6036a0] [c000000000014c50] .__switch_to+0x1e0/0x390
-[ 1843.426666] [c00000170c603750] [c0000000006ed314] .__schedule+0x364/0x8c0
-[ 1843.426672] [c00000170c6039d0] [c000000000139c28] .futex_wait_queue_me+0xf8/0x1a0
-[ 1843.426679] [c00000170c603a60] [c00000000013afbc] .futex_wait+0x17c/0x2a0
-[ 1843.453383] [c00000170c603c10] [c00000000013cee4] .do_futex+0x254/0xd80
-[ 1843.453389] [c00000170c603d60] [c00000000013db2c] .SyS_futex+0x11c/0x1d0
-[ 1843.453395] [c00000170c603e30] [c000000000009efc] syscall_exit+0x0/0x7c
-[ 1843.453400] java            S 00003fffa08b1a74     0 14813  14203 0x00000080
-[ 1843.453407] Call Trace:
+>  	if (!bus) {
+>  		LOGERR("CONTROLVM_BUS_CREATE Failed: kmalloc for bus failed.\n");
+>  		POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, busNo,
+> @@ -324,8 +324,6 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>  		return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>  	}
+>  
+> -	memset(bus, 0, size);
+> -
+>  	/* Currently by default, the bus Number is the GuestHandle.
+>  	 * Configure Bus message can override this.
+>  	 */
+> @@ -359,7 +357,7 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>  		       bus->busNo);
+>  		POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+>  				 POSTCODE_SEVERITY_ERR);
+> -		UISFREE(bus, size);
+> +		kfree(bus);
+>  		return CONTROLVM_RESP_ERROR_ALREADY_DONE;
+>  	}
+>  	if ((msg->cmd.createBus.channelAddr != 0)
+> @@ -380,14 +378,14 @@ create_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>  		cmd.add_vbus.busTypeGuid = msg->cmd.createBus.busDataTypeGuid;
+>  		cmd.add_vbus.busInstGuid = msg->cmd.createBus.busInstGuid;
+>  		if (!VirtControlChanFunc) {
+> -			UISFREE(bus, size);
+> +			kfree(bus);
+>  			LOGERR("CONTROLVM_BUS_CREATE Failed: virtpci callback not registered.");
+>  			POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+>  					 POSTCODE_SEVERITY_ERR);
+>  			return CONTROLVM_RESP_ERROR_VIRTPCI_DRIVER_FAILURE;
+>  		}
+>  		if (!VirtControlChanFunc(&cmd)) {
+> -			UISFREE(bus, size);
+> +			kfree(bus);
+>  			LOGERR("CONTROLVM_BUS_CREATE Failed: virtpci GUEST_ADD_VBUS returned error.");
+>  			POSTCODE_LINUX_3(BUS_CREATE_FAILURE_PC, bus->busNo,
+>  					 POSTCODE_SEVERITY_ERR);
+> @@ -485,9 +483,7 @@ destroy_bus(CONTROLVM_MESSAGE *msg, char *buf)
+>  		bus->pBusChannel = NULL;
+>  	}
+>  
+> -	UISFREE(bus,
+> -		sizeof(struct bus_info) +
+> -		(bus->deviceCount * sizeof(struct device_info *)));
+> +	kfree(bus);
+>  	return CONTROLVM_RESP_SUCCESS;
+>  }
+>  
+> @@ -507,7 +503,7 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+>  	POSTCODE_LINUX_4(DEVICE_CREATE_ENTRY_PC, devNo, busNo,
+>  			 POSTCODE_SEVERITY_INFO);
+>  
+> -	dev = UISMALLOC(sizeof(struct device_info), GFP_ATOMIC);
+> +	dev = kzalloc(sizeof(struct device_info), GFP_ATOMIC | __GFP_NORETRY);
+>  	if (!dev) {
+>  		LOGERR("CONTROLVM_DEVICE_CREATE Failed: kmalloc for dev failed.\n");
+>  		POSTCODE_LINUX_4(DEVICE_CREATE_FAILURE_PC, devNo, busNo,
+> @@ -515,7 +511,6 @@ create_device(CONTROLVM_MESSAGE *msg, char *buf)
+>  		return CONTROLVM_RESP_ERROR_KMALLOC_FAILED;
+>  	}
+>  
+> -	memset(dev, 0, sizeof(struct device_info));
+>  	dev->channelTypeGuid = msg->cmd.createDevice.dataTypeGuid;
+>  	dev->intr = msg->cmd.createDevice.intr;
+>  	dev->channelAddr = msg->cmd.createDevice.channelAddr;
+> @@ -688,7 +683,7 @@ Away:
+>  		dev->chanptr = NULL;
+>  	}
+>  
+> -	UISFREE(dev, sizeof(struct device_info));
+> +	kfree(dev);
+>  	return result;
+>  }
+>  
+> @@ -917,7 +912,7 @@ destroy_device(CONTROLVM_MESSAGE *msg, char *buf)
+>  				LOGINF("destroy_device, doing iounmap");
+>  				uislib_iounmap(dev->chanptr);
+>  			}
+> -			UISFREE(dev, sizeof(struct device_info));
+> +			kfree(dev);
+>  			bus->device[devNo] = NULL;
+>  			break;
+>  		}
+> @@ -1343,69 +1338,7 @@ uislib_client_delete_vnic(U32 busNo)
+>  	return 1;
+>  }
+>  EXPORT_SYMBOL_GPL(uislib_client_delete_vnic);
+> -
+> -				/* end client_delete_vnic */
+> -
+> -static atomic_t Malloc_BytesInUse = ATOMIC_INIT(0);
+> -static atomic_t Malloc_BuffersInUse = ATOMIC_INIT(0);
+> -static atomic_t Malloc_FailuresAlloc = ATOMIC_INIT(0);
+> -static atomic_t Malloc_FailuresFree = ATOMIC_INIT(0);
+> -static atomic_t Malloc_TotalMallocs = ATOMIC_INIT(0);
+> -static atomic_t Malloc_TotalFrees = ATOMIC_INIT(0);
+> -
+> -void *
+> -uislib_malloc(size_t siz, gfp_t gfp, U8 contiguous, char *fn, int ln)
+> -{
+> -	void *p = NULL;
+> -
+> -	if (contiguous == 0) {
+> -		/* Allocate non-contiguous memory, such as in the
+> -		* add_vnic and add_vhba methods where we are rebooting
+> -		* the guest, for example.  Otherwise the contiguous
+> -		* memory allocation attempt results in an
+> -		* out-of-memory crash in the IOVM...
+> -		*/
+> -		p = vmalloc(siz);
+> -	} else {
+> -		/* __GFP_NORETRY means "ok to fail", meaning kmalloc()
+> -		* can return NULL.  If you do NOT specify
+> -		* __GFP_NORETRY, Linux will go to extreme measures to
+> -		* get memory for you (like, invoke oom killer), which
+> -		* will probably cripple the system.
+> -		*/
+> -		p = kmalloc(siz, gfp | __GFP_NORETRY);
+> -	}
+> -	if (p == NULL) {
+> -		LOGERR("uislib_malloc failed to alloc %d bytes @%s:%d",
+> -		       (int) siz, fn, ln);
+> -		atomic_inc(&Malloc_FailuresAlloc);
+> -		return NULL;
+> -	}
+> -	atomic_add((int) (siz), &Malloc_BytesInUse);
+> -	atomic_inc(&Malloc_BuffersInUse);
+> -	atomic_inc(&Malloc_TotalMallocs);	/* will eventually overflow */
+> -	return p;
+> -}
+> -EXPORT_SYMBOL_GPL(uislib_malloc);
+> -
+> -void
+> -uislib_free(void *p, size_t siz, U8 contiguous, char *fn, int ln)
+> -{
+> -	if (p == NULL) {
+> -		LOGERR("uislib_free NULL pointer @%s:%d", fn, ln);
+> -		atomic_inc(&Malloc_FailuresFree);
+> -		return;
+> -	}
+> -
+> -	if (contiguous == 0)
+> -		vfree(p);
+> -	else
+> -		kfree(p);
+> -	atomic_sub((int) (siz), &Malloc_BytesInUse);
+> -	atomic_dec(&Malloc_BuffersInUse);
+> -	atomic_inc(&Malloc_TotalFrees);	/* will eventually overflow */
+> -}
+> -EXPORT_SYMBOL_GPL(uislib_free);
+> +/* end client_delete_vnic */
+>  
+>  void *
+>  uislib_cache_alloc(struct kmem_cache *cur_pool, char *fn, int ln)
+> @@ -1605,24 +1538,6 @@ info_proc_read_helper(char **buff, int *buff_len)
+>  	}
+>  	read_unlock(&BusListLock);
+>  
+> -	if (PLINE("Malloc bytes in use: %d\n",
+> -		 atomic_read(&Malloc_BytesInUse)) < 0)
+> -		goto err_done;
+> -	if (PLINE("Malloc buffers in use: %d\n",
+> -		  atomic_read(&Malloc_BuffersInUse)) < 0)
+> -		goto err_done;
+> -	if (PLINE("Malloc allocation failures: %d\n",
+> -		  atomic_read(&Malloc_FailuresAlloc)) < 0)
+> -		goto err_done;
+> -	if (PLINE("Malloc free failures: %d\n",
+> -		  atomic_read(&Malloc_FailuresFree)) < 0)
+> -		goto err_done;
+> -	if (PLINE("Malloc total mallocs: %u (may overflow)\n",
+> -		  (unsigned) atomic_read(&Malloc_TotalMallocs)) < 0)
+> -		goto err_done;
+> -	if (PLINE("Malloc total frees: %u (may overflow)\n",
+> -		  (unsigned) atomic_read(&Malloc_TotalFrees)) < 0)
+> -		goto err_done;
+>  	if (PLINE("UisUtils_Registered_Services: %d\n",
+>  		  atomic_read(&UisUtils_Registered_Services)) < 0)
+>  		goto err_done;
+> @@ -1655,7 +1570,7 @@ info_proc_read(struct file *file, char __user *buf, size_t len, loff_t *offset)
+>  /* *start = buf; */
+>  	if (ProcReadBuffer == NULL) {
+>  		DBGINF("ProcReadBuffer == NULL; allocating buffer.\n.");
+> -		ProcReadBuffer = UISVMALLOC(PROC_READ_BUFFER_SIZE);
+> +		ProcReadBuffer = vmalloc(PROC_READ_BUFFER_SIZE);
+>  
+>  		if (ProcReadBuffer == NULL) {
+>  			LOGERR("failed to allocate buffer to provide proc data.\n");
+> @@ -1691,7 +1606,7 @@ platformnumber_proc_read(struct file *file, char __user *buf,
+>  	if (pos > 0 || !len)
+>  		return 0;
+>  
+> -	vbuf = kzalloc(len, GFP_KERNEL);
+> +	vbuf = kzalloc(len, GFP_KERNEL | __GFP_NORETRY);
 
-There are 332 tasks all stuck in futex_wait_queue_me().
-I am able to reproduce this consistently.
+Why did you change this line?
 
-Infact I can reproduce this if the java_constraint is either node, socket, system.
-However I am not able to reproduce if java_constraint is set to core.
+thanks,
 
-I ran git bisect between v3.12 and v3.14-rc6 and found that
-
-https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=b0c29f79ecea0b6fbcefc999e70f2843ae8306db
-
-commit b0c29f79ecea0b6fbcefc999e70f2843ae8306db
-Author: Davidlohr Bueso <davidlohr@hp.com>
-Date:   Sun Jan 12 15:31:25 2014 -0800
-
-futexes: Avoid taking the hb->lock if there's nothing to wake up
-
-was the commit thats causing the threads to be stuck in futex.
-
-I reverted b0c29f79ecea0b6fbcefc999e70f2843ae8306db on top of v3.14-rc6 and confirmed that
-reverting the commit solved the problem.
-
--- 
-Thanks and Regards
-Srikar Dronamraju
-
+greg k-h
