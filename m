@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758225AbaCSWZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:25:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49680 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757805AbaCSWZY (ORCPT
+	id S1757574AbaCSWaH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:30:07 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:62422 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753760AbaCSWaE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:25:24 -0400
-Date: Wed, 19 Mar 2014 15:25:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Aaron Tomlin <atomlin@redhat.com>, Andrew Shewmaker <agshew@gmail.com>,
-        Li Zefan <lizefan@huawei.com>, Dario Faggioli <raistlin@linux.it>,
-        Andi Kleen <ak@linux.intel.com>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] sysctl: fix incorrect write position handling
-Message-Id: <20140319152521.04fe6665c67efe0c6a70d8a5@linux-foundation.org>
-In-Reply-To: <1395163080-6290-2-git-send-email-keescook@chromium.org>
-References: <1395163080-6290-1-git-send-email-keescook@chromium.org>
-	<1395163080-6290-2-git-send-email-keescook@chromium.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 19 Mar 2014 18:30:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Stratos Karafotis <stratosk@semaphore.gr>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: Remove unnecessary braces
+Date: Wed, 19 Mar 2014 23:45:35 +0100
+Message-ID: <93042283.W9rbzHbJB2@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <532A0D0C.50507@semaphore.gr>
+References: <532A0D0C.50507@semaphore.gr>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 10:17:59 -0700 Kees Cook <keescook@chromium.org> wrote:
-
-> When writing to a sysctl string, each write, regardless of VFS position,
-> began writing the string from the start. This meant the contents of
-> the last write to the sysctl controlled the string contents instead of
-> the first:
+On Wednesday, March 19, 2014 11:33:00 PM Stratos Karafotis wrote:
+> Remove 3 sets of unnecessary braces
 > 
-> open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
-> write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
-> write(1, "/bin/true", 9)                = 9
-> close(1)                                = 0
+> Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> ---
+>  drivers/cpufreq/cpufreq.c | 11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
 > 
-> $ cat /proc/sys/kernel/modprobe
-> /bin/true
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index 1eafd8c..ca3c01f 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1325,17 +1325,16 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>  	cpus = cpumask_weight(policy->cpus);
+>  	up_read(&policy->rwsem);
+>  
+> -	if (cpu != policy->cpu) {
+> +	if (cpu != policy->cpu)
+>  		sysfs_remove_link(&dev->kobj, "cpufreq");
+> -	} else if (cpus > 1) {
 
-Yes, procfs writes have always been weird.
+These braces aren't in fact unnecessary, they are in accordance with CodingStyle.
 
-Why are we fixing this?
+> +	else if (cpus > 1) {
+>  		new_cpu = cpufreq_nominate_new_policy_cpu(policy, cpu);
+>  		if (new_cpu >= 0) {
+>  			update_policy_cpu(policy, new_cpu);
+>  
+> -			if (!cpufreq_suspended) {
+> +			if (!cpufreq_suspended)
+>  				pr_debug("%s: policy Kobject moved to cpu: %d from: %d\n",
+>  					 __func__, new_cpu, cpu);
+> -			}
+>  		}
+>  	}
+>  
+> @@ -2158,11 +2157,9 @@ int cpufreq_update_policy(unsigned int cpu)
+>  		if (!policy->cur) {
+>  			pr_debug("Driver did not initialize current freq\n");
+>  			policy->cur = new_policy.cur;
+> -		} else {
+> -			if (policy->cur != new_policy.cur && has_target())
+> +		} else if (policy->cur != new_policy.cur && has_target())
 
-Perhaps there's an existing application which holds an fd open
-and periodically writes to it expecting some result.  This patch
-would break such an app?
+And here too.
 
+>  				cpufreq_out_of_sync(cpu, policy->cur,
+>  								new_policy.cur);
+> -		}
+>  	}
+>  
+>  	ret = cpufreq_set_policy(policy, &new_policy);
+> 
 
-And what about something like this?
-
-while true
-do
-	echo 1
-	sleep 60
-done > /proc/sys/vm/drop_caches
-
-To be consistent with the proposed alteration to string writes, this
-would have to write 1 then change that to 11 then to 111.  Or
-something, makes my head spin.
-
-> Expected behaviour would be to have the sysctl be "AAAA..." capped at
-> maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
-> contents of the second write. Similarly, multiple short writes would not
-> append to the sysctl.
-
-So if we do
-
-(
-	echo foo
-	echo bar
-) > /proc/sys/kernel/modprobe
-
-we get foo and later we get foobar?
-
-> This fixes the unexpected behavior for strings, and disallows non-zero
-> file position when writing numeric sysctls (similar to what is already
-> done when reading from non-zero file positions).
-
-So my script which writes drop_caches will break?
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
