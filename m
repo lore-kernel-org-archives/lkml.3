@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759488AbaCSXs6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:48:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42926 "EHLO
+	id S1759514AbaCSXtF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 19:49:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42931 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758198AbaCSXs4 (ORCPT
+	with ESMTP id S1755438AbaCSXtB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:48:56 -0400
-Date: Wed, 19 Mar 2014 16:48:36 -0700
+	Wed, 19 Mar 2014 19:49:01 -0400
+Date: Wed, 19 Mar 2014 16:48:47 -0700
 From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-706b158559e41ba8d8ea83f3e468466e64769058@git.kernel.org>
+Message-ID: <tip-bbe831de1924f56596848919f98b195ed250fd28@git.kernel.org>
 Cc: ffusco@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
         mingo@kernel.org, dborkman@redhat.com, jbeulich@suse.com,
         davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
@@ -18,11 +18,11 @@ Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         ffusco@redhat.com, dborkman@redhat.com, jbeulich@suse.com,
         davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
         tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <530F0996020000780011FBE7@nat28.tlf.novell.com>
-References: <530F0996020000780011FBE7@nat28.tlf.novell.com>
+In-Reply-To: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
+References: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hash] x86, hash: Fix build failure with older binutils
-Git-Commit-ID: 706b158559e41ba8d8ea83f3e468466e64769058
+Subject: [tip:x86/hash] x86, hash: Swap arguments passed to crc32_u32()
+Git-Commit-ID: bbe831de1924f56596848919f98b195ed250fd28
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,59 +35,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  706b158559e41ba8d8ea83f3e468466e64769058
-Gitweb:     http://git.kernel.org/tip/706b158559e41ba8d8ea83f3e468466e64769058
+Commit-ID:  bbe831de1924f56596848919f98b195ed250fd28
+Gitweb:     http://git.kernel.org/tip/bbe831de1924f56596848919f98b195ed250fd28
 Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 27 Feb 2014 08:47:02 +0000
+AuthorDate: Thu, 27 Feb 2014 08:47:34 +0000
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 19 Mar 2014 16:25:03 -0700
+CommitDate: Wed, 19 Mar 2014 16:26:14 -0700
 
-x86, hash: Fix build failure with older binutils
+x86, hash: Swap arguments passed to crc32_u32()
 
-Just like for other ISA extension instruction uses we should check
-whether the assembler actually supports them. The fallback here simply
-is to encode an instruction  with fixed operands (%eax and %ecx).
+... to match the function's parameters. While reportedly commutative,
+using the proper order allows for leveraging the instruction permitting
+the source operand to be in memory.
 
-[ hpa: tagging for -stable as a build fix ]
+[ hpa: This code originated in the dpdk toolkit.  This was a bug in dpdk
+  which has recently been fixed in part due to an earlier version of
+  this patch. ]
 
 Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/530F0996020000780011FBE7@nat28.tlf.novell.com
+Link: http://lkml.kernel.org/r/530F09B6020000780011FBEB@nat28.tlf.novell.com
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
 Cc: Francesco Fusco <ffusco@redhat.com>
-Cc: Daniel Borkmann <dborkman@redhat.com>
 Cc: Thomas Graf <tgraf@redhat.com>
 Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@vger.kernel.org> # v3.14
 ---
- arch/x86/Makefile   | 1 +
- arch/x86/lib/hash.c | 4 ++++
- 2 files changed, 5 insertions(+)
+ arch/x86/lib/hash.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index eeda43a..f8842c4 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -152,6 +152,7 @@ cfi-sections := $(call as-instr,.cfi_sections .debug_frame,-DCONFIG_AS_CFI_SECTI
- 
- # does binutils support specific instructions?
- asinstr := $(call as-instr,fxsaveq (%rax),-DCONFIG_AS_FXSAVEQ=1)
-+asinstr += $(call as-instr,crc32l %eax$(comma)%eax,-DCONFIG_AS_CRC32=1)
- avx_instr := $(call as-instr,vxorps %ymm0$(comma)%ymm1$(comma)%ymm2,-DCONFIG_AS_AVX=1)
- avx2_instr :=$(call as-instr,vpbroadcastb %xmm0$(comma)%ymm1,-DCONFIG_AS_AVX2=1)
- 
 diff --git a/arch/x86/lib/hash.c b/arch/x86/lib/hash.c
-index 3056702..060cc44 100644
+index 060cc44..ac628aa 100644
 --- a/arch/x86/lib/hash.c
 +++ b/arch/x86/lib/hash.c
-@@ -39,7 +39,11 @@
+@@ -53,7 +53,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
+ 	u32 i, tmp = 0;
  
- static inline u32 crc32_u32(u32 crc, u32 val)
- {
-+#ifdef CONFIG_AS_CRC32
- 	asm ("crc32l %1,%0\n" : "+r" (crc) : "rm" (val));
-+#else
-+	asm (".byte 0xf2, 0x0f, 0x38, 0xf1, 0xc1" : "+a" (crc) : "c" (val));
-+#endif
- 	return crc;
+ 	for (i = 0; i < len / 4; i++)
+-		seed = crc32_u32(*p32++, seed);
++		seed = crc32_u32(seed, *p32++);
+ 
+ 	switch (3 - (len & 0x03)) {
+ 	case 0:
+@@ -64,7 +64,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
+ 		/* fallthrough */
+ 	case 2:
+ 		tmp |= *((const u8 *) p32);
+-		seed = crc32_u32(tmp, seed);
++		seed = crc32_u32(seed, tmp);
+ 	default:
+ 		break;
+ 	}
+@@ -78,7 +78,7 @@ static u32 intel_crc4_2_hash2(const u32 *data, u32 len, u32 seed)
+ 	u32 i;
+ 
+ 	for (i = 0; i < len; i++)
+-		seed = crc32_u32(*p32++, seed);
++		seed = crc32_u32(seed, *p32++);
+ 
+ 	return seed;
  }
- 
