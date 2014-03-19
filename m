@@ -1,58 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965711AbaCSQJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:09:33 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53209 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965684AbaCSQJ2 (ORCPT
+	id S965730AbaCSQNr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:13:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46479 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964973AbaCSQNp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:09:28 -0400
-Message-ID: <5329C133.60900@wwwdotorg.org>
-Date: Wed, 19 Mar 2014 10:09:23 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
+	Wed, 19 Mar 2014 12:13:45 -0400
+Message-ID: <5329C22A.5070206@canonical.com>
+Date: Wed, 19 Mar 2014 12:13:30 -0400
+From: Joseph Salisbury <joseph.salisbury@canonical.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Vince Hsu <vinceh@nvidia.com>
-Subject: Re: [PATCH] mfd: as3722: make FUSE7_REG readable
-References: <1393951832-2638-1-git-send-email-swarren@wwwdotorg.org> <20140305015539.GK10579@lee--X1>
-In-Reply-To: <20140305015539.GK10579@lee--X1>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, oleg@redhat.com
+CC: JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
+        Sreekanth.Reddy@lsi.com, rientjes@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
+Subject: Re: [v3.13][v3.14][Regression] kthread:makekthread_create()killable
+References: <20140316162512.GA9467@redhat.com>	<201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp>	<20140317142246.GA27453@redhat.com>	<201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>	<20140318171620.GA10636@redhat.com> <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp>
+In-Reply-To: <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 06:55 PM, Lee Jones wrote:
->> From: Stephen Warren <swarren@nvidia.com>
+On 03/19/2014 07:49 AM, Tetsuo Handa wrote:
+> Oleg Nesterov wrote:
+>>>> If we need the urgent hack to fix the regression, then I suggest to change
+>>>> scsi_host_alloc() temporary until mptsas (or whatever) is fixed.
+>>> Device initialization taking longer than 30 seconds is possible and is not a
+>>> hang up. It is systemd which needs to be fixed.
+>> Perhaps systemd needs the fix too, I do not know. But this is irrelevant,
+>> I think. Or at least this should be discussed separately.
+> I confirmed that this problem goes away if systemd-udevd supports longer
+> timeout.
+>
+>> kthread_run() can fail anyway, mptsas_probe() should not crash the kernel.
+> Right. But mptsas_probe() triggering an OOPS is irrelevant to kthread_run()
+> ( comment #27 ).
+>
+>> And btw, it is not clear to me if in this case device initialization really
+>> needs more than 30 seconds... My understanding is probably wrong, so please
+>> correct me. But it seems that before your "make kthread_create() killable"
 >>
->> The FUSE7_REG register is not currently marked readable. This causes
->> as3722_sd0_is_low_voltage() to emit an error during boot, and assume
->> the range of the SD0 regulator:
+>> 	- probe hangs
 >>
->> as3722-regulator as3722-regulator: Reg 0xa7 read failed: -5
+>> 	- SIGKILL wakes it up
 >>
->> Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
->> [exposed the bug, by checking for readability]
->> Fixes: 762a8ee80897 ("regulator: as3722: detect SD0 low-voltage mode")
->> [left out this register from the readable list]
->> Cc: Mark Brown <broonie@linaro.org>
->> Cc: Michal Simek <michal.simek@xilinx.com>
->> Cc: Andrew Bresticker <abrestic@chromium.org>
->> Cc: Vince Hsu <vinceh@nvidia.com>
->> Signed-off-by: Stephen Warren <swarren@nvidia.com>
->> ---
->> Note: I believe the regmap commit mentioned above is for 3.15, whereas
->> the as3722 commit is in at least 3.14. So, this only needs to be applied
->> for 3.15, but might make sense to go into earlier kernels, at your
->> discretion.
-> 
-> Applied to MFD -next (v3.15).
+>> 	- so I assume that the probe was interrupted and didn't finish
+>> 	  correctly ???
+>>
+>> 	- initialization continues, does scsi_host_alloc(), etc, and
+>> 	  everything works fine even if probe was interrupted?
+>>
+> I confirmed that device initialization really took more than 30 seconds
+> ( comments #51 and #52 ).
+>
+>> So perhaps that probe should not hang and this should be fixed too ?
+>> Do you know where exactly it hangs? And where it is woken up by SIGKILL ?
+>> Or I totally misunderstood ?
+> The probe did not hang. SIGKILL affected only wait_for_completion_killable()
+> in kthread_create_on_node() called by mptsas_probe() via scsi_host_alloc().
+> Thus, the probe was interrupted because kthread_run() returned an error.
+>
+>>> I think we need a bit different version, in order to take TIF_MEMDIE flag into
+>>> account at the caller of kthread_create(), for the purpose of commit 786235ee
+>>> is "try to die as soon as possible if chosen by the OOM killer".
+>>>
+>>> 	for (;;) {
+>>> 		shost->ehandler = kthread_run(scsi_error_handler, shost,
+>>> 					      "scsi_eh_%d", shost->host_no);
+>>> 		if (PTR_ERR(shost->ehandler) != -EINTR ||
+>>> 		    test_thread_flag(TIF_MEMDIE))
+>> Well, personally I do not care about TIF_MEMDIE/oom at all. We need the
+>> temporary hack (unless we have the "right" fix right now) which should be
+>> reverted later.
+> I do seriously care about TIF_MEMDIE/oom. Last week I respond to a trouble
+> which hit "kernel: request_module() OOM local DoS" (RHBZ #853474) without
+> any malice.
+>
+>> Not sure I understand... Yes, wait_for_completion_killable() can return
+>> immediately if TIF_SIGPENDING will be set again for any reason. Say, another
+>> signal. But the next iteration will clear TIF_SIGPENDING ?
+>>
+>>>      As I think it is difficult to prove that kmalloc(GFP_KERNEL) never sets
+>>>      TIF_SIGPENDING flag
+>> Ah, I see, you mean that kmalloc() can do this every time. No, this should
+>> not happen or we have another problem.
+> Then, what happens if somebody does
+>
+>   while (1)
+>       kill(pid, SIGKILL);
+>
+> where pid is the process calling kthread_run() from the "for (;;)" loop in
+> scsi_host_alloc()? Theoretically, it will form an infinite retry loop.
+> Clearing TIF_SIGPENDING does not guarantee that next
+> wait_for_completion_killable() does not return immediately.
+> Doing retry decision at scsi_host_alloc() will make things worse than
+> doing it at kthread_create_on_node().
+>
+>> Anyway. I agree with any hack in scsi_host_alloc/etc, this is up to
+>> maintainers. I still think that your change uncovered the problems in
+>> drivers/message/fusion/, these problems should be fixed somehow.
+>>
+>> Dear maintainers, we need your help.
+>>
+> Right. We found that we can fix this problem by updating systemd-udevd to
+> support longer timeout ( comment #53 ). Joseph, would you consult systemd
+> maintainers?
 
-I don't see this in next-20140319; did it get dropped somewhere, or was
-your branch not pushed out?
+Thanks everyone for reviewing this bug.  Message sent to systemd mailing
+list:
+http://lists.freedesktop.org/archives/systemd-devel/2014-March/018006.html
