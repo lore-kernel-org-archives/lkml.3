@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965295AbaCSO2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 10:28:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22557 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964832AbaCSO2H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 10:28:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,686,1389772800"; 
-   d="scan'208";a="495122307"
-Message-ID: <5329A94D.9060701@intel.com>
-Date: Wed, 19 Mar 2014 16:27:25 +0200
-From: Adrian Hunter <adrian.hunter@intel.com>
-Organization: Intel Finland Oy, Registered Address: PL 281, 00181 Helsinki,
- Business Identity Code: 0357606 - 4, Domiciled in Helsinki 
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S965129AbaCSOd7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 10:33:59 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:37215 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933874AbaCSOd6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 10:33:58 -0400
+Date: Wed, 19 Mar 2014 10:33:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: Re: [RFC PATCH v5 1/3] Tracepoint cleanup: remove unused API
+ functions
+Message-ID: <20140319103355.5fb39ef6@gandalf.local.home>
+In-Reply-To: <1395151546-20445-2-git-send-email-mathieu.desnoyers@efficios.com>
+References: <1395151546-20445-1-git-send-email-mathieu.desnoyers@efficios.com>
+	<1395151546-20445-2-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>, Don Zickus <dzickus@redhat.com>
-CC: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 06/13] perf tools: Use tid in mmap/mmap2 events to find
- maps
-References: <1395177965-8879-1-git-send-email-acme@infradead.org> <1395177965-8879-7-git-send-email-acme@infradead.org> <532943A2.7040407@intel.com> <20140319131945.GW25953@redhat.com> <20140319133025.GF1449@krava.brq.redhat.com>
-In-Reply-To: <20140319133025.GF1449@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.03.2014 15:30, Jiri Olsa wrote:
-> On Wed, Mar 19, 2014 at 09:19:45AM -0400, Don Zickus wrote:
->> On Wed, Mar 19, 2014 at 09:13:38AM +0200, Adrian Hunter wrote:
->>> On 18.03.2014 23:25, Arnaldo Carvalho de Melo wrote:
->>>> From: Don Zickus <dzickus@redhat.com>
->>>>
->>>> Now that we can properly synthesize threads system-wide, make sure the
->>>> mmap and mmap2 events use tids instead of pids to locate their maps.
->>>
->>> This is a good change but it cannot go yet because it is dependent on Jiri's
->>> "perf tools: Share map groups within process" series.
->>
->> No it isn't. :-) Commit bfd66cc71a3f831ba7c2116d79416cfb8883f6cf is the
->> reason why.  It synthesizes thread events to make this work correctly.
-> 
-> ok, I haven't realized this one was pulled in as well ;-)
-> it's ok then..
+On Tue, 18 Mar 2014 10:05:44 -0400
+Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
 
-No, you mustn't split up the maps between threads.  We currently assume
-CLONE_VM is always used to create threads.
+> After the following commit:
+> 
+> commit b75ef8b44b1cb95f5a26484b0e2fe37a63b12b44
+> Author: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Date:   Wed Aug 10 15:18:39 2011 -0400
+> 
+>     Tracepoint: Dissociate from module mutex
+> 
+> The following functions became unnecessary:
+> 
+> - tracepoint_probe_register_noupdate,
+> - tracepoint_probe_unregister_noupdate,
+> - tracepoint_probe_update_all.
+> 
+> In fact, none of the in-kernel tracers, nor LTTng, nor SystemTAP use
+> them. Remove those.
+> 
+> Moreover, the functions:
+> 
+> - tracepoint_iter_start,
+> - tracepoint_iter_next,
+> - tracepoint_iter_stop,
+> - tracepoint_iter_reset.
+> 
+> are unused by in-kernel tracers, LTTng and SystemTAP. Remove those too.
+> 
 
-> 
-> Arnaldo, I'll rebase the perf/core_mmaps (shared map groups) to your
-> latest perf/core
-> 
-> jirka
-> 
-> 
+New warning caused by this patch:
 
+tracepoint.c:446:13: warning: 'tracepoint_add_old_probes' defined but not used [-Wunused-function]
+    struct tp_probes, probes[0]);
+
+--  Steve
