@@ -1,76 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305AbaCSGUn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 02:20:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:33871 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751313AbaCSGUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 02:20:42 -0400
-Date: Wed, 19 Mar 2014 17:20:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: linux-next: build failure after merge of the final tree
- (wireless-next tree related)
-Message-Id: <20140319172035.b4e7c4043b486d8eeaa0534a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F"
+	id S1755174AbaCSGXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 02:23:55 -0400
+Received: from mail-lb0-f169.google.com ([209.85.217.169]:53153 "EHLO
+	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaCSGXw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 02:23:52 -0400
+Date: Wed, 19 Mar 2014 09:20:00 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Mel Gorman <mgorman@suse.de>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: kswapd using __this_cpu_add() in preemptible code
+Message-ID: <20140319062000.GA435@swordfish>
+References: <20140318185329.GB430@swordfish>
+ <20140318142216.317bf986d10a564881791100@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140318142216.317bf986d10a564881791100@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On (03/18/14 14:22), Andrew Morton wrote:
+> On Tue, 18 Mar 2014 21:53:30 +0300 Sergey Senozhatsky <sergey.senozhatsky@gmail.com> wrote:
+> 
+> > Hello gentlemen,
+> > 
+> > Commit 589a606f9539663f162e4a110d117527833b58a4 ("percpu: add preemption
+> > checks to __this_cpu ops") added preempt check to used in __count_vm_events()
+> > __this_cpu ops, causing the following kswapd warning:
+> > 
+> >  BUG: using __this_cpu_add() in preemptible [00000000] code: kswapd0/56
+> >  caller is __this_cpu_preempt_check+0x2b/0x2d
+> >  Call Trace:
+> >  [<ffffffff813b8d4d>] dump_stack+0x4e/0x7a
+> >  [<ffffffff8121366f>] check_preemption_disabled+0xce/0xdd
+> >  [<ffffffff812136bb>] __this_cpu_preempt_check+0x2b/0x2d
+> >  [<ffffffff810f622e>] inode_lru_isolate+0xed/0x197
+> >  [<ffffffff810be43c>] list_lru_walk_node+0x7b/0x14c
+> >  [<ffffffff810f6141>] ? iput+0x131/0x131
+> >  [<ffffffff810f681f>] prune_icache_sb+0x35/0x4c
+> >  [<ffffffff810e3951>] super_cache_scan+0xe3/0x143
+> >  [<ffffffff810b1301>] shrink_slab_node+0x103/0x16f
+> >  [<ffffffff810b19fd>] shrink_slab+0x75/0xe4
+> >  [<ffffffff810b3f3d>] balance_pgdat+0x2fa/0x47f
+> >  [<ffffffff810b4395>] kswapd+0x2d3/0x2fd
+> >  [<ffffffff81068049>] ? __wake_up_sync+0xd/0xd
+> >  [<ffffffff810b40c2>] ? balance_pgdat+0x47f/0x47f
+> >  [<ffffffff81051e75>] kthread+0xd6/0xde
+> >  [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
+> >  [<ffffffff813be5bc>] ret_from_fork+0x7c/0xb0
+> >  [<ffffffff81051d9f>] ? kthread_create_on_node+0x162/0x162
+> > 
+> > 
+> > list_lru_walk_node() seems to be the only place where __count_vm_events()
+> > called with preemption enabled. remaining __count_vm_events() and
+> > __count_vm_event() calls are done with preemption disabled (unless I
+> > overlooked something).
+> 
+> Christoph caught one.  How does this look?
+> 
 
-Hi all,
+Thank you.
 
-After merging the final tree, today's linux-next build (powerpc allyesconfi=
-g)
-failed like this:
+Tested-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
 
-drivers/net/wireless/iwlwifi/mvm/debugfs.c: In function 'iwl_dbgfs_fw_error=
-_dump_release':
-drivers/net/wireless/iwlwifi/mvm/debugfs.c:161:2: error: implicit declarati=
-on of function 'vfree' [-Werror=3Dimplicit-function-declaration]
-  vfree(file->private_data);
-  ^
+	-ss
 
-Caused by commit 1bd3cbc1a0e9 ("iwlwifi: mvm: send udev event upon
-firmware error to dump logs") from the wireless-next tree.  See Rule 1
-from Documentation/SubmitChecklist.
-
-I have reverted that commit (and commit cdb00563fe2c ("iwlwifi: mvm: BT
-Coex - add debugfs hook to set BT Tx priority") that may depend on it)
-for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTKTc3AAoJEMDTa8Ir7ZwV7J0P/ijg3uCXHHnjVuX3a29oMWtB
-iAyxUMmABClnq3KDTsT+OkPMcUEqUfIt1Ho9NolDG2S2CV/f9o+GzTr7Hh8cEduL
-EVUtHZk5AMp2+hFn0j65Vg+sxmUxHOVerk+LET3+gxBztPi1XZaNy+SZ8PDzzPdc
-qafOR8hQVt5+MPlpvx9UJm68Rh22yrdYBexa+j6UlG2fjhm1OZlisahZmPOYKY+p
-JmpYPwNuUSg6uomT5oT2Af9StfK/XgKnvMnxAJtY1g07D7WoiFbevBWAvzIbYDl8
-LoQ2LCMQBnRxWk9K0xtxdhHsbkgkOIciBgZkcj8JOskGHgyq27MJnXhZaHo/siqe
-Fv5CneFlsuBEYCTIaDPxD6fFh1qIELnpQdZRvIUzWfnvJ+di5BVKYvJ+FSH56JOY
-/F+7Q18O1x+EOW3upz5VlUPnOb+dAooIXTDugGkCISgv6n+1kZp+2Cr16dC/TaY9
-Nr5Piv5gN8yMbbAo9BIXuOswmPnzOV9PR9472JGu9kVp2eErtUBodk+pezinP8QW
-Cw6g6NpSadeKp/BPbY1k5v/I2Y8dZeyBTYftb1T3pxSINBiH53snYxSBpF6xrQhn
-ZM/1N80fFSKpK1xII6oclizzM/WAqlvnfctcynp09NpWH5FDtb9F0tslvQEFcR5K
-oT0myRe6gycAaiB7BmGI
-=IrVT
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_Mar_2014_17_20_35_+1100_siFwPu9=VL_Yui1F--
+> 
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: fs/inode.c:inode_lru_isolate(): use atomic count_vm_events()
+> 
+> "percpu: add preemption checks to __this_cpu ops" added preempt check to
+> used in __count_vm_events() __this_cpu ops, causing the following kswapd
+> warning:
+> 
+>  BUG: using __this_cpu_add() in preemptible [00000000] code: kswapd0/56
+>  caller is __this_cpu_preempt_check+0x2b/0x2d
+>  Call Trace:
+>  [<ffffffff813b8d4d>] dump_stack+0x4e/0x7a
+>  [<ffffffff8121366f>] check_preemption_disabled+0xce/0xdd
+>  [<ffffffff812136bb>] __this_cpu_preempt_check+0x2b/0x2d
+>  [<ffffffff810f622e>] inode_lru_isolate+0xed/0x197
+>  [<ffffffff810be43c>] list_lru_walk_node+0x7b/0x14c
+>  [<ffffffff810f6141>] ? iput+0x131/0x131
+>  [<ffffffff810f681f>] prune_icache_sb+0x35/0x4c
+> 
+> Switch from __count_vm_events() to the preempt-safe count_vm_events().
+> 
+> Reported-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  fs/inode.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff -puN fs/inode.c~fs-inodec-inode_lru_isolate-use-atomic-count_vm_events fs/inode.c
+> --- a/fs/inode.c~fs-inodec-inode_lru_isolate-use-atomic-count_vm_events
+> +++ a/fs/inode.c
+> @@ -722,9 +722,9 @@ inode_lru_isolate(struct list_head *item
+>  			unsigned long reap;
+>  			reap = invalidate_mapping_pages(&inode->i_data, 0, -1);
+>  			if (current_is_kswapd())
+> -				__count_vm_events(KSWAPD_INODESTEAL, reap);
+> +				count_vm_events(KSWAPD_INODESTEAL, reap);
+>  			else
+> -				__count_vm_events(PGINODESTEAL, reap);
+> +				count_vm_events(PGINODESTEAL, reap);
+>  			if (current->reclaim_state)
+>  				current->reclaim_state->reclaimed_slab += reap;
+>  		}
+> _
+> 
