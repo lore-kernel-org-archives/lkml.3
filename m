@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965643AbaCSQXH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 12:23:07 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:47278 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965141AbaCSQXF (ORCPT
+	id S933993AbaCSQYI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 12:24:08 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:45850 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932996AbaCSQYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 12:23:05 -0400
-Date: Wed, 19 Mar 2014 12:23:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Li Zefan <lizefan@huawei.com>,
-        cgroups@vger.kernel.org
-Subject: [GIT PULL] cgroup fixes for v3.14-rc7
-Message-ID: <20140319162300.GB19874@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 19 Mar 2014 12:24:06 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
+        james.hogan@imgtec.com, cmetcalf@tilera.com, benh@kernel.crashing.org,
+        linux@arm.linux.org.uk, linux-arm-kernel@lists.infradead.org
+Cc: dietmar.eggemann@arm.com, preeti@linux.vnet.ibm.com,
+        linaro-kernel@lists.linaro.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v3 0/6] rework sched_domain topology description
+Date: Wed, 19 Mar 2014 17:22:39 +0100
+Message-Id: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+This patchset was previously part of the larger tasks packing patchset [1].
+I have splitted the latter in 3 different patchsets (at least) to make the
+thing easier.
+-configuration of sched_domain topology (this patchset)
+-update and consolidation of cpu_power
+-tasks packing algorithm
 
-One really late cgroup patch to fix error path in create_css().
-Hitting this bug would be pretty rare but still possible and it gets
-delayed we'd need to backport it through -stable anyway.  It only
-updates error path in create_css() and has low chance of new
-breakages.
+Based on Peter Z's proposal [2][3], this patchset modifies the way to configure
+the sched_domain level in order to let architectures to add specific level like
+the current BOOK level or the proposed power gating level for ARM architecture.
 
-The following changes since commit 99afb0fd5f05aac467ffa85c36778fec4396209b:
+[1] https://lkml.org/lkml/2013/10/18/121
+[2] https://lkml.org/lkml/2013/11/5/239
+[3] https://lkml.org/lkml/2013/11/5/449
 
-  cpuset: fix a race condition in __cpuset_node_allowed_softwall() (2014-02-27 09:39:54 -0500)
+Change since v2:
+- remove patch 1 as it has been already applied to metag tree for v3.15
+- updates some commit messages
+- add new flag description in TOPOLOGY_SD_FLAGS description
 
-are available in the git repository at:
+Change since v1:
+- move sched_domains_curr_level back under #ifdef CONFIG_NUMA
+- use function pointer to set flag instead of a plain value.
+- add list of tunable flags in the commit message of patch 2
+- add SD_SHARE_POWER_DOMAIN flag for powerpc's SMT level
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git for-3.14-fixes
+Vincent Guittot (6):
+  sched: rework of sched_domain topology definition
+  sched: s390: create a dedicated topology table
+  sched: powerpc: create a dedicated topology table
+  sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+  sched: ARM: create a dedicated scheduler topology table
+  sched: powerpc: Add SD_SHARE_POWERDOMAIN for SMT level
 
-for you to fetch changes up to 3eb59ec64fc7a3f4576da23f811b39331b830ba2:
+ arch/arm/kernel/topology.c       |  26 +++++
+ arch/ia64/include/asm/topology.h |  24 ----
+ arch/powerpc/kernel/smp.c        |  31 +++--
+ arch/s390/include/asm/topology.h |  13 +--
+ arch/s390/kernel/topology.c      |  20 ++++
+ arch/tile/include/asm/topology.h |  33 ------
+ include/linux/sched.h            |  49 +++++++-
+ include/linux/topology.h         | 128 +++-----------------
+ kernel/sched/core.c              | 244 ++++++++++++++++++++-------------------
+ 9 files changed, 255 insertions(+), 313 deletions(-)
 
-  cgroup: fix a failure path in create_css() (2014-03-18 17:15:36 -0400)
+-- 
+1.9.0
 
-Thanks.
-
-----------------------------------------------------------------
-Li Zefan (1):
-      cgroup: fix a failure path in create_css()
-
- kernel/cgroup.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 105f273..0c753dd 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4112,17 +4112,17 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	err = percpu_ref_init(&css->refcnt, css_release);
- 	if (err)
--		goto err_free;
-+		goto err_free_css;
- 
- 	init_css(css, ss, cgrp);
- 
- 	err = cgroup_populate_dir(cgrp, 1 << ss->subsys_id);
- 	if (err)
--		goto err_free;
-+		goto err_free_percpu_ref;
- 
- 	err = online_css(css);
- 	if (err)
--		goto err_free;
-+		goto err_clear_dir;
- 
- 	dget(cgrp->dentry);
- 	css_get(css->parent);
-@@ -4138,8 +4138,11 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 
- 	return 0;
- 
--err_free:
-+err_clear_dir:
-+	cgroup_clear_dir(css->cgroup, 1 << css->ss->subsys_id);
-+err_free_percpu_ref:
- 	percpu_ref_cancel_init(&css->refcnt);
-+err_free_css:
- 	ss->css_free(css);
- 	return err;
- }
