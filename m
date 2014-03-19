@@ -1,97 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758098AbaCSWP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 18:15:29 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:49556 "EHLO quartz.orcorp.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757968AbaCSWP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 18:15:26 -0400
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Rob Herring <robh+dt@kernel.org>, Florian Fainelli <f.fainelli@gmail.com>,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH v3 2/2] of_mdio: Allow the DT to specify the phy ID and avoid autoprobing
-Date: Wed, 19 Mar 2014 16:15:24 -0600
-Message-Id: <1395267324-5788-2-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
-References: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
+	id S1758319AbaCSWQI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 18:16:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:54863 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933274AbaCSWQB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 18:16:01 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: dirk.brandewie@gmail.com
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patrick.marlier@gmail.com, viresh.kumar@linaro.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 1/2] cpufreq: Add stop callback to cpufreq_driver interface
+Date: Wed, 19 Mar 2014 23:31:31 +0100
+Message-ID: <3686462.d0rjfgiuqO@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1395243954-28262-2-git-send-email-dirk.j.brandewie@intel.com>
+References: <1395243954-28262-1-git-send-email-dirk.j.brandewie@intel.com> <1395243954-28262-2-git-send-email-dirk.j.brandewie@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the generic of_mdiobus_register parse the DT compatible string for
-the pattern ethernet-phy-idAAAA.BBBB. If present it should be a value that
-matches the phy-id register normally readable through MDIO.
+On Wednesday, March 19, 2014 08:45:53 AM dirk.brandewie@gmail.com wrote:
+> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> 
+> This callback allows the driver to do clean up before the CPU is
+> completely down and its state cannot be modified.  This is used
+> by the intel_pstate driver to reduce the requested P state prior to
+> the core going away.  This is required because the requested P state
+> of the offline core is used to select the package P state. This
+> effectively sets the floor package P state to the requested P state on
+> the offline core.
+> 
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> ---
+>  Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
+>  drivers/cpufreq/cpufreq.c              | 3 ++-
+>  include/linux/cpufreq.h                | 1 +
+>  3 files changed, 10 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+> index 8b1a445..79def80 100644
+> --- a/Documentation/cpu-freq/cpu-drivers.txt
+> +++ b/Documentation/cpu-freq/cpu-drivers.txt
+> @@ -61,7 +61,13 @@ target_index		-	See below on the differences.
+>  
+>  And optionally
+>  
+> -cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
+> +cpufreq_driver.exit -		A pointer to a per-CPU cleanup
+> +		    		function called during CPU_POST_DEAD
+> +		    		phase of cpu hotplug process.
+> +
+> +cpufreq_driver.stop -		A pointer to a per-CPU stop function
+> +			    	called during CPU_DOWN_PREPARE phase of
+> +				cpu hotplug process.
+>  
+>  cpufreq_driver.resume -		A pointer to a per-CPU resume function
+>  				which is called with interrupts disabled
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index cf485d9..bb20292 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -1336,7 +1336,8 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>  						__func__, new_cpu, cpu);
+>  			}
+>  		}
+> -	}
+> +	} else if (cpufreq_driver->stop && cpufreq_driver->setpolicy)
+> +		cpufreq_driver->stop(policy);
 
-When the ID is given the phy autoprobing is defeated and the phy is
-created directly.
+Nit: Why is it an int function if the only caller doesn't check the
+return value?  It should be void.
 
-This is necessary to support phy's that cannot be autoprobed when
-of_mdiobus_register is called. Specifically, my case has the phy in reset at
-of_mdiobus_register, the reset is only released once the ethernet driver
-starts, before it attaches to the phy.
+>  
+>  	return 0;
+>  }
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 4d89e0e..ff8db19 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -224,6 +224,7 @@ struct cpufreq_driver {
+>  	int	(*bios_limit)	(int cpu, unsigned int *limit);
+>  
+>  	int	(*exit)		(struct cpufreq_policy *policy);
+> +	int	(*stop)		(struct cpufreq_policy *policy);
+>  	int	(*suspend)	(struct cpufreq_policy *policy);
+>  	int	(*resume)	(struct cpufreq_policy *policy);
+>  	struct freq_attr	**attr;
+> 
 
-Tested on ARM Kirkwood with phy id 0x01410e90 (Marvell 88E1318)
-
-Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-Acked-by: Florian Fainelli <f.fainelli@gmail.com>
----
- drivers/of/of_mdio.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
-
-For net-next
-
-v3:
- - Use of_property_for_each_string as per Rob Herring
- - Rebase+retest against 3.14-rc7
-
-diff --git a/drivers/of/of_mdio.c b/drivers/of/of_mdio.c
-index 5b3c24f..9a95831 100644
---- a/drivers/of/of_mdio.c
-+++ b/drivers/of/of_mdio.c
-@@ -43,6 +43,23 @@ static void of_set_phy_supported(struct phy_device *phydev, u32 max_speed)
- 	}
- }
- 
-+/* Extract the clause 22 phy ID from the compatible string of the form
-+ * ethernet-phy-idAAAA.BBBB */
-+static int of_get_phy_id(struct device_node *device, u32 *phy_id)
-+{
-+	struct property *prop;
-+	const char *cp;
-+	unsigned int upper, lower;
-+
-+	of_property_for_each_string(device, "compatible", prop, cp) {
-+		if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) == 2) {
-+			*phy_id = ((upper & 0xFFFF) << 16) | (lower & 0xFFFF);
-+			return 0;
-+		}
-+	}
-+	return -EINVAL;
-+}
-+
- static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *child,
- 				   u32 addr)
- {
-@@ -50,11 +67,15 @@ static int of_mdiobus_register_phy(struct mii_bus *mdio, struct device_node *chi
- 	bool is_c45;
- 	int rc;
- 	u32 max_speed = 0;
-+	u32 phy_id;
- 
- 	is_c45 = of_device_is_compatible(child,
- 					 "ethernet-phy-ieee802.3-c45");
- 
--	phy = get_phy_device(mdio, addr, is_c45);
-+	if (!is_c45 && !of_get_phy_id(child, &phy_id))
-+		phy = phy_device_create(mdio, addr, phy_id, 0, NULL);
-+	else
-+		phy = get_phy_device(mdio, addr, is_c45);
- 	if (!phy || IS_ERR(phy))
- 		return 1;
- 
 -- 
-1.8.1.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
