@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965109AbaCTOz1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:55:27 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44060 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933815AbaCTOzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:55:20 -0400
-Date: Thu, 20 Mar 2014 10:55:07 -0400
-From: tytso@mit.edu
-To: Kees Cook <keescook@chromium.org>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Message-ID: <20140320145507.GB20618@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Kees Cook <keescook@chromium.org>,
-	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-	Matthew Garrett <matthew.garrett@nebula.com>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-	"jmorris@namei.org" <jmorris@namei.org>,
-	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
-	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-	"hpa@zytor.com" <hpa@zytor.com>,
-	"jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-	"linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-References: <1394762250.6416.24.camel@x230.lan>
- <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
- <1394801518.6416.38.camel@x230.lan>
- <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
- <1394820664.26846.18.camel@x230.mview.int.nebula.com>
- <20140314214806.54a3d031@alan.etchedpixels.co.uk>
- <1394834193.1286.11.camel@x230>
- <20140314220840.29a12171@alan.etchedpixels.co.uk>
- <20140314231832.GA653@thunk.org>
- <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
+	id S964780AbaCTO6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:58:37 -0400
+Received: from [216.32.181.181] ([216.32.181.181]:52577 "EHLO
+	ch1outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S933061AbaCTO6f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 10:58:35 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 1
+X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1de2h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+From: Suresh Gupta <suresh.gupta@freescale.com>
+To: <balbi@ti.com>, <gregkh@linuxfoundation.org>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Suresh Gupta <B42813@freescale.com>
+Subject: [PATCH v2] usb: gadget: fsl: Set dma_ops for FSL USB Gadget Device
+Date: Fri, 21 Mar 2014 01:56:49 +0530
+Message-ID: <1395347209-22480-1-git-send-email-suresh.gupta@freescale.com>
+X-Mailer: git-send-email 1.8.4.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 01:16:15PM -0700, Kees Cook wrote:
-> UEFI is a red herring in both cases. This isn't about UEFI, it just
-> happens that one of the things that can assert "trusted_kernel" is the
-> UEFI Secure Boot path. Chrome OS would assert "trusted_kernel" by
-> passing it on the kernel command line (since it, along with firmware,
-> kernel, and root fs are effectively measured). A
-> boot-my-router-from-CD system can assert similarly because the kernel
-> is on RO media.
+From: Suresh Gupta <B42813@freescale.com>
 
-I disagree; it's highly likely, if not certain that Windows booting
-under UEFI secure boot is going to be able to do some of the things
-that people are proposing that we have to prohibit in the name of
-security.  That's because presumably Windows won't be willing to make
-certain usability tradeoffs, and since they control the signing certs,
-even in the unlikely case that people can leverage these "holes" to
-enable a boot sector virus, it seems unlikely that Windows will revoke
-its own cert.
+DMA mapping functions are moved to common place in udc_core.c
+which expect the DMA operation of gadget device
 
-The security goals for Windows' secure boot is quite a bit weaker than
-what ChromeOS is trying to promise; this is why I claim the real
-argument is over what the goals are for "trusted boot".
+Signed-off-by: Suresh Gupta <B42813@freescale.com>
+---
+Changes from previous version:
+* Added description
 
-Cheers,
+ drivers/usb/gadget/fsl_udc_core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-					- Ted
+diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
+index d68aa77..35cb972 100644
+--- a/drivers/usb/gadget/fsl_udc_core.c
++++ b/drivers/usb/gadget/fsl_udc_core.c
+@@ -2456,6 +2456,7 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
+ 	/* Setup gadget.dev and register with kernel */
+ 	dev_set_name(&udc_controller->gadget.dev, "gadget");
+ 	udc_controller->gadget.dev.of_node = pdev->dev.of_node;
++	set_dma_ops(&udc_controller->gadget.dev, pdev->dev.archdata.dma_ops);
+ 
+ 	if (!IS_ERR_OR_NULL(udc_controller->transceiver))
+ 		udc_controller->gadget.is_otg = 1;
+-- 
+1.8.4.1
+
+
