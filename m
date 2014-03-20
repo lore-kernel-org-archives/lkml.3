@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759353AbaCTQMw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:12:52 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:38328 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759238AbaCTQMt (ORCPT
+	id S932713AbaCTQND (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:13:03 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56915 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759304AbaCTQMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:12:49 -0400
-Message-ID: <532B137B.7010900@codethink.co.uk>
-Date: Thu, 20 Mar 2014 17:12:43 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 20 Mar 2014 12:12:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Girish K S <ks.giri@samsung.com>, devicetree@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Suman Anna <s-anna@ti.com>, Ilho Lee <ilho215.lee@samsung.com>
+Subject: Re: [PATCH 2/2] arm64: dts: exynos: added mailbox node
+Date: Thu, 20 Mar 2014 17:12:46 +0100
+Message-ID: <7073716.9YBOcHOu36@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CABb+yY1rvozkGS34CHt8YEJqvGRXuHV09=AdS3=zQBx=DjFDCQ@mail.gmail.com>
+References: <1395057839-23871-1-git-send-email-ks.giri@samsung.com> <201403191846.28563.arnd@arndb.de> <CABb+yY1rvozkGS34CHt8YEJqvGRXuHV09=AdS3=zQBx=DjFDCQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: Re: DMABOUNCE in pci-rcar
-References: <201402241200.21944.arnd@arndb.de> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk> <5527822.QYtFYiIpiW@wuerfel>
-In-Reply-To: <5527822.QYtFYiIpiW@wuerfel>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:G3COBO/Oi3M/vT99/L74cC7hgLGLD2eIbd0bhK1VTc8
+ HTI3CJXEvtSt53pqMGieceNi75HiGTkUY1fM5BOLr7E1TzkD71
+ yYEF/mX8XYVCYEctf7hCYRbgtpBj1DjCTCX0j9fSYRb097SkWC
+ bMARjk1wQU5T7M7o//fzChPZqB4do5BCvKuW+YM1Tck43JINP3
+ Nn3fjz3cJvHBmG3nDm64B08IXqkj9rfVFdhZgzAyKUA+i/uj24
+ 9wjCsVgv2a9qJ57Qee8/XkFTu0vwcRzwfracsKidqy46bS4x1/
+ 1Ia6KLowIUZX0HSBXEcD0J9aB0fTL3Ad14RrpjzZOhBd+Ik7GF
+ 4n9E0HavZbuRY++pND68=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/03/14 17:09, Arnd Bergmann wrote:
-> On Thursday 20 March 2014 16:04:36 Ben Dooks wrote:
->> On 26/02/14 20:57, Arnd Bergmann wrote:
->>> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
->>>> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>>> Hi Magnus,
->>>>>
->>>>> I noticed during randconfig testing that you enabled DMABOUNCE for the
->>>>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
->>>>>
->>>>> I didn't see the original post unfortunately, but I fear we have to
->>>>> revert it and come up with a better solution, ...
->>>>
->>>> Sounds like I should drop the following patches from my pci/host-rcar
->>>> branch for now?
->>>>
->>>>     PCI: rcar: Add DMABOUNCE support
->>>>     PCI: rcar: Enable BOUNCE in case of HIGHMEM
->>>>     PCI: rcar: Make the Kconfig dependencies more generic
->>>
->>> Sounds good to me. The last patch is actually fine, but you'll have to
->>> fix the context to apply it without the other two.
->>
->> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
->> controllers no longer work with full 2GiB RAM enabled in the device
->> tree.
->
-> Did it work before these patches got applied initially?
+On Thursday 20 March 2014 21:39:56 Jassi Brar wrote:
+> On Wed, Mar 19, 2014 at 11:16 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 17 March 2014, Jassi Brar wrote:
+> 
+> >>   Perhaps the mailbox controller driver should name its links as it
+> >> wants. By how the remote works with the mailbox links, the client
+> >> driver asks for a specific mailbox link (which maybe a hardcoded
+> >> string in the driver or be gotten alongside other data via client's
+> >> DT) ?
+> >
+> > I don't see why we should do it any different from the other bindings.
+> > Let's just stick with mboxes/mbox-names or mailboxes/mailbox-names
+> > if you prefer.
+> >
+> >>   IOW we can't have a generic API/DT-bindings that could get us
+> >> reusable client drivers. But only common framework/code that would
+> >> otherwise be duplicated by every platform.
+> >
+> > That is a major benefit though.
+> > Also even if most drivers won't work across multiple platforms, there
+> > is still a reasonable chance that /some/ drivers will.
+> >
+> It seems those /some/ drivers will have to work with everything same
+> but the channel name (which the client could get from its DT node when
+> the second platform appears).
 
-It did, but I cannot remember if we where limiting DRAM to 1GiB
-or not.
+Why would you ever have varying channel names? I would expect that
+the name is always fixed in the binding of the client driver, like
+we do for clocks or interrupts for instance.
 
->> Could we work around this by having 1GiB of memory defined in the
->> 32bit memory and then add the rest of the 3GiB from the >32bit
->> area via LPAE? Will the kernel ever try to allocate DMA memory from
->> anything >32bit?
->
-> You can solve the case for dma_alloc_coherent() this way, or by
-> setting the mask correctly. It won't help you for dma_map_* though,
-> which still requires someone to add support for swiotlb or using
-> an IOMMU if present.
-
-We do not have an IOMMU present at the moment. Not sure how
-to go about setting a mask on a pci-probed device.
-
-
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+	Arnd
