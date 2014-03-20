@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757724AbaCTLis (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:38:48 -0400
-Received: from www84.your-server.de ([213.133.104.84]:54256 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaCTLiq (ORCPT
+	id S1757993AbaCTLjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:39:39 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:49085 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757878AbaCTLji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:38:46 -0400
-Message-ID: <1395315494.1127.3.camel@vger.seibold.net>
-Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
-From: Stefani Seibold <stefani@seibold.net>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        mingo@redhat.com, hpa@zytor.com, ak@linux.intel.com,
-        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
-        xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Date: Thu, 20 Mar 2014 12:38:14 +0100
-In-Reply-To: <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
-References: <1395301511-5908-1-git-send-email-stefani@seibold.net>
-	 <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 20 Mar 2014 07:39:38 -0400
+Date: Thu, 20 Mar 2014 04:39:26 -0700
+From: tip-bot for Viresh Kumar <tipbot@zytor.com>
+Message-ID: <tip-c41eba7de133e43ea2c998ccd484059feab200f6@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+In-Reply-To: <0d8645a6efc8360c4196c9797d59343abbfdcc5e.1395129136.git.viresh.kumar@linaro.org>
+References: <0d8645a6efc8360c4196c9797d59343abbfdcc5e.1395129136.git.viresh.kumar@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] timer:
+  Use variable head instead of &work_list in __run_timers()
+Git-Commit-ID: c41eba7de133e43ea2c998ccd484059feab200f6
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, den 20.03.2014, 10:53 +0100 schrieb Thomas Gleixner:
-> On Thu, 20 Mar 2014, Stefani Seibold wrote:
-> 
-> > This patch add a correct out of memory handling for setup a 32 bit vDSO.
-> > 
-> > The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
-> > 
-> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > ---
-> >  arch/x86/vdso/vdso32-setup.c | 17 ++++++++++++++++-
-> >  1 file changed, 16 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-> > index 0bc363a..e1171c2 100644
-> > --- a/arch/x86/vdso/vdso32-setup.c
-> > +++ b/arch/x86/vdso/vdso32-setup.c
-> > @@ -134,8 +134,14 @@ int __init sysenter_setup(void)
-> >  	}
-> >  
-> >  	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
-> > -	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
-> > +
-> > +	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
-> 
-> Why is this GFP_ATOMIC and not GFP_ATOMIC ?
-> 
-> That code is called either from identify_boot_cpu(), where GFP_KERNEL
-> is perfectly valid and from subsys_initcall(sysenter_setup) which is
-> way late in the boot process where GFP_KERNEL is the RightThing.
-> 
-> Aside of that, why do we need to call it early for X86_32 and late for
-> X86_64?
-> 
-> We need the vdso before we head off to user space, but not in the
-> early boot process.
-> 
+Commit-ID:  c41eba7de133e43ea2c998ccd484059feab200f6
+Gitweb:     http://git.kernel.org/tip/c41eba7de133e43ea2c998ccd484059feab200f6
+Author:     Viresh Kumar <viresh.kumar@linaro.org>
+AuthorDate: Tue, 18 Mar 2014 13:23:15 +0530
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 20 Mar 2014 12:35:45 +0100
 
-All complains are design decisions not made by me. I will send a patch
-for the GFP_ATOMIC thing. For the other one it would be the best to ask
-Andy for the reason.
+timer: Use variable head instead of &work_list in __run_timers()
 
-- Stefani
+We already have a variable 'head' that points to '&work_list', and so
+we should use that instead wherever possible.
 
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Link: http://lkml.kernel.org/r/0d8645a6efc8360c4196c9797d59343abbfdcc5e.1395129136.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 949d74e..8e503fe 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1192,7 +1192,7 @@ static inline void __run_timers(struct tvec_base *base)
+ 					!cascade(base, &base->tv4, INDEX(2)))
+ 			cascade(base, &base->tv5, INDEX(3));
+ 		++base->timer_jiffies;
+-		list_replace_init(base->tv1.vec + index, &work_list);
++		list_replace_init(base->tv1.vec + index, head);
+ 		while (!list_empty(head)) {
+ 			void (*fn)(unsigned long);
+ 			unsigned long data;
