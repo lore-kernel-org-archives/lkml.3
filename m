@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020AbaCTJjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:39:52 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:55325 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757821AbaCTJjt (ORCPT
+	id S1758099AbaCTJkH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:40:07 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:50538 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821AbaCTJkB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:39:49 -0400
-Subject: [PATCH 05/33] Fetching Memory maps
+	Thu, 20 Mar 2014 05:40:01 -0400
+Subject: [PATCH 06/33] Check ELF class
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
@@ -21,8 +21,8 @@ Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
         eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
         tj@kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:09:36 +0530
-Message-ID: <20140320093936.14878.51299.stgit@localhost.localdomain>
+Date: Thu, 20 Mar 2014 15:09:47 +0530
+Message-ID: <20140320093947.14878.48540.stgit@localhost.localdomain>
 In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
 References: <20140320093040.14878.903.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -31,179 +31,105 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-3568-0000-0000-00000520E586
+x-cbid: 14032009-9264-0000-0000-000005AD5B45
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fetching virtual memory areas through /proc/pid/maps and storing it in a
-linked list in order to populate the program headers and file maps.
+The process to be dumped can be either a 32bit application or a 64 bit
+application. We first need to check this and proceed with the dump accordingly.
 
 Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 ---
- src/coredump.c |    8 +++++
- src/coredump.h |   11 ++++++
- src/proc.c     |   95 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 114 insertions(+)
+ src/coredump.c |    5 +++++
+ src/coredump.h |    1 +
+ src/proc.c     |   45 +++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 51 insertions(+)
 
 diff --git a/src/coredump.c b/src/coredump.c
-index dd9089f..7a559e2 100644
+index 7a559e2..f9c7176 100644
 --- a/src/coredump.c
 +++ b/src/coredump.c
-@@ -183,6 +183,11 @@ int do_coredump(int pid, char *core_file)
+@@ -188,6 +188,11 @@ int do_coredump(int pid, char *core_file)
  	if (ret)
  		goto cleanup;
  
-+	/* Get VMAS */
-+	ret = get_vmas(pid, &cp);
-+	if (ret)
++	/* Compat Support */
++	cp.elf_class = ret = get_elf_class(pid, &cp);
++	if (ret == -1)
 +		goto cleanup;
 +
  cleanup:
  
  	/* Release the threads */
-@@ -191,6 +196,9 @@ cleanup:
- 	if (cp.t_id)
- 		free(cp.t_id);
- 
-+	if (cp.vmas)
-+		free_maps(cp.vmas);
-+
- 	errno = status;
- 
- 	return ret;
 diff --git a/src/coredump.h b/src/coredump.h
-index 00cb008..291e13b 100644
+index 291e13b..25042f5 100644
 --- a/src/coredump.h
 +++ b/src/coredump.h
-@@ -16,8 +16,19 @@ struct pid_stat {
- 	unsigned long long ps_num[NUM_STAT_FEILDS];
- };
- 
-+/* Structure for maps */
-+struct maps {
-+	unsigned long long src, dst, offset;
-+	char r, w, x;
-+	long inode;
-+	struct maps *next;
-+	char fname[0];
-+};
-+
- /* Structure for the Core of the Process */
- struct core_proc {
- 	int thread_count;		/* Number of threads */
+@@ -31,4 +31,5 @@ struct core_proc {
  	int *t_id;			/* Threads_ids of all the threads */
-+	struct maps *vmas;		/* VMAs */
-+	int phdrs_count;		/* Number of Program headers */
+ 	struct maps *vmas;		/* VMAs */
+ 	int phdrs_count;		/* Number of Program headers */
++	int elf_class;			/* Elf class of the process */
  };
 diff --git a/src/proc.c b/src/proc.c
-index fc16d90..a401aa5 100644
+index a401aa5..3a4a387 100644
 --- a/src/proc.c
 +++ b/src/proc.c
-@@ -25,6 +25,7 @@
- #include <stdio.h>
- #include <errno.h>
+@@ -27,6 +27,7 @@
  #include <stdlib.h>
-+#include <string.h>
+ #include <string.h>
  #include <coredump.h>
++#include <elf.h>
  
  /* Get Process Stats */
-@@ -136,3 +137,97 @@ char get_thread_status(int tid)
- 
- 	return buff[pos - buff + 2];
+ int get_pid_stat(int pid, struct pid_stat *ps)
+@@ -231,3 +232,47 @@ int get_vmas(int pid, struct core_proc *cp)
+ 	fclose(fin);
+ 	return 0;
  }
 +
-+/* Free Maps */
-+void free_maps(struct maps *head)
++/* Check if its ELF */
++int check_elf_hdr(unsigned char *elf_ident)
 +{
-+	struct maps *tmp;
++	if (memcmp(elf_ident, ELFMAG, SELFMAG) != 0)
++		return -1;
 +
-+	while (head) {
-+		tmp = head->next;
-+		free(head);
-+		head = tmp;
-+	}
++	return 0;
 +}
 +
-+/* Append a new VMA */
-+void append_maps(struct maps *new_map, struct core_proc *cp)
++/* Get ELF Class */
++int get_elf_class(int pid, struct core_proc *cp)
 +{
-+	struct maps *tmp;
-+
-+	if (cp->vmas == NULL)
-+		cp->vmas = new_map;
-+	else {
-+		tmp = cp->vmas;
-+		while (tmp->next != NULL)
-+			tmp = tmp->next;
-+		tmp->next = new_map;
-+	}
-+}
-+
-+/* Collects virtual memory areas */
-+int get_vmas(int pid, struct core_proc *cp)
-+{
-+	char filename[40];
-+	char buff[4096];
-+	char src[128];
-+	char dst[128];
-+	char fname[4096];
-+	char page_offset[128];
-+	char inode[128];
-+	char r, w, x;
-+	char junk[30];
 +	FILE *fin;
-+	struct maps *tmp;
-+	long tmp_inode;
++	unsigned char elf_magic[EI_NIDENT];
++	char filename[40];
++	int ret;
 +
-+	snprintf(filename, 40, "/proc/%d/maps", pid);
++	snprintf(filename, 40, "/proc/%d/exe", pid);
 +	fin = fopen(filename, "r");
 +	if (fin == NULL) {
 +		status = errno;
-+		gencore_log("Failure in fetching Memory Mappings %s.\n",
-+								filename);
++		gencore_log("Failure while fetching the ELF header of the executable from %s.\n", filename);
 +		return -1;
 +	}
 +
-+	while (fgets(buff, 4096, fin)) {
-+
-+		sscanf(buff, "%[^-]%c%s %c%c%c%c %s %s %s %s", src, &junk[0],
-+					dst, &r, &w, &x, &junk[0],
-+					page_offset, junk, inode, fname);
-+
-+		tmp_inode = strtol(inode, NULL, 16);
-+
-+		if (tmp_inode)
-+			tmp = malloc(sizeof(struct maps) + strlen(fname) + 1);
-+		else
-+			tmp = malloc(sizeof(struct maps));
-+		if (!tmp) {
-+			status = errno;
-+			gencore_log("Failure in allocating memory for memory maps.\n");
-+			fclose(fin);
-+			return -1;
-+		}
-+
-+		tmp->src = strtoull(src, NULL, 16);
-+		tmp->dst = strtoull(dst, NULL, 16);
-+		tmp->offset = strtoull(page_offset, NULL, 16);
-+		tmp->r = r;
-+		tmp->w = w;
-+		tmp->x = x;
-+		tmp->inode = tmp_inode;
-+
-+		if (tmp->inode != 0)
-+			strcpy(tmp->fname, fname);
-+
-+		tmp->next = NULL;
-+		append_maps(tmp, cp);
-+		cp->phdrs_count++;
++	ret = fread(elf_magic, EI_NIDENT, 1, fin);
++	if (ret != 1) {
++		status = errno;
++		gencore_log("Failure while fetching the ELF header of the executable from %s.\n", filename);
++		fclose(fin);
++		return -1;
 +	}
 +
-+	/* One extra for the PT_NOTE */
-+	cp->phdrs_count++;
++	if (check_elf_hdr(elf_magic)) {
++		status = EINVAL;
++		gencore_log("Process to be dumped is not an ELF.\n");
++		return -1;
++	}
 +
 +	fclose(fin);
-+	return 0;
++
++	return elf_magic[EI_CLASS];
 +}
 
