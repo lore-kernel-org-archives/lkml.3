@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759997AbaCTUpX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:45:23 -0400
-Received: from smtprelay0106.hostedemail.com ([216.40.44.106]:51326 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759883AbaCTUpU (ORCPT
+	id S933679AbaCTUsx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:48:53 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:57405 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932328AbaCTUsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:45:20 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3871:3872:4250:4321:5007:7652:8957:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12517:12519:12740:13069:13095:13311:13357:13894,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mind92_2e22c830f2237
-X-Filterd-Recvd-Size: 2029
-Message-ID: <1395348314.7776.47.camel@joe-AO722>
-Subject: Re: [PATCH 2/2] coding style: fix line over 80 characters
-From: Joe Perches <joe@perches.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: =?ISO-8859-1?Q?C=E9dric?= Cabessa <ced@ryick.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Mar 2014 13:45:14 -0700
-In-Reply-To: <532B5ED1.8060406@cogentembedded.com>
-References: <1395266697-8699-1-git-send-email-ced@ryick.net>
-	 <1395266697-8699-3-git-send-email-ced@ryick.net>
-	 <532B5ED1.8060406@cogentembedded.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Mar 2014 16:48:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1558044.S1G2VU7srO@vostro.rjw.lan>
+References: <20140224162400.GE16457@pd.tnic> <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+ <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com> <1558044.S1G2VU7srO@vostro.rjw.lan>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Mar 2014 14:48:30 -0600
+Message-ID: <CAErSpo4pDYMhHo6e-1TN6XDRO0xy0u8H+=oucFnrEK+kbjZvzw@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 00:34 +0300, Sergei Shtylyov wrote:
-> On 03/20/2014 01:04 AM, Cédric Cabessa wrote:
-> > diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-[]
-> > @@ -271,12 +271,14 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-> >   			}
-> >   			break;
-> >   		case USB_PORT_FEAT_POWER:
-> > -			usbip_dbg_vhci_rh(" ClearPortFeature: USB_PORT_FEAT_POWER\n");
-> > +			usbip_dbg_vhci_rh(
-> > +				" ClearPortFeature: USB_PORT_FEAT_POWER\n");
-> 
->     Your version of scripts/checkpatch.pl seems outdated. It shouldn't 
-> complain about strings violating 80-column limit (and I've just verified it 
-> doesn't).
+On Thu, Mar 20, 2014 at 2:55 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> On Thursday, March 20, 2014 10:45:52 AM Bjorn Helgaas wrote:
+>> The purpose of system.c is indeed to prevent resources from being
+>> allocated to other devices.  This is really a question for Rafael, but
+>> in my opinion this function (reserving resources of PNP/ACPI devices
+>> to prevent their allocation to other devices) should be done for *all*
+>> PNP and ACPI devices, not just the PNP0C01/PNP0C02 devices handled by
+>> system.c.
+>>
+>> So I think the best solution would be to move that into the ACPI core
+>> somehow so it happens for all devices.
+>
+> Well, I think you got to the bottom of this, but that's something we can
+> do long-term.  Still, we need to find a short-term solution for the
+> particular issue at hand.
 
-checkpatch complains about > 80 char lines for lines with
-a function where the function name isn't understood to be
-a logging use.
+Right.  Even if we had this long-term solution, we'd still have
+Stephane's current problem, because the PNP0C02 _CRS is still wrong.
 
-uspip_dbg_<foo> doesn't take the general form so if the
-string at the EOL exceeds 80 chars, a message is emitted.
+We do have a drivers/pnp/quirks.c where we could conceivably adjust
+the PNP resource if we found the matching PCI device and MCHBAR.  That
+should solve Stephane's problem even with the current
+drivers/pnp/system.c.
 
-Long standalone strings on a single line do not get warnings.
-
-
+Bjorn
