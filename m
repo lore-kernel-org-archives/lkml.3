@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754867AbaCTF5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:57:07 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:17608 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbaCTF5E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:57:04 -0400
-Message-ID: <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        tglx@linutronix.de, mingo@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Wed, 19 Mar 2014 22:56:59 -0700
-In-Reply-To: <20140320053350.GB30295@linux.vnet.ibm.com>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	 <20140320053350.GB30295@linux.vnet.ibm.com>
+	id S1755353AbaCTF5z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:57:55 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12371 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755088AbaCTF5x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 01:57:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,692,1389772800"; 
+   d="scan'208";a="495607259"
+Message-ID: <1395295065.3571.10.camel@rzhang1-mobl4>
+Subject: Re: [PATCH v2 3/5] thermal: dove: prepare new Dove DT Kconfig
+ variable
+From: Zhang Rui <rui.zhang@intel.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Andrew Lunn <andrew@lunn.ch>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org
+Date: Thu, 20 Mar 2014 13:57:45 +0800
+In-Reply-To: <20140304040318.GG1872@titan.lakedaemon.net>
+References: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <1393662801-17950-3-git-send-email-sebastian.hesselbarth@gmail.com>
+	 <20140304040318.GG1872@titan.lakedaemon.net>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 11:03 +0530, Srikar Dronamraju wrote:
-> > > Joy,.. let me look at that with ppc in mind.
+On Mon, 2014-03-03 at 23:03 -0500, Jason Cooper wrote:
+> On Sat, Mar 01, 2014 at 09:33:19AM +0100, Sebastian Hesselbarth wrote:
+> > DT-enabled Dove will move over from ARCH_DOVE in mach-dove to MACH_DOVE in
+> > mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
+> > DT-only MACH_DOVE Kconfig.
 > > 
-> > OK; so while pretty much all the comments from that patch are utter
-> > nonsense (what was I thinking), I cannot actually find a real bug.
+> > Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> > ---
+> > Rui, Eduardo,
 > > 
-> > But could you try the below which replaces a control dependency with a
-> > full barrier. The control flow is plenty convoluted that I think the
-> > control barrier isn't actually valid anymore and that might indeed
-> > explain the fail.
+> > Mark Brown requested to take the corresponding ASoC patch through
+> > his tree. Therefore, I have split the former patch into individual subsystem
+> > patches.              
 > > 
+> > Cc: Zhang Rui <rui.zhang@intel.com>
+> > Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+> > Cc: Jason Cooper <jason@lakedaemon.net>
+> > Cc: Andrew Lunn <andrew@lunn.ch>
+> > Cc: Gregory Clement <gregory.clement@free-electrons.com>
+> > Cc: linux-pm@vger.kernel.org
+> > Cc: linux-arm-kernel@lists.infradead.org
+> > Cc: linux-kernel@vger.kernel.org
+> > ---
+> >  drivers/thermal/Kconfig | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> Unfortunately the patch didnt help. Still seeing tasks stuck
-> 
-> # ps -Ao pid,tt,user,fname,tmout,f,wchan | grep futex
-> 14680 pts/0    root     java         - 0 futex_wait_queue_me
-> 14797 pts/0    root     java         - 0 futex_wait_queue_me
-> # :> /var/log/messages
-> # echo t > /proc/sysrq-trigger 
-> # grep futex_wait_queue_me /var/log/messages | wc -l 
-> 334
-> #
-> 
-> [ 6904.211478] Call Trace:
-> [ 6904.211481] [c000000fa1f1b4d0] [0000000000000020] 0x20 (unreliable)
-> [ 6904.211486] [c000000fa1f1b6a0] [c000000000015208] .__switch_to+0x1e8/0x330
-> [ 6904.211491] [c000000fa1f1b750] [c000000000702f00] .__schedule+0x360/0x8b0
-> [ 6904.211495] [c000000fa1f1b9d0] [c000000000147348] .futex_wait_queue_me+0xf8/0x1a0
-> [ 6904.211500] [c000000fa1f1ba60] [c0000000001486dc] .futex_wait+0x17c/0x2a0
-> [ 6904.211505] [c000000fa1f1bc10] [c00000000014a614] .do_futex+0x254/0xd80
-> [ 6904.211510] [c000000fa1f1bd60] [c00000000014b25c] .SyS_futex+0x11c/0x1d0
-> [ 6904.238874] [c000000fa1f1be30] [c00000000000a0fc] syscall_exit+0x0/0x7c
-> [ 6904.238879] java            S 00003fff825f6044     0 14682  14076 0x00000080
-> 
-> Is there any other information that I provide that can help?
+> Acked-by: Jason Cooper <jason@lakedaemon.net>
 
-This problem suggests that we missed a wakeup for a task that was adding
-itself to the queue in a wait path. And the only place that can happen
-is with the hb spinlock check for any pending waiters. Just in case we
-missed some assumption about checking the hash bucket spinlock as a way
-of detecting any waiters (powerpc?), could you revert this commit and
-try the original atomic operations variant:
+applied.
 
-https://lkml.org/lkml/2013/12/19/630
+thanks,
+rui
+> 
+> thx,
+> 
+> Jason.
+
 
