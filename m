@@ -1,229 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166AbaCTDDY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 23:03:24 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:45696 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbaCTDDV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 23:03:21 -0400
-Message-ID: <532A5A62.5020303@gmail.com>
-Date: Thu, 20 Mar 2014 11:02:58 +0800
-From: TonyHo <tonyho.profession@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1754621AbaCTDEB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 23:04:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:22376 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377AbaCTDD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 23:03:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,691,1389772800"; 
+   d="scan'208";a="476106897"
+From: "Zhang, Rui" <rui.zhang@intel.com>
+To: "Lu, Aaron" <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>
+CC: lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Subject: RE: Info: mapping multiple BARs. Your kernel is fine.
+Thread-Topic: Info: mapping multiple BARs. Your kernel is fine.
+Thread-Index: AQHPQFbTsRMjm351nUi0BPnn+Nj/O5rowCwAgACNNGA=
+Date: Thu, 20 Mar 2014 03:03:45 +0000
+Message-ID: <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+References: <20140224162400.GE16457@pd.tnic>
+ <4205942.Tp8ltEsv6e@vostro.rjw.lan> <532A514C.5010106@intel.com>
+In-Reply-To: <532A514C.5010106@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Sebastian Capella <sebastian.capella@linaro.org>
-CC: "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org> <1394016605-24120-3-git-send-email-sebastian.capella@linaro.org> <20140316070917.GA3094@arch.cereza> <CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com> <20140317204410.GA1118@arch.cereza> <CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com> <20140319154434.GA3488@arch.cereza>
-In-Reply-To: <20140319154434.GA3488@arch.cereza>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2K345Kp018609
 
-Hi ,
-I'm trying add the hibernation to Freescale imx6Q(Cortex-A9*4), and I 
-use the patches from:
-http://lists.infradead.org/pipermail/linux-arm-kernel/2010-December/036055.html 
 
-And the TuxOnIce patches:
-http://tuxonice.nigelcunningham.com.au/downloads/all/tuxonice-for-linux-3.0-2012-10-23.patch.bz2 
 
-The kernel version is 3.0.35. And the SoC have 4 Cores.
-When I try to make the hibernation snapshot image, the kernel hint "NULL 
-pointer dereference", when enter the "swsusp_arch_suspend" function. 
-This function comes from the first patch link.
-The function is called in file tuxonice_builtin.c , the code snappit is 
-showed below:
-int toi_lowlevel_builtin(void){
-...
-     save_processor_state();
-     printk(KERN_ERR "Will Swsusp_arch_suspend\n");
-     error = swsusp_arch_suspend();
-     printk(KERN_ERR "Done Swsusp_arch_suspend\n");
-     if (error)
-         printk(KERN_ERR "Error %d hibernating\n", error);
-...
-}
-
-1. And I have tried to remove the "error = swsusp_arch_suspend()" , and 
-this would fix the "NULL pointer dereference", So I can confirm this 
-function is the problem. But I can't identify which sentence cause the 
-NULL pointer dereference.  Detail log is following.
-
-2. Also the "[ 23.058386] ...20%...40% " in below logs confuse me, it 
-seems the cache writing is not complete, it miss the 60% and 80%.
-
-3. When the 'replace the swsusp with tuxonice' is not selected, I use 
-the 'echo disk>/sys/power/state' to make a hibernation, will cause the 
-same problem.
-So this question might caused by the patch from the first patch link. 
-The freescale official BSP kernel version is 3.0.35, so the lastest 
-suspend to disk patches is not suitable. Any one have tried the SMP 
-Cortex-A9 hibernation ?
-
-Looking forward to someone would give me a hand.
-
-Detail Logs:
-/ # echo >/sys/power/tuxonice/do_hibernate
-[ 22.191954] TuxOnIce 3.2, with support for usm, compression, block i/o, 
-swap storage, file storage, userui.
-[ 22.202953] Initiating a hibernation cycle.
-  [ 22.207481] Failed to launch userspace program 
-'/usr/local/sbin/tuxoniceui_text': Error -2
-[ 22.215774] Launch userspace program failed.
-[ 22.220090] Starting other threads.
-[ 22.223537] Freezing processes & syncing filesystems.
-[ 22.228793] Stopping fuse filesystems.
-[ 22.232549] Freezing user space processes ... (elapsed 0.01 seconds) done.
-[ 22.782219] Stopping normal filesystems.
-[ 22.800634] Freezing remaining freezable tasks ... (elapsed 0.01 
-seconds) done.
-[ 22.867306] Preparing Image. Try 1.
-[ 22.925873] Restarting normal filesystems.
-[ 22.957534] Stopping fuse filesystems.
-[ 22.961311] Freezing user space processes ... (elapsed 0.00 seconds) done.
-[ 22.968803] Stopping normal filesystems.
-[ 22.975835] Freezing remaining freezable tasks ... (elapsed 0.01 
-seconds) done.
-[ 23.049812] Starting to save the image..
-[ 23.053750] Writing caches...
-[ 23.058386] ...20%...40%
-[ 23.061313] ====>> iofinish+iobase=55P,iobarmax=8758P
-[ 23.066467] ====>> iofinish+iobase=220KB,iobarmax=35032KB
-[ 23.071982] ====>> 
-toi_compress_bytes_in=225280B,toi_compress_bytes_out=106086B
-[ 23.106327] Waited for i/o due to synchronous I/O 4 times.
-[ 23.111848] Doing atomic copy/restore.
-[ 23.115602] Enter the Hibernation [imx6_hibernation_begin]
-[ 23.122407] udc suspend begins
-[ 23.126080] add wake up source irq 51
-[ 23.129910] PM: freeze of devices complete after 8.805 msecs
-[ 23.136256] PM: late freeze of devices complete after 0.677 msecs
-[ 23.142372] Enter the Hibernation [imx6_hibernation_pre_snapshot]
-[ 23.148471] Disabling non-boot CPUs ...
-[ 23.153364] CPU1: shutdown
-[ 23.157274] CPU2: shutdown
-[ 23.160823] CPU3: shutdown
-[ 23.163908] Will Swsusp_arch_suspend
-[ 23.421375] Unable to handle kernel NULL pointer dereference at virtual 
-address 00000000
-[ 23.429477] pgd = a8b3c000
-[ 23.432186] [00000000] *pgd=3816c831, *pte=00000000, *ppte=00000000
-[ 23.438500] Internal error: Oops: 80000007 [#1] PREEMPT SMP
-[ 23.444076] Modules linked in:
-[ 23.447150] CPU: 0 Not tainted (3.0.35 #56)
-[ 23.451687] PC is at 0x0
-[ 23.454223] LR is at 0x0
-[ 23.456759] pc : [<00000000>] lr : [<00000000>] psr: 60000093
-[ 23.456764] sp : a8b27e90 ip : 00000002 fp : 00000000
-[ 23.468251] r10: 804ee340 r9 : 00000000 r8 : 00000000
-[ 23.473479] r7 : 804aa4b0 r6 : 00000000 r5 : 804edd28 r4 : 804ed674
-[ 23.480010] r3 : 804e4478 r2 : 804cf814 r1 : 00008000 r0 : 00000000
-[ 23.486543] Flags: nZCv IRQs off FIQs on Mode SVC_32 ISA ARM Segment 
-kernel
-[ 23.493942] Control: 10c53c7d Table: 38b3c04a DAC: 00000015
-[ 23.499690]
-[ 23.499692] SP: 0xa8b27e10:
-[ 23.503972] 7e10 33322020 3336312e 5d383039 00000020 00000000 00000001 
-00000000 00025b3e
-[ 23.512266] 7e30 00000000 0000040f 00000007 00000000 804aa4b0 80033bb4 
-00000000 00008000
-[ 23.520558] 7e50 804cf814 804e4478 804ed674 804edd28 00000000 804aa4b0 
-00000000 00000000
-[ 23.528850] 7e70 804ee340 00000000 00000002 a8b27e90 00000000 00000000 
-60000093 ffffffff
-[ 23.537141] 7e90 00000001 804ed674 804edd28 00000000 804aa4b0 00000000 
-804ee340 800a700c
-[ 23.545435] 7eb0 60000093 804ed684 804edd28 8009fd94 000021ff 00000037 
-00000004 00000003
-[ 23.553726] 7ed0 a8b26000 00000000 804aa000 804ed684 00000000 804ee340 
-00000000 800a028c
-[ 23.562020] 7ef0 8009e848 804cf9c8 a8bee000 00000001 00000001 00000000 
-a825f3f8 804cfa2c
-On 03/19/2014 11:44 PM, Ezequiel Garcia wrote:
-> On Mar 17, Sebastian Capella wrote:
-> [..]
->> Thanks, I've added it like this in arch/arm/Kconfig.  I'm sure you
->> know, but this way also takes care of the CPU_FEROCEON in the default
->> list since SUSPEND_POSSIBLE already contains it.
->>
->> config ARCH_HIBERNATION_POSSIBLE
->>          bool
->>          depends on MMU
->>          default y if ARCH_SUSPEND_POSSIBLE
->>
->> Does this look ok?
->>
-> I applied this change on top of your patches and tested it on a Kirkwood
-> Openblocks A6 board, using a resume=/dev/sda2 kernel parameter (iow, without
-> any U-Boot assistance to resume). Seems to work fine (as you can see here
-> http://sprunge.us/BJRV). I guess you can add a:
+> -----Original Message-----
+> From: Lu, Aaron
+> Sent: Thursday, March 20, 2014 10:24 AM
+> To: Rafael J. Wysocki; Borislav Petkov
+> Cc: lkml; x86@kernel.org; Bjorn Helgaas; Linux PCI; ACPI Devel Maling
+> List; Zhang, Rui; Yinghai Lu; H. Peter Anvin; Stephane Eranian
+> Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+> Importance: High
+> 
+> On 03/15/2014 10:15 PM, Rafael J. Wysocki wrote:
+> > [CC list rearranged]
+> >
+> > On Monday, February 24, 2014 05:24:00 PM Borislav Petkov wrote:
+> >> This started happening this morning after booting -rc4+tip, let's
+> add
+> >> *everybody* to CC :-)
+> >>
+> >> We have intel_uncore_init, snb_uncore_imc_init_box, uncore_pci_probe
+> >> and other goodies on the stack.
+> >
+> > I've just gone throught this.
+> >
+> > So the problem is that we have the PNP "system" driver whose only
+> > purpose seems to be to reserve system resources so that the PCI layer
+> > doesn't assign them to new devices on hotplug (disclaimer: I didn't
+> > invent it, I only read the code and comments in there).
+> 
+> And to PCI devices which have uninitialized BARs.
+> 
+> >
+> > It does that for ACPI device objects having the "PNP0C02" and
+> "PNP0C01" IDs.
+> >
+> > Apparently, snb_uncore_imc_init_box() steps on a range already
+> > reserved by that driver on your box.  And this doesn't seem to be a
+> > coincidence, because the ACPI device object in question probably
+> > *does* correspond to the memory controller that the uncore driver
+> attempts to use.
+> >
+> > I'm not sure how to address that right now to be honest.  Arguably,
+> > the PNP "system" driver should be replaced with something saner, but
+> > still the resources it claims need to be kept out of reach of the
+> > PCI's resource allocation code.
+> 
+> The quirk_system_pci_resources is meant to disable PNP devices'
+> resource if they collide with any known PCI device's BAR. I'm not sure
+> why it doesn't work here, perhaps the uncore PCI device doesn't have a
+> BAR that falls in the PNP device's resource window?
 >
-> Tested-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
->
-> On the other side, this board has no pm_power_off() support, which means
-> kernel_halt() is called after kernel_power_off().
->
-> I'm not sure if a NULL pm_power_off() is supported, but this makes my kernel
-> crash in a reboot notifier that's called twice (first in kernel_power_off
-> and then in kernel_halt):
->
-> Unable to handle kernel paging request at virtual address 00100104
-> pgd = df634000
-> [00100104] *pgd=1f5c3831, *pte=00000000, *ppte=00000000
-> Internal error: Oops: 817 [#1] PREEMPT ARM
-> CPU: 0 PID: 565 Comm: sh Not tainted 3.14.0-rc6-00002-g06da70a-dirty #24
-> task: df4d5440 ti: df666000 task.ti: df666000
-> PC is at led_trigger_unregister+0x3c/0xcc
-> LR is at led_trigger_unregister+0x20/0xcc
-> pc : [<c0273090>]    lr : [<c0273074>]    psr: 60000093
-> sp : df667e50  ip : 00100100  fp : 000ab294
-> r10: 00000002  r9 : 00000000  r8 : c0459a6c
-> r7 : c046c87c  r6 : c046c964  r5 : c03ee198  r4 : c046c964
-> r3 : 00200200  r2 : 00100100  r1 : 00200200  r0 : c046c8e4
-> Flags: nZCv  IRQs off  FIQs on  Mode SVC_32  ISA ARM  Segment user
-> Control: 0005397f  Table: 1f634000  DAC: 00000015
-> Process sh (pid: 565, stack limit = 0xdf6661c0)
-> Stack: (0xdf667e50 to 0xdf668000)
-> 7e40:                                     00000000 c046c964 c03ee198 00000000
-> 7e60: 00000000 c0273ae0 c0273ab4 c046c94c ffffffff c0036698 c04546c8 ffffffff
-> 7e80: 00000000 00000002 c0446800 c04550e8 df5270c8 c0036b24 00000000 c034cce0
-> 7ea0: c03c4b18 c04550e8 df666018 00000000 c0476f60 c0036b54 00000000 c04550e8
-> 7ec0: df5270c8 c00378ec 00000001 c034cc64 c0455288 c0044cac 0000006b df4270d8
-> 7ee0: df53f480 00000005 00000004 df53f480 00000005 c0042dc4 00000005 df4270d8
-> 7f00: df53f480 00000005 df667f80 df53f480 df5270c0 c01a2bf4 00000005 c0108dd0
-> 7f20: c0108d8c 00000000 00000000 c010c090 00000000 00000000 df4dd280 000acb10
-> 7f40: df667f80 00000005 00000000 00000005 00000000 c00af2b8 fffffff6 c0019d9c
-> 7f60: 00000003 00000000 00000000 df4dd280 000acb10 00000000 00000005 c00af448
-> 7f80: 00000000 00000000 00200200 000aa8b0 00000001 000acb10 00000004 c0009424
-> 7fa0: df666000 c00092c0 000aa8b0 00000001 00000001 000acb10 00000005 00000000
-> 7fc0: 000aa8b0 00000001 000acb10 00000004 00000020 000ab2a8 000ab274 000ab294
-> 7fe0: 00000005 befbd738 0000e1f0 b6edeb4c 60000010 00000001 1fffd831 1fffdc31
-> [<c0273090>] (led_trigger_unregister) from [<c0273ae0>] (heartbeat_reboot_notifier+0x2c/0x40)
-> [<c0273ae0>] (heartbeat_reboot_notifier) from [<c0036698>] (notifier_call_chain+0x48/0x9c)
-> [<c0036698>] (notifier_call_chain) from [<c0036b24>] (__blocking_notifier_call_chain+0x48/0x60)
-> [<c0036b24>] (__blocking_notifier_call_chain) from [<c0036b54>] (blocking_notifier_call_chain+0x18/0x20)
-> [<c0036b54>] (blocking_notifier_call_chain) from [<c00378ec>] (kernel_halt+0x14/0x58)
-> [<c00378ec>] (kernel_halt) from [<c034cc64>] (power_down+0x8c/0xac)
-> [<c034cc64>] (power_down) from [<c0044cac>] (hibernate+0x1a8/0x1ec)
-> [<c0044cac>] (hibernate) from [<c0042dc4>] (state_store+0xac/0xb8)
-> [<c0042dc4>] (state_store) from [<c01a2bf4>] (kobj_attr_store+0x14/0x20)
-> [<c01a2bf4>] (kobj_attr_store) from [<c0108dd0>] (sysfs_kf_write+0x44/0x48)
-> [<c0108dd0>] (sysfs_kf_write) from [<c010c090>] (kernfs_fop_write+0xb4/0x14c)
-> [<c010c090>] (kernfs_fop_write) from [<c00af2b8>] (vfs_write+0xac/0x188)
-> [<c00af2b8>] (vfs_write) from [<c00af448>] (SyS_write+0x3c/0x78)
-> [<c00af448>] (SyS_write) from [<c00092c0>] (ret_fast_syscall+0x0/0x2c)
-> Code: e3a03602 e2822c01 e2833c02 e59f7084 (e58c1004)
-> ---[ end trace 72dd5ccae5489f38 ]---
->
+I've talked with Yan Zheng, and I was told that this resource "0xfed10000 - 0xfed15fff"
+is got from PCI device register directly, which is not in its BAR range.
+Thus IMO, it is impossible for PNP layer to be aware of this resource.
 
+BTW, about drivers/pnp/system.c, if its ONLY purpose is to prevent those
+resources from being allocated to uninitialized PCI devices, then IMO,
+the best way to do this is make PCI bus handle those PNP0C01/PNP0C02
+resources directly, probably via a platform callback, say,
+1. make drivers/pnp/system.c a no-op for PNPACPI, by checking pnp_dev->protocol.
+2. introduce acpi_check_reserved_resource() to parsing PNP0C01/PNP0C02 resources.
+3. in PCI bus, invoke acpi_check_reserved_resource() when assigning
+   resources to PCI devices.
+
+Thanks,
+rui
+ 
+> Thanks,
+> Aaron
+> 
+> >
+> >> ...
+> >> [    0.488998] software IO TLB [mem 0xcac30000-0xcec30000] (64MB)
+> mapped at [ffff8800cac30000-ffff8800cec2ffff]
+> >> [    0.489975] resource map sanity check conflict: 0xfed10000
+> 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+> >> [    0.490079] ------------[ cut here ]------------
+> >> [    0.490204] WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171
+> __ioremap_caller+0x372/0x380()
+> >> [    0.490306] Info: mapping multiple BARs. Your kernel is fine.
+> >> [    0.490371] Modules linked in:
+> >> [    0.490558] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+
+> #1
+> >> [    0.490642] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW
+> (2.06 ) 11/13/2012
+> >> [    0.490742]  00000000000000ab ffff880213d01ad8 ffffffff816112e3
+> 0000000000000006
+> >> [    0.491032]  ffff880213d01b28 ffff880213d01b18 ffffffff8104e9bc
+> ffff880213d01b08
+> >> [    0.491343]  ffffc90000c58000 00000000fed10000 00000000fed10000
+> 0000000000006000
+> >> [    0.491631] Call Trace:
+> >> [    0.493337]  [<ffffffff816112e3>] dump_stack+0x4f/0x7c
+> >> [    0.493420]  [<ffffffff8104e9bc>] warn_slowpath_common+0x8c/0xc0
+> >> [    0.493503]  [<ffffffff8104eaa6>] warn_slowpath_fmt+0x46/0x50
+> >> [    0.493588]  [<ffffffff8103f1e2>] __ioremap_caller+0x372/0x380
+> >> [    0.493674]  [<ffffffff810211a2>] ?
+> snb_uncore_imc_init_box+0x62/0x90
+> >> [    0.493761]  [<ffffffff8103f247>] ioremap_nocache+0x17/0x20
+> >> [    0.493846]  [<ffffffff810211a2>]
+> snb_uncore_imc_init_box+0x62/0x90
+> >> [    0.493933]  [<ffffffff81022925>] uncore_pci_probe+0xe5/0x1e0
+> >> [    0.494020]  [<ffffffff812d487e>] local_pci_probe+0x4e/0xa0
+> >> [    0.494104]  [<ffffffff81418a59>] ? get_device+0x19/0x20
+> >> [    0.494213]  [<ffffffff812d5cd1>] pci_device_probe+0xe1/0x130
+> >> [    0.494300]  [<ffffffff8141d3cb>] driver_probe_device+0x7b/0x240
+> >> [    0.494385]  [<ffffffff8141d63b>] __driver_attach+0xab/0xb0
+> >> [    0.494469]  [<ffffffff8141d590>] ?
+> driver_probe_device+0x240/0x240
+> >> [    0.494551]  [<ffffffff8141b71e>] bus_for_each_dev+0x5e/0x90
+> >> [    0.494634]  [<ffffffff8141cede>] driver_attach+0x1e/0x20
+> >> [    0.494718]  [<ffffffff8141ca57>] bus_add_driver+0x117/0x230
+> >> [    0.494802]  [<ffffffff8141dd34>] driver_register+0x64/0xf0
+> >> [    0.494884]  [<ffffffff812d4c14>] __pci_register_driver+0x64/0x70
+> >> [    0.494972]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+> >> [    0.495056]  [<ffffffff81d03312>] intel_uncore_init+0x177/0x41c
+> >> [    0.495155]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+> >> [    0.495242]  [<ffffffff8100029e>] do_one_initcall+0x4e/0x170
+> >> [    0.495326]  [<ffffffff81071100>] ? parse_args+0x60/0x360
+> >> [    0.495411]  [<ffffffff81cfbfb8>]
+> kernel_init_freeable+0x106/0x19a
+> >> [    0.495497]  [<ffffffff81cfb83b>] ? do_early_param+0x86/0x86
+> >> [    0.495582]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+> >> [    0.495666]  [<ffffffff81607efe>] kernel_init+0xe/0xf0
+> >> [    0.495749]  [<ffffffff81621f6c>] ret_from_fork+0x7c/0xb0
+> >> [    0.495831]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+> >> [    0.495921] ---[ end trace 428f365c054d9a01 ]---
+> >> [    0.496196] RAPL PMU detected, hw unit 2^-16 Joules, API unit is
+> 2^-32 Joules, 3 fixed counters 163840 ms ovfl timer
+> >> [    0.498598] futex hash table entries: 1024 (order: 5, 131072
+> bytes)
+> >> [    0.498833] audit: initializing netlink subsys (disabled)
+> >> [    0.499024] audit: type=2000 audit(1393259866.477:1): initialized
+> >> ...
+> >>
+> >>
+> >
+
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
