@@ -1,59 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759540AbaCTTcp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:32:45 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57401 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755653AbaCTTck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:32:40 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
-        <peter@hurleysoftware.com>, <m-karicheri2@ti.com>,
-        <b32955@freescale.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 07/11] tty: serial: omap: remove unneeded singlethread workqueue
-Date: Thu, 20 Mar 2014 14:30:03 -0500
-Message-ID: <1395343807-21618-7-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.9.1.286.g5172cb3
-In-Reply-To: <1395343807-21618-1-git-send-email-balbi@ti.com>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+	id S1759664AbaCTTcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:32:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:27094 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653AbaCTTct (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:32:49 -0400
+X-IronPort-AV: E=Sophos;i="4.97,697,1389744000"; 
+   d="scan'208";a="112029814"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next] xen-netback: Stop using xenvif_tx_pending_slots_available
+Date: Thu, 20 Mar 2014 19:32:40 +0000
+Message-ID: <1395343961-4744-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
 Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it wasn't used by anything, just remove it.
+Since the early days TX stops if there isn't enough free pending slots to
+consume a maximum sized (slot-wise) packet. Probably the reason for that is to
+avoid the case when we don't have enough free pending slot in the ring to finish
+the packet. But if we make sure that the pending ring has the same size as the
+shared ring, that shouldn't really happen. The frontend can only post packets
+which fit the to the free space of the shared ring. If it doesn't, the frontend
+has to stop, as it can only increase the req_prod when the whole packet fits
+onto the ring.
+This patch avoid using this checking, makes sure the 2 ring has the same size,
+and remove a checking from the callback. As now we don't stop the NAPI instance
+on this condition, we don't have to wake it up if we free pending slots up.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
- drivers/tty/serial/omap-serial.c | 3 ---
- 1 file changed, 3 deletions(-)
-
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index c79d3e6..b092d3d 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -180,8 +180,6 @@ static struct uart_omap_port *ui[OMAP_MAX_HSUART_PORTS];
- /* Forward declaration of functions */
- static void serial_omap_mdr1_errataset(struct uart_omap_port *up, u8 mdr1);
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index bef37be..a800a8e 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -81,7 +81,7 @@ struct xenvif_rx_meta {
  
--static struct workqueue_struct *serial_omap_uart_wq;
+ #define MAX_BUFFER_OFFSET PAGE_SIZE
+ 
+-#define MAX_PENDING_REQS 256
++#define MAX_PENDING_REQS XEN_NETIF_TX_RING_SIZE
+ 
+ /* It's possible for an skb to have a maximal number of frags
+  * but still be less than MAX_BUFFER_OFFSET in size. Thus the
+@@ -253,12 +253,6 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
+ 		vif->pending_prod + vif->pending_cons;
+ }
+ 
+-static inline bool xenvif_tx_pending_slots_available(struct xenvif *vif)
+-{
+-	return nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
+-		< MAX_PENDING_REQS;
+-}
 -
- static inline unsigned int serial_in(struct uart_omap_port *up, int offset)
- {
- 	offset <<= up->port.regshift;
-@@ -1684,7 +1682,6 @@ static int serial_omap_probe(struct platform_device *pdev)
- 	up->calc_latency = PM_QOS_CPU_DMA_LAT_DEFAULT_VALUE;
- 	pm_qos_add_request(&up->pm_qos_request,
- 		PM_QOS_CPU_DMA_LATENCY, up->latency);
--	serial_omap_uart_wq = create_singlethread_workqueue(up->name);
- 	INIT_WORK(&up->qos_work, serial_omap_uart_qos_work);
+ /* Callback from stack when TX packet can be released */
+ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
  
- 	platform_set_drvdata(pdev, up);
--- 
-1.9.1.286.g5172cb3
-
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 83a71ac..7bb7734 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -88,8 +88,7 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+ 		local_irq_save(flags);
+ 
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, more_to_do);
+-		if (!(more_to_do &&
+-		      xenvif_tx_pending_slots_available(vif)))
++		if (!more_to_do)
+ 			__napi_complete(napi);
+ 
+ 		local_irq_restore(flags);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index bc94320..5df8d63 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1175,8 +1175,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 	struct sk_buff *skb;
+ 	int ret;
+ 
+-	while (xenvif_tx_pending_slots_available(vif) &&
+-	       (skb_queue_len(&vif->tx_queue) < budget)) {
++	while (skb_queue_len(&vif->tx_queue) < budget) {
+ 		struct xen_netif_tx_request txreq;
+ 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+@@ -1516,13 +1515,6 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+ 	wake_up(&vif->dealloc_wq);
+ 	spin_unlock_irqrestore(&vif->callback_lock, flags);
+ 
+-	if (RING_HAS_UNCONSUMED_REQUESTS(&vif->tx) &&
+-	    xenvif_tx_pending_slots_available(vif)) {
+-		local_bh_disable();
+-		napi_schedule(&vif->napi);
+-		local_bh_enable();
+-	}
+-
+ 	if (likely(zerocopy_success))
+ 		vif->tx_zerocopy_success++;
+ 	else
+@@ -1714,8 +1706,7 @@ static inline int rx_work_todo(struct xenvif *vif)
+ static inline int tx_work_todo(struct xenvif *vif)
+ {
+ 
+-	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
+-	    xenvif_tx_pending_slots_available(vif))
++	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)))
+ 		return 1;
+ 
+ 	return 0;
