@@ -1,183 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249AbaCTJeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:34:00 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:53435 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaCTJVU (ORCPT
+	id S1756353AbaCTJgW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:36:22 -0400
+Received: from smtprelay0025.hostedemail.com ([216.40.44.25]:45945 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750960AbaCTJgU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:20 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 01/36] mtd: st_spi_fsm: Allocate resources and register with MTD framework
-Date: Thu, 20 Mar 2014 09:20:33 +0000
-Message-Id: <1395307268-12721-2-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 05:36:20 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:560:599:800:960:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2896:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3872:4321:5007:7652:7809:7901:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: stone78_19d35fc27f608
+X-Filterd-Recvd-Size: 1813
+Message-ID: <1395308175.8649.67.camel@joe-AO722>
+Subject: Re: [PATCH] MAINTAINERS: Reorder maintainer addresses for PM and
+ ACPI
+From: Joe Perches <joe@perches.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, Pavel Machek <pavel@ucw.cz>
+Date: Thu, 20 Mar 2014 02:36:15 -0700
+In-Reply-To: <CAMuHMdXFkf0g15vY=PkeMgxhr4G2=tWhK+jd8ejiqT0bJVaxQQ@mail.gmail.com>
+References: <1744772.yf52reTAmC@vostro.rjw.lan>
+	 <1395282105.8649.55.camel@joe-AO722>
+	 <CAMuHMdXFkf0g15vY=PkeMgxhr4G2=tWhK+jd8ejiqT0bJVaxQQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a new driver. It's used to communicate with a special type of
-optimised Serial Flash Controller called the FSM. The FSM uses a subset
-of the SPI protocol to communicate with supported NOR-Flash devices.
+On Thu, 2014-03-20 at 08:58 +0100, Geert Uytterhoeven wrote:
+> Hi Joe,
+> 
+> On Thu, Mar 20, 2014 at 3:21 AM, Joe Perches <joe@perches.com> wrote:
+> >>  SUSPEND TO RAM
+> >> +M:   Rafael J. Wysocki <rjw@rjwysocki.net>
+> >> -M:   "Rafael J. Wysocki" <rjw@rjwysocki.net>
+> >
+> > Please keep the quotes around your name.
+> >
+> > It makes it easier for some systems to accept
+> > names with periods via copy/paste.
+> 
+> While for "git send-email", it's easier if I don't have to remove the one in
+> the middle manually...
+> 
+> Anyway, scripts/get_maintainer.pl re-adds them.
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/Kconfig      |   8 +++
- drivers/mtd/devices/Makefile     |   1 +
- drivers/mtd/devices/st_spi_fsm.c | 106 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 115 insertions(+)
- create mode 100644 drivers/mtd/devices/st_spi_fsm.c
+A lot of people just open MAINTAINERS, root around
+for sections of interest, and copy/paste.
 
-diff --git a/drivers/mtd/devices/Kconfig b/drivers/mtd/devices/Kconfig
-index 0128138..1210bc2 100644
---- a/drivers/mtd/devices/Kconfig
-+++ b/drivers/mtd/devices/Kconfig
-@@ -210,6 +210,14 @@ config MTD_DOCG3
- 	  M-Systems and now Sandisk. The support is very experimental,
- 	  and doesn't give access to any write operations.
- 
-+config MTD_ST_SPI_FSM
-+	tristate "ST Microelectronics SPI FSM Serial Flash Controller"
-+	depends on ARM || SH
-+	help
-+	  This provides an MTD device driver for the ST Microelectronics
-+	  SPI Fast Sequence Mode (FSM) Serial Flash Controller and support
-+	  for a subset of connected Serial Flash devices.
-+
- if MTD_DOCG3
- config BCH_CONST_M
- 	default 14
-diff --git a/drivers/mtd/devices/Makefile b/drivers/mtd/devices/Makefile
-index d83bd73..c68868f 100644
---- a/drivers/mtd/devices/Makefile
-+++ b/drivers/mtd/devices/Makefile
-@@ -16,6 +16,7 @@ obj-$(CONFIG_MTD_NAND_OMAP_BCH)	+= elm.o
- obj-$(CONFIG_MTD_SPEAR_SMI)	+= spear_smi.o
- obj-$(CONFIG_MTD_SST25L)	+= sst25l.o
- obj-$(CONFIG_MTD_BCM47XXSFLASH)	+= bcm47xxsflash.o
-+obj-$(CONFIG_MTD_ST_SPI_FSM)    += st_spi_fsm.o
- 
- 
- CFLAGS_docg3.o			+= -I$(src)
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-new file mode 100644
-index 0000000..b1e6740
---- /dev/null
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -0,0 +1,106 @@
-+/*
-+ * st_spi_fsm.c	- ST Fast Sequence Mode (FSM) Serial Flash Controller
-+ *
-+ * Author: Angus Clark <angus.clark@st.com>
-+ *
-+ * Copyright (C) 2010-2014 STicroelectronics Limited
-+ *
-+ * JEDEC probe based on drivers/mtd/devices/m25p80.c
-+ *
-+ * This code is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mtd/mtd.h>
-+#include <linux/sched.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/of.h>
-+
-+struct stfsm {
-+	struct device		*dev;
-+	void __iomem		*base;
-+	struct resource		*region;
-+	struct mtd_info		mtd;
-+	struct mutex		lock;
-+};
-+
-+static int stfsm_probe(struct platform_device *pdev)
-+{
-+	struct device_node *np = pdev->dev.of_node;
-+	struct resource *res;
-+	struct stfsm *fsm;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No DT found\n");
-+		return -EINVAL;
-+	}
-+
-+	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
-+	if (!fsm)
-+		return -ENOMEM;
-+
-+	fsm->dev = &pdev->dev;
-+
-+	platform_set_drvdata(pdev, fsm);
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!res) {
-+		dev_err(&pdev->dev, "Resource not found\n");
-+		return -ENODEV;
-+	}
-+
-+	fsm->base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(fsm->base)) {
-+		dev_err(&pdev->dev,
-+			"Failed to reserve memory region %pR\n", res);
-+		return PTR_ERR(fsm->base);
-+	}
-+
-+	mutex_init(&fsm->lock);
-+
-+	fsm->mtd.dev.parent	= &pdev->dev;
-+	fsm->mtd.type		= MTD_NORFLASH;
-+	fsm->mtd.writesize	= 4;
-+	fsm->mtd.writebufsize	= fsm->mtd.writesize;
-+	fsm->mtd.flags		= MTD_CAP_NORFLASH;
-+
-+	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
-+}
-+
-+static int stfsm_remove(struct platform_device *pdev)
-+{
-+	struct stfsm *fsm = platform_get_drvdata(pdev);
-+	int err;
-+
-+	err = mtd_device_unregister(&fsm->mtd);
-+	if (err)
-+		return err;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id stfsm_match[] = {
-+	{ .compatible = "st,spi-fsm", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, stfsm_match);
-+
-+static struct platform_driver stfsm_driver = {
-+	.probe		= stfsm_probe,
-+	.remove		= stfsm_remove,
-+	.driver		= {
-+		.name	= "st-spi-fsm",
-+		.owner	= THIS_MODULE,
-+		.of_match_table = stfsm_match,
-+	},
-+};
-+module_platform_driver(stfsm_driver);
-+
-+MODULE_AUTHOR("Angus Clark <angus.clark@st.com>");
-+MODULE_DESCRIPTION("ST SPI FSM driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.2
 
