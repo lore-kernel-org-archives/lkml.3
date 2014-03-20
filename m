@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753949AbaCTF4d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:56:33 -0400
-Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:26999
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752245AbaCTF4A (ORCPT
+	id S1752082AbaCTFz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:55:58 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:21333
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751705AbaCTFzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:56:00 -0400
+	Thu, 20 Mar 2014 01:55:40 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz8275dh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <shawn.guo@linaro.org>
 CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 3/3] ARM: dts: vf610-twr: Enables FTM PWM device.
-Date: Thu, 20 Mar 2014 13:12:05 +0800
-Message-ID: <1395292325-8497-4-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCH 0/3] Add DTS node for FTM PWM
+Date: Thu, 20 Mar 2014 13:12:02 +0800
+Message-ID: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -29,30 +27,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
-Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
----
- arch/arm/boot/dts/vf610-twr.dts | 6 ++++++
- 1 file changed, 6 insertions(+)
+Hi Shawn,
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index 3fabdb5..c016ec8 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -245,6 +245,12 @@
- 	};
- };
- 
-+&pwm0 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_pwm0>;
-+	status = "okay";
-+};
-+
- &sai2 {
- 	#sound-dai-cells = <0>;
- 	pinctrl-names = "default";
+The FTM PWM driver has been applied by the Maintainer, so here I resend
+this patches based upon git://git.linaro.org/people/shawnguo/linux-2.6.git
+newest reporsitory.
+
+
+
+
+Xiubo Li (3):
+  ARM: dts: vf610: Add Freescale FTM PWM node. ==> resend v10
+  ARM: dts: vf610-twr: Add PWM0's pinctrl node ==> new
+  ARM: dts: vf610-twr: Enables FTM PWM device. ==> resend v10
+
+ arch/arm/boot/dts/vf610-twr.dts | 17 +++++++++++++++++
+ arch/arm/boot/dts/vf610.dtsi    | 13 +++++++++++++
+ 2 files changed, 30 insertions(+)
+
 -- 
 1.8.4
 
