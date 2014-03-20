@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaCTBbb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 21:31:31 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34367 "EHLO
+	id S1757002AbaCTBeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 21:34:18 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34342 "EHLO
 	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750853AbaCTBb3 (ORCPT
+	with ESMTP id S1751553AbaCTBba (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 21:31:29 -0400
+	Wed, 19 Mar 2014 21:31:30 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,196 +16,176 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 02/13] perf tools: Convert sort entries to hpp formats
-Date: Thu, 20 Mar 2014 10:31:16 +0900
-Message-Id: <1395279087-12554-3-git-send-email-namhyung@kernel.org>
+Subject: [RFC/PATCHSET 00/13] perf report: Add -F option for specifying output fields (v3)
+Date: Thu, 20 Mar 2014 10:31:14 +0900
+Message-Id: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
-References: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a preparation of consolidating management of output field and
-sort keys.
+Hello,
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/hist.c   |  6 ++++
- tools/perf/util/hist.h |  6 ++++
- tools/perf/util/sort.c | 80 +++++++++++++++++++++++++++++++++++++++++++++++---
- 3 files changed, 88 insertions(+), 4 deletions(-)
+This is a patchset implementing -F/--fields option to setup output
+field/column as Ingo requested.  It depends on my perf/percentage
+patchset (with minor updates) [1].
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index d4a4f2e7eb43..a6eea666b443 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -284,6 +284,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- };
- 
- LIST_HEAD(perf_hpp__list);
-+LIST_HEAD(perf_hpp__sort_list);
- 
- 
- #undef HPP__COLOR_PRINT_FNS
-@@ -325,6 +326,11 @@ void perf_hpp__column_register(struct perf_hpp_fmt *format)
- 	list_add_tail(&format->list, &perf_hpp__list);
- }
- 
-+void perf_hpp__register_sort_field(struct perf_hpp_fmt *format)
-+{
-+	list_add_tail(&format->sort_list, &perf_hpp__sort_list);
-+}
-+
- void perf_hpp__column_enable(unsigned col)
- {
- 	BUG_ON(col >= PERF_HPP__MAX_INDEX);
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 9ef3b3a75f03..0f8d46803c92 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -158,13 +158,18 @@ struct perf_hpp_fmt {
- 	int64_t (*sort)(struct hist_entry *a, struct hist_entry *b);
- 
- 	struct list_head list;
-+	struct list_head sort_list;
- };
- 
- extern struct list_head perf_hpp__list;
-+extern struct list_head perf_hpp__sort_list;
- 
- #define perf_hpp__for_each_format(format) \
- 	list_for_each_entry(format, &perf_hpp__list, list)
- 
-+#define perf_hpp__for_each_sort_list(format) \
-+	list_for_each_entry(format, &perf_hpp__sort_list, sort_list)
-+
- extern struct perf_hpp_fmt perf_hpp__format[];
- 
- enum {
-@@ -183,6 +188,7 @@ enum {
- void perf_hpp__init(void);
- void perf_hpp__column_register(struct perf_hpp_fmt *format);
- void perf_hpp__column_enable(unsigned col);
-+void perf_hpp__register_sort_field(struct perf_hpp_fmt *format);
- 
- typedef u64 (*hpp_field_fn)(struct hist_entry *he);
- typedef int (*hpp_callback_fn)(struct perf_hpp *hpp, bool front);
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 635cd8f8b22e..b2829f947053 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -2,6 +2,7 @@
- #include "hist.h"
- #include "comm.h"
- #include "symbol.h"
-+#include "evsel.h"
- 
- regex_t		parent_regex;
- const char	default_parent_pattern[] = "^sys_|^do_page_fault";
-@@ -1027,10 +1028,80 @@ static struct sort_dimension memory_sort_dimensions[] = {
- 
- #undef DIM
- 
--static void __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
-+struct hpp_sort_entry {
-+	struct perf_hpp_fmt hpp;
-+	struct sort_entry *se;
-+};
-+
-+static int __sort__hpp_header(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+			      struct perf_evsel *evsel)
-+{
-+	struct hpp_sort_entry *hse;
-+	size_t len;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+	len = hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+
-+	return scnprintf(hpp->buf, hpp->size, "%*s", len, hse->se->se_header);
-+}
-+
-+static int __sort__hpp_width(struct perf_hpp_fmt *fmt,
-+			     struct perf_hpp *hpp __maybe_unused,
-+			     struct perf_evsel *evsel)
-+{
-+	struct hpp_sort_entry *hse;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+
-+	return hists__col_len(&evsel->hists, hse->se->se_width_idx);
-+}
-+
-+static int __sort__hpp_entry(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
-+			     struct hist_entry *he)
-+{
-+	struct hpp_sort_entry *hse;
-+	size_t len;
-+
-+	hse = container_of(fmt, struct hpp_sort_entry, hpp);
-+	len = hists__col_len(he->hists, hse->se->se_width_idx);
-+
-+	return hse->se->se_snprintf(he, hpp->buf, hpp->size, len);
-+}
-+
-+static int __sort_dimension__add_hpp(struct sort_dimension *sd)
-+{
-+	struct hpp_sort_entry *hse;
-+
-+	hse = malloc(sizeof(*hse));
-+	if (hse == NULL) {
-+		pr_err("Memory allocation failed\n");
-+		return -1;
-+	}
-+
-+	hse->se = sd->entry;
-+	hse->hpp.header = __sort__hpp_header;
-+	hse->hpp.width = __sort__hpp_width;
-+	hse->hpp.entry = __sort__hpp_entry;
-+	hse->hpp.color = NULL;
-+
-+	hse->hpp.cmp = sd->entry->se_cmp;
-+	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
-+	hse->hpp.sort = hse->hpp.collapse;
-+
-+	INIT_LIST_HEAD(&hse->hpp.list);
-+	INIT_LIST_HEAD(&hse->hpp.sort_list);
-+
-+	perf_hpp__register_sort_field(&hse->hpp);
-+	return 0;
-+}
-+
-+static int __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- {
- 	if (sd->taken)
--		return;
-+		return 0;
-+
-+	if (__sort_dimension__add_hpp(sd) < 0)
-+		return -1;
- 
- 	if (sd->entry->se_collapse)
- 		sort__need_collapse = 1;
-@@ -1040,6 +1111,8 @@ static void __sort_dimension__add(struct sort_dimension *sd, enum sort_type idx)
- 
- 	list_add_tail(&sd->entry->list, &hist_entry__sort_list);
- 	sd->taken = 1;
-+
-+	return 0;
- }
- 
- int sort_dimension__add(const char *tok)
-@@ -1068,8 +1141,7 @@ int sort_dimension__add(const char *tok)
- 			sort__has_dso = 1;
- 		}
- 
--		__sort_dimension__add(sd, i);
--		return 0;
-+		return __sort_dimension__add(sd, i);
- 	}
- 
- 	for (i = 0; i < ARRAY_SIZE(bstack_sort_dimensions); i++) {
+The -F option can receive any sort keys that -s option recognize, plus
+following fields (name can be changed):
+
+  overhead, overhead_sys, overhead_us, sample, period
+
+The overhead_guest_sys and overhead_guest_us might be avaiable when
+you profile guest machines.
+
+Output will be sorted by in order of fields and sort keys passed by -s
+option will be added to the output field list automatically.  If you
+want to change the order of sorting you can give -s option in addition
+to -F option.  To support old behavior, it'll also prepend 'overhead'
+field to the sort keys unless you give -F option explicitly.
+
+
+  $ perf report -s dso,sym
+  ...
+  # Overhead  Shared Object                      Symbol
+  # ........  .............  ..........................
+  #
+      13.75%  ld-2.17.so     [.] strcmp                
+      10.00%  abc            [.] a                     
+      10.00%  abc            [.] b                     
+      10.00%  abc            [.] c                     
+       8.75%  abc            [.] main                  
+       7.50%  libc-2.17.so   [.] _setjmp               
+       6.25%  abc            [.] _init                 
+       6.25%  abc            [.] frame_dummy           
+       5.00%  abc            [.] __libc_csu_init       
+       5.00%  ld-2.17.so     [.] _dl_name_match_p      
+       3.75%  libc-2.17.so   [.] __new_exitfn          
+       2.50%  libc-2.17.so   [.] __cxa_atexit          
+       1.25%  ld-2.17.so     [.] _dl_check_map_versions
+       1.25%  ld-2.17.so     [.] _dl_setup_hash        
+       1.25%  ld-2.17.so     [.] _dl_sysdep_start      
+       1.25%  ld-2.17.so     [.] brk                   
+       1.25%  ld-2.17.so     [.] calloc@plt            
+       1.25%  ld-2.17.so     [.] dl_main               
+       1.25%  ld-2.17.so     [.] match_symbol          
+       1.25%  ld-2.17.so     [.] sbrk                  
+       1.25%  ld-2.17.so     [.] strlen                
+
+
+  $ perf report -F sym,sample,overhead
+  ...
+  #                     Symbol       Samples  Overhead
+  # ..........................  ............  ........
+  #
+    [.] __cxa_atexit                       2     2.50%
+    [.] __libc_csu_init                    4     5.00%
+    [.] __new_exitfn                       3     3.75%
+    [.] _dl_check_map_versions             1     1.25%
+    [.] _dl_name_match_p                   4     5.00%
+    [.] _dl_setup_hash                     1     1.25%
+    [.] _dl_sysdep_start                   1     1.25%
+    [.] _init                              5     6.25%
+    [.] _setjmp                            6     7.50%
+    [.] a                                  8    10.00%
+    [.] b                                  8    10.00%
+    [.] brk                                1     1.25%
+    [.] c                                  8    10.00%
+    [.] calloc@plt                         1     1.25%
+    [.] dl_main                            1     1.25%
+    [.] frame_dummy                        5     6.25%
+    [.] main                               7     8.75%
+    [.] match_symbol                       1     1.25%
+    [.] sbrk                               1     1.25%
+    [.] strcmp                            11    13.75%
+    [.] strlen                             1     1.25%
+
+
+  $ perf report -F sym,sample -s overhead
+  ...
+  #                     Symbol       Samples  Overhead
+  # ..........................  ............  ........
+  #
+    [.] strcmp                            11    13.75%
+    [.] a                                  8    10.00%
+    [.] b                                  8    10.00%
+    [.] c                                  8    10.00%
+    [.] main                               7     8.75%
+    [.] _setjmp                            6     7.50%
+    [.] _init                              5     6.25%
+    [.] frame_dummy                        5     6.25%
+    [.] __libc_csu_init                    4     5.00%
+    [.] _dl_name_match_p                   4     5.00%
+    [.] __new_exitfn                       3     3.75%
+    [.] __cxa_atexit                       2     2.50%
+    [.] _dl_check_map_versions             1     1.25%
+    [.] _dl_setup_hash                     1     1.25%
+    [.] _dl_sysdep_start                   1     1.25%
+    [.] brk                                1     1.25%
+    [.] calloc@plt                         1     1.25%
+    [.] dl_main                            1     1.25%
+    [.] match_symbol                       1     1.25%
+    [.] sbrk                               1     1.25%
+    [.] strlen                             1     1.25%
+
+
+ * changes in v3:
+  - rename to --fields option for consistency  (David)
+  - prevent to add same keys multiple times
+  - change dso sorting to show unknown dsos last
+  - fix minor bugs
+
+ * changes in v2:
+  - add a cleanup patch using ui__has_annotation()
+  - cleanup default sort order managment
+  - support perf top also
+  - handle elided sort entries properly
+  - add Acked-by's from Ingo
+
+
+I pushed the patch series on the 'perf/field-v3' branch in my tree
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, please test!
+
+Thanks,
+Namhyung
+
+
+[1] http://lkml.org/lkml/2014/3/10/48
+
+
+Namhyung Kim (13):
+  perf tools: Add ->cmp(), ->collapse() and ->sort() to perf_hpp_fmt
+  perf tools: Convert sort entries to hpp formats
+  perf tools: Use hpp formats to sort hist entries
+  perf tools: Support event grouping in hpp ->sort()
+  perf tools: Use hpp formats to sort final output
+  perf tools: Consolidate output field handling to hpp format routines
+  perf ui: Get rid of callback from __hpp__fmt()
+  perf tools: Allow hpp fields to be sort keys
+  perf tools: Consolidate management of default sort orders
+  perf report: Add -F option to specify output fields
+  perf tools: Add ->sort() member to struct sort_entry
+  perf top: Add --fields option to specify output fields
+  perf tools: Skip elided sort entries
+
+ tools/perf/Documentation/perf-report.txt |  10 +
+ tools/perf/Documentation/perf-top.txt    |   9 +
+ tools/perf/builtin-report.c              |  26 +--
+ tools/perf/builtin-top.c                 |  10 +-
+ tools/perf/ui/browsers/hists.c           |  69 +++---
+ tools/perf/ui/gtk/hists.c                |  39 +---
+ tools/perf/ui/hist.c                     | 189 ++++++++++++++---
+ tools/perf/ui/stdio/hist.c               |  61 +++---
+ tools/perf/util/hist.c                   |  83 ++------
+ tools/perf/util/hist.h                   |  19 +-
+ tools/perf/util/sort.c                   | 352 ++++++++++++++++++++++++++++++-
+ tools/perf/util/sort.h                   |   4 +
+ 12 files changed, 644 insertions(+), 227 deletions(-)
+
 -- 
 1.7.11.7
 
