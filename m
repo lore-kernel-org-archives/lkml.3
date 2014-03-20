@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696AbaCTUYR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:24:17 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:50518 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759424AbaCTUYP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:24:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140320015634.GH3132@tassilo.jf.intel.com>
-References: <1395163080-6290-1-git-send-email-keescook@chromium.org>
-	<1395163080-6290-2-git-send-email-keescook@chromium.org>
-	<20140319152521.04fe6665c67efe0c6a70d8a5@linux-foundation.org>
-	<20140320015634.GH3132@tassilo.jf.intel.com>
-Date: Thu, 20 Mar 2014 13:24:14 -0700
-X-Google-Sender-Auth: atFb6awkq9iTG76e4enAEbbxecc
-Message-ID: <CAGXu5jKmfp=6VT6uS9025w5DA8NCgFUj1+tQKtM-JgnLqB1UCw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] sysctl: fix incorrect write position handling
-From: Kees Cook <keescook@chromium.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Aaron Tomlin <atomlin@redhat.com>,
-        Andrew Shewmaker <agshew@gmail.com>, Li Zefan <lizefan@huawei.com>,
-        Dario Faggioli <raistlin@linux.it>,
-        Dave Hansen <dave.hansen@linux.intel.com>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Eric Dumazet <edumazet@google.com>,
-        Willem de Bruijn <willemb@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1759799AbaCTUYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:24:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:52729 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759725AbaCTUYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 16:24:19 -0400
+Message-ID: <1395346982.3460.23.camel@pasglop>
+Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: torvalds@linux-foundation.org
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
+        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org, paulus@samba.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Davidlohr Bueso <davidlohr@hp.com>
+Date: Fri, 21 Mar 2014 07:23:02 +1100
+In-Reply-To: <1395333093.14694.3.camel@buesod1.americas.hpqcorp.net>
+References: <20140319152619.GB10406@linux.vnet.ibm.com>
+	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
+	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
+	 <20140320053350.GB30295@linux.vnet.ibm.com>
+	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
+	 <1395333093.14694.3.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 6:56 PM, Andi Kleen <ak@linux.intel.com> wrote:
->>
->> Why are we fixing this?
->
-> Also sysctl writes are root only anyways.
->
-> Protecting root against root? Seems odd.
+On Thu, 2014-03-20 at 09:31 -0700, Davidlohr Bueso wrote:
+> hmmm looking at ppc spinlock code, it seems that it doesn't have ticket
+> spinlocks -- in fact Torsten Duwe has been trying to get them upstream
+> very recently. Since we rely on the counter for detecting waiters, this
+> might explain the issue. Could someone confirm this spinlock
+> implementation difference? 
 
-I think you misunderstood my motivation. I don't want to protect
-anything here except a code auditor's mind. :)
+Indeed. I haven't merged ticket locks because they break lockref :-(
 
-The flaw itself was entirely with Chrome OS and poor filtering of
-options that landed in procfs. The failure to recognize the needed
-filtering came from the fact that procfs writes behave in an
-unexpected manner.
+We have a problem here because we need to store the lock holder so we
+can yield to the lock holder partition on contention and we are running
+out of space in the spinlock.
 
-I'd still be curious to see if we could improve things at all without
-breaking actual uses. At least some better documentation seems
-warranted.
+The lock holder doesn't have to be atomic, so in theory we could have
+the tickets and the lockref in the same 64-bit and the holder separately
+but the way the layers are stacked at the moment that's not workable,
+at least not without duplicating the whole lockref implementation and
+breaking the spinlock in two, a "base" lock without older and the separate
+variant with holder field. A mess...
 
--Kees
+I want to try sorting that out at some stage but haven't had a chance yet.
 
--- 
-Kees Cook
-Chrome OS Security
+Cheers,
+Ben.
+
+
