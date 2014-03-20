@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670AbaCTJl4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:41:56 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:55400 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932172AbaCTJlr (ORCPT
+	id S932773AbaCTJmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:42:09 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52852 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678AbaCTJmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:41:47 -0400
-Subject: [PATCH 19/33] Block till request
+	Thu, 20 Mar 2014 05:42:02 -0400
+Subject: [PATCH 21/33] Get Clients PID
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
@@ -21,8 +21,8 @@ Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
         eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
         tj@kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:11:38 +0530
-Message-ID: <20140320094138.14878.13459.stgit@localhost.localdomain>
+Date: Thu, 20 Mar 2014 15:11:48 +0530
+Message-ID: <20140320094148.14878.73813.stgit@localhost.localdomain>
 In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
 References: <20140320093040.14878.903.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -31,79 +31,68 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-8878-0000-0000-00000B692518
+x-cbid: 14032009-6102-0000-0000-0000052BBD8E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Block until input arrives on the socket.
+Get the Clients PID using getsockopt. This is done for security reasons. So
+that we dont get any malicious dump requests.
 
 Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 ---
- src/coredump.c |   45 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 45 insertions(+)
+ src/coredump.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
 diff --git a/src/coredump.c b/src/coredump.c
-index c992c66..d93f4b2 100644
+index fadb7cd..599a912 100755
 --- a/src/coredump.c
 +++ b/src/coredump.c
-@@ -349,6 +349,38 @@ int setup_server(void)
+@@ -22,6 +22,7 @@
+  *      Suzuki K. Poulose <suzuki@in.ibm.com>
+  */
+ 
++#define _GNU_SOURCE
+ #include <stdarg.h>
+ #include <stdio.h>
+ #include <string.h>
+@@ -430,17 +431,38 @@ int receive_core_filename(char *core_file)
  	return 0;
  }
  
-+/* Blocking on a request */
-+int block_on_request(void)
++/* Get client details */
++int get_client_pid(struct ucred *client_info)
 +{
-+	fd_set read;
-+
-+	do {
-+		/* Initialise */
-+		FD_ZERO(&read);
-+		FD_SET(socket_fd, &read);
-+
-+		gencore_log("[%d]: Waiting on incoming request.\n", pid_log);
-+
-+		if (select(socket_fd + 1, &read, NULL, NULL, NULL) <= 0) {
-+			/*
-+			 * EINTR just means a signal is caught and hence, we need not
-+			 * terminate for this error.
-+			 */
-+			if (errno != EINTR) {
-+				gencore_log("[%d]: Error while waiting for connection requests.\n",
-+						pid_log, strerror(errno));
-+				close(socket_fd);
-+				return -1;
-+			}
-+		}
-+
-+	} while(FD_ISSET(socket_fd, &read) == 0);
-+
-+	gencore_log("[%d]: Request found.\n", pid_log);
++	socklen_t len = sizeof(struct ucred);
++	if (getsockopt(new_sock, SOL_SOCKET, SO_PEERCRED,
++				client_info, &len)) {
++		send_reply(errno);
++		gencore_log("[%d]: Can't get credentials of the client:%s\n",
++				pid_log, strerror(errno));
++		return -1;
++	}
 +
 +	return 0;
 +}
 +
- /* Daemon for self dump */
- int daemon_dump(void)
+ /* Services requests */
+ int service_request(void)
  {
-@@ -386,6 +418,19 @@ int daemon_dump(void)
- 	/* Flush the log */
- 	fflush(fp_log);
+ 	int ret;
+ 	char core_file[CORE_FILE_NAME_SZ];
++	struct ucred client_info;
  
-+	while (1) {
-+
-+		/* Blocks on request */
-+		ret = block_on_request();
-+		if (ret)
-+			goto cleanup;
-+
-+		/* Flush the log */
-+		fflush(fp_log);
-+	}
-+
-+	return 0;
+ 	/* Receive the message */
+ 	ret = receive_core_filename(core_file);
+ 	if (ret)
+ 		goto cleanup;
+ 
++	/* Fetch client PID */
++	ret = get_client_pid(&client_info);
++	if (ret)
++		goto cleanup;
 +
  cleanup:
- 
- 	fclose(fp_log);
+ 	close(new_sock);
+ 	if (ret == -1)
 
