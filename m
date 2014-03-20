@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965053AbaCTOqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:46:40 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:39775 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964901AbaCTOpM (ORCPT
+	id S965085AbaCTOq4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:46:56 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:59520 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933548AbaCTOqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:45:12 -0400
+	Thu, 20 Mar 2014 10:46:53 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
 To: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, eddie.wai@broadcom.com,
         paulmck@linux.vnet.ibm.com
-Subject: [PATCH 6/9] scsi: Replace rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL) in drivers/scsi/libfc/fc_libfc.c
-Date: Thu, 20 Mar 2014 20:14:13 +0530
-Message-Id: <53f52b8b185a76418272b3ad78dc566a3163a7e0.1395324808.git.monamagarwal123@gmail.com>
+Subject: [PATCH 8/9] vhost: Replace rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL) in drivers/vhost/net.c
+Date: Thu, 20 Mar 2014 20:16:00 +0530
+Message-Id: <649bfa7337b1aca38de9b1aa69f1d68e6c257a74.1395324808.git.monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <09e2af73056d815f34152f1ebfd45b52d7aa2ff9.1395324808.git.monamagarwal123@gmail.com>
-References: <09e2af73056d815f34152f1ebfd45b52d7aa2ff9.1395324808.git.monamagarwal123@gmail.com>
+In-Reply-To: <db3a67a00fa847aabde7244268fafdbc78783207.1395324808.git.monamagarwal123@gmail.com>
+References: <db3a67a00fa847aabde7244268fafdbc78783207.1395324808.git.monamagarwal123@gmail.com>
 In-Reply-To: <cover.1395324808.git.monamagarwal123@gmail.com>
 References: <cover.1395324808.git.monamagarwal123@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -25,24 +25,21 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/scsi/libfc/fc_libfc.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/vhost/net.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/scsi/libfc/fc_libfc.c b/drivers/scsi/libfc/fc_libfc.c
-index b773512..ee74eec 100644
---- a/drivers/scsi/libfc/fc_libfc.c
-+++ b/drivers/scsi/libfc/fc_libfc.c
-@@ -297,9 +297,9 @@ void fc_fc4_deregister_provider(enum fc_fh_type type, struct fc4_prov *prov)
- 	BUG_ON(type >= FC_FC4_PROV_SIZE);
- 	mutex_lock(&fc_prov_mutex);
- 	if (prov->recv)
--		rcu_assign_pointer(fc_passive_prov[type], NULL);
-+		RCU_INIT_POINTER(fc_passive_prov[type], NULL);
- 	else
--		rcu_assign_pointer(fc_active_prov[type], NULL);
-+		RCU_INIT_POINTER(fc_active_prov[type], NULL);
- 	mutex_unlock(&fc_prov_mutex);
- 	synchronize_rcu();
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 882a51f..b243e06 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -556,7 +556,7 @@ static struct socket *vhost_net_stop_vq(struct vhost_net *n,
+ 	sock = rcu_dereference_protected(vq->private_data,
+ 					 lockdep_is_held(&vq->mutex));
+ 	vhost_net_disable_vq(n, vq);
+-	rcu_assign_pointer(vq->private_data, NULL);
++	RCU_INIT_POINTER(vq->private_data, NULL);
+ 	mutex_unlock(&vq->mutex);
+ 	return sock;
  }
 -- 
 1.7.9.5
