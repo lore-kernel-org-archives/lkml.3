@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751905AbaCTCDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 22:03:11 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53873 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751229AbaCTCDA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 22:03:00 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, Len Brown <lenb@kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Reorder maintainer addresses for PM and ACPI
-Date: Thu, 20 Mar 2014 03:18:31 +0100
-Message-ID: <1951615.ZARZL5D0Yx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140319225409.GA22342@amd.pavel.ucw.cz>
-References: <1744772.yf52reTAmC@vostro.rjw.lan> <20140319225409.GA22342@amd.pavel.ucw.cz>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	id S1752502AbaCTCE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 22:04:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59311 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751553AbaCTCEY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 22:04:24 -0400
+X-IronPort-AV: E=Sophos;i="4.97,690,1389715200"; 
+   d="scan'208";a="9731468"
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+Subject: [PATCH 03/17 V2] kernel/sys: Replace opened code implementation with nice_to_rlimit().
+Date: Thu, 20 Mar 2014 10:02:24 +0800
+Message-Id: <1395280944-19643-1-git-send-email-yangds.fnst@cn.fujitsu.com>
+X-Mailer: git-send-email 1.8.2.1
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/20 10:01:23,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/20 10:01:24,
+	Serialize complete at 2014/03/20 10:01:24
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 19, 2014 11:54:10 PM Pavel Machek wrote:
-> On Thu 2014-03-20 00:00:14, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@rjwysocki.net>
-> > 
-> > For a few subsystems I am the person who actually applies patches
-> > and people don't CC me on patch submissions, because my address is
-> > not the first one in the given MAINTAINERS item.
-> > 
-> > Reorder PM and ACPI maintainer addresses in MAINTAINERS to make
-> > the probability of that a bit smaller.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@rjwysocki.net>
-> 
-> Acked-by: Pavel Machek <pavel@ucw.cz>
-> 
-> (And keep up good work :-).
+Signed-off-by: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+---
+ kernel/sys.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Thanks!
-
+diff --git a/kernel/sys.c b/kernel/sys.c
+index adaeab6..d412b9e 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -250,7 +250,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 			else
+ 				p = current;
+ 			if (p) {
+-				niceval = 20 - task_nice(p);
++				niceval = nice_to_rlimit(task_nice(p));
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			}
+@@ -261,7 +261,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 			else
+ 				pgrp = task_pgrp(current);
+ 			do_each_pid_thread(pgrp, PIDTYPE_PGID, p) {
+-				niceval = 20 - task_nice(p);
++				niceval = nice_to_rlimit(task_nice(p));
+ 				if (niceval > retval)
+ 					retval = niceval;
+ 			} while_each_pid_thread(pgrp, PIDTYPE_PGID, p);
+@@ -277,7 +277,7 @@ SYSCALL_DEFINE2(getpriority, int, which, int, who)
+ 
+ 			do_each_thread(g, p) {
+ 				if (uid_eq(task_uid(p), uid)) {
+-					niceval = 20 - task_nice(p);
++					niceval = nice_to_rlimit(task_nice(p));
+ 					if (niceval > retval)
+ 						retval = niceval;
+ 				}
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.8.2.1
+
