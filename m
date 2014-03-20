@@ -1,66 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757630AbaCTJja (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:39:30 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33555 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757191AbaCTJj2 (ORCPT
+	id S933195AbaCTJxn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:53:43 -0400
+Received: from www.linutronix.de ([62.245.132.108]:39744 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932755AbaCTJxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:39:28 -0400
-Subject: [PATCH 01/33] Configure and Make files
-To: linux-kernel@vger.kernel.org
-From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
-Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
-        james.hogan@imgtec.com, aravinda@linux.vnet.ibm.com, hch@lst.de,
-        mhiramat@redhat.com, jeremy.fitzhardinge@citrix.com,
-        xemul@parallels.com, d.hatayama@jp.fujitsu.com, coreutils@gnu.org,
-        kosaki.motohiro@jp.fujitsu.com, adobriyan@gmail.com,
-        util-linux@vger.kernel.org, tarundsk@linux.vnet.ibm.com,
-        vapier@gentoo.org, roland@hack.frob.com, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
-        tj@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:09:09 +0530
-Message-ID: <20140320093909.14878.91133.stgit@localhost.localdomain>
-In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
-References: <20140320093040.14878.903.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	Thu, 20 Mar 2014 05:53:42 -0400
+Date: Thu, 20 Mar 2014 10:53:45 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefani Seibold <stefani@seibold.net>
+cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        mingo@redhat.com, hpa@zytor.com, ak@linux.intel.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
+In-Reply-To: <1395301511-5908-1-git-send-email-stefani@seibold.net>
+Message-ID: <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
+References: <1395301511-5908-1-git-send-email-stefani@seibold.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-7014-0000-0000-0000048ABA30
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-configure.ac and automake files for the repository.
+On Thu, 20 Mar 2014, Stefani Seibold wrote:
 
-Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
----
- Makefile.am  |    2 ++
- configure.ac |    7 +++++++
- 2 files changed, 9 insertions(+)
+> This patch add a correct out of memory handling for setup a 32 bit vDSO.
+> 
+> The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
+> 
+> Signed-off-by: Stefani Seibold <stefani@seibold.net>
+> ---
+>  arch/x86/vdso/vdso32-setup.c | 17 ++++++++++++++++-
+>  1 file changed, 16 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+> index 0bc363a..e1171c2 100644
+> --- a/arch/x86/vdso/vdso32-setup.c
+> +++ b/arch/x86/vdso/vdso32-setup.c
+> @@ -134,8 +134,14 @@ int __init sysenter_setup(void)
+>  	}
+>  
+>  	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
+> -	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
+> +
+> +	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
 
-diff --git a/Makefile.am b/Makefile.am
-index e69de29..2cc6dc7 100644
---- a/Makefile.am
-+++ b/Makefile.am
-@@ -0,0 +1,2 @@
-+AUTOMAKE_OPTIONS = foreign
-+SUBDIRS =
-diff --git a/configure.ac b/configure.ac
-index e69de29..f34a0c3 100644
---- a/configure.ac
-+++ b/configure.ac
-@@ -0,0 +1,7 @@
-+AC_INIT([Gencore], [0.1], [jananive@linux.vnet.ibm.com], [gencore], [])
-+LT_INIT()
-+AM_INIT_AUTOMAKE([-Wall -Werror foreign])
-+AC_CONFIG_HEADERS([config.h])
-+AC_PROG_CC
-+AC_CONFIG_FILES(Makefile)
-+AC_OUTPUT()
+Why is this GFP_ATOMIC and not GFP_ATOMIC ?
+
+That code is called either from identify_boot_cpu(), where GFP_KERNEL
+is perfectly valid and from subsys_initcall(sysenter_setup) which is
+way late in the boot process where GFP_KERNEL is the RightThing.
+
+Aside of that, why do we need to call it early for X86_32 and late for
+X86_64?
+
+We need the vdso before we head off to user space, but not in the
+early boot process.
+
+Thanks,
+
+	tglx
 
