@@ -1,101 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165AbaCTKou (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:44:50 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:41393 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaCTKos (ORCPT
+	id S1757332AbaCTKrl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:47:41 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40172 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaCTKrk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:44:48 -0400
-Message-ID: <532AC6A2.9070307@gmail.com>
-Date: Thu, 20 Mar 2014 11:44:50 +0100
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 06:47:40 -0400
+Date: Thu, 20 Mar 2014 11:47:47 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+In-Reply-To: <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403201056020.18573@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403181921010.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182218170.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403190941170.18343@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191456120.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403191039560.18652@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191552570.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Cho KyongHo <pullip.cho@samsung.com>, Tomasz Figa <t.figa@samsung.com>
-CC: Linux DeviceTree <devicetree@vger.kernel.org>,
-        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
-        Prathyush <prathyush.k@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>, Joerg Roedel <joro@8bytes.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Grant Grundler <grundler@chromium.org>,
-        Linux IOMMU <iommu@lists.linux-foundation.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Varun Sethi <Varun.Sethi@freescale.com>,
-        Antonios Motakis <a.motakis@virtualopensystems.com>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>
-Subject: Re: [PATCH v11 10/27] iommu/exynos: use managed device helper functions
-References: <20140314140542.f4ded6c50dbd8a1d937bf354@samsung.com> <CAK9yfHw7zYaX9EYFE+m3Mh-u8Uiyubx-cS0EwPmfW+0weLiBKw@mail.gmail.com> <20140318200915.7dd833ce0fddbbd6ecd8dac9@samsung.com> <532862ED.8040809@samsung.com> <20140319175927.a3feadcacbffe80eca1d3421@samsung.com> <CAK9yfHxxo2eFh38gPZkpYf1ueBWySWqPzgLV_tSSykzHhNzN8g@mail.gmail.com> <532988CA.4000008@samsung.com> <20140320190333.9c3555b097e97d593faddbdd@samsung.com>
-In-Reply-To: <20140320190333.9c3555b097e97d593faddbdd@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.03.2014 11:03, Cho KyongHo wrote:
-> On Wed, 19 Mar 2014 13:08:42 +0100, Tomasz Figa wrote:
->> On 19.03.2014 10:01, Sachin Kamat wrote:
->>> On 19 March 2014 14:29, Cho KyongHo <pullip.cho@samsung.com> wrote:
->>>> On Tue, 18 Mar 2014 16:14:53 +0100, Tomasz Figa wrote:
->>>>> On 18.03.2014 12:09, Cho KyongHo wrote:
->>>>>> On Fri, 14 Mar 2014 20:52:43 +0530, Sachin Kamat wrote:
->>>>>>> Hi KyongHo,
->>>>>>>
->>>>>>> On 14 March 2014 10:35, Cho KyongHo <pullip.cho@samsung.com> wrote:
->>>>>>>> This patch uses managed device helper functions in the probe().
->>>>>>>>
->>>>>>>> Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
->>>>>>>> ---
->>>>>>> [snip]
->>>>>>>
->>>>>>>> +       data->clk = devm_clk_get(dev, "sysmmu");
->>>>>>>> +       if (IS_ERR(data->clk)) {
->>>>>>>> +               dev_info(dev, "No gate clock found!\n");
->>>>>>>> +               data->clk = NULL;
->>>>>>>> +       }
->>>>>>>
->>>>>>> Why aren't you returning from here upon error?
->>>>>>
->>>>>> It is for the case of a System MMU which does not need clock gating.
->>>>>>
->>>>>
->>>>> Are there really such cases?
->>>>>
->>>>
->>>> Yes.
->>>> Especially in the case of initial stage of new SoC development.
->>>>
->>>> I have experianced some software workaround for H/W restriction
->>>> needs prevention of clock gating for some devices.
->>>
->>> So aren't these basically some exceptions/hacks rather than the usual way
->>> of functioning of the device?
->>>
->>
->> This actually raises a good question, whether we really need to support
->> such early development SoC versions in mainline.
->>
->> Another thing is that if you need to assure that a clock is ungated, you
->> must acquire it and prepare_enable explicitly, so I don't think this
->> kind of handling is correct.
->>
-> On early development step of a new SoC, clock related stuffs and
-> some device drivers like display controller are usually developed in parallel.
->
-> In that case, -ENOENT from clk_get() must not treated as an error.
-> "[PATCH v11 20/17] iommu/exynos: allow having multiple System MMUs for a master H/W"
-> patch distinguishes -ENOENT from other error values returned by devm_clk_get().
 
-I still don't think upstream is right place for such development hacks 
-and such assumption will mask potential errors caused by clocks 
-unspecified in DT.
 
-If such thing is needed for development, an extra patch might be kept in 
-development tree, until clock driver is implemented or a dummy 
-fixed-rate clock might be specified in DT.
+On Wed, 19 Mar 2014, Vince Weaver wrote:
 
-Best regards,
-Tomasz
+> On Wed, 19 Mar 2014, Thomas Gleixner wrote:
+> 
+> > Good, we have at least a point where we can gather useful
+> > information. The timer belongs to a delayed work. The work itself is
+> > tracked via debug objects as well. So we can get that as well. Delta
+> > patch below.
+> 
+> with that patch applied:
+> 
+> [    4.314095] Invalid timer base: tmr ffff880117738150 tmr->base           (null) base ffffffff81a3edc0
+> [    4.324216] ------------[ cut here ]------------
+> [    4.329326] WARNING: CPU: 0 PID: 0 at lib/debugobjects.c:261 debug_print_object+0x8c/0xb0()
+> [    4.338495] ODEBUG: Info active (active state 0) object type: timer_list hint:           (null) delayed_work_timer_fn+0x0/0x20
+
+Do you have DEBUG_OBJECTS_WORK and DEBUG_OBJECTS_FREE enabled?
+
+If yes, then I'm completely puzzled why we find the timer in the
+tracking objects, but not the delayed work itself.
+
+Find a more brute force method to get this decoded below. Full patch
+this time, please zap the old one. That should spill out the recent
+debug object calls and we can just hope, that we get enough history to
+find this horror.
+
+Please add "ftrace_dump_on_oops" to the kernel command line. No other
+trace related options required.
+
+Btw, can you send me your .config file, so I might try to reproduce.
+
+Thanks,
+
+	tglx
+
+---------
+
+Index: linux-2.6/include/linux/debugobjects.h
+===================================================================
+--- linux-2.6.orig/include/linux/debugobjects.h
++++ linux-2.6/include/linux/debugobjects.h
+@@ -30,6 +30,7 @@ struct debug_obj {
+ 	unsigned int		astate;
+ 	void			*object;
+ 	struct debug_obj_descr	*descr;
++	void			*hint;
+ };
+ 
+ /**
+@@ -68,6 +69,7 @@ extern void debug_object_deactivate(void
+ extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
+ extern void debug_object_assert_init(void *addr, struct debug_obj_descr *descr);
++extern void debug_object_info(void *addr, struct debug_obj_descr *descr);
+ 
+ /*
+  * Active state:
+@@ -95,6 +97,8 @@ static inline void
+ debug_object_free      (void *addr, struct debug_obj_descr *descr) { }
+ static inline void
+ debug_object_assert_init(void *addr, struct debug_obj_descr *descr) { }
++static inline void
++debug_object_info(void *addr, struct debug_obj_descr *descr) { }
+ 
+ static inline void debug_objects_early_init(void) { }
+ static inline void debug_objects_mem_init(void) { }
+Index: linux-2.6/kernel/timer.c
+===================================================================
+--- linux-2.6.orig/kernel/timer.c
++++ linux-2.6/kernel/timer.c
+@@ -1081,7 +1081,12 @@ static int cascade(struct tvec_base *bas
+ 	 * don't have to detach them individually.
+ 	 */
+ 	list_for_each_entry_safe(timer, tmp, &tv_list, entry) {
+-		BUG_ON(tbase_get_base(timer->base) != base);
++		if (tbase_get_base(timer->base) != base) {
++			pr_err("Invalid timer base: tmr %p tmr->base %p base %p\n",
++			       timer, timer->base, base);
++			debug_object_info(timer, &timer_debug_descr);
++			BUG();
++		}
+ 		/* No accounting, while moving them */
+ 		__internal_add_timer(base, timer);
+ 	}
+Index: linux-2.6/lib/debugobjects.c
+===================================================================
+--- linux-2.6.orig/lib/debugobjects.c
++++ linux-2.6/lib/debugobjects.c
+@@ -14,6 +14,7 @@
+ #include <linux/debugfs.h>
+ #include <linux/slab.h>
+ #include <linux/hash.h>
++#include <linux/workqueue.h>
+ 
+ #define ODEBUG_HASH_BITS	14
+ #define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
+@@ -255,9 +256,9 @@ static void debug_print_object(struct de
+ 			descr->debug_hint(obj->object) : NULL;
+ 		limit++;
+ 		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
+-				 "object type: %s hint: %pS\n",
++				 "object type: %s hint: %pS %pS\n",
+ 			msg, obj_states[obj->state], obj->astate,
+-			descr->name, hint);
++		     descr->name, hint, obj->hint);
+ 	}
+ 	debug_objects_warnings++;
+ }
+@@ -326,6 +327,11 @@ __debug_object_init(void *addr, struct d
+ 		debug_object_is_on_stack(addr, onstack);
+ 	}
+ 
++	if (!obj->hint)
++		obj->hint = descr->debug_hint ?	descr->debug_hint(addr) : NULL;
++
++	trace_printk("Object init: %s %p %pS\n", descr->name, addr, obj->hint);
++
+ 	switch (obj->state) {
+ 	case ODEBUG_STATE_NONE:
+ 	case ODEBUG_STATE_INIT:
+@@ -377,6 +383,42 @@ void debug_object_init_on_stack(void *ad
+ 	__debug_object_init(addr, descr, 1);
+ }
+ 
++void debug_object_info(void *addr, struct debug_obj_descr *descr)
++{
++	struct debug_bucket *db;
++	struct debug_obj *obj;
++	unsigned long flags;
++
++	if (!debug_objects_enabled)
++		return;
++
++	db = get_bucket((unsigned long) addr);
++
++	raw_spin_lock_irqsave(&db->lock, flags);
++
++	obj = lookup_object(addr, db);
++	if (!obj)
++		pr_err("Object unknown %p\n", addr);
++	else
++		debug_print_object(obj, "Info");
++
++	raw_spin_unlock_irqrestore(&db->lock, flags);
++
++	addr = container_of(addr, struct delayed_work, timer);
++
++	db = get_bucket((unsigned long) addr);
++
++	raw_spin_lock_irqsave(&db->lock, flags);
++
++	obj = lookup_object(addr, db);
++	if (!obj)
++		pr_err("Object unknown %p\n", addr);
++	else
++		debug_print_object(obj, "Info");
++
++	raw_spin_unlock_irqrestore(&db->lock, flags);
++}
++
+ /**
+  * debug_object_activate - debug checks when an object is activated
+  * @addr:	address of the object
+@@ -403,6 +445,10 @@ int debug_object_activate(void *addr, st
+ 
+ 	obj = lookup_object(addr, db);
+ 	if (obj) {
++
++		trace_printk("Object activate: %s %p %pS\n", descr->name, addr,
++			     obj->hint);
++
+ 		switch (obj->state) {
+ 		case ODEBUG_STATE_INIT:
+ 		case ODEBUG_STATE_INACTIVE:
+@@ -425,6 +471,9 @@ int debug_object_activate(void *addr, st
+ 			ret = 0;
+ 			break;
+ 		}
++		if (!obj->hint)
++			obj->hint = descr->debug_hint ?	descr->debug_hint(addr) : NULL;
++
+ 		raw_spin_unlock_irqrestore(&db->lock, flags);
+ 		return ret;
+ 	}
+@@ -463,6 +512,10 @@ void debug_object_deactivate(void *addr,
+ 
+ 	obj = lookup_object(addr, db);
+ 	if (obj) {
++
++		trace_printk("Object deactivate: %s %p %pS\n",
++			     descr->name, addr, obj->hint);
++
+ 		switch (obj->state) {
+ 		case ODEBUG_STATE_INIT:
+ 		case ODEBUG_STATE_INACTIVE:
+@@ -513,6 +566,9 @@ void debug_object_destroy(void *addr, st
+ 	if (!obj)
+ 		goto out_unlock;
+ 
++	trace_printk("Object destroy: %s %p, %pS\n", descr->name, addr,
++		     obj->hint);
++
+ 	switch (obj->state) {
+ 	case ODEBUG_STATE_NONE:
+ 	case ODEBUG_STATE_INIT:
+@@ -559,6 +615,8 @@ void debug_object_free(void *addr, struc
+ 	if (!obj)
+ 		goto out_unlock;
+ 
++	trace_printk("Object free: %s %p %pS\n", descr->name, addr, obj->hint);
++
+ 	switch (obj->state) {
+ 	case ODEBUG_STATE_ACTIVE:
+ 		debug_print_object(obj, "free");
+@@ -711,6 +769,8 @@ repeat:
+ 		/* Now free them */
+ 		hlist_for_each_entry_safe(obj, tmp, &freelist, node) {
+ 			hlist_del(&obj->node);
++			trace_printk("Tracking Object free: %s %p %pS\n",
++				     descr->name, addr, obj->hint);
+ 			free_object(obj);
+ 		}
+ 
