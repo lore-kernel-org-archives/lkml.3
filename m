@@ -1,119 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701AbaCTJdF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:33:05 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:63083 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756350AbaCTJV0 (ORCPT
+	id S1758226AbaCTJdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:33:35 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:54493 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757539AbaCTJd3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:26 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 04/36] mtd: st_spi_fsm: Supply framework for device requests
-Date: Thu, 20 Mar 2014 09:20:36 +0000
-Message-Id: <1395307268-12721-5-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 05:33:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <532AB3E7.3090503@linux.vnet.ibm.com>
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
+	<532840FD.308@linux.vnet.ibm.com>
+	<CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
+	<53296870.5010505@linux.vnet.ibm.com>
+	<CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
+	<53298A7D.3080400@linux.vnet.ibm.com>
+	<CAKohpon=VLfPiukzrtQOSVAQg-Z-Aq3+AkZ1myrE6XtVRMY8mQ@mail.gmail.com>
+	<532AA7A8.3040508@linux.vnet.ibm.com>
+	<CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com>
+	<532AB3E7.3090503@linux.vnet.ibm.com>
+Date: Thu, 20 Mar 2014 15:03:28 +0530
+Message-ID: <CAKohpokiDYqpTj0AbR17KDbE26E=5usRuLWg0+pLR0xR5e5xTg@mail.gmail.com>
+Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Daniel <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSM hardware works by setting a predetermined sequence of register
-writes. Rather than open coding them inside each functional block we're
-going to define them in a series of formatted 'sequence structures'.
-This patch provides the framework which shall be used for every action.
+On 20 March 2014 14:54, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> On 03/20/2014 02:07 PM, Viresh Kumar wrote:
+>>     WARN_ON(policy->transition_ongoing);
+>>
+>
+> I guess you meant WARN_ON(!policy->transition_ongoing)
+> perhaps?
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 56 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+Ooops!!
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 7048ea7..5e22c86 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -194,6 +194,8 @@
- 
- #define STFSM_FLASH_SAFE_FREQ  10000000UL                         /* 10 MHz */
- 
-+#define STFSM_MAX_WAIT_SEQ_MS  1000     /* FSM execution time */
-+
- struct stfsm {
- 	struct device		*dev;
- 	void __iomem		*base;
-@@ -204,6 +206,24 @@ struct stfsm {
- 	uint32_t                fifo_dir_delay;
- };
- 
-+struct stfsm_seq {
-+	uint32_t data_size;
-+	uint32_t addr1;
-+	uint32_t addr2;
-+	uint32_t addr_cfg;
-+	uint32_t seq_opc[5];
-+	uint32_t mode;
-+	uint32_t dummy;
-+	uint32_t status;
-+	uint8_t  seq[16];
-+	uint32_t seq_cfg;
-+} __packed __aligned(4);
-+
-+static inline int stfsm_is_idle(struct stfsm *fsm)
-+{
-+	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
-+}
-+
- static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
- {
- 	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
-@@ -225,6 +245,42 @@ static void stfsm_clear_fifo(struct stfsm *fsm)
- 	}
- }
- 
-+static inline void stfsm_load_seq(struct stfsm *fsm,
-+				  const struct stfsm_seq *seq)
-+{
-+	void __iomem *dst = fsm->base + SPI_FAST_SEQ_TRANSFER_SIZE;
-+	const uint32_t *src = (const uint32_t *)seq;
-+	int words = sizeof(*seq) / sizeof(*src);
-+
-+	BUG_ON(!stfsm_is_idle(fsm));
-+
-+	while (words--) {
-+		writel(*src, dst);
-+		src++;
-+		dst += 4;
-+	}
-+}
-+
-+static void stfsm_wait_seq(struct stfsm *fsm)
-+{
-+	unsigned long deadline;
-+	int timeout = 0;
-+
-+	deadline = jiffies + msecs_to_jiffies(STFSM_MAX_WAIT_SEQ_MS);
-+
-+	while (!timeout) {
-+		if (time_after_eq(jiffies, deadline))
-+			timeout = 1;
-+
-+		if (stfsm_is_idle(fsm))
-+			return;
-+
-+		cond_resched();
-+	}
-+
-+	dev_err(fsm->dev, "timeout on sequence completion\n");
-+}
-+
- static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
- {
- 	int ret, timeout = 10;
--- 
-1.8.3.2
+> I'm not sure whether its really worth it, because it kinda looks
+> obvious. Not sure what kind of bugs it would catch. I can't think of any
+> such scenario :-(
 
+Just to catch if somebody is sending a POSTCHANGE one without first
+sending a PRECHANGE one.. Just another check to make sure things are
+in order.
