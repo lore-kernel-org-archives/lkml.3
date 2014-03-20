@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933748AbaCTV1R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:27:17 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:52140 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760220AbaCTV1L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:27:11 -0400
-Date: Thu, 20 Mar 2014 17:27:05 -0400 (EDT)
-Message-Id: <20140320.172705.8391298175812938.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
-        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
-        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
-        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
-        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
-        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v3] core, nfqueue, openvswitch: Orphan frags in
- skb_zerocopy and handle errors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Mar 2014 14:27:10 -0700 (PDT)
+	id S964853AbaCTVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:34:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59980 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932328AbaCTVeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 17:34:07 -0400
+Date: Thu, 20 Mar 2014 21:33:58 +0000
+From: Mel Gorman <mgorman@suse.de>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: page_alloc: spill to remote nodes before waking
+ kswapd
+Message-ID: <20140320213358.GO25087@suse.de>
+References: <1395348816-4733-1-git-send-email-hannes@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <1395348816-4733-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Thu, 20 Mar 2014 16:02:34 +0000
-
-> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-> orphan them. Also, it doesn't handle errors, so this patch takes care of that
-> as well, and modify the callers accordingly. skb_tx_error() is also added to
-> the callers so they will signal the failed delivery towards the creator of the
-> skb.
+On Thu, Mar 20, 2014 at 04:53:36PM -0400, Johannes Weiner wrote:
+> On NUMA systems, a node may start thrashing cache or even swap
+> anonymous pages while there are still free pages on remote nodes.
 > 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> This is a result of 81c0a2bb515f ("mm: page_alloc: fair zone allocator
+> policy") and fff4068cba48 ("mm: page_alloc: revert NUMA aspect of fair
+> allocation policy").  Before those changes, the allocator would first
+> try all allowed zones, including those on remote nodes, before waking
+> any kswapds.  But now, the allocator fastpath doubles as the fairness
+> pass, which in turn can only consider the local node to prevent remote
+> spilling based on exhausted fairness batches alone.  Remote nodes are
+> only considered in the slowpath, after the kswapds are woken up.  But
+> if remote nodes still have free memory, kswapd should not be woken to
+> rebalance the local node or it may thrash cash or swap prematurely.
+> 
+> Fix this by adding one more unfair pass over the zonelist that is
+> allowed to spill to remote nodes after the local fairness pass fails
+> but before entering the slowpath and waking the kswapds.
+> 
+> This also gets rid of the GFP_THISNODE exemption from the fairness
+> protocol because the unfair pass is no longer tied to kswapd, which
+> GFP_THISNODE is not allowed to wake up.
+> 
+> However, because remote spills can be more frequent now - we prefer
+> them over local kswapd reclaim - the allocation batches on remote
+> nodes could underflow more heavily.  When resetting the batches, use
+> atomic_long_read() directly instead of zone_page_state() to calculate
+> the delta as the latter filters negative counter values.
+> 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: <stable@kernel.org> [3.12+]
 
-I'll wait for Thomas to review this new version before applying.
+Acked-by: Mel Gorman <mgorman@suse.de>
+
+-- 
+Mel Gorman
+SUSE Labs
