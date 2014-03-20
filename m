@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756061AbaCTFlP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:41:15 -0400
+	id S1751859AbaCTFgw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:36:52 -0400
 Received: from lgeamrelo02.lge.com ([156.147.1.126]:56244 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaCTFgx (ORCPT
+	with ESMTP id S1750743AbaCTFgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:36:53 -0400
-X-AuditID: 9c93017e-b7b10ae000000e66-07-532a7e71b28e
+	Thu, 20 Mar 2014 01:36:50 -0400
+X-AuditID: 9c93017e-b7b10ae000000e66-ec-532a7e701b7c
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -18,260 +18,278 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 09/21] perf ui/hist: Add support to accumulated hist stat
-Date: Thu, 20 Mar 2014 14:36:34 +0900
-Message-Id: <1395293806-25847-10-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 00/21] perf tools: Add support to accumulate hist periods (v9)
+Date: Thu, 20 Mar 2014 14:36:25 +0900
+Message-Id: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
-References: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print accumulated stat of a hist entry if requested.
+Hello,
 
-To do that, add new HPP_PERCENT_ACC_FNS macro and generate a
-perf_hpp_fmt using it.  The __hpp__sort_acc() function sorts entries
-by accumulated period value.  When accumulated periods of two entries
-are same (i.e. single path callchain) put the caller above since
-accumulation tends to put callers on higher position for obvious
-reason.
+This is a new attempt to implement cumulative hist period report.
+This work begins from Arun's SORT_INCLUSIVE patch [1] but I completely
+rewrote it from scratch.
 
-Also add "overhead_children" output field to be selected by user.
+This version depends on my previous percentage patchset [2] and output
+field patchset[3].  So please test this again although there's not
+much change in the series itself.
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
+This patchset basically adds period in a sample to every node in the
+callchain.  A hist_entry now has an additional fields to keep the
+cumulative period if --children option is given on perf report.
+
+I changed the option as a separate --children and added a new
+"Children" column (and renamed the default "Overhead" column into
+"Self").  The output will be sorted by children (cumulative) overhead
+for now.  It also adds 'overhead_children' field to -F/--fields option
+to be selected by user and it'll show you "N/A" if the cumulation is
+not supported (due to missing callchain).
+
+ * changes in v9:
+  - support output field option
+  - add Acked-by tags from Jiri
+
+ * changes in v8:
+  - not depends on --percentage patchkit
+  - fix callchain resolving bug (Jiri)
+  - convert to sample__resolve_{mem,bstack}
+  - eliminate 'event' field from hist_entry_iter
+
+ * changes in v7:
+  - add Tested-by tags from Arun
+  - rebase onto current acme/perf/core
+
+ * changes in v6:
+  - separate struct hist_iter_ops (Jiri)
+  - check iter->he before calling ->add_entry_cb (Jiri)
+  - fix locking issue on perf top (Jiri)
+
+ * changes in v5:
+  - support both of --children and --call-graph (Arun)
+  - refactor hist_entry_iter to share with perf top (Jiri)
+  - various cleanups and fixes (Jiri)
+  - add ack's from Jiri
+
+ * changes in v4:
+  - change to --children option (Ingo)
+  - rebased on new annotation change (Arnaldo)
+  - support perf top also
+  - enable --children option by default (Ingo)
+
+ * changes in v3:
+  - change to --cumulate option
+  - fix a couple of bugs (Jiri, Rodrigo)
+  - rename some help functions (Arnaldo)
+  - cache previous hist entries rathen than just symbol and dso
+  - add some preparatory cleanups
+  - add report.cumulate config option
+
+
+Let me show you an example:
+
+  $ cat abc.c
+  #define barrier() asm volatile("" ::: "memory")
+
+  void a(void)
+  {
+  	int i;
+  	for (i = 0; i < 1000000; i++)
+  		barrier();
+  }
+  void b(void)
+  {
+  	a();
+  }
+  void c(void)
+  {
+  	b();
+  }
+  int main(void)
+  {
+  	c();
+  	return 0;
+  }
+
+With this simple program I ran perf record and report:
+
+  $ perf record -g -e cycles:u ./abc
+
+
+Case 1.
+
+  $ perf report --stdio --no-call-graph --no-children
+
+  # Overhead  Command      Shared Object          Symbol
+  # ........  .......  .................  ..............
+  #
+      91.50%      abc  abc                [.] a         
+       8.18%      abc  ld-2.17.so         [.] strlen    
+       0.31%      abc  [kernel.kallsyms]  [k] page_fault
+       0.01%      abc  ld-2.17.so         [.] _start    
+
+
+Case 2. (current default behavior)
+
+  $ perf report --stdio --call-graph --no-children
+
+  # Overhead  Command      Shared Object          Symbol
+  # ........  .......  .................  ..............
+  #
+      91.50%      abc  abc                [.] a         
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+
+       8.18%      abc  ld-2.17.so         [.] strlen    
+                  |
+                  --- strlen
+                      _dl_sysdep_start
+
+       0.31%      abc  [kernel.kallsyms]  [k] page_fault
+                  |
+                  --- page_fault
+                      _start
+
+       0.01%      abc  ld-2.17.so         [.] _start    
+                  |
+                  --- _start
+
+
+Case 3.
+
+  $ perf report --no-call-graph --children --stdio
+
+  #     Self  Children  Command      Shared Object                 Symbol
+  # ........  ........  .......  .................  .....................
+  #
+       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
+       0.00%    91.50%      abc  abc                [.] main             
+       0.00%    91.50%      abc  abc                [.] c                
+       0.00%    91.50%      abc  abc                [.] b                
+      91.50%    91.50%      abc  abc                [.] a                
+       0.00%     8.18%      abc  ld-2.17.so         [.] _dl_sysdep_start 
+       8.18%     8.18%      abc  ld-2.17.so         [.] strlen           
+       0.01%     0.33%      abc  ld-2.17.so         [.] _start           
+       0.31%     0.31%      abc  [kernel.kallsyms]  [k] page_fault       
+
+As you can see __libc_start_main -> main -> c -> b -> a callchain show
+up in the output.
+
+Finally, it looks like below with both option enabled:
+
+Case 4. (default behavior?)
+
+  $ perf report --call-graph --children --stdio
+
+  #     Self  Children  Command      Shared Object                 Symbol
+  # ........  ........  .......  .................  .....................
+  #
+       0.00%    91.50%      abc  libc-2.17.so       [.] __libc_start_main
+                  |
+                  --- __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] main             
+                  |
+                  --- main
+                      __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] c                
+                  |
+                  --- c
+                      main
+                      __libc_start_main
+
+       0.00%    91.50%      abc  abc                [.] b                
+                  |
+                  --- b
+                      c
+                      main
+                      __libc_start_main
+
+      91.50%    91.50%      abc  abc                [.] a                
+                  |
+                  --- a
+                      b
+                      c
+                      main
+                      __libc_start_main
+  ...
+
+
+Currently the perf enables both of --call-graph and --children when it
+finds callchains in the samples.  While this is useful for TUI or GTK,
+I'm not sure for stdio as it'd consume so much lines.
+
+It does not handle all kind of cases like event annotation yet, but I
+really want to release it and get reviews.
+
+You can also get this series on 'perf/cumulate-v9' branch in my tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments are welcome, thanks.
+Namhyung
+
+
+Cc: Arun Sharma <asharma@fb.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/hist.c   | 99 ++++++++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h |  4 ++
- tools/perf/util/sort.c |  1 +
- 3 files changed, 104 insertions(+)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 809210593f23..0e411e2a5d69 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -104,6 +104,18 @@ int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	return ret;
- }
- 
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent)
-+{
-+	if (!symbol_conf.cumulate_callchain) {
-+		return snprintf(hpp->buf, hpp->size, "%*s",
-+				fmt_percent ? 8 : 12, "N/A");
-+	}
-+
-+	return __hpp__fmt(hpp, he, get_field, fmt, print_fn, fmt_percent);
-+}
-+
- static int field_cmp(u64 field_a, u64 field_b)
- {
- 	if (field_a > field_b)
-@@ -160,6 +172,24 @@ out:
- 	return ret;
- }
- 
-+static int __hpp__sort_acc(struct hist_entry *a, struct hist_entry *b,
-+			   hpp_field_fn get_field)
-+{
-+	s64 ret = 0;
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		/*
-+		 * Put caller above callee when they have equal period.
-+		 */
-+		ret = field_cmp(get_field(a), get_field(b));
-+		if (ret)
-+			return ret;
-+
-+		ret = b->callchain->max_depth - a->callchain->max_depth;
-+	}
-+	return ret;
-+}
-+
- #define __HPP_HEADER_FN(_type, _str, _min_width, _unit_width) 		\
- static int hpp__header_##_type(struct perf_hpp_fmt *fmt __maybe_unused,	\
- 			       struct perf_hpp *hpp,			\
-@@ -242,6 +272,34 @@ static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
- 	return __hpp__sort(a, b, he_get_##_field);				\
- }
- 
-+#define __HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+static u64 he_get_acc_##_field(struct hist_entry *he)				\
-+{										\
-+	return he->stat_acc->_field;						\
-+}										\
-+										\
-+static int hpp__color_##_type(struct perf_hpp_fmt *fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, " %6.2f%%",		\
-+			      hpp_color_scnprintf, true);			\
-+}
-+
-+#define __HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
-+			      struct perf_hpp *hpp, struct hist_entry *he) 	\
-+{										\
-+	const char *fmt = symbol_conf.field_sep ? " %.2f" : " %6.2f%%";		\
-+	return __hpp__fmt_acc(hpp, he, he_get_acc_##_field, fmt,		\
-+			      hpp_entry_scnprintf, true);			\
-+}
-+
-+#define __HPP_SORT_ACC_FN(_type, _field)					\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	return __hpp__sort_acc(a, b, he_get_acc_##_field);			\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -270,18 +328,27 @@ __HPP_COLOR_PERCENT_FN(_type, _field)					\
- __HPP_ENTRY_PERCENT_FN(_type, _field)					\
- __HPP_SORT_FN(_type, _field)
- 
-+#define HPP_PERCENT_ACC_FNS(_type, _str, _field, _min_width, _unit_width)\
-+__HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
-+__HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
-+__HPP_COLOR_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_ENTRY_ACC_PERCENT_FN(_type, _field)				\
-+__HPP_SORT_ACC_FN(_type, _field)
-+
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_ENTRY_RAW_FN(_type, _field)					\
- __HPP_SORT_RAW_FN(_type, _field)
- 
-+__HPP_HEADER_FN(overhead_self, "Self", 8, 8)
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
- HPP_PERCENT_FNS(overhead_sys, "sys", period_sys, 8, 8)
- HPP_PERCENT_FNS(overhead_us, "usr", period_us, 8, 8)
- HPP_PERCENT_FNS(overhead_guest_sys, "guest sys", period_guest_sys, 9, 8)
- HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
-+HPP_PERCENT_ACC_FNS(overhead_acc, "Children", period, 8, 8)
- 
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
-@@ -303,6 +370,17 @@ static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
- 		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
-+#define HPP__COLOR_ACC_PRINT_FNS(_name)			\
-+	{						\
-+		.header	= hpp__header_ ## _name,	\
-+		.width	= hpp__width_ ## _name,		\
-+		.color	= hpp__color_ ## _name,		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
-+	}
-+
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
-@@ -319,6 +397,7 @@ struct perf_hpp_fmt perf_hpp__format[] = {
- 	HPP__COLOR_PRINT_FNS(overhead_us),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_sys),
- 	HPP__COLOR_PRINT_FNS(overhead_guest_us),
-+	HPP__COLOR_ACC_PRINT_FNS(overhead_acc),
- 	HPP__PRINT_FNS(samples),
- 	HPP__PRINT_FNS(period)
- };
-@@ -328,16 +407,23 @@ LIST_HEAD(perf_hpp__sort_list);
- 
- 
- #undef HPP__COLOR_PRINT_FNS
-+#undef HPP__COLOR_ACC_PRINT_FNS
- #undef HPP__PRINT_FNS
- 
- #undef HPP_PERCENT_FNS
-+#undef HPP_PERCENT_ACC_FNS
- #undef HPP_RAW_FNS
- 
- #undef __HPP_HEADER_FN
- #undef __HPP_WIDTH_FN
- #undef __HPP_COLOR_PERCENT_FN
- #undef __HPP_ENTRY_PERCENT_FN
-+#undef __HPP_COLOR_ACC_PERCENT_FN
-+#undef __HPP_ENTRY_ACC_PERCENT_FN
- #undef __HPP_ENTRY_RAW_FN
-+#undef __HPP_SORT_FN
-+#undef __HPP_SORT_ACC_FN
-+#undef __HPP_SORT_RAW_FN
- 
- 
- void perf_hpp__init(void)
-@@ -361,6 +447,13 @@ void perf_hpp__init(void)
- 	if (field_order)
- 		return;
- 
-+	if (symbol_conf.cumulate_callchain) {
-+		perf_hpp__column_enable(PERF_HPP__OVERHEAD_ACC);
-+
-+		perf_hpp__format[PERF_HPP__OVERHEAD].header =
-+						hpp__header_overhead_self;
-+	}
-+
- 	perf_hpp__column_enable(PERF_HPP__OVERHEAD);
- 
- 	if (symbol_conf.show_cpu_utilization) {
-@@ -383,6 +476,12 @@ void perf_hpp__init(void)
- 	list = &perf_hpp__format[PERF_HPP__OVERHEAD].sort_list;
- 	if (list_empty(list))
- 		list_add(list, &perf_hpp__sort_list);
-+
-+	if (symbol_conf.cumulate_callchain) {
-+		list = &perf_hpp__format[PERF_HPP__OVERHEAD_ACC].sort_list;
-+		if (list_empty(list))
-+			list_add(list, &perf_hpp__sort_list);
-+	}
- }
- 
- void perf_hpp__column_register(struct perf_hpp_fmt *format)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 3269a8a8be91..ac7629003dd4 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -214,6 +214,7 @@ enum {
- 	PERF_HPP__OVERHEAD_US,
- 	PERF_HPP__OVERHEAD_GUEST_SYS,
- 	PERF_HPP__OVERHEAD_GUEST_US,
-+	PERF_HPP__OVERHEAD_ACC,
- 	PERF_HPP__SAMPLES,
- 	PERF_HPP__PERIOD,
- 
-@@ -239,6 +240,9 @@ typedef int (*hpp_snprint_fn)(struct perf_hpp *hpp, const char *fmt, ...);
- int __hpp__fmt(struct perf_hpp *hpp, struct hist_entry *he,
- 	       hpp_field_fn get_field, const char *fmt,
- 	       hpp_snprint_fn print_fn, bool fmt_percent);
-+int __hpp__fmt_acc(struct perf_hpp *hpp, struct hist_entry *he,
-+		   hpp_field_fn get_field, const char *fmt,
-+		   hpp_snprint_fn print_fn, bool fmt_percent);
- 
- static inline void advance_hpp(struct perf_hpp *hpp, int inc)
- {
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index d4502db36cba..0a6802b0bf34 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -1063,6 +1063,7 @@ static struct hpp_dimension hpp_sort_dimensions[] = {
- 	DIM(PERF_HPP__OVERHEAD_US, "overhead_us"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_SYS, "overhead_guest_sys"),
- 	DIM(PERF_HPP__OVERHEAD_GUEST_US, "overhead_guest_us"),
-+	DIM(PERF_HPP__OVERHEAD_ACC, "overhead_children"),
- 	DIM(PERF_HPP__SAMPLES, "sample"),
- 	DIM(PERF_HPP__PERIOD, "period"),
- };
+[1] https://lkml.org/lkml/2012/3/31/6
+[2] https://lkml.org/lkml/2014/3/10/48
+[3] https://lkml.org/lkml/2014/3/19/689
+
+
+Namhyung Kim (21):
+  perf tools: Introduce struct hist_entry_iter
+  perf hists: Add support for accumulated stat of hist entry
+  perf hists: Check if accumulated when adding a hist entry
+  perf hists: Accumulate hist entry stat based on the callchain
+  perf tools: Update cpumode for each cumulative entry
+  perf report: Cache cumulative callchains
+  perf callchain: Add callchain_cursor_snapshot()
+  perf tools: Save callchain info for each cumulative entry
+  perf ui/hist: Add support to accumulated hist stat
+  perf ui/browser: Add support to accumulated hist stat
+  perf ui/gtk: Add support to accumulated hist stat
+  perf tools: Apply percent-limit to cumulative percentage
+  perf tools: Add more hpp helper functions
+  perf report: Add --children option
+  perf report: Add report.children config option
+  perf tools: Do not auto-remove Children column if --fields given
+  perf tools: Add callback function to hist_entry_iter
+  perf top: Convert to hist_entry_iter
+  perf top: Add --children option
+  perf top: Add top.children config option
+  perf tools: Enable --children option by default
+
+ tools/perf/Documentation/perf-report.txt |   7 +-
+ tools/perf/Documentation/perf-top.txt    |   8 +-
+ tools/perf/builtin-annotate.c            |   3 +-
+ tools/perf/builtin-diff.c                |   2 +-
+ tools/perf/builtin-report.c              | 193 +++---------
+ tools/perf/builtin-top.c                 |  95 +++---
+ tools/perf/tests/hists_link.c            |   4 +-
+ tools/perf/ui/browsers/hists.c           |  68 +++--
+ tools/perf/ui/gtk/hists.c                |  23 +-
+ tools/perf/ui/hist.c                     | 119 ++++++++
+ tools/perf/ui/stdio/hist.c               |   4 +-
+ tools/perf/util/callchain.c              |  45 ++-
+ tools/perf/util/callchain.h              |  11 +
+ tools/perf/util/hist.c                   | 495 ++++++++++++++++++++++++++++++-
+ tools/perf/util/hist.h                   |  49 ++-
+ tools/perf/util/sort.c                   |   1 +
+ tools/perf/util/sort.h                   |  18 +-
+ tools/perf/util/symbol.c                 |  11 +-
+ tools/perf/util/symbol.h                 |   1 +
+ 19 files changed, 910 insertions(+), 247 deletions(-)
+
 -- 
 1.7.11.7
 
