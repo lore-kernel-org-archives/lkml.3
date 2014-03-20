@@ -1,101 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759659AbaCTSsZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:48:25 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:43842 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759527AbaCTSsW (ORCPT
+	id S964833AbaCTSsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 14:48:52 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:54791 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759570AbaCTSss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:48:22 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-To: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-In-Reply-To: <20140320153804.35d5b835@samsung.com>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < 20140226110114.CF2C7C40A89@trevor.secretlab.ca> <531D916C.2010903@ti.com> < 5427810.BUKJ3iUXnO@avalon> <20140312102556.GC21483@n2100.arm.linux.org.uk> <20140320175432.0559CC4067A@trevor.secretlab.ca> <20140320153804.35d5b835@ samsung.com>
-Date: Thu, 20 Mar 2014 18:48:16 +0000
-Message-Id: <20140320184816.7AB02C4067A@trevor.secretlab.ca>
+	Thu, 20 Mar 2014 14:48:48 -0400
+Message-ID: <532B37D6.6070400@st.com>
+Date: Thu, 20 Mar 2014 19:47:50 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Lee Jones <lee.jones@linaro.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <kernel@stlinux.com>, <srinivas.kandagatla@st.com>,
+        <patrice.chotard@st.com>
+Subject: Re: [PATCH] ARM: STi: Add support for the FSM Serial Flash Controller
+References: <1395330920-10559-1-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <1395330920-10559-1-git-send-email-lee.jones@linaro.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.129.4.70]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-20_04:2014-03-20,2014-03-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014 15:38:04 -0300, Mauro Carvalho Chehab <m.chehab@samsung.com> wrote:
-> Em Thu, 20 Mar 2014 17:54:31 +0000
-> Grant Likely <grant.likely@linaro.org> escreveu:
-> 
-> > On Wed, 12 Mar 2014 10:25:56 +0000, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > > On Mon, Mar 10, 2014 at 02:52:53PM +0100, Laurent Pinchart wrote:
-> > > > In theory unidirectional links in DT are indeed enough. However, let's not 
-> > > > forget the following.
-> > > > 
-> > > > - There's no such thing as single start points for graphs. Sure, in some 
-> > > > simple cases the graph will have a single start point, but that's not a 
-> > > > generic rule. For instance the camera graphs 
-> > > > http://ideasonboard.org/media/omap3isp.ps and 
-> > > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus two 
-> > > > starting points from a data flow point of view.
-> > > 
-> > > I think we need to stop thinking of a graph linked in terms of data
-> > > flow - that's really not useful.
-> > > 
-> > > Consider a display subsystem.  The CRTC is the primary interface for
-> > > the CPU - this is the "most interesting" interface, it's the interface
-> > > which provides access to the picture to be displayed for the CPU.  Other
-> > > interfaces are secondary to that purpose - reading the I2C DDC bus for
-> > > the display information is all secondary to the primary purpose of
-> > > displaying a picture.
-> > > 
-> > > For a capture subsystem, the primary interface for the CPU is the frame
-> > > grabber (whether it be an already encoded frame or not.)  The sensor
-> > > devices are all secondary to that.
-> > > 
-> > > So, the primary software interface in each case is where the data for
-> > > the primary purpose is transferred.  This is the point at which these
-> > > graphs should commence since this is where we would normally start
-> > > enumeration of the secondary interfaces.
-> > > 
-> > > V4L2 even provides interfaces for this: you open the capture device,
-> > > which then allows you to enumerate the capture device's inputs, and
-> > > this in turn allows you to enumerate their properties.  You don't open
-> > > a particular sensor and work back up the tree.
-> > > 
-> > > I believe trying to do this according to the flow of data is just wrong.
-> > > You should always describe things from the primary device for the CPU
-> > > towards the peripheral devices and never the opposite direction.
-> > 
-> > Agreed.
-> 
-> I don't agree, as what's the primary device is relative. 
-> 
-> Actually, in the case of a media data flow, the CPU is generally not
-> the primary device.
-> 
-> Even on general purpose computers, if the full data flow is taken into
-> the account, the CPU is a mere device that will just be used to copy
-> data either to GPU and speakers or to disk, eventually doing format
-> conversions, when the hardware is cheap and don't provide format
-> converters.
-> 
-> On more complex devices, like the ones we want to solve with the
-> media controller, like an embedded hardware like a TV or a STB, the CPU
-> is just an ancillary component that could even hang without stopping 
-> TV reception, as the data flow can be fully done inside the chipset.
 
-We're talking about wiring up device drivers here, not data flow. Yes, I
-completely understand that data flow is often not even remotely
-cpu-centric. However, device drivers are, and the kernel needs to know
-the dependency graph for choosing what devices depend on other devices.
 
-g.
+On 03/20/2014 04:55 PM, Lee Jones wrote:
+> Here we add the necessary device nodes required for successful device
+> probing and Pinctrl setup for the FSM.
+>
+> Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+> Acked-by Angus Clark <angus.clark@st.com>
+> Acked-by: Brian Norris <computersforpeace@gmail.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>   arch/arm/boot/dts/stih416-pinctrl.dtsi | 13 +++++++++++++
+>   arch/arm/boot/dts/stih416.dtsi         | 13 +++++++++++++
+>   arch/arm/boot/dts/stih41x-b2020.dtsi   |  1 +
+>   arch/arm/boot/dts/stih41x-b2020x.dtsi  | 28 ++++++++++++++++++++++++++++
+Could you please split this patch in two ?
+	1 - stih416-pinctrl.dtsi and stih416.dtsi
+	2 - stih41x-b2020.dtsi and stih41x-b2020x.dtsi
 
+Once these changes done, you can add
+
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+
+Thanks,
+Maxime
+
+>   4 files changed, 55 insertions(+)
+>   create mode 100644 arch/arm/boot/dts/stih41x-b2020x.dtsi
+>
+> diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> index b29ff4b..81df8e7 100644
+> --- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> +++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+> @@ -210,6 +210,19 @@
+>   					};
+>   				};
+>   			};
+> +
+> +			fsm {
+> +				pinctrl_fsm: fsm {
+> +					st,pins {
+> +						spi-fsm-clk  = <&PIO12 2 ALT1 OUT>;
+> +						spi-fsm-cs   = <&PIO12 3 ALT1 OUT>;
+> +						spi-fsm-mosi = <&PIO12 4 ALT1 OUT>;
+> +						spi-fsm-miso = <&PIO12 5 ALT1 IN>;
+> +						spi-fsm-hol  = <&PIO12 6 ALT1 OUT>;
+> +						spi-fsm-wp   = <&PIO12 7 ALT1 OUT>;
+> +					};
+> +				};
+> +			};
+>   		};
+>
+>   		pin-controller-rear {
+> diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+> index b7ab47b..1e24b9e 100644
+> --- a/arch/arm/boot/dts/stih416.dtsi
+> +++ b/arch/arm/boot/dts/stih416.dtsi
+> @@ -145,5 +145,18 @@
+>
+>   			status		= "disabled";
+>   		};
+> +
+> +		/* FSM */
+> +		spifsm: spifsm@fe902000 {
+> +			compatible	   = "st,spi-fsm";
+> +			reg		   = <0xfe902000 0x1000>;
+> +			pinctrl-0	   = <&pinctrl_fsm>;
+> +
+> +			st,syscfg	   = <&syscfg_rear>;
+> +			st,boot-device-reg = <0x958>;
+> +			st,boot-device-spi = <0x1a>;
+> +
+> +			status = "disabled";
+> +		};
+>   	};
+>   };
+> diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+> index 0ef0a69..01487e0 100644
+> --- a/arch/arm/boot/dts/stih41x-b2020.dtsi
+> +++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+> @@ -6,6 +6,7 @@
+>    * it under the terms of the GNU General Public License version 2 as
+>    * publishhed by the Free Software Foundation.
+>    */
+> +#include "stih41x-b2020x.dtsi"
+>   / {
+>   	memory{
+>   		device_type = "memory";
+> diff --git a/arch/arm/boot/dts/stih41x-b2020x.dtsi b/arch/arm/boot/dts/stih41x-b2020x.dtsi
+> new file mode 100644
+> index 0000000..df01c12
+> --- /dev/null
+> +++ b/arch/arm/boot/dts/stih41x-b2020x.dtsi
+> @@ -0,0 +1,28 @@
+> +/*
+> + * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
+> + * Author: Lee Jones <lee.jones@linaro.org>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * publishhed by the Free Software Foundation.
+> + */
+> +/ {
+> +	soc {
+> +		spifsm: spifsm@fe902000 {
+> +			#address-cells = <1>;
+> +			#size-cells    = <1>;
+> +
+> +			status = "okay";
+> +
+> +			partition@0 {
+> +				label = "SerialFlash1";
+> +				reg   = <0x00000000 0x00500000>;
+> +			};
+> +
+> +			partition@500000 {
+> +				label = "SerialFlash2";
+> +				reg   = <0x00500000 0x00b00000>;
+> +			};
+> +		};
+> +	};
+> +};
+>
