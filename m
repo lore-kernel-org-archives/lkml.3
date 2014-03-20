@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758670AbaCTOUN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:20:13 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:36923 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaCTOUL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:20:11 -0400
-Message-ID: <532AF8E8.8030101@oracle.com>
-Date: Thu, 20 Mar 2014 10:19:20 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1758815AbaCTOVs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:21:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15400 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757116AbaCTOVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 10:21:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,695,1389772800"; 
+   d="scan'208";a="476416258"
+Date: Thu, 20 Mar 2014 14:21:25 +0000
+From: Damien Lespiau <damien.lespiau@intel.com>
+To: sagar.a.kamble@intel.com
+Cc: intel-gfx@lists.freedesktop.org, airlied@linux.ie,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [PATCH 1/4] drm: Added plane alpha and color
+ blending property
+Message-ID: <20140320142125.GR6912@strange.amr.corp.intel.com>
+References: <CAKMK7uE3yWRoirtu133JQUwPjhH+D228LFh-+Kk65vAGAj_xww@mail.gmail.com>
+ <1394266879-20522-1-git-send-email-sagar.a.kamble@intel.com>
+ <1394266879-20522-2-git-send-email-sagar.a.kamble@intel.com>
 MIME-Version: 1.0
-To: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-References: <20140311171045.GA4693@redhat.com> <20140311173603.GG32390@moon> <20140311173917.GB4693@redhat.com> <alpine.LSU.2.11.1403181703470.7055@eggly.anvils> <5328F3B4.1080208@oracle.com> <20140319020602.GA29787@redhat.com> <20140319021131.GA30018@redhat.com> <alpine.LSU.2.11.1403181918130.3423@eggly.anvils> <20140319145200.GA4608@redhat.com> <alpine.LSU.2.11.1403192147470.971@eggly.anvils> <20140320135137.GA2263@redhat.com>
-In-Reply-To: <20140320135137.GA2263@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394266879-20522-2-git-send-email-sagar.a.kamble@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 09:51 AM, Dave Jones wrote:
-> On Wed, Mar 19, 2014 at 10:00:29PM -0700, Hugh Dickins wrote:
->
->   > > This might be collateral damage from the swapops thing, I guess we won't know until
->   > > that gets fixed, but I thought I'd mention that we might still have a problem here.
->   >
->   > Yes, those Bad rss-counters could well be collateral damage from the
->   > swapops BUG.  To which I believe I now have the answer: again untested,
->   > but please give this a try...
->
-> This survived an overnight run. No swapops bug, and no bad RSS. Good job:)
+On Sat, Mar 08, 2014 at 01:51:16PM +0530, sagar.a.kamble@intel.com wrote:
+> From: Sagar Kamble <sagar.a.kamble@intel.com>
+> 
+> This patch creates a generic blending enum property.
+> Drivers may support subset of these values.
+> 
+> Cc: airlied@linux.ie
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+> ---
+>  drivers/gpu/drm/drm_crtc.c | 33 +++++++++++++++++++++++++++++++++
+>  include/drm/drm_crtc.h     | 25 +++++++++++++++++++++++++
+>  2 files changed, 58 insertions(+)
+> 
+> diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+> index 4e43fc2..15281a3 100644
+> --- a/drivers/gpu/drm/drm_crtc.c
+> +++ b/drivers/gpu/drm/drm_crtc.c
+> @@ -4147,3 +4147,36 @@ void drm_mode_config_cleanup(struct drm_device *dev)
+>  	idr_destroy(&dev->mode_config.crtc_idr);
+>  }
+>  EXPORT_SYMBOL(drm_mode_config_cleanup);
+> +
+> +struct drm_property *drm_mode_create_blend_property(struct drm_device *dev,
+> +				unsigned int supported_factors)
+> +{
+> +	static const struct drm_prop_enum_list props[] = {
+> +		{ DRM_BLEND_NONE,   			"none" },
+> +		{ DRM_BLEND_ZERO,  			"zero" },
+> +		{ DRM_BLEND_ONE, 			"one" },
+> +		{ DRM_BLEND_SRC_COLOR, 			"src-color" },
+> +		{ DRM_BLEND_ONE_MINUS_SRC_COLOR,  	"one-minus-src-color" },
+> +		{ DRM_BLEND_DST_COLOR, 			"dst-color" },
+> +		{ DRM_BLEND_ONE_MINUS_DST_COLOR,  	"one-minus-dst-color" },
+> +		{ DRM_BLEND_SRC_ALPHA, 			"src-alpha" },
+> +		{ DRM_BLEND_ONE_MINUS_SRC_ALPHA, 	"one-minus-src-alpha" },
+> +		{ DRM_BLEND_DST_ALPHA, 			"dst-alpha" },
+> +		{ DRM_BLEND_ONE_MINUS_DST_ALPHA, 	"one-minus-dst-alpha" },
+> +		{ DRM_BLEND_CONSTANT_COLOR, 		"constant-color" },
+> +		{ DRM_BLEND_ONE_MINUS_CONSTANT_COLOR, 	"one-minus-constant-color" },
+> +		{ DRM_BLEND_CONSTANT_ALPHA, 		"constant-alpha" },
+> +		{ DRM_BLEND_ONE_MINUS_CONSTANT_ALPHA, 	"one-minus-constant-alpha" },
+> +		{ DRM_BLEND_SRC_ALPHA_SATURATE, 	"alpha-saturate" },
+> +		{ DRM_BLEND_SRC1_COLOR, 		"src1-color" },
+> +		{ DRM_BLEND_ONE_MINUS_SRC1_COLOR, 	"one-minus-src1-color" },
+> +		{ DRM_BLEND_SRC1_ALPHA, 		"src1-alpha" },
+> +		{ DRM_BLEND_ONE_MINUS_SRC1_ALPHA, 	"one-minus-src1-alpha" },
+> +		{ DRM_BLEND_PREMULTIPLIED_ALPHA, 	"pre-multiplied-alpha" }
+> +	};
 
-Same here, swapops bug is gone!
+Another few notes:
 
+- You seem to assume that there's a need for DRM_BLEND_NONE, what would it
+do? The property should default to DRM_BLEND_SRC_COLOR ie "Take the
+color from this plane for the blending".
 
-Thanks,
-Sasha
+- There's no need to expose SRC1 variants, this was done in GL to expose a
+second color the fragment shader can output, not applicable here.
+
+-- 
+Damien
