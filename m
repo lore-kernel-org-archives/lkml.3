@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752335AbaCTHa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 03:30:27 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:63457 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbaCTHaZ (ORCPT
+	id S1752082AbaCTHpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 03:45:25 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:61313 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbaCTHpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 03:30:25 -0400
-Date: Thu, 20 Mar 2014 00:30:21 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        DCG_UPD_stlinux_kernel@list.st.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, Angus.Clark@st.com
-Subject: Re: [PATCH 11/35] mtd: st_spi_fsm: Use device size to determine
- address width
-Message-ID: <20140320073021.GC31517@norris-Latitude-E6410>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
- <1392735362-1245-12-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 03:45:24 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 20 Mar 2014 16:45:29 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Dave Hansen <dave@sr71.net>
+Cc: Michal Hocko <mhocko@suse.cz>, John Stultz <john.stultz@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Dhaval Giani <dgiani@mozilla.com>, Jan Kara <jack@suse.cz>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
+Message-ID: <20140320074529.GB5902@bbox>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+ <20140318122425.GD3191@dhcp22.suse.cz>
+ <532A3872.1080101@sr71.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1392735362-1245-12-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <532A3872.1080101@sr71.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Feb 18, 2014 at 02:55:38PM +0000, Lee Jones wrote:
-> Take some known parameters, namely size and number of sectors and use
-> them to determine weather a device can support 32bit addressing or not.
-> If it can, set the associated flash capability flag for latter use.
+Hello Dave,
+
+On Wed, Mar 19, 2014 at 05:38:10PM -0700, Dave Hansen wrote:
+> On 03/18/2014 05:24 AM, Michal Hocko wrote:
+> > On Fri 14-03-14 11:33:30, John Stultz wrote:
+> > [...]
+> >> Volatile ranges provides a method for userland to inform the kernel that
+> >> a range of memory is safe to discard (ie: can be regenerated) but
+> >> userspace may want to try access it in the future.  It can be thought of
+> >> as similar to MADV_DONTNEED, but that the actual freeing of the memory
+> >> is delayed and only done under memory pressure, and the user can try to
+> >> cancel the action and be able to quickly access any unpurged pages. The
+> >> idea originated from Android's ashmem, but I've since learned that other
+> >> OSes provide similar functionality.
+> > 
+> > Maybe I have missed something (I've only glanced through the patches)
+> > but it seems that marking a range volatile doesn't alter neither
+> > reference bits nor position in the LRU. I thought that a volatile page
+> > would be moved to the end of inactive LRU with the reference bit
+> > dropped. Or is this expectation wrong and volatility is not supposed to
+> > touch page aging?
 > 
-> Acked-by Angus Clark <angus.clark@st.com>
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> ---
->  drivers/mtd/devices/st_spi_fsm.c | 4 ++++
->  1 file changed, 4 insertions(+)
+> I'm not really convinced it should alter the aging.  Things could
+> potentially go in and out of volatile state frequently, and requiring
+> aging means we've got to go after them page-by-page or pte-by-pte at
+> best.  That doesn't seem like something we want to do in a path we want
+> to be fast.
+
+Since vrange syscall design was changed from range-based to pte-based,
+it shouldn't be fast. Sure, vrange(VOLAILTE) could be fast with just
+mark it VMA_VOALTILE to vma->vm_flags but vrange(NOVOLATILE) should
+look every pages in the range so it could be slow.
+Even vrange(VOLATILE) call is fast now, I want to accout volatile
+pages to expose it to the user by vmstat so that user could see
+current status of the system memory, which makes userspace more happy
+and predicatble. If we add such stat, vrange(VOLATILE) should look
+every pages in the range so it could be slow, too.
+
 > 
-> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-> index 68fa12e..1d7a13a0 100644
-> --- a/drivers/mtd/devices/st_spi_fsm.c
-> +++ b/drivers/mtd/devices/st_spi_fsm.c
-> @@ -670,6 +670,10 @@ static int stfsm_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	fsm->info = info;
->  
-> +	/* Use device size to determine address width */
-> +	if (info->sector_size * info->n_sectors > 0xFFFFFF)
+> Why not just let normal page aging deal with them?  It seems to me like
+> like trying to infer intended lru position from volatility is the wrong
+> thing.  It's quite possible we'd have two pages in the same range that
+> we want in completely different parts of the LRU.  Maybe the structure
+> has a hot page and a cold one, and we would ideally want the cold one
+> swapped out and not the hot one.
 
-Shouldn't you compare:
+Yes, it would be really arguble and it depends on the user's usecase.
+That's why I'd like to add VRANGE_NORMAL_AGING which just don't move
+the page in curret position of the LRU. It would be useful when it used
+with VRANGE_SIGBUS because they could handle partial pages.
 
-	if (info->sector_size * info->n_sectors > 0x1000000)
+Otherwise, I'd like to move that pages into inacive's tail so that it
+should prevent reclaiming of the hot pages.
+If there is no memory pressure, we could get a chance to reuse volatile
+pages so it could rotate back to the head of LRU when VM reclaim logic is
+triggered.
 
-?
+I agree with John's opinion that just make approach simple as possible
+and extend it later so that we should make a room in syscall semantic
+and make an agreement what should be default at the moment.
 
-A device of size 0x1000000 can be addressed completely with only the
-lower 24 bits.
+Thanks.
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
-> +		info->flags |= FLASH_FLAG_32BIT_ADDR;
-> +
->  	platform_set_drvdata(pdev, fsm);
->  
->  	fsm->mtd.dev.parent	= &pdev->dev;
-
-Brian
+-- 
+Kind regards,
+Minchan Kim
