@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757802AbaCTJWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:22:34 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:33725 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757661AbaCTJWY (ORCPT
+	id S932330AbaCTJWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:22:42 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:37120 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757661AbaCTJWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:22:24 -0400
+	Thu, 20 Mar 2014 05:22:35 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com
 Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 31/36] mtd: st_spi_fsm: Supply the MX25xxx chip specific configuration call-back
-Date: Thu, 20 Mar 2014 09:21:03 +0000
-Message-Id: <1395307268-12721-32-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v6 36/36] ARM: STi: Add support for the FSM Serial Flash Controller
+Date: Thu, 20 Mar 2014 09:21:08 +0000
+Message-Id: <1395307268-12721-37-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
@@ -22,126 +22,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here we add the necessary device nodes required for successful device
+probing and Pinctrl setup for the FSM.
+
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 82 +++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 81 insertions(+), 1 deletion(-)
+ arch/arm/boot/dts/stih416-pinctrl.dtsi | 13 +++++++++++++
+ arch/arm/boot/dts/stih416.dtsi         | 13 +++++++++++++
+ arch/arm/boot/dts/stih41x-b2020.dtsi   |  1 +
+ arch/arm/boot/dts/stih41x-b2020x.dtsi  | 28 ++++++++++++++++++++++++++++
+ 4 files changed, 55 insertions(+)
+ create mode 100644 arch/arm/boot/dts/stih41x-b2020x.dtsi
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 0eb2c09..89d5e0b 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -326,6 +326,7 @@ struct flash_info {
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index b29ff4b..81df8e7 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -210,6 +210,19 @@
+ 					};
+ 				};
+ 			};
++
++			fsm {
++				pinctrl_fsm: fsm {
++					st,pins {
++						spi-fsm-clk  = <&PIO12 2 ALT1 OUT>;
++						spi-fsm-cs   = <&PIO12 3 ALT1 OUT>;
++						spi-fsm-mosi = <&PIO12 4 ALT1 OUT>;
++						spi-fsm-miso = <&PIO12 5 ALT1 IN>;
++						spi-fsm-hol  = <&PIO12 6 ALT1 OUT>;
++						spi-fsm-wp   = <&PIO12 7 ALT1 OUT>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-rear {
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index b7ab47b..1e24b9e 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -145,5 +145,18 @@
+ 
+ 			status		= "disabled";
+ 		};
++
++		/* FSM */
++		spifsm: spifsm@fe902000 {
++			compatible	   = "st,spi-fsm";
++			reg		   = <0xfe902000 0x1000>;
++			pinctrl-0	   = <&pinctrl_fsm>;
++
++			st,syscfg	   = <&syscfg_rear>;
++			st,boot-device-reg = <0x958>;
++			st,boot-device-spi = <0x1a>;
++
++			status = "disabled";
++		};
+ 	};
  };
- 
- static int stfsm_n25q_config(struct stfsm *fsm);
-+static int stfsm_mx25_config(struct stfsm *fsm);
- 
- static struct flash_info flash_types[] = {
- 	/*
-@@ -357,7 +358,8 @@ static struct flash_info flash_types[] = {
- 		   FLASH_FLAG_SE_4K             |	\
- 		   FLASH_FLAG_SE_32K)
- 	{ "mx25l25635e", 0xc22019, 0, 64*1024, 512,
--	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70, NULL }
-+	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
-+	  stfsm_mx25_config },
- 
- #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
- 		   FLASH_FLAG_READ_FAST         |	\
-@@ -509,6 +511,31 @@ static struct seq_rw_config n25q_read4_configs[] = {
- 	{0x00,			0,			0, 0, 0, 0x00, 0, 0},
- };
- 
+diff --git a/arch/arm/boot/dts/stih41x-b2020.dtsi b/arch/arm/boot/dts/stih41x-b2020.dtsi
+index 0ef0a69..01487e0 100644
+--- a/arch/arm/boot/dts/stih41x-b2020.dtsi
++++ b/arch/arm/boot/dts/stih41x-b2020.dtsi
+@@ -6,6 +6,7 @@
+  * it under the terms of the GNU General Public License version 2 as
+  * publishhed by the Free Software Foundation.
+  */
++#include "stih41x-b2020x.dtsi"
+ / {
+ 	memory{
+ 		device_type = "memory";
+diff --git a/arch/arm/boot/dts/stih41x-b2020x.dtsi b/arch/arm/boot/dts/stih41x-b2020x.dtsi
+new file mode 100644
+index 0000000..d9af63d
+--- /dev/null
++++ b/arch/arm/boot/dts/stih41x-b2020x.dtsi
+@@ -0,0 +1,28 @@
 +/*
-+ * [MX25xxx] Configuration
++ * Copyright (C) 2013 STMicroelectronics (R&D) Limited.
++ * Author: Lee Jones <lee.jones@linaro.org>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * publishhed by the Free Software Foundation.
 + */
-+#define MX25_STATUS_QE			(0x1 << 6)
++/ {
++	soc {
++		spifsm: spifsm@fe902000 {
++			#address-cells = <1>;
++			#size-cells    = <1>;
 +
-+static int stfsm_mx25_en_32bit_addr_seq(struct stfsm_seq *seq)
-+{
-+	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			   SEQ_OPC_CYCLES(8) |
-+			   SEQ_OPC_OPCODE(FLASH_CMD_EN4B_ADDR) |
-+			   SEQ_OPC_CSDEASSERT);
++			status = "okay";
 +
-+	seq->seq[0] = STFSM_INST_CMD1;
-+	seq->seq[1] = STFSM_INST_WAIT;
-+	seq->seq[2] = STFSM_INST_STOP;
++			partition@0 {
++				label = "Serial Flash 1";
++				reg   = <0x00000000 0x00500000>;
++			};
 +
-+	seq->seq_cfg = (SEQ_CFG_PADS_1 |
-+			SEQ_CFG_ERASE |
-+			SEQ_CFG_READNOTWRITE |
-+			SEQ_CFG_CSDEASSERT |
-+			SEQ_CFG_STARTSEQ);
-+
-+	return 0;
-+}
-+
- static struct stfsm_seq stfsm_seq_read;		/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_write;	/* Dynamically populated */
- static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
-@@ -1048,6 +1075,59 @@ static int stfsm_prepare_rwe_seqs_default(struct stfsm *fsm)
- 	return 0;
- }
- 
-+static int stfsm_mx25_config(struct stfsm *fsm)
-+{
-+	uint32_t flags = fsm->info->flags;
-+	uint32_t data_pads;
-+	uint8_t sta;
-+	int ret;
-+	bool soc_reset;
-+
-+	/*
-+	 * Use default READ/WRITE sequences
-+	 */
-+	ret = stfsm_prepare_rwe_seqs_default(fsm);
-+	if (ret)
-+		return ret;
-+
-+	/*
-+	 * Configure 32-bit Address Support
-+	 */
-+	if (flags & FLASH_FLAG_32BIT_ADDR) {
-+		/* Configure 'enter_32bitaddr' FSM sequence */
-+		stfsm_mx25_en_32bit_addr_seq(&stfsm_seq_en_32bit_addr);
-+
-+		soc_reset = stfsm_can_handle_soc_reset(fsm);
-+		if (soc_reset || !fsm->booted_from_spi) {
-+			/* If we can handle SoC resets, we enable 32-bit address
-+			 * mode pervasively */
-+			stfsm_enter_32bit_addr(fsm, 1);
-+
-+		} else {
-+			/* Else, enable/disable 32-bit addressing before/after
-+			 * each operation */
-+			fsm->configuration = (CFG_READ_TOGGLE_32BIT_ADDR |
-+					      CFG_WRITE_TOGGLE_32BIT_ADDR |
-+					      CFG_ERASESEC_TOGGLE_32BIT_ADDR);
-+			/* It seems a small delay is required after exiting
-+			 * 32-bit mode following a write operation.  The issue
-+			 * is under investigation.
-+			 */
-+			fsm->configuration |= CFG_WRITE_EX_32BIT_ADDR_DELAY;
-+		}
-+	}
-+
-+	/* For QUAD mode, set 'QE' STATUS bit */
-+	data_pads = ((stfsm_seq_read.seq_cfg >> 16) & 0x3) + 1;
-+	if (data_pads == 4) {
-+		stfsm_read_status(fsm, FLASH_CMD_RDSR, &sta);
-+		sta |= MX25_STATUS_QE;
-+		stfsm_write_status(fsm, sta, 1);
-+	}
-+
-+	return 0;
-+}
-+
- static int stfsm_n25q_config(struct stfsm *fsm)
- {
- 	uint32_t flags = fsm->info->flags;
++			partition@500000 {
++				label = "Serial Flash 2";
++				reg   = <0x00500000 0x00b00000>;
++			};
++		};
++	};
++};
 -- 
 1.8.3.2
 
