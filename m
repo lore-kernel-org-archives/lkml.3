@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392AbaCTKXG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:23:06 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:61436 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308AbaCTKXB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:23:01 -0400
+	id S1756225AbaCTKmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:42:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaCTKmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 06:42:17 -0400
+Date: Thu, 20 Mar 2014 09:33:33 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [PATCH 0/6] perf tools: Share map groups within process
+Message-ID: <20140320083333.GA3762@krava.redhat.com>
+References: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1394481265-7275-1-git-send-email-geert@linux-m68k.org>
-References: <1394481265-7275-1-git-send-email-geert@linux-m68k.org>
-Date: Thu, 20 Mar 2014 11:23:00 +0100
-X-Google-Sender-Auth: sBpKxeSQkk0jkM2UcVLO4Q_8ER0
-Message-ID: <CAMuHMdVmrEoRkqUB=3mBRNrPEJiR701YUmr8C7HX1O6UxT_NUg@mail.gmail.com>
-Subject: Re: [PATCH/RFC] serial_core: Fix pm imbalance on unbind
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395154016-26709-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, Mar 18, 2014 at 03:46:50PM +0100, Jiri Olsa wrote:
+> hi,
+> this patchset moves thread's map_groups to be dynamically
+> allocated and shared within process threads.
+> 
+> The main benefit would be to be able to look up memory
+> map from any thread that belongs to the process.
+> 
+> This implements one of the solution ideas for issue
+> described by Don in following thread:
+> http://marc.info/?l=linux-kernel&m=139403876017159&w=2
+> 
+> RFC changes:
+>   - added automated test for thread map groups get/put methods
+>   - fix reference count for case described by Namhyung
+>   - rename the mmap-events.c test to mmap-thread-lookup.c
+>   - added PROT_EXEC to mmap call in tests/mmap-thread-lookup.c
+>     as it's not implied by default on all archs (Namhyung)
+>   - lazy mg allocation in thread__find_addr_map (Namhyung)
+>   - fix compilation failures (Arnaldo)
+> 
+> also available in here:
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>   perf/core_mmaps
 
-On Mon, Mar 10, 2014 at 8:54 PM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> When a serial port is closed, uart_close() takes care of shutting down the
-> hardware, and powering it down.
->
-> When a serial port is unbound while in use, uart_close() bypasses all of
-> this, as this is supposed to be done through uart_hangup() (invoked via
-> tty_vhangup() in uart_remove_one_port()).
->
-> However, uart_hangup() does not set the hardware's power state, leaving it
-> powered up.  This may also lead to unbounded nesting counts in clock and
-> power management, depending on their internal implementation.
->
-> Make sure to power down the port in uart_hangup(), except when the port is
-> used as a serial console. For serial consoles, this must be postponed until
-> after their deregistration in uart_remove_one_port() (symmetry with
-> registration in uart_configure_port(), invoked from uart_add_one_port()).
->
-> After this, the module clock used by the sh-sci driver is disabled on
-> unbind while the serial port is in use.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Arnaldo,
+I rebased this to your latest perf/core
 
-I noticed you have applied all serial patches I've sent, except for this one.
-Is there any specific reason you skipped this one?
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+thanks,
+jirka
