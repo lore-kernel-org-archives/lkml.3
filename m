@@ -1,106 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755616AbaCTIO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 04:14:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44997 "EHLO mx2.suse.de"
+	id S1755759AbaCTIRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 04:17:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32890 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755261AbaCTIOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 04:14:02 -0400
-Date: Thu, 20 Mar 2014 09:13:59 +0100
-From: Jan Kara <jack@suse.cz>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Jan Kara <jack@suse.cz>, John Stultz <john.stultz@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
-Message-ID: <20140320081359.GB32080@quack.suse.cz>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
- <20140318151113.GA10724@gmail.com>
- <CALAqxLV=uRV825taKrnH2=p_kAf5f1PbQ7=J5MopFt9ATj=a3A@mail.gmail.com>
- <20140319004918.GB13475@bbox>
- <20140319101202.GE26358@quack.suse.cz>
- <20140320010954.GE16478@bbox>
+	id S1751605AbaCTIRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 04:17:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,693,1389772800"; 
+   d="scan'208";a="503643970"
+Message-ID: <532AA3F6.9090402@intel.com>
+Date: Thu, 20 Mar 2014 16:16:54 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320010954.GE16478@bbox>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Zhang, Rui" <rui.zhang@intel.com>, Stephane Eranian <eranian@google.com>
+CC: "Lu, Aaron" <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+References: <20140224162400.GE16457@pd.tnic>	<4205942.Tp8ltEsv6e@vostro.rjw.lan>	<532A514C.5010106@intel.com>	<744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com> <CABPqkBTyti0owCA_cWf9GcvYnOSvbMQpRC29rgpicjW1iYBjYQ@mail.gmail.com> <744357E9AAD1214791ACBA4B0B9092630121F3B7@SHSMSX101.ccr.corp.intel.com>
+In-Reply-To: <744357E9AAD1214791ACBA4B0B9092630121F3B7@SHSMSX101.ccr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-03-14 10:09:54, Minchan Kim wrote:
-> Hello,
-> 
-> On Wed, Mar 19, 2014 at 11:12:02AM +0100, Jan Kara wrote:
-> > On Wed 19-03-14 09:49:18, Minchan Kim wrote:
-> > > On Tue, Mar 18, 2014 at 11:07:50AM -0700, John Stultz wrote:
-> > > > On Tue, Mar 18, 2014 at 8:11 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > > > 1) SIGBUS
-> > > > >
-> > > > > It's one of the arguable issue because some user want to get a
-> > > > > SIGBUS(ex, Firefox) while other want a just zero page(ex, Google
-> > > > > address sanitizer) without signal so it should be option.
-> > > > >
-> > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO, &purged);
-> > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL, &purged);
-> > > > 
-> > > > So, the zero-fill on volatile access feels like a *very* special case
-> > > > to me, since a null page could be valid data in many cases. Since
-> > > > support/interest for volatile ranges has been middling at best, I want
-> > > > to start culling the stranger use cases. I'm open in the future to
-> > > > adding a special flag or something if it really make sense, but at
-> > > > this point, lets just get the more general volatile range use cases
-> > > > supported.
-> > > 
-> > > I'm not sure it's special case. Because some user could reserve
-> > > a big volatile VMA and want to use the range by circle queue for
-> > > caching so overwriting could happen easily.
-> > > We should call vrange(NOVOLATILE) to prevent SIGBUS right before
-> > > overwriting. I feel it's unnecessary overhead and we could avoid
-> > > the cost with VRANGE_ZERO.
-> > > Do you think this usecase would be rare?
-> >   If I understand it correctly the buffer would be volatile all the time
-> > and userspace would like to opportunistically access it. Hum, but then with
-> > your automatic zero-filling it could see half of the page with data and
-> > half of the page zeroed out (the page got evicted in the middle of
-> > userspace reading it). I don't think that's a very comfortable interface to
-> > work with (you would have to very carefully verify the data you've read is
-> > really valid). And frankly in most cases I'm afraid the application would
-> > fail to do proper verification and crash randomly under memory pressure. So
-> > I wouldn't provide VRANGE_ZERO unless I come across real people for which
-> > avoiding marking the range as NONVOLATILE is a big deal and they are OK with
-> > handling all the odd situations that can happen.
-> 
-> Plaes think following usecase.
-> 
-> Let's assume big volatile cacne.
-> If there is request for cache, it should find a object in a cache
-> and if it found, it should call vrange(NOVOLATILE) right before
-> passing it to the user and investigate it was purged or not.
-> If it wasn't purged, cache manager could pass the object to the user.
-> But it's circular cache so if there is no request from user, cache manager
-> always overwrites objects so it could encounter SIGBUS easily
-> so as current sematic, cache manager always should call vrange(NOVOLATILE)
-> right before the overwriting. Otherwise, it should register SIGBUS handler
-> to unmark volatile by page unit. SIGH.
-> 
-> If we support VRANGE_ZERO, cache manager could overwrite object without
-> SIGBUS handling or vrange(NOVOLATILE) call. Just need is vrange(NOVOLATILE)
-> call while cache manager pass it to the user.
-  OK, that makes some sense but I don't think we have to implement this
-functionality in the beginning...
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+On 03/20/2014 03:53 PM, Zhang, Rui wrote:
+> The resource length is also hardcoded to 0x6000, right?
+> This is probably a problem, because
+> only if the resource length read from PCI config space is larger than 0x4000,
+> drivers/pnp/quirks.c will detect the conflict and disable the PNP0C02
+> resource 0xfed10000 - 0xfed13fff, and the PCI device can request this
+> resource successfully.
+> In order to check this, can you please attach the dmesg output after boot?
+
+maybe the issue can be fixed by below untested patch
+
+---
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index fd5e883..2b3d834 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -1701,7 +1701,7 @@ static struct uncore_event_desc snb_uncore_imc_events[] = {
+ #define SNB_UNCORE_PCI_IMC_BAR_OFFSET		0x48
+ 
+ /* page size multiple covering all config regs */
+-#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x6000
++#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x8
+ 
+ #define SNB_UNCORE_PCI_IMC_DATA_READS		0x1
+ #define SNB_UNCORE_PCI_IMC_DATA_READS_BASE	0x5050
+@@ -1736,7 +1736,8 @@ static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
+ 
+ 	addr &= ~(PAGE_SIZE - 1);
+ 
+-	box->io_addr = ioremap(addr, SNB_UNCORE_PCI_IMC_MAP_SIZE);
++	box->io_addr = ioremap(addr + SNB_UNCORE_PCI_IMC_CTR_BASE,
++			       SNB_UNCORE_PCI_IMC_MAP_SIZE);
+ 	box->hrtimer_duration = UNCORE_SNB_IMC_HRTIMER_INTERVAL;
+ }
+ 
+@@ -1832,7 +1833,7 @@ static int snb_uncore_imc_event_init(struct perf_event *event)
+ 	}
+ 
+ 	/* must be done before validate_group */
+-	event->hw.event_base = base;
++	event->hw.event_base = base - SNB_UNCORE_PCI_IMC_CTR_BASE;
+ 	event->hw.config = cfg;
+ 	event->hw.idx = idx;
+ 
