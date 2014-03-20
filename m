@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760176AbaCTVXl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:23:41 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59338 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759971AbaCTVXi (ORCPT
+	id S1760193AbaCTVYF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:24:05 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:37869 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759889AbaCTVYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:23:38 -0400
-Date: Thu, 20 Mar 2014 22:23:36 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH RFC] PM / Hibernate: no kernel_power_off when
- pm_power_off NULL
-Message-ID: <20140320212336.GA17368@amd.pavel.ucw.cz>
-References: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org>
- <1395348795-8554-2-git-send-email-sebastian.capella@linaro.org>
+	Thu, 20 Mar 2014 17:24:01 -0400
+Message-ID: <532B6A79.3070802@cogentembedded.com>
+Date: Fri, 21 Mar 2014 01:23:53 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395348795-8554-2-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Joe Perches <joe@perches.com>
+CC: =?ISO-8859-1?Q?C=E9dric_Cabessa?= <ced@ryick.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] coding style: fix line over 80 characters
+References: <1395266697-8699-1-git-send-email-ced@ryick.net>	 <1395266697-8699-3-git-send-email-ced@ryick.net>	 <532B5ED1.8060406@cogentembedded.com> <1395348314.7776.47.camel@joe-AO722>
+In-Reply-To: <1395348314.7776.47.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 03/20/2014 11:45 PM, Joe Perches wrote:
 
-> Reboot logic in kernel/reboot will avoid calling kernel_power_off
-> when pm_power_off is null, and instead uses kernel_halt.  Change
-> hibernate's power_down to follow the behavior in the reboot call.
-> 
-> Calling the notifier twice (once for SYS_POWER_OFF and again for
-> SYS_HALT) causes a panic during hibernation on Kirkwood
-> Openblocks A6 board.
+>>> diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
+> []
+>>> @@ -271,12 +271,14 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
+>>>    			}
+>>>    			break;
+>>>    		case USB_PORT_FEAT_POWER:
+>>> -			usbip_dbg_vhci_rh(" ClearPortFeature: USB_PORT_FEAT_POWER\n");
+>>> +			usbip_dbg_vhci_rh(
+>>> +				" ClearPortFeature: USB_PORT_FEAT_POWER\n");
 
-I can't say I like this patch.
+>>      Your version of scripts/checkpatch.pl seems outdated. It shouldn't
+>> complain about strings violating 80-column limit (and I've just verified it
+>> doesn't).
 
-kernel_power_off should work with pm_power_off == NULL, see for
-example x86.
+> checkpatch complains about > 80 char lines for lines with
+> a function where the function name isn't understood to be
+> a logging use.
 
-static void native_machine_power_off(void)
-{
-        if (pm_power_off) {
-                if (!reboot_force)
-			machine_shutdown();
-                pm_power_off();
-        }
-        /* A fallback in case there is no PM info available */
-        tboot_shutdown(TB_SHUTDOWN_HALT);
-}
+> uspip_dbg_<foo> doesn't take the general form so if the
+> string at the EOL exceeds 80 chars, a message is emitted.
 
-. arch/arm/process.c implementation is strange:
+> Long standalone strings on a single line do not get warnings.
 
-void machine_halt(void)
-{
-        local_irq_disable();
-	smp_send_stop();
+    OK, but there's still issue that the patch context doesn't correspond to 
+what can be seen in Greg's tree. What I am seeing there is broken up string.
 
-        local_irq_disable();
-        while (1);
-}
+WBR, Sergei
 
-## Why second disable?
-
-/*                                                                                                 
- * Power-off simply requires that the secondary CPUs stop performing
- any                           
- * activity (executing tasks, handling interrupts). smp_send_stop()                                
- * achieves this. When the system power is turned off, it will take
- all CPUs                       
- * with it.                                                                                        
- */
-void machine_power_off(void)
-{
-	local_irq_disable();
-        smp_send_stop();
-
-	if (pm_power_off)
-                pm_power_off();
-}
-
-## It really should do while (1) here.
-   
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
