@@ -1,81 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759652AbaCTUPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:15:52 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57562 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755381AbaCTUPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759606AbaCTUPv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:15:51 -0400
+Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:56441 "EHLO
+	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751671AbaCTUPt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 16:15:49 -0400
-Message-ID: <532B4C36.8060405@ti.com>
-Date: Thu, 20 Mar 2014 16:14:46 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <galak@codeaurora.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>,
-        Warner Losh <imp@bsdimp.com>
-Subject: Re: [PATCH v2] mtd: davinci-nand: disable subpage write for keystone-nand
-References: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1395346112-13350-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Message-ID: <1395346547.29055.2.camel@x220>
+Subject: Re: [PATCH] MAINTAINERS: microblaze: Use LKML as mailing list
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Michal Simek <michal.simek@xilinx.com>
+Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
+        microblaze-uclinux@itee.uq.edu.au,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>
+Date: Thu, 20 Mar 2014 21:15:47 +0100
+In-Reply-To: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>
+References: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Mar 2014 20:15:47.0741 (UTC) FILETIME=[2E692CD0:01CF4479]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 March 2014 04:08 PM, Ivan Khoronzhuk wrote:
-> From: Murali Karicheri <m-karicheri2@ti.com>
+On Thu, 2014-03-20 at 16:09 +0100, Michal Simek wrote:
+> microblaze-uclinux mailing list is almost dead and
+> it is just causing troubles for non subscribers which are
+> getting email about waiting for moderator.
+> Approval never happens. Move it to LKML.
 > 
-> Sub page write doesn't work because of hw issue in controller found on
-> Keystone SOCs. AEMIF controller is also used on DaVinci SOCs which
-> don't seems to have any issue. So add "ti,keysone-nand" compatible
-> to nand driver in order to set NAND_NO_SUBPAGE_WRITE option.
-> 
-> Cc: Brian Norris <computersforpeace@gmail.com>
-> Cc: Warner Losh <imp@bsdimp.com>
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> Reported-by: Richard Guy Briggs <rgb@redhat.com>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
 > ---
 > 
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>  MAINTAINERS | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index b3fdb0f..1a22c62 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5702,7 +5702,7 @@ F:	fs/imgdafs/
+> 
+>  MICROBLAZE ARCHITECTURE
+>  M:	Michal Simek <monstr@monstr.eu>
+> -L:	microblaze-uclinux@itee.uq.edu.au (moderated for non-subscribers)
+> +L:	linux-kernel@vger.kernel.org
 
-> This patch is a result of discussion on patch v1:
-> https://lkml.org/lkml/2014/3/20/461
-> 
->  drivers/mtd/nand/davinci_nand.c | 6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> index 4615d79..b922c8e 100644
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -523,6 +523,7 @@ static struct nand_ecclayout hwecc4_2048 = {
->  #if defined(CONFIG_OF)
->  static const struct of_device_id davinci_nand_of_match[] = {
->  	{.compatible = "ti,davinci-nand", },
-> +	{.compatible = "ti,keystone-nand", },
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, davinci_nand_of_match);
-> @@ -581,6 +582,11 @@ static struct davinci_nand_pdata
->  		    of_property_read_bool(pdev->dev.of_node,
->  			"ti,davinci-nand-use-bbt"))
->  			pdata->bbt_options = NAND_BBT_USE_FLASH;
-> +
-> +		if (of_device_is_compatible(pdev->dev.of_node,
-> +					    "ti,keystone-nand")) {
-> +			pdata->options |= NAND_NO_SUBPAGE_WRITE;
-> +		}
->  	}
->  
->  	return dev_get_platdata(&pdev->dev);
-> 
+Isn't lkml already the catch all address that get_maintainer.pl always
+spits out?
+
+>  W:	http://www.monstr.eu/fdt/
+>  T:	git git://git.monstr.eu/linux-2.6-microblaze.git
+>  S:	Supported
+
+
+Paul Bolle
 
