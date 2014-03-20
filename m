@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaCTHym (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 03:54:42 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:62243 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859AbaCTHyk (ORCPT
+	id S1753733AbaCTHzs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 03:55:48 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:54950 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaCTHzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 03:54:40 -0400
+	Thu, 20 Mar 2014 03:55:47 -0400
+Date: Thu, 20 Mar 2014 00:55:43 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        DCG_UPD_stlinux_kernel@list.st.com, dwmw2@infradead.org,
+        linux-mtd@lists.infradead.org, Angus.Clark@st.com
+Subject: Re: [PATCH 25/35] mtd: st_spi_fsm: Add the ability to read from a
+ Serial Flash device
+Message-ID: <20140320075543.GD31517@norris-Latitude-E6410>
+References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
+ <1392735362-1245-26-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <6636992.81rGEKjTqL@vostro.rjw.lan>
-References: <1395087971-31897-1-git-send-email-geert@linux-m68k.org>
-	<6636992.81rGEKjTqL@vostro.rjw.lan>
-Date: Thu, 20 Mar 2014 08:54:39 +0100
-X-Google-Sender-Auth: Ot_vWzfTYQUe12ro3xByAsQgew0
-Message-ID: <CAMuHMdVZ6VS3zfZ0Li6MEd7tkTdxfRz96L74z0GsfXvxj+cDVA@mail.gmail.com>
-Subject: Re: [PATCH 1/2] PM: Correct whitespace errors in <linux/pm.h>
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1392735362-1245-26-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+On Tue, Feb 18, 2014 at 02:55:52PM +0000, Lee Jones wrote:
+> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+> index fe538bb..e4815fe 100644
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -942,6 +945,100 @@ static int stfsm_n25q_config(struct stfsm *fsm)
+[...]
+> +static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
+> +			  size_t *retlen, u_char *buf)
+> +{
+> +	struct stfsm *fsm = dev_get_drvdata(mtd->dev.parent);
+> +	uint32_t bytes;
+> +
+> +	dev_dbg(fsm->dev, "%s from 0x%08x, len %zd\n",
+> +		__func__, (u32)from, len);
+> +
+> +	mutex_lock(&fsm->lock);
+> +
+> +	while (len > 0) {
+> +		bytes = min_t(size_t, len, FLASH_PAGESIZE);
+> +
+> +		stfsm_read(fsm, buf, bytes, from);
+> +
+> +		buf += bytes;
+> +		from += bytes;
+> +		len -= bytes;
+> +
+> +		if (retlen)
 
-On Wed, Mar 19, 2014 at 11:50 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Monday, March 17, 2014 09:26:10 PM Geert Uytterhoeven wrote:
->> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->
-> Why exactly are they errors?
+Same as with your _write implementation; you can assume that retlen is
+always non-NULL.
 
-checkpatch.pl says: "WARNING: please, no space before tabs",
-Vim (with "let c_space_errors=1") shows them in red.
+> +			*retlen += bytes;
+> +	}
+> +
+> +	mutex_unlock(&fsm->lock);
+> +
+> +	return 0;
+> +}
+> +
+>  static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
+>  {
+>  	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Brian
