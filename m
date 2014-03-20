@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756018AbaCTDCX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 23:02:23 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:36123 "EHLO
+	id S1756126AbaCTDCu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 23:02:50 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:36117 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633AbaCTC7Y (ORCPT
+	with ESMTP id S1751416AbaCTC7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 22:59:24 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-f6-532a598b5fdc
+	Wed, 19 Mar 2014 22:59:21 -0400
+X-AuditID: cbfee690-b7f266d00000287c-88-532a59878b83
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 Cc: rafael.j.wysocki@intel.com, t.figa@samsaung.com, b.zolnierkie@samsaung.com,
         linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv4 5/5] devfreq: exynos5: Add CONFIG_PM_OPP dependency to fix
- probe fail
-Date: Thu, 20 Mar 2014 11:59:13 +0900
-Message-id: <1395284353-22458-6-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCHv4 1/5] devfreq: exynos4: Fix bug of resource leak and code
+ clean on probe()
+Date: Thu, 20 Mar 2014 11:59:09 +0900
+Message-id: <1395284353-22458-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1395284353-22458-1-git-send-email-cw00.choi@samsung.com>
 References: <1395284353-22458-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrGLMWRmVeSWpSXmKPExsWyRsSkRLc7UivYYPEpJYuOnt8sFte/PGe1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkSLcjUivYYPUuRouOnt8sFte/PGe1
 	ONv0ht3i8q45bBYzzu9jsrjduILN4vGKt+wWN6fOZnLg8Fi85yWTx8/l29k9+rasYvT4vEku
-	gCWKyyYlNSezLLVI3y6BK+P+ux72gilsFYsfnmFtYJzA2sXIySEhYCKx+NxTRghbTOLCvfVs
-	ILaQwFJGicb30TA1f66cZe5i5AKKL2KU2H3hB5TTyCRxeMlmsA42AS2J/S9ugNkiAuYSu5b+
-	ZAMpYhbYySix//YisBXCApESy95/BVvNIqAqMW/ZDLAGXgFXiS0LDkOdJCfxYc8jdhCbU8BN
-	4ujj2VAnuUp86IGISwjMY5d4f0kMYo6AxLfJh1i6GDmA4rISmw4wQ5RIShxccYNlAqPwAkaG
-	VYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiBYX7637P+HYx3D1gfYkwGGjeRWUo0OR8YJ3kl
-	8YbGZkYWpiamxkbmlmakCSuJ895/mBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgVGwV0/w
-	aFbROQ+mBSs+GU/M0DCRbLBv6E8z/LHqXbHLG41Gjo4N9cvm1p4t8LkgLH9i/qWH5VFGCg8m
-	Xr+xN01C8p7y4oXxLdOvK37PeR827b8N15GaPtfEqy4sv3XykrdM8fGX01llcNrgh+gKNvV4
-	XUkT64Vzj6zoX+fXKHyX0WGO+SW/uUosxRmJhlrMRcWJAIchelWJAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd3uSK1gg/uTpS06en6zWFz/8pzV
-	4mzTG3aLy7vmsFnMOL+PyeJ24wo2i8cr3rJb3Jw6m8mBw2PxnpdMHj+Xb2f36NuyitHj8ya5
-	AJaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKA7
-	lBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGENYwZ99/1sBdMYatY/PAMawPj
-	BNYuRk4OCQETiT9XzjJD2GISF+6tZ+ti5OIQEljEKLH7wg9mCKeRSeLwks1sIFVsAloS+1/c
-	ALNFBMwldi39CdbBLLCTUWL/7UWMIAlhgUiJZe+/gq1gEVCVmLdsBlgDr4CrxJYFh6FWy0l8
-	2POIHcTmFHCTOPp4NliNEFDNh55H7BMYeRcwMqxiFE0tSC4oTkrPNdIrTswtLs1L10vOz93E
-	CI6kZ9I7GFc1WBxiFOBgVOLhXbFHM1iINbGsuDL3EKMEB7OSCK+1u1awEG9KYmVValF+fFFp
-	TmrxIcZkoKsmMkuJJucDozyvJN7Q2MTMyNLI3NDCyNicNGElcd6DrdaBQgLpiSWp2ampBalF
-	MFuYODilGhgV9vYqM7x5xc8qeFHm37QNnO/2XG+zaT3YV+ozX6Xuv9qk56xJ87NiytdXZzyc
-	yqzQVi2VvrA9+/Dal3xtV7sTpymcKCryevju29kqodrFHQ66O3nY312IOmPoV9p2VimabRXX
-	fx21X+rt2XV2H7fP0fz5PWG9aeu7GJbIHKnrb/c+PvjR6b8SS3FGoqEWc1FxIgCL2Nsq6AIA	AA==
+	gCWKyyYlNSezLLVI3y6BK+P706nMBStFKza8OsHcwHhLsIuRk0NCwETi0ZntbBC2mMSFe+uB
+	bC4OIYGljBJn9/xigSm69+MdVGIRo8TmGzegnEYmiUdLT4G1swloSex/cQPMFhEwl9i19CdY
+	EbPATkaJ/bcXMYIkhAViJfb33AIbyyKgKnHizxywOK+Aq8THuc9YIdbJSXzY84gdxOYUcJM4
+	+ng22FAhoJoPPSBxLqCa6ewS1z9eYoYYJCDxbfIhoKEcQAlZiU0HmCHmSEocXHGDZQKj8AJG
+	hlWMoqkFyQXFSelFJnrFibnFpXnpesn5uZsYgaF++t+zCTsY7x2wPsSYDDRuIrOUaHI+MFby
+	SuINjc2MLExNTI2NzC3NSBNWEudVe5QUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGx3G5e
+	+D9lyXshxz5snVgZ9zh2Vf+f7DqD2dU/dFgXrZ9R9K2pYsVemRUinv3sFfI7LUVaqthf+d5g
+	c+zQj5v7/82+W3M9Kr/v7a+bFm5u4Prxg4d37HYNs/h3CkEVH3N+et66Obkv1eH1rH3y+R4T
+	V3Nnai7Pm7tL7cxj5TPthSoHFgi5qXArsRRnJBpqMRcVJwIAVDzUJ4sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKIsWRmVeSWpSXmKPExsVy+t9jAd32SK1gg7cNZhYdPb9ZLK5/ec5q
+	cbbpDbvF5V1z2CxmnN/HZHG7cQWbxeMVb9ktbk6dzeTA4bF4z0smj5/Lt7N79G1ZxejxeZNc
+	AEtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAd
+	SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaM70+nMhesFK3Y8OoEcwPj
+	LcEuRk4OCQETiXs/3rFB2GISF+6tB7K5OIQEFjFKbL5xA8ppZJJ4tPQUWBWbgJbE/hc3wGwR
+	AXOJXUt/ghUxC+xklNh/exEjSEJYIFZif88tFhCbRUBV4sSfOWBxXgFXiY9zn7FCrJOT+LDn
+	ETuIzSngJnH08WywoUJANR96HrFPYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4
+	kp5J72Bc1WBxiFGAg1GJh3fFHs1gIdbEsuLK3EOMEhzMSiK81u5awUK8KYmVValF+fFFpTmp
+	xYcYk4GumsgsJZqcD4zyvJJ4Q2MTMyNLI3NDCyNjc9KElcR5D7ZaBwoJpCeWpGanphakFsFs
+	YeLglGpgLJwq5jHF49Q711DD9cWPz66r0WmTZXfWWfznUusZ0+Iff6+8OGJ9jol1eqwa92HT
+	FXLxecmsSUdTD+se3+L3/WK9hm/FR/1j3WeS3ttZCuXVfdf48bRU6EZ8U/PmOatF2oLZvjbs
+	+/Jfe5FPlOgCRpv7ltmP/go51+QYr1fqSp91WrfZY7WWEktxRqKhFnNRcSIAiQGWDegCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,27 +50,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add CONFIG_PM_OPP dependecy to exynos5_bus driver
-to fix probe fail. If CONFIG_PM_OPP is disabled, dev_pm_opp_find_freq_floor()
-will always return ERR_PTR(-EINVAL) error.
+This patch fix bug about resource leak when happening probe fail and code clean
+to add debug message.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/devfreq/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/devfreq/exynos/exynos4_bus.c | 35 +++++++++++++++++++++++------------
+ 1 file changed, 23 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index b2de2a1..c023c57 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -84,6 +84,7 @@ config ARM_EXYNOS5_BUS_DEVFREQ
- 	depends on SOC_EXYNOS5250
- 	select ARCH_HAS_OPP
- 	select DEVFREQ_GOV_SIMPLE_ONDEMAND
-+	select PM_OPP
- 	help
- 	  This adds the DEVFREQ driver for Exynos5250 bus interface (vdd_int).
- 	  It reads PPMU counters of memory controllers and adjusts the
+diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
+index e07b0c6..4c1bbd9 100644
+--- a/drivers/devfreq/exynos/exynos4_bus.c
++++ b/drivers/devfreq/exynos/exynos4_bus.c
+@@ -763,19 +763,11 @@ static int exynos4_bus_get_dev_status(struct device *dev,
+ 	return 0;
+ }
+ 
+-static void exynos4_bus_exit(struct device *dev)
+-{
+-	struct busfreq_data *data = dev_get_drvdata(dev);
+-
+-	devfreq_unregister_opp_notifier(dev, data->devfreq);
+-}
+-
+ static struct devfreq_dev_profile exynos4_devfreq_profile = {
+ 	.initial_freq	= 400000,
+ 	.polling_ms	= 50,
+ 	.target		= exynos4_bus_target,
+ 	.get_dev_status	= exynos4_bus_get_dev_status,
+-	.exit		= exynos4_bus_exit,
+ };
+ 
+ static int exynos4210_init_tables(struct busfreq_data *data)
+@@ -1048,8 +1040,11 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+ 		dev_err(dev, "Cannot determine the device id %d\n", data->type);
+ 		err = -EINVAL;
+ 	}
+-	if (err)
++	if (err) {
++		dev_err(dev, "Cannot initialize busfreq table %d\n",
++			     data->type);
+ 		return err;
++	}
+ 
+ 	data->vdd_int = devm_regulator_get(dev, "vdd_int");
+ 	if (IS_ERR(data->vdd_int)) {
+@@ -1086,23 +1081,39 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+ 	if (IS_ERR(data->devfreq))
+ 		return PTR_ERR(data->devfreq);
+ 
+-	devfreq_register_opp_notifier(dev, data->devfreq);
++	/* Register opp_notifier for Exynos4 busfreq */
++	err = devfreq_register_opp_notifier(dev, data->devfreq);
++	if (err < 0) {
++		dev_err(dev, "Failed to register opp notifier\n");
++		goto err_notifier_opp;
++	}
+ 
++	/* Register pm_notifier for Exynos4 busfreq */
+ 	err = register_pm_notifier(&data->pm_notifier);
+ 	if (err) {
+ 		dev_err(dev, "Failed to setup pm notifier\n");
+-		devfreq_remove_device(data->devfreq);
+-		return err;
++		goto err_notifier_pm;
+ 	}
+ 
+ 	return 0;
++
++err_notifier_pm:
++	devfreq_unregister_opp_notifier(dev, data->devfreq);
++err_notifier_opp:
++	devfreq_remove_device(data->devfreq);
++
++	return err;
+ }
+ 
+ static int exynos4_busfreq_remove(struct platform_device *pdev)
+ {
+ 	struct busfreq_data *data = platform_get_drvdata(pdev);
+ 
++	/* Unregister all of notifier chain */
+ 	unregister_pm_notifier(&data->pm_notifier);
++	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
++
++	/* Remove devfreq instance */
+ 	devfreq_remove_device(data->devfreq);
+ 
+ 	return 0;
 -- 
 1.8.0
 
