@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933932AbaCTPdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:33:20 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44088 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932796AbaCTPdK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:33:10 -0400
-Date: Thu, 20 Mar 2014 11:32:51 -0400
-From: tytso@mit.edu
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>, Kristian@thunk.org,
-        =?iso-8859-1?Q?H=F8gsberg_=3Ckrh=40bitplanet=2Enet=3E?=@thunk.org,
-        john.stultz@linaro.org, Greg Kroah-Hartman <greg@kroah.com>,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-Message-ID: <20140320153250.GC20618@thunk.org>
-Mail-Followup-To: tytso@mit.edu,
-	David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org,
-	Hugh Dickins <hughd@google.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	Matthew Wilcox <matthew@wil.cx>,
-	Karol Lewandowski <k.lewandowsk@samsung.com>,
-	Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-	Lennart Poettering <lennart@poettering.net>, Kristian@thunk.org,
-	=?iso-8859-1?Q?H=F8gsberg_=3Ckrh=40bitplanet=2E?=@thunk.org,
-	=?iso-8859-1?Q?net=3E?=@thunk.org, john.stultz@linaro.org,
-	Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
-	Johannes Weiner <hannes@cmpxchg.org>,
-	dri-devel@lists.freedesktop.org, linux-fsdevel@vger.kernel.org,
-	linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ryan Lortie <desrt@desrt.ca>,
-	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	id S933997AbaCTPew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:34:52 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:54571 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932796AbaCTPet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 11:34:49 -0400
+Date: Thu, 20 Mar 2014 15:34:43 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        SangYoung Son <hello.son@smasung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH/RFC 6/8] leds: Add support for max77693 mfd flash cell
+Message-ID: <20140320153443.GD8207@lee--X1>
+References: <1395327070-20215-1-git-send-email-j.anaszewski@samsung.com>
+ <1395327070-20215-7-git-send-email-j.anaszewski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395327070-20215-7-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 08:06:45PM +0100, David Herrmann wrote:
+On Thu, 20 Mar 2014, Jacek Anaszewski wrote:
+
+> This patch adds led-flash support to Maxim max77693 chipset.
+> Device can be exposed to user space through LED subsystem
+> sysfs interface or through V4L2 subdevice when the support
+> for Multimedia Framework is enabled. Device supports up to
+> two leds which can work in flash and torch mode. Leds can
+> be triggered externally or by software.
 > 
-> This series introduces the concept of "file sealing". Sealing a file restricts
-> the set of allowed operations on the file in question. Multiple seals are
-> defined and each seal will cause a different set of operations to return EPERM
-> if it is set. The following seals are introduced:
-> 
->  * SEAL_SHRINK: If set, the inode size cannot be reduced
->  * SEAL_GROW: If set, the inode size cannot be increased
->  * SEAL_WRITE: If set, the file content cannot be modified
+> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Bryan Wu <cooloney@gmail.com>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Cc: SangYoung Son <hello.son@smasung.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/leds/Kconfig         |    9 +
+>  drivers/leds/Makefile        |    1 +
+>  drivers/leds/leds-max77693.c |  768 ++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/max77693.c       |   21 +-
+>  include/linux/mfd/max77693.h |   32 ++
+>  5 files changed, 825 insertions(+), 6 deletions(-)
+>  create mode 100644 drivers/leds/leds-max77693.c
 
-Looking at your patches, and what files you are modifying, you are
-enforcing this in the low-level file system.
+[...]
 
-Why not make sealing an attribute of the "struct file", and enforce it
-at the VFS layer?  That way all file system objects would have access
-to sealing interface, and for memfd_shmem, you can't get another
-struct file pointing at the object, the security properties would be
-identical.
+> diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+> index c5535f0..6fa92d3 100644
+> --- a/drivers/mfd/max77693.c
+> +++ b/drivers/mfd/max77693.c
+> @@ -41,12 +41,21 @@
+>  #define I2C_ADDR_MUIC	(0x4A >> 1)
+>  #define I2C_ADDR_HAPTIC	(0x90 >> 1)
+>  
+> -static const struct mfd_cell max77693_devs[] = {
+> -	{ .name = "max77693-pmic", },
+> -	{ .name = "max77693-charger", },
+> -	{ .name = "max77693-flash", },
+> -	{ .name = "max77693-muic", },
+> -	{ .name = "max77693-haptic", },
+> +enum mfd_devs_idx {
+> +	IDX_PMIC,
+> +	IDX_CHARGER,
+> +	IDX_LED,
+> +	IDX_MUIC,
+> +	IDX_HAPTIC,
+> +};
+> +
+> +static struct mfd_cell max77693_devs[] = {
+> +	[IDX_PMIC]      = { .name = "max77693-pmic", },
+> +	[IDX_CHARGER]   = { .name = "max77693-charger", },
+> +	[IDX_LED]       = { .name = "max77693-led",
+> +			    .of_compatible = "maxim,max77693-led"},
+> +	[IDX_MUIC]      = { .name = "max77693-muic", },
+> +	[IDX_HAPTIC]    = { .name = "max77693-haptic", },
+>  };
 
-Cheers,
+What is the purpose of this change?
 
-						- Ted
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
