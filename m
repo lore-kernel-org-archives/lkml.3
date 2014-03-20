@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759917AbaCTVMa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:12:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34454 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759676AbaCTVM2 (ORCPT
+	id S1760003AbaCTVNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:13:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51920 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759503AbaCTVNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:12:28 -0400
-Date: Thu, 20 Mar 2014 14:14:32 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH/RFC] serial_core: Fix pm imbalance on unbind
-Message-ID: <20140320211432.GA2813@kroah.com>
-References: <1394481265-7275-1-git-send-email-geert@linux-m68k.org>
- <CAMuHMdVmrEoRkqUB=3mBRNrPEJiR701YUmr8C7HX1O6UxT_NUg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdVmrEoRkqUB=3mBRNrPEJiR701YUmr8C7HX1O6UxT_NUg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 20 Mar 2014 17:13:42 -0400
+Date: Thu, 20 Mar 2014 17:13:39 -0400 (EDT)
+Message-Id: <20140320.171339.838529247165735046.davem@davemloft.net>
+To: richardcochran@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, ben@decadent.org.uk,
+        christian.riesch@omicron.at, stefan.sorensen@spectralink.com
+Subject: Re: [PATCH net-next v2 1/9] ptp: introduce programmable pins.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140320204307.GA4931@netboy>
+References: <5faff8ea096044a48e4edcc6391844f8d428383f.1394975663.git.richardcochran@gmail.com>
+	<20140317.212534.579591104509436501.davem@davemloft.net>
+	<20140320204307.GA4931@netboy>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Mar 2014 14:13:41 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 11:23:00AM +0100, Geert Uytterhoeven wrote:
-> Hi Greg,
+From: Richard Cochran <richardcochran@gmail.com>
+Date: Thu, 20 Mar 2014 21:43:08 +0100
+
+> On Mon, Mar 17, 2014 at 09:25:34PM -0400, David Miller wrote:
+>> 
+>> This locking seems unnecessarily complex to me.  You should be able to
+>> do the stateless sanity checks, take the mutex, then do all of the
+>> rest of the operations until the end of the function before
+>> dropping the lock.
+>> 
+>> So just take the lock once over the operations that need it.
 > 
-> On Mon, Mar 10, 2014 at 8:54 PM, Geert Uytterhoeven
-> <geert@linux-m68k.org> wrote:
-> > From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> >
-> > When a serial port is closed, uart_close() takes care of shutting down the
-> > hardware, and powering it down.
-> >
-> > When a serial port is unbound while in use, uart_close() bypasses all of
-> > this, as this is supposed to be done through uart_hangup() (invoked via
-> > tty_vhangup() in uart_remove_one_port()).
-> >
-> > However, uart_hangup() does not set the hardware's power state, leaving it
-> > powered up.  This may also lead to unbounded nesting counts in clock and
-> > power management, depending on their internal implementation.
-> >
-> > Make sure to power down the port in uart_hangup(), except when the port is
-> > used as a serial console. For serial consoles, this must be postponed until
-> > after their deregistration in uart_remove_one_port() (symmetry with
-> > registration in uart_configure_port(), invoked from uart_add_one_port()).
-> >
-> > After this, the module clock used by the sh-sci driver is disabled on
-> > unbind while the serial port is in use.
-> >
-> > Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> 
-> I noticed you have applied all serial patches I've sent, except for this one.
-> Is there any specific reason you skipped this one?
+> The idea was to avoid holding the mutex when invoking the driver
+> callbacks (.verify and .enable). Mostly this is my paranoia that some
+> bad driver will call back into the core via ptp_set_pinfunc().
 
-It was marked "RFC" so I didn't think it was to be applied...
+During my review, I checked all the implementations of said methods
+and they all universally adjust software state and return.
 
-If it's ready, please resend.
+> But you are right that the result is overly complex. I'll make the
+> callers of ptp_set_pinfunc hold the mutex, and so the set path will
+> look just like the get path.
 
-thanks,
-
-greg k-h
+Thanks.
