@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759227AbaCTPGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:06:54 -0400
-Received: from fbr03.mfg.siteprotect.com ([64.26.60.138]:59971 "EHLO
-	fbr03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109AbaCTPGv (ORCPT
+	id S1759258AbaCTPH1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:07:27 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:20227 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758109AbaCTPHX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:06:51 -0400
-X-Greylist: delayed 556 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 11:06:51 EDT
-Date: Thu, 20 Mar 2014 11:01:34 -0400 (EDT)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: "Yan, Zheng" <zheng.z.yan@intel.com>
-cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@kernel.org,
-        acme@infradead.org, eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH 4/4] perf/x86/uncore: modularize Intel uncore driver
-In-Reply-To: <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
-Message-ID: <alpine.DEB.2.02.1403201059250.8477@pianoman.cluster.toy>
-References: <1395133004-23205-1-git-send-email-zheng.z.yan@intel.com> <1395133004-23205-4-git-send-email-zheng.z.yan@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020202.532B01DE.020B,ss=1,re=0.000,fgs=0
+	Thu, 20 Mar 2014 11:07:23 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-ae-532b042abeb6
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Sekhar Nori <nsekhar@ti.com>
+Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spear-devel@list.st.com
+Subject: Re: [PATCH 3/4] ata: add new-style AHCI platform driver for DaVinci
+ DA850 AHCI controller
+Date: Thu, 20 Mar 2014 16:07:04 +0100
+Message-id: <348852006.YgTlFegqas@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <2662651.GJX9HVKij5@amdc1032>
+References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+ <532AA2B0.1060103@ti.com> <2662651.GJX9HVKij5@amdc1032>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t9jAV0tFu1gg5ZbHBbnbjWwWtxZwWyx
+	6fE1VotjOx4xWVzeNYfNYn/vBiaLhu4edos5MzazWvxafpTRYuXFv8wOXB7XX/1n8tg56y67
+	x6ZVnWwec6Y1sXicvHCSxWPzknqPpz/2Mnscv7GdyePzJrkAzigum5TUnMyy1CJ9uwSujAcz
+	LjAWHGer+L+KtYGxn7WLkZNDQsBEovPqLTYIW0ziwr31YLaQwCJGiblvnLoYuYDsFiaJPQsu
+	MYMk2ASsJCa2r2IEsUUEFCRWXdnLClLELHCMSeLnz+lMIAlhgRSJGQ9msoDYLAKqEt9bethB
+	bF4BbYndE16DbRAV8JTYsX0lkM3BwSmgJXFhoTvEsiZGieb+3cwQ9YISPybfA5vDLCAvsW//
+	VFYIW0dif+s0tgmMArOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFx
+	8kx6B+OqBotDjAIcjEo8vCv2aAYLsSaWFVfmHmKU4GBWEuGtYNYOFuJNSaysSi3Kjy8qzUkt
+	PsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDYdkutkDenPe3qj2uZm9N/nOjs3fS9
+	21Hw9/WMQxO3rr/hNsuqXaItvMBY8XRr8K8vV42frhYuzQxNLXpSqcBiJLjlkZic+fHGbcFc
+	DwWumyglvvB/dMeRaZGXST6raa2N1Pw5c16+P1QZ5/J0ub/hlA03d1dta5k422XKlFVnMq5Y
+	vdUSMl+oxFKckWioxVxUnAgApPV+B48CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Yan, Zheng wrote:
+On Thursday, March 20, 2014 01:57:10 PM Bartlomiej Zolnierkiewicz wrote:
 
-> This patch adds support for building Intel uncore driver as module.
-> It adds clean-up code and config option for the Intel uncore driver
+> > > +#define DA8XX_SYSCFG1_VIRT(x)	(da8xx_syscfg1_base + (x))
+> > > +#define DA8XX_PWRDN_REG		0x18
+> > > +
+> > > +/* SATA PHY Control Register offset from AHCI base */
+> > > +#define SATA_P0PHYCR_REG	0x178
+> > > +
+> > > +#define SATA_PHY_MPY(x)		((x) << 0)
+> > > +#define SATA_PHY_LOS(x)		((x) << 6)
+> > > +#define SATA_PHY_RXCDR(x)	((x) << 10)
+> > > +#define SATA_PHY_RXEQ(x)	((x) << 13)
+> > > +#define SATA_PHY_TXSWING(x)	((x) << 19)
+> > > +#define SATA_PHY_ENPLL(x)	((x) << 31)
+> > 
+> > These can be replaced with BIT(N)
+> 
+> OK, I'll fix it.
 
-so just curious, after all this time why are we suddenly making 
-modularizable perf pmu drivers?
+Uh, no, we can't use BIT() here.
 
-Will other pmus be modularized, or is the uncore a special case?
+BIT(N) does (1UL << (N)) and here we have ((N) << offset).
 
-I'm not necessarily against the idea, it's just it's tricky enough as it 
-is trying to help people with uncore pmu issues and now I will have to add 
-"make sure the relevant kernel module is loaded" to the list of things 
-that could be going wrong.
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
-Vince
