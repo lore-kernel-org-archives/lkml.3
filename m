@@ -1,109 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144AbaCTXY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 19:24:27 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:36930 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759997AbaCTXYZ (ORCPT
+	id S1760098AbaCTXbF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 19:31:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57198 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759458AbaCTXbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 19:24:25 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-Date: Fri, 21 Mar 2014 00:26:12 +0100
-Message-ID: <2220569.iDU3Tk3vCh@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140320231250.8F0E0C412EA@trevor.secretlab.ca>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <20140320153804.35d5b835@samsung.com> <20140320231250.8F0E0C412EA@trevor.secretlab.ca>
+	Thu, 20 Mar 2014 19:31:01 -0400
+Date: Thu, 20 Mar 2014 16:30:35 -0700
+From: tip-bot for Dave Jones <tipbot@zytor.com>
+Message-ID: <tip-8c90487cdc64847b4fdd812ab3047f426fec4d13@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        davej@fedoraproject.org, davej@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        davej@fedoraproject.org, tglx@linutronix.de, davej@redhat.com
+In-Reply-To: <20140226154949.GA770@redhat.com>
+References: <20140226154949.GA770@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC
+Git-Commit-ID: 8c90487cdc64847b4fdd812ab3047f426fec4d13
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+Commit-ID:  8c90487cdc64847b4fdd812ab3047f426fec4d13
+Gitweb:     http://git.kernel.org/tip/8c90487cdc64847b4fdd812ab3047f426fec4d13
+Author:     Dave Jones <davej@redhat.com>
+AuthorDate: Wed, 26 Feb 2014 10:49:49 -0500
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 20 Mar 2014 16:28:09 -0700
 
-On Thursday 20 March 2014 23:12:50 Grant Likely wrote:
-> On Thu, 20 Mar 2014 19:52:53 +0100, Laurent Pinchart wrote:
-> > On Thursday 20 March 2014 18:48:16 Grant Likely wrote:
-> > > On Thu, 20 Mar 2014 15:38:04 -0300, Mauro Carvalho Chehab wrote:
-> > > > Em Thu, 20 Mar 2014 17:54:31 +0000 Grant Likely escreveu:
-> > > > > On Wed, 12 Mar 2014 10:25:56 +0000, Russell King - ARM Linux wrote:
+Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC
 
-[snip]
+Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC, so we can repurpose
+the flag to encompass a wider range of pushing the CPU beyond its
+warrany.
 
-> > > > > > I believe trying to do this according to the flow of data is just
-> > > > > > wrong. You should always describe things from the primary device
-> > > > > > for the CPU towards the peripheral devices and never the opposite
-> > > > > > direction.
-> > > > > 
-> > > > > Agreed.
-> > > > 
-> > > > I don't agree, as what's the primary device is relative.
-> > > > 
-> > > > Actually, in the case of a media data flow, the CPU is generally not
-> > > > the primary device.
-> > > > 
-> > > > Even on general purpose computers, if the full data flow is taken into
-> > > > the account, the CPU is a mere device that will just be used to copy
-> > > > data either to GPU and speakers or to disk, eventually doing format
-> > > > conversions, when the hardware is cheap and don't provide format
-> > > > converters.
-> > > > 
-> > > > On more complex devices, like the ones we want to solve with the
-> > > > media controller, like an embedded hardware like a TV or a STB, the
-> > > > CPU is just an ancillary component that could even hang without
-> > > > stopping TV reception, as the data flow can be fully done inside the
-> > > > chipset.
-> > > 
-> > > We're talking about wiring up device drivers here, not data flow. Yes, I
-> > > completely understand that data flow is often not even remotely
-> > > cpu-centric. However, device drivers are, and the kernel needs to know
-> > > the dependency graph for choosing what devices depend on other devices.
-> > 
-> > Then we might not be talking about the same thing. I'm talking about DT
-> > bindings to represent the topology of the device, not how drivers are
-> > wired together.
-> 
-> Possibly. I'm certainly confused now. You brought up the component helpers
-> in drivers/base/component.c, so I thought working out dependencies is part
-> of the purpose of this binding. Everything I've heard so far has given me
-> the impression that the graph binding is tied up with knowing when all of
-> the devices exist.
+Signed-off-by: Dave Jones <davej@fedoraproject.org>
+Link: http://lkml.kernel.org/r/20140226154949.GA770@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/amd.c | 2 +-
+ include/linux/kernel.h    | 2 +-
+ kernel/module.c           | 2 +-
+ kernel/panic.c            | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
 
-The two are related, you're of course right about that.
-
-We're not really moving forward here. Part of our disagreement comes in my 
-opinion from having different requirements and different views of the problem, 
-caused by experiences with different kind of devices. This is much easier to 
-solve by sitting around the same table than discussing on mailing lists. I 
-would propose a meeting at the ELC but that's still a bit far away and would 
-delay progress by more than one month, which is probably not acceptable.
-
-I can reply to the e-mail where I've drawn one use case I have to deal with to 
-detail my needs if that can help.
-
-Alternatively the UK isn't that far away and I could jump in a train if you 
-can provide tea for the discussion :-)
-
-> How device drivers get connected together may not strictly be a property
-> of hardware, but it absolutely is informed by hardware topology.
-
--- 
-Regards,
-
-Laurent Pinchart
-
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index b85e43a..ce8b8ff 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -218,7 +218,7 @@ static void amd_k7_smp_check(struct cpuinfo_x86 *c)
+ 	 */
+ 	WARN_ONCE(1, "WARNING: This combination of AMD"
+ 		" processors is not suitable for SMP.\n");
+-	add_taint(TAINT_UNSAFE_SMP, LOCKDEP_NOW_UNRELIABLE);
++	add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
+ }
+ 
+ static void init_amd_k7(struct cpuinfo_x86 *c)
+diff --git a/include/linux/kernel.h b/include/linux/kernel.h
+index 196d1ea..08fb024 100644
+--- a/include/linux/kernel.h
++++ b/include/linux/kernel.h
+@@ -458,7 +458,7 @@ extern enum system_states {
+ 
+ #define TAINT_PROPRIETARY_MODULE	0
+ #define TAINT_FORCED_MODULE		1
+-#define TAINT_UNSAFE_SMP		2
++#define TAINT_CPU_OUT_OF_SPEC		2
+ #define TAINT_FORCED_RMMOD		3
+ #define TAINT_MACHINE_CHECK		4
+ #define TAINT_BAD_PAGE			5
+diff --git a/kernel/module.c b/kernel/module.c
+index d24fcf2..ca2c1ad 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1015,7 +1015,7 @@ static size_t module_flags_taint(struct module *mod, char *buf)
+ 		buf[l++] = 'C';
+ 	/*
+ 	 * TAINT_FORCED_RMMOD: could be added.
+-	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
++	 * TAINT_CPU_OUT_OF_SPEC, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
+ 	 * apply to modules.
+ 	 */
+ 	return l;
+diff --git a/kernel/panic.c b/kernel/panic.c
+index 6d63003..2270cfd 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -199,7 +199,7 @@ struct tnt {
+ static const struct tnt tnts[] = {
+ 	{ TAINT_PROPRIETARY_MODULE,	'P', 'G' },
+ 	{ TAINT_FORCED_MODULE,		'F', ' ' },
+-	{ TAINT_UNSAFE_SMP,		'S', ' ' },
++	{ TAINT_CPU_OUT_OF_SPEC,	'S', ' ' },
+ 	{ TAINT_FORCED_RMMOD,		'R', ' ' },
+ 	{ TAINT_MACHINE_CHECK,		'M', ' ' },
+ 	{ TAINT_BAD_PAGE,		'B', ' ' },
