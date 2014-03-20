@@ -1,124 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965029AbaCTOzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:55:00 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:29151 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933815AbaCTOvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:51:38 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-3f-532b007909d0
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC 2/8] leds: Improve and export led_update_brightness function
-Date: Thu, 20 Mar 2014 15:51:04 +0100
-Message-id: <1395327070-20215-3-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1395327070-20215-1-git-send-email-j.anaszewski@samsung.com>
-References: <1395327070-20215-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprDLMWRmVeSWpSXmKPExsVy+t9jQd1KBu1gg39zBS1urTvHanF050Qm
-	i/lHgKzeq88ZLc42vWG3uLxrDpvF1jfrGC16Nmxltdi96ymrxeE37awOXB47Z91l99gz/wer
-	R9+WVYwenzfJBbBEcdmkpOZklqUW6dslcGVsmr+JveC+aMWtHXNYGhgnCnUxcnJICJhI7JzU
-	zQRhi0lcuLeerYuRi0NIYDqjxISGHkaQhJBAJ5PE2RXKIDabgKHEzxevwRpEBMolpk19xATS
-	wCywj1Fi07TjzCAJYYEAiY+7L4HZLAKqEjOOrASzeQU8JPa1LgayOYC2KUjMmWQDEuYU8JRY
-	urQLLCwEVHJ2YsQERt4FjAyrGEVTC5ILipPScw31ihNzi0vz0vWS83M3MYLD7JnUDsaVDRaH
-	GAU4GJV4eFfs0QwWYk0sK67MPcQowcGsJMJr91wrWIg3JbGyKrUoP76oNCe1+BCjNAeLkjjv
-	gVbrQCGB9MSS1OzU1ILUIpgsEwenVAPjzolNp1Q8U09f0ZzdvX/mvrtOzDym8fvT/d28+tk/
-	xDpJJpw6eGTVXemwrrrPQmfyJn+qT6/dsaM1UK40I8dZaQ7/vckzky+/CP66oXBSEvO0CdtZ
-	uVwlPi0U+aRR08FtHd114GfttB8CjW7nuJsSZqf1b2FsLGE2Z1N6K3ac6/vuzV5CPolKLMUZ
-	iYZazEXFiQA8C6CoLwIAAA==
+	id S965109AbaCTOz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:55:27 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44060 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933815AbaCTOzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 10:55:20 -0400
+Date: Thu, 20 Mar 2014 10:55:07 -0400
+From: tytso@mit.edu
+To: Kees Cook <keescook@chromium.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Message-ID: <20140320145507.GB20618@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Kees Cook <keescook@chromium.org>,
+	One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+	Matthew Garrett <matthew.garrett@nebula.com>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	"jmorris@namei.org" <jmorris@namei.org>,
+	"linux-security-module@vger.kernel.org" <linux-security-module@vger.kernel.org>,
+	"akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+	"hpa@zytor.com" <hpa@zytor.com>,
+	"jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+	"linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+	"gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+References: <1394762250.6416.24.camel@x230.lan>
+ <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+ <1394801518.6416.38.camel@x230.lan>
+ <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
+ <1394820664.26846.18.camel@x230.mview.int.nebula.com>
+ <20140314214806.54a3d031@alan.etchedpixels.co.uk>
+ <1394834193.1286.11.camel@x230>
+ <20140314220840.29a12171@alan.etchedpixels.co.uk>
+ <20140314231832.GA653@thunk.org>
+ <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-led_update_brightness helper function used to be exploited
-only locally in the led-class.c module, where its result was
-being passed to the brightness_show sysfs callback. With the
-introduction of v4l2-flash subdevice the same functionality
-became required for checking the current flash strobe status.
-This patch adds checking brightness_get callback error code
-and adds the function to the LED subsystem public API.
+On Wed, Mar 19, 2014 at 01:16:15PM -0700, Kees Cook wrote:
+> UEFI is a red herring in both cases. This isn't about UEFI, it just
+> happens that one of the things that can assert "trusted_kernel" is the
+> UEFI Secure Boot path. Chrome OS would assert "trusted_kernel" by
+> passing it on the kernel command line (since it, along with firmware,
+> kernel, and root fs are effectively measured). A
+> boot-my-router-from-CD system can assert similarly because the kernel
+> is on RO media.
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
----
- drivers/leds/led-class.c |    6 ------
- drivers/leds/led-core.c  |   17 +++++++++++++++++
- include/linux/leds.h     |   10 ++++++++++
- 3 files changed, 27 insertions(+), 6 deletions(-)
+I disagree; it's highly likely, if not certain that Windows booting
+under UEFI secure boot is going to be able to do some of the things
+that people are proposing that we have to prohibit in the name of
+security.  That's because presumably Windows won't be willing to make
+certain usability tradeoffs, and since they control the signing certs,
+even in the unlikely case that people can leverage these "holes" to
+enable a boot sector virus, it seems unlikely that Windows will revoke
+its own cert.
 
-diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
-index 0510532..04de352 100644
---- a/drivers/leds/led-class.c
-+++ b/drivers/leds/led-class.c
-@@ -27,12 +27,6 @@
- 
- static struct class *leds_class;
- 
--static void led_update_brightness(struct led_classdev *led_cdev)
--{
--	if (led_cdev->brightness_get)
--		led_cdev->brightness = led_cdev->brightness_get(led_cdev);
--}
--
- static ssize_t brightness_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
-diff --git a/drivers/leds/led-core.c b/drivers/leds/led-core.c
-index 093703c..21ceda1 100644
---- a/drivers/leds/led-core.c
-+++ b/drivers/leds/led-core.c
-@@ -166,6 +166,23 @@ void led_set_brightness(struct led_classdev *led_cdev,
- }
- EXPORT_SYMBOL(led_set_brightness);
- 
-+int led_update_brightness(struct led_classdev *led_cdev)
-+{
-+	int ret;
-+
-+	if (led_cdev->brightness_get == NULL)
-+		return -EINVAL;
-+
-+	ret = led_cdev->brightness_get(led_cdev);
-+	if (ret >= 0)
-+		led_cdev->brightness = ret;
-+	else
-+		return ret;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(led_update_brightness);
-+
- int led_set_flash_mode(struct led_classdev *led_cdev,
- 			bool flash_mode)
- {
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index 1bf0ab3..5bf05cc 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -190,6 +190,16 @@ extern void led_blink_set_oneshot(struct led_classdev *led_cdev,
- extern void led_set_brightness(struct led_classdev *led_cdev,
- 			       enum led_brightness brightness);
- /**
-+ * led_update_brightness - update LED brightness
-+ * @led_cdev: the LED to query about
-+ *
-+ * Get an LED's current brightness and update led_cdev->brightness
-+ * member with the obtained value.
-+ *
-+ * Returns: 0 on success or negative error value on failure
-+ */
-+extern int led_update_brightness(struct led_classdev *led_cdev);
-+
- /**
-  * led_set_flash_mode - set LED flash mode
-  * @led_cdev: the LED to set
--- 
-1.7.9.5
+The security goals for Windows' secure boot is quite a bit weaker than
+what ChromeOS is trying to promise; this is why I claim the real
+argument is over what the goals are for "trusted boot".
 
+Cheers,
+
+					- Ted
