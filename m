@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759415AbaCTRIE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:08:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52684 "EHLO mail.zytor.com"
+	id S1759267AbaCTRHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:07:50 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48777 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756777AbaCTRIA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:08:00 -0400
-Message-ID: <532B2022.90907@zytor.com>
-Date: Thu, 20 Mar 2014 10:06:42 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756809AbaCTRHp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:07:45 -0400
+From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+To: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
+        <galak@codeaurora.org>, <santosh.shilimkar@ti.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+Subject: [PATCH 1/3] ARM: dts: k2hk-evm: set ubifs partition size for 512M NAND
+Date: Thu, 20 Mar 2014 19:06:22 +0200
+Message-ID: <1395335184-4745-2-git-send-email-ivan.khoronzhuk@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com>
+References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Stefani Seibold <stefani@seibold.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
-References: <1395301511-5908-1-git-send-email-stefani@seibold.net> <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de> <1395315494.1127.3.camel@vger.seibold.net> <alpine.DEB.2.02.1403201328520.18573@ionos.tec.linutronix.de> <CALCETrVgC7yKsu0KM0=TfUuX9msn9ru_nG=Fv6Mz6PKDTnWGnQ@mail.gmail.com> <alpine.DEB.2.02.1403201614360.18573@ionos.tec.linutronix.de> <CALCETrWQbviwiQi2cJi=_kkjTPG8NpsYT4Sf0UB8SaDWN5rr7A@mail.gmail.com> <532B104D.8050601@zytor.com> <CALCETrWR-2DpSorAaQpru5u9igNXCqP66=43a+_bRs3F0q8KOA@mail.gmail.com>
-In-Reply-To: <CALCETrWR-2DpSorAaQpru5u9igNXCqP66=43a+_bRs3F0q8KOA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 09:56 AM, Andy Lutomirski wrote:
-> 
-> Holy cow the 32-bit vdso code is a mess.  I have a patch to clean up
-> this bit of it, and I'll send it out once I've tested it a bit.
-> 
+From: Murali Karicheri <m-karicheri2@ti.com>
 
-Thanks.
+The UBIFS partition size was incorrectly defined as for 128M NAND,
+but on k2hk-evm installed NAND flash size is 512M.
+Hence, correct it.
 
-	-hpa
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+---
+ arch/arm/boot/dts/k2hk-evm.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/arch/arm/boot/dts/k2hk-evm.dts b/arch/arm/boot/dts/k2hk-evm.dts
+index 1a1335b..949ef7d 100644
+--- a/arch/arm/boot/dts/k2hk-evm.dts
++++ b/arch/arm/boot/dts/k2hk-evm.dts
+@@ -133,7 +133,7 @@
+ 
+ 			partition@180000 {
+ 				label = "ubifs";
+-				reg = <0x180000 0x7E80000>;
++				reg = <0x180000 0x1fe80000>;
+ 			};
+ 		};
+ 	};
+-- 
+1.8.3.2
 
