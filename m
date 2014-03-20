@@ -1,256 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332AbaCTKrl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:47:41 -0400
-Received: from www.linutronix.de ([62.245.132.108]:40172 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751271AbaCTKrk (ORCPT
+	id S1757405AbaCTKsc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:48:32 -0400
+Received: from 67.160.232.221.broad.wh.hb.dynamic.163data.com.cn ([221.232.160.67]:4013
+	"HELO web110.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with SMTP id S1751271AbaCTKsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:47:40 -0400
-Date: Thu, 20 Mar 2014 11:47:47 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-In-Reply-To: <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.02.1403201056020.18573@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403041620390.15963@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181250110.14816@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403181921010.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182218170.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403190941170.18343@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191456120.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403191039560.18652@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191552570.18573@ionos.tec.linutronix.de>
- <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 20 Mar 2014 06:48:31 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 06:48:30 EDT
+Date: Thu, 20 Mar 2014 18:42:20 +0800
+X-Mailer: Microsoft Outlook Express 6.00.2900.5512
+Message-ID: <005887821317$32470312$80806600@fzww>
+From: =?gb2312?B?Um9zYWxpbmQgwt7Jr8HVtcI=?= <hujian@web110.org>
+To: <777@svadba-spb.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+                                         《 微 营 销 实 战 》
+
+-------------------------------------------------------------------------------------------------
+                                           【主讲：马佳彬】
+
+-------------------------------------------------------------------------------------------------
+  报名详情 >
+
+【培训时间】2014年3月21上海、3月22北京、3月29深圳
+
+【培训对象】企业的经营者、营销负责人、网络营销人员、企业营销策略制定者及所有营销人员。
+
+【授课方式】讲师讲授 + 视频演绎 + 案例研讨 +角色扮演 + 讲师点评 + 落地工具。
+
+【培训费用】3200/两人，单独一人收费1980元（含资料费、午餐、茶点、教材）
+
+          赠送：
+
+           价值1800元的微网站，限前30名报名学员。
+
+           微信营销系统40多款公众平台接口，含大转盘、刮刮卡、优惠券等实用营销功能。
+
+【承办单位】宇杰企管
+
+【报名热线】深圳：0755-6128 2360   上海：021-5160 2030    北京：010-5166 9310
+
+ 在线QQ：511 798 337        
 
 
-On Wed, 19 Mar 2014, Vince Weaver wrote:
+【课程背景】
 
-> On Wed, 19 Mar 2014, Thomas Gleixner wrote:
-> 
-> > Good, we have at least a point where we can gather useful
-> > information. The timer belongs to a delayed work. The work itself is
-> > tracked via debug objects as well. So we can get that as well. Delta
-> > patch below.
-> 
-> with that patch applied:
-> 
-> [    4.314095] Invalid timer base: tmr ffff880117738150 tmr->base           (null) base ffffffff81a3edc0
-> [    4.324216] ------------[ cut here ]------------
-> [    4.329326] WARNING: CPU: 0 PID: 0 at lib/debugobjects.c:261 debug_print_object+0x8c/0xb0()
-> [    4.338495] ODEBUG: Info active (active state 0) object type: timer_list hint:           (null) delayed_work_timer_fn+0x0/0x20
+-------------------------------------------------------------------------------------------------
+10年前，互联网来了，有人因此成为商业巨头；
+5年前，淘宝来了，有人因此实现“草根创业”；
+3年前，微博来了，有人因此实现财富“核裂变”；
+而今天，微信来了，微营销来了……
 
-Do you have DEBUG_OBJECTS_WORK and DEBUG_OBJECTS_FREE enabled?
+7天连锁酒店通过微信营销，一个月内，会员从30万几何式增至120万！
+小米手机通过微信营销，在短短3个月内吸引粉丝105万，网上订单暴增15倍！
+星巴克通过微信营销,在三周内，仅“冰摇沁爽”一项产品销售额就突破750万！
+“90后”大学生通过微信营销卖水果，一没店铺，二没员工情况下，实现月入8万的奇迹！
+微信来了，“微”机也就来了，你知道这意味着什么！！
+未来十年，是中国商业领域大规模打劫的时代，所有还在采用传统运营模式的企业的“粮仓”
+都有可能遭遇打劫，而那些适应了“微”机，抓住了“微”机的企业将是这个时代最大的赢家，小米赢了，
+星巴克赢了……
 
-If yes, then I'm completely puzzled why we find the timer in the
-tracking objects, but not the delayed work itself.
+参加《微信营销从入门到实战》，下一个赢家，就是你！
 
-Find a more brute force method to get this decoded below. Full patch
-this time, please zap the old one. That should spill out the recent
-debug object calls and we can just hope, that we get enough history to
-find this horror.
+【课程收益】
 
-Please add "ftrace_dump_on_oops" to the kernel command line. No other
-trace related options required.
+-------------------------------------------------------------------------------------------------
+ 1.全面系统学习微信营销两大平台，普及数10种实操技巧； 
+ 2.知晓微信营销定位、策划、运营、推广、成 交5大模块致胜诀窍； 
+ 3.学会渗透微信朋友圈子，把握强弱关系，实 现口碑营销及建立转介绍系统； 
+ 4.掌握运营层面6大功能实操细节，解答线 上、线下活动策划注意事项。 
+ 5.获得微信营销落地搭建团队一系列建议，包括绩效考核与效果分析。 
+ 6.了解微信发展趋势以及企业移动互联网营销趋势，少走弯路取得成效。
 
-Btw, can you send me your .config file, so I might try to reproduce.
 
-Thanks,
+【讲师介绍】 【马佳彬】
 
-	tglx
+-------------------------------------------------------------------------------------------------
+ 微信实战应用专家、网络营销实战专家。
 
----------
+【教育背景】
 
-Index: linux-2.6/include/linux/debugobjects.h
-===================================================================
---- linux-2.6.orig/include/linux/debugobjects.h
-+++ linux-2.6/include/linux/debugobjects.h
-@@ -30,6 +30,7 @@ struct debug_obj {
- 	unsigned int		astate;
- 	void			*object;
- 	struct debug_obj_descr	*descr;
-+	void			*hint;
- };
- 
- /**
-@@ -68,6 +69,7 @@ extern void debug_object_deactivate(void
- extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
- extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
- extern void debug_object_assert_init(void *addr, struct debug_obj_descr *descr);
-+extern void debug_object_info(void *addr, struct debug_obj_descr *descr);
- 
- /*
-  * Active state:
-@@ -95,6 +97,8 @@ static inline void
- debug_object_free      (void *addr, struct debug_obj_descr *descr) { }
- static inline void
- debug_object_assert_init(void *addr, struct debug_obj_descr *descr) { }
-+static inline void
-+debug_object_info(void *addr, struct debug_obj_descr *descr) { }
- 
- static inline void debug_objects_early_init(void) { }
- static inline void debug_objects_mem_init(void) { }
-Index: linux-2.6/kernel/timer.c
-===================================================================
---- linux-2.6.orig/kernel/timer.c
-+++ linux-2.6/kernel/timer.c
-@@ -1081,7 +1081,12 @@ static int cascade(struct tvec_base *bas
- 	 * don't have to detach them individually.
- 	 */
- 	list_for_each_entry_safe(timer, tmp, &tv_list, entry) {
--		BUG_ON(tbase_get_base(timer->base) != base);
-+		if (tbase_get_base(timer->base) != base) {
-+			pr_err("Invalid timer base: tmr %p tmr->base %p base %p\n",
-+			       timer, timer->base, base);
-+			debug_object_info(timer, &timer_debug_descr);
-+			BUG();
-+		}
- 		/* No accounting, while moving them */
- 		__internal_add_timer(base, timer);
- 	}
-Index: linux-2.6/lib/debugobjects.c
-===================================================================
---- linux-2.6.orig/lib/debugobjects.c
-+++ linux-2.6/lib/debugobjects.c
-@@ -14,6 +14,7 @@
- #include <linux/debugfs.h>
- #include <linux/slab.h>
- #include <linux/hash.h>
-+#include <linux/workqueue.h>
- 
- #define ODEBUG_HASH_BITS	14
- #define ODEBUG_HASH_SIZE	(1 << ODEBUG_HASH_BITS)
-@@ -255,9 +256,9 @@ static void debug_print_object(struct de
- 			descr->debug_hint(obj->object) : NULL;
- 		limit++;
- 		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
--				 "object type: %s hint: %pS\n",
-+				 "object type: %s hint: %pS %pS\n",
- 			msg, obj_states[obj->state], obj->astate,
--			descr->name, hint);
-+		     descr->name, hint, obj->hint);
- 	}
- 	debug_objects_warnings++;
- }
-@@ -326,6 +327,11 @@ __debug_object_init(void *addr, struct d
- 		debug_object_is_on_stack(addr, onstack);
- 	}
- 
-+	if (!obj->hint)
-+		obj->hint = descr->debug_hint ?	descr->debug_hint(addr) : NULL;
-+
-+	trace_printk("Object init: %s %p %pS\n", descr->name, addr, obj->hint);
-+
- 	switch (obj->state) {
- 	case ODEBUG_STATE_NONE:
- 	case ODEBUG_STATE_INIT:
-@@ -377,6 +383,42 @@ void debug_object_init_on_stack(void *ad
- 	__debug_object_init(addr, descr, 1);
- }
- 
-+void debug_object_info(void *addr, struct debug_obj_descr *descr)
-+{
-+	struct debug_bucket *db;
-+	struct debug_obj *obj;
-+	unsigned long flags;
-+
-+	if (!debug_objects_enabled)
-+		return;
-+
-+	db = get_bucket((unsigned long) addr);
-+
-+	raw_spin_lock_irqsave(&db->lock, flags);
-+
-+	obj = lookup_object(addr, db);
-+	if (!obj)
-+		pr_err("Object unknown %p\n", addr);
-+	else
-+		debug_print_object(obj, "Info");
-+
-+	raw_spin_unlock_irqrestore(&db->lock, flags);
-+
-+	addr = container_of(addr, struct delayed_work, timer);
-+
-+	db = get_bucket((unsigned long) addr);
-+
-+	raw_spin_lock_irqsave(&db->lock, flags);
-+
-+	obj = lookup_object(addr, db);
-+	if (!obj)
-+		pr_err("Object unknown %p\n", addr);
-+	else
-+		debug_print_object(obj, "Info");
-+
-+	raw_spin_unlock_irqrestore(&db->lock, flags);
-+}
-+
- /**
-  * debug_object_activate - debug checks when an object is activated
-  * @addr:	address of the object
-@@ -403,6 +445,10 @@ int debug_object_activate(void *addr, st
- 
- 	obj = lookup_object(addr, db);
- 	if (obj) {
-+
-+		trace_printk("Object activate: %s %p %pS\n", descr->name, addr,
-+			     obj->hint);
-+
- 		switch (obj->state) {
- 		case ODEBUG_STATE_INIT:
- 		case ODEBUG_STATE_INACTIVE:
-@@ -425,6 +471,9 @@ int debug_object_activate(void *addr, st
- 			ret = 0;
- 			break;
- 		}
-+		if (!obj->hint)
-+			obj->hint = descr->debug_hint ?	descr->debug_hint(addr) : NULL;
-+
- 		raw_spin_unlock_irqrestore(&db->lock, flags);
- 		return ret;
- 	}
-@@ -463,6 +512,10 @@ void debug_object_deactivate(void *addr,
- 
- 	obj = lookup_object(addr, db);
- 	if (obj) {
-+
-+		trace_printk("Object deactivate: %s %p %pS\n",
-+			     descr->name, addr, obj->hint);
-+
- 		switch (obj->state) {
- 		case ODEBUG_STATE_INIT:
- 		case ODEBUG_STATE_INACTIVE:
-@@ -513,6 +566,9 @@ void debug_object_destroy(void *addr, st
- 	if (!obj)
- 		goto out_unlock;
- 
-+	trace_printk("Object destroy: %s %p, %pS\n", descr->name, addr,
-+		     obj->hint);
-+
- 	switch (obj->state) {
- 	case ODEBUG_STATE_NONE:
- 	case ODEBUG_STATE_INIT:
-@@ -559,6 +615,8 @@ void debug_object_free(void *addr, struc
- 	if (!obj)
- 		goto out_unlock;
- 
-+	trace_printk("Object free: %s %p %pS\n", descr->name, addr, obj->hint);
-+
- 	switch (obj->state) {
- 	case ODEBUG_STATE_ACTIVE:
- 		debug_print_object(obj, "free");
-@@ -711,6 +769,8 @@ repeat:
- 		/* Now free them */
- 		hlist_for_each_entry_safe(obj, tmp, &freelist, node) {
- 			hlist_del(&obj->node);
-+			trace_printk("Tracking Object free: %s %p %pS\n",
-+				     descr->name, addr, obj->hint);
- 			free_object(obj);
- 		}
- 
+    上海交通大学EMBA总裁班导师；中央人民广播电台
+    经济之声时评嘉宾；中特《微信解码》专家；《微信宝典》作者；创新工场多贝网达人讲师；马老师
+是多家知名网站的专栏作家，如：Chinaz站长之家，Donews新锐作家、速途网、艾瑞网、易观网、亿邦动
+力网和最科技网等。微信营销领域专业排名前四*马老师拥有9年的互联网行业培训经验，先后从事信息咨
+询及广告传媒工作。微博营销领域首次提出“灭亡论”。最早涉足研究微信营销，微信营销实战班网络培
+训开创者，“微信营销六步思维法”讲师。长期担任业内多家知名IT门户站点写手。其个人博客在业内拥
+有比较高的知名度，已被网站运营等专业书籍收录推荐。培训学员数以万计，马老师由于长期亲密接触网
+络营销一线，因此，讲解风格生动、贴近实际，更易引起学员共鸣！是最早的微信营销研究及实践者，在
+微信营销领域具有完善系统的研究成果。
+
+【课程大纲】
+
+-------------------------------------------------------------------------------------------------
+一、微信营销概念篇
+1、移动电子商务带来了什么机会？
+2、常见的移动互联网商业模式有哪些？
+3、微信的发展历史及其商业模式。微信营销与社交网络有什么关系？
+4、企业为什么要做微信营销？微信营销能给企业带来什么？
+
+二、微信营销入门篇
+1、微信手机版、网页版、公众平台介绍；
+2、微信手机版实操技巧解密、电脑模拟手机版技术介绍；
+3、微信网页版实操技巧介绍（批量微群加好友技巧）；
+4、微信公众平台搭建全面系统介绍（科学正确使用微信公众帐号）；
+5、微信9大辅助营销软件首度无保留全公开；
+
+三、微信营销进阶篇
+1、微信移动电子商务系统搭建指南；
+2、微信O2O电子商务系统搭建指南；
+3、微信客服系统（CRM）搭建指南；
+4、微信自推广系统搭建指南；
+5、微信营销四步思维法：定位+策划+运营+转化 四大模块系统解析；
+   5.1.1 企业微信运营团队建设策略；       
+   5.1.2 企业微信公众帐号内容策划策略；
+   5.1.3 企业微信公众帐号活动策划策略；   
+   5.1.4 企业微信公众帐号客服策略；
+   5.1.5 企业微信公众帐号推广策略；
+6、微信个人帐号营销、公众帐号营销辅助手段延伸推荐（易信、微米、来往多平台营销推广）；
+
+四、微信营销落地篇
+1、微信个人帐号朋友圈销售实操技巧指南；
+2、微信公众帐号落地策略（多行业）；
+3、微信企业应用经典案例分享（多行业）；
+4、微信自媒体品牌打造三部曲；
+5、微信自媒体品牌经典案例分享；
+
+-------------------------------------------------------------------------------------------------
+
