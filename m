@@ -1,163 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932832AbaCTNtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:49:49 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:41707 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758999AbaCTNtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:49:45 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
-        mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [RFC 4/4] cpuset: Add cpusets.quiesce option
-Date: Thu, 20 Mar 2014 19:19:01 +0530
-Message-Id: <e643acf71086db239254d44c77d4966b2a4a01e5.1395322529.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <cover.1395322529.git.viresh.kumar@linaro.org>
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1395322529.git.viresh.kumar@linaro.org>
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
+	id S1758783AbaCTNvm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:51:42 -0400
+Received: from mail1.bemta8.messagelabs.com ([216.82.243.201]:16002 "EHLO
+	mail1.bemta8.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757555AbaCTNvk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 09:51:40 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 09:51:40 EDT
+X-Env-Sender: Seth.Bollinger@digi.com
+X-Msg-Ref: server-8.tower-45.messagelabs.com!1395323098!29999746!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Bollinger, Seth" <Seth.Bollinger@digi.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Possible software flow problem in serial_core
+Thread-Topic: Possible software flow problem in serial_core
+Thread-Index: AQHPREKU9KCJrmW7V0KAljYo9hJjtw==
+Date: Thu, 20 Mar 2014 13:44:57 +0000
+Message-ID: <CF505B08.6E64%seth.bollinger@digi.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [10.10.80.99]
+x-kse-antivirus-interceptor-info: scan successful
+x-kse-antivirus-info: Clean
+Content-Type: text/plain; charset="utf-7"
+Content-ID: <9FD5FBF13B197A438C3BE4CB23BEB732@digi.com>
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For networking applications platforms need to provide one CPU per each user
-space data plane thread. These CPUs should not be interrupted by kernel at all
-unless userspace has requested for some syscalls. Currently, there are
-background kernel activities that are running on almost every CPU, like:
-timers/hrtimers/watchdogs/etc, and these are required to be migrated to other
-CPUs.
+Hello All,
 
-To achieve that, this patch adds another option to cpusets, i.e. 'quiesce'.
-Writing '1' on this file would migrate these unbound/unpinned timers/workqueues
-away from the CPUs of the cpuset in question. Writing '0' has no effect and this
-file can't be read from userspace as we aren't maintaining a state here.
+We+IBk-ve recently run into a possible problem with software flow control
+handling in the serial+AF8-core layer.
 
-Currently, only timers are migrated. This would be followed by other kernel
-infrastructure later.
+Here is the scenario:
 
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
- kernel/cpuset.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 56 insertions(+)
+1. Transmit from uart to remote device
+2. Remote device sends us an XOFF
+3. The tty layer receives the XOFF
+4. stop+AF8-tty() - The uart transmitter is stopped (ops-+AD4-stop+AF8-tx) just as the
+serial+AF8-core ring is cleared (this could trap a few bytes in the fifo).
+5. Remote device sends us an XON
+6. The tty layer receives the XON
+7. start+AF8-tty() - However, the serial+AF8-core ring is empty, so the call to
+start the uart transmitter (uart+AF8-start:ops-+AD4-start+AF8-tx) is skipped
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 3d54c41..1b79ae6 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -43,10 +43,12 @@
- #include <linux/pagemap.h>
- #include <linux/proc_fs.h>
- #include <linux/rcupdate.h>
-+#include <linux/tick.h>
- #include <linux/sched.h>
- #include <linux/seq_file.h>
- #include <linux/security.h>
- #include <linux/slab.h>
-+#include <linux/smp.h>
- #include <linux/spinlock.h>
- #include <linux/stat.h>
- #include <linux/string.h>
-@@ -150,6 +152,7 @@ typedef enum {
- 	CS_SCHED_LOAD_BALANCE,
- 	CS_SPREAD_PAGE,
- 	CS_SPREAD_SLAB,
-+	CS_QUIESCE,
- } cpuset_flagbits_t;
- 
- /* convenient tests for these bits */
-@@ -1208,6 +1211,44 @@ static int update_relax_domain_level(struct cpuset *cs, s64 val)
- 	return 0;
- }
- 
-+void timer_quiesce_cpu(void *cpu);
-+
-+/**
-+ * quiesce_cpuset - Move unbound timers/workqueues away from cpuset.cpus
-+ * @cs: cpuset to be quiesced
-+ *
-+ * For isolating a core with cpusets we require all unbound timers/workqueues to
-+ * move away for isolated core. For simplicity, currently we migrate these to
-+ * the first online CPU which is not part of tick_nohz_full_mask.
-+ *
-+ * Currently we are only migrating timers away.
-+ */
-+void quiesce_cpuset(struct cpuset *cs)
-+{
-+	int from_cpu, to_cpu;
-+	cpumask_t cpumask;
-+
-+	cpumask_andnot(&cpumask, cpu_online_mask, cs->cpus_allowed);
-+
-+#ifdef CONFIG_NO_HZ_FULL
-+	cpumask_andnot(&cpumask, &cpumask, tick_nohz_full_mask);
-+#endif
-+
-+	if (cpumask_empty(&cpumask)) {
-+		pr_err("%s: Couldn't find a CPU to migrate to\n", __func__);
-+		return;
-+	}
-+
-+	to_cpu = cpumask_first(&cpumask);
-+
-+	for_each_cpu(from_cpu, cs->cpus_allowed) {
-+		pr_debug("%s: Migrating from CPU:%d to CPU:%d\n", __func__,
-+				from_cpu, to_cpu);
-+		smp_call_function_single(to_cpu, timer_quiesce_cpu,
-+				(void *)from_cpu, true);
-+	}
-+}
-+
- /**
-  * update_tasks_flags - update the spread flags of tasks in the cpuset.
-  * @cs: the cpuset in which each task's spread flags needs to be changed
-@@ -1244,6 +1285,11 @@ static int update_flag(cpuset_flagbits_t bit, struct cpuset *cs,
- 	int spread_flag_changed;
- 	int err;
- 
-+	if (bit == CS_QUIESCE && turning_on) {
-+		quiesce_cpuset(cs);
-+		return 0;
-+	}
-+
- 	trialcs = alloc_trial_cpuset(cs);
- 	if (!trialcs)
- 		return -ENOMEM;
-@@ -1526,6 +1572,7 @@ typedef enum {
- 	FILE_MEMORY_PRESSURE,
- 	FILE_SPREAD_PAGE,
- 	FILE_SPREAD_SLAB,
-+	FILE_CPU_QUIESCE,
- } cpuset_filetype_t;
- 
- static int cpuset_write_u64(struct cgroup_subsys_state *css, struct cftype *cft,
-@@ -1569,6 +1616,9 @@ static int cpuset_write_u64(struct cgroup_subsys_state *css, struct cftype *cft,
- 	case FILE_SPREAD_SLAB:
- 		retval = update_flag(CS_SPREAD_SLAB, cs, val);
- 		break;
-+	case FILE_CPU_QUIESCE:
-+		retval = update_flag(CS_QUIESCE, cs, val);
-+		break;
- 	default:
- 		retval = -EINVAL;
- 		break;
-@@ -1837,6 +1887,12 @@ static struct cftype files[] = {
- 		.private = FILE_MEMORY_PRESSURE_ENABLED,
- 	},
- 
-+	{
-+		.name = "quiesce",
-+		.write_u64 = cpuset_write_u64,
-+		.private = FILE_CPU_QUIESCE,
-+	},
-+
- 	{ }	/* terminate */
- };
- 
--- 
-1.7.12.rc2.18.g61b472e
+Any window, however small, could leave bytes stuck in the transmitter
+forever -- particularly if there will be no further transmission until
+receiving a response.
+
+I can't find any functionality in the drivers that accounts for this
+possibility.  Can you help me find how Linux serial drivers manage this
+eventuality?
+
+Thanks,
+
+Seth
 
