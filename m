@@ -1,222 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759554AbaCTRd5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:33:57 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:51645 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758756AbaCTRdy (ORCPT
+	id S1759623AbaCTRew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:34:52 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:60141 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758756AbaCTReu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:33:54 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-To: Andrzej Hajda <a.hajda@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
+	Thu, 20 Mar 2014 13:34:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394053603-3724-3-git-send-email-suravee.suthikulpanit@amd.com>
+References: <1394053603-3724-1-git-send-email-suravee.suthikulpanit@amd.com> <1394053603-3724-3-git-send-email-suravee.suthikulpanit@amd.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Mar 2014 11:33:50 -0600
+Message-ID: <CAErSpo4xG4uhFmo91G5RaCveN9FZLec6fmsORu99HWOzMNVMBw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] amd/pci: Support additional MMIO ranges capabilities
+To: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-In-Reply-To: <531F09E2.3070407@samsung.com>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < 5427810.BUKJ3iUXnO@avalon> <20140310145815.17595C405FA@trevor.secretlab.ca> <4339286.FzhQ2m6hoA@avalon> <531F09E2.3070407@samsung.com>
-Date: Thu, 20 Mar 2014 17:33:48 +0000
-Message-Id: <20140320173348.9F96BC4067A@trevor.secretlab.ca>
+        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
+        kim.naru@amd.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014 14:04:34 +0100, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> On 03/10/2014 04:15 PM, Laurent Pinchart wrote:
-> > Hi Grant,
-> > 
-> > On Monday 10 March 2014 14:58:15 Grant Likely wrote:
-> >> On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart wrote:
-> >>> On Monday 10 March 2014 12:18:20 Tomi Valkeinen wrote:
-> >>>> On 08/03/14 13:41, Grant Likely wrote:
-> >>>>>> Ok. If we go for single directional link, the question is then: which
-> >>>>>> way? And is the direction different for display and camera, which are
-> >>>>>> kind of reflections of each other?
-> >>>>>
-> >>>>> In general I would recommend choosing whichever device you would
-> >>>>> sensibly think of as a master. In the camera case I would choose the
-> >>>>> camera controller node instead of the camera itself, and in the
-> >>>>> display case I would choose the display controller instead of the
-> >>>>> panel. The binding author needs to choose what she things makes the
-> >>>>> most sense, but drivers can still use if it it turns out to be
-> >>>>> 'backwards'
-> >>>>
-> >>>> I would perhaps choose the same approach, but at the same time I think
-> >>>> it's all but clear. The display controller doesn't control the panel any
-> >>>> more than a DMA controller controls, say, the display controller.
-> >>>>
-> >>>> In fact, in earlier versions of OMAP DSS DT support I had a simpler port
-> >>>> description, and in that I had the panel as the master (i.e. link from
-> >>>> panel to dispc) because the panel driver uses the display controller's
-> >>>> features to provide the panel device a data stream.
-> >>>>
-> >>>> And even with the current OMAP DSS DT version, which uses the v4l2 style
-> >>>> ports/endpoints, the driver model is still the same, and only links
-> >>>> towards upstream are used.
-> >>>>
-> >>>> So one reason I'm happy with the dual-linking is that I can easily
-> >>>> follow the links from the downstream entities to upstream entities, and
-> >>>> other people, who have different driver model, can easily do the
-> >>>> opposite.
-> >>>>
-> >>>> But I agree that single-linking is enough and this can be handled at
-> >>>> runtime, even if it makes the code more complex. And perhaps requires
-> >>>> extra data in the dts, to give the start points for the graph.
-> >>>
-> >>> In theory unidirectional links in DT are indeed enough. However, let's not
-> >>> forget the following.
-> >>>
-> >>> - There's no such thing as single start points for graphs. Sure, in some
-> >>> simple cases the graph will have a single start point, but that's not a
-> >>> generic rule. For instance the camera graphs
-> >>> http://ideasonboard.org/media/omap3isp.ps and
-> >>> http://ideasonboard.org/media/eyecam.ps have two camera sensors, and thus
-> >>> two starting points from a data flow point of view. And if you want a
-> >>> better understanding of how complex media graphs can become, have a look
-> >>> at http://ideasonboard.org/media/vsp1.0.pdf (that's a real world example,
-> >>> albeit all connections are internal to the SoC in that particular case,
-> >>> and don't need to be described in DT).
-> >>>
-> >>> - There's also no such thing as a master device that can just point to
-> >>> slave devices. Once again simple cases exist where that model could work,
-> >>> but real world examples exist of complex pipelines with dozens of
-> >>> elements all implemented by a separate IP core and handled by separate
-> >>> drivers, forming a graph with long chains and branches. We thus need real
-> >>> graph bindings.
-> >>>
-> >>> - Finally, having no backlinks in DT would make the software
-> >>> implementation very complex. We need to be able to walk the graph in a
-> >>> generic way without having any of the IP core drivers loaded, and without
-> >>> any specific starting point. We would thus need to parse the complete DT
-> >>> tree, looking at all nodes and trying to find out whether they're part of
-> >>> the graph we're trying to walk. The complexity of the operation would be
-> >>> at best quadratic to the number of nodes in the whole DT and to the number
-> >>> of nodes in the graph.
-> >>
-> >> Not really. To being with, you cannot determine any meaning of a node
-> >> across the tree (aside from it being an endpoint)
-> > 
-> > That's the important part. I can assume the target node of the remote-endpoint 
-> > phandle to be an endpoint, and can thus assume that it implements the of-graph 
-> > bindings. That's all I need to be able to walk the graph in a generic way.
-> > 
-> >> without also understanding the binding that the node is a part of. That
-> >> means you need to have something matching against the compatible string on
-> >> both ends of the linkage. For instance:
-> >>
-> >> panel {
-> >> 	compatible = "acme,lvds-panel";
-> >> 	lvds-port: port {
-> >> 	};
-> >> };
-> >>
-> >> display-controller {
-> >> 	compatible = "encom,video";
-> >> 	port {
-> >> 		remote-endpoint = <&lvds-port>;
-> >> 	};
-> >> };
-> >>
-> >> In the above example, the encom,video driver has absolutely zero
-> >> information about what the acme,lvds-panel binding actually implements.
-> >> There needs to be both a driver for the "acme,lvds-panel" binding and
-> >> one for the "encom,video" binding (even if the acme,lvds-panel binding
-> >> is very thin and defers the functionality to the video controller).
-> > 
-> > I absolutely agree with that. We need a driver for each device (in this case 
-> > the acme panel and the encom display controller), and we need those drivers to 
-> > register entities (in the generic sense of the term) for them to be able to 
-> > communicate with each other. The display controller driver must not try to 
-> > parse panel-specific properties from the panel node. However, as described 
-> > above, I believe it can parse ports and endpoints to walk the graph.
-> > 
-> >> What you want here is the drivers to register each side of the
-> >> connection. That could be modeled with something like the following
-> >> (pseudocode):
-> >>
-> >> struct of_endpoint {
-> >> 	struct list_head list;
-> >> 	struct device_node *ep_node;
-> >> 	void *context;
-> >> 	void (*cb)(struct of_endpoint *ep, void *data);
-> >> }
-> >>
-> >> int of_register_port(struct device *node, void (*cb)(struct of_endpoint *ep,
-> >> void *data), void *data) {
-> >> 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
-> >>
-> >> 	ep->ep_node = node;
-> >> 	ep->data = data;
-> >> 	ep->callback = cb;
-> >>
-> >> 	/* store the endpoint to a list */
-> >> 	/* check if the endpoint has a remote-endpoint link */
-> >> 		/* If so, then link the two together and call the
-> >> 		 * callbacks */
-> >> }
-> >>
-> >> That's neither expensive or complicated.
-> >>
-> >> Originally I suggested walking the whole tree multiple times, but as
-> >> mentioned that doesn't scale, and as I thought about the above it isn't
-> >> even a valid thing to do. Everything has to be driven by drivers, so
-> >> even if the backlinks are there, nothing can be done with the link until
-> >> the other side goes through enumeration independently.
-> > 
-> > For such composite devices, what we need from a drivers point of view is a 
-> > mechanism to wait for all components to be in place before proceeding. This 
-> > isn't DT-related as such, but the graph is obviously described in DT for DT-
-> > based platforms.
-> > 
-> > There are at least two mainline implementation of such a mechanism. One of 
-> > them can be found in drivers/media/v4l2-core/v4l2-async.c, another more recent 
-> > one in drivers/base/component.c. Neither of them is DT-specific, and they 
-> > don't try to parse DT content.
-> > 
-> > The main problem, from a DT point of view, is that we need to pick a master 
-> > driver that will initiate the process of waiting for all components to be in 
-> > place. This is usually the driver of the main component inside the SoC. For a 
-> > camera capture pipeline the master is the SoC camera device driver that will 
-> > create the V4L2 device node(s). For a display pipeline the master is the SoC 
-> > display driver that will create the DRM/KMS devices.
-> > 
-> > The master device driver needs to create a list of all components it needs, 
-> > and wait until all those components have been probed by their respective 
-> > driver. Creating such a list requires walking the graph, starting at the 
-> > master device (using a CPU-centric view as described by Russell). This is why 
-> > we need the backlinks, as the master device can have inbound links.
-> > 
-> 
-> I am not sure if the approach with one device driver parsing links
-> between two other devices is the correct one. For example some links can
-> be optional, some irrelevant to the pipeline the master device tries to
-> create,....
+On Wed, Mar 5, 2014 at 2:06 PM,  <suravee.suthikulpanit@amd.com> wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>
+> This patch adds supports for additional MMIO ranges (16 ranges)
+> Also, each MMIO base/limit can now supports upto 48-bit MMIO address.
+> However, this requires initializing the ECS sooner since the new registers
+> are in the ECS ranges.
 
-Yes, that is exactly what I'm concerned about. I think it is important
-to be able to have an unambiguous dependency graph. In most cases, only
-the driver for a component will actually know which links are
-dependencies, and which are optional.... And that doesn't even address hot
-plug!
+Sorry I didn't look at this before; I had thought the _PXM issue was
+the main point of this series.
 
-> I guess it could be sometimes solved using additional
-> properties, but this will complicate things and will not work if the
-> routing decision can be taken only during specific driver probe or later.
+What's the reason for this particular patch?  Does this fix a problem?
 
-If a component is sufficiently complex that the routing is dynamic and
-'downstream' components may or may not be present/usable, then there
-just has to be a driver that understands its behaviour; either
-integrated into the master driver, or a separate driver that abstracts
-it from the master driver.
+The original reason for amd_bus.c was to figure out host bridge
+aperture and NUMA information before Linux knew how to deal with _CRS
+methods.  But Linux does pay attention to the PNP0A08 and PNP0A03 _CRS
+methods now, so the info from amd_bus.c shouldn't be necessary in most
+cases.
 
-g.
+Bjorn
+
+> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+> Tested-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
+> ---
+>  arch/x86/pci/amd_bus.c |  116 +++++++++++++++++++++++++++++++++++++++---------
+>  1 file changed, 94 insertions(+), 22 deletions(-)
+>
+> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
+> index 4041cbe..577995e 100644
+> --- a/arch/x86/pci/amd_bus.c
+> +++ b/arch/x86/pci/amd_bus.c
+> @@ -15,15 +15,28 @@
+>  #define AMD_NB_F0_UNIT_ID                       0x64
+>  #define AMD_NB_F1_MMIO_BASE_REG                 0x80
+>  #define AMD_NB_F1_MMIO_LIMIT_REG                0x84
+> +#define AMD_NB_F1_MMIO_BASE_LIMIT_HI_REG        0x180
+>  #define AMD_NB_F1_IO_BASEA_DDR_REG              0xc0
+>  #define AMD_NB_F1_IO_LIMIT_ADDR_REG             0xc4
+>  #define AMD_NB_F1_CONFIG_MAP_REG                0xe0
+>
+>  #define RANGE_NUM                               16
+> -#define AMD_NB_F1_MMIO_RANGES                   8
+> +#define AMD_NB_F1_MMIO_RANGES                   16
+>  #define AMD_NB_F1_IOPORT_RANGES                 4
+>  #define AMD_NB_F1_CONFIG_MAP_RANGES             4
+>
+> +#define AMD_PCIE_CF8(bus, dev, fn, reg) \
+> +                       (0x80000000 | \
+> +                       ((reg & 0xF00) << 16) | \
+> +                       ((bus & 0xF) << 16) | \
+> +                       ((dev & 0x1F) << 11) | \
+> +                       ((fn & 0x7) << 8) | \
+> +                       ((reg & 0xFC)))
+> +
+> +static bool amd_early_ecs_enabled;
+> +
+> +static int __init pci_io_ecs_init(u8 bus, u8 slot);
+> +
+>  /*
+>   * This discovers the pcibus <-> node mapping on AMD K8.
+>   * also get peer root bus resource for io,mmio
+> @@ -44,6 +57,20 @@ static struct amd_hostbridge hb_probes[] __initdata = {
+>         { 0xff, 0   , PCI_DEVICE_ID_AMD_10H_NB_HT },
+>  };
+>
+> +/* This version of read_pci_config allows reading of registers in ECS area */
+> +static inline int _amd_read_pci_config(u8 bus, u8 slot, u8 fn, u32 offset)
+> +{
+> +       u32 value;
+> +
+> +       if ((!amd_early_ecs_enabled) && (offset > 0xFF))
+> +               return -1;
+> +
+> +       outl(AMD_PCIE_CF8(bus, slot, fn, offset), 0xcf8);
+> +       value = inl(0xcfc);
+> +
+> +       return value;
+> +}
+> +
+>  static struct pci_root_info __init *find_pci_root_info(int node, int link)
+>  {
+>         struct pci_root_info *info;
+> @@ -53,6 +80,9 @@ static struct pci_root_info __init *find_pci_root_info(int node, int link)
+>                 if (info->node == node && info->link == link)
+>                         return info;
+>
+> +       pr_warn("AMD-Bus: WARNING: Failed to find root info for node %#x, link %#x\n",
+> +               node, link);
+> +
+>         return NULL;
+>  }
+>
+> @@ -65,6 +95,7 @@ static void __init set_mp_bus_range_to_node(int min_bus, int max_bus, int node)
+>                 set_mp_bus_to_node(j, node);
+>  #endif
+>  }
+> +
+>  /**
+>   * early_fill_mp_bus_to_node()
+>   * called before pcibios_scan_root and pci_scan_bus
+> @@ -132,6 +163,12 @@ static int __init early_fill_mp_bus_info(void)
+>
+>         printk(KERN_DEBUG "Found AMD hostbridge at %x:%x.0\n", bus, slot);
+>
+> +       /* We enabling ECS mode prior to probing MMIO since
+> +        * the MMIO-related registers are in the ECS area.
+> +        */
+> +       pci_io_ecs_init(bus, slot);
+> +
+> +       found = false;
+>         for (i = 0; i < AMD_NB_F1_CONFIG_MAP_RANGES; i++) {
+>                 int min_bus;
+>                 int max_bus;
+> @@ -142,6 +179,7 @@ static int __init early_fill_mp_bus_info(void)
+>                 if ((reg & 7) != 3)
+>                         continue;
+>
+> +               found = true;
+>                 min_bus = (reg >> 16) & 0xff;
+>                 max_bus = (reg >> 24) & 0xff;
+>                 node = (reg >> 4) & 0x07;
+> @@ -151,6 +189,14 @@ static int __init early_fill_mp_bus_info(void)
+>                 info = alloc_pci_root_info(min_bus, max_bus, node, link);
+>         }
+>
+> +       if (!found) {
+> +               /* In case there is no AMDNB_F1_CONFIG_MAP_REGs,
+> +                * we just use default to bus 0, node 0 link 0)
+> +                */
+> +               set_mp_bus_range_to_node(0, 0, 0);
+> +               info = alloc_pci_root_info(0, 0, 0, 0);
+> +       }
+> +
+>         /* get the default node and link for left over res */
+>         reg = read_pci_config(bus, slot, 0, AMD_NB_F0_NODE_ID);
+>         def_node = (reg >> 8) & 0x07;
+> @@ -159,6 +205,7 @@ static int __init early_fill_mp_bus_info(void)
+>
+>         memset(range, 0, sizeof(range));
+>         add_range(range, RANGE_NUM, 0, 0, 0xffff + 1);
+> +
+>         /* io port resource */
+>         for (i = 0; i < AMD_NB_F1_IOPORT_RANGES; i++) {
+>                 reg = read_pci_config(bus, slot, 1,
+> @@ -186,6 +233,7 @@ static int __init early_fill_mp_bus_info(void)
+>                 update_res(info, start, end, IORESOURCE_IO, 1);
+>                 subtract_range(range, RANGE_NUM, start, end + 1);
+>         }
+> +
+>         /* add left over io port range to def node/link, [0, 0xffff] */
+>         /* find the position */
+>         info = find_pci_root_info(def_node, def_link);
+> @@ -229,23 +277,45 @@ static int __init early_fill_mp_bus_info(void)
+>
+>         /* mmio resource */
+>         for (i = 0; i < AMD_NB_F1_MMIO_RANGES; i++) {
+> -               reg = read_pci_config(bus, slot, 1,
+> -                               AMD_NB_F1_MMIO_BASE_REG + (i << 3));
+> +               u64 tmp;
+> +               u32 base = AMD_NB_F1_MMIO_BASE_REG + (i << 3);
+> +               u32 limit = AMD_NB_F1_MMIO_LIMIT_REG + (i << 3);
+> +               u32 base_limit_hi = AMD_NB_F1_MMIO_BASE_LIMIT_HI_REG + (i << 2);
+> +
+> +               if (i >= 12) {
+> +                       /* Range 12 base/limit starts at 0x2A0 */
+> +                       base += 0x1c0;
+> +                       limit += 0x1c0;
+> +                       /* Range 12 base/limit hi starts at 0x2C0 */
+> +                       base_limit_hi += 0x110;
+> +               } else if (i >= 8) {
+> +                       /* Range 8 base/limit starts at 0x1A0 */
+> +                       base += 0xe0;
+> +                       limit += 0xe0;
+> +                       /* Range 12 base/limit hi starts at 0x1C0 */
+> +                       base_limit_hi += 0x20;
+> +               }
+> +
+> +               /* Base lo */
+> +               reg = _amd_read_pci_config(bus, slot, 1, base);
+>                 if (!(reg & 3))
+>                         continue;
+>
+> -               start = reg & 0xffffff00; /* 39:16 on 31:8*/
+> -               start <<= 8;
+> -               reg = read_pci_config(bus, slot, 1,
+> -                               AMD_NB_F1_MMIO_LIMIT_REG + (i << 3));
+> +               start = (reg & 0xffffff00UL) << 8; /* 39:16 on 31:8*/
+> +
+> +               /* Limit lo */
+> +               reg = _amd_read_pci_config(bus, slot, 1, limit);
+>                 node = reg & 0x07;
+>                 link = (reg >> 4) & 0x03;
+> -               end = (reg & 0xffffff00);
+> -               end <<= 8;
+> -               end |= 0xffff;
+> +               end = (reg & 0xffffff00UL) << 8; /* 39:16 on 31:8*/
+> +               end |= 0xffffUL;
+>
+> -               info = find_pci_root_info(node, link);
+> +               /* Base/Limit hi */
+> +               tmp = _amd_read_pci_config(bus, slot, 1, base_limit_hi);
+> +               start |= ((tmp & 0xffUL) << 40);
+> +               end |= ((tmp & (0xffUL << 16)) << 24);
+>
+> +               info = find_pci_root_info(node, link);
+>                 if (!info)
+>                         continue;
+>
+> @@ -373,20 +443,24 @@ static struct notifier_block amd_cpu_notifier = {
+>         .notifier_call  = amd_cpu_notify,
+>  };
+>
+> -static void __init pci_enable_pci_io_ecs(void)
+> +static void __init pci_enable_pci_io_ecs(u8 bus, u8 slot)
+>  {
+>  #ifdef CONFIG_AMD_NB
+>         unsigned int i, n;
+> +       u8 limit;
+>
+>         for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
+> -               u8 bus = amd_nb_bus_dev_ranges[i].bus;
+> -               u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
+> -               u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
+> +               /* Try matching for the bus range */
+> +               if ((bus != amd_nb_bus_dev_ranges[i].bus) ||
+> +                   (slot != amd_nb_bus_dev_ranges[i].dev_base))
+> +                       continue;
+> +
+> +               limit = amd_nb_bus_dev_ranges[i].dev_limit;
+>
+> +               /* Setup all northbridges within the range */
+>                 for (; slot < limit; ++slot) {
+>                         u32 val = read_pci_config(bus, slot, 3, 0);
+> -
+> -                       if (!early_is_amd_nb(val))
+> +                       if (!val)
+>                                 continue;
+>
+>                         val = read_pci_config(bus, slot, 3, 0x8c);
+> @@ -394,13 +468,14 @@ static void __init pci_enable_pci_io_ecs(void)
+>                                 val |= ENABLE_CF8_EXT_CFG >> 32;
+>                                 write_pci_config(bus, slot, 3, 0x8c, val);
+>                         }
+> +                       amd_early_ecs_enabled = true;
+>                         ++n;
+>                 }
+>         }
+>  #endif
+>  }
+>
+> -static int __init pci_io_ecs_init(void)
+> +static int __init pci_io_ecs_init(u8 bus, u8 slot)
+>  {
+>         int cpu;
+>
+> @@ -408,9 +483,7 @@ static int __init pci_io_ecs_init(void)
+>          if (boot_cpu_data.x86 < 0x10)
+>                 return 0;
+>
+> -       /* Try the PCI method first. */
+> -       if (early_pci_allowed())
+> -               pci_enable_pci_io_ecs();
+> +       pci_enable_pci_io_ecs(bus, slot);
+>
+>         register_cpu_notifier(&amd_cpu_notifier);
+>         for_each_online_cpu(cpu)
+> @@ -427,7 +500,6 @@ static int __init amd_postcore_init(void)
+>                 return 0;
+>
+>         early_fill_mp_bus_info();
+> -       pci_io_ecs_init();
+>
+>         return 0;
+>  }
+> --
+> 1.7.10.4
+>
+>
