@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655AbaCTUlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:41:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:56794 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaCTUlL (ORCPT
+	id S1759944AbaCTUnX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:43:23 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:33597 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759851AbaCTUnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:41:11 -0400
-Message-ID: <532B5224.8010900@ti.com>
-Date: Thu, 20 Mar 2014 16:40:04 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 16:43:21 -0400
+Date: Thu, 20 Mar 2014 21:43:08 +0100
+From: Richard Cochran <richardcochran@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, ben@decadent.org.uk,
+        christian.riesch@omicron.at, stefan.sorensen@spectralink.com
+Subject: Re: [PATCH net-next v2 1/9] ptp: introduce programmable pins.
+Message-ID: <20140320204307.GA4931@netboy>
+References: <cover.1394975663.git.richardcochran@gmail.com>
+ <5faff8ea096044a48e4edcc6391844f8d428383f.1394975663.git.richardcochran@gmail.com>
+ <20140317.212534.579591104509436501.davem@davemloft.net>
 MIME-Version: 1.0
-To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <galak@codeaurora.org>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
-        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>
-Subject: Re: [PATCH v2] ARM: dts: k2hk-evm: set ubifs partition size for 512M
- NAND
-References: <1395346813-13439-1-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1395346813-13439-1-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140317.212534.579591104509436501.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 March 2014 04:20 PM, Ivan Khoronzhuk wrote:
-> From: Murali Karicheri <m-karicheri2@ti.com>
+On Mon, Mar 17, 2014 at 09:25:34PM -0400, David Miller wrote:
 > 
-> The UBIFS partition size was incorrectly defined as for 128M NAND,
-> but on k2hk-evm installed NAND flash size is 512M.
-> Hence, correct it.
+> This locking seems unnecessarily complex to me.  You should be able to
+> do the stateless sanity checks, take the mutex, then do all of the
+> rest of the operations until the end of the function before
+> dropping the lock.
 > 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
-> 
-> Just cut from series
-> v1:
-> [PATCH 1/3] ARM: dts: k2hk-evm: set ubifs partition size for 512M NAND
-> https://lkml.org/lkml/2014/3/20/462
-> 
-Applied to for_3.15/fixes
+> So just take the lock once over the operations that need it.
 
->  arch/arm/boot/dts/k2hk-evm.dts | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/boot/dts/k2hk-evm.dts b/arch/arm/boot/dts/k2hk-evm.dts
-> index 1a1335b..949ef7d 100644
-> --- a/arch/arm/boot/dts/k2hk-evm.dts
-> +++ b/arch/arm/boot/dts/k2hk-evm.dts
-> @@ -133,7 +133,7 @@
->  
->  			partition@180000 {
->  				label = "ubifs";
-> -				reg = <0x180000 0x7E80000>;
-> +				reg = <0x180000 0x1fe80000>;
->  			};
->  		};
->  	};
-> 
+The idea was to avoid holding the mutex when invoking the driver
+callbacks (.verify and .enable). Mostly this is my paranoia that some
+bad driver will call back into the core via ptp_set_pinfunc().
 
+But you are right that the result is overly complex. I'll make the
+callers of ptp_set_pinfunc hold the mutex, and so the set path will
+look just like the get path.
+
+Thanks,
+Richard
