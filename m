@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524AbaCTEjQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 00:39:16 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:30356 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750726AbaCTEi4 (ORCPT
+	id S1751872AbaCTEjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 00:39:52 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56433 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaCTEiv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 00:38:56 -0400
-X-AuditID: cbfee68e-b7f566d000002344-b4-532a70de4c5d
+	Thu, 20 Mar 2014 00:38:51 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-dd-532a70dbb815
 From: Pankaj Dubey <pankaj.dubey@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
-Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, Ben Dooks <ben-linux@fluff.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: [PATCH v3 3/4] ARM: S3C24XX: move S3C24XX clock Kconfig options to
- Samsung clock Kconfig file
-Date: Thu, 20 Mar 2014 13:55:24 +0900
-Message-id: <1395291325-4043-4-git-send-email-pankaj.dubey@samsung.com>
+Cc: Pankaj Dubey <pankaj.dubey@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>
+Subject: [PATCH v3 1/4] clk: samsung: add new Kconfig for Samsung common clock
+ option
+Date: Thu, 20 Mar 2014 13:55:22 +0900
+Message-id: <1395291325-4043-2-git-send-email-pankaj.dubey@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1395291325-4043-1-git-send-email-pankaj.dubey@samsung.com>
 References: <1394598781-3848-1-git-send-email-pankaj.dubey@samsung.com>
  <1395291325-4043-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmplkeLIzCtJLcpLzFFi42I5/e+Zke69Aq1gg1dvlCwmrTvAZNG74Cqb
-	xabH11gtLu+aw2Yx4/w+Jovbl3ktnk64yGaxaOsXdov1M16zOHB6tDT3sHn8XfWC2ePOtT1s
-	HpuX1Hv0bVnF6PF5k1wAWxSXTUpqTmZZapG+XQJXxvlTu9gKZgtVnJ2/ib2B8RdfFyMnh4SA
-	icTDg5MYIWwxiQv31rN1MXJxCAksY5Q4+PE4C0zR5ZfNrBCJRYwSz590QFW1MUm8/3uXFaSK
-	TUBX4sn7ucwgtohAtsSlWbdYQIqYBZ4ySixdvxCsSFggQ2L+1D6wfSwCqhLbXh4Ha+AVcJc4
-	93oqkM0BtE5BYs4kG5Awp4CHxJ3591kglrUySiz7sJwZxJEQ2MQu0T5pBdQgAYlvkw+xQDTL
-	Smw6wAxxtqTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKRXnJhbXJqXrpecn7uJERIFfTsYbx6w
-	PsSYDDRuIrOUaHI+MIrySuINjc2MLExNTI2NzC3NSBNWEudd9DApSEggPbEkNTs1tSC1KL6o
-	NCe1+BAjEwenVAMj37wg7qUP5wtvW5V6IV15l+Misal//ldaxoXf4Gdv7fk5o/z8xT9KKqI/
-	OFdFfxSdm50xeXf8kfqmt5UPNy2POB8RcDyv+kq50+51/1iWxa1auKbzYoCJTWnfKfX0zZfb
-	BH3874UI203e6pnY/vvhmzPL8+69XjE56lDEPY9tHwL2zl0Re47LWImlOCPRUIu5qDgRAJRu
-	k7iYAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrEIsWRmVeSWpSXmKPExsVy+t9jAd17BVrBBjO3y1lMWneAyaJ3wVU2
-	i02Pr7FaXN41h81ixvl9TBa3L/NaPJ1wkc1i0dYv7BbrZ7xmceD0aGnuYfP4u+oFs8eda3vY
-	PDYvqffo27KK0ePzJrkAtqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8
-	xNxUWyUXnwBdt8wcoKOUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBnn
-	T+1iK5gtVHF2/ib2BsZffF2MnBwSAiYSl182s0LYYhIX7q1n62Lk4hASWMQo8fxJB5TTxiTx
-	/u9dsCo2AV2JJ+/nMoPYIgLZEpdm3WIBKWIWeMoosXT9QrAiYYEMiflT+xhBbBYBVYltL4+D
-	NfAKuEucez0VyOYAWqcgMWeSDUiYU8BD4s78+ywQy1oZJZZ9WM48gZF3ASPDKkbR1ILkguKk
-	9FxDveLE3OLSvHS95PzcTYzgGHsmtYNxZYPFIUYBDkYlHt4VezSDhVgTy4orcw8xSnAwK4nw
-	WrtrBQvxpiRWVqUW5ccXleakFh9iTAa6aiKzlGhyPjD+80riDY1NzIwsjcwsjEzMzUkTVhLn
-	PdBqHSgkkJ5YkpqdmlqQWgSzhYmDU6qBcdVLr/bTb370/ViyJmdH066//cLPTE8+XrbrzMtH
-	dzn/ChpckQzd/lvlWD53auicE04bj6wNNe7UU78p7JiXszVuWV7hn4fNnev31AZXsM8LDA34
-	n/Rv87SLiZrmU/leT43pYAiQ098r5XNKVtmsJapzh8jOggVdv3k2TmbtiBXO7du+VLEjRIml
-	OCPRUIu5qDgRANKHlhj1AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNLMWRmVeSWpSXmKPExsVy+t8zI93bBVrBBnubuC02Pb7GanF51xw2
+	ixnn9zFZPJ1wkc1i0dYv7BbrZ7xmcWDzuHNtD5vH5iX1Hn1bVjF6fN4kF8ASxWWTkpqTWZZa
+	pG+XwJWxf+ozpoKP7BX9Cw+zNDBeYOti5OSQEDCRmLv1ASOELSZx4d56oDgXh5DAMkaJLaub
+	WLsYOcCK/i2uhIgvYpQ4MO0bM4TTxiTx4ewyZpBuNgFdiSfv54LZIgLZEpdm3WIBsZkFyiWu
+	HXvHDmILC4RL/HnZAWazCKhKHFq/GczmFXCXaG/7BbVMQWLOJBuQMKeAh8Sd+fdZIHa1Mkos
+	+7AcbLGEQDe7xK6FX1kgBglIfJt8iAWiWVZi0wFmiG8kJQ6uuMEygVF4ASPDKkbR1ILkguKk
+	9CJDveLE3OLSvHS95PzcTYyQgO7dwXj7gPUhxmSgcROZpUST84ERkVcSb2hsZmRhamJqbGRu
+	aUaasJI4b9LDpCAhgfTEktTs1NSC1KL4otKc1OJDjEwcnFINjNv+iP+PN1V0O7vZ0PCE1945
+	URL3LSY8meK2Y11fbP585sVfivWl1rZLn+tlryjeq9J3ov32lqxNa+dXMp9ZsqDW86Xtnq8H
+	307yyvK8VvjBS9/icoBJmp6+UeE6xT2etvMmBrPt9Mjc/mD9IW2LlINL3Sd5y4mEbuN7qZnw
+	ZdG97TnMQbxTFJVYijMSDbWYi4oTAYJUn2N+AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBIsWRmVeSWpSXmKPExsVy+t9jAd3bBVrBBlensVtsenyN1eLyrjls
+	FjPO72OyeDrhIpvFoq1f2C3Wz3jN4sDmcefaHjaPzUvqPfq2rGL0+LxJLoAlqoHRJiM1MSW1
+	SCE1Lzk/JTMv3VbJOzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdouZJCWWJOKVAoILG4
+	WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsI4xY//UZ0wFH9kr+hceZmlgvMDWxcjBISFgIvFv
+	cWUXIyeQKSZx4d56oDAXh5DAIkaJA9O+MUM4bUwSH84uYwapYhPQlXjyfi6YLSKQLXFp1i0W
+	EJtZoFzi2rF37CC2sEC4xJ+XHWA2i4CqxKH1m8FsXgF3ifa2X6wQixUk5kyyAQlzCnhI3Jl/
+	nwViVyujxLIPy5knMPIuYGRYxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcL8+kdjCubLA4
+	xCjAwajEw7tij2awEGtiWXFl7iFGCQ5mJRFea3etYCHelMTKqtSi/Pii0pzU4kOMyUBXTWSW
+	Ek3OB8ZyXkm8obGJmZGlkZmFkYm5OWnCSuK8B1qtA4UE0hNLUrNTUwtSi2C2MHFwSjUwdic8
+	/uj8M0FxZeMzlR3HN6k96dst8yx/zQ+F2K2nE5fk/ty+bM4HY65ql7bp9lszY+9mWZfxTez7
+	yKNjVMSx88Zhl7t8KQE7r2q0mYdeusO1Zj7Ldm9H06hEuReH+D+u0vWZ9mLy29x3u70vly6u
+	fsf76+uC/HYWD5Fj0/r/3Xsn/FOlZ82bq0osxRmJhlrMRcWJAJGgVPjbAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -56,91 +51,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves S3C24XX specific clock Kconfig options into
-"clk/samsung/Kconfig" and also removes COMMON_CLK selection from
-"mach-s3c24xx/Kconfig" as S3C24XX_COMMON_CLK is selecting it's dependency.
+This patch adds new Kconfig file for adding new COMMON_CLK_SAMSUNG option.
+Samsung platforms can select this for using common clock infrastructure.
 
-CC: Ben Dooks <ben-linux@fluff.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>
-CC: Russell King <linux@arm.linux.org.uk>
-CC: Mike Turquette <mturquette@linaro.org>
 CC: Tomasz Figa <t.figa@samsung.com>
+CC: Mike Turquette <mturquette@linaro.org>
 Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
- arch/arm/mach-s3c24xx/Kconfig |   14 --------------
- drivers/clk/samsung/Kconfig   |    9 +++++++++
- 2 files changed, 9 insertions(+), 14 deletions(-)
+ drivers/clk/Kconfig         |    2 ++
+ drivers/clk/samsung/Kconfig |    3 +++
+ 2 files changed, 5 insertions(+)
+ create mode 100644 drivers/clk/samsung/Kconfig
 
-diff --git a/arch/arm/mach-s3c24xx/Kconfig b/arch/arm/mach-s3c24xx/Kconfig
-index 80373da..2d1232e 100644
---- a/arch/arm/mach-s3c24xx/Kconfig
-+++ b/arch/arm/mach-s3c24xx/Kconfig
-@@ -39,7 +39,6 @@ config CPU_S3C2410
+diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
+index 7641965..f2b6179 100644
+--- a/drivers/clk/Kconfig
++++ b/drivers/clk/Kconfig
+@@ -112,3 +112,5 @@ source "drivers/clk/qcom/Kconfig"
+ endmenu
  
- config CPU_S3C2412
- 	bool "SAMSUNG S3C2412"
--	select COMMON_CLK
- 	select CPU_ARM926T
- 	select CPU_LLSERIAL_S3C2440
- 	select S3C2412_COMMON_CLK
-@@ -50,7 +49,6 @@ config CPU_S3C2412
- 
- config CPU_S3C2416
- 	bool "SAMSUNG S3C2416/S3C2450"
--	select COMMON_CLK
- 	select CPU_ARM926T
- 	select CPU_LLSERIAL_S3C2440
- 	select S3C2416_PM if PM
-@@ -88,7 +86,6 @@ config CPU_S3C244X
- 
- config CPU_S3C2443
- 	bool "SAMSUNG S3C2443"
--	select COMMON_CLK
- 	select CPU_ARM920T
- 	select CPU_LLSERIAL_S3C2440
- 	select S3C2443_COMMON_CLK
-@@ -364,11 +361,6 @@ config S3C2412_PM_SLEEP
- 
- if CPU_S3C2412
- 
--config S3C2412_COMMON_CLK
--	bool
--	help
--	  Build the s3c2412 clock driver based on the common clock framework.
--
- config CPU_S3C2412_ONLY
- 	bool
- 	depends on !CPU_S3C2410 && !CPU_S3C2416 && !CPU_S3C2440 && \
-@@ -651,12 +643,6 @@ endif	# CPU_S3C2442
- 
- if CPU_S3C2443 || CPU_S3C2416
- 
--config S3C2443_COMMON_CLK
--	bool
--	help
--	  Temporary symbol to build the clock driver based on the common clock
--	  framework.
--
- config S3C2443_DMA
- 	bool
- 	help
+ source "drivers/clk/mvebu/Kconfig"
++
++source "drivers/clk/samsung/Kconfig"
 diff --git a/drivers/clk/samsung/Kconfig b/drivers/clk/samsung/Kconfig
-index fc8696b..baf28cb 100644
---- a/drivers/clk/samsung/Kconfig
+new file mode 100644
+index 0000000..fc8696b
+--- /dev/null
 +++ b/drivers/clk/samsung/Kconfig
-@@ -1,3 +1,12 @@
- config COMMON_CLK_SAMSUNG
- 	bool
- 	select COMMON_CLK
-+
-+config S3C2412_COMMON_CLK
+@@ -0,0 +1,3 @@
++config COMMON_CLK_SAMSUNG
 +	bool
-+	select COMMON_CLK_SAMSUNG
-+
-+config S3C2443_COMMON_CLK
-+	bool
-+	select COMMON_CLK_SAMSUNG
-+
++	select COMMON_CLK
 -- 
 1.7.10.4
 
