@@ -1,159 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757878AbaCTRSB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:18:01 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:34897 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaCTRR7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:17:59 -0400
-Message-ID: <532B22CF.1030504@arm.com>
-Date: Thu, 20 Mar 2014 17:18:07 +0000
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1759068AbaCTRSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:18:16 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47981 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685AbaCTRSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:18:12 -0400
+Date: Thu, 20 Mar 2014 12:16:22 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Cox <alan@linux.intel.com>
+CC: <balbi@ti.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: hci_ldsic nested locking problem
+Message-ID: <20140320171621.GA2827@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140320163435.GH32692@saruman.home>
+ <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v3 1/6] sched: rework of sched_domain topology definition
-References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org> <1395246165-31150-2-git-send-email-vincent.guittot@linaro.org> <532AE216.3080106@arm.com> <CAKfTPtB7Gh7Mw8XXGVOiWk8XAJYKB8V18+My86_2c=LAsMLp7Q@mail.gmail.com>
-In-Reply-To: <CAKfTPtB7Gh7Mw8XXGVOiWk8XAJYKB8V18+My86_2c=LAsMLp7Q@mail.gmail.com>
-X-OriginalArrivalTime: 20 Mar 2014 17:18:07.0295 (UTC) FILETIME=[5C4A34F0:01CF4460]
-X-MC-Unique: 114032017175700401
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Disposition: inline
+In-Reply-To: <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/03/14 17:02, Vincent Guittot wrote:
-> On 20 March 2014 13:41, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->> On 19/03/14 16:22, Vincent Guittot wrote:
->>> We replace the old way to configure the scheduler topology with a new method
->>> which enables a platform to declare additionnal level (if needed).
->>>
->>> We still have a default topology table definition that can be used by platform
->>> that don't want more level than the SMT, MC, CPU and NUMA ones. This table can
->>> be overwritten by an arch which either wants to add new level where a load balance
->>> make sense like BOOK or powergating level or wants to change the flags
->>> configuration of some levels.
->>>
->>> For each level, we need a function pointer that returns cpumask for each cpu,
->>> a function pointer that returns the flags for the level and a name. Only flags
->>> that describe topology, can be set by an architecture. The current topology
->>> flags are:
->>>  SD_SHARE_CPUPOWER
->>>  SD_SHARE_PKG_RESOURCES
->>>  SD_NUMA
->>>  SD_ASYM_PACKING
->>>
->>> Then, each level must be a subset on the next one. The build sequence of the
->>> sched_domain will take care of removing useless levels like those with 1 CPU
->>> and those with the same CPU span and relevant information for load balancing
->>> than its child.
->>
->> The paragraph above contains important information to set this up
->> correctly, that's why it might be worth clarifying:
->>
->> - "next one" of sd means "child of sd" ?
-> 
-> It's the next one in the table so the parent in the sched_domain
+--xHFwDpU9dbj6ez1V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Right, it's this way around. DIE is parent of MC is parent of GMC. Maybe
-you could be more explicit about the parent of relation here?
+On Thu, Mar 20, 2014 at 04:42:16PM +0000, Alan Cox wrote:
+> On Thu, 2014-03-20 at 11:34 -0500, Felipe Balbi wrote:
+> > Hi,
+> >=20
+> > when 8250 driver calls uart_write_wakeup(), the tty port lock is already
+> > taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+> > tty->ops->write() to actually send the characters, but that call will
+> > try to acquire the same port lock again.
+> >=20
+> > Looking at other line disciplines that looks like a bug in hci_ldisc.c.
+> > Am I correct to assume that ->write_wakeup() is supposed to *just*
+> > wakeup the bottom half so we handle ->write() in another context ?
+> >=20
+> > Is it legal to call tty->ops->write() from within ->write_wakeup() ?
+>=20
+> It isn't because you might send all the bytes and go
+>=20
+> 	write
+> 		write_wakeup
+> 			write
+> 				write wakeup
+> 					...
+>=20
+> and recurse
 
-> 
->> - "subset" means really "subset" and not "proper subset" ?
-> 
-> yes, it's really "subset" and not "proper subset"
-> 
-> Vincent
-> 
->>
->> On TC2 w/ the following change in cpu_corepower_mask()
->>
->>  const struct cpumask *cpu_corepower_mask(int cpu)
->>  {
->> -       return &cpu_topology[cpu].thread_sibling;
->> +       return cpu_topology[cpu].socket_id ?
->> &cpu_topology[cpu].thread_sibling :
->> +                       &cpu_topology[cpu].core_sibling;
->>  }
->>
->> I get this e.g. for CPU0,2:
->>
->> CPU0: cpu_corepower_mask=0-1  -> GMC is subset of MC
->> CPU0: cpu_coregroup_mask=0-1
->> CPU0: cpu_cpu_mask=0-4
->>
->> CPU2: cpu_corepower_mask=2    -> GMC is proper sunset of MC
->> CPU2: cpu_coregroup_mask=2-4
->> CPU2: cpu_cpu_mask=0-4
->>
->> I assume here that this is a correct set-up.
+cool, so there really is a bug in hci_ldisc. Marcel, any tips on how do
+you want this to be sorted out ?
 
-So this is a correct setup?
+--=20
+balbi
 
->>
->> The domain degenerate part:
->>
->> "useless levels like those with 1 CPU" ... that's the case for GMC level
->> for CPU2,3,4
->>
->> The GMC level is destroyed because of the following code snippet in
->> sd_degenerate(): if (cpumask_weight(sched_domain_span(sd)) == 1)
->>
->> so that's fine.
->>
->> In case of CPU0,1 since GMC and MC have the same span, the code in
->> build_sched_groups() creates only one group for MC  and that's why
->> pflags is altered in sd_parent_degenerate() to SD_WAKE_AFFINE (0x20) and
->> the if condition 'if (~cflags & pflags)' is not hit and
->> sd_parent_degenerate() finally returns 1 for MC.
->>
->> So the "those with the same CPU span and relevant information for load
->> balancing than its child." is not so easy to understand for me. Because
->> both levels have the same span we actually don't take the flags of the
->> parent into consideration which require at least 2 groups.
->>
->> So the TC2 example covers for me two corner cases: (1) The level I want
->> to get rid of only contains 1 CPU (GMC for CPU2,3,4) and (2) The span of
->> the parent level I want to get rid of (MC for CPU0,1) of is the same as
->> the span of the level which should stay.
->>
->> Are these two corner cases the only one supported here? If yes this has
->> to be stated somewhere, otherwise if somebody will try this approach on
->> a different topology, (s)he might be surprised.
+--xHFwDpU9dbj6ez1V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Could you please comment on the paragraph above too?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Thanks,
+iQIcBAEBAgAGBQJTKyJlAAoJEIaOsuA1yqRE2FwP/AmUoBnEl6k60x4X1R19LYYP
+Hcfqh96Or4Z0qA8+AxTWwK6gyOgTvU5l9VhR549x3lB3G5KIf/k2VffkjARtn94v
+gBahV14mpjA2AQRtidQwqAtqivf0UN9dcLC6vfVjkqfHOqma6nfjfP82P5KFI7aY
+G0bsnb62ojKTIDYtNmJor3mAKGzzL9LfZX3jShjFldoU01UTr8e0ONL2fRhyJ0l0
+1+5euw0GaGGnxAbZvVgulFZh7CECpmkDGspzUN9cjY45spwDOergGVH2lXPS7Hae
+a+rEwUI3F4fkARGST+cuKc4/VgG91E0IgyLW10paNwtdW8kgzcIjYqRzFepb/PMm
+cRbYj2XIRF2mekpvo2I8zm+6ZtWdS74PiBwLR14OvQJ1/YcFIN6cwlVjafZyyHuK
+7P+YCSzQLGKV9Ra+lW0UCe9BYUh1xMQztGFu7mRRSMIR6KTmF36fAzxsn6/eZlmG
+YGJaz90RbSutEZ9dhf1kclMvURrXkSZUFeWIEfLV6dpgTTZ35OrIyslFpvoRWEs4
+IkjKwQowwf1WJ7ow1k4KbAYz+wF9froG/F128y+408ks9kWrD33uOIaBewTM7Da8
+k5+vr2CWysQausGHZKAC+L9lmIo2DfmOdy8C+DzkCLgOH5WpxqXb5Vx5bw5sRO6N
+2PjQiY5IBPKzhcVpIobJ
+=+Ocl
+-----END PGP SIGNATURE-----
 
--- Dietmar
-
->>
->> If we only consider SD_SHARE_POWERDOMAIN for the socket related level,
->> this works fine.
->>
->> I would like to test this on more platforms but I only have my TC2
->> available :-)
->>
->> -- Dietmar
->>
->> [...]
->>
-> 
-
-
+--xHFwDpU9dbj6ez1V--
