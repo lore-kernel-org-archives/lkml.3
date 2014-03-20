@@ -1,67 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759606AbaCTUPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:15:51 -0400
-Received: from cpsmtpb-ews09.kpnxchange.com ([213.75.39.14]:56441 "EHLO
-	cpsmtpb-ews09.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751671AbaCTUPt (ORCPT
+	id S1759756AbaCTURx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:17:53 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51060 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759718AbaCTURv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:15:49 -0400
-Message-ID: <1395346547.29055.2.camel@x220>
-Subject: Re: [PATCH] MAINTAINERS: microblaze: Use LKML as mailing list
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Michal Simek <michal.simek@xilinx.com>
-Cc: linux-kernel@vger.kernel.org, monstr@monstr.eu,
-        microblaze-uclinux@itee.uq.edu.au,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>
-Date: Thu, 20 Mar 2014 21:15:47 +0100
-In-Reply-To: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>
-References: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
+	Thu, 20 Mar 2014 16:17:51 -0400
+Date: Thu, 20 Mar 2014 16:17:49 -0400 (EDT)
+Message-Id: <20140320.161749.202694042947099781.davem@davemloft.net>
+To: dbaluta@ixiacom.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net: remove empty lines from tcp_syn_flood_action
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395237505-20550-2-git-send-email-dbaluta@ixiacom.com>
+References: <1395237505-20550-1-git-send-email-dbaluta@ixiacom.com>
+	<1395237505-20550-2-git-send-email-dbaluta@ixiacom.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Mar 2014 20:15:47.0741 (UTC) FILETIME=[2E692CD0:01CF4479]
-X-RcptDomain: vger.kernel.org
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Mar 2014 13:17:51 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 16:09 +0100, Michal Simek wrote:
-> microblaze-uclinux mailing list is almost dead and
-> it is just causing troubles for non subscribers which are
-> getting email about waiting for moderator.
-> Approval never happens. Move it to LKML.
-> 
-> Reported-by: Richard Guy Briggs <rgb@redhat.com>
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> 
->  MAINTAINERS | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index b3fdb0f..1a22c62 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5702,7 +5702,7 @@ F:	fs/imgdafs/
-> 
->  MICROBLAZE ARCHITECTURE
->  M:	Michal Simek <monstr@monstr.eu>
-> -L:	microblaze-uclinux@itee.uq.edu.au (moderated for non-subscribers)
-> +L:	linux-kernel@vger.kernel.org
+From: Daniel Baluta <dbaluta@ixiacom.com>
+Date: Wed, 19 Mar 2014 15:58:25 +0200
 
-Isn't lkml already the catch all address that get_maintainer.pl always
-spits out?
+> Signed-off-by: Daniel Baluta <dbaluta@ixiacom.com>
 
->  W:	http://www.monstr.eu/fdt/
->  T:	git git://git.monstr.eu/linux-2.6-microblaze.git
->  S:	Supported
-
-
-Paul Bolle
-
+Applied to net-next, thank you.
