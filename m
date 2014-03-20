@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065AbaCTM1f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:27:35 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:46838 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757872AbaCTM1d (ORCPT
+	id S1756141AbaCTMaL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:30:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:41327 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264AbaCTMaJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:27:33 -0400
-Message-ID: <532ADFD8.80301@gmail.com>
-Date: Thu, 20 Mar 2014 13:32:24 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Jean-Francois Moine <moinejf@free.fr>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org
-CC: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT documentation
-References: <20140320092639.48F68A6279@smtp3-g21.free.fr>
-In-Reply-To: <20140320092639.48F68A6279@smtp3-g21.free.fr>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Mar 2014 08:30:09 -0400
+Date: Thu, 20 Mar 2014 13:30:14 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefani Seibold <stefani@seibold.net>
+cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        mingo@redhat.com, hpa@zytor.com, ak@linux.intel.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
+In-Reply-To: <1395315494.1127.3.camel@vger.seibold.net>
+Message-ID: <alpine.DEB.2.02.1403201328520.18573@ionos.tec.linutronix.de>
+References: <1395301511-5908-1-git-send-email-stefani@seibold.net>  <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de> <1395315494.1127.3.camel@vger.seibold.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 09:58 AM, Jean-Francois Moine wrote:
-> The I2C address (reg) is required for the TDA998x driver to be loaded
-> and initialized.
->
-> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
-> ---
-> This patch applies to linux-next.
-> ---
->   Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 2 ++
->   1 file changed, 2 insertions(+)
->
-> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> index d7df01c..fc7effa 100644
-> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-> @@ -3,6 +3,8 @@ Device-Tree bindings for the NXP TDA998x HDMI transmitter
->   Required properties;
->     - compatible: must be "nxp,tda998x"
->
-> +  - reg: I2C address - must be <0x70>
+On Thu, 20 Mar 2014, Stefani Seibold wrote:
+> Am Donnerstag, den 20.03.2014, 10:53 +0100 schrieb Thomas Gleixner:
+> > On Thu, 20 Mar 2014, Stefani Seibold wrote:
+> > 
+> > > This patch add a correct out of memory handling for setup a 32 bit vDSO.
+> > > 
+> > > The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
+> > > 
+> > > Signed-off-by: Stefani Seibold <stefani@seibold.net>
+> > > ---
+> > >  arch/x86/vdso/vdso32-setup.c | 17 ++++++++++++++++-
+> > >  1 file changed, 16 insertions(+), 1 deletion(-)
+> > > 
+> > > diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+> > > index 0bc363a..e1171c2 100644
+> > > --- a/arch/x86/vdso/vdso32-setup.c
+> > > +++ b/arch/x86/vdso/vdso32-setup.c
+> > > @@ -134,8 +134,14 @@ int __init sysenter_setup(void)
+> > >  	}
+> > >  
+> > >  	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
+> > > -	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
+> > > +
+> > > +	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
+> > 
+> > Why is this GFP_ATOMIC and not GFP_ATOMIC ?
+> > 
+> > That code is called either from identify_boot_cpu(), where GFP_KERNEL
+> > is perfectly valid and from subsys_initcall(sysenter_setup) which is
+> > way late in the boot process where GFP_KERNEL is the RightThing.
+> > 
+> > Aside of that, why do we need to call it early for X86_32 and late for
+> > X86_64?
+> > 
+> > We need the vdso before we head off to user space, but not in the
+> > early boot process.
+> > 
+> 
+> All complains are design decisions not made by me. I will send a patch
+> for the GFP_ATOMIC thing. For the other one it would be the best to ask
+> Andy for the reason.
 
-TDA9983b datasheet says:
+I'm not saying it's your fault, but if we rework code, then we really
+should question such things. What happens if you remove the x32 call
+and make the x64 subsys thing valid for both cases?
 
-"Bits A0 and A1 of the I2C-bus device address are externally selected
-by pins A0 and A1."
+Thanks,
 
-Therefore, 0x70, 0x71, 0x72, and 0x73 are valid i2c addresses.
-
-Sebastian
-
->   Optional properties:
->     - interrupts: interrupt number and trigger type
->   	default: polling
->
-
+	tglx
