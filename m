@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760105AbaCTXlH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 19:41:07 -0400
-Received: from mail1.bemta12.messagelabs.com ([216.82.251.8]:54429 "EHLO
-	mail1.bemta12.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759365AbaCTXlF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 19:41:05 -0400
-X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 19:41:04 EDT
-X-Env-Sender: Seth.Bollinger@digi.com
-X-Msg-Ref: server-13.tower-28.messagelabs.com!1395358452!24818141!1
-X-Originating-IP: [66.77.174.13]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Bollinger, Seth" <Seth.Bollinger@digi.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>
-Subject: Re: Possible software flow problem in serial_core
-Thread-Topic: Possible software flow problem in serial_core
-Thread-Index: AQHPREKU9KCJrmW7V0KAljYo9hJjt5rq7RmA//+0KoA=
-Date: Thu, 20 Mar 2014 23:34:11 +0000
-Message-ID: <CF50E0EB.6E95%seth.bollinger@digi.com>
-References: <CF505B08.6E64%seth.bollinger@digi.com>
- <532B743F.2030705@hurleysoftware.com>
-In-Reply-To: <532B743F.2030705@hurleysoftware.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.3.9.131030
-x-originating-ip: [172.26.1.22]
-x-kse-antivirus-interceptor-info: scan successful
-x-kse-antivirus-info: Clean
-Content-Type: text/plain; charset="iso-8859-1"
-Content-ID: <40F4F7B38E5B9E4FBEB8209D6928AC71@digi.com>
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1760124AbaCTXnH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 19:43:07 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759420AbaCTXnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 19:43:05 -0400
+From: Richard Weinberger <richard@nod.at>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH] staging/rtl8821ae: Fix OOM handling in _rtl_init_deferred_work()
+Date: Fri, 21 Mar 2014 00:42:54 +0100
+Message-Id: <1395358974-25474-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+alloc_workqueue() can fail, handle this case.
 
->What hardware is this?
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ drivers/staging/rtl8821ae/base.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
 
-We¹re using the Freescale mxs-auart driver (i.mx28).
+diff --git a/drivers/staging/rtl8821ae/base.c b/drivers/staging/rtl8821ae/base.c
+index fce9c3f..8dbe13c 100644
+--- a/drivers/staging/rtl8821ae/base.c
++++ b/drivers/staging/rtl8821ae/base.c
+@@ -388,7 +388,7 @@ static void _rtl_init_mac80211(struct ieee80211_hw *hw)
  
->A 16550 transmitter doesn't shut-off at uart->stop_tx(), so the remaining
->data in the transmitter FIFO is still transmitted.
-
-Ok, I just reviewed the 8250 driver and you¹re correct, it appears the
-transmitter is only disabled on the 16C950.  I misread before (incorrectly
-saw 16C550)...
-
->Some hardware has (relatively) big FIFOs and allows the transmitter to be
->shutoff, but these should unconditionally re-enable the transmitter
->without
->clearing the xmit fifo.
-
-Do you have a driver that would be a good example of this?  From looking
-at serial_core.c:uart_start(), is seems that start_tx() is only called if
-the serial_core ring buffer is not empty.  If we don¹t stop the
-transmitter, we slew too many characters.
-
->Are you seeing lost data? Maybe it's because soft flow-control is to
->slow to shutoff the sender?
-
-No dropped bytes, but we do see a few bytes trapped in the fifo because we
-received an XOFF.  When we receive the XON, start_tx() is never called
-because the serial_core ring buffer is empty, and we have no more data to
-transmit.  When we enable the transmitter manually, these bytes will pop
-out.
-
-Thanks for all of your help!
-
-Seth
+ }
+ 
+-static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
++static int _rtl_init_deferred_work(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
+ 
+@@ -410,6 +410,9 @@ static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
+ 	rtlpriv->works.rtl_wq = create_workqueue(rtlpriv->cfg->name);
+ #endif
+ /*<delete in kernel end>*/
++	if (!rtlpriv->works.rtl_wq)
++		return -ENOMEM;
++
+ 	INIT_DELAYED_WORK(&rtlpriv->works.watchdog_wq,
+ 			  (void *)rtl_watchdog_wq_callback);
+ 	INIT_DELAYED_WORK(&rtlpriv->works.ips_nic_off_wq,
+@@ -421,6 +424,8 @@ static void _rtl_init_deferred_work(struct ieee80211_hw *hw)
+ 	INIT_DELAYED_WORK(&rtlpriv->works.fwevt_wq,
+ 			  (void *)rtl_fwevt_wq_callback);
+ 
++	return 0;
++
+ }
+ 
+ void rtl_deinit_deferred_work(struct ieee80211_hw *hw)
+@@ -519,7 +524,8 @@ int rtl_init_core(struct ieee80211_hw *hw)
+ 	INIT_LIST_HEAD(&rtlpriv->entry_list);
+ 
+ 	/* <6> init deferred work */
+-	_rtl_init_deferred_work(hw);
++	if (_rtl_init_deferred_work(hw))
++		return 1;
+ 
+ 	/* <7> */
+ #ifdef VIF_TODO
+-- 
+1.8.1.4
 
