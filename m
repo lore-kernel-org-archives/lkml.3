@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283AbaCTIhv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 04:37:51 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:59280 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752962AbaCTIhs (ORCPT
+	id S1756539AbaCTIiV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 04:38:21 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:29570 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756297AbaCTIiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 04:37:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <532AA7A8.3040508@linux.vnet.ibm.com>
-References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
-	<532840FD.308@linux.vnet.ibm.com>
-	<CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
-	<53296870.5010505@linux.vnet.ibm.com>
-	<CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
-	<53298A7D.3080400@linux.vnet.ibm.com>
-	<CAKohpon=VLfPiukzrtQOSVAQg-Z-Aq3+AkZ1myrE6XtVRMY8mQ@mail.gmail.com>
-	<532AA7A8.3040508@linux.vnet.ibm.com>
-Date: Thu, 20 Mar 2014 14:07:47 +0530
-Message-ID: <CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com>
-Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Amit Daniel <amit.daniel@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Mar 2014 04:38:18 -0400
+From: Zheng Li <zheng.x.li@oracle.com>
+To: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com,
+        zheng.x.li@oracle.com
+Subject: [PATCH] bonding: Inactive slaves should keep inactive flag's value to 1.
+Date: Thu, 20 Mar 2014 16:51:44 +0800
+Message-Id: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 March 2014 14:02, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-> index 199b52b..5283f10 100644
-> --- a/drivers/cpufreq/cpufreq.c
-> +++ b/drivers/cpufreq/cpufreq.c
-> @@ -349,6 +349,39 @@ void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
->  EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
->
->
-> +void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
-> +               struct cpufreq_freqs *freqs, unsigned int state)
-> +{
-> +wait:
-> +       wait_event(&policy->transition_wait, !policy->transition_ongoing);
-> +
-> +       mutex_lock(&policy->transition_lock);
-> +
-> +       if (policy->transition_ongoing) {
-> +               mutex_unlock(&policy->transition_lock);
-> +               goto wait;
-> +       }
-> +
-> +       policy->transition_ongoing = true;
-> +
-> +       mutex_unlock(&policy->transition_lock);
-> +
-> +       cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
-> +}
-> +
-> +void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
-> +               struct cpufreq_freqs *freqs, unsigned int state)
-> +{
-> +       cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
-> +
-> +       mutex_lock(&policy->transition_lock);
+Except bond mode 1, in other bond modes, inactive slaves should keep inactive flag to
+1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
+(for example ARP requests) which will arrive inactive slaves on same host from switch,
+but inactive slave's inactive flag is zero that cause bridge receive the broadcast
+packets to produce a wrong entry in forward table. Typical situation is domu send some
+ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
+packets go back to inactive slave from switch, because the inactive slave's inactive
+flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
+bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
 
-Why do we need locking here? You explained that earlier :)
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+---
+ drivers/net/bonding/bond_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Also, I would like to add this here:
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index e5628fc..2f73f18 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3063,7 +3063,7 @@ static int bond_open(struct net_device *bond_dev)
+ 				bond_set_slave_inactive_flags(slave,
+ 							      BOND_SLAVE_NOTIFY_NOW);
+ 			} else {
+-				bond_set_slave_active_flags(slave,
++				bond_set_slave_state(slave, BOND_STATE_ACTIVE,
+ 							    BOND_SLAVE_NOTIFY_NOW);
+ 			}
+ 		}
+-- 
+1.7.6.5
 
-    WARN_ON(policy->transition_ongoing);
-
-> +       policy->transition_ongoing = false;
-> +       mutex_unlock(&policy->transition_lock);
-> +
-> +       wake_up(&policy->transition_wait);
-> +}
