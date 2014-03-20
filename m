@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933867AbaCTPB2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:01:28 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:45050 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932685AbaCTPB0 (ORCPT
+	id S1758208AbaCTPBx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:01:53 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:52585 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757146AbaCTPBv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:01:26 -0400
+	Thu, 20 Mar 2014 11:01:51 -0400
+Message-ID: <532B02DC.5000306@gmail.com>
+Date: Thu, 20 Mar 2014 08:01:48 -0700
+From: Dirk Brandewie <dirk.brandewie@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk>
-References: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk>
-Date: Thu, 20 Mar 2014 12:01:25 -0300
-Message-ID: <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
-Subject: Re: [BUG] Paravirtual time accounting / IRQ time accounting
-From: Glauber Costa <glommer@gmail.com>
-To: lwcheng@cs.hku.hk, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: dirk.brandewie@gmail.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patrick.marlier@gmail.com,
+        viresh.kumar@linaro.org, srivatsa.bhat@linux.vnet.ibm.com,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Subject: Re: [PATCH 1/2] cpufreq: Add stop callback to cpufreq_driver interface
+References: <1395243954-28262-1-git-send-email-dirk.j.brandewie@intel.com> <1395243954-28262-2-git-send-email-dirk.j.brandewie@intel.com> <3686462.d0rjfgiuqO@vostro.rjw.lan> <2400024.pvKZSBQzVt@vostro.rjw.lan>
+In-Reply-To: <2400024.pvKZSBQzVt@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 6:42 AM,  <lwcheng@cs.hku.hk> wrote:
-> In consolidated environments, when there are multiple virtual machines (VMs)
-> running on one CPU core, timekeeping will be a problem to the guest OS.
-> Here, I report my findings about Linux process scheduler.
+On 03/19/2014 08:28 PM, Rafael J. Wysocki wrote:
+> On Wednesday, March 19, 2014 11:31:31 PM Rafael J. Wysocki wrote:
+>> On Wednesday, March 19, 2014 08:45:53 AM dirk.brandewie@gmail.com wrote:
+>>> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>>>
+>>> This callback allows the driver to do clean up before the CPU is
+>>> completely down and its state cannot be modified.  This is used
+>>> by the intel_pstate driver to reduce the requested P state prior to
+>>> the core going away.  This is required because the requested P state
+>>> of the offline core is used to select the package P state. This
+>>> effectively sets the floor package P state to the requested P state on
+>>> the offline core.
+>>>
+>>> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
 >
+> To speed up things a bit I changed the name of the new callback to ->stop_cpu
+> and made it void.
 >
-> Description
-> ------------
-> Linux CFS relies on rq->clock_task to charge each task, determine vruntime,
-> etc.
+> I also modified patch [2/2] accordingly and queued the both of them up for 3.15.
 >
-> When CONFIG_IRQ_TIME_ACCOUNTING is enabled, the time spent on serving IRQ
-> will be excluded from updating rq->clock_task.
-> When CONFIG_PARAVIRT_TIME_ACCOUNTING is enabled, the time stolen by the
-> hypervisor
-> will also be excluded from updating rq->clock_task.
+> Please check the bleeding-edge branch.
 >
-> With "both" CONFIG_IRQ_TIME_ACCOUNTING and CONFIG_PARAVIRT_TIME_ACCOUNTING
-> enabled,
-> I put three KVM guests on one core and run hackbench in each guest. I find
-> that
-> in the guests, rq->clock_task stays *unchanged*. The malfunction embarrasses
-> CFS.
-> ------------
->
->
-> Analysis
-> ------------
-> [src/kernel/sched/core.c]
-> static void update_rq_clock_task(struct rq *rq, s64 delta)
-> {
->     ... ...
-> #ifdef CONFIG_IRQ_TIME_ACCOUNTING
->     irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
->     ... ...
->     rq->prev_irq_time += irq_delta;
->     delta -= irq_delta;
-> #endif
->
-> #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
->     if (static_key_false((&paravirt_steal_rq_enabled))) {
->         steal = paravirt_steal_clock(cpu_of(rq));
->         steal -= rq->prev_steal_time_rq;
->         ... ...
->         rq->prev_steal_time_rq += steal;
->         delta -= steal;
->     }
-> #endif
->
->     rq->clock_task += delta;
->     ... ...
-> }
-> --
-> "delta" -> the intended increment to rq->clock_task
-> "irq_delta" -> the time spent on serving IRQ (hard + soft)
-> "steal" -> the time stolen by the underlying hypervisor
-> --
-> "irq_delta" is calculated based on sched_clock_cpu(), which is vulnerable
-> to VM scheduling delays.
+> I wouldn't like to need to do anything like that any more in the future, though.
 
-This looks like a real problem indeed. The main problem in searching
-for a solution, is that of course not all of the irq time is steal
-time and vice versa. In this case, we could subtract irq_time from
-steal, and add only the steal part time that is in excess. I don't
-think this is 100 % guaranteed, but maybe it is a good approximation.
+Sorry had appointments yesterday afternoon.
 
-Rik, do you have an opinion on this ?
+bleeding-edge looks good
+
+
+>
+>>> ---
+>>>   Documentation/cpu-freq/cpu-drivers.txt | 8 +++++++-
+>>>   drivers/cpufreq/cpufreq.c              | 3 ++-
+>>>   include/linux/cpufreq.h                | 1 +
+>>>   3 files changed, 10 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/Documentation/cpu-freq/cpu-drivers.txt b/Documentation/cpu-freq/cpu-drivers.txt
+>>> index 8b1a445..79def80 100644
+>>> --- a/Documentation/cpu-freq/cpu-drivers.txt
+>>> +++ b/Documentation/cpu-freq/cpu-drivers.txt
+>>> @@ -61,7 +61,13 @@ target_index		-	See below on the differences.
+>>>
+>>>   And optionally
+>>>
+>>> -cpufreq_driver.exit -		A pointer to a per-CPU cleanup function.
+>>> +cpufreq_driver.exit -		A pointer to a per-CPU cleanup
+>>> +		    		function called during CPU_POST_DEAD
+>>> +		    		phase of cpu hotplug process.
+>>> +
+>>> +cpufreq_driver.stop -		A pointer to a per-CPU stop function
+>>> +			    	called during CPU_DOWN_PREPARE phase of
+>>> +				cpu hotplug process.
+>>>
+>>>   cpufreq_driver.resume -		A pointer to a per-CPU resume function
+>>>   				which is called with interrupts disabled
+>>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>>> index cf485d9..bb20292 100644
+>>> --- a/drivers/cpufreq/cpufreq.c
+>>> +++ b/drivers/cpufreq/cpufreq.c
+>>> @@ -1336,7 +1336,8 @@ static int __cpufreq_remove_dev_prepare(struct device *dev,
+>>>   						__func__, new_cpu, cpu);
+>>>   			}
+>>>   		}
+>>> -	}
+>>> +	} else if (cpufreq_driver->stop && cpufreq_driver->setpolicy)
+>>> +		cpufreq_driver->stop(policy);
+>>
+>> Nit: Why is it an int function if the only caller doesn't check the
+>> return value?  It should be void.
+>>
+>>>
+>>>   	return 0;
+>>>   }
+>>> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+>>> index 4d89e0e..ff8db19 100644
+>>> --- a/include/linux/cpufreq.h
+>>> +++ b/include/linux/cpufreq.h
+>>> @@ -224,6 +224,7 @@ struct cpufreq_driver {
+>>>   	int	(*bios_limit)	(int cpu, unsigned int *limit);
+>>>
+>>>   	int	(*exit)		(struct cpufreq_policy *policy);
+>>> +	int	(*stop)		(struct cpufreq_policy *policy);
+>>>   	int	(*suspend)	(struct cpufreq_policy *policy);
+>>>   	int	(*resume)	(struct cpufreq_policy *policy);
+>>>   	struct freq_attr	**attr;
+>>>
+>>
+>>
+>
+
