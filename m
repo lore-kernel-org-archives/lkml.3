@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301AbaCTQMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:12:37 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:21842 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758612AbaCTQMb (ORCPT
+	id S1759353AbaCTQMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:12:52 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:38328 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759238AbaCTQMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:12:31 -0400
-X-IronPort-AV: E=Sophos;i="4.97,695,1389744000"; 
-   d="scan'208";a="111947203"
-Message-ID: <532B1320.1070607@citrix.com>
-Date: Thu, 20 Mar 2014 16:11:12 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 12:12:49 -0400
+Message-ID: <532B137B.7010900@codethink.co.uk>
+Date: Thu, 20 Mar 2014 17:12:43 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Wei Liu <wei.liu2@citrix.com>, Paul Durrant <Paul.Durrant@citrix.com>,
-        David Miller <davem@davemloft.net>
-CC: Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Davies <Jonathan.Davies@citrix.com>
-Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap operations
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com> <1394142511-14827-10-git-send-email-zoltan.kiss@citrix.com> <532A0915.5090006@citrix.com> <20140320104855.GA16285@zion.uk.xensource.com> <9AAE0902D5BC7E449B7C8E4E778ABCD0292550@AMSPEX01CL01.citrite.net> <20140320123839.GK16807@zion.uk.xensource.com>
-In-Reply-To: <20140320123839.GK16807@zion.uk.xensource.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Simon Horman <horms+renesas@verge.net.au>
+Subject: Re: DMABOUNCE in pci-rcar
+References: <201402241200.21944.arnd@arndb.de> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk> <5527822.QYtFYiIpiW@wuerfel>
+In-Reply-To: <5527822.QYtFYiIpiW@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/03/14 12:38, Wei Liu wrote:
-> On Thu, Mar 20, 2014 at 11:14:51AM +0000, Paul Durrant wrote:
->>> -----Original Message-----
->>> From: Wei Liu [mailto:wei.liu2@citrix.com]
->>> Sent: 20 March 2014 10:49
->>> To: Zoltan Kiss
->>> Cc: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org;
->>> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jonathan Davies;
->>> Paul Durrant
->>> Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
->>> operations
->>>
->>> On Wed, Mar 19, 2014 at 09:16:05PM +0000, Zoltan Kiss wrote:
->>>> Hi,
+On 20/03/14 17:09, Arnd Bergmann wrote:
+> On Thursday 20 March 2014 16:04:36 Ben Dooks wrote:
+>> On 26/02/14 20:57, Arnd Bergmann wrote:
+>>> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
+>>>> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>> Hi Magnus,
+>>>>>
+>>>>> I noticed during randconfig testing that you enabled DMABOUNCE for the
+>>>>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
+>>>>>
+>>>>> I didn't see the original post unfortunately, but I fear we have to
+>>>>> revert it and come up with a better solution, ...
 >>>>
->>>> I'm thinking about revoking this patch: it's value is pretty small,
->>>> but it causes performance regression on Win7 guests. And probably it
->>>> is not the best solution for this problem. It might be the delay it
->>>> takes the dealloc thread to be scheduled is enough.
->>>> What do you think?
+>>>> Sounds like I should drop the following patches from my pci/host-rcar
+>>>> branch for now?
 >>>>
+>>>>     PCI: rcar: Add DMABOUNCE support
+>>>>     PCI: rcar: Enable BOUNCE in case of HIGHMEM
+>>>>     PCI: rcar: Make the Kconfig dependencies more generic
 >>>
->>> Can you elaborate? What makes Win7 so special? What's performance
->>> impact to other guests?
->>>
+>>> Sounds good to me. The last patch is actually fine, but you'll have to
+>>> fix the context to apply it without the other two.
 >>
->> It won't be Win7 specifically I expect. It will likely by any version
->> of Windows, or any other OS that limits the TXs-in-flight so
->> aggressively. Basically you need to TX-complete reasonably frequently
->> otherwise your throughput drops off a lot. IIRC at Solarflare we found
->> every ~500us to be just about frequent enough for hitting 10G.
+>> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
+>> controllers no longer work with full 2GiB RAM enabled in the device
+>> tree.
 >
-> Thanks for the explanation.
+> Did it work before these patches got applied initially?
+
+It did, but I cannot remember if we where limiting DRAM to 1GiB
+or not.
+
+>> Could we work around this by having 1GiB of memory defined in the
+>> 32bit memory and then add the rest of the 3GiB from the >32bit
+>> area via LPAE? Will the kernel ever try to allocate DMA memory from
+>> anything >32bit?
 >
-> Reverting this change basically means when to flush TLB is at sole
-> discretion of Linux kernel scheduler. I don't oppose to that. But it
-> would be better to provide some numbers.
+> You can solve the case for dma_alloc_coherent() this way, or by
+> setting the mask correctly. It won't help you for dma_map_* though,
+> which still requires someone to add support for swiotlb or using
+> an IOMMU if present.
 
-My comparisons with iperf haven't showed any significant difference. 
-I've measured Win7 and upstream Linux guest.
-There was a misunderstanding that reverting this patch would stop 
-batching of unmap. There would be still batching as when the callback 
-wakes the dealloc thread, by the time it happens other callbacks still 
-can place work on the dealloc ring, even while the thread started to 
-process them. And that could happen independently from the TX operations 
-in the NAPI instance, which is an another good feature of having a 
-dealloc thread.
+We do not have an IOMMU present at the moment. Not sure how
+to go about setting a mask on a pci-probed device.
 
-I've discussed this in person with Paul and Ian as well, they are happy 
-with the reverting. So David, can you please revert e9275f5e2d 
-"xen-netback: Aggregate TX unmap operations"?
 
-Regards,
-
-Zoli
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
