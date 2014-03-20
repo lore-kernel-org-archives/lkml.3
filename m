@@ -1,142 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759667AbaCTSzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:55:11 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:47819 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755653AbaCTSzF (ORCPT
+	id S1759504AbaCTTAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:00:19 -0400
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:53681 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341AbaCTTAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:55:05 -0400
-Message-ID: <532B3983.6040706@hurleysoftware.com>
-Date: Thu, 20 Mar 2014 14:54:59 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 15:00:17 -0400
+Message-ID: <532B3AB9.5050809@gmail.com>
+Date: Fri, 21 Mar 2014 00:30:09 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: Felipe Balbi <balbi@ti.com>, Alan Cox <alan@linux.intel.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Muralidharan Karicheri <m-karicheri2@ti.com>,
-        linux-bluetooth@vger.kernel.org, linux-serial@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Huang Shijie <b32955@freescale.com>
-Subject: Re: hci_ldsic nested locking problem
-References: <20140320163435.GH32692@saruman.home> <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com> <20140320171621.GA2827@saruman.home> <20140320172920.GC2827@saruman.home> <532B26C1.8080806@hurleysoftware.com> <20140320173518.GD2827@saruman.home> <20140320184544.GA1113@kroah.com>
-In-Reply-To: <20140320184544.GA1113@kroah.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 02:45 PM, Greg KH wrote:
-> On Thu, Mar 20, 2014 at 12:35:18PM -0500, Felipe Balbi wrote:
->> On Thu, Mar 20, 2014 at 01:34:57PM -0400, Peter Hurley wrote:
->>> [ +cc Huang Shijie ]
->>>
->>> On 03/20/2014 01:29 PM, Felipe Balbi wrote:
->>>> then we need updates to Documentation:
->>>>
->>>> Documentation/serial/tty.txt::
->>>>
->>>> |  Driver Side Interfaces:
->>>> |
->>>> |  receive_buf()	-	Hand buffers of bytes from the driver to the ldisc
->>>> |  			for processing. Semantics currently rather
->>>> |  			mysterious 8(
->>>> |
->>>> |  write_wakeup()	-	May be called at any point between open and close.
->>>> |  			The TTY_DO_WRITE_WAKEUP flag indicates if a call
->>>> |  			is needed but always races versus calls. Thus the
->>>> |  			ldisc must be careful about setting order and to
->>>> |  			handle unexpected calls. Must not sleep.
->>>> |
->>>> |  			The driver is forbidden from calling this directly
->>>> |  			from the ->write call from the ldisc as the ldisc
->>>> |  			is permitted to call the driver write method from
->>>> |  			this function. In such a situation defer it.
->>>>
->>>> documentation says ldisc is allowed to call ->write() from
->>>> ->write_wakeup(). huh ?
->>>
->>> Patch submitted but never applied.
->>>
->>> http://www.spinics.net/lists/linux-serial/msg11144.html
->>
->> Thank you. For that patch:
->>
->> Acked-by: Felipe Balbi <balbi@ti.com>
->
-> Can someone resend it, this is lost in my tree for some reason...
+>From f18fc68778c210863ca0968e4448375c89e9bb06 Mon Sep 17 00:00:00 2001
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Date: Fri, 21 Mar 2014 00:22:32 +0530
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
 
-Apologies if my mailer mangles this.
+This is a patch to add support for
+maxim dallas rtc ds1347
 
---- >% ---
-From: Huang Shijie <b32955@freescale.com>
-
-In the uart_handle_cts_change(), uart_write_wakeup() is called after
-we call @uart_port->ops->start_tx().
-
-The Documentation/serial/driver tells us:
------------------------------------------------
-   start_tx(port)
-	Start transmitting characters.
-
-	Locking: port->lock taken.
-	Interrupts: locally disabled.
------------------------------------------------
-
-So when the uart_write_wakeup() is called, the port->lock is taken by
-the upper. See the following callstack:
-
-	|_ uart_write_wakeup
-	   |_ tty_wakeup
-	      |_ ld->ops->write_wakeup
-
-With the port->lock held, we call the @write_wakeup. Some implemetation of
-the @write_wakeup does not notice that the port->lock is held, and it still
-tries to send data with uart_write() which will try to grab the prot->lock.
-A dead lock occurs, see the following log caught in the Bluetooth by uart:
-
---------------------------------------------------------------------
-BUG: spinlock lockup suspected on CPU#0, swapper/0/0
-  lock: 0xdc3f4410, .magic: dead4ead, .owner: swapper/0/0, .owner_cpu: 0
-CPU: 0 PID: 0 Comm: swapper/0 Tainted: G        W    3.10.17-16839-ge4a1bef #1320
-[<80014cbc>] (unwind_backtrace+0x0/0x138) from [<8001251c>] (show_stack+0x10/0x14)
-[<8001251c>] (show_stack+0x10/0x14) from [<802816ac>] (do_raw_spin_lock+0x108/0x184)
-[<802816ac>] (do_raw_spin_lock+0x108/0x184) from [<806a22b0>] (_raw_spin_lock_irqsave+0x54/0x60)
-[<806a22b0>] (_raw_spin_lock_irqsave+0x54/0x60) from [<802f5754>] (uart_write+0x38/0xe0)
-[<802f5754>] (uart_write+0x38/0xe0) from [<80455270>] (hci_uart_tx_wakeup+0xa4/0x168)
-[<80455270>] (hci_uart_tx_wakeup+0xa4/0x168) from [<802dab18>] (tty_wakeup+0x50/0x5c)
-[<802dab18>] (tty_wakeup+0x50/0x5c) from [<802f81a4>] (imx_rtsint+0x50/0x80)
-[<802f81a4>] (imx_rtsint+0x50/0x80) from [<802f88f4>] (imx_int+0x158/0x17c)
-[<802f88f4>] (imx_int+0x158/0x17c) from [<8007abe0>] (handle_irq_event_percpu+0x50/0x194)
-[<8007abe0>] (handle_irq_event_percpu+0x50/0x194) from [<8007ad60>] (handle_irq_event+0x3c/0x5c)
---------------------------------------------------------------------
-
-This patch adds more limits to the @write_wakeup, the one who wants to
-implemet the @write_wakeup should follow the limits which avoid the deadlock.
-
-Signed-off-by: Huang Shijie <b32955@freescale.com>
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
 ---
-  include/linux/tty_ldisc.h |    5 ++++-
-  1 files changed, 4 insertions(+), 1 deletions(-)
+ drivers/rtc/Kconfig      |   12 ++++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-ds1347.c |  169 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 182 insertions(+)
+ create mode 100644 drivers/rtc/rtc-ds1347.c
 
-diff --git a/include/linux/tty_ldisc.h b/include/linux/tty_ldisc.h
-index f15c898..539ccc5 100644
---- a/include/linux/tty_ldisc.h
-+++ b/include/linux/tty_ldisc.h
-@@ -91,7 +91,10 @@
-   *	This function is called by the low-level tty driver to signal
-   *	that line discpline should try to send more characters to the
-   *	low-level driver for transmission.  If the line discpline does
-- *	not have any more data to send, it can just return.
-+ *	not have any more data to send, it can just return. If the line
-+ *	discipline does have some data to send, please arise a tasklet
-+ *	or workqueue to do the real data transfer. Do not send data in
-+ *	this hook, it may leads to a deadlock.
-   *
-   * int (*hangup)(struct tty_struct *)
-   *
--- 1.7.2.rc3
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index db933de..2e565f8 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -573,6 +573,18 @@ config RTC_DRV_DS1305
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-ds1305.
+ 
++config RTC_DRV_DS1347
++	tristate "Dallas/Maxim DS1347"
++	help
++	  If you say yes here you get support for the
++	  Dallas/Maxim DS1347 chips.
++
++	  This driver only supports the RTC feature, and not other chip
++	  features such as alarms.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-ds1347.
++
+ config RTC_DRV_DS1390
+ 	tristate "Dallas/Maxim DS1390/93/94"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index b427bf7..40a0991 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
+ obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
+ obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
+ obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
++obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
+ obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
+ obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
+ obj-$(CONFIG_RTC_DRV_DS1511)	+= rtc-ds1511.o
+diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
+new file mode 100644
+index 0000000..986275e
+--- /dev/null
++++ b/drivers/rtc/rtc-ds1347.c
+@@ -0,0 +1,169 @@
++/* rtc-ds1347.c
++ *
++ * Driver for Dallas Semiconductor DS1347 Low Current, SPI Compatible
++ * Real Time Clock
++ *
++ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/spi/spi.h>
++#include <linux/bcd.h>
++
++/* Registers in ds1347 rtc */
++
++#define DS1347_SECONDS_REG	0x01
++#define DS1347_MINUTES_REG	0x03
++#define DS1347_HOURS_REG	0x05
++#define DS1347_DATE_REG		0x07
++#define DS1347_MONTH_REG	0x09
++#define DS1347_DAY_REG		0x0B
++#define DS1347_YEAR_REG		0x0D
++#define DS1347_CONTROL_REG	0x0F
++#define DS1347_STATUS_REG	0x17
++#define DS1347_CLOCK_BURST	0x3F
++
++static int ds1347_read_reg(struct device *dev, unsigned char address,
++				unsigned char *data)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	*data = address | 0x80;
++
++	return spi_write_then_read(spi, data, 1, data, 1);
++}
++
++static int ds1347_write_reg(struct device *dev, unsigned char address,
++				unsigned char data)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[2];
++
++	buf[0] = address & 0x7F;
++	buf[1] = data;
++
++	return spi_write_then_read(spi, buf, 2, NULL, 0);
++}
++
++static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	int err;
++	unsigned char buf[8];
++
++	buf[0] = DS1347_CLOCK_BURST | 0x80;
++
++	err = spi_write_then_read(spi, buf, 1, buf, 8);
++	if (err)
++		return err;
++
++	dt->tm_sec = bcd2bin(buf[0]);
++	dt->tm_min = bcd2bin(buf[1]);
++	dt->tm_hour = bcd2bin(buf[2] & 0x3F);
++	dt->tm_mday = bcd2bin(buf[3]);
++	dt->tm_mon = bcd2bin(buf[4]) - 1;
++	dt->tm_wday = bcd2bin(buf[5]) - 1;
++	dt->tm_year = bcd2bin(buf[6]) + 100;
++
++	return rtc_valid_tm(dt);
++}
++
++static int ds1347_set_time(struct device *dev, struct rtc_time *dt)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[9];
++
++	buf[0] = DS1347_CLOCK_BURST & 0x7F;
++	buf[1] = bin2bcd(dt->tm_sec);
++	buf[2] = bin2bcd(dt->tm_min);
++	buf[3] = (bin2bcd(dt->tm_hour) & 0x3F);
++	buf[4] = bin2bcd(dt->tm_mday);
++	buf[5] = bin2bcd(dt->tm_mon + 1);
++	buf[6] = bin2bcd(dt->tm_wday + 1);
++
++	/* year in linux is from 1900 i.e in range of 100
++	in rtc it is from 00 to 99 so subtract
++	the linux year by 100 */
++	if (dt->tm_year >= 100)
++		dt->tm_year -= 100;
++
++	buf[7] = bin2bcd(dt->tm_year);
++	buf[8] = bin2bcd(0x00);
++
++	/* write the rtc settings */
++	return spi_write_then_read(spi, buf, 9, NULL, 0);
++}
++
++static const struct rtc_class_ops ds1347_rtc_ops = {
++	.read_time = ds1347_read_time,
++	.set_time = ds1347_set_time,
++};
++
++static int ds1347_probe(struct spi_device *spi)
++{
++	struct rtc_device *rtc;
++	unsigned char data;
++	int res;
++
++	/* spi setup with ds1347 in mode 3 and bits per word as 8 */
++	spi->mode = SPI_MODE_3;
++	spi->bits_per_word = 8;
++	spi_setup(spi);
++
++	/* RTC Settings */
++	res = ds1347_read_reg(&spi->dev, DS1347_SECONDS_REG, &data);
++	if (res)
++		return res;
++
++	/* Disable the write protect of rtc */
++	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
++	data = data & ~(1<<7);
++	ds1347_write_reg(&spi->dev, DS1347_CONTROL_REG, data);
++
++	/* Enable the oscillator , disable the oscillator stop flag,
++	 and glitch filter to reduce current consumption */
++	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
++	data = data & 0x1B;
++	ds1347_write_reg(&spi->dev, DS1347_STATUS_REG, data);
++
++	/* display the settings */
++	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
++	dev_info(&spi->dev, "DS1347 RTC CTRL Reg = 0x%02x\n", data);
++
++	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
++	dev_info(&spi->dev, "DS1347 RTC Status Reg = 0x%02x\n", data);
++
++	rtc = devm_rtc_device_register(&spi->dev, "ds1347",
++				&ds1347_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(rtc))
++		return PTR_ERR(rtc);
++
++	spi_set_drvdata(spi, rtc);
++
++	return 0;
++}
++
++static struct spi_driver ds1347_driver = {
++	.driver = {
++		.name = "ds1347",
++		.owner = THIS_MODULE,
++	},
++	.probe = ds1347_probe,
++};
++
++module_spi_driver(ds1347_driver);
++
++MODULE_DESCRIPTION("DS1347 SPI RTC DRIVER");
++MODULE_AUTHOR("Raghavendra C Ganiga <ravi23ganiga@gmail.com>");
++MODULE_LICENSE("GPL v2");
++
+-- 
+1.7.10.4
