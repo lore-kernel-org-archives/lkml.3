@@ -1,283 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964802AbaCTSWy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:22:54 -0400
-Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:59947 "EHLO
-	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933560AbaCTSWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:22:52 -0400
-Date: Thu, 20 Mar 2014 19:22:49 +0100
-From: Alessandro Zummo <a.zummo@towertech.it>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
-Subject: Re: [PATCH] rtc: add support for maxim dallas rtc ds1347
-Message-ID: <20140320192249.72f0288a@linux.lan.towertech.it>
-In-Reply-To: <532B167D.80406@gmail.com>
-References: <532B167D.80406@gmail.com>
-Organization: Tower Technologies
+	id S1759400AbaCTS1Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 14:27:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45364 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751685AbaCTS1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 14:27:23 -0400
+Date: Thu, 20 Mar 2014 13:25:28 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: <balbi@ti.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: hci_ldsic nested locking problem
+Message-ID: <20140320182528.GE3959@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140320163435.GH32692@saruman.home>
+ <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
+ <20140320171621.GA2827@saruman.home>
+ <532B25FC.3070408@hurleysoftware.com>
+ <20140320181145.GC3959@saruman.home>
+ <532B319D.4090208@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CGDBiGfvSTbxKZlW"
+Content-Disposition: inline
+In-Reply-To: <532B319D.4090208@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014 21:55:33 +0530
-RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com> wrote:
+--CGDBiGfvSTbxKZlW
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- Thanks for your submission!
- just a few comments below:
+On Thu, Mar 20, 2014 at 02:21:17PM -0400, Peter Hurley wrote:
+> On 03/20/2014 02:11 PM, Felipe Balbi wrote:
+> >On Thu, Mar 20, 2014 at 01:31:40PM -0400, Peter Hurley wrote:
+> >>[ +cc Huang Shijie ]
+> >>
+> >>On 03/20/2014 01:16 PM, Felipe Balbi wrote:
+> >>>On Thu, Mar 20, 2014 at 04:42:16PM +0000, Alan Cox wrote:
+> >>>>On Thu, 2014-03-20 at 11:34 -0500, Felipe Balbi wrote:
+> >>>>>Hi,
+> >>>>>
+> >>>>>when 8250 driver calls uart_write_wakeup(), the tty port lock is alr=
+eady
+> >>>>>taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+> >>>>>tty->ops->write() to actually send the characters, but that call will
+> >>>>>try to acquire the same port lock again.
+> >>>>>
+> >>>>>Looking at other line disciplines that looks like a bug in hci_ldisc=
+=2Ec.
+> >>>>>Am I correct to assume that ->write_wakeup() is supposed to *just*
+> >>>>>wakeup the bottom half so we handle ->write() in another context ?
+> >>>>>
+> >>>>>Is it legal to call tty->ops->write() from within ->write_wakeup() ?
+> >>>>
+> >>>>It isn't because you might send all the bytes and go
+> >>>>
+> >>>>	write
+> >>>>		write_wakeup
+> >>>>			write
+> >>>>				write wakeup
+> >>>>					...
+> >>>>
+> >>>>and recurse
+> >>>
+> >>>cool, so there really is a bug in hci_ldisc. Marcel, any tips on how do
+> >>>you want this to be sorted out ?
+> >>
+> >>hci_uart_tx_wakeup() should perform the I/O as work.
+> >>FWIW, this was reported by Huang Shijie back on Dec 6.
+> >>
+> >>I'd fix it but I have no way to test it.
+> >
+> >here's a build-tested only patch which is waiting for testing from other
+> >colleagues who've got a platform to reproduce the problem:
+>=20
+> Where's the cancel_work_sync() on teardown?
 
-> ---
->  drivers/rtc/Kconfig      |   12 ++++
->  drivers/rtc/Makefile     |    1 +
->  drivers/rtc/rtc-ds1347.c |  175 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 188 insertions(+)
->  create mode 100644 drivers/rtc/rtc-ds1347.c
-> 
-> diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-> index db933de..2e565f8 100644
-> --- a/drivers/rtc/Kconfig
-> +++ b/drivers/rtc/Kconfig
-> @@ -573,6 +573,18 @@ config RTC_DRV_DS1305
->  	  This driver can also be built as a module. If so, the module
->  	  will be called rtc-ds1305.
->  
-> +config RTC_DRV_DS1347
-> +	tristate "Dallas/Maxim DS1347"
-> +	help
-> +	  If you say yes here you get support for the
-> +	  Dallas/Maxim DS1347 chips.
-> +
-> +	  This driver only supports the RTC feature, and not other chip
-> +	  features such as alarms.
-> +
-> +	  This driver can also be built as a module. If so, the module
-> +	  will be called rtc-ds1347.
-> +
->  config RTC_DRV_DS1390
->  	tristate "Dallas/Maxim DS1390/93/94"
->  	help
-> diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-> index b427bf7..40a0991 100644
-> --- a/drivers/rtc/Makefile
-> +++ b/drivers/rtc/Makefile
-> @@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
->  obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
->  obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
->  obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
-> +obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
->  obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
->  obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
->  obj-$(CONFIG_RTC_DRV_DS1511)	+= rtc-ds1511.o
-> diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
-> new file mode 100644
-> index 0000000..3c9a934
-> --- /dev/null
-> +++ b/drivers/rtc/rtc-ds1347.c
-> @@ -0,0 +1,175 @@
-> +/* rtc-ds1347.c
-> + *
-> + * Driver for Dallas Semiconductor DS1347 Low Current, SPI Compatible
-> + * Real Time Clock
-> + *
-> + * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + */
-> +
-> +#include <linux/init.h>
-> +#include <linux/module.h>
-> +#include <linux/device.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/rtc.h>
-> +#include <linux/spi/spi.h>
-> +#include <linux/bcd.h>
-> +
-> +/*Registers in ds1347 rtc*/
-> +
-> +#define DS1347_SECONDS_REG	0x01
-> +#define DS1347_MINUTES_REG	0x03
-> +#define DS1347_HOURS_REG	0x05
-> +#define DS1347_DATE_REG		0x07
-> +#define DS1347_MONTH_REG	0x09
-> +#define DS1347_DAY_REG		0x0B
-> +#define DS1347_YEAR_REG		0x0D
-> +#define DS1347_CONTROL_REG	0x0F
-> +#define DS1347_STATUS_REG	0x17
-> +#define DS1347_CLOCK_BURST	0x3F
-> +
-> +
-> +
-> +static int ds1347_read_reg(struct device *dev, unsigned char address,
-> +				unsigned char *data)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +
-> +	*data = address | 0x80;
-> +
-> +	return spi_write_then_read(spi, data, 1, data, 1);
-> +}
-> +
-> +static int ds1347_write_reg(struct device *dev, unsigned char address,
-> +				unsigned char data)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +	unsigned char buf[2];
-> +
-> +	buf[0] = address & 0x7F;
-> +	buf[1] = data;
-> +
-> +	return spi_write_then_read(spi, buf, 2, NULL, 0);
-> +}
-> +
-> +static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +	int err;
-> +	unsigned char buf[8];
-> +
-> +	buf[0] = DS1347_CLOCK_BURST | 0x80;
-> +
-> +	err = spi_write_then_read(spi, buf, 1, buf, 8);
-> +	if (err)
-> +		return err;
-> +
-> +	dt->tm_sec = bcd2bin(buf[0]);
-> +	dt->tm_min = bcd2bin(buf[1]);
-> +	dt->tm_hour = bcd2bin(buf[2] & 0x3F);
-> +	dt->tm_mday = bcd2bin(buf[3]);
-> +	dt->tm_mon = bcd2bin(buf[4]) - 1;
-> +	dt->tm_wday = bcd2bin(buf[5]) - 1;
-> +	dt->tm_year = bcd2bin(buf[6]) + 100;
-> +
-> +	return rtc_valid_tm(dt);
-> +}
-> +
-> +static int ds1347_set_time(struct device *dev, struct rtc_time *dt)
-> +{
-> +	struct spi_device *spi = to_spi_device(dev);
-> +	unsigned char buf[9];
-> +
-> +	buf[0] = DS1347_CLOCK_BURST & 0x7F;
-> +	buf[1] = bin2bcd(dt->tm_sec);
-> +	buf[2] = bin2bcd(dt->tm_min);
-> +	buf[3] = (bin2bcd(dt->tm_hour) & 0x3F);
-> +	buf[4] = bin2bcd(dt->tm_mday);
-> +	buf[5] = bin2bcd(dt->tm_mon + 1);
-> +	buf[6] = bin2bcd(dt->tm_wday + 1);
-> +
-> +	/*year in linux is from 1900 i.e in range of 100
-> +	in rtc it is from 00 to 99 so subtract
+here, as a patch too this time:
 
- please leave a space after /*
+=46rom 3ee6b74833f154df64a6164476b854846206a3f2 Mon Sep 17 00:00:00 2001
+=46rom: Felipe Balbi <balbi@ti.com>
+Date: Thu, 20 Mar 2014 13:20:10 -0500
+Subject: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
 
-> +	the linux year by 100*/
+LDISCs shouldn't call tty->ops->write() from within
+->write_wakeup().
 
- and before */
+->write_wakeup() is called with port lock taken and
+IRQs disabled, tty->ops->write() will try to acquire
+the same port lock and we will deadlock.
 
- (ditto for the other comments)
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/bluetooth/hci_ldisc.c | 20 +++++++++++++++-----
+ drivers/bluetooth/hci_uart.h  |  1 +
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-> +	if (dt->tm_year >= 100)
-> +		dt->tm_year -= 100;
-> +
-> +	buf[7] = bin2bcd(dt->tm_year);
-> +	buf[8] = bin2bcd(0x00);
-> +
-> +	/*write the rtc settings*/
-> +	return spi_write_then_read(spi, buf, 9, NULL, 0);
-> +}
-> +
-> +
-> +
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index 6e06f6f..ecdd765 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct =
+hci_uart *hu)
+=20
+ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ {
+-	struct tty_struct *tty =3D hu->tty;
+-	struct hci_dev *hdev =3D hu->hdev;
+-	struct sk_buff *skb;
+-
+ 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+ 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 		return 0;
+@@ -129,6 +125,18 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
+=20
+ 	BT_DBG("");
+=20
++	schedule_work(&hu->write_work);
++
++	return 0;
++}
++
++static void hci_uart_write_work(struct work_struct *work)
++{
++	struct hci_uart *hu =3D container_of(work, struct hci_uart, init_ready);
++	struct tty_struct *tty =3D hu->tty;
++	struct hci_dev *hdev =3D hu->hdev;
++	struct sk_buff *skb;
++
+ restart:
+ 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+=20
+@@ -153,7 +161,6 @@ restart:
+ 		goto restart;
+=20
+ 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+-	return 0;
+ }
+=20
+ static void hci_uart_init_work(struct work_struct *work)
+@@ -281,6 +288,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+ 	tty->receive_room =3D 65536;
+=20
+ 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
++	INIT_WORK(&hu->write_work, hci_uart_write_work);
+=20
+ 	spin_lock_init(&hu->rx_lock);
+=20
+@@ -318,6 +326,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 	if (hdev)
+ 		hci_uart_close(hdev);
+=20
++	cancel_work_sync(&hy->write_work);
++
+ 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+ 		if (hdev) {
+ 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+index fffa61f..12df101 100644
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -68,6 +68,7 @@ struct hci_uart {
+ 	unsigned long		hdev_flags;
+=20
+ 	struct work_struct	init_ready;
++	struct work_struct	write_work;
+=20
+ 	struct hci_uart_proto	*proto;
+ 	void			*priv;
+--=20
+1.9.1.286.g5172cb3
 
- extra white lines
 
-> +static const struct rtc_class_ops ds1347_rtc_ops = {
-> +	.read_time = ds1347_read_time,
-> +	.set_time = ds1347_set_time,
-> +};
-> +
-> +static int ds1347_probe(struct spi_device *spi)
-> +{
-> +	struct rtc_device *rtc;
-> +	unsigned char data;
-> +	int res;
-> +
-> +	/*spi setup with ds1347 in mode 3 and bits per word as 8*/
-> +	spi->mode = SPI_MODE_3;
-> +	spi->bits_per_word = 8;
-> +	spi_setup(spi);
-> +
-> +	/*RTC Settings*/
-> +
+--=20
+balbi
 
- unnecessary comment
+--CGDBiGfvSTbxKZlW
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +	/*check if spi read is successfull*/
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
- unnecessary comment, this is pretty clear
+iQIcBAEBAgAGBQJTKzKYAAoJEIaOsuA1yqREC7EQAJFT5/oRZkKd/rSs8NB8CMPU
+tR5WSxJdc1mAaHPrFPDq6jXPWI4O5dauUtCvNB4d/GIcM0kUuFLMpLGWLxVHZXze
+rmutr8Lh0dDFQcjnH5TkXFcWfctzD4k/IpxE5DRAJivz3GtYqtXGghb9/NoAQi8Q
+7R+NoDNQDO3KSGjF1PBTaCF3VQrQoVkb050tH0uj5RPOVsWfo2k8ra8+xkIHWXkm
+mx1hzfpNFygE//aliG1rWXoc7NqExZo4XUqjRAXUW6HtEYg69xSfxOAsiI+/ltwm
+lYvvdzZQbK5Ds8f6NKn5chqkVpAQm8LabmFKCsu1TKpPExRDgaA9/JkBRRcYAqK9
+NrcyIZEEVGzwv+5vLR7k5a08NEoS+o1W1JBkeEV7vF1EvWwvWUyRJBlJsPjGjBCK
+gDfQzekRgmovQtB6JYqsW1rCOYBLfGRaFVv2fP+WUJ98kdww55SxPXPUIk+wwB/H
+SA23Zwy96RsrXYlvX8dYOl4qCWAg+EoFYhjYvktGMMyqi5rq2N5asrlcy3tSo+BH
+2VUu0fRzgFij+TED7bs6nXRRs8v1msvSX6NLNKvZRXPIAWGbSHI9Q90ZzVupbBK9
+YT03BnuHMTv92bsiOe0UUhNxjObLDLsEkZKFqUVC/utC+9SAyF52BjTZWYn6oObN
+Bgg49FJgkPICNaxTDgmt
+=pIEh
+-----END PGP SIGNATURE-----
 
-> +	res = ds1347_read_reg(&spi->dev, DS1347_SECONDS_REG, &data);
-> +	if (res)
-> +		return res;
-> +
-> +	/*Disable the write protect of rtc*/
-> +	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-> +	data = data & ~(1<<7);
-> +	ds1347_write_reg(&spi->dev, DS1347_CONTROL_REG, data);
-> +
-> +	/*Enable the oscillator , disable the oscillator stop flag,
-> +	 and glitch filter to reduce current consumption*/
-> +	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-> +	data = data & 0x1B;
-> +	ds1347_write_reg(&spi->dev, DS1347_STATUS_REG, data);
-> +
-> +	/*display the settings*/
-> +	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-> +	dev_info(&spi->dev, "DS1347 RTC CTRL Reg = 0x%02x\n", data);
-> +
-> +	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-> +	dev_info(&spi->dev, "DS1347 RTC Status Reg = 0x%02x\n", data);
-> +
-> +	rtc = devm_rtc_device_register(&spi->dev, "ds1347",
-> +				&ds1347_rtc_ops, THIS_MODULE);
-> +
-> +	if (IS_ERR(rtc))
-> +		return PTR_ERR(rtc);
-> +
-> +	spi_set_drvdata(spi, rtc);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct spi_driver ds1347_driver = {
-> +	.driver = {
-> +		.name = "ds1347",
-> +		.owner = THIS_MODULE,
-> +	},
-> +	.probe = ds1347_probe,
-> +};
-> +
-> +module_spi_driver(ds1347_driver);
-> +
-> +MODULE_DESCRIPTION("DS1347 SPI RTC DRIVER");
-> +MODULE_AUTHOR("Raghavendra C Ganiga <ravi23ganiga@gmail.com>");
-> +MODULE_LICENSE("GPL");
-
- should be GPL v2
- as you declared in the comments at the top of the file.
-
--- 
-
- Best regards,
-
- Alessandro Zummo,
-  Tower Technologies - Torino, Italy
-
-  http://www.towertech.it
-
+--CGDBiGfvSTbxKZlW--
