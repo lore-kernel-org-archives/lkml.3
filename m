@@ -1,184 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754782AbaCTJZA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:25:00 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:50913 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757550AbaCTJWR (ORCPT
+	id S1756545AbaCTJZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:25:20 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42921 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaCTJZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:22:17 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 28/36] mtd: st_spi_fsm: Erase partly or as a whole a Serial Flash device
-Date: Thu, 20 Mar 2014 09:21:00 +0000
-Message-Id: <1395307268-12721-29-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 05:25:14 -0400
+Message-ID: <532AB3E7.3090503@linux.vnet.ibm.com>
+Date: Thu, 20 Mar 2014 14:54:55 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Daniel <amit.daniel@samsung.com>
+Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org> <532840FD.308@linux.vnet.ibm.com> <CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com> <53296870.5010505@linux.vnet.ibm.com> <CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com> <53298A7D.3080400@linux.vnet.ibm.com> <CAKohpon=VLfPiukzrtQOSVAQg-Z-Aq3+AkZ1myrE6XtVRMY8mQ@mail.gmail.com> <532AA7A8.3040508@linux.vnet.ibm.com> <CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com>
+In-Reply-To: <CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032009-9574-0000-0000-00000C886F99
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When an erase is requested by userspace the MTD framework calls back
-into the driver to conduct the actual command issue. Here we provide the
-routines which do exactly that. We can choose to either do an entire chip
-erase or by sector.
+On 03/20/2014 02:07 PM, Viresh Kumar wrote:
+> On 20 March 2014 14:02, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+>> index 199b52b..5283f10 100644
+>> --- a/drivers/cpufreq/cpufreq.c
+>> +++ b/drivers/cpufreq/cpufreq.c
+>> @@ -349,6 +349,39 @@ void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+>>  EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+>>
+>>
+>> +void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+>> +               struct cpufreq_freqs *freqs, unsigned int state)
+>> +{
+>> +wait:
+>> +       wait_event(&policy->transition_wait, !policy->transition_ongoing);
+>> +
+>> +       mutex_lock(&policy->transition_lock);
+>> +
+>> +       if (policy->transition_ongoing) {
+>> +               mutex_unlock(&policy->transition_lock);
+>> +               goto wait;
+>> +       }
+>> +
+>> +       policy->transition_ongoing = true;
+>> +
+>> +       mutex_unlock(&policy->transition_lock);
+>> +
+>> +       cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
+>> +}
+>> +
+>> +void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+>> +               struct cpufreq_freqs *freqs, unsigned int state)
+>> +{
+>> +       cpufreq_notify_transition(policy, freqs, CPUFREQ_POSTCHANGE);
+>> +
+>> +       mutex_lock(&policy->transition_lock);
+> 
+> Why do we need locking here? You explained that earlier :)
+> 
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 113 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 112 insertions(+), 1 deletion(-)
+Hmm.. I had thought of some complex race condition which would make
+tasks miss the wake-up event and sleep forever, and hence added
+the locking there to prevent that. But now that I think more closely,
+I'm not able to recall that race... I will give some more thought to
+it and if I can't find any loopholes in doing the second update to
+the ongoing flag without locks, then I'll post the patchset with
+that lockless version itself.
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 99e08b0..34aac3f 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -567,6 +567,27 @@ static struct stfsm_seq stfsm_seq_erase_sector = {
- 		    SEQ_CFG_STARTSEQ),
- };
+> Also, I would like to add this here:
+> 
+>     WARN_ON(policy->transition_ongoing);
+>
+
+Hmm? Won't it always be true? We are the ones who set that flag to
+true earlier, right? I guess you meant WARN_ON(!policy->transition_ongoing)
+perhaps? I'm not sure whether its really worth it, because it kinda looks
+obvious. Not sure what kind of bugs it would catch. I can't think of any
+such scenario :-(
  
-+static struct stfsm_seq stfsm_seq_erase_chip = {
-+	.seq_opc = {
-+		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		 SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-+
-+		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		 SEQ_OPC_OPCODE(FLASH_CMD_CHIPERASE) | SEQ_OPC_CSDEASSERT),
-+	},
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_CMD2,
-+		STFSM_INST_WAIT,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_ERASE |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
-+
- static struct stfsm_seq stfsm_seq_wrvcr = {
- 	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
- 		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-@@ -1217,6 +1238,47 @@ static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
- 	return 0;
- }
- 
-+static int stfsm_erase_sector(struct stfsm *fsm, const uint32_t offset)
-+{
-+	struct stfsm_seq *seq = &stfsm_seq_erase_sector;
-+	int ret;
-+
-+	dev_dbg(fsm->dev, "erasing sector at 0x%08x\n", offset);
-+
-+	/* Enter 32-bit address mode, if required */
-+	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
-+		stfsm_enter_32bit_addr(fsm, 1);
-+
-+	seq->addr1 = (offset >> 16) & 0xffff;
-+	seq->addr2 = offset & 0xffff;
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	/* Wait for completion */
-+	ret = stfsm_wait_busy(fsm);
-+
-+	/* Exit 32-bit address mode, if required */
-+	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
-+		stfsm_enter_32bit_addr(fsm, 0);
-+
-+	return ret;
-+}
-+
-+static int stfsm_erase_chip(struct stfsm *fsm)
-+{
-+	const struct stfsm_seq *seq = &stfsm_seq_erase_chip;
-+
-+	dev_dbg(fsm->dev, "erasing chip\n");
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return stfsm_wait_busy(fsm);
-+}
-+
- /*
-  * Write an address range to the flash chip.  Data must be written in
-  * FLASH_PAGESIZE chunks.  The address range may be any size provided
-@@ -1272,6 +1334,54 @@ out1:
- 	return ret;
- }
- 
-+/*
-+ * Erase an address range on the flash chip. The address range may extend
-+ * one or more erase sectors.  Return an error is there is a problem erasing.
-+ */
-+static int stfsm_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
-+{
-+	struct stfsm *fsm = dev_get_drvdata(mtd->dev.parent);
-+	u32 addr, len;
-+	int ret;
-+
-+	dev_dbg(fsm->dev, "%s at 0x%llx, len %lld\n", __func__,
-+		(long long)instr->addr, (long long)instr->len);
-+
-+	addr = instr->addr;
-+	len = instr->len;
-+
-+	mutex_lock(&fsm->lock);
-+
-+	/* Whole-chip erase? */
-+	if (len == mtd->size) {
-+		ret = stfsm_erase_chip(fsm);
-+		if (ret)
-+			goto out1;
-+	} else {
-+		while (len) {
-+			ret = stfsm_erase_sector(fsm, addr);
-+			if (ret)
-+				goto out1;
-+
-+			addr += mtd->erasesize;
-+			len -= mtd->erasesize;
-+		}
-+	}
-+
-+	mutex_unlock(&fsm->lock);
-+
-+	instr->state = MTD_ERASE_DONE;
-+	mtd_erase_callback(instr);
-+
-+	return 0;
-+
-+out1:
-+	instr->state = MTD_ERASE_FAILED;
-+	mutex_unlock(&fsm->lock);
-+
-+	return ret;
-+}
-+
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
-@@ -1529,8 +1639,9 @@ static int stfsm_probe(struct platform_device *pdev)
- 
- 	fsm->mtd._read  = stfsm_mtd_read;
- 	fsm->mtd._write = stfsm_mtd_write;
-+	fsm->mtd._erase = stfsm_mtd_erase;
- 
--	dev_err(&pdev->dev,
-+	dev_info(&pdev->dev,
- 		"Found serial flash device: %s\n"
- 		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
- 		info->name,
--- 
-1.8.3.2
+>> +       policy->transition_ongoing = false;
+>> +       mutex_unlock(&policy->transition_lock);
+>> +
+>> +       wake_up(&policy->transition_wait);
+>> +}
+> 
+
+Regards,
+Srivatsa S. Bhat
 
