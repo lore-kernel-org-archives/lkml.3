@@ -1,53 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759514AbaCTR2k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:28:40 -0400
-Received: from mailgw1.uni-kl.de ([131.246.120.220]:48031 "EHLO
-	mailgw1.uni-kl.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754731AbaCTR2i (ORCPT
+	id S1759521AbaCTR3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:29:19 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:52705 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990AbaCTR3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:28:38 -0400
-Message-ID: <532B2540.8050601@fastmail.fm>
-Date: Thu, 20 Mar 2014 18:28:32 +0100
-From: Bernd Schubert <bernd.schubert@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Thu, 20 Mar 2014 13:29:17 -0400
+Date: Thu, 20 Mar 2014 10:29:12 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, dwmw2@infradead.org,
+        galak@codeaurora.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk, rob@landley.net,
+        linux@arm.linux.org.uk, grygorii.strashko@ti.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-mtd@lists.infradead.org, Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [PATCH 2/3] mtd: davinci-nand: add dts property for
+ NAND_NO_SUBPAGE_WRITE option
+Message-ID: <20140320172912.GW31517@norris-Latitude-E6410>
+References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com>
+ <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com>
+ <532B2183.2080309@ti.com>
 MIME-Version: 1.0
-To: "Reddy, Sreekanth" <Sreekanth.Reddy@lsi.com>, jejb@kernel.org,
-        JBottomley@Parallels.com
-CC: linux-scsi@vger.kernel.org, Sathya.Prakash@lsi.com,
-        Nagalakshmi.Nandigama@lsi.com, linux-kernel@vger.kernel.org,
-        sreekanthreddy0547@gmail.com
-Subject: Re: [PATCH 02/11][SCSI]mpt2sas: Added new driver module Parameter
- disable_eedp to Disable EEDP Support
-References: <20140314153622.GA7947@lsi.com>
-In-Reply-To: <20140314153622.GA7947@lsi.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ITWM-CharSet: UTF-8
-X-ITWM-Scanned-By: mail1.itwm.fhg.de
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532B2183.2080309@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->   	u8		scsi_io_cb_idx;
-> diff --git a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-> index 7f0af4f..d502728 100644
-> --- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-> +++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-> @@ -127,6 +127,11 @@ static int disable_discovery = -1;
->   module_param(disable_discovery, int, 0);
->   MODULE_PARM_DESC(disable_discovery, " disable discovery ");
->
-> +/* Enable or disable EEDP support */
-> +static int disable_eedp;
-> +module_param(disable_eedp, uint, 0);
-> +MODULE_PARM_DESC(disable_eedp, " disable EEDP support: (default=0)");
+On Thu, Mar 20, 2014 at 01:12:35PM -0400, Santosh Shilimkar wrote:
+> Boris,
 
-Wouldn't it make sense to exlain what EEDP means? Something like
+Who's Boris? And why should Boris be taking this patch? It's an MTD
+patch.
 
-MODULE_PARM_DESC(disable_eedp,
-		" disable end-to-end data protection support (DIF): "
-		"default=0)");
+> On Thursday 20 March 2014 01:06 PM, Ivan Khoronzhuk wrote:
+> > From: Murali Karicheri <m-karicheri2@ti.com>
+> > 
+> > After testing NAND flash with ubifs for k2hk-emv board were committed
+> > that flash doesn't support subpage writing, so we can fix it by
+> > adding a property to disable subpage write.
 
+What flash? We try to autodetect NAND as much as possible. Perhaps we
+should be adding infrastructure support instead of hacking it with a DT
+property.
 
+> > Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> > Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> > ---
+> Can you please pick this up for 3.15 fixes ? Ofcourse assuming DT folks
+> are ok with the patch.
+> 
+> I can then take patch 1/3 and 3/3 in my 3.15 fixes queue.
+> 
+> >  Documentation/devicetree/bindings/mtd/davinci-nand.txt | 2 ++
+> >  drivers/mtd/nand/davinci_nand.c                        | 3 +++
+> >  2 files changed, 5 insertions(+)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+> > index cfb18ab..50af930 100644
+> > --- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+> > +++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
+> > @@ -53,6 +53,8 @@ Recommended properties :
+> >  				identifier is saved in OOB area. If not present
+> >  				false.
+> >  
+> > +- ti,davinci-nosubpage-write:	disable subpage write for the device
 
+If we really need the DT property, I'd prefer a generic
+"nand-numer-of-partial-programs" or something like that, and if it's
+equal to 1, then the flash doesn't support partial page programming.
+
+But I'd prefer not to encode that in DT if possible.
+
+> >  Deprecated properties:
+> >  
+> >  - ti,davinci-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
+> > diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
+> > index 4615d79..3ba058d 100644
+> > --- a/drivers/mtd/nand/davinci_nand.c
+> > +++ b/drivers/mtd/nand/davinci_nand.c
+> > @@ -581,6 +581,9 @@ static struct davinci_nand_pdata
+> >  		    of_property_read_bool(pdev->dev.of_node,
+> >  			"ti,davinci-nand-use-bbt"))
+> >  			pdata->bbt_options = NAND_BBT_USE_FLASH;
+> > +		if (of_property_read_bool(pdev->dev.of_node,
+> > +			"ti,davinci-no-subpage-write"))
+> > +			pdata->options |= NAND_NO_SUBPAGE_WRITE;
+> >  	}
+> >  
+> >  	return dev_get_platdata(&pdev->dev);
+> > 
+> 
+
+Brian
