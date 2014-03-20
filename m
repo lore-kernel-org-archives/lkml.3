@@ -1,91 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaCTOnu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:43:50 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:42994 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932438AbaCTOns (ORCPT
+	id S964851AbaCTOoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:44:46 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10546 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933849AbaCTOon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:43:48 -0400
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, eddie.wai@broadcom.com,
-        paulmck@linux.vnet.ibm.com
-Subject: [PATCH 5/9] net/wireless: Replace rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL) in drivers/net/wireless/ath/carl9170/main.c
-Date: Thu, 20 Mar 2014 20:12:54 +0530
-Message-Id: <09e2af73056d815f34152f1ebfd45b52d7aa2ff9.1395324808.git.monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <01911c3cccbcd3916e0c29854d289187507f7746.1395324808.git.monamagarwal123@gmail.com>
-References: <01911c3cccbcd3916e0c29854d289187507f7746.1395324808.git.monamagarwal123@gmail.com>
-In-Reply-To: <cover.1395324808.git.monamagarwal123@gmail.com>
-References: <cover.1395324808.git.monamagarwal123@gmail.com>
+	Thu, 20 Mar 2014 10:44:43 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-52-532afed91a29
+Message-id: <532AFED3.5030103@samsung.com>
+Date: Thu, 20 Mar 2014 15:44:35 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Josh Wu <josh.wu@atmel.com>
+Cc: g.liakhovetski@gmx.de, m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [media] ov2640: add support for async device registration
+References: <1394791952-12941-1-git-send-email-josh.wu@atmel.com>
+ <532371F4.9050509@gmail.com> <53296094.3060209@atmel.com>
+In-reply-to: <53296094.3060209@atmel.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsVy+t/xa7o3/2kFG7Tv5LV4v3Eek8Wuxt+s
+	Fpd3zWGz6NmwldXi4jp5B1aPBb+2snh8+Bjn0bdlFaPH501yASxRXDYpqTmZZalF+nYJXBm7
+	F1xlLJjJVbFk12XGBsZJHF2MnBwSAiYSm99sYoWwxSQu3FvP1sXIxSEksJRRYs7D74wQzidG
+	iYfLn7OBVPEKaEns+HEVzGYRUJX4eHkHWDebgKFE79E+RhBbVCBCYu7EzVD1ghI/Jt9jAbFF
+	BOQlZl84BWYzC+RIvG1rZAexhQX8JH7+uwhWLyRQK/F19l+wGk4BTYm9U5YwQdTrSOxvncYG
+	YctLbF7zlnkCo8AsJCtmISmbhaRsASPzKkbR1NLkguKk9FxDveLE3OLSvHS95PzcTYyQIP6y
+	g3HxMatDjAIcjEo8vCv2aAYLsSaWFVfmHmKU4GBWEuG1e64VLMSbklhZlVqUH19UmpNafIiR
+	iYNTqoHRxPBBftIUzidz+KarWy3t2ldxmFPn0wPLDpvzPLI9vXsdS9ITe6Z6i7UtTFkZddxF
+	YE7buc+M/sGfNJnX+hsVz8hLPKDOvo+tuGXHgw2hzOXf2/ytXdVmnbjQq+o9PTlTbEFPjrL/
+	pQ8XGDsOXNY4avzy2NLz6k4VIUeE5PcWz1jz1lGwoEGJpTgj0VCLuag4EQC2ruvFQAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
- drivers/net/wireless/ath/carl9170/main.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+Hi Josh,
 
-diff --git a/drivers/net/wireless/ath/carl9170/main.c b/drivers/net/wireless/ath/carl9170/main.c
-index f06e069..5518592 100644
---- a/drivers/net/wireless/ath/carl9170/main.c
-+++ b/drivers/net/wireless/ath/carl9170/main.c
-@@ -446,7 +446,7 @@ static void carl9170_op_stop(struct ieee80211_hw *hw)
- 
- 	mutex_lock(&ar->mutex);
- 	if (IS_ACCEPTING_CMD(ar)) {
--		rcu_assign_pointer(ar->beacon_iter, NULL);
-+		RCU_INIT_POINTER(ar->beacon_iter, NULL);
- 
- 		carl9170_led_set_state(ar, 0);
- 
-@@ -678,7 +678,7 @@ unlock:
- 		vif_priv->active = false;
- 		bitmap_release_region(&ar->vif_bitmap, vif_id, 0);
- 		ar->vifs--;
--		rcu_assign_pointer(ar->vif_priv[vif_id].vif, NULL);
-+		RCU_INIT_POINTER(ar->vif_priv[vif_id].vif, NULL);
- 		list_del_rcu(&vif_priv->list);
- 		mutex_unlock(&ar->mutex);
- 		synchronize_rcu();
-@@ -716,7 +716,7 @@ static void carl9170_op_remove_interface(struct ieee80211_hw *hw,
- 	WARN_ON(vif_priv->enable_beacon);
- 	vif_priv->enable_beacon = false;
- 	list_del_rcu(&vif_priv->list);
--	rcu_assign_pointer(ar->vif_priv[id].vif, NULL);
-+	RCU_INIT_POINTER(ar->vif_priv[id].vif, NULL);
- 
- 	if (vif == main_vif) {
- 		rcu_read_unlock();
-@@ -1258,7 +1258,7 @@ static int carl9170_op_sta_add(struct ieee80211_hw *hw,
- 		}
- 
- 		for (i = 0; i < CARL9170_NUM_TID; i++)
--			rcu_assign_pointer(sta_info->agg[i], NULL);
-+			RCU_INIT_POINTER(sta_info->agg[i], NULL);
- 
- 		sta_info->ampdu_max_len = 1 << (3 + sta->ht_cap.ampdu_factor);
- 		sta_info->ht_sta = true;
-@@ -1285,7 +1285,7 @@ static int carl9170_op_sta_remove(struct ieee80211_hw *hw,
- 			struct carl9170_sta_tid *tid_info;
- 
- 			tid_info = rcu_dereference(sta_info->agg[i]);
--			rcu_assign_pointer(sta_info->agg[i], NULL);
-+			RCU_INIT_POINTER(sta_info->agg[i], NULL);
- 
- 			if (!tid_info)
- 				continue;
-@@ -1398,7 +1398,7 @@ static int carl9170_op_ampdu_action(struct ieee80211_hw *hw,
- 			spin_unlock_bh(&ar->tx_ampdu_list_lock);
- 		}
- 
--		rcu_assign_pointer(sta_info->agg[tid], NULL);
-+		RCU_INIT_POINTER(sta_info->agg[tid], NULL);
- 		rcu_read_unlock();
- 
- 		ieee80211_stop_tx_ba_cb_irqsafe(vif, sta->addr, tid);
--- 
-1.7.9.5
+On 19/03/14 10:17, Josh Wu wrote:
+> On 3/15/2014 5:17 AM, Sylwester Nawrocki wrote:
+>> > On 03/14/2014 11:12 AM, Josh Wu wrote:
+>>> >> +    clk = v4l2_clk_get(&client->dev, "mclk");
+>>> >> +    if (IS_ERR(clk))
+>>> >> +        return -EPROBE_DEFER;
+>> >
+>> > You should instead make it:
+>> >
+>> >         return PTR_ERR(clk);
+>> >
+>> > But you will need this patch for that to work:
+>> > http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/clk/clk.c?id=a34cd4666f3da84228a82f70c94b8d9b692034ea 
+>> >
+>> >
+>> > With this patch there is no need to overwrite any returned error
+>> > value with EPROBE_DEFER.
+>
+> Thanks for the information. I will use this in v2 version.
 
+Oops, I missed somehow that it's v4l2_clk_get(), rather than
+clk_get(). So it seems it will not work when you return PTR_ERR(clk),
+since v4l2_clk_get() returns -ENODEV when clock is not found.
+I think we should modify v4l2_clk_get() so it returns EPROBE_DEFER
+rather than ENODEV on error. I anticipate v4l2_clk_get() might be
+using clk_get() internally in future, and the v4l2 clk look up
+will be used as a fallback only. So sensor drivers should just
+do something like:
+
+ clk = v4l2_clk_get(...);
+ if (IS_ERR(clk))
+	return PTR_ERR(clk);
+
+--
+Regards,
+Sylwester
