@@ -1,67 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759301AbaCTQgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:36:00 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:34375 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757481AbaCTQf7 (ORCPT
+	id S1759326AbaCTQga (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:36:30 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:43197 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757067AbaCTQg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:35:59 -0400
-Date: Thu, 20 Mar 2014 17:35:53 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Imre Deak <imre.deak@intel.com>
-Cc: sagar.a.kamble@intel.com, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx@lists.freedesktop.org, "G, Pallavi" <pallavi.g@intel.com>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH v4 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB
- Cursor Support
-Message-ID: <20140320163553.GU30571@phenom.ffwll.local>
-Mail-Followup-To: Imre Deak <imre.deak@intel.com>, sagar.a.kamble@intel.com,
-	intel-gfx@lists.freedesktop.org, "G, Pallavi" <pallavi.g@intel.com>,
-	linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-References: <20140310100321.GA30571@phenom.ffwll.local>
- <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
- <1395329443.17233.10.camel@intelbox>
+	Thu, 20 Mar 2014 12:36:28 -0400
+Date: Thu, 20 Mar 2014 11:34:35 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Marcel Holtmann <marcel@holtmann.org>, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: Muralidharan Karicheri <m-karicheri2@ti.com>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: hci_ldsic nested locking problem
+Message-ID: <20140320163435.GH32692@saruman.home>
+Reply-To: <balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="RwGu8mu1E+uYXPWP"
 Content-Disposition: inline
-In-Reply-To: <1395329443.17233.10.camel@intelbox>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 05:30:43PM +0200, Imre Deak wrote:
-> On Mon, 2014-03-10 at 17:06 +0530, sagar.a.kamble@intel.com wrote:
-> > From: Sagar Kamble <sagar.a.kamble@intel.com>
-> > 
-> > With this patch we allow larger cursor planes of sizes 128x128
-> > and 256x256.
-> > 
-> > v2: Added more precise check on size while setting cursor plane.
-> > 
-> > v3: Changes related to restructuring cursor size restrictions
-> > and DRM_DEBUG usage.
-> > 
-> > v4: Indentation related changes for setting cursor control and
-> > implementing DRM_CAP_CURSOR_WIDTH and DRM_CAP_CURSOR_HEIGHT
-> > 
-> > Testcase: igt/kms_cursor_crc
-> > Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Cc: Jani Nikula <jani.nikula@linux.intel.com>
-> > Cc: David Airlie <airlied@linux.ie>
-> > Cc: dri-devel@lists.freedesktop.org
-> > Cc: linux-kernel@vger.kernel.org
-> > Signed-off-by: G, Pallavi <pallavi.g@intel.com>
-> > Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
-> 
-> Looks ok:
-> Reviewed-by: Imre Deak <imre.deak@intel.com>
+--RwGu8mu1E+uYXPWP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Queued for -next, thanks for the patch.
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Hi,
+
+when 8250 driver calls uart_write_wakeup(), the tty port lock is already
+taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+tty->ops->write() to actually send the characters, but that call will
+try to acquire the same port lock again.
+
+Looking at other line disciplines that looks like a bug in hci_ldisc.c.
+Am I correct to assume that ->write_wakeup() is supposed to *just*
+wakeup the bottom half so we handle ->write() in another context ?
+
+Is it legal to call tty->ops->write() from within ->write_wakeup() ?
+
+cheers
+
+--=20
+balbi
+
+--RwGu8mu1E+uYXPWP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTKxibAAoJEIaOsuA1yqREQ6wP/Rki7213nleViEF4e2iQPoiX
+Phn2KyCf70Mbly1abtLR9ilIqs4iebRg+VOowU2/64d6+SiiOzPupDlJRIrikHvR
+BT4gZB7YTQiUgYteO21vlIEKUBxRTr8ntujA6p+v0NOZqJv/BNcLcGuR8e774+fe
+j97ZcFlx+hbEb9q608bD5XbkGXftXBhhFx+llbM5AAK/ffDzFwwp9EgYzjSO4M0I
+lpIInSuT7NvOShU63Jx642D5BG2n1F5A6NgZacKGhXIC0FSJjHPN6eo1vNYPcqGe
+ubM8MgF/RbDrqJS7c0BRnr3qFvYah0NYeS0sEkWKcTlmXK8JX8fIXw+7+e49WaE1
+fc2ccmfJWfNneB1/kRfTZgt3Pxi6iwS2GzMrXKEelpI2BLrnhpm2Ew5TQmMaIfw3
+WLySiAtZG6zWuqxHzbAOUu8vMdH+NRxFRvTUhYXiSSJhUxQIrYL2IeOG3vecTkYQ
+4bRXLnK0OOCPPKC95IA3RyFP26rb4uMOYU+t/lbU5OD24L0mzwFAGl7i8AfoYTAy
+s3BywhZA5joQTqDKXDVQ9agz4VmiIG5tLcp1WPEMXRwS6/BRM/DI4oRRfKfjKpLB
+jLcGurJjdt04I7irLBMksVdMPqMRWn3b3ZgEGlJffEcxC4V9r2IPH8Pi9C4ccKTH
+17CbvpZMUjSUZoDkbPZT
+=eLjS
+-----END PGP SIGNATURE-----
+
+--RwGu8mu1E+uYXPWP--
