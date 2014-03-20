@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933771AbaCTPXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:23:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52801 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933546AbaCTPXO (ORCPT
+	id S964822AbaCTPXq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:23:46 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:57873 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932383AbaCTPXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:23:14 -0400
-Date: Thu, 20 Mar 2014 16:23:07 +0100
-From: Robert Schwebel <r.schwebel@pengutronix.de>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Liam Girdwood <lgirdwood@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC V2] mfd: da9063: Add support for production silicon variant
- code
-Message-ID: <20140320152307.GR1629@pengutronix.de>
-References: <201402141506.s1EF6iYr002690@swsrvapps-01.diasemi.com>
- <20140214164319.GB30687@lee--X1>
- <1394807833.3710.57.camel@paszta.hi.pengutronix.de>
- <6ED8E3B22081A4459DAC7699F3695FB7A18F5A46@SW-EX-MBX02.diasemi.com>
+	Thu, 20 Mar 2014 11:23:12 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [patch 08/26] arm: Replace various irq_desc accesses
+Date: Thu, 20 Mar 2014 16:22:27 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        omap <linux-omap@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ingo Molnar <mingo@elte.hu>, Shawn Guo <shawn.guo@linaro.org>
+References: <20140223212703.511977310@linutronix.de> <20140223212737.099151500@linutronix.de>
+In-Reply-To: <20140223212737.099151500@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6ED8E3B22081A4459DAC7699F3695FB7A18F5A46@SW-EX-MBX02.diasemi.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 16:18:24 up 208 days, 49 min, 54 users,  load average: 1,38, 0,80,
- 0,40
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
-X-SA-Exim-Mail-From: rsc@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403201622.27725.arnd@arndb.de>
+X-Provags-ID: V02:K0:pIYNtCmO0vlBeyjiKOKBi00NJMv8RHxMqUHTSl6fO0d
+ jPTk42tcZfbR5dAENqWRPmT9pd159vGcodDqQ83u3N5BdkATdV
+ FvADsyXALexz2tMLVU+CdyBdW9+97zHJsKDDNVxNutwRk9G06k
+ AaV4nkBDySCCWlSSsxuc7gJIsPw+YA2rvaYy+iV0L1sRpwtNKV
+ e1I1w6/FGaPssfnZo+VCxhRnrNCC2cT07dQ27AYW4BOtw79E2y
+ FwogHzepwHc/ECswv1jrC/lVGEA3ma9HG+6MKMCYWue5xjN5PV
+ ld/WrT9EiOLk16pQCoBsSoKGrhkWUY5qPgzM9jqkisdlj8DGSK
+ BnrJ8C9JXA8Hly18P57Aq2R93khUtGNs+SxKPhHPu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+On Sunday 23 February 2014, Thomas Gleixner wrote:
+> --- tip.orig/arch/arm/mach-omap1/ams-delta-fiq.c
+> +++ tip/arch/arm/mach-omap1/ams-delta-fiq.c
+> @@ -44,13 +44,10 @@ static unsigned int irq_counter[16];
+>  
+>  static irqreturn_t deferred_fiq(int irq, void *dev_id)
+>  {
+> -       struct irq_desc *irq_desc;
+> -       struct irq_chip *irq_chip = NULL;
+>         int gpio, irq_num, fiq_count;
+> +       struct irq_chip *irq_chip;
+>  
+> -       irq_desc = irq_to_desc(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
+> -       if (irq_desc)
+> -               irq_chip = irq_desc->irq_data.chip;
+> +       irq_chip = irq_get_irq_chip(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
 
-On Wed, Mar 19, 2014 at 05:14:54PM +0000, Opensource [Steve Twiss] wrote:
-> > > > > This patch will remove the older variant code ID which matches the
-> > > > > pre-production silicon ID (0x3) for the DA9063 chip.
+I got a compile error because irq_get_irq_chip() doesn't exist. I suppose
+you meant irq_get_chip.
 
-[...]
-
-> > > we have a few i.MX6 Modules (imx6q-phytec-pfla02) with DA9063 PMICs that
-> > > all report the model/revision ID as 0x61/0x03. Those are marked as
-> > > follows:
-> > >    dialog DA9063 44 1240EHDA
-> > >    dialog DA9063 44 1312ECAF
-> > >
-> > > We now have received a report from Phytec that those PMICs were not
-> > > marketed as preproduction in any way, but as a normal mask revision.
-> > > Their Dialog Semiconductor contact talked about AD, BA, and BB silicon
-> > > variants. How do those relate to the variant register value and to the
-> > > markings on the chips?
-> > >
-> > > There seems to be a serious miscommunication somewhere.
-
-[...]
-
-> Phytec informs us that you already asked them for this and have
-> confirmed that you should have all necessary information now
-
-No, it's completely unclear:
-
-a) You said above that the 0x3 silicon is pre-production and thus you
-   removed that from the kernel.
-
-b) Phytec says you didn't mark the PMICs as preproduction in any way.
-
-The question is still, which one is correct? If a), I'm wondering why
-Phytec didn't get that information. If b), the 0x3 variant must not be
-removed from the kernel.
-
-Could you clarify that?
-
-rsc
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+	Arnd
