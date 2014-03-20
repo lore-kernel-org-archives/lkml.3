@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894AbaCTJji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:39:38 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:47619 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757821AbaCTJje (ORCPT
+	id S1757951AbaCTJjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:39:44 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:39802 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821AbaCTJjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:39:34 -0400
-Subject: [PATCH 03/33] Process Status
+	Thu, 20 Mar 2014 05:39:40 -0400
+Subject: [PATCH 04/33] Hold threads
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
@@ -21,8 +21,8 @@ Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
         eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
         tj@kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:09:25 +0530
-Message-ID: <20140320093925.14878.81715.stgit@localhost.localdomain>
+Date: Thu, 20 Mar 2014 15:09:31 +0530
+Message-ID: <20140320093931.14878.89112.stgit@localhost.localdomain>
 In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
 References: <20140320093040.14878.903.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -31,163 +31,284 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-5816-0000-0000-00000CF3D632
+x-cbid: 14032009-4790-0000-0000-0000003F25C3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fetch the process status from /proc/pid/stat as it will be required for the dump.
+Getting number of threads and their respective IDs through /proc/pid/stat and
+/proc/pid/task.
 
-Signed-off-by: Suzuki K. Poulose <suzuki@in.ibm.com>
+The threads are then seized and interrupted. After the dump is taken they are
+detached.
+
 Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 ---
- src/Makefile.am |    2 +
- src/coredump.c  |    4 +++
- src/coredump.h  |   13 ++++++++
- src/proc.c      |   86 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 104 insertions(+), 1 deletion(-)
- create mode 100644 src/coredump.h
- create mode 100644 src/proc.c
+ src/coredump.c |  149 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/coredump.h |   10 ++++
+ src/proc.c     |   52 ++++++++++++++++++++
+ 3 files changed, 210 insertions(+), 1 deletion(-)
 
-diff --git a/src/Makefile.am b/src/Makefile.am
-index f7b25fa..9e5d3c0 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
-@@ -3,5 +3,5 @@ HAVE_SYSTEMD_SOCKET_SUPPORT = 0
- CFLAGS += -I. -DHAVE_SYSTEMD_SOCKET_SUPPORT='$(HAVE_SYSTEMD_SOCKET_SUPPORT)'
- 
- bin_PROGRAMS = gencore
--gencore_SOURCES = coredump.c
-+gencore_SOURCES = coredump.c proc.c
- 
 diff --git a/src/coredump.c b/src/coredump.c
-index 7a7fe11..ad9ee7d 100644
+index ad9ee7d..dd9089f 100644
 --- a/src/coredump.c
 +++ b/src/coredump.c
-@@ -26,10 +26,14 @@
+@@ -26,6 +26,9 @@
  #include <stdio.h>
  #include <string.h>
  #include <stdlib.h>
-+#include <coredump.h>
++#include <dirent.h>
++#include <errno.h>
++#include <sys/ptrace.h>
+ #include <coredump.h>
  
  /* For logging all the messages */
- FILE *fp_log;
+@@ -43,10 +46,154 @@ void gencore_log(char *fmt, ...)
+ 	va_end(argptr);
+ }
  
-+/* Status of the dump */
-+int status;
++/* Core process object */
++struct core_proc cp;
 +
- /* Logging messages */
- void gencore_log(char *fmt, ...)
++/* Initialised core process members */
++void init_core(void)
++{
++	memset(&cp, 0, sizeof(struct core_proc));
++}
++
++/* Gets the Thread IDS and siezes them */
++int seize_threads(int pid)
++{
++	char filename[40];
++	DIR *dir;
++	int ct = 0, ret = 0, tmp_tid;
++	struct dirent *entry;
++	char state;
++
++	ret = get_thread_count(pid);
++	if (ret == -1)
++		return -1;
++
++	cp.thread_count = ret;
++	cp.t_id = calloc(cp.thread_count, sizeof(int));
++	if (!cp.t_id) {
++		status = errno;
++		gencore_log("Could not allocate memory for thread_ids.\n");
++		return -1;
++	}
++
++	snprintf(filename, 40, "/proc/%d/task", pid);
++	dir = opendir(filename);
++
++	while ((entry = readdir(dir))) {
++		if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
++			tmp_tid = atoi(entry->d_name);
++			ret = ptrace(PTRACE_SEIZE, tmp_tid, 0, 0);
++			if (ret) {
++				state = get_thread_status(tmp_tid);
++				if (state == 'Z')
++					goto assign;
++				status = errno;
++				gencore_log("Could not seize thread: %d\n",
++								tmp_tid);
++				break;
++			}
++			ret = ptrace(PTRACE_INTERRUPT, tmp_tid, 0, 0);
++			if (ret) {
++				state = get_thread_status(tmp_tid);
++				if (state == 'Z')
++					goto assign;
++				status = errno;
++				gencore_log("Could not interrupt thread: %d\n",
++								tmp_tid);
++				break;
++			}
++assign:
++			/* If a new thread, is created after we fetch the thread_count,
++			 * we may encounter a buffer overflow situation in the cp_tid.
++			 * Hence we check this case and re-allocate memory if required.
++			 */
++			cp.t_id[ct++] = tmp_tid;
++		}
++	}
++
++	/* Reassigning based on successful seizes */
++	cp.thread_count = ct;
++
++	closedir(dir);
++
++	/* Successful seize and interrupt on all threads makes ret = 0 */
++	return ret;
++}
++
++/* Wait for threads to stop */
++int wait_for_threads_to_stop(void)
++{
++	int i;
++	char state;
++
++	/*
++	 * We check for the process to stop infinitely now. We need
++	 * to break out after some definite time. Need to work on
++	 * that.
++	 */
++	for (i = 0; i < cp.thread_count; i++) {
++		do {
++			state = get_thread_status(cp.t_id[i]);
++			if (state != 't')
++				sched_yield();
++		} while (state != 't' && state!='Z' && state != -1);
++		if (state == -1)
++			return -1;
++	}
++
++	return 0;
++}
++
++/* Release the threads that are held */
++int release_threads(void)
++{
++	int i, ret = 0;
++	char state;
++
++	/* Detach the process to be dumped */
++	for (i = 0; i < cp.thread_count; i++) {
++		state = get_thread_status(cp.t_id[i]);
++		if (state == 't') {
++			ret += ptrace(PTRACE_DETACH, cp.t_id[i], 0, 0);
++			if (ret)
++				gencore_log("Could not detach from thread: %d\n",
++								cp.t_id[i]);
++		}
++	}
++
++	/* Successful detach on all threads makes ret = 0 */
++	return ret;
++}
++
+ /* Performs the core dump */
+ int do_coredump(int pid, char *core_file)
  {
+-	return 0;
++	int ret;
++
++	/* Initialise members of core process */
++	init_core();
++
++	/* Getting thread information and seizing them */
++	ret = seize_threads(pid);
++	if (ret)
++		goto cleanup;
++
++	/* Wait for threads to stop */
++	ret = wait_for_threads_to_stop();
++	if (ret)
++		goto cleanup;
++
++cleanup:
++
++	/* Release the threads */
++	release_threads();
++
++	if (cp.t_id)
++		free(cp.t_id);
++
++	errno = status;
++
++	return ret;
+ }
+ 
+ /* Daemon for self dump */
 diff --git a/src/coredump.h b/src/coredump.h
-new file mode 100644
-index 0000000..cc77197
---- /dev/null
+index cc77197..00cb008 100644
+--- a/src/coredump.h
 +++ b/src/coredump.h
-@@ -0,0 +1,13 @@
-+#define COMM_LEN 17            /* Maximum length of command line */
-+#define NUM_STAT_FEILDS 30     /* Number of fields read from /proc/pid/stat */
+@@ -1,6 +1,10 @@
+ #define COMM_LEN 17            /* Maximum length of command line */
+ #define NUM_STAT_FEILDS 30     /* Number of fields read from /proc/pid/stat */
+ 
++#define THREAD_COUNT_IDX 16	/* Index for number of threads */
 +
-+/* Status of the dump */
-+extern int status;
++#define __ps_thread_count ps_num[THREAD_COUNT_IDX]	/* Process Information */
 +
-+/* Structure for Status of process */
-+struct pid_stat {
-+	int ps_pid;
-+	char ps_comm[COMM_LEN];
-+	char ps_state;
-+	unsigned long long ps_num[NUM_STAT_FEILDS];
+ /* Status of the dump */
+ extern int status;
+ 
+@@ -11,3 +15,9 @@ struct pid_stat {
+ 	char ps_state;
+ 	unsigned long long ps_num[NUM_STAT_FEILDS];
+ };
++
++/* Structure for the Core of the Process */
++struct core_proc {
++	int thread_count;		/* Number of threads */
++	int *t_id;			/* Threads_ids of all the threads */
 +};
 diff --git a/src/proc.c b/src/proc.c
-new file mode 100644
-index 0000000..6c9e804
---- /dev/null
+index 6c9e804..fc16d90 100644
+--- a/src/proc.c
 +++ b/src/proc.c
-@@ -0,0 +1,86 @@
-+/*
-+ * /proc/ helper routines for gencore
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2013
-+ *
-+ * Authors:
-+ *      Janani Venkataraman <jananve@in.ibm.com>
-+ *      Suzuki K. Poulose <suzuki@in.ibm.com>
-+ */
+@@ -24,6 +24,7 @@
+ 
+ #include <stdio.h>
+ #include <errno.h>
++#include <stdlib.h>
+ #include <coredump.h>
+ 
+ /* Get Process Stats */
+@@ -84,3 +85,54 @@ err:
+ 	fclose(fin);
+ 	return ret;
+ }
 +
-+#include <stdio.h>
-+#include <errno.h>
-+#include <coredump.h>
-+
-+/* Get Process Stats */
-+int get_pid_stat(int pid, struct pid_stat *ps)
++/* Counts the number of threads in the process */
++int get_thread_count(int pid)
 +{
-+	int ret = -1, i;
-+	char junk;
-+	char filename[40];
-+	FILE *fin;
++	struct pid_stat p;
++	int ret;
 +
-+	snprintf(filename, 40, "/proc/%d/stat", pid);
++	ret = get_pid_stat(pid, &p);
++	if (ret)
++		return -1;
++
++	return p.__ps_thread_count;
++}
++
++/* Fetched thread status */
++char get_thread_status(int tid)
++{
++	int ret;
++	char filename[40], buff[40];
++	FILE *fin;
++	char *pos;
++
++	snprintf(filename, 40, "/proc/%d/stat", tid);
 +	fin = fopen(filename, "r");
 +	if (fin == NULL) {
 +		status = errno;
-+		gencore_log("Failure while fetching thread status from %s.\n",
++		gencore_log("Failure while fetching thread state from %s.\n",
 +								filename);
 +		return -1;
 +	}
 +
-+	/* Read pid */
-+	fscanf(fin, "%d", &ps->ps_pid);
-+
-+	/* Skip till '(' */
-+	while (fscanf(fin, "%c", &junk) != EOF && junk != '(');
-+	if (junk != '(')  {
++	ret = fread(buff, 40, 1, fin);
++	if (ret == 0) {
 +		status = errno;
-+		gencore_log("Failure while fetching thread status from %s.\n",
++		gencore_log("Failure while fetching thread state from %s.\n",
 +								filename);
-+		goto err;
++		return -1;
 +	}
 +
-+	/* Read Command Line */
-+	fscanf(fin, "%[^)]", ps->ps_comm);
-+
-+	/* Skip the ')' */
-+	while (fscanf(fin, "%c", &junk) != EOF && junk != ')');
-+	if (junk != ')')  {
++	pos = strrchr(buff, ')');
++	if (pos == NULL) {
 +		status = errno;
-+		gencore_log("Failure while fetching thread status from %s.\n",
++		gencore_log("Failure while fetching thread state from %s.\n",
 +								filename);
-+		goto err;
++		return -1;
 +	}
 +
-+	/* Reading the space */
-+	fscanf(fin, "%c", &junk);
-+
-+	/* State */
-+	fscanf(fin, "%c", &ps->ps_state);
-+
-+	/* Read the rest of the fields */
-+	for (i = 0; i < NUM_STAT_FEILDS &&
-+			(fscanf(fin, "%lld", &ps->ps_num[i]) != EOF); i++);
-+
-+	if (i == NUM_STAT_FEILDS)
-+		ret = 0;
-+
-+err:
 +	fclose(fin);
-+	return ret;
++
++	return buff[pos - buff + 2];
 +}
 
