@@ -1,150 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451AbaCTG0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 02:26:40 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:38765 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751115AbaCTG0i (ORCPT
+	id S1751428AbaCTGjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 02:39:41 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56997 "EHLO
+	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaCTGjk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 02:26:38 -0400
-From: <jiel@marvell.com>
-To: <akpm@linux-foundation.org>, <joe@perches.com>, <tj@kernel.org>,
-        <fweisbec@gmail.com>, <paul.gortmaker@windriver.com>,
-        <keescook@chromium.org>
-CC: <linux-kernel@vger.kernel.org>, <jiel@marvell.com>
-Subject: [PATCH v2] printk: fix one circular lockdep warning about console_lock
-Date: Thu, 20 Mar 2014 14:26:12 +0800
-Message-ID: <1395296772-27087-1-git-send-email-jiel@marvell.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-20_02:2014-03-19,2014-03-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403190206
+	Thu, 20 Mar 2014 02:39:40 -0400
+X-AuditID: 9c93017d-b7ceaae000000e36-ad-532a8d29b1d4
+From: Minchan Kim <minchan@kernel.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Jason Evans <je@fb.com>, Minchan Kim <minchan@kernel.org>
+Subject: [RFC v2 0/3] support madvise(MADV_FREE)
+Date: Thu, 20 Mar 2014 15:38:55 +0900
+Message-Id: <1395297538-10491-1-git-send-email-minchan@kernel.org>
+X-Mailer: git-send-email 1.9.0
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jane Li <jiel@marvell.com>
+This patch is an attempt to support MADV_FREE for Linux.
 
-This patch tries to fix a warning about possible circular locking
-dependency.
+Rationale is following as.
 
-If do in following sequence:
-    enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
-lockdep will show warning as following:
+Allocators call munmap(2) when user call free(3) if ptr is
+in mmaped area. But munmap isn't cheap because it have to
+clean up all pte entries, unlinking a vma and returns free pages
+to page allocator so that overhead would be increased linearly
+by mmaped area's size. In the end, userspace allocators like
+MADV_DONTNEED rather than munmap.
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.10.0 #2 Tainted: G           O
--------------------------------------------------------
-sh/1271 is trying to acquire lock:
-(console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
-but task is already holding lock:
-(cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
-which lock already depends on the new lock.
+Because MADV_DONTNEED holds read-side lock of mmap_sem so
+other threads of the process could go with concurrent page faults
+so it is better than munmap if it's not lack of address space.
+But a problem of this approach is that most of allocator reuses
+freed memory space soonish so users of allocator will see
+page fault, page allocation, page zeroing if allocator already
+called MADV_DONNEED on the address space.
 
-the existing dependency chain (in reverse order) is:
--> #2 (cpu_hotplug.lock){+.+.+.}:
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c06f5014>] mutex_lock_nested+0x50/0x3d8
-[<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
-[<c06ebfac>] _cpu_up+0x24/0x154
-[<c06ec140>] cpu_up+0x64/0x84
-[<c0981834>] smp_init+0x9c/0xd4
-[<c0973880>] kernel_init_freeable+0x78/0x1c8
-[<c06e7f40>] kernel_init+0x8/0xe4
-[<c010eec8>] ret_from_fork+0x14/0x2c
+For avoidng that overheads, other OS have supported MADV_FREE.
+The idea is just clear dirty bit from pte when the syscall
+is called and purge them if memory pressure happens.
 
--> #1 (cpu_add_remove_lock){+.+.+.}:
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c06f5014>] mutex_lock_nested+0x50/0x3d8
-[<c012b758>] disable_nonboot_cpus+0x8/0xe8
-[<c016b83c>] suspend_devices_and_enter+0x214/0x448
-[<c016bc54>] pm_suspend+0x1e4/0x284
-[<c016bdcc>] try_to_suspend+0xa4/0xbc
-[<c0143848>] process_one_work+0x1c4/0x4fc
-[<c0143f80>] worker_thread+0x138/0x37c
-[<c014aaf8>] kthread+0xa4/0xb0
-[<c010eec8>] ret_from_fork+0x14/0x2c
+If there is write(ie, store) operation in MADV_FREEed page,
+VM checks pte_dirty and don't purge the page so users could
+the page without any corruption.
 
--> #0 (console_lock){+.+.+.}:
-[<c017b5d0>] __lock_acquire+0x1b38/0x1b80
-[<c017bb7c>] lock_acquire+0x98/0x12c
-[<c01288c4>] console_lock+0x54/0x68
-[<c06ebf7c>] console_cpu_notify+0x20/0x2c
-[<c01501d4>] notifier_call_chain+0x44/0x84
-[<c012b448>] __cpu_notify+0x2c/0x48
-[<c012b5b0>] cpu_notify_nofail+0x8/0x14
-[<c06e81bc>] _cpu_down+0xf4/0x258
-[<c06e8344>] cpu_down+0x24/0x40
-[<c06e921c>] store_online+0x30/0x74
-[<c03b7298>] dev_attr_store+0x18/0x24
-[<c025fc5c>] sysfs_write_file+0x16c/0x19c
-[<c0207a98>] vfs_write+0xb4/0x190
-[<c0207e58>] SyS_write+0x3c/0x70
-[<c010ee00>] ret_fast_syscall+0x0/0x48
+For testing, I tweaked jamalloc to use MADV_FREE.
 
-Chain exists of:
-   console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+diff --git a/src/chunk_mmap.c b/src/chunk_mmap.c
+index 8a42e75..20e31af 100644
+--- a/src/chunk_mmap.c
++++ b/src/chunk_mmap.c
+@@ -131,7 +131,7 @@ pages_purge(void *addr, size_t length)
+ #  else
+ #    error "No method defined for purging unused dirty pages."
+ #  endif
+-       int err = madvise(addr, length, JEMALLOC_MADV_PURGE);
++       int err = madvise(addr, length, 5);
+        unzeroed = (JEMALLOC_MADV_ZEROS == false || err != 0);
+ #  undef JEMALLOC_MADV_PURGE
+ #  undef JEMALLOC_MADV_ZEROS
 
-Possible unsafe locking scenario:
-       CPU0                    CPU1
-       ----                    ----
-lock(cpu_hotplug.lock);
-                               lock(cpu_add_remove_lock);
-                               lock(cpu_hotplug.lock);
-lock(console_lock);
-  *** DEADLOCK ***
 
-There are three locks involved in two sequence:
-a) pm suspend:
-	console_lock (@suspend_console())
-	cpu_add_remove_lock (@disable_nonboot_cpus())
-	cpu_hotplug.lock (@_cpu_down())
-b) Plug-out CPUx:
-	cpu_add_remove_lock (@(cpu_down())
-	cpu_hotplug.lock (@_cpu_down())
-	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+RAM 2G, CPU 4, ebizzy benchmark(./ebizzy -S 30 -n 512)
 
-There should be not real deadlock, as flag of console_suspended can
-protect this.
+(1.1) stands for 1 process and 1 thread so for exmaple,
+(1.4) means 1 process and 4 thread.
 
-Although console_suspend() releases console_sem, it doesn't tell lockdep
-about it. That results in the lockdep warning about circular locking
-when doing the following:
-  enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+vanilla jemalloc         patched jemalloc
 
-Fix the problem by telling lockdep we actually released the semaphore in
-console_suspend() and acquired it again in console_resume().
+1.1       1.1
+records:  5               records:  5
+avg:      7417.80         avg:      13866.00
+std:      82.53(1.11%)    std:      323.16(2.33%)
+max:      7559.00         max:      14264.00
+min:      7309.00         min:      13543.00
+1.4       1.4
+records:  5               records:  5
+avg:      16353.80        avg:      30380.00
+std:      423.30(2.59%)   std:      852.16(2.81%)
+max:      16823.00        max:      31819.00
+min:      15788.00        min:      29310.00
+1.8       1.8
+records:  5               records:  5
+avg:      15766.00        avg:      27498.40
+std:      1073.76(6.81%)  std:      1838.82(6.69%)
+max:      17259.00        max:      30070.00
+min:      13919.00        min:      24810.00
+4.1       4.1
+records:  5               records:  5
+avg:      4000.40         avg:      7926.60
+std:      9.75(0.24%)     std:      126.84(1.60%)
+max:      4013.00         max:      8171.00
+min:      3984.00         min:      7805.00
+4.4       4.4
+records:  5               records:  5
+avg:      3920.40         avg:      7046.80
+std:      73.11(1.86%)    std:      148.47(2.11%)
+max:      4044.00         max:      7320.00
+min:      3838.00         min:      6876.00
+4.8       4.8
+records:  5               records:  5
+avg:      3951.80         avg:      7024.60
+std:      51.47(1.30%)    std:      150.76(2.15%)
+max:      4048.00         max:      7284.00
+min:      3893.00         min:      6814.00
+8.1       8.1
+records:  5               records:  5
+avg:      1919.80         avg:      3354.00
+std:      39.33(2.05%)    std:      100.58(3.00%)
+max:      1989.00         max:      3529.00
+min:      1870.00         min:      3227.00
+8.4       8.4
+records:  5               records:  5
+avg:      1946.60         avg:      2800.40
+std:      22.69(1.17%)    std:      246.64(8.81%)
+max:      1977.00         max:      3081.00
+min:      1915.00         min:      2394.00
+8.8       8.8
+records:  5               records:  5
+avg:      1947.20         avg:      2249.60
+std:      19.54(1.00%)    std:      131.43(5.84%)
+max:      1973.00         max:      2505.00
+min:      1929.00         min:      2149.00
 
-Signed-off-by: Jane Li <jiel@marvell.com>
----
- kernel/printk/printk.c |    2 ++
- 1 file changed, 2 insertions(+)
+MADV_FREE is about 2 time faster than MADV_DONTNEED but
+it starts slow down as memory pressure is heavy compared to
+DONTNEED. It's natural because MADV_FREE needs more steps to
+free pages so one thing I have a mind to overcome is just
+purge them if memory pressure is severe(ex, kswapd active)
+rather than giving a chance to promote freeing page
+from inactive LRU when madvise_free is called.
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 4dae9cb..e6ada32 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1880,6 +1880,7 @@ void suspend_console(void)
- 	console_lock();
- 	console_suspended = 1;
- 	up(&console_sem);
-+	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
- }
- 
- void resume_console(void)
-@@ -1887,6 +1888,7 @@ void resume_console(void)
- 	if (!console_suspend_enabled)
- 		return;
- 	down(&console_sem);
-+	mutex_acquire(&console_lock_dep_map, 0, 0, _RET_IP_);
- 	console_suspended = 0;
- 	console_unlock();
- }
+(just wondering, when I used PG_lazyfree(ie, PG_private)
+ in previous internal version, I didn't see the  above
+ regression in same test. I will investigate what's culprit
+ in there.)
+
+Still, I didn't test a lot and surely needs more description
+and a few TODO(ex, lazyfree page accoutning and work with
+swapless system but it's further enhance, not necessary
+in this stage) but it's enough to show the concept and direction
+before LSF/MM.
+
+Patchset is based on 3.14-rc6.
+
+Welcome any comment!
+
+* From v1
+  * Use custom page table walker for madvise_free - Johannes
+  * Remove PG_lazypage flag - Johannes
+  * Do madvise_dontneed instead of madvise_freein swapless system
+
+Minchan Kim (3):
+  mm: support madvise(MADV_FREE)
+  mm: work deactivate_page with anon pages
+  mm: deactivate lazyfree pages
+
+ include/linux/mm.h                     |   2 +
+ include/linux/mm_inline.h              |   9 ++
+ include/linux/rmap.h                   |   6 ++
+ include/linux/vm_event_item.h          |   1 +
+ include/uapi/asm-generic/mman-common.h |   1 +
+ mm/madvise.c                           |  25 +++++
+ mm/memory.c                            | 162 ++++++++++++++++++++++++++++++++-
+ mm/rmap.c                              |  31 ++++++-
+ mm/swap.c                              |  20 ++--
+ mm/swap_state.c                        |   3 +-
+ mm/vmscan.c                            |  12 +++
+ mm/vmstat.c                            |   1 +
+ 12 files changed, 255 insertions(+), 18 deletions(-)
+
 -- 
-1.7.9.5
+1.9.0
 
