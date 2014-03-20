@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089AbaCTLmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:42:06 -0400
-Received: from www84.your-server.de ([213.133.104.84]:54453 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932978AbaCTLmE (ORCPT
+	id S933196AbaCTLnO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:43:14 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:35549 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932623AbaCTLnK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:42:04 -0400
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH v2] x86, vdso32: fix out of memory handling setup vDSO
-Date: Thu, 20 Mar 2014 12:41:27 +0100
-Message-Id: <1395315687-3691-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.9.0
-X-Authenticated-Sender: stefani@seibold.net
+	Thu, 20 Mar 2014 07:43:10 -0400
+Message-ID: <532AD44A.90409@monstr.eu>
+Date: Thu, 20 Mar 2014 12:43:06 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Subject: Re: [PATCH v3 0/9] tty: xuartps: Rebranding + DT documentation
+References: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a correct out of memory handling for setup a 32 bit vDSO.
+Hi Greg,
 
-The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
+On 03/12/2014 08:02 PM, Soren Brinkmann wrote:
+> Here is a fixed and extended v3. I picked up Michal's patches and
+> incorporated them into the series. Those are the first two patches.
+> The 'rebranding' patch is correspondingly extended to convert the new
+> code as well.
+> 
+> The erroneously changed compatibility string has been reverted back to
+> what it should be.
+> 
+> 	Sören
+> 
+> Michal Simek (2):
+>   tty: xuartps: Fix kernel-doc errors in the driver
+>   tty: xuartps: Initialize ports according to aliases
+> 
+> Soren Brinkmann (7):
+>   tty: xuartps: Clean up
+>   tty: xuartps: Print warning in clock notifier
+>   tty: xuartps: Refactor read-modify-writes
+>   tty: xuartps: Don't write IRQ disable register to enable interrupts
+>   tty: xuartps: Rebrand driver as Cadence UART
+>   tty: cadence: Document DT binding
+>   ARM: zynq: DT: Migrate UART to Cadence binding
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vdso32-setup.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
+I have done boot test and console is still there
+that's why
+Tested-by: Michal Simek <michal.simek@xilinx.com>
 
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 0bc363a..b77fdb2 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -134,8 +134,14 @@ int __init sysenter_setup(void)
- 	}
- 
- 	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
--	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
--	vdso_pages = kmalloc(VDSO_OFFSET(vdso32_size), GFP_ATOMIC);
-+
-+	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_KERNEL);
-+	if (!vdso32_pages)
-+		goto fail;
-+
-+	vdso_pages = kmalloc(VDSO_OFFSET(vdso32_size), GFP_KERNEL);
-+	if (!vdso_pages)
-+		goto fail;
- 
- 	for(i = 0; i != vdso32_size; ++i)
- 		vdso32_pages[i] = virt_to_page(vdso_pages + VDSO_OFFSET(i));
-@@ -144,6 +150,12 @@ int __init sysenter_setup(void)
- 	patch_vdso32(vdso_pages, vdso_len);
- 
- 	return 0;
-+fail:
-+	kfree(vdso32_pages);
-+	kfree(vdso_pages);
-+	vdso32_size = 0;
-+
-+	return -ENOMEM;
- }
- 
- /* Setup a VMA at program startup for the vsyscall page */
-@@ -162,6 +174,9 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 	if (vdso_enabled != 1)  /* Other values all mean "disabled" */
- 		return 0;
- 
-+	if (!vdso32_size)
-+		return 0;
-+
- 	down_write(&mm->mmap_sem);
- 
- 	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
+I think that 1/9 - 8/9 should go through your tree
+and 9/9 should go through arm-soc because there could
+be some conflicts in dtsi.
+
+Can you please apply that patches and I will take the rest
+through arm-soc tree?
+
+Thanks,
+Michal
+
 -- 
-1.9.0
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
