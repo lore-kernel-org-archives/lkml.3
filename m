@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707AbaCTJPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:15:52 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:59584 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaCTJPu (ORCPT
+	id S1755560AbaCTJVV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:21:21 -0400
+Received: from mail-we0-f182.google.com ([74.125.82.182]:44790 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750740AbaCTJVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:15:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140320042700.GA11505@redhat.com>
-References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
-	<1394818720.3253.1.camel@joe-AO722>
-	<20140314180258.GA29201@thunk.org>
-	<87y509scl3.fsf@rustcorp.com.au>
-	<1395032434.2556.10.camel@joe-AO722>
-	<1395041214.2556.17.camel@joe-AO722>
-	<87zjkmr8w1.fsf@rustcorp.com.au>
-	<1395211832.8649.40.camel@joe-AO722>
-	<87k3bpr28n.fsf@rustcorp.com.au>
-	<20140320042700.GA11505@redhat.com>
-Date: Thu, 20 Mar 2014 12:15:48 +0300
-Message-ID: <CACVxJT_WnkoUVxcLoraBAGpMB9jMaOqg8SY27RPLuym55o4J4Q@mail.gmail.com>
-Subject: Re: Stricter module param and sysfs permission checks
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Dave Jones <davej@redhat.com>, Rusty Russell <rusty@rustcorp.com.au>,
-        Joe Perches <joe@perches.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        fes@google.com, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Simon Wood <simon@mungewell.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Mar 2014 05:21:18 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        computersforpeace@gmail.com
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com
+Subject: [PATCH v6 00/36] mtd: st_spi_fsm: Add new driver
+Date: Thu, 20 Mar 2014 09:20:32 +0000
+Message-Id: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 7:27 AM, Dave Jones <davej@redhat.com> wrote:
-> On Thu, Mar 20, 2014 at 01:43:44PM +1030, Rusty Russell wrote:
->
->  > drivers/mtd/devices/docg3.c:
->  >      __ATTR(f##id##_dps0_protection_key, S_IWUGO, NULL, dps0_insert_key), \
->  >      __ATTR(f##id##_dps1_protection_key, S_IWUGO, NULL, dps1_insert_key), \
->  >
->  > drivers/scsi/pm8001/pm8001_ctl.c:
->  > static DEVICE_ATTR(update_fw, S_IRUGO|S_IWUGO,
->  >      pm8001_show_update_fw, pm8001_store_update_fw);
->
-> Why on earth are these world writable ?
+This should be the final version (again) :)
 
-Yup.
+Version 6:
+  Serviced 3 nits picked up by Brian during final review.
+  
+Version 5:
+  Tended to Christophe, Ludovic and Angus' comments.
+  
+Version 4:
+  Tended to Brian's review comments
+    - Checkpatch acceptance
+    - MODULE_DEVICE_TABLE() name slip correction
+    - Timeout issue(s) resolved
+    - Potential infinite loop mitigated
+    - Code clarity suggests heeded
+    - Duplication with MTD core code removed
+    - Upgraded to using ROUND_UP() helper
+    - Moved non-shared header code into main driver
+    - Relocated dynamic msg sequence stores into main struct
+    - Averted adaption of static (table) data
+    - Basic whitespace/spelling/data type/dev_err suggestions applied
+  
+Version 3:
+  Okay, this thing should be fully functional now. Identify a chip
+  based on it's JEDEC ID, Read, Write, Erase (all or by sector).
+  Support for various chip quirks added too.
+  
+Version 2:
+  The first bunch of these patches have been on the MLs before, but
+  didn't receive a great deal of attention for the most part. We are
+  a little more featureful this time however. We can now successfully
+  setup and configure the N25Q256. We still can't read/write/erase
+  it though. I'll start work on that next week and will provide it in
+  the next instalment.
 
-I like new and improved checks.
-Rusty, add my "& 2" check everywhere!
+Version 1:
+  First stab at getting this thing Mainlined. It doesn't do a great deal
+  yet, but we are able to initialise the device and dynamically set it up
+  correctly based on an extracted JEDEC ID.
+
+ Documentation/devicetree/bindings/mtd/st-fsm.txt |   26 ++
+ arch/arm/boot/dts/stih416-pinctrl.dtsi           |   13 +
+ arch/arm/boot/dts/stih416.dtsi                   |   13 +
+ arch/arm/boot/dts/stih41x-b2020.dtsi             |    1 +
+ arch/arm/boot/dts/stih41x-b2020x.dtsi            |   28 ++
+ drivers/mtd/devices/Kconfig                      |    8 +
+ drivers/mtd/devices/Makefile                     |    1 +
+ drivers/mtd/devices/serial_flash_cmds.h          |   81 +++++
+ drivers/mtd/devices/st_spi_fsm.c                 | 2122 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 2293 insertions(+)
+
