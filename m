@@ -1,92 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbaCTGQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 02:16:11 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:22738 "EHLO
+	id S1752451AbaCTG0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 02:26:40 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:38765 "EHLO
 	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750917AbaCTGQJ (ORCPT
+	by vger.kernel.org with ESMTP id S1751115AbaCTG0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 02:16:09 -0400
-Message-ID: <532A8794.40103@marvell.com>
-Date: Thu, 20 Mar 2014 14:15:48 +0800
-From: Jane Li <jiel@marvell.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Thu, 20 Mar 2014 02:26:38 -0400
+From: <jiel@marvell.com>
+To: <akpm@linux-foundation.org>, <joe@perches.com>, <tj@kernel.org>,
+        <fweisbec@gmail.com>, <paul.gortmaker@windriver.com>,
+        <keescook@chromium.org>
+CC: <linux-kernel@vger.kernel.org>, <jiel@marvell.com>
+Subject: [PATCH v2] printk: fix one circular lockdep warning about console_lock
+Date: Thu, 20 Mar 2014 14:26:12 +0800
+Message-ID: <1395296772-27087-1-git-send-email-jiel@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>, <joe@perches.com>,
-        <tj@kernel.org>, <fweisbec@gmail.com>, <davem@davemloft.net>,
-        <keescook@chromium.org>, <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        "jiel@marvell.com" <"Jane Li"@mx0b-0016f401.pphosted.com>
-Subject: Re: [PATCH] printk: fix one circular lockdep warning about console_lock
-References: <23E65EE4544D484CBE73B588E192C6D620B93AC9EB@sc-vexch3.marvell.com> <532A838D.8040209@marvell.com>
-In-Reply-To: <532A838D.8040209@marvell.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
  definitions=2014-03-20_02:2014-03-19,2014-03-20,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
  phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1305240000 definitions=main-1403190204
+ scancount=1 engine=7.0.1-1305240000 definitions=main-1403190206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 06:00 PM, Jan Kara wrote:
+From: Jane Li <jiel@marvell.com>
 
-> On Wed 19-03-14 11:08:08, Jane Li wrote:
->> On 02/12/2014 05:19 AM, Andrew Morton wrote:
->>> On Tue, 11 Feb 2014 14:50:00 +0800<jiel@marvell.com>  wrote:
->   Umm, I disagree with the patch. What I proposed in my answer to your patch is something like the patch below. Does it fix your problem?
->
-> 								Honza
->
-> From 91497a88c403a7f22e78fee2f69d7413c6e8209f Mon Sep 17 00:00:00 2001
-> From: Jan Kara <jack@suse.cz>
-> Date: Wed, 19 Mar 2014 10:56:12 +0100
-> Subject: [PATCH] printk: Fixup lockdep annotation in console_suspend()
->
-> Although console_suspend() releases console_sem, it doesn't tell lockdep about it. That results in the lockdep warning about circular locking when doing the following:
->   enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
->
-> Fix the problem by telling lockdep we actually released the semaphore in
-> console_suspend() and acquired it again in console_resume().
->
-> Signed-off-by: Jan Kara <jack@suse.cz>
-> ---
->  kernel/printk/printk.c | 2 ++
->  1 file changed, 2 insertions(+)
->
-> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c index 4dae9cbe9259..e6ada322782b 100644
-> --- a/kernel/printk/printk.c
-> +++ b/kernel/printk/printk.c
-> @@ -1880,6 +1880,7 @@ void suspend_console(void)
->  	console_lock();
->  	console_suspended = 1;
->  	up(&console_sem);
-> +	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
->  }
->  
->  void resume_console(void)
-> @@ -1887,6 +1888,7 @@ void resume_console(void)
->  	if (!console_suspend_enabled)
->  		return;
->  	down(&console_sem);
-> +	mutex_acquire(&console_lock_dep_map, 0, 0, _RET_IP_);
->  	console_suspended = 0;
->  	console_unlock();
->  }
-> --
-> 1.8.1.4
+This patch tries to fix a warning about possible circular locking
+dependency.
 
-Oh, yes, this new solution works well. If run same test, no circular lockdep warning occurs now. I will update patch v2.
+If do in following sequence:
+    enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+lockdep will show warning as following:
 
-Sorry for misunderstanding your answer before.
+======================================================
+[ INFO: possible circular locking dependency detected ]
+3.10.0 #2 Tainted: G           O
+-------------------------------------------------------
+sh/1271 is trying to acquire lock:
+(console_lock){+.+.+.}, at: [<c06ebf7c>] console_cpu_notify+0x20/0x2c
+but task is already holding lock:
+(cpu_hotplug.lock){+.+.+.}, at: [<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+which lock already depends on the new lock.
 
-Thanks!
+the existing dependency chain (in reverse order) is:
+-> #2 (cpu_hotplug.lock){+.+.+.}:
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c06f5014>] mutex_lock_nested+0x50/0x3d8
+[<c012b4e8>] cpu_hotplug_begin+0x2c/0x58
+[<c06ebfac>] _cpu_up+0x24/0x154
+[<c06ec140>] cpu_up+0x64/0x84
+[<c0981834>] smp_init+0x9c/0xd4
+[<c0973880>] kernel_init_freeable+0x78/0x1c8
+[<c06e7f40>] kernel_init+0x8/0xe4
+[<c010eec8>] ret_from_fork+0x14/0x2c
 
-Best Regards,
+-> #1 (cpu_add_remove_lock){+.+.+.}:
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c06f5014>] mutex_lock_nested+0x50/0x3d8
+[<c012b758>] disable_nonboot_cpus+0x8/0xe8
+[<c016b83c>] suspend_devices_and_enter+0x214/0x448
+[<c016bc54>] pm_suspend+0x1e4/0x284
+[<c016bdcc>] try_to_suspend+0xa4/0xbc
+[<c0143848>] process_one_work+0x1c4/0x4fc
+[<c0143f80>] worker_thread+0x138/0x37c
+[<c014aaf8>] kthread+0xa4/0xb0
+[<c010eec8>] ret_from_fork+0x14/0x2c
 
-Jane
+-> #0 (console_lock){+.+.+.}:
+[<c017b5d0>] __lock_acquire+0x1b38/0x1b80
+[<c017bb7c>] lock_acquire+0x98/0x12c
+[<c01288c4>] console_lock+0x54/0x68
+[<c06ebf7c>] console_cpu_notify+0x20/0x2c
+[<c01501d4>] notifier_call_chain+0x44/0x84
+[<c012b448>] __cpu_notify+0x2c/0x48
+[<c012b5b0>] cpu_notify_nofail+0x8/0x14
+[<c06e81bc>] _cpu_down+0xf4/0x258
+[<c06e8344>] cpu_down+0x24/0x40
+[<c06e921c>] store_online+0x30/0x74
+[<c03b7298>] dev_attr_store+0x18/0x24
+[<c025fc5c>] sysfs_write_file+0x16c/0x19c
+[<c0207a98>] vfs_write+0xb4/0x190
+[<c0207e58>] SyS_write+0x3c/0x70
+[<c010ee00>] ret_fast_syscall+0x0/0x48
 
+Chain exists of:
+   console_lock --> cpu_add_remove_lock --> cpu_hotplug.lock
+
+Possible unsafe locking scenario:
+       CPU0                    CPU1
+       ----                    ----
+lock(cpu_hotplug.lock);
+                               lock(cpu_add_remove_lock);
+                               lock(cpu_hotplug.lock);
+lock(console_lock);
+  *** DEADLOCK ***
+
+There are three locks involved in two sequence:
+a) pm suspend:
+	console_lock (@suspend_console())
+	cpu_add_remove_lock (@disable_nonboot_cpus())
+	cpu_hotplug.lock (@_cpu_down())
+b) Plug-out CPUx:
+	cpu_add_remove_lock (@(cpu_down())
+	cpu_hotplug.lock (@_cpu_down())
+	console_lock (@console_cpu_notify()) => Lockdeps prints warning log.
+
+There should be not real deadlock, as flag of console_suspended can
+protect this.
+
+Although console_suspend() releases console_sem, it doesn't tell lockdep
+about it. That results in the lockdep warning about circular locking
+when doing the following:
+  enter suspend ->  resume ->  plug-out CPUx (echo 0 > cpux/online)
+
+Fix the problem by telling lockdep we actually released the semaphore in
+console_suspend() and acquired it again in console_resume().
+
+Signed-off-by: Jane Li <jiel@marvell.com>
+---
+ kernel/printk/printk.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 4dae9cb..e6ada32 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1880,6 +1880,7 @@ void suspend_console(void)
+ 	console_lock();
+ 	console_suspended = 1;
+ 	up(&console_sem);
++	mutex_release(&console_lock_dep_map, 1, _RET_IP_);
+ }
+ 
+ void resume_console(void)
+@@ -1887,6 +1888,7 @@ void resume_console(void)
+ 	if (!console_suspend_enabled)
+ 		return;
+ 	down(&console_sem);
++	mutex_acquire(&console_lock_dep_map, 0, 0, _RET_IP_);
+ 	console_suspended = 0;
+ 	console_unlock();
+ }
+-- 
+1.7.9.5
 
