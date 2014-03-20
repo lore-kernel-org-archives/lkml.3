@@ -1,57 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902AbaCTPgt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:36:49 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:51637 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758452AbaCTPgk (ORCPT
+	id S1759117AbaCTPhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:37:01 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:37081 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758459AbaCTPg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:36:40 -0400
-Date: Thu, 20 Mar 2014 08:36:34 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Michael Brunner <michael.brunner@kontron.com>
-Subject: Re: [PATCH] mfd: kempld-core: Fix potential hang-up during boot
-Message-ID: <20140320153634.GB18690@roeck-us.net>
-References: <1395328348-20661-1-git-send-email-linux@roeck-us.net>
- <20140320152812.GB8207@lee--X1>
+	Thu, 20 Mar 2014 11:36:58 -0400
+Message-ID: <532B0B14.7040600@codethink.co.uk>
+Date: Thu, 20 Mar 2014 16:36:52 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320152812.GB8207@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: DMABOUNCE in pci-rcar
+References: <201402241200.21944.arnd@arndb.de> <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk> <20140320152640.GW7528@n2100.arm.linux.org.uk>
+In-Reply-To: <20140320152640.GW7528@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 03:28:12PM +0000, Lee Jones wrote:
-> > On PXT and COMe-cPC2 boards it is observed that the hardware
-> > mutex is acquired but not being released during initialization.
-> > This can result in a hang-up during boot if the driver is built
-> > into the kernel.
-> > 
-> > Releasing the mutex twice if it was acquired fixes the problem.
-> > Subsequent request/release cycles work as expected, so the fix is
-> > only needed during initialization.
-> > 
-> > Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
-> > Tested-by: Michael Brunner <michael.brunner@kontron.com>
-> > Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-> > ---
-> >  drivers/mfd/kempld-core.c |    7 +++++--
-> >  1 file changed, 5 insertions(+), 2 deletions(-)
-> 
-> I was going to stop taking patches for this cycle, but as this looks
-> like a bugfix I'll apply it, thanks.
-> 
+On 20/03/14 16:26, Russell King - ARM Linux wrote:
+> On Thu, Mar 20, 2014 at 04:04:36PM +0100, Ben Dooks wrote:
+>> On 26/02/14 20:57, Arnd Bergmann wrote:
+>>> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
+>>>> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>>> Hi Magnus,
+>>>>>
+>>>>> I noticed during randconfig testing that you enabled DMABOUNCE for the
+>>>>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
+>>>>>
+>>>>> I didn't see the original post unfortunately, but I fear we have to
+>>>>> revert it and come up with a better solution, ...
+>>>>
+>>>> Sounds like I should drop the following patches from my pci/host-rcar
+>>>> branch for now?
+>>>>
+>>>>     PCI: rcar: Add DMABOUNCE support
+>>>>     PCI: rcar: Enable BOUNCE in case of HIGHMEM
+>>>>     PCI: rcar: Make the Kconfig dependencies more generic
+>>>
+>>> Sounds good to me. The last patch is actually fine, but you'll have to
+>>> fix the context to apply it without the other two.
+>>
+>> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
+>> controllers no longer work with full 2GiB RAM enabled in the device
+>> tree.
+>>
+>> Could we work around this by having 1GiB of memory defined in the
+>> 32bit memory and then add the rest of the 3GiB from the >32bit
+>> area via LPAE? Will the kernel ever try to allocate DMA memory from
+>> anything >32bit?
+>
+> Ignore highmem.  What is the actual hardware restriction concerning memory
+> it can access?
 
-Hi Lee,
+If the window is set to 2GiB it can only access 2GiB aligned to 2GiB
+boundary, however DRAM spans a 2GiB boundary (being at 1-3GiB)
 
-Great.
 
-I should have added a note - the patch will also be needed in -stable;
-the driver is used in both 3.12 and 3.13.
-
-Thanks,
-Guenter
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
