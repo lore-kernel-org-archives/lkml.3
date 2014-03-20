@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180AbaCTIZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 04:25:12 -0400
-Received: from relmlor4.renesas.com ([210.160.252.174]:11704 "EHLO
-	relmlie3.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751129AbaCTIZI (ORCPT
+	id S1754555AbaCTI0g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 04:26:36 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:50325 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751407AbaCTI0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 04:25:08 -0400
-X-IronPort-AV: E=Sophos;i="4.97,693,1389711600"; 
-   d="scan'";a="155897429"
-Message-ID: <532AA5D6.6000402@renesas.com>
-Date: Thu, 20 Mar 2014 17:24:54 +0900
-From: Nobuhiro Iwamatsu <nobuhiro.iwamatsu.yj@renesas.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:10.0.2) Gecko/20120216 Thunderbird/10.0.2
+	Thu, 20 Mar 2014 04:26:34 -0400
+Message-ID: <532AA634.5090707@codethink.co.uk>
+Date: Thu, 20 Mar 2014 09:26:28 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] uio: Fix memory size check with vma in uio_mmap_physical()
-References: <1394587461-8574-1-git-send-email-nobuhiro.iwamatsu.yj@renesas.com> <20140317232645.GA11450@kroah.com>
-In-Reply-To: <20140317232645.GA11450@kroah.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+CC: "David S. Miller" <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
+        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH v2a 1/2] dt: Document a compatible entry for MDIO ethernet
+ Phys
+References: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
+In-Reply-To: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [211.11.155.148]
-X-ClientProxiedBy: SINPR04CA008.apcprd04.prod.outlook.com (10.242.48.38) To
- HKNPR06MB084.apcprd06.prod.outlook.com (10.242.102.153)
-X-Forefront-PRVS: 01565FED4C
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(6049001)(428001)(51704005)(199002)(189002)(479174003)(24454002)(54356001)(53806001)(42186004)(51856001)(46102001)(81342001)(76482001)(77096001)(94316002)(74706001)(81816001)(81686001)(94946001)(50466002)(87976001)(64126003)(81542001)(54316002)(95416001)(74662001)(77982001)(59766001)(74502001)(65806001)(80022001)(86362001)(97186001)(65956001)(19580405001)(83322001)(47776003)(20776003)(19580395003)(63696002)(80316001)(31966008)(66066001)(74876001)(93516002)(76796001)(97336001)(80976001)(59896001)(36756003)(79102001)(74366001)(83506001)(90146001)(56816005)(92566001)(92726001)(33656001)(83072002)(85852003)(23676002)(56776001)(85306002)(50986001)(47976001)(47736001)(4396001)(49866001)(69226001);DIR:OUT;SFP:1101;SCL:1;SRVR:HKNPR06MB084;H:[10.161.41.224];FPR:BEEED217.EFE2DC29.ACF4A947.82EAD2F1.2028D;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-X-OriginatorOrg: renesas.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/18 8:26), Greg KH wrote:
-> On Wed, Mar 12, 2014 at 10:24:21AM +0900, Nobuhiro Iwamatsu wrote:
->> Register for the device are mapped in uio_mmap_physical().
->> In this case, it might not be the same as the size of VMA always.
+On 19/03/14 23:15, Jason Gunthorpe wrote:
+> This describes a compatible entry of the form:
+>    ethernet-phy-idAAAA,BBBB
+> Which is modelled after the PCI structured compatible entry
+> (pciVVVV,DDDD.SSSS.ssss.RR)
 >
-> Why wouldn't this be the case?
-
-size contained in the "mem-> size" is the size of the actual always.
-However, in this case, "if (vma-> vm_end - vma-> vm_start> mem-> size)" is an error by always.
-This is because the address contained in the vma is because it is always aligned by PAGE_SIZE.
-
+> If present the OF core will be able to use this information to
+> directly create the correct phy without auto probing the bus.
 >
->> This uses PAGE_ALIGN to memory size, fix the check of the memory size
->> to be mapped.
->>
->> Signed-off-by: Nobuhiro Iwamatsu<nobuhiro.iwamatsu.yj@renesas.com>
->> ---
->>   drivers/uio/uio.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
->> index a673e5b..e371f5a 100644
->> --- a/drivers/uio/uio.c
->> +++ b/drivers/uio/uio.c
->> @@ -655,7 +655,7 @@ static int uio_mmap_physical(struct vm_area_struct *vma)
->>
->>   	if (mem->addr&  ~PAGE_MASK)
->>   		return -ENODEV;
->> -	if (vma->vm_end - vma->vm_start>  mem->size)
->> +	if (vma->vm_end - vma->vm_start>  PAGE_ALIGN(mem->size))
+> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+> Acked-by: Rob Herring <robh@kernel.org>
+> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+> ---
+>   Documentation/devicetree/bindings/net/phy.txt | 10 +++++++++-
+>   1 file changed, 9 insertions(+), 1 deletion(-)
 >
-> You just increased the size for the check, that seems wrong.  Why
-> wouldn't mem->size be correct here?
+> - Resend for net-next
 >
-> What hardware is failing for this with a valid size and end/start
-> addresses?
-
-For example, when I have the following settings in in platform device setup,
-the size of the mem->size will be 344.
-
-static struct resource vpu_resources[] = {
-	[0] = {
-		.name	= "VPU",
-		.start	= 0xfe900000,
-		.end	= 0xfe900157,
-		.flags	= IORESOURCE_MEM,
-	},
-};
-
-And vma->vm_start was set 0xB6F9F000, vma->start was set B6FA0000.
-Therefore, this is "if (vma-> vm_end - vma-> vm_start> mem-> size)" will result in an error.
-Am I wrong how to use UIO?
-
+> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
+> index 58307d0..5b8c589 100644
+> --- a/Documentation/devicetree/bindings/net/phy.txt
+> +++ b/Documentation/devicetree/bindings/net/phy.txt
+> @@ -21,10 +21,18 @@ Optional Properties:
+>     elements.
+>   - max-speed: Maximum PHY supported speed (10, 100, 1000...)
 >
-> thanks,
->
-> greg k-h
+> +  If the phy's identifier is known then the list may contain an entry
+> +  of the form: "ethernet-phy-idAAAA.BBBB" where
+> +     AAAA - The value of the 16 bit Phy Identifier 1 register as
+> +            4 hex digits. This is the chip vendor OUI bits 3:18
+> +     BBBB - The value of the 16 bit Phy Identifier 2 register as
+> +            4 hex digits. This is the chip vendor OUI bits 19:24,
+> +            followed by 10 bits of a vendor specific ID.
+> +
 
-Best regards,
-   Nobuhiro
+How about having "ethernet-phy" and adding a single property in the
+PHY node saying phy-id = <AAAABBBB>, which would be much easier to
+parse.
+
+>   Example:
+>
+>   ethernet-phy@0 {
+> -	compatible = "ethernet-phy-ieee802.3-c22";
+> +	compatible = "ethernet-phy-id0141.0e90", "ethernet-phy-ieee802.3-c22";
+>   	interrupt-parent = <40000>;
+>   	interrupts = <35 1>;
+>   	reg = <0>;
+>
+
+
+-- 
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
