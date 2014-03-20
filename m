@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224AbaCTBbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 21:31:35 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34340 "EHLO
+	id S1753380AbaCTBbd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 21:31:33 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34372 "EHLO
 	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751377AbaCTBb3 (ORCPT
+	with ESMTP id S1751416AbaCTBb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 Mar 2014 21:31:29 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
         David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 01/13] perf tools: Add ->cmp(), ->collapse() and ->sort() to perf_hpp_fmt
-Date: Thu, 20 Mar 2014 10:31:15 +0900
-Message-Id: <1395279087-12554-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 05/13] perf tools: Use hpp formats to sort final output
+Date: Thu, 20 Mar 2014 10:31:19 +0900
+Message-Id: <1395279087-12554-6-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
 References: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
@@ -26,113 +26,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Those function pointers will be used to sort report output based on
-the selected fields.  This is a preparation of later change.
+Convert output sorting function to use ->sort hpp functions.
 
 Acked-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/ui/hist.c   | 39 +++++++++++++++++++++++++++++++++++----
- tools/perf/util/hist.h |  3 +++
- 2 files changed, 38 insertions(+), 4 deletions(-)
+ tools/perf/util/hist.c | 62 +++++++-------------------------------------------
+ 1 file changed, 8 insertions(+), 54 deletions(-)
 
-diff --git a/tools/perf/ui/hist.c b/tools/perf/ui/hist.c
-index 0912805c08f4..d4a4f2e7eb43 100644
---- a/tools/perf/ui/hist.c
-+++ b/tools/perf/ui/hist.c
-@@ -192,6 +192,14 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  hpp_entry_scnprintf, true);				\
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index e6dc0323c263..8d04796b919a 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -569,64 +569,18 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
+ 	}
  }
  
-+#define __HPP_SORT_FN(_type, _field)						\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	s64 __a = he_get_##_field(a);						\
-+	s64 __b = he_get_##_field(b);						\
-+	return __a - __b;							\
-+}
-+
- #define __HPP_ENTRY_RAW_FN(_type, _field)					\
- static u64 he_get_raw_##_field(struct hist_entry *he)				\
- {										\
-@@ -206,16 +214,27 @@ static int hpp__entry_##_type(struct perf_hpp_fmt *_fmt __maybe_unused,		\
- 			  hpp_entry_scnprintf, false);				\
+-/*
+- * reverse the map, sort on period.
+- */
+-
+-static int period_cmp(u64 period_a, u64 period_b)
++static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
+ {
+-	if (period_a > period_b)
+-		return 1;
+-	if (period_a < period_b)
+-		return -1;
+-	return 0;
+-}
+-
+-static int hist_entry__sort_on_period(struct hist_entry *a,
+-				      struct hist_entry *b)
+-{
+-	int ret;
+-	int i, nr_members;
+-	struct perf_evsel *evsel;
+-	struct hist_entry *pair;
+-	u64 *periods_a, *periods_b;
+-
+-	ret = period_cmp(a->stat.period, b->stat.period);
+-	if (ret || !symbol_conf.event_group)
+-		return ret;
+-
+-	evsel = hists_to_evsel(a->hists);
+-	nr_members = evsel->nr_members;
+-	if (nr_members <= 1)
+-		return ret;
+-
+-	periods_a = zalloc(sizeof(periods_a) * nr_members);
+-	periods_b = zalloc(sizeof(periods_b) * nr_members);
+-
+-	if (!periods_a || !periods_b)
+-		goto out;
+-
+-	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
+-		evsel = hists_to_evsel(pair->hists);
+-		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
+-	}
+-
+-	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
+-		evsel = hists_to_evsel(pair->hists);
+-		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
+-	}
++	struct perf_hpp_fmt *fmt;
++	int64_t cmp = 0;
+ 
+-	for (i = 1; i < nr_members; i++) {
+-		ret = period_cmp(periods_a[i], periods_b[i]);
+-		if (ret)
++	perf_hpp__for_each_format(fmt) {
++		cmp = fmt->sort(a, b);
++		if (cmp)
+ 			break;
+ 	}
+ 
+-out:
+-	free(periods_a);
+-	free(periods_b);
+-
+-	return ret;
++	return cmp;
  }
  
-+#define __HPP_SORT_RAW_FN(_type, _field)					\
-+static int64_t hpp__sort_##_type(struct hist_entry *a, struct hist_entry *b)	\
-+{										\
-+	s64 __a = he_get_raw_##_field(a);					\
-+	s64 __b = he_get_raw_##_field(b);					\
-+	return __a - __b;							\
-+}
-+
-+
- #define HPP_PERCENT_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
- __HPP_COLOR_PERCENT_FN(_type, _field)					\
--__HPP_ENTRY_PERCENT_FN(_type, _field)
-+__HPP_ENTRY_PERCENT_FN(_type, _field)					\
-+__HPP_SORT_FN(_type, _field)
+ static void __hists__insert_output_entry(struct rb_root *entries,
+@@ -645,7 +599,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
+ 		parent = *p;
+ 		iter = rb_entry(parent, struct hist_entry, rb_node);
  
- #define HPP_RAW_FNS(_type, _str, _field, _min_width, _unit_width)	\
- __HPP_HEADER_FN(_type, _str, _min_width, _unit_width)			\
- __HPP_WIDTH_FN(_type, _min_width, _unit_width)				\
--__HPP_ENTRY_RAW_FN(_type, _field)
-+__HPP_ENTRY_RAW_FN(_type, _field)					\
-+__HPP_SORT_RAW_FN(_type, _field)
- 
- 
- HPP_PERCENT_FNS(overhead, "Overhead", period, 8, 8)
-@@ -227,19 +246,31 @@ HPP_PERCENT_FNS(overhead_guest_us, "guest usr", period_guest_us, 9, 8)
- HPP_RAW_FNS(samples, "Samples", nr_events, 12, 12)
- HPP_RAW_FNS(period, "Period", period, 12, 12)
- 
-+static int64_t hpp__nop_cmp(struct hist_entry *a __maybe_unused,
-+			    struct hist_entry *b __maybe_unused)
-+{
-+	return 0;
-+}
-+
- #define HPP__COLOR_PRINT_FNS(_name)			\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
- 		.width	= hpp__width_ ## _name,		\
- 		.color	= hpp__color_ ## _name,		\
--		.entry	= hpp__entry_ ## _name		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
- #define HPP__PRINT_FNS(_name)				\
- 	{						\
- 		.header	= hpp__header_ ## _name,	\
- 		.width	= hpp__width_ ## _name,		\
--		.entry	= hpp__entry_ ## _name		\
-+		.entry	= hpp__entry_ ## _name,		\
-+		.cmp	= hpp__nop_cmp,			\
-+		.collapse = hpp__nop_cmp,		\
-+		.sort	= hpp__sort_ ## _name,		\
- 	}
- 
- struct perf_hpp_fmt perf_hpp__format[] = {
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 5a0343eb22e2..9ef3b3a75f03 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -153,6 +153,9 @@ struct perf_hpp_fmt {
- 		     struct hist_entry *he);
- 	int (*entry)(struct perf_hpp_fmt *fmt, struct perf_hpp *hpp,
- 		     struct hist_entry *he);
-+	int64_t (*cmp)(struct hist_entry *a, struct hist_entry *b);
-+	int64_t (*collapse)(struct hist_entry *a, struct hist_entry *b);
-+	int64_t (*sort)(struct hist_entry *a, struct hist_entry *b);
- 
- 	struct list_head list;
- };
+-		if (hist_entry__sort_on_period(he, iter) > 0)
++		if (hist_entry__sort(he, iter) > 0)
+ 			p = &(*p)->rb_left;
+ 		else
+ 			p = &(*p)->rb_right;
 -- 
 1.7.11.7
 
