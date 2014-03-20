@@ -1,166 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760216AbaCTV0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:26:53 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:55405 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759823AbaCTVWY (ORCPT
+	id S933748AbaCTV1R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:27:17 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:52140 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760220AbaCTV1L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:22:24 -0400
-From: Richard Cochran <richardcochran@gmail.com>
-To: <netdev@vger.kernel.org>
-Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        David Miller <davem@davemloft.net>,
-        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>
-Subject: [PATCH net-next v3 2/9] ptp: add the pin GET/SETFUNC ioctls to the testptp program.
-Date: Thu, 20 Mar 2014 22:21:53 +0100
-Message-Id: <17edf60e086c73d0d502279c3c32947904b7cba9.1395350113.git.richardcochran@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1395350105.git.richardcochran@gmail.com>
-References: <cover.1395350105.git.richardcochran@gmail.com>
+	Thu, 20 Mar 2014 17:27:11 -0400
+Date: Thu, 20 Mar 2014 17:27:05 -0400 (EDT)
+Message-Id: <20140320.172705.8391298175812938.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
+        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
+        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
+        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
+        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
+        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v3] core, nfqueue, openvswitch: Orphan frags in
+ skb_zerocopy and handle errors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Mar 2014 14:27:10 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a option to the test program that lists the
-programmable pins on a PTP Hardware Clock device, assuming there
-are any such pins. A second option lets the user reprogram the
-auxiliary function of a single pin.
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Thu, 20 Mar 2014 16:02:34 +0000
 
-Signed-off-by: Richard Cochran <richardcochran@gmail.com>
----
- Documentation/ptp/testptp.c |   58 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 55 insertions(+), 3 deletions(-)
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well, and modify the callers accordingly. skb_tx_error() is also added to
+> the callers so they will signal the failed delivery towards the creator of the
+> skb.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-diff --git a/Documentation/ptp/testptp.c b/Documentation/ptp/testptp.c
-index 4aba043..e9eaee6 100644
---- a/Documentation/ptp/testptp.c
-+++ b/Documentation/ptp/testptp.c
-@@ -120,6 +120,13 @@ static void usage(char *progname)
- 		" -i val     index for event/trigger\n"
- 		" -k val     measure the time offset between system and phc clock\n"
- 		"            for 'val' times (Maximum 25)\n"
-+		" -l         list the current pin configuration\n"
-+		" -L pin,val configure pin index 'pin' with function 'val'\n"
-+		"            the channel index is taken from the '-i' option\n"
-+		"            'val' specifies the auxiliary function:\n"
-+		"            0 - none\n"
-+		"            1 - external time stamp\n"
-+		"            2 - periodic output\n"
- 		" -p val     enable output with a period of 'val' nanoseconds\n"
- 		" -P val     enable or disable (val=1|0) the system clock PPS\n"
- 		" -s         set the ptp clock time from the system time\n"
-@@ -134,6 +141,7 @@ int main(int argc, char *argv[])
- 	struct ptp_extts_event event;
- 	struct ptp_extts_request extts_request;
- 	struct ptp_perout_request perout_request;
-+	struct ptp_pin_desc desc;
- 	struct timespec ts;
- 	struct timex tx;
- 
-@@ -156,11 +164,13 @@ int main(int argc, char *argv[])
- 	int extts = 0;
- 	int gettime = 0;
- 	int index = 0;
-+	int list_pins = 0;
- 	int oneshot = 0;
- 	int pct_offset = 0;
- 	int n_samples = 0;
- 	int periodic = 0;
- 	int perout = -1;
-+	int pin_index = -1, pin_func;
- 	int pps = -1;
- 	int settime = 0;
- 
-@@ -169,7 +179,7 @@ int main(int argc, char *argv[])
- 
- 	progname = strrchr(argv[0], '/');
- 	progname = progname ? 1+progname : argv[0];
--	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghi:k:p:P:sSt:v"))) {
-+	while (EOF != (c = getopt(argc, argv, "a:A:cd:e:f:ghi:k:lL:p:P:sSt:v"))) {
- 		switch (c) {
- 		case 'a':
- 			oneshot = atoi(optarg);
-@@ -199,6 +209,16 @@ int main(int argc, char *argv[])
- 			pct_offset = 1;
- 			n_samples = atoi(optarg);
- 			break;
-+		case 'l':
-+			list_pins = 1;
-+			break;
-+		case 'L':
-+			cnt = sscanf(optarg, "%d,%d", &pin_index, &pin_func);
-+			if (cnt != 2) {
-+				usage(progname);
-+				return -1;
-+			}
-+			break;
- 		case 'p':
- 			perout = atoi(optarg);
- 			break;
-@@ -245,12 +265,14 @@ int main(int argc, char *argv[])
- 			       "  %d programmable alarms\n"
- 			       "  %d external time stamp channels\n"
- 			       "  %d programmable periodic signals\n"
--			       "  %d pulse per second\n",
-+			       "  %d pulse per second\n"
-+			       "  %d programmable pins\n",
- 			       caps.max_adj,
- 			       caps.n_alarm,
- 			       caps.n_ext_ts,
- 			       caps.n_per_out,
--			       caps.pps);
-+			       caps.pps,
-+			       caps.n_pins);
- 		}
- 	}
- 
-@@ -331,6 +353,24 @@ int main(int argc, char *argv[])
- 		}
- 	}
- 
-+	if (list_pins) {
-+		int n_pins = 0;
-+		if (ioctl(fd, PTP_CLOCK_GETCAPS, &caps)) {
-+			perror("PTP_CLOCK_GETCAPS");
-+		} else {
-+			n_pins = caps.n_pins;
-+		}
-+		for (i = 0; i < n_pins; i++) {
-+			desc.index = i;
-+			if (ioctl(fd, PTP_PIN_GETFUNC, &desc)) {
-+				perror("PTP_PIN_GETFUNC");
-+				break;
-+			}
-+			printf("name %s index %u func %u chan %u\n",
-+			       desc.name, desc.index, desc.func, desc.chan);
-+		}
-+	}
-+
- 	if (oneshot) {
- 		install_handler(SIGALRM, handle_alarm);
- 		/* Create a timer. */
-@@ -392,6 +432,18 @@ int main(int argc, char *argv[])
- 		}
- 	}
- 
-+	if (pin_index >= 0) {
-+		memset(&desc, 0, sizeof(desc));
-+		desc.index = pin_index;
-+		desc.func = pin_func;
-+		desc.chan = index;
-+		if (ioctl(fd, PTP_PIN_SETFUNC, &desc)) {
-+			perror("PTP_PIN_SETFUNC");
-+		} else {
-+			puts("set pin function okay");
-+		}
-+	}
-+
- 	if (pps != -1) {
- 		int enable = pps ? 1 : 0;
- 		if (ioctl(fd, PTP_ENABLE_PPS, enable)) {
--- 
-1.7.10.4
-
+I'll wait for Thomas to review this new version before applying.
