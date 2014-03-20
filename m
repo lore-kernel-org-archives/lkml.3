@@ -1,95 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759476AbaCTRJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:09:45 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:8462 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755261AbaCTRJl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:09:41 -0400
-X-AuditID: cbfec372-b7fa96d000006a7b-04-532b20d32f15
-Date: Thu, 20 Mar 2014 14:09:33 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mark Brown <broonie@kernel.org>, Greg KH <greg@kroah.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging tree with the  tree
-Message-id: <20140320140933.4218df22@samsung.com>
-In-reply-to: <20140320154402.063BDC40A0B@trevor.secretlab.ca>
-References: <20140313005026.95bb2222270ded24b0a5deff@kernel.org>
- <3306881.foYD0IDJn0@avalon> <20140320154402.063BDC40A0B@trevor.secretlab.ca>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrILMWRmVeSWpSXmKPExsVy+t/hYN3LCtrBBh86rC2mPnzCZvHqzEY2
-	i3MLZjBadE5cwm5xedccNouDC9sYLe7eO8HiwO4xu2Mmq8emVZ1sHm8fBnj0/zXw+PlSx+Pz
-	JrkAtigum5TUnMyy1CJ9uwSujPuXWtkK2gQqnqxsZWlgvMPTxcjJISFgIvFt9RlmCFtM4sK9
-	9WxdjFwcQgJLGCUWvz7EDOH0MElMvDsLrIpFQFVizvIONhCbTcBI4lVjC2sXIweHiICOxLNz
-	giD1zAK3GSW2fb8PVi8s4CHxdeoCMJtXwFCi4+p7dhCbU8BWov3HZVaIBf1A295tYoQ4w0ni
-	1evJTBANghI/Jt9jAbGZBbQkNm9rYoWw5SU2r3nLPIFRYBaSsllIymYhKVvAyLyKUbS0OLmg
-	OCk911CvODG3uDQvXS85P3cTIyTYi3YwPttgdYhRgINRiYe3glM7WIg1say4MvcQowQHs5II
-	b54MUIg3JbGyKrUoP76oNCe1+BAjEwenVAPjjJlzuJubRHlO2X3M7q6XFfl+ZuG5QzvCwpmi
-	Fkccj0tV0Nwxz+dR8MqnqXwd/73OOJx+ZKe9JFAwx8c27Iyz0ZHiY0c5Ap79M/M4HsTX0dc1
-	z+K65V/z+3pdW2rPrzqSJNW4rp39XNfl78o2YdPf5fv0/D7Kmr3jsKbKse6vUps3xSy9G5mu
-	xFKckWioxVxUnAgANqzznFQCAAA=
+	id S1759146AbaCTRMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:12:15 -0400
+Received: from mail-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:12745
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753222AbaCTRMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:12:10 -0400
+From: Matthew Garrett <matthew.garrett@nebula.com>
+To: "tytso@mit.edu" <tytso@mit.edu>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jmorris@namei.org" <jmorris@namei.org>,
+        "keescook@chromium.org" <keescook@chromium.org>,
+        "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "hpa@zytor.com" <hpa@zytor.com>,
+        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+Subject: Re: Trusted kernel patchset for Secure Boot lockdown
+Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
+Thread-Index: AQHPP9H0gdFEpLbAD0ahQ2OJgthmsZrhN8oAgAeouoCAATicgIAAJkSA
+Date: Thu, 20 Mar 2014 17:12:05 +0000
+Message-ID: <1395335525.16016.3.camel@x230>
+References: <1394762250.6416.24.camel@x230.lan>
+	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
+	 <1394801518.6416.38.camel@x230.lan>
+	 <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
+	 <1394820664.26846.18.camel@x230.mview.int.nebula.com>
+	 <20140314214806.54a3d031@alan.etchedpixels.co.uk>
+	 <1394834193.1286.11.camel@x230>
+	 <20140314220840.29a12171@alan.etchedpixels.co.uk>
+	 <20140314231832.GA653@thunk.org>
+	 <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
+	 <20140320145507.GB20618@thunk.org>
+In-Reply-To: <20140320145507.GB20618@thunk.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [208.186.201.90]
+x-forefront-prvs: 01565FED4C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(377424004)(81342001)(47976001)(47736001)(49866001)(4396001)(74876001)(69226001)(76786001)(65816001)(76796001)(85852003)(83072002)(90146001)(20776003)(2171001)(92566001)(56816005)(63696002)(50986001)(66066001)(74502001)(31966008)(74662001)(47446002)(87936001)(80022001)(87266001)(19580395003)(95416001)(95666003)(93136001)(19580405001)(85306002)(97186001)(94946001)(76482001)(81542001)(74706001)(2656002)(80976001)(79102001)(92726001)(46102001)(86362001)(51856001)(94316002)(74366001)(93516002)(97336001)(33646001)(83322001)(56776001)(54316002)(77096001)(33716001)(81816001)(59766001)(77982001)(81686001)(53806001)(54356001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:7736F32F.ADD71B0B.B9D34FA6.8224D843.20253;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <5AD5D3E378B571469A6A3C63FE37928B@namprd05.prod.outlook.com>
+MIME-Version: 1.0
+X-OriginatorOrg: nebula.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2KHCOLV024172
 
-Em Thu, 20 Mar 2014 15:44:01 +0000
-Grant Likely <grant.likely@secretlab.ca> escreveu:
+On Thu, 2014-03-20 at 10:55 -0400, tytso@mit.edu wrote:
 
-> On Thu, 13 Mar 2014 10:17:56 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
-> > Hi Mark,
-> > 
-> > On Thursday 13 March 2014 00:50:26 Mark Brown wrote:
-> > > Hi Greg,
-> > > 
-> > > Today's linux-next merge of the staging tree got a conflict in
-> > > drivers/media/v4l2-core/v4l2-of.c between commit b9db140c1e4644d
-> > > ("[media] v4l: of: Support empty port nodes") from the v4l tree and
-> > > commit fd9fdb78a9bf ("[media] of: move graph helpers from
-> > > drivers/media/v4l2-core to drivers/of") from the staging tree.
-> > > 
-> > > I fixed it up by essentially dropping the support for empty port nodes
-> > > since there were more context differences than I was comfortable with
-> > > in the changes in the new code.
-> > 
-> > If I'm not mistaken the move of drivers/media/v4l2-core/v4l2-of.c to 
-> > drivers/of/of-graph.c has been canceled for v3.15 and related patches should 
-> > be dropped from the for-next branches in the very near future (the v4l tree 
-> > has already been rebased).
-> 
-> I had not actually asked Mauro to revert,
+> I disagree; it's highly likely, if not certain that Windows booting
+> under UEFI secure boot is going to be able to do some of the things
+> that people are proposing that we have to prohibit in the name of
+> security.  That's because presumably Windows won't be willing to make
+> certain usability tradeoffs, and since they control the signing certs,
+> even in the unlikely case that people can leverage these "holes" to
+> enable a boot sector virus, it seems unlikely that Windows will revoke
+> its own cert.
 
-See:
-	https://lkml.org/lkml/2014/3/10/283
+I don't think any of the functionality we're disabling (with the
+arguable exception of kexec, which, again, there is a plan to handle) is
+useful on modern systems. And, seriously, if this forces vendors to
+write actual kernel drivers rather than run an io port banging IPMI
+driver in userspace, that's a *good* thing.
 
-There, you literally answered me that:
-	"All trees containing the branch would need to be reverted."
-and:
-	"It means any tree containing that branch *must* be rewound."
+Whether Microsoft would actually follow through on blacklisting their
+own signatures is obviously an unknown - they've told us they would, but
+commercial concerns etc who knows. They *will* blacklist our signatures.
 
-That's what I (unhappily) did.
-
-I won't reapply this series, but, instead, I'll simply wait for the
-staging tree to be merged before sending those patches upstream,
-before sending the topic branch with exynos 5 patches that depend on it.
-
-This way, I can add Stephen patch on such topic branch, to avoid
-compilation breakages after merged.
-
-> but the branch is still in rmk's
-> tree and linux-next. I do not think it needs to be cancelled.
-
-> I do still have issues about it as a generic pattern, but I'm happy with
-> the discussion so far and the documentation will be sorted before the
-> next kernel is released.
-> 
-> g.
-
-Regards,
-Mauro
+-- 
+Matthew Garrett <matthew.garrett@nebula.com>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
