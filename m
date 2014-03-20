@@ -1,160 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530AbaCTLkG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:40:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49098 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221AbaCTLj7 (ORCPT
+	id S932796AbaCTLl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:41:27 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51970 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaCTLlZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:39:59 -0400
-Date: Thu, 20 Mar 2014 04:39:48 -0700
-From: tip-bot for Viresh Kumar <tipbot@zytor.com>
-Message-ID: <tip-6201b4d61fbf194df6371fb3376c5026cb8f5eec@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        viresh.kumar@linaro.org, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        viresh.kumar@linaro.org, tglx@linutronix.de
-In-Reply-To: <1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org>
-References: <1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] timer:
-  Remove code redundancy while calling get_nohz_timer_target()
-Git-Commit-ID: 6201b4d61fbf194df6371fb3376c5026cb8f5eec
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Thu, 20 Mar 2014 07:41:25 -0400
+Date: Thu, 20 Mar 2014 12:40:55 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Fugang Duan <B38611@freescale.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Budig <simon.budig@kernelconcepts.de>
+Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+Message-ID: <20140320124055.53d469e7@ipc1.ka-ro>
+In-Reply-To: <20140320093719.GB14420@e106331-lin.cambridge.arm.com>
+References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
+	<1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
+	<20140320093719.GB14420@e106331-lin.cambridge.arm.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6201b4d61fbf194df6371fb3376c5026cb8f5eec
-Gitweb:     http://git.kernel.org/tip/6201b4d61fbf194df6371fb3376c5026cb8f5eec
-Author:     Viresh Kumar <viresh.kumar@linaro.org>
-AuthorDate: Tue, 18 Mar 2014 16:26:07 +0530
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 20 Mar 2014 12:35:46 +0100
+Hi,
 
-timer: Remove code redundancy while calling get_nohz_timer_target()
+Mark Rutland wrote:
+> On Wed, Mar 19, 2014 at 01:09:20PM +0000, Lothar Waßmann wrote:
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+> > ---
+> >  .../bindings/input/touchscreen/edt-ft5x06.txt      |   41 ++++++
+> >  drivers/input/touchscreen/edt-ft5x06.c             |  144 +++++++++++++++-----
+> >  2 files changed, 154 insertions(+), 31 deletions(-)
+> >  create mode 100644 Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > 
+> > diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > new file mode 100644
+> > index 0000000..e5adc76
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
+> > @@ -0,0 +1,41 @@
+> > +FocalTech EDT-FT5x06 Polytouch driver
+> > +=====================================
+> > +
+> > +Required properties:
+> > + - compatible:  "edt,edt-ft5x06"
+> 
+> Is the 'x' part of a particular product name, or is this a class of
+> devices?
+> 
+The FT5x06 datasheet lists 3 variants for different panel sizes.
+I'll add distinct compatible strings for those chips, though their SW
+interface is (currently) identical:
+|Required properties:
+| - compatible:  "edt,edt-ft5206", "edt,edt-ft5x06"
+|           or:  "edt,edt-ft5306", "edt,edt-ft5x06"
+|           or:  "edt,edt-ft5406", "edt,edt-ft5x06"
 
-There are only two users of get_nohz_timer_target(): timer and hrtimer. Both
-call it under same circumstances, i.e.
 
-	#ifdef CONFIG_NO_HZ_COMMON
-	       if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-	               return get_nohz_timer_target();
-	#endif
+> > + - reg:         I2C slave address of the chip (0x38)
+> > + - interrupt-parent: a phandle pointing to the interrupt controller
+> > +                     serving the interrupt for this chip
+> > + - interrupts:       interrupt specification for this chip
+> 
+> How many? What are they for?
+>
+I'll change it to: 
+| - interrupts:       interrupt specification for the touchdetect
+|                     interrupt
 
-So, it makes more sense to get all this as part of get_nohz_timer_target()
-instead of duplicating code at two places. For this another parameter is
-required to be passed to this routine, pinned.
+> > + - report_rate: allows setting the report rate in the range from 3 to
+> > +                14.
+> 
+> However, why can the kernel not decide the report rate? This doesn't
+> sound like something that needs to vary per-board.
+> 
+> Also, s/_/-/ in property names, please.
+> 
+OK, I'll drop the property, which also simplyfies the code a bit.
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: fweisbec@gmail.com
-Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1e1b53537217d58d48c2d7a222a9c3ac47d5b64c.1395140107.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/sched.h |  6 +++++-
- kernel/hrtimer.c      | 15 +--------------
- kernel/sched/core.c   |  5 ++++-
- kernel/timer.c        |  7 +------
- 4 files changed, 11 insertions(+), 22 deletions(-)
+> > +#define EDT_GET_PROP(name, reg) {					\
+> > +	const u32 *prop = of_get_property(np, #name, NULL);		\
+> > +	if (prop)							\
+> > +		edt_ft5x06_register_write(tsdata, reg, be32_to_cpu(*prop)); \
+> > +}
+> 
+> Use of_property_read_u32, it'll handle endianness conversion for you.
+> 
+> Use of of_get_property is almost always wrong.
+> 
+Sure.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 68a0e84..6f6c56f 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -291,10 +291,14 @@ extern int runqueue_is_locked(int cpu);
- #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ_COMMON)
- extern void nohz_balance_enter_idle(int cpu);
- extern void set_cpu_sd_state_idle(void);
--extern int get_nohz_timer_target(void);
-+extern int get_nohz_timer_target(int pinned);
- #else
- static inline void nohz_balance_enter_idle(int cpu) { }
- static inline void set_cpu_sd_state_idle(void) { }
-+static inline int get_nohz_timer_target(int pinned)
-+{
-+	return smp_processor_id();
-+}
- #endif
- 
- /*
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 0909436..d55092c 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -168,19 +168,6 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
- 	}
- }
- 
--
--/*
-- * Get the preferred target CPU for NOHZ
-- */
--static int hrtimer_get_target(int this_cpu, int pinned)
--{
--#ifdef CONFIG_NO_HZ_COMMON
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
--		return get_nohz_timer_target();
--#endif
--	return this_cpu;
--}
--
- /*
-  * With HIGHRES=y we do not migrate the timer when it is expiring
-  * before the next event on the target cpu because we cannot reprogram
-@@ -214,7 +201,7 @@ switch_hrtimer_base(struct hrtimer *timer, struct hrtimer_clock_base *base,
- 	struct hrtimer_clock_base *new_base;
- 	struct hrtimer_cpu_base *new_cpu_base;
- 	int this_cpu = smp_processor_id();
--	int cpu = hrtimer_get_target(this_cpu, pinned);
-+	int cpu = get_nohz_timer_target(pinned);
- 	int basenum = base->index;
- 
- again:
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index b46131e..c0339e2 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -555,12 +555,15 @@ void resched_cpu(int cpu)
-  * selecting an idle cpu will add more delays to the timers than intended
-  * (as that cpu's timer base may not be uptodate wrt jiffies etc).
-  */
--int get_nohz_timer_target(void)
-+int get_nohz_timer_target(int pinned)
- {
- 	int cpu = smp_processor_id();
- 	int i;
- 	struct sched_domain *sd;
- 
-+	if (pinned || !get_sysctl_timer_migration() || !idle_cpu(cpu))
-+		return cpu;
-+
- 	rcu_read_lock();
- 	for_each_domain(cpu, sd) {
- 		for_each_cpu(i, sched_domain_span(sd)) {
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 8e503fe..1d35dda 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -760,12 +760,7 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
- 
- 	debug_activate(timer, expires);
- 
--	cpu = smp_processor_id();
--
--#if defined(CONFIG_NO_HZ_COMMON) && defined(CONFIG_SMP)
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
--		cpu = get_nohz_timer_target();
--#endif
-+	cpu = get_nohz_timer_target(pinned);
- 	new_base = per_cpu(tvec_bases, cpu);
- 
- 	if (base != new_base) {
+
+Lothar Waßmann
+-- 
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
