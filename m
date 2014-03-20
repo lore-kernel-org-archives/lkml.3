@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933119AbaCTJnD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:43:03 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:49042 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932895AbaCTJnA (ORCPT
+	id S1757082AbaCTJnN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:43:13 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:58417 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932895AbaCTJnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:43:00 -0400
-Subject: [PATCH 26/33] [libgencore] Setting up Connection
+	Thu, 20 Mar 2014 05:43:08 -0400
+Subject: [PATCH 27/33] [libgencore] Request for dump
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
@@ -21,8 +21,8 @@ Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
         eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
         tj@kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:12:38 +0530
-Message-ID: <20140320094238.14878.9756.stgit@localhost.localdomain>
+Date: Thu, 20 Mar 2014 15:12:57 +0530
+Message-ID: <20140320094257.14878.9997.stgit@localhost.localdomain>
 In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
 References: <20140320093040.14878.903.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
@@ -31,109 +31,134 @@ Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-7014-0000-0000-0000048ABBB6
+x-cbid: 14032009-9574-0000-0000-00000C888BF0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Creating a socket and setting up a connection with the server(daemon).
+Request for a self dump and wait for an acknowledgement first and then a
+response about the status of the dump.
+
+  --------    gencore(file_name) --------
+ |        |   ----------------> |        |
+ |        |   ack(errno)        |        |
+ | CLIENT |   <---------------- | SERVER |
+ |        |   status(errno)     |(daemon)|
+ |        |   <---------------- |        |
+  --------                       --------
+
+a) The client connects to the server(daemon)
+
+b) Once the connection is accepted, request for dump is sent. This request
+contains the file name where the dump is to be saved.
+
+c) Once the request is sent, the client waits for an acknowledgment from the
+server, that it has received the message.
+
+d) Then the client waits for the status response from the server which either
+is a sucess or a failure. If it is a failure, the correct errno is sent back.
 
 Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 ---
- src/Makefile.am |    4 +++
- src/client.c    |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 74 insertions(+)
- create mode 100644 src/client.c
+ src/Makefile.am |    1 +
+ src/client.c    |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ src/gencore.h   |    1 +
+ 3 files changed, 53 insertions(+)
+ create mode 100644 src/gencore.h
 
 diff --git a/src/Makefile.am b/src/Makefile.am
-index b9b2e9b..a1d57ca 100644
+index a1d57ca..c8a52b7 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
-@@ -3,6 +3,10 @@ HAVE_SYSTEMD_SOCKET_SUPPORT = 0
+@@ -3,6 +3,7 @@ HAVE_SYSTEMD_SOCKET_SUPPORT = 0
  SOCKET_PATH = /var/run/gencored.socket
  CFLAGS += -I. -DHAVE_SYSTEMD_SOCKET_SUPPORT='$(HAVE_SYSTEMD_SOCKET_SUPPORT)' -DSOCKET_PATH='"$(SOCKET_PATH)"'
  
-+lib_LTLIBRARIES = libgencore.la
-+libgencore_la_LDFLAGS = -fPIC
-+libgencore_la_SOURCES = client.c
-+
- bin_PROGRAMS = gencore
- gencore_SOURCES = coredump.c proc.c elf32.c elf64.c
- 
++include_HEADERS = gencore.h
+ lib_LTLIBRARIES = libgencore.la
+ libgencore_la_LDFLAGS = -fPIC
+ libgencore_la_SOURCES = client.c
 diff --git a/src/client.c b/src/client.c
-new file mode 100644
-index 0000000..cddaf94
---- /dev/null
+index cddaf94..8d078b7 100644
+--- a/src/client.c
 +++ b/src/client.c
-@@ -0,0 +1,70 @@
-+/*
-+ * Client interface for selfdump.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU Lesser General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU Lesser General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU Lesser General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright (C) IBM Corporation, 2013
-+ *
-+ * Authors:
-+ *      Janani Venkataraman <jananve@in.ibm.com>
-+ */
-+
-+#include <stdio.h>
-+#include <sys/socket.h>
-+#include <sys/un.h>
-+#include <unistd.h>
-+#include <string.h>
-+#include <errno.h>
-+
-+int setup_connection(void)
+@@ -27,6 +27,7 @@
+ #include <unistd.h>
+ #include <string.h>
+ #include <errno.h>
++#include <gencore.h>
+ 
+ int setup_connection(void)
+ {
+@@ -53,6 +54,51 @@ int setup_connection(void)
+ 	return socket_fd;
+ }
+ 
++/* Sends message to client */
++int send_core_filename(int socket_fd, char *corefile)
 +{
-+	int socket_fd;
-+	struct sockaddr_un address;
-+	socklen_t len = sizeof(struct sockaddr_un);
++	if (write(socket_fd, corefile , strlen(corefile) + 1) == -1)
++		return errno;
 +
-+	/* Creating the socket */
-+	socket_fd = socket(PF_UNIX, SOCK_STREAM, 0);
-+	if (socket_fd < 0)
-+		return -1;
-+
-+	memset(&address, 0, len);
-+
-+	address.sun_family = PF_FILE;
-+	strcpy(address.sun_path, SOCKET_PATH);
-+
-+	/* Connecting to the server */
-+	if (connect(socket_fd, (struct sockaddr *) &address, len)) {
-+		close(socket_fd);
-+		return -1;
-+	}
-+
-+	return socket_fd;
++	return 0;
 +}
 +
-+int gencore(char *corefile)
++/* Receive message from client */
++int receive_reply(int socket_fd)
 +{
-+	int socket, ret;
++	int reply;
 +
-+	/* Socket operation */
-+	socket = setup_connection();
-+	if (socket == -1) {
-+		ret = errno;
++	if (read(socket_fd, &reply , sizeof(reply)) == -1)
++		return errno;
++
++	return reply;
++}
++
++int dump_request(int socket_fd, char *corefile)
++{
++	int ret;
++
++	/* Sends request */
++	ret = send_core_filename(socket_fd, corefile);
++	if (ret)
 +		goto cleanup;
-+	}
++
++	/* Receives acknowledgment */
++	ret = receive_reply(socket_fd);
++	if (ret)
++		goto cleanup;
++
++	/* Receives status */
++	ret = receive_reply(socket_fd);
++	if (ret)
++		goto cleanup;
 +
 +cleanup:
++	close(socket_fd);
 +
 +	return ret;
 +}
++
+ int gencore(char *corefile)
+ {
+ 	int socket, ret;
+@@ -64,6 +110,11 @@ int gencore(char *corefile)
+ 		goto cleanup;
+ 	}
+ 
++	/* Asks for a self dump */
++	ret = dump_request(socket, corefile);
++	if (ret)
++		goto cleanup;
++
+ cleanup:
+ 
+ 	return ret;
+diff --git a/src/gencore.h b/src/gencore.h
+new file mode 100644
+index 0000000..8ad0ca8
+--- /dev/null
++++ b/src/gencore.h
+@@ -0,0 +1 @@
++int gencore(char *corefile);
 
