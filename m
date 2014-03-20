@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759856AbaCTUx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:53:56 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:64935 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759768AbaCTUxv (ORCPT
+	id S1759932AbaCTU5J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:57:09 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:50549 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759458AbaCTU5H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:53:51 -0400
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: [PATCH RFC] PM / Hibernate: no kernel_power_off when pm_power_off NULL
-Date: Thu, 20 Mar 2014 13:53:15 -0700
-Message-Id: <1395348795-8554-2-git-send-email-sebastian.capella@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org>
-References: <1395348795-8554-1-git-send-email-sebastian.capella@linaro.org>
+	Thu, 20 Mar 2014 16:57:07 -0400
+Date: Thu, 20 Mar 2014 16:57:03 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jeffrey Layton <jlayton@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Steve French <sfrench@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        uobergfe@redhat.com, Pavel Shilovsky <piastryyy@gmail.com>
+Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
+ queues
+Message-ID: <20140320165703.522c7c5c@gandalf.local.home>
+In-Reply-To: <20140320152833.216d81a0@tlielax.poochiereds.net>
+References: <20140319151252.16ed3ac6@gandalf.local.home>
+	<20140320152833.216d81a0@tlielax.poochiereds.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reboot logic in kernel/reboot will avoid calling kernel_power_off
-when pm_power_off is null, and instead uses kernel_halt.  Change
-hibernate's power_down to follow the behavior in the reboot call.
+On Thu, 20 Mar 2014 15:28:33 -0400
+Jeffrey Layton <jlayton@redhat.com> wrote:
 
-Calling the notifier twice (once for SYS_POWER_OFF and again for
-SYS_HALT) causes a panic during hibernation on Kirkwood
-Openblocks A6 board.
+ 
+> Nice analysis! I think eventually we'll need to overhaul this code not
 
-Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Len Brown <len.brown@intel.com>
-Cc: Pavel Machek <pavel@ucw.cz>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
----
- kernel/power/hibernate.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Note, Ulrich Obergfell helped a bit in the initial analysis. He found
+from a customer core dump that the kworker thread was blocked on the
+cinode->lock_sem, and the reader was blocked as well. That was enough
+for me to find where the problem laid.
 
-diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
-index 37170d4..6a278dc 100644
---- a/kernel/power/hibernate.c
-+++ b/kernel/power/hibernate.c
-@@ -595,7 +595,8 @@ static void power_down(void)
- 	case HIBERNATION_PLATFORM:
- 		hibernation_platform_enter();
- 	case HIBERNATION_SHUTDOWN:
--		kernel_power_off();
-+		if (pm_power_off)
-+			kernel_power_off();
- 		break;
- #ifdef CONFIG_SUSPEND
- 	case HIBERNATION_SUSPEND:
--- 
-1.7.9.5
+> to use rw semaphores, but that's going to take some redesign. (Wonder
+> if we could change it to use seqlocks or something?)
+> 
+> Out of curiousity, does this eventually time out and unwedge itself?
+> Usually when the server doesn't get a response to an oplock break in
+> around a minute or so it gives up and allows the thing that caused the
+> oplock break to proceed anyway. Not great for performance but it out to
+> eventually make progress due to that.
+
+No, I believe it's hard locked. Nothing is going to wake up the oplock
+break  if it is blocked on a down_read(). Only the release of the rwsem
+will do that. It's the subtle way the kworker threads are done.
+
+> 
+> In any case, this looks like a reasonable fix for now, but I suspect you
+> can hit similar problems in the write codepath too. What may be best is
+> turn this around and queue the oplock break to the new workqueue
+> instead of the read completion job.
+
+Or perhaps give both the read and write their own workqueues? We have
+to look at all the work queue handlers, and be careful about any users
+that take the lock_sem, and separate them out.
+
+-- Steve
+
 
