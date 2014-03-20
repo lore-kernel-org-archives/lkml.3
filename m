@@ -1,227 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964914AbaCTT3N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:29:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35601 "EHLO mx1.redhat.com"
+	id S964965AbaCTT34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:29:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55426 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964875AbaCTT3J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:29:09 -0400
-Date: Thu, 20 Mar 2014 15:28:33 -0400
-From: Jeffrey Layton <jlayton@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Steve French <sfrench@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        uobergfe@redhat.com, Pavel Shilovsky <piastryyy@gmail.com>
-Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
- queues
-Message-ID: <20140320152833.216d81a0@tlielax.poochiereds.net>
-In-Reply-To: <20140319151252.16ed3ac6@gandalf.local.home>
-References: <20140319151252.16ed3ac6@gandalf.local.home>
+	id S964875AbaCTT3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:29:54 -0400
+Message-ID: <532B4173.9010208@ti.com>
+Date: Thu, 20 Mar 2014 15:28:51 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: Warner Losh <imp@bsdimp.com>, David Woodhouse <dwmw2@infradead.org>,
+        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
+        <rob@landley.net>, Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [PATCH 2/3] mtd: davinci-nand: add dts property for NAND_NO_SUBPAGE_WRITE
+ option
+References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com> <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com> <532B2183.2080309@ti.com> <20140320172912.GW31517@norris-Latitude-E6410> <532B2766.6090506@ti.com> <D69011BE-C37F-4085-B992-45F6F32AF1D0@gmail.com> <532B2D3F.6050004@ti.com> <20140320185452.GB21018@ld-irv-0074> <532B3D74.6070703@ti.com> <532B40E5.4070201@ti.com>
+In-Reply-To: <532B40E5.4070201@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Mar 2014 15:12:52 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Thursday 20 March 2014 03:26 PM, Ivan Khoronzhuk wrote:
+> 
+> On 03/20/2014 09:11 PM, Santosh Shilimkar wrote:
+>> On Thursday 20 March 2014 02:54 PM, Brian Norris wrote:
+>>> On Thu, Mar 20, 2014 at 02:02:39PM -0400, Santosh Shilimkar wrote:
+>>>> On Thursday 20 March 2014 01:44 PM, Warner Losh wrote:
+>>>>> I though sub page writing was one of the fields in the onfi and/or jedec(toggle) meta data structures. Have you looked there?
+>>>>>
+>>>> Am not sure if I follow you. The limitation is from the TI NAND controller(AEMIF) and
+>>>> not the NAND memory.
+>>> That doesn't match the patch description, which says "that flash doesn't
+>>> support subpage writing". Flash != flash controller.
+>>>
+>> Patch description is indeed doesn't reflect the actual issue.
+>>
+>>> Which one is it? If it's a controller limitation, I think we should be
+>>> able to pull this from a "compatible" property, no?
+>>>
+>> Just to be accurate, the limitation(bug) is on the controller found on Keystone
+>> SOCs. AEMIF controller is also used on DaVinci SOCs which don't seems to have
+>> any issue. So even for compatible, you need to add keystone specific one.
+>> Hence thought dt property is better option.
+>>
 
-> We just had a customer report a deadlock in their 3.8-rt kernel.
-> Looking into this, it is very possible to have the same deadlock in
-> mainline in Linus's tree as it stands today.
 > 
-> It is much easier to deadlock in the -rt kernel because reader locks
-> are serialized, where a down_read() can block another down_read(). But
-> because rwsems are fair locks, if a writer is waiting, a new reader
-> will then block. This means that if it is possible for a reader to
-> deadlock another reader, this can happen if a write comes along and
-> blocks on a current reader. That will prevent another reader from
-> running, and if that new reader requires to wake up a reader that owns
-> the lock, you have your deadlock.
+> I will use compatible approach.
+> We have keystone compatible in k2hk-evm.dts,
+> so I need to add it only in the davinci-nand driver.
+> I will add the following:
 > 
-> Here's the situation with CIFS and workqueues:
-> 
-> The cifs system has several workqueues used in file.c and other
-> places. One of them is used for completion of a read and to release
-> the page_lock which wakes up the reader. There are several other
-> workqueues that do various other tasks.
-> 
-> A holder of the reader lock can sleep on a page_lock() and expect the
-> reader workqueue to wake it up (page_unlock()). The reader workqueue
-> takes no locks so this does not seem to be a problem (but it is).
-> 
-> The other workqueues can take the rwsem for read or for write. But our
-> issue that we tripped over was that it grabs it for read (remember in
-> -rt readers are serialized). But this can also happen if a separate
-> writer is waiting on the lock as that would cause a reader to block on
-> another reader too.
-> 
-> All the workqueue callbacks are executed on the same workqueue:
-> 
-> 	queue_work(cifsiod_wq, &rdata->work);
-> 	[...]
-> 	queue_work(cifsiod_wq, &cfile->oplock_break);
-> 
-> Now if the reader workqueue callback is queued after one of these
-> workqueues that can take the rwsem, we can hit a deadlock. The
-> workqueue code looks to be able to prevent deadlocks of these kinds,
-> but I do not totally understand the workqueue scheduled work structure
-> and perhaps if the kworker thread structure blocks hard it wont move
-> works around.
-> 
-> Here's what we see:
-> 
-> 	rdata->work is scheduled after cfile->oplock_break
-> 
-> 	CPU0						CPU1
-> 	----						----
-> 
->   do_sync_read()
->     cifs_strict_readv()
->       down_read(cinode->lock_sem);
->       generic_file_aio_read()
->         __lock_page_killable()
->           __wait_on_bit_lock()
-> 
->        * BLOCKED *
-> 
-> 						process_one_work()
-> 						  cifs_oplock_break()
-> 						    cifs_has_mand_locks()
-> 						      down_read(cinode->lock_sem);
-> 
-> 						   * BLOCKED *
-> 
-> 					      [ note,
-> cifs_oplock_break() can also call cifs_push_locks which takes
-> 					        the lock with
-> down_write() ]
-> 
-> 
-> But we noticed that the rdata->work was queued to run under the same
-> workqueue task and this work is to wake up the owner of the semaphore.
-> But because the workqueue task is blocked waiting on that lock, it
-> will never wake it up.
-> 
-> My question to Tejun is, if we create another workqueue, to add the
-> rdata->work to, would that prevent the above problem? Or what other
-> fixes can we do?
-> 
-> This is only compiled tested, we have not given it to our customer
-> yet.
-> 
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-
-Cc'ing Pavel since he wrote most of the lock pushing code...
-
-Nice analysis! I think eventually we'll need to overhaul this code not
-to use rw semaphores, but that's going to take some redesign. (Wonder
-if we could change it to use seqlocks or something?)
-
-Out of curiousity, does this eventually time out and unwedge itself?
-Usually when the server doesn't get a response to an oplock break in
-around a minute or so it gives up and allows the thing that caused the
-oplock break to proceed anyway. Not great for performance but it out to
-eventually make progress due to that.
-
-In any case, this looks like a reasonable fix for now, but I suspect you
-can hit similar problems in the write codepath too. What may be best is
-turn this around and queue the oplock break to the new workqueue
-instead of the read completion job.
-
-> diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-> index 849f613..6656058 100644
-> --- a/fs/cifs/cifsfs.c
-> +++ b/fs/cifs/cifsfs.c
-> @@ -86,6 +86,7 @@ extern mempool_t *cifs_req_poolp;
->  extern mempool_t *cifs_mid_poolp;
->  
->  struct workqueue_struct	*cifsiod_wq;
-> +struct workqueue_struct	*cifsiord_wq;
->  
->  #ifdef CONFIG_CIFS_SMB2
->  __u8 cifs_client_guid[SMB2_CLIENT_GUID_SIZE];
-> @@ -1199,9 +1200,15 @@ init_cifs(void)
->  		goto out_clean_proc;
->  	}
->  
-> +	cifsiord_wq = alloc_workqueue("cifsiord",
-> WQ_FREEZABLE|WQ_MEM_RECLAIM, 0);
-> +	if (!cifsiord_wq) {
-> +		rc = -ENOMEM;
-> +		goto out_destroy_wq;
-> +	}
-> +
->  	rc = cifs_fscache_register();
->  	if (rc)
-> -		goto out_destroy_wq;
-> +		goto out_destroy_rwq;
->  
->  	rc = cifs_init_inodecache();
->  	if (rc)
-> @@ -1249,6 +1256,8 @@ out_destroy_inodecache:
->  	cifs_destroy_inodecache();
->  out_unreg_fscache:
->  	cifs_fscache_unregister();
-> +out_destroy_rwq:
-> +	destroy_workqueue(cifsiord_wq);
->  out_destroy_wq:
->  	destroy_workqueue(cifsiod_wq);
->  out_clean_proc:
-> @@ -1273,6 +1282,7 @@ exit_cifs(void)
->  	cifs_destroy_inodecache();
->  	cifs_fscache_unregister();
->  	destroy_workqueue(cifsiod_wq);
-> +	destroy_workqueue(cifsiord_wq);
->  	cifs_proc_clean();
+> if (of_device_is_compatible(np, "ti,keystone-nand")) {
+>             pdata->options |= NAND_NO_SUBPAGE_WRITE;
 >  }
->  
-> diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-> index c0f3718..75d1941 100644
-> --- a/fs/cifs/cifsglob.h
-> +++ b/fs/cifs/cifsglob.h
-> @@ -1561,6 +1561,7 @@ void cifs_oplock_break(struct work_struct
-> *work); 
->  extern const struct slow_work_ops cifs_oplock_break_ops;
->  extern struct workqueue_struct *cifsiod_wq;
-> +extern struct workqueue_struct *cifsiord_wq;
->  
->  extern mempool_t *cifs_mid_poolp;
->  
-> diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-> index f3264bd..ca04a2e 100644
-> --- a/fs/cifs/cifssmb.c
-> +++ b/fs/cifs/cifssmb.c
-> @@ -1571,7 +1571,7 @@ cifs_readv_callback(struct mid_q_entry *mid)
->  		rdata->result = -EIO;
->  	}
->  
-> -	queue_work(cifsiod_wq, &rdata->work);
-> +	queue_work(cifsiord_wq, &rdata->work);
->  	DeleteMidQEntry(mid);
->  	add_credits(server, 1, 0);
->  }
-> diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
-> index 8603447..b74bf61 100644
-> --- a/fs/cifs/smb2pdu.c
-> +++ b/fs/cifs/smb2pdu.c
-> @@ -1742,7 +1742,7 @@ smb2_readv_callback(struct mid_q_entry *mid)
->  	if (rdata->result)
->  		cifs_stats_fail_inc(tcon, SMB2_READ_HE);
->  
-> -	queue_work(cifsiod_wq, &rdata->work);
-> +	queue_work(cifsiord_wq, &rdata->work);
->  	DeleteMidQEntry(mid);
->  	add_credits(server, credits_received, 0);
->  }
+> 
+> ...
+> 
+> static const struct of_device_id davinci_nand_of_match[] = {
+>     {.compatible = "ti,davinci-nand", },
+>     {.compatible = "ti,keystone-nand", },
+>     {},
+> };
+> 
+Looks good. I think you should go ahead and respin the patch
+with above.
 
-
-
--- 
-Jeff Layton <jlayton@redhat.com>
+Regards,
+Santosh
