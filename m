@@ -1,64 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228AbaCTJsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:48:30 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:45510 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754148AbaCTJs0 (ORCPT
+	id S1758374AbaCTJtD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:49:03 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54640 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756894AbaCTJlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:48:26 -0400
-Date: Thu, 20 Mar 2014 02:48:20 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com
-Subject: Re: [PATCH v6 00/36] mtd: st_spi_fsm: Add new driver
-Message-ID: <20140320094820.GJ31517@norris-Latitude-E6410>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 05:41:25 -0400
+Subject: [PATCH 15/33] Updating Offset
+To: linux-kernel@vger.kernel.org
+From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
+        james.hogan@imgtec.com, aravinda@linux.vnet.ibm.com, hch@lst.de,
+        mhiramat@redhat.com, jeremy.fitzhardinge@citrix.com,
+        xemul@parallels.com, d.hatayama@jp.fujitsu.com, coreutils@gnu.org,
+        kosaki.motohiro@jp.fujitsu.com, adobriyan@gmail.com,
+        util-linux@vger.kernel.org, tarundsk@linux.vnet.ibm.com,
+        vapier@gentoo.org, roland@hack.frob.com, ananth@linux.vnet.ibm.com,
+        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
+        eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
+        tj@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org
+Date: Thu, 20 Mar 2014 15:11:17 +0530
+Message-ID: <20140320094117.14878.54577.stgit@localhost.localdomain>
+In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
+References: <20140320093040.14878.903.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032009-5564-0000-0000-00000C985D02
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 09:20:32AM +0000, Lee Jones wrote:
-> This should be the final version (again) :)
-> 
-> Version 6:
->   Serviced 3 nits picked up by Brian during final review.
+Updating offset throughout keeping in mind that they need to be PAGE ALIGNED.
 
-I'm really sorry to do this again, but can you *please* read *all* of my
-comments? You're missing at least the following diff! I'm fine with an
-incremental patch on top of this series.
+Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+---
+ src/elf.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index aefd48db7ade..6369636e980a 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -3,7 +3,7 @@
-  *
-  * Author: Angus Clark <angus.clark@st.com>
-  *
-- * Copyright (C) 2010-2014 STicroelectronics Limited
-+ * Copyright (C) 2010-2014 STMicroelectronics Limited
-  *
-  * JEDEC probe based on drivers/mtd/devices/m25p80.c
-  *
-@@ -1730,14 +1730,6 @@ static int stfsm_mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
+diff --git a/src/elf.c b/src/elf.c
+index a5a1feb..a101ddf 100644
+--- a/src/elf.c
++++ b/src/elf.c
+@@ -39,6 +39,8 @@
  
- 	dev_dbg(fsm->dev, "%s to 0x%08x, len %zd\n", __func__, (u32)to, len);
+ #define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
  
--	*retlen = 0;
--
--	if (!len)
--		return 0;
--
--	if (to + len > mtd->size)
--		return -EINVAL;
--
- 	/* Offset within page */
- 	page_offs = to % FLASH_PAGESIZE;
++#define ALIGN(addr, pagesize) (((addr) + (pagesize) - 1) & ~(pagesize - 1))
++
+ /* Default alignment for program headers */
+ #ifndef ELF_EXEC_PAGESIZE
+ #define ELF_EXEC_PAGESIZE PAGESIZE
+@@ -617,7 +619,6 @@ static int get_phdrs(int pid, struct core_proc *cp)
+ 	cp_phdrs[0].p_offset = 0;
+ 	cp_phdrs[0].p_vaddr = 0;
+ 	cp_phdrs[0].p_paddr = 0;
+-	/* Will fill the size after filling notes */
+ 	cp_phdrs[0].p_filesz = 0;
+ 	cp_phdrs[0].p_memsz = 0;
  
+@@ -671,6 +672,50 @@ static int get_phdrs(int pid, struct core_proc *cp)
+ 	return 0;
+ }
+ 
++/* Updating the Offset */
++static void update_offset(struct core_proc *cp)
++{
++	Elf_Long data_offset = 0;
++	struct mem_note *note = cp->notes;
++	int i;
++	Elf_Phdr *cp_phdrs;
++	Elf_Ehdr *cp_elf;
++
++	cp_elf = (Elf_Ehdr *)cp->elf_hdr;
++	cp_phdrs = (Elf_Phdr *)cp->phdrs;
++
++	/* ELF HEADER */
++	data_offset += sizeof(Elf_Ehdr);
++
++	/* Program Headers */
++	data_offset += cp->phdrs_count * sizeof(Elf_Phdr);
++
++	/* Notes */
++	cp_phdrs[0].p_offset = data_offset;
++
++	/* Calucalating entire NOTES size */
++	while (note) {
++		data_offset += note->size;
++		note = note->next;
++	}
++
++	/* Filling PT_NOTE size */
++	cp_phdrs[0].p_filesz = data_offset - cp_phdrs[0].p_offset;
++
++	data_offset = ALIGN(data_offset, ELF_EXEC_PAGESIZE);
++
++	/* Populating offsets of Program Headers */
++	for (i = 1; i < cp->phdrs_count; i++) {
++		cp_phdrs[i].p_offset = data_offset;
++		data_offset += cp_phdrs[i].p_filesz;
++		data_offset = ALIGN(data_offset, ELF_EXEC_PAGESIZE);
++	}
++
++	/* Filling extra program header offset if phnum > PN_XNUM */
++	if (cp->phdrs_count > PN_XNUM)
++		cp_elf->e_shoff = data_offset;
++}
++
+ int do_elf_coredump(int pid, struct core_proc *cp)
+ {
+ 	int ret, i;
+@@ -705,5 +750,8 @@ int do_elf_coredump(int pid, struct core_proc *cp)
+ 	if (ret)
+ 		return -1;
+ 
++	/* Updating offset */
++	update_offset(cp);
++
+ 	return 0;
+ }
+
