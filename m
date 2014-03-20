@@ -1,153 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208AbaCTJdH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:33:07 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:18560 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756297AbaCTJVY (ORCPT
+	id S1757701AbaCTJdF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:33:05 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:63083 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756350AbaCTJV0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:24 -0400
-Message-ID: <532AB305.4050001@oracle.com>
-Date: Thu, 20 Mar 2014 17:21:09 +0800
-From: Bob Liu <bob.liu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130308 Thunderbird/17.0.4
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mel Gorman <mgorman@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Rik van Riel <riel@redhat.com>
-Subject: Re: mm: kernel BUG at mm/swap.c:609!
-References: <531F6D02.3060409@oracle.com> <531FB77E.4030805@oracle.com>
-In-Reply-To: <531FB77E.4030805@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 20 Mar 2014 05:21:26 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        computersforpeace@gmail.com
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v6 04/36] mtd: st_spi_fsm: Supply framework for device requests
+Date: Thu, 20 Mar 2014 09:20:36 +0000
+Message-Id: <1395307268-12721-5-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The FSM hardware works by setting a predetermined sequence of register
+writes. Rather than open coding them inside each functional block we're
+going to define them in a series of formatted 'sequence structures'.
+This patch provides the framework which shall be used for every action.
 
-On 03/12/2014 09:25 AM, Bob Liu wrote:
-> 
-> On 03/12/2014 04:07 AM, Sasha Levin wrote:
->> Hi all,
->>
->> While fuzzing with trinity inside a KVM tools guest running latest -next
->> kernel
->> I've stumbled on the following spew:
->>
->> [  477.301955] kernel BUG at mm/swap.c:609!
->> [  477.302564] invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
->> [  477.303590] Dumping ftrace buffer:
->> [  477.305022]    (ftrace buffer empty)
->> [  477.305899] Modules linked in:
->> [  477.306397] CPU: 35 PID: 10092 Comm: trinity-c374 Tainted: G       
->> W    3.14.0-rc5-next-20140307-sasha-00010-g1f812cb #142
->> [  477.307644] task: ffff8800a7f80000 ti: ffff8800a7f6a000 task.ti:
->> ffff8800a7f6a000
->> [  477.309124] RIP: 0010:[<ffffffff8127f311>]  [<ffffffff8127f311>]
->> lru_cache_add+0x21/0x60
->> [  477.310301] RSP: 0000:ffff8800a7f6bbc8  EFLAGS: 00010292
->> [  477.311110] RAX: 000000000000003f RBX: ffffea0013d68000 RCX:
->> 0000000000000006
->> [  477.311110] RDX: 0000000000000006 RSI: ffff8800a7f80d60 RDI:
->> 0000000000000282
->> [  477.311110] RBP: ffff8800a7f6bbc8 R08: 0000000000000001 R09:
->> 0000000000000001
->> [  477.311110] R10: 0000000000000001 R11: 0000000000000001 R12:
->> ffff8800ab9b0c00
->> [  477.311110] R13: 0000000002400000 R14: ffff8800ab9b0c00 R15:
->> 0000000000000001
->> [  477.311110] FS:  00007ff2c047c700(0000) GS:ffff88042bc00000(0000)
->> knlGS:0000000000000000
->> [  477.311110] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
->> [  477.311110] CR2: 0000000003788a68 CR3: 00000000a7f68000 CR4:
->> 00000000000006a0
->> [  477.311110] DR0: 000000000069b000 DR1: 0000000000000000 DR2:
->> 0000000000000000
->> [  477.311110] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7:
->> 0000000000000600
->> [  477.311110] Stack:
->> [  477.311110]  ffff8800a7f6bbf8 ffffffff812adaec ffffea0013d68000
->> ffffea002bdb8000
->> [  477.311110]  ffffea0013d68000 ffff8800a7f7c090 ffff8800a7f6bca8
->> ffffffff812db8ec
->> [  477.311110]  0000000000000001 ffffffff812e1321 ffff8800a7f6bc48
->> ffffffff811ad632
->> [  477.311110] Call Trace:
->> [  477.311110]  [<ffffffff812adaec>] page_add_new_anon_rmap+0x1ec/0x210
->> [  477.311110]  [<ffffffff812db8ec>]
->> migrate_misplaced_transhuge_page+0x55c/0x830
->> [  477.311110]  [<ffffffff812e1321>] ? do_huge_pmd_numa_page+0x311/0x460
->> [  477.311110]  [<ffffffff811ad632>] ? __lock_release+0x1e2/0x200
->> [  477.311110]  [<ffffffff812e133f>] do_huge_pmd_numa_page+0x32f/0x460
->> [  477.311110]  [<ffffffff81af6aca>] ? delay_tsc+0xfa/0x120
->> [  477.311110]  [<ffffffff812a31f4>] __handle_mm_fault+0x244/0x3a0
->> [  477.311110]  [<ffffffff812e37ed>] ? rcu_read_unlock+0x5d/0x60
->> [  477.311110]  [<ffffffff812a3463>] handle_mm_fault+0x113/0x1c0
->> [  477.311110]  [<ffffffff844abd42>] ? __do_page_fault+0x302/0x5d0
->> [  477.311110]  [<ffffffff844abfd1>] __do_page_fault+0x591/0x5d0
->> [  477.311110]  [<ffffffff8118ab46>] ? vtime_account_user+0x96/0xb0
->> [  477.311110]  [<ffffffff844ac492>] ? preempt_count_sub+0xe2/0x120
->> [  477.311110]  [<ffffffff81269567>] ?
->> context_tracking_user_exit+0x187/0x1d0
->> [  477.311110]  [<ffffffff844ac0d5>] do_page_fault+0x45/0x70
->> [  477.311110]  [<ffffffff844ab386>] do_async_page_fault+0x36/0x100
->> [  477.311110]  [<ffffffff844a7f18>] async_page_fault+0x28/0x30
->> [  477.311110] Code: 65 f0 4c 8b 6d f8 c9 c3 66 90 55 48 89 e5 66 66 66
->> 66 90 48 8b 07 a8 40 74 18 48 8b 07 a9 00 00 10 00 74 0e 31 f6 e8 2f 20
->> ff ff <0f> 0b eb fe 0f 1f 00 48 8b 07 a8 20 74 19 31 f6 e8 1a 20 ff ff
->> [  477.311110] RIP  [<ffffffff8127f311>] lru_cache_add+0x21/0x60
->> [  477.311110]  RSP <ffff8800a7f6bbc8>
->>
-> 
-> 
-> If PageUnevictable(old_page) is true, new page will also be set before
-> page_add_new_anon_rmap().
-> 
-> migrate_misplaced_transhuge_page()
->     > migrate_page_copy()
->         > SetPageUnevictable(newpage)
->     > page_add_new_anon_rmap()
-> 
-> But in page_add_new_anon_rmap(), there is only mlocked_vma_newpage()
-> called to check whether a page should be added to unevictable list. I
-> think that is incorrect in some cases and may trigger this BUG().
-> 
-> We can see from vmscan:
-> int page_evictable(struct page *page)
-> {
->     return !mapping_unevictable(page_mapping(page)) && !PageMlocked(page);
-> }
-> 
-> Besides mlock, we may also set a page to unevictable when that page's
-> mapping marked unevictable.
-> 
-> mlocked_vma_newpage(new_page) can't detect this situation if the old
-> page is set to unevictable by this reason. So I think we should add an
-> extra !PageUnevictable(page) checking in page_add_new_anon_rmap().
-> Fix me if I misunderstood something.
-> 
-> diff --git a/mm/rmap.c b/mm/rmap.c
-> index 9056a1f..8d13318 100644
-> --- a/mm/rmap.c
-> +++ b/mm/rmap.c
-> @@ -1024,7 +1024,7 @@ void page_add_new_anon_rmap(struct page *page,
->         __mod_zone_page_state(page_zone(page), NR_ANON_PAGES,
->                         hpage_nr_pages(page));
->         __page_set_anon_rmap(page, vma, address, 1);
-> -       if (!mlocked_vma_newpage(vma, page)) {
-> +       if (!mlocked_vma_newpage(vma, page) && !PageUnevictable(page)) {
->                 SetPageActive(page);
->                 lru_cache_add(page);
->         } else
-> 
-> 
+Acked-by Angus Clark <angus.clark@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 56 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 56 insertions(+)
 
-Sasha, any lucky with above changes? If it can fix this issue, I'll
-resend out a patch.
-
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 7048ea7..5e22c86 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -194,6 +194,8 @@
+ 
+ #define STFSM_FLASH_SAFE_FREQ  10000000UL                         /* 10 MHz */
+ 
++#define STFSM_MAX_WAIT_SEQ_MS  1000     /* FSM execution time */
++
+ struct stfsm {
+ 	struct device		*dev;
+ 	void __iomem		*base;
+@@ -204,6 +206,24 @@ struct stfsm {
+ 	uint32_t                fifo_dir_delay;
+ };
+ 
++struct stfsm_seq {
++	uint32_t data_size;
++	uint32_t addr1;
++	uint32_t addr2;
++	uint32_t addr_cfg;
++	uint32_t seq_opc[5];
++	uint32_t mode;
++	uint32_t dummy;
++	uint32_t status;
++	uint8_t  seq[16];
++	uint32_t seq_cfg;
++} __packed __aligned(4);
++
++static inline int stfsm_is_idle(struct stfsm *fsm)
++{
++	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
++}
++
+ static inline uint32_t stfsm_fifo_available(struct stfsm *fsm)
+ {
+ 	return (readl(fsm->base + SPI_FAST_SEQ_STA) >> 5) & 0x7f;
+@@ -225,6 +245,42 @@ static void stfsm_clear_fifo(struct stfsm *fsm)
+ 	}
+ }
+ 
++static inline void stfsm_load_seq(struct stfsm *fsm,
++				  const struct stfsm_seq *seq)
++{
++	void __iomem *dst = fsm->base + SPI_FAST_SEQ_TRANSFER_SIZE;
++	const uint32_t *src = (const uint32_t *)seq;
++	int words = sizeof(*seq) / sizeof(*src);
++
++	BUG_ON(!stfsm_is_idle(fsm));
++
++	while (words--) {
++		writel(*src, dst);
++		src++;
++		dst += 4;
++	}
++}
++
++static void stfsm_wait_seq(struct stfsm *fsm)
++{
++	unsigned long deadline;
++	int timeout = 0;
++
++	deadline = jiffies + msecs_to_jiffies(STFSM_MAX_WAIT_SEQ_MS);
++
++	while (!timeout) {
++		if (time_after_eq(jiffies, deadline))
++			timeout = 1;
++
++		if (stfsm_is_idle(fsm))
++			return;
++
++		cond_resched();
++	}
++
++	dev_err(fsm->dev, "timeout on sequence completion\n");
++}
++
+ static int stfsm_set_mode(struct stfsm *fsm, uint32_t mode)
+ {
+ 	int ret, timeout = 10;
 -- 
-Regards,
--Bob
+1.8.3.2
+
