@@ -1,82 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555AbaCTI0g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 04:26:36 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:50325 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751407AbaCTI0e (ORCPT
+	id S932140AbaCTI1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 04:27:30 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57203 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754736AbaCTI12 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 04:26:34 -0400
-Message-ID: <532AA634.5090707@codethink.co.uk>
-Date: Thu, 20 Mar 2014 09:26:28 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 20 Mar 2014 04:27:28 -0400
+Date: Thu, 20 Mar 2014 09:27:21 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: linux-kernel@vger.kernel.org, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+Message-ID: <20140320082721.GG8557@laptop.programming.kicks-ass.net>
+References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com>
 MIME-Version: 1.0
-To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-CC: "David S. Miller" <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH v2a 1/2] dt: Document a compatible entry for MDIO ethernet
- Phys
-References: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
-In-Reply-To: <1395267324-5788-1-git-send-email-jgunthorpe@obsidianresearch.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/14 23:15, Jason Gunthorpe wrote:
-> This describes a compatible entry of the form:
->    ethernet-phy-idAAAA,BBBB
-> Which is modelled after the PCI structured compatible entry
-> (pciVVVV,DDDD.SSSS.ssss.RR)
->
-> If present the OF core will be able to use this information to
-> directly create the correct phy without auto probing the bus.
->
-> Signed-off-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-> Acked-by: Rob Herring <robh@kernel.org>
-> Acked-by: Florian Fainelli <f.fainelli@gmail.com>
+On Thu, Mar 20, 2014 at 02:03:46PM +0800, Yan, Zheng wrote:
+> This patch adds support for building Intel uncore driver as module.
+> It adds clean-up code and config option for the Intel uncore driver
+> 
+> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 > ---
->   Documentation/devicetree/bindings/net/phy.txt | 10 +++++++++-
->   1 file changed, 9 insertions(+), 1 deletion(-)
->
-> - Resend for net-next
->
-> diff --git a/Documentation/devicetree/bindings/net/phy.txt b/Documentation/devicetree/bindings/net/phy.txt
-> index 58307d0..5b8c589 100644
-> --- a/Documentation/devicetree/bindings/net/phy.txt
-> +++ b/Documentation/devicetree/bindings/net/phy.txt
-> @@ -21,10 +21,18 @@ Optional Properties:
->     elements.
->   - max-speed: Maximum PHY supported speed (10, 100, 1000...)
->
-> +  If the phy's identifier is known then the list may contain an entry
-> +  of the form: "ethernet-phy-idAAAA.BBBB" where
-> +     AAAA - The value of the 16 bit Phy Identifier 1 register as
-> +            4 hex digits. This is the chip vendor OUI bits 3:18
-> +     BBBB - The value of the 16 bit Phy Identifier 2 register as
-> +            4 hex digits. This is the chip vendor OUI bits 19:24,
-> +            followed by 10 bits of a vendor specific ID.
-> +
+> Changes since v1:
+>  move config option to "General setup/Kernel Performance Events and Counters"
 
-How about having "ethernet-phy" and adding a single property in the
-PHY node saying phy-id = <AAAABBBB>, which would be much easier to
-parse.
-
->   Example:
->
->   ethernet-phy@0 {
-> -	compatible = "ethernet-phy-ieee802.3-c22";
-> +	compatible = "ethernet-phy-id0141.0e90", "ethernet-phy-ieee802.3-c22";
->   	interrupt-parent = <40000>;
->   	interrupts = <35 1>;
->   	reg = <0>;
->
-
-
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+Thanks!
