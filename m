@@ -1,177 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587AbaCTTN5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:13:57 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:35040 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759321AbaCTTN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:13:56 -0400
-Date: Thu, 20 Mar 2014 14:13:54 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Ingo Molnar <mingo@redhat.com>
-Subject: [patch] x86/UV: Set n_lshift based on GAM_GR_CONFIG MMR for UV3
-Message-ID: <20140320191354.GA30582@sgi.com>
+	id S933831AbaCTTQl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:16:41 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:53172 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932279AbaCTTQj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:16:39 -0400
+Message-ID: <532B3E93.7060902@hurleysoftware.com>
+Date: Thu, 20 Mar 2014 15:16:35 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: balbi@ti.com
+CC: Marcel Holtmann <marcel@holtmann.org>, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        linux-bluetooth@vger.kernel.org, linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: hci_ldsic nested locking problem
+References: <20140320163435.GH32692@saruman.home> <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com> <20140320171621.GA2827@saruman.home> <532B25FC.3070408@hurleysoftware.com> <20140320181145.GC3959@saruman.home> <532B319D.4090208@hurleysoftware.com> <20140320182528.GE3959@saruman.home>
+In-Reply-To: <20140320182528.GE3959@saruman.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the UV n_lshift value based on the GAM_GR_CONFIG MMR for UV3, making it
-independent of the socket m_val.
+On 03/20/2014 02:25 PM, Felipe Balbi wrote:
+> On Thu, Mar 20, 2014 at 02:21:17PM -0400, Peter Hurley wrote:
+>> On 03/20/2014 02:11 PM, Felipe Balbi wrote:
+>>> On Thu, Mar 20, 2014 at 01:31:40PM -0400, Peter Hurley wrote:
+>>>> [ +cc Huang Shijie ]
+>>>>
+>>>> On 03/20/2014 01:16 PM, Felipe Balbi wrote:
+>>>>> On Thu, Mar 20, 2014 at 04:42:16PM +0000, Alan Cox wrote:
+>>>>>> On Thu, 2014-03-20 at 11:34 -0500, Felipe Balbi wrote:
+>>>>>>> Hi,
+>>>>>>>
+>>>>>>> when 8250 driver calls uart_write_wakeup(), the tty port lock is already
+>>>>>>> taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+>>>>>>> tty->ops->write() to actually send the characters, but that call will
+>>>>>>> try to acquire the same port lock again.
+>>>>>>>
+>>>>>>> Looking at other line disciplines that looks like a bug in hci_ldisc.c.
+>>>>>>> Am I correct to assume that ->write_wakeup() is supposed to *just*
+>>>>>>> wakeup the bottom half so we handle ->write() in another context ?
+>>>>>>>
+>>>>>>> Is it legal to call tty->ops->write() from within ->write_wakeup() ?
+>>>>>>
+>>>>>> It isn't because you might send all the bytes and go
+>>>>>>
+>>>>>> 	write
+>>>>>> 		write_wakeup
+>>>>>> 			write
+>>>>>> 				write wakeup
+>>>>>> 					...
+>>>>>>
+>>>>>> and recurse
+>>>>>
+>>>>> cool, so there really is a bug in hci_ldisc. Marcel, any tips on how do
+>>>>> you want this to be sorted out ?
+>>>>
+>>>> hci_uart_tx_wakeup() should perform the I/O as work.
+>>>> FWIW, this was reported by Huang Shijie back on Dec 6.
+>>>>
+>>>> I'd fix it but I have no way to test it.
+>>>
+>>> here's a build-tested only patch which is waiting for testing from other
+>>> colleagues who've got a platform to reproduce the problem:
+>>
+>> Where's the cancel_work_sync() on teardown?
+>
+> here, as a patch too this time:
 
-Remove unneeded macros.
+Thanks. Minor edits below but, strictly speaking, not necessary.
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- arch/x86/include/asm/uv/uv_hub.h   |   12 ---------
- arch/x86/include/asm/uv/uv_mmrs.h  |   42 ++++++++++++++++++++++++++++++++-
- arch/x86/kernel/apic/x2apic_uv_x.c |   15 +++++++++--
- 3 files changed, 54 insertions(+), 15 deletions(-)
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
 
-Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV APIC functions (note: not an Intel compatible APIC)
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- #include <linux/cpumask.h>
- #include <linux/hardirq.h>
-@@ -843,12 +843,14 @@ void uv_cpu_init(void)
- void __init uv_system_init(void)
- {
- 	union uvh_rh_gam_config_mmr_u  m_n_config;
-+	union uv3h_gr0_gam_gr_config_u m_gr_config;
- 	union uvh_node_id_u node_id;
- 	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
- 	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
- 	int gnode_extra, min_pnode = 999999, max_pnode = -1;
- 	unsigned long mmr_base, present, paddr;
- 	unsigned short pnode_mask;
-+	unsigned char n_lshift;
- 	char *hub = (is_uv1_hub() ? "UV1" :
- 		    (is_uv2_hub() ? "UV2" :
- 				    "UV3"));
-@@ -859,6 +861,14 @@ void __init uv_system_init(void)
- 	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
- 	m_val = m_n_config.s.m_skt;
- 	n_val = m_n_config.s.n_skt;
-+	if (is_uv1_hub())
-+		n_lshift = m_val;
-+	else if (is_uv2_hub())
-+		n_lshift = m_val == 40 ? 40 : 39;
-+	else {
-+		m_gr_config.v = uv_read_local_mmr(UV3H_GR0_GAM_GR_CONFIG);
-+		n_lshift = m_gr_config.s3.m_skt;
-+	}
- 	pnode_mask = (1 << n_val) - 1;
- 	mmr_base =
- 	    uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR) &
-@@ -935,8 +945,7 @@ void __init uv_system_init(void)
- 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
- 
- 		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
--		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
--				(m_val == 40 ? 40 : 39) : m_val;
-+		uv_cpu_hub_info(cpu)->n_lshift = n_lshift;
- 
- 		pnode = uv_apicid_to_pnode(apicid);
- 		blade = boot_pnode_to_blade(pnode);
-Index: linux/arch/x86/include/asm/uv/uv_mmrs.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_mmrs.h
-+++ linux/arch/x86/include/asm/uv/uv_mmrs.h
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV MMR definitions
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_MMRS_H
-@@ -2803,6 +2803,46 @@ union uv1h_lb_target_physical_apic_id_ma
- };
- 
- /* ========================================================================= */
-+/*                          UV3H_GR0_GAM_GR_CONFIG                           */
-+/* ========================================================================= */
-+#define UV3H_GR0_GAM_GR_CONFIG				0xc00028UL
-+
-+#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_SHFT		0
-+#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_SHFT		10
-+#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
-+#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
-+
-+union uv3h_gr0_gam_gr_config_u {
-+	unsigned long	v;
-+	struct uv3h_gr0_gam_gr_config_s {
-+		unsigned long	m_skt:6;			/* RW */
-+		unsigned long	undef_6_9:4;			/* Undefined */
-+		unsigned long	subspace:1;			/* RW */
-+		unsigned long	reserved:53;
-+	} s3;
-+};
-+
-+/* ========================================================================= */
-+/*                          UV3H_GR1_GAM_GR_CONFIG                           */
-+/* ========================================================================= */
-+#define UV3H_GR1_GAM_GR_CONFIG				0x1000028UL
-+
-+#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_SHFT		0
-+#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_SHFT		10
-+#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
-+#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
-+
-+union uv3h_gr1_gam_gr_config_u {
-+	unsigned long	v;
-+	struct uv3h_gr1_gam_gr_config_s {
-+		unsigned long	m_skt:6;			/* RW */
-+		unsigned long	undef_6_9:4;			/* Undefined */
-+		unsigned long	subspace:1;			/* RW */
-+		unsigned long	reserved:53;
-+	} s3;
-+};
-+
-+/* ========================================================================= */
- /*                   UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR                   */
- /* ========================================================================= */
- #define UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR		0x1603000UL
-Index: linux/arch/x86/include/asm/uv/uv_hub.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h
-+++ linux/arch/x86/include/asm/uv/uv_hub.h
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV architectural definitions
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_HUB_H
-@@ -204,16 +204,6 @@ static inline int is_uvx_hub(void)
- 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
- }
- 
--static inline int is_uv2_1_hub(void)
--{
--	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
--}
--
--static inline int is_uv2_2_hub(void)
--{
--	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
--}
--
- union uvh_apicid {
-     unsigned long       v;
-     struct uvh_apicid_s {
+
+>  From 3ee6b74833f154df64a6164476b854846206a3f2 Mon Sep 17 00:00:00 2001
+> From: Felipe Balbi <balbi@ti.com>
+> Date: Thu, 20 Mar 2014 13:20:10 -0500
+> Subject: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
+>
+> LDISCs shouldn't call tty->ops->write() from within
+> ->write_wakeup().
+>
+> ->write_wakeup() is called with port lock taken and
+> IRQs disabled, tty->ops->write() will try to acquire
+> the same port lock and we will deadlock.
+>
+
+I know you found it independently but ?
+
+Reported-by: Huang Shijie <b32955@freescale.com>
+
+> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> ---
+>   drivers/bluetooth/hci_ldisc.c | 20 +++++++++++++++-----
+>   drivers/bluetooth/hci_uart.h  |  1 +
+>   2 files changed, 16 insertions(+), 5 deletions(-)
+>
+> diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+> index 6e06f6f..ecdd765 100644
+> --- a/drivers/bluetooth/hci_ldisc.c
+> +++ b/drivers/bluetooth/hci_ldisc.c
+> @@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
+>
+>   int hci_uart_tx_wakeup(struct hci_uart *hu)
+>   {
+> -	struct tty_struct *tty = hu->tty;
+> -	struct hci_dev *hdev = hu->hdev;
+> -	struct sk_buff *skb;
+> -
+>   	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+>   		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+>   		return 0;
+> @@ -129,6 +125,18 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
+>
+>   	BT_DBG("");
+>
+> +	schedule_work(&hu->write_work);
+> +
+> +	return 0;
+> +}
+> +
+> +static void hci_uart_write_work(struct work_struct *work)
+> +{
+> +	struct hci_uart *hu = container_of(work, struct hci_uart, init_ready);
+> +	struct tty_struct *tty = hu->tty;
+> +	struct hci_dev *hdev = hu->hdev;
+> +	struct sk_buff *skb;
+> +
+
++	/* FIXME: if bad skb length or tty->ops->write() returns < 0 ??? */
+
+>   restart:
+>   	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+>
+> @@ -153,7 +161,6 @@ restart:
+>   		goto restart;
+>
+>   	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+> -	return 0;
+>   }
+>
+>   static void hci_uart_init_work(struct work_struct *work)
+> @@ -281,6 +288,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+>   	tty->receive_room = 65536;
+>
+>   	INIT_WORK(&hu->init_ready, hci_uart_init_work);
+> +	INIT_WORK(&hu->write_work, hci_uart_write_work);
+>
+>   	spin_lock_init(&hu->rx_lock);
+>
+> @@ -318,6 +326,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+>   	if (hdev)
+>   		hci_uart_close(hdev);
+>
+> +	cancel_work_sync(&hy->write_work);
+> +
+>   	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+>   		if (hdev) {
+>   			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+> diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+> index fffa61f..12df101 100644
+> --- a/drivers/bluetooth/hci_uart.h
+> +++ b/drivers/bluetooth/hci_uart.h
+> @@ -68,6 +68,7 @@ struct hci_uart {
+>   	unsigned long		hdev_flags;
+>
+>   	struct work_struct	init_ready;
+> +	struct work_struct	write_work;
+>
+>   	struct hci_uart_proto	*proto;
+>   	void			*priv;
+>
+
