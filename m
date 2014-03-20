@@ -1,178 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964858AbaCTPbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:31:48 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:56713 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932796AbaCTPbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:31:47 -0400
-Date: Thu, 20 Mar 2014 10:28:37 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, broonie@kernel.org, kernel@stlinux.com
-Subject: Re: [PATCH 1/1] regulator: Add new driver for ST's PWM controlled
- voltage regulators
-Message-ID: <20140320152837.GW18529@joshc.qualcomm.com>
-References: <1395324654-8235-1-git-send-email-lee.jones@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395324654-8235-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S933875AbaCTPdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:33:06 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52624 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932796AbaCTPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 11:33:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,695,1389772800"; 
+   d="asc'?scan'208";a="476464243"
+Message-ID: <1395329443.17233.10.camel@intelbox>
+Subject: Re: [PATCH v4 1/1] drm/i915: Enabling 128x128 and 256x256 ARGB
+ Cursor Support
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: sagar.a.kamble@intel.com
+Cc: intel-gfx@lists.freedesktop.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
+        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        "G, Pallavi" <pallavi.g@intel.com>
+Date: Thu, 20 Mar 2014 17:30:43 +0200
+In-Reply-To: <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
+References: <20140310100321.GA30571@phenom.ffwll.local>
+	 <1394451383-27133-1-git-send-email-sagar.a.kamble@intel.com>
+Organization: Intel
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
+	boundary="=-/ACFEWok3TtdNIMe5z5u"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Lee-
 
-A few minor things below.
+--=-/ACFEWok3TtdNIMe5z5u
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Mar 20, 2014 at 02:10:54PM +0000, Lee Jones wrote:
-> On some STMicroelectronics hardware reside regulators consisting
-> partly of a PWM input connected to the feedback loop. As the PWM
-> duty-cycle is varied the output voltage adapts. This driver
-> allows us to vary the output voltage by adapting the PWM input
-> duty-cycle.
-> 
-> Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> --- /dev/null
-> +++ b/drivers/regulator/st-pwm.c
-> +static int st_pwm_regulator_set_voltage(struct regulator_dev *dev,
-> +					int min_uV, int max_uV,
-> +					unsigned *selector)
-> +{
-> +	struct st_pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
-> +	int dutycycle, best_val = INT_MAX;
-> +	int sel, ret;
+On Mon, 2014-03-10 at 17:06 +0530, sagar.a.kamble@intel.com wrote:
+> From: Sagar Kamble <sagar.a.kamble@intel.com>
+>=20
+> With this patch we allow larger cursor planes of sizes 128x128
+> and 256x256.
+>=20
+> v2: Added more precise check on size while setting cursor plane.
+>=20
+> v3: Changes related to restructuring cursor size restrictions
+> and DRM_DEBUG usage.
+>=20
+> v4: Indentation related changes for setting cursor control and
+> implementing DRM_CAP_CURSOR_WIDTH and DRM_CAP_CURSOR_HEIGHT
+>=20
+> Testcase: igt/kms_cursor_crc
+> Cc: Daniel Vetter <daniel.vetter@ffwll.ch>
+> Cc: Jani Nikula <jani.nikula@linux.intel.com>
+> Cc: David Airlie <airlied@linux.ie>
+> Cc: dri-devel@lists.freedesktop.org
+> Cc: linux-kernel@vger.kernel.org
+> Signed-off-by: G, Pallavi <pallavi.g@intel.com>
+> Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+
+Looks ok:
+Reviewed-by: Imre Deak <imre.deak@intel.com>
+
+> ---
+>  drivers/gpu/drm/i915/i915_reg.h      |  4 +++
+>  drivers/gpu/drm/i915/intel_display.c | 53 ++++++++++++++++++++++++++++++=
+++----
+>  drivers/gpu/drm/i915/intel_drv.h     |  7 +++++
+>  3 files changed, 59 insertions(+), 5 deletions(-)
+>=20
+> diff --git a/drivers/gpu/drm/i915/i915_reg.h b/drivers/gpu/drm/i915/i915_=
+reg.h
+> index 146609a..aee8258 100644
+> --- a/drivers/gpu/drm/i915/i915_reg.h
+> +++ b/drivers/gpu/drm/i915/i915_reg.h
+> @@ -3551,7 +3551,11 @@ enum punit_power_well {
+>  /* New style CUR*CNTR flags */
+>  #define   CURSOR_MODE		0x27
+>  #define   CURSOR_MODE_DISABLE   0x00
+> +#define   CURSOR_MODE_128_32B_AX 0x02
+> +#define   CURSOR_MODE_256_32B_AX 0x03
+>  #define   CURSOR_MODE_64_32B_AX 0x07
+> +#define   CURSOR_MODE_128_ARGB_AX ((1 << 5) | CURSOR_MODE_128_32B_AX)
+> +#define   CURSOR_MODE_256_ARGB_AX ((1 << 5) | CURSOR_MODE_256_32B_AX)
+>  #define   CURSOR_MODE_64_ARGB_AX ((1 << 5) | CURSOR_MODE_64_32B_AX)
+>  #define   MCURSOR_PIPE_SELECT	(1 << 28)
+>  #define   MCURSOR_PIPE_A	0x00
+> diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/=
+intel_display.c
+> index 0868afb..ec6a073 100644
+> --- a/drivers/gpu/drm/i915/intel_display.c
+> +++ b/drivers/gpu/drm/i915/intel_display.c
+> @@ -7440,10 +7440,26 @@ static void i9xx_update_cursor(struct drm_crtc *c=
+rtc, u32 base)
+>  	bool visible =3D base !=3D 0;
+> =20
+>  	if (intel_crtc->cursor_visible !=3D visible) {
+> +		int16_t width =3D intel_crtc->cursor_width;
+>  		uint32_t cntl =3D I915_READ(CURCNTR(pipe));
+>  		if (base) {
+>  			cntl &=3D ~(CURSOR_MODE | MCURSOR_PIPE_SELECT);
+> -			cntl |=3D CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+> +			cntl |=3D MCURSOR_GAMMA_ENABLE;
 > +
-> +	for (sel = 0; sel < dev->desc->n_voltages; sel++) {
-> +		if (drvdata->duty_cycle_table[sel].uV < best_val &&
-> +		    drvdata->duty_cycle_table[sel].uV >= min_uV &&
-> +		    drvdata->duty_cycle_table[sel].uV <= max_uV) {
-> +			best_val = drvdata->duty_cycle_table[sel].uV;
-> +			if (selector)
-> +				*selector = sel;
-> +		}
+> +			switch (width) {
+> +			case 64:
+> +				cntl |=3D CURSOR_MODE_64_ARGB_AX;
+> +				break;
+> +			case 128:
+> +				cntl |=3D CURSOR_MODE_128_ARGB_AX;
+> +				break;
+> +			case 256:
+> +				cntl |=3D CURSOR_MODE_256_ARGB_AX;
+> +				break;
+> +			default:
+> +				WARN_ON(1);
+> +				return;
+> +			}
+>  			cntl |=3D pipe << 28; /* Connect to correct pipe */
+>  		} else {
+>  			cntl &=3D ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+> @@ -7468,10 +7484,25 @@ static void ivb_update_cursor(struct drm_crtc *cr=
+tc, u32 base)
+>  	bool visible =3D base !=3D 0;
+> =20
+>  	if (intel_crtc->cursor_visible !=3D visible) {
+> +		int16_t width =3D intel_crtc->cursor_width;
+>  		uint32_t cntl =3D I915_READ(CURCNTR_IVB(pipe));
+>  		if (base) {
+>  			cntl &=3D ~CURSOR_MODE;
+> -			cntl |=3D CURSOR_MODE_64_ARGB_AX | MCURSOR_GAMMA_ENABLE;
+> +			cntl |=3D MCURSOR_GAMMA_ENABLE;
+> +			switch (width) {
+> +			case 64:
+> +				cntl |=3D CURSOR_MODE_64_ARGB_AX;
+> +				break;
+> +			case 128:
+> +				cntl |=3D CURSOR_MODE_128_ARGB_AX;
+> +				break;
+> +			case 256:
+> +				cntl |=3D CURSOR_MODE_256_ARGB_AX;
+> +				break;
+> +			default:
+> +				WARN_ON(1);
+> +				return;
+> +			}
+>  		} else {
+>  			cntl &=3D ~(CURSOR_MODE | MCURSOR_GAMMA_ENABLE);
+>  			cntl |=3D CURSOR_MODE_DISABLE;
+> @@ -7567,9 +7598,11 @@ static int intel_crtc_cursor_set(struct drm_crtc *=
+crtc,
+>  		goto finish;
+>  	}
+> =20
+> -	/* Currently we only support 64x64 cursors */
+> -	if (width !=3D 64 || height !=3D 64) {
+> -		DRM_ERROR("we currently only support 64x64 cursors\n");
+> +	/* Check for which cursor types we support */
+> +	if (!((width =3D=3D 64 && height =3D=3D 64) ||
+> +			(width =3D=3D 128 && height =3D=3D 128 && !IS_GEN2(dev)) ||
+> +			(width =3D=3D 256 && height =3D=3D 256 && !IS_GEN2(dev)))) {
+> +		DRM_DEBUG("Cursor dimension not supported\n");
+>  		return -EINVAL;
+>  	}
+> =20
+> @@ -10331,6 +10364,16 @@ static void intel_crtc_init(struct drm_device *d=
+ev, int pipe)
+> =20
+>  	drm_crtc_init(dev, &intel_crtc->base, &intel_crtc_funcs);
+> =20
+> +	if (IS_GEN2(dev)) {
+> +		intel_crtc->max_cursor_width =3D GEN2_CURSOR_WIDTH;
+> +		intel_crtc->max_cursor_height =3D GEN2_CURSOR_HEIGHT;
+> +	} else {
+> +		intel_crtc->max_cursor_width =3D CURSOR_WIDTH;
+> +		intel_crtc->max_cursor_height =3D CURSOR_HEIGHT;
 > +	}
+> +	dev->mode_config.cursor_width =3D intel_crtc->max_cursor_width;
+> +	dev->mode_config.cursor_height =3D intel_crtc->max_cursor_height;
+> +
+>  	drm_mode_crtc_set_gamma_size(&intel_crtc->base, 256);
+>  	for (i =3D 0; i < 256; i++) {
+>  		intel_crtc->lut_r[i] =3D i;
+> diff --git a/drivers/gpu/drm/i915/intel_drv.h b/drivers/gpu/drm/i915/inte=
+l_drv.h
+> index 9c70905..eca4a0a 100644
+> --- a/drivers/gpu/drm/i915/intel_drv.h
+> +++ b/drivers/gpu/drm/i915/intel_drv.h
+> @@ -78,6 +78,12 @@
+>  #define MAX_OUTPUTS 6
+>  /* maximum connectors per crtcs in the mode set */
+> =20
+> +/* Maximum cursor sizes */
+> +#define GEN2_CURSOR_WIDTH 64
+> +#define GEN2_CURSOR_HEIGHT 64
+> +#define CURSOR_WIDTH 256
+> +#define CURSOR_HEIGHT 256
+> +
+>  #define INTEL_I2C_BUS_DVO 1
+>  #define INTEL_I2C_BUS_SDVO 2
+> =20
+> @@ -364,6 +370,7 @@ struct intel_crtc {
+>  	uint32_t cursor_addr;
+>  	int16_t cursor_x, cursor_y;
+>  	int16_t cursor_width, cursor_height;
+> +	int16_t max_cursor_width, max_cursor_height;
+>  	bool cursor_visible;
+> =20
+>  	struct intel_crtc_config config;
 
-If you implement .set_voltage_sel() instead and set map_voltage to
-regulator_map_voltage_iterate, the core can take care of this.
 
-> +
-> +	if (best_val == INT_MAX)
-> +		return -EINVAL;
-> +
-> +	dutycycle = (ST_PWM_REG_PERIOD / 100) *
-> +		drvdata->duty_cycle_table[sel].dutycycle;
+--=-/ACFEWok3TtdNIMe5z5u
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-Considering (ST_PWM_REG_PERIOD / 100) is constant, could you get away
-with dropping this calculation by just putting the already-adjusted
-values into your duty cycle table?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
 
-> +
-> +	ret = pwm_config(drvdata->pwm, dutycycle, ST_PWM_REG_PERIOD);
-> +	if (ret) {
-> +		dev_err(&dev->dev, "Failed to configure PWM\n");
-> +		return ret;
-> +	}
-> +
-> +	drvdata->state = sel;
-> +
-> +	if (!drvdata->enabled) {
-> +		ret = pwm_enable(drvdata->pwm);
-> +		if (ret) {
-> +			dev_err(&dev->dev, "Failed to enable PWM\n");
-> +			return ret;
-> +		}
-> +		drvdata->enabled = true;
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int st_pwm_regulator_list_voltage(struct regulator_dev *dev,
-> +					 unsigned selector)
-> +{
-> +	struct st_pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
-> +
-> +	if (selector >= dev->desc->n_voltages)
-> +		return -EINVAL;
-> +
-> +	return drvdata->duty_cycle_table[selector].uV;
-> +}
-> +
-> +static struct regulator_ops st_pwm_regulator_voltage_ops = {
-> +	.get_voltage  = st_pwm_regulator_get_voltage,
-> +	.set_voltage  = st_pwm_regulator_set_voltage,
-> +	.list_voltage = st_pwm_regulator_list_voltage,
-> +};
-> +
-> +static struct st_pwm_voltages b2105_duty_cycle_table[] = {
-> +	{ .uV = 1114000, .dutycycle = 0,  },
-> +	{ .uV = 1095000, .dutycycle = 10, },
-> +	{ .uV = 1076000, .dutycycle = 20, },
-> +	{ .uV = 1056000, .dutycycle = 30, },
-> +	{ .uV = 1036000, .dutycycle = 40, },
-> +	{ .uV =  996000, .dutycycle = 50, },
-> +	/* WARNING: Values above 50% duty-cycle cause boot failures. */
-> +};
-> +
-> +static struct regulator_desc b2105_desc = {
-> +	.name		= "b2105-pwm-regulator",
-> +	.ops		= &st_pwm_regulator_voltage_ops,
-> +	.type		= REGULATOR_VOLTAGE,
-> +	.owner		= THIS_MODULE,
-> +	.n_voltages	= ARRAY_SIZE(b2105_duty_cycle_table),
-> +	.supply_name    = "pwm",
-> +};
-> +
-> +static struct st_pwm_regulator_data b2105_info = {
-> +	.desc		  = &b2105_desc,
-> +	.duty_cycle_table = b2105_duty_cycle_table,
-> +};
-> +
-> +static struct of_device_id st_pwm_of_match[] = {
+iQEcBAABAgAGBQJTKwmjAAoJEORIIAnNuWDFH/wH/1LGUlujmKeP4D0b/OtDizpL
+oYdt0EwG1XjKgKHpbLiCGoh1eR0MriB7jO6BHFPud0UHCYXDhjEbGMBVXtGIAbYV
+QiA9q5P3GvUY4D44EHqY8VWU6YM055KZkj4/aVCIp28bpZxVoourKzmuC3NHlaTl
+nWib8WQtv1unaQqOvNH8B9mIBSc+lLSjXkXRnJ6kUpkX/pnGCfOQcHSH+qEy3f5q
+p8HtzUdWSD/348rvcIqb4wo63BM7N/1eYhgQt4kYCz1AuO4V/R2cuE7q4xyN6Le0
+7fWo/cfYJWxyr/QpOuRLYVoA2cRUE7GskDXHr48rzqW/HJJOaLvR3DmcVhhxr90=
+=JrDe
+-----END PGP SIGNATURE-----
 
-const.  At least the regulator_desc and duty cycle table should be const
-as well. (see my comments below about b2105_info).
+--=-/ACFEWok3TtdNIMe5z5u--
 
-> +	{ .compatible = "st,b2105-pwm-regulator", .data = &b2105_info, },
-> +	{ },
-> +};
-
-You may want a MODULE_DEVICE_TABLE(of, ...); here if you want to be able
-to be autoloaded.
-
-> +
-> +static int st_pwm_regulator_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *np = pdev->dev.of_node;
-> +	struct st_pwm_regulator_data *drvdata;
-> +	const struct of_device_id *of_match;
-> +	struct regulator_dev *regulator;
-> +	struct regulator_config config = { };
-> +
-> +	if (!np) {
-> +		dev_err(&pdev->dev, "Device Tree node missing\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	of_match = of_match_device(st_pwm_of_match, &pdev->dev);
-> +	if (!of_match) {
-> +		dev_err(&pdev->dev, "failed to match of device\n");
-> +		return -ENODEV;
-> +	}
-> +	drvdata =  (struct st_pwm_regulator_data *) of_match->data;
-
-Hrm, I typed "cast not necessary here", but then I realized it is
-necessary since you using it to cast away constness.
-
-Are you safe assuming that there will only be one of these devices in a
-system?  It doesn't seem like much a burden to just allocate a new
-object and use it instead of a statically allocated one.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
