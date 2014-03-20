@@ -1,75 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755258AbaCTKCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:02:52 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44379 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaCTKCv (ORCPT
+	id S1755870AbaCTKDH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:03:07 -0400
+Received: from smtp.eu.citrix.com ([185.25.65.24]:38503 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743AbaCTKDD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:02:51 -0400
-Date: Thu, 20 Mar 2014 10:02:41 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Shuah Khan <shuah.kh@samsung.com>, lgirdwood@gmail.com,
-        stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Message-ID: <20140320100241.GB11706@sirena.org.uk>
-References: <1394054987-4743-1-git-send-email-shuah.kh@samsung.com>
- <20140319235828.GC22080@kroah.com>
+	Thu, 20 Mar 2014 06:03:03 -0400
+X-Greylist: delayed 587 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 06:03:02 EDT
+X-IronPort-AV: E=Sophos;i="4.97,693,1389744000"; 
+   d="scan'208";a="11866324"
+From: Paul Durrant <Paul.Durrant@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
+        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Jonathan Davies" <Jonathan.Davies@citrix.com>
+Subject: RE: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
+ operations
+Thread-Topic: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
+ operations
+Thread-Index: AQHPOYYi+CJloEb6V06vjlUaE/Z1Xpro7RCAgADjrQA=
+Date: Thu, 20 Mar 2014 09:53:12 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD029201D@AMSPEX01CL01.citrite.net>
+References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
+ <1394142511-14827-10-git-send-email-zoltan.kiss@citrix.com>
+ <532A0915.5090006@citrix.com>
+In-Reply-To: <532A0915.5090006@citrix.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.80.2.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ZVHwZItCpgidUOc6"
-Content-Disposition: inline
-In-Reply-To: <20140319235828.GC22080@kroah.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3.13] regulator: core: Change dummy supplies error
- message to a warning
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-DLP: AMS1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: Zoltan Kiss
+> Sent: 19 March 2014 21:16
+> To: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org
+> Cc: netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jonathan Davies;
+> Paul Durrant
+> Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
+> operations
+> 
+> Hi,
+> 
+> I'm thinking about revoking this patch: it's value is pretty small, but
+> it causes performance regression on Win7 guests. And probably it is not
+> the best solution for this problem. It might be the delay it takes the
+> dealloc thread to be scheduled is enough.
+> What do you think?
+> 
 
---ZVHwZItCpgidUOc6
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes, I think we need a revert to fix the performance regression. As I understand things, it's sufficiently bad that we would not want to take the grant mapping series into XenServer without the reversion.
 
-On Wed, Mar 19, 2014 at 11:58:28PM +0000, Greg KH wrote:
-> On Wed, Mar 05, 2014 at 02:29:47PM -0700, Shuah Khan wrote:
+  Paul
 
-> > -		dev_err(dev, "dummy supplies not allowed\n");
-> > +		dev_warn(dev, "dummy supplies not allowed\n");
+> Zoli
+> 
+> On 06/03/14 21:48, Zoltan Kiss wrote:
+> > Unmapping causes TLB flushing, therefore we should make it in the largest
+> > possible batches. However we shouldn't starve the guest for too long. So if
+> > the guest has space for at least two big packets and we don't have at least a
+> > quarter ring to unmap, delay it for at most 1 milisec.
+> >
+> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> > ---
+> > v4:
+> > - use bool for tx_dealloc_work_todo
+> >
+> > v6:
+> > - rebase tx_dealloc_work_todo due to missing ;
+> >
+> > diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-
+> netback/common.h
+> > index d1cd8ce..95498c8 100644
+> > --- a/drivers/net/xen-netback/common.h
+> > +++ b/drivers/net/xen-netback/common.h
+> > @@ -118,6 +118,8 @@ struct xenvif {
+> >   	u16 dealloc_ring[MAX_PENDING_REQS];
+> >   	struct task_struct *dealloc_task;
+> >   	wait_queue_head_t dealloc_wq;
+> > +	struct timer_list dealloc_delay;
+> > +	bool dealloc_delay_timed_out;
+> >
+> >   	/* Use kthread for guest RX */
+> >   	struct task_struct *task;
+> > diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-
+> netback/interface.c
+> > index 40aa500..f925af5 100644
+> > --- a/drivers/net/xen-netback/interface.c
+> > +++ b/drivers/net/xen-netback/interface.c
+> > @@ -407,6 +407,7 @@ struct xenvif *xenvif_alloc(struct device *parent,
+> domid_t domid,
+> >   			  .desc = i };
+> >   		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
+> >   	}
+> > +	init_timer(&vif->dealloc_delay);
+> >
+> >   	/*
+> >   	 * Initialise a dummy MAC address. We choose the numerically
+> > @@ -557,6 +558,7 @@ void xenvif_disconnect(struct xenvif *vif)
+> >   	}
+> >
+> >   	if (vif->dealloc_task) {
+> > +		del_timer_sync(&vif->dealloc_delay);
+> >   		kthread_stop(vif->dealloc_task);
+> >   		vif->dealloc_task = NULL;
+> >   	}
+> > diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-
+> netback/netback.c
+> > index bb65c7c..c098276 100644
+> > --- a/drivers/net/xen-netback/netback.c
+> > +++ b/drivers/net/xen-netback/netback.c
+> > @@ -135,6 +135,11 @@ static inline pending_ring_idx_t
+> nr_pending_reqs(struct xenvif *vif)
+> >   		vif->pending_prod + vif->pending_cons;
+> >   }
+> >
+> > +static inline pending_ring_idx_t nr_free_slots(struct
+> xen_netif_tx_back_ring *ring)
+> > +{
+> > +	return ring->nr_ents -	(ring->sring->req_prod - ring-
+> >rsp_prod_pvt);
+> > +}
+> > +
+> >   bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
+> >   {
+> >   	RING_IDX prod, cons;
+> > @@ -1932,9 +1937,36 @@ static inline int tx_work_todo(struct xenvif *vif)
+> >   	return 0;
+> >   }
+> >
+> > +static void xenvif_dealloc_delay(unsigned long data)
+> > +{
+> > +	struct xenvif *vif = (struct xenvif *)data;
+> > +
+> > +	vif->dealloc_delay_timed_out = true;
+> > +	wake_up(&vif->dealloc_wq);
+> > +}
+> > +
+> >   static inline bool tx_dealloc_work_todo(struct xenvif *vif)
+> >   {
+> > -	return vif->dealloc_cons != vif->dealloc_prod;
+> > +	if (vif->dealloc_cons != vif->dealloc_prod) {
+> > +		if ((nr_free_slots(&vif->tx) > 2 *
+> XEN_NETBK_LEGACY_SLOTS_MAX) &&
+> > +		    (vif->dealloc_prod - vif->dealloc_cons <
+> MAX_PENDING_REQS / 4) &&
+> > +		    !vif->dealloc_delay_timed_out) {
+> > +			if (!timer_pending(&vif->dealloc_delay)) {
+> > +				vif->dealloc_delay.function =
+> > +					xenvif_dealloc_delay;
+> > +				vif->dealloc_delay.data = (unsigned long)vif;
+> > +				mod_timer(&vif->dealloc_delay,
+> > +					  jiffies + msecs_to_jiffies(1));
+> > +
+> > +			}
+> > +			return false;
+> > +		}
+> > +		del_timer_sync(&vif->dealloc_delay);
+> > +		vif->dealloc_delay_timed_out = false;
+> > +		return true;
+> > +	}
+> > +
+> > +	return false;
+> >   }
+> >
+> >   void xenvif_unmap_frontend_rings(struct xenvif *vif)
+> >
 
-> This really isn't a problem that warrents a stable backport, sorry.  I
-> can understand distros being "annoyed" at it, but probably not.
-
-A previous stable commit caused this to happen for esentially every
-regulator request on x86 when previously it wouldn't have triggered.
-
---ZVHwZItCpgidUOc6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKry+AAoJELSic+t+oim9QZMP/3nAXW3yEVzyJlW0gz/WYta+
-LlQIgsU+UNCGEsSlkBxHy1G7KOWUMjV0joNMwIM1o0tAO6vVnQ64zMi3eq56Wyf4
-LsDfZogQ/P18weTSGLLdD7cZ0Y92Kadq14JmpYjhYzs3wJ1FyCWCi6wzdoxAGyyB
-4bla3OQYU7Ngzu7i8AAD79dAvPWC3jLZCSPJ3x+PsDUX7Ay6wxxoP5t+ywZcLIWp
-80NTCt00NOOTZukO/EtALifciUfwdL36/3PfeDi/3872Wlz21A9HHvDmED5AKaEU
-kjq8Kq5/U3I1FsTIrTAMfbcisRGmlKMkiK6bgR/5WuAP7UxWnpeFsat3i0qKiIHE
-4QHB2P5Fpe9o+PUdlCXttFYXkUvlpBnPWK5V+A9dur7SYUQMXouKvsmSOIvXz40e
-Ww5f2fsbkwEIT9KhD3s7XOqZ6fwPSDWGo8KoKqu/yU0hCaOGLAazEMYheqovQ46c
-wm5cEe0M1aF9uCTSo93bXOv5neEggEMrWzk71jBU6rgEVatO2Fi0keh9tt5g/O9W
-AoGjpQgFyvGcZsdPb/EUzp0O7/yrTf5fXK++4niMqo1nVPAQHoRxajmadctlSTw4
-nvOYm28ihoSIP1UyEjkVPKDtLr7xGAcRMxgv3CeRau8PIdeyDriYU+h7/etA28Rc
-KPQFNGqVHnmn2WV9Jjbx
-=RgBa
------END PGP SIGNATURE-----
-
---ZVHwZItCpgidUOc6--
