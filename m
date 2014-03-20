@@ -1,56 +1,257 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758075AbaCTQXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:23:15 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32897 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753188AbaCTQXN (ORCPT
+	id S1758383AbaCTQZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:25:42 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:62596 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755533AbaCTQZl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:23:13 -0400
-Date: Thu, 20 Mar 2014 16:22:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT
-	documentation
-Message-ID: <20140320162258.GX7528@n2100.arm.linux.org.uk>
-References: <20140320092639.48F68A6279@smtp3-g21.free.fr> <532ADFD8.80301@gmail.com> <20140320140156.5d768b1f@armhf> <532AEDE2.3080306@gmail.com> <20140320145221.09252bf6@armhf> <20140320143110.GU7528@n2100.arm.linux.org.uk> <20140320155935.7a474173@armhf> <20140320151934.GV7528@n2100.arm.linux.org.uk> <20140320165440.195cd2ea@armhf>
+	Thu, 20 Mar 2014 12:25:41 -0400
+Message-ID: <532B167D.80406@gmail.com>
+Date: Thu, 20 Mar 2014 21:55:33 +0530
+From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320165440.195cd2ea@armhf>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
+        rtc-linux@googlegroups.com
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 04:54:40PM +0100, Jean-Francois Moine wrote:
-> On Thu, 20 Mar 2014 15:19:34 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> 
-> > I'm not saying that it has to match the physical device fitted - I'm
-> > merely suggesting not using nxp,tda1998x which could (and as Sebastian
-> > has found, does) conflict with other devices with different properties.
-> > 
-> > We still auto-detect the exact device type by reading the ID register
-> > because that's the most reliable way to detect exactly what kind of
-> > device is fitted to the board.
-> 
-> I don't see the problem.
-> 
-> Actually the driver handles the tda9989, tda19988 and tda19989 (2
-> variants). If some board has, for example, the tda9983 and if the
-> driver is extended to handle this chip (i.e. mainly ignore the CEC
-> part), setting 'nxp,tda998x' in the associated DT will still work.
+>From 64f99d0497c6de5157bc4931b47aadc266f5961e Mon Sep 17 00:00:00 2001
+From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
+Date: Thu, 20 Mar 2014 00:53:30 +0530
+Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
 
-So you have to encode in the driver that if you see a tda9983 device,
-you don't touch the CEC part.
+This is a patch to add support for
+maxim dallas rtc ds1347
 
-Now think about how you'd handle a tda998x compatible device but with
-the CEC stuff at a different I2C address.
+Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+---
+ drivers/rtc/Kconfig      |   12 ++++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-ds1347.c |  175 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 188 insertions(+)
+ create mode 100644 drivers/rtc/rtc-ds1347.c
 
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index db933de..2e565f8 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -573,6 +573,18 @@ config RTC_DRV_DS1305
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-ds1305.
+ 
++config RTC_DRV_DS1347
++	tristate "Dallas/Maxim DS1347"
++	help
++	  If you say yes here you get support for the
++	  Dallas/Maxim DS1347 chips.
++
++	  This driver only supports the RTC feature, and not other chip
++	  features such as alarms.
++
++	  This driver can also be built as a module. If so, the module
++	  will be called rtc-ds1347.
++
+ config RTC_DRV_DS1390
+ 	tristate "Dallas/Maxim DS1390/93/94"
+ 	help
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index b427bf7..40a0991 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
+ obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
+ obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
+ obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
++obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
+ obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
+ obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
+ obj-$(CONFIG_RTC_DRV_DS1511)	+= rtc-ds1511.o
+diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
+new file mode 100644
+index 0000000..3c9a934
+--- /dev/null
++++ b/drivers/rtc/rtc-ds1347.c
+@@ -0,0 +1,175 @@
++/* rtc-ds1347.c
++ *
++ * Driver for Dallas Semiconductor DS1347 Low Current, SPI Compatible
++ * Real Time Clock
++ *
++ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/spi/spi.h>
++#include <linux/bcd.h>
++
++/*Registers in ds1347 rtc*/
++
++#define DS1347_SECONDS_REG	0x01
++#define DS1347_MINUTES_REG	0x03
++#define DS1347_HOURS_REG	0x05
++#define DS1347_DATE_REG		0x07
++#define DS1347_MONTH_REG	0x09
++#define DS1347_DAY_REG		0x0B
++#define DS1347_YEAR_REG		0x0D
++#define DS1347_CONTROL_REG	0x0F
++#define DS1347_STATUS_REG	0x17
++#define DS1347_CLOCK_BURST	0x3F
++
++
++
++static int ds1347_read_reg(struct device *dev, unsigned char address,
++				unsigned char *data)
++{
++	struct spi_device *spi = to_spi_device(dev);
++
++	*data = address | 0x80;
++
++	return spi_write_then_read(spi, data, 1, data, 1);
++}
++
++static int ds1347_write_reg(struct device *dev, unsigned char address,
++				unsigned char data)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[2];
++
++	buf[0] = address & 0x7F;
++	buf[1] = data;
++
++	return spi_write_then_read(spi, buf, 2, NULL, 0);
++}
++
++static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	int err;
++	unsigned char buf[8];
++
++	buf[0] = DS1347_CLOCK_BURST | 0x80;
++
++	err = spi_write_then_read(spi, buf, 1, buf, 8);
++	if (err)
++		return err;
++
++	dt->tm_sec = bcd2bin(buf[0]);
++	dt->tm_min = bcd2bin(buf[1]);
++	dt->tm_hour = bcd2bin(buf[2] & 0x3F);
++	dt->tm_mday = bcd2bin(buf[3]);
++	dt->tm_mon = bcd2bin(buf[4]) - 1;
++	dt->tm_wday = bcd2bin(buf[5]) - 1;
++	dt->tm_year = bcd2bin(buf[6]) + 100;
++
++	return rtc_valid_tm(dt);
++}
++
++static int ds1347_set_time(struct device *dev, struct rtc_time *dt)
++{
++	struct spi_device *spi = to_spi_device(dev);
++	unsigned char buf[9];
++
++	buf[0] = DS1347_CLOCK_BURST & 0x7F;
++	buf[1] = bin2bcd(dt->tm_sec);
++	buf[2] = bin2bcd(dt->tm_min);
++	buf[3] = (bin2bcd(dt->tm_hour) & 0x3F);
++	buf[4] = bin2bcd(dt->tm_mday);
++	buf[5] = bin2bcd(dt->tm_mon + 1);
++	buf[6] = bin2bcd(dt->tm_wday + 1);
++
++	/*year in linux is from 1900 i.e in range of 100
++	in rtc it is from 00 to 99 so subtract
++	the linux year by 100*/
++	if (dt->tm_year >= 100)
++		dt->tm_year -= 100;
++
++	buf[7] = bin2bcd(dt->tm_year);
++	buf[8] = bin2bcd(0x00);
++
++	/*write the rtc settings*/
++	return spi_write_then_read(spi, buf, 9, NULL, 0);
++}
++
++
++
++static const struct rtc_class_ops ds1347_rtc_ops = {
++	.read_time = ds1347_read_time,
++	.set_time = ds1347_set_time,
++};
++
++static int ds1347_probe(struct spi_device *spi)
++{
++	struct rtc_device *rtc;
++	unsigned char data;
++	int res;
++
++	/*spi setup with ds1347 in mode 3 and bits per word as 8*/
++	spi->mode = SPI_MODE_3;
++	spi->bits_per_word = 8;
++	spi_setup(spi);
++
++	/*RTC Settings*/
++
++	/*check if spi read is successfull*/
++	res = ds1347_read_reg(&spi->dev, DS1347_SECONDS_REG, &data);
++	if (res)
++		return res;
++
++	/*Disable the write protect of rtc*/
++	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
++	data = data & ~(1<<7);
++	ds1347_write_reg(&spi->dev, DS1347_CONTROL_REG, data);
++
++	/*Enable the oscillator , disable the oscillator stop flag,
++	 and glitch filter to reduce current consumption*/
++	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
++	data = data & 0x1B;
++	ds1347_write_reg(&spi->dev, DS1347_STATUS_REG, data);
++
++	/*display the settings*/
++	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
++	dev_info(&spi->dev, "DS1347 RTC CTRL Reg = 0x%02x\n", data);
++
++	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
++	dev_info(&spi->dev, "DS1347 RTC Status Reg = 0x%02x\n", data);
++
++	rtc = devm_rtc_device_register(&spi->dev, "ds1347",
++				&ds1347_rtc_ops, THIS_MODULE);
++
++	if (IS_ERR(rtc))
++		return PTR_ERR(rtc);
++
++	spi_set_drvdata(spi, rtc);
++
++	return 0;
++}
++
++static struct spi_driver ds1347_driver = {
++	.driver = {
++		.name = "ds1347",
++		.owner = THIS_MODULE,
++	},
++	.probe = ds1347_probe,
++};
++
++module_spi_driver(ds1347_driver);
++
++MODULE_DESCRIPTION("DS1347 SPI RTC DRIVER");
++MODULE_AUTHOR("Raghavendra C Ganiga <ravi23ganiga@gmail.com>");
++MODULE_LICENSE("GPL");
++
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.10.4
