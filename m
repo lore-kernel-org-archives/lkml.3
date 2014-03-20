@@ -1,95 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaCTLpJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:45:09 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:51982 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757056AbaCTLpF convert rfc822-to-8bit (ORCPT
+	id S1757382AbaCTLr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:47:56 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:52297 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755870AbaCTLrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:45:05 -0400
-Date: Thu, 20 Mar 2014 12:44:18 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Henrik Rydberg" <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Budig <simon.budig@kernelconcepts.de>
-Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-Message-ID: <20140320124418.55b79a3e@ipc1.ka-ro>
-In-Reply-To: <c9718f7215eb41439606b0107a8e2a02@BLUPR03MB373.namprd03.prod.outlook.com>
-References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
-	<1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
-	<c9718f7215eb41439606b0107a8e2a02@BLUPR03MB373.namprd03.prod.outlook.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Mar 2014 07:47:55 -0400
+Date: Thu, 20 Mar 2014 19:47:35 +0800
+From: Kevin Hao <haokexin@gmail.com>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Chenhui Zhao <chenhui.zhao@freescale.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, leoli@freescale.com,
+        Jason.Jin@freescale.com
+Subject: Re: [PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
+Message-ID: <20140320114735.GD10182@pek-khao-d1.corp.ad.wrs.com>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+ <1394168285-32275-9-git-send-email-chenhui.zhao@freescale.com>
+ <1394586624.13761.132.camel@snotra.buserror.net>
+ <20140312055755.GA17203@pek-khao-d1.corp.ad.wrs.com>
+ <1394646185.13761.145.camel@snotra.buserror.net>
+ <20140313074613.GD26692@pek-khao-d1.corp.ad.wrs.com>
+ <1394835987.12479.119.camel@snotra.buserror.net>
+ <20140316045801.GA32188@pek-khao-d1.corp.ad.wrs.com>
+ <1395184734.12479.250.camel@snotra.buserror.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Qrgsu6vtpU/OV/zm"
+Content-Disposition: inline
+In-Reply-To: <1395184734.12479.250.camel@snotra.buserror.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-fugang.duan@freescale.com wrote:
-> From: Lothar Waßmann <LW@KARO-electronics.de>
-> Data: Wednesday, March 19, 2014 9:09 PM
-> 
-> >To: Dmitry Torokhov; Duan Fugang-B38611; Grant Likely; Henrik Rydberg; Ian
-> >Campbell; Jingoo Han; Kumar Gala; Mark Rutland; Pawel Moll; Rob Herring; Rob
-> >Landley; Sachin Kamat; devicetree@vger.kernel.org; linux-doc@vger.kernel.org;
-> >linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Simon Budig; Lothar
-> >Waßmann
-> >Subject: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-> >
-> >
-No need to quote the mail headers here.
+--Qrgsu6vtpU/OV/zm
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[...]
-> >diff --git a/drivers/input/touchscreen/edt-ft5x06.c
-> >b/drivers/input/touchscreen/edt-ft5x06.c
-> >index 7b4470d..257a1c8 100644
-> >--- a/drivers/input/touchscreen/edt-ft5x06.c
-> >+++ b/drivers/input/touchscreen/edt-ft5x06.c
-> >@@ -33,6 +33,7 @@
-> > #include <linux/debugfs.h>
-> > #include <linux/slab.h>
-> > #include <linux/gpio.h>
-> >+#include <linux/of_gpio.h>
-> > #include <linux/input/mt.h>
-> > #include <linux/input/edt-ft5x06.h>
-> >
-> [...]
-> >+#ifdef CONFIG_OF
-> >+static int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
-> >+				struct edt_ft5x06_ts_data *tsdata)
-> >+{
-> >+	struct device_node *np = dev->of_node;
-> >+
-> >+	if (!np)
-> >+		return -ENODEV;
-> Don't need to check the device node valid. If the device node is not existed, the driver don't run probe.
-> 
-Perfectly right. I'll drop this in the next version.
+On Tue, Mar 18, 2014 at 06:18:54PM -0500, Scott Wood wrote:
+> >  The sequence "write, readback, sync" will guarantee this according to =
+the manual.=20
+>=20
+> If you're referring to the section you quoted above, the manual does not
+> say that.  It only talks about when accesses "to memory regions affected
+> by the configuration register write" can be safely made.
 
+  To guarantee that the results of any sequence of writes to configuration
+  registers are in effect, the final configuration register write should be
+  immediately followed by a read of the same register, and that should be
+  followed by a SYNC instruction. Then accesses can safely be made to memory
+  regions affected by the configuration register write.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+According to the above description in t4240 RM manual (2.6.1 Accessing CCSR
+Memory from the Local Processor), that the writing to configuration register
+takes effect is a prerequisite for the memory access to the affected region=
+s.
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+>=20
+> > If we just want to
+> > order the delay loop after the load, the following sequence should be e=
+nough:
+> > 	store to CCSR_DDR_SDRAM_CFG_2
+> > 	load from CCSR_DDR_SDRAM_CFG_2
+> > 	isync or sync
+> > 	delay loop
+> >=20
+> > Why do we need the 'date dependency' here? According to the e6500 manua=
+l, the
+> > instructions can execute out of order, but complete in order. So I am r=
+eally
+> > wondering why we need to order the load and the following delay loop if=
+ there
+> > is no intention to order the storage access?=20
+>=20
+> The data (not date) dependency means that the twi will not execute until
+> after the load instruction returns data (thus, after the device has
+> responded to the load).  The twi, being a flow control instruction
+> rather than a storage instruction, should be fully ordered by isync.
+>=20
+> From the isync description in the ISA: "Except as described in the
+> preceding sentence, the isync instruction may complete before storage
+> accesses associated with instructions preceding the
+> isync instruction have been performed."
+>=20
+> I don't know if that really applies to loads (as opposed to stores), and
+> it probably doesn't apply to guarded loads, but I feel safer leaving the
+> twi in.
+>=20
+> As for sync instead of isync, I see nothing to indicate that it would be
+> adequate (though it may be that the only reason there needed to be a
+> delay loop in the first place was the lack of a readback/sync before
+> doing other I/O, in which case this is moot).
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+OK, so the intention of 'twi, isync' following the load is not to order the
+following storage access, but order the following delay loop instructions,
+right? But according to the e6500 manual, the instructions complete in orde=
+r.
+The following is the definition of 'complete':
+  Complete=E2=80=94An instruction is eligible to complete after it finishes=
+ executing
+  and makes its results available for subsequent instructions. Instructions
+  must complete in order from the bottom two entries of the
+  completion queue (CQ). The completion unit coordinates how instructions (=
+which
+  may have executed out of order) affect architected registers to ensure the
+  appearance of serial execution. This guarantees that the completed instru=
+ction
+  and all previous instructions can cause no exceptions. An instruction com=
+pletes
+  when it is retired, that is, deleted from the CQ.
+
+So the following delay loop instructions should never complete before the
+complete of the load instruction. After the complete of load instruction,
+the data should already been updated to the architecture register. So we can
+guarantee that the load instruction get the data (the device has responded =
+to
+the load) before the complete of the following delay loop instructions, why=
+ do
+we need the additional 'twi, isync'?  Then for a case like this (which don't
+need order the following storage access), I think the following sequence sh=
+ould
+be enough:
+	write to configuration register
+	read back
+	delay loop
+
+> I mean that I do not understand why it says, "the load on which the
+> Branch depends is performed before any loads caused by instructions
+> following the isync" rather than "the Load on which the Branch depends
+> is performed before any instructions following the isync".
+
+When we talk about the 'performed' here, we should only mean the effect of
+storage access. The following is the definition of 'performed':
+  performed
+  A load or instruction fetch by a processor or mech-
+  anism (P1) is performed with respect to any pro-
+  cessor or mechanism (P2) when the value to be
+  returned by the load or instruction fetch can no
+  longer be changed by a store by P2. A store by P1
+  is performed with respect to P2 when a load by P2
+  from the location accessed by the store will return
+  the value stored (or a value stored subsequently).
+  An instruction cache block invalidation by P1 is
+  performed with respect to P2 when an instruction
+  fetch by P2 will not be satisfied from the copy of
+  the block that existed in its instruction cache when
+  the instruction causing the invalidation was exe-
+  cuted, and similarly for a data cache block invalida-
+  tion.
+  The preceding definitions apply regardless of
+  whether P1 and P2 are the same entity.
+
+>=20
+> > > > So if we want to order all the storage access as well
+> > > > as execution synchronization, we should choose sync here.
+> > >=20
+> > > Do we need execution synchronization or context synchronization?
+> >=20
+> > There is no context-altering instruction here, so I think an execution
+> > synchronizing instruction should be enough here.
+>=20
+> Is the ISA ever explicit about what constitutes "context"?
+
+The following is the definition of context-altering instruction:
+  An instruction that alters the context in which data
+  addresses or instruction addresses are interpreted, or
+  in which instructions are executed or data accesses are
+  performed, is called a context-altering instruction.
+
+So the context should be:
+  - in which data addresses or instruction addresses are interpreted
+  - in which instructions are executed
+  - in which data accesses are performed
+
+Thanks,
+Kevin
+
+--Qrgsu6vtpU/OV/zm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQEcBAEBAgAGBQJTKtVXAAoJEJNY7TDerrFxFDIH/jJ8L8UXohZVkK4cWZQgVWgT
+Eg9NzcXxMjbv4UFiKrlyoaQYh+YNbwetZwwM1eqPAS+/LHHnbR7Xu+/UiVSmh6zY
+AqKCYPXcx/bpWFEPws4aASxfgRxYW0lQxyjwS80p8H1eGiNUZkzuygo+jOs1hSlL
+s/FdsghCJzpqvhGW9NFs0CTG08fbtylp8orXsPEG65ptpM9u9nG7zt0owO+Cznx4
+HcbskvIGvfTjx7WP/xg8v2uSVDwUOmPB1tWIkZsd7Nf4b+zsaNNxS0J8m6FwK7T1
+SfdY2kxzVM3M2kxu4UflBVIpJVOdd+9LuZVNiqTKm4pv5pCvMFRArWTVmLqS3ws=
+=nrfu
+-----END PGP SIGNATURE-----
+
+--Qrgsu6vtpU/OV/zm--
