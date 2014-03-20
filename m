@@ -1,243 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaCTD2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 23:28:09 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:35063 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750737AbaCTD2I (ORCPT
+	id S1752451AbaCTDef (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 23:34:35 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:45309 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751274AbaCTDec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 23:28:08 -0400
-From: Eric Biggers <ebiggers3@gmail.com>
-To: viro@zeniv.linux.org.uk
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Biggers <ebiggers3@gmail.com>
-Subject: [PATCH] vfs: Deduplicate code shared by xattr system calls operating on paths
-Date: Wed, 19 Mar 2014 22:26:37 -0500
-Message-Id: <1395285997-5106-1-git-send-email-ebiggers3@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	Wed, 19 Mar 2014 23:34:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+References: <20140224162400.GE16457@pd.tnic>
+	<4205942.Tp8ltEsv6e@vostro.rjw.lan>
+	<532A514C.5010106@intel.com>
+	<744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+Date: Thu, 20 Mar 2014 04:34:31 +0100
+Message-ID: <CABPqkBTyti0owCA_cWf9GcvYnOSvbMQpRC29rgpicjW1iYBjYQ@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Stephane Eranian <eranian@google.com>
+To: "Zhang, Rui" <rui.zhang@intel.com>
+Cc: "Lu, Aaron" <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following pairs of system calls dealing with extended attributes only
-differ in their behavior on whether the symbolic link is followed (when
-the named file is a symbolic link):
+On Thu, Mar 20, 2014 at 4:03 AM, Zhang, Rui <rui.zhang@intel.com> wrote:
+>
+>
+>> -----Original Message-----
+>> From: Lu, Aaron
+>> Sent: Thursday, March 20, 2014 10:24 AM
+>> To: Rafael J. Wysocki; Borislav Petkov
+>> Cc: lkml; x86@kernel.org; Bjorn Helgaas; Linux PCI; ACPI Devel Maling
+>> List; Zhang, Rui; Yinghai Lu; H. Peter Anvin; Stephane Eranian
+>> Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+>> Importance: High
+>>
+>> On 03/15/2014 10:15 PM, Rafael J. Wysocki wrote:
+>> > [CC list rearranged]
+>> >
+>> > On Monday, February 24, 2014 05:24:00 PM Borislav Petkov wrote:
+>> >> This started happening this morning after booting -rc4+tip, let's
+>> add
+>> >> *everybody* to CC :-)
+>> >>
+>> >> We have intel_uncore_init, snb_uncore_imc_init_box, uncore_pci_probe
+>> >> and other goodies on the stack.
+>> >
+>> > I've just gone throught this.
+>> >
+>> > So the problem is that we have the PNP "system" driver whose only
+>> > purpose seems to be to reserve system resources so that the PCI layer
+>> > doesn't assign them to new devices on hotplug (disclaimer: I didn't
+>> > invent it, I only read the code and comments in there).
+>>
+>> And to PCI devices which have uninitialized BARs.
+>>
+>> >
+>> > It does that for ACPI device objects having the "PNP0C02" and
+>> "PNP0C01" IDs.
+>> >
+>> > Apparently, snb_uncore_imc_init_box() steps on a range already
+>> > reserved by that driver on your box.  And this doesn't seem to be a
+>> > coincidence, because the ACPI device object in question probably
+>> > *does* correspond to the memory controller that the uncore driver
+>> attempts to use.
+>> >
+>> > I'm not sure how to address that right now to be honest.  Arguably,
+>> > the PNP "system" driver should be replaced with something saner, but
+>> > still the resources it claims need to be kept out of reach of the
+>> > PCI's resource allocation code.
+>>
+>> The quirk_system_pci_resources is meant to disable PNP devices'
+>> resource if they collide with any known PCI device's BAR. I'm not sure
+>> why it doesn't work here, perhaps the uncore PCI device doesn't have a
+>> BAR that falls in the PNP device's resource window?
+>>
+> I've talked with Yan Zheng, and I was told that this resource "0xfed10000 - 0xfed15fff"
+> is got from PCI device register directly, which is not in its BAR range.
+> Thus IMO, it is impossible for PNP layer to be aware of this resource.
+>
+That is not what the perf_event code does. Nothing is hardcoded except
+the IMC PCI device ids. The BAR offset is hardcoded that's all. The 0xfed10000
+is discovered.
 
-- setxattr() and lsetxattr()
-- getxattr() and lgetxattr()
-- listxattr() and llistxattr()
-- removexattr() and lremovexattr()
-
-Despite this, the implementations all had duplicated code, so this commit
-redirects each of the above pairs of system calls to a corresponding
-function to which different lookup flags (LOOKUP_FOLLOW or 0) are passed.
-
-Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
----
- fs/xattr.c | 116 +++++++++++++++++++++----------------------------------------
- 1 file changed, 39 insertions(+), 77 deletions(-)
-
-diff --git a/fs/xattr.c b/fs/xattr.c
-index 3377dff..dcf053e 100644
---- a/fs/xattr.c
-+++ b/fs/xattr.c
-@@ -364,13 +364,12 @@ out:
- 	return error;
- }
- 
--SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
--		const char __user *, name, const void __user *, value,
--		size_t, size, int, flags)
-+static int path_setxattr(const char __user *pathname,
-+			 const char __user *name, const void __user *value,
-+			 size_t size, int flags, unsigned int lookup_flags)
- {
- 	struct path path;
- 	int error;
--	unsigned int lookup_flags = LOOKUP_FOLLOW;
- retry:
- 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
- 	if (error)
-@@ -388,28 +387,18 @@ retry:
- 	return error;
- }
- 
-+SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
-+		const char __user *, name, const void __user *, value,
-+		size_t, size, int, flags)
-+{
-+	return path_setxattr(pathname, name, value, size, flags, LOOKUP_FOLLOW);
-+}
-+
- SYSCALL_DEFINE5(lsetxattr, const char __user *, pathname,
- 		const char __user *, name, const void __user *, value,
- 		size_t, size, int, flags)
- {
--	struct path path;
--	int error;
--	unsigned int lookup_flags = 0;
--retry:
--	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
--	if (error)
--		return error;
--	error = mnt_want_write(path.mnt);
--	if (!error) {
--		error = setxattr(path.dentry, name, value, size, flags);
--		mnt_drop_write(path.mnt);
--	}
--	path_put(&path);
--	if (retry_estale(error, lookup_flags)) {
--		lookup_flags |= LOOKUP_REVAL;
--		goto retry;
--	}
--	return error;
-+	return path_setxattr(pathname, name, value, size, flags, 0);
- }
- 
- SYSCALL_DEFINE5(fsetxattr, int, fd, const char __user *, name,
-@@ -481,12 +470,12 @@ getxattr(struct dentry *d, const char __user *name, void __user *value,
- 	return error;
- }
- 
--SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
--		const char __user *, name, void __user *, value, size_t, size)
-+static ssize_t path_getxattr(const char __user *pathname,
-+			     const char __user *name, void __user *value,
-+			     size_t size, unsigned int lookup_flags)
- {
- 	struct path path;
- 	ssize_t error;
--	unsigned int lookup_flags = LOOKUP_FOLLOW;
- retry:
- 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
- 	if (error)
-@@ -500,23 +489,16 @@ retry:
- 	return error;
- }
- 
-+SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
-+		const char __user *, name, void __user *, value, size_t, size)
-+{
-+	return path_getxattr(pathname, name, value, size, LOOKUP_FOLLOW);
-+}
-+
- SYSCALL_DEFINE4(lgetxattr, const char __user *, pathname,
- 		const char __user *, name, void __user *, value, size_t, size)
- {
--	struct path path;
--	ssize_t error;
--	unsigned int lookup_flags = 0;
--retry:
--	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
--	if (error)
--		return error;
--	error = getxattr(path.dentry, name, value, size);
--	path_put(&path);
--	if (retry_estale(error, lookup_flags)) {
--		lookup_flags |= LOOKUP_REVAL;
--		goto retry;
--	}
--	return error;
-+	return path_getxattr(pathname, name, value, size, 0);
- }
- 
- SYSCALL_DEFINE4(fgetxattr, int, fd, const char __user *, name,
-@@ -571,12 +553,11 @@ listxattr(struct dentry *d, char __user *list, size_t size)
- 	return error;
- }
- 
--SYSCALL_DEFINE3(listxattr, const char __user *, pathname, char __user *, list,
--		size_t, size)
-+static ssize_t path_listxattr(const char __user *pathname, char __user *list,
-+			      size_t size, unsigned int lookup_flags)
- {
- 	struct path path;
- 	ssize_t error;
--	unsigned int lookup_flags = LOOKUP_FOLLOW;
- retry:
- 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
- 	if (error)
-@@ -590,23 +571,16 @@ retry:
- 	return error;
- }
- 
-+SYSCALL_DEFINE3(listxattr, const char __user *, pathname, char __user *, list,
-+		size_t, size)
-+{
-+	return path_listxattr(pathname, list, size, LOOKUP_FOLLOW);
-+}
-+
- SYSCALL_DEFINE3(llistxattr, const char __user *, pathname, char __user *, list,
- 		size_t, size)
- {
--	struct path path;
--	ssize_t error;
--	unsigned int lookup_flags = 0;
--retry:
--	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
--	if (error)
--		return error;
--	error = listxattr(path.dentry, list, size);
--	path_put(&path);
--	if (retry_estale(error, lookup_flags)) {
--		lookup_flags |= LOOKUP_REVAL;
--		goto retry;
--	}
--	return error;
-+	return path_listxattr(pathname, list, size, 0);
- }
- 
- SYSCALL_DEFINE3(flistxattr, int, fd, char __user *, list, size_t, size)
-@@ -640,12 +614,11 @@ removexattr(struct dentry *d, const char __user *name)
- 	return vfs_removexattr(d, kname);
- }
- 
--SYSCALL_DEFINE2(removexattr, const char __user *, pathname,
--		const char __user *, name)
-+static int path_removexattr(const char __user *pathname,
-+			    const char __user *name, unsigned int lookup_flags)
- {
- 	struct path path;
- 	int error;
--	unsigned int lookup_flags = LOOKUP_FOLLOW;
- retry:
- 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
- 	if (error)
-@@ -663,27 +636,16 @@ retry:
- 	return error;
- }
- 
-+SYSCALL_DEFINE2(removexattr, const char __user *, pathname,
-+		const char __user *, name)
-+{
-+	return path_removexattr(pathname, name, LOOKUP_FOLLOW);
-+}
-+
- SYSCALL_DEFINE2(lremovexattr, const char __user *, pathname,
- 		const char __user *, name)
- {
--	struct path path;
--	int error;
--	unsigned int lookup_flags = 0;
--retry:
--	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
--	if (error)
--		return error;
--	error = mnt_want_write(path.mnt);
--	if (!error) {
--		error = removexattr(path.dentry, name);
--		mnt_drop_write(path.mnt);
--	}
--	path_put(&path);
--	if (retry_estale(error, lookup_flags)) {
--		lookup_flags |= LOOKUP_REVAL;
--		goto retry;
--	}
--	return error;
-+	return path_removexattr(pathname, name, 0);
- }
- 
- SYSCALL_DEFINE2(fremovexattr, int, fd, const char __user *, name)
--- 
-1.9.0
-
+> BTW, about drivers/pnp/system.c, if its ONLY purpose is to prevent those
+> resources from being allocated to uninitialized PCI devices, then IMO,
+> the best way to do this is make PCI bus handle those PNP0C01/PNP0C02
+> resources directly, probably via a platform callback, say,
+> 1. make drivers/pnp/system.c a no-op for PNPACPI, by checking pnp_dev->protocol.
+> 2. introduce acpi_check_reserved_resource() to parsing PNP0C01/PNP0C02 resources.
+> 3. in PCI bus, invoke acpi_check_reserved_resource() when assigning
+>    resources to PCI devices.
+>
+> Thanks,
+> rui
+>
+>> Thanks,
+>> Aaron
+>>
+>> >
+>> >> ...
+>> >> [    0.488998] software IO TLB [mem 0xcac30000-0xcec30000] (64MB)
+>> mapped at [ffff8800cac30000-ffff8800cec2ffff]
+>> >> [    0.489975] resource map sanity check conflict: 0xfed10000
+>> 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+>> >> [    0.490079] ------------[ cut here ]------------
+>> >> [    0.490204] WARNING: CPU: 2 PID: 1 at arch/x86/mm/ioremap.c:171
+>> __ioremap_caller+0x372/0x380()
+>> >> [    0.490306] Info: mapping multiple BARs. Your kernel is fine.
+>> >> [    0.490371] Modules linked in:
+>> >> [    0.490558] CPU: 2 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc4+
+>> #1
+>> >> [    0.490642] Hardware name: LENOVO 2320CTO/2320CTO, BIOS G2ET86WW
+>> (2.06 ) 11/13/2012
+>> >> [    0.490742]  00000000000000ab ffff880213d01ad8 ffffffff816112e3
+>> 0000000000000006
+>> >> [    0.491032]  ffff880213d01b28 ffff880213d01b18 ffffffff8104e9bc
+>> ffff880213d01b08
+>> >> [    0.491343]  ffffc90000c58000 00000000fed10000 00000000fed10000
+>> 0000000000006000
+>> >> [    0.491631] Call Trace:
+>> >> [    0.493337]  [<ffffffff816112e3>] dump_stack+0x4f/0x7c
+>> >> [    0.493420]  [<ffffffff8104e9bc>] warn_slowpath_common+0x8c/0xc0
+>> >> [    0.493503]  [<ffffffff8104eaa6>] warn_slowpath_fmt+0x46/0x50
+>> >> [    0.493588]  [<ffffffff8103f1e2>] __ioremap_caller+0x372/0x380
+>> >> [    0.493674]  [<ffffffff810211a2>] ?
+>> snb_uncore_imc_init_box+0x62/0x90
+>> >> [    0.493761]  [<ffffffff8103f247>] ioremap_nocache+0x17/0x20
+>> >> [    0.493846]  [<ffffffff810211a2>]
+>> snb_uncore_imc_init_box+0x62/0x90
+>> >> [    0.493933]  [<ffffffff81022925>] uncore_pci_probe+0xe5/0x1e0
+>> >> [    0.494020]  [<ffffffff812d487e>] local_pci_probe+0x4e/0xa0
+>> >> [    0.494104]  [<ffffffff81418a59>] ? get_device+0x19/0x20
+>> >> [    0.494213]  [<ffffffff812d5cd1>] pci_device_probe+0xe1/0x130
+>> >> [    0.494300]  [<ffffffff8141d3cb>] driver_probe_device+0x7b/0x240
+>> >> [    0.494385]  [<ffffffff8141d63b>] __driver_attach+0xab/0xb0
+>> >> [    0.494469]  [<ffffffff8141d590>] ?
+>> driver_probe_device+0x240/0x240
+>> >> [    0.494551]  [<ffffffff8141b71e>] bus_for_each_dev+0x5e/0x90
+>> >> [    0.494634]  [<ffffffff8141cede>] driver_attach+0x1e/0x20
+>> >> [    0.494718]  [<ffffffff8141ca57>] bus_add_driver+0x117/0x230
+>> >> [    0.494802]  [<ffffffff8141dd34>] driver_register+0x64/0xf0
+>> >> [    0.494884]  [<ffffffff812d4c14>] __pci_register_driver+0x64/0x70
+>> >> [    0.494972]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+>> >> [    0.495056]  [<ffffffff81d03312>] intel_uncore_init+0x177/0x41c
+>> >> [    0.495155]  [<ffffffff81d0319b>] ? uncore_types_init+0x19c/0x19c
+>> >> [    0.495242]  [<ffffffff8100029e>] do_one_initcall+0x4e/0x170
+>> >> [    0.495326]  [<ffffffff81071100>] ? parse_args+0x60/0x360
+>> >> [    0.495411]  [<ffffffff81cfbfb8>]
+>> kernel_init_freeable+0x106/0x19a
+>> >> [    0.495497]  [<ffffffff81cfb83b>] ? do_early_param+0x86/0x86
+>> >> [    0.495582]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+>> >> [    0.495666]  [<ffffffff81607efe>] kernel_init+0xe/0xf0
+>> >> [    0.495749]  [<ffffffff81621f6c>] ret_from_fork+0x7c/0xb0
+>> >> [    0.495831]  [<ffffffff81607ef0>] ? rest_init+0xd0/0xd0
+>> >> [    0.495921] ---[ end trace 428f365c054d9a01 ]---
+>> >> [    0.496196] RAPL PMU detected, hw unit 2^-16 Joules, API unit is
+>> 2^-32 Joules, 3 fixed counters 163840 ms ovfl timer
+>> >> [    0.498598] futex hash table entries: 1024 (order: 5, 131072
+>> bytes)
+>> >> [    0.498833] audit: initializing netlink subsys (disabled)
+>> >> [    0.499024] audit: type=2000 audit(1393259866.477:1): initialized
+>> >> ...
+>> >>
+>> >>
+>> >
+>
