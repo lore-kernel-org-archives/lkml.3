@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852AbaCTOGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:06:38 -0400
-Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:42484 "EHLO
-	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960AbaCTOGh (ORCPT
+	id S932620AbaCTOJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:09:29 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:53961 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755870AbaCTOJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:06:37 -0400
-Date: Thu, 20 Mar 2014 09:06:34 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Grygorii Strashko <grygorii.strashko@ti.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: Re: [linux-next][regression] [PATCH] percpu: add preemption checks
- to __this_cpu ops
-In-Reply-To: <20140318143759.04a892434d84a9fd3aa94262@linux-foundation.org>
-Message-ID: <alpine.DEB.2.10.1403200905070.4107@nuc>
-References: <53285FE7.5010203@ti.com> <alpine.DEB.2.10.1403180922050.17965@nuc> <53286ABF.3040408@ti.com> <alpine.DEB.2.10.1403181053110.23935@nuc> <20140318143759.04a892434d84a9fd3aa94262@linux-foundation.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 20 Mar 2014 10:09:27 -0400
+Date: Thu, 20 Mar 2014 14:08:48 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "jon@ringle.org" <jon@ringle.org>
+Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "shc_work@mail.ru" <shc_work@mail.ru>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH] tty: serial: sc16is7xx
+Message-ID: <20140320140848.GB23372@e106331-lin.cambridge.arm.com>
+References: <1395324177-15311-1-git-send-email-jon@ringle.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395324177-15311-1-git-send-email-jon@ringle.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014, Andrew Morton wrote:
+On Thu, Mar 20, 2014 at 02:02:57PM +0000, jon@ringle.org wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
+> 
+> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
+> high performance UART. The SC16IS7xx’s internal register set is
+> backward-compatible with the widely used and widely popular 16C450.
+> 
+> The SC16IS7xx also provides additional advanced features such as
+> auto hardware and software flow control, automatic RS-485 support, and
+> software reset.
+> 
+> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> ---
+>  drivers/tty/serial/Kconfig       |   10 +
+>  drivers/tty/serial/Makefile      |    1 +
+>  drivers/tty/serial/sc16is7xx.c   | 1258 ++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/serial_core.h |    3 +
+>  4 files changed, 1272 insertions(+)
+>  create mode 100644 drivers/tty/serial/sc16is7xx.c
 
-> > snprintf can cause hangs.
->
-> This is weird.  How the heck can snprintf() fail if called too early?
-> All it does is shuffle chars around in memory.  The only external
-> dependency I'm seeing is a WARN_ON() which presumably didn't trigger
-> anyway.
->
-> I'm suspecting a misdiagnosis here.  Otherwise, we seriously need to
-> fix snprintf(), not work around it!
->
-> Also, what does "before checking error conditions" refer to?  Does this
-> mean you know why snprintf() failed??
+[...]
 
-No I dont. I only know that this fixes Grygorii's issues. There could be
-numerous arch specific per cpu setup issues going on that may impact on
-snprintf.
+> +static const struct of_device_id __maybe_unused sc16is7xx_dt_ids[] = {
+> +       { .compatible = "nxp,sc16is740",        .data = &sc16is74x_devtype, },
+> +       { .compatible = "nxp,sc16is741",        .data = &sc16is74x_devtype, },
+> +       { .compatible = "nxp,sc16is750",        .data = &sc16is750_devtype, },
+> +       { .compatible = "nxp,sc16is752",        .data = &sc16is752_devtype, },
+> +       { .compatible = "nxp,sc16is760",        .data = &sc16is760_devtype, },
+> +       { .compatible = "nxp,sc16is762",        .data = &sc16is762_devtype, },
+> +       { }
+> +};
 
-If I move it behind the checks then I can avoid using snprintf.
+Please document these strings (even if under a trivial binding
+document).
+
+Cheers,
+Mark.
