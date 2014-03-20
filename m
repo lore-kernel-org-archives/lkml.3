@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758510AbaCTPnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:43:19 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:49789 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671AbaCTPnQ (ORCPT
+	id S1758837AbaCTPoN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:44:13 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:42041 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758065AbaCTPoK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:43:16 -0400
-Date: Thu, 20 Mar 2014 11:42:57 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Mark Brown <broonie@kernel.org>, Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] regulator: bcm590xx: Use array to save desc and *info
-Message-ID: <20140320154257.GL25092@beef>
-References: <1394762274.8460.1.camel@phoenix>
- <1394762428.8460.5.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394762428.8460.5.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 20 Mar 2014 11:44:10 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the staging tree with the  tree
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Brown <broonie@kernel.org>
+Cc: Greg KH <greg@kroah.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <3306881.foYD0IDJn0@avalon>
+References: <20140313005026.95bb2222270ded24b0a5deff@kernel.org> <3306881. foYD0IDJn0@avalon>
+Date: Thu, 20 Mar 2014 15:44:01 +0000
+Message-Id: <20140320154402.063BDC40A0B@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 10:00:28AM +0800, Axel Lin wrote:
-> BCM590XX_NUM_REGS is known in compile time.
-> Use array to save desc and *info makes the code simpler.
+On Thu, 13 Mar 2014 10:17:56 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> Hi Mark,
 > 
-> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> On Thursday 13 March 2014 00:50:26 Mark Brown wrote:
+> > Hi Greg,
+> > 
+> > Today's linux-next merge of the staging tree got a conflict in
+> > drivers/media/v4l2-core/v4l2-of.c between commit b9db140c1e4644d
+> > ("[media] v4l: of: Support empty port nodes") from the v4l tree and
+> > commit fd9fdb78a9bf ("[media] of: move graph helpers from
+> > drivers/media/v4l2-core to drivers/of") from the staging tree.
+> > 
+> > I fixed it up by essentially dropping the support for empty port nodes
+> > since there were more context differences than I was comfortable with
+> > in the changes in the new code.
+> 
+> If I'm not mistaken the move of drivers/media/v4l2-core/v4l2-of.c to 
+> drivers/of/of-graph.c has been canceled for v3.15 and related patches should 
+> be dropped from the for-next branches in the very near future (the v4l tree 
+> has already been rebased).
 
-Well, ok. It was coded for dynamic allocation because I'm starting to
-work on BCM59054 support, which is similar but different. The actual
-regulators are different but, due to luck, the total number is the
-same between 59056 and 59054...so this can still work for the moment.
-However, another 590xx part does have a different number of regulators
-so I'm not sure this is worth doing when we know we'll go back to
-dynamic allocation in the future.
+I had not actually asked Mauro to revert, but the branch is still in rmk's
+tree and linux-next. I do not think it needs to be cancelled.
 
--Matt
+I do still have issues about it as a generic pattern, but I'm happy with
+the discussion so far and the documentation will be sorted before the
+next kernel is released.
 
-> ---
->  drivers/regulator/bcm590xx-regulator.c | 18 ++----------------
->  1 file changed, 2 insertions(+), 16 deletions(-)
-> 
-> diff --git a/drivers/regulator/bcm590xx-regulator.c b/drivers/regulator/bcm590xx-regulator.c
-> index ab08ca7..fe21855 100644
-> --- a/drivers/regulator/bcm590xx-regulator.c
-> +++ b/drivers/regulator/bcm590xx-regulator.c
-> @@ -151,9 +151,9 @@ static struct bcm590xx_info bcm590xx_regs[] = {
->  };
->  
->  struct bcm590xx_reg {
-> -	struct regulator_desc *desc;
-> +	struct regulator_desc desc[BCM590XX_NUM_REGS];
->  	struct bcm590xx *mfd;
-> -	struct bcm590xx_info **info;
-> +	struct bcm590xx_info *info[BCM590XX_NUM_REGS];
->  };
->  
->  static int bcm590xx_get_vsel_register(int id)
-> @@ -319,20 +319,6 @@ static int bcm590xx_probe(struct platform_device *pdev)
->  
->  	platform_set_drvdata(pdev, pmu);
->  
-> -	pmu->desc = devm_kzalloc(&pdev->dev, BCM590XX_NUM_REGS *
-> -			sizeof(struct regulator_desc), GFP_KERNEL);
-> -	if (!pmu->desc) {
-> -		dev_err(&pdev->dev, "Memory alloc fails for desc\n");
-> -		return -ENOMEM;
-> -	}
-> -
-> -	pmu->info = devm_kzalloc(&pdev->dev, BCM590XX_NUM_REGS *
-> -			sizeof(struct bcm590xx_info *), GFP_KERNEL);
-> -	if (!pmu->info) {
-> -		dev_err(&pdev->dev, "Memory alloc fails for info\n");
-> -		return -ENOMEM;
-> -	}
-> -
->  	info = bcm590xx_regs;
->  
->  	for (i = 0; i < BCM590XX_NUM_REGS; i++, info++) {
-> -- 
-> 1.8.1.2
-> 
-> 
-> 
+g.
