@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758397AbaCTMlv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:41:51 -0400
-Received: from mxout1.netvision.net.il ([194.90.9.20]:61689 "EHLO
-	mxout1.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaCTMls (ORCPT
+	id S1758552AbaCTMmp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:42:45 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:63027 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903AbaCTMmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:41:48 -0400
+	Thu, 20 Mar 2014 08:42:42 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-57-532ae23f7a5c
+Message-id: <532AE239.9000800@samsung.com>
+Date: Thu, 20 Mar 2014 13:42:33 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
 MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII; format=flowed
-Message-id: <532AE17F.9020509@gmail.com>
-Date: Thu, 20 Mar 2014 14:39:27 +0200
-From: Eli Billauer <eli.billauer@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12)
- Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-To: monstr@monstr.eu
-Cc: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>,
-        Mike Looijmans <mike.looijmans@topic.nl>, chris@printf.net,
-        michal.simek@xilinx.com, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mmc: sdhci: add quirk for broken write protect detection
-References: <1393759200-22819-1-git-send-email-eli.billauer@gmail.com>
- <74003aec-1707-4f43-b947-df148d573fa1@TX2EHSMHS038.ehs.local>
- <53163247.8000904@gmail.com>
- <ae0f71ac-c5f7-4af7-a9ba-c019cec19ebf@AM1EHSMHS017.ehs.local>
- <531878C8.2020001@topic.nl>
- <ad0a3559-a687-4f51-b284-f515372cfad2@VA3EHSMHS001.ehs.local>
- <532ADE8D.7040900@monstr.eu>
-In-reply-to: <532ADE8D.7040900@monstr.eu>
+To: Maxime Coquelin <maxime.coquelin@st.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+Cc: mark.rutland@arm.com, mturquette@linaro.org, gregkh@linuxfoundation.org,
+        t.figa@samsung.com, sw0312.kim@samsung.com,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        robh+dt@kernel.org, galak@codeaurora.org, grant.likely@linaro.org,
+        linux@arm.linux.org.uk, m.szyprowski@samsung.com, t-kristo@ti.com
+Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents and
+ rates
+References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
+ <53187C13.3040202@st.com>
+In-reply-to: <53187C13.3040202@st.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e/4ZV37R1rBBs/faljMP3KO1aL/zUJW
+	iwN/djBaNC9ez2ZxtukNu8Wmx9dYLS7vmsNmcfsyr8XaI3fZLZZev8hk8ej0YjaLpxMuslm0
+	7j3CbjFj8ks2iyVPO9gs1s94zeIg4LFm3hpGj5bmHjaPy329TB6bVnWyedy5tofNY//cNewe
+	m5fUe/RtWcXo8fTHXmaP4ze2M3l83iQXwB3FZZOSmpNZllqkb5fAlbHvsn3BWf6KH1PPsjcw
+	nuLpYuTkkBAwkTi0bh0jhC0mceHeerYuRi4OIYGljBLreyYwQjifGCX+9ZxjA6niFdCSWH/q
+	HZjNIqAqsWfKK2YQm03AUKL3aB/YJFGBCIm5EzdD1QtK/Jh8jwXEFhEokNi1cyk7yFBmgX1M
+	Eu03boA1CwuESexdfQzMFhJIklje8wxsEKeAmsT59n9gNrOAjsT+1mlsELa8xOY1b5knMArM
+	QrJjFpKyWUjKFjAyr2IUTS1NLihOSs810itOzC0uzUvXS87P3cQIibyvOxiXHrM6xCjAwajE
+	w7tij2awEGtiWXFl7iFGCQ5mJRHeqTe0goV4UxIrq1KL8uOLSnNSiw8xMnFwSjUwmkvekzFh
+	0vo9paAhKumnxYK1NWYzS/buXqonwfk2/vhK34UOa+e4+v/vPPDs5P2bwhUCXIHCzxmqy40q
+	7XeFLGBsztExL4r+OeW50VqFww6312vdtevWlor+OkFx3YLqzlnLE87t0TA0ynO68O1Uhu0i
+	dx472Rl1e7xFJykcDnC9vpBL56itEktxRqKhFnNRcSIAzOZEvZoCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Michal.
+Hi Maxime,
 
-The Zybo board doesn't have any WP pin connected to the MicroSD card. 
-There is no physical possibility for the processor to know whether the 
-card is write-protected or not.
+On 06/03/14 14:45, Maxime Coquelin wrote:
+> Hi Sylwester,
+> 
+> 	I like the principle of your implementation, but I have two questions:
+> 	1 - How can we manage PM with this solution, as the parent/rate will be 
+> set only once at probe time?
+> 	2 - How to set the parent of a parent clock (which can be shared with 
+> other devices)? Same question about the parent rates.
 
-As I mentioned earlier, the practical problem can be worked around by 
-inverting the polarity of the WP bit, using wp-inverted. Practically 
-speaking, there's no need for this patch.
+Thanks for your feedback and apologies for late reply.
 
-I insisted on this patch, because I think that the device tree should 
-reflect the hardware as it is, and not contain tricks for fooling the 
-driver into doing what we want. But I guess this wasn't a reason good 
-enough for adding yet another quirk (to the existing 38 or so).
+IIUC your first concern is about a situation when clocks need to be
+reconfigured upon each resume from system sleep or runtime PM resume ?
+As I mentioned in v1 of the RFC I was considering having individual
+drivers calling explicitly the clocks set up routine. Presumably this
+would allow to resolve the power management related issue.
+One example I'm aware the approach as in this RFC wouldn't work is
+when a device in a SoC belongs to a power domain, which needs to be
+first switched on before we can start setting up and the clocks'
+configuration get lost after the power domain switch off.
 
+OTOH I suspect devices for which one-time clocks setup is sufficient
+will be quite common. And for these there would need to be a single
+call to the setup routine in probe() I guess, since it wouldn't be
+possible to figure out just from the DT data when the actual call
+should be made.
+
+For a global clocks configuration, I thought about specifying that
+in the clocks controller node, and then to have the setup routine
+called e.g. from of_clk_init(). I think that could work well enough,
+together with the patch [1], adding clock dependencies handling.
+But then the clock frequency set up function would need to be
+modified to respect the clock parent relationships, similarly as
+in patch series [2]. A just noticed [2] recently, after posting
+this RFC (adding Tero at Cc).
+
+--
 Regards,
-    Eli
+Sylwester
 
-On 20/03/14 14:26, Michal Simek wrote:
-> we have got this from Mike (we couldn't reply because he has lost this email
-> thread.
->
-> Mike:
-> "I think I found the issue. In ps7_init.c as generated by the tools, it sets the "WP" pin not to EMIO, but to MIO 0. We use pin 0 for a status LED.
->
-> # devmem 0XF8000830
-> 0x002E0000
->
-> Register 0XF8000830 is SD0_WP_CD_SEL, and 0x002E0000 sets CD to pin 46 and WP to pin "0", not to EMIO as I specified in the design.
-> "
->
-> Eli: Maybe you have the same issue as Mike. Can you please check it?
->    
-
-
+[1] http://www.spinics.net/lists/arm-kernel/msg310507.html
+[2] http://www.spinics.net/lists/linux-omap/msg103069.html
