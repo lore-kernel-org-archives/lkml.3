@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933579AbaCTJpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:45:53 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:41411 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740AbaCTJmb (ORCPT
+	id S933662AbaCTJqV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:46:21 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:43750 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933594AbaCTJqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:42:31 -0400
-Subject: [PATCH 23/33] Handling SIG TERM of the daemon
-To: linux-kernel@vger.kernel.org
-From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
-Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
-        james.hogan@imgtec.com, aravinda@linux.vnet.ibm.com, hch@lst.de,
-        mhiramat@redhat.com, jeremy.fitzhardinge@citrix.com,
-        xemul@parallels.com, d.hatayama@jp.fujitsu.com, coreutils@gnu.org,
-        kosaki.motohiro@jp.fujitsu.com, adobriyan@gmail.com,
-        util-linux@vger.kernel.org, tarundsk@linux.vnet.ibm.com,
-        vapier@gentoo.org, roland@hack.frob.com, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
-        tj@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:12:10 +0530
-Message-ID: <20140320094210.14878.75209.stgit@localhost.localdomain>
-In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
-References: <20140320093040.14878.903.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	Thu, 20 Mar 2014 05:46:17 -0400
+Message-ID: <532AB8D7.5000608@linux.vnet.ibm.com>
+Date: Thu, 20 Mar 2014 15:15:59 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Daniel <amit.daniel@samsung.com>
+Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org> <532840FD.308@linux.vnet.ibm.com> <CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com> <53296870.5010505@linux.vnet.ibm.com> <CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com> <53298A7D.3080400@linux.vnet.ibm.com> <CAKohpon=VLfPiukzrtQOSVAQg-Z-Aq3+AkZ1myrE6XtVRMY8mQ@mail.gmail.com> <532AA7A8.3040508@linux.vnet.ibm.com> <CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com> <532AB3E7.3090503@linux.vnet.ibm.com> <CAKohpokiDYqpTj0AbR17KDbE26E=5usRuLWg0+pLR0xR5e5xTg@mail.gmail.com>
+In-Reply-To: <CAKohpokiDYqpTj0AbR17KDbE26E=5usRuLWg0+pLR0xR5e5xTg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-2000-0000-0000-00001044DD15
+x-cbid: 14032009-9574-0000-0000-00000C8890BD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We handle SIGTERM on the daemon, by closing the socket opened for that
-connection.
+On 03/20/2014 03:03 PM, Viresh Kumar wrote:
+> On 20 March 2014 14:54, Srivatsa S. Bhat
+> <srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> On 03/20/2014 02:07 PM, Viresh Kumar wrote:
+>>>     WARN_ON(policy->transition_ongoing);
+>>>
+>>
+>> I guess you meant WARN_ON(!policy->transition_ongoing)
+>> perhaps?
+> 
+> Ooops!!
+> 
+>> I'm not sure whether its really worth it, because it kinda looks
+>> obvious. Not sure what kind of bugs it would catch. I can't think of any
+>> such scenario :-(
+> 
+> Just to catch if somebody is sending a POSTCHANGE one without first
+> sending a PRECHANGE one.. Just another check to make sure things are
+> in order.
+> 
 
-Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
----
- src/coredump.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+Well, that's unlikely, since they will have to call _end() before
+_begin() :-) That's the power of having great function names - they make
+it impossible to use them incorrectly ;-) But anyway, I can add the check,
+just in case somebody misses even such an obvious cue! :-)
 
-diff --git a/src/coredump.c b/src/coredump.c
-index 72ba8d8..c0da457 100755
---- a/src/coredump.c
-+++ b/src/coredump.c
-@@ -562,6 +562,17 @@ int handle_request(void)
- 	return 0;
- }
- 
-+/* Handles Signals to the Daemon */
-+void sig_daemon_handler(int sig)
-+{
-+	close(socket_fd);
-+	unlink(SOCKET_PATH);
-+
-+	gencore_log("[%d]: Cleanup done and daemon exiting.\n", pid_log);
-+
-+	fclose(fp_log);
-+}
-+
- /* Daemon for self dump */
- int daemon_dump(void)
- {
-@@ -602,6 +613,11 @@ int daemon_dump(void)
- 	/* SIGCHILD - Signal handler */
- 	signal(SIGCHLD, sigchild_handler);
- 
-+	/* Terminate Daemon - signal handler */
-+	signal(SIGTERM, sig_daemon_handler);
-+	signal(SIGSEGV, sig_daemon_handler);
-+	signal(SIGPIPE, sig_daemon_handler);
-+
- 	while (1) {
- 
- 		/* Blocks on request */
+By the way, I'm also thinking of using a spinlock instead of a mutex.
+The critical section is tiny and we don't sleep inside the critical
+section - sounds like the perfect case for a spinlock.
+
+Regards,
+Srivatsa S. Bhat
 
