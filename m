@@ -1,193 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756859AbaCTFnT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:43:19 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:56244 "EHLO
-	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751223AbaCTFgv (ORCPT
+	id S1756952AbaCTFn4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:43:56 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:20154
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750854AbaCTFny convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:36:51 -0400
-X-AuditID: 9c93017e-b7b10ae000000e66-f8-532a7e70ec8a
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
-        Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 04/21] perf hists: Accumulate hist entry stat based on the callchain
-Date: Thu, 20 Mar 2014 14:36:29 +0900
-Message-Id: <1395293806-25847-5-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
-References: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Mar 2014 01:43:54 -0400
+From: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "balbi@ti.com" <balbi@ti.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in platform
+ device id
+Thread-Topic: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in platform
+ device id
+Thread-Index: AQHPPpdRgmsBtN4byECY9YgUxW/lcprfJAUAgAHdeiCAAGBZgIAGzXhAgAB6fgCAABOuYIAAw61g
+Date: Thu, 20 Mar 2014 05:43:51 +0000
+Message-ID: <d8e3ca39d71045aeaef97c9a348de4d6@BN1PR03MB251.namprd03.prod.outlook.com>
+References: <1394719531-27062-1-git-send-email-suresh.gupta@freescale.com>
+ <20140313152628.GI4599@saruman.home>
+ <71f42b215c58414d8bfa7efb968dadbf@BN1PR03MB251.namprd03.prod.outlook.com>
+ <20140315014015.GD31520@saruman.home>
+ <bb1e5245113c424abd45e6dad2d0cba4@BN1PR03MB251.namprd03.prod.outlook.com>
+ <20140319165138.GC27142@kroah.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.169.1]
+x-forefront-prvs: 01565FED4C
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(377454003)(51704005)(13464003)(24454002)(52604005)(47736001)(49866001)(94946001)(47446002)(47976001)(76576001)(50986001)(65816001)(76786001)(92566001)(81342001)(74876001)(79102001)(31966008)(74316001)(19580405001)(87936001)(83072002)(93136001)(94316002)(19580395003)(95416001)(33646001)(74662001)(66066001)(85852003)(80022001)(83322001)(74366001)(76796001)(4396001)(81542001)(81816001)(63696002)(20776003)(97336001)(81686001)(87266001)(56816005)(2656002)(90146001)(85306002)(86362001)(54316002)(69226001)(80976001)(56776001)(46102001)(77096001)(74502001)(93516002)(95666003)(97186001)(51856001)(74706001)(76482001)(53806001)(77982001)(59766001)(54356001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB251;H:BN1PR03MB251.namprd03.prod.outlook.com;FPR:275CF15D.A7329C29.E75F63.4158FA79.20377;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call __hists__add_entry() for each callchain node to get an
-accumulated stat for an entry.  Introduce new cumulative_iter ops to
-process them properly.
+Ignore last mail, was not intended for you. 
 
-Tested-by: Arun Sharma <asharma@fb.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c |  2 ++
- tools/perf/util/callchain.c |  3 +-
- tools/perf/util/hist.c      | 87 +++++++++++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h      |  1 +
- 4 files changed, 92 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index f6e809453713..2e2a2eedcfd6 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -104,6 +104,8 @@ static int process_sample_event(struct perf_tool *tool,
- 		iter.ops = &hist_iter_branch;
- 	else if (rep->mem_mode)
- 		iter.ops = &hist_iter_mem;
-+	else if (symbol_conf.cumulate_callchain)
-+		iter.ops = &hist_iter_cumulative;
- 	else
- 		iter.ops = &hist_iter_normal;
- 
-diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
-index 8d9db454f1a9..35b12a06bc39 100644
---- a/tools/perf/util/callchain.c
-+++ b/tools/perf/util/callchain.c
-@@ -538,7 +538,8 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
- 	if (sample->callchain == NULL)
- 		return 0;
- 
--	if (symbol_conf.use_callchain || sort__has_parent) {
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain ||
-+	    sort__has_parent) {
- 		return machine__resolve_callchain(al->machine, evsel, al->thread,
- 						  sample, parent, al, max_stack);
- 	}
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index f7e28be9f6e1..c00114f9272c 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -712,6 +712,85 @@ iter_finish_normal_entry(struct hist_entry_iter *iter, struct addr_location *al)
- 
- 	return hist_entry__append_callchain(he, sample);
- }
-+static int
-+iter_prepare_cumulative_entry(struct hist_entry_iter *iter __maybe_unused,
-+			      struct addr_location *al __maybe_unused)
-+{
-+	callchain_cursor_commit(&callchain_cursor);
-+	return 0;
-+}
-+
-+static int
-+iter_add_single_cumulative_entry(struct hist_entry_iter *iter,
-+				 struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, true);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+}
-+
-+static int
-+iter_next_cumulative_entry(struct hist_entry_iter *iter,
-+			   struct addr_location *al)
-+{
-+	struct callchain_cursor_node *node;
-+
-+	node = callchain_cursor_current(&callchain_cursor);
-+	if (node == NULL)
-+		return 0;
-+
-+	al->map = node->map;
-+	al->sym = node->sym;
-+	if (node->map)
-+		al->addr = node->map->map_ip(node->map, node->ip);
-+	else
-+		al->addr = node->ip;
-+
-+	if (iter->hide_unresolved && al->sym == NULL)
-+		return 0;
-+
-+	callchain_cursor_advance(&callchain_cursor);
-+	return 1;
-+}
-+
-+static int
-+iter_add_next_cumulative_entry(struct hist_entry_iter *iter,
-+			       struct addr_location *al)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+	struct hist_entry *he;
-+
-+	he = __hists__add_entry(&evsel->hists, al, iter->parent, NULL, NULL,
-+				sample->period, sample->weight,
-+				sample->transaction, false);
-+	if (he == NULL)
-+		return -ENOMEM;
-+
-+	return hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
-+}
-+
-+static int
-+iter_finish_cumulative_entry(struct hist_entry_iter *iter,
-+			     struct addr_location *al __maybe_unused)
-+{
-+	struct perf_evsel *evsel = iter->evsel;
-+	struct perf_sample *sample = iter->sample;
-+
-+	evsel->hists.stats.total_period += sample->period;
-+	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
-+
-+	return 0;
-+}
-+
- const struct hist_iter_ops hist_iter_mem = {
- 	.prepare_entry 		= iter_prepare_mem_entry,
- 	.add_single_entry 	= iter_add_single_mem_entry,
-@@ -736,6 +815,14 @@ const struct hist_iter_ops hist_iter_normal = {
- 	.finish_entry 		= iter_finish_normal_entry,
- };
- 
-+const struct hist_iter_ops hist_iter_cumulative = {
-+	.prepare_entry 		= iter_prepare_cumulative_entry,
-+	.add_single_entry 	= iter_add_single_cumulative_entry,
-+	.next_entry 		= iter_next_cumulative_entry,
-+	.add_next_entry 	= iter_add_next_cumulative_entry,
-+	.finish_entry 		= iter_finish_cumulative_entry,
-+};
-+
- int hist_entry_iter__add(struct hist_entry_iter *iter, struct addr_location *al,
- 			 struct perf_evsel *evsel, struct perf_sample *sample,
- 			 int max_stack_depth)
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 742c18b73096..3269a8a8be91 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -124,6 +124,7 @@ struct hist_entry_iter {
- extern const struct hist_iter_ops hist_iter_normal;
- extern const struct hist_iter_ops hist_iter_branch;
- extern const struct hist_iter_ops hist_iter_mem;
-+extern const struct hist_iter_ops hist_iter_cumulative;
- 
- struct hist_entry *__hists__add_entry(struct hists *hists,
- 				      struct addr_location *al,
--- 
-1.7.11.7
+> -----Original Message-----
+> From: Gupta Suresh-B42813
+> Sent: Wednesday, March 19, 2014 11:33 PM
+> To: 'gregkh@linuxfoundation.org'
+> Cc: balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
+> platform device id
+> 
+> Hi Ramneek,
+> 
+> Do you understand, what Greg want to communicate.
+> 
+> 
+> Thanks
+> SuresH
+> 
+> > -----Original Message-----
+> > From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+> > Sent: Wednesday, March 19, 2014 10:22 PM
+> > To: Gupta Suresh-B42813
+> > Cc: balbi@ti.com; linux-usb@vger.kernel.org;
+> > linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
+> > platform device id
+> >
+> > On Wed, Mar 19, 2014 at 02:25:25PM +0000, suresh.gupta@freescale.com
+> > wrote:
+> > > Hi
+> > >
+> > > > -----Original Message-----
+> > > > From: Felipe Balbi [mailto:balbi@ti.com]
+> > > > Sent: Saturday, March 15, 2014 7:10 AM
+> > > > To: Gupta Suresh-B42813
+> > > > Cc: balbi@ti.com; gregkh@linuxfoundation.org;
+> > > > linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > > > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry in
+> > > > platform device id
+> > > >
+> > > > On Fri, Mar 14, 2014 at 08:52:19PM +0000,
+> > > > suresh.gupta@freescale.com
+> > > > wrote:
+> > > > > Hi,
+> > > > > Thanks for reviewing my patches.
+> > > > > Please find my comments inline
+> > > > >
+> > > > > -----Original Message-----
+> > > > > From: Felipe Balbi [mailto:balbi@ti.com]
+> > > > > Sent: Thursday, March 13, 2014 8:56 PM
+> > > > > To: Gupta Suresh-B42813
+> > > > > Cc: balbi@ti.com; gregkh@linuxfoundation.org;
+> > > > > linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org; Gupta
+> > > > > Suresh-B42813
+> > > > > Subject: Re: [PATCH] usb: gadget: fsl: Add FSL USB Gadget entry
+> > > > > in platform device id
+> > > > >
+> > > > > On Thu, Mar 13, 2014 at 07:35:31PM +0530, Suresh Gupta wrote:
+> > > > > > From: Suresh Gupta <B42813@freescale.com>
+> > > > > >
+> > > > > > 	Add FSL USB Gadget entry in platform device id table
+> > > > >
+> > > > > why this tab ?
+> > > > > [SuresH] I will remove it in next version.
+> > > > >
+> > > > > > Signed-off-by: Suresh Gupta <B42813@freescale.com>
+> > > > > > ---
+> > > > > >  drivers/usb/gadget/fsl_udc_core.c | 2 ++
+> > > > > >  1 file changed, 2 insertions(+)
+> > > > > >
+> > > > > > diff --git a/drivers/usb/gadget/fsl_udc_core.c
+> > > > > > b/drivers/usb/gadget/fsl_udc_core.c
+> > > > > > index b7dea4e..35b20e6 100644
+> > > > > > --- a/drivers/usb/gadget/fsl_udc_core.c
+> > > > > > +++ b/drivers/usb/gadget/fsl_udc_core.c
+> > > > > > @@ -2654,6 +2654,8 @@ static const struct platform_device_id
+> > > > fsl_udc_devtype[] = {
+> > > > > >  	}, {
+> > > > > >  		.name = "imx-udc-mx51",
+> > > > > >  	}, {
+> > > > > > +		.name = "fsl-usb2-udc",
+> > > > >
+> > > > > why aren't you just using chipidea ?
+> > > > > [SuresH] This is our legacy driver for all previous and existing
+> > > > > ppc socs. Many of our customers are already using this, and we
+> > > > > need to support them on this driver. We do have plans to shift
+> > > > > to chipidea, but after some time.
+> > > >
+> > > > cool, you already have plans, so we will see a new glue layer for
+> > > > v3.16 right ? Which means I don't need to take this patch either.
+> > > >
+> > > we do have plans, but in remote future. Right now, we need to
+> > > support customers on the present legacy driver. We'll phase out this
+> > > driver slowly when we integrate chipidea. At this time I would
+> > > request you to please accept this patch
+> >
+> > Even if Felipe takes the patch, I'll reject it as you should be doing
+> > the correct thing here, and if it's accepted, it will never be
+> changed...
+> >
+> > greg k-h
+> >
 
