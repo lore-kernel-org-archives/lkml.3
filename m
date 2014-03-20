@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965AbaCTUZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:25:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12439 "EHLO mx1.redhat.com"
+	id S1759979AbaCTUZm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:25:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57925 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759746AbaCTUZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:25:14 -0400
-Message-ID: <1395347109.632.39.camel@ul30vt.home>
-Subject: Re: [PATCH 3/4] KVM: ioapic: extract body of kvm_ioapic_set_irq
+	id S1759953AbaCTUZ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 16:25:29 -0400
+Message-ID: <1395347123.632.40.camel@ul30vt.home>
+Subject: Re: [PATCH 1/4] KVM: ioapic: merge ioapic_deliver into
+ ioapic_service
 From: Alex Williamson <alex.williamson@redhat.com>
 To: Paolo Bonzini <pbonzini@redhat.com>
 Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, mtosatti@redhat.com,
         kvm@vger.kernel.org
-Date: Thu, 20 Mar 2014 14:25:09 -0600
-In-Reply-To: <1395154495-22807-4-git-send-email-pbonzini@redhat.com>
+Date: Thu, 20 Mar 2014 14:25:23 -0600
+In-Reply-To: <1395154495-22807-2-git-send-email-pbonzini@redhat.com>
 References: <1395154495-22807-1-git-send-email-pbonzini@redhat.com>
-	 <1395154495-22807-4-git-send-email-pbonzini@redhat.com>
+	 <1395154495-22807-2-git-send-email-pbonzini@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
@@ -24,109 +25,91 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 2014-03-18 at 15:54 +0100, Paolo Bonzini wrote:
-> We will reuse it to process a nonzero IRR that is passed to KVM_SET_IRQCHIP.
+> Commonize the handling of masking, which was absent for kvm_ioapic_set_irq.
+> Setting remote_irr does not need a separate function either, and merging
+> the two functions avoids confusion.
 > 
 > Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 > ---
->  virt/kvm/ioapic.c | 63 ++++++++++++++++++++++++++++++++++---------------------
->  1 file changed, 39 insertions(+), 24 deletions(-)
+>  virt/kvm/ioapic.c | 29 +++++++++--------------------
+>  1 file changed, 9 insertions(+), 20 deletions(-)
 
-I might choose to keep the "irq_level" variable name in the new
-functions since dealing with both "edge" and "level" variables is a bit
-confusing.  Some handy comments describing the return value were also
-dropped.  Functionally identical though
+Code consolidation, no functional change
 
 Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
 
 > diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index 25e16a6898ed..7a573f1bb79e 100644
+> index 1539d3757a04..0b4914147b9d 100644
 > --- a/virt/kvm/ioapic.c
 > +++ b/virt/kvm/ioapic.c
-> @@ -163,6 +163,44 @@ static bool rtc_irq_check_coalesced(struct kvm_ioapic *ioapic)
+> @@ -50,7 +50,7 @@
+>  #else
+>  #define ioapic_debug(fmt, arg...)
+>  #endif
+> -static int ioapic_deliver(struct kvm_ioapic *vioapic, int irq,
+> +static int ioapic_service(struct kvm_ioapic *vioapic, int irq,
+>  		bool line_status);
+>  
+>  static unsigned long ioapic_read_indirect(struct kvm_ioapic *ioapic,
+> @@ -163,23 +163,6 @@ static bool rtc_irq_check_coalesced(struct kvm_ioapic *ioapic)
 >  	return false;
 >  }
 >  
-> +static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
-> +		int level, bool line_status)
-> +{
-> +	union kvm_ioapic_redirect_entry entry;
-> +	u32 mask = 1 << irq;
-> +	u32 old_irr;
-> +	int edge, ret;
-> +
-> +	entry = ioapic->redirtbl[irq];
-> +	edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
-> +
-> +	if (!level) {
-> +		ioapic->irr &= ~mask;
-> +		ret = 1;
-> +		goto out;
-> +	}
-> +
-> +	if (irq == RTC_GSI && line_status &&
-> +		rtc_irq_check_coalesced(ioapic)) {
-> +		ret = 0;
-> +		goto out;
-> +	}
-> +
-> +	old_irr = ioapic->irr;
-> +	ioapic->irr |= mask;
-> +	if ((edge && old_irr == ioapic->irr) ||
-> +	    (!edge && entry.fields.remote_irr)) {
-> +		ret = 0;
-> +		goto out;
-> +	}
-> +
-> +	ret = ioapic_service(ioapic, irq, line_status);
-> +
-> +out:
-> +	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
-> +	return ret;
-> +}
-> +
+> -static int ioapic_service(struct kvm_ioapic *ioapic, unsigned int idx,
+> -		bool line_status)
+> -{
+> -	union kvm_ioapic_redirect_entry *pent;
+> -	int injected = -1;
+> -
+> -	pent = &ioapic->redirtbl[idx];
+> -
+> -	if (!pent->fields.mask) {
+> -		injected = ioapic_deliver(ioapic, idx, line_status);
+> -		if (injected && pent->fields.trig_mode == IOAPIC_LEVEL_TRIG)
+> -			pent->fields.remote_irr = 1;
+> -	}
+> -
+> -	return injected;
+> -}
+> -
 >  static void update_handled_vectors(struct kvm_ioapic *ioapic)
 >  {
 >  	DECLARE_BITMAP(handled_vectors, 256);
-> @@ -308,38 +346,15 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
->  int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
->  		       int level, bool line_status)
+> @@ -282,12 +265,15 @@ static void ioapic_write_indirect(struct kvm_ioapic *ioapic, u32 val)
+>  	}
+>  }
+>  
+> -static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq, bool line_status)
+> +static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
 >  {
-> -	u32 old_irr;
-> -	u32 mask = 1 << irq;
-> -	union kvm_ioapic_redirect_entry entry;
->  	int ret, irq_level;
+>  	union kvm_ioapic_redirect_entry *entry = &ioapic->redirtbl[irq];
+>  	struct kvm_lapic_irq irqe;
+>  	int ret;
 >  
->  	BUG_ON(irq < 0 || irq >= IOAPIC_NUM_PINS);
+> +	if (entry->fields.mask)
+> +		return -1;
+> +
+>  	ioapic_debug("dest=%x dest_mode=%x delivery_mode=%x "
+>  		     "vector=%x trig_mode=%x\n",
+>  		     entry->fields.dest_id, entry->fields.dest_mode,
+> @@ -310,6 +296,9 @@ static int ioapic_deliver(struct kvm_ioapic *ioapic, int irq, bool line_status)
+>  	} else
+>  		ret = kvm_irq_delivery_to_apic(ioapic->kvm, NULL, &irqe, NULL);
 >  
->  	spin_lock(&ioapic->lock);
-> -	old_irr = ioapic->irr;
->  	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
->  					 irq_source_id, level);
-> -	entry = ioapic->redirtbl[irq];
-> -	if (!irq_level) {
-> -		ioapic->irr &= ~mask;
-> -		ret = 1;
-> -	} else {
-> -		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
-> +	ret = ioapic_set_irq(ioapic, irq, irq_level, line_status);
->  
-> -		if (irq == RTC_GSI && line_status &&
-> -			rtc_irq_check_coalesced(ioapic)) {
-> -			ret = 0; /* coalesced */
-> -			goto out;
-> -		}
-> -		ioapic->irr |= mask;
-> -		if ((edge && old_irr != ioapic->irr) ||
-> -		    (!edge && !entry.fields.remote_irr))
-> -			ret = ioapic_service(ioapic, irq, line_status);
-> -		else
-> -			ret = 0; /* report coalesced interrupt */
-> -	}
-> -out:
-> -	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
->  	spin_unlock(&ioapic->lock);
->  
+> +	if (ret && irqe.trig_mode == IOAPIC_LEVEL_TRIG)
+> +		entry->fields.remote_irr = 1;
+> +
 >  	return ret;
-
+>  }
+>  
+> @@ -393,7 +382,7 @@ static void __kvm_ioapic_update_eoi(struct kvm_vcpu *vcpu,
+>  
+>  		ASSERT(ent->fields.trig_mode == IOAPIC_LEVEL_TRIG);
+>  		ent->fields.remote_irr = 0;
+> -		if (!ent->fields.mask && (ioapic->irr & (1 << i)))
+> +		if (ioapic->irr & (1 << i))
+>  			ioapic_service(ioapic, i, false);
+>  	}
+>  }
 
 
