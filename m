@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaCTFgy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:36:54 -0400
+	id S1755148AbaCTFjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:39:41 -0400
 Received: from lgeamrelo02.lge.com ([156.147.1.126]:61615 "EHLO
 	LGEAMRELO02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaCTFgu (ORCPT
+	with ESMTP id S1751958AbaCTFgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:36:50 -0400
-X-AuditID: 9c93017e-b7b10ae000000e66-f4-532a7e7014f0
+	Thu, 20 Mar 2014 01:36:54 -0400
+X-AuditID: 9c93017e-b7b10ae000000e66-16-532a7e720a18
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
@@ -18,9 +18,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>, Arun Sharma <asharma@fb.com>,
         Rodrigo Campos <rodrigo@sdfg.com.ar>
-Subject: [PATCH 02/21] perf hists: Add support for accumulated stat of hist entry
-Date: Thu, 20 Mar 2014 14:36:27 +0900
-Message-Id: <1395293806-25847-3-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 14/21] perf report: Add --children option
+Date: Thu, 20 Mar 2014 14:36:39 +0900
+Message-Id: <1395293806-25847-15-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
 References: <1395293806-25847-1-git-send-email-namhyung@kernel.org>
@@ -29,129 +29,71 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maintain accumulated stat information in hist_entry->stat_acc if
-symbol_conf.cumulate_callchain is set.  Fields in ->stat_acc have same
-vaules initially, and will be updated as callchain is processed later.
+The --children option is for showing accumulated overhead (period)
+value as well as self overhead.
 
 Tested-by: Arun Sharma <asharma@fb.com>
 Acked-by: Jiri Olsa <jolsa@redhat.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c   | 28 ++++++++++++++++++++++++++--
- tools/perf/util/sort.h   |  1 +
- tools/perf/util/symbol.h |  1 +
- 3 files changed, 28 insertions(+), 2 deletions(-)
+ tools/perf/Documentation/perf-report.txt |  7 ++++++-
+ tools/perf/builtin-report.c              | 10 ++++++++++
+ 2 files changed, 16 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 83d55f814be1..84ed573e3b6d 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -231,6 +231,8 @@ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
- 		return true;
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index 8adbadf34b37..4092bd6daa54 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -102,7 +102,7 @@ OPTIONS
+ --fields=::
+ 	Specify output field - multiple keys can be specified in CSV format.
+ 	Following fields are available:
+-	overhead, overhead_sys, overhead_us, sample and period.
++	overhead, overhead_sys, overhead_us, overhead_children, sample and period.
+ 	Also it can contain any sort key(s).
  
- 	he_stat__decay(&he->stat);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__decay(he->stat_acc);
+ 	By default, every sort keys not specified in -F will be appended
+@@ -154,6 +154,11 @@ OPTIONS
  
- 	if (!he->filtered)
- 		hists->stats.total_period -= prev_period - he->stat.period;
-@@ -272,12 +274,26 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 	Default: fractal,0.5,callee,function.
  
- static struct hist_entry *hist_entry__new(struct hist_entry *template)
- {
--	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
--	struct hist_entry *he = zalloc(sizeof(*he) + callchain_size);
-+	size_t callchain_size = 0;
-+	struct hist_entry *he;
++--children::
++	Accumulate callchain of children to parent entry so that then can
++	show up in the output.  The output will have a new "Children" column
++	and will be sorted on the data.  It requires callchains are recorded.
 +
-+	if (symbol_conf.use_callchain || symbol_conf.cumulate_callchain)
-+		callchain_size = sizeof(struct callchain_root);
-+
-+	he = zalloc(sizeof(*he) + callchain_size);
- 
- 	if (he != NULL) {
- 		*he = *template;
- 
-+		if (symbol_conf.cumulate_callchain) {
-+			he->stat_acc = malloc(sizeof(he->stat));
-+			if (he->stat_acc == NULL) {
-+				free(he);
-+				return NULL;
-+			}
-+			memcpy(he->stat_acc, &he->stat, sizeof(he->stat));
-+		}
-+
- 		if (he->ms.map)
- 			he->ms.map->referenced = true;
- 
-@@ -289,6 +305,7 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
- 			 */
- 			he->branch_info = malloc(sizeof(*he->branch_info));
- 			if (he->branch_info == NULL) {
-+				free(he->stat_acc);
- 				free(he);
- 				return NULL;
+ --max-stack::
+ 	Set the stack depth limit when parsing the callchain, anything
+ 	beyond the specified depth will be ignored. This is a trade-off
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 2e2a2eedcfd6..c28297a71f5c 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -172,6 +172,14 @@ static int report__setup_sample_type(struct report *rep)
  			}
-@@ -363,6 +380,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	}
  
- 		if (!cmp) {
- 			he_stat__add_period(&he->stat, period, weight);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_period(he->stat_acc, period, weight);
- 
- 			/*
- 			 * This mem info was allocated from sample__resolve_mem
-@@ -399,6 +418,8 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
- 	he_stat__add_cpumode_period(&he->stat, al->cpumode, period);
-+	if (symbol_conf.cumulate_callchain)
-+		he_stat__add_cpumode_period(he->stat_acc, al->cpumode, period);
- 	return he;
- }
- 
-@@ -784,6 +805,7 @@ void hist_entry__free(struct hist_entry *he)
- {
- 	zfree(&he->branch_info);
- 	zfree(&he->mem_info);
-+	zfree(&he->stat_acc);
- 	free_srcline(he->srcline);
- 	free(he);
- }
-@@ -809,6 +831,8 @@ static bool hists__collapse_insert_entry(struct hists *hists __maybe_unused,
- 
- 		if (!cmp) {
- 			he_stat__add_stat(&iter->stat, &he->stat);
-+			if (symbol_conf.cumulate_callchain)
-+				he_stat__add_stat(iter->stat_acc, he->stat_acc);
- 
- 			if (symbol_conf.use_callchain) {
- 				callchain_cursor_reset(&callchain_cursor);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index cd679a56c81d..f840a8d1ca70 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -82,6 +82,7 @@ struct hist_entry {
- 		struct list_head head;
- 	} pairs;
- 	struct he_stat		stat;
-+	struct he_stat		*stat_acc;
- 	struct map_symbol	ms;
- 	struct thread		*thread;
- 	struct comm		*comm;
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index ae94e006a52d..c8f5544aa542 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -108,6 +108,7 @@ struct symbol_conf {
- 			show_nr_samples,
- 			show_total_period,
- 			use_callchain,
-+			cumulate_callchain,
- 			exclude_other,
- 			show_cpu_utilization,
- 			initialized,
++	if (symbol_conf.cumulate_callchain) {
++		/* Silently ignore if callchain is missing */
++		if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++			symbol_conf.cumulate_callchain = false;
++			perf_hpp__cancel_cumulate();
++		}
++	}
++
+ 	if (sort__mode == SORT_MODE__BRANCH) {
+ 		if (!is_pipe &&
+ 		    !(sample_type & PERF_SAMPLE_BRANCH_STACK)) {
+@@ -648,6 +656,8 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+ 		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
++	OPT_BOOLEAN(0, "children", &symbol_conf.cumulate_callchain,
++		    "Accumulate callchains of children and show total overhead as well"),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
 -- 
 1.7.11.7
 
