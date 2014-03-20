@@ -1,80 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759968AbaCTUj5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:39:57 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:37991 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759934AbaCTUjy (ORCPT
+	id S1759655AbaCTUlN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:41:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:56794 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbaCTUlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:39:54 -0400
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Antoine Tenart <antoine.tenart@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/2] ARM: berlin: SMP support
-Date: Thu, 20 Mar 2014 21:39:44 +0100
-Message-Id: <1395347986-30203-1-git-send-email-sebastian.hesselbarth@gmail.com>
+	Thu, 20 Mar 2014 16:41:11 -0400
+Message-ID: <532B5224.8010900@ti.com>
+Date: Thu, 20 Mar 2014 16:40:04 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>,
+        <computersforpeace@gmail.com>, <galak@codeaurora.org>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        <linux@arm.linux.org.uk>, <grygorii.strashko@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>, <m-karicheri2@ti.com>
+Subject: Re: [PATCH v2] ARM: dts: k2hk-evm: set ubifs partition size for 512M
+ NAND
+References: <1395346813-13439-1-git-send-email-ivan.khoronzhuk@ti.com>
+In-Reply-To: <1395346813-13439-1-git-send-email-ivan.khoronzhuk@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a small patch set for SMP support on Marvell Berlin BG2
-and recently provided BG2Q. Nothing spectacular, as it basically
-copies SMP holding pen mechanism from mach-prima2 and plat-versatile
-with minor Berlin specific code for SCU and general purpose registers
-used by secondary CPUs to get their boot address.
+On Thursday 20 March 2014 04:20 PM, Ivan Khoronzhuk wrote:
+> From: Murali Karicheri <m-karicheri2@ti.com>
+> 
+> The UBIFS partition size was incorrectly defined as for 128M NAND,
+> but on k2hk-evm installed NAND flash size is 512M.
+> Hence, correct it.
+> 
+> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
+> ---
+> 
+> Just cut from series
+> v1:
+> [PATCH 1/3] ARM: dts: k2hk-evm: set ubifs partition size for 512M NAND
+> https://lkml.org/lkml/2014/3/20/462
+> 
+Applied to for_3.15/fixes
 
-There was some IRC discussion with Alexandre about using
-scu_get_base() instead of a DT node. Although BG2Q is true A9
-and provides SCU base; BG2 with PJ4b does not and I decided to
-depend on a DT node for SCU in both cases, which is fine I guess.
-
-I tested this on BG2, and BG2CD (which is UP). I expect the
-Free-Electrons guys to test on BG2Q.
-
-There is a branch based on v3.14-rc1 and latest BG2Q DTs for the
-lucky ones who are able to boot unsigned images at
-
-https://github.com/shesselba/linux-berlin.git topic/smp-bg2-bg2q
-
-Sebastian
-
-Sebastian Hesselbarth (2):
-  ARM: berlin: add scu and chipctrl device nodes for BG2/BG2Q
-  ARM: berlin: add SMP support
-
- arch/arm/boot/dts/berlin2.dtsi  |  10 +++
- arch/arm/boot/dts/berlin2q.dtsi |  10 +++
- arch/arm/mach-berlin/Kconfig    |   1 +
- arch/arm/mach-berlin/Makefile   |   1 +
- arch/arm/mach-berlin/berlin.c   |   3 +
- arch/arm/mach-berlin/common.h   |  18 ++++++
- arch/arm/mach-berlin/headsmp.S  |  43 +++++++++++++
- arch/arm/mach-berlin/platsmp.c  | 139 ++++++++++++++++++++++++++++++++++++++++
- 8 files changed, 225 insertions(+)
- create mode 100644 arch/arm/mach-berlin/common.h
- create mode 100644 arch/arm/mach-berlin/headsmp.S
- create mode 100644 arch/arm/mach-berlin/platsmp.c
-
----
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-Cc: Kumar Gala <galak@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org
--- 
-1.9.0
+>  arch/arm/boot/dts/k2hk-evm.dts | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm/boot/dts/k2hk-evm.dts b/arch/arm/boot/dts/k2hk-evm.dts
+> index 1a1335b..949ef7d 100644
+> --- a/arch/arm/boot/dts/k2hk-evm.dts
+> +++ b/arch/arm/boot/dts/k2hk-evm.dts
+> @@ -133,7 +133,7 @@
+>  
+>  			partition@180000 {
+>  				label = "ubifs";
+> -				reg = <0x180000 0x7E80000>;
+> +				reg = <0x180000 0x1fe80000>;
+>  			};
+>  		};
+>  	};
+> 
 
