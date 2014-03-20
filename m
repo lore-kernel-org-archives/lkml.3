@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaCTHKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 03:10:32 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:52844 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750922AbaCTHKa (ORCPT
+	id S1751449AbaCTHY0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 03:24:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:56225 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaCTHYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 03:10:30 -0400
-Date: Thu, 20 Mar 2014 00:10:26 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        DCG_UPD_stlinux_kernel@list.st.com, dwmw2@infradead.org,
-        linux-mtd@lists.infradead.org, Angus.Clark@st.com
-Subject: Re: [PATCH v6 01/35] mtd: st_spi_fsm: Allocate resources and
- register with MTD framework
-Message-ID: <20140320071026.GA31517@norris-Latitude-E6410>
-References: <1392735362-1245-1-git-send-email-lee.jones@linaro.org>
- <1392735362-1245-2-git-send-email-lee.jones@linaro.org>
- <20140309053306.GL31517@norris-Latitude-E6410>
- <20140311082316.GJ2839@lee--X1>
+	Thu, 20 Mar 2014 03:24:25 -0400
+Date: Thu, 20 Mar 2014 08:23:59 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: davidlohr@hp.com, torvalds@linux-foundation.org, tglx@linutronix.de,
+        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linuxppc-dev@lists.ozlabs.org, benh@kernel.crashing.org,
+        paulus@samba.org, Paul McKenney <paulmck@linux.vnet.ibm.com>
+Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
+Message-ID: <20140320072359.GF27965@twins.programming.kicks-ass.net>
+References: <20140319152619.GB10406@linux.vnet.ibm.com>
+ <20140319154705.GB8557@laptop.programming.kicks-ass.net>
+ <20140319170829.GD8557@laptop.programming.kicks-ass.net>
+ <20140320053350.GB30295@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140311082316.GJ2839@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140320053350.GB30295@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+On Thu, Mar 20, 2014 at 11:03:50AM +0530, Srikar Dronamraju wrote:
+> > > Joy,.. let me look at that with ppc in mind.
+> > 
+> > OK; so while pretty much all the comments from that patch are utter
+> > nonsense (what was I thinking), I cannot actually find a real bug.
+> > 
+> > But could you try the below which replaces a control dependency with a
+> > full barrier. The control flow is plenty convoluted that I think the
+> > control barrier isn't actually valid anymore and that might indeed
+> > explain the fail.
+> > 
+> 
+> Unfortunately the patch didnt help. Still seeing tasks stuck
 
-I really can't take this patch separately. You'll need to resend the
-whole series soon.
-
-On Tue, Mar 11, 2014 at 08:23:16AM +0000, Lee Jones wrote:
-> Sorry about the previous fixup misses. There were a couple of patches
-> which I had failed to squash into the pack. Hopefully the rest of the
-> review will go more smoothly.
-
-Yeah... you missed a few more comments in the rest of the series too.
-Can you please (for your own sake!) go through the rest of my comments
-from before and see if you've missed any other important ones? I hate to
-do the same work twice. The series mostly looks good, and I'd rather not
-stall again for lack of attention to detail.
-
-I'll comment on the couple of things I saw in just a bit.
-
-Brian
+Aww bugger. I'll be traveling tomorrow and today is wasted getting
+ready. So unless Davidlohr has anything we'll need to scrap this change.
