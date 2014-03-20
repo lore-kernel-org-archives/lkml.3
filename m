@@ -1,110 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760150AbaCTXy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 19:54:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56142 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759943AbaCTXyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 19:54:25 -0400
-Date: Thu, 20 Mar 2014 19:53:46 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Steve French <sfrench@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        uobergfe@redhat.com
-Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
- queues
-Message-ID: <20140320195346.0876e175@tlielax.poochiereds.net>
-In-Reply-To: <20140319151252.16ed3ac6@gandalf.local.home>
-References: <20140319151252.16ed3ac6@gandalf.local.home>
+	id S1760164AbaCTXzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 19:55:19 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:11836 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759943AbaCTXzR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 19:55:17 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AupMAGt/K1N5LMWSPGdsb2JhbABZgwaDR4UMtTSFW4ESFwMBAQEBODWCJQEBAQMBOhwjBQsIAw4GBAklDwUlAwcaE4dxB9AEFxaOTweEOASYRpQggVIp
+Date: Fri, 21 Mar 2014 10:55:08 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Matthew Wilcox <willy@linux.intel.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Toshi Kani <toshi.kani@hp.com>,
+        Matthew Wilcox <matthew.r.wilcox@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH v6 07/22] Replace the XIP page fault handler with the DAX
+ page fault handler
+Message-ID: <20140320235508.GO7072@dastard>
+References: <1393337918-28265-1-git-send-email-matthew.r.wilcox@intel.com>
+ <1393337918-28265-8-git-send-email-matthew.r.wilcox@intel.com>
+ <1393609771.6784.83.camel@misato.fc.hp.com>
+ <20140228202031.GB12820@linux.intel.com>
+ <20140302233027.GR30131@dastard>
+ <alpine.OSX.2.00.1403031549110.34680@scrumpy>
+ <20140304005624.GB6851@dastard>
+ <20140320193844.GB5705@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140320193844.GB5705@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Mar 2014 15:12:52 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Thu, Mar 20, 2014 at 03:38:44PM -0400, Matthew Wilcox wrote:
+> On Tue, Mar 04, 2014 at 11:56:25AM +1100, Dave Chinner wrote:
+> > > get_block_t is used by the VFS to ask filesystem to translate logical
+> > > blocks within a file to sectors on a block device.
+> > > 
+> > > typedef int (get_block_t)(struct inode *inode, sector_t iblock,
+> > >                         struct buffer_head *bh_result, int create);
+> > > 
+> > > get_block() must not be called simultaneously with the create flag set
+> > > for overlapping extents *** or is/was this a bug in ext2? ***
+> > 
+> > Why not? The filesystem is responsible for serialising such requests
+> > internally, or if it can't handle them preventing them from
+> > occurring. XFS has allowed this to occur with concurrent overlapping
+> > direct IO writes for a long time. In the situations where we need
+> > serialisation to avoid data corruption (e.g. overlapping sub-block
+> > IO), we serialise at the IO syscall context (i.e at a much higher
+> > layer).
+> 
+> I'm basing this on this commit:
+> 
+> commit 14bac5acfdb6a40be64acc042c6db73f1a68f6a4
+> Author: Nick Piggin <npiggin@suse.de>
+> Date:   Wed Aug 20 14:09:20 2008 -0700
+> 
+>     mm: xip/ext2 fix block allocation race
+>     
+>     XIP can call into get_xip_mem concurrently with the same file,offset with
+>     create=1.  This usually maps down to get_block, which expects the page
+>     lock to prevent such a situation.  This causes ext2 to explode for one
+>     reason or another.
+>     
+>     Serialise those calls for the moment.  For common usages today, I suspect
+>     get_xip_mem rarely is called to create new blocks.  In future as XIP
+>     technologies evolve we might need to look at which operations require
+>     scalability, and rework the locking to suit.
+> 
+> Now, specifically for DAX, reads and writes are serialised by DIO_LOCKING,
+> just like direct I/O.
 
-> We just had a customer report a deadlock in their 3.8-rt kernel.
-> Looking into this, it is very possible to have the same deadlock in
-> mainline in Linus's tree as it stands today.
-> 
-> It is much easier to deadlock in the -rt kernel because reader locks
-> are serialized, where a down_read() can block another down_read(). But
-> because rwsems are fair locks, if a writer is waiting, a new reader
-> will then block. This means that if it is possible for a reader to
-> deadlock another reader, this can happen if a write comes along and
-> blocks on a current reader. That will prevent another reader from
-> running, and if that new reader requires to wake up a reader that owns
-> the lock, you have your deadlock.
-> 
-> Here's the situation with CIFS and workqueues:
-> 
-> The cifs system has several workqueues used in file.c and other places.
-> One of them is used for completion of a read and to release the
-> page_lock which wakes up the reader. There are several other workqueues
-> that do various other tasks.
-> 
-> A holder of the reader lock can sleep on a page_lock() and expect the
-> reader workqueue to wake it up (page_unlock()). The reader workqueue
-> takes no locks so this does not seem to be a problem (but it is).
-> 
-> The other workqueues can take the rwsem for read or for write. But our
-> issue that we tripped over was that it grabs it for read (remember in
-> -rt readers are serialized). But this can also happen if a separate
-> writer is waiting on the lock as that would cause a reader to block on
-> another reader too.
-> 
-> All the workqueue callbacks are executed on the same workqueue:
-> 
-> 	queue_work(cifsiod_wq, &rdata->work);
-> 	[...]
-> 	queue_work(cifsiod_wq, &cfile->oplock_break);
-> 
-> Now if the reader workqueue callback is queued after one of these
-> workqueues that can take the rwsem, we can hit a deadlock. The
-> workqueue code looks to be able to prevent deadlocks of these kinds,
-> but I do not totally understand the workqueue scheduled work structure
-> and perhaps if the kworker thread structure blocks hard it wont move
-> works around.
-> 
-> Here's what we see:
-> 
-> 	rdata->work is scheduled after cfile->oplock_break
-> 
-> 	CPU0						CPU1
-> 	----						----
-> 
->   do_sync_read()
->     cifs_strict_readv()
->       down_read(cinode->lock_sem);
->       generic_file_aio_read()
->         __lock_page_killable()
->           __wait_on_bit_lock()
-> 
->        * BLOCKED *
-> 
-> 						process_one_work()
-> 						  cifs_oplock_break()
-> 						    cifs_has_mand_locks()
-> 						      down_read(cinode->lock_sem);
-> 
-> 						   * BLOCKED *
-> 
-> 					      [ note, cifs_oplock_break() can
-> 					        also call cifs_push_locks which takes
-> 					        the lock with down_write() ]
-> 
-> 
+No, filesystems don't necessarily use DIO_LOCKING for direct IO.
+That's the whole point of having the flag - so filesystems can use
+their own, more efficient serialisation for getblocks calls.  XFS
+does it via the internal XFS inode i_ilock, others do it via the
+i_alloc_sem, and so on.
 
-Wait...why does the work running on CPU1 end up blocked on down_read()?
-Is it really getting stuck on the down_write you mention?
+Indeed, XFS has extremely good DIO scalability because it uses
+shared locks where ever possible inside getblocks - it only takes an
+exclusive lock if allocation is actually required - and hence
+concurrent lookups don't serialise unless a modification is
+required...
+
+> *currently*, simultaneous pagefaults are not
+> serialised against each other at all (or reads/writes), which means we
+> can call get_block() with create=1 simultaneously for the same block.
+> For a variety of reasons (scalability, fix a subtle race), I'm going to
+> implement an equivalent to the page lock for pages of DAX memory, so in
+> the future the DAX code will also not call into get_block in parallel.
+
+Which is going to be a major scalability issue. You need to allow
+concurrent calls into getblock...
+
+> So what should the document say here?  It sounds like it's similar to
+> the iblock beyond i_size below; that the filesystem and the VFS should
+> cooperate to ensure that it only happens if the filesystem can make
+> it work.
+
+"Filesystems are responsible for ensuring coherency w.r.t.
+concurrent access to their block mapping routines"
+
+> > > Despite the iblock argument having type sector_t, iblock is actually
+> > > in units of the file block size, not in units of 512-byte sectors.
+> > > iblock must not extend beyond i_size. *** um, looks like xfs permits
+> > > this ... ? ***
+> > 
+> > Of course.  There is nothing that prevents filesystems from mapping
+> > and allocating blocks beyond EOF if they can do so sanely, and
+> > nothign that prevents getblocks from letting them do so. Callers
+> > need to handle the situation appropriately, either by doing their
+> > own EOF checks or by leaving it up to the filesystems to do the
+> > right thing. Buffered IO does the former, direct IO does the latter.
+> > 
+> > The code in question in __xfs_get_blocks:
+> > 
+> >         if (!create && direct && offset >= i_size_read(inode))
+> > 	                return 0;
+> > 
+> > This is because XFS does direct IO differently to everyone else.  It
+> > doesn't update the inode size until after IO completion (see
+> > xfs_end_io_direct_write()), and hence it has to be able to allocate
+> > and map blocks beyond EOF.
+> > 
+> > i.e. only direct IO reads are disallowed if the requested mapping is
+> > beyond EOF. Buffered reads beyond EOF don't get here, but direct IO
+> > does.
+> 
+> So how can we document this?  'iblock must not be beyond i_size unless
+> it's allowed to be'?  'iblock may only be beyond end of file for direct
+> I/O'?
+
+"filesystems must reject attempts to map a range beyond EOF if
+create is not set".
+
+> > > b_size to indicate the length of the hole.  It may also opt to leave
+> > > bh_result untouched as described above.  If the block corresponds to
+> > > a hole, bh_result *may* be unmodified, but the VFS can optimise some
+> > > operations if the filesystem reports the length of the hole as described
+> > > below. *** or is this a bug in ext4? ***
+> > 
+> > mpage_readpages() remaps the hole on every block, so regardless of
+> > the size of the hole getblocks returns it will do the right thing.
+> 
+> Yes, this is true, but it could be more efficient if it could rely on
+> get_block to return an accurate length of the hole.
+
+Sure. But do_mpage_readpage() needs an aenema. It's a complex mess
+that relies on block_read_full_page() and bufferhead based IO to
+sort out the crap it gets confused about.
+
+As it is, I suspect that this is all going to be academic. I'm in
+the process of ripping bufferhead support out of XFS and adding a
+new iomapping interface so that we don't have to carry bufferheads
+around on pages anymore. As such, I'll have to re-implement whatever
+you do with DAX to support bufferhead enabled filesystems....
+
+> > > If bh_result describes an extent which has data in the pagecache, but
+> > > that data has not yet had space allocated on the media (due to delayed
+> > > allocation), BH_Mapped, BH_Uptodate and BH_Delay will be set.  b_blocknr
+> > > is not set.
+> > 
+> > b_blocknr is undefined. filesystems can set it to whatever they
+> > want; they will interpret it correctly when they see BH_Delay on the
+> > buffer.
+> 
+> Thanks, I'll fix that.
+> 
+> > Again, BH_Uptodate is used here by XFS to prevent
+> > __block_write_begin() from issuing IO on delalloc buffers that have
+> > no data in them yet. That's specific to the filesystem
+> > implementation (as XFS uses __block_write_begin), so this is
+> > actually a requirement of __block_write_begin() for being used with
+> > delalloc buffers, not a requirement of the getblocks interface.
+> 
+> So ... "BH_Mapped and BH_Delay will be set.  BH_Uptodate may be set.
+> b_blocknr may be used by the filesystem for its own purpose."
+
+The only indication that a buffer contains a delayed allocation map
+is BH_Delay. What the filesystem sets in other flags is determined
+by the filesystem implementation, not the getblock API. e.g. it
+looks like ext4 always sets buffer_new() on a delalloc block, but
+XFs only ever sets it on the getblocks call that allocates the
+delalloc block. i.e. the use of many of these flags is filesystem
+implementation specific, so you can't actually say that the getblock
+API has fixed definitions for these combinations of flags.
+
+> > > The filesystem may choose to set b_private.  Other fields in buffer_head
+> > > are legacy buffer-cache uses and will not be modified by get_block.
+> > 
+> > Precisely why we should be moving this interface to a structure like
+> > this:
+> > 
+> > struct iomap {
+> > 	sector_t	blocknr;
+> > 	sector_t	length;
+> > 	void		*fsprivate;
+> > 	unsigned int	state;
+> > };
+> > 
+> > That is used specifically for returning block maps and directing
+> > allocation, rather than something that conflates mapping, allocation
+> > and data initialisation all into the one interface...
+> 
+> You missed:
+> 	struct block_device *bdev;
+
+Sure - it's in the structures I'm using. ;)
+
+> And I agree, but documentation of the current get_block interface is
+> not the place to launch into a polemic on how things ought to be.  It's
+> reasonable to point out infelicities ... which I do in a few places :-)
+
+Saying how things are broken and ought to be is the first step
+towards fixing a mess. XFS is definitely going to be moving away
+from this current mess so we can support block size > page size  and
+mulit-page writes without major changes needed to either the
+filesystem or the page cache.  Moving away from bufferheads and the
+getblock interface is a necessary part of that change...
+
+Cheers,
+
+Dave.
 
 -- 
-Jeff Layton <jlayton@redhat.com>
+Dave Chinner
+david@fromorbit.com
