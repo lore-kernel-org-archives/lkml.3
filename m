@@ -1,44 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670AbaCTSuY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:50:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16945 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759301AbaCTSuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:50:22 -0400
-Date: Thu, 20 Mar 2014 19:49:04 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Dilger, Andreas" <andreas.dilger@intel.com>,
-        Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [PATCH RFC] sched: introduce add_wait_queue_exclusive_head
-Message-ID: <20140320184904.GA10194@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com> <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com> <20140318140504.GD23193@laptop.programming.kicks-ass.net> <CA+a=Yy567xtU0Osz+9-hTCNrzB65vE=ErYWTq880N+uEwG2DHA@mail.gmail.com> <20140318162319.GB5669@redhat.com> <CA+a=Yy51Ex=UdsCRn8Ty_s4XR4xbOZ_YAf3tejb=JyTgQ_QzRA@mail.gmail.com> <20140319173330.GA11923@redhat.com> <CF4F4C6F.9A880%andreas.dilger@intel.com> <20140319195520.GF8557@laptop.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319195520.GF8557@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759708AbaCTSvL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 14:51:11 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:38721 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759465AbaCTSvG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 14:51:06 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: linux-next: manual merge of the staging tree with the  tree
+To: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mark Brown <broonie@kernel.org>, Greg KH <greg@kroah.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140320140933.4218df22@samsung.com>
+References: <20140313005026.95bb2222270ded24b0a5deff@kernel.org> <3306881. foYD0IDJn0@avalon> <20140320154402.063BDC40A0B@trevor.secretlab.ca> < 20140320140933.4218df22@samsung.com>
+Date: Thu, 20 Mar 2014 18:51:01 +0000
+Message-Id: <20140320185101.ED471C4067A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19, Peter Zijlstra wrote:
->
-> On Wed, Mar 19, 2014 at 07:44:29PM +0000, Dilger, Andreas wrote:
-> > The original reason for l_wait_event() not using TASK_UNINTERRUPTIBLE
-> > is to avoid the load on the server continually being "num_service_threads"
-> > regardless of whether they are actually doing something or not.  We
-> > added various cases for periodic wakeups and such afterward.
->
-> Hmm, maybe we should finally do the TASK_IDLE thing;
->
->   https://lkml.org/lkml/2013/11/12/710
+On Thu, 20 Mar 2014 14:09:33 -0300, Mauro Carvalho Chehab <m.chehab@samsung.com> wrote:
+> Em Thu, 20 Mar 2014 15:44:01 +0000
+> Grant Likely <grant.likely@secretlab.ca> escreveu:
+> 
+> > On Thu, 13 Mar 2014 10:17:56 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> > > Hi Mark,
+> > > 
+> > > On Thursday 13 March 2014 00:50:26 Mark Brown wrote:
+> > > > Hi Greg,
+> > > > 
+> > > > Today's linux-next merge of the staging tree got a conflict in
+> > > > drivers/media/v4l2-core/v4l2-of.c between commit b9db140c1e4644d
+> > > > ("[media] v4l: of: Support empty port nodes") from the v4l tree and
+> > > > commit fd9fdb78a9bf ("[media] of: move graph helpers from
+> > > > drivers/media/v4l2-core to drivers/of") from the staging tree.
+> > > > 
+> > > > I fixed it up by essentially dropping the support for empty port nodes
+> > > > since there were more context differences than I was comfortable with
+> > > > in the changes in the new code.
+> > > 
+> > > If I'm not mistaken the move of drivers/media/v4l2-core/v4l2-of.c to 
+> > > drivers/of/of-graph.c has been canceled for v3.15 and related patches should 
+> > > be dropped from the for-next branches in the very near future (the v4l tree 
+> > > has already been rebased).
+> > 
+> > I had not actually asked Mauro to revert,
+> 
+> See:
+> 	https://lkml.org/lkml/2014/3/10/283
+> 
+> There, you literally answered me that:
+> 	"All trees containing the branch would need to be reverted."
 
-Agreed. And if we are not going to expose TASK_IDLE bit in /proc/ (I think
-we should not) the patch should be really trivial.
+"would" being the operative word. I then went on to say that because it
+is messy, I would be okay with leaving it as is if my concerns are
+addressed.
 
-Oleg.
+Sorry for the confusion.
+
+g.
+
+> and:
+> 	"It means any tree containing that branch *must* be rewound."
+> 
+> That's what I (unhappily) did.
+> 
+> I won't reapply this series, but, instead, I'll simply wait for the
+> staging tree to be merged before sending those patches upstream,
+> before sending the topic branch with exynos 5 patches that depend on it.
+> 
+> This way, I can add Stephen patch on such topic branch, to avoid
+> compilation breakages after merged.
+> 
+> > but the branch is still in rmk's
+> > tree and linux-next. I do not think it needs to be cancelled.
+> 
+> > I do still have issues about it as a generic pattern, but I'm happy with
+> > the discussion so far and the documentation will be sorted before the
+> > next kernel is released.
+> > 
+> > g.
+> 
+> Regards,
+> Mauro
 
