@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758342AbaCTMGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:06:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56019 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758275AbaCTMGf (ORCPT
+	id S1758452AbaCTMGv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:06:51 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:52002 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758391AbaCTMGs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:06:35 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Pavel Machek <pavel@ucw.cz>, Len Brown <len.brown@intel.com>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 1/2] PM: Correct whitespace errors in <linux/pm.h>
-Date: Thu, 20 Mar 2014 13:22:05 +0100
-Message-ID: <9150659.AE7ZjEGHLS@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAMuHMdVZ6VS3zfZ0Li6MEd7tkTdxfRz96L74z0GsfXvxj+cDVA@mail.gmail.com>
-References: <1395087971-31897-1-git-send-email-geert@linux-m68k.org> <6636992.81rGEKjTqL@vostro.rjw.lan> <CAMuHMdVZ6VS3zfZ0Li6MEd7tkTdxfRz96L74z0GsfXvxj+cDVA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Mar 2014 08:06:48 -0400
+Date: Thu, 20 Mar 2014 13:05:49 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Simon Budig <simon.budig@kernelconcepts.de>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Fugang Duan <B38611@freescale.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+Message-ID: <20140320130549.3bc2925e@ipc1.ka-ro>
+In-Reply-To: <532AD571.9000907@kernelconcepts.de>
+References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
+	<1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
+	<20140320093719.GB14420@e106331-lin.cambridge.arm.com>
+	<20140320124055.53d469e7@ipc1.ka-ro>
+	<532AD571.9000907@kernelconcepts.de>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 20, 2014 08:54:39 AM Geert Uytterhoeven wrote:
-> Hi Rafael,
-> 
-> On Wed, Mar 19, 2014 at 11:50 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> > On Monday, March 17, 2014 09:26:10 PM Geert Uytterhoeven wrote:
-> >> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-> >
-> > Why exactly are they errors?
-> 
-> checkpatch.pl says: "WARNING: please, no space before tabs",
-> Vim (with "let c_space_errors=1") shows them in red.
+Hi,
 
-Fair enough.
+Simon Budig wrote:
+> On 20/03/14 12:40, Lothar Waßmann wrote:
+> > The FT5x06 datasheet lists 3 variants for different panel sizes.
+> > I'll add distinct compatible strings for those chips, though their SW
+> > interface is (currently) identical:
+> > |Required properties:
+> > | - compatible:  "edt,edt-ft5206", "edt,edt-ft5x06"
+> > |           or:  "edt,edt-ft5306", "edt,edt-ft5x06"
+> > |           or:  "edt,edt-ft5406", "edt,edt-ft5x06"
+> 
+> Please note that the M09 variants of the polytouch family will use the
+> same chips, but a different sw protocol (see Patch 5/5).
+> 
+The firmware version can be detected by SW, thus there is no need to
+distinguish it via DT.
 
+> I don't know anything about the naming scheme used in the device tree,
+> but I am not sure if the chip-ID is actually useful here.
+> 
+Since the chip variants handle different panel sizes, it might be useful
+to be able to distinguish them.
+
+
+Lothar Waßmann
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
