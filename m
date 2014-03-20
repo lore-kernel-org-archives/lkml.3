@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760193AbaCTVYF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:24:05 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:37869 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759889AbaCTVYB (ORCPT
+	id S1760200AbaCTVZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:25:39 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:41592 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760061AbaCTVWj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:24:01 -0400
-Message-ID: <532B6A79.3070802@cogentembedded.com>
-Date: Fri, 21 Mar 2014 01:23:53 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: =?ISO-8859-1?Q?C=E9dric_Cabessa?= <ced@ryick.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] coding style: fix line over 80 characters
-References: <1395266697-8699-1-git-send-email-ced@ryick.net>	 <1395266697-8699-3-git-send-email-ced@ryick.net>	 <532B5ED1.8060406@cogentembedded.com> <1395348314.7776.47.camel@joe-AO722>
-In-Reply-To: <1395348314.7776.47.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Mar 2014 17:22:39 -0400
+From: Richard Cochran <richardcochran@gmail.com>
+To: <netdev@vger.kernel.org>
+Cc: <linux-kernel@vger.kernel.org>, Ben Hutchings <ben@decadent.org.uk>,
+        Christian Riesch <christian.riesch@omicron.at>,
+        David Miller <davem@davemloft.net>,
+        =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
+	<stefan.sorensen@spectralink.com>
+Subject: [PATCH net-next v3 6/9] dp83640: correct the periodic output frequency
+Date: Thu, 20 Mar 2014 22:21:57 +0100
+Message-Id: <f235b9f42a25c713739ae58c37cb4ad260ab5bad.1395350113.git.richardcochran@gmail.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1395350105.git.richardcochran@gmail.com>
+References: <cover.1395350105.git.richardcochran@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 11:45 PM, Joe Perches wrote:
+The phyter driver incorrectly feeds the value of the period into what
+is in fact a pulse width register, resulting in the actual period
+being twice the dialed value. This patch fixes the issue and renames a
+variable to make the code at bit more clear.
 
->>> diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-> []
->>> @@ -271,12 +271,14 @@ static int vhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
->>>    			}
->>>    			break;
->>>    		case USB_PORT_FEAT_POWER:
->>> -			usbip_dbg_vhci_rh(" ClearPortFeature: USB_PORT_FEAT_POWER\n");
->>> +			usbip_dbg_vhci_rh(
->>> +				" ClearPortFeature: USB_PORT_FEAT_POWER\n");
+Signed-off-by: Richard Cochran <richardcochran@gmail.com>
+---
+ drivers/net/phy/dp83640.c |   11 ++++++-----
+ 1 file changed, 6 insertions(+), 5 deletions(-)
 
->>      Your version of scripts/checkpatch.pl seems outdated. It shouldn't
->> complain about strings violating 80-column limit (and I've just verified it
->> doesn't).
-
-> checkpatch complains about > 80 char lines for lines with
-> a function where the function name isn't understood to be
-> a logging use.
-
-> uspip_dbg_<foo> doesn't take the general form so if the
-> string at the EOL exceeds 80 chars, a message is emitted.
-
-> Long standalone strings on a single line do not get warnings.
-
-    OK, but there's still issue that the patch context doesn't correspond to 
-what can be seen in Greg's tree. What I am seeing there is broken up string.
-
-WBR, Sergei
+diff --git a/drivers/net/phy/dp83640.c b/drivers/net/phy/dp83640.c
+index d6c1061..9e26555 100644
+--- a/drivers/net/phy/dp83640.c
++++ b/drivers/net/phy/dp83640.c
+@@ -271,7 +271,7 @@ static void periodic_output(struct dp83640_clock *clock,
+ {
+ 	struct dp83640_private *dp83640 = clock->chosen;
+ 	struct phy_device *phydev = dp83640->phydev;
+-	u32 sec, nsec, period;
++	u32 sec, nsec, pwidth;
+ 	u16 gpio, ptp_trig, trigger, val;
+ 
+ 	gpio = on ? gpio_tab[PEROUT_GPIO] : 0;
+@@ -296,8 +296,9 @@ static void periodic_output(struct dp83640_clock *clock,
+ 
+ 	sec = clkreq->perout.start.sec;
+ 	nsec = clkreq->perout.start.nsec;
+-	period = clkreq->perout.period.sec * 1000000000UL;
+-	period += clkreq->perout.period.nsec;
++	pwidth = clkreq->perout.period.sec * 1000000000UL;
++	pwidth += clkreq->perout.period.nsec;
++	pwidth /= 2;
+ 
+ 	mutex_lock(&clock->extreg_lock);
+ 
+@@ -310,8 +311,8 @@ static void periodic_output(struct dp83640_clock *clock,
+ 	ext_write(0, phydev, PAGE4, PTP_TDR, nsec >> 16);      /* ns[31:16] */
+ 	ext_write(0, phydev, PAGE4, PTP_TDR, sec & 0xffff);    /* sec[15:0] */
+ 	ext_write(0, phydev, PAGE4, PTP_TDR, sec >> 16);       /* sec[31:16] */
+-	ext_write(0, phydev, PAGE4, PTP_TDR, period & 0xffff); /* ns[15:0] */
+-	ext_write(0, phydev, PAGE4, PTP_TDR, period >> 16);    /* ns[31:16] */
++	ext_write(0, phydev, PAGE4, PTP_TDR, pwidth & 0xffff); /* ns[15:0] */
++	ext_write(0, phydev, PAGE4, PTP_TDR, pwidth >> 16);    /* ns[31:16] */
+ 
+ 	/*enable trigger*/
+ 	val &= ~TRIG_LOAD;
+-- 
+1.7.10.4
 
