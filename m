@@ -1,95 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752888AbaCTDPm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 23:15:42 -0400
-Received: from mail.efficios.com ([78.47.125.74]:58759 "EHLO mail.efficios.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751274AbaCTDPk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 23:15:40 -0400
-Date: Thu, 20 Mar 2014 03:15:43 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Message-ID: <686288039.7231.1395285343508.JavaMail.zimbra@efficios.com>
-In-Reply-To: <20140319230132.5dc57068@gandalf.local.home>
-References: <1395268262-31224-1-git-send-email-mathieu.desnoyers@efficios.com> <1395268262-31224-3-git-send-email-mathieu.desnoyers@efficios.com> <20140319230132.5dc57068@gandalf.local.home>
-Subject: Re: [RFC PATCH v6 2/3] Tracepoint API doc update: data argument
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
-Thread-Topic: Tracepoint API doc update: data argument
-Thread-Index: pmcu66puh676fDyoTZ/hYHugKdfcEw==
+	id S1752162AbaCTD2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 23:28:09 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:35063 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750737AbaCTD2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 23:28:08 -0400
+From: Eric Biggers <ebiggers3@gmail.com>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Biggers <ebiggers3@gmail.com>
+Subject: [PATCH] vfs: Deduplicate code shared by xattr system calls operating on paths
+Date: Wed, 19 Mar 2014 22:26:37 -0500
+Message-Id: <1395285997-5106-1-git-send-email-ebiggers3@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Steven Rostedt" <rostedt@goodmis.org>
-> To: "Mathieu Desnoyers" <mathieu.desnoyers@efficios.com>
-> Cc: linux-kernel@vger.kernel.org, "Ingo Molnar" <mingo@kernel.org>, "Frederic Weisbecker" <fweisbec@gmail.com>,
-> "Andrew Morton" <akpm@linux-foundation.org>
-> Sent: Wednesday, March 19, 2014 11:01:32 PM
-> Subject: Re: [RFC PATCH v6 2/3] Tracepoint API doc update: data argument
-> 
-> On Wed, 19 Mar 2014 18:31:01 -0400
-> Mathieu Desnoyers <mathieu.desnoyers@efficios.com> wrote:
-> 
-> > Describe the @data argument (probe private data).
-> 
-> As you probably noticed, I added your previous patch to my tree.
-> You don't need to keep this with your patches.
+The following pairs of system calls dealing with extended attributes only
+differ in their behavior on whether the symbolic link is followed (when
+the named file is a symbolic link):
 
-OK, thanks!
+- setxattr() and lsetxattr()
+- getxattr() and lgetxattr()
+- listxattr() and llistxattr()
+- removexattr() and lremovexattr()
 
-Mathieu
+Despite this, the implementations all had duplicated code, so this commit
+redirects each of the above pairs of system calls to a corresponding
+function to which different lookup flags (LOOKUP_FOLLOW or 0) are passed.
 
-> 
-> -- Steve
-> 
-> > 
-> > Fixes: 38516ab59fbc "tracing: Let tracepoints have data passed to
-> > tracepoint callbacks"
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > CC: Steven Rostedt <rostedt@goodmis.org>
-> > CC: Ingo Molnar <mingo@kernel.org>
-> > CC: Frederic Weisbecker <fweisbec@gmail.com>
-> > CC: Andrew Morton <akpm@linux-foundation.org>
-> > ---
-> >  kernel/tracepoint.c |    2 ++
-> >  1 file changed, 2 insertions(+)
-> > 
-> > diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> > index f27e5f0..2e4bfcb 100644
-> > --- a/kernel/tracepoint.c
-> > +++ b/kernel/tracepoint.c
-> > @@ -370,6 +370,7 @@ tracepoint_add_probe(const char *name, void *probe,
-> > void *data)
-> >   * tracepoint_probe_register -  Connect a probe to a tracepoint
-> >   * @name: tracepoint name
-> >   * @probe: probe handler
-> > + * @data: probe private data
-> >   *
-> >   * Returns 0 if ok, error value on error.
-> >   * The probe address must at least be aligned on the architecture pointer
-> >   size.
-> > @@ -412,6 +413,7 @@ tracepoint_remove_probe(const char *name, void *probe,
-> > void *data)
-> >   * tracepoint_probe_unregister -  Disconnect a probe from a tracepoint
-> >   * @name: tracepoint name
-> >   * @probe: probe function pointer
-> > + * @data: probe private data
-> >   *
-> >   * We do not need to call a synchronize_sched to make sure the probes have
-> >   * finished running before doing a module unload, because the module
-> >   unload
-> 
-> 
+Signed-off-by: Eric Biggers <ebiggers3@gmail.com>
+---
+ fs/xattr.c | 116 +++++++++++++++++++++----------------------------------------
+ 1 file changed, 39 insertions(+), 77 deletions(-)
 
+diff --git a/fs/xattr.c b/fs/xattr.c
+index 3377dff..dcf053e 100644
+--- a/fs/xattr.c
++++ b/fs/xattr.c
+@@ -364,13 +364,12 @@ out:
+ 	return error;
+ }
+ 
+-SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
+-		const char __user *, name, const void __user *, value,
+-		size_t, size, int, flags)
++static int path_setxattr(const char __user *pathname,
++			 const char __user *name, const void __user *value,
++			 size_t size, int flags, unsigned int lookup_flags)
+ {
+ 	struct path path;
+ 	int error;
+-	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ retry:
+ 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+ 	if (error)
+@@ -388,28 +387,18 @@ retry:
+ 	return error;
+ }
+ 
++SYSCALL_DEFINE5(setxattr, const char __user *, pathname,
++		const char __user *, name, const void __user *, value,
++		size_t, size, int, flags)
++{
++	return path_setxattr(pathname, name, value, size, flags, LOOKUP_FOLLOW);
++}
++
+ SYSCALL_DEFINE5(lsetxattr, const char __user *, pathname,
+ 		const char __user *, name, const void __user *, value,
+ 		size_t, size, int, flags)
+ {
+-	struct path path;
+-	int error;
+-	unsigned int lookup_flags = 0;
+-retry:
+-	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+-	if (error)
+-		return error;
+-	error = mnt_want_write(path.mnt);
+-	if (!error) {
+-		error = setxattr(path.dentry, name, value, size, flags);
+-		mnt_drop_write(path.mnt);
+-	}
+-	path_put(&path);
+-	if (retry_estale(error, lookup_flags)) {
+-		lookup_flags |= LOOKUP_REVAL;
+-		goto retry;
+-	}
+-	return error;
++	return path_setxattr(pathname, name, value, size, flags, 0);
+ }
+ 
+ SYSCALL_DEFINE5(fsetxattr, int, fd, const char __user *, name,
+@@ -481,12 +470,12 @@ getxattr(struct dentry *d, const char __user *name, void __user *value,
+ 	return error;
+ }
+ 
+-SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
+-		const char __user *, name, void __user *, value, size_t, size)
++static ssize_t path_getxattr(const char __user *pathname,
++			     const char __user *name, void __user *value,
++			     size_t size, unsigned int lookup_flags)
+ {
+ 	struct path path;
+ 	ssize_t error;
+-	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ retry:
+ 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+ 	if (error)
+@@ -500,23 +489,16 @@ retry:
+ 	return error;
+ }
+ 
++SYSCALL_DEFINE4(getxattr, const char __user *, pathname,
++		const char __user *, name, void __user *, value, size_t, size)
++{
++	return path_getxattr(pathname, name, value, size, LOOKUP_FOLLOW);
++}
++
+ SYSCALL_DEFINE4(lgetxattr, const char __user *, pathname,
+ 		const char __user *, name, void __user *, value, size_t, size)
+ {
+-	struct path path;
+-	ssize_t error;
+-	unsigned int lookup_flags = 0;
+-retry:
+-	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+-	if (error)
+-		return error;
+-	error = getxattr(path.dentry, name, value, size);
+-	path_put(&path);
+-	if (retry_estale(error, lookup_flags)) {
+-		lookup_flags |= LOOKUP_REVAL;
+-		goto retry;
+-	}
+-	return error;
++	return path_getxattr(pathname, name, value, size, 0);
+ }
+ 
+ SYSCALL_DEFINE4(fgetxattr, int, fd, const char __user *, name,
+@@ -571,12 +553,11 @@ listxattr(struct dentry *d, char __user *list, size_t size)
+ 	return error;
+ }
+ 
+-SYSCALL_DEFINE3(listxattr, const char __user *, pathname, char __user *, list,
+-		size_t, size)
++static ssize_t path_listxattr(const char __user *pathname, char __user *list,
++			      size_t size, unsigned int lookup_flags)
+ {
+ 	struct path path;
+ 	ssize_t error;
+-	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ retry:
+ 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+ 	if (error)
+@@ -590,23 +571,16 @@ retry:
+ 	return error;
+ }
+ 
++SYSCALL_DEFINE3(listxattr, const char __user *, pathname, char __user *, list,
++		size_t, size)
++{
++	return path_listxattr(pathname, list, size, LOOKUP_FOLLOW);
++}
++
+ SYSCALL_DEFINE3(llistxattr, const char __user *, pathname, char __user *, list,
+ 		size_t, size)
+ {
+-	struct path path;
+-	ssize_t error;
+-	unsigned int lookup_flags = 0;
+-retry:
+-	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+-	if (error)
+-		return error;
+-	error = listxattr(path.dentry, list, size);
+-	path_put(&path);
+-	if (retry_estale(error, lookup_flags)) {
+-		lookup_flags |= LOOKUP_REVAL;
+-		goto retry;
+-	}
+-	return error;
++	return path_listxattr(pathname, list, size, 0);
+ }
+ 
+ SYSCALL_DEFINE3(flistxattr, int, fd, char __user *, list, size_t, size)
+@@ -640,12 +614,11 @@ removexattr(struct dentry *d, const char __user *name)
+ 	return vfs_removexattr(d, kname);
+ }
+ 
+-SYSCALL_DEFINE2(removexattr, const char __user *, pathname,
+-		const char __user *, name)
++static int path_removexattr(const char __user *pathname,
++			    const char __user *name, unsigned int lookup_flags)
+ {
+ 	struct path path;
+ 	int error;
+-	unsigned int lookup_flags = LOOKUP_FOLLOW;
+ retry:
+ 	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+ 	if (error)
+@@ -663,27 +636,16 @@ retry:
+ 	return error;
+ }
+ 
++SYSCALL_DEFINE2(removexattr, const char __user *, pathname,
++		const char __user *, name)
++{
++	return path_removexattr(pathname, name, LOOKUP_FOLLOW);
++}
++
+ SYSCALL_DEFINE2(lremovexattr, const char __user *, pathname,
+ 		const char __user *, name)
+ {
+-	struct path path;
+-	int error;
+-	unsigned int lookup_flags = 0;
+-retry:
+-	error = user_path_at(AT_FDCWD, pathname, lookup_flags, &path);
+-	if (error)
+-		return error;
+-	error = mnt_want_write(path.mnt);
+-	if (!error) {
+-		error = removexattr(path.dentry, name);
+-		mnt_drop_write(path.mnt);
+-	}
+-	path_put(&path);
+-	if (retry_estale(error, lookup_flags)) {
+-		lookup_flags |= LOOKUP_REVAL;
+-		goto retry;
+-	}
+-	return error;
++	return path_removexattr(pathname, name, 0);
+ }
+ 
+ SYSCALL_DEFINE2(fremovexattr, int, fd, const char __user *, name)
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+1.9.0
+
