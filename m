@@ -1,94 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757672AbaCTNm1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:42:27 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43151 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaCTNmZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:42:25 -0400
-Date: Thu, 20 Mar 2014 13:42:19 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        Tushar Behera <tushar.behera@linaro.org>,
-        Yadwinder Singh Brar <yadi.brar@samsung.com>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>
-Subject: Re: [PATCH v3 1/3] clk: s2mps11: Add support for S2MPS14 clocks
-Message-ID: <20140320134219.GB6816@lee--X1>
-References: <1395047958-17953-1-git-send-email-k.kozlowski@samsung.com>
- <1395047958-17953-2-git-send-email-k.kozlowski@samsung.com>
- <20140319001643.30995.46947@quantum>
- <1395215408.18730.2.camel@AMDC1943>
- <20140319191117.30995.13715@quantum>
- <1395319557.22979.1.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395319557.22979.1.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757984AbaCTNnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:43:16 -0400
+Received: from mga01.intel.com ([192.55.52.88]:8210 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754614AbaCTNnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 09:43:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,694,1389772800"; 
+   d="scan'208";a="502777402"
+Message-ID: <1395322983.2721.12.camel@rzhang1-mobl4>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+From: Zhang Rui <rui.zhang@intel.com>
+To: "Yan, Zheng" <zheng.z.yan@intel.com>
+Cc: Stephane Eranian <eranian@google.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 20 Mar 2014 21:43:03 +0800
+In-Reply-To: <532AA3F6.9090402@intel.com>
+References: <20140224162400.GE16457@pd.tnic>
+		<4205942.Tp8ltEsv6e@vostro.rjw.lan>	<532A514C.5010106@intel.com>
+		<744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+	 <CABPqkBTyti0owCA_cWf9GcvYnOSvbMQpRC29rgpicjW1iYBjYQ@mail.gmail.com>
+	 <744357E9AAD1214791ACBA4B0B9092630121F3B7@SHSMSX101.ccr.corp.intel.com>
+	 <532AA3F6.9090402@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > > This patch adds support for S2MPS14 PMIC clocks (BT and AP) to the
-> > > > > s2mps11 clock driver.
-> > > > > 
-> > > > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > > > Reviewed-by: Yadwinder Singh Brar <yadi.brar@samsung.com>
-> > > > > Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> > > > 
-> > > > This does not apply cleanly to to clk tree trip, nor does it compile
-> > > > after manually merging due to changes introducing
-> > > > linux/mfd/samsung/s2mps14.h.
-> > > > 
-> > > > The changes look OK to me so maybe Lee can take it with my Ack?
-> > > > 
-> > > > Acked-by: Mike Turquette <mturquette@linaro.org>
-> > > > 
-> > > 
-> > > Hi,
-> > > 
-> > > Thanks for the Ack. The patch depends on Tushar Behera's patches:
-> > >  - [PATCH V2 0/2] Add support for clocks in S5M8767
-> > >    http://thread.gmane.org/gmane.linux.kernel.samsung-soc/27264
-> > > which are waiting for some time. Both patchsets should be pulled
-> > > together.
-> > 
-> > I took those patches in yesterday. So we have three options:
+On Thu, 2014-03-20 at 16:16 +0800, Yan, Zheng wrote:
+> On 03/20/2014 03:53 PM, Zhang, Rui wrote:
+> > The resource length is also hardcoded to 0x6000, right?
+> > This is probably a problem, because
+> > only if the resource length read from PCI config space is larger than 0x4000,
+> > drivers/pnp/quirks.c will detect the conflict and disable the PNP0C02
+> > resource 0xfed10000 - 0xfed13fff, and the PCI device can request this
+> > resource successfully.
+> > In order to check this, can you please attach the dmesg output after boot?
 > 
-> Great! Thanks.
+> maybe the issue can be fixed by below untested patch
 > 
-> > 
-> > 1) MFD tree can pull a stable commit from the clk tree. I'm happy to
-> > make a topic branch for this. Then these patches can be applied.
-> > 
-> > 2) clk tree can pull a stable commit from the mfd tree if the mfd folks
-> > can provide one.
-> > 
-> > 3) Wait until after the merge window to apply this one to the clk tree.
-> > I don't currently plan to send 2 PRs during the merge window, so this
-> > could either go in 3.16 or maybe into 3.15 if a split PR is sent.
-> 
-> Dear Lee,
-> 
-> How do you wish to proceed? The patchset depends on changes in sec-core
-> MFD driver.
+> ---
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> index fd5e883..2b3d834 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+> @@ -1701,7 +1701,7 @@ static struct uncore_event_desc snb_uncore_imc_events[] = {
+>  #define SNB_UNCORE_PCI_IMC_BAR_OFFSET		0x48
+>  
+>  /* page size multiple covering all config regs */
+> -#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x6000
+> +#define SNB_UNCORE_PCI_IMC_MAP_SIZE		0x8
+>  
+>  #define SNB_UNCORE_PCI_IMC_DATA_READS		0x1
+>  #define SNB_UNCORE_PCI_IMC_DATA_READS_BASE	0x5050
+> @@ -1736,7 +1736,8 @@ static void snb_uncore_imc_init_box(struct intel_uncore_box *box)
+>  
+>  	addr &= ~(PAGE_SIZE - 1);
+>  
+> -	box->io_addr = ioremap(addr, SNB_UNCORE_PCI_IMC_MAP_SIZE);
+> +	box->io_addr = ioremap(addr + SNB_UNCORE_PCI_IMC_CTR_BASE,
+> +			       SNB_UNCORE_PCI_IMC_MAP_SIZE);
 
-The MFD tree is betting pretty complicated with sec-core stuff at the
-minuite. Can I vote for option 3?
+you're remapping 0xfed15050 - 0xfed1b04f instead of 0xfed10000 -
+0xfed15fff ?
+I do not quite understand this, but apparently this is not a FIX.
+If it works for this problem, it is because 0xfed15050 - 0xfed1b04f
+happens to be not conflict with any resource reserved by PNP system
+driver, on this machine.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+thanks,
+rui
+
+>  	box->hrtimer_duration = UNCORE_SNB_IMC_HRTIMER_INTERVAL;
+>  }
+>  
+> @@ -1832,7 +1833,7 @@ static int snb_uncore_imc_event_init(struct perf_event *event)
+>  	}
+>  
+>  	/* must be done before validate_group */
+> -	event->hw.event_base = base;
+> +	event->hw.event_base = base - SNB_UNCORE_PCI_IMC_CTR_BASE;
+>  	event->hw.config = cfg;
+>  	event->hw.idx = idx;
+>  
+
+
