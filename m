@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753380AbaCTBbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 21:31:33 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34372 "EHLO
+	id S1755864AbaCTBcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 21:32:35 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34427 "EHLO
 	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751416AbaCTBb3 (ORCPT
+	with ESMTP id S1751941AbaCTBbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 21:31:29 -0400
+	Wed, 19 Mar 2014 21:31:31 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -15,10 +15,11 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 05/13] perf tools: Use hpp formats to sort final output
-Date: Thu, 20 Mar 2014 10:31:19 +0900
-Message-Id: <1395279087-12554-6-git-send-email-namhyung@kernel.org>
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH 09/13] perf tools: Consolidate management of default sort orders
+Date: Thu, 20 Mar 2014 10:31:23 +0900
+Message-Id: <1395279087-12554-10-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.7.11.7
 In-Reply-To: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
 References: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
@@ -26,99 +27,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert output sorting function to use ->sort hpp functions.
+The perf uses different default sort orders for different use-cases,
+and this was scattered throughout the code.  Add get_default_sort_
+order() function to handle this and change initial value of sort_order
+to NULL to distinguish it from user-given one.
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 62 +++++++-------------------------------------------
- 1 file changed, 8 insertions(+), 54 deletions(-)
+ tools/perf/builtin-report.c | 18 ------------------
+ tools/perf/builtin-top.c    |  3 +--
+ tools/perf/util/sort.c      | 25 +++++++++++++++++++++++--
+ tools/perf/util/sort.h      |  1 +
+ 4 files changed, 25 insertions(+), 22 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index e6dc0323c263..8d04796b919a 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -569,64 +569,18 @@ void hists__collapse_resort(struct hists *hists, struct ui_progress *prog)
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index af8cb7a2c9b6..90be90491bad 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -884,30 +884,12 @@ repeat:
+ 	if (branch_mode == -1 && has_br_stack)
+ 		sort__mode = SORT_MODE__BRANCH;
+ 
+-	/* sort__mode could be NORMAL if --no-branch-stack */
+-	if (sort__mode == SORT_MODE__BRANCH) {
+-		/*
+-		 * if no sort_order is provided, then specify
+-		 * branch-mode specific order
+-		 */
+-		if (sort_order == default_sort_order)
+-			sort_order = "comm,dso_from,symbol_from,"
+-				     "dso_to,symbol_to";
+-
+-	}
+ 	if (report.mem_mode) {
+ 		if (sort__mode == SORT_MODE__BRANCH) {
+ 			pr_err("branch and mem mode incompatible\n");
+ 			goto error;
+ 		}
+ 		sort__mode = SORT_MODE__MEMORY;
+-
+-		/*
+-		 * if no sort_order is provided, then specify
+-		 * branch-mode specific order
+-		 */
+-		if (sort_order == default_sort_order)
+-			sort_order = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
  	}
+ 
+ 	if (setup_sorting() < 0) {
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 37d30460bada..bb2aa6645a7e 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1137,8 +1137,7 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	if (argc)
+ 		usage_with_options(top_usage, options);
+ 
+-	if (sort_order == default_sort_order)
+-		sort_order = "dso,symbol";
++	sort__mode = SORT_MODE__TOP;
+ 
+ 	if (setup_sorting() < 0) {
+ 		parse_options_usage(top_usage, options, "s", 1);
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index 916652af8304..2f83965ab2c0 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -8,7 +8,10 @@ regex_t		parent_regex;
+ const char	default_parent_pattern[] = "^sys_|^do_page_fault";
+ const char	*parent_pattern = default_parent_pattern;
+ const char	default_sort_order[] = "comm,dso,symbol";
+-const char	*sort_order = default_sort_order;
++const char	default_branch_sort_order[] = "comm,dso_from,symbol_from,dso_to,symbol_to";
++const char	default_mem_sort_order[] = "local_weight,mem,sym,dso,symbol_daddr,dso_daddr,snoop,tlb,locked";
++const char	default_top_sort_order[] = "dso,symbol";
++const char	*sort_order;
+ regex_t		ignore_callees_regex;
+ int		have_ignore_callees = 0;
+ int		sort__need_collapse = 0;
+@@ -1218,11 +1221,29 @@ int sort_dimension__add(const char *tok)
+ 	return -ESRCH;
  }
  
--/*
-- * reverse the map, sort on period.
-- */
--
--static int period_cmp(u64 period_a, u64 period_b)
-+static int hist_entry__sort(struct hist_entry *a, struct hist_entry *b)
++static const char *get_default_sort_order(void)
++{
++	const char *default_sort_orders[] = {
++		default_sort_order,
++		default_branch_sort_order,
++		default_mem_sort_order,
++		default_top_sort_order,
++	};
++
++	BUG_ON(sort__mode > ARRAY_SIZE(default_sort_orders));
++
++	return default_sort_orders[sort__mode];
++}
++
+ int setup_sorting(void)
  {
--	if (period_a > period_b)
--		return 1;
--	if (period_a < period_b)
--		return -1;
--	return 0;
--}
--
--static int hist_entry__sort_on_period(struct hist_entry *a,
--				      struct hist_entry *b)
--{
--	int ret;
--	int i, nr_members;
--	struct perf_evsel *evsel;
--	struct hist_entry *pair;
--	u64 *periods_a, *periods_b;
--
--	ret = period_cmp(a->stat.period, b->stat.period);
--	if (ret || !symbol_conf.event_group)
--		return ret;
--
--	evsel = hists_to_evsel(a->hists);
--	nr_members = evsel->nr_members;
--	if (nr_members <= 1)
--		return ret;
--
--	periods_a = zalloc(sizeof(periods_a) * nr_members);
--	periods_b = zalloc(sizeof(periods_b) * nr_members);
--
--	if (!periods_a || !periods_b)
--		goto out;
--
--	list_for_each_entry(pair, &a->pairs.head, pairs.node) {
--		evsel = hists_to_evsel(pair->hists);
--		periods_a[perf_evsel__group_idx(evsel)] = pair->stat.period;
--	}
--
--	list_for_each_entry(pair, &b->pairs.head, pairs.node) {
--		evsel = hists_to_evsel(pair->hists);
--		periods_b[perf_evsel__group_idx(evsel)] = pair->stat.period;
--	}
-+	struct perf_hpp_fmt *fmt;
-+	int64_t cmp = 0;
+-	char *tmp, *tok, *str = strdup(sort_order);
++	char *tmp, *tok, *str;
+ 	int ret = 0;
  
--	for (i = 1; i < nr_members; i++) {
--		ret = period_cmp(periods_a[i], periods_b[i]);
--		if (ret)
-+	perf_hpp__for_each_format(fmt) {
-+		cmp = fmt->sort(a, b);
-+		if (cmp)
- 			break;
- 	}
++	if (sort_order == NULL)
++		sort_order = get_default_sort_order();
++
++	str = strdup(sort_order);
+ 	if (str == NULL) {
+ 		error("Not enough memory to setup sort keys");
+ 		return -ENOMEM;
+diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
+index 43e5ff42a609..35b53cc56feb 100644
+--- a/tools/perf/util/sort.h
++++ b/tools/perf/util/sort.h
+@@ -133,6 +133,7 @@ enum sort_mode {
+ 	SORT_MODE__NORMAL,
+ 	SORT_MODE__BRANCH,
+ 	SORT_MODE__MEMORY,
++	SORT_MODE__TOP,
+ };
  
--out:
--	free(periods_a);
--	free(periods_b);
--
--	return ret;
-+	return cmp;
- }
- 
- static void __hists__insert_output_entry(struct rb_root *entries,
-@@ -645,7 +599,7 @@ static void __hists__insert_output_entry(struct rb_root *entries,
- 		parent = *p;
- 		iter = rb_entry(parent, struct hist_entry, rb_node);
- 
--		if (hist_entry__sort_on_period(he, iter) > 0)
-+		if (hist_entry__sort(he, iter) > 0)
- 			p = &(*p)->rb_left;
- 		else
- 			p = &(*p)->rb_right;
+ enum sort_type {
 -- 
 1.7.11.7
 
