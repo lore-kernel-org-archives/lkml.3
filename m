@@ -1,251 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759504AbaCTTAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:00:19 -0400
-Received: from mail-pd0-f182.google.com ([209.85.192.182]:53681 "EHLO
-	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754341AbaCTTAR (ORCPT
+	id S1759527AbaCTTBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:01:45 -0400
+Received: from relay.parallels.com ([195.214.232.42]:43353 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751271AbaCTTBn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:00:17 -0400
-Message-ID: <532B3AB9.5050809@gmail.com>
-Date: Fri, 21 Mar 2014 00:30:09 +0530
-From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Thu, 20 Mar 2014 15:01:43 -0400
+Message-ID: <532B3B00.6080201@parallels.com>
+Date: Thu, 20 Mar 2014 23:01:20 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-To: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
-Content-Type: text/plain; charset=ISO-8859-1
+To: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+CC: <linux-kernel@vger.kernel.org>, <amwang@redhat.com>,
+        <procps@freelists.org>, <rdunlap@xenotime.net>,
+        <james.hogan@imgtec.com>, <aravinda@linux.vnet.ibm.com>, <hch@lst.de>,
+        <mhiramat@redhat.com>, <jeremy.fitzhardinge@citrix.com>,
+        <d.hatayama@jp.fujitsu.com>, <coreutils@gnu.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <adobriyan@gmail.com>,
+        <util-linux@vger.kernel.org>, <tarundsk@linux.vnet.ibm.com>,
+        <vapier@gentoo.org>, <roland@hack.frob.com>,
+        <ananth@linux.vnet.ibm.com>, <gorcunov@openvz.org>,
+        <avagin@openvz.org>, <oleg@redhat.com>, <eparis@redhat.com>,
+        <suzuki@linux.vnet.ibm.com>, <andi@firstfloor.org>, <tj@kernel.org>,
+        <akpm@linux-foundation.org>, <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 04/33] Hold threads
+References: <20140320093040.14878.903.stgit@localhost.localdomain> <20140320093931.14878.89112.stgit@localhost.localdomain>
+In-Reply-To: <20140320093931.14878.89112.stgit@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From f18fc68778c210863ca0968e4448375c89e9bb06 Mon Sep 17 00:00:00 2001
-From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
-Date: Fri, 21 Mar 2014 00:22:32 +0530
-Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
+On 03/20/2014 01:39 PM, Janani Venkataraman wrote:
+> Getting number of threads and their respective IDs through /proc/pid/stat and
+> /proc/pid/task.
+> 
+> The threads are then seized and interrupted. After the dump is taken they are
+> detached.
+> 
+> Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+> ---
 
-This is a patch to add support for
-maxim dallas rtc ds1347
+> +/* Gets the Thread IDS and siezes them */
+> +int seize_threads(int pid)
+> +{
+> +	char filename[40];
+> +	DIR *dir;
+> +	int ct = 0, ret = 0, tmp_tid;
+> +	struct dirent *entry;
+> +	char state;
+> +
+> +	ret = get_thread_count(pid);
+> +	if (ret == -1)
+> +		return -1;
+> +
+> +	cp.thread_count = ret;
+> +	cp.t_id = calloc(cp.thread_count, sizeof(int));
+> +	if (!cp.t_id) {
+> +		status = errno;
+> +		gencore_log("Could not allocate memory for thread_ids.\n");
+> +		return -1;
+> +	}
+> +
+> +	snprintf(filename, 40, "/proc/%d/task", pid);
+> +	dir = opendir(filename);
+> +
+> +	while ((entry = readdir(dir))) {
 
-Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
----
- drivers/rtc/Kconfig      |   12 ++++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-ds1347.c |  169 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 182 insertions(+)
- create mode 100644 drivers/rtc/rtc-ds1347.c
+This simple loop is not enough -- threads may appear and disappear while
+you do the readdir and seize, so you should scan it several times to
+make sure you caught all the threads.
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index db933de..2e565f8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -573,6 +573,18 @@ config RTC_DRV_DS1305
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-ds1305.
- 
-+config RTC_DRV_DS1347
-+	tristate "Dallas/Maxim DS1347"
-+	help
-+	  If you say yes here you get support for the
-+	  Dallas/Maxim DS1347 chips.
-+
-+	  This driver only supports the RTC feature, and not other chip
-+	  features such as alarms.
-+
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-ds1347.
-+
- config RTC_DRV_DS1390
- 	tristate "Dallas/Maxim DS1390/93/94"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index b427bf7..40a0991 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
- obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
- obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
- obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
-+obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
- obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
- obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
- obj-$(CONFIG_RTC_DRV_DS1511)	+= rtc-ds1511.o
-diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
-new file mode 100644
-index 0000000..986275e
---- /dev/null
-+++ b/drivers/rtc/rtc-ds1347.c
-@@ -0,0 +1,169 @@
-+/* rtc-ds1347.c
-+ *
-+ * Driver for Dallas Semiconductor DS1347 Low Current, SPI Compatible
-+ * Real Time Clock
-+ *
-+ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/spi/spi.h>
-+#include <linux/bcd.h>
-+
-+/* Registers in ds1347 rtc */
-+
-+#define DS1347_SECONDS_REG	0x01
-+#define DS1347_MINUTES_REG	0x03
-+#define DS1347_HOURS_REG	0x05
-+#define DS1347_DATE_REG		0x07
-+#define DS1347_MONTH_REG	0x09
-+#define DS1347_DAY_REG		0x0B
-+#define DS1347_YEAR_REG		0x0D
-+#define DS1347_CONTROL_REG	0x0F
-+#define DS1347_STATUS_REG	0x17
-+#define DS1347_CLOCK_BURST	0x3F
-+
-+static int ds1347_read_reg(struct device *dev, unsigned char address,
-+				unsigned char *data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	*data = address | 0x80;
-+
-+	return spi_write_then_read(spi, data, 1, data, 1);
-+}
-+
-+static int ds1347_write_reg(struct device *dev, unsigned char address,
-+				unsigned char data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char buf[2];
-+
-+	buf[0] = address & 0x7F;
-+	buf[1] = data;
-+
-+	return spi_write_then_read(spi, buf, 2, NULL, 0);
-+}
-+
-+static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	int err;
-+	unsigned char buf[8];
-+
-+	buf[0] = DS1347_CLOCK_BURST | 0x80;
-+
-+	err = spi_write_then_read(spi, buf, 1, buf, 8);
-+	if (err)
-+		return err;
-+
-+	dt->tm_sec = bcd2bin(buf[0]);
-+	dt->tm_min = bcd2bin(buf[1]);
-+	dt->tm_hour = bcd2bin(buf[2] & 0x3F);
-+	dt->tm_mday = bcd2bin(buf[3]);
-+	dt->tm_mon = bcd2bin(buf[4]) - 1;
-+	dt->tm_wday = bcd2bin(buf[5]) - 1;
-+	dt->tm_year = bcd2bin(buf[6]) + 100;
-+
-+	return rtc_valid_tm(dt);
-+}
-+
-+static int ds1347_set_time(struct device *dev, struct rtc_time *dt)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char buf[9];
-+
-+	buf[0] = DS1347_CLOCK_BURST & 0x7F;
-+	buf[1] = bin2bcd(dt->tm_sec);
-+	buf[2] = bin2bcd(dt->tm_min);
-+	buf[3] = (bin2bcd(dt->tm_hour) & 0x3F);
-+	buf[4] = bin2bcd(dt->tm_mday);
-+	buf[5] = bin2bcd(dt->tm_mon + 1);
-+	buf[6] = bin2bcd(dt->tm_wday + 1);
-+
-+	/* year in linux is from 1900 i.e in range of 100
-+	in rtc it is from 00 to 99 so subtract
-+	the linux year by 100 */
-+	if (dt->tm_year >= 100)
-+		dt->tm_year -= 100;
-+
-+	buf[7] = bin2bcd(dt->tm_year);
-+	buf[8] = bin2bcd(0x00);
-+
-+	/* write the rtc settings */
-+	return spi_write_then_read(spi, buf, 9, NULL, 0);
-+}
-+
-+static const struct rtc_class_ops ds1347_rtc_ops = {
-+	.read_time = ds1347_read_time,
-+	.set_time = ds1347_set_time,
-+};
-+
-+static int ds1347_probe(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc;
-+	unsigned char data;
-+	int res;
-+
-+	/* spi setup with ds1347 in mode 3 and bits per word as 8 */
-+	spi->mode = SPI_MODE_3;
-+	spi->bits_per_word = 8;
-+	spi_setup(spi);
-+
-+	/* RTC Settings */
-+	res = ds1347_read_reg(&spi->dev, DS1347_SECONDS_REG, &data);
-+	if (res)
-+		return res;
-+
-+	/* Disable the write protect of rtc */
-+	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-+	data = data & ~(1<<7);
-+	ds1347_write_reg(&spi->dev, DS1347_CONTROL_REG, data);
-+
-+	/* Enable the oscillator , disable the oscillator stop flag,
-+	 and glitch filter to reduce current consumption */
-+	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-+	data = data & 0x1B;
-+	ds1347_write_reg(&spi->dev, DS1347_STATUS_REG, data);
-+
-+	/* display the settings */
-+	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-+	dev_info(&spi->dev, "DS1347 RTC CTRL Reg = 0x%02x\n", data);
-+
-+	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-+	dev_info(&spi->dev, "DS1347 RTC Status Reg = 0x%02x\n", data);
-+
-+	rtc = devm_rtc_device_register(&spi->dev, "ds1347",
-+				&ds1347_rtc_ops, THIS_MODULE);
-+
-+	if (IS_ERR(rtc))
-+		return PTR_ERR(rtc);
-+
-+	spi_set_drvdata(spi, rtc);
-+
-+	return 0;
-+}
-+
-+static struct spi_driver ds1347_driver = {
-+	.driver = {
-+		.name = "ds1347",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = ds1347_probe,
-+};
-+
-+module_spi_driver(ds1347_driver);
-+
-+MODULE_DESCRIPTION("DS1347 SPI RTC DRIVER");
-+MODULE_AUTHOR("Raghavendra C Ganiga <ravi23ganiga@gmail.com>");
-+MODULE_LICENSE("GPL v2");
-+
--- 
-1.7.10.4
+You can look at how this is done in CRIU in cr-dump,c:collect_threads().
+
+> +		if (entry->d_type == DT_DIR && entry->d_name[0] != '.') {
+> +			tmp_tid = atoi(entry->d_name);
+> +			ret = ptrace(PTRACE_SEIZE, tmp_tid, 0, 0);
+> +			if (ret) {
+> +				state = get_thread_status(tmp_tid);
+> +				if (state == 'Z')
+> +					goto assign;
+> +				status = errno;
+> +				gencore_log("Could not seize thread: %d\n",
+> +								tmp_tid);
+> +				break;
+> +			}
+> +			ret = ptrace(PTRACE_INTERRUPT, tmp_tid, 0, 0);
+> +			if (ret) {
+> +				state = get_thread_status(tmp_tid);
+> +				if (state == 'Z')
+> +					goto assign;
+> +				status = errno;
+> +				gencore_log("Could not interrupt thread: %d\n",
+> +								tmp_tid);
+> +				break;
+> +			}
+> +assign:
+> +			/* If a new thread, is created after we fetch the thread_count,
+> +			 * we may encounter a buffer overflow situation in the cp_tid.
+> +			 * Hence we check this case and re-allocate memory if required.
+> +			 */
+> +			cp.t_id[ct++] = tmp_tid;
+> +		}
+> +	}
+> +
+> +	/* Reassigning based on successful seizes */
+> +	cp.thread_count = ct;
+> +
+> +	closedir(dir);
+> +
+> +	/* Successful seize and interrupt on all threads makes ret = 0 */
+> +	return ret;
+> +}
