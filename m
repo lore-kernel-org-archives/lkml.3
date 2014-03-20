@@ -1,125 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757754AbaCTM1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:27:07 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:37362 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752103AbaCTM1E (ORCPT
+	id S1758065AbaCTM1f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:27:35 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46838 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757872AbaCTM1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:27:04 -0400
-Message-ID: <532ADE8D.7040900@monstr.eu>
-Date: Thu, 20 Mar 2014 13:26:53 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: =?UTF-8?B?U8O2cmVuIEJyaW5rbWFubg==?= <soren.brinkmann@xilinx.com>
-CC: Mike Looijmans <mike.looijmans@topic.nl>,
-        Eli Billauer <eli.billauer@gmail.com>, chris@printf.net,
-        michal.simek@xilinx.com, linux-mmc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] mmc: sdhci: add quirk for broken write protect detection
-References: <1393759200-22819-1-git-send-email-eli.billauer@gmail.com> <74003aec-1707-4f43-b947-df148d573fa1@TX2EHSMHS038.ehs.local> <53163247.8000904@gmail.com> <ae0f71ac-c5f7-4af7-a9ba-c019cec19ebf@AM1EHSMHS017.ehs.local> <531878C8.2020001@topic.nl> <ad0a3559-a687-4f51-b284-f515372cfad2@VA3EHSMHS001.ehs.local>
-In-Reply-To: <ad0a3559-a687-4f51-b284-f515372cfad2@VA3EHSMHS001.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="VV9AQjEhgSr0jhWSBLiLlFvWK0tr1t3iL"
+	Thu, 20 Mar 2014 08:27:33 -0400
+Message-ID: <532ADFD8.80301@gmail.com>
+Date: Thu, 20 Mar 2014 13:32:24 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Jean-Francois Moine <moinejf@free.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org
+CC: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT documentation
+References: <20140320092639.48F68A6279@smtp3-g21.free.fr>
+In-Reply-To: <20140320092639.48F68A6279@smtp3-g21.free.fr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---VV9AQjEhgSr0jhWSBLiLlFvWK0tr1t3iL
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 03/20/2014 09:58 AM, Jean-Francois Moine wrote:
+> The I2C address (reg) is required for the TDA998x driver to be loaded
+> and initialized.
+>
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> ---
+> This patch applies to linux-next.
+> ---
+>   Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 2 ++
+>   1 file changed, 2 insertions(+)
+>
+> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> index d7df01c..fc7effa 100644
+> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> @@ -3,6 +3,8 @@ Device-Tree bindings for the NXP TDA998x HDMI transmitter
+>   Required properties;
+>     - compatible: must be "nxp,tda998x"
+>
+> +  - reg: I2C address - must be <0x70>
 
-Hi,
+TDA9983b datasheet says:
 
-On 03/06/2014 05:42 PM, S=C3=B6ren Brinkmann wrote:
-> On Thu, 2014-03-06 at 02:31PM +0100, Mike Looijmans wrote:
->> On 03/04/2014 10:00 PM, S=C3=B6ren Brinkmann wrote:
->>> On Tue, 2014-03-04 at 10:06PM +0200, Eli Billauer wrote:
->>>> Hello S=C3=B6ren,
->>>>
->>>> wp-inverted solves the practical problem indeed, and fools the
->>>> driver into thinking that the card has an inverted write protection
->>>> sensor, and the logic zero that it finds in the hardware register
->>>> means that the card isn't write protected.
->>>>
->>>> I'm insisting on this patch, because I think that the device tree
->>>> should describe the hardware as it is, and not fool the driver into
->>>> behaving the way we want it to. These tricks always bite back later
->>>> on.
->>> Well, why is broken-wp more accurate than wp-inverted? Strictly
->>> speaking the WP is there and working, it's just tied off to some valu=
-e
->>> you want to have interpreted the other way.
->>> Anyway, seems like this is solvable with wp-inverted and whether the
->>> additional quirk is needed I leave to others do decide.
->>
->> I've begged for this patch - or a similar one - to be included too,
->> because on our boards, the "wp" value appears to be sort of random.
->> Out of 5 prototype boards, 3 would only boot with wp-inverted while
->> the other 2 wouldn't boot with wp-inverted set.
->>
->> In our case I really don't know (and I don't care either) to which
->> logic level the wp happens to think it's wired. I just want to be
->> able to tell the driver that the WP line is
->> free-floating-and-might-have-any-random-value-at-any-given-moment
->> which is a bit long, so I'd go for disable-wp instead.
->=20
-> Could you provide the design you use and give more details? According t=
-o
-> the people I talked to, the signal should never float, unless you pin i=
-t
-> out and don't drive it.
-> Actually, you should open a support case for this. It is not supposed t=
-o
-> happen.
+"Bits A0 and A1 of the I2C-bus device address are externally selected
+by pins A0 and A1."
 
-we have got this from Mike (we couldn't reply because he has lost this em=
-ail
-thread.
+Therefore, 0x70, 0x71, 0x72, and 0x73 are valid i2c addresses.
 
-Mike:
-"I think I found the issue. In ps7_init.c as generated by the tools, it s=
-ets the "WP" pin not to EMIO, but to MIO 0. We use pin 0 for a status LED=
-=2E
+Sebastian
 
-# devmem 0XF8000830
-0x002E0000
+>   Optional properties:
+>     - interrupts: interrupt number and trigger type
+>   	default: polling
+>
 
-Register 0XF8000830 is SD0_WP_CD_SEL, and 0x002E0000 sets CD to pin 46 an=
-d WP to pin "0", not to EMIO as I specified in the design.
-"
-
-Eli: Maybe you have the same issue as Mike. Can you please check it?
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---VV9AQjEhgSr0jhWSBLiLlFvWK0tr1t3iL
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlMq3o0ACgkQykllyylKDCGWGQCfV1xQbJ0sUHFIw42eWJt8/sL/
-gCcAoJm1zK5GDROd7KwULu18A/v5XWD7
-=QGh2
------END PGP SIGNATURE-----
-
---VV9AQjEhgSr0jhWSBLiLlFvWK0tr1t3iL--
