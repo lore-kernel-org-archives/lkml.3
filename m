@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757984AbaCTMDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:03:14 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:34874 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757200AbaCTMDN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:03:13 -0400
-Date: Thu, 20 Mar 2014 12:03:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: Joe Perches <joe@perches.com>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, kernel@stlinux.com,
-        linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com
-Subject: Re: [PATCH 1/5] mtd: st_spi_fsm: Remove useless consts from function
- arguments
-Message-ID: <20140320120307.GA9240@lee--X1>
-References: <1395313907-25318-1-git-send-email-lee.jones@linaro.org>
- <1395313907-25318-2-git-send-email-lee.jones@linaro.org>
- <1395314713.7776.17.camel@joe-AO722>
- <20140320114123.GE21349@lee--X1>
- <1395316090.7776.24.camel@joe-AO722>
- <20140320115412.GU31517@norris-Latitude-E6410>
+	id S1757918AbaCTMEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:04:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55503 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769AbaCTMEi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 08:04:38 -0400
+Subject: [PATCH 00/12] KEYS: Use preparsing in most key types
+From: David Howells <dhowells@redhat.com>
+To: keyrings@linux-nfs.org
+Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Thu, 20 Mar 2014 12:04:29 +0000
+Message-ID: <20140320120428.21635.13071.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140320115412.GU31517@norris-Latitude-E6410>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Good catch. That wasn't my intention.
 
-+1
+Here are a set of patches that make all but encrypted and trusted keys use
+preparsing.  Unfortunately, encrypted and trusted keys incorrectly use the
+update op to alter a key, so other changes will need to be made for them.
 
-> > Why?
+These changes permit payload parsing when instantiating or updating a key to be
+done before locks are taken and to determine the amount of quota that will be
+required in advance.  The latter will make it possible to do LRU discard before
+any locks are taken.
 
-An oversight.
+They can be found here also:
 
-> I can let Lee speak for himself. But I'm thinking I'll squash this diff
-> in, if no one minds:
-> 
-> Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+	http://git.kernel.org/cgit/linux/kernel/git/dhowells/linux-fs.git/log/?h=keys-preparse-1
 
-Patch looks good to me:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+David
+---
+David Howells (12):
+      KEYS: Provide a generic instantiation function
+      KEYS: struct key_preparsed_payload should have two payload pointers
+      KEYS: Allow expiry time to be set when preparsing a key
+      KEYS: Call ->free_preparse() even after ->preparse() returns an error
+      KEYS: user: Use key preparsing
+      KEYS: Ceph: Use key preparsing
+      KEYS: Ceph: Use user_match()
+      KEYS: DNS: Use key preparsing
+      KEYS: RxRPC: Use key preparsing
+      KEYS: big_key: Use key preparsing
+      KEYS: keyring: Provide key preparsing
+      KEYS: request_key_auth: Provide key preparsing
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+
+ Documentation/security/keys.txt          |   14 ++-
+ crypto/asymmetric_keys/asymmetric_type.c |   27 -----
+ crypto/asymmetric_keys/x509_public_key.c |    2 
+ fs/nfs/idmap.c                           |    8 +
+ include/keys/big_key-type.h              |    3 -
+ include/keys/user-type.h                 |    3 -
+ include/linux/key-type.h                 |    5 +
+ net/ceph/crypto.c                        |   26 +++--
+ net/dns_resolver/dns_key.c               |   43 +++++---
+ net/rxrpc/ar-key.c                       |  165 ++++++++++++++++++------------
+ security/keys/big_key.c                  |   41 +++++--
+ security/keys/encrypted-keys/encrypted.c |    2 
+ security/keys/key.c                      |   49 ++++++++-
+ security/keys/keyring.c                  |   34 ++++--
+ security/keys/request_key_auth.c         |   13 ++
+ security/keys/user_defined.c             |   41 ++++---
+ 16 files changed, 291 insertions(+), 185 deletions(-)
+
