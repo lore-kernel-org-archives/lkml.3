@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552AbaCTP05 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:26:57 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32830 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751925AbaCTP04 (ORCPT
+	id S933847AbaCTP1a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:27:30 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:43690 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932796AbaCTP11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:26:56 -0400
-Date: Thu, 20 Mar 2014 15:26:40 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-sh@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: DMABOUNCE in pci-rcar
-Message-ID: <20140320152640.GW7528@n2100.arm.linux.org.uk>
-References: <201402241200.21944.arnd@arndb.de> <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532B0384.1000400@codethink.co.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 20 Mar 2014 11:27:27 -0400
+Date: Thu, 20 Mar 2014 15:26:57 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kristian =?UTF-8?B?SMO4Z3NiZXJn?= <krh@bitplanet.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+Message-ID: <20140320152657.381956ff@alan.etchedpixels.co.uk>
+In-Reply-To: <CANq1E4Ro8bsgp1QS_Qf9KKBAMZH+joMW5DmfyZ4OBJuTxdXCZA@mail.gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<CA+55aFyNORiS2XidhWoDBVyO6foZuPJTg_BOP3aLtvVhY1R6mw@mail.gmail.com>
+	<CANq1E4TuiU6_J=N0WoPav=0AxOJ9G1w+FGvO15kmGP76i+-caw@mail.gmail.com>
+	<20140320144127.1d411f26@alan.etchedpixels.co.uk>
+	<CANq1E4Ro8bsgp1QS_Qf9KKBAMZH+joMW5DmfyZ4OBJuTxdXCZA@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 04:04:36PM +0100, Ben Dooks wrote:
-> On 26/02/14 20:57, Arnd Bergmann wrote:
->> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
->>> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>> Hi Magnus,
->>>>
->>>> I noticed during randconfig testing that you enabled DMABOUNCE for the
->>>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
->>>>
->>>> I didn't see the original post unfortunately, but I fear we have to
->>>> revert it and come up with a better solution, ...
->>>
->>> Sounds like I should drop the following patches from my pci/host-rcar
->>> branch for now?
->>>
->>>    PCI: rcar: Add DMABOUNCE support
->>>    PCI: rcar: Enable BOUNCE in case of HIGHMEM
->>>    PCI: rcar: Make the Kconfig dependencies more generic
->>
->> Sounds good to me. The last patch is actually fine, but you'll have to
->> fix the context to apply it without the other two.
->
-> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
-> controllers no longer work with full 2GiB RAM enabled in the device
-> tree.
->
-> Could we work around this by having 1GiB of memory defined in the
-> 32bit memory and then add the rest of the 3GiB from the >32bit
-> area via LPAE? Will the kernel ever try to allocate DMA memory from
-> anything >32bit?
+On Thu, 20 Mar 2014 16:12:54 +0100
+David Herrmann <dh.herrmann@gmail.com> wrote:
 
-Ignore highmem.  What is the actual hardware restriction concerning memory
-it can access?
+> Hi
+> 
+> On Thu, Mar 20, 2014 at 3:41 PM, One Thousand Gnomes
+> <gnomes@lxorguk.ukuu.org.uk> wrote:
+> > I think you want two things at minimum
+> >
+> > owner to seal
+> > root can always override
+> 
+> Why should root be allowed to override?
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Because root can already override it by say mmapping the kernel memory
+and patching. It also tends to be valuable for debugging horrible
+problems with complex systems.
+
+Imposing fake restrictions on root just causes annoyance when doing stuff
+like debugging but doesn't actually change the security situation.
+> 
+> I'm fine with F_SET/GET_SEALS. But given you suggested requiring
+> MFD_ALLOW_SEALS for sealing, I don't see why we couldn't limit this
+> interface entirely to memfd_create().
+
+But if someone does find a non memfd use for it then it's useful not to
+have to go "this fnctl for memfd, that fnctl for the other"
+
+Just planning ahead.
+
+
+> > Whether you want some way to undo a seal without an exclusive reference as
+> > the file owner is another question.
+> 
+> No. You are never allowed to undo a seal but with an exclusive
+> reference. This interface was created for situations _without_ any
+> trust relationship. So if the owner is allowed to undo seals, the
+> interface doesn't make any sense. The only options I see is to not
+> allow un-sealing at all (which I'm fine with) or tracking users (which
+> is way too much overhead).
+
+Ok - that makes sense
