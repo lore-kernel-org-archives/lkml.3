@@ -1,149 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755685AbaCTBcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 21:32:33 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34450 "EHLO
-	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752159AbaCTBbb (ORCPT
+	id S1756202AbaCTBc4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 21:32:56 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:38036 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756019AbaCTBcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 21:31:31 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 11/13] perf tools: Add ->sort() member to struct sort_entry
-Date: Thu, 20 Mar 2014 10:31:25 +0900
-Message-Id: <1395279087-12554-12-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.11.7
-In-Reply-To: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
-References: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
+	Wed, 19 Mar 2014 21:32:53 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com>
+References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
+	<CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
+	<CAErSpo4ngU60XQCD=DbFJbqNOMkOwwhHB1oau1mmr7rJQQ2+pg@mail.gmail.com>
+	<CACVXFVMz+6DaSgT0EHeVfyBOsXfWDYnZQ0wy7pwcey5ahM6rUA@mail.gmail.com>
+	<20140318002700.GA22356@google.com>
+	<CACVXFVNbzjYa7dJpH+k-F02Cap7yBBi7TkngjVu_KthXw-WKJA@mail.gmail.com>
+	<CACVXFVO2rR+H7X2Xv_d-U0NeikT4dR97ffQ7PuV7+i0fN=_k3w@mail.gmail.com>
+	<CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com>
+Date: Thu, 20 Mar 2014 09:32:52 +0800
+Message-ID: <CACVXFVPq2nQ8jcn+v424roieO+v_asyfXcHUHv=uSOABYHJ4eg@mail.gmail.com>
+Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
+From: Ming Lei <tom.leiming@gmail.com>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pekka Enberg <penberg@kernel.org>,
+        Sasha Levin <sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, what the sort_entry does is just identifying hist entries
-so that they can be grouped properly.  However, with -F option
-support, it indeed needs to sort entries appropriately to be shown to
-users.  So add ->sort() member to do it.
+On Thu, Mar 20, 2014 at 12:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+> On Tue, Mar 18, 2014 at 10:52 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+>> Hi,
+>>
+>> Looks Sasha fixed the problem in lkvm tool[1].
+>>
+>> Sasha, looks we both saw the problem, but from technical
+>> view, I am wondering if the fix is correct, because PCI spec.
+>> requires that the IO/MMIO bits in COMMAND register should
+>> be cleared after reset, maybe there are some potential problem
+>> in lkvm pci emulation.
+>
+> I think I'm going to revert this patch ([2], "Ignore BAR contents when
+> firmware left decoding disabled").  The main reason for that patch was
+> to try for a consistent way of figuring out whether BARs are valid
+> that we could use on all architectures, but I think we can do it in a
+> better way.
+>
+> That said, this kvm change should not be necessary.  We *should* be
+> able to take any PCI device and initialize it from power-on state
+> without any dependencies on what the BIOS left in the BARs or the
+> command register.  As far as I can tell, the PCI core actually worked
+> fine in this case (we assigned valid addresses to the devices), but
+> something else blew up.  If I revert that patch, it will cover up
+> whatever this other bug is, but it would be much better to figure out
+> what it is and fix is.
+>
+> You said earlier that "The memory allocation failure is caused by
+> mistaken value read from pci address after the device is failed to
+> enable."  Can you elaborate on that?  Are you saying that something
 
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/util/sort.c | 27 ++++++++++++++++++++++-----
- tools/perf/util/sort.h |  1 +
- 2 files changed, 23 insertions(+), 5 deletions(-)
+Sorry, that's my take for granted.
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index 639dd49f2884..1e7b80e517d5 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -98,6 +98,12 @@ sort__comm_collapse(struct hist_entry *left, struct hist_entry *right)
- 	return comm__str(right->comm) - comm__str(left->comm);
- }
- 
-+static int64_t
-+sort__comm_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	return strcmp(comm__str(right->comm), comm__str(left->comm));
-+}
-+
- static int hist_entry__comm_snprintf(struct hist_entry *he, char *bf,
- 				     size_t size, unsigned int width)
- {
-@@ -108,6 +114,7 @@ struct sort_entry sort_comm = {
- 	.se_header	= "Command",
- 	.se_cmp		= sort__comm_cmp,
- 	.se_collapse	= sort__comm_collapse,
-+	.se_sort	= sort__comm_sort,
- 	.se_snprintf	= hist_entry__comm_snprintf,
- 	.se_width_idx	= HISTC_COMM,
- };
-@@ -121,7 +128,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- 	const char *dso_name_l, *dso_name_r;
- 
- 	if (!dso_l || !dso_r)
--		return cmp_null(dso_l, dso_r);
-+		return cmp_null(dso_r, dso_l);
- 
- 	if (verbose) {
- 		dso_name_l = dso_l->long_name;
-@@ -137,7 +144,7 @@ static int64_t _sort__dso_cmp(struct map *map_l, struct map *map_r)
- static int64_t
- sort__dso_cmp(struct hist_entry *left, struct hist_entry *right)
- {
--	return _sort__dso_cmp(left->ms.map, right->ms.map);
-+	return _sort__dso_cmp(right->ms.map, left->ms.map);
- }
- 
- static int _hist_entry__dso_snprintf(struct map *map, char *bf,
-@@ -209,6 +216,15 @@ sort__sym_cmp(struct hist_entry *left, struct hist_entry *right)
- 	return _sort__sym_cmp(left->ms.sym, right->ms.sym);
- }
- 
-+static int64_t
-+sort__sym_sort(struct hist_entry *left, struct hist_entry *right)
-+{
-+	if (!left->ms.sym || !right->ms.sym)
-+		return cmp_null(left->ms.sym, right->ms.sym);
-+
-+	return strcmp(right->ms.sym->name, left->ms.sym->name);
-+}
-+
- static int _hist_entry__sym_snprintf(struct map *map, struct symbol *sym,
- 				     u64 ip, char level, char *bf, size_t size,
- 				     unsigned int width)
-@@ -255,6 +271,7 @@ static int hist_entry__sym_snprintf(struct hist_entry *he, char *bf,
- struct sort_entry sort_sym = {
- 	.se_header	= "Symbol",
- 	.se_cmp		= sort__sym_cmp,
-+	.se_sort	= sort__sym_sort,
- 	.se_snprintf	= hist_entry__sym_snprintf,
- 	.se_width_idx	= HISTC_SYMBOL,
- };
-@@ -282,7 +299,7 @@ sort__srcline_cmp(struct hist_entry *left, struct hist_entry *right)
- 					    map__rip_2objdump(map, right->ip));
- 		}
- 	}
--	return strcmp(left->srcline, right->srcline);
-+	return strcmp(right->srcline, left->srcline);
- }
- 
- static int hist_entry__srcline_snprintf(struct hist_entry *he, char *bf,
-@@ -310,7 +327,7 @@ sort__parent_cmp(struct hist_entry *left, struct hist_entry *right)
- 	if (!sym_l || !sym_r)
- 		return cmp_null(sym_l, sym_r);
- 
--	return strcmp(sym_l->name, sym_r->name);
-+	return strcmp(sym_r->name, sym_l->name);
- }
- 
- static int hist_entry__parent_snprintf(struct hist_entry *he, char *bf,
-@@ -1125,7 +1142,7 @@ __sort_dimension__alloc_hpp(struct sort_dimension *sd)
- 
- 	hse->hpp.cmp = sd->entry->se_cmp;
- 	hse->hpp.collapse = sd->entry->se_collapse ? : sd->entry->se_cmp;
--	hse->hpp.sort = hse->hpp.collapse;
-+	hse->hpp.sort = sd->entry->se_sort ? : hse->hpp.collapse;
- 
- 	INIT_LIST_HEAD(&hse->hpp.list);
- 	INIT_LIST_HEAD(&hse->hpp.sort_list);
-diff --git a/tools/perf/util/sort.h b/tools/perf/util/sort.h
-index 02706c9766d6..cd679a56c81d 100644
---- a/tools/perf/util/sort.h
-+++ b/tools/perf/util/sort.h
-@@ -181,6 +181,7 @@ struct sort_entry {
- 
- 	int64_t (*se_cmp)(struct hist_entry *, struct hist_entry *);
- 	int64_t (*se_collapse)(struct hist_entry *, struct hist_entry *);
-+	int64_t	(*se_sort)(struct hist_entry *, struct hist_entry *);
- 	int	(*se_snprintf)(struct hist_entry *he, char *bf, size_t size,
- 			       unsigned int width);
- 	u8	se_width_idx;
+> tried to read from a region mapped by a BAR even though
+> pci_enable_device() failed?  That would be a programming error, of
+> course.  If you have any more details about exactly where this
+> happened, that would help a lot in finding the problem.
+
+When I check again, as you saw in the dmesg log after reverting, the
+virtio device has been enabled successfully, looks no obvious PCI
+failure, and the only problem is that the virtio driver reads zero queue
+number from one region mapped by a BAR:
+
+ioread16(vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NUM)
+         <- setup_vq(): drivers/virtio/virtio_pci.c
+
+That causes the memory allocation failure.
+
+Thanks,
 -- 
-1.7.11.7
-
+Ming Lei
