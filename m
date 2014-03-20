@@ -1,108 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964811AbaCTSjw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:39:52 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:43362 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759322AbaCTSju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759582AbaCTSju (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 14:39:50 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33083 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933332AbaCTSjs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 14:39:48 -0400
+Date: Thu, 20 Mar 2014 18:39:32 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: DMABOUNCE in pci-rcar
+Message-ID: <20140320183932.GA7528@n2100.arm.linux.org.uk>
+References: <201402241200.21944.arnd@arndb.de> <20140320173106.GA19395@obsidianresearch.com> <532B2628.5080305@codethink.co.uk> <201403201929.13633.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <CAMbOQaVt+KSHwejbLFGy9qzgFG2DG3K84KZE0KOAh3Vyy8YHog@mail.gmail.com>
-References: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
-	<20140319190119.GC16906@thunk.org>
-	<CAMbOQaVt+KSHwejbLFGy9qzgFG2DG3K84KZE0KOAh3Vyy8YHog@mail.gmail.com>
-Date: Fri, 21 Mar 2014 00:09:49 +0530
-Message-ID: <CAMbOQaVGZZjAvvx+PGkTdiBQfYc9xGxkiP1_3P7i304Kg+d_hw@mail.gmail.com>
-Subject: Re: Page cache corruption with mount/unmount of USB with Fat file system
-From: Nilesh More <nilesh99999@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Prafull Suryawanshi <prafull.net@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201403201929.13633.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I now know the source of page allocations between add_disk call and
-mount call. The auto mount service triggers disk check operation which
-eventually calls checkfilesys(). This function does open and close
-calls which results into page allocations and de-allocations. If I do
-an early return from this function, I don't this issue of ext4 file
-system corruption.
+On Thu, Mar 20, 2014 at 07:29:13PM +0100, Arnd Bergmann wrote:
+> On Thursday 20 March 2014, Ben Dooks wrote:
+> > On 20/03/14 18:31, Jason Gunthorpe wrote:
+> > > On Thu, Mar 20, 2014 at 06:25:25PM +0100, Ben Dooks wrote:
+> > >> So doing:
+> > >>
+> > >> static void pci_rcar_fixup(struct pci_dev *dev)
+> > >> {
+> > >>      if (dev->bus->ops == &rcar_pci_ops) {
+> > >>              dev_info(&dev->dev, "applying new dma mask\n");
+> > >>              dev->dma_mask = DMA_BIT_MASK(31);
+> > >>      }
+> > >> }
+> > >>
+> > >> DECLARE_PCI_FIXUP_EARLY(PCI_ANY_ID, PCI_ANY_ID, pci_rcar_fixup);
+> > >>
+> > >> Did not work for me :(
+> > >
+> > > Seems like it should work, do you have CONFIG_PCI_QUIRKS turned on?
+> > 
+> > Yes, see the print happening, just still PCI OHCI dies horribly.
+> 
+> Shouldn't that mask be 30 instead of 31 when you only support DMA
+> to the first GB?
+> 
+> Another possibility is that 'EARLY' means it gets applied before
+> the normal mask is set.
+> 
+> Finally, setting the mask itself is not enough. As I mentioned you
+> also need to use the swiotlb_dma_ops. Did you already implement
+> those?
 
- Though the file check operation might be expected before mount, it
-may be exposing a linux-kernel bug.
+And the above is no way to handle the DMA mask - it will get
+overwritten if the PCI device calls pci_set_dma_mask().  Please people,
+read the documentation on how this stuff is supposed to work:
 
-Can anybody please comment if the checkfilesys() operation is expected
-before actually mounting the file system ? If 'yes', how does it know
-about the superblock location, directory structure etc. ?
+  For correct operation, you must interrogate the kernel in your device
+  probe routine to see if the DMA controller on the machine can properly
+  support the DMA addressing limitation your device has.  It is good
+  style to do this even if your device holds the default setting,
+  because this shows that you did think about these issues wrt. your
+  device.
 
-What should be the next step here ? I am thinking to try and track
-down all page/buffer allocations because of open/close calls from auto
-mount service - checkfilesys() and see why it is resulting into ext4
-corruption.
+Yes, OHCI's PCI driver doesn't do that at the moment, but that's not
+to say that it won't in the future - at which point hacks like the
+above suddenly stop working.
 
-Thank you,
-Nilesh
+We have other platforms which suffer from this - IXP is one of those
+examples where PCI only has 64MB available.  The unfortunate thing is
+we haven't yet got a good multi-platform way to handle dma_set_mask()
+and dma_set_coherent_mask() with these kinds of restrictions.
 
-On Thu, Mar 20, 2014 at 12:38 AM, Nilesh More <nilesh99999@gmail.com> wrote:
-> Hi Ted,
->
->>And I'll repeat the comments I made a few weeks ago.  Last time you
->>reported this, you included a dmesg output which included this:
->
->> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
->> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
->> #81827: block 328308: comm installd...
->
->  > Are you seeing the same thing?  If so, the fundamental high level
-> issue is that the USB driver is reporting a device disconnect,
-> presumably of a USB device different from the one that you just
-> plugged in.   Are you still seeing this?
->
-> The dmesg output that I attached earlier was when I saw the prints
-> after actually disconnecting the USB. I am pretty certain that USB
-> driver does not report any false disconnect. This issue occurs when I
-> connect the USBdrive on android tablet with USB mount support. This
-> issue may or may not occur the first time I hotplug the USB drive. It
-> might require couple of hotplug/hotunplug to see this issue.
->
-> Thank you,
-> Nilesh
->
-> On Thu, Mar 20, 2014 at 12:31 AM,  <tytso@mit.edu> wrote:
->> On Thu, Mar 20, 2014 at 12:05:44AM +0530, Nilesh More wrote:
->>> Hi all,
->>>
->>> First of all sorry for the lengthy mail but I did not want to miss out
->>> on any details.
->>>
->>> The following issue that I am reporting occurs when I plugin the USB
->>> drive on android tablet with USB mount support. Please note that this
->>> issue may or may not occur the first time I hotplug the USB drive. It
->>> might require couple of hotplug/hotunplug to see this issue. If
->>> anybody has/gets any clue about the possible root cause, please let me
->>> know.
->>
->> And I'll repeat the comments I made a few weeks ago.  Last time you
->> reported this, you included a dmesg output which included this:
->>
->>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
->>> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
->>> #81827: block 328308: comm installd...
->>
->> Are you seeing the same thing?  If so, the fundamental high level
->> issue is that the USB driver is reporting a device disconnect,
->> presumably of a USB device different from the one that you just
->> plugged in.   Are you still seeing this?
->>
->> If so, it's important if you want to root cause this issue to
->> determine why the USB disconnect is happening, and not try to comment
->> out the page invalidations which happens *after* the USB device is
->> reported as disconnected.
->>
->> If I had to guess, it's probably some hardware issue where when you
->> plug in a USB device that draws too much power, it's destablizing the
->> USB bus and causing some other USB device to report a disconnect.
->>
->>                                           - Ted
+However, the right solution here is that OHCI _should_ be making those
+calls, and we _should_ be applying the platform specific fixups like
+IXP does, but in a more generic way.  That includes using swiotlb
+rather than dmabounce.
+
+That all said, what I find most annoying is that Ben has ignored my
+question about exactly what the nature of the limitation is on this
+platform.  My response to that is - if you're not going to do the
+curtesy of answering such a simple question, then you don't get to
+patch the kernel for this problem.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
