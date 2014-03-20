@@ -1,118 +1,355 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759191AbaCTRww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:52:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757878AbaCTRwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:52:51 -0400
-Date: Thu, 20 Mar 2014 18:51:58 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>
-Subject: [PATCH 2/2] wait: introduce WQ_FLAG_EXCLUSIVE_HEAD
-Message-ID: <20140320175158.GC7375@redhat.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com> <20140318133331.GA23193@laptop.programming.kicks-ass.net> <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com> <20140318140504.GD23193@laptop.programming.kicks-ass.net> <20140318154724.GA5669@redhat.com> <CA+a=Yy4WPO9FQwqzDygz6AadT6xbOMEa_puwosZ6WFN17uCncw@mail.gmail.com> <20140319164907.GA10113@redhat.com> <20140319165747.GC8557@laptop.programming.kicks-ass.net> <20140319171906.GA11377@redhat.com> <20140320175111.GA7375@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320175111.GA7375@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1759358AbaCTRx2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:53:28 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:36778 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759287AbaCTRxZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:53:25 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <2089551.u6VYBAmlhv@avalon>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < 20140310145815.17595C405FA@trevor.secretlab.ca> <1394550420.3772.29.camel@ paszta.hi.pengutronix.de> <2089551.u6VYBAmlhv@avalon>
+Date: Thu, 20 Mar 2014 17:53:20 +0000
+Message-Id: <20140320175320.1A9DBC4067A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Normally wait_queue_t is a FIFO list for exclusive waiting tasks,
-but Lustre wants LIFO to wake up the most recent active thread and
-avoid the unnecessary cache line pollution.
+On Tue, 11 Mar 2014 16:21:49 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> Hi Philipp,
+> 
+> On Tuesday 11 March 2014 16:07:00 Philipp Zabel wrote:
+> > Am Montag, den 10.03.2014, 14:58 +0000 schrieb Grant Likely:
+> > > On Mon, 10 Mar 2014 14:52:53 +0100, Laurent Pinchart wrote:
+> 
+> [snip]
+> 
+> > > > In theory unidirectional links in DT are indeed enough. However, let's
+> > > > not forget the following.
+> > > > 
+> > > > - There's no such thing as single start points for graphs. Sure, in some
+> > > > simple cases the graph will have a single start point, but that's not a
+> > > > generic rule. For instance the camera graphs
+> > > > http://ideasonboard.org/media/omap3isp.ps and
+> > > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and
+> > > > thus two starting points from a data flow point of view. And if you
+> > > > want a better understanding of how complex media graphs can become,
+> > > > have a look at http://ideasonboard.org/media/vsp1.0.pdf (that's a real
+> > > > world example, albeit all connections are internal to the SoC in that
+> > > > particular case, and don't need to be described in DT).
+> > > > 
+> > > > - There's also no such thing as a master device that can just point to
+> > > > slave devices. Once again simple cases exist where that model could
+> > > > work, but real world examples exist of complex pipelines with dozens of
+> > > > elements all implemented by a separate IP core and handled by separate
+> > > > drivers, forming a graph with long chains and branches. We thus need
+> > > > real graph bindings.
+> > > > 
+> > > > - Finally, having no backlinks in DT would make the software
+> > > > implementation very complex. We need to be able to walk the graph in a
+> > > > generic way without having any of the IP core drivers loaded, and
+> > > > without any specific starting point. We would thus need to parse the
+> > > > complete DT tree, looking at all nodes and trying to find out whether
+> > > > they're part of the graph we're trying to walk. The complexity of the
+> > > > operation would be at best quadratic to the number of nodes in the whole
+> > > > DT and to the number of nodes in the graph.
+> > > 
+> > > Not really. To being with, you cannot determine any meaning of a node
+> > > across the tree (aside from it being an endpoint) without also
+> > > understanding the binding that the node is a part of. That means you
+> > > need to have something matching against the compatible string on both
+> > > ends of the linkage. For instance:
+> > > 
+> > > panel {
+> > > 	compatible = "acme,lvds-panel";
+> > > 	lvds-port: port {
+> > > 	};
+> > > };
+> > > 
+> > > display-controller {
+> > > 	compatible = "encom,video";
+> > > 	port {
+> > > 		remote-endpoint = <&lvds-port>;
+> > > 	};
+> > > };
+> > > 
+> > > In the above example, the encom,video driver has absolutely zero
+> > > information about what the acme,lvds-panel binding actually implements.
+> > > There needs to be both a driver for the "acme,lvds-panel" binding and
+> > > one for the "encom,video" binding (even if the acme,lvds-panel binding
+> > > is very thin and defers the functionality to the video controller).
+> > > 
+> > > What you want here is the drivers to register each side of the
+> > > connection. That could be modeled with something like the following
+> > > (pseudocode):
+> > > 
+> > > struct of_endpoint {
+> > > 
+> > > 	struct list_head list;
+> > > 	struct device_node *ep_node;
+> > > 	void *context;
+> > > 	void (*cb)(struct of_endpoint *ep, void *data);
+> > > 
+> > > }
+> > > 
+> > > int of_register_port(struct device *node, void (*cb)(struct of_endpoint
+> > > *ep, void *data), void *data) {
+> > > 
+> > > 	struct of_endpoint *ep = kzalloc(sizeof(*ep), GFP_KERNEL);
+> > > 	
+> > > 	ep->ep_node = node;
+> > > 	ep->data = data;
+> > > 	ep->callback = cb;
+> > > 	
+> > > 	/* store the endpoint to a list */
+> > > 	/* check if the endpoint has a remote-endpoint link */
+> > > 		/* If so, then link the two together and call the
+> > > 		 * callbacks */
+> > > }
+> > > 
+> > > That's neither expensive or complicated.
+> > > 
+> > > Originally I suggested walking the whole tree multiple times, but as
+> > > mentioned that doesn't scale, and as I thought about the above it isn't
+> > > even a valid thing to do. Everything has to be driven by drivers, so
+> > > even if the backlinks are there, nothing can be done with the link until
+> > > the other side goes through enumeration independently.
+> > 
+> > I have implemented your suggestion as follows. Basically, this allows
+> > either endpoint to contain the remote-endpoint link, as long as all
+> > drivers register their endpoints in the probe function and return
+> > -EPROBE_DEFER from their component framework bind callback until all
+> > their endpoints are connected.
+> 
+> Beside bringing the whole graph down when a single component can't be probed 
+> (either because the corresponding hardware devices is missing, broken, or the 
+> driver isn't loaded),
 
-As Peter suggested we add the new WQ_FLAG_EXCLUSIVE_HEAD flag and
-teach prepare_to_wait_event() to insert the new entry right before
-the first WQ_FLAG_EXCLUSIVE task.
+I don't think that follows. It creates a list of all port connections as
+drivers 'announce' that the device is available. Any master driver can
+query the list and determine what links are important. If something is
+missing, then with Phillip's approach the master driver can choose to
+ignore it.
 
-Note:
-	- this obviously assumes that the user of EXCLUSIVE_HEAD
-	  doesn't mix exclusive and !exclusive too much, otherwise
-	  it should accept the cost of additional list_for_each().
+> that's adding even one more level of complexity with an 
+> additional callback. I'm afraid I can't accept it as-is, the result is just 
+> too complex for device drivers and not flexible enough.
 
-	- WQ_FLAG_EXCLUSIVE_HEAD doesn't imply WQ_FLAG_EXCLUSIVE,
-	  it only controls the placement in queue. So the new flag
-	  can be used individually even if this is unlikely useful.
+How is it not flexible enough? It seems to be more flexible to me
+because each driver gets to determine the meaning of each link and
+whether or not it is important.
 
-Requested-by: Peng Tao <bergwolf@gmail.com>
-Suggested-by: Peter Zijlstra <peterz@infradead.org>
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- include/linux/wait.h |    3 ++-
- kernel/sched/wait.c  |   30 ++++++++++++++++++++++++------
- 2 files changed, 26 insertions(+), 7 deletions(-)
+The interface could be modifed though to be simpler for drivers by
+eliminating the callback and adding a notifier for linkage additions or
+removals. Then only code that actually cares about links needs to handle
+events.
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index e547c6c..afd41eb 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -16,7 +16,8 @@ int default_wake_function(wait_queue_t *wait, unsigned mode, int flags, void *ke
- struct __wait_queue {
- 	unsigned int		flags;
- #define WQ_FLAG_EXCLUSIVE	0x01
--#define WQ_FLAG_MASK		WQ_FLAG_EXCLUSIVE
-+#define WQ_FLAG_EXCLUSIVE_HEAD	0x02
-+#define WQ_FLAG_MASK		(WQ_FLAG_EXCLUSIVE | WQ_FLAG_EXCLUSIVE_HEAD)
- 	void			*private;
- 	wait_queue_func_t	func;
- 	struct list_head	task_list;
-diff --git a/kernel/sched/wait.c b/kernel/sched/wait.c
-index 7d50f79..894ff75 100644
---- a/kernel/sched/wait.c
-+++ b/kernel/sched/wait.c
-@@ -195,6 +195,28 @@ prepare_to_wait_exclusive(wait_queue_head_t *q, wait_queue_t *wait, int state)
- }
- EXPORT_SYMBOL(prepare_to_wait_exclusive);
- 
-+static void add_wait_queue_flag(wait_queue_head_t *q, wait_queue_t *wait)
-+{
-+	struct list_head *head = &q->task_list;
-+
-+	if (wait->flags & (WQ_FLAG_EXCLUSIVE | WQ_FLAG_EXCLUSIVE_HEAD)) {
-+		if (wait->flags & WQ_FLAG_EXCLUSIVE_HEAD) {
-+			wait_queue_t *curr;
-+			/* find the first exclusive entry */
-+			list_for_each_entry(curr, head, task_list) {
-+				if (likely(curr->flags & WQ_FLAG_EXCLUSIVE)) {
-+					head = &curr->task_list;
-+					break;
-+				}
-+			}
-+		}
-+		/* turn list_add() below into list_add_tail() */
-+		head = head->prev;
-+	}
-+
-+	list_add(&wait->task_list, head);
-+}
-+
- long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
- {
- 	unsigned long flags;
-@@ -206,12 +228,8 @@ long prepare_to_wait_event(wait_queue_head_t *q, wait_queue_t *wait, int state)
- 	wait->func = autoremove_wake_function;
- 
- 	spin_lock_irqsave(&q->lock, flags);
--	if (list_empty(&wait->task_list)) {
--		if (wait->flags & WQ_FLAG_EXCLUSIVE)
--			__add_wait_queue_tail(q, wait);
--		else
--			__add_wait_queue(q, wait);
--	}
-+	if (list_empty(&wait->task_list))
-+		add_wait_queue_flag(q, wait);
- 	set_current_state(state);
- 	spin_unlock_irqrestore(&q->lock, flags);
- 
--- 
-1.5.5.1
-
+> I want to keep the ability to walk the graph without requiring all components 
+> to be probed by their respective driver. What happened to your suggestion of 
+> parsing the whole DT once at boot time ?
+> 
+> > From fdda1fb2bd133200d4620adcbb28697cb360e1cb Mon Sep 17 00:00:00 2001
+> > From: Philipp Zabel <p.zabel@pengutronix.de>
+> > Date: Tue, 11 Mar 2014 15:56:18 +0100
+> > Subject: [PATCH] of: Implement of_graph_register_endpoint
+> > 
+> > This patch adds a function that lets drivers register their endpoints in a
+> > global list. Newly registered endpoints are compared against known endpoints
+> > to check if a connection should be made. If so, the driver is notified via
+> > a simple callback.
+> > 
+> > Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> > ---
+> >  drivers/of/base.c        | 69 ++++++++++++++++++++++++++++++++++++++++++---
+> >  include/linux/of_graph.h | 20 +++++++++++++-
+> >  2 files changed, 84 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index ebb001a..77ae54a 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -29,6 +29,7 @@
+> >  #include "of_private.h"
+> > 
+> >  LIST_HEAD(aliases_lookup);
+> > +LIST_HEAD(endpoint_list);
+> > 
+> >  struct device_node *of_allnodes;
+> >  EXPORT_SYMBOL(of_allnodes);
+> > @@ -2002,6 +2003,7 @@ int of_graph_parse_endpoint(const struct device_node
+> > *node, memset(endpoint, 0, sizeof(*endpoint));
+> > 
+> >  	endpoint->local_node = node;
+> > +	endpoint->remote_node = of_parse_phandle(node, "remote-endpoint", 0);
+> >  	/*
+> >  	 * It doesn't matter whether the two calls below succeed.
+> >  	 * If they don't then the default value 0 is used.
+> > @@ -2126,6 +2128,19 @@ struct device_node *of_graph_get_next_endpoint(const
+> > struct device_node *parent, }
+> >  EXPORT_SYMBOL(of_graph_get_next_endpoint);
+> > 
+> > +static struct of_endpoint *__of_graph_lookup_endpoint(
+> > +				const struct device_node *node)
+> > +{
+> > +	struct of_endpoint *ep;
+> > +
+> > +	list_for_each_entry(ep, &endpoint_list, list) {
+> > +		if (ep->local_node == node)
+> > +			return ep;
+> > +	}
+> > +
+> > +	return NULL;
+> > +}
+> > +
+> >  /**
+> >   * of_graph_get_remote_port_parent() - get remote port's parent node
+> >   * @node: pointer to a local endpoint device_node
+> > @@ -2136,11 +2151,15 @@ EXPORT_SYMBOL(of_graph_get_next_endpoint);
+> >  struct device_node *of_graph_get_remote_port_parent(
+> >  			       const struct device_node *node)
+> >  {
+> > +	struct of_endpoint *ep;
+> >  	struct device_node *np;
+> >  	unsigned int depth;
+> > 
+> >  	/* Get remote endpoint node. */
+> > -	np = of_parse_phandle(node, "remote-endpoint", 0);
+> > +	ep = __of_graph_lookup_endpoint(node);
+> > +	if (!ep || !ep->remote_node)
+> > +		return NULL;
+> > +	np = ep->remote_node;
+> > 
+> >  	/* Walk 3 levels up only if there is 'ports' node */
+> >  	for (depth = 3; depth && np; depth--) {
+> > @@ -2163,13 +2182,14 @@ EXPORT_SYMBOL(of_graph_get_remote_port_parent);
+> >   */
+> >  struct device_node *of_graph_get_remote_port(const struct device_node
+> > *node) {
+> > +	struct of_endpoint *ep;
+> >  	struct device_node *np;
+> > 
+> >  	/* Get remote endpoint node. */
+> > -	np = of_parse_phandle(node, "remote-endpoint", 0);
+> > -	if (!np)
+> > +	ep = __of_graph_lookup_endpoint(node);
+> > +	if (!ep || !ep->remote_node)
+> >  		return NULL;
+> > -	np = of_get_next_parent(np);
+> > +	np = of_get_next_parent(ep->remote_node);
+> >  	if (of_node_cmp(np->name, "port")) {
+> >  		of_node_put(np);
+> >  		return NULL;
+> > @@ -2177,3 +2197,44 @@ struct device_node *of_graph_get_remote_port(const
+> > struct device_node *node) return np;
+> >  }
+> >  EXPORT_SYMBOL(of_graph_get_remote_port);
+> > +
+> > +int of_graph_register_endpoint(const struct device_node *node,
+> > +		void (*cb)(struct of_endpoint *ep, void *data), void *data)
+> > +{
+> > +	struct of_endpoint *remote_ep, *ep = kmalloc(sizeof(*ep), GFP_KERNEL);
+> > +	if (!ep)
+> > +		return -ENOMEM;
+> > +
+> > +	of_graph_parse_endpoint(node, ep);
+> > +	ep->callback = cb;
+> > +	ep->data = data;
+> > +
+> > +	list_add(&ep->list, &endpoint_list);
+> > +
+> > +	list_for_each_entry(remote_ep, &endpoint_list, list) {
+> > +		struct of_endpoint *from, *to;
+> > +		if (ep->remote_node) {
+> > +			from = ep;
+> > +			to = remote_ep;
+> > +		} else {
+> > +			from = remote_ep;
+> > +			to = ep;
+> > +		}
+> > +		if (from->remote_node &&
+> > +		    from->remote_node == to->local_node) {
+> > +			WARN_ON(to->remote_node &&
+> > +				to->remote_node != from->local_node);
+> > +			to->remote_node = from->local_node;
+> > +			to->remote_ep = from;
+> > +			from->remote_ep = to;
+> > +			if (from->callback)
+> > +				from->callback(from, from->data);
+> > +			if (to->callback)
+> > +				to->callback(to, to->data);
+> > +			return 0;
+> > +		}
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(of_graph_register_endpoint);
+> > diff --git a/include/linux/of_graph.h b/include/linux/of_graph.h
+> > index 3a3c5a9..f00ac4e 100644
+> > --- a/include/linux/of_graph.h
+> > +++ b/include/linux/of_graph.h
+> > @@ -23,7 +23,14 @@
+> >  struct of_endpoint {
+> >  	unsigned int port;
+> >  	unsigned int id;
+> > -	const struct device_node *local_node;
+> > +	struct device_node *local_node;
+> > +	struct device_node *remote_node;
+> > +	struct of_endpoint *remote_ep;
+> > +
+> > +	/* Internal use only */
+> > +	struct list_head list;
+> > +	void (*callback)(struct of_endpoint *ep, void *data);
+> > +	void *data;
+> >  };
+> > 
+> >  #ifdef CONFIG_OF
+> > @@ -35,6 +42,10 @@ struct device_node *of_graph_get_next_endpoint(const
+> > struct device_node *parent, struct device_node
+> > *of_graph_get_remote_port_parent(
+> >  					const struct device_node *node);
+> >  struct device_node *of_graph_get_remote_port(const struct device_node
+> > *node); +
+> > +int of_graph_register_endpoint(const struct device_node *ep_node,
+> > +				void (*cb)(struct of_endpoint *ep, void *data),
+> > +				void *data);
+> >  #else
+> > 
+> >  static inline int of_graph_parse_endpoint(const struct device_node *node,
+> > @@ -68,6 +79,13 @@ static inline struct device_node
+> > *of_graph_get_remote_port( return NULL;
+> >  }
+> > 
+> > +static inline int of_graph_register_endpoint(const struct device_node
+> > *ep_node, +				void (*cb)(struct of_endpoint *ep, void *data),
+> > +				void *data);
+> > +{
+> > +	return -ENOSYS;
+> > +}
+> > +
+> >  #endif /* CONFIG_OF */
+> > 
+> >  #endif /* __LINUX_OF_GRAPH_H */
+> 
+> -- 
+> Regards,
+> 
+> Laurent Pinchart
+> 
 
