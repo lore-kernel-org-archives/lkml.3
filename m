@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759376AbaCTQgz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:36:55 -0400
-Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:54765 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaCTQgx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:36:53 -0400
-X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 12:36:53 EDT
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Dave Jones <davej@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Joe Perches <joe@perches.com>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        fes@google.com, Bjorn Helgaas <bhelgaas@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Simon Wood <simon@mungewell.org>
-Subject: Re: Stricter module param and sysfs permission checks
-References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
-	<1394818720.3253.1.camel@joe-AO722> <20140314180258.GA29201@thunk.org>
-	<87y509scl3.fsf@rustcorp.com.au> <1395032434.2556.10.camel@joe-AO722>
-	<1395041214.2556.17.camel@joe-AO722> <87zjkmr8w1.fsf@rustcorp.com.au>
-	<1395211832.8649.40.camel@joe-AO722> <87k3bpr28n.fsf@rustcorp.com.au>
-	<20140320042700.GA11505@redhat.com>
-X-URL: http://belgarath.falguerolles.org/
-Date: Thu, 20 Mar 2014 17:28:50 +0100
-Message-ID: <87ob10vnp9.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	id S1759194AbaCTQiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:38:23 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44131 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753188AbaCTQiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 12:38:21 -0400
+Date: Thu, 20 Mar 2014 12:38:06 -0400
+From: tytso@mit.edu
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+Message-ID: <20140320163806.GA10440@thunk.org>
+Mail-Followup-To: tytso@mit.edu, David Herrmann <dh.herrmann@gmail.com>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Hugh Dickins <hughd@google.com>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Karol Lewandowski <k.lewandowsk@samsung.com>,
+	Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+	Lennart Poettering <lennart@poettering.net>,
+	John Stultz <john.stultz@linaro.org>,
+	Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+	Johannes Weiner <hannes@cmpxchg.org>,
+	"dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+	linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ryan Lortie <desrt@desrt.ca>,
+	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+ <20140320153250.GC20618@thunk.org>
+ <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones <davej@redhat.com> writes:
+On Thu, Mar 20, 2014 at 04:48:30PM +0100, David Herrmann wrote:
+> On Thu, Mar 20, 2014 at 4:32 PM,  <tytso@mit.edu> wrote:
+> > Why not make sealing an attribute of the "struct file", and enforce it
+> > at the VFS layer?  That way all file system objects would have access
+> > to sealing interface, and for memfd_shmem, you can't get another
+> > struct file pointing at the object, the security properties would be
+> > identical.
+> 
+> Sealing as introduced here is an inode-attribute, not "struct file".
+> This is intentional. For instance, a gfx-client can get a read-only FD
+> via /proc/self/fd/ and pass it to the compositor so it can never
+> overwrite the contents (unless the compositor has write-access to the
+> inode itself, in which case it can just re-open it read-write).
 
-> On Thu, Mar 20, 2014 at 01:43:44PM +1030, Rusty Russell wrote:
->
->  > drivers/mtd/devices/docg3.c:
->  >  	__ATTR(f##id##_dps0_protection_key, S_IWUGO, NULL, dps0_insert_key), \
->  > 	__ATTR(f##id##_dps1_protection_key, S_IWUGO, NULL, dps1_insert_key), \
->  > 
->  > drivers/scsi/pm8001/pm8001_ctl.c:
->  > static DEVICE_ATTR(update_fw, S_IRUGO|S_IWUGO,
->  > 	pm8001_show_update_fw, pm8001_store_update_fw);
->
-> Why on earth are these world writable ?
-For docg3, this attributes are used to input a "password" into the flash chip,
-to unlock parts of the flash memory. By unlock I mean that a sector read will
-return the actual sector when unlocked, and only 0xff if not read unlocked.
+Hmm, good point.  I had forgotten about the /proc/self/fd hole.
+Hmm... what if we have a SEAL_PROC which forces the permissions of
+/proc/self/fd to be 000?
 
-As to the "why writable" by "others", the legacy reason is that when I wrote
-that code I had in mind that a casual user count :
- - input the code : "echo secret > dps0_protection_key"
- - mount /usermount
+So if it is a property of the attribute, SEAL_WRITE and SEAL_GROW is
+basically equivalent to using chattr to set the immutable and
+append-only attribute, except for the "you can't undo the seal unless
+you have exclusive access to the inode" magic.
 
-That's not a good reason, I know, and changing that to remove the "other" write
-permission is fine by me.
+That does make it pretty memfd_create specific and not a very general
+API, which is a little unfortunate; hence why I'm trying to explore
+ways of making a bit more generic and hopefully useful for more use
+cases.
 
-Cheers.
+Cheers,
 
--- 
-Robert
+					- Ted
