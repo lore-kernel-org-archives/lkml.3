@@ -1,268 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752309AbaCTGCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 02:02:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13540 "EHLO mga02.intel.com"
+	id S1753487AbaCTGEA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 02:04:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17573 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751153AbaCTGCW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 02:02:22 -0400
+	id S1750963AbaCTGD6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 02:03:58 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,692,1389772800"; 
-   d="scan'208";a="476176104"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] pwm: add support for Intel Low Power Subsystem PWM
-Date: Thu, 20 Mar 2014 22:04:23 +0800
-Message-Id: <1395324263-4282-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+   d="scan'208";a="476176918"
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: a.p.zijlstra@chello.nl, mingo@kernel.org, acme@infradead.org,
+        eranian@google.com, andi@firstfloor.org,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+Date: Thu, 20 Mar 2014 14:03:46 +0800
+Message-Id: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
+This patch adds support for building Intel uncore driver as module.
+It adds clean-up code and config option for the Intel uncore driver
 
-Add support for Intel Low Power I/O subsystem PWM controllers found on
-Intel BayTrail SoC.
-
-Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
-Signed-off-by: Chew, Kean Ho <kean.ho.chew@intel.com>
-Signed-off-by: Chang, Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 ---
- changelog v3:
- * check validity of clk_get_rate()'s return value before division
- * update MODULE_LICENSE()line
+Changes since v1:
+ move config option to "General setup/Kernel Performance Events and Counters"
 
- drivers/pwm/Kconfig    |   10 +++
- drivers/pwm/Makefile   |    1 +
- drivers/pwm/pwm-lpss.c |  183 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 194 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pwm/pwm-lpss.c
+ arch/x86/kernel/cpu/Makefile                  |  3 +-
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
+ init/Kconfig                                  | 10 ++++++
+ 3 files changed, 56 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 1445ba1..5b34ff2 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -138,6 +138,16 @@ config PWM_LPC32XX
- 	  To compile this driver as a module, choose M here: the module
- 	  will be called pwm-lpc32xx.
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 7fd54f0..5d3da70 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -36,7 +36,8 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
+ endif
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
+ obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
+-obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
++obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
++obj-$(CONFIG_PERF_X86_INTEL_UNCORE)	+= perf_event_intel_uncore.o
+ endif
  
-+config PWM_LPSS
-+	tristate "Intel LPSS PWM support"
-+	depends on ACPI
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 618d502..fd5e883 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -3643,6 +3643,7 @@ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+ 
+ 	if (!pmu->type->pmu) {
+ 		pmu->pmu = (struct pmu) {
++			.module		= THIS_MODULE,
+ 			.attr_groups	= pmu->type->attr_groups,
+ 			.task_ctx_nr	= perf_invalid_context,
+ 			.event_init	= uncore_pmu_event_init,
+@@ -3654,6 +3655,7 @@ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+ 		};
+ 	} else {
+ 		pmu->pmu = *pmu->type->pmu;
++		pmu->pmu.module = THIS_MODULE;
+ 		pmu->pmu.attr_groups = pmu->type->attr_groups;
+ 	}
+ 
+@@ -3671,7 +3673,7 @@ static int __init uncore_pmu_register(struct intel_uncore_pmu *pmu)
+ 	return ret;
+ }
+ 
+-static void __init uncore_type_exit(struct intel_uncore_type *type)
++static void uncore_type_exit(struct intel_uncore_type *type)
+ {
+ 	int i;
+ 
+@@ -3683,7 +3685,7 @@ static void __init uncore_type_exit(struct intel_uncore_type *type)
+ 	type->events_group = NULL;
+ }
+ 
+-static void __init uncore_types_exit(struct intel_uncore_type **types)
++static void uncore_types_exit(struct intel_uncore_type **types)
+ {
+ 	int i;
+ 	for (i = 0; types[i]; i++)
+@@ -3910,7 +3912,7 @@ static int __init uncore_pci_init(void)
+ 	return ret;
+ }
+ 
+-static void __init uncore_pci_exit(void)
++static void uncore_pci_exit(void)
+ {
+ 	if (pcidrv_registered) {
+ 		pcidrv_registered = false;
+@@ -4293,4 +4295,42 @@ static int __init intel_uncore_init(void)
+ fail:
+ 	return ret;
+ }
+-device_initcall(intel_uncore_init);
++
++static void __exit uncore_pmus_unregister(void)
++{
++	struct intel_uncore_pmu *pmu;
++	struct intel_uncore_type *type;
++	int i, j;
++
++	for (i = 0; msr_uncores[i]; i++) {
++		type = msr_uncores[i];
++		for (j = 0; j < type->num_boxes; j++) {
++			pmu = &type->pmus[j];
++			perf_pmu_unregister(&pmu->pmu);
++		}
++	}
++
++	for (i = 0; pci_uncores[i]; i++) {
++		type = pci_uncores[i];
++		for (j = 0; j < type->num_boxes; j++) {
++			pmu = &type->pmus[j];
++			perf_pmu_unregister(&pmu->pmu);
++		}
++	}
++}
++
++static void __exit intel_uncore_exit(void)
++{
++	uncore_pmus_unregister();
++
++	unregister_cpu_notifier(&uncore_cpu_nb);
++
++	uncore_pci_exit();
++
++	uncore_types_exit(msr_uncores);
++}
++
++module_init(intel_uncore_init);
++module_exit(intel_uncore_exit);
++MODULE_DESCRIPTION("Intel Uncore Performance Monitoring driver");
++MODULE_LICENSE("GPL");
+diff --git a/init/Kconfig b/init/Kconfig
+index 009a797..751e06c 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -1502,6 +1502,16 @@ config PERF_EVENTS
+ 
+ 	  Say Y if unsure.
+ 
++config PERF_X86_INTEL_UNCORE
++	default y
++	tristate "Intel uncore performance monitoring support"
++	depends on PERF_EVENTS && CPU_SUP_INTEL && PCI
 +	help
-+	  Generic PWM framework driver for Intel Low Power Subsystem PWM
-+	  controller.
++	  This option allows kernel to access the Uncore performance
++	  monitoring units of Intel processors.
 +
-+	  To compile this driver as a module, choose M here: the module
-+	  will be called pwm-lpss.
++	  Say Y if unsure.
 +
- config PWM_MXS
- 	tristate "Freescale MXS PWM support"
- 	depends on ARCH_MXS && OF
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 82f294e..e57d2c3 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -11,6 +11,7 @@ obj-$(CONFIG_PWM_IMX)		+= pwm-imx.o
- obj-$(CONFIG_PWM_JZ4740)	+= pwm-jz4740.o
- obj-$(CONFIG_PWM_LP3943)	+= pwm-lp3943.o
- obj-$(CONFIG_PWM_LPC32XX)	+= pwm-lpc32xx.o
-+obj-$(CONFIG_PWM_LPSS)		+= pwm-lpss.o
- obj-$(CONFIG_PWM_MXS)		+= pwm-mxs.o
- obj-$(CONFIG_PWM_PCA9685)	+= pwm-pca9685.o
- obj-$(CONFIG_PWM_PUV3)		+= pwm-puv3.o
-diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-new file mode 100644
-index 0000000..449e372
---- /dev/null
-+++ b/drivers/pwm/pwm-lpss.c
-@@ -0,0 +1,183 @@
-+/*
-+ * Intel Low Power Subsystem PWM controller driver
-+ *
-+ * Copyright (C) 2014, Intel Corporation
-+ * Author: Mika Westerberg <mika.westerberg@linux.intel.com>
-+ * Author: Chew Kean Ho <kean.ho.chew@intel.com>
-+ * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-+ * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+
-+#include <linux/acpi.h>
-+#include <linux/clk.h>
-+#include <linux/device.h>
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/pwm.h>
-+#include <linux/platform_device.h>
-+
-+#define PWM				0x00000000
-+#define PWM_ENABLE			BIT(31)
-+#define PWM_SW_UPDATE			BIT(30)
-+#define PWM_BASE_UNIT_SHIFT		8
-+#define PWM_BASE_UNIT_MASK		0x00ffff00
-+#define PWM_ON_TIME_DIV_MASK		0x000000ff
-+#define PWM_DIVISION_CORRECTION		0x2
-+#define PWM_LIMIT			(0x8000 + PWM_DIVISION_CORRECTION)
-+#define NSECS_PER_SEC			1000000000UL
-+
-+struct pwm_lpss_chip {
-+	struct pwm_chip chip;
-+	void __iomem *regs;
-+	struct clk *clk;
-+};
-+
-+static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
-+{
-+	return container_of(chip, struct pwm_lpss_chip, chip);
-+}
-+
-+static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
-+			   int duty_ns, int period_ns)
-+{
-+	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
-+	u8 on_time_div;
-+	unsigned long c;
-+	unsigned long long base_unit, freq = NSECS_PER_SEC;
-+	u32 ctrl;
-+
-+	do_div(freq, period_ns);
-+
-+	/* The equation is: base_unit = ((freq / c) * 65536) + correction */
-+	base_unit = freq * 65536;
-+
-+	c = clk_get_rate(lpwm->clk);
-+	if (!c)
-+		return -EINVAL;
-+
-+	do_div(base_unit, c);
-+	base_unit += PWM_DIVISION_CORRECTION;
-+	if (base_unit > PWM_LIMIT)
-+		return -EINVAL;
-+
-+	if (duty_ns <= 0)
-+		duty_ns = 1;
-+	on_time_div = 255 - (255 * duty_ns / period_ns);
-+
-+	ctrl = readl(lpwm->regs + PWM);
-+	ctrl &= ~(PWM_BASE_UNIT_MASK | PWM_ON_TIME_DIV_MASK);
-+	ctrl |= (u16) base_unit << PWM_BASE_UNIT_SHIFT;
-+	ctrl |= on_time_div;
-+	/* request PWM to update on next cycle */
-+	ctrl |= PWM_SW_UPDATE;
-+	writel(ctrl, lpwm->regs + PWM);
-+
-+	return 0;
-+}
-+
-+static int pwm_lpss_enable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
-+	u32 ctrl;
-+	int ret;
-+
-+	ret = clk_prepare_enable(lpwm->clk);
-+	if (ret)
-+		return ret;
-+
-+	ctrl = readl(lpwm->regs + PWM);
-+	writel(ctrl | PWM_ENABLE, lpwm->regs + PWM);
-+
-+	return 0;
-+}
-+
-+static void pwm_lpss_disable(struct pwm_chip *chip, struct pwm_device *pwm)
-+{
-+	struct pwm_lpss_chip *lpwm = to_lpwm(chip);
-+	u32 ctrl;
-+
-+	ctrl = readl(lpwm->regs + PWM);
-+	writel(ctrl & ~PWM_ENABLE, lpwm->regs + PWM);
-+
-+	clk_disable_unprepare(lpwm->clk);
-+}
-+
-+static const struct pwm_ops pwm_lpss_ops = {
-+	.config = pwm_lpss_config,
-+	.enable = pwm_lpss_enable,
-+	.disable = pwm_lpss_disable,
-+	.owner = THIS_MODULE,
-+};
-+
-+static const struct acpi_device_id pwm_lpss_acpi_match[] = {
-+	{ "80860F09", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
-+
-+static int pwm_lpss_probe(struct platform_device *pdev)
-+{
-+	struct pwm_lpss_chip *lpwm;
-+	struct resource *r;
-+	int ret;
-+
-+	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
-+	if (!lpwm)
-+		return -ENOMEM;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
-+	if (IS_ERR(lpwm->regs))
-+		return PTR_ERR(lpwm->regs);
-+
-+	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
-+	if (IS_ERR(lpwm->clk)) {
-+		dev_err(&pdev->dev, "failed to get PWM clock\n");
-+		return PTR_ERR(lpwm->clk);
-+	}
-+
-+	lpwm->chip.dev = &pdev->dev;
-+	lpwm->chip.ops = &pwm_lpss_ops;
-+	lpwm->chip.base = -1;
-+	lpwm->chip.npwm = 1;
-+
-+	ret = pwmchip_add(&lpwm->chip);
-+	if (ret) {
-+		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
-+		return ret;
-+	}
-+
-+	platform_set_drvdata(pdev, lpwm);
-+	return 0;
-+}
-+
-+static int pwm_lpss_remove(struct platform_device *pdev)
-+{
-+	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
-+	u32 ctrl;
-+
-+	ctrl = readl(lpwm->regs + PWM);
-+	writel(ctrl & ~PWM_ENABLE, lpwm->regs + PWM);
-+
-+	return pwmchip_remove(&lpwm->chip);
-+}
-+
-+static struct platform_driver pwm_lpss_driver = {
-+	.driver = {
-+		.name = "pwm-lpss",
-+		.acpi_match_table = pwm_lpss_acpi_match,
-+	},
-+	.probe = pwm_lpss_probe,
-+	.remove = pwm_lpss_remove,
-+};
-+module_platform_driver(pwm_lpss_driver);
-+
-+MODULE_DESCRIPTION("PWM driver for Intel LPSS");
-+MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
-+MODULE_LICENSE("GPL v2");
-+MODULE_ALIAS("platform:pwm-lpss");
+ config DEBUG_PERF_USE_VMALLOC
+ 	default n
+ 	bool "Debug: use vmalloc to back perf mmap() buffers"
 -- 
-1.7.4.4
+1.8.5.3
 
