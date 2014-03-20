@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759932AbaCTU5J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:57:09 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:50549 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759458AbaCTU5H (ORCPT
+	id S1759957AbaCTU6e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:58:34 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51673 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759719AbaCTU6d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:57:07 -0400
-Date: Thu, 20 Mar 2014 16:57:03 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeffrey Layton <jlayton@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
-        Steve French <sfrench@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        uobergfe@redhat.com, Pavel Shilovsky <piastryyy@gmail.com>
-Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
- queues
-Message-ID: <20140320165703.522c7c5c@gandalf.local.home>
-In-Reply-To: <20140320152833.216d81a0@tlielax.poochiereds.net>
-References: <20140319151252.16ed3ac6@gandalf.local.home>
-	<20140320152833.216d81a0@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Thu, 20 Mar 2014 16:58:33 -0400
+Date: Thu, 20 Mar 2014 16:58:25 -0400 (EDT)
+Message-Id: <20140320.165825.2258647784698720017.davem@davemloft.net>
+To: benchan@chromium.org
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, oliver@neukum.org, gregkh@linuxfoundation.org,
+        bjorn@mork.no, gsuarez@smithmicro.com
+Subject: Re: [PATCH net-next v4 0/2] adjust MTU as indicated by MBIM
+ extended functional descriptor
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395262806-19237-1-git-send-email-benchan@chromium.org>
+References: <1395262806-19237-1-git-send-email-benchan@chromium.org>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 20 Mar 2014 13:58:32 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014 15:28:33 -0400
-Jeffrey Layton <jlayton@redhat.com> wrote:
+From: Ben Chan <benchan@chromium.org>
+Date: Wed, 19 Mar 2014 14:00:04 -0700
 
- 
-> Nice analysis! I think eventually we'll need to overhaul this code not
-
-Note, Ulrich Obergfell helped a bit in the initial analysis. He found
-from a customer core dump that the kworker thread was blocked on the
-cinode->lock_sem, and the reader was blocked as well. That was enough
-for me to find where the problem laid.
-
-> to use rw semaphores, but that's going to take some redesign. (Wonder
-> if we could change it to use seqlocks or something?)
+> The MBIM extended functional descriptor, defined in "Universal Serial Bus
+> Communications Class Subclass Specification for Mobile Broadband Interface
+> Model, Revision 1.0, Errata-1" by USB-IF, indicates the operator preferred MTU
+> value via a wMTU field.
 > 
-> Out of curiousity, does this eventually time out and unwedge itself?
-> Usually when the server doesn't get a response to an oplock break in
-> around a minute or so it gives up and allows the thing that caused the
-> oplock break to proceed anyway. Not great for performance but it out to
-> eventually make progress due to that.
-
-No, I believe it's hard locked. Nothing is going to wake up the oplock
-break  if it is blocked on a down_read(). Only the release of the rwsem
-will do that. It's the subtle way the kworker threads are done.
-
+> This patch set ensures that the initial MTU value set by cdc_ncm on a MBIM net
+> device does not exceed the wMTU value, provided the MBIM device exposes a MBIM
+> extended functional descriptor.
 > 
-> In any case, this looks like a reasonable fix for now, but I suspect you
-> can hit similar problems in the write codepath too. What may be best is
-> turn this around and queue the oplock break to the new workqueue
-> instead of the read completion job.
+> * Changelog
+> v2: Fixed a le16_to_cpu conversion issue in patch 2/2 pointed out by
+>     Bjørn Mork <bjorn@mork.no>
+> v3: No code changes. Resubmitted to include patch 1/2 as suggested by
+>     David Miller <davem@davemloft.net>
+> v4: No code changes. Resubmitted as suggested by David Miller:
+>     - Added a summary of the patch set
+>     - Carried the ACK from Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>     - Added a specified the tree (net-next) to apply the patch set to
 
-Or perhaps give both the read and write their own workqueues? We have
-to look at all the work queue handlers, and be careful about any users
-that take the lock_sem, and separate them out.
-
--- Steve
-
-
+Series applied to net-next, thanks Ben.
