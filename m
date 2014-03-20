@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854AbaCTNsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:48:10 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42945 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757087AbaCTNsH (ORCPT
+	id S1758873AbaCTNtR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:49:17 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:59493 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757116AbaCTNtO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:48:07 -0400
-Date: Thu, 20 Mar 2014 13:47:44 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: <nicolas.ferre@atmel.com>, Boris BREZILLON <b.brezillon@overkiz.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Message-ID: <20140320134744.GF11706@sirena.org.uk>
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
- <1395049541-28128-8-git-send-email-voice.shen@atmel.com>
- <20140317115518.GD11706@sirena.org.uk>
- <532931C3.4080909@atmel.com>
- <20140319102800.GW11706@sirena.org.uk>
- <532A5481.6000008@atmel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="repgo6uzkDL7F6fU"
-Content-Disposition: inline
-In-Reply-To: <532A5481.6000008@atmel.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
- driver
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 20 Mar 2014 09:49:14 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de, fweisbec@gmail.com, peterz@infradead.org,
+        mingo@kernel.org, tj@kernel.org, lizefan@huawei.com
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        cgroups@vger.kernel.org, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
+Date: Thu, 20 Mar 2014 19:18:57 +0530
+Message-Id: <cover.1395322529.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+For networking platforms we need to provide one isolated CPU per user space data
+plane thread. These CPUs should not be interrupted by kernel at all unless
+userspace has requested for some syscalls. And so must live in isolated mode.
+Currently, there are background kernel activities that are running on almost
+every CPU, like: timers/hrtimers/watchdogs/etc, and these are required to be
+migrated to other CPUs.
 
---repgo6uzkDL7F6fU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patchset tries to migrate un-pinned timers away in the first attempt. And
+support for migrating others like hrtimers/workqueues/etc would be added later.
 
-On Thu, Mar 20, 2014 at 10:37:53AM +0800, Bo Shen wrote:
+This has only went through basic testing currently on ARM Samsung Exynos board
+which only has two CPUs. Separate cpusets were created for these two CPUs and
+then timers were migrated from one cpuset to other.
 
-> For this, in my mind, I think we need add following parameters in DT.
-> 1. sysclk_src_from_fll --> we need do nothing.
+This option was earlier suggested by Peter Z. here.
 
-No, how would this work?  If nothing else the FLL needs configuration.
+https://lkml.org/lkml/2014/1/15/186
 
-> 2. sysclk_src_from_mclk
->    2.1 use_external_xtal --> we need clock_frequency
->    2.2 !use_external_xtal --> we need retrieve clock and clock_frequency.
+Please provide your inputs on how this can be improved..
 
-No, this is all handled in the clock binding.  If there's a fixed rate
-clock the device tree should have a fixed rate clock provided.
+Viresh Kumar (4):
+  timer: track pinned timers with TIMER_PINNED flag
+  timer: don't migrate pinned timers
+  timer: create timer_quiesce_cpu() for cpusets.quiesce option
+  cpuset: Add cpusets.quiesce option
 
-> Does this acceptable? Or any other better suggestion for this?
+ include/linux/timer.h | 10 +++---
+ kernel/cpuset.c       | 56 +++++++++++++++++++++++++++++++
+ kernel/timer.c        | 92 +++++++++++++++++++++++++++++++++++++++++----------
+ 3 files changed, 136 insertions(+), 22 deletions(-)
 
-Just have the device tree describe the hardware and provide a way of
-specifying an optional MCLK.
+-- 
+1.7.12.rc2.18.g61b472e
 
---repgo6uzkDL7F6fU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKvF9AAoJELSic+t+oim94yoP/jzlLrru/i3gZQPprWhhPuwU
-0BB/QKc2uMrxTclMUTT5jzsdJFefXDYKoN63Eh6c58Cu1hBS3K/Qr0zOxWFTlMaU
-yyW4G4nRd1Kw/jx9KyoC2YFVQirB3kATHmX/2UMqMTmVENH4j5FFVy+VzHImA7lq
-9RbKgY7Xi0VR/H2xSDvGJw1GNQkXs4SUvVHMxi1BJ6VVF2cSvxfTL2pcBP6d0haT
-Wjtkh6KdfLV8ex358JZw2a0BCoAAIUMWPFVnB+0SHeMNbvtm3coaSAGEJd58bXrX
-Wb903OQbmdZ0x0MnGONOaROZ9O7YD0J091wYWGrRAYHEOvyD17Ppdv0/6GW4/fKD
-nmCYiCYwTqQ5wu2Xx3SS5wcwrzktGxVQK99thLEgJYZnGJMzke2vSaP71OWxlB7T
-ezow/M2QWSFIlXJrMK7A9LlK0SKwA1M0TTuc1wI5XkE2Be0nHR9K4LTT03GoNdwQ
-SrDq3194wV8mqUYjzJMH0JCaGgow4uRp2c8PeRUSskYgNEoA9q92mFuT5UR5vrKn
-MfK8nYyKRaVr2alilvMYOPs2NgzTn0gVN3uitmSDlHO8sUILZWTf0txdBtfc4T5Z
-Zu3kfWe0H0NoAP9VcW0t/d6V++Nuew5EkC/NGs1qEpxmKB7cVa4XMBiMMQMLj0tr
-R7vdAwVojfvXl9iGHHJt
-=v1cx
------END PGP SIGNATURE-----
-
---repgo6uzkDL7F6fU--
