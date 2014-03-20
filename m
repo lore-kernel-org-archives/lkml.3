@@ -1,332 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953AbaCTWbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 18:31:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56684 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaCTWbP (ORCPT
+	id S934024AbaCTWdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 18:33:10 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:55364 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759289AbaCTWdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 18:31:15 -0400
-Date: Thu, 20 Mar 2014 15:30:37 -0700
-From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
-Message-ID: <tip-b67e612cef1e5964efc6fa99fb7ad3d31c4db01a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <b8093933fad09ce181edb08a61dcd5d2592e9814.1395352498.git.luto@amacapital.net>
-References: <b8093933fad09ce181edb08a61dcd5d2592e9814.1395352498.git.luto@amacapital.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86: Load the 32-bit vdso in place,
-  just like the 64-bit vdsos
-Git-Commit-ID: b67e612cef1e5964efc6fa99fb7ad3d31c4db01a
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+	Thu, 20 Mar 2014 18:33:08 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Philipp Zabel <philipp.zabel@gmail.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+In-Reply-To: <CA+gwMcfgKre8S4KHPvTVuAuz672aehGrN1UfFpwKAueTAcrMZQ@mail.gmail.com>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> < 1393428297.3248.92.camel@paszta.hi.pengutronix.de> <20140307171804. EF245C40A32@trevor.secretlab.ca> < CA+gwMcfgKre8S4KHPvTVuAuz672aehGrN1UfFpwKAueTAcrMZQ@mail.gmail.com>
+Date: Thu, 20 Mar 2014 22:33:02 +0000
+Message-Id: <20140320223302.490D6C412EA@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b67e612cef1e5964efc6fa99fb7ad3d31c4db01a
-Gitweb:     http://git.kernel.org/tip/b67e612cef1e5964efc6fa99fb7ad3d31c4db01a
-Author:     Andy Lutomirski <luto@amacapital.net>
-AuthorDate: Thu, 20 Mar 2014 15:01:21 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 20 Mar 2014 15:19:14 -0700
+On Sat, 8 Mar 2014 13:07:23 +0100, Philipp Zabel <philipp.zabel@gmail.com> wrote:
+> Hi Grant,
+> 
+> On Fri, Mar 7, 2014 at 6:18 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> > On Wed, 26 Feb 2014 16:24:57 +0100, Philipp Zabel <p.zabel@pengutronix.de> wrote:
+> >> The 'ports' node is optional. It is only needed if the parent node has
+> >> its own #address-cells and #size-cells properties. If the ports are
+> >> direct children of the device node, there might be other nodes than
+> >> ports:
+> >>
+> >>       device {
+> >>               #address-cells = <1>;
+> >>               #size-cells = <0>;
+> >>
+> >>               port@0 {
+> >>                       endpoint { ... };
+> >>               };
+> >>               port@1 {
+> >>                       endpoint { ... };
+> >>               };
+> >>
+> >>               some-other-child { ... };
+> >>       };
+> >>
+> >>       device {
+> >>               #address-cells = <x>;
+> >>               #size-cells = <y>;
+> >>
+> >>               ports {
+> >>                       #address-cells = <1>;
+> >>                       #size-cells = <0>;
+> >>
+> >>                       port@0 {
+> >>                               endpoint { ... };
+> >>                       };
+> >>                       port@1 {
+> >>                               endpoint { ... };
+> >>                       };
+> >>               };
+> >>
+> >>               some-other-child { ... };
+> >>       };
+> >
+> > From a pattern perspective I have no problem with that.... From an
+> > individual driver binding perspective that is just dumb! It's fine for
+> > the ports node to be optional, but an individual driver using the
+> > binding should be explicit about which it will accept. Please use either
+> > a flag or a separate wrapper so that the driver can select the
+> > behaviour.
+> 
+> If the generic binding exists in both forms, most drivers should be
+> able to cope with both. Maybe it should be mentioned in the bindings
+> that the short form without ports node should be used where possible
+> (i.e. for devices that don't already have #address,size-cells != 1,0).
 
-x86: Load the 32-bit vdso in place, just like the 64-bit vdsos
+I would rephrase that: (ie. for devices that have other child nodes that
+aren't ports.) It isn't about the #address/size-cells values. It is
+about how the driver interprets child nodes.
 
-This replaces a decent amount of incomprehensible and buggy code
-with much more straightforward code.  It also brings the 32-bit vdso
-more in line with the 64-bit vdsos, so maybe someday they can share
-even more code.
+> 
+> Having a separate wrapper to enforce the ports node for devices that
+> need it might be useful.
 
-This wastes a small amount of kernel .data and .text space, but it
-avoids a couple of allocations on startup, so it should be more or
-less a wash memory-wise.
+Or the other way around. Make the core function only handle an explicit
+location and use a v4l2 wrapper to preserve the current behaviour. That
+will encourage stricter usage.
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-Cc: Stefani Seibold <stefani@seibold.net>
-Link: http://lkml.kernel.org/r/b8093933fad09ce181edb08a61dcd5d2592e9814.1395352498.git.luto@amacapital.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/vdso.h  |  8 -------
- arch/x86/vdso/vdso.S         | 22 ++-----------------
- arch/x86/vdso/vdso32-setup.c | 50 +++++++++++++++++++++++++-------------------
- arch/x86/vdso/vdso32.S       | 21 ++++---------------
- arch/x86/vdso/vdso_image.h   | 30 ++++++++++++++++++++++++++
- arch/x86/vdso/vdsox32.S      | 22 ++-----------------
- arch/x86/vdso/vma.c          |  8 +++----
- 7 files changed, 70 insertions(+), 91 deletions(-)
+> >> The helper should find the two endpoints in both cases.
+> >> Tomi suggests an even more compact form for devices with just one port:
+> >>
+> >>       device {
+> >>               endpoint { ... };
+> >>
+> >>               some-other-child { ... };
+> >>       };
+> >
+> > That's fine. In that case the driver would specifically require the
+> > endpoint to be that one node.... although the above looks a little weird
+> > to me. I would recommend that if there are other non-port child nodes
+> > then the ports should still be encapsulated by a ports node.  The device
+> > binding should not be ambiguous about which nodes are ports.
+> 
+> Sylwester suggested as an alternative, if I understood correctly, to
+> drop the endpoint node and instead keep the port:
+> 
+>     device-a {
+>         implicit_output_ep: port {
+>             remote-endpoint = <&explicit_input_ep>;
+>         };
+>     };
+> 
+>     device-b {
+>         port {
+>             explicit_input_ep: endpoint {
+>                 remote-endpoint = <&implicit_output_ep>;
+>             };
+>         };
+>     };
+> 
+> This would have the advantage to reduce verbosity for devices with multiple
+> ports that are only connected via one endport each, and you'd always have
+> the connected ports in the device tree as 'port' nodes.
 
-diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
-index bde4359..0301d78 100644
---- a/arch/x86/include/asm/vdso.h
-+++ b/arch/x86/include/asm/vdso.h
-@@ -25,14 +25,6 @@ extern const char VDSO32_PRELINK[];
- extern void __user __kernel_sigreturn;
- extern void __user __kernel_rt_sigreturn;
- 
--/*
-- * These symbols are defined by vdso32.S to mark the bounds
-- * of the ELF DSO images included therein.
-- */
--extern const char vdso32_int80_start, vdso32_int80_end;
--extern const char vdso32_syscall_start, vdso32_syscall_end;
--extern const char vdso32_sysenter_start, vdso32_sysenter_end;
--
- void __init patch_vdso32(void *vdso, size_t len);
- 
- #endif /* _ASM_X86_VDSO_H */
-diff --git a/arch/x86/vdso/vdso.S b/arch/x86/vdso/vdso.S
-index 1e13eb8..c749d15 100644
---- a/arch/x86/vdso/vdso.S
-+++ b/arch/x86/vdso/vdso.S
-@@ -1,21 +1,3 @@
--#include <asm/page_types.h>
--#include <linux/linkage.h>
-+#include "vdso_image.h"
- 
--__PAGE_ALIGNED_DATA
--
--	.globl vdso_start, vdso_end
--	.align PAGE_SIZE
--vdso_start:
--	.incbin "arch/x86/vdso/vdso.so"
--vdso_end:
--	.align PAGE_SIZE /* extra data here leaks to userspace. */
--
--.previous
--
--	.globl vdso_pages
--	.bss
--	.align 8
--	.type vdso_pages, @object
--vdso_pages:
--	.zero (vdso_end - vdso_start + PAGE_SIZE - 1) / PAGE_SIZE * 8
--	.size vdso_pages, .-vdso_pages
-+DEFINE_VDSO_IMAGE(vdso, "arch/x86/vdso/vdso.so")
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 5b4aaef..b45528e 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -29,6 +29,7 @@
- #include <asm/fixmap.h>
- #include <asm/hpet.h>
- #include <asm/vvar.h>
-+#include "vdso_image.h"
- 
- #ifdef CONFIG_COMPAT_VDSO
- #define VDSO_DEFAULT	0
-@@ -41,6 +42,12 @@
- #define arch_setup_additional_pages	syscall32_setup_pages
- #endif
- 
-+DECLARE_VDSO_IMAGE(vdso32_int80);
-+#ifdef CONFIG_COMPAT
-+DECLARE_VDSO_IMAGE(vdso32_syscall);
-+#endif
-+DECLARE_VDSO_IMAGE(vdso32_sysenter);
-+
- /*
-  * Should the kernel map a VDSO page into processes and pass its
-  * address down to glibc upon exec()?
-@@ -71,7 +78,7 @@ EXPORT_SYMBOL_GPL(vdso_enabled);
- #endif
- 
- static struct page **vdso32_pages;
--static unsigned int vdso32_size;
-+static unsigned vdso32_size;
- 
- #ifdef CONFIG_X86_64
- 
-@@ -117,31 +124,32 @@ void enable_sep_cpu(void)
- 
- int __init sysenter_setup(void)
- {
--	void *vdso_pages;
--	const void *vdso;
--	size_t vdso_len;
--	unsigned int i;
-+	char *vdso32_start, *vdso32_end;
-+	int npages, i;
- 
-+#ifdef CONFIG_COMPAT
- 	if (vdso32_syscall()) {
--		vdso = &vdso32_syscall_start;
--		vdso_len = &vdso32_syscall_end - &vdso32_syscall_start;
--	} else if (vdso32_sysenter()){
--		vdso = &vdso32_sysenter_start;
--		vdso_len = &vdso32_sysenter_end - &vdso32_sysenter_start;
-+		vdso32_start = vdso32_syscall_start;
-+		vdso32_end = vdso32_syscall_end;
-+		vdso32_pages = vdso32_syscall_pages;
-+	} else
-+#endif
-+	if (vdso32_sysenter()) {
-+		vdso32_start = vdso32_sysenter_start;
-+		vdso32_end = vdso32_sysenter_end;
-+		vdso32_pages = vdso32_sysenter_pages;
- 	} else {
--		vdso = &vdso32_int80_start;
--		vdso_len = &vdso32_int80_end - &vdso32_int80_start;
-+		vdso32_start = vdso32_int80_start;
-+		vdso32_end = vdso32_int80_end;
-+		vdso32_pages = vdso32_int80_pages;
- 	}
- 
--	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
--	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
--	vdso_pages = kmalloc(VDSO_OFFSET(vdso32_size), GFP_ATOMIC);
--
--	for(i = 0; i != vdso32_size; ++i)
--		vdso32_pages[i] = virt_to_page(vdso_pages + VDSO_OFFSET(i));
-+	npages = ((vdso32_end - vdso32_start) + PAGE_SIZE - 1) / PAGE_SIZE;
-+	vdso32_size = npages << PAGE_SHIFT;
-+	for (i = 0; i < npages; i++)
-+		vdso32_pages[i] = virt_to_page(vdso32_start + i*PAGE_SIZE);
- 
--	memcpy(vdso_pages, vdso, vdso_len);
--	patch_vdso32(vdso_pages, vdso_len);
-+	patch_vdso32(vdso32_start, vdso32_size);
- 
- 	return 0;
- }
-@@ -177,7 +185,7 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 	 */
- 	ret = install_special_mapping(mm,
- 			addr,
--			VDSO_OFFSET(vdso32_size),
-+			vdso32_size,
- 			VM_READ|VM_EXEC|
- 			VM_MAYREAD|VM_MAYWRITE|VM_MAYEXEC,
- 			vdso32_pages);
-diff --git a/arch/x86/vdso/vdso32.S b/arch/x86/vdso/vdso32.S
-index 2ce5f82..cfa6add 100644
---- a/arch/x86/vdso/vdso32.S
-+++ b/arch/x86/vdso/vdso32.S
-@@ -1,22 +1,9 @@
--#include <linux/init.h>
-+#include "vdso_image.h"
- 
--__INITDATA
-+DEFINE_VDSO_IMAGE(vdso32_int80, "arch/x86/vdso/vdso32-int80.so")
- 
--	.globl vdso32_int80_start, vdso32_int80_end
--vdso32_int80_start:
--	.incbin "arch/x86/vdso/vdso32-int80.so"
--vdso32_int80_end:
--
--	.globl vdso32_syscall_start, vdso32_syscall_end
--vdso32_syscall_start:
- #ifdef CONFIG_COMPAT
--	.incbin "arch/x86/vdso/vdso32-syscall.so"
-+DEFINE_VDSO_IMAGE(vdso32_syscall, "arch/x86/vdso/vdso32-syscall.so")
- #endif
--vdso32_syscall_end:
--
--	.globl vdso32_sysenter_start, vdso32_sysenter_end
--vdso32_sysenter_start:
--	.incbin "arch/x86/vdso/vdso32-sysenter.so"
--vdso32_sysenter_end:
- 
--__FINIT
-+DEFINE_VDSO_IMAGE(vdso32_sysenter, "arch/x86/vdso/vdso32-sysenter.so")
-diff --git a/arch/x86/vdso/vdso_image.h b/arch/x86/vdso/vdso_image.h
-new file mode 100644
-index 0000000..1baa6bc
---- /dev/null
-+++ b/arch/x86/vdso/vdso_image.h
-@@ -0,0 +1,30 @@
-+#ifndef _VDSO_IMAGE_H
-+#define _VDSO_IMAGE_H
-+
-+#include <asm/page_types.h>
-+#include <linux/linkage.h>
-+
-+#define DEFINE_VDSO_IMAGE(symname, filename)				\
-+__PAGE_ALIGNED_DATA ;							\
-+	.globl symname##_start, symname##_end ;				\
-+	.align PAGE_SIZE ;						\
-+	symname##_start: ;						\
-+	.incbin filename ;						\
-+	symname##_end: ;						\
-+	.align PAGE_SIZE /* extra data here leaks to userspace. */ ;	\
-+									\
-+.previous ;								\
-+									\
-+	.globl symname##_pages ;					\
-+	.bss ;								\
-+	.align 8 ;							\
-+	.type symname##_pages, @object ;				\
-+	symname##_pages: ;						\
-+	.zero (symname##_end - symname##_start + PAGE_SIZE - 1) / PAGE_SIZE * (BITS_PER_LONG / 8) ; \
-+	.size symname##_pages, .-symname##_pages
-+
-+#define DECLARE_VDSO_IMAGE(symname)				\
-+	extern char symname##_start[], symname##_end[];		\
-+	extern struct page *symname##_pages[]
-+
-+#endif /* _VDSO_IMAGE_H */
-diff --git a/arch/x86/vdso/vdsox32.S b/arch/x86/vdso/vdsox32.S
-index 295f1c7..19a6927 100644
---- a/arch/x86/vdso/vdsox32.S
-+++ b/arch/x86/vdso/vdsox32.S
-@@ -1,21 +1,3 @@
--#include <asm/page_types.h>
--#include <linux/linkage.h>
-+#include "vdso_image.h"
- 
--__PAGE_ALIGNED_DATA
--
--	.globl vdsox32_start, vdsox32_end
--	.align PAGE_SIZE
--vdsox32_start:
--	.incbin "arch/x86/vdso/vdsox32.so"
--vdsox32_end:
--	.align PAGE_SIZE /* extra data here leaks to userspace. */
--
--.previous
--
--	.globl vdsox32_pages
--	.bss
--	.align 8
--	.type vdsox32_pages, @object
--vdsox32_pages:
--	.zero (vdsox32_end - vdsox32_start + PAGE_SIZE - 1) / PAGE_SIZE * 8
--	.size vdsox32_pages, .-vdsox32_pages
-+DEFINE_VDSO_IMAGE(vdsox32, "arch/x86/vdso/vdsox32.so")
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 7345bc9..6db0bbd 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -15,19 +15,17 @@
- #include <asm/proto.h>
- #include <asm/vdso.h>
- #include <asm/page.h>
-+#include "vdso_image.h"
- 
- #if defined(CONFIG_X86_64)
- unsigned int __read_mostly vdso_enabled = 1;
- 
--extern char vdso_start[], vdso_end[];
-+DECLARE_VDSO_IMAGE(vdso);
- extern unsigned short vdso_sync_cpuid;
--
--extern struct page *vdso_pages[];
- static unsigned vdso_size;
- 
- #ifdef CONFIG_X86_X32_ABI
--extern char vdsox32_start[], vdsox32_end[];
--extern struct page *vdsox32_pages[];
-+DECLARE_VDSO_IMAGE(vdsox32);
- static unsigned vdsox32_size;
- #endif
- #endif
+It sounds like that is a closer description of the hardware, so I agree.
+
+> 
+> >> > It seems that this function is merely a helper to get all grandchildren
+> >> > of a node (with some very minor constraints). That could be generalized
+> >> > and simplified. If the function takes the "ports" node as an argument
+> >> > instead of the parent, then there is a greater likelyhood that other
+> >> > code can make use of it...
+> >> >
+> >> > Thinking further. I think the semantics of this whole feature basically
+> >> > boil down to this:
+> >> >
+> >> > #define for_each_grandchild_of_node(parent, child, grandchild) \
+> >> >     for_each_child_of_node(parent, child) \
+> >> >             for_each_child_of_node(child, grandchild)
+> >> >
+> >> > Correct? Or in this specific case:
+> >> >
+> >> >     parent = of_get_child_by_name(np, "ports")
+> >> >     for_each_grandchild_of_node(parent, child, grandchild) {
+> >> >             ...
+> >> >     }
+> >>
+> >> Hmm, that would indeed be a bit more generic, but it doesn't handle the
+> >> optional 'ports' subnode and doesn't allow for other child nodes in the
+> >> device node.
+> >
+> > See above. The no-ports-node version could be the
+> > for_each_grandchild_of_node() block, and the yes-ports-node version
+> > could be a wrapper around that.
+> 
+> For the yes-ports-node version I see no problem, but without the ports node,
+> for_each_grandchild_of_node would also collect the children of non-port
+> child nodes.
+> The port and endpoint nodes in this binding are identified by their name,
+> so maybe adding of_get_next_child_by_name() /
+> for_each_named_child_of_node() could be helpful here.
+
+Generally I would avoid mixing child nodes of different purposes. If you
+are in that situation, the recommendation should be to use a ports node.
+If there are any current users for which that doesn't work, only then
+would I do the child_by_name approach.
+
+g.
+
