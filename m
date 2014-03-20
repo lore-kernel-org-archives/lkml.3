@@ -1,80 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759146AbaCTRMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:12:15 -0400
-Received: from mail-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:12745
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753222AbaCTRMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:12:10 -0400
-From: Matthew Garrett <matthew.garrett@nebula.com>
-To: "tytso@mit.edu" <tytso@mit.edu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jmorris@namei.org" <jmorris@namei.org>,
-        "keescook@chromium.org" <keescook@chromium.org>,
-        "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "hpa@zytor.com" <hpa@zytor.com>,
-        "jwboyer@fedoraproject.org" <jwboyer@fedoraproject.org>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-Subject: Re: Trusted kernel patchset for Secure Boot lockdown
-Thread-Topic: Trusted kernel patchset for Secure Boot lockdown
-Thread-Index: AQHPP9H0gdFEpLbAD0ahQ2OJgthmsZrhN8oAgAeouoCAATicgIAAJkSA
-Date: Thu, 20 Mar 2014 17:12:05 +0000
-Message-ID: <1395335525.16016.3.camel@x230>
-References: <1394762250.6416.24.camel@x230.lan>
-	 <20140314122231.17b9ca8a@alan.etchedpixels.co.uk>
-	 <1394801518.6416.38.camel@x230.lan>
-	 <20140314170655.0ce398a3@alan.etchedpixels.co.uk>
-	 <1394820664.26846.18.camel@x230.mview.int.nebula.com>
-	 <20140314214806.54a3d031@alan.etchedpixels.co.uk>
-	 <1394834193.1286.11.camel@x230>
-	 <20140314220840.29a12171@alan.etchedpixels.co.uk>
-	 <20140314231832.GA653@thunk.org>
-	 <CAGXu5j+JXy4EbHxu+8twWo=3gqyLJ6hZGPbgsdf3t8YhUA-bWw@mail.gmail.com>
-	 <20140320145507.GB20618@thunk.org>
-In-Reply-To: <20140320145507.GB20618@thunk.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [208.186.201.90]
-x-forefront-prvs: 01565FED4C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(377424004)(81342001)(47976001)(47736001)(49866001)(4396001)(74876001)(69226001)(76786001)(65816001)(76796001)(85852003)(83072002)(90146001)(20776003)(2171001)(92566001)(56816005)(63696002)(50986001)(66066001)(74502001)(31966008)(74662001)(47446002)(87936001)(80022001)(87266001)(19580395003)(95416001)(95666003)(93136001)(19580405001)(85306002)(97186001)(94946001)(76482001)(81542001)(74706001)(2656002)(80976001)(79102001)(92726001)(46102001)(86362001)(51856001)(94316002)(74366001)(93516002)(97336001)(33646001)(83322001)(56776001)(54316002)(77096001)(33716001)(81816001)(59766001)(77982001)(81686001)(53806001)(54356001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR05MB424;H:BN1PR05MB423.namprd05.prod.outlook.com;FPR:7736F32F.ADD71B0B.B9D34FA6.8224D843.20253;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <5AD5D3E378B571469A6A3C63FE37928B@namprd05.prod.outlook.com>
+	id S1759482AbaCTRM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:12:57 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:39654 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759340AbaCTRMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:12:53 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: nebula.com
+In-Reply-To: <20140320155732.GB25092@ulmo>
+References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
+	<1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
+	<20140318215231.GH5917@mithrandir>
+	<CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
+	<20140320155732.GB25092@ulmo>
+Date: Thu, 20 Mar 2014 10:12:51 -0700
+Message-ID: <CAAYSxhrMxjFNr-z1qQQRK88B2_GcWo_5MhQrwsht=zRWpp4SQw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Christian Daudt <bcm@fixthebug.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux PWM List <linux-pwm@vger.kernel.org>,
+        Device Tree List <devicetree@vger.kernel.org>,
+        Linux Doc List <linux-doc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2KHCOLV024172
 
-On Thu, 2014-03-20 at 10:55 -0400, tytso@mit.edu wrote:
+On Thu, Mar 20, 2014 at 8:57 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Tue, Mar 18, 2014 at 04:47:36PM -0700, Tim Kryger wrote:
 
-> I disagree; it's highly likely, if not certain that Windows booting
-> under UEFI secure boot is going to be able to do some of the things
-> that people are proposing that we have to prohibit in the name of
-> security.  That's because presumably Windows won't be willing to make
-> certain usability tradeoffs, and since they control the signing certs,
-> even in the unlikely case that people can leverage these "holes" to
-> enable a boot sector virus, it seems unlikely that Windows will revoke
-> its own cert.
+> Perhaps the comment for enum pwm_polarity in include/linux/pwm.h makes
+> this more obvious. What you do here is invert the duty cycle, rather
+> than the polarity. While it is true that the result is the same for
+> things like LEDs or backlight (because the signal power remains the
+> same), but there's a slight difference to what the PWM signal looks
+> like.
 
-I don't think any of the functionality we're disabling (with the
-arguable exception of kexec, which, again, there is a plan to handle) is
-useful on modern systems. And, seriously, if this forces vendors to
-write actual kernel drivers rather than run an io port banging IPMI
-driver in userspace, that's a *good* thing.
+Thanks, I missed that comment before.
 
-Whether Microsoft would actually follow through on blacklisting their
-own signatures is obviously an unknown - they've told us they would, but
-commercial concerns etc who knows. They *will* blacklist our signatures.
+>> Does polarity influence the output while a PWM is disabled?
+>
+> Yes, there is apparently hardware where the polarity causes the PWM pin
+> to be 1 when the PWM is disabled. But that's really a separate issue.
 
--- 
-Matthew Garrett <matthew.garrett@nebula.com>
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Do you have a preference on how this should be handled?
+
+
+> Things are starting to get confusing here. Looking at the register
+> definitions, there's PWM_CONTROL_ENABLE_SHIFT(chan), which I suspect
+> controls whether or not a channel is enabled (if that's not the case
+> then please add a comment that explains what it does).
+
+I've tried to do this but the unfortunate name for these bits and
+their nuanced behavior makes it difficult.
+
+>
+> But a little further up you said that the hardware does only support a
+> configure operation and not an enable/disable.
+
+If you define disabled as zero duty output, then this is true.
+
+When the smooth bit is off and the "enable" bit is off output is 100% duty.
+
+>
+> The comment above further confuses me. What I read from it is that you
+> can in fact disable a channel by clearing the "enable" bit in the
+> control register. But the reason why you don't do it that way is because
+> that change won't take effect until "settings start to take effect". So
+> in order to disable the PWM immediately you resort to writing a 0 duty
+> cycle.
+
+Sorry if my comments were confusing.  New settings are only applied on
+a rising edge of the "enable" bit.  You should think of it more as a
+trigger bit than an enable.
+
+>
+> Perhaps I misunderstood, in which case it might be good to revise that
+> comment to be more explicit or accurate.
+
+Perhaps it would be clearest to deviate from the hw docs and rename
+PWM_CONTROL_ENABLE_SHIFT to PWM_CONTROL_TRIGGER_SHIFT to more closely
+match its function.  What do you think of the following?
+
+/*
+* New duty and period settings are only reflected in the PWM output
+* after a rising edge of the trigger bit.  After a rising edge, if the
+* smooth bit is set, the settings are also delayed until the current
+* period has completed. Furthermore, if the smooth bit is set, the PWM
+* continues to output a waveform based on the old settings during the
+* time that the trigger bit is low.  Otherwise the output is a constant
+* high signal while the trigger bit is low.
+*/
