@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258AbaCTPH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:07:27 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:20227 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758109AbaCTPHX (ORCPT
+	id S1758877AbaCTPKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:10:14 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:58736 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756588AbaCTPKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:07:23 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-ae-532b042abeb6
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Sekhar Nori <nsekhar@ti.com>
-Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@deeprootsystems.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        spear-devel@list.st.com
-Subject: Re: [PATCH 3/4] ata: add new-style AHCI platform driver for DaVinci
- DA850 AHCI controller
-Date: Thu, 20 Mar 2014 16:07:04 +0100
-Message-id: <348852006.YgTlFegqas@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <2662651.GJX9HVKij5@amdc1032>
-References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
- <532AA2B0.1060103@ti.com> <2662651.GJX9HVKij5@amdc1032>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrDLMWRmVeSWpSXmKPExsVy+t9jAV0tFu1gg5ZbHBbnbjWwWtxZwWyx
-	6fE1VotjOx4xWVzeNYfNYn/vBiaLhu4edos5MzazWvxafpTRYuXFv8wOXB7XX/1n8tg56y67
-	x6ZVnWwec6Y1sXicvHCSxWPzknqPpz/2Mnscv7GdyePzJrkAzigum5TUnMyy1CJ9uwSujAcz
-	LjAWHGer+L+KtYGxn7WLkZNDQsBEovPqLTYIW0ziwr31YLaQwCJGiblvnLoYuYDsFiaJPQsu
-	MYMk2ASsJCa2r2IEsUUEFCRWXdnLClLELHCMSeLnz+lMIAlhgRSJGQ9msoDYLAKqEt9bethB
-	bF4BbYndE16DbRAV8JTYsX0lkM3BwSmgJXFhoTvEsiZGieb+3cwQ9YISPybfA5vDLCAvsW//
-	VFYIW0dif+s0tgmMArOQlM1CUjYLSdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFx
-	8kx6B+OqBotDjAIcjEo8vCv2aAYLsSaWFVfmHmKU4GBWEuGtYNYOFuJNSaysSi3Kjy8qzUkt
-	PsQozcGiJM57sNU6UEggPbEkNTs1tSC1CCbLxMEp1cDYdkutkDenPe3qj2uZm9N/nOjs3fS9
-	21Hw9/WMQxO3rr/hNsuqXaItvMBY8XRr8K8vV42frhYuzQxNLXpSqcBiJLjlkZic+fHGbcFc
-	DwWumyglvvB/dMeRaZGXST6raa2N1Pw5c16+P1QZ5/J0ub/hlA03d1dta5k422XKlFVnMq5Y
-	vdUSMl+oxFKckWioxVxUnAgApPV+B48CAAA=
+	Thu, 20 Mar 2014 11:10:12 -0400
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: microblaze-uclinux@itee.uq.edu.au,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: [PATCH] MAINTAINERS: microblaze: Use LKML as mailing list
+Date: Thu, 20 Mar 2014 16:09:58 +0100
+Message-Id: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-4854-1395328198-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 20, 2014 01:57:10 PM Bartlomiej Zolnierkiewicz wrote:
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
-> > > +#define DA8XX_SYSCFG1_VIRT(x)	(da8xx_syscfg1_base + (x))
-> > > +#define DA8XX_PWRDN_REG		0x18
-> > > +
-> > > +/* SATA PHY Control Register offset from AHCI base */
-> > > +#define SATA_P0PHYCR_REG	0x178
-> > > +
-> > > +#define SATA_PHY_MPY(x)		((x) << 0)
-> > > +#define SATA_PHY_LOS(x)		((x) << 6)
-> > > +#define SATA_PHY_RXCDR(x)	((x) << 10)
-> > > +#define SATA_PHY_RXEQ(x)	((x) << 13)
-> > > +#define SATA_PHY_TXSWING(x)	((x) << 19)
-> > > +#define SATA_PHY_ENPLL(x)	((x) << 31)
-> > 
-> > These can be replaced with BIT(N)
-> 
-> OK, I'll fix it.
+--=_mimegpg-monstr-desktop-4854-1395328198-0001
 
-Uh, no, we can't use BIT() here.
+microblaze-uclinux mailing list is almost dead and
+it is just causing troubles for non subscribers which are
+getting email about waiting for moderator.
+Approval never happens. Move it to LKML.
 
-BIT(N) does (1UL << (N)) and here we have ((N) << offset).
+Reported-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-Best regards,
+ MAINTAINERS | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index b3fdb0f..1a22c62 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5702,7 +5702,7 @@ F:	fs/imgdafs/
+
+ MICROBLAZE ARCHITECTURE
+ M:	Michal Simek <monstr@monstr.eu>
+-L:	microblaze-uclinux@itee.uq.edu.au (moderated for non-subscribers)
++L:	linux-kernel@vger.kernel.org
+ W:	http://www.monstr.eu/fdt/
+ T:	git git://git.monstr.eu/linux-2.6-microblaze.git
+ S:	Supported
 --
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+1.8.2.3
 
+
+--=_mimegpg-monstr-desktop-4854-1395328198-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlMrBMYACgkQykllyylKDCHhWACfSbepagdeizzPfeSM3JzOWmbN
+JgMAn37+SHfLfgdY7WPo7BOlYwoCw7zr
+=5CVp
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-4854-1395328198-0001--
