@@ -1,131 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932AbaCTJHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:07:21 -0400
-Received: from nasmtp01.atmel.com ([192.199.1.245]:34512 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750743AbaCTJHS (ORCPT
+	id S1755829AbaCTJOi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:14:38 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52489 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752245AbaCTJOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:07:18 -0400
-From: Josh Wu <josh.wu@atmel.com>
-CC: <g.liakhovetski@gmx.de>, <m.chehab@samsung.com>,
-        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <sylvester.nawrocki@gmail.com>, Josh Wu <josh.wu@atmel.com>
-Subject: [PATCH v2] [media] ov2640: add support for async device registration
-Date: Thu, 20 Mar 2014 17:01:49 +0800
-Message-ID: <1395306109-11016-1-git-send-email-josh.wu@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 20 Mar 2014 05:14:34 -0400
+X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 05:14:28 EDT
+Date: Thu, 20 Mar 2014 14:27:17 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@gmail.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH 4/4] ata: add new-style AHCI platform driver for ST
+ SPEAr1340 AHCI controller
+Message-ID: <20140320085717.GC4607@pratyush-vbox>
+References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+ <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-20_02:2014-03-19,2014-03-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since the the v4l2_clk_get() may return a EPROBE_DEFER during async
-probing. So move the v4l2_clk_get() to the beginning of the
-probe(). Only when we get mclk successfully we continue the probe.
+On Tue, Mar 18, 2014 at 02:31:58AM +0800, Bartlomiej Zolnierkiewicz wrote:
+> The new driver is named ahci_spear1340 and is only compile tested.  Once
+> it is tested on the real hardware and verified to work correctly, the legacy
+> platform code (which depends on the deprecated struct ahci_platform_data)
+> can be removed.
+> 
+> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 
-Signed-off-by: Josh Wu <josh.wu@atmel.com>
----
-v1 -> v2:
-  just return PTR_ERR(clk) as it can be -EPROBE_DEFER.
-  refined the commit message
+This patch will not be needed any more, since SPEAr sata platform code has
+already been cleaned up.
 
- drivers/media/i2c/soc_camera/ov2640.c |   43 +++++++++++++++++++++------------
- 1 file changed, 28 insertions(+), 15 deletions(-)
+See:
+https://lkml.org/lkml/2014/2/28/174
 
-diff --git a/drivers/media/i2c/soc_camera/ov2640.c b/drivers/media/i2c/soc_camera/ov2640.c
-index 6c6b1c3..7c77a15 100644
---- a/drivers/media/i2c/soc_camera/ov2640.c
-+++ b/drivers/media/i2c/soc_camera/ov2640.c
-@@ -22,6 +22,7 @@
- #include <linux/videodev2.h>
- 
- #include <media/soc_camera.h>
-+#include <media/v4l2-async.h>
- #include <media/v4l2-clk.h>
- #include <media/v4l2-subdev.h>
- #include <media/v4l2-ctrls.h>
-@@ -1069,6 +1070,7 @@ static int ov2640_probe(struct i2c_client *client,
- 	struct ov2640_priv	*priv;
- 	struct soc_camera_subdev_desc *ssdd = soc_camera_i2c_to_desc(client);
- 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
-+	struct v4l2_clk		*clk;
- 	int			ret;
- 
- 	if (!ssdd) {
-@@ -1083,13 +1085,20 @@ static int ov2640_probe(struct i2c_client *client,
- 		return -EIO;
- 	}
- 
-+	clk = v4l2_clk_get(&client->dev, "mclk");
-+	if (IS_ERR(clk))
-+		return PTR_ERR(clk);
-+
- 	priv = devm_kzalloc(&client->dev, sizeof(struct ov2640_priv), GFP_KERNEL);
- 	if (!priv) {
- 		dev_err(&adapter->dev,
- 			"Failed to allocate memory for private data!\n");
--		return -ENOMEM;
-+		ret = -ENOMEM;
-+		goto err_kzalloc;
- 	}
- 
-+	priv->clk = clk;
-+
- 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov2640_subdev_ops);
- 	v4l2_ctrl_handler_init(&priv->hdl, 2);
- 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
-@@ -1097,23 +1106,26 @@ static int ov2640_probe(struct i2c_client *client,
- 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
- 			V4L2_CID_HFLIP, 0, 1, 1, 0);
- 	priv->subdev.ctrl_handler = &priv->hdl;
--	if (priv->hdl.error)
--		return priv->hdl.error;
--
--	priv->clk = v4l2_clk_get(&client->dev, "mclk");
--	if (IS_ERR(priv->clk)) {
--		ret = PTR_ERR(priv->clk);
--		goto eclkget;
-+	if (priv->hdl.error) {
-+		ret = priv->hdl.error;
-+		goto err_kzalloc;
- 	}
- 
- 	ret = ov2640_video_probe(client);
--	if (ret) {
--		v4l2_clk_put(priv->clk);
--eclkget:
--		v4l2_ctrl_handler_free(&priv->hdl);
--	} else {
--		dev_info(&adapter->dev, "OV2640 Probed\n");
--	}
-+	if (ret)
-+		goto err_probe;
-+
-+	ret = v4l2_async_register_subdev(&priv->subdev);
-+	if (ret)
-+		goto err_probe;
-+
-+	dev_info(&adapter->dev, "OV2640 Probed\n");
-+	return 0;
-+
-+err_probe:
-+	v4l2_ctrl_handler_free(&priv->hdl);
-+err_kzalloc:
-+	v4l2_clk_put(clk);
- 
- 	return ret;
- }
-@@ -1122,6 +1134,7 @@ static int ov2640_remove(struct i2c_client *client)
- {
- 	struct ov2640_priv       *priv = to_ov2640(client);
- 
-+	v4l2_async_unregister_subdev(&priv->subdev);
- 	v4l2_clk_put(priv->clk);
- 	v4l2_device_unregister_subdev(&priv->subdev);
- 	v4l2_ctrl_handler_free(&priv->hdl);
--- 
-1.7.9.5
-
+Regards
+Pratyush
