@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaCTCEb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 22:04:31 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59311 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751229AbaCTCE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 22:04:28 -0400
-X-IronPort-AV: E=Sophos;i="4.97,690,1389715200"; 
-   d="scan'208";a="9731469"
-Message-ID: <532A4C35.4090202@cn.fujitsu.com>
-Date: Thu, 20 Mar 2014 10:02:29 +0800
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
+	id S1753317AbaCTCFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 22:05:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752537AbaCTCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 22:05:42 -0400
+Date: Thu, 20 Mar 2014 03:05:40 +0100
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
+To: Stephen Hemminger <stephen@networkplumber.org>
+Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        xen-devel@lists.xenproject.org, bridge@lists.linux-foundation.org
+Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
+Message-ID: <20140320020540.GF28801@wotan.suse.de>
+References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com> <20140318201056.7b876394@nehalam.linuxnetplumber.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, joe@perches.com, mingo@kernel.org,
-        tglx@linutronix.de, heiko.carstens@de.ibm.com
-Subject: Re: [PATCH 00/17 for-tip V3] A series patches about sched priority.
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com> <20140319083644.GL22095@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140319083644.GL22095@laptop.programming.kicks-ass.net>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/20 10:01:28,
-	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
- 2014/03/20 10:01:30,
-	Serialize complete at 2014/03/20 10:01:30
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Rgf3q3z9SdmXC6oT"
+Content-Disposition: inline
+In-Reply-To: <20140318201056.7b876394@nehalam.linuxnetplumber.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 04:36 PM, Peter Zijlstra wrote:
-> I picked up all except:
->
->   2 - whcih I don't think should go through a scheduler tree
 
-Peter, as you did not pick the patch 2, there will be a conflict when you
-apply [3/17]. I sent a v2 for [3/17], which does not depend to [2/17].
+--Rgf3q3z9SdmXC6oT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Please replace [3/17] with the V2 one.
+On Tue, Mar 18, 2014 at 08:10:56PM -0700, Stephen Hemminger wrote:
+> On Wed, 12 Mar 2014 20:15:25 -0700
+> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
+>=20
+> > As it is now if you add create a bridge it gets started
+> > with a random MAC address and if you then add a net_device
+> > as a slave but later kick it out you end up with a zero
+> > MAC address. Instead preserve the original random MAC
+> > address and use it.
+>=20
+> What is supposed to happen is that the recalculate chooses
+> the lowest MAC address of the slaves. If there are no slaves
+> it might as well just calculate a new random value. There is
+> not great merit in preserving the original defunct address.
+>=20
+> Or something like this
+> --- a/net/bridge/br_stp_if.c	2014-02-12 08:21:56.733857356 -0800
+> +++ b/net/bridge/br_stp_if.c	2014-03-18 20:09:09.334388826 -0700
+> @@ -235,6 +235,9 @@ bool br_stp_recalculate_bridge_id(struct
+>  			addr =3D p->dev->dev_addr;
+> =20
+>  	}
+> +
+> +	if (addr =3D=3D br_mac_zero)
+> +		return false;  /* keep original address */
+> =20
+>  	if (ether_addr_equal(br->bridge_id.addr, addr))
+>  		return false;	/* no change */
+>=20
+> that just keeps the old value.
 
-Thanx.
->   6 - its tools/ bits, the changelog wasn't clear if the MIN/MAX_NICE
->        macros were uapi visible and I couldn't be bothered to figure it out.
->   8 - I don't like the pointless macro
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+The old value could be a port which got root blocked, I think
+it can be confusing to see that happen. Either way feel free to
+make the call, I'll provide more details below on perhaps one reason
+to keep the original MAC address.
 
+> The bridge is in a meaningless state when there are no ports,
+
+Some virtualization topologies may want a backend with no link (or
+perhaps one which is dynamic, with the option to have none) to the
+internet but just a bridge so guests sharing the bridge can talk to=20
+each other. In this case bridging can be used only to link the
+batch of guests.
+
+In this case the bridge simply acts as a switch, but also can be used as the
+interface for DHCP, for example. In such a case the guests will be doing
+ARP to get to the DHCP server. There's a flurry of ways one can try to get
+all this meshed together including enablign an ARP proxy but I'm looking
+at ways to optimize this further -- but I'd like to address the current
+usage cases first.
+
+> and when the first port is added back it will be used as the
+> new bridge id.
+
+Sure. Let me know how you think we should proceed with this patch based
+on the above.
+
+  Luis
+
+--Rgf3q3z9SdmXC6oT
+Content-Type: application/pgp-signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.9 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTKkz0AAoJEPep4JnvMe6zIjQQAIaPp0PA7yP7u0xd9zfXEk6D
+Wu8DWiwDpRFzUiXwzG0YP8D5uyorvKTfsgb+7HUYbswbkOxa5HdwCrggT63+SPb8
++d4UqH8nQTCx0yRXU52UFb6kAwyaNGrd5TiGZgwVSE2XzO2S7+Epjcjm+nwnfX63
+v7j410NCswB7rMYHiyGDWTIFWMoEy31f/xDPs+hSTVIXbCrg84D2kP0wIlULKsa9
+Q1U4GyPRK5o6AATOsZHzcwnzNNgaTNtOYh1tOcOm7+Xl7cY/HCKjKar0M730CuDU
+ltni1SN0DeIjPqzrXnLZPRdKfa73/CAIacrADVkr8SqtZPHmQSN1L2NHSGZrRRl3
+32otSLedC4nilbKdF199fIj0HrJwp/ik4vZjfYPjjZTxr9bBlZBfbgOOFbO8Xc3h
+4koN4wkTf9/MainQL/2NVC1QCmh00tJ/CabkuN/sFAYFPJd7ykECHMbXQol/w66v
+lvaEEk27oig1JXMcu1x9a7sn1n3YmCsnnV/E04sfBULKVhflsK2Keuy2z5TeXLjR
+93b1+QrJIdaUJt9CQkgxO7Kzjs4azMRpLl/7/uB8X6SuAOJyhmKbrxPhR6PAbdD8
+uqBUbAFwKiKEEgPKEjZ5KnyBrUXGiASVRqOjYYGOiscFHQfqWawf9lzZXjsJps/4
+u7Z/zpcajDEKowIpYtr3
+=v79u
+-----END PGP SIGNATURE-----
+
+--Rgf3q3z9SdmXC6oT--
