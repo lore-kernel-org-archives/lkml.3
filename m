@@ -1,130 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaCTC5v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 22:57:51 -0400
-Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:52164
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750757AbaCTC5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 22:57:48 -0400
-X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 Mar 2014 22:57:48 EDT
-From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
-To: =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Henrik Rydberg" <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Budig <simon.budig@kernelconcepts.de>
-Subject: RE: [PATCHv4 1/5] Input: edt-ft5x06: several cleanups; no
- functional change
-Thread-Topic: [PATCHv4 1/5] Input: edt-ft5x06: several cleanups; no
- functional change
-Thread-Index: AQHPQ3SJJktDdwwSA0KMaWvo2kmAuprpRInA
-Date: Thu, 20 Mar 2014 02:42:25 +0000
-Message-ID: <5f82f6ff3c38443f86f4a55c8d435712@BLUPR03MB373.namprd03.prod.outlook.com>
-References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
- <1395234563-11034-2-git-send-email-LW@KARO-electronics.de>
-In-Reply-To: <1395234563-11034-2-git-send-email-LW@KARO-electronics.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.215]
-x-forefront-prvs: 01565FED4C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(377454003)(51704005)(47446002)(74502001)(69226001)(74662001)(85306002)(80022001)(81342001)(66066001)(80976001)(79102001)(46102001)(2656002)(31966008)(59766001)(33646001)(74706001)(54356001)(94946001)(76482001)(53806001)(54316002)(94316002)(74366001)(74316001)(95416001)(20776003)(87266001)(63696002)(575784001)(86362001)(76576001)(77982001)(95666003)(19580395003)(76786001)(83322001)(56776001)(76796001)(81542001)(74876001)(19580405001)(65816001)(90146001)(4396001)(51856001)(87936001)(81816001)(93136001)(2201001)(85852003)(97336001)(92566001)(97186001)(83072002)(93516002)(47736001)(50986001)(47976001)(49866001)(56816005)(81686001)(1121002)(921003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB375;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:BC2B427E.F7F29C0B.25E75B5F.10EACAB2.20318;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1753375AbaCTC7W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 22:59:22 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:9851 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873AbaCTC7U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 22:59:20 -0400
+X-AuditID: cbfee68e-b7f566d000002344-dd-532a5986bb85
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
+Cc: rafael.j.wysocki@intel.com, t.figa@samsaung.com, b.zolnierkie@samsaung.com,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv4 0/5] devfreq: exynos: Fix minor issue and code clean to
+ remove legacy method
+Date: Thu, 20 Mar 2014 11:59:08 +0900
+Message-id: <1395284353-22458-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsWyRsSkWLctUivY4EiXpUVHz28Wi+tfnrNa
+	nG16w25xedccNosZ5/cxWdxuXMFm8XjFW3aLm1NnMzlweCze85LJ4+fy7ewefVtWMXp83iQX
+	wBLFZZOSmpNZllqkb5fAlfFm1UzGgjW8FZ83cjUwfuHqYuTkkBAwkZh46xUrhC0mceHeerYu
+	Ri4OIYGljBL3b65igik6um4BM0RiEaPEjjUHoZxGJom++wtZQKrYBLQk9r+4wQZiiwiYS+xa
+	+hNsFLPATkaJ/bcXMXYxcnAICyRIPL0hB1LDIqAqsf3+KnYQm1fAVWJ/+1tGiG1yEh/2PGIH
+	6ZUQaGaXWNHSzwrRICDxbfIhFpA5EgKyEpsOMEPUS0ocXHGDZQKj4AJGhlWMoqkFyQXFSelF
+	RnrFibnFpXnpesn5uZsYgWF7+t+zvh2MNw9YH2JMBho3kVlKNDkfGPZ5JfGGxmZGFqYmpsZG
+	5pZmpAkrifMuepgUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGRs3Keecauo9ay8y69eXOB
+	R/Gz5PmlekyfZjDtz75x80LIQZ0FVf9n9tlVTVgctW9thuU6e7nNtletLkRMm5O+kXdVSnTF
+	E4eLXrmrL9dWWCnrTt+mXfLNbV+LQzqn316Byz9TY5rXXn6bZ7n5TmSGiVhGK99qh7DW2dLt
+	vSudtzqEyUQ6fbVVYinOSDTUYi4qTgQAwwUj8nECAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t9jAd22SK1gg0vdhhYdPb9ZLK5/ec5q
+	cbbpDbvF5V1z2CxmnN/HZHG7cQWbxeMVb9ktbk6dzeTA4bF4z0smj5/Lt7N79G1ZxejxeZNc
+	AEtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+ArltmDtAd
+	SgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMN6tmMhas4a34vJGrgfEL
+	VxcjJ4eEgInE0XULmCFsMYkL99azdTFycQgJLGKU2LHmIDOE08gk0Xd/IQtIFZuAlsT+FzfY
+	QGwRAXOJXUt/gnUwC+xklNh/exFjFyMHh7BAgsTTG3IgNSwCqhLb769iB7F5BVwl9re/ZYTY
+	JifxYc8j9gmM3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfFM6kdjCsbLA4xCnAw
+	KvHwrtijGSzEmlhWXJl7iFGCg1lJhNfaXStYiDclsbIqtSg/vqg0J7X4EGMy0PaJzFKiyfnA
+	iM0riTc0NjEzsjQyN7QwMjYnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsawNo29G//W
+	y05J1lDm3N6bL8cb0HrB3/PoH4moCWfSV8sqCH5Pme5wgeP2DBfjDd/SNOoeXs39n3Q+OOno
+	dhexmkNf9gvLXM/012MMSWQ0O1eZo9IdeON8kMjm1knpDQaae/Tm1OcsM5Wfm+Li4bou6lVj
+	0T5hs5VPQp75lS1SsQgP07/KrsRSnJFoqMVcVJwIAMcg623OAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2K2w0hr018540
 
-From: Lothar Wa√ümann <LW@KARO-electronics.de>
-Data: Wednesday, March 19, 2014 9:09 PM
+This patchset use SIMPLE_DEV_PM_OPS macro intead of legacy method and fix
+probe fail if CONFIG_PM_OPP is disabled. Also, this patchset fix minor issue.
 
->To: Dmitry Torokhov; Duan Fugang-B38611; Grant Likely; Henrik Rydberg; Ian
->Campbell; Jingoo Han; Kumar Gala; Mark Rutland; Pawel Moll; Rob Herring; Rob
->Landley; Sachin Kamat; devicetree@vger.kernel.org; linux-doc@vger.kernel.org;
->linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Simon Budig; Lothar
->Wa√ümann
->Subject: [PATCHv4 1/5] Input: edt-ft5x06: several cleanups; no functional
->change
->
->- remove redundant parens
->- remove redundant type casts
->- fix mixed tab/space indentation
->
->Signed-off-by: Lothar Wa√ümann <LW@KARO-electronics.de>
->---
-> drivers/input/touchscreen/edt-ft5x06.c |   12 ++++++------
-> 1 file changed, 6 insertions(+), 6 deletions(-)
->
->diff --git a/drivers/input/touchscreen/edt-ft5x06.c
->b/drivers/input/touchscreen/edt-ft5x06.c
->index 412a85e..7b4470d 100644
->--- a/drivers/input/touchscreen/edt-ft5x06.c
->+++ b/drivers/input/touchscreen/edt-ft5x06.c
->@@ -173,7 +173,7 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
-> 		x = ((buf[0] << 8) | buf[1]) & 0x0fff;
-> 		y = ((buf[2] << 8) | buf[3]) & 0x0fff;
-> 		id = (buf[2] >> 4) & 0x0f;
->-		down = (type != TOUCH_EVENT_UP);
->+		down = type != TOUCH_EVENT_UP;
->
-> 		input_mt_slot(tsdata->input, id);
-> 		input_mt_report_slot_state(tsdata->input, MT_TOOL_FINGER, down);
->@@ -257,7 +257,7 @@ static ssize_t edt_ft5x06_setting_show(struct device *dev,
-> 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
-> 	struct edt_ft5x06_attribute *attr =
-> 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
->-	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
->+	u8 *field = (u8 *)tsdata + attr->field_offset;
-> 	int val;
-> 	size_t count = 0;
-> 	int error = 0;
->@@ -299,7 +299,7 @@ static ssize_t edt_ft5x06_setting_store(struct device *dev,
-> 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
-> 	struct edt_ft5x06_attribute *attr =
-> 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
->-	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
->+	u8 *field = (u8 *)tsdata + attr->field_offset;
-> 	unsigned int val;
-> 	int error;
->
->@@ -479,7 +479,7 @@ static int edt_ft5x06_debugfs_mode_set(void *data, u64 mode)
->
-> 	if (mode != tsdata->factory_mode) {
-> 		retval = mode ? edt_ft5x06_factory_mode(tsdata) :
->-			        edt_ft5x06_work_mode(tsdata);
->+				edt_ft5x06_work_mode(tsdata);
-> 	}
->
-> 	mutex_unlock(&tsdata->mutex);
->@@ -852,8 +852,8 @@ static SIMPLE_DEV_PM_OPS(edt_ft5x06_ts_pm_ops,
-> 			 edt_ft5x06_ts_suspend, edt_ft5x06_ts_resume);
->
-> static const struct i2c_device_id edt_ft5x06_ts_id[] = {
->-	{ "edt-ft5x06", 0 },
->-	{ }
->+	{ "edt-ft5x06", 0, },
->+	{ /* sentinel */ }
-> };
-> MODULE_DEVICE_TABLE(i2c, edt_ft5x06_ts_id);
->
->--
->1.7.10.4
->
->
+Changes from v3:
+- Discard patches related to DT support because DT support patch of patchset
+  don't satisfy the basic of dt concept. So, I'm going to implement DT support
+  patch regardless this patchset separately.
+- Use SIMPLE_DEV_PM_OPS macro instead of SET_SYSTEM_SLEEP_PM_OPS macro
+- Delete devfreq->profile->exit callback to improve readability when failure
+  happen in probe().
+- Add exynos5 patch to clean code
 
-Acked-by: Fugang Duan <B38611@freescale.com>
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Changes from v2:
+- Add detailed description to Documentation/devicetree/bindings/exynos4_bus.txt
+  and change patch description of patch#8
+- Change the sequence of patchset in patch #1 ~ #4
+- Fix minor issue
+
+Changes from v1:
+- Add exynos4_bus.txt documentation for devicetree guide
+- Fix probe failure if CONFIG_PM_OPP is disabled
+- Fix typo and resource leak(regulator/clock/memory) when happening probe failure
+- Add additionally comment for PPMU usage instead of previous PPC
+- Split separate patch to remove ambiguous of patch
+
+Chanwoo Choi (5):
+  devfreq: exynos4: Fix bug of resource leak and code clean on probe()
+  devfreq: exynos4: Use SIMPLE_DEV_PM_OPS macro
+  devfreq: exynos4: Add CONFIG_PM_OPP dependency to fix probe fail
+  devfreq: exynos5: Use SIMPLE_DEV_PM_OPS macro
+  devfreq: exynos5: Add CONFIG_PM_OPP dependency to fix probe fail
+
+ drivers/devfreq/Kconfig              |  2 ++
+ drivers/devfreq/exynos/exynos4_bus.c | 43 ++++++++++++++++++++++--------------
+ drivers/devfreq/exynos/exynos5_bus.c |  7 ++++--
+ 3 files changed, 34 insertions(+), 18 deletions(-)
+
+-- 
+1.8.0
+
