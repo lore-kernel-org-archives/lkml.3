@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760098AbaCTXbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 19:31:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57198 "EHLO
+	id S1759932AbaCTXbE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 19:31:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57199 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759458AbaCTXbB (ORCPT
+	with ESMTP id S1759365AbaCTXbB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 19:31:01 -0400
-Date: Thu, 20 Mar 2014 16:30:35 -0700
-From: tip-bot for Dave Jones <tipbot@zytor.com>
-Message-ID: <tip-8c90487cdc64847b4fdd812ab3047f426fec4d13@git.kernel.org>
+Date: Thu, 20 Mar 2014 16:30:46 -0700
+From: tip-bot for Chris Bainbridge <tipbot@zytor.com>
+Message-ID: <tip-3e2ae0fed2a12ef72dea787db4c25466f9d89207@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        davej@fedoraproject.org, davej@redhat.com, tglx@linutronix.de
+        tglx@linutronix.de, chris.bainbridge@gmail.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        davej@fedoraproject.org, tglx@linutronix.de, davej@redhat.com
-In-Reply-To: <20140226154949.GA770@redhat.com>
-References: <20140226154949.GA770@redhat.com>
+        tglx@linutronix.de, chris.bainbridge@gmail.com
+In-Reply-To: <20140307114040.GA4997@localhost>
+References: <20140307114040.GA4997@localhost>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC
-Git-Commit-ID: 8c90487cdc64847b4fdd812ab3047f426fec4d13
+Subject: [tip:x86/cpu] x86, cpu:
+  Add forcepae parameter for booting PAE kernels on PAE-disabled Pentium M
+Git-Commit-ID: 3e2ae0fed2a12ef72dea787db4c25466f9d89207
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,78 +32,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c90487cdc64847b4fdd812ab3047f426fec4d13
-Gitweb:     http://git.kernel.org/tip/8c90487cdc64847b4fdd812ab3047f426fec4d13
-Author:     Dave Jones <davej@redhat.com>
-AuthorDate: Wed, 26 Feb 2014 10:49:49 -0500
+Commit-ID:  3e2ae0fed2a12ef72dea787db4c25466f9d89207
+Gitweb:     http://git.kernel.org/tip/3e2ae0fed2a12ef72dea787db4c25466f9d89207
+Author:     Chris Bainbridge <chris.bainbridge@gmail.com>
+AuthorDate: Fri, 7 Mar 2014 18:40:42 +0700
 Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 20 Mar 2014 16:28:09 -0700
+CommitDate: Thu, 20 Mar 2014 16:28:43 -0700
 
-Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC
+x86, cpu: Add forcepae parameter for booting PAE kernels on PAE-disabled Pentium M
 
-Rename TAINT_UNSAFE_SMP to TAINT_CPU_OUT_OF_SPEC, so we can repurpose
-the flag to encompass a wider range of pushing the CPU beyond its
-warrany.
+Many Pentium M systems disable PAE but may have a functionally usable PAE
+implementation. This adds the "forcepae" parameter which bypasses the boot
+check for PAE, and sets the CPU as being PAE capable. Using this parameter
+will taint the kernel with TAINT_CPU_OUT_OF_SPEC.
 
-Signed-off-by: Dave Jones <davej@fedoraproject.org>
-Link: http://lkml.kernel.org/r/20140226154949.GA770@redhat.com
+Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
+Link: http://lkml.kernel.org/r/20140307114040.GA4997@localhost
 Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/cpu/amd.c | 2 +-
- include/linux/kernel.h    | 2 +-
- kernel/module.c           | 2 +-
- kernel/panic.c            | 2 +-
- 4 files changed, 4 insertions(+), 4 deletions(-)
+ Documentation/kernel-parameters.txt |  7 +++++++
+ arch/x86/boot/cpucheck.c            | 20 ++++++++++++++++++++
+ arch/x86/kernel/cpu/intel.c         | 19 +++++++++++++++++++
+ 3 files changed, 46 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
-index b85e43a..ce8b8ff 100644
---- a/arch/x86/kernel/cpu/amd.c
-+++ b/arch/x86/kernel/cpu/amd.c
-@@ -218,7 +218,7 @@ static void amd_k7_smp_check(struct cpuinfo_x86 *c)
- 	 */
- 	WARN_ONCE(1, "WARNING: This combination of AMD"
- 		" processors is not suitable for SMP.\n");
--	add_taint(TAINT_UNSAFE_SMP, LOCKDEP_NOW_UNRELIABLE);
-+	add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 7116fda..06600cc 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1011,6 +1011,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			parameter will force ia64_sal_cache_flush to call
+ 			ia64_pal_cache_flush instead of SAL_CACHE_FLUSH.
+ 
++	forcepae [X86-32]
++			Forcefully enable Physical Address Extension (PAE).
++			Many Pentium M systems disable PAE but may have a
++			functionally usable PAE implementation.
++			Warning: use of this parameter will taint the kernel
++			and may cause unknown problems.
++
+ 	ftrace=[tracer]
+ 			[FTRACE] will set and start the specified tracer
+ 			as early as possible in order to facilitate early
+diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
+index 100a9a1..f0d0b20 100644
+--- a/arch/x86/boot/cpucheck.c
++++ b/arch/x86/boot/cpucheck.c
+@@ -67,6 +67,13 @@ static int is_transmeta(void)
+ 	       cpu_vendor[2] == A32('M', 'x', '8', '6');
  }
  
- static void init_amd_k7(struct cpuinfo_x86 *c)
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 196d1ea..08fb024 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -458,7 +458,7 @@ extern enum system_states {
++static int is_intel(void)
++{
++	return cpu_vendor[0] == A32('G', 'e', 'n', 'u') &&
++	       cpu_vendor[1] == A32('i', 'n', 'e', 'I') &&
++	       cpu_vendor[2] == A32('n', 't', 'e', 'l');
++}
++
+ /* Returns a bitmask of which words we have error bits in */
+ static int check_cpuflags(void)
+ {
+@@ -153,6 +160,19 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
+ 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
  
- #define TAINT_PROPRIETARY_MODULE	0
- #define TAINT_FORCED_MODULE		1
--#define TAINT_UNSAFE_SMP		2
-+#define TAINT_CPU_OUT_OF_SPEC		2
- #define TAINT_FORCED_RMMOD		3
- #define TAINT_MACHINE_CHECK		4
- #define TAINT_BAD_PAGE			5
-diff --git a/kernel/module.c b/kernel/module.c
-index d24fcf2..ca2c1ad 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1015,7 +1015,7 @@ static size_t module_flags_taint(struct module *mod, char *buf)
- 		buf[l++] = 'C';
+ 		err = check_cpuflags();
++	} else if (err == 0x01 &&
++		   !(err_flags[0] & ~(1 << X86_FEATURE_PAE)) &&
++		   is_intel() && cpu.level == 6 &&
++		   (cpu.model == 9 || cpu.model == 13)) {
++		/* PAE is disabled on this Pentium M but can be forced */
++		if (cmdline_find_option_bool("forcepae")) {
++			puts("WARNING: Forcing PAE in CPU flags\n");
++			set_bit(X86_FEATURE_PAE, cpu.flags);
++			err = check_cpuflags();
++		}
++		else {
++			puts("WARNING: PAE disabled. Use parameter 'forcepae' to enable at your own risk!\n");
++		}
+ 	}
+ 
+ 	if (err_flags_ptr)
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index 34bbb55..897d620 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -186,6 +186,14 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
+ 	}
+ }
+ 
++static int forcepae;
++static int __init forcepae_setup(char *__unused)
++{
++	forcepae = 1;
++	return 1;
++}
++__setup("forcepae", forcepae_setup);
++
+ static void intel_workarounds(struct cpuinfo_x86 *c)
+ {
+ #ifdef CONFIG_X86_F00F_BUG
+@@ -214,6 +222,17 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
+ 		clear_cpu_cap(c, X86_FEATURE_SEP);
+ 
  	/*
- 	 * TAINT_FORCED_RMMOD: could be added.
--	 * TAINT_UNSAFE_SMP, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
-+	 * TAINT_CPU_OUT_OF_SPEC, TAINT_MACHINE_CHECK, TAINT_BAD_PAGE don't
- 	 * apply to modules.
++	 * PAE CPUID issue: many Pentium M report no PAE but may have a
++	 * functionally usable PAE implementation.
++	 * Forcefully enable PAE if kernel parameter "forcepae" is present.
++	 */
++	if (forcepae) {
++		printk(KERN_WARNING "PAE forced!\n");
++		set_cpu_cap(c, X86_FEATURE_PAE);
++		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
++	}
++
++	/*
+ 	 * P4 Xeon errata 037 workaround.
+ 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
  	 */
- 	return l;
-diff --git a/kernel/panic.c b/kernel/panic.c
-index 6d63003..2270cfd 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -199,7 +199,7 @@ struct tnt {
- static const struct tnt tnts[] = {
- 	{ TAINT_PROPRIETARY_MODULE,	'P', 'G' },
- 	{ TAINT_FORCED_MODULE,		'F', ' ' },
--	{ TAINT_UNSAFE_SMP,		'S', ' ' },
-+	{ TAINT_CPU_OUT_OF_SPEC,	'S', ' ' },
- 	{ TAINT_FORCED_RMMOD,		'R', ' ' },
- 	{ TAINT_MACHINE_CHECK,		'M', ' ' },
- 	{ TAINT_BAD_PAGE,		'B', ' ' },
