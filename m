@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529AbaCTQVO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:21:14 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51096 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750960AbaCTQVM (ORCPT
+	id S1758075AbaCTQXP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:23:15 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32897 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753188AbaCTQXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:21:12 -0400
-Date: Thu, 20 Mar 2014 17:21:00 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Documentation: dt: list all compatible strings for at91
-Message-ID: <20140320162100.GU12021@piout.net>
-References: <1395224808-10133-1-git-send-email-alexandre.belloni@free-electrons.com>
- <CAL_Jsq+sctq85ZhqKyVa7=r5A0FEDKu36692rRJufyca1gzF6g@mail.gmail.com>
+	Thu, 20 Mar 2014 12:23:13 -0400
+Date: Thu, 20 Mar 2014 16:22:58 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT
+	documentation
+Message-ID: <20140320162258.GX7528@n2100.arm.linux.org.uk>
+References: <20140320092639.48F68A6279@smtp3-g21.free.fr> <532ADFD8.80301@gmail.com> <20140320140156.5d768b1f@armhf> <532AEDE2.3080306@gmail.com> <20140320145221.09252bf6@armhf> <20140320143110.GU7528@n2100.arm.linux.org.uk> <20140320155935.7a474173@armhf> <20140320151934.GV7528@n2100.arm.linux.org.uk> <20140320165440.195cd2ea@armhf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAL_Jsq+sctq85ZhqKyVa7=r5A0FEDKu36692rRJufyca1gzF6g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140320165440.195cd2ea@armhf>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
-
-On 19/03/2014 at 11:14:43 -0500, Rob Herring wrote :
-> On Wed, Mar 19, 2014 at 5:26 AM, Alexandre Belloni
-> <alexandre.belloni@free-electrons.com> wrote:
-> > Avoids getting the newly introduced warning:
-> > WARNING: DT compatible string "atmel,at91sam9g45-adc" appears un-documented -- check ./Documentation/devicetree/bindings/
-> > +                               compatible = "atmel,at91sam9g45-adc";
-> >
-> > Introduced by:
-> > bff5da433525 checkpatch: add DT compatible string documentation checks
+On Thu, Mar 20, 2014 at 04:54:40PM +0100, Jean-Francois Moine wrote:
+> On Thu, 20 Mar 2014 15:19:34 +0000
+> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
 > 
-> We should fix checkpatch instead. There are some fixes in progress,
-> but I don't think it covers this issue. I'm puzzled by this one as I
-> thought I checked for this case.
+> > I'm not saying that it has to match the physical device fitted - I'm
+> > merely suggesting not using nxp,tda1998x which could (and as Sebastian
+> > has found, does) conflict with other devices with different properties.
+> > 
+> > We still auto-detect the exact device type by reading the ID register
+> > because that's the most reliable way to detect exactly what kind of
+> > device is fitted to the board.
 > 
+> I don't see the problem.
+> 
+> Actually the driver handles the tda9989, tda19988 and tda19989 (2
+> variants). If some board has, for example, the tda9983 and if the
+> driver is extended to handle this chip (i.e. mainly ignore the CEC
+> part), setting 'nxp,tda998x' in the associated DT will still work.
 
-Will someone take care of it ? I'm not sure how you want to handle that
-as <chip> is replacing different values depending on the context. Also,
-while for atmel and freescale, it is replacing the full chip name, that
-is not the case for nvidia...
+So you have to encode in the driver that if you see a tda9983 device,
+you don't touch the CEC part.
+
+Now think about how you'd handle a tda998x compatible device but with
+the CEC stuff at a different I2C address.
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
