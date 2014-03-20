@@ -1,115 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753317AbaCTCFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 22:05:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41822 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752537AbaCTCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 22:05:42 -0400
-Date: Thu, 20 Mar 2014 03:05:40 +0100
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: Stephen Hemminger <stephen@networkplumber.org>
-Cc: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 1/3] bridge: preserve random init MAC address
-Message-ID: <20140320020540.GF28801@wotan.suse.de>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-2-git-send-email-mcgrof@do-not-panic.com> <20140318201056.7b876394@nehalam.linuxnetplumber.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Rgf3q3z9SdmXC6oT"
-Content-Disposition: inline
-In-Reply-To: <20140318201056.7b876394@nehalam.linuxnetplumber.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1751274AbaCTCVv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 22:21:51 -0400
+Received: from smtprelay0221.hostedemail.com ([216.40.44.221]:52078 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750737AbaCTCVt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 Mar 2014 22:21:49 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:560:599:800:960:966:973:988:989:1042:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2196:2198:2199:2200:2393:2559:2562:2828:2896:3138:3139:3140:3141:3142:3350:3622:3865:3866:3867:3868:3870:3872:3874:4250:4321:4385:5007:7652:7809:7901:10004:10400:10848:11232:11658:11914:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: tail09_f88f2002ec28
+X-Filterd-Recvd-Size: 1652
+Message-ID: <1395282105.8649.55.camel@joe-AO722>
+Subject: Re: [PATCH] MAINTAINERS: Reorder maintainer addresses for PM and
+ ACPI
+From: Joe Perches <joe@perches.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, Len Brown <lenb@kernel.org>,
+        Pavel Machek <pavel@ucw.cz>
+Date: Wed, 19 Mar 2014 19:21:45 -0700
+In-Reply-To: <1744772.yf52reTAmC@vostro.rjw.lan>
+References: <1744772.yf52reTAmC@vostro.rjw.lan>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-03-20 at 00:00 +0100, Rafael J. Wysocki wrote:
 
---Rgf3q3z9SdmXC6oT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Reorder PM and ACPI maintainer addresses in MAINTAINERS to make
+> the probability of that a bit smaller.
 
-On Tue, Mar 18, 2014 at 08:10:56PM -0700, Stephen Hemminger wrote:
-> On Wed, 12 Mar 2014 20:15:25 -0700
-> "Luis R. Rodriguez" <mcgrof@do-not-panic.com> wrote:
->=20
-> > As it is now if you add create a bridge it gets started
-> > with a random MAC address and if you then add a net_device
-> > as a slave but later kick it out you end up with a zero
-> > MAC address. Instead preserve the original random MAC
-> > address and use it.
->=20
-> What is supposed to happen is that the recalculate chooses
-> the lowest MAC address of the slaves. If there are no slaves
-> it might as well just calculate a new random value. There is
-> not great merit in preserving the original defunct address.
->=20
-> Or something like this
-> --- a/net/bridge/br_stp_if.c	2014-02-12 08:21:56.733857356 -0800
-> +++ b/net/bridge/br_stp_if.c	2014-03-18 20:09:09.334388826 -0700
-> @@ -235,6 +235,9 @@ bool br_stp_recalculate_bridge_id(struct
->  			addr =3D p->dev->dev_addr;
-> =20
->  	}
-> +
-> +	if (addr =3D=3D br_mac_zero)
-> +		return false;  /* keep original address */
-> =20
->  	if (ether_addr_equal(br->bridge_id.addr, addr))
->  		return false;	/* no change */
->=20
-> that just keeps the old value.
+>  FREEZER
+> +M:	Rafael J. Wysocki <rjw@rjwysocki.net>
+> -M:	"Rafael J. Wysocki" <rjw@rjwysocki.net>
+[]
+>  HIBERNATION (aka Software Suspend, aka swsusp)
+> +M:	Rafael J. Wysocki <rjw@rjwysocki.net>
+> -M:	"Rafael J. Wysocki" <rjw@rjwysocki.net>
+[]
+>  SUSPEND TO RAM
+> +M:	Rafael J. Wysocki <rjw@rjwysocki.net>
+> -M:	"Rafael J. Wysocki" <rjw@rjwysocki.net>
 
-The old value could be a port which got root blocked, I think
-it can be confusing to see that happen. Either way feel free to
-make the call, I'll provide more details below on perhaps one reason
-to keep the original MAC address.
+Please keep the quotes around your name.
 
-> The bridge is in a meaningless state when there are no ports,
+It makes it easier for some systems to accept
+names with periods via copy/paste.
 
-Some virtualization topologies may want a backend with no link (or
-perhaps one which is dynamic, with the option to have none) to the
-internet but just a bridge so guests sharing the bridge can talk to=20
-each other. In this case bridging can be used only to link the
-batch of guests.
 
-In this case the bridge simply acts as a switch, but also can be used as the
-interface for DHCP, for example. In such a case the guests will be doing
-ARP to get to the DHCP server. There's a flurry of ways one can try to get
-all this meshed together including enablign an ARP proxy but I'm looking
-at ways to optimize this further -- but I'd like to address the current
-usage cases first.
-
-> and when the first port is added back it will be used as the
-> new bridge id.
-
-Sure. Let me know how you think we should proceed with this patch based
-on the above.
-
-  Luis
-
---Rgf3q3z9SdmXC6oT
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.9 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTKkz0AAoJEPep4JnvMe6zIjQQAIaPp0PA7yP7u0xd9zfXEk6D
-Wu8DWiwDpRFzUiXwzG0YP8D5uyorvKTfsgb+7HUYbswbkOxa5HdwCrggT63+SPb8
-+d4UqH8nQTCx0yRXU52UFb6kAwyaNGrd5TiGZgwVSE2XzO2S7+Epjcjm+nwnfX63
-v7j410NCswB7rMYHiyGDWTIFWMoEy31f/xDPs+hSTVIXbCrg84D2kP0wIlULKsa9
-Q1U4GyPRK5o6AATOsZHzcwnzNNgaTNtOYh1tOcOm7+Xl7cY/HCKjKar0M730CuDU
-ltni1SN0DeIjPqzrXnLZPRdKfa73/CAIacrADVkr8SqtZPHmQSN1L2NHSGZrRRl3
-32otSLedC4nilbKdF199fIj0HrJwp/ik4vZjfYPjjZTxr9bBlZBfbgOOFbO8Xc3h
-4koN4wkTf9/MainQL/2NVC1QCmh00tJ/CabkuN/sFAYFPJd7ykECHMbXQol/w66v
-lvaEEk27oig1JXMcu1x9a7sn1n3YmCsnnV/E04sfBULKVhflsK2Keuy2z5TeXLjR
-93b1+QrJIdaUJt9CQkgxO7Kzjs4azMRpLl/7/uB8X6SuAOJyhmKbrxPhR6PAbdD8
-uqBUbAFwKiKEEgPKEjZ5KnyBrUXGiASVRqOjYYGOiscFHQfqWawf9lzZXjsJps/4
-u7Z/zpcajDEKowIpYtr3
-=v79u
------END PGP SIGNATURE-----
-
---Rgf3q3z9SdmXC6oT--
