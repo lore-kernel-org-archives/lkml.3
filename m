@@ -1,86 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202AbaCTBc4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 21:32:56 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:38036 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756019AbaCTBcx (ORCPT
+	id S1755472AbaCTBcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 21:32:32 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:34464 "EHLO
+	lgeamrelo05.lge.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752188AbaCTBbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 21:32:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com>
-References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com>
-	<CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com>
-	<CAErSpo4ngU60XQCD=DbFJbqNOMkOwwhHB1oau1mmr7rJQQ2+pg@mail.gmail.com>
-	<CACVXFVMz+6DaSgT0EHeVfyBOsXfWDYnZQ0wy7pwcey5ahM6rUA@mail.gmail.com>
-	<20140318002700.GA22356@google.com>
-	<CACVXFVNbzjYa7dJpH+k-F02Cap7yBBi7TkngjVu_KthXw-WKJA@mail.gmail.com>
-	<CACVXFVO2rR+H7X2Xv_d-U0NeikT4dR97ffQ7PuV7+i0fN=_k3w@mail.gmail.com>
-	<CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com>
-Date: Thu, 20 Mar 2014 09:32:52 +0800
-Message-ID: <CACVXFVPq2nQ8jcn+v424roieO+v_asyfXcHUHv=uSOABYHJ4eg@mail.gmail.com>
-Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding disabled
-From: Ming Lei <tom.leiming@gmail.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Pekka Enberg <penberg@kernel.org>,
-        Sasha Levin <sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 Mar 2014 21:31:31 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>, Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 12/13] perf top: Add --fields option to specify output fields
+Date: Thu, 20 Mar 2014 10:31:26 +0900
+Message-Id: <1395279087-12554-13-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.11.7
+In-Reply-To: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
+References: <1395279087-12554-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 12:45 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
-> On Tue, Mar 18, 2014 at 10:52 PM, Ming Lei <tom.leiming@gmail.com> wrote:
->> Hi,
->>
->> Looks Sasha fixed the problem in lkvm tool[1].
->>
->> Sasha, looks we both saw the problem, but from technical
->> view, I am wondering if the fix is correct, because PCI spec.
->> requires that the IO/MMIO bits in COMMAND register should
->> be cleared after reset, maybe there are some potential problem
->> in lkvm pci emulation.
->
-> I think I'm going to revert this patch ([2], "Ignore BAR contents when
-> firmware left decoding disabled").  The main reason for that patch was
-> to try for a consistent way of figuring out whether BARs are valid
-> that we could use on all architectures, but I think we can do it in a
-> better way.
->
-> That said, this kvm change should not be necessary.  We *should* be
-> able to take any PCI device and initialize it from power-on state
-> without any dependencies on what the BIOS left in the BARs or the
-> command register.  As far as I can tell, the PCI core actually worked
-> fine in this case (we assigned valid addresses to the devices), but
-> something else blew up.  If I revert that patch, it will cover up
-> whatever this other bug is, but it would be much better to figure out
-> what it is and fix is.
->
-> You said earlier that "The memory allocation failure is caused by
-> mistaken value read from pci address after the device is failed to
-> enable."  Can you elaborate on that?  Are you saying that something
+The --fields option is to allow user setup output field in any order.
+It can recieve any sort keys and following (hpp) fields:
 
-Sorry, that's my take for granted.
+  overhead, overhead_sys, overhead_us, sample and period
 
-> tried to read from a region mapped by a BAR even though
-> pci_enable_device() failed?  That would be a programming error, of
-> course.  If you have any more details about exactly where this
-> happened, that would help a lot in finding the problem.
+If guest profiling is enabled, overhead_guest_{sys,us} will be
+available too.
 
-When I check again, as you saw in the dmesg log after reverting, the
-virtio device has been enabled successfully, looks no obvious PCI
-failure, and the only problem is that the virtio driver reads zero queue
-number from one region mapped by a BAR:
+More more information, please see previous patch "perf report:
+Add -F option to specify output fields"
 
-ioread16(vp_dev->ioaddr + VIRTIO_PCI_QUEUE_NUM)
-         <- setup_vq(): drivers/virtio/virtio_pci.c
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/Documentation/perf-top.txt | 9 +++++++++
+ tools/perf/builtin-top.c              | 7 +++++++
+ 2 files changed, 16 insertions(+)
 
-That causes the memory allocation failure.
-
-Thanks,
+diff --git a/tools/perf/Documentation/perf-top.txt b/tools/perf/Documentation/perf-top.txt
+index 0acf54f203f0..50fcf97a7dc9 100644
+--- a/tools/perf/Documentation/perf-top.txt
++++ b/tools/perf/Documentation/perf-top.txt
+@@ -116,6 +116,15 @@ Default is to monitor all CPUS.
+ 	Sort by key(s): pid, comm, dso, symbol, parent, srcline, weight,
+ 	local_weight, abort, in_tx, transaction
+ 
++--fields=::
++	Specify output field - multiple keys can be specified in CSV format.
++	Following fields are available:
++	overhead, overhead_sys, overhead_us, sample and period.
++	Also it can contain any sort key(s).
++
++	By default, every sort keys not specified in --field will be appended
++	automatically.
++
+ -n::
+ --show-nr-samples::
+ 	Show a column with the number of samples.
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index bb2aa6645a7e..dcda6d5e320b 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -1085,6 +1085,8 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	OPT_STRING('s', "sort", &sort_order, "key[,key2...]",
+ 		   "sort by key(s): pid, comm, dso, symbol, parent, weight, local_weight,"
+ 		   " abort, in_tx, transaction"),
++	OPT_STRING(0, "fields", &field_order, "key[,keys...]",
++		   "output field(s): overhead, period, sample plus all of sort keys"),
+ 	OPT_BOOLEAN('n', "show-nr-samples", &symbol_conf.show_nr_samples,
+ 		    "Show a column with the number of samples"),
+ 	OPT_CALLBACK_NOOPT('g', NULL, &top.record_opts,
+@@ -1203,6 +1205,11 @@ int cmd_top(int argc, const char **argv, const char *prefix __maybe_unused)
+ 
+ 	sort__setup_elide(stdout);
+ 
++	if (setup_output_field() < 0) {
++		parse_options_usage(top_usage, options, "F", 1);
++		goto out_delete_evlist;
++	}
++
+ 	get_term_dimensions(&top.winsize);
+ 	if (top.print_entries == 0) {
+ 		struct sigaction act = {
 -- 
-Ming Lei
+1.7.11.7
+
