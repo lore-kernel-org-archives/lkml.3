@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893AbaCTUUQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:20:16 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:26325 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755381AbaCTUUO (ORCPT
+	id S1759909AbaCTUUo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:20:44 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:33453 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759504AbaCTUUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:20:14 -0400
-Message-ID: <1395346808.14694.62.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Thu, 20 Mar 2014 13:20:08 -0700
-In-Reply-To: <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	 <20140320053350.GB30295@linux.vnet.ibm.com>
-	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-	 <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
-	 <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Mar 2014 16:20:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395345324-18299-3-git-send-email-bigeasy@linutronix.de>
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+	<1395345324-18299-3-git-send-email-bigeasy@linutronix.de>
+Date: Thu, 20 Mar 2014 15:20:41 -0500
+Message-ID: <CANk1AXTjuBWa_DdKaV2dCPjhbKRHE9bR2uHyuoCYtt_-zk7EoQ@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio: dwapb: do not create the irq mapping upfront.
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 12:25 -0700, Linus Torvalds wrote:
-> On Thu, Mar 20, 2014 at 12:08 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > Oh, it does. This atomics technique was tested at a customer's site and
-> > ready for upstream.
-> 
-> I'm not worried about the *original* patch. I'm worried about the
-> incremental one.
-> 
-> Your original patch never applied to my tree - I think it was based on
-> -mm or something. So I couldn't verify my "let's go back to the
-> explicit 'waiters'" incremental patch against reverting and
-> re-applying the original patch.
+On Thu, Mar 20, 2014 at 2:55 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> After the irq chip got registered the driver creates a mapping for every
+> gpio line. This mapping be useless if the gpio in question never is
+> beeing used a irq line. The mapping should be created by the core on
+> request.
+>
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> ---
+>  drivers/gpio/gpio-dwapb.c | 5 +----
+>  1 file changed, 1 insertion(+), 4 deletions(-)
+>
+> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+> index 4d25a06b..0db0b94 100644
+> --- a/drivers/gpio/gpio-dwapb.c
+> +++ b/drivers/gpio/gpio-dwapb.c
+> @@ -211,7 +211,7 @@ static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
+>         struct gpio_chip *gc = &port->bgc.gc;
+>         struct device_node *node =  gc->of_node;
+>         struct irq_chip_generic *irq_gc;
+> -       unsigned int hwirq, ngpio = gc->ngpio;
+> +       unsigned int ngpio = gc->ngpio;
+>         struct irq_chip_type *ct;
+>         int err, irq;
+>
+> @@ -263,9 +263,6 @@ static void dwapb_configure_irqs(struct dwapb_gpio *gpio,
+>         irq_set_chained_handler(irq, dwapb_irq_handler);
+>         irq_set_handler_data(irq, gpio);
+>
+> -       for (hwirq = 0 ; hwirq < ngpio ; hwirq++)
+> -               irq_create_mapping(gpio->domain, hwirq);
+> -
+>         port->bgc.gc.to_irq = dwapb_gpio_to_irq;
+>  }
 
-Ok, so a big reason why this patch doesn't apply cleanly after reverting
-is because *most* of the changes were done at the top of the file with
-regards to documenting the ordering guarantees, the actual code changes
-are quite minimal.
 
-I reverted commits 99b60ce6 (documentation) and b0c29f79 (the offending
-commit), and then I cleanly applied the equivalent ones from v3 of the
-series (which was already *tested* and ready for upstream until you
-suggested looking into the alternative spinlock approach):
+Hi Sebastian,
 
-https://lkml.org/lkml/2013/12/19/624
-https://lkml.org/lkml/2013/12/19/630
+I think this functionality has changed at some point or maybe
+everybody copied the same bad code over and over.  I see a lot of
+legacy gpio drivers calling irq_create_mapping in their to_irq()
+functions.  Linus Walleij asked me to create the mappings at probe
+time.  Please see https://lkml.org/lkml/2014/2/10/154 and the
+subsequent discussion in https://lkml.org/lkml/2014/2/24/232
 
-Assuming the atomics solves the issue, would you be willing to take this
-path? Any pending documentation fixes can be added afterwards. The
-important thing is that the actual code is well tested.
-
-Thanks,
-Davidlohr
-
+Alan Tull
+aka
+delicious quinoa
