@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759643AbaCTTYA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:24:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48157 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754341AbaCTTX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:23:58 -0400
-Date: Thu, 20 Mar 2014 20:23:07 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Joseph Salisbury <joseph.salisbury@canonical.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
-Subject: Re: please fix FUSION (Was: [v3.13][v3.14][Regression]
-	kthread:makekthread_create()killable)
-Message-ID: <20140320192307.GA11883@redhat.com>
-References: <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp> <20140317142246.GA27453@redhat.com> <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp> <20140318171620.GA10636@redhat.com> <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp> <5329C22A.5070206@canonical.com> <20140319175253.GB11923@redhat.com> <20140319182910.GA14511@redhat.com> <20140319194232.GA6207@redhat.com> <532B1B67.5050104@canonical.com>
+	id S1759673AbaCTTZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:25:04 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59296 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757263AbaCTTZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:25:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532B1B67.5050104@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
+References: <20140319152619.GB10406@linux.vnet.ibm.com>
+	<20140319154705.GB8557@laptop.programming.kicks-ass.net>
+	<20140319170829.GD8557@laptop.programming.kicks-ass.net>
+	<20140320053350.GB30295@linux.vnet.ibm.com>
+	<1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
+	<1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
+	<CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
+	<1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
+Date: Thu, 20 Mar 2014 12:25:01 -0700
+X-Google-Sender-Auth: pHdR1EGVw7PPGrf6NMS-k7hAEB0
+Message-ID: <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
+Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20, Joseph Salisbury wrote:
+On Thu, Mar 20, 2014 at 12:08 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
 >
-> On 03/19/2014 03:42 PM, Oleg Nesterov wrote:
-> > On 03/19, Oleg Nesterov wrote:
-> >> On 03/19, Oleg Nesterov wrote:
-> >>> But please do not forget that the kernel crashes. Whatever else we do, this
-> >>> should be fixed anyway. And this should be fixed in driver.
-> >> drivers/message/fusion/ is obviously buggy.
-> > Perhaps this is the only problem and Tetsuo is right, this driver
-> > really needs more than 30 secs to probe...
-> >
-> > But if you have a bit of free time, perhaps you can try the stupid
-> > debugging patch below ;) Not sure it will help, but who knows.
-> >
-> > Oleg.
->
-> There was some testing done with your test kernel.  The data collected
-> while running your kernel is available in the bug report:
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705/comments/58
+> Oh, it does. This atomics technique was tested at a customer's site and
+> ready for upstream.
 
-Joseph, thanks a lot.
+I'm not worried about the *original* patch. I'm worried about the
+incremental one.
 
-I'll try to read the logs tomorrow, but at first glance Tetsuo was right,
-I do not see a "long" sleep in that log. And it shows that the hack around
-kthread_run() in scsi_host_alloc() won't help. I am wondering why I didn't
-realize this before ;)
+Your original patch never applied to my tree - I think it was based on
+-mm or something. So I couldn't verify my "let's go back to the
+explicit 'waiters'" incremental patch against reverting and
+re-applying the original patch.
 
-Hmm. Perhaps we should simply change mptsas_init() to block all signals
-until we have the right fix.
+So I'd like you to re-verify that that incremental patch really is
+solid, and does what your original one did.
 
-Oleg.
-
+               Linus
