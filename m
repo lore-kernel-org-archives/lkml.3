@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757263AbaCTJbO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:31:14 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:57754 "EHLO
+	id S1757745AbaCTJbl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:31:41 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:36353 "EHLO
 	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757165AbaCTJVl (ORCPT
+	with ESMTP id S1757021AbaCTJVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:41 -0400
+	Thu, 20 Mar 2014 05:21:34 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com
 Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 10/36] mtd: st_spi_fsm: Search for preferred FSM message sequence configurations
-Date: Thu, 20 Mar 2014 09:20:42 +0000
-Message-Id: <1395307268-12721-11-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v6 08/36] mtd: st_spi_fsm: Provide device look-up table
+Date: Thu, 20 Mar 2014 09:20:40 +0000
+Message-Id: <1395307268-12721-9-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
@@ -22,62 +22,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here we provide a means to traverse though all supplied FSM message
-sequence configurations and pick one based on our chip's capabilities.
-The first one we match will be the preferred one, as they are
-presented in order of preference.
+Supply a lookup table of all the devices we intend to support. This table
+is used to store device information such as; a human readable device name,
+their JEDEC ID (plus the extended version), sector size and amount, a bit
+store of a device's capabilities, its maximum running frequency and
+possible use of a per-device configuration call-back.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 136 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 136 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 9467585..2740ae1 100644
+index 1eea949..29da522 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -222,6 +222,18 @@ struct stfsm_seq {
+@@ -221,6 +221,142 @@ struct stfsm_seq {
  	uint32_t seq_cfg;
  } __packed __aligned(4);
  
-+/* Parameters to configure a READ or WRITE FSM sequence */
-+struct seq_rw_config {
-+	uint32_t        flags;          /* flags to support config */
-+	uint8_t         cmd;            /* FLASH command */
-+	int             write;          /* Write Sequence */
-+	uint8_t         addr_pads;      /* No. of addr pads (MODE & DUMMY) */
-+	uint8_t         data_pads;      /* No. of data pads */
-+	uint8_t         mode_data;      /* MODE data */
-+	uint8_t         mode_cycles;    /* No. of MODE cycles */
-+	uint8_t         dummy_cycles;   /* No. of DUMMY cycles */
++/* SPI Flash Device Table */
++struct flash_info {
++	char            *name;
++	/*
++	 * JEDEC id zero means "no ID" (most older chips); otherwise it has
++	 * a high byte of zero plus three data bytes: the manufacturer id,
++	 * then a two byte device id.
++	 */
++	u32             jedec_id;
++	u16             ext_id;
++	/*
++	 * The size listed here is what works with FLASH_CMD_SE, which isn't
++	 * necessarily called a "sector" by the vendor.
++	 */
++	unsigned        sector_size;
++	u16             n_sectors;
++	u32             flags;
++	/*
++	 * Note, where FAST_READ is supported, freq_max specifies the
++	 * FAST_READ frequency, not the READ frequency.
++	 */
++	u32             max_freq;
++	int             (*config)(struct stfsm *);
 +};
 +
- /* SPI Flash Device Table */
- struct flash_info {
- 	char            *name;
-@@ -462,6 +474,21 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
- }
- 
-+/* Search for preferred configuration based on available flags */
-+static struct seq_rw_config *
-+stfsm_search_seq_rw_configs(struct stfsm *fsm,
-+			    struct seq_rw_config cfgs[])
-+{
-+	struct seq_rw_config *config;
-+	int flags = fsm->info->flags;
++static struct flash_info flash_types[] = {
++	/*
++	 * ST Microelectronics/Numonyx --
++	 * (newer production versions may have feature updates
++	 * (eg faster operating frequency)
++	 */
++#define M25P_FLAG (FLASH_FLAG_READ_WRITE | FLASH_FLAG_READ_FAST)
++	{ "m25p40",  0x202013, 0,  64 * 1024,   8, M25P_FLAG, 25, NULL },
++	{ "m25p80",  0x202014, 0,  64 * 1024,  16, M25P_FLAG, 25, NULL },
++	{ "m25p16",  0x202015, 0,  64 * 1024,  32, M25P_FLAG, 25, NULL },
++	{ "m25p32",  0x202016, 0,  64 * 1024,  64, M25P_FLAG, 50, NULL },
++	{ "m25p64",  0x202017, 0,  64 * 1024, 128, M25P_FLAG, 50, NULL },
++	{ "m25p128", 0x202018, 0, 256 * 1024,  64, M25P_FLAG, 50, NULL },
 +
-+	for (config = cfgs; config->cmd != 0; config++)
-+		if ((config->flags & flags) == config->flags)
-+			return config;
++#define M25PX_FLAG (FLASH_FLAG_READ_WRITE      |	\
++		    FLASH_FLAG_READ_FAST        |	\
++		    FLASH_FLAG_READ_1_1_2       |	\
++		    FLASH_FLAG_WRITE_1_1_2)
++	{ "m25px32", 0x207116, 0,  64 * 1024,  64, M25PX_FLAG, 75, NULL },
++	{ "m25px64", 0x207117, 0,  64 * 1024, 128, M25PX_FLAG, 75, NULL },
 +
-+	return NULL;
-+}
++#define MX25_FLAG (FLASH_FLAG_READ_WRITE       |	\
++		   FLASH_FLAG_READ_FAST         |	\
++		   FLASH_FLAG_READ_1_1_2        |	\
++		   FLASH_FLAG_READ_1_2_2        |	\
++		   FLASH_FLAG_READ_1_1_4        |	\
++		   FLASH_FLAG_READ_1_4_4        |	\
++		   FLASH_FLAG_SE_4K             |	\
++		   FLASH_FLAG_SE_32K)
++	{ "mx25l25635e", 0xc22019, 0, 64*1024, 512,
++	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70, NULL }
 +
- static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
- {
- 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
++#define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
++		   FLASH_FLAG_READ_FAST         |	\
++		   FLASH_FLAG_READ_1_1_2        |	\
++		   FLASH_FLAG_READ_1_2_2        |	\
++		   FLASH_FLAG_READ_1_1_4        |	\
++		   FLASH_FLAG_READ_1_4_4        |	\
++		   FLASH_FLAG_WRITE_1_1_2       |	\
++		   FLASH_FLAG_WRITE_1_2_2       |	\
++		   FLASH_FLAG_WRITE_1_1_4       |	\
++		   FLASH_FLAG_WRITE_1_4_4)
++	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108, NULL },
++	{ "n25q256", 0x20ba19, 0, 64 * 1024,  512,
++	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, NULL },
++
++	/*
++	 * Spansion S25FLxxxP
++	 *     - 256KiB and 64KiB sector variants (identified by ext. JEDEC)
++	 */
++#define S25FLXXXP_FLAG (FLASH_FLAG_READ_WRITE  |	\
++			FLASH_FLAG_READ_1_1_2   |	\
++			FLASH_FLAG_READ_1_2_2   |	\
++			FLASH_FLAG_READ_1_1_4   |	\
++			FLASH_FLAG_READ_1_4_4   |	\
++			FLASH_FLAG_WRITE_1_1_4  |	\
++			FLASH_FLAG_READ_FAST)
++	{ "s25fl129p0", 0x012018, 0x4d00, 256 * 1024,  64, S25FLXXXP_FLAG, 80,
++	  NULL },
++	{ "s25fl129p1", 0x012018, 0x4d01,  64 * 1024, 256, S25FLXXXP_FLAG, 80,
++	  NULL },
++
++	/*
++	 * Spansion S25FLxxxS
++	 *     - 256KiB and 64KiB sector variants (identified by ext. JEDEC)
++	 *     - RESET# signal supported by die but not bristled out on all
++	 *       package types.  The package type is a function of board design,
++	 *       so this information is captured in the board's flags.
++	 *     - Supports 'DYB' sector protection. Depending on variant, sectors
++	 *       may default to locked state on power-on.
++	 */
++#define S25FLXXXS_FLAG (S25FLXXXP_FLAG         |	\
++			FLASH_FLAG_RESET        |	\
++			FLASH_FLAG_DYB_LOCKING)
++	{ "s25fl128s0", 0x012018, 0x0300,  256 * 1024, 64, S25FLXXXS_FLAG, 80,
++	  NULL },
++	{ "s25fl128s1", 0x012018, 0x0301,  64 * 1024, 256, S25FLXXXS_FLAG, 80,
++	  NULL },
++	{ "s25fl256s0", 0x010219, 0x4d00, 256 * 1024, 128,
++	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, NULL },
++	{ "s25fl256s1", 0x010219, 0x4d01,  64 * 1024, 512,
++	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, NULL },
++
++	/* Winbond -- w25x "blocks" are 64K, "sectors" are 4KiB */
++#define W25X_FLAG (FLASH_FLAG_READ_WRITE       |	\
++		   FLASH_FLAG_READ_FAST         |	\
++		   FLASH_FLAG_READ_1_1_2        |	\
++		   FLASH_FLAG_WRITE_1_1_2)
++	{ "w25x40",  0xef3013, 0,  64 * 1024,   8, W25X_FLAG, 75, NULL },
++	{ "w25x80",  0xef3014, 0,  64 * 1024,  16, W25X_FLAG, 75, NULL },
++	{ "w25x16",  0xef3015, 0,  64 * 1024,  32, W25X_FLAG, 75, NULL },
++	{ "w25x32",  0xef3016, 0,  64 * 1024,  64, W25X_FLAG, 75, NULL },
++	{ "w25x64",  0xef3017, 0,  64 * 1024, 128, W25X_FLAG, 75, NULL },
++
++	/* Winbond -- w25q "blocks" are 64K, "sectors" are 4KiB */
++#define W25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
++		   FLASH_FLAG_READ_FAST         |	\
++		   FLASH_FLAG_READ_1_1_2        |	\
++		   FLASH_FLAG_READ_1_2_2        |	\
++		   FLASH_FLAG_READ_1_1_4        |	\
++		   FLASH_FLAG_READ_1_4_4        |	\
++		   FLASH_FLAG_WRITE_1_1_4)
++	{ "w25q80",  0xef4014, 0,  64 * 1024,  16, W25Q_FLAG, 80, NULL },
++	{ "w25q16",  0xef4015, 0,  64 * 1024,  32, W25Q_FLAG, 80, NULL },
++	{ "w25q32",  0xef4016, 0,  64 * 1024,  64, W25Q_FLAG, 80, NULL },
++	{ "w25q64",  0xef4017, 0,  64 * 1024, 128, W25Q_FLAG, 80, NULL },
++
++	/* Sentinel */
++	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
++};
++
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+ 	.data_size = TRANSFER_SIZE(8),
+ 	.seq_opc[0] = (SEQ_OPC_PADS_1 |
 -- 
 1.8.3.2
 
