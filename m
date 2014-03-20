@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932556AbaCTJWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:22:51 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:51894 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932379AbaCTJWr convert rfc822-to-8bit (ORCPT
+	id S1757828AbaCTJXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:23:25 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:33154 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757745AbaCTJWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:22:47 -0400
-Date: Thu, 20 Mar 2014 10:21:53 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: <y@KARO-electronics.de>, Arnd Bergmann <arnd@arndb.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140320102153.7106f915@ipc1.ka-ro>
-In-Reply-To: <532AB1A2.9010702@freescale.com>
-References: <1395235406-13449-1-git-send-email-y>
-	<532AB1A2.9010702@freescale.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Mar 2014 05:22:33 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        computersforpeace@gmail.com
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
+        Lee Jones <lee.jones@linaro.org>
+Subject: [PATCH v6 35/36] mtd: st_spi_fsm: Convert ST SPI FSM (NOR) Flash driver to new DT partitions
+Date: Thu, 20 Mar 2014 09:21:07 +0000
+Message-Id: <1395307268-12721-36-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The old API expected a "partitions" property provided a phandle to a
+separate partitions node, which itself contained yet more nodes each
+representing one partition. The new API rids the requirement for the
+superfluous intermediary partitions node. This patch provides the
+added information required for automatic parsing by the core.
 
-Huang Shijie wrote:
-> 于 2014年03月19日 21:23, y@karo-electronics.de 写道:
-> > configurable via DT. This is required for the Ka-Ro electronics
-> > platforms.
-> >
-> If you disable the swapping, you will disable the NAND boot in actually.
-> 
-No. All our modules do boot from NAND and none of them does the
-swapping.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/devices/st_spi_fsm.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-
-Lothar Waßmann
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index dccbac0..aefd48d 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -18,6 +18,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/mfd/syscon.h>
+ #include <linux/mtd/mtd.h>
++#include <linux/mtd/partitions.h>
+ #include <linux/sched.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
+@@ -1997,6 +1998,7 @@ boot_device_fail:
+ static int stfsm_probe(struct platform_device *pdev)
+ {
+ 	struct device_node *np = pdev->dev.of_node;
++	struct mtd_part_parser_data ppdata;
+ 	struct flash_info *info;
+ 	struct resource *res;
+ 	struct stfsm *fsm;
+@@ -2006,6 +2008,7 @@ static int stfsm_probe(struct platform_device *pdev)
+ 		dev_err(&pdev->dev, "No DT found\n");
+ 		return -EINVAL;
+ 	}
++	ppdata.of_node = np;
+ 
+ 	fsm = devm_kzalloc(&pdev->dev, sizeof(*fsm), GFP_KERNEL);
+ 	if (!fsm)
+@@ -2062,6 +2065,7 @@ static int stfsm_probe(struct platform_device *pdev)
+ 			return ret;
+ 	}
+ 
++	fsm->mtd.name		= info->name;
+ 	fsm->mtd.dev.parent	= &pdev->dev;
+ 	fsm->mtd.type		= MTD_NORFLASH;
+ 	fsm->mtd.writesize	= 4;
+@@ -2081,7 +2085,7 @@ static int stfsm_probe(struct platform_device *pdev)
+ 		(long long)fsm->mtd.size, (long long)(fsm->mtd.size >> 20),
+ 		fsm->mtd.erasesize, (fsm->mtd.erasesize >> 10));
+ 
+-	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
++	return mtd_device_parse_register(&fsm->mtd, NULL, &ppdata, NULL, 0);
+ }
+ 
+ static int stfsm_remove(struct platform_device *pdev)
 -- 
-___________________________________________________________
+1.8.3.2
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
