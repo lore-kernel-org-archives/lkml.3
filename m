@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065AbaCTJ3z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:29:55 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:47129 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbaCTJVt (ORCPT
+	id S1757215AbaCTJVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:21:43 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:58963 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756989AbaCTJVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:49 -0400
+	Thu, 20 Mar 2014 05:21:39 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com
 Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 14/36] mtd: st_spi_fsm: Fetch boot-device from mode pins
-Date: Thu, 20 Mar 2014 09:20:46 +0000
-Message-Id: <1395307268-12721-15-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v6 09/36] mtd: st_spi_fsm: Dynamically setup flash device based on JEDEC ID
+Date: Thu, 20 Mar 2014 09:20:41 +0000
+Message-Id: <1395307268-12721-10-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
@@ -22,97 +22,87 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's important for us to determine which device was used to boot from in
-order to make some correct decisions surrounding Power Management. On
-each of the platforms which support the FSM this is communicated via
-a set of mode pins held in the system configuration area. This patch
-determine the boot device and stores the result.
+Using previously added infrastructure we can now extract a device's JEDEC
+ID, compare it to a list of known and supported devices and make assumptions
+based on known characteristics of a given chip.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 46 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 46 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 83cf9df..6be2672 100644
+index 29da522..9467585 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -14,7 +14,9 @@
-  */
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/regmap.h>
- #include <linux/platform_device.h>
-+#include <linux/mfd/syscon.h>
- #include <linux/mtd/mtd.h>
- #include <linux/sched.h>
- #include <linux/delay.h>
-@@ -207,6 +209,7 @@ struct stfsm {
- 	struct flash_info       *info;
+@@ -204,6 +204,7 @@ struct stfsm {
+ 	struct resource		*region;
+ 	struct mtd_info		mtd;
+ 	struct mutex		lock;
++	struct flash_info       *info;
  
  	uint32_t                fifo_dir_delay;
-+	bool                    booted_from_spi;
  };
+@@ -477,6 +478,7 @@ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
  
- struct stfsm_seq {
-@@ -692,6 +695,47 @@ static int stfsm_init(struct stfsm *fsm)
- 	return 0;
+ static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
+ {
++	struct flash_info	*info;
+ 	u16                     ext_jedec;
+ 	u32			jedec;
+ 	u8			id[5];
+@@ -494,6 +496,15 @@ static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
+ 	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
+ 		jedec, id[0], id[1], id[2], id[3], id[4]);
+ 
++	for (info = flash_types; info->name; info++) {
++		if (info->jedec_id == jedec) {
++			if (info->ext_id && info->ext_id != ext_jedec)
++				continue;
++			return info;
++		}
++	}
++	dev_err(fsm->dev, "Unrecognized JEDEC id %06x\n", jedec);
++
+ 	return NULL;
  }
  
-+static void stfsm_fetch_platform_configs(struct platform_device *pdev)
-+{
-+	struct stfsm *fsm = platform_get_drvdata(pdev);
-+	struct device_node *np = pdev->dev.of_node;
-+	struct regmap *regmap;
-+	uint32_t boot_device_reg;
-+	uint32_t boot_device_spi;
-+	uint32_t boot_device;     /* Value we read from *boot_device_reg */
-+	int ret;
-+
-+	/* Booting from SPI NOR Flash is the default */
-+	fsm->booted_from_spi = true;
-+
-+	regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
-+	if (IS_ERR(regmap))
-+		goto boot_device_fail;
-+
-+	/* Where in the syscon the boot device information lives */
-+	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	/* Boot device value when booted from SPI NOR */
-+	ret = of_property_read_u32(np, "st,boot-device-spi", &boot_device_spi);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	ret = regmap_read(regmap, boot_device_reg, &boot_device);
-+	if (ret)
-+		goto boot_device_fail;
-+
-+	if (boot_device != boot_device_spi)
-+		fsm->booted_from_spi = false;
-+
-+	return;
-+
-+boot_device_fail:
-+	dev_warn(&pdev->dev,
-+		 "failed to fetch boot device, assuming boot from SPI\n");
-+}
-+
+@@ -588,6 +599,7 @@ static int stfsm_init(struct stfsm *fsm)
  static int stfsm_probe(struct platform_device *pdev)
  {
  	struct device_node *np = pdev->dev.of_node;
-@@ -734,6 +778,8 @@ static int stfsm_probe(struct platform_device *pdev)
- 		return ret;
++	struct flash_info *info;
+ 	struct resource *res;
+ 	struct stfsm *fsm;
+ 	int ret;
+@@ -627,13 +639,25 @@ static int stfsm_probe(struct platform_device *pdev)
  	}
  
-+	stfsm_fetch_platform_configs(pdev);
-+
  	/* Detect SPI FLASH device */
- 	info = stfsm_jedec_probe(fsm);
- 	if (!info)
+-	stfsm_jedec_probe(fsm);
++	info = stfsm_jedec_probe(fsm);
++	if (!info)
++		return -ENODEV;
++	fsm->info = info;
+ 
+ 	fsm->mtd.dev.parent	= &pdev->dev;
+ 	fsm->mtd.type		= MTD_NORFLASH;
+ 	fsm->mtd.writesize	= 4;
+ 	fsm->mtd.writebufsize	= fsm->mtd.writesize;
+ 	fsm->mtd.flags		= MTD_CAP_NORFLASH;
++	fsm->mtd.size		= info->sector_size * info->n_sectors;
++	fsm->mtd.erasesize	= info->sector_size;
++
++	dev_err(&pdev->dev,
++		"Found serial flash device: %s\n"
++		" size = %llx (%lldMiB) erasesize = 0x%08x (%uKiB)\n",
++		info->name,
++		(long long)fsm->mtd.size, (long long)(fsm->mtd.size >> 20),
++		fsm->mtd.erasesize, (fsm->mtd.erasesize >> 10));
+ 
+ 	return mtd_device_parse_register(&fsm->mtd, NULL, NULL, NULL, 0);
+ }
 -- 
 1.8.3.2
 
