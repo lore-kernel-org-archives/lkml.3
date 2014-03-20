@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999AbaCTJ26 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:28:58 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:60955 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757234AbaCTJV5 (ORCPT
+	id S1758009AbaCTJ3a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:29:30 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:59915 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756984AbaCTJVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:57 -0400
+	Thu, 20 Mar 2014 05:21:51 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com
 Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 18/36] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
-Date: Thu, 20 Mar 2014 09:20:50 +0000
-Message-Id: <1395307268-12721-19-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v6 15/36] mtd: st_spi_fsm: Provide the erase one sector sequence
+Date: Thu, 20 Mar 2014 09:20:47 +0000
+Message-Id: <1395307268-12721-16-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
@@ -22,82 +22,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Based on information we can obtain though platform specific data and/or
-chip capabilities we are able to determine whether or not we can handle
-a SoC reset or not. To find out why this is important please read the
-comment provided in the patch.
+The FSM Serial Flash Controller is driven by issuing a standard set of
+register writes we call a message sequence. This patch supplies a method
+to prepare the message sequence responsible for erasing a single sector.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 40 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 35 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 3e13d57..7cc4425 100644
+index 6be2672..06e6a52 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -210,6 +210,8 @@ struct stfsm {
- 
- 	uint32_t                fifo_dir_delay;
- 	bool                    booted_from_spi;
-+	bool                    reset_signal;
-+	bool                    reset_por;
+@@ -389,6 +389,28 @@ static struct stfsm_seq stfsm_seq_read_jedec = {
+ 		    SEQ_CFG_STARTSEQ),
  };
  
- struct stfsm_seq {
-@@ -521,6 +523,40 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
++static struct stfsm_seq stfsm_seq_erase_sector = {
++	/* 'addr_cfg' configured during initialisation */
++	.seq_opc = {
++		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++		 SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
++
++		(SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
++		 SEQ_OPC_OPCODE(FLASH_CMD_SE)),
++	},
++	.seq = {
++		STFSM_INST_CMD1,
++		STFSM_INST_CMD2,
++		STFSM_INST_ADD1,
++		STFSM_INST_ADD2,
++		STFSM_INST_STOP,
++	},
++	.seq_cfg = (SEQ_CFG_PADS_1 |
++		    SEQ_CFG_READNOTWRITE |
++		    SEQ_CFG_CSDEASSERT |
++		    SEQ_CFG_STARTSEQ),
++};
++
+ static inline int stfsm_is_idle(struct stfsm *fsm)
+ {
+ 	return readl(fsm->base + SPI_FAST_SEQ_STA) & 0x10;
+@@ -477,6 +499,19 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
  	}
  }
  
-+/*
-+ * SoC reset on 'boot-from-spi' systems
-+ *
-+ * Certain modes of operation cause the Flash device to enter a particular state
-+ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
-+ * Addr' commands).  On boot-from-spi systems, it is important to consider what
-+ * happens if a warm reset occurs during this period.  The SPIBoot controller
-+ * assumes that Flash device is in its default reset state, 24-bit address mode,
-+ * and ready to accept commands.  This can be achieved using some form of
-+ * on-board logic/controller to force a device POR in response to a SoC-level
-+ * reset or by making use of the device reset signal if available (limited
-+ * number of devices only).
-+ *
-+ * Failure to take such precautions can cause problems following a warm reset.
-+ * For some operations (e.g. ERASE), there is little that can be done.  For
-+ * other modes of operation (e.g. 32-bit addressing), options are often
-+ * available that can help minimise the window in which a reset could cause a
-+ * problem.
-+ *
-+ */
-+static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
++/* Configure 'addr_cfg' according to addressing mode */
++static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
++				       struct stfsm_seq *seq)
 +{
-+	/* Reset signal is available on the board and supported by the device */
-+	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
-+		return true;
++	int addr1_cycles = fsm->info->flags & FLASH_FLAG_32BIT_ADDR ? 16 : 8;
 +
-+	/* Board-level logic forces a power-on-reset */
-+	if (fsm->reset_por)
-+		return true;
-+
-+	/* Reset is not properly handled and may result in failure to reboot */
-+	return false;
++	seq->addr_cfg = (ADR_CFG_CYCLES_ADD1(addr1_cycles) |
++			 ADR_CFG_PADS_1_ADD1 |
++			 ADR_CFG_CYCLES_ADD2(16) |
++			 ADR_CFG_PADS_1_ADD2 |
++			 ADR_CFG_CSDEASSERT_ADD2);
 +}
 +
- /* Configure 'addr_cfg' according to addressing mode */
- static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
- 				       struct stfsm_seq *seq)
-@@ -786,6 +822,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
- 	if (IS_ERR(regmap))
- 		goto boot_device_fail;
- 
-+	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
-+
-+	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
-+
- 	/* Where in the syscon the boot device information lives */
- 	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
- 	if (ret)
+ /* Search for preferred configuration based on available flags */
+ static struct seq_rw_config *
+ stfsm_search_seq_rw_configs(struct stfsm *fsm,
 -- 
 1.8.3.2
 
