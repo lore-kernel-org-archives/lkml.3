@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965225AbaCTTcR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:32:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53504 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067AbaCTTcI (ORCPT
+	id S965248AbaCTTc1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:32:27 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50384 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755653AbaCTTcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:32:08 -0400
-From: Felipe Balbi <balbi@ti.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: <linux-serial@vger.kernel.org>, <linux-bluetooth@vger.kernel.org>,
-        <peter@hurleysoftware.com>, <m-karicheri2@ti.com>,
-        <b32955@freescale.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 11/11] serial: fix UART_IIR_ID
-Date: Thu, 20 Mar 2014 14:30:07 -0500
-Message-ID: <1395343807-21618-11-git-send-email-balbi@ti.com>
-X-Mailer: git-send-email 1.9.1.286.g5172cb3
-In-Reply-To: <1395343807-21618-1-git-send-email-balbi@ti.com>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+	Thu, 20 Mar 2014 15:32:22 -0400
+Date: Thu, 20 Mar 2014 16:32:12 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Adrien BAK <adrien.bak@metascale.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Mathias Gaunard <mathias.gaunard@metascale.org>
+Subject: Re: [PATCH] perf-script : improves option passing mechansim
+Message-ID: <20140320193212.GB21431@kernel.org>
+References: <53286FBD.4050901@metascale.org>
+ <20140318181525.GE6482@ghostprotocols.net>
+ <532AF29E.3040207@metascale.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532AF29E.3040207@metascale.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-UART IRQ Identification bitfield is 3
-bits long (bits 3:1) but current mask only
-masks 2 bits. Fix it.
+Em Thu, Mar 20, 2014 at 02:52:30PM +0100, Adrien BAK escreveu:
+> Indeed. I wasn't aware of the '--' behaviour and the documentation
+> doesn't seem to mention it. My patch essentially implements the same
+> behaviour, except that the script name itself is used to separate
+> the options. I guess there is not much need the proposed patch then.
+> 
+> Sorry for the wasted time.
 
-Signed-off-by: Felipe Balbi <balbi@ti.com>
----
- include/uapi/linux/serial_reg.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+No need to be sorry, I appreciate _you_ taking the time to help improve
+the tools, maybe you can send a patch to update the documentation
+instead, with examples where -- is used so that people don't fall into
+this trap again?
 
-diff --git a/include/uapi/linux/serial_reg.h b/include/uapi/linux/serial_reg.h
-index e632260..99b4705 100644
---- a/include/uapi/linux/serial_reg.h
-+++ b/include/uapi/linux/serial_reg.h
-@@ -32,7 +32,7 @@
- 
- #define UART_IIR	2	/* In:  Interrupt ID Register */
- #define UART_IIR_NO_INT		0x01 /* No interrupts pending */
--#define UART_IIR_ID		0x06 /* Mask for the interrupt ID */
-+#define UART_IIR_ID		0x0e /* Mask for the interrupt ID */
- #define UART_IIR_MSI		0x00 /* Modem status interrupt */
- #define UART_IIR_THRI		0x02 /* Transmitter holding register empty */
- #define UART_IIR_RDI		0x04 /* Receiver data interrupt */
--- 
-1.9.1.286.g5172cb3
+Thanks!
 
+- Arnaldo
+
+> Adrien
+> 
+> On 03/18/2014 07:15 PM, Arnaldo Carvalho de Melo wrote:
+> >Em Tue, Mar 18, 2014 at 05:09:33PM +0100, Adrien BAK escreveu:
+> >>This pull request fixes the following issues :
+> >>* when passing custom arguments to a script, if those arguments are
+> >>  not declared within perf, they prevent the execution of perf.
+> >>e.g.
+> >>
+> >>perf script -i path/to/perf.data -s my_script -arg1 arg_value
+> >>
+> >>perf will issue an error message and no processing will occur
+> >I haven't tested this, but what comes to mind is the use of -- to
+> >separate what options should be processed by perf and which ones should
+> >be left to the script, is that what you're fixing?
+> >
+> >- Arnaldo
+> >>* when passing custom arguments to a script, if those arguments are
+> >>  declared by perf, they are consumed and not passed to the script.
+> >>e.g.
+> >>perf script -i path/to/perf.data -s my_script -h
+> >>
+> >>perf will display its own help message, instead of the expected help
+> >>message from my_script.
+> >>
+> >>These issues are addressed as follows :
+> >>* The parse option flag is changed from PARSE_OPT_STOP_AT_NON_OPTION to
+> >>PARSE_OPT_KEEP_UNKNOWN
+> >>* A new option type is introduce OPT_CALLBACK_FINAL_OPTION, which
+> >>effectively
+> >>  prevents the parsing of all options located after the script.
+> >>
+> >>Signed-off-by: Adrien Bak <adrien.bak@metascale.org>
