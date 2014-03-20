@@ -1,71 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758107AbaCTLui (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:50:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57162 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758056AbaCTLug (ORCPT
+	id S932427AbaCTLuq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:50:46 -0400
+Received: from relay.parallels.com ([195.214.232.42]:38917 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757165AbaCTLum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:50:36 -0400
-Date: Thu, 20 Mar 2014 11:50:10 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: <brian.austin@cirrus.com>, <Paul.Handrigan@cirrus.com>,
-        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <lgirdwood@gmail.com>, <grant.likely@linaro.org>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>
-Message-ID: <20140320115010.GD11706@sirena.org.uk>
-References: <1395310717-2090-1-git-send-email-Guangyu.Chen@freescale.com>
+	Thu, 20 Mar 2014 07:50:42 -0400
+Message-ID: <532AD606.40406@parallels.com>
+Date: Thu, 20 Mar 2014 15:50:30 +0400
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Mx3Wl9kSzNzqr7Kn"
-Content-Disposition: inline
-In-Reply-To: <1395310717-2090-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: Turn the other cheek.
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4] ASoC: cs42xx8: Add codec driver support for
- CS42448/CS42888
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Herrmann <dh.herrmann@gmail.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        =?ISO-8859-1?Q?Kristian_H?= =?ISO-8859-1?Q?=F8gsberg?= 
+	<krh@bitplanet.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Subject: Re: [PATCH 3/6] shm: add memfd_create() syscall
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com> <1395256011-2423-4-git-send-email-dh.herrmann@gmail.com> <20140320084748.GK1728@moon> <532AAE7B.2030501@parallels.com> <CANq1E4SLp5Smxf3VbjT0hq0UrWWDf0RxudbQTA1G=sW1ecQk-g@mail.gmail.com>
+In-Reply-To: <CANq1E4SLp5Smxf3VbjT0hq0UrWWDf0RxudbQTA1G=sW1ecQk-g@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.114]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/20/2014 03:29 PM, David Herrmann wrote:
+> Hi
+> 
+> On Thu, Mar 20, 2014 at 10:01 AM, Pavel Emelyanov <xemul@parallels.com> wrote:
+>> On 03/20/2014 12:47 PM, Cyrill Gorcunov wrote:
+>>> If I'm not mistaken in something obvious, this looks similar to /proc/pid/map_files
+>>> feature, Pavel?
+>>
+>> It is, but the map_files will work "in the opposite direction" :) In the memfd
+>> case one first gets an FD, then mmap()s it; in the /proc/pis/map_files case one
+>> should first mmap() a region, then open it via /proc/self/map_files.
+>>
+>> But I don't know whether this matters.
+> 
+> Yes, you can replace memfd_create() so far with:
+>   p = mmap(NULL, size, ..., MAP_ANON | MAP_SHARED, -1, 0);
+>   sprintf(path, "/proc/self/map_files/%lx-%lx", p, p + size);
+>   fd = open(path, O_RDWR);
+> 
+> However, map_files is only enabled with CONFIG_CHECKPOINT_RESTORE, the
+> /proc/pid/map_files/ directory is root-only (at least I get EPERM if
+> non-root),
 
---Mx3Wl9kSzNzqr7Kn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Yes. But this is something we'd also like to have fixed :) Having two
+parties willing the same makes it easier for the patch to get accepted.
 
-On Thu, Mar 20, 2014 at 06:18:37PM +0800, Nicolin Chen wrote:
-> This patch adds support for the Cirrus Logic CS42448/CS42888 Audio CODEC that
-> has six/four 24-bit AD and eight 24-bit DA converters.
+> it doesn't provide the "name" argument which is very handy
+> for debugging,
 
-Applied, thanks.
+What if we make mmap's shmem_zero_setup() generate a meaningful name,
+would it solve the debugging issue?
 
---Mx3Wl9kSzNzqr7Kn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> it doesn't explicitly support sealing (it requires MAP_ANON to be backed 
+> by shmem)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Can you elaborate on this? The fd generated by sys_memfd() will be
+shmem-backed, so will be the file opened via map_files link for the
+MAP_ANON | MAP_SHARED mapping. So what are the problems to make it
+support sealing?
 
-iQIcBAEBAgAGBQJTKtXvAAoJELSic+t+oim92oYQAJ4uVmnOH/4eaekP8lsS+Poa
-28nCDZbM2/U5rt2H6Id0b6F6ZnmDfuUN7BKN8TsTFMRUoKf+YZkFJ9cxnLV4Np4u
-6u2DOsSTNyIlQiRODPmQn2XUCFSD+VHxX+w7m85ysUdbO9RoQzpFtd384LLpfrWU
-mUvpc9cJXHy9WtFzJWnyE3Diem1WOk6Y62T0LT5YonMgDpgC9gc95Zk3JcHQOMEc
-/SBlrnezoG9nPmHQmgA5nzgAmhDSL3cPRbHexlRMgaRNW0+w8iMbCBVDUIyE6E95
-0agE16yPjwkSrLgH3IOToWaq5FKHeTZ3x+b/T/WwbWM5vDjqRFmZ14cogx+21E/l
-lw0dVEpKkboOojimcJGNmokxfhSddugr4/yFF531WcTDmxvBSoi7UPKdcLd9tZPX
-qxOZG8AgZ2DgrQNP/Iy03MudzOaM5zD4DbYX54Bdrhf4rLET25mXQmTIGLVJanny
-9hsusNCv9oH/BXp/k/9jhPkYw3vBm0Ops4kzLVWFX53rr6K3I/AXZLlCLM8JU6/t
-RhRL+CLlHwc8tgV3RfcjPUabtgS6s6hDJ4vk4IgbzDcGahV88K0dSnqq+KIdJHez
-GcucK2+k/9M4jvICCioRhdBwsI/O3Wj59ftQ8JurZ6LbxPXHGapZGXC9DHvxF6os
-S8aeytThkzEyycz3tKz5
-=27uM
------END PGP SIGNATURE-----
+> and it's a very weird API for something this simple.
 
---Mx3Wl9kSzNzqr7Kn--
+:)
+
+Thanks,
+Pavel
