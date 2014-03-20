@@ -1,127 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759898AbaCTWuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 18:50:32 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:56864 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759365AbaCTWu3 (ORCPT
+	id S1760035AbaCTWvN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 18:51:13 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33292 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759998AbaCTWvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 18:50:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140320124143.GA10751@localhost>
-References: <20140320124143.GA10751@localhost>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 20 Mar 2014 16:50:08 -0600
-Message-ID: <CAErSpo7i1sD=mNd1MZ+yWrPrPJDpZx2w-L3Dj=2N+gJBqVdSzA@mail.gmail.com>
-Subject: Re: [pci] WARNING: CPU: 0 PID: 1 at drivers/gpu/drm/drm_crtc.c:94 drm_warn_on_modeset_not_all_locked()
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+	Thu, 20 Mar 2014 18:51:10 -0400
+Date: Thu, 20 Mar 2014 22:50:48 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Content-Type: text/plain; charset=UTF-8
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: DMABOUNCE in pci-rcar
+Message-ID: <20140320225048.GE7528@n2100.arm.linux.org.uk>
+References: <201402241200.21944.arnd@arndb.de> <201403201929.13633.arnd@arndb.de> <20140320183932.GA7528@n2100.arm.linux.org.uk> <14479462.PmG77WeO2J@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <14479462.PmG77WeO2J@wuerfel>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 6:41 AM, Fengguang Wu <fengguang.wu@intel.com> wrote:
-> Greetings,
->
-> I got the below dmesg and the first bad commit is
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git pci/resource
->
-> commit aa11fc58dc71c27701b1f9a529a36a38d4337722
-> Author:     Bjorn Helgaas <bhelgaas@google.com>
-> AuthorDate: Fri Mar 7 13:39:01 2014 -0700
-> Commit:     Bjorn Helgaas <bhelgaas@google.com>
-> CommitDate: Wed Mar 19 15:00:16 2014 -0600
->
->     PCI: Check all IORESOURCE_TYPE_BITS in pci_bus_alloc_from_region()
->
->     When allocating space from a bus resource, i.e., from apertures leading to
->     this bus, make sure the entire resource type matches.  The previous code
->     assumed the IORESOURCE_TYPE_BITS field was a bitmask with only a single bit
->     set, but this is not true.  IORESOURCE_TYPE_BITS is really an enumeration,
->     and we have to check all the bits.
->
->     See 72dcb1197228 ("resources: Add register address resource type").
->
->     No functional change.  If we used this path for allocating IRQs, DMA
->     channels, or bus numbers, this would fix a bug because those types are
->     indistinguishable when masked by IORESOURCE_IO | IORESOURCE_MEM.  But we
->     don't, so this shouldn't make any difference.
->
->     Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+On Thu, Mar 20, 2014 at 11:11:04PM +0100, Arnd Bergmann wrote:
+> On Thursday 20 March 2014 18:39:32 Russell King - ARM Linux wrote:
+> > Yes, OHCI's PCI driver doesn't do that at the moment, but that's not
+> > to say that it won't in the future - at which point hacks like the
+> > above suddenly stop working.
+> 
+> If the OHCI-PCI driver is changed to call
+> dma_set_mask_and_coherent(dev, DMA_BIT_MASK(32))), what do you
+> think should happen? The way I read it, that call must fail on
+> this platform, causing the probe() function to bail out and not
+> use the hardware, which is clearly not what we want here.
 
-Thanks (I think).  I'm afraid I'm going to need some more help to
-debug this.  I built aa11fc58dc with the config you supplied and
-booted it on qemu with no real issues (it didn't boot all the way
-because the config doesn't include a driver for my root disk, but
-that's to be expected).
+That depends how you interpret what's going on here.  It's saying
+"I may allocate and try and map memory which result in 32-bits
+of DMA address".  Under normal situations where there is a 1:1
+relationship and a simple mapping done by the DMA API, then yes,
+such memory would end up with 32-bits of DMA address.
 
-The dmesg you supplied is for some other commit 2d18516 that I don't
-have, so I'm confused about why it's not from aa11fc58dc.
+Now, if the DMA implementation has a way to cope with providing a
+restricted DMA address to the device due to bus limitations which
+the DMA implementation knows about, then the answer to "can you
+cope with memory which would normally result in 32-bits of DMA
+address" is yes, even if you can only handle 30 bits.
 
-I did reproduce what appears to be basically the same problem with
-a654dc797f3e, which is the 20140320 linux-next tree.  I backed up to
-93ecdc077282, which is where pci/next was merged (this includes
-aa11fc58dc), but I could not reproduce the problem there.
+The reason being is that you're agreeing to the driver using
+memory which would be 32-bits, but internally you're guaranteeing
+not to violate the bus limitation of 30 bits.
 
-So bottom line, I'm confused because your bisection doesn't match what
-I'm seeing, and I don't want to spend more time flailing around.
+Things get harder with the coherent API, and that's where IXP4xx
+has to intercept the call and limit the coherent mask, so the
+coherent allocator knows to restrict the memory returned - there's
+no way that such memory could be fixed up after the fact.
 
-Bjorn
+> IXP uses defines a ixp4xx_pci_platform_notify() function that basically
+> does the same thing that Ben tried adding here, and then it has a
+> dma_set_coherent_mask function that checks whether the mask that the
+> device tries to set is even smaller than that, in which case it returns
+> a failure, but it returns success if the device tries to set a larger
+> mask.
 
+Yes, IXP has a two-pronged approach because of problem drivers like
+OHCI which don't call the DMA mask setting functions.  If everyone
+did, then the hooks in the mask setting functions would be all that
+it needs, since it could apply its restriction there rather than via
+notifiers.
 
-> +------------------------------------------------------------------------------------------------+------------+------------+
-> |                                                                                                | aa11fc58dc | 2d18516523 |
-> +------------------------------------------------------------------------------------------------+------------+------------+
-> | boot_successes                                                                                 | 19         | 0          |
-> | boot_failures                                                                                  | 1          | 19         |
-> | BUG:unable_to_handle_kernel_NULL_pointer_dereference                                           | 1          | 1          |
-> | Oops                                                                                           | 1          | 1          |
-> | EIP_is_at_rapl_pmu_init                                                                        | 1          | 1          |
-> | Kernel_panic-not_syncing:Attempted_to_kill_init_exitcode=                                      | 1          | 1          |
-> | backtrace:rapl_pmu_init                                                                        | 1          | 1          |
-> | backtrace:kernel_init_freeable                                                                 | 1          | 19         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_crtc.c:drm_warn_on_modeset_not_all_locked()             | 0          | 18         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_crtc_helper.c:drm_helper_encoder_in_use()               | 0          | 18         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_crtc_helper.c:drm_helper_crtc_in_use()                  | 0          | 18         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_crtc_helper.c:drm_helper_probe_single_connector_modes() | 0          | 18         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_modes.c:drm_mode_probed_add()                           | 0          | 18         |
-> | WARNING:CPU:PID:at_drivers/gpu/drm/drm_modes.c:drm_mode_connector_list_update()                | 0          | 18         |
-> | backtrace:drm_helper_disable_unused_functions                                                  | 0          | 18         |
-> | backtrace:cirrus_fbdev_init                                                                    | 0          | 18         |
-> | backtrace:cirrus_modeset_init                                                                  | 0          | 18         |
-> | backtrace:__pci_register_driver                                                                | 0          | 18         |
-> | backtrace:drm_pci_init                                                                         | 0          | 18         |
-> | backtrace:cirrus_init                                                                          | 0          | 18         |
-> | backtrace:drm_fb_helper_initial_config                                                         | 0          | 18         |
-> +------------------------------------------------------------------------------------------------+------------+------------+
->
-> [    1.624247] [TTM] Initializing pool allocator
-> [    1.625248] ------------[ cut here ]------------
-> [    1.625248] ------------[ cut here ]------------
-> [    1.626136] WARNING: CPU: 0 PID: 1 at drivers/gpu/drm/drm_crtc.c:94 drm_warn_on_modeset_not_all_locked+0x61/0xc6()
->
-> git bisect start 2d1851652373730f6b8c7fa7f45eaa854f23da8f dcb99fd9b08cfe1afe426af4d8d3cbc429190f15 --
-> git bisect  bad 82202f95148065d7a0f5d86d4d6e39f31dbd7937  # 12:19      0-     10  Merge 'asoc/fix/cs42l51' into devel-hourly-2014032007
-> git bisect good 9115e0b3218bd6b97e830bc36e6e80c4890f6fe4  # 12:45     20+      0  Merge 'scsi/misc' into devel-hourly-2014032007
-> git bisect good 4fb88b0dc2d9b229d03a9e6555d9056888c90137  # 14:42     20+      0  Merge 'target/for-next' into devel-hourly-2014032007
-> git bisect  bad c5011f998a8e94c052c5aa71cf19510f2d0bf5fd  # 15:06      0-      1  Merge 'pci/pci/resource' into devel-hourly-2014032007
-> git bisect good daec480a6e6be6e9716a56029aafcbfb79e6b47b  # 15:41     20+      0  Merge 'netdev-next/master' into devel-hourly-2014032007
-> git bisect good 937441ae220fd3fae143ef394227337c969ad155  # 15:57     20+      0  Merge 'kvm/queue' into devel-hourly-2014032007
-> git bisect good 3cedcc3621289d41bd21c5dbe0b886d57c83a1ea  # 16:27     20+      0  PCI: Don't enable decoding if BAR hasn't been assigned an address
-> git bisect good d75332325389a95c4ddbfa0f0cd7e5e08a54aa43  # 16:54     20+      0  s390/PCI: Use generic pci_enable_resources()
-> git bisect  bad aa11fc58dc71c27701b1f9a529a36a38d4337722  # 17:11      0-      1  PCI: Check all IORESOURCE_TYPE_BITS in pci_bus_alloc_from_region()
-> git bisect good 6404e88e8385638123f4b18b104430480870601a  # 17:23     20+      0  resources: Set type in __request_region()
-> # first bad commit: [aa11fc58dc71c27701b1f9a529a36a38d4337722] PCI: Check all IORESOURCE_TYPE_BITS in pci_bus_alloc_from_region()
-> git bisect good 6404e88e8385638123f4b18b104430480870601a  # 17:27     60+      0  resources: Set type in __request_region()
-> git bisect  bad 2d1851652373730f6b8c7fa7f45eaa854f23da8f  # 17:27      0-     19  0day head guard for 'devel-hourly-2014032007'
-> git bisect good 887843961c4b4681ee993c36d4997bf4b4aa8253  # 19:24     60+      0  mm: fix bad rss-counter if remap_file_pages raced migration
-> git bisect  bad a654dc797f3ea1cb5719a71a17af35f57fddb2d8  # 20:10      0-      1  Add linux-next specific files for 20140320
->
-> Thanks,
-> Fengguang
+So, what IXP does is it overrides dma_set_coherent_mask() to be a
+function which just validates the mask, and doesn't actually allow
+the mask to be changed.  This coupled with the notifier sets the
+coherent mask to 64M, and ensures that it isn't changed (except by
+buggy drivers which access it directly.)
+
+An alternative approach for that would be to accept 64M or larger
+masks in dma_set_coherent_mask() but always set the actual coherent
+DMA mask to no larger than 64M - but that's only possible where all
+drivers properly call dma_set_coherent_mask().
+
+The streaming DMA mask has become more convoluted - it's now set
+such that any device which has dmabounce attached to it will ignore
+attempts to change the streaming DMA mask value - just like the
+above.
+
+> In no case does it try to actually set the mask. While this seems
+> like a practical approach, I don't see how that actually matches up
+> with the documentation, e.g. "dma_set_coherent_mask will always be able
+> to set the same or a smaller mask as the streaming mask." and
+> "When dma_set_mask() or dma_set_mask_and_coherent() is successful, and
+> returns zero, the kernel saves away this mask you have provided."
+
+IXP4xx used to conform - 6fee48cd330c:
+
+-int
+-pci_set_dma_mask(struct pci_dev *dev, u64 mask)
+-{
+-       if (mask >= SZ_64M - 1 )
+-               return 0;
+-
+-       return -EIO;
+-}
+-    
+-int
+-pci_set_consistent_dma_mask(struct pci_dev *dev, u64 mask)
+-{
+-       if (mask >= SZ_64M - 1 )
+-               return 0;
+-
+-       return -EIO;
+-}
+
+Here, both functions have the same behaviour.  The bit about "smaller
+mask" is slightly bogus - you can never set a mask that is smaller
+than the system's DMA memory pool, because the system never has a way
+to guarantee you memory below GFP_DMA allocations.  In this case on
+IXP4xx, that is 64MB of memory, so thse functions reject on 64MB or
+smaller allocations.
+
+However, because of the bouncing that is implemented, it can accept
+drivers asking for larger DMA masks, and because it limits the
+coherent memory allocations to 64MB internally within the DMA API,
+larger coherent masks are permissible.
+
+So.. there's no problem here.  What is a problem is:
+
+static int dmabounce_set_mask(struct device *dev, u64 dma_mask)
+{
+        if (dev->archdata.dmabounce)
+                return 0;
+
+        return arm_dma_ops.set_dma_mask(dev, dma_mask);
+}
+
+which says "I'll accept anything if I'm a DMA bounce-hindered device"
+which isn't actually correct, since we should still be rejecting
+masks smaller than the system can allocate for.
+
+That's checked for by dma_supported() which should really be in 
+the above.
+
+The remaining gotcha for multiplatform is the coherent mask, which
+doesn't have a way for it to be intercepted by the platform.  That
+means any /good/ driver which calls dma_set_coherent_mask() results
+in resetting the coherent mask to the driver specified mask.
+
+> The majority of the platforms we support today are fine with
+> always assuming that all of memory can be reached at the physical
+> address,
+
+That's only because they're now all fine with 32-bit addresses.
+
+> and the exceptions are either the legacy non-multiplatform
+> ones, or very new platforms with LPAE that can only be probed using
+> devicetree.
+
+Remember with LPAE and its strange memory setups, physical address !=
+DMA address, and that's going to be something that everyone is going
+to /have/ to learn to get used to.  No longer will it be possible to
+assume that the two are the same, or you can just crop the bits above
+32-bit off to make it fit in a 32-bit controller - consider 8G of
+memory on LPAE with a 32-bit DMA controller.
+
+That's where dealing with the DMA mask correctly (representing the number
+of bits the /device/ can accept rather than the number of physical address
+bits) matters, and thankfully that should now be solved.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
