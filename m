@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933AbaCTJ02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:26:28 -0400
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:53537 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757510AbaCTJWN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:22:13 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 26/36] mtd: st_spi_fsm: Write to Flash via the FSM FIFO
-Date: Thu, 20 Mar 2014 09:20:58 +0000
-Message-Id: <1395307268-12721-27-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	id S1757860AbaCTJ0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:26:53 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:58548 "EHLO smtp3-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750960AbaCTJ0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 05:26:51 -0400
+X-Mailbox-Line: From 132ea5a4272d4927e8e389427d9c96e6a6d7166d Mon Sep 17 00:00:00 2001
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Thu, 20 Mar 2014 09:58:10 +0100
+Subject: [PATCH] ASoC: tda998x: Fix lack of required reg in DT documentation
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org
+Cc: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Message-Id: <20140320092639.48F68A6279@smtp3-g21.free.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we write data to the FIFO the FSM Controller subsequently writes
-that data out to the Serial Flash chip.
+The I2C address (reg) is required for the TDA998x driver to be loaded
+and initialized.
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+This patch applies to linux-next.
+---
+ Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index b1a65c1..58b8761 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -668,6 +668,20 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
- 	}
- }
+diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+index d7df01c..fc7effa 100644
+--- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
++++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+@@ -3,6 +3,8 @@ Device-Tree bindings for the NXP TDA998x HDMI transmitter
+ Required properties;
+   - compatible: must be "nxp,tda998x"
  
-+static int stfsm_write_fifo(struct stfsm *fsm,
-+			    const uint32_t *buf, const uint32_t size)
-+{
-+	uint32_t words = size >> 2;
++  - reg: I2C address - must be <0x70>
 +
-+	dev_dbg(fsm->dev, "writing %d bytes to FIFO\n", size);
-+
-+	BUG_ON((((uint32_t)buf) & 0x3) || (size & 0x3));
-+
-+	writesl(fsm->base + SPI_FAST_SEQ_DATA_REG, buf, words);
-+
-+	return size;
-+}
-+
- static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_en_32bit_addr;
+ Optional properties:
+   - interrupts: interrupt number and trigger type
+ 	default: polling
 -- 
-1.8.3.2
+1.9.1
 
