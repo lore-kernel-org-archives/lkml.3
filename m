@@ -1,151 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760183AbaCTXdv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 19:33:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57226 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759420AbaCTXds (ORCPT
+	id S1760191AbaCTXgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 19:36:20 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:53203 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759628AbaCTXgQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 19:33:48 -0400
-Date: Thu, 20 Mar 2014 16:33:25 -0700
-From: tip-bot for Chris Bainbridge <tipbot@zytor.com>
-Message-ID: <tip-69f2366c9456d0ce784cf5aba87ee77eeadc1d5e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, bp@suse.de, chris.bainbridge@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, bp@suse.de, chris.bainbridge@gmail.com
-In-Reply-To: <20140307114040.GA4997@localhost>
-References: <20140307114040.GA4997@localhost>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cpu] x86, cpu:
-  Add forcepae parameter for booting PAE kernels on PAE-disabled Pentium M
-Git-Commit-ID: 69f2366c9456d0ce784cf5aba87ee77eeadc1d5e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Thu, 20 Mar 2014 19:36:16 -0400
+Date: Fri, 21 Mar 2014 00:36:13 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] ARM: berlin: add SMP support
+Message-ID: <20140320233613.GZ12021@piout.net>
+References: <1395347986-30203-1-git-send-email-sebastian.hesselbarth@gmail.com>
+ <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  69f2366c9456d0ce784cf5aba87ee77eeadc1d5e
-Gitweb:     http://git.kernel.org/tip/69f2366c9456d0ce784cf5aba87ee77eeadc1d5e
-Author:     Chris Bainbridge <chris.bainbridge@gmail.com>
-AuthorDate: Fri, 7 Mar 2014 18:40:42 +0700
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 20 Mar 2014 16:31:54 -0700
+On 20/03/2014 at 21:39:46 +0100, Sebastian Hesselbarth wrote :
+> This adds SMP support to Marvell Berlin2 SoCs. Secondary CPUs boot into
+> BootROM, wait for interrupt, and read SW generic register 1 with actual
+> boot code address. Synchronization by holding pen is copied from
+> plat-versatile and mach-prima2.
+> 
+> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 
-x86, cpu: Add forcepae parameter for booting PAE kernels on PAE-disabled Pentium M
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-Many Pentium M systems disable PAE but may have a functionally usable PAE
-implementation. This adds the "forcepae" parameter which bypasses the boot
-check for PAE, and sets the CPU as being PAE capable. Using this parameter
-will taint the kernel with TAINT_CPU_OUT_OF_SPEC.
+> ---
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
+> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: linux-kernel@vger.kernel.org
+> ---
+>  arch/arm/mach-berlin/Kconfig   |   1 +
+>  arch/arm/mach-berlin/Makefile  |   1 +
+>  arch/arm/mach-berlin/berlin.c  |   3 +
+>  arch/arm/mach-berlin/common.h  |  18 ++++++
+>  arch/arm/mach-berlin/headsmp.S |  43 +++++++++++++
+>  arch/arm/mach-berlin/platsmp.c | 139 +++++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 205 insertions(+)
+>  create mode 100644 arch/arm/mach-berlin/common.h
+>  create mode 100644 arch/arm/mach-berlin/headsmp.S
+>  create mode 100644 arch/arm/mach-berlin/platsmp.c
+> 
+> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+> index 7a02d222c378..eecec99c3096 100644
+> --- a/arch/arm/mach-berlin/Kconfig
+> +++ b/arch/arm/mach-berlin/Kconfig
+> @@ -15,6 +15,7 @@ config MACH_BERLIN_BG2
+>  	bool "Marvell Armada 1500 (BG2)"
+>  	select CACHE_L2X0
+>  	select CPU_PJ4B
+> +	select HAVE_ARM_SCU if SMP
+>  	select HAVE_ARM_TWD if SMP
+>  	select HAVE_SMP
+>  
+> diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
+> index ab69fe956f49..e11b1b0be4dd 100644
+> --- a/arch/arm/mach-berlin/Makefile
+> +++ b/arch/arm/mach-berlin/Makefile
+> @@ -1 +1,2 @@
+>  obj-y += berlin.o
+> +obj-$(CONFIG_SMP)	+= platsmp.o headsmp.o
+> diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
+> index 025bcb5473eb..1bbca793174d 100644
+> --- a/arch/arm/mach-berlin/berlin.c
+> +++ b/arch/arm/mach-berlin/berlin.c
+> @@ -18,6 +18,8 @@
+>  #include <asm/hardware/cache-l2x0.h>
+>  #include <asm/mach/arch.h>
+>  
+> +#include "common.h"
+> +
+>  static void __init berlin_init_machine(void)
+>  {
+>  	/*
+> @@ -36,4 +38,5 @@ static const char * const berlin_dt_compat[] = {
+>  DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
+>  	.dt_compat	= berlin_dt_compat,
+>  	.init_machine	= berlin_init_machine,
+> +	.smp		= smp_ops(berlin_smp_ops),
+>  MACHINE_END
+> diff --git a/arch/arm/mach-berlin/common.h b/arch/arm/mach-berlin/common.h
+> new file mode 100644
+> index 000000000000..57c97669af0a
+> --- /dev/null
+> +++ b/arch/arm/mach-berlin/common.h
+> @@ -0,0 +1,18 @@
+> +/*
+> + * Marvell Berlin SoCs common include.
+> + *
+> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> + *
+> + * This file is licensed under the terms of the GNU General Public
+> + * License version 2.  This program is licensed "as is" without any
+> + * warranty of any kind, whether express or implied.
+> + */
+> +
+> +#ifndef __ARCH_BERLIN_COMMON_H
+> +#define __ARCH_BERLIN_COMMON_H
+> +
+> +extern void berlin_secondary_startup(void);
+> +
+> +extern struct smp_operations berlin_smp_ops;
+> +
+> +#endif
+> diff --git a/arch/arm/mach-berlin/headsmp.S b/arch/arm/mach-berlin/headsmp.S
+> new file mode 100644
+> index 000000000000..bd187257fefd
+> --- /dev/null
+> +++ b/arch/arm/mach-berlin/headsmp.S
+> @@ -0,0 +1,43 @@
+> +/*
+> + * linux/arch/arm/mach-berlin/headsmp.S
+> + *
+> + * Based on linux/arch/arm/mach-prima2/headsmp.S
+> + *
+> + * Copyright (c) 2003 ARM Limited
+> + * All Rights Reserved
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +#include <linux/linkage.h>
+> +#include <linux/init.h>
+> +#include <asm/assembler.h>
+> +
+> +/*
+> + * Entry point for secondary CPUs, this provides a "holding pen" into which
+> + * all secondary cores are held until we're ready for them to initialise.
+> + */
+> +ENTRY(berlin_secondary_startup)
+> + ARM_BE8(setend be)
+> +	bl	v7_invalidate_l1
+> +	mrc	p15, 0, r0, c0, c0, 5
+> +	and	r0, r0, #15
+> +	adr	r4, 1f
+> +	ldmia	r4, {r5, r6}
+> +	sub	r4, r4, r5
+> +	add	r6, r6, r4
+> +pen:	ldr	r7, [r6]
+> +	cmp	r7, r0
+> +	bne	pen
+> +
+> +	/*
+> +	 * we've been released from the holding pen: secondary_stack
+> +	 * should now contain the SVC stack for this core
+> +	 */
+> +	b	secondary_startup
+> +ENDPROC(berlin_secondary_startup)
+> +
+> +	.align
+> +1:	.long	.
+> +	.long	pen_release
+> diff --git a/arch/arm/mach-berlin/platsmp.c b/arch/arm/mach-berlin/platsmp.c
+> new file mode 100644
+> index 000000000000..5c83941b0918
+> --- /dev/null
+> +++ b/arch/arm/mach-berlin/platsmp.c
+> @@ -0,0 +1,139 @@
+> +/*
+> + * linux/arch/arm/mach-berlin/platsmp.c
+> + *
+> + * Based on linux/arch/arm/plat-versatile/platsmp.c
+> + *
+> + * Copyright (C) 2002 ARM Ltd.
+> + * All Rights Reserved
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> +*/
+> +
+> +#include <linux/init.h>
+> +#include <linux/delay.h>
+> +#include <linux/errno.h>
+> +#include <linux/io.h>
+> +#include <linux/jiffies.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/smp.h>
+> +
+> +#include <asm/cacheflush.h>
+> +#include <asm/smp_plat.h>
+> +#include <asm/smp_scu.h>
+> +
+> +#include "common.h"
+> +
+> +/*
+> + * Write pen_release in a way that is guaranteed to be visible to all
+> + * observers, irrespective of whether they're taking part in coherency
+> + * or not.  This is necessary for the hotplug code to work reliably.
+> + */
+> +static void write_pen_release(int val)
+> +{
+> +	pen_release = val;
+> +	/* write and flush pen_release to memory */
+> +	smp_wmb();
+> +	sync_cache_w(&pen_release);
+> +}
+> +
+> +static DEFINE_SPINLOCK(boot_lock);
+> +
+> +static void berlin_secondary_init(unsigned int cpu)
+> +{
+> +	/*
+> +	 * let the primary processor know we're out of the
+> +	 * pen, then head off into the C entry point
+> +	 */
+> +	write_pen_release(-1);
+> +
+> +	/*
+> +	 * Synchronise with the boot thread.
+> +	 */
+> +	spin_lock(&boot_lock);
+> +	spin_unlock(&boot_lock);
+> +}
+> +
+> +static int berlin_boot_secondary(unsigned int cpu, struct task_struct *idle)
+> +{
+> +	unsigned long timeout;
+> +
+> +	/*
+> +	 * Set synchronisation state between this boot processor
+> +	 * and the secondary one
+> +	 */
+> +	spin_lock(&boot_lock);
+> +
+> +	/*
+> +	 * This is really belt and braces; we hold unintended secondary
+> +	 * CPUs in the holding pen until we're ready for them.  However,
+> +	 * since we haven't sent them a soft interrupt, they shouldn't
+> +	 * be there.
+> +	 */
+> +	write_pen_release(cpu_logical_map(cpu));
+> +
+> +	/*
+> +	 * Send the secondary CPU a soft interrupt, thereby causing
+> +	 * the boot monitor to read the system wide flags register,
+> +	 * and branch to the address found there.
+> +	 */
+> +	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+> +
+> +	timeout = jiffies + (1 * HZ);
+> +	while (time_before(jiffies, timeout)) {
+> +		/* pen_release SMP read barrier */
+> +		smp_rmb();
+> +		if (pen_release == -1)
+> +			break;
+> +
+> +		udelay(10);
+> +	}
+> +
+> +	/*
+> +	 * now the secondary core is starting up let it run its
+> +	 * calibrations, then wait for it to finish
+> +	 */
+> +	spin_unlock(&boot_lock);
+> +
+> +	return pen_release != -1 ? -ENOSYS : 0;
+> +}
+> +
+> +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
+> +{
+> +	struct device_node *np;
+> +	void __iomem *scu_base;
+> +	void __iomem *gpr_base;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
+> +	scu_base = of_iomap(np, 0);
+> +	of_node_put(np);
+> +	if (!scu_base)
+> +		return;
+> +
+> +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-generic-regs");
+> +	gpr_base = of_iomap(np, 0);
+> +	of_node_put(np);
+> +	if (!gpr_base) {
+> +		iounmap(scu_base);
+> +		return;
+> +	}
+> +
+> +	/*
+> +	 * Enable SCU and write the address of secondary startup into the
+> +	 * global SW generic register 1. The secondary CPU waits for an
+> +	 * interrupt and then branches to the address stored in the SW
+> +	 * generic register 1.
+> +	 */
+> +	scu_enable(scu_base);
+> +	writel(virt_to_phys(berlin_secondary_startup), gpr_base + 0x04);
+> +	iounmap(scu_base);
+> +	iounmap(gpr_base);
+> +}
+> +
+> +struct smp_operations berlin_smp_ops __initdata = {
+> +	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
+> +	.smp_secondary_init	= berlin_secondary_init,
+> +	.smp_boot_secondary	= berlin_boot_secondary,
+> +};
+> -- 
+> 1.9.0
+> 
 
-Signed-off-by: Chris Bainbridge <chris.bainbridge@gmail.com>
-Link: http://lkml.kernel.org/r/20140307114040.GA4997@localhost
-Acked-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- Documentation/kernel-parameters.txt |  7 +++++++
- arch/x86/boot/cpucheck.c            | 20 ++++++++++++++++++++
- arch/x86/kernel/cpu/intel.c         | 19 +++++++++++++++++++
- 3 files changed, 46 insertions(+)
-
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 7116fda..06600cc 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1011,6 +1011,13 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			parameter will force ia64_sal_cache_flush to call
- 			ia64_pal_cache_flush instead of SAL_CACHE_FLUSH.
- 
-+	forcepae [X86-32]
-+			Forcefully enable Physical Address Extension (PAE).
-+			Many Pentium M systems disable PAE but may have a
-+			functionally usable PAE implementation.
-+			Warning: use of this parameter will taint the kernel
-+			and may cause unknown problems.
-+
- 	ftrace=[tracer]
- 			[FTRACE] will set and start the specified tracer
- 			as early as possible in order to facilitate early
-diff --git a/arch/x86/boot/cpucheck.c b/arch/x86/boot/cpucheck.c
-index 100a9a1..f0d0b20 100644
---- a/arch/x86/boot/cpucheck.c
-+++ b/arch/x86/boot/cpucheck.c
-@@ -67,6 +67,13 @@ static int is_transmeta(void)
- 	       cpu_vendor[2] == A32('M', 'x', '8', '6');
- }
- 
-+static int is_intel(void)
-+{
-+	return cpu_vendor[0] == A32('G', 'e', 'n', 'u') &&
-+	       cpu_vendor[1] == A32('i', 'n', 'e', 'I') &&
-+	       cpu_vendor[2] == A32('n', 't', 'e', 'l');
-+}
-+
- /* Returns a bitmask of which words we have error bits in */
- static int check_cpuflags(void)
- {
-@@ -153,6 +160,19 @@ int check_cpu(int *cpu_level_ptr, int *req_level_ptr, u32 **err_flags_ptr)
- 		asm("wrmsr" : : "a" (eax), "d" (edx), "c" (ecx));
- 
- 		err = check_cpuflags();
-+	} else if (err == 0x01 &&
-+		   !(err_flags[0] & ~(1 << X86_FEATURE_PAE)) &&
-+		   is_intel() && cpu.level == 6 &&
-+		   (cpu.model == 9 || cpu.model == 13)) {
-+		/* PAE is disabled on this Pentium M but can be forced */
-+		if (cmdline_find_option_bool("forcepae")) {
-+			puts("WARNING: Forcing PAE in CPU flags\n");
-+			set_bit(X86_FEATURE_PAE, cpu.flags);
-+			err = check_cpuflags();
-+		}
-+		else {
-+			puts("WARNING: PAE disabled. Use parameter 'forcepae' to enable at your own risk!\n");
-+		}
- 	}
- 
- 	if (err_flags_ptr)
-diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-index 34bbb55..897d620 100644
---- a/arch/x86/kernel/cpu/intel.c
-+++ b/arch/x86/kernel/cpu/intel.c
-@@ -186,6 +186,14 @@ static void intel_smp_check(struct cpuinfo_x86 *c)
- 	}
- }
- 
-+static int forcepae;
-+static int __init forcepae_setup(char *__unused)
-+{
-+	forcepae = 1;
-+	return 1;
-+}
-+__setup("forcepae", forcepae_setup);
-+
- static void intel_workarounds(struct cpuinfo_x86 *c)
- {
- #ifdef CONFIG_X86_F00F_BUG
-@@ -214,6 +222,17 @@ static void intel_workarounds(struct cpuinfo_x86 *c)
- 		clear_cpu_cap(c, X86_FEATURE_SEP);
- 
- 	/*
-+	 * PAE CPUID issue: many Pentium M report no PAE but may have a
-+	 * functionally usable PAE implementation.
-+	 * Forcefully enable PAE if kernel parameter "forcepae" is present.
-+	 */
-+	if (forcepae) {
-+		printk(KERN_WARNING "PAE forced!\n");
-+		set_cpu_cap(c, X86_FEATURE_PAE);
-+		add_taint(TAINT_CPU_OUT_OF_SPEC, LOCKDEP_NOW_UNRELIABLE);
-+	}
-+
-+	/*
- 	 * P4 Xeon errata 037 workaround.
- 	 * Hardware prefetcher may cause stale data to be loaded into the cache.
- 	 */
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
