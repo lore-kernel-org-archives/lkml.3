@@ -1,223 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759716AbaCTT0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:26:10 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35678 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaCTT0I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:26:08 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-Date: Thu, 20 Mar 2014 20:27:55 +0100
-Message-ID: <22904541.tzCZUcGtJB@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140320181820.GY7528@n2100.arm.linux.org.uk>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <2161777.L3ZZmhyfM4@avalon> <20140320181820.GY7528@n2100.arm.linux.org.uk>
+	id S1759752AbaCTT1h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:27:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55310 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaCTT1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:27:34 -0400
+Date: Thu, 20 Mar 2014 14:25:33 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: <balbi@ti.com>, Marcel Holtmann <marcel@holtmann.org>,
+        Alan Cox <alan@linux.intel.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: hci_ldsic nested locking problem
+Message-ID: <20140320192533.GK3959@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140320163435.GH32692@saruman.home>
+ <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
+ <20140320171621.GA2827@saruman.home>
+ <532B25FC.3070408@hurleysoftware.com>
+ <20140320181145.GC3959@saruman.home>
+ <532B319D.4090208@hurleysoftware.com>
+ <20140320182528.GE3959@saruman.home>
+ <532B3E93.7060902@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IuJpT0rwbUevm2bB"
+Content-Disposition: inline
+In-Reply-To: <532B3E93.7060902@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+--IuJpT0rwbUevm2bB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thursday 20 March 2014 18:18:20 Russell King - ARM Linux wrote:
-> On Thu, Mar 20, 2014 at 07:16:29PM +0100, Laurent Pinchart wrote:
-> > On Thursday 20 March 2014 17:54:31 Grant Likely wrote:
-> > > On Wed, 12 Mar 2014 10:25:56 +0000, Russell King - ARM Linux wrote:
-> > > > On Mon, Mar 10, 2014 at 02:52:53PM +0100, Laurent Pinchart wrote:
-> > > > > In theory unidirectional links in DT are indeed enough. However,
-> > > > > let's not forget the following.
-> > > > > 
-> > > > > - There's no such thing as single start points for graphs. Sure, in
-> > > > > some simple cases the graph will have a single start point, but
-> > > > > that's not a generic rule. For instance the camera graphs
-> > > > > http://ideasonboard.org/media/omap3isp.ps and
-> > > > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and
-> > > > > thus two starting points from a data flow point of view.
-> > > > 
-> > > > I think we need to stop thinking of a graph linked in terms of data
-> > > > flow - that's really not useful.
-> > > > 
-> > > > Consider a display subsystem.  The CRTC is the primary interface for
-> > > > the CPU - this is the "most interesting" interface, it's the interface
-> > > > which provides access to the picture to be displayed for the CPU. 
-> > > > Other interfaces are secondary to that purpose - reading the I2C DDC
-> > > > bus for the display information is all secondary to the primary
-> > > > purpose of displaying a picture.
-> > > > 
-> > > > For a capture subsystem, the primary interface for the CPU is the
-> > > > frame grabber (whether it be an already encoded frame or not.)  The
-> > > > sensor devices are all secondary to that.
-> > > > 
-> > > > So, the primary software interface in each case is where the data for
-> > > > the primary purpose is transferred.  This is the point at which these
-> > > > graphs should commence since this is where we would normally start
-> > > > enumeration of the secondary interfaces.
-> > > > 
-> > > > V4L2 even provides interfaces for this: you open the capture device,
-> > > > which then allows you to enumerate the capture device's inputs, and
-> > > > this in turn allows you to enumerate their properties.  You don't open
-> > > > a particular sensor and work back up the tree.
-> > > > 
-> > > > I believe trying to do this according to the flow of data is just
-> > > > wrong. You should always describe things from the primary device for
-> > > > the CPU towards the peripheral devices and never the opposite
-> > > > direction.
-> > > 
-> > > Agreed.
-> > 
-> > Absolutely not agreed. The whole concept of CPU towards peripherals only
-> > makes sense for very simple devices and breaks as soon as the hardware
-> > gets more complex. There's no such thing as CPU towards peripherals when
-> > peripherals communicate directly.
-> > 
-> > Please consider use cases more complex than just a display controller and
-> > an encoder, and you'll realize how messy not being able to parse the
-> > whole graph at once will become. Let's try to improve things, not to make
-> > sure to prevent support for future devices.
-> 
-> That's odd, I did.
-> 
-> Please draw some (ascii) diagrams of the situations you're saying this
-> won't work for, because at the moment all I'm seeing is some vague
-> hand-waving rather than anything factual that I can relate to.  Help
-> us to actually _see_ the problem you have with this approach so we can
-> understand it.
+Hi,
 
-I've broken the diagram into pieces as it won't fit in 80 columns. Ports named 
-by a capital letter enclosed in parentheses are connected together. 
+On Thu, Mar 20, 2014 at 03:16:35PM -0400, Peter Hurley wrote:
+> On 03/20/2014 02:25 PM, Felipe Balbi wrote:
+> >On Thu, Mar 20, 2014 at 02:21:17PM -0400, Peter Hurley wrote:
+> >>On 03/20/2014 02:11 PM, Felipe Balbi wrote:
+> >>>On Thu, Mar 20, 2014 at 01:31:40PM -0400, Peter Hurley wrote:
+> >>>>[ +cc Huang Shijie ]
+> >>>>
+> >>>>On 03/20/2014 01:16 PM, Felipe Balbi wrote:
+> >>>>>On Thu, Mar 20, 2014 at 04:42:16PM +0000, Alan Cox wrote:
+> >>>>>>On Thu, 2014-03-20 at 11:34 -0500, Felipe Balbi wrote:
+> >>>>>>>Hi,
+> >>>>>>>
+> >>>>>>>when 8250 driver calls uart_write_wakeup(), the tty port lock is a=
+lready
+> >>>>>>>taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+> >>>>>>>tty->ops->write() to actually send the characters, but that call w=
+ill
+> >>>>>>>try to acquire the same port lock again.
+> >>>>>>>
+> >>>>>>>Looking at other line disciplines that looks like a bug in hci_ldi=
+sc.c.
+> >>>>>>>Am I correct to assume that ->write_wakeup() is supposed to *just*
+> >>>>>>>wakeup the bottom half so we handle ->write() in another context ?
+> >>>>>>>
+> >>>>>>>Is it legal to call tty->ops->write() from within ->write_wakeup()=
+ ?
+> >>>>>>
+> >>>>>>It isn't because you might send all the bytes and go
+> >>>>>>
+> >>>>>>	write
+> >>>>>>		write_wakeup
+> >>>>>>			write
+> >>>>>>				write wakeup
+> >>>>>>					...
+> >>>>>>
+> >>>>>>and recurse
+> >>>>>
+> >>>>>cool, so there really is a bug in hci_ldisc. Marcel, any tips on how=
+ do
+> >>>>>you want this to be sorted out ?
+> >>>>
+> >>>>hci_uart_tx_wakeup() should perform the I/O as work.
+> >>>>FWIW, this was reported by Huang Shijie back on Dec 6.
+> >>>>
+> >>>>I'd fix it but I have no way to test it.
+> >>>
+> >>>here's a build-tested only patch which is waiting for testing from oth=
+er
+> >>>colleagues who've got a platform to reproduce the problem:
+> >>
+> >>Where's the cancel_work_sync() on teardown?
+> >
+> >here, as a patch too this time:
+>=20
+> Thanks. Minor edits below but, strictly speaking, not necessary.
+>=20
+> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+>=20
+>=20
+> > From 3ee6b74833f154df64a6164476b854846206a3f2 Mon Sep 17 00:00:00 2001
+> >From: Felipe Balbi <balbi@ti.com>
+> >Date: Thu, 20 Mar 2014 13:20:10 -0500
+> >Subject: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
+> >
+> >LDISCs shouldn't call tty->ops->write() from within
+> >->write_wakeup().
+> >
+> >->write_wakeup() is called with port lock taken and
+> >IRQs disabled, tty->ops->write() will try to acquire
+> >the same port lock and we will deadlock.
+> >
+>=20
+> I know you found it independently but ?
+>=20
+> Reported-by: Huang Shijie <b32955@freescale.com>
 
-Let's start with the on-board input paths, with an HDMI input connector and a 
-camera sensor.
+I will never add any *-by tags without seeing it in the mailing list.
+Now I can add it to the patch and send it as a real patch (git
+send-email it).
 
- ,-----------.      ,----------.
- | HDMI      |      | ADV7611  |
- | Connector | ---> | HDMI     | ---> (A)
- |           |      | Decoder  |
- `-----------'      `----------'
+> >Signed-off-by: Felipe Balbi <balbi@ti.com>
+> >---
+> >  drivers/bluetooth/hci_ldisc.c | 20 +++++++++++++++-----
+> >  drivers/bluetooth/hci_uart.h  |  1 +
+> >  2 files changed, 16 insertions(+), 5 deletions(-)
+> >
+> >diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc=
+=2Ec
+> >index 6e06f6f..ecdd765 100644
+> >--- a/drivers/bluetooth/hci_ldisc.c
+> >+++ b/drivers/bluetooth/hci_ldisc.c
+> >@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(stru=
+ct hci_uart *hu)
+> >
+> >  int hci_uart_tx_wakeup(struct hci_uart *hu)
+> >  {
+> >-	struct tty_struct *tty =3D hu->tty;
+> >-	struct hci_dev *hdev =3D hu->hdev;
+> >-	struct sk_buff *skb;
+> >-
+> >  	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+> >  		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+> >  		return 0;
+> >@@ -129,6 +125,18 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
+> >
+> >  	BT_DBG("");
+> >
+> >+	schedule_work(&hu->write_work);
+> >+
+> >+	return 0;
+> >+}
+> >+
+> >+static void hci_uart_write_work(struct work_struct *work)
+> >+{
+> >+	struct hci_uart *hu =3D container_of(work, struct hci_uart, init_ready=
+);
+> >+	struct tty_struct *tty =3D hu->tty;
+> >+	struct hci_dev *hdev =3D hu->hdev;
+> >+	struct sk_buff *skb;
+> >+
+>=20
+> +	/* FIXME: if bad skb length or tty->ops->write() returns < 0 ??? */
+>=20
+> >  restart:
+> >  	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+> >
+> >@@ -153,7 +161,6 @@ restart:
+> >  		goto restart;
+> >
+> >  	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+> >-	return 0;
+> >  }
+> >
+> >  static void hci_uart_init_work(struct work_struct *work)
+> >@@ -281,6 +288,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+> >  	tty->receive_room =3D 65536;
+> >
+> >  	INIT_WORK(&hu->init_ready, hci_uart_init_work);
+> >+	INIT_WORK(&hu->write_work, hci_uart_write_work);
+> >
+> >  	spin_lock_init(&hu->rx_lock);
+> >
+> >@@ -318,6 +326,8 @@ static void hci_uart_tty_close(struct tty_struct *tt=
+y)
+> >  	if (hdev)
+> >  		hci_uart_close(hdev);
+> >
+> >+	cancel_work_sync(&hy->write_work);
+> >+
+> >  	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+> >  		if (hdev) {
+> >  			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+> >diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+> >index fffa61f..12df101 100644
+> >--- a/drivers/bluetooth/hci_uart.h
+> >+++ b/drivers/bluetooth/hci_uart.h
+> >@@ -68,6 +68,7 @@ struct hci_uart {
+> >  	unsigned long		hdev_flags;
+> >
+> >  	struct work_struct	init_ready;
+> >+	struct work_struct	write_work;
+> >
+> >  	struct hci_uart_proto	*proto;
+> >  	void			*priv;
+> >
+>=20
 
- ,-----------.
- | AR0331    |
- | Camera    | ---> (B)
- | Sensor    |
- `-----------'
+--=20
+balbi
 
-We then get to the SoC.
+--IuJpT0rwbUevm2bB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-      |
-      |    ,-----------.      ,------------.
-      |    | BT.656    |      | Test       |
-(A) -[0]-> | Decoder   | ---> | Pattern    | ---> (C)
-      |    |           |      | Generator  |
-      |    `-----------'      `------------'
-      |
-      |    ,-----------.      ,------------.      ,------------.
-      |    | CSI-2     |      |            |      | Test       |
-(B) -[1]-> | Receiver  | ---> | Processing | ---> | Pattern    |  ---> (D)
-      |    |           |  `   |            |      | Generator  |
-      |    `-----------'  |   `------------'      `------------'
-      |                   |   ,------------.
-      |                   |   |            |      ,-----.
-      | --SOC--           `-> | Statistics | ---> | DMA |
-      |                       |            |      `-----'
-      |                       `------------'
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The blocks named Processing is made of
+iQIcBAEBAgAGBQJTK0CtAAoJEIaOsuA1yqRESTcQALFnk4AN9xnWTgDUn2oRcM9n
+CfJlNRpjcLjbv1YgrYY6wE0Cmib/QWtm5LJbOp12LvlWyq9YfQA11bIrBs4ef0Ox
+ESI5IcNNJwvhd/BoiaRm/wb7S2ql6fU+MxQOPh8wM4U20XLK1LOcUduaaNPrCkyu
+6DbiaGaRulNt/Utknu91upsdnQ+zhALQw2Lz2fM3ab6Poh16kcMjWUexe9v/jXIc
+UwPHPje0QugrKoe8xs2FKAmtEZsKstzggvVfTAsFgRJ2nFWoh/jT6/2Q+wZ+Zkv8
+0f/gl11VYjUmEyo6kG6z93wgj/A7MmLETZnkDDekIHKkSgADMjyRsHme17E9TUcv
+pGPoW90Yxz9/5RZSTIUKHRDoAg3+FY1f4JFvXoIIeKpP/23M+ebw7EVjFwkj+fxY
+ndOKmq6E8AW5MxkplQ3N90ftlFQ8J8QOsnSlfiqmMzQUrQndWsz8ST37XopESa/1
+sWtJRrnpr8uJYaoziWNvCy3l3yunhplfZbvjYJ6qWCjGJ6iOdspqTEtyeV/NrYla
+Y13kEhl8s8igF/4YT7UAInM+7Oe2MZtaJOTOoYhEOi8q0TYf8LzSMm4DeLuGFj+I
+QItJOvFf0usq2tZDducrN6dI/kT1QD0XAE6UxfEpCMNMw3PxRfSIK0SlQSP/hoh9
+xx9zlUpDuZi7YVzqnDwt
+=gpFl
+-----END PGP SIGNATURE-----
 
-      ,------------.      ,------------.      ,-------------.
-      | Faulty     |      | Bayer      |      | White       |
- ---> | Pixels     | ---> | to RGB     | ---> | Balance     | ---.
-      | Correction |      | Conversion |      | Correction  |    |
-      `------------'      `------------'      `-------------'    |
-                                                                 |
- ,---------------------------------------------------------------'
- |
- |    ,------------.      ,------------.      ,-------------.
- |    | Gamma      |      | RGB to YUV |      | Image       |
- `--> | Correction | ---> | Conversion | ---> | Enhancement | --->
-      |            |      |            |      |             |
-      `------------'      `------------'      `-------------'
-
-The two flows then go through a crossbar switch.
-
-                                ,--------.
-                                |        |      ,-----.
-           ,-----------.     -> | Scaler | ---> | DMA |
-           |           |   ,'   |        |      `-----'
-           |     ,----[2] -     `--------'
- (C) ---> [0]---'      |
-           |   `,-----[3] ----> (E)
- (D) ---> [1]--'       |
-           |    `-----[4] -
-           |           |   `--> (F)
-           `-----------'
-
-One of the video streams went to memory through DMA. The second one enters the 
-compositor through a scaler, with two additional streams coming from memory.
-
-                  ,------------.       ,--------------.
-     ,-----.      | RGB to YUV |       |              |
-     | DMA | ---> | Conversion | ---> [0]             |
-     `-----'      |            |       |              |
-                  `------------'       |              |
-                  ,--------.           |              |
-     ,-----.      |        |           |  Compositor  |
-     | DMA | ---> | Scaler | -------> [1]            [3] ---> (G)
-     `-----'      |        |           |              |
-                  `--------'           |              |
-                  ,--------.           |              |
-                  |        |           |              |
-     (E) -------> | Scaler | -------> [2]             |
-                  |        |           |              |
-                  `--------'           `--------------'
-
-The remaining video capture stream and the video display stream exit the SoC 
-and are output to HDMI connectors through HDMI encoders.
-
-          |
-          |    ,---------.      ,-----------.
-          |    | ADV7511 |      | HDMI      |
-    (G) -[2]-> | HDMI    | ---> | Output    |
-          |    | Encoder |      | Connector |
-          |    `---------'      `-----------'
-          |
-          |    ,---------.      ,-----------.
-          |    | ADV7511 |      | HDMI      |
-    (F) -[3]-> | HDMI    | ---> | Output    |
-          |    | Encoder |      | Connector |
-  --SOC-- |    `---------'      `-----------'
-          |
-
-Every block in this diagram (including the DMA engines) corresponds to a 
-device instance and has a device node in the device tree.
-
-Note how the same RGB to YUV conversion and scaler blocks are used in both 
-capture and display pipelines, how the capture and display pipelines are 
-merged at the hardware level, and how the same HDMI encoder is used for one 
-video output that comes from the display device (G) and one video output that 
-comes straight from the capture device (F).
-
-I wish this was an example I made up instead of real hardware I need to 
-support.
-
--- 
-Regards,
-
-Laurent Pinchart
+--IuJpT0rwbUevm2bB--
