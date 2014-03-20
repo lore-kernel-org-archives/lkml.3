@@ -1,95 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964868AbaCTTIg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:08:36 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:38455 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754030AbaCTTIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:08:35 -0400
-Message-ID: <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Thu, 20 Mar 2014 12:08:30 -0700
-In-Reply-To: <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	 <20140320053350.GB30295@linux.vnet.ibm.com>
-	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-	 <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	id S1759339AbaCTTM4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:12:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:48239 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754030AbaCTTMx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:12:53 -0400
+Message-ID: <532B3D74.6070703@ti.com>
+Date: Thu, 20 Mar 2014 15:11:48 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Brian Norris <computersforpeace@gmail.com>
+CC: Warner Losh <imp@bsdimp.com>, Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>,
+        David Woodhouse <dwmw2@infradead.org>, <galak@codeaurora.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <rob@landley.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        <grygorii.strashko@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        <linux-mtd@lists.infradead.org>,
+        Murali Karicheri <m-karicheri2@ti.com>
+Subject: Re: [PATCH 2/3] mtd: davinci-nand: add dts property for NAND_NO_SUBPAGE_WRITE
+ option
+References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com> <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com> <532B2183.2080309@ti.com> <20140320172912.GW31517@norris-Latitude-E6410> <532B2766.6090506@ti.com> <D69011BE-C37F-4085-B992-45F6F32AF1D0@gmail.com> <532B2D3F.6050004@ti.com> <20140320185452.GB21018@ld-irv-0074>
+In-Reply-To: <20140320185452.GB21018@ld-irv-0074>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 11:36 -0700, Linus Torvalds wrote:
-> On Thu, Mar 20, 2014 at 10:18 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > Comparing with the patch I sent earlier this morning, looks equivalent,
-> > and fwiw, passes my initial qemu bootup, which is the first way of
-> > detecting anything stupid going on.
-> >
-> > So, Srikar, please try this patch out, as opposed to mine, you don't
-> > have to first revert the commit in question.
+On Thursday 20 March 2014 02:54 PM, Brian Norris wrote:
+> On Thu, Mar 20, 2014 at 02:02:39PM -0400, Santosh Shilimkar wrote:
+>> On Thursday 20 March 2014 01:44 PM, Warner Losh wrote:
+>>> I though sub page writing was one of the fields in the onfi and/or jedec(toggle) meta data structures. Have you looked there?
+>>>
+>> Am not sure if I follow you. The limitation is from the TI NAND controller(AEMIF) and
+>> not the NAND memory. 
 > 
-> Ok, so it boots for me too, so hopefully it isn't totally broken.
+> That doesn't match the patch description, which says "that flash doesn't
+> support subpage writing". Flash != flash controller.
+>
+Patch description is indeed doesn't reflect the actual issue.
+
+> Which one is it? If it's a controller limitation, I think we should be
+> able to pull this from a "compatible" property, no?
 > 
-> However, since it's just closing a race, and since getting the counts
-> wrong should easily result in it *working* but always taking the slow
-> path (for example), I'd really like people to also verify that it
-> fixes the actual performance issue (ie assuming it fixes powerpc
-> behavior for Srikar, I'd like to get it double-checked that it also
-> avoids the spinlock in the common case). 
+Just to be accurate, the limitation(bug) is on the controller found on Keystone
+SOCs. AEMIF controller is also used on DaVinci SOCs which don't seems to have
+any issue. So even for compatible, you need to add keystone specific one.
+Hence thought dt property is better option.
 
-Oh, it does. This atomics technique was tested at a customer's site and
-ready for upstream. To refresh, we were originally seeing massive
-contention on the hb->lock and an enormous amounts of 0 returns from
-futex_wake, indicating that spinners where piling up just to realize
-that the plist was empty! While I don't have any official numbers, I can
-confirm that perf showed that this issue was addressed with the atomics
-variant. Yes, such pathological behavior shows problems in the userspace
-locking primitives design/implementation, but allowing the kernel not to
-be affected by suboptimal uses of futexes is definitely a plus. 
-
-As tglx suggested at the time, I also made sure that adding the barriers
-when doing the key refcounting didn't impose any serious restrictions to
-performance either.
-
-Now, what at the time required re-testing everything was when you
-suggested replacing this approach with a more elegant spin is locked
-test. Both approaches showed pretty much identical performance (and
-correctness, at least on x86). And to this day shows *significant* less
-time spent in kernel space dealing with futexes.
-
-
-> Because if the
-> increment/decrement pairings end up being wrong, we could have a
-> situation where the waiter count just ends up bogus, and it all works
-> from a correctness standpoint but not from the intended performance
-> optimization.
-> 
-> No way I can test that sanely on my single-socket machine. Davidlohr?
-
-Not this patch, no :( -- we could never blindly reproduce the customer's
-workload. The only patch that I was able to create test cases for is the
-larger hash table one, which simply alleviates collisions. This is now
-part of perf-bench.
-
-Thanks,
-Davidlohr
+regards,
+Santosh
 
