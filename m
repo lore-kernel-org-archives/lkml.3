@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755829AbaCTJOi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:14:38 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52489 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752245AbaCTJOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:14:34 -0400
-X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 05:14:28 EDT
-Date: Thu, 20 Mar 2014 14:27:17 +0530
-From: Pratyush Anand <pratyush.anand@st.com>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@gmail.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH 4/4] ata: add new-style AHCI platform driver for ST
- SPEAr1340 AHCI controller
-Message-ID: <20140320085717.GC4607@pratyush-vbox>
-References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
- <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
+	id S1755217AbaCTJOa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:14:30 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:58404
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751539AbaCTJO0 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 05:14:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 5
+X-BigFish: VS5(zzc89bhzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kz4ejz1de098h1de097hz2dh2a8h4a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
+Message-ID: <532AB1A2.9010702@freescale.com>
+Date: Thu, 20 Mar 2014 17:15:14 +0800
+From: Huang Shijie <b32955@freescale.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-20_02:2014-03-19,2014-03-20,1970-01-01 signatures=0
+To: <y@karo-electronics.de>
+CC: Arnd Bergmann <arnd@arndb.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@karo-electronics.de>,
+        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
+Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
+References: <1395235406-13449-1-git-send-email-y>
+In-Reply-To: <1395235406-13449-1-git-send-email-y>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 02:31:58AM +0800, Bartlomiej Zolnierkiewicz wrote:
-> The new driver is named ahci_spear1340 and is only compile tested.  Once
-> it is tested on the real hardware and verified to work correctly, the legacy
-> platform code (which depends on the deprecated struct ahci_platform_data)
-> can be removed.
-> 
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+于 2014年03月19日 21:23, y@karo-electronics.de 写道:
+> configurable via DT. This is required for the Ka-Ro electronics
+> platforms.
+>
+If you disable the swapping, you will disable the NAND boot in actually.
 
-This patch will not be needed any more, since SPEAr sata platform code has
-already been cleaned up.
+do you need the nand boot?
 
-See:
-https://lkml.org/lkml/2014/2/28/174
+could you please tell me more detail background?
 
-Regards
-Pratyush
+thanks
+Huang Shijie
+
