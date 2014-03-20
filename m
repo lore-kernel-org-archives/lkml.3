@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaCTJOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:14:30 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:58404
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751539AbaCTJO0 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:14:26 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(zzc89bhzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kz4ejz1de098h1de097hz2dh2a8h4a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
-Message-ID: <532AB1A2.9010702@freescale.com>
-Date: Thu, 20 Mar 2014 17:15:14 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
+	id S1756353AbaCTJPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:15:19 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52489 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752292AbaCTJO2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 05:14:28 -0400
+X-Greylist: delayed 1101 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 05:14:28 EDT
+Date: Thu, 20 Mar 2014 14:25:09 +0530
+From: Pratyush Anand <pratyush.anand@st.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Mohit Kumar <mohit.kumar@st.com>, Shiraz Hashim <shiraz.hashim@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, spear-devel <spear-devel@list.st.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "...)" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH RESEND] ARM: SPEAr1340: static-ize SATA functions
+Message-ID: <20140320085509.GB4607@pratyush-vbox>
+References: <1678906.b5uh0Nm7QE@amdc1032>
+ <CAOh2x=nr1mrkcFk8nQFwNXxCqMPiN1Hq4=f1wwN=i65StawJ1Q@mail.gmail.com>
 MIME-Version: 1.0
-To: <y@karo-electronics.de>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@karo-electronics.de>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
-References: <1395235406-13449-1-git-send-email-y>
-In-Reply-To: <1395235406-13449-1-git-send-email-y>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <CAOh2x=nr1mrkcFk8nQFwNXxCqMPiN1Hq4=f1wwN=i65StawJ1Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-20_02:2014-03-19,2014-03-20,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年03月19日 21:23, y@karo-electronics.de 写道:
-> configurable via DT. This is required for the Ka-Ro electronics
-> platforms.
->
-If you disable the swapping, you will disable the NAND boot in actually.
+On Tue, Mar 18, 2014 at 07:00:08PM +0800, Viresh Kumar wrote:
+> On Tue, Mar 18, 2014 at 4:28 PM, Bartlomiej Zolnierkiewicz
+> <b.zolnierkie@samsung.com> wrote:
+> > Make sata_miphy_exit(), sata_suspend() and sata_resume() static.
+> >
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> > ---
+> > Previous submission:
+> > https://lkml.org/lkml/2013/10/4/369
+> >
+> >  arch/arm/mach-spear/spear1340.c | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-spear/spear1340.c b/arch/arm/mach-spear/spear1340.c
+> > index 3fb6834..e0e4251 100644
+> > --- a/arch/arm/mach-spear/spear1340.c
+> > +++ b/arch/arm/mach-spear/spear1340.c
+> > @@ -93,7 +93,7 @@ static int sata_miphy_init(struct device *dev, void __iomem *addr)
+> >         return 0;
+> >  }
+> >
+> > -void sata_miphy_exit(struct device *dev)
+> > +static void sata_miphy_exit(struct device *dev)
+> >  {
+> >         writel(0, SPEAR1340_PCIE_SATA_CFG);
+> >         writel(0, SPEAR1340_PCIE_MIPHY_CFG);
+> > @@ -107,7 +107,7 @@ void sata_miphy_exit(struct device *dev)
+> >         msleep(20);
+> >  }
+> >
+> > -int sata_suspend(struct device *dev)
+> > +static int sata_suspend(struct device *dev)
+> >  {
+> >         if (dev->power.power_state.event == PM_EVENT_FREEZE)
+> >                 return 0;
+> > @@ -117,7 +117,7 @@ int sata_suspend(struct device *dev)
+> >         return 0;
+> >  }
+> >
+> > -int sata_resume(struct device *dev)
+> > +static int sata_resume(struct device *dev)
+> >  {
+> >         if (dev->power.power_state.event == PM_EVENT_THAW)
+> >                 return 0;
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-do you need the nand boot?
+This patch will not be needed any more, since sata platform code has
+already been cleaned up.
 
-could you please tell me more detail background?
+See:
+https://lkml.org/lkml/2014/2/28/174
 
-thanks
-Huang Shijie
-
+Regards
+Pratyush
