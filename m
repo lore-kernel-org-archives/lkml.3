@@ -1,61 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759630AbaCTTE0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:04:26 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:59910 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758670AbaCTTEX (ORCPT
+	id S933436AbaCTTE7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:04:59 -0400
+Received: from smtp-out-028.synserver.de ([212.40.185.28]:1075 "EHLO
+	smtp-out-025.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758197AbaCTTE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:04:23 -0400
+	Thu, 20 Mar 2014 15:04:58 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 23528
+Message-ID: <532B3C03.7030208@metafoo.de>
+Date: Thu, 20 Mar 2014 20:05:39 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-In-Reply-To: <20140320183932.GA7528@n2100.arm.linux.org.uk>
-References: <201402241200.21944.arnd@arndb.de>
-	<20140320173106.GA19395@obsidianresearch.com>
-	<532B2628.5080305@codethink.co.uk>
-	<201403201929.13633.arnd@arndb.de>
-	<20140320183932.GA7528@n2100.arm.linux.org.uk>
-Date: Thu, 20 Mar 2014 20:04:22 +0100
-X-Google-Sender-Auth: C3ybQ64I-OhR66iHI02qdQaTX68
-Message-ID: <CAMuHMdX0kZhJyJFCQK7MUbv3nnKbqLkEJ2gnWMuHLSGLQvuQ2A@mail.gmail.com>
-Subject: Re: DMABOUNCE in pci-rcar
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>, Ben Dooks <ben.dooks@codethink.co.uk>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mark Brown <broonie@kernel.org>
+CC: Stephen Warren <swarren@wwwdotorg.org>, Songhee Baek <sbaek@nvidia.com>,
+        Arun Shamanna Lakshmi <aruns@nvidia.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+References: <1395186692-11735-1-git-send-email-aruns@nvidia.com> <20140318235941.GT11706@sirena.org.uk> <781A12BB53C15A4BB37291FDE08C03F3A05CB21E46@HQMAIL02.nvidia.com> <20140320114829.GC11706@sirena.org.uk> <532B3161.6080808@wwwdotorg.org> <20140320183638.GI11706@sirena.org.uk>
+In-Reply-To: <20140320183638.GI11706@sirena.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+On 03/20/2014 07:36 PM, Mark Brown wrote:
+> On Thu, Mar 20, 2014 at 12:20:17PM -0600, Stephen Warren wrote:
+>> On 03/20/2014 05:48 AM, Mark Brown wrote:
+>>> On Wed, Mar 19, 2014 at 04:44:00PM -0700, Arun Shamanna Lakshmi wrote:
+>
+>>>> If each bit of a 32 bit register maps to an input of a mux, then with
+>>>> the current 'soc_enum' structure we cannot have more than 64 inputs
+>>>> for the mux (because of reg and reg2 only).
+>
+>>> What makes you say that?  We currently have devices in mainline which
+>>> have well over 32 inputs to muxes.
+>
+>> I think their register layout is different.
+>
+>> I found a number of large muxes where the register stores a 'integer'
+>> indicating which mux input to select, e.g. Arizona, WM2200, etc. In this
+>> case, an N-bit register could support up to 2^N inputs.
+>
+>> However, the registers in the Tegra AHUB use 1 bit position per input,
+>> and require you to set one single bit at a time. Hence, an N bit
+>> register (or string of registers) can support up to N inputs. In more
+>> recent Tegra chips, we have at least >32 inputs and I think Arun was
+>> saying even >64 inputs. That requires 2 or 3 or more .reg fields in
+>> struct soc_enum.
+>
+> Right, that was my guess too (the mail wasn't terribly clear with the
+> formatting, references to unpublished documents and so on) but that's
+> not a straight mux, it's a value mux, and the limit with the current
+> code is much lower on 32 bit systems (like at least some of the K1s)
+> since muxes only use one of the current register fields.
 
-On Thu, Mar 20, 2014 at 7:39 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> That all said, what I find most annoying is that Ben has ignored my
-> question about exactly what the nature of the limitation is on this
-> platform.  My response to that is - if you're not going to do the
-> curtesy of answering such a simple question, then you don't get to
-> patch the kernel for this problem.
+It might make sense to add special code for supported muxes with a one-hot 
+encoding instead of using a value mux. Having an large array where each 
+entry is just 1<<n is a bit ugly in my opinion, especially if the value 
+needs to be able to be larger than 2**64. But anyway the patch that modifies 
+the soc_enum struct should also add the code that makes use of the new 
+struct layout.
 
-Ben did answer:
-"If the window is set to 2GiB it can only access 2GiB aligned to 2GiB
- boundary, however DRAM spans a 2GiB boundary (being at 1-3GiB)"
+- Lars
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
