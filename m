@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964822AbaCTPXq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:23:46 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:57873 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932383AbaCTPXM (ORCPT
+	id S1758552AbaCTP05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:26:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:32830 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751925AbaCTP04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:23:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [patch 08/26] arm: Replace various irq_desc accesses
-Date: Thu, 20 Mar 2014 16:22:27 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        omap <linux-omap@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ingo Molnar <mingo@elte.hu>, Shawn Guo <shawn.guo@linaro.org>
-References: <20140223212703.511977310@linutronix.de> <20140223212737.099151500@linutronix.de>
-In-Reply-To: <20140223212737.099151500@linutronix.de>
+	Thu, 20 Mar 2014 11:26:56 -0400
+Date: Thu, 20 Mar 2014 15:26:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ben Dooks <ben.dooks@codethink.co.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-sh@vger.kernel.org,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: DMABOUNCE in pci-rcar
+Message-ID: <20140320152640.GW7528@n2100.arm.linux.org.uk>
+References: <201402241200.21944.arnd@arndb.de> <CAErSpo5RV=w+DkgHSZZPOFGiEBBxMSraLV3TepYUZwDJuV+Jzg@mail.gmail.com> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403201622.27725.arnd@arndb.de>
-X-Provags-ID: V02:K0:pIYNtCmO0vlBeyjiKOKBi00NJMv8RHxMqUHTSl6fO0d
- jPTk42tcZfbR5dAENqWRPmT9pd159vGcodDqQ83u3N5BdkATdV
- FvADsyXALexz2tMLVU+CdyBdW9+97zHJsKDDNVxNutwRk9G06k
- AaV4nkBDySCCWlSSsxuc7gJIsPw+YA2rvaYy+iV0L1sRpwtNKV
- e1I1w6/FGaPssfnZo+VCxhRnrNCC2cT07dQ27AYW4BOtw79E2y
- FwogHzepwHc/ECswv1jrC/lVGEA3ma9HG+6MKMCYWue5xjN5PV
- ld/WrT9EiOLk16pQCoBsSoKGrhkWUY5qPgzM9jqkisdlj8DGSK
- BnrJ8C9JXA8Hly18P57Aq2R93khUtGNs+SxKPhHPu
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532B0384.1000400@codethink.co.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 February 2014, Thomas Gleixner wrote:
-> --- tip.orig/arch/arm/mach-omap1/ams-delta-fiq.c
-> +++ tip/arch/arm/mach-omap1/ams-delta-fiq.c
-> @@ -44,13 +44,10 @@ static unsigned int irq_counter[16];
->  
->  static irqreturn_t deferred_fiq(int irq, void *dev_id)
->  {
-> -       struct irq_desc *irq_desc;
-> -       struct irq_chip *irq_chip = NULL;
->         int gpio, irq_num, fiq_count;
-> +       struct irq_chip *irq_chip;
->  
-> -       irq_desc = irq_to_desc(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
-> -       if (irq_desc)
-> -               irq_chip = irq_desc->irq_data.chip;
-> +       irq_chip = irq_get_irq_chip(gpio_to_irq(AMS_DELTA_GPIO_PIN_KEYBRD_CLK));
+On Thu, Mar 20, 2014 at 04:04:36PM +0100, Ben Dooks wrote:
+> On 26/02/14 20:57, Arnd Bergmann wrote:
+>> On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
+>>> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> Hi Magnus,
+>>>>
+>>>> I noticed during randconfig testing that you enabled DMABOUNCE for the
+>>>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
+>>>>
+>>>> I didn't see the original post unfortunately, but I fear we have to
+>>>> revert it and come up with a better solution, ...
+>>>
+>>> Sounds like I should drop the following patches from my pci/host-rcar
+>>> branch for now?
+>>>
+>>>    PCI: rcar: Add DMABOUNCE support
+>>>    PCI: rcar: Enable BOUNCE in case of HIGHMEM
+>>>    PCI: rcar: Make the Kconfig dependencies more generic
+>>
+>> Sounds good to me. The last patch is actually fine, but you'll have to
+>> fix the context to apply it without the other two.
+>
+> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
+> controllers no longer work with full 2GiB RAM enabled in the device
+> tree.
+>
+> Could we work around this by having 1GiB of memory defined in the
+> 32bit memory and then add the rest of the 3GiB from the >32bit
+> area via LPAE? Will the kernel ever try to allocate DMA memory from
+> anything >32bit?
 
-I got a compile error because irq_get_irq_chip() doesn't exist. I suppose
-you meant irq_get_chip.
+Ignore highmem.  What is the actual hardware restriction concerning memory
+it can access?
 
-	Arnd
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
