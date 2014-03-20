@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292AbaCTMhk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:37:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29762 "EHLO mx1.redhat.com"
+	id S1758216AbaCTMhj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:37:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1849 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757281AbaCTMhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754990AbaCTMhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 08:37:35 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
  Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
  Kingdom.
  Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 10/12] KEYS: big_key: Use key preparsing
+Subject: [PATCH 03/12] KEYS: Allow expiry time to be set when preparsing a
+ key
 From: David Howells <dhowells@redhat.com>
 To: keyrings@linux-nfs.org
 Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Date: Thu, 20 Mar 2014 12:05:49 +0000
-Message-ID: <20140320120549.21635.97439.stgit@warthog.procyon.org.uk>
+Date: Thu, 20 Mar 2014 12:04:58 +0000
+Message-ID: <20140320120458.21635.23935.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20140320120428.21635.13071.stgit@warthog.procyon.org.uk>
 References: <20140320120428.21635.13071.stgit@warthog.procyon.org.uk>
 User-Agent: StGit/0.17-dirty
@@ -27,122 +28,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make use of key preparsing in the big key type so that quota size determination
-can take place prior to keyring locking when a key is being added.
+Allow a key type's preparsing routine to set the expiry time for a key.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- include/keys/big_key-type.h |    3 ++-
- security/keys/big_key.c     |   41 +++++++++++++++++++++++++----------------
- 2 files changed, 27 insertions(+), 17 deletions(-)
+ Documentation/security/keys.txt |   10 +++++++---
+ include/linux/key-type.h        |    1 +
+ security/keys/key.c             |    8 ++++++++
+ 3 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/include/keys/big_key-type.h b/include/keys/big_key-type.h
-index d69bc8af3292..e0970a578188 100644
---- a/include/keys/big_key-type.h
-+++ b/include/keys/big_key-type.h
-@@ -16,7 +16,8 @@
+diff --git a/Documentation/security/keys.txt b/Documentation/security/keys.txt
+index a4c33f1a7c6d..315cf96a41a2 100644
+--- a/Documentation/security/keys.txt
++++ b/Documentation/security/keys.txt
+@@ -1150,20 +1150,24 @@ The structure has a number of fields, some of which are mandatory:
+ 		const void	*data;
+ 		size_t		datalen;
+ 		size_t		quotalen;
++		time_t		expiry;
+ 	};
  
- extern struct key_type key_type_big_key;
+      Before calling the method, the caller will fill in data and datalen with
+      the payload blob parameters; quotalen will be filled in with the default
+-     quota size from the key type and the rest will be cleared.
++     quota size from the key type; expiry will be set to TIME_T_MAX and the
++     rest will be cleared.
  
--extern int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep);
-+extern int big_key_preparse(struct key_preparsed_payload *prep);
-+extern void big_key_free_preparse(struct key_preparsed_payload *prep);
- extern void big_key_revoke(struct key *key);
- extern void big_key_destroy(struct key *key);
- extern void big_key_describe(const struct key *big_key, struct seq_file *m);
-diff --git a/security/keys/big_key.c b/security/keys/big_key.c
-index 8137b27d641d..c2f91a0cf889 100644
---- a/security/keys/big_key.c
-+++ b/security/keys/big_key.c
-@@ -34,7 +34,9 @@ MODULE_LICENSE("GPL");
- struct key_type key_type_big_key = {
- 	.name			= "big_key",
- 	.def_lookup_type	= KEYRING_SEARCH_LOOKUP_DIRECT,
--	.instantiate		= big_key_instantiate,
-+	.preparse		= big_key_preparse,
-+	.free_preparse		= big_key_free_preparse,
-+	.instantiate		= generic_key_instantiate,
- 	.match			= user_match,
- 	.revoke			= big_key_revoke,
- 	.destroy		= big_key_destroy,
-@@ -43,11 +45,11 @@ struct key_type key_type_big_key = {
+      If a description can be proposed from the payload contents, that should be
+      attached as a string to the description field.  This will be used for the
+      key description if the caller of add_key() passes NULL or "".
+ 
+      The method can attach anything it likes to type_data[] and payload.  These
+-     are merely passed along to the instantiate() or update() operations.
++     are merely passed along to the instantiate() or update() operations.  If
++     set, the expiry time will be applied to the key if it is instantiated from
++     this data.
+ 
+-     The method should return 0 if success ful or a negative error code
++     The method should return 0 if successful or a negative error code
+      otherwise.
+ 
+      
+diff --git a/include/linux/key-type.h b/include/linux/key-type.h
+index d2b4845d74bf..44792ee649de 100644
+--- a/include/linux/key-type.h
++++ b/include/linux/key-type.h
+@@ -45,6 +45,7 @@ struct key_preparsed_payload {
+ 	const void	*data;		/* Raw data */
+ 	size_t		datalen;	/* Raw datalen */
+ 	size_t		quotalen;	/* Quota length for proposed payload */
++	time_t		expiry;		/* Expiry time of key */
+ 	bool		trusted;	/* True if key is trusted */
  };
  
- /*
-- * Instantiate a big key
-+ * Preparse a big key
-  */
--int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
-+int big_key_preparse(struct key_preparsed_payload *prep)
- {
--	struct path *path = (struct path *)&key->payload.data2;
-+	struct path *path = (struct path *)&prep->payload;
- 	struct file *file;
- 	ssize_t written;
- 	size_t datalen = prep->datalen;
-@@ -58,11 +60,9 @@ int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 		goto error;
- 
- 	/* Set an arbitrary quota */
--	ret = key_payload_reserve(key, 16);
--	if (ret < 0)
--		goto error;
-+	prep->quotalen = 16;
- 
--	key->type_data.x[1] = datalen;
-+	prep->type_data[1] = (void *)(unsigned long)datalen;
- 
- 	if (datalen > BIG_KEY_FILE_THRESHOLD) {
- 		/* Create a shmem file to store the data in.  This will permit the data
-@@ -73,7 +73,7 @@ int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 		file = shmem_kernel_file_setup("", datalen, 0);
- 		if (IS_ERR(file)) {
- 			ret = PTR_ERR(file);
--			goto err_quota;
-+			goto error;
- 		}
- 
- 		written = kernel_write(file, prep->data, prep->datalen, 0);
-@@ -93,24 +93,33 @@ int big_key_instantiate(struct key *key, struct key_preparsed_payload *prep)
- 	} else {
- 		/* Just store the data in a buffer */
- 		void *data = kmalloc(datalen, GFP_KERNEL);
--		if (!data) {
--			ret = -ENOMEM;
--			goto err_quota;
--		}
-+		if (!data)
-+			return -ENOMEM;
- 
--		key->payload.data = memcpy(data, prep->data, prep->datalen);
-+		prep->payload[0] = memcpy(data, prep->data, prep->datalen);
- 	}
- 	return 0;
- 
- err_fput:
- 	fput(file);
--err_quota:
--	key_payload_reserve(key, 0);
- error:
- 	return ret;
- }
- 
- /*
-+ * Clear preparsement.
-+ */
-+void big_key_free_preparse(struct key_preparsed_payload *prep)
-+{
-+	if (prep->datalen > BIG_KEY_FILE_THRESHOLD) {
-+		struct path *path = (struct path *)&prep->payload;
-+		path_put(path);
-+	} else {
-+		kfree(prep->payload[0]);
-+	}
-+}
+diff --git a/security/keys/key.c b/security/keys/key.c
+index 686b10e81054..6a37856d428d 100644
+--- a/security/keys/key.c
++++ b/security/keys/key.c
+@@ -437,6 +437,11 @@ static int __key_instantiate_and_link(struct key *key,
+ 			/* disable the authorisation key */
+ 			if (authkey)
+ 				key_revoke(authkey);
 +
-+/*
-  * dispose of the links from a revoked keyring
-  * - called with the key sem write-locked
-  */
++			if (prep->expiry != TIME_T_MAX) {
++				key->expiry = prep->expiry;
++				key_schedule_gc(prep->expiry + key_gc_delay);
++			}
+ 		}
+ 	}
+ 
+@@ -479,6 +484,7 @@ int key_instantiate_and_link(struct key *key,
+ 	prep.data = data;
+ 	prep.datalen = datalen;
+ 	prep.quotalen = key->type->def_datalen;
++	prep.expiry = TIME_T_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
+@@ -811,6 +817,7 @@ key_ref_t key_create_or_update(key_ref_t keyring_ref,
+ 	prep.datalen = plen;
+ 	prep.quotalen = index_key.type->def_datalen;
+ 	prep.trusted = flags & KEY_ALLOC_TRUSTED;
++	prep.expiry = TIME_T_MAX;
+ 	if (index_key.type->preparse) {
+ 		ret = index_key.type->preparse(&prep);
+ 		if (ret < 0) {
+@@ -941,6 +948,7 @@ int key_update(key_ref_t key_ref, const void *payload, size_t plen)
+ 	prep.data = payload;
+ 	prep.datalen = plen;
+ 	prep.quotalen = key->type->def_datalen;
++	prep.expiry = TIME_T_MAX;
+ 	if (key->type->preparse) {
+ 		ret = key->type->preparse(&prep);
+ 		if (ret < 0)
 
