@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824AbaCTQAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:00:18 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:60489 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932221AbaCTQAP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:00:15 -0400
-Date: Thu, 20 Mar 2014 11:54:42 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth-next 2014-03-19
-Message-ID: <20140320155442.GB12987@tuxdriver.com>
-References: <20140319215143.GB9454@joana>
+	id S1758670AbaCTQAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:00:31 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51890 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755574AbaCTQA1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 12:00:27 -0400
+Message-ID: <532B104D.8050601@zytor.com>
+Date: Thu, 20 Mar 2014 08:59:09 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140319215143.GB9454@joana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andy Lutomirski <luto@amacapital.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: Stefani Seibold <stefani@seibold.net>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        John Stultz <john.stultz@linaro.org>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Martin Runge <Martin.Runge@rohde-schwarz.com>,
+        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
+Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
+References: <1395301511-5908-1-git-send-email-stefani@seibold.net> <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de> <1395315494.1127.3.camel@vger.seibold.net> <alpine.DEB.2.02.1403201328520.18573@ionos.tec.linutronix.de> <CALCETrVgC7yKsu0KM0=TfUuX9msn9ru_nG=Fv6Mz6PKDTnWGnQ@mail.gmail.com> <alpine.DEB.2.02.1403201614360.18573@ionos.tec.linutronix.de> <CALCETrWQbviwiQi2cJi=_kkjTPG8NpsYT4Sf0UB8SaDWN5rr7A@mail.gmail.com>
+In-Reply-To: <CALCETrWQbviwiQi2cJi=_kkjTPG8NpsYT4Sf0UB8SaDWN5rr7A@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 06:51:43PM -0300, Gustavo Padovan wrote:
-> Hi John,
+On 03/20/2014 08:18 AM, Andy Lutomirski wrote:
 > 
-> One more pull request to 3.15. This is mostly and bug fix pull request, it
-> contains several fixes and clean up all over the tree, plus some small new
-> features.
->  
-> Please pull or let me know of any problem. Thanks.
+> Not really.  I'll play with it a bit.
 > 
-> 	Gustavo
-> 
-> ---
-> The following changes since commit 81ad6fd9698f659dbabdc6cd3e1667a98eb2be3b:
-> 
->   Bluetooth: Remove unnecessary stop_scan_complete function (2014-02-28 10:28:17 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-> 
-> for you to fetch changes up to 40b552aa5a0bfa785bc7ddb5c2d7965b1e0bb08d:
-> 
->   Bluetooth: Enforce strict Secure Connections Only mode security (2014-03-19 23:30:32 +0200)
 
-Pulling now...
+That would be really nice.
 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+	-hpa
+
+
