@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757978AbaCTMey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:34:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2299 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751226AbaCTMet (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:34:49 -0400
-Message-ID: <532AE010.9050903@redhat.com>
-Date: Thu, 20 Mar 2014 13:33:20 +0100
-From: Thomas Graf <tgraf@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758139AbaCTMg5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:36:57 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:60518 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754990AbaCTMg4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 08:36:56 -0400
+Date: Thu, 20 Mar 2014 12:36:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, devicetree@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT
+	documentation
+Message-ID: <20140320123640.GR7528@n2100.arm.linux.org.uk>
+References: <20140320092639.48F68A6279@smtp3-g21.free.fr> <532ADFD8.80301@gmail.com>
 MIME-Version: 1.0
-To: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
-        pshelar@nicira.com, dev@openvswitch.org
-CC: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
-        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, xen-devel@lists.xenproject.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v2] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
- and handle errors
-References: <1395263249-16450-1-git-send-email-zoltan.kiss@citrix.com> <532ADC33.5040607@redhat.com>
-In-Reply-To: <532ADC33.5040607@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532ADFD8.80301@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 01:16 PM, Thomas Graf wrote:
-> On 03/19/2014 10:07 PM, Zoltan Kiss wrote:
->> skb_zerocopy can copy elements of the frags array between skbs, but it
->> doesn't
->> orphan them. Also, it doesn't handle errors, so this patch takes care
->> of that
->> as well.
+On Thu, Mar 20, 2014 at 01:32:24PM +0100, Sebastian Hesselbarth wrote:
+> On 03/20/2014 09:58 AM, Jean-Francois Moine wrote:
+>> The I2C address (reg) is required for the TDA998x driver to be loaded
+>> and initialized.
 >>
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->
-> Acked-by: Thomas Graf <tgraf@redhat.com>
-
-I take this back ;)
-
+>> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 >> ---
->> +    if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
->> +        skb_tx_error(to);
->> +        return -ENOMEM;
->> +    }
+>> This patch applies to linux-next.
+>> ---
+>>   Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 2 ++
+>>   1 file changed, 2 insertions(+)
+>>
+>> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+>> index d7df01c..fc7effa 100644
+>> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+>> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+>> @@ -3,6 +3,8 @@ Device-Tree bindings for the NXP TDA998x HDMI transmitter
+>>   Required properties;
+>>     - compatible: must be "nxp,tda998x"
+>>
+>> +  - reg: I2C address - must be <0x70>
+>
+> TDA9983b datasheet says:
+>
+> "Bits A0 and A1 of the I2C-bus device address are externally selected
+> by pins A0 and A1."
+>
+> Therefore, 0x70, 0x71, 0x72, and 0x73 are valid i2c addresses.
 
-Just noticed that you orphan the Netlink skb frags which do not
-exist yet instead of the source skb frags.
+Thanks Sebastian, those kinds of details are very important to get right
+when it comes to the binding doc, much more so than what's in the code.
+It probably makes more sense not to specify what the address actually is.
+After all, that's a specification by the data sheet and software shouldn't
+really care what that is.
 
-> Did you consider calling skb_tx_error() for Netlink message
-> allocation failures for the upcall as well? That memory pressure
-> is currently not reported back.
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
