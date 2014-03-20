@@ -1,127 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758374AbaCTJtD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:49:03 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54640 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894AbaCTJlZ (ORCPT
+	id S932928AbaCTJuK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:50:10 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:63712 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757002AbaCTJuB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:41:25 -0400
-Subject: [PATCH 15/33] Updating Offset
-To: linux-kernel@vger.kernel.org
-From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
-Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
-        james.hogan@imgtec.com, aravinda@linux.vnet.ibm.com, hch@lst.de,
-        mhiramat@redhat.com, jeremy.fitzhardinge@citrix.com,
-        xemul@parallels.com, d.hatayama@jp.fujitsu.com, coreutils@gnu.org,
-        kosaki.motohiro@jp.fujitsu.com, adobriyan@gmail.com,
-        util-linux@vger.kernel.org, tarundsk@linux.vnet.ibm.com,
-        vapier@gentoo.org, roland@hack.frob.com, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
-        tj@kernel.org, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:11:17 +0530
-Message-ID: <20140320094117.14878.54577.stgit@localhost.localdomain>
-In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
-References: <20140320093040.14878.903.stgit@localhost.localdomain>
-User-Agent: StGit/0.16
+	Thu, 20 Mar 2014 05:50:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-5564-0000-0000-00000C985D02
+In-Reply-To: <532AB8D7.5000608@linux.vnet.ibm.com>
+References: <2efc621827cbd96a05a3d34075154974b4816ecd.1394782795.git.viresh.kumar@linaro.org>
+	<532840FD.308@linux.vnet.ibm.com>
+	<CAKohpomhTJa06a1LSi9tK1+=6Y2MyidJSbYWuffAsU5KxVf7zw@mail.gmail.com>
+	<53296870.5010505@linux.vnet.ibm.com>
+	<CAKohpomr1s3SLs-K8+-BKguX4PyfHvSjyzd5PFjM4mJeyTj3-A@mail.gmail.com>
+	<53298A7D.3080400@linux.vnet.ibm.com>
+	<CAKohpon=VLfPiukzrtQOSVAQg-Z-Aq3+AkZ1myrE6XtVRMY8mQ@mail.gmail.com>
+	<532AA7A8.3040508@linux.vnet.ibm.com>
+	<CAKohpon-i7LUqALr3Bi1Sn02m93YZpBn3sjmDdo3VQCuW5bNYw@mail.gmail.com>
+	<532AB3E7.3090503@linux.vnet.ibm.com>
+	<CAKohpokiDYqpTj0AbR17KDbE26E=5usRuLWg0+pLR0xR5e5xTg@mail.gmail.com>
+	<532AB8D7.5000608@linux.vnet.ibm.com>
+Date: Thu, 20 Mar 2014 15:20:00 +0530
+Message-ID: <CAKohpo=WXwirP1y8f2HbSykhPaECCfUKD3XKSLVFty-Jarojvw@mail.gmail.com>
+Subject: Re: [RFC v3] cpufreq: Make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Amit Daniel <amit.daniel@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updating offset throughout keeping in mind that they need to be PAGE ALIGNED.
+On 20 March 2014 15:15, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+> By the way, I'm also thinking of using a spinlock instead of a mutex.
+> The critical section is tiny and we don't sleep inside the critical
+> section - sounds like the perfect case for a spinlock.
 
-Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
----
- src/elf.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 49 insertions(+), 1 deletion(-)
-
-diff --git a/src/elf.c b/src/elf.c
-index a5a1feb..a101ddf 100644
---- a/src/elf.c
-+++ b/src/elf.c
-@@ -39,6 +39,8 @@
- 
- #define roundup(x, y) ((((x) + ((y) - 1)) / (y)) * (y))
- 
-+#define ALIGN(addr, pagesize) (((addr) + (pagesize) - 1) & ~(pagesize - 1))
-+
- /* Default alignment for program headers */
- #ifndef ELF_EXEC_PAGESIZE
- #define ELF_EXEC_PAGESIZE PAGESIZE
-@@ -617,7 +619,6 @@ static int get_phdrs(int pid, struct core_proc *cp)
- 	cp_phdrs[0].p_offset = 0;
- 	cp_phdrs[0].p_vaddr = 0;
- 	cp_phdrs[0].p_paddr = 0;
--	/* Will fill the size after filling notes */
- 	cp_phdrs[0].p_filesz = 0;
- 	cp_phdrs[0].p_memsz = 0;
- 
-@@ -671,6 +672,50 @@ static int get_phdrs(int pid, struct core_proc *cp)
- 	return 0;
- }
- 
-+/* Updating the Offset */
-+static void update_offset(struct core_proc *cp)
-+{
-+	Elf_Long data_offset = 0;
-+	struct mem_note *note = cp->notes;
-+	int i;
-+	Elf_Phdr *cp_phdrs;
-+	Elf_Ehdr *cp_elf;
-+
-+	cp_elf = (Elf_Ehdr *)cp->elf_hdr;
-+	cp_phdrs = (Elf_Phdr *)cp->phdrs;
-+
-+	/* ELF HEADER */
-+	data_offset += sizeof(Elf_Ehdr);
-+
-+	/* Program Headers */
-+	data_offset += cp->phdrs_count * sizeof(Elf_Phdr);
-+
-+	/* Notes */
-+	cp_phdrs[0].p_offset = data_offset;
-+
-+	/* Calucalating entire NOTES size */
-+	while (note) {
-+		data_offset += note->size;
-+		note = note->next;
-+	}
-+
-+	/* Filling PT_NOTE size */
-+	cp_phdrs[0].p_filesz = data_offset - cp_phdrs[0].p_offset;
-+
-+	data_offset = ALIGN(data_offset, ELF_EXEC_PAGESIZE);
-+
-+	/* Populating offsets of Program Headers */
-+	for (i = 1; i < cp->phdrs_count; i++) {
-+		cp_phdrs[i].p_offset = data_offset;
-+		data_offset += cp_phdrs[i].p_filesz;
-+		data_offset = ALIGN(data_offset, ELF_EXEC_PAGESIZE);
-+	}
-+
-+	/* Filling extra program header offset if phnum > PN_XNUM */
-+	if (cp->phdrs_count > PN_XNUM)
-+		cp_elf->e_shoff = data_offset;
-+}
-+
- int do_elf_coredump(int pid, struct core_proc *cp)
- {
- 	int ret, i;
-@@ -705,5 +750,8 @@ int do_elf_coredump(int pid, struct core_proc *cp)
- 	if (ret)
- 		return -1;
- 
-+	/* Updating offset */
-+	update_offset(cp);
-+
- 	return 0;
- }
-
+Probably yes.
