@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759512AbaCTS1d (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:27:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:8610 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaCTS1b (ORCPT
+	id S1759561AbaCTS1j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 14:27:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56164 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaCTS1f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:27:31 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-c9-532b33115d5b
+	Thu, 20 Mar 2014 14:27:35 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-ce-532b3316a0bc
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
@@ -17,63 +17,72 @@ Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         davinci-linux-open-source@linux.davincidsp.com,
         spear-devel@list.st.com, b.zolnierkie@samsung.com
-Subject: [PATCH v2 0/3] ata: ahci_platform related cleanups
-Date: Thu, 20 Mar 2014 19:27:03 +0100
-Message-id: <1395340026-3969-1-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v2 1/3] ata: ahci_platform: fix ahci_platform_data->suspend
+ method handling
+Date: Thu, 20 Mar 2014 19:27:04 +0100
+Message-id: <1395340026-3969-2-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t9jQV0hY+1gg/utTBYbZ6xntTh3q4HV
-	4s3x6UwWd1YwW2x6fI3V4tiOR0wWl3fNYbPY37uByaKhu4fdYs6MzawWv5YfZbRYefEvswOP
-	x/VX/5k8ds66y+6xaVUnm8ecaU0sHicvnGTx2Lyk3uP9vqtsHn1bVjF6PP2xl9nj+I3tTB6f
-	N8kFcEdx2aSk5mSWpRbp2yVwZXReXMBYsIm74tufK8wNjN85uhg5OCQETCSOnc/sYuQEMsUk
-	Ltxbz9bFyMUhJDCdUeLW6bUsIAkhgS4mif43aSA2m4CVxMT2VYwgtoiArMSVaQ8ZQRqYBbqY
-	JZbM3sIIMlRYwFpi7oY4kBoWAVWJppmn2EBsXgF3iQ3zTrNCLFOU6H42gW0CI/cCRoZVjKKp
-	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGMHB+Ex6B+OqBotDjAIcjEo8vBWc2sFCrIllxZW5hxgl
-	OJiVRHiv6QKFeFMSK6tSi/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJxcEo1
-	MHox2K/bn/3E7/WNg6F79LXtd4UunZb8ZfLV/q1J9h8nXn2wp3rF9iXRJ3MO75rhWLNnFyeb
-	0zr9d8HLLuSGC2mZVSefFxXLOsdgxts4xezn/ckT+1dKZSZE/daemOZ0xtY0NSTek0FP2WDt
-	ZuOulrjDTjNXn05zuTNlpnR10PrFczjCbtfzKiuxFGckGmoxFxUnAgD10ptQQgIAAA==
+In-reply-to: <1395340026-3969-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1395340026-3969-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsVy+t9jQV0xY+1gg5e7pSw2zljPanHuVgOr
+	xZvj05ks7qxgttj0+BqrxbEdj5gsLu+aw2axv3cDk0VDdw+7xZwZm1ktfi0/ymix8uJfZgce
+	j+uv/jN57Jx1l91j06pONo8505pYPE5eOMnisXlJvcf7fVfZPPq2rGL0ePpjL7PH8RvbmTw+
+	b5IL4I7isklJzcksSy3St0vgyuj7s5itYDFXxaL2TywNjIc4uhg5OSQETCTeHPvHCmGLSVy4
+	t56ti5GLQ0hgOqPEp117mCCcLiaJ0282M4JUsQlYSUxsXwVmiwjISlyZ9pARpIhZoItZYsns
+	LWAJYYFYieZNk8HGsgioSuz51gkW5xVwl+hZsIQZYp2iRPezCWwgNqeAh8T//klgcSGgmvPd
+	p9gmMPIuYGRYxSiaWpBcUJyUnmukV5yYW1yal66XnJ+7iREcws+kdzCuarA4xCjAwajEw1vB
+	qR0sxJpYVlyZe4hRgoNZSYT3mi5QiDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU
+	7NTUgtQimCwTB6dUA+PEfy9+ndUxWLRogr1ZzypDW5ZHRe9Dvk406GPInsR6vUE/xGuJgfib
+	0odbV/qrv99iyN5sVtK2tWvJuSWFh4oeiL6QF1i8q0Q9+qC07L1MHiWNzSlxPL5vrPN4tzAz
+	Jb0NXMq4c/rG/w9Eypd/nnlm66/Ex+xs17clXj42fV/ozi1x1Q9kjJ8psRRnJBpqMRcVJwIA
+	ArxeO10CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ v1 was named "ata: add remaining new-style AHCI platform drivers"
-  but we are down from 2 drivers to 1 driver so the title of the patch
-  series no longer was valid :) ]
+Looking at ST SPEAr1340 AHCI code (the only user of the deprecated
+pdata->suspend and pdata->resume) it is obvious the we should return
+after calling pdata->suspend() only if the function have returned
+non-zero return value.  The code has been broken since commit 1e70c2
+("ata/ahci_platform: Add clock framework support").  Fix it.
 
-Hi,
+Cc: Viresh Kumar <viresh.linux@gmail.com>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+v2:
+- updated patch description
 
-This patch series:
-- fixes ahci_platform_data->suspend() handling
-- moves library AHCI platform code to its own file
-- adds a new-style AHCI platform driver for DaVinci DA850 AHCI controller
+ drivers/ata/ahci_platform.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-Changes since v1:
-- dropped no longer needed patch #4 (ST SPEAr1340 AHCI controller driver)
-- adressed review comments for patch #3 from Sekhar Nori
-- updated patch descriptions
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
-
-Bartlomiej Zolnierkiewicz (3):
-  ata: ahci_platform: fix ahci_platform_data->suspend method handling
-  ata: move library code from ahci_platform.c to libahci_platform.c
-  ata: add new-style AHCI platform driver for DaVinci DA850 AHCI
-    controller
-
- arch/arm/mach-davinci/devices-da8xx.c |  99 +------
- drivers/ata/Kconfig                   |  14 +-
- drivers/ata/Makefile                  |   9 +-
- drivers/ata/ahci_da850.c              | 116 ++++++++
- drivers/ata/ahci_platform.c           | 508 -------------------------------
- drivers/ata/libahci_platform.c        | 541 ++++++++++++++++++++++++++++++++++
- 6 files changed, 681 insertions(+), 606 deletions(-)
- create mode 100644 drivers/ata/ahci_da850.c
- create mode 100644 drivers/ata/libahci_platform.c
-
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 70fbf66..7bd6adf 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -521,12 +521,19 @@ int ahci_platform_suspend(struct device *dev)
+ 	if (rc)
+ 		return rc;
+ 
+-	if (pdata && pdata->suspend)
+-		return pdata->suspend(dev);
++	if (pdata && pdata->suspend) {
++		rc = pdata->suspend(dev);
++		if (rc)
++			goto resume_host;
++	}
+ 
+ 	ahci_platform_disable_resources(hpriv);
+ 
+ 	return 0;
++
++resume_host:
++	ahci_platform_resume_host(dev);
++	return rc;
+ }
+ EXPORT_SYMBOL_GPL(ahci_platform_suspend);
+ 
 -- 
 1.8.2.3
 
