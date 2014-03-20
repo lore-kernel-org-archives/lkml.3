@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760009AbaCTVCL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 17:02:11 -0400
-Received: from lekensteyn.nl ([178.21.112.251]:38953 "EHLO lekensteyn.nl"
+	id S1760022AbaCTVDS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 17:03:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20370 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759782AbaCTVCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 17:02:06 -0400
-From: Peter Wu <peter@lekensteyn.nl>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: John W Linville <linville@tuxdriver.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Chaoming_Li <chaoming_li@realsil.com.cn>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] rtlwifi (and staging rtl8821ae) cleanups
-Date: Thu, 20 Mar 2014 22:01:49 +0100
-Message-ID: <1944222.25WC2qyDiY@al>
-User-Agent: KMail/4.12.3 (Linux/3.14.0-rc7-custom-00033-g8878439; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <532B4606.3030303@lwfinger.net>
-References: <1395341544-21464-1-git-send-email-peter@lekensteyn.nl> <532B4606.3030303@lwfinger.net>
+	id S1759365AbaCTVDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 17:03:16 -0400
+Date: Thu, 20 Mar 2014 17:02:39 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-cifs@vger.kernel.org,
+        Steve French <sfrench@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        uobergfe@redhat.com, Pavel Shilovsky <piastryyy@gmail.com>
+Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
+ queues
+Message-ID: <20140320170239.51d20a0e@tlielax.poochiereds.net>
+In-Reply-To: <20140320165703.522c7c5c@gandalf.local.home>
+References: <20140319151252.16ed3ac6@gandalf.local.home>
+	<20140320152833.216d81a0@tlielax.poochiereds.net>
+	<20140320165703.522c7c5c@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 March 2014 14:48:22 Larry Finger wrote:
-> On 03/20/2014 01:52 PM, Peter Wu wrote:
-> > Hi,
-> > 
-> > The first patch of these series was NAKed some weeks ago because it would
-> > conflict with the new rtl8723be driver. Since those changes are in
-> > wireless-next now, I have adjusted that patch to take care of rtl8723be.
-> > 
-> > The other two patches to the staging driver is similar to the rtlwifi
-> > changes. I am not sure who to send these two patches to. Greg is the
-> > staging maintainer, but John takes wireless patches, so I have included
-> > both of you.
-> > 
-> > All patches are compile-tested on top of v3.14-rc2-938-g67b3bd4.
-> > 
-> > I also found the following (unrelated to my patches) warning while
-> > compiling the staging driver, perhaps it needs a closer look?
+On Thu, 20 Mar 2014 16:57:03 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
+
+> On Thu, 20 Mar 2014 15:28:33 -0400
+> Jeffrey Layton <jlayton@redhat.com> wrote:
 > 
-> Peter,
+>  
+> > Nice analysis! I think eventually we'll need to overhaul this code not
 > 
-> Your Patch 1/3 applies cleanly and I think it is OK, but if you are going to
-> do cleanups on the wireless tree, you should be working from the latest
-> version of wireless-testing git repo. We are on 3.14-rc7 and there are
-> several recent commits that might have conflicted.
+> Note, Ulrich Obergfell helped a bit in the initial analysis. He found
+> from a customer core dump that the kworker thread was blocked on the
+> cinode->lock_sem, and the reader was blocked as well. That was enough
+> for me to find where the problem laid.
+> 
 
-The changes are not new, just updated for the latest wireless-next. I did test 
-it on wireless-next, apparently it has not synced with Linus' tree yet:
+Kudos to Uli, then ;)
 
-$ git describe wireless-next/master 
-v3.14-rc2-938-g67b3bd4
-$ git log --oneline -n4 rtlwifi-wireless-next 
-cb39071 staging/rtl8821ae: remove unused allow_all_destaddr function
-607693e staging/rtl8821ae: avoid accessing RCR directly
-7db8deb rtlwifi: remove unused allow_all_destaddr functions
-67b3bd4 brcmfmac: fallback to mimo_bw_cap for older firmwares
+> > to use rw semaphores, but that's going to take some redesign. (Wonder
+> > if we could change it to use seqlocks or something?)
+> > 
+> > Out of curiousity, does this eventually time out and unwedge itself?
+> > Usually when the server doesn't get a response to an oplock break in
+> > around a minute or so it gives up and allows the thing that caused the
+> > oplock break to proceed anyway. Not great for performance but it out to
+> > eventually make progress due to that.
+> 
+> No, I believe it's hard locked. Nothing is going to wake up the oplock
+> break  if it is blocked on a down_read(). Only the release of the rwsem
+> will do that. It's the subtle way the kworker threads are done.
+> 
 
-> As for the changes to staging/rtl8821ae (No. 2 & 3), once Linus starts the
-> merge that will precede the release of 3.15-rc2, the entire code for
-> rtl8821ae will be replaced. A cleaned-up version was nearly ready for the
-> regular wireless tree in time to make 3.15, but it did not get enough
-> testing. As a result, that driver will be in testing for one more cycle. By
-> 3.16, it should reside in the regular tree and be out of staging.
+Eventually the server should just allow the read to complete even if
+the client doesn't respond to the oplock break. It has to since clients
+can suddenly drop off the net while holding an oplock. That should
+allow everything to unwedge eventually (though it may take a while).
 
-I must be missing something, since I subscribed to linux-wireless this month, 
-I have not seen discussions about a replacement for rtl8821ae. Is this driver 
-not published yet?
+If that's not happening then I'd be curious as to why...
 
-> Pushing patches that affect both the regular tree and staging is complicated
-> and should be avoided whenever possible.
+> > 
+> > In any case, this looks like a reasonable fix for now, but I suspect you
+> > can hit similar problems in the write codepath too. What may be best is
+> > turn this around and queue the oplock break to the new workqueue
+> > instead of the read completion job.
+> 
+> Or perhaps give both the read and write their own workqueues? We have
+> to look at all the work queue handlers, and be careful about any users
+> that take the lock_sem, and separate them out.
+> 
 
-Ok, I kept those in separate patches, but will send different series next time 
-if it is preferred.
+Yeah, I haven't looked closely yet but I'm fairly sure that you could
+hit the same situation in the write codepath as well. Whether adding
+more workqueues will really help, I'm not sure of yet...
 
-Thanks,
-Peter
-
+-- 
+Jeff Layton <jlayton@redhat.com>
