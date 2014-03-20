@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377AbaCTJup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:50:45 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:47084 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932984AbaCTJum (ORCPT
+	id S1757630AbaCTJja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:39:30 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:33555 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757191AbaCTJj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:50:42 -0400
-Message-ID: <532AB9EC.1030507@gmail.com>
-Date: Thu, 20 Mar 2014 10:50:36 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 05:39:28 -0400
+Subject: [PATCH 01/33] Configure and Make files
+To: linux-kernel@vger.kernel.org
+From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
+        james.hogan@imgtec.com, aravinda@linux.vnet.ibm.com, hch@lst.de,
+        mhiramat@redhat.com, jeremy.fitzhardinge@citrix.com,
+        xemul@parallels.com, d.hatayama@jp.fujitsu.com, coreutils@gnu.org,
+        kosaki.motohiro@jp.fujitsu.com, adobriyan@gmail.com,
+        util-linux@vger.kernel.org, tarundsk@linux.vnet.ibm.com,
+        vapier@gentoo.org, roland@hack.frob.com, ananth@linux.vnet.ibm.com,
+        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
+        eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
+        tj@kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org
+Date: Thu, 20 Mar 2014 15:09:09 +0530
+Message-ID: <20140320093909.14878.91133.stgit@localhost.localdomain>
+In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
+References: <20140320093040.14878.903.stgit@localhost.localdomain>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Boris BREZILLON <brezillonboris@gmail.com>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 09/11] ARM: at91/dt: define main xtal frequency of the
- at91sam9261ek board
-References: <1395173924-3648-1-git-send-email-b.brezillon.dev@gmail.com>	<1395173924-3648-10-git-send-email-b.brezillon.dev@gmail.com> <CACh+v5OF52ZuDBpkqpev1Jxv0DJ1ckRR+DjcX500i3o0o4HE9A@mail.gmail.com>
-In-Reply-To: <CACh+v5OF52ZuDBpkqpev1Jxv0DJ1ckRR+DjcX500i3o0o4HE9A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032009-7014-0000-0000-0000048ABA30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 20/03/2014 10:24, Jean-Jacques Hiblot a écrit :
-> 2014-03-18 21:18 GMT+01:00 Boris BREZILLON <brezillonboris@gmail.com>:
->> Define at91sam9261ek main crystal frequency.
->>
->> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
->> ---
->>   arch/arm/boot/dts/at91sam9261ek.dts |    4 ++++
->>   1 file changed, 4 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/at91sam9261ek.dts b/arch/arm/boot/dts/at91sam9261ek.dts
->> index 2ce527e..7175986 100644
->> --- a/arch/arm/boot/dts/at91sam9261ek.dts
->> +++ b/arch/arm/boot/dts/at91sam9261ek.dts
->> @@ -29,6 +29,10 @@
->>                          compatible = "atmel,osc", "fixed-clock";
->>                          clock-frequency = <18432000>;
->>                  };
->> +
->> +               main_xtal: main_xtal {
->> +                       clock-frequency = <18432000>;
->> +               };
->>          };
->>
->>          ahb {
->> --
->> 1.7.9.5
->>
-> You forgot to remove the old fixed-clock definition for the main_clock: clock@0
+configure.ac and automake files for the repository.
 
-We need this clock when CCF is disabled (when using the old at91 clk 
-implementation).
-I'm afraid we'll have to keep it until we move all sam9 SoCs and boards 
-to CCF (and DT).
+Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+---
+ Makefile.am  |    2 ++
+ configure.ac |    7 +++++++
+ 2 files changed, 9 insertions(+)
 
-Best Regards,
-
-Boris
->
-> Otherwise:
-> Acked-by: Jean-Jacques HIBLOT <jjhiblot@traphandler.com>
+diff --git a/Makefile.am b/Makefile.am
+index e69de29..2cc6dc7 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -0,0 +1,2 @@
++AUTOMAKE_OPTIONS = foreign
++SUBDIRS =
+diff --git a/configure.ac b/configure.ac
+index e69de29..f34a0c3 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -0,0 +1,7 @@
++AC_INIT([Gencore], [0.1], [jananive@linux.vnet.ibm.com], [gencore], [])
++LT_INIT()
++AM_INIT_AUTOMAKE([-Wall -Werror foreign])
++AC_CONFIG_HEADERS([config.h])
++AC_PROG_CC
++AC_CONFIG_FILES(Makefile)
++AC_OUTPUT()
 
