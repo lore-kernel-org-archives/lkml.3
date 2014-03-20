@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202AbaCTOLU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 10:11:20 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:49243 "EHLO
+	id S933574AbaCTOM1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 10:12:27 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:49259 "EHLO
 	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932702AbaCTOLQ (ORCPT
+	with ESMTP id S933009AbaCTOLR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 10:11:16 -0400
+	Thu, 20 Mar 2014 10:11:17 -0400
 From: Frank Haverkamp <haver@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: gregkh@linuxfoundation.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
@@ -14,45 +14,412 @@ Cc: gregkh@linuxfoundation.org, arnd@arndb.de, cody@linux.vnet.ibm.com,
         MIJUNG@de.ibm.com, cascardo@linux.vnet.ibm.com, michael@ibmra.de,
         colin.king@canonical.com, bjking1@us.ibm.com, esa@de.ibm.com,
         haver@linux.vnet.ibm.com
-Subject: [PATCH 1/5] GenWQE: Enable access to VPD flash area
-Date: Thu, 20 Mar 2014 15:11:02 +0100
-Message-Id: <1395324666-27153-1-git-send-email-haver@linux.vnet.ibm.com>
+Subject: [PATCH 4/5] GenWQE: Fix multithreading problems
+Date: Thu, 20 Mar 2014 15:11:05 +0100
+Message-Id: <1395324666-27153-4-git-send-email-haver@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1395324666-27153-1-git-send-email-haver@linux.vnet.ibm.com>
+References: <1395324666-27153-1-git-send-email-haver@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032014-4966-0000-0000-000008CB55BD
+x-cbid: 14032014-4966-0000-0000-000008CB55C7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In addition to the two flash partitions we used so far, there is a 3rd
-one which is enabled for usage by this fix.
+When being used in a multithreaded application there were problems
+with memory pages/cachelines accessed by multiple threads/cpus at the
+same time, while doing DMA transfers to/from those. To avoid such
+situations this fix is creating a copy of the first and the last page
+if it is not fully used. The data is copied from user-space into those
+pages and results are copied back when the DDCB-request is
+successfully finished.
 
 Signed-off-by: Frank Haverkamp <haver@linux.vnet.ibm.com>
 ---
- drivers/misc/genwqe/card_dev.c |    6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/misc/genwqe/card_base.h  |   58 ++++++++-----
+ drivers/misc/genwqe/card_dev.c   |   38 ++------
+ drivers/misc/genwqe/card_utils.c |  170 +++++++++++++++++++++++++++++----------
+ 3 files changed, 180 insertions(+), 86 deletions(-)
 
+--- a/drivers/misc/genwqe/card_base.h
++++ b/drivers/misc/genwqe/card_base.h
+@@ -337,6 +337,44 @@ enum genwqe_requ_state {
+ };
+ 
+ /**
++ * struct genwqe_sgl - Scatter gather list describing user-space memory
++ * @sgl:            scatter gather list needs to be 128 byte aligned
++ * @sgl_dma_addr:   dma address of sgl
++ * @sgl_size:       size of area used for sgl
++ * @user_addr:      user-space address of memory area
++ * @user_size:      size of user-space memory area
++ * @page:           buffer for partial pages if needed
++ * @page_dma_addr:  dma address partial pages
++ */
++struct genwqe_sgl {
++	dma_addr_t sgl_dma_addr;
++	struct sg_entry *sgl;
++	size_t sgl_size;	/* size of sgl */
++
++	void __user *user_addr; /* user-space base-address */
++	size_t user_size;       /* size of memory area */
++
++	unsigned long nr_pages;
++	unsigned long fpage_offs;
++	size_t fpage_size;
++	size_t lpage_size;
++
++	void *fpage;
++	dma_addr_t fpage_dma_addr;
++
++	void *lpage;
++	dma_addr_t lpage_dma_addr;
++};
++
++int genwqe_alloc_sync_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl,
++			  void __user *user_addr, size_t user_size);
++
++int genwqe_setup_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl,
++		     dma_addr_t *dma_list);
++
++int genwqe_free_sync_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl);
++
++/**
+  * struct ddcb_requ - Kernel internal representation of the DDCB request
+  * @cmd:          User space representation of the DDCB execution request
+  */
+@@ -347,9 +385,7 @@ struct ddcb_requ {
+ 	struct ddcb_queue *queue;	  /* associated queue */
+ 
+ 	struct dma_mapping  dma_mappings[DDCB_FIXUPS];
+-	struct sg_entry     *sgl[DDCB_FIXUPS];
+-	dma_addr_t	    sgl_dma_addr[DDCB_FIXUPS];
+-	size_t		    sgl_size[DDCB_FIXUPS];
++	struct genwqe_sgl sgls[DDCB_FIXUPS];
+ 
+ 	/* kernel/user shared content */
+ 	struct genwqe_ddcb_cmd cmd;	/* ddcb_no for this request */
+@@ -453,22 +489,6 @@ int  genwqe_user_vmap(struct genwqe_dev 
+ int  genwqe_user_vunmap(struct genwqe_dev *cd, struct dma_mapping *m,
+ 			struct ddcb_requ *req);
+ 
+-struct sg_entry *genwqe_alloc_sgl(struct genwqe_dev *cd, int num_pages,
+-				 dma_addr_t *dma_addr, size_t *sgl_size);
+-
+-void genwqe_free_sgl(struct genwqe_dev *cd, struct sg_entry *sg_list,
+-		    dma_addr_t dma_addr, size_t size);
+-
+-int genwqe_setup_sgl(struct genwqe_dev *cd,
+-		    unsigned long offs,
+-		    unsigned long size,
+-		    struct sg_entry *sgl, /* genwqe sgl */
+-		    dma_addr_t dma_addr, size_t sgl_size,
+-		    dma_addr_t *dma_list, int page_offs, int num_pages);
+-
+-int genwqe_check_sgl(struct genwqe_dev *cd, struct sg_entry *sg_list,
+-		     int size);
+-
+ static inline bool dma_mapping_used(struct dma_mapping *m)
+ {
+ 	if (!m)
 --- a/drivers/misc/genwqe/card_dev.c
 +++ b/drivers/misc/genwqe/card_dev.c
-@@ -531,7 +531,9 @@ static int do_flash_update(struct genwqe
- 	case '1':
- 		cmdopts = 0x1C;
- 		break;		/* download/erase_first/part_1 */
--	case 'v':		/* cmdopts = 0x0c (VPD) */
-+	case 'v':
-+		cmdopts = 0x0C;
-+		break;		/* download/erase_first/vpd */
- 	default:
- 		return -EINVAL;
+@@ -840,15 +840,8 @@ static int ddcb_cmd_cleanup(struct genwq
+ 			__genwqe_del_mapping(cfile, dma_map);
+ 			genwqe_user_vunmap(cd, dma_map, req);
+ 		}
+-		if (req->sgl[i] != NULL) {
+-			genwqe_free_sgl(cd, req->sgl[i],
+-				       req->sgl_dma_addr[i],
+-				       req->sgl_size[i]);
+-			req->sgl[i] = NULL;
+-			req->sgl_dma_addr[i] = 0x0;
+-			req->sgl_size[i] = 0;
+-		}
+-
++		if (req->sgls[i].sgl != NULL)
++			genwqe_free_sync_sgl(cd, &req->sgls[i]);
  	}
-@@ -665,6 +667,8 @@ static int do_flash_read(struct genwqe_f
- 		cmdopts = 0x1A;
- 		break;		/* upload/part_1 */
- 	case 'v':
-+		cmdopts = 0x0A;
-+		break;		/* upload/vpd */
- 	default:
- 		return -EINVAL;
+ 	return 0;
+ }
+@@ -917,7 +910,7 @@ static int ddcb_cmd_fixups(struct genwqe
+ 
+ 		case ATS_TYPE_SGL_RDWR:
+ 		case ATS_TYPE_SGL_RD: {
+-			int page_offs, nr_pages, offs;
++			int page_offs;
+ 
+ 			u_addr = be64_to_cpu(*((__be64 *)
+ 					       &cmd->asiv[asiv_offs]));
+@@ -955,27 +948,18 @@ static int ddcb_cmd_fixups(struct genwqe
+ 				page_offs = 0;
+ 			}
+ 
+-			offs = offset_in_page(u_addr);
+-			nr_pages = DIV_ROUND_UP(offs + u_size, PAGE_SIZE);
+-
+ 			/* create genwqe style scatter gather list */
+-			req->sgl[i] = genwqe_alloc_sgl(cd, m->nr_pages,
+-						      &req->sgl_dma_addr[i],
+-						      &req->sgl_size[i]);
+-			if (req->sgl[i] == NULL) {
+-				rc = -ENOMEM;
++			rc = genwqe_alloc_sync_sgl(cd, &req->sgls[i],
++						   (void __user *)u_addr,
++						   u_size);
++			if (rc != 0)
+ 				goto err_out;
+-			}
+-			genwqe_setup_sgl(cd, offs, u_size,
+-					req->sgl[i],
+-					req->sgl_dma_addr[i],
+-					req->sgl_size[i],
+-					m->dma_list,
+-					page_offs,
+-					nr_pages);
++
++			genwqe_setup_sgl(cd, &req->sgls[i],
++					 &m->dma_list[page_offs]);
+ 
+ 			*((__be64 *)&cmd->asiv[asiv_offs]) =
+-				cpu_to_be64(req->sgl_dma_addr[i]);
++				cpu_to_be64(req->sgls[i].sgl_dma_addr);
+ 
+ 			break;
+ 		}
+--- a/drivers/misc/genwqe/card_utils.c
++++ b/drivers/misc/genwqe/card_utils.c
+@@ -275,67 +275,107 @@ static int genwqe_sgl_size(int num_pages
+ 	return roundup(len, PAGE_SIZE);
+ }
+ 
+-struct sg_entry *genwqe_alloc_sgl(struct genwqe_dev *cd, int num_pages,
+-				  dma_addr_t *dma_addr, size_t *sgl_size)
++/**
++ * genwqe_alloc_sync_sgl() - Allocate memory for sgl and overlapping pages
++ *
++ * Allocates memory for sgl and overlapping pages. Pages which might
++ * overlap other user-space memory blocks are being cached for DMAs,
++ * such that we do not run into syncronization issues. Data is copied
++ * from user-space into the cached pages.
++ */
++int genwqe_alloc_sync_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl,
++			  void __user *user_addr, size_t user_size)
+ {
++	int rc;
+ 	struct pci_dev *pci_dev = cd->pci_dev;
+-	struct sg_entry *sgl;
+ 
+-	*sgl_size = genwqe_sgl_size(num_pages);
+-	if (get_order(*sgl_size) > MAX_ORDER) {
++	sgl->fpage_offs = offset_in_page((unsigned long)user_addr);
++	sgl->fpage_size = min_t(size_t, PAGE_SIZE-sgl->fpage_offs, user_size);
++	sgl->nr_pages = DIV_ROUND_UP(sgl->fpage_offs + user_size, PAGE_SIZE);
++	sgl->lpage_size = (user_size - sgl->fpage_size) % PAGE_SIZE;
++
++	dev_dbg(&pci_dev->dev, "[%s] uaddr=%p usize=%8ld nr_pages=%ld "
++		"fpage_offs=%lx fpage_size=%ld lpage_size=%ld\n",
++		__func__, user_addr, user_size, sgl->nr_pages,
++		sgl->fpage_offs, sgl->fpage_size, sgl->lpage_size);
++
++	sgl->user_addr = user_addr;
++	sgl->user_size = user_size;
++	sgl->sgl_size = genwqe_sgl_size(sgl->nr_pages);
++
++	if (get_order(sgl->sgl_size) > MAX_ORDER) {
+ 		dev_err(&pci_dev->dev,
+ 			"[%s] err: too much memory requested!\n", __func__);
+-		return NULL;
++		return -ENOMEM;
  	}
+ 
+-	sgl = __genwqe_alloc_consistent(cd, *sgl_size, dma_addr);
+-	if (sgl == NULL) {
++	sgl->sgl = __genwqe_alloc_consistent(cd, sgl->sgl_size,
++					     &sgl->sgl_dma_addr);
++	if (sgl->sgl == NULL) {
+ 		dev_err(&pci_dev->dev,
+ 			"[%s] err: no memory available!\n", __func__);
+-		return NULL;
++		return -ENOMEM;
++	}
++
++	/* Only use buffering on incomplete pages */
++	if ((sgl->fpage_size != 0) && (sgl->fpage_size != PAGE_SIZE)) {
++		sgl->fpage = __genwqe_alloc_consistent(cd, PAGE_SIZE,
++						       &sgl->fpage_dma_addr);
++		if (sgl->fpage == NULL)
++			goto err_out;
++
++		/* Sync with user memory */
++		if (copy_from_user(sgl->fpage + sgl->fpage_offs,
++				   user_addr, sgl->fpage_size)) {
++			rc = -EFAULT;
++			goto err_out;
++		}
++	}
++	if (sgl->lpage_size != 0) {
++		sgl->lpage = __genwqe_alloc_consistent(cd, PAGE_SIZE,
++						       &sgl->lpage_dma_addr);
++		if (sgl->lpage == NULL)
++			goto err_out1;
++
++		/* Sync with user memory */
++		if (copy_from_user(sgl->lpage, user_addr + user_size -
++				   sgl->lpage_size, sgl->lpage_size)) {
++			rc = -EFAULT;
++			goto err_out1;
++		}
+ 	}
++	return 0;
+ 
+-	return sgl;
++ err_out1:
++	__genwqe_free_consistent(cd, PAGE_SIZE, sgl->fpage,
++				 sgl->fpage_dma_addr);
++ err_out:
++	__genwqe_free_consistent(cd, sgl->sgl_size, sgl->sgl,
++				 sgl->sgl_dma_addr);
++	return -ENOMEM;
+ }
+ 
+-int genwqe_setup_sgl(struct genwqe_dev *cd,
+-		     unsigned long offs,
+-		     unsigned long size,
+-		     struct sg_entry *sgl,
+-		     dma_addr_t dma_addr, size_t sgl_size,
+-		     dma_addr_t *dma_list, int page_offs, int num_pages)
++int genwqe_setup_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl,
++		     dma_addr_t *dma_list)
+ {
+ 	int i = 0, j = 0, p;
+ 	unsigned long dma_offs, map_offs;
+-	struct pci_dev *pci_dev = cd->pci_dev;
+ 	dma_addr_t prev_daddr = 0;
+ 	struct sg_entry *s, *last_s = NULL;
+-
+-	/* sanity checks */
+-	if (offs > PAGE_SIZE) {
+-		dev_err(&pci_dev->dev,
+-			"[%s] too large start offs %08lx\n", __func__, offs);
+-		return -EFAULT;
+-	}
+-	if (sgl_size < genwqe_sgl_size(num_pages)) {
+-		dev_err(&pci_dev->dev,
+-			"[%s] sgl_size too small %08lx for %d pages\n",
+-			__func__, sgl_size, num_pages);
+-		return -EFAULT;
+-	}
++	size_t size = sgl->user_size;
+ 
+ 	dma_offs = 128;		/* next block if needed/dma_offset */
+-	map_offs = offs;	/* offset in first page */
++	map_offs = sgl->fpage_offs; /* offset in first page */
+ 
+-	s = &sgl[0];		/* first set of 8 entries */
++	s = &sgl->sgl[0];	/* first set of 8 entries */
+ 	p = 0;			/* page */
+-	while (p < num_pages) {
++	while (p < sgl->nr_pages) {
+ 		dma_addr_t daddr;
+ 		unsigned int size_to_map;
+ 
+ 		/* always write the chaining entry, cleanup is done later */
+ 		j = 0;
+-		s[j].target_addr = cpu_to_be64(dma_addr + dma_offs);
++		s[j].target_addr = cpu_to_be64(sgl->sgl_dma_addr + dma_offs);
+ 		s[j].len	 = cpu_to_be32(128);
+ 		s[j].flags	 = cpu_to_be32(SG_CHAINED);
+ 		j++;
+@@ -343,7 +383,17 @@ int genwqe_setup_sgl(struct genwqe_dev *
+ 		while (j < 8) {
+ 			/* DMA mapping for requested page, offs, size */
+ 			size_to_map = min(size, PAGE_SIZE - map_offs);
+-			daddr = dma_list[page_offs + p] + map_offs;
++
++			if ((p == 0) && (sgl->fpage != NULL)) {
++				daddr = sgl->fpage_dma_addr + map_offs;
++
++			} else if ((p == sgl->nr_pages - 1) &&
++				   (sgl->lpage != NULL)) {
++				daddr = sgl->lpage_dma_addr;
++			} else {
++				daddr = dma_list[p] + map_offs;
++			}
++
+ 			size -= size_to_map;
+ 			map_offs = 0;
+ 
+@@ -358,7 +408,7 @@ int genwqe_setup_sgl(struct genwqe_dev *
+ 							  size_to_map);
+ 
+ 				p++; /* process next page */
+-				if (p == num_pages)
++				if (p == sgl->nr_pages)
+ 					goto fixup;  /* nothing to do */
+ 
+ 				prev_daddr = daddr + size_to_map;
+@@ -374,7 +424,7 @@ int genwqe_setup_sgl(struct genwqe_dev *
+ 			j++;
+ 
+ 			p++;	/* process next page */
+-			if (p == num_pages)
++			if (p == sgl->nr_pages)
+ 				goto fixup;  /* nothing to do */
+ 		}
+ 		dma_offs += 128;
+@@ -395,10 +445,50 @@ int genwqe_setup_sgl(struct genwqe_dev *
+ 	return 0;
+ }
+ 
+-void genwqe_free_sgl(struct genwqe_dev *cd, struct sg_entry *sg_list,
+-		    dma_addr_t dma_addr, size_t size)
++/**
++ * genwqe_free_sync_sgl() - Free memory for sgl and overlapping pages
++ *
++ * After the DMA transfer has been completed we free the memory for
++ * the sgl and the cached pages. Data is being transfered from cached
++ * pages into user-space buffers.
++ */
++int genwqe_free_sync_sgl(struct genwqe_dev *cd, struct genwqe_sgl *sgl)
+ {
+-	__genwqe_free_consistent(cd, size, sg_list, dma_addr);
++	int rc;
++	struct pci_dev *pci_dev = cd->pci_dev;
++
++	if (sgl->fpage) {
++		if (copy_to_user(sgl->user_addr, sgl->fpage + sgl->fpage_offs,
++				 sgl->fpage_size)) {
++			dev_err(&pci_dev->dev, "[%s] err: copying fpage!\n",
++				__func__);
++			rc = -EFAULT;
++		}
++		__genwqe_free_consistent(cd, PAGE_SIZE, sgl->fpage,
++					 sgl->fpage_dma_addr);
++		sgl->fpage = NULL;
++		sgl->fpage_dma_addr = 0;
++	}
++	if (sgl->lpage) {
++		if (copy_to_user(sgl->user_addr + sgl->user_size -
++				 sgl->lpage_size, sgl->lpage,
++				 sgl->lpage_size)) {
++			dev_err(&pci_dev->dev, "[%s] err: copying lpage!\n",
++				__func__);
++			rc = -EFAULT;
++		}
++		__genwqe_free_consistent(cd, PAGE_SIZE, sgl->lpage,
++					 sgl->lpage_dma_addr);
++		sgl->lpage = NULL;
++		sgl->lpage_dma_addr = 0;
++	}
++	__genwqe_free_consistent(cd, sgl->sgl_size, sgl->sgl,
++				 sgl->sgl_dma_addr);
++
++	sgl->sgl = NULL;
++	sgl->sgl_dma_addr = 0x0;
++	sgl->sgl_size = 0;
++	return rc;
+ }
+ 
+ /**
 
