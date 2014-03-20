@@ -1,59 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758292AbaCTPyc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:54:32 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:40001 "EHLO smtp4-g21.free.fr"
+	id S933787AbaCTPyq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:54:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21483 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaCTPya convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:54:30 -0400
-Date: Thu, 20 Mar 2014 16:54:40 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT
- documentation
-Message-ID: <20140320165440.195cd2ea@armhf>
-In-Reply-To: <20140320151934.GV7528@n2100.arm.linux.org.uk>
-References: <20140320092639.48F68A6279@smtp3-g21.free.fr>
-	<532ADFD8.80301@gmail.com>
-	<20140320140156.5d768b1f@armhf>
-	<532AEDE2.3080306@gmail.com>
-	<20140320145221.09252bf6@armhf>
-	<20140320143110.GU7528@n2100.arm.linux.org.uk>
-	<20140320155935.7a474173@armhf>
-	<20140320151934.GV7528@n2100.arm.linux.org.uk>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	id S932091AbaCTPyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 11:54:43 -0400
+Date: Thu, 20 Mar 2014 11:54:11 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Muli Ben-Yehuda <muli@cs.technion.ac.il>,
+        "Jon D. Mason" <jdmason@kudzu.us>, "H. Peter Anvin" <hpa@zytor.com>,
+        Baoquan He <bhe@redhat.com>, kexec@lists.infradead.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, WANG Chao <chaowang@redhat.com>
+Subject: Re: [PATCH v2] x86, calgary: use 8M TCE table size by default
+Message-ID: <20140320155411.GC29549@redhat.com>
+References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014 15:19:34 +0000
-Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+Hi hpa,
 
-> I'm not saying that it has to match the physical device fitted - I'm
-> merely suggesting not using nxp,tda1998x which could (and as Sebastian
-> has found, does) conflict with other devices with different properties.
+I am wondering how to make progress on calgary issue now. We do want to
+cleanup kexec-tools code and move to passing memory ranges in bootparams.
+
+I see two choices here.
+
+- Take this patch in so that new kernel code will work with modified
+  kexec-tools without any user intervention. (Both first and second kernel
+  need to be new). 
+
+- Don't take this patch in and calgary will be broken with new
+  kexec-tools. And that will always require manual user intervention
+  from user to force passing memmap on command line.
+
+I kind of prefer the first option so that even if there are some calgary
+machines out there, they will work automatically with new kernel and
+will require manual intervention only for old kernels and new kexec-tool
+cobination.
+
+But I can live with second option too if that's everybody agrees to and
+hopefully we don't get lots of reports of breaking kdump with kexec-tools
+upgrade.
+
+Thanks
+Vivek
+
+On Mon, Mar 10, 2014 at 10:52:00PM +0800, WANG Chao wrote:
+> New kexec-tools wants to pass kdump kernel needed memmap via E820
+> directly, instead of memmap=exactmap. This makes saved_max_pfn not
+> be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
+> the same TCE table size, Muli suggest to hard code the size to max (8M).
 > 
-> We still auto-detect the exact device type by reading the ID register
-> because that's the most reliable way to detect exactly what kind of
-> device is fitted to the board.
-
-I don't see the problem.
-
-Actually the driver handles the tda9989, tda19988 and tda19989 (2
-variants). If some board has, for example, the tda9983 and if the
-driver is extended to handle this chip (i.e. mainly ignore the CEC
-part), setting 'nxp,tda998x' in the associated DT will still work.
-
-There could be a problem if somebody would write a specific driver for,
-say, a tda9985. But, then, the compatible would be 'nxp,tda9985'.
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
+> We can't get rid of saved_max_pfn this time, for backward compatibility
+> with old first kernel and new second kernel. However new first kernel
+> and old second kernel can not work unfortunately.
+> 
+> v2->v1:
+> - retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
+>   from Vivek
+> 
+> Signed-off-by: WANG Chao <chaowang@redhat.com>
+> ---
+>  arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
+>  1 file changed, 19 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
+> index 299d493..0497f71 100644
+> --- a/arch/x86/kernel/pci-calgary_64.c
+> +++ b/arch/x86/kernel/pci-calgary_64.c
+> @@ -1207,23 +1207,31 @@ error:
+>  	return ret;
+>  }
+>  
+> -static inline int __init determine_tce_table_size(u64 ram)
+> +static inline int __init determine_tce_table_size(void)
+>  {
+>  	int ret;
+>  
+>  	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
+>  		return specified_table_size;
+>  
+> -	/*
+> -	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+> -	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+> -	 * larger table size has twice as many entries, so shift the
+> -	 * max ram address by 13 to divide by 8K and then look at the
+> -	 * order of the result to choose between 0-7.
+> -	 */
+> -	ret = get_order(ram >> 13);
+> -	if (ret > TCE_TABLE_SIZE_8M)
+> +	if (is_kdump_kernel() && saved_max_pfn) {
+> +		/*
+> +		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
+> +		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
+> +		 * larger table size has twice as many entries, so shift the
+> +		 * max ram address by 13 to divide by 8K and then look at the
+> +		 * order of the result to choose between 0-7.
+> +		 */
+> +		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
+> +		if (ret > TCE_TABLE_SIZE_8M)
+> +			ret = TCE_TABLE_SIZE_8M;
+> +	} else {
+> +		/*
+> +		 * Use 8M by default (suggested by Muli) if it's not
+> +		 * kdump kernel and saved_max_pfn isn't set.
+> +		 */
+>  		ret = TCE_TABLE_SIZE_8M;
+> +	}
+>  
+>  	return ret;
+>  }
+> @@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
+>  		return -ENOMEM;
+>  	}
+>  
+> -	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
+> -					saved_max_pfn : max_pfn) * PAGE_SIZE);
+> +	specified_table_size = determine_tce_table_size();
+>  
+>  	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
+>  		struct calgary_bus_info *info = &bus_info[bus];
+> -- 
+> 1.8.5.3
