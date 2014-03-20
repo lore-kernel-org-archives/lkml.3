@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaCTF5C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:57:02 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:59335
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751852AbaCTFz4 (ORCPT
+	id S1754867AbaCTF5H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:57:07 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:17608 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbaCTF5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:55:56 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <shawn.guo@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 2/3] ARM: dts: vf610-twr: Add PWM0's pinctrl node
-Date: Thu, 20 Mar 2014 13:12:04 +0800
-Message-ID: <1395292325-8497-3-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Thu, 20 Mar 2014 01:57:04 -0400
+Message-ID: <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
+        tglx@linutronix.de, mingo@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>
+Date: Wed, 19 Mar 2014 22:56:59 -0700
+In-Reply-To: <20140320053350.GB30295@linux.vnet.ibm.com>
+References: <20140319152619.GB10406@linux.vnet.ibm.com>
+	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
+	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
+	 <20140320053350.GB30295@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- arch/arm/boot/dts/vf610-twr.dts | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+On Thu, 2014-03-20 at 11:03 +0530, Srikar Dronamraju wrote:
+> > > Joy,.. let me look at that with ppc in mind.
+> > 
+> > OK; so while pretty much all the comments from that patch are utter
+> > nonsense (what was I thinking), I cannot actually find a real bug.
+> > 
+> > But could you try the below which replaces a control dependency with a
+> > full barrier. The control flow is plenty convoluted that I think the
+> > control barrier isn't actually valid anymore and that might indeed
+> > explain the fail.
+> > 
+> 
+> Unfortunately the patch didnt help. Still seeing tasks stuck
+> 
+> # ps -Ao pid,tt,user,fname,tmout,f,wchan | grep futex
+> 14680 pts/0    root     java         - 0 futex_wait_queue_me
+> 14797 pts/0    root     java         - 0 futex_wait_queue_me
+> # :> /var/log/messages
+> # echo t > /proc/sysrq-trigger 
+> # grep futex_wait_queue_me /var/log/messages | wc -l 
+> 334
+> #
+> 
+> [ 6904.211478] Call Trace:
+> [ 6904.211481] [c000000fa1f1b4d0] [0000000000000020] 0x20 (unreliable)
+> [ 6904.211486] [c000000fa1f1b6a0] [c000000000015208] .__switch_to+0x1e8/0x330
+> [ 6904.211491] [c000000fa1f1b750] [c000000000702f00] .__schedule+0x360/0x8b0
+> [ 6904.211495] [c000000fa1f1b9d0] [c000000000147348] .futex_wait_queue_me+0xf8/0x1a0
+> [ 6904.211500] [c000000fa1f1ba60] [c0000000001486dc] .futex_wait+0x17c/0x2a0
+> [ 6904.211505] [c000000fa1f1bc10] [c00000000014a614] .do_futex+0x254/0xd80
+> [ 6904.211510] [c000000fa1f1bd60] [c00000000014b25c] .SyS_futex+0x11c/0x1d0
+> [ 6904.238874] [c000000fa1f1be30] [c00000000000a0fc] syscall_exit+0x0/0x7c
+> [ 6904.238879] java            S 00003fff825f6044     0 14682  14076 0x00000080
+> 
+> Is there any other information that I provide that can help?
 
-diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-twr.dts
-index f3af8ea..3fabdb5 100644
---- a/arch/arm/boot/dts/vf610-twr.dts
-+++ b/arch/arm/boot/dts/vf610-twr.dts
-@@ -213,6 +213,17 @@
- 			>;
- 		};
- 
-+		pinctrl_pwm0: pwm0grp {
-+			fsl,pins = <
-+				VF610_PAD_PTB0__FTM0_CH0		0x1582
-+				VF610_PAD_PTB1__FTM0_CH1		0x1582
-+				VF610_PAD_PTB2__FTM0_CH2		0x1582
-+				VF610_PAD_PTB3__FTM0_CH3		0x1582
-+				VF610_PAD_PTB6__FTM0_CH6		0x1582
-+				VF610_PAD_PTB7__FTM0_CH7		0x1582
-+			>;
-+		};
-+
- 		pinctrl_sai2: sai2grp {
- 			fsl,pins = <
- 				VF610_PAD_PTA16__SAI2_TX_BCLK		0x02ed
--- 
-1.8.4
+This problem suggests that we missed a wakeup for a task that was adding
+itself to the queue in a wait path. And the only place that can happen
+is with the hb spinlock check for any pending waiters. Just in case we
+missed some assumption about checking the hash bucket spinlock as a way
+of detecting any waiters (powerpc?), could you revert this commit and
+try the original atomic operations variant:
 
+https://lkml.org/lkml/2013/12/19/630
 
