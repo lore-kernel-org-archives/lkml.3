@@ -1,75 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaCTDAS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 23:00:18 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:32718 "EHLO
+	id S1755148AbaCTDAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 23:00:16 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:32013 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752923AbaCTDAL (ORCPT
+	by vger.kernel.org with ESMTP id S1754654AbaCTDAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 23:00:11 -0400
-Message-Id: <20140320030010.073469437@goodmis.org>
+	Wed, 19 Mar 2014 23:00:12 -0400
+Message-Id: <20140320030009.809627569@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 19 Mar 2014 22:58:34 -0400
+Date: Wed, 19 Mar 2014 22:58:32 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [for-next][PATCH 3/4] tracepoints: API doc update to tracepoint_probe_register() return
- value
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Jiri Slaby <jslaby@suse.cz>, Ingo Molnar <mingo@redhat.com>
+Subject: [for-next][PATCH 1/4] ftrace: Fix compilation warning about control_ops_free
 References: <20140320025831.285817697@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tracepoints-API-doc-update-to-tracepoint_probe_regis.patch
-X-RR-Connecting-IP: 107.14.168.118:25
+Content-Disposition: inline; filename=0000-ftrace-Fix-compilation-warning-about-control_ops_fre.patch
+X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
-Describe the return values of tracepoint_probe_register(), including
--ENODEV added by commit:
+With CONFIG_DYNAMIC_FTRACE=n, I see a warning:
+kernel/trace/ftrace.c:240:13: warning: 'control_ops_free' defined but not used
+ static void control_ops_free(struct ftrace_ops *ops)
+             ^
+Move that function around to an already existing #ifdef
+CONFIG_DYNAMIC_FTRACE block as the function is used solely from the
+dynamic function tracing functions.
 
-Author: Steven Rostedt <rostedt@goodmis.org>
+Link: http://lkml.kernel.org/r/1394484131-5107-1-git-send-email-jslaby@suse.cz
 
-    tracing: Warn if a tracepoint is not set via debugfs
-
-Link: http://lkml.kernel.org/r/1394499898-1537-2-git-send-email-mathieu.desnoyers@efficios.com
-
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/tracepoint.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ kernel/trace/ftrace.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index a4f629d..e2a58a2 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -378,7 +378,17 @@ tracepoint_add_probe(const char *name, void *probe, void *data)
-  * @probe: probe handler
-  * @data: probe private data
-  *
-- * Returns 0 if ok, error value on error.
-+ * Returns:
-+ * - 0 if the probe was successfully registered, and tracepoint
-+ *   callsites are currently loaded for that probe,
-+ * - -ENODEV if the probe was successfully registered, but no tracepoint
-+ *   callsite is currently loaded for that probe,
-+ * - other negative error value on error.
-+ *
-+ * When tracepoint_probe_register() returns either 0 or -ENODEV,
-+ * parameters @name, @probe, and @data may be used by the tracepoint
-+ * infrastructure until the probe is unregistered.
-+ *
-  * The probe address must at least be aligned on the architecture pointer size.
-  */
- int tracepoint_probe_register(const char *name, void *probe, void *data)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 0e48ff4..b4531b2 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -237,11 +237,6 @@ static int control_ops_alloc(struct ftrace_ops *ops)
+ 	return 0;
+ }
+ 
+-static void control_ops_free(struct ftrace_ops *ops)
+-{
+-	free_percpu(ops->disabled);
+-}
+-
+ static void update_global_ops(void)
+ {
+ 	ftrace_func_t func = ftrace_global_list_func;
+@@ -2100,6 +2095,11 @@ static ftrace_func_t saved_ftrace_func;
+ static int ftrace_start_up;
+ static int global_start_up;
+ 
++static void control_ops_free(struct ftrace_ops *ops)
++{
++	free_percpu(ops->disabled);
++}
++
+ static void ftrace_startup_enable(int command)
+ {
+ 	if (saved_ftrace_func != ftrace_trace_function) {
 -- 
 1.8.5.3
 
