@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753505AbaCTF4F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:56:05 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:29376
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751167AbaCTF4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:56:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h2668h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <shawn.guo@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 1/3] ARM: dts: vf610: Add Freescale FTM PWM node.
-Date: Thu, 20 Mar 2014 13:12:03 +0800
-Message-ID: <1395292325-8497-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1752713AbaCTF4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:56:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58349 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167AbaCTFz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 01:55:28 -0400
+X-IronPort-AV: E=Sophos;i="4.97,692,1389715200"; 
+   d="scan'208";a="9732605"
+Message-ID: <532A80B1.5010002@cn.fujitsu.com>
+Date: Thu, 20 Mar 2014 13:46:25 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Benjamin <bcrl@kvack.org>
+CC: Al Viro <viro@zeniv.linux.org.uk>, jmoyer@redhat.com,
+        kosaki.motohiro@jp.fujitsu.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>, miaox@cn.fujitsu.com,
+        linux-aio@kvack.org, fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2/2] aio: fix the confliction of read events and migrating
+ ring page
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/20 13:52:26,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/20 13:52:28,
+	Serialize complete at 2014/03/20 13:52:28
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds devicetree node for VF610, and there are 8 channels
-supported.
+Since we do not have additional protection on the page at the read events
+side, so it is possible that the read of the page takes place after the
+page has been freed and allocated to another part of the kernel. This
+would result in the read returning invalid information.
+So here we add a mutex pair before putting old page when migrating page
+success to fix the confliction of reading events and migrating page.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
-Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
-Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
+Reported-by: Benjamin LaHaise <bcrl@kvack.org>
+Signed-off-by: Gu Zheng <guz.fnst@cn.fujitsu.com>
 ---
- arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ fs/aio.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
-index acf544e..ccc6d35 100644
---- a/arch/arm/boot/dts/vf610.dtsi
-+++ b/arch/arm/boot/dts/vf610.dtsi
-@@ -192,6 +192,19 @@
- 				status = "disabled";
- 			};
+diff --git a/fs/aio.c b/fs/aio.c
+index 88ad40c..e353085 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -319,6 +319,9 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 	ctx->ring_pages[old->index] = new;
+ 	spin_unlock_irqrestore(&ctx->completion_lock, flags);
  
-+			pwm0: pwm@40038000 {
-+				compatible = "fsl,vf610-ftm-pwm";
-+				#pwm-cells = <3>;
-+				reg = <0x40038000 0x1000>;
-+				clock-names = "ftm_sys", "ftm_ext",
-+					      "ftm_fix", "ftm_cnt_clk_en";
-+				clocks = <&clks VF610_CLK_FTM0>,
-+					<&clks VF610_CLK_FTM0_EXT_SEL>,
-+					<&clks VF610_CLK_FTM0_FIX_SEL>,
-+					<&clks VF610_CLK_FTM0_EXT_FIX_EN>;
-+				status = "disabled";
-+			};
-+
- 			wdog@4003e000 {
- 				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
- 				reg = <0x4003e000 0x1000>;
++	/* Ensure read event is completed before putting old page */
++	mutex_lock(&ctx->ring_lock);
++	mutex_unlock(&ctx->ring_lock);
+ 	put_page(old);
+ 
+ 	return rc;
 -- 
-1.8.4
-
+1.7.7
 
