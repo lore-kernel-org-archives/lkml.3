@@ -1,73 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933436AbaCTTE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:04:59 -0400
-Received: from smtp-out-028.synserver.de ([212.40.185.28]:1075 "EHLO
-	smtp-out-025.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758197AbaCTTE6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:04:58 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 23528
-Message-ID: <532B3C03.7030208@metafoo.de>
-Date: Thu, 20 Mar 2014 20:05:39 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S964807AbaCTTFw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:05:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55970 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933548AbaCTTFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 15:05:50 -0400
+Date: Thu, 20 Mar 2014 14:03:57 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Peter Hurley <peter@hurleysoftware.com>,
+        Marcel Holtmann <marcel@holtmann.org>, Alan Cox <alan@linux.intel.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Huang Shijie <b32955@freescale.com>
+Subject: Re: hci_ldsic nested locking problem
+Message-ID: <20140320190357.GG3959@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <20140320163435.GH32692@saruman.home>
+ <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
+ <20140320171621.GA2827@saruman.home>
+ <532B25FC.3070408@hurleysoftware.com>
+ <20140320181145.GC3959@saruman.home>
+ <532B319D.4090208@hurleysoftware.com>
+ <20140320182528.GE3959@saruman.home>
+ <20140320190154.GF3959@saruman.home>
 MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: Stephen Warren <swarren@wwwdotorg.org>, Songhee Baek <sbaek@nvidia.com>,
-        Arun Shamanna Lakshmi <aruns@nvidia.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
-References: <1395186692-11735-1-git-send-email-aruns@nvidia.com> <20140318235941.GT11706@sirena.org.uk> <781A12BB53C15A4BB37291FDE08C03F3A05CB21E46@HQMAIL02.nvidia.com> <20140320114829.GC11706@sirena.org.uk> <532B3161.6080808@wwwdotorg.org> <20140320183638.GI11706@sirena.org.uk>
-In-Reply-To: <20140320183638.GI11706@sirena.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Fnm8lRGFTVS/3GuM"
+Content-Disposition: inline
+In-Reply-To: <20140320190154.GF3959@saruman.home>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 07:36 PM, Mark Brown wrote:
-> On Thu, Mar 20, 2014 at 12:20:17PM -0600, Stephen Warren wrote:
->> On 03/20/2014 05:48 AM, Mark Brown wrote:
->>> On Wed, Mar 19, 2014 at 04:44:00PM -0700, Arun Shamanna Lakshmi wrote:
->
->>>> If each bit of a 32 bit register maps to an input of a mux, then with
->>>> the current 'soc_enum' structure we cannot have more than 64 inputs
->>>> for the mux (because of reg and reg2 only).
->
->>> What makes you say that?  We currently have devices in mainline which
->>> have well over 32 inputs to muxes.
->
->> I think their register layout is different.
->
->> I found a number of large muxes where the register stores a 'integer'
->> indicating which mux input to select, e.g. Arizona, WM2200, etc. In this
->> case, an N-bit register could support up to 2^N inputs.
->
->> However, the registers in the Tegra AHUB use 1 bit position per input,
->> and require you to set one single bit at a time. Hence, an N bit
->> register (or string of registers) can support up to N inputs. In more
->> recent Tegra chips, we have at least >32 inputs and I think Arun was
->> saying even >64 inputs. That requires 2 or 3 or more .reg fields in
->> struct soc_enum.
->
-> Right, that was my guess too (the mail wasn't terribly clear with the
-> formatting, references to unpublished documents and so on) but that's
-> not a straight mux, it's a value mux, and the limit with the current
-> code is much lower on 32 bit systems (like at least some of the K1s)
-> since muxes only use one of the current register fields.
+--Fnm8lRGFTVS/3GuM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It might make sense to add special code for supported muxes with a one-hot 
-encoding instead of using a value mux. Having an large array where each 
-entry is just 1<<n is a bit ugly in my opinion, especially if the value 
-needs to be able to be larger than 2**64. But anyway the patch that modifies 
-the soc_enum struct should also add the code that makes use of the new 
-struct layout.
+Hi,
 
-- Lars
+On Thu, Mar 20, 2014 at 02:01:54PM -0500, Felipe Balbi wrote:
+> > @@ -318,6 +326,8 @@ static void hci_uart_tty_close(struct tty_struct *t=
+ty)
+> >  	if (hdev)
+> >  		hci_uart_close(hdev);
+> > =20
+> > +	cancel_work_sync(&hy->write_work);
+>=20
+> forgot to commit, darn it
 
+here it is:
+
+=46rom eaf7ff6f2d224f202369e4820b76a03fa664fab0 Mon Sep 17 00:00:00 2001
+=46rom: Felipe Balbi <balbi@ti.com>
+Date: Thu, 20 Mar 2014 13:20:10 -0500
+Subject: [PATCH] bluetooth: hci_ldisc: fix deadlock condition
+
+LDISCs shouldn't call tty->ops->write() from within
+->write_wakeup().
+
+->write_wakeup() is called with port lock taken and
+IRQs disabled, tty->ops->write() will try to acquire
+the same port lock and we will deadlock.
+
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/bluetooth/hci_ldisc.c | 20 +++++++++++++++-----
+ drivers/bluetooth/hci_uart.h  |  1 +
+ 2 files changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index 6e06f6f..5a53e50 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct =
+hci_uart *hu)
+=20
+ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ {
+-	struct tty_struct *tty =3D hu->tty;
+-	struct hci_dev *hdev =3D hu->hdev;
+-	struct sk_buff *skb;
+-
+ 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+ 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 		return 0;
+@@ -129,6 +125,18 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
+=20
+ 	BT_DBG("");
+=20
++	schedule_work(&hu->write_work);
++
++	return 0;
++}
++
++static void hci_uart_write_work(struct work_struct *work)
++{
++	struct hci_uart *hu =3D container_of(work, struct hci_uart, init_ready);
++	struct tty_struct *tty =3D hu->tty;
++	struct hci_dev *hdev =3D hu->hdev;
++	struct sk_buff *skb;
++
+ restart:
+ 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+=20
+@@ -153,7 +161,6 @@ restart:
+ 		goto restart;
+=20
+ 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+-	return 0;
+ }
+=20
+ static void hci_uart_init_work(struct work_struct *work)
+@@ -281,6 +288,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+ 	tty->receive_room =3D 65536;
+=20
+ 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
++	INIT_WORK(&hu->write_work, hci_uart_write_work);
+=20
+ 	spin_lock_init(&hu->rx_lock);
+=20
+@@ -318,6 +326,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 	if (hdev)
+ 		hci_uart_close(hdev);
+=20
++	cancel_work_sync(&hu->write_work);
++
+ 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+ 		if (hdev) {
+ 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+index fffa61f..12df101 100644
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -68,6 +68,7 @@ struct hci_uart {
+ 	unsigned long		hdev_flags;
+=20
+ 	struct work_struct	init_ready;
++	struct work_struct	write_work;
+=20
+ 	struct hci_uart_proto	*proto;
+ 	void			*priv;
+--=20
+1.9.1.286.g5172cb3
+
+
+--=20
+balbi
+
+--Fnm8lRGFTVS/3GuM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTKzudAAoJEIaOsuA1yqRE4cwP/3pUTISIhQVOzyYIwCwwIEw/
+lWxnQjhaGuoYYlL1sFoAucj0vh9AHDH3zE74/ltSoBR5GT+mx2HxvrYmTRCpMVD8
+pD0bcRnVWx5j3tJbDVZVC/DuiL06TTTn/MRVcs36U4CRtXF2hurBqx3mAtalt1FO
+MzTf7pH6wpUEFEbnqnOY3lrfKrtATn8fP/GXSIcnButY3z4C/FiAwsDqOTdKb0+J
+zmVsdeRYv8HDMfOuLuNEttFcBIOMMW5p1UEvYmSksr1VNtEhm1pL7E7mGPW69Mr2
+VoSMkeSAyJosNs+4TCcvWkuOJrZjZTeTibf96C3uhILFM+sJOP9O+rCHRaveBphM
+Q5+0FmZ6bSC+/ZGhWQAeQjG0NocoSL6KEpMirABLhDQmvCyt+PBYLH6ztrV8wyZD
+0eFqqIqGiCnQL1rWgzNMlWCdqiBefc5trBAbTElTPcfOYRV3GnnUyi/CRV5WExg8
+zLPm5NaslZdD7/TCX6h2F4zkiTQe6LV3s7u6NPA8g1L8BNhqX/3Vs28ePi90Lluj
+qEe4SvO1fa5261EsipfmdRj6YzjIVE24TZY5SCUrpEWuCpaWAPPOUK3lb5+b7D2q
+HbvFsfTmIhsGefHqP5SoC3UfLrous67B7PZOovYLYDNQ64WZuF4+JwdZVuv8XaY0
+M2KFvQMahyVBnz19sgIi
+=sTPQ
+-----END PGP SIGNATURE-----
+
+--Fnm8lRGFTVS/3GuM--
