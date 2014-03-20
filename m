@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759451AbaCTRNj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:13:39 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:45153 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757672AbaCTRNh (ORCPT
+	id S1759498AbaCTRN5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:13:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:21701 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757087AbaCTRNz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:13:37 -0400
-Message-ID: <532B2183.2080309@ti.com>
-Date: Thu, 20 Mar 2014 13:12:35 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 13:13:55 -0400
+Date: Thu, 20 Mar 2014 13:13:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jump label: constify lookup functions
+Message-ID: <20140320131352.560df1dd@gandalf.local.home>
+In-Reply-To: <53235B15.7070807@oracle.com>
+References: <1390850839-24346-1-git-send-email-sasha.levin@oracle.com>
+	<52FB7D96.2050100@oracle.com>
+	<53235B15.7070807@oracle.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: <computersforpeace@gmail.com>
-CC: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>, <dwmw2@infradead.org>,
-        <galak@codeaurora.org>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <grygorii.strashko@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        <linux-mtd@lists.infradead.org>,
-        Murali Karicheri <m-karicheri2@ti.com>
-Subject: Re: [PATCH 2/3] mtd: davinci-nand: add dts property for NAND_NO_SUBPAGE_WRITE
- option
-References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com> <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com>
-In-Reply-To: <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boris,
+On Fri, 14 Mar 2014 15:40:05 -0400
+Sasha Levin <sasha.levin@oracle.com> wrote:
 
-On Thursday 20 March 2014 01:06 PM, Ivan Khoronzhuk wrote:
-> From: Murali Karicheri <m-karicheri2@ti.com>
+> ping?
 > 
-> After testing NAND flash with ubifs for k2hk-emv board were committed
-> that flash doesn't support subpage writing, so we can fix it by
-> adding a property to disable subpage write.
-> 
-> Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
-> Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-> ---
-Can you please pick this up for 3.15 fixes ? Ofcourse assuming DT folks
-are ok with the patch.
+> On 02/12/2014 08:56 AM, Sasha Levin wrote:
+> > ping?
+> >
+> > On 01/27/2014 02:27 PM, Sasha Levin wrote:
+> >> Modify the parameters of all the lookup and the bookkeeping functions which
+> >> should be const to const.
+> >>
+> >> For example, jump_label_text_reserved() doesn't modify the memory it works on,
+> >> it just checks whether there are any jump labels there.
+> >>
+> >> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> >> ---
+> >>   arch/arm/include/asm/jump_label.h     |  2 +-
+> >>   arch/arm/kernel/jump_label.c          |  6 ++---
+> >>   arch/arm64/include/asm/jump_label.h   |  2 +-
+> >>   arch/arm64/kernel/jump_label.c        |  6 ++---
+> >>   arch/mips/include/asm/jump_label.h    |  2 +-
+> >>   arch/mips/kernel/jump_label.c         |  2 +-
+> >>   arch/powerpc/include/asm/jump_label.h |  2 +-
+> >>   arch/powerpc/kernel/jump_label.c      |  2 +-
+> >>   arch/s390/include/asm/jump_label.h    |  2 +-
+> >>   arch/s390/kernel/jump_label.c         | 12 ++++-----
+> >>   arch/sparc/include/asm/jump_label.h   |  2 +-
+> >>   arch/sparc/kernel/jump_label.c        |  2 +-
+> >>   arch/x86/include/asm/jump_label.h     |  2 +-
+> >>   arch/x86/include/asm/spinlock.h       |  2 +-
+> >>   arch/x86/kernel/jump_label.c          |  6 ++---
 
-I can then take patch 1/3 and 3/3 in my 3.15 fixes queue.
+The arch changes should be broken up per arch. They are not dependent
+on each other, and they require being either acked by or pulled in by
+the architecture maintainers.
 
->  Documentation/devicetree/bindings/mtd/davinci-nand.txt | 2 ++
->  drivers/mtd/nand/davinci_nand.c                        | 3 +++
->  2 files changed, 5 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-> index cfb18ab..50af930 100644
-> --- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-> +++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-> @@ -53,6 +53,8 @@ Recommended properties :
->  				identifier is saved in OOB area. If not present
->  				false.
->  
-> +- ti,davinci-nosubpage-write:	disable subpage write for the device
-> +
->  Deprecated properties:
->  
->  - ti,davinci-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
-> diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-> index 4615d79..3ba058d 100644
-> --- a/drivers/mtd/nand/davinci_nand.c
-> +++ b/drivers/mtd/nand/davinci_nand.c
-> @@ -581,6 +581,9 @@ static struct davinci_nand_pdata
->  		    of_property_read_bool(pdev->dev.of_node,
->  			"ti,davinci-nand-use-bbt"))
->  			pdata->bbt_options = NAND_BBT_USE_FLASH;
-> +		if (of_property_read_bool(pdev->dev.of_node,
-> +			"ti,davinci-no-subpage-write"))
-> +			pdata->options |= NAND_NO_SUBPAGE_WRITE;
->  	}
->  
->  	return dev_get_platdata(&pdev->dev);
-> 
+> >>   include/linux/jump_label.h            | 27 ++++++++++----------
+> >>   kernel/jump_label.c                   | 46 ++++++++++++++++++-----------------
+> >>   17 files changed, 64 insertions(+), 61 deletions(-)
 
+The jump label generic patch should also be by itself, and that I can
+take.
+
+-- Steve
