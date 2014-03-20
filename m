@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759485AbaCSXzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 19:55:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43000 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129AbaCSXyw (ORCPT
+	id S1759402AbaCTABg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 20:01:36 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:35211 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941AbaCTABe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 19:54:52 -0400
-Date: Wed, 19 Mar 2014 16:54:37 -0700
-From: tip-bot for Jan Beulich <tipbot@zytor.com>
-Message-ID: <tip-c5cdfdf90901c51363441365997eecd58efd9374@git.kernel.org>
-Cc: ffusco@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        mingo@kernel.org, dborkman@redhat.com, jbeulich@suse.com,
-        davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        ffusco@redhat.com, dborkman@redhat.com, jbeulich@suse.com,
-        davem@davemloft.net, tgraf@redhat.com, JBeulich@suse.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
-References: <530F09B6020000780011FBEB@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/hash] x86, hash: Swap arguments passed to crc32_u32()
-Git-Commit-ID: c5cdfdf90901c51363441365997eecd58efd9374
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 19 Mar 2014 20:01:34 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+In-Reply-To: <1395243954-28262-3-git-send-email-dirk.j.brandewie@intel.com>
+References: <1395243954-28262-1-git-send-email-dirk.j.brandewie@intel.com>
+	<1395243954-28262-3-git-send-email-dirk.j.brandewie@intel.com>
+Date: Thu, 20 Mar 2014 05:31:33 +0530
+Message-ID: <CAKohpomh5hjituqNCSiPB5cN8Sn6OOKGYcz1a=O7AYPY_sBhoQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] intel_pstate: Set core to min P state during core offline
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Patrick Marlier <patrick.marlier@gmail.com>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Dirk Brandewie <dirk.j.brandewie@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c5cdfdf90901c51363441365997eecd58efd9374
-Gitweb:     http://git.kernel.org/tip/c5cdfdf90901c51363441365997eecd58efd9374
-Author:     Jan Beulich <JBeulich@suse.com>
-AuthorDate: Thu, 27 Feb 2014 08:47:34 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 19 Mar 2014 16:51:04 -0700
+On 19 March 2014 21:15,  <dirk.brandewie@gmail.com> wrote:
+> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+>
+> Change to use ->exit_prepare() callback to do clean up during CPU
 
-x86, hash: Swap arguments passed to crc32_u32()
+exit_prepare() ?? Probably rename it to cpu_stop as well, as Rafael
+suggested in another thread.
 
-... to match the function's parameters. While reportedly commutative,
-using the proper order allows for leveraging the instruction permitting
-the source operand to be in memory.
-
-[ hpa: This code originated in the dpdk toolkit.  This was a bug in dpdk
-  which has recently been fixed in part due to an earlier version of
-  this patch. ]
-
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
-Link: http://lkml.kernel.org/r/530F09B6020000780011FBEB@nat28.tlf.novell.com
-Acked-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Francesco Fusco <ffusco@redhat.com>
-Cc: Thomas Graf <tgraf@redhat.com>
-Cc: David S. Miller <davem@davemloft.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/lib/hash.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/lib/hash.c b/arch/x86/lib/hash.c
-index 060cc44..ac628aa 100644
---- a/arch/x86/lib/hash.c
-+++ b/arch/x86/lib/hash.c
-@@ -53,7 +53,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
- 	u32 i, tmp = 0;
- 
- 	for (i = 0; i < len / 4; i++)
--		seed = crc32_u32(*p32++, seed);
-+		seed = crc32_u32(seed, *p32++);
- 
- 	switch (3 - (len & 0x03)) {
- 	case 0:
-@@ -64,7 +64,7 @@ static u32 intel_crc4_2_hash(const void *data, u32 len, u32 seed)
- 		/* fallthrough */
- 	case 2:
- 		tmp |= *((const u8 *) p32);
--		seed = crc32_u32(tmp, seed);
-+		seed = crc32_u32(seed, tmp);
- 	default:
- 		break;
- 	}
-@@ -78,7 +78,7 @@ static u32 intel_crc4_2_hash2(const u32 *data, u32 len, u32 seed)
- 	u32 i;
- 
- 	for (i = 0; i < len; i++)
--		seed = crc32_u32(*p32++, seed);
-+		seed = crc32_u32(seed, *p32++);
- 
- 	return seed;
- }
+> hotplug. The requested P state for an offline core will be used by the
+> hardware coordination function to select the package P state. If the
+> core is under load when it is offlined it will fix the package P state
+> floor to the requested P state of offline core.
+>
+> Reported-by: Patrick Marlier <patrick.marlier@gmail.com>
+> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+> ---
+>  drivers/cpufreq/intel_pstate.c | 20 +++++++++++++-------
+>  1 file changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
+> index 2cd36b9..e9092fd 100644
+> --- a/drivers/cpufreq/intel_pstate.c
+> +++ b/drivers/cpufreq/intel_pstate.c
+> @@ -447,7 +447,7 @@ static void core_set_pstate(struct cpudata *cpudata, int pstate)
+>         if (limits.no_turbo)
+>                 val |= (u64)1 << 32;
+>
+> -       wrmsrl(MSR_IA32_PERF_CTL, val);
+> +       wrmsrl_on_cpu(cpudata->cpu, MSR_IA32_PERF_CTL, val);
+>  }
+>
+>  static struct cpu_defaults core_params = {
+> @@ -773,16 +773,22 @@ static int intel_pstate_verify_policy(struct cpufreq_policy *policy)
+>         return 0;
+>  }
+>
+> -static int intel_pstate_cpu_exit(struct cpufreq_policy *policy)
+> +static int intel_pstate_cpu_stop(struct cpufreq_policy *policy)
+>  {
+> -       int cpu = policy->cpu;
+> +       int cpu_num = policy->cpu;
+> +       struct cpudata *cpu = all_cpu_data[cpu_num];
+> +
+> +       pr_info("intel_pstate CPU %d exiting\n", cpu_num);
+> +
+> +       del_timer(&all_cpu_data[cpu_num]->timer);
+> +       intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
+> +       kfree(all_cpu_data[cpu_num]);
+> +       all_cpu_data[cpu_num] = NULL;
+>
+> -       del_timer(&all_cpu_data[cpu]->timer);
+> -       kfree(all_cpu_data[cpu]);
+> -       all_cpu_data[cpu] = NULL;
+>         return 0;
+>  }
+>
+> +
+>  static int intel_pstate_cpu_init(struct cpufreq_policy *policy)
+>  {
+>         struct cpudata *cpu;
+> @@ -818,7 +824,7 @@ static struct cpufreq_driver intel_pstate_driver = {
+>         .setpolicy      = intel_pstate_set_policy,
+>         .get            = intel_pstate_get,
+>         .init           = intel_pstate_cpu_init,
+> -       .exit           = intel_pstate_cpu_exit,
+> +       .stop           = intel_pstate_cpu_stop,
+>         .name           = "intel_pstate",
+>  };
+>
+> --
+> 1.8.3.1
+>
