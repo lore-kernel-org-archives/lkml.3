@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932717AbaCTLOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:14:54 -0400
-Received: from smtp.eu.citrix.com ([185.25.65.24]:43266 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916AbaCTLOw convert rfc822-to-8bit (ORCPT
+	id S1757428AbaCTLSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:18:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:51517 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaCTLSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:14:52 -0400
-X-IronPort-AV: E=Sophos;i="4.97,694,1389744000"; 
-   d="scan'208";a="11873011"
-From: Paul Durrant <Paul.Durrant@citrix.com>
-To: Wei Liu <wei.liu2@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: Ian Campbell <Ian.Campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Jonathan Davies" <Jonathan.Davies@citrix.com>
-Subject: RE: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
- operations
-Thread-Topic: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
- operations
-Thread-Index: AQHPOYYi+CJloEb6V06vjlUaE/Z1Xpro7RCAgADjGoCAABdh0A==
-Date: Thu, 20 Mar 2014 11:14:51 +0000
-Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD0292550@AMSPEX01CL01.citrite.net>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
- <1394142511-14827-10-git-send-email-zoltan.kiss@citrix.com>
- <532A0915.5090006@citrix.com> <20140320104855.GA16285@zion.uk.xensource.com>
-In-Reply-To: <20140320104855.GA16285@zion.uk.xensource.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.80.2.29]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Mar 2014 07:18:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Subject: Re: [PATCH v7 3/3] arm64: Add architecture support for PCI
+Date: Thu, 20 Mar 2014 12:17:22 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-pci" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linaro-kernel" <linaro-kernel@lists.linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com> <8312584.jdZZuHGAjg@wuerfel> <20140320094654.GZ6457@e106497-lin.cambridge.arm.com>
+In-Reply-To: <20140320094654.GZ6457@e106497-lin.cambridge.arm.com>
 MIME-Version: 1.0
-X-DLP: AMS1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403201217.22339.arnd@arndb.de>
+X-Provags-ID: V02:K0:tlEY6V1q5Gb3zFG5CMOXiAnizesa7dpl3PO/gFTtcGv
+ SPej8vlHsEh5nO39bqR/enKg1TcS62vwgIS+LQYcER+d2kUvmJ
+ LhjzYXPhQwx7cTYUlrPTaylTV+G0N+Q59QAcAFR+mF2lQT3TL0
+ KLL1Eaok3sqWi5boPlqc6RrTLW2H9Xf/QZuKKzuyxlSrDN9894
+ +27LzQKBUbZKWQeyfSHREcs9jNpTbECOFRjt7bRBbNiMp361do
+ nlopimEQrofbteatmnei0nLz8oJuA8k/a2uCzDusUOI/XEikZp
+ 8QG7Cq6Gxob+SQDHdid4CKUc9clj2tUnwdg06TPU/wRgkN50Bz
+ Q8Mn+0H44KMqzDYlNyH02LuTbZJp2UO//PyPjNOY7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Wei Liu [mailto:wei.liu2@citrix.com]
-> Sent: 20 March 2014 10:49
-> To: Zoltan Kiss
-> Cc: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org;
-> netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jonathan Davies;
-> Paul Durrant
-> Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
-> operations
+On Thursday 20 March 2014, Liviu Dudau wrote:
+> On Wed, Mar 19, 2014 at 06:37:51PM +0000, Arnd Bergmann wrote:
+> > On Wednesday 19 March 2014 17:21:41 Liviu Dudau wrote:
+> > > 
+> > > My ultimate point is that no matter how long we argue about the shape of the functions that
+> > > I've added into arch/arm64/kernel/pci.c I don't think we can get away without having that
+> > > file, or at least not in the first phase if we want speedy integration into mainline.
+> > 
+> > Let me simplify the discussion here:
+> > 
+> > NAK to adding yet another architecture specific implementation.
 > 
-> On Wed, Mar 19, 2014 at 09:16:05PM +0000, Zoltan Kiss wrote:
-> > Hi,
-> >
-> > I'm thinking about revoking this patch: it's value is pretty small,
-> > but it causes performance regression on Win7 guests. And probably it
-> > is not the best solution for this problem. It might be the delay it
-> > takes the dealloc thread to be scheduled is enough.
-> > What do you think?
-> >
+> So what would be your approach for handling pci_address_to_pio() in a non-arch specific way?
 > 
-> Can you elaborate? What makes Win7 so special? What's performance
-> impact to other guests?
+> unsigned long __weak pci_address_to_pio(phys_addr_t address)
+> {
+> #ifdef ARCH_HAS_IOSPACE
+>         if (address > IO_SPACE_LIMIT)
+>                 return (unsigned long)-1;
 > 
+>         return (unsigned long) address;
+> #else
+>         struct ioresource *res;
+> 
+>         list_for_each_entry(res, &io_list, list) {
+>                 if (address >= res->start &&
+>                         address < res->start + res->size) {
+>                         return res->start - address;
+>                 }
+>         }
+> 
+>         return (unsigned long)-1;
+> #endif
+> }
+> 
+> 
+> Either that, or you have more magic rabbits than me.
 
-It won't be Win7 specifically I expect. It will likely by any version of Windows, or any other OS that limits the TXs-in-flight so aggressively. Basically you need to TX-complete reasonably frequently otherwise your throughput drops off a lot. IIRC at Solarflare we found every ~500us to be just about frequent enough for hitting 10G.
+I don't even understand why you want to create a generic pci_address_to_pio
+implementation, when we don't need that for arm64 at all. Unless I'm
+missing something important, that function is only called in case of
+PCI_PROBE_DEVTREE with pci_of_scan on PowerPC. I don't expect any
+architecture to do the same thing, and the only other architecture that
+needs something like it (sparc) has a different implementation.
 
-  Paul
+The regular (non-DEVTREE) PCI bus scan should just be able to translate
+the BUS I/O addresses into Linux I/O port numbers using io_offset,
+without going through an intermediate step of translating into a CPU
+physical address first, so the entire lookup method won't get used.
+
+The reason why PowerPC needs it is that they traditionally don't
+use PCI config space access to assign or look at resources, but
+instead rely on the firmware to have set it up in advance and then
+put matching information into DT and the BARs. For Solaris and AIX,
+it's probably easier to use the information from DT, but in Linux,
+we already need to implement the manual bus scan, e.g. to do
+PCI device hotplugging if nothing else.
+
+	Arnd
