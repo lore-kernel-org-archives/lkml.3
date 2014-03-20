@@ -1,53 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759124AbaCTQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:01:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58011 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758994AbaCTQBX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:01:23 -0400
-Date: Thu, 20 Mar 2014 09:03:28 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Suresh Gupta <suresh.gupta@freescale.com>
-Cc: balbi@ti.com, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] USB: Gadget: fsl driver pullup fix
-Message-ID: <20140320160328.GB18120@kroah.com>
-References: <1395347238-22518-1-git-send-email-suresh.gupta@freescale.com>
+	id S1759296AbaCTQCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:02:09 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:41480 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751226AbaCTQCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 12:02:06 -0400
+X-IronPort-AV: E=Sophos;i="4.97,695,1389744000"; 
+   d="scan'208";a="113315244"
+Message-ID: <532B10F7.60801@citrix.com>
+Date: Thu, 20 Mar 2014 16:01:59 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395347238-22518-1-git-send-email-suresh.gupta@freescale.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Graf <tgraf@redhat.com>, Jesse Gross <jesse@nicira.com>,
+        <pshelar@nicira.com>, <dev@openvswitch.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395263249-16450-1-git-send-email-zoltan.kiss@citrix.com> <532ADC33.5040607@redhat.com> <532AE010.9050903@redhat.com>
+In-Reply-To: <532AE010.9050903@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 01:57:18AM +0530, Suresh Gupta wrote:
-> This fix the fsl usb gadget driver in a way that the usb device
-> will be only "pulled up" on requests only when vbus is powered
-> 
-> Signed-off-by: Suresh Gupta <suresh.gupta@freescale.com>
-> ---
-> Changes from previous version:
-> * Removed re-factored code, Will send another patch for re-factoring
->   duplicated code
-> * Changed Description 
-> 
->  drivers/usb/gadget/fsl_udc_core.c | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-> index 35cb972..49d66779 100644
-> --- a/drivers/usb/gadget/fsl_udc_core.c
-> +++ b/drivers/usb/gadget/fsl_udc_core.c
-> @@ -1219,6 +1219,10 @@ static int fsl_pullup(struct usb_gadget *gadget, int is_on)
->  	struct fsl_udc *udc;
->  
->  	udc = container_of(gadget, struct fsl_udc, gadget);
-> +
-> +	if(!udc->vbus_active)
-> +		return -EOPNOTSUPP;
+On 20/03/14 12:33, Thomas Graf wrote:
+> On 03/20/2014 01:16 PM, Thomas Graf wrote:
+>> On 03/19/2014 10:07 PM, Zoltan Kiss wrote:
+>>> skb_zerocopy can copy elements of the frags array between skbs, but it
+>>> doesn't
+>>> orphan them. Also, it doesn't handle errors, so this patch takes care
+>>> of that
+>>> as well.
+>>>
+>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>
+>> Acked-by: Thomas Graf <tgraf@redhat.com>
+>
+> I take this back ;)
+>
+>>> ---
+>>> +    if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
+>>> +        skb_tx_error(to);
+>>> +        return -ENOMEM;
+>>> +    }
+>
+> Just noticed that you orphan the Netlink skb frags which do not
+> exist yet instead of the source skb frags.
+Oh, sorry, I'll fix this up.
 
-Always run your patches through scripts/checkpatch.pl so they don't get
-rejected for silly things like the wrong coding style...
+>
+>> Did you consider calling skb_tx_error() for Netlink message
+>> allocation failures for the upcall as well? That memory pressure
+>> is currently not reported back.
+Yeah, that makes sense, I'll fix it the callers. Btw. I guess that just 
+provides some statistical data for the creator of the skb. At least for 
+netback it only increment a stat counter.
+
+Zoli
+
+
