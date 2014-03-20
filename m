@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759241AbaCTPsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 11:48:36 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35737 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759158AbaCTPse (ORCPT
+	id S1759145AbaCTPsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 11:48:33 -0400
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:57681 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757263AbaCTPsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 11:48:34 -0400
-Date: Thu, 20 Mar 2014 15:48:27 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, broonie@kernel.org, kernel@stlinux.com
-Subject: Re: [PATCH 1/1] regulator: Add new driver for ST's PWM controlled
- voltage regulators
-Message-ID: <20140320154827.GE8207@lee--X1>
-References: <1395324654-8235-1-git-send-email-lee.jones@linaro.org>
- <20140320152837.GW18529@joshc.qualcomm.com>
+	Thu, 20 Mar 2014 11:48:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140320152837.GW18529@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140320153250.GC20618@thunk.org>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<20140320153250.GC20618@thunk.org>
+Date: Thu, 20 Mar 2014 16:48:30 +0100
+Message-ID: <CANq1E4SUXrzAV8FS8HVYxnRVb1oOR6HSTyucJzyFs5PuS5Y88A@mail.gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: tytso@mit.edu, David Herrmann <dh.herrmann@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Hugh Dickins <hughd@google.com>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        John Stultz <john.stultz@linaro.org>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > On some STMicroelectronics hardware reside regulators consisting
-> > partly of a PWM input connected to the feedback loop. As the PWM
-> > duty-cycle is varied the output voltage adapts. This driver
-> > allows us to vary the output voltage by adapting the PWM input
-> > duty-cycle.
-> > 
-> > Signed-off-by: Lee Jones <lee.jones@linaro.org>
-> > --- /dev/null
-> > +++ b/drivers/regulator/st-pwm.c
-> > +static int st_pwm_regulator_set_voltage(struct regulator_dev *dev,
-> > +					int min_uV, int max_uV,
-> > +					unsigned *selector)
-> > +{
-> > +	struct st_pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
-> > +	int dutycycle, best_val = INT_MAX;
-> > +	int sel, ret;
-> > +
-> > +	for (sel = 0; sel < dev->desc->n_voltages; sel++) {
-> > +		if (drvdata->duty_cycle_table[sel].uV < best_val &&
-> > +		    drvdata->duty_cycle_table[sel].uV >= min_uV &&
-> > +		    drvdata->duty_cycle_table[sel].uV <= max_uV) {
-> > +			best_val = drvdata->duty_cycle_table[sel].uV;
-> > +			if (selector)
-> > +				*selector = sel;
-> > +		}
-> > +	}
-> 
-> If you implement .set_voltage_sel() instead and set map_voltage to
-> regulator_map_voltage_iterate, the core can take care of this.
+Hi
 
-I'll do that, thanks.
+On Thu, Mar 20, 2014 at 4:32 PM,  <tytso@mit.edu> wrote:
+> Why not make sealing an attribute of the "struct file", and enforce it
+> at the VFS layer?  That way all file system objects would have access
+> to sealing interface, and for memfd_shmem, you can't get another
+> struct file pointing at the object, the security properties would be
+> identical.
 
-> > +
-> > +	if (best_val == INT_MAX)
-> > +		return -EINVAL;
-> > +
-> > +	dutycycle = (ST_PWM_REG_PERIOD / 100) *
-> > +		drvdata->duty_cycle_table[sel].dutycycle;
-> 
-> Considering (ST_PWM_REG_PERIOD / 100) is constant, could you get away
-> with dropping this calculation by just putting the already-adjusted
-> values into your duty cycle table?
+Sealing as introduced here is an inode-attribute, not "struct file".
+This is intentional. For instance, a gfx-client can get a read-only FD
+via /proc/self/fd/ and pass it to the compositor so it can never
+overwrite the contents (unless the compositor has write-access to the
+inode itself, in which case it can just re-open it read-write).
 
-I thought about this, but I settled on this way for clarity. Also,
-this is only a constant if no one decides to change the period, so the
-calculation needs to be done somewhere. Did you have something better
-in mind?
+Furthermore, I don't see any use-case besides memfd for sealing, so I
+purposely avoided changing core VFS interfaces. Protecting
+page-allocation/access for SEAL_WRITE like I do in shmem.c is not that
+easy to do generically. So if we moved this interface to "struct
+inode", all that would change is moving "u32 seals;" from one struct
+to the other. Ok, some protections might get easily implemented
+generically, but I without proper insight in the underlying
+implemenation, I couldn't verify all paths and possible races. Isn't
+keeping the API generic enough so far? Changing the underlying
+implementation can be done once we know what we want.
 
-[...] 
-
-> > +static struct st_pwm_voltages b2105_duty_cycle_table[] = {
-> > +	{ .uV = 1114000, .dutycycle = 0,  },
-> > +	{ .uV = 1095000, .dutycycle = 10, },
-> > +	{ .uV = 1076000, .dutycycle = 20, },
-> > +	{ .uV = 1056000, .dutycycle = 30, },
-> > +	{ .uV = 1036000, .dutycycle = 40, },
-> > +	{ .uV =  996000, .dutycycle = 50, },
-> > +	/* WARNING: Values above 50% duty-cycle cause boot failures. */
-> > +};
-> > +
-> > +static struct regulator_desc b2105_desc = {
-> > +	.name		= "b2105-pwm-regulator",
-> > +	.ops		= &st_pwm_regulator_voltage_ops,
-> > +	.type		= REGULATOR_VOLTAGE,
-> > +	.owner		= THIS_MODULE,
-> > +	.n_voltages	= ARRAY_SIZE(b2105_duty_cycle_table),
-> > +	.supply_name    = "pwm",
-> > +};
-> > +
-> > +static struct st_pwm_regulator_data b2105_info = {
-> > +	.desc		  = &b2105_desc,
-> > +	.duty_cycle_table = b2105_duty_cycle_table,
-> > +};
-> > +
-> > +static struct of_device_id st_pwm_of_match[] = {
-> 
-> const.  At least the regulator_desc and duty cycle table should be const
-> as well. (see my comments below about b2105_info).
-> 
-> > +	{ .compatible = "st,b2105-pwm-regulator", .data = &b2105_info, },
-> > +	{ },
-> > +};
-> 
-> You may want a MODULE_DEVICE_TABLE(of, ...); here if you want to be able
-> to be autoloaded.
-
-Right, good catch.
-
-> > +static int st_pwm_regulator_probe(struct platform_device *pdev)
-> > +{
-> > +	struct device_node *np = pdev->dev.of_node;
-> > +	struct st_pwm_regulator_data *drvdata;
-> > +	const struct of_device_id *of_match;
-> > +	struct regulator_dev *regulator;
-> > +	struct regulator_config config = { };
-> > +
-> > +	if (!np) {
-> > +		dev_err(&pdev->dev, "Device Tree node missing\n");
-> > +		return -EINVAL;
-> > +	}
-> > +
-> > +	of_match = of_match_device(st_pwm_of_match, &pdev->dev);
-> > +	if (!of_match) {
-> > +		dev_err(&pdev->dev, "failed to match of device\n");
-> > +		return -ENODEV;
-> > +	}
-> > +	drvdata =  (struct st_pwm_regulator_data *) of_match->data;
-> 
-> Hrm, I typed "cast not necessary here", but then I realized it is
-> necessary since you using it to cast away constness.
-
-This is remnant from when I was doing something unessersariy
-complcated in a previous (unpublished/personal) revision. I'll take a
-look at this too, thanks.
-
-> Are you safe assuming that there will only be one of these devices in a
-> system?  It doesn't seem like much a burden to just allocate a new
-> object and use it instead of a statically allocated one.
-
-I have written this driver to be expandable. We have new systems
-coming out which contain more than one of these regulators. Unless I'm
-missing your meaning?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Thanks
+David
