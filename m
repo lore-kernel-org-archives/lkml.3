@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758259AbaCTNFN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:05:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3776 "EHLO mx1.redhat.com"
+	id S1758529AbaCTNIX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:08:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757644AbaCTNFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:05:09 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-Subject: [PATCH 12/12] KEYS: request_key_auth: Provide key preparsing
-From: David Howells <dhowells@redhat.com>
-To: keyrings@linux-nfs.org
-Cc: dhowells@redhat.com, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 20 Mar 2014 12:06:17 +0000
-Message-ID: <20140320120617.21635.96975.stgit@warthog.procyon.org.uk>
-In-Reply-To: <20140320120428.21635.13071.stgit@warthog.procyon.org.uk>
-References: <20140320120428.21635.13071.stgit@warthog.procyon.org.uk>
-User-Agent: StGit/0.17-dirty
+	id S1752493AbaCTNIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 09:08:21 -0400
+Message-ID: <532ADC33.5040607@redhat.com>
+Date: Thu, 20 Mar 2014 13:16:51 +0100
+From: Thomas Graf <tgraf@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
+        pshelar@nicira.com, dev@openvswitch.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v2] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395263249-16450-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1395263249-16450-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide key preparsing for the request_key_auth key type so that we can make
-preparsing mandatory.  This does nothing as this type can only be set up
-internally to the kernel.
+On 03/19/2014 10:07 PM, Zoltan Kiss wrote:
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well.
+>
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Acked-by: Thomas Graf <tgraf@redhat.com>
 
- security/keys/request_key_auth.c |   13 +++++++++++++
- 1 file changed, 13 insertions(+)
+> ---
+> +	if (unlikely(skb_orphan_frags(to, GFP_ATOMIC))) {
+> +		skb_tx_error(to);
+> +		return -ENOMEM;
+> +	}
 
-diff --git a/security/keys/request_key_auth.c b/security/keys/request_key_auth.c
-index 7495a93b4b90..842e6f410d50 100644
---- a/security/keys/request_key_auth.c
-+++ b/security/keys/request_key_auth.c
-@@ -20,6 +20,8 @@
- #include "internal.h"
- #include <keys/user-type.h>
- 
-+static int request_key_auth_preparse(struct key_preparsed_payload *);
-+static void request_key_auth_free_preparse(struct key_preparsed_payload *);
- static int request_key_auth_instantiate(struct key *,
- 					struct key_preparsed_payload *);
- static void request_key_auth_describe(const struct key *, struct seq_file *);
-@@ -33,6 +35,8 @@ static long request_key_auth_read(const struct key *, char __user *, size_t);
- struct key_type key_type_request_key_auth = {
- 	.name		= ".request_key_auth",
- 	.def_datalen	= sizeof(struct request_key_auth),
-+	.preparse	= request_key_auth_preparse,
-+	.free_preparse	= request_key_auth_free_preparse,
- 	.instantiate	= request_key_auth_instantiate,
- 	.describe	= request_key_auth_describe,
- 	.revoke		= request_key_auth_revoke,
-@@ -40,6 +44,15 @@ struct key_type key_type_request_key_auth = {
- 	.read		= request_key_auth_read,
- };
- 
-+int request_key_auth_preparse(struct key_preparsed_payload *prep)
-+{
-+	return 0;
-+}
-+
-+void request_key_auth_free_preparse(struct key_preparsed_payload *prep)
-+{
-+}
-+
- /*
-  * Instantiate a request-key authorisation key.
-  */
-
+Did you consider calling skb_tx_error() for Netlink message
+allocation failures for the upcall as well? That memory pressure
+is currently not reported back.
