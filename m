@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885AbaCTLu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:50:58 -0400
-Received: from mail.kernelconcepts.de ([212.60.202.196]:45927 "EHLO
-	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932588AbaCTLuz (ORCPT
+	id S933099AbaCTLvG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:51:06 -0400
+Received: from 2.mo4.mail-out.ovh.net ([46.105.72.36]:54707 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932755AbaCTLu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:50:55 -0400
-X-Greylist: delayed 1860 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 07:50:52 EDT
-Message-ID: <532AD571.9000907@kernelconcepts.de>
-Date: Thu, 20 Mar 2014 12:48:01 +0100
-From: Simon Budig <simon.budig@kernelconcepts.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Thu, 20 Mar 2014 07:50:58 -0400
+X-Greylist: delayed 98869 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 07:50:58 EDT
 MIME-Version: 1.0
-To: =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>,
-        Mark Rutland <mark.rutland@arm.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Fugang Duan <B38611@freescale.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Rob Landley <rob@landley.net>, Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>	<1395234563-11034-3-git-send-email-LW@KARO-electronics.de>	<20140320093719.GB14420@e106331-lin.cambridge.arm.com> <20140320124055.53d469e7@ipc1.ka-ro>
-In-Reply-To: <20140320124055.53d469e7@ipc1.ka-ro>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="HhJx1dDCBmjH17WR1LSIjRhei6Xq3WoSw"
+In-Reply-To: <1395173924-3648-9-git-send-email-b.brezillon.dev@gmail.com>
+References: <1395173924-3648-1-git-send-email-b.brezillon.dev@gmail.com>
+	<1395173924-3648-9-git-send-email-b.brezillon.dev@gmail.com>
+Date: Thu, 20 Mar 2014 10:22:51 +0100
+Message-ID: <CACh+v5Ngvdt=FnyzMz4Q0i1U7kNmrgXWDavzi4xvLDJR0qh0WA@mail.gmail.com>
+Subject: Re: [PATCH 08/11] ARM: at91/dt: move at91sam9261 SoC to the new main
+ clock model
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Boris BREZILLON <brezillonboris@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-Ovh-Tracer-Id: 12929271582361213069
+X-Ovh-Remote: 209.85.220.41 (mail-pa0-f41.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---HhJx1dDCBmjH17WR1LSIjRhei6Xq3WoSw
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+2014-03-18 21:18 GMT+01:00 Boris BREZILLON <brezillonboris@gmail.com>:
+>
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+> ---
+>  arch/arm/boot/dts/at91sam9261.dtsi |   10 +++++++++-
+>  1 file changed, 9 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+> index e21dda0..e00fabc 100644
+> --- a/arch/arm/boot/dts/at91sam9261.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9261.dtsi
+> @@ -45,6 +45,14 @@
+>                 reg = <0x20000000 0x08000000>;
+>         };
+>
+> +       clocks {
+> +               main_xtal: main_xtal {
+> +                       compatible = "fixed-clock";
+> +                       #clock-cells = <0>;
+> +                       clock-frequency = <0>;
+> +               };
+> +       };
+> +
+>         ahb {
+>                 compatible = "simple-bus";
+>                 #address-cells = <1>;
+> @@ -534,7 +542,7 @@
+>                                         compatible = "atmel,at91rm9200-clk-main";
+>                                         #clock-cells = <0>;
+>                                         interrupts-extended = <&pmc AT91_PMC_MOSCS>;
+> -                                       clocks = <&clk32k>;
+> +                                       clocks = <&main_xtal>;
+>                                 };
+>
+>                                 plla: pllack {
+> --
+> 1.7.9.5
+>
 
-On 20/03/14 12:40, Lothar Wa=C3=9Fmann wrote:
-> The FT5x06 datasheet lists 3 variants for different panel sizes.
-> I'll add distinct compatible strings for those chips, though their SW
-> interface is (currently) identical:
-> |Required properties:
-> | - compatible:  "edt,edt-ft5206", "edt,edt-ft5x06"
-> |           or:  "edt,edt-ft5306", "edt,edt-ft5x06"
-> |           or:  "edt,edt-ft5406", "edt,edt-ft5x06"
-
-Please note that the M09 variants of the polytouch family will use the
-same chips, but a different sw protocol (see Patch 5/5).
-
-I don't know anything about the naming scheme used in the device tree,
-but I am not sure if the chip-ID is actually useful here.
-
-Bye,
-        Simon
-
---=20
-       Simon Budig                        kernel concepts GmbH
-       simon.budig@kernelconcepts.de      Sieghuetter Hauptweg 48
-       +49-271-771091-17                  D-57072 Siegen
-
-
-
---HhJx1dDCBmjH17WR1LSIjRhei6Xq3WoSw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlMq1XEACgkQO2O/RXesiHBYegCdEhyb5e7+T45ijRYorB0CJ2U/
-yCYAn3VVGHGLx/YQFQ/7csC/vGZzDxqa
-=pegi
------END PGP SIGNATURE-----
-
---HhJx1dDCBmjH17WR1LSIjRhei6Xq3WoSw--
+Acked-by: Jean-Jacques HIBLOT <jjhiblot@traphandler.com>
