@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759957AbaCTWCW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 18:02:22 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:64108 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759424AbaCTWCU (ORCPT
+	id S1759965AbaCTWF5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 18:05:57 -0400
+Received: from qmta15.emeryville.ca.mail.comcast.net ([76.96.27.228]:49145
+	"EHLO qmta15.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759160AbaCTWFz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 18:02:20 -0400
-Message-ID: <532B6543.7050707@redhat.com>
-Date: Thu, 20 Mar 2014 23:01:39 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        kvm@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Michel Lespinasse <walken@google.com>,
-        Alok Kataria <akataria@vmware.com>, linux-arch@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>, x86@kernel.org,
-        xen-devel@lists.xenproject.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Scott J Norton <scott.norton@hp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Chris Wright <chrisw@sous-sol.org>, Oleg Nesterov <oleg@redhat.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Chegu Vinod <chegu_vinod@hp.com>, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v7 06/11] pvqspinlock, x86: Allow unfair queue spinlock
- in a KVM guest
-References: <1395260049-30839-1-git-send-email-Waiman.Long@hp.com> <1395260049-30839-7-git-send-email-Waiman.Long@hp.com>
-In-Reply-To: <1395260049-30839-7-git-send-email-Waiman.Long@hp.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Mar 2014 18:05:55 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: mkrufky@linuxtv.org, m.chehab@samsung.com
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, shuah.kh@samusung.com,
+        shuahkhan@gmail.com
+Subject: [PATCH] media: lgdt3305 - add lgdt3304_ops: sleep
+Date: Thu, 20 Mar 2014 16:05:50 -0600
+Message-Id: <1395353150-6133-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 19/03/2014 21:14, Waiman Long ha scritto:
-> This patch adds a KVM init function to activate the unfair queue
-> spinlock in a KVM guest when the PARAVIRT_UNFAIR_LOCKS kernel config
-> option is selected.
->
-> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
-> ---
->  arch/x86/kernel/kvm.c |   17 +++++++++++++++++
->  1 files changed, 17 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 713f1b3..a489140 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -826,3 +826,20 @@ static __init int kvm_spinlock_init_jump(void)
->  early_initcall(kvm_spinlock_init_jump);
->
->  #endif	/* CONFIG_PARAVIRT_SPINLOCKS */
-> +
-> +#ifdef CONFIG_PARAVIRT_UNFAIR_LOCKS
-> +/*
-> + * Enable unfair lock if running in a real para-virtualized environment
-> + */
-> +static __init int kvm_unfair_locks_init_jump(void)
-> +{
-> +	if (!kvm_para_available())
-> +		return 0;
-> +
-> +	static_key_slow_inc(&paravirt_unfairlocks_enabled);
-> +	printk(KERN_INFO "KVM setup unfair spinlock\n");
-> +
-> +	return 0;
-> +}
-> +early_initcall(kvm_unfair_locks_init_jump);
-> +#endif
->
+Add sleep ops to lgdt3304_ops to invoke lgdt3305_sleep() to be called
+from dvb_frontend_suspend(). lgdt3305_soft_reset() is called for both
+3304 and 3305 devices. soft_reset and sleep touch LGDT3305_GEN_CTRL_3
+on 3304 and 3305 devices. Hence, adding sleep to lgdt3304_ops will help
+suspend 3304 properly from dvb_frontend_suspend().
 
-No!  Please do what I asked you to do.  You are not handling Hyper-V or 
-VMWare.  Just use X86_FEATURE_HYPERVISOR and it will cover all 
-hypervisors that actually follow Intel's guidelines.
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/media/dvb-frontends/lgdt3305.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Paolo
+diff --git a/drivers/media/dvb-frontends/lgdt3305.c b/drivers/media/dvb-frontends/lgdt3305.c
+index 1d2c473..92c891a 100644
+--- a/drivers/media/dvb-frontends/lgdt3305.c
++++ b/drivers/media/dvb-frontends/lgdt3305.c
+@@ -1176,6 +1176,7 @@ static struct dvb_frontend_ops lgdt3304_ops = {
+ 	},
+ 	.i2c_gate_ctrl        = lgdt3305_i2c_gate_ctrl,
+ 	.init                 = lgdt3305_init,
++	.sleep                = lgdt3305_sleep,
+ 	.set_frontend         = lgdt3304_set_parameters,
+ 	.get_frontend         = lgdt3305_get_frontend,
+ 	.get_tune_settings    = lgdt3305_get_tune_settings,
+-- 
+1.7.10.4
+
