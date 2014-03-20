@@ -1,79 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758346AbaCTMin (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:38:43 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:57801 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960AbaCTMil (ORCPT
+	id S1758377AbaCTMlD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:41:03 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:53415 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413AbaCTMlB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:38:41 -0400
-X-IronPort-AV: E=Sophos;i="4.97,694,1389744000"; 
-   d="scan'208";a="111855224"
-Date: Thu, 20 Mar 2014 12:38:39 +0000
-From: Wei Liu <wei.liu2@citrix.com>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, Zoltan Kiss <zoltan.kiss@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jonathan Davies <Jonathan.Davies@citrix.com>
-Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
- operations
-Message-ID: <20140320123839.GK16807@zion.uk.xensource.com>
-References: <1394142511-14827-1-git-send-email-zoltan.kiss@citrix.com>
- <1394142511-14827-10-git-send-email-zoltan.kiss@citrix.com>
- <532A0915.5090006@citrix.com>
- <20140320104855.GA16285@zion.uk.xensource.com>
- <9AAE0902D5BC7E449B7C8E4E778ABCD0292550@AMSPEX01CL01.citrite.net>
+	Thu, 20 Mar 2014 08:41:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD0292550@AMSPEX01CL01.citrite.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DLP: MIA1
+In-Reply-To: <1395317630.7776.29.camel@joe-AO722>
+References: <1395313907-25318-1-git-send-email-lee.jones@linaro.org>
+	<1395313907-25318-2-git-send-email-lee.jones@linaro.org>
+	<1395314713.7776.17.camel@joe-AO722>
+	<20140320114123.GE21349@lee--X1>
+	<1395316090.7776.24.camel@joe-AO722>
+	<20140320115412.GU31517@norris-Latitude-E6410>
+	<20140320120307.GA9240@lee--X1>
+	<1395317630.7776.29.camel@joe-AO722>
+Date: Thu, 20 Mar 2014 05:41:00 -0700
+Message-ID: <CAN8TOE9g2VwVgVx1Sj3OcguuwP_A9pJS+WpgTAL49KyN9r1CiA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] mtd: st_spi_fsm: Remove useless consts from function arguments
+From: Brian Norris <computersforpeace@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, kernel@stlinux.com,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Angus CLARK <angus.clark@st.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 11:14:51AM +0000, Paul Durrant wrote:
-> > -----Original Message-----
-> > From: Wei Liu [mailto:wei.liu2@citrix.com]
-> > Sent: 20 March 2014 10:49
-> > To: Zoltan Kiss
-> > Cc: Ian Campbell; Wei Liu; xen-devel@lists.xenproject.org;
-> > netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Jonathan Davies;
-> > Paul Durrant
-> > Subject: Re: [PATCH net-next v7 9/9] xen-netback: Aggregate TX unmap
-> > operations
-> > 
-> > On Wed, Mar 19, 2014 at 09:16:05PM +0000, Zoltan Kiss wrote:
-> > > Hi,
-> > >
-> > > I'm thinking about revoking this patch: it's value is pretty small,
-> > > but it causes performance regression on Win7 guests. And probably it
-> > > is not the best solution for this problem. It might be the delay it
-> > > takes the dealloc thread to be scheduled is enough.
-> > > What do you think?
-> > >
-> > 
-> > Can you elaborate? What makes Win7 so special? What's performance
-> > impact to other guests?
-> > 
-> 
-> It won't be Win7 specifically I expect. It will likely by any version
-> of Windows, or any other OS that limits the TXs-in-flight so
-> aggressively. Basically you need to TX-complete reasonably frequently
-> otherwise your throughput drops off a lot. IIRC at Solarflare we found
-> every ~500us to be just about frequent enough for hitting 10G.
+On Thu, Mar 20, 2014 at 5:13 AM, Joe Perches <joe@perches.com> wrote:
+> On Thu, 2014-03-20 at 12:03 +0000, Lee Jones wrote:
+>> > Good catch. That wasn't my intention.
+>> > > Why?
+>> An oversight.
+>
+> That's still not an explanation.
+>
+> Why, unless cast away by the code itself, is
+> const removal a good thing?
 
-Thanks for the explanation.
+It's not so much removal as it is review of the initial driver merge.
+I'd contend that const was applied somewhat thoughtlessly originally,
+and it didn't really serve a good purpose.
 
-Reverting this change basically means when to flush TLB is at sole
-discretion of Linux kernel scheduler. I don't oppose to that. But it
-would be better to provide some numbers.
+> It does serve as an indication to a reader what
+> the code does with the argument.
+>
+> About the only reason I can think of arguing in
+> favor of removal is inconsistent application of
+> const within the module.
 
-Wei.
+That's one good reason. And not only consistency within the modules,
+but consistency within the subsystem (and the kernel at large,
+really). There's rarely a case of a const function parameter. And I'm
+sure there are numerous function parameters which could potentially be
+marked 'const'.
 
-> 
->   Paul
+I also don't think that a function parameter is the right place to
+mark const like this. Function arguments are always pass-by-value, so
+this 'const' tells users (callers) nothing useful. It only provides
+useless constraints on what the function can do with its copy of the
+parameter.
+
+Brian
