@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390AbaCTRSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:18:39 -0400
-Received: from g5t1625.atlanta.hp.com ([15.192.137.8]:55561 "EHLO
-	g5t1625.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039AbaCTRSh (ORCPT
+	id S1759174AbaCTRXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:23:12 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:61675 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758127AbaCTRXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:18:37 -0400
-Message-ID: <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Thu, 20 Mar 2014 10:18:29 -0700
-In-Reply-To: <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	 <20140320053350.GB30295@linux.vnet.ibm.com>
-	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 20 Mar 2014 13:23:07 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+In-Reply-To: <1883687.VdfitvQEN3@avalon>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < 139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com> <1883687.VdfitvQEN3@ avalon>
+Date: Thu, 20 Mar 2014 17:23:02 +0000
+Message-Id: <20140320172302.CD320C4067A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 09:41 -0700, Linus Torvalds wrote:
-> On Wed, Mar 19, 2014 at 10:56 PM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> >
-> > This problem suggests that we missed a wakeup for a task that was adding
-> > itself to the queue in a wait path. And the only place that can happen
-> > is with the hb spinlock check for any pending waiters.
+On Tue, 11 Mar 2014 14:16:37 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+> On Tuesday 11 March 2014 14:59:20 Tomi Valkeinen wrote:
+> > So depending on the use case, the endpoints would point to opposite
+> > direction from the encoder's point of view.
+> > 
+> > And if I gathered Grant's opinion correctly (correct me if I'm wrong),
+> > he thinks things should be explicit, i.e. the bindings for, say, an
+> > encoder should state that the encoder's output endpoint _must_ contain a
+> > remote-endpoint property, whereas the encoder's input endpoint _must
+> > not_ contain a remote-endpoint property.
 > 
-> Ok, so thinking about hb_waiters_pending():
-> 
->  - spin_is_locked() test
->  - read barrier
->  - plist_head_empty() test
-> 
-> seems to be broken after all.
-> 
-> The race is against futex_wait() that does
-> 
->  - futex_wait_setup():
->    - queue_lock()
->    - get_futex_value_locked()
->  - futex_wait_queue_me()
->    - queue_me()
->      - plist_add()
-> 
-> right?
+> Actually my understand was that DT links would have the same direction as the 
+> data flow. There would be no ambiguity in that case as the direction of the 
+> data flow is known. What happens for bidirectional data flows still need to be 
+> discussed though. And if we want to use the of-graph bindings to describe 
+> graphs without a data flow, a decision will need to be taken there too.
 
-Yep.
+On further thinking, I would say linkage direction should be in the
+direction that would be considered the dependency order... I'm going to
+soften my position though. I think the generic pattern should still
+recommend unidirection links in direction of device dependency, but
+I'm okay with allowing the bidirection option if the helper functions
+are modified to validate the target endpoint. I think it needs to test
+for the following:
+- Make sure the endpoint either:
+  - does not have a backlink, or
+  - the backlink points back to the origin node
+- If the target is an endpoint node, then make sure the parent doesn't
+  have a link of any kind
+- If the target is a port node, make sure it doesn't have any endpoint
+  children nodes at all.
 
-> 
-> It strikes me that the "spin_is_locked()" test has no barriers wrt the
-> writing of the new futex value on the wake path. And the read barrier
-> obviously does nothing wrt the write either. Or am I missing
-> something? So the write that actually released the futex might be
-> almost arbitrarily delayed on the waking side. So the waiting side may
-> not see the new value, even though the waker assumes it does due to
-> the ordering of it doing the write first.
+g.
 
-Aha, that would certainly violate the ordering guarantees. I feared
-_something_ like that when we originally discussed your suggestion as
-opposed to the atomics one, but didn't have any case for it either.
-
-> So maybe we need a memory barrier in hb_waiters_pending() just to make
-> sure that the new value is written.
-> 
-> But at that point, I suspect that Davidlohrs original patch that just
-> had explicit waiting counts is just as well. The whole point with the
-> head empty test was to emulate that "do we have waiters" without
-> having to actually add the atomics, but a memory barrier is really no
-> worse.
-> 
-> The attached is a TOTALLY UNTESTED interdiff that adds back Davidlohrs
-> atomic count. It may be terminally broken, I literally didn't test it
-> at all.
-
-Comparing with the patch I sent earlier this morning, looks equivalent,
-and fwiw, passes my initial qemu bootup, which is the first way of
-detecting anything stupid going on.
-
-So, Srikar, please try this patch out, as opposed to mine, you don't
-have to first revert the commit in question.
 
