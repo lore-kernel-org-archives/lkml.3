@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326AbaCTQga (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:36:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:43197 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757067AbaCTQg2 (ORCPT
+	id S1759376AbaCTQgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:36:55 -0400
+Received: from smtp09.smtpout.orange.fr ([80.12.242.131]:54765 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960AbaCTQgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:36:28 -0400
-Date: Thu, 20 Mar 2014 11:34:35 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Marcel Holtmann <marcel@holtmann.org>, Alan Cox <alan@linux.intel.com>,
-        Greg KH <gregkh@linuxfoundation.org>
-CC: Muralidharan Karicheri <m-karicheri2@ti.com>,
-        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: hci_ldsic nested locking problem
-Message-ID: <20140320163435.GH32692@saruman.home>
-Reply-To: <balbi@ti.com>
+	Thu, 20 Mar 2014 12:36:53 -0400
+X-Greylist: delayed 477 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 12:36:53 EDT
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Dave Jones <davej@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Joe Perches <joe@perches.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        fes@google.com, Bjorn Helgaas <bhelgaas@google.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Simon Wood <simon@mungewell.org>
+Subject: Re: Stricter module param and sysfs permission checks
+References: <1394818263-29947-1-git-send-email-tytso@mit.edu>
+	<1394818720.3253.1.camel@joe-AO722> <20140314180258.GA29201@thunk.org>
+	<87y509scl3.fsf@rustcorp.com.au> <1395032434.2556.10.camel@joe-AO722>
+	<1395041214.2556.17.camel@joe-AO722> <87zjkmr8w1.fsf@rustcorp.com.au>
+	<1395211832.8649.40.camel@joe-AO722> <87k3bpr28n.fsf@rustcorp.com.au>
+	<20140320042700.GA11505@redhat.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Thu, 20 Mar 2014 17:28:50 +0100
+Message-ID: <87ob10vnp9.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RwGu8mu1E+uYXPWP"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---RwGu8mu1E+uYXPWP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dave Jones <davej@redhat.com> writes:
 
-Hi,
+> On Thu, Mar 20, 2014 at 01:43:44PM +1030, Rusty Russell wrote:
+>
+>  > drivers/mtd/devices/docg3.c:
+>  >  	__ATTR(f##id##_dps0_protection_key, S_IWUGO, NULL, dps0_insert_key), \
+>  > 	__ATTR(f##id##_dps1_protection_key, S_IWUGO, NULL, dps1_insert_key), \
+>  > 
+>  > drivers/scsi/pm8001/pm8001_ctl.c:
+>  > static DEVICE_ATTR(update_fw, S_IRUGO|S_IWUGO,
+>  > 	pm8001_show_update_fw, pm8001_store_update_fw);
+>
+> Why on earth are these world writable ?
+For docg3, this attributes are used to input a "password" into the flash chip,
+to unlock parts of the flash memory. By unlock I mean that a sector read will
+return the actual sector when unlocked, and only 0xff if not read unlocked.
 
-when 8250 driver calls uart_write_wakeup(), the tty port lock is already
-taken. hci_ldisc.c's implementation of ->write_wakeup() calls
-tty->ops->write() to actually send the characters, but that call will
-try to acquire the same port lock again.
+As to the "why writable" by "others", the legacy reason is that when I wrote
+that code I had in mind that a casual user count :
+ - input the code : "echo secret > dps0_protection_key"
+ - mount /usermount
 
-Looking at other line disciplines that looks like a bug in hci_ldisc.c.
-Am I correct to assume that ->write_wakeup() is supposed to *just*
-wakeup the bottom half so we handle ->write() in another context ?
+That's not a good reason, I know, and changing that to remove the "other" write
+permission is fine by me.
 
-Is it legal to call tty->ops->write() from within ->write_wakeup() ?
+Cheers.
 
-cheers
-
---=20
-balbi
-
---RwGu8mu1E+uYXPWP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTKxibAAoJEIaOsuA1yqREQ6wP/Rki7213nleViEF4e2iQPoiX
-Phn2KyCf70Mbly1abtLR9ilIqs4iebRg+VOowU2/64d6+SiiOzPupDlJRIrikHvR
-BT4gZB7YTQiUgYteO21vlIEKUBxRTr8ntujA6p+v0NOZqJv/BNcLcGuR8e774+fe
-j97ZcFlx+hbEb9q608bD5XbkGXftXBhhFx+llbM5AAK/ffDzFwwp9EgYzjSO4M0I
-lpIInSuT7NvOShU63Jx642D5BG2n1F5A6NgZacKGhXIC0FSJjHPN6eo1vNYPcqGe
-ubM8MgF/RbDrqJS7c0BRnr3qFvYah0NYeS0sEkWKcTlmXK8JX8fIXw+7+e49WaE1
-fc2ccmfJWfNneB1/kRfTZgt3Pxi6iwS2GzMrXKEelpI2BLrnhpm2Ew5TQmMaIfw3
-WLySiAtZG6zWuqxHzbAOUu8vMdH+NRxFRvTUhYXiSSJhUxQIrYL2IeOG3vecTkYQ
-4bRXLnK0OOCPPKC95IA3RyFP26rb4uMOYU+t/lbU5OD24L0mzwFAGl7i8AfoYTAy
-s3BywhZA5joQTqDKXDVQ9agz4VmiIG5tLcp1WPEMXRwS6/BRM/DI4oRRfKfjKpLB
-jLcGurJjdt04I7irLBMksVdMPqMRWn3b3ZgEGlJffEcxC4V9r2IPH8Pi9C4ccKTH
-17CbvpZMUjSUZoDkbPZT
-=eLjS
------END PGP SIGNATURE-----
-
---RwGu8mu1E+uYXPWP--
+-- 
+Robert
