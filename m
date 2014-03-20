@@ -1,120 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752488AbaCTGjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 02:39:46 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:56997 "EHLO
-	LGEAMRELO01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870AbaCTGjn (ORCPT
+	id S1751334AbaCTG4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 02:56:25 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:63146 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbaCTG4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 02:39:43 -0400
-X-AuditID: 9c93017d-b7ceaae000000e36-cc-532a8d2b5b66
-From: Minchan Kim <minchan@kernel.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>, Dave Hansen <dave.hansen@intel.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Jason Evans <je@fb.com>, Minchan Kim <minchan@kernel.org>
-Subject: [RFC v2 2/3] mm: work deactivate_page with anon pages
-Date: Thu, 20 Mar 2014 15:38:57 +0900
-Message-Id: <1395297538-10491-3-git-send-email-minchan@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395297538-10491-1-git-send-email-minchan@kernel.org>
-References: <1395297538-10491-1-git-send-email-minchan@kernel.org>
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 20 Mar 2014 02:56:23 -0400
+X-AuditID: cbfee691-b7efc6d0000039d3-91-532a9115e682
+Message-id: <532A9116.7090603@samsung.com>
+Date: Thu, 20 Mar 2014 15:56:22 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: gregkh@linuxfoundation.org, balbi@ti.com, myungjoo.ham@samsung.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH 1/2] extcon: of: Remove unnecessary function call by using
+ the name of device_node
+References: <1395144280-23240-1-git-send-email-cw00.choi@samsung.com>
+ <1395144280-23240-2-git-send-email-cw00.choi@samsung.com>
+ <532988DA.8030002@ti.com> <532A50CD.7030601@samsung.com>
+ <532A7AB3.8000706@ti.com>
+In-reply-to: <532A7AB3.8000706@ti.com>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsWyRsSkUFd0olawwaytlhYH79dbNC9ez2Zx
+	4WkPm8XlXXPYLGYv6WexWLSsldniduMKNgd2j/1z17B79G1Zxehx/MZ2Jo/Pm+QCWKK4bFJS
+	czLLUov07RK4Mt5uPMJWsEOj4v6+58wNjJcVuhg5OSQETCT2/l7LAmGLSVy4t56ti5GLQ0hg
+	KaPEill7WGCKnm3dwQpiCwlMZ5R43qwEUfSKUeL6qqlgCV4BLYmHu54ANXBwsAioSqzolAIJ
+	swGF97+4wQZiiwqESaycfoUFolxQ4sfke2C2CFDN6Z0/mEFsZoH5jBKv23NAbGGBDImVq1tZ
+	IHbdYJQ4N2UNI0iCU0BNYvfCx+wQDToS+1unsUHY8hKb17xlhjj6GLvE92tgt7EICEh8m3wI
+	7DYJAVmJTQegSiQlDq64wTKBUWwWkpNmIZk6C8nUBYzMqxhFUwuSC4qT0otM9YoTc4tL89L1
+	kvNzNzECI+30v2cTdzDeP2B9iDEZaOVEZinR5HxgpOaVxBsamxlZmJqYGhuZW5qRJqwkzpv+
+	KClISCA9sSQ1OzW1ILUovqg0J7X4ECMTB6dUA6OE142c+e9fPz325kHsih3rL18Iur9lq/DD
+	XZd3bb0Qf0FjpujJ1fbvnlmURXdLip01bs+ctuKszFONc3OemdW7veqdFvK9+nxqg9Zm9Tcq
+	c/nfRRxTN7n7kjXa+t+1k96zGsLnB3clGP9Zsnhj+8P5Wcb39+pPsX3x02S7YCpnxfLF6gfu
+	fa/pV2Ipzkg01GIuKk4EAFSi3U3KAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jQV3RiVrBBoe/61kcvF9v0bx4PZvF
+	hac9bBaXd81hs5i9pJ/FYtGyVmaL240r2BzYPfbPXcPu0bdlFaPH8RvbmTw+b5ILYIlqYLTJ
+	SE1MSS1SSM1Lzk/JzEu3VfIOjneONzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpASaEsMacU
+	KBSQWFyspG+HaUJoiJuuBUxjhK5vSBBcj5EBGkhYw5jxduMRtoIdGhX39z1nbmC8rNDFyMkh
+	IWAi8WzrDlYIW0ziwr31bCC2kMB0RonnzUpdjFxA9itGieurpoIV8QpoSTzc9YSli5GDg0VA
+	VWJFpxRImA0ovP/FDbBeUYEwiZXTr7BAlAtK/Jh8D8wWAao5vfMHM4jNLDCfUeJ1ew6ILSyQ
+	IbFydSsLxK4bjBLnpqxhBElwCqhJ7F74mB2iQUdif+s0NghbXmLzmrfMExgFZiHZMQtJ2Swk
+	ZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBEfyM6kdjCsbLA4xCnAwKvHwrtijGSzE
+	mlhWXJl7iFGCg1lJhNfaXStYiDclsbIqtSg/vqg0J7X4EGMyMAQmMkuJJucDk0xeSbyhsYmZ
+	kaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTCq1r+TeRD7c8raxjVaaW5l
+	r+d8KThleUSja7Hl3ffdWXXFv6+uO+f0p7Dp1aHJr7ZsOrYlQPzAwXU7/tscMFqyv5FH9LXl
+	/pvljhPXsGlMrdAvWa2cM+0BS9364yyHZstMDN/ccfFYwqcKv53hF9bdsttxcWvFrYM6as/2
+	7LN2CFFbFpx30af/nhJLcUaioRZzUXEiABLYy4MoAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, deactivate_page works for file page but MADV_FREE will use
-it to move lazyfree pages to inactive LRU's tail so this patch
-makes deactivate_page work with anon pages as well as file pages.
+Hi,
 
-Signed-off-by: Minchan Kim <minchan@kernel.org>
----
- include/linux/mm_inline.h |  9 +++++++++
- mm/swap.c                 | 20 ++++++++++----------
- 2 files changed, 19 insertions(+), 10 deletions(-)
+On 03/20/2014 02:20 PM, Kishon Vijay Abraham I wrote:
+> Hi,
+> 
+> On Thursday 20 March 2014 07:52 AM, Chanwoo Choi wrote:
+>> Hi,
+>>
+>> On 03/19/2014 09:08 PM, Kishon Vijay Abraham I wrote:
+>>> Hi,
+>>>
+>>> On Tuesday 18 March 2014 05:34 PM, Chanwoo Choi wrote:
+>>>> This patch remove unnecessary function call in of_extcon_get_extcon_dev()
+>>>> by using the name of device_node structure.
+>>>>
+>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>> ---
+>>>>  drivers/extcon/of_extcon.c | 12 ++----------
+>>>>  1 file changed, 2 insertions(+), 10 deletions(-)
+>>>>
+>>>> diff --git a/drivers/extcon/of_extcon.c b/drivers/extcon/of_extcon.c
+>>>> index 72173ec..0a29f82 100644
+>>>> --- a/drivers/extcon/of_extcon.c
+>>>> +++ b/drivers/extcon/of_extcon.c
+>>>> @@ -32,7 +32,6 @@ struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+>>>>  {
+>>>>  	struct device_node *node;
+>>>>  	struct extcon_dev *edev;
+>>>> -	struct platform_device *extcon_parent_dev;
+>>>>  
+>>>>  	if (!dev->of_node) {
+>>>>  		dev_dbg(dev, "device does not have a device node entry\n");
+>>>> @@ -46,16 +45,9 @@ struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+>>>>  		return ERR_PTR(-ENODEV);
+>>>>  	}
+>>>>  
+>>>> -	extcon_parent_dev = of_find_device_by_node(node);
+>>>> -	if (!extcon_parent_dev) {
+>>>> -		dev_dbg(dev, "unable to find device by node\n");
+>>>> -		return ERR_PTR(-EPROBE_DEFER);
+>>>> -	}
+>>>> -
+>>>> -	edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
+>>>> +	edev = extcon_get_extcon_dev(node->name);
+>>>
+>>> Since you no longer want to use device names I think you should add this too to
+>>> warn users if they rely on using the device name.
+>>
+>> Previous of_extcon_get_extcon_dev() support only platform device using of_find_device_by_node.
+>>
+>> If extcon device is based on i2c/spi/pci and so on, of_extcon_get_extcon_dev() can't
+>> find device instance for device name. So, I change device name from the name of platform device
+>> to the name of dt node.
+> 
+> That's fine. But we have to fix extcon_dev_register() too, to not use device
+> names right? We have to warn extcon users not to use device names right?
 
-diff --git a/include/linux/mm_inline.h b/include/linux/mm_inline.h
-index cf55945c83fb..0503caafd532 100644
---- a/include/linux/mm_inline.h
-+++ b/include/linux/mm_inline.h
-@@ -22,6 +22,15 @@ static inline int page_is_file_cache(struct page *page)
- 	return !PageSwapBacked(page);
- }
- 
-+static __always_inline void add_page_to_lru_list_tail(struct page *page,
-+				struct lruvec *lruvec, enum lru_list lru)
-+{
-+	int nr_pages = hpage_nr_pages(page);
-+	mem_cgroup_update_lru_size(lruvec, lru, nr_pages);
-+	list_add_tail(&page->lru, &lruvec->lists[lru]);
-+	__mod_zone_page_state(lruvec_zone(lruvec), NR_LRU_BASE + lru, nr_pages);
-+}
-+
- static __always_inline void add_page_to_lru_list(struct page *page,
- 				struct lruvec *lruvec, enum lru_list lru)
- {
-diff --git a/mm/swap.c b/mm/swap.c
-index 0092097b3f4c..ac13714b5d8b 100644
---- a/mm/swap.c
-+++ b/mm/swap.c
-@@ -643,14 +643,11 @@ void add_page_to_unevictable_list(struct page *page)
-  * If the page isn't page_mapped and dirty/writeback, the page
-  * could reclaim asap using PG_reclaim.
-  *
-- * 1. active, mapped page -> none
-- * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-- * 3. inactive, mapped page -> none
-- * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-- * 5. inactive, clean -> inactive, tail
-- * 6. Others -> none
-+ * 1. file mapped page -> none
-+ * 2. dirty/writeback page -> head of inactive with PG_reclaim
-+ * 3. inactive, clean -> tail of inactive
-  *
-- * In 4, why it moves inactive's head, the VM expects the page would
-+ * In 2, why it moves inactive's head, the VM expects the page would
-  * be write it out by flusher threads as this is much more effective
-  * than the single-page writeout from reclaim.
-  */
-@@ -667,7 +664,7 @@ static void lru_deactivate_fn(struct page *page, struct lruvec *lruvec,
- 		return;
- 
- 	/* Some processes are using the page */
--	if (page_mapped(page))
-+	if (!PageAnon(page) && page_mapped(page))
- 		return;
- 
- 	active = PageActive(page);
-@@ -677,7 +674,6 @@ static void lru_deactivate_fn(struct page *page, struct lruvec *lruvec,
- 	del_page_from_lru_list(page, lruvec, lru + active);
- 	ClearPageActive(page);
- 	ClearPageReferenced(page);
--	add_page_to_lru_list(page, lruvec, lru);
- 
- 	if (PageWriteback(page) || PageDirty(page)) {
- 		/*
-@@ -686,12 +682,16 @@ static void lru_deactivate_fn(struct page *page, struct lruvec *lruvec,
- 		 * is _really_ small and  it's non-critical problem.
- 		 */
- 		SetPageReclaim(page);
-+		add_page_to_lru_list(page, lruvec, lru);
- 	} else {
- 		/*
- 		 * The page's writeback ends up during pagevec
- 		 * We moves tha page into tail of inactive.
-+		 *
-+		 * The lazyfree page move into lru's tail to
-+		 * discard easily.
- 		 */
--		list_move_tail(&page->lru, &lruvec->lists[lru]);
-+		add_page_to_lru_list_tail(page, lruvec, lru);
- 		__count_vm_event(PGROTATED);
- 	}
- 
--- 
-1.9.0
+I don't think so. extcon_get_edev_by_phandle() shows wrong node->name as following:
+The consumer could detect the cause of problem which can't get extcon device after
+checking error log message.
 
+	edev = extcon_get_extcon_dev(node->name);
+	if (!edev) {
+		dev_err(dev, "unable to get extcon device : %s\n", node->name);
+		return ERR_PTR(-ENODEV);
+	}
+
+I don't want to add more log message.
+
+>>
+>>
+>>> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+>>> index bc4c789..025eb39 100644
+>>> --- a/drivers/extcon/extcon-class.c
+>>> +++ b/drivers/extcon/extcon-class.c
+>>> @@ -601,7 +601,6 @@ int extcon_dev_register(struct extcon_dev *edev)
+>>>         edev->dev.class = extcon_class;
+>>>         edev->dev.release = extcon_dev_release;
+>>>
+>>> -       edev->name = edev->name ? edev->name : dev_name(edev->dev.parent);
+>>> //The user should always pass the 'name' as we no longer use device name while
+>>> getting extcon device. And this name should also be the 'node' name?
+>>>         if (IS_ERR_OR_NULL(edev->name)) {
+>>>                 dev_err(&edev->dev,
+>>>                         "extcon device name is null\n");
+>>>
+>>> Btw changing to node name from device name breaks dwc3 in OMAP5 and you would
+>>> need this too..
+>>>
+>>> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+>>> index 2aea4bc..cea8cd3 100644
+>>> --- a/drivers/extcon/extcon-palmas.c
+>>> +++ b/drivers/extcon/extcon-palmas.c
+>>> @@ -188,6 +188,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
+>>>
+>>>         palmas_usb->edev.supported_cable = palmas_extcon_cable;
+>>>         palmas_usb->edev.dev.parent = palmas_usb->dev;
+>>> +       palmas_usb->edev.name = "palmas_usb";
+>>>         palmas_usb->edev.mutually_exclusive = mutually_exclusive;
+>>>
+>>>         status = extcon_dev_register(&palmas_usb->edev);
+>>>
+>>> Cheers
+>>> Kishon
+>>>
+>>
+>> If node name is same as extcon device name, don't need some modification.
+>> Also, you can modify node name in some OMAP dts file insead of modification of extcon-palmas.c
+> 
+> node name in OMAP dts is already 'palmas_usb'. But since we were not setting
+> 'edev.name' in extcon-palmas.c, extcon_dev_register used device name of palmas
+> (palmas_usb.7 in my case). So extcon-palmas.c needs the fix.
+
+For example,
+I used extcon provider/consumer driver in dts as following:
+extcon-max14577.c set device name as edev->name and then dt node name of max14577
+set "max14577-muic" which is same as device name(dev_name(&pdev->dev)).
+
+I don't need to modify extcon-max14577.c
+
+In drivers/extcon/extcon-max14577.c
+	...
+	info->edev->name = dev_name(&pdev->dev);
+	...
+In dts.
+	i2c@13880000 {
+		.....
+		max14577@25 {
+			.....
+			muic: max14577-muic {
+				compatible = "maxim,max14577-muic";
+			};
+			....
+		};
+	};
+
+	hsotg@12480000 {
+		.....
+		extcon = <&muic>;
+	};
+
+
+Thanks,
+Chanwoo Choi
