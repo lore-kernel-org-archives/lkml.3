@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769AbaCTJYl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:24:41 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:45836 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757589AbaCTJWW (ORCPT
+	id S1757577AbaCTJWR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:22:17 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51886 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932091AbaCTJWI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:22:22 -0400
-From: Lee Jones <lee.jones@linaro.org>
-To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        computersforpeace@gmail.com
-Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
-        Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 30/36] mtd: st_spi_fsm: Add the ability to write to FSM's status register
-Date: Thu, 20 Mar 2014 09:21:02 +0000
-Message-Id: <1395307268-12721-31-git-send-email-lee.jones@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
-References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
+	Thu, 20 Mar 2014 05:22:08 -0400
+Date: Thu, 20 Mar 2014 10:20:29 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Juergen Beisert <jbe@pengutronix.de>
+Cc: linux-arm-kernel@lists.infradead.org, y@KARO-electronics.de,
+        Arnd Bergmann <arnd@arndb.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Huang Shijie <b32955@freescale.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
+Message-ID: <20140320102029.4327a6c0@ipc1.ka-ro>
+In-Reply-To: <201403200933.39382.jbe@pengutronix.de>
+References: <1395235406-13449-1-git-send-email-y>
+	<201403200933.39382.jbe@pengutronix.de>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by Angus Clark <angus.clark@st.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mtd/devices/st_spi_fsm.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+Hi,
 
-diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 5e315e3..0eb2c09 100644
---- a/drivers/mtd/devices/st_spi_fsm.c
-+++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -588,6 +588,23 @@ static struct stfsm_seq stfsm_seq_erase_chip = {
- 		    SEQ_CFG_STARTSEQ),
- };
- 
-+static struct stfsm_seq stfsm_seq_write_status = {
-+	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-+	.seq_opc[1] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
-+		       SEQ_OPC_OPCODE(FLASH_CMD_WRSR)),
-+	.seq = {
-+		STFSM_INST_CMD1,
-+		STFSM_INST_CMD2,
-+		STFSM_INST_STA_WR1,
-+		STFSM_INST_STOP,
-+	},
-+	.seq_cfg = (SEQ_CFG_PADS_1 |
-+		    SEQ_CFG_READNOTWRITE |
-+		    SEQ_CFG_CSDEASSERT |
-+		    SEQ_CFG_STARTSEQ),
-+};
-+
- static struct stfsm_seq stfsm_seq_wrvcr = {
- 	.seq_opc[0] = (SEQ_OPC_PADS_1 | SEQ_OPC_CYCLES(8) |
- 		       SEQ_OPC_OPCODE(FLASH_CMD_WREN) | SEQ_OPC_CSDEASSERT),
-@@ -817,6 +834,25 @@ static int stfsm_read_status(struct stfsm *fsm, uint8_t cmd,
- 	return 0;
- }
- 
-+static int stfsm_write_status(struct stfsm *fsm, uint16_t status,
-+			       int sta_bytes)
-+{
-+	struct stfsm_seq *seq = &stfsm_seq_write_status;
-+
-+	dev_dbg(fsm->dev, "writing STA[%s] 0x%04x\n",
-+		(sta_bytes == 1) ? "1" : "1+2", status);
-+
-+	seq->status = (uint32_t)status | STA_PADS_1 | STA_CSDEASSERT;
-+	seq->seq[2] = (sta_bytes == 1) ?
-+		STFSM_INST_STA_WR1 : STFSM_INST_STA_WR1_2;
-+
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
-+};
-+
- static int stfsm_wrvcr(struct stfsm *fsm, uint8_t data)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_wrvcr;
+Juergen Beisert wrote:
+> Hi Lothar,
+> 
+> On Wednesday 19 March 2014 14:23:26 y@karo-electronics.de wrote:
+> > With a flash-based BBT there is no reason to move the Factory Bad
+> > Block Marker from the data area buffer (to where it is mapped by the
+> > GPMI NAND controller) to the OOB buffer. Thus, make this feature
+> > configurable via DT. This is required for the Ka-Ro electronics
+> > platforms.
+> > [...]
+> 
+> How do you create the BBT the very first time with valuable data when the NAND 
+> already contains factory bad blocks?
+> 
+With the flashtool that does the initial flash programming.
+
+
+Lothar Waßmann
 -- 
-1.8.3.2
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
