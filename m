@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755893AbaCTKIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:08:55 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:37446 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449AbaCTKIy (ORCPT
+	id S1756992AbaCTKKh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:10:37 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51931 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752335AbaCTKKf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:08:54 -0400
-Date: Thu, 20 Mar 2014 15:38:48 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, torvalds@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>, paulus@samba.org,
-        tglx@linutronix.de, Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, mingo@kernel.org
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-Message-ID: <20140320100848.GC10406@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
- <20140319154705.GB8557@laptop.programming.kicks-ass.net>
- <20140319170829.GD8557@laptop.programming.kicks-ass.net>
- <20140320053350.GB30295@linux.vnet.ibm.com>
- <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032010-9574-0000-0000-00000C88AB55
+	Thu, 20 Mar 2014 06:10:35 -0400
+Date: Thu, 20 Mar 2014 11:09:14 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Huang Shijie <b32955@freescale.com>
+Cc: <y@KARO-electronics.de>, Arnd Bergmann <arnd@arndb.de>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>,
+        <b47714@freescale.com>
+Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
+Message-ID: <20140320110914.731db7cf@ipc1.ka-ro>
+In-Reply-To: <532AB94D.1050406@freescale.com>
+References: <1395235406-13449-1-git-send-email-y>
+	<532AB1A2.9010702@freescale.com>
+	<20140320102153.7106f915@ipc1.ka-ro>
+	<532AB94D.1050406@freescale.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This problem suggests that we missed a wakeup for a task that was adding
-> itself to the queue in a wait path. And the only place that can happen
-> is with the hb spinlock check for any pending waiters. Just in case we
-> missed some assumption about checking the hash bucket spinlock as a way
-> of detecting any waiters (powerpc?), could you revert this commit and
-> try the original atomic operations variant:
+Hi,
+
+Huang Shijie wrote:
+> 于 2014年03月20日 17:21, Lothar Waßmann 写道:
+> > Hi,
+> >
+> > Huang Shijie wrote:
+> >> 于 2014年03月19日 21:23, y@karo-electronics.de 写道:
+> >>> configurable via DT. This is required for the Ka-Ro electronics
+> >>> platforms.
+> >>>
+> >> If you disable the swapping, you will disable the NAND boot in actually.
+> >>
+> > No. All our modules do boot from NAND and none of them does the
+> > swapping.
+> >
+> >
+> It seems the NAND boot runs well by luck.
 > 
-> https://lkml.org/lkml/2013/12/19/630
+> The ROM will do the swapping when it reads the BBT table written by the 
+> kobs-ng (or something else?).
+> 
+This can be disabled by parameter in the FCB (at least according to
+the i.MX6 reference Manual):
+|DISBBM 172 4 If 0 ROM will swap BadBlockMarkerByte with
+|             metadata[0] after reading a page using BCH40.
+|             If the value set is 1 then ROM will not do
+|             swapping
 
-I think the above url and the commit id that I reverted i.e
-git://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=b0c29f79ecea0b6fbcefc999
-are the same.
 
-Or am I missing something? 
-
+Lothar Waßmann
 -- 
-Thanks and Regards
-Srikar Dronamraju
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
