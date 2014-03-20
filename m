@@ -1,81 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758596AbaCTQmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:42:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.24]:57239 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757263AbaCTQmf (ORCPT
+	id S932989AbaCTQqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:46:16 -0400
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:36518 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751925AbaCTQqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:42:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ben Dooks <ben.dooks@codethink.co.uk>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: Re: DMABOUNCE in pci-rcar
-Date: Thu, 20 Mar 2014 17:41:49 +0100
-Message-ID: <4884083.IuNl44Y6XD@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <532B137B.7010900@codethink.co.uk>
-References: <201402241200.21944.arnd@arndb.de> <5527822.QYtFYiIpiW@wuerfel> <532B137B.7010900@codethink.co.uk>
+	Thu, 20 Mar 2014 12:46:13 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aFPw5AZ15fkpf3mGFgy9Pc2aZuAbj54yhVVjhNqpVsY
- m5w//t1ZldUHBStJzdkMHP7wNBkZDpxAVxB76T8xGn4+b27TBT
- TXn+z9S0NSBzQKvPoSLGdh1lom5xQQyPu0TibU9+tx/MRN3//C
- +rkWXVFhbZUSgyJNK+/9x58AlGu9dfybiMDQ/aH/G992bIfpm9
- G71vxkvxasxP7NBmKOy1S+LJOuM3w9kn0dAOYcU5aRxS62HQZ2
- mnnU8lwbAu+O4ZNnezu8wIl4vjQrW8Qbz1gRaZh5npWL6zlMmY
- hJir9c8vIxCYFKy5lVWly1w9pIJq2ygFvyVL9TmYR9SQkRTG1D
- O9XZQlXZaYWiuCe7wzTA=
+In-Reply-To: <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+References: <20140224162400.GE16457@pd.tnic> <4205942.Tp8ltEsv6e@vostro.rjw.lan>
+ <532A514C.5010106@intel.com> <744357E9AAD1214791ACBA4B0B9092630121F201@SHSMSX101.ccr.corp.intel.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Thu, 20 Mar 2014 10:45:52 -0600
+Message-ID: <CAErSpo55DjkGQB=7ksow34BpCObnY+o3eNnt0n5oQEh6Lfw1pw@mail.gmail.com>
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+To: "Zhang, Rui" <rui.zhang@intel.com>
+Cc: "Lu, Aaron" <aaron.lu@intel.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Borislav Petkov <bp@alien8.de>, lkml <linux-kernel@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 March 2014 17:12:43 Ben Dooks wrote:
-> On 20/03/14 17:09, Arnd Bergmann wrote:
-> > On Thursday 20 March 2014 16:04:36 Ben Dooks wrote:
+On Wed, Mar 19, 2014 at 9:03 PM, Zhang, Rui <rui.zhang@intel.com> wrote:
 
-> >> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
-> >> controllers no longer work with full 2GiB RAM enabled in the device
-> >> tree.
-> >
-> > Did it work before these patches got applied initially?
-> 
-> It did, but I cannot remember if we where limiting DRAM to 1GiB
-> or not.
+> I've talked with Yan Zheng, and I was told that this resource "0xfed10000 - 0xfed15fff"
+> is got from PCI device register directly, which is not in its BAR range.
+> Thus IMO, it is impossible for PNP layer to be aware of this resource.
 
-I would assume you did, or you happened to never actually use
-memory higher than that for DMA during tests.
+Slow down, this isn't quite correct.  The *base* address (0xfed10000)
+is from a PCI config register (MCHBAR, at PCI config offset 0x48) [1].
+ This is a device-dependent register, so the PCI core knows neither
+the base nor the size.
 
-> >> Could we work around this by having 1GiB of memory defined in the
-> >> 32bit memory and then add the rest of the 3GiB from the >32bit
-> >> area via LPAE? Will the kernel ever try to allocate DMA memory from
-> >> anything >32bit?
-> >
-> > You can solve the case for dma_alloc_coherent() this way, or by
-> > setting the mask correctly. It won't help you for dma_map_* though,
-> > which still requires someone to add support for swiotlb or using
-> > an IOMMU if present.
-> 
-> We do not have an IOMMU present at the moment. Not sure how
-> to go about setting a mask on a pci-probed device.
+The device consumes address space that is not reported via the
+architected PCI mechanism, so the only way to report that space is via
+the PNP0C02 ACPI device.  The BIOS has to determine the base and size
+based on its knowledge of the hardware.  On this hardware, per the
+spec in [1], the region described by MCHBAR is 32KB in size.
 
-Ah, right. The mask is a problem because PCI devices assume that
-they can do DMA to any 32-bit masked address without calling
-dma_set_mask. Your trick to describe the system memory at a different
-physical alias would solve this part. Another option might be to
-add a quirk in the OHCI/EHCI drivers, if you are able to detect
-this special case from the PCI IDs. Whether we can allow the PCI host
-controller to just set a mask is an open question. If we decide to go
-that route, you should be able to do it using the add_bus() callback
-in the host controller driver. However, it would be a departure from
-the normal way of doing PCI DMA, and I can't foresee what the implications
-would be.
+The 0x6000 (24KB) size of the region above comes from the driver and
+is actually less than what the device consumes.  It is legal for a
+driver to request only the area it requires, but the entire area
+consumed by the device should be reported via the PNP0C02 device.  The
+fact that PNP0C02 reports 16KB but the device actually consumes 32KB
+is a BIOS defect.  This probably happened because previous versions of
+this chip consumed only 16KB, and the BIOS didn't get updated for the
+change.
 
-	Arnd
+> BTW, about drivers/pnp/system.c, if its ONLY purpose is to prevent those
+> resources from being allocated to uninitialized PCI devices, then IMO,
+> the best way to do this is make PCI bus handle those PNP0C01/PNP0C02
+> resources directly, probably via a platform callback, say,
+> 1. make drivers/pnp/system.c a no-op for PNPACPI, by checking pnp_dev->protocol.
+> 2. introduce acpi_check_reserved_resource() to parsing PNP0C01/PNP0C02 resources.
+> 3. in PCI bus, invoke acpi_check_reserved_resource() when assigning
+>    resources to PCI devices.
+
+The purpose of system.c is indeed to prevent resources from being
+allocated to other devices.  This is really a question for Rafael, but
+in my opinion this function (reserving resources of PNP/ACPI devices
+to prevent their allocation to other devices) should be done for *all*
+PNP and ACPI devices, not just the PNP0C01/PNP0C02 devices handled by
+system.c.
+
+So I think the best solution would be to move that into the ACPI core
+somehow so it happens for all devices.  If we had that, we could get
+rid of system.c altogether, and we wouldn't have to do anything
+special in PCI.  This is much easier to say than to do, however,
+because there are all kinds of issues with legacy resource
+reservations, and we currently can't really deal with overlapping
+resources.
+
+Bjorn
+
+[1] https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet,
+sec. 3.1.2 on p. 61
