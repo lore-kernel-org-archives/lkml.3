@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757510AbaCTJjR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:39:17 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:39547 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757191AbaCTJjO (ORCPT
+	id S1757802AbaCTJjb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:39:31 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:46543 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349AbaCTJj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:39:14 -0400
-Subject: [PATCH 00/33] [RFC] Non disruptive application core dump
- infrastructure
+	Thu, 20 Mar 2014 05:39:28 -0400
+Subject: [PATCH 02/33] Validity of arguments
 To: linux-kernel@vger.kernel.org
 From: Janani Venkataraman <jananive@linux.vnet.ibm.com>
 Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
@@ -22,206 +21,182 @@ Cc: amwang@redhat.com, procps@freelists.org, rdunlap@xenotime.net,
         eparis@redhat.com, suzuki@linux.vnet.ibm.com, andi@firstfloor.org,
         tj@kernel.org, akpm@linux-foundation.org,
         torvalds@linux-foundation.org
-Date: Thu, 20 Mar 2014 15:09:03 +0530
-Message-ID: <20140320093040.14878.903.stgit@localhost.localdomain>
+Date: Thu, 20 Mar 2014 15:09:20 +0530
+Message-ID: <20140320093920.14878.52834.stgit@localhost.localdomain>
+In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
+References: <20140320093040.14878.903.stgit@localhost.localdomain>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032009-4790-0000-0000-0000003F23E8
+x-cbid: 14032009-2000-0000-0000-00001044DA0E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+The validity of the arguments passed to the program are checked. PID is a
+mandatory argument. The core file name is optional, if not specified the
+default file name is core.pid.
 
-The following series implements an infrastructure for capturing the core of an
-application without disrupting its process.
+If a self dump is requested then, the application is called with a --daemon
+option or the --socket option.
 
-Kernel Space Approach:
+If the SYSTEMD_SOCKET_OPTION is enabled, then the socket option will be fully
+functional. The system where the program is run needs to have sd-daemon.h. For
+this we need to have the correct version of systemd which has this socket
+option enabled.
 
-1) Posted an RFD to LKML explaining the various kernel-methods being analysed.
-
-https://lkml.org/lkml/2013/9/3/122
-
-2) Went ahead to implement the same using the task_work_add approach and posted an
-RFC to LKML.
-
-http://lwn.net/Articles/569534/
-
-Based on the responses, the present approach implements the same in User-Space.
-
-User Space Approach:
-
-We didn't adopt the CRIU approach because our method would give us a head
-start, as all that the distro would need is the PTRACE_functionality and nothing
-more which is available from kernel versions 3.4 and above.
-
-Basic Idea of User Space:
-
-1) The threads are held using PTRACE_SEIZE and PTRACE_INTERRUPT.
-
-2) The dump is then taken using the following:
-    1) The register sets namely general purpose, floating point and the arch
-    specific register sets are collected through PTRACE_GETREGSET calls by
-    passing the appropriate register type as parameter.
-    2) The virtual memory maps are collected from /proc/pid/maps.
-    3) The auxiliary vector is collected from /proc/pid/auxv.
-    4) Process state information for filling the notes such as PRSTATUS and
-    PRPSINFO are collected from /proc/pid/stat and /proc/pid/status.
-    5) The actual memory is read through process_vm_readv syscall as suggested
-    by Andi Kleen.
-    6) Command line arguments are collected from /proc/pid/cmdline
-
-3) The threads are then released using PTRACE_DETACH.
-
-Self Dump:
-
-A self dump is implemented with the following approach which was adapted
-from CRIU:
-
-Gencore Daemon
-
-The programs can request a dump using gencore() API, provided through
-libgencore. This is implemented through a daemon which listens on a UNIX File
-socket. The daemon is started immediately post installation.
-
-We have provided service scripts for integration with systemd.
-
-NOTE:
-
-On systems with systemd, we could make use of socket option, which will avoid
-the need for running the gencore daemon always. The systemd can wait on the
-socket for requests and trigger the daemon as and when required. However, since
-the systemd socket APIs are not exported yet, we have disabled the supporting
-code for this feature.
-
-libgencore:
-
-1) The client interface is a standard library call. All that the dump requester
-does is open the library and call the gencore() API and the dump will be
-generated in the path specified(relative/absolute).
-
-To Do:
-
-1) Presently we wait indefinitely for the all the threads to seize. We can add
-a time-out to decide how much time we need to wait for the threads to be
-seized. This can be passed as command line argument in the case of a third
-party dump and in the case of the self-dump through the library call. We need
-to work on how much time to wait.
-
-2) Like mentioned before, the systemd socket APIs are not exported yet and
-hence this option is disabled now. Once these API's are available we can enable
-the socket option.
-
-We would like to push this to one of the following packages:
-a) util-linux
-b) coreutils
-c) procps-ng
-
-We are not sure which one would suit this application the best.
-Please let us know your views on the same.
-
-Patches 1 - 16 implements the dump generation.
-
-Patches 17 - 24 implements the daemon approach.
-
-Patch 25 implements the systemd socket approach.
-
-Patches 26-27 implements the client-interface library.
-
-Patches 28-33 handles the building and other packaging aspects.
-
-Please let us know your reviews and comments.
-
-Thanks.
-
-Janani Venkataraman (33):
-      Configure and Make files
-      Validity of arguments
-      Process Status
-      Hold threads
-      Fetching Memory maps
-      Check ELF class
-      Do elf_coredump
-      Fills elf header
-      Adding notes infrastructure
-      Populates PRPS info
-      Populate AUXV
-      Fetch File maps
-      Fetching thread specific Notes
-      Populating Program Headers
-      Updating Offset
-      Writing to core file
-      Daemonizing the Process
-      Socket operations
-      Block till request
-      Handling Requests
-      Get Clients PID
-      Dump the task
-      Handling SIG TERM of the daemon
-      Handling SIG TERM of the child
-      Systemd Socket ID retrieval
-      [libgencore] Setting up Connection
-      [libgencore] Request for dump
-      Man pages
-      Automake files for the doc folder
-      README, COPYING, Changelog
-      Spec file
-      Socket and Service files.
-      Support check
-
-
- COPYING            |   24 ++
- COPYING.LIBGENCORE |   24 ++
- Changelog          |    7 
- Makefile.am        |   22 +
- README             |  108 +++++++
- configure.ac       |    8 +
- doc/Makefile.am    |    2 
- doc/gencore.1      |   31 ++
- doc/gencore.3      |   28 ++
- gencore.service    |    9 +
- gencore.socket     |   10 +
- gencore.spec.in    |   88 ++++++
- gencore@.service   |    9 +
- libgencore.pc.in   |    8 +
- src/Makefile.am    |   13 +
- src/client.c       |  121 ++++++++
- src/coredump.c     |  764 ++++++++++++++++++++++++++++++++++++++++++++++++
- src/coredump.h     |   74 +++++
- src/elf-compat.h   |  124 ++++++++
- src/elf.c          |  827 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- src/elf32.c        |   43 +++
- src/elf64.c        |   44 +++
- src/gencore.h      |    1 
- src/proc.c         |  278 +++++++++++++++++
- 24 files changed, 2667 insertions(+)
- create mode 100644 COPYING
- create mode 100644 COPYING.LIBGENCORE
- create mode 100644 Changelog
- create mode 100644 README
- create mode 100644 doc/Makefile.am
- create mode 100644 doc/gencore.1
- create mode 100644 doc/gencore.3
- create mode 100644 gencore.service
- create mode 100644 gencore.socket
- create mode 100644 gencore.spec.in
- create mode 100644 gencore@.service
- create mode 100644 libgencore.pc.in
+Signed-off-by: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+---
+ Makefile.am     |    2 +
+ configure.ac    |    2 +
+ src/Makefile.am |    7 ++++
+ src/coredump.c  |  104 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 113 insertions(+), 2 deletions(-)
  create mode 100644 src/Makefile.am
- create mode 100644 src/client.c
  create mode 100644 src/coredump.c
- create mode 100644 src/coredump.h
- create mode 100644 src/elf-compat.h
- create mode 100644 src/elf.c
- create mode 100644 src/elf32.c
- create mode 100644 src/elf64.c
- create mode 100644 src/gencore.h
- create mode 100644 src/proc.c
 
--- 
-Janani
+diff --git a/Makefile.am b/Makefile.am
+index 2cc6dc7..dfa49b2 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,2 +1,2 @@
+ AUTOMAKE_OPTIONS = foreign
+-SUBDIRS =
++SUBDIRS = src
+diff --git a/configure.ac b/configure.ac
+index f34a0c3..8c785cd 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -4,4 +4,4 @@ AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+ AC_CONFIG_HEADERS([config.h])
+ AC_PROG_CC
+ AC_CONFIG_FILES(Makefile)
+-AC_OUTPUT()
++AC_OUTPUT(src/Makefile)
+diff --git a/src/Makefile.am b/src/Makefile.am
+new file mode 100644
+index 0000000..f7b25fa
+--- /dev/null
++++ b/src/Makefile.am
+@@ -0,0 +1,7 @@
++AUTOMAKE_OPTIONS = foreign
++HAVE_SYSTEMD_SOCKET_SUPPORT = 0
++CFLAGS += -I. -DHAVE_SYSTEMD_SOCKET_SUPPORT='$(HAVE_SYSTEMD_SOCKET_SUPPORT)'
++
++bin_PROGRAMS = gencore
++gencore_SOURCES = coredump.c
++
+diff --git a/src/coredump.c b/src/coredump.c
+new file mode 100644
+index 0000000..7a7fe11
+--- /dev/null
++++ b/src/coredump.c
+@@ -0,0 +1,104 @@
++/*
++ * Initiates the core-dump
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ *
++ * Copyright (C) IBM Corporation, 2013, 2014
++ *
++ * Authors:
++ *      Janani Venkataraman <jananve@in.ibm.com>
++ *      Suzuki K. Poulose <suzuki@in.ibm.com>
++ */
++
++#include <stdarg.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++/* For logging all the messages */
++FILE *fp_log;
++
++/* Logging messages */
++void gencore_log(char *fmt, ...)
++{
++	va_list argptr;
++	va_start(argptr, fmt);
++	vfprintf(fp_log, fmt, argptr);
++	va_end(argptr);
++}
++
++/* Performs the core dump */
++int do_coredump(int pid, char *core_file)
++{
++	return 0;
++}
++
++/* Daemon for self dump */
++int daemon_dump(void)
++{
++	return 0;
++}
++
++#if HAVE_SYSTEMD_SOCKET_SUPPORT
++/* Systemd socket for self dump */
++int socket_dump(void)
++{
++	return 0;
++}
++#endif
++
++int main(int argc, char *argv[])
++{
++	int ret;
++	int pid;
++	char core_file[15];
++
++	if (argc < 2 || argc > 3) {
++		fprintf(stderr, "Invalid number of arguments.\n\n");
++		fprintf(stderr, "Usage: %s pid [output-file-name]\n", argv[0]);
++		return -1;
++	}
++
++	if (strcmp(argv[1], "--daemon") == 0)
++		ret = daemon_dump();
++#if HAVE_SYSTEMD_SOCKET_SUPPORT
++	else if (strcmp(argv[1], "--socket") == 0) {
++		fp_log = stderr;
++		ret = socket_dump();
++	}
++#endif
++	else if (strcmp(argv[1], "--help") == 0) {
++		printf("Usage: %s pid [output-file-name]\n", argv[0]);
++		return -1;
++	} else {
++		fp_log = stderr;
++		pid = atoi(argv[1]);
++		if (pid == 0 && argv[1][0] != '0') {
++			fprintf(stderr, "Enter a valid PID.\n");
++			fprintf(stderr, "Usage: %s pid [output-file-name]\n", argv[0]);
++			return -1;
++		}
++		if (argc == 2) {
++			snprintf(core_file, 15, "core.%d", pid);
++			ret = do_coredump(pid, core_file);
++		} else
++			ret = do_coredump(pid, argv[2]);
++
++		if (ret == -1)
++			gencore_log("Failed to create core file.\n");
++	}
++
++	return ret;
++}
 
