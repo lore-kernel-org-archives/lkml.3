@@ -1,69 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754625AbaCTJCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:02:12 -0400
-Received: from relay.parallels.com ([195.214.232.42]:42797 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743AbaCTJCI (ORCPT
+	id S1753932AbaCTJHV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:07:21 -0400
+Received: from nasmtp01.atmel.com ([192.199.1.245]:34512 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750743AbaCTJHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:02:08 -0400
-Message-ID: <532AAE7B.2030501@parallels.com>
-Date: Thu, 20 Mar 2014 13:01:47 +0400
-From: Pavel Emelyanov <xemul@parallels.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Thu, 20 Mar 2014 05:07:18 -0400
+From: Josh Wu <josh.wu@atmel.com>
+CC: <g.liakhovetski@gmx.de>, <m.chehab@samsung.com>,
+        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <sylvester.nawrocki@gmail.com>, Josh Wu <josh.wu@atmel.com>
+Subject: [PATCH v2] [media] ov2640: add support for async device registration
+Date: Thu, 20 Mar 2014 17:01:49 +0800
+Message-ID: <1395306109-11016-1-git-send-email-josh.wu@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>,
-        David Herrmann <dh.herrmann@gmail.com>
-CC: <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Matthew Wilcox <matthew@wil.cx>,
-        Karol Lewandowski <k.lewandowsk@samsung.com>,
-        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        =?ISO-8859-1?Q?Kristian_H=F8gsberg?= <krh@bitplanet.net>,
-        <john.stultz@linaro.org>, Greg Kroah-Hartman <greg@kroah.com>,
-        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-fsdevel@vger.kernel.org>,
-        <linux-mm@kvack.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ryan Lortie <desrt@desrt.ca>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 3/6] shm: add memfd_create() syscall
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com> <1395256011-2423-4-git-send-email-dh.herrmann@gmail.com> <20140320084748.GK1728@moon>
-In-Reply-To: <20140320084748.GK1728@moon>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.114]
+Content-Type: text/plain
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 12:47 PM, Cyrill Gorcunov wrote:
-> On Wed, Mar 19, 2014 at 08:06:48PM +0100, David Herrmann wrote:
->> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
->> that you can pass to mmap(). It explicitly allows sealing and
->> avoids any connection to user-visible mount-points. Thus, it's not
->> subject to quotas on mounted file-systems, but can be used like
->> malloc()'ed memory, but with a file-descriptor to it.
->>
->> memfd_create() does not create a front-FD, but instead returns the raw
->> shmem file, so calls like ftruncate() can be used. Also calls like fstat()
->> will return proper information and mark the file as regular file. Sealing
->> is explicitly supported on memfds.
->>
->> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
->> subject to quotas and alike.
-> 
-> If I'm not mistaken in something obvious, this looks similar to /proc/pid/map_files
-> feature, Pavel?
+Since the the v4l2_clk_get() may return a EPROBE_DEFER during async
+probing. So move the v4l2_clk_get() to the beginning of the
+probe(). Only when we get mclk successfully we continue the probe.
 
-Thanks, Cyrill.
+Signed-off-by: Josh Wu <josh.wu@atmel.com>
+---
+v1 -> v2:
+  just return PTR_ERR(clk) as it can be -EPROBE_DEFER.
+  refined the commit message
 
-It is, but the map_files will work "in the opposite direction" :) In the memfd
-case one first gets an FD, then mmap()s it; in the /proc/pis/map_files case one
-should first mmap() a region, then open it via /proc/self/map_files.
+ drivers/media/i2c/soc_camera/ov2640.c |   43 +++++++++++++++++++++------------
+ 1 file changed, 28 insertions(+), 15 deletions(-)
 
-But I don't know whether this matters.
+diff --git a/drivers/media/i2c/soc_camera/ov2640.c b/drivers/media/i2c/soc_camera/ov2640.c
+index 6c6b1c3..7c77a15 100644
+--- a/drivers/media/i2c/soc_camera/ov2640.c
++++ b/drivers/media/i2c/soc_camera/ov2640.c
+@@ -22,6 +22,7 @@
+ #include <linux/videodev2.h>
+ 
+ #include <media/soc_camera.h>
++#include <media/v4l2-async.h>
+ #include <media/v4l2-clk.h>
+ #include <media/v4l2-subdev.h>
+ #include <media/v4l2-ctrls.h>
+@@ -1069,6 +1070,7 @@ static int ov2640_probe(struct i2c_client *client,
+ 	struct ov2640_priv	*priv;
+ 	struct soc_camera_subdev_desc *ssdd = soc_camera_i2c_to_desc(client);
+ 	struct i2c_adapter	*adapter = to_i2c_adapter(client->dev.parent);
++	struct v4l2_clk		*clk;
+ 	int			ret;
+ 
+ 	if (!ssdd) {
+@@ -1083,13 +1085,20 @@ static int ov2640_probe(struct i2c_client *client,
+ 		return -EIO;
+ 	}
+ 
++	clk = v4l2_clk_get(&client->dev, "mclk");
++	if (IS_ERR(clk))
++		return PTR_ERR(clk);
++
+ 	priv = devm_kzalloc(&client->dev, sizeof(struct ov2640_priv), GFP_KERNEL);
+ 	if (!priv) {
+ 		dev_err(&adapter->dev,
+ 			"Failed to allocate memory for private data!\n");
+-		return -ENOMEM;
++		ret = -ENOMEM;
++		goto err_kzalloc;
+ 	}
+ 
++	priv->clk = clk;
++
+ 	v4l2_i2c_subdev_init(&priv->subdev, client, &ov2640_subdev_ops);
+ 	v4l2_ctrl_handler_init(&priv->hdl, 2);
+ 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
+@@ -1097,23 +1106,26 @@ static int ov2640_probe(struct i2c_client *client,
+ 	v4l2_ctrl_new_std(&priv->hdl, &ov2640_ctrl_ops,
+ 			V4L2_CID_HFLIP, 0, 1, 1, 0);
+ 	priv->subdev.ctrl_handler = &priv->hdl;
+-	if (priv->hdl.error)
+-		return priv->hdl.error;
+-
+-	priv->clk = v4l2_clk_get(&client->dev, "mclk");
+-	if (IS_ERR(priv->clk)) {
+-		ret = PTR_ERR(priv->clk);
+-		goto eclkget;
++	if (priv->hdl.error) {
++		ret = priv->hdl.error;
++		goto err_kzalloc;
+ 	}
+ 
+ 	ret = ov2640_video_probe(client);
+-	if (ret) {
+-		v4l2_clk_put(priv->clk);
+-eclkget:
+-		v4l2_ctrl_handler_free(&priv->hdl);
+-	} else {
+-		dev_info(&adapter->dev, "OV2640 Probed\n");
+-	}
++	if (ret)
++		goto err_probe;
++
++	ret = v4l2_async_register_subdev(&priv->subdev);
++	if (ret)
++		goto err_probe;
++
++	dev_info(&adapter->dev, "OV2640 Probed\n");
++	return 0;
++
++err_probe:
++	v4l2_ctrl_handler_free(&priv->hdl);
++err_kzalloc:
++	v4l2_clk_put(clk);
+ 
+ 	return ret;
+ }
+@@ -1122,6 +1134,7 @@ static int ov2640_remove(struct i2c_client *client)
+ {
+ 	struct ov2640_priv       *priv = to_ov2640(client);
+ 
++	v4l2_async_unregister_subdev(&priv->subdev);
+ 	v4l2_clk_put(priv->clk);
+ 	v4l2_device_unregister_subdev(&priv->subdev);
+ 	v4l2_ctrl_handler_free(&priv->hdl);
+-- 
+1.7.9.5
 
-Thanks,
-Pavel
