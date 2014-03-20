@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759681AbaCTTk4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:40:56 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:46114 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933875AbaCTTkR convert rfc822-to-8bit (ORCPT
+	id S1759602AbaCTTs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:48:27 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:37928 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756155AbaCTTs0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:40:17 -0400
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
-Subject: Re: [PATCH 09/11] bluetooth: hci_ldisc: fix deadlock condition
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <1395343807-21618-9-git-send-email-balbi@ti.com>
-Date: Thu, 20 Mar 2014 12:40:40 -0700
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-serial@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org,
-        Peter Hurley <peter@hurleysoftware.com>, m-karicheri2@ti.com,
-        b32955@freescale.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <95DFF994-1668-4F93-943B-06805FD5B20B@holtmann.org>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com> <1395343807-21618-9-git-send-email-balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-X-Mailer: Apple Mail (2.1874)
+	Thu, 20 Mar 2014 15:48:26 -0400
+Message-ID: <532B4606.3030303@lwfinger.net>
+Date: Thu, 20 Mar 2014 14:48:22 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Peter Wu <peter@lekensteyn.nl>, John W Linville <linville@tuxdriver.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Chaoming_Li <chaoming_li@realsil.com.cn>, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lekensteyn@gmail.com
+Subject: Re: [PATCH 0/3] rtlwifi (and staging rtl8821ae) cleanups
+References: <1395341544-21464-1-git-send-email-peter@lekensteyn.nl>
+In-Reply-To: <1395341544-21464-1-git-send-email-peter@lekensteyn.nl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
+On 03/20/2014 01:52 PM, Peter Wu wrote:
+> Hi,
+>
+> The first patch of these series was NAKed some weeks ago because it would
+> conflict with the new rtl8723be driver. Since those changes are in wireless-next
+> now, I have adjusted that patch to take care of rtl8723be.
+>
+> The other two patches to the staging driver is similar to the rtlwifi changes.
+> I am not sure who to send these two patches to. Greg is the staging maintainer,
+> but John takes wireless patches, so I have included both of you.
+>
+> All patches are compile-tested on top of v3.14-rc2-938-g67b3bd4.
+>
+> I also found the following (unrelated to my patches) warning while compiling the
+> staging driver, perhaps it needs a closer look?
 
-> LDISCs shouldn't call tty->ops->write() from within
-> ->write_wakeup().
-> 
-> ->write_wakeup() is called with port lock taken and
-> IRQs disabled, tty->ops->write() will try to acquire
-> the same port lock and we will deadlock.
-> 
-> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-> Reported-by: Huang Shijie <b32955@freescale.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> ---
-> drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
-> drivers/bluetooth/hci_uart.h  |  1 +
-> 2 files changed, 20 insertions(+), 5 deletions(-)
+Peter,
 
-I hope these are not causing any conflicts with bluetooth-next / linux-next. If not, then I can let Greg take it through tty-next tree.
+Your Patch 1/3 applies cleanly and I think it is OK, but if you are going to do 
+cleanups on the wireless tree, you should be working from the latest version of 
+wireless-testing git repo. We are on 3.14-rc7 and there are several recent 
+commits that might have conflicted.
 
-Acked-by: Marcel Holtmann <marcel@holtmann.org>
+As for the changes to staging/rtl8821ae (No. 2 & 3), once Linus starts the merge 
+that will precede the release of 3.15-rc2, the entire code for rtl8821ae will be 
+replaced. A cleaned-up version was nearly ready for the regular wireless tree in 
+time to make 3.15, but it did not get enough testing. As a result, that driver 
+will be in testing for one more cycle. By 3.16, it should reside in the regular 
+tree and be out of staging.
 
-Regards
+Pushing patches that affect both the regular tree and staging is complicated and 
+should be avoided whenever possible.
 
-Marcel
+Larry
+
+
 
