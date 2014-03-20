@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099AbaCTLvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:51:06 -0400
-Received: from 2.mo4.mail-out.ovh.net ([46.105.72.36]:54707 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932755AbaCTLu6 (ORCPT
+	id S933160AbaCTLvx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:51:53 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:27686 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082AbaCTLvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:50:58 -0400
-X-Greylist: delayed 98869 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 07:50:58 EDT
-MIME-Version: 1.0
-In-Reply-To: <1395173924-3648-9-git-send-email-b.brezillon.dev@gmail.com>
-References: <1395173924-3648-1-git-send-email-b.brezillon.dev@gmail.com>
-	<1395173924-3648-9-git-send-email-b.brezillon.dev@gmail.com>
-Date: Thu, 20 Mar 2014 10:22:51 +0100
-Message-ID: <CACh+v5Ngvdt=FnyzMz4Q0i1U7kNmrgXWDavzi4xvLDJR0qh0WA@mail.gmail.com>
-Subject: Re: [PATCH 08/11] ARM: at91/dt: move at91sam9261 SoC to the new main
- clock model
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Boris BREZILLON <brezillonboris@gmail.com>
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        devicetree <devicetree@vger.kernel.org>, linux-doc@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Thu, 20 Mar 2014 07:51:51 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-60-532ad65405fa
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Pratyush Anand <pratyush.anand@st.com>
+Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@gmail.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-Ovh-Tracer-Id: 12929271582361213069
-X-Ovh-Remote: 209.85.220.41 (mail-pa0-f41.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejuddrfeefucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH 4/4] ata: add new-style AHCI platform driver for ST
+ SPEAr1340 AHCI controller
+Date: Thu, 20 Mar 2014 12:51:32 +0100
+Message-id: <3482323.3pWPcG8rCe@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140320085717.GC4607@pratyush-vbox>
+References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
+ <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
+ <20140320085717.GC4607@pratyush-vbox>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQd3Qa1rBBm/FLP5OOsZuce5WA6vF
+	nRXMFpseX2O1OLbjEZPF5V1z2Cw2Tv3FaLG/dwOTRfslZYs/H/Qs5szYzGrxa/lRRouVF/8y
+	O/B6/P41idHj+qv/TB47Z91l99i0qpPNY860JhaPkxdOsnhsXlLv8fTHXmaP4ze2M3l83iQX
+	wBXFZZOSmpNZllqkb5fAlbFo70WmgntsFdeWtTE1MG5n7WLk5JAQMJG4Ou0lO4QtJnHh3nq2
+	LkYuDiGB6YwSe9sfsUM4LUwS667MZAGpYhOwkpjYvooRxBYR0JJ4tmMRWAezwF0WiTu9B8HG
+	CgskSzQd6QcrYhFQlbi/4DkziM0roCnx98s9JhBbVMBTYsf2lWwgNqeAkcTSzh2sENvWM0qc
+	7HjLDtEgKPFj8j2wzcwC8hL79k9lhbC1JNbvPM40gVFgFpKyWUjKZiEpW8DIvIpRNLUguaA4
+	KT3XSK84Mbe4NC9dLzk/dxMjOJ6eSe9gXNVgcYhRgINRiYd3xR7NYCHWxLLiytxDjBIczEoi
+	vEsuawUL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYGxv
+	uRLacvyoTEZAfU/bl/BcPZVpx5iao36da3y8Vs8oatbhPt/ENVc5nkqefFNuk5CxLmn7zW1v
+	Nf6qFHj9fnpn3oU38jkee6weTM87fZ4l2P+rZZdjrFhlho9s7urw/qt/zxgy7JvT/v1QUQfz
+	BqbWB7MNFVcvKlytVRGcxd52qMbh5FRjbSWW4oxEQy3mouJEANcyOM+jAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-18 21:18 GMT+01:00 Boris BREZILLON <brezillonboris@gmail.com>:
->
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->  arch/arm/boot/dts/at91sam9261.dtsi |   10 +++++++++-
->  1 file changed, 9 insertions(+), 1 deletion(-)
->
-> diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
-> index e21dda0..e00fabc 100644
-> --- a/arch/arm/boot/dts/at91sam9261.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9261.dtsi
-> @@ -45,6 +45,14 @@
->                 reg = <0x20000000 0x08000000>;
->         };
->
-> +       clocks {
-> +               main_xtal: main_xtal {
-> +                       compatible = "fixed-clock";
-> +                       #clock-cells = <0>;
-> +                       clock-frequency = <0>;
-> +               };
-> +       };
-> +
->         ahb {
->                 compatible = "simple-bus";
->                 #address-cells = <1>;
-> @@ -534,7 +542,7 @@
->                                         compatible = "atmel,at91rm9200-clk-main";
->                                         #clock-cells = <0>;
->                                         interrupts-extended = <&pmc AT91_PMC_MOSCS>;
-> -                                       clocks = <&clk32k>;
-> +                                       clocks = <&main_xtal>;
->                                 };
->
->                                 plla: pllack {
-> --
-> 1.7.9.5
->
 
-Acked-by: Jean-Jacques HIBLOT <jjhiblot@traphandler.com>
+Hi,
+
+On Thursday, March 20, 2014 02:27:17 PM Pratyush Anand wrote:
+> On Tue, Mar 18, 2014 at 02:31:58AM +0800, Bartlomiej Zolnierkiewicz wrote:
+> > The new driver is named ahci_spear1340 and is only compile tested.  Once
+> > it is tested on the real hardware and verified to work correctly, the legacy
+> > platform code (which depends on the deprecated struct ahci_platform_data)
+> > can be removed.
+> > 
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> 
+> This patch will not be needed any more, since SPEAr sata platform code has
+> already been cleaned up.
+> 
+> See:
+> https://lkml.org/lkml/2014/2/28/174
+
+OK.  Conversion of SPEAr1340 AHCI platform code to PHY driver is even better
+than adding custom AHCI driver.
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
