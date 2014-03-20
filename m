@@ -1,133 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405AbaCTKsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 06:48:32 -0400
-Received: from 67.160.232.221.broad.wh.hb.dynamic.163data.com.cn ([221.232.160.67]:4013
-	"HELO web110.org" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with SMTP id S1751271AbaCTKsb (ORCPT
+	id S1757469AbaCTKsz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 06:48:55 -0400
+Received: from www.linutronix.de ([62.245.132.108]:40189 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbaCTKsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 06:48:31 -0400
-X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 06:48:30 EDT
-Date: Thu, 20 Mar 2014 18:42:20 +0800
-X-Mailer: Microsoft Outlook Express 6.00.2900.5512
-Message-ID: <005887821317$32470312$80806600@fzww>
-From: =?gb2312?B?Um9zYWxpbmQgwt7Jr8HVtcI=?= <hujian@web110.org>
-To: <777@svadba-spb.ru>
+	Thu, 20 Mar 2014 06:48:54 -0400
+Date: Thu, 20 Mar 2014 11:49:01 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stefani Seibold <stefani@seibold.net>
+cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        mingo@redhat.com, hpa@zytor.com, ak@linux.intel.com,
+        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
+        xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
+        Andreas.Brief@rohde-schwarz.com
+Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
+In-Reply-To: <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1403201148360.18573@ionos.tec.linutronix.de>
+References: <1395301511-5908-1-git-send-email-stefani@seibold.net> <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-                                         《 微 营 销 实 战 》
-
--------------------------------------------------------------------------------------------------
-                                           【主讲：马佳彬】
-
--------------------------------------------------------------------------------------------------
-  报名详情 >
-
-【培训时间】2014年3月21上海、3月22北京、3月29深圳
-
-【培训对象】企业的经营者、营销负责人、网络营销人员、企业营销策略制定者及所有营销人员。
-
-【授课方式】讲师讲授 + 视频演绎 + 案例研讨 +角色扮演 + 讲师点评 + 落地工具。
-
-【培训费用】3200/两人，单独一人收费1980元（含资料费、午餐、茶点、教材）
-
-          赠送：
-
-           价值1800元的微网站，限前30名报名学员。
-
-           微信营销系统40多款公众平台接口，含大转盘、刮刮卡、优惠券等实用营销功能。
-
-【承办单位】宇杰企管
-
-【报名热线】深圳：0755-6128 2360   上海：021-5160 2030    北京：010-5166 9310
-
- 在线QQ：511 798 337        
 
 
-【课程背景】
+On Thu, 20 Mar 2014, Thomas Gleixner wrote:
 
--------------------------------------------------------------------------------------------------
-10年前，互联网来了，有人因此成为商业巨头；
-5年前，淘宝来了，有人因此实现“草根创业”；
-3年前，微博来了，有人因此实现财富“核裂变”；
-而今天，微信来了，微营销来了……
+> On Thu, 20 Mar 2014, Stefani Seibold wrote:
+> 
+> > This patch add a correct out of memory handling for setup a 32 bit vDSO.
+> > 
+> > The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
+> > 
+> > Signed-off-by: Stefani Seibold <stefani@seibold.net>
+> > ---
+> >  arch/x86/vdso/vdso32-setup.c | 17 ++++++++++++++++-
+> >  1 file changed, 16 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+> > index 0bc363a..e1171c2 100644
+> > --- a/arch/x86/vdso/vdso32-setup.c
+> > +++ b/arch/x86/vdso/vdso32-setup.c
+> > @@ -134,8 +134,14 @@ int __init sysenter_setup(void)
+> >  	}
+> >  
+> >  	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
+> > -	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
+> > +
+> > +	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
+> 
+> Why is this GFP_ATOMIC and not GFP_ATOMIC ?
 
-7天连锁酒店通过微信营销，一个月内，会员从30万几何式增至120万！
-小米手机通过微信营销，在短短3个月内吸引粉丝105万，网上订单暴增15倍！
-星巴克通过微信营销,在三周内，仅“冰摇沁爽”一项产品销售额就突破750万！
-“90后”大学生通过微信营销卖水果，一没店铺，二没员工情况下，实现月入8万的奇迹！
-微信来了，“微”机也就来了，你知道这意味着什么！！
-未来十年，是中国商业领域大规模打劫的时代，所有还在采用传统运营模式的企业的“粮仓”
-都有可能遭遇打劫，而那些适应了“微”机，抓住了“微”机的企业将是这个时代最大的赢家，小米赢了，
-星巴克赢了……
-
-参加《微信营销从入门到实战》，下一个赢家，就是你！
-
-【课程收益】
-
--------------------------------------------------------------------------------------------------
- 1.全面系统学习微信营销两大平台，普及数10种实操技巧； 
- 2.知晓微信营销定位、策划、运营、推广、成 交5大模块致胜诀窍； 
- 3.学会渗透微信朋友圈子，把握强弱关系，实 现口碑营销及建立转介绍系统； 
- 4.掌握运营层面6大功能实操细节，解答线 上、线下活动策划注意事项。 
- 5.获得微信营销落地搭建团队一系列建议，包括绩效考核与效果分析。 
- 6.了解微信发展趋势以及企业移动互联网营销趋势，少走弯路取得成效。
-
-
-【讲师介绍】 【马佳彬】
-
--------------------------------------------------------------------------------------------------
- 微信实战应用专家、网络营销实战专家。
-
-【教育背景】
-
-    上海交通大学EMBA总裁班导师；中央人民广播电台
-    经济之声时评嘉宾；中特《微信解码》专家；《微信宝典》作者；创新工场多贝网达人讲师；马老师
-是多家知名网站的专栏作家，如：Chinaz站长之家，Donews新锐作家、速途网、艾瑞网、易观网、亿邦动
-力网和最科技网等。微信营销领域专业排名前四*马老师拥有9年的互联网行业培训经验，先后从事信息咨
-询及广告传媒工作。微博营销领域首次提出“灭亡论”。最早涉足研究微信营销，微信营销实战班网络培
-训开创者，“微信营销六步思维法”讲师。长期担任业内多家知名IT门户站点写手。其个人博客在业内拥
-有比较高的知名度，已被网站运营等专业书籍收录推荐。培训学员数以万计，马老师由于长期亲密接触网
-络营销一线，因此，讲解风格生动、贴近实际，更易引起学员共鸣！是最早的微信营销研究及实践者，在
-微信营销领域具有完善系统的研究成果。
-
-【课程大纲】
-
--------------------------------------------------------------------------------------------------
-一、微信营销概念篇
-1、移动电子商务带来了什么机会？
-2、常见的移动互联网商业模式有哪些？
-3、微信的发展历史及其商业模式。微信营销与社交网络有什么关系？
-4、企业为什么要做微信营销？微信营销能给企业带来什么？
-
-二、微信营销入门篇
-1、微信手机版、网页版、公众平台介绍；
-2、微信手机版实操技巧解密、电脑模拟手机版技术介绍；
-3、微信网页版实操技巧介绍（批量微群加好友技巧）；
-4、微信公众平台搭建全面系统介绍（科学正确使用微信公众帐号）；
-5、微信9大辅助营销软件首度无保留全公开；
-
-三、微信营销进阶篇
-1、微信移动电子商务系统搭建指南；
-2、微信O2O电子商务系统搭建指南；
-3、微信客服系统（CRM）搭建指南；
-4、微信自推广系统搭建指南；
-5、微信营销四步思维法：定位+策划+运营+转化 四大模块系统解析；
-   5.1.1 企业微信运营团队建设策略；       
-   5.1.2 企业微信公众帐号内容策划策略；
-   5.1.3 企业微信公众帐号活动策划策略；   
-   5.1.4 企业微信公众帐号客服策略；
-   5.1.5 企业微信公众帐号推广策略；
-6、微信个人帐号营销、公众帐号营销辅助手段延伸推荐（易信、微米、来往多平台营销推广）；
-
-四、微信营销落地篇
-1、微信个人帐号朋友圈销售实操技巧指南；
-2、微信公众帐号落地策略（多行业）；
-3、微信企业应用经典案例分享（多行业）；
-4、微信自媒体品牌打造三部曲；
-5、微信自媒体品牌经典案例分享；
-
--------------------------------------------------------------------------------------------------
-
+Should be: Why is this GFP_ATOMIC and not GFP_KERNEL ?
+ 
+> That code is called either from identify_boot_cpu(), where GFP_KERNEL
+> is perfectly valid and from subsys_initcall(sysenter_setup) which is
+> way late in the boot process where GFP_KERNEL is the RightThing.
+> 
+> Aside of that, why do we need to call it early for X86_32 and late for
+> X86_64?
+> 
+> We need the vdso before we head off to user space, but not in the
+> early boot process.
+> 
+> Thanks,
+> 
+> 	tglx
+> 
+> 
