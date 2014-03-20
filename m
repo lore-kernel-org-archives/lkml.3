@@ -1,123 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760042AbaCTWQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 18:16:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:56484 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759587AbaCTWQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 18:16:25 -0400
-Date: Thu, 20 Mar 2014 15:15:51 -0700
-From: tip-bot for WANG Chao <tipbot@zytor.com>
-Message-ID: <tip-936329de1e6bf3dfa8c056074e6fc6b673e7b1d0@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
-        tglx@linutronix.de, hpa@linux.intel.com, chaowang@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        mulix@mulix.org, vgoyal@redhat.com, jdmason@kudzu.us,
-        tglx@linutronix.de, chaowang@redhat.com, hpa@linux.intel.com
-In-Reply-To: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
-References: <1394463120-26999-1-git-send-email-chaowang@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86, calgary: Use 8M TCE table size by default
-Git-Commit-ID: 936329de1e6bf3dfa8c056074e6fc6b673e7b1d0
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S964848AbaCTWR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 18:17:57 -0400
+Received: from mail-bn1blp0189.outbound.protection.outlook.com ([207.46.163.189]:28802
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758484AbaCTWRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 18:17:55 -0400
+Message-ID: <1395353868.12479.342.camel@snotra.buserror.net>
+Subject: Re: [PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
+From: Scott Wood <scottwood@freescale.com>
+To: Kevin Hao <haokexin@gmail.com>
+CC: Chenhui Zhao <chenhui.zhao@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>, <leoli@freescale.com>,
+        <Jason.Jin@freescale.com>
+Date: Thu, 20 Mar 2014 17:17:48 -0500
+In-Reply-To: <20140320114735.GD10182@pek-khao-d1.corp.ad.wrs.com>
+References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
+	 <1394168285-32275-9-git-send-email-chenhui.zhao@freescale.com>
+	 <1394586624.13761.132.camel@snotra.buserror.net>
+	 <20140312055755.GA17203@pek-khao-d1.corp.ad.wrs.com>
+	 <1394646185.13761.145.camel@snotra.buserror.net>
+	 <20140313074613.GD26692@pek-khao-d1.corp.ad.wrs.com>
+	 <1394835987.12479.119.camel@snotra.buserror.net>
+	 <20140316045801.GA32188@pek-khao-d1.corp.ad.wrs.com>
+	 <1395184734.12479.250.camel@snotra.buserror.net>
+	 <20140320114735.GD10182@pek-khao-d1.corp.ad.wrs.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 MIME-Version: 1.0
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: BLUPR07CA029.namprd07.prod.outlook.com (10.141.20.44) To
+ BL2PR03MB388.namprd03.prod.outlook.com (10.141.91.153)
+X-Forefront-PRVS: 01565FED4C
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(57704003)(24454002)(377424004)(189002)(199002)(87976001)(83322001)(87266001)(87286001)(51856001)(95666003)(85306002)(69226001)(80976001)(97336001)(97186001)(1411001)(42186004)(83072002)(47776003)(85852003)(93516002)(20776003)(63696002)(65816001)(81342001)(53806001)(23676002)(76786001)(62966002)(46102001)(93136001)(49866001)(80022001)(47736001)(92726001)(77982001)(81542001)(94316002)(92566001)(77156001)(76796001)(95416001)(94946001)(54316002)(56776001)(88136002)(4396001)(79102001)(90146001)(56816005)(86362001)(93916002)(76482001)(89996001)(47976001)(50986001)(50226001)(74662001)(81686001)(81816001)(74706001)(33646001)(59766001)(77096001)(74502001)(47446002)(74876001)(50466002)(31966008)(74366001)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2PR03MB388;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:6626D29D.960A8065.31D43F8B.C0FEDB4A.202DE;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  936329de1e6bf3dfa8c056074e6fc6b673e7b1d0
-Gitweb:     http://git.kernel.org/tip/936329de1e6bf3dfa8c056074e6fc6b673e7b1d0
-Author:     WANG Chao <chaowang@redhat.com>
-AuthorDate: Mon, 10 Mar 2014 22:52:00 +0800
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 20 Mar 2014 14:51:39 -0700
+On Thu, 2014-03-20 at 19:47 +0800, Kevin Hao wrote:
+> OK, so the intention of 'twi, isync' following the load is not to order the
+> following storage access, but order the following delay loop instructions,
+> right? But according to the e6500 manual, the instructions complete in order.
+> The following is the definition of 'complete':
+>   Complete—An instruction is eligible to complete after it finishes executing
+>   and makes its results available for subsequent instructions. Instructions
+>   must complete in order from the bottom two entries of the
+>   completion queue (CQ). The completion unit coordinates how instructions (which
+>   may have executed out of order) affect architected registers to ensure the
+>   appearance of serial execution. This guarantees that the completed instruction
+>   and all previous instructions can cause no exceptions. An instruction completes
+>   when it is retired, that is, deleted from the CQ.
+> 
+> So the following delay loop instructions should never complete before the
+> complete of the load instruction.
 
-x86, calgary: Use 8M TCE table size by default
+We don't want the delay loop instructions to *start* until the load has
+completed.  Completion of the loop only matters when ordering the loop
+versus post-loop actions (and again, there we'd want the loop to
+complete before subsequent actions start).
 
-New kexec-tools wants to pass kdump kernel needed memmap via E820
-directly, instead of memmap=exactmap. This makes saved_max_pfn not
-be passed down to 2nd kernel. To keep 1st kernel and 2nd kernel using
-the same TCE table size, Muli suggest to hard code the size to max (8M).
+> > > > > So if we want to order all the storage access as well
+> > > > > as execution synchronization, we should choose sync here.
+> > > > 
+> > > > Do we need execution synchronization or context synchronization?
+> > > 
+> > > There is no context-altering instruction here, so I think an execution
+> > > synchronizing instruction should be enough here.
+> > 
+> > Is the ISA ever explicit about what constitutes "context"?
+> 
+> The following is the definition of context-altering instruction:
+>   An instruction that alters the context in which data
+>   addresses or instruction addresses are interpreted, or
+>   in which instructions are executed or data accesses are
+>   performed, is called a context-altering instruction.
+> 
+> So the context should be:
+>   - in which data addresses or instruction addresses are interpreted
+>   - in which instructions are executed
+>   - in which data accesses are performed
 
-We can't get rid of saved_max_pfn this time, for backward compatibility
-with old first kernel and new second kernel. However new first kernel
-and old second kernel can not work unfortunately.
+By that definition, a store to CCSR could easily change the context in
+which data accesses are performed, by changing a mapping.
 
-v2->v1:
-- retain saved_max_pfn so new 2nd kernel can work with old 1st kernel
-  from Vivek
+But still, nothing in the above defines "context" -- or rather, it does
+so circularly.  While it makes intuitive sense that it would be limited
+to context that lives within the core, rather than the rest of the
+system, I don't think the ISA generally distinguishes between the two.
 
-Signed-off-by: WANG Chao <chaowang@redhat.com>
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Acked-by: Muli Ben-Yehuda <mulix@mulix.org>
-Acked-by: Jon Mason <jdmason@kudzu.us>
-Link: http://lkml.kernel.org/r/1394463120-26999-1-git-send-email-chaowang@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/pci-calgary_64.c | 31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+-Scott
 
-diff --git a/arch/x86/kernel/pci-calgary_64.c b/arch/x86/kernel/pci-calgary_64.c
-index 299d493..0497f71 100644
---- a/arch/x86/kernel/pci-calgary_64.c
-+++ b/arch/x86/kernel/pci-calgary_64.c
-@@ -1207,23 +1207,31 @@ error:
- 	return ret;
- }
- 
--static inline int __init determine_tce_table_size(u64 ram)
-+static inline int __init determine_tce_table_size(void)
- {
- 	int ret;
- 
- 	if (specified_table_size != TCE_TABLE_SIZE_UNSPECIFIED)
- 		return specified_table_size;
- 
--	/*
--	 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
--	 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
--	 * larger table size has twice as many entries, so shift the
--	 * max ram address by 13 to divide by 8K and then look at the
--	 * order of the result to choose between 0-7.
--	 */
--	ret = get_order(ram >> 13);
--	if (ret > TCE_TABLE_SIZE_8M)
-+	if (is_kdump_kernel() && saved_max_pfn) {
-+		/*
-+		 * Table sizes are from 0 to 7 (TCE_TABLE_SIZE_64K to
-+		 * TCE_TABLE_SIZE_8M). Table size 0 has 8K entries and each
-+		 * larger table size has twice as many entries, so shift the
-+		 * max ram address by 13 to divide by 8K and then look at the
-+		 * order of the result to choose between 0-7.
-+		 */
-+		ret = get_order((saved_max_pfn * PAGE_SIZE) >> 13);
-+		if (ret > TCE_TABLE_SIZE_8M)
-+			ret = TCE_TABLE_SIZE_8M;
-+	} else {
-+		/*
-+		 * Use 8M by default (suggested by Muli) if it's not
-+		 * kdump kernel and saved_max_pfn isn't set.
-+		 */
- 		ret = TCE_TABLE_SIZE_8M;
-+	}
- 
- 	return ret;
- }
-@@ -1418,8 +1426,7 @@ int __init detect_calgary(void)
- 		return -ENOMEM;
- 	}
- 
--	specified_table_size = determine_tce_table_size((is_kdump_kernel() ?
--					saved_max_pfn : max_pfn) * PAGE_SIZE);
-+	specified_table_size = determine_tce_table_size();
- 
- 	for (bus = 0; bus < MAX_PHB_BUS_NUM; bus++) {
- 		struct calgary_bus_info *info = &bus_info[bus];
+
