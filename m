@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318AbaCTRHw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 13:07:52 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44841 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757079AbaCTRHp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 13:07:45 -0400
+	id S1759365AbaCTRH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 13:07:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47572 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756777AbaCTRHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 13:07:55 -0400
 From: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 To: <dwmw2@infradead.org>, <computersforpeace@gmail.com>,
         <galak@codeaurora.org>, <santosh.shilimkar@ti.com>
@@ -18,9 +17,9 @@ CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
         <linux-mtd@lists.infradead.org>,
         Murali Karicheri <m-karicheri2@ti.com>,
         Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
-Subject: [PATCH 2/3] mtd: davinci-nand: add dts property for NAND_NO_SUBPAGE_WRITE option
-Date: Thu, 20 Mar 2014 19:06:23 +0200
-Message-ID: <1395335184-4745-3-git-send-email-ivan.khoronzhuk@ti.com>
+Subject: [PATCH 3/3] ARM: dts: k2hk-evm: disable subpage write for davinci nand device
+Date: Thu, 20 Mar 2014 19:06:24 +0200
+Message-ID: <1395335184-4745-4-git-send-email-ivan.khoronzhuk@ti.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com>
 References: <1395335184-4745-1-git-send-email-ivan.khoronzhuk@ti.com>
@@ -32,44 +31,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Murali Karicheri <m-karicheri2@ti.com>
 
-After testing NAND flash with ubifs for k2hk-emv board were committed
-that flash doesn't support subpage writing, so we can fix it by
-adding a property to disable subpage write.
+Add the property davinci-no-subpage-write to disable sub page write
+in the nand driver.
 
 Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
 Signed-off-by: Ivan Khoronzhuk <ivan.khoronzhuk@ti.com>
 ---
- Documentation/devicetree/bindings/mtd/davinci-nand.txt | 2 ++
- drivers/mtd/nand/davinci_nand.c                        | 3 +++
- 2 files changed, 5 insertions(+)
+ arch/arm/boot/dts/k2hk-evm.dts | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/mtd/davinci-nand.txt b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-index cfb18ab..50af930 100644
---- a/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-+++ b/Documentation/devicetree/bindings/mtd/davinci-nand.txt
-@@ -53,6 +53,8 @@ Recommended properties :
- 				identifier is saved in OOB area. If not present
- 				false.
+diff --git a/arch/arm/boot/dts/k2hk-evm.dts b/arch/arm/boot/dts/k2hk-evm.dts
+index 949ef7d..b0498c140 100644
+--- a/arch/arm/boot/dts/k2hk-evm.dts
++++ b/arch/arm/boot/dts/k2hk-evm.dts
+@@ -118,6 +118,7 @@
+ 			nand-ecc-mode = "hw";
+ 			ti,davinci-ecc-bits = <4>;
+ 			nand-on-flash-bbt;
++			ti,davinci-no-subpage-write;
  
-+- ti,davinci-nosubpage-write:	disable subpage write for the device
-+
- Deprecated properties:
- 
- - ti,davinci-ecc-mode:		operation mode of the NAND ecc mode. ECC mode
-diff --git a/drivers/mtd/nand/davinci_nand.c b/drivers/mtd/nand/davinci_nand.c
-index 4615d79..3ba058d 100644
---- a/drivers/mtd/nand/davinci_nand.c
-+++ b/drivers/mtd/nand/davinci_nand.c
-@@ -581,6 +581,9 @@ static struct davinci_nand_pdata
- 		    of_property_read_bool(pdev->dev.of_node,
- 			"ti,davinci-nand-use-bbt"))
- 			pdata->bbt_options = NAND_BBT_USE_FLASH;
-+		if (of_property_read_bool(pdev->dev.of_node,
-+			"ti,davinci-no-subpage-write"))
-+			pdata->options |= NAND_NO_SUBPAGE_WRITE;
- 	}
- 
- 	return dev_get_platdata(&pdev->dev);
+ 			partition@0 {
+ 				label = "u-boot";
 -- 
 1.8.3.2
 
