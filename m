@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341AbaCTQ4m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:56:42 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:58800 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaCTQ4k (ORCPT
+	id S1758686AbaCTQ6H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:58:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55548 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757901AbaCTQ6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:56:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <532B104D.8050601@zytor.com>
-References: <1395301511-5908-1-git-send-email-stefani@seibold.net>
- <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de>
- <1395315494.1127.3.camel@vger.seibold.net> <alpine.DEB.2.02.1403201328520.18573@ionos.tec.linutronix.de>
- <CALCETrVgC7yKsu0KM0=TfUuX9msn9ru_nG=Fv6Mz6PKDTnWGnQ@mail.gmail.com>
- <alpine.DEB.2.02.1403201614360.18573@ionos.tec.linutronix.de>
- <CALCETrWQbviwiQi2cJi=_kkjTPG8NpsYT4Sf0UB8SaDWN5rr7A@mail.gmail.com> <532B104D.8050601@zytor.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 20 Mar 2014 09:56:18 -0700
-Message-ID: <CALCETrWR-2DpSorAaQpru5u9igNXCqP66=43a+_bRs3F0q8KOA@mail.gmail.com>
-Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Stefani Seibold <stefani@seibold.net>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Martin Runge <Martin.Runge@rohde-schwarz.com>,
-        Andreas Brief <Andreas.Brief@rohde-schwarz.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Mar 2014 12:58:03 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] mfd: arizona: Mark DSP clocking register as volatile
+Date: Thu, 20 Mar 2014 16:49:24 +0000
+Message-Id: <1395334164-3012-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <1395334164-3012-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1395334164-3012-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 8:59 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 03/20/2014 08:18 AM, Andy Lutomirski wrote:
->>
->> Not really.  I'll play with it a bit.
->>
->
-> That would be really nice.
->
+The DSPs will often control there own clock speeds whilst running as
+such we should mark the registers controlling this as volatile.
 
-Holy cow the 32-bit vdso code is a mess.  I have a patch to clean up
-this bit of it, and I'll send it out once I've tested it a bit.
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm5102-tables.c |    1 +
+ drivers/mfd/wm5110-tables.c |    4 ++++
+ 2 files changed, 5 insertions(+), 0 deletions(-)
 
---Andy
-
->         -hpa
->
->
-
-
-
+diff --git a/drivers/mfd/wm5102-tables.c b/drivers/mfd/wm5102-tables.c
+index 187ee86..a856ac7 100644
+--- a/drivers/mfd/wm5102-tables.c
++++ b/drivers/mfd/wm5102-tables.c
+@@ -1925,6 +1925,7 @@ static bool wm5102_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_AOD_IRQ1:
+ 	case ARIZONA_AOD_IRQ2:
+ 	case ARIZONA_AOD_IRQ_RAW_STATUS:
++	case ARIZONA_DSP1_CLOCKING_1:
+ 	case ARIZONA_DSP1_STATUS_1:
+ 	case ARIZONA_DSP1_STATUS_2:
+ 	case ARIZONA_DSP1_STATUS_3:
+diff --git a/drivers/mfd/wm5110-tables.c b/drivers/mfd/wm5110-tables.c
+index 178e041..1942b6f 100644
+--- a/drivers/mfd/wm5110-tables.c
++++ b/drivers/mfd/wm5110-tables.c
+@@ -2652,6 +2652,7 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP1_SCRATCH_1:
+ 	case ARIZONA_DSP1_SCRATCH_2:
+ 	case ARIZONA_DSP1_SCRATCH_3:
++	case ARIZONA_DSP1_CLOCKING_1:
+ 	case ARIZONA_DSP2_STATUS_1:
+ 	case ARIZONA_DSP2_STATUS_2:
+ 	case ARIZONA_DSP2_STATUS_3:
+@@ -2680,6 +2681,7 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP2_SCRATCH_1:
+ 	case ARIZONA_DSP2_SCRATCH_2:
+ 	case ARIZONA_DSP2_SCRATCH_3:
++	case ARIZONA_DSP2_CLOCKING_1:
+ 	case ARIZONA_DSP3_STATUS_1:
+ 	case ARIZONA_DSP3_STATUS_2:
+ 	case ARIZONA_DSP3_STATUS_3:
+@@ -2708,6 +2710,7 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP3_SCRATCH_1:
+ 	case ARIZONA_DSP3_SCRATCH_2:
+ 	case ARIZONA_DSP3_SCRATCH_3:
++	case ARIZONA_DSP3_CLOCKING_1:
+ 	case ARIZONA_DSP4_STATUS_1:
+ 	case ARIZONA_DSP4_STATUS_2:
+ 	case ARIZONA_DSP4_STATUS_3:
+@@ -2736,6 +2739,7 @@ static bool wm5110_volatile_register(struct device *dev, unsigned int reg)
+ 	case ARIZONA_DSP4_SCRATCH_1:
+ 	case ARIZONA_DSP4_SCRATCH_2:
+ 	case ARIZONA_DSP4_SCRATCH_3:
++	case ARIZONA_DSP4_CLOCKING_1:
+ 		return true;
+ 	default:
+ 		return wm5110_is_adsp_memory(dev, reg);
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.7.2.5
+
