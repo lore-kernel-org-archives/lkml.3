@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966AbaCTJ2m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 05:28:42 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:49863 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757390AbaCTJV7 (ORCPT
+	id S1757999AbaCTJ26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 05:28:58 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:60955 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757234AbaCTJV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 05:21:59 -0400
+	Thu, 20 Mar 2014 05:21:57 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         computersforpeace@gmail.com
 Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org, Angus.Clark@st.com,
         Lee Jones <lee.jones@linaro.org>
-Subject: [PATCH v6 19/36] mtd: st_spi_fsm: Provide a method to put the chip into 32bit addressing mode
-Date: Thu, 20 Mar 2014 09:20:51 +0000
-Message-Id: <1395307268-12721-20-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v6 18/36] mtd: st_spi_fsm: Add a check to if the chip can handle an SoC reset
+Date: Thu, 20 Mar 2014 09:20:50 +0000
+Message-Id: <1395307268-12721-19-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
 References: <1395307268-12721-1-git-send-email-lee.jones@linaro.org>
@@ -22,55 +22,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Most Serial Flash chips support 24bit addressing as a default but more
-recent incarnations can support 32bit. Based on information provided
-though platform specific data and capabilities we can determine whether
-or not our current chip can. This patch provides a means to setup the
-FSM message sequence to put the chip into 32bit mode.
+Based on information we can obtain though platform specific data and/or
+chip capabilities we are able to determine whether or not we can handle
+a SoC reset or not. To find out why this is important please read the
+comment provided in the patch.
 
 Acked-by Angus Clark <angus.clark@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ drivers/mtd/devices/st_spi_fsm.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 7cc4425..0a5b702 100644
+index 3e13d57..7cc4425 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -375,6 +375,8 @@ static struct flash_info flash_types[] = {
- 	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
+@@ -210,6 +210,8 @@ struct stfsm {
+ 
+ 	uint32_t                fifo_dir_delay;
+ 	bool                    booted_from_spi;
++	bool                    reset_signal;
++	bool                    reset_por;
  };
  
-+static struct stfsm_seq stfsm_seq_en_32bit_addr;/* Dynamically populated */
-+
- static struct stfsm_seq stfsm_seq_read_jedec = {
- 	.data_size = TRANSFER_SIZE(8),
- 	.seq_opc[0] = (SEQ_OPC_PADS_1 |
-@@ -523,6 +525,23 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
+ struct stfsm_seq {
+@@ -521,6 +523,40 @@ static void stfsm_read_fifo(struct stfsm *fsm, uint32_t *buf,
  	}
  }
  
-+static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
++/*
++ * SoC reset on 'boot-from-spi' systems
++ *
++ * Certain modes of operation cause the Flash device to enter a particular state
++ * for a period of time (e.g. 'Erase Sector', 'Quad Enable', and 'Enter 32-bit
++ * Addr' commands).  On boot-from-spi systems, it is important to consider what
++ * happens if a warm reset occurs during this period.  The SPIBoot controller
++ * assumes that Flash device is in its default reset state, 24-bit address mode,
++ * and ready to accept commands.  This can be achieved using some form of
++ * on-board logic/controller to force a device POR in response to a SoC-level
++ * reset or by making use of the device reset signal if available (limited
++ * number of devices only).
++ *
++ * Failure to take such precautions can cause problems following a warm reset.
++ * For some operations (e.g. ERASE), there is little that can be done.  For
++ * other modes of operation (e.g. 32-bit addressing), options are often
++ * available that can help minimise the window in which a reset could cause a
++ * problem.
++ *
++ */
++static bool stfsm_can_handle_soc_reset(struct stfsm *fsm)
 +{
-+	struct stfsm_seq *seq = &stfsm_seq_en_32bit_addr;
-+	uint32_t cmd = enter ? FLASH_CMD_EN4B_ADDR : FLASH_CMD_EX4B_ADDR;
++	/* Reset signal is available on the board and supported by the device */
++	if (fsm->reset_signal && fsm->info->flags & FLASH_FLAG_RESET)
++		return true;
 +
-+	seq->seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			   SEQ_OPC_CYCLES(8) |
-+			   SEQ_OPC_OPCODE(cmd) |
-+			   SEQ_OPC_CSDEASSERT);
++	/* Board-level logic forces a power-on-reset */
++	if (fsm->reset_por)
++		return true;
 +
-+	stfsm_load_seq(fsm, seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
++	/* Reset is not properly handled and may result in failure to reboot */
++	return false;
 +}
 +
- /*
-  * SoC reset on 'boot-from-spi' systems
-  *
+ /* Configure 'addr_cfg' according to addressing mode */
+ static void stfsm_prepare_erasesec_seq(struct stfsm *fsm,
+ 				       struct stfsm_seq *seq)
+@@ -786,6 +822,10 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+ 	if (IS_ERR(regmap))
+ 		goto boot_device_fail;
+ 
++	fsm->reset_signal = of_property_read_bool(np, "st,reset-signal");
++
++	fsm->reset_por = of_property_read_bool(np, "st,reset-por");
++
+ 	/* Where in the syscon the boot device information lives */
+ 	ret = of_property_read_u32(np, "st,boot-device-reg", &boot_device_reg);
+ 	if (ret)
 -- 
 1.8.3.2
 
