@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759575AbaCTSQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 14:16:20 -0400
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:44757 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757388AbaCTSQT (ORCPT
+	id S1759249AbaCTSSq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 14:18:46 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:33043 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756651AbaCTSSo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 14:16:19 -0400
+	Thu, 20 Mar 2014 14:18:44 -0400
+Date: Thu, 20 Mar 2014 18:18:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+	drivers/media/v4l2-core to drivers/of
+Message-ID: <20140320181820.GY7528@n2100.arm.linux.org.uk>
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <20140312102556.GC21483@n2100.arm.linux.org.uk> <20140320175432.0559CC4067A@trevor.secretlab.ca> <2161777.L3ZZmhyfM4@avalon>
 MIME-Version: 1.0
-In-Reply-To: <1395338607.14694.23.camel@buesod1.americas.hpqcorp.net>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	<20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	<20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	<20140320053350.GB30295@linux.vnet.ibm.com>
-	<1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-	<1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
-	<CA+55aFw-gGQ5hTdVPovpRgcEHGyhf3YDzoSLpavzP4SefkkBDg@mail.gmail.com>
-	<1395338607.14694.23.camel@buesod1.americas.hpqcorp.net>
-Date: Thu, 20 Mar 2014 11:16:18 -0700
-X-Google-Sender-Auth: KM4XU_8rs9eXR1jpSeuZKZemwZw
-Message-ID: <CA+55aFyNFwtf2A9nexVnLJ3YRm2FJeH1WJ1U3nMaTCEq8rrOBg@mail.gmail.com>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2161777.L3ZZmhyfM4@avalon>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 11:03 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
->
-> I still wonder about ppc and spinlocks (no ticketing!!) ... sure the
-> "waiters" patch might fix the problem just because we explicitly count
-> the members of the plist. And I guess if we cannot rely on all archs
-> having an equivalent spinlock implementation, we simply cannot use this
-> technique for futexes.
+On Thu, Mar 20, 2014 at 07:16:29PM +0100, Laurent Pinchart wrote:
+> On Thursday 20 March 2014 17:54:31 Grant Likely wrote:
+> > On Wed, 12 Mar 2014 10:25:56 +0000, Russell King - ARM Linux wrote:
+> > > On Mon, Mar 10, 2014 at 02:52:53PM +0100, Laurent Pinchart wrote:
+> > > > In theory unidirectional links in DT are indeed enough. However, let's
+> > > > not forget the following.
+> > > > 
+> > > > - There's no such thing as single start points for graphs. Sure, in some
+> > > > simple cases the graph will have a single start point, but that's not a
+> > > > generic rule. For instance the camera graphs
+> > > > http://ideasonboard.org/media/omap3isp.ps and
+> > > > http://ideasonboard.org/media/eyecam.ps have two camera sensors, and
+> > > > thus two starting points from a data flow point of view.
+> > > 
+> > > I think we need to stop thinking of a graph linked in terms of data
+> > > flow - that's really not useful.
+> > > 
+> > > Consider a display subsystem.  The CRTC is the primary interface for
+> > > the CPU - this is the "most interesting" interface, it's the interface
+> > > which provides access to the picture to be displayed for the CPU.  Other
+> > > interfaces are secondary to that purpose - reading the I2C DDC bus for
+> > > the display information is all secondary to the primary purpose of
+> > > displaying a picture.
+> > > 
+> > > For a capture subsystem, the primary interface for the CPU is the frame
+> > > grabber (whether it be an already encoded frame or not.)  The sensor
+> > > devices are all secondary to that.
+> > > 
+> > > So, the primary software interface in each case is where the data for
+> > > the primary purpose is transferred.  This is the point at which these
+> > > graphs should commence since this is where we would normally start
+> > > enumeration of the secondary interfaces.
+> > > 
+> > > V4L2 even provides interfaces for this: you open the capture device,
+> > > which then allows you to enumerate the capture device's inputs, and
+> > > this in turn allows you to enumerate their properties.  You don't open
+> > > a particular sensor and work back up the tree.
+> > > 
+> > > I believe trying to do this according to the flow of data is just wrong.
+> > > You should always describe things from the primary device for the CPU
+> > > towards the peripheral devices and never the opposite direction.
+> > 
+> > Agreed.
+> 
+> Absolutely not agreed. The whole concept of CPU towards peripherals only makes 
+> sense for very simple devices and breaks as soon as the hardware gets more 
+> complex. There's no such thing as CPU towards peripherals when peripherals 
+> communicate directly.
+> 
+> Please consider use cases more complex than just a display controller and an 
+> encoder, and you'll realize how messy not being able to parse the whole graph 
+> at once will become. Let's try to improve things, not to make sure to prevent 
+> support for future devices.
 
-So the ticketing part means that on x86 we see pending waiters even
-when a previous one does "spin_unlock()". I agree that that is a
-fundamental difference between x86 and powerpc, and it does seem to be
-the most likely culprit.
+That's odd, I did.
 
-And dammit, I *liked* my "don't use an explicit waiter count"
-approach, so I'd love to be able to do it. But I we've never really
-guaranteed that "is_spin_locked()" shows whether there are spinners,
-so I don't know how to do that.
+Please draw some (ascii) diagrams of the situations you're saying this
+won't work for, because at the moment all I'm seeing is some vague
+hand-waving rather than anything factual that I can relate to.  Help
+us to actually _see_ the problem you have with this approach so we can
+understand it.
 
-I guess we could expose some interface for the spinlock code to say
-whether it supports that or not, and then switch between the two
-algorithms. But that just feels very very ugly to me.
-
-But let's see if the explicit waiter count version even solves the
-thing on powerpc. Maybe it's something else, and we'll have to revert
-entirely for now.
-
-                 Linus
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
