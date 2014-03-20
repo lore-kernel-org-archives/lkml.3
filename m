@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758999AbaCTNv5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:51:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14980 "EHLO mx1.redhat.com"
+	id S1759089AbaCTNwL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:52:11 -0400
+Received: from smtp3-g21.free.fr ([212.27.42.3]:37243 "EHLO smtp3-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757555AbaCTNv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:51:56 -0400
-Date: Thu, 20 Mar 2014 09:51:37 -0400
-From: Dave Jones <davej@redhat.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-        Konstantin Khlebnikov <koct9i@gmail.com>
-Subject: Re: bad rss-counter message in 3.14rc5
-Message-ID: <20140320135137.GA2263@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Hugh Dickins <hughd@google.com>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Cyrill Gorcunov <gorcunov@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Joonsoo Kim <iamjoonsoo.kim@lge.com>, Bob Liu <bob.liu@oracle.com>,
-	Konstantin Khlebnikov <koct9i@gmail.com>
-References: <20140311171045.GA4693@redhat.com>
- <20140311173603.GG32390@moon>
- <20140311173917.GB4693@redhat.com>
- <alpine.LSU.2.11.1403181703470.7055@eggly.anvils>
- <5328F3B4.1080208@oracle.com>
- <20140319020602.GA29787@redhat.com>
- <20140319021131.GA30018@redhat.com>
- <alpine.LSU.2.11.1403181918130.3423@eggly.anvils>
- <20140319145200.GA4608@redhat.com>
- <alpine.LSU.2.11.1403192147470.971@eggly.anvils>
+	id S1759031AbaCTNwH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 09:52:07 -0400
+Date: Thu, 20 Mar 2014 14:52:21 +0100
+From: Jean-Francois Moine <moinejf@free.fr>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: tda998x: Fix lack of required reg in DT
+ documentation
+Message-ID: <20140320145221.09252bf6@armhf>
+In-Reply-To: <532AEDE2.3080306@gmail.com>
+References: <20140320092639.48F68A6279@smtp3-g21.free.fr>
+	<532ADFD8.80301@gmail.com>
+	<20140320140156.5d768b1f@armhf>
+	<532AEDE2.3080306@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.11.1403192147470.971@eggly.anvils>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 10:00:29PM -0700, Hugh Dickins wrote:
+On Thu, 20 Mar 2014 14:32:18 +0100
+Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
 
- > > This might be collateral damage from the swapops thing, I guess we won't know until
- > > that gets fixed, but I thought I'd mention that we might still have a problem here.
- > 
- > Yes, those Bad rss-counters could well be collateral damage from the
- > swapops BUG.  To which I believe I now have the answer: again untested,
- > but please give this a try...
+> Ok, I had another round of google'ing and found this:
+> http://hipstercircuits.com/wp-content/uploads/2013/05/TDA19988.pdf
+> 
+> There, the datasheet specifically for TDA19988 only states 0x70 and
+> 0x34 as the two i2c addresses. Therefore, TDA19988 has fixed i2c
+> addresses while TDA9983b has configurable (main) i2c address.
+> 
+> Not as easy as we thought ;)
+> 
+> I suggest reword the reg property to:
+> "- reg: shall be set to the I2C address"
+> 
+> and optionally list all known addresses for each TDA[1]998x in the
+> binding.
 
-This survived an overnight run. No swapops bug, and no bad RSS. Good job :)
+Thanks for the link.
 
- > (It's worth saying, by the way, that these bugs are not a consequence
- > of recent changes at all, they've been there for ages; but trinity has
- > just got better at taunting remap_file_pages and the rest of mm...)
+OK, then, as the linux tda998x driver handles only the tda 19988 and
+19989 chips, the HDMI I2C address is always 0x70.
 
-Indeed. I hope to lift the covers on more stuff like this (and hopefully
-get it done in a more reproducable manner).  A lot of the stuff trinity
-is doing with VM syscalls is still very naive.
+So, question: Russell and Sebastian, do you still want an other patch?
 
-	Dave
+Other question: the CEC address is hard-coded to 0x34 in the driver.
+Should it be configurable in the DT?
 
+-- 
+Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
+Jef		|		http://moinejf.free.fr/
