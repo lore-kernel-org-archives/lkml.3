@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961AbaCTQKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:10:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55791 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaCTQKs (ORCPT
+	id S1759101AbaCTQLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:11:25 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:51200 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756146AbaCTQLX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:10:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
-        Russell King <linux@arm.linux.org.uk>, linux-sh@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Magnus Damm <damm@opensource.se>, Ben Dooks <ben-linux@fluff.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Simon Horman <horms+renesas@verge.net.au>
-Subject: Re: DMABOUNCE in pci-rcar
-Date: Thu, 20 Mar 2014 17:09:57 +0100
-Message-ID: <5527822.QYtFYiIpiW@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <532B0384.1000400@codethink.co.uk>
-References: <201402241200.21944.arnd@arndb.de> <5165962.7bqj51B15Z@wuerfel> <532B0384.1000400@codethink.co.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:paDq5zOBhfbvs/aqwF7nGfXdIXe6vmTdBR9YaKlaKek
- CvYyTRI+5cmLFOerX9LwczreIPHJeLr4Ud5gcehTOLLt0RCcBn
- sq+OQibodCKkZHDjeB4MSxklBYrp0ycflWJcRYmdYgC0ihY36y
- lZjw+AhKxZ/GbjU8bv/RHXb06lh6fQ/xWreDfWmUdT8IYnQICH
- NCElN7aGsmV3uBW32PBgocBBWn6kAm2UC3+TLP8miGC4XIAR2h
- 3wEzD69Zt937x19JD9vwcMMxYXG3Qdis0qFAmlicSgkM0g7zmN
- sLA0inoX5yOZ6n/79UZjUlHrOXbhhmDJ5pYWyVdDgFGVQ8TgGd
- WaR6N3t8FaUq2gbaoPwA=
+	Thu, 20 Mar 2014 12:11:23 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v2] dt: platform driver: Fill the resources before probe and defer if needed
+To: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        devicetree <devicetree@vger.kernel.org>,
+        gregkh <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        robh+dt <robh+dt@kernel.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CACh+v5M+0+C2JJwLqcp6erWa81kt=j1HucHiE52ufj1SO9F75w@mail.gmail.com>
+References: <20140220153042.DF053C4050F@trevor.secretlab.ca> < CACh+v5P=tcc-h_9r7Btwyu+jWjwH2ocmW4VCgDYqY7VMWsHuOA@mail.gmail.com> < 20140317142443.A2447C40A85@trevor.secretlab.ca> < CACh+v5M+0+C2JJwLqcp6erWa81kt=j1HucHiE52ufj1SO9F75w@mail.gmail.com>
+Date: Thu, 20 Mar 2014 16:11:18 +0000
+Message-Id: <20140320161118.B7075C4067A@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 March 2014 16:04:36 Ben Dooks wrote:
-> On 26/02/14 20:57, Arnd Bergmann wrote:
-> > On Wednesday 26 February 2014 12:48:17 Bjorn Helgaas wrote:
-> >> On Mon, Feb 24, 2014 at 4:00 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> >>> Hi Magnus,
-> >>>
-> >>> I noticed during randconfig testing that you enabled DMABOUNCE for the
-> >>> pci-rcar-gen2 driver as posted in this patch https://lkml.org/lkml/2014/2/5/30
-> >>>
-> >>> I didn't see the original post unfortunately, but I fear we have to
-> >>> revert it and come up with a better solution, ...
+On Mon, 17 Mar 2014 16:20:03 +0100, Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> 2014-03-17 15:24 GMT+01:00 Grant Likely <grant.likely@secretlab.ca>:
+> > On Mon, 17 Mar 2014 12:07:37 +0100, Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> >> Hi Grant,
 > >>
-> >> Sounds like I should drop the following patches from my pci/host-rcar
-> >> branch for now?
+> >> Sorry for the delay, I was having nice vacations.
 > >>
-> >>    PCI: rcar: Add DMABOUNCE support
-> >>    PCI: rcar: Enable BOUNCE in case of HIGHMEM
-> >>    PCI: rcar: Make the Kconfig dependencies more generic
+> >> 2014-03-08 8:37 GMT+01:00 Grant Likely <grant.likely@linaro.org>:
+> >> > On Fri, 21 Feb 2014 14:18:40 +0100, Jean-Jacques Hiblot <jjhiblot@traphandler.com> wrote:
+> >> >> The goal of this patch is to allow drivers to be probed even if at the time of
+> >> >> the DT parsing some of their ressources are not available yet.
+> >> >
+> >> > Hi Jean-Jacques
+> >> >
+> >> > [...]
+> >> >> +int of_platform_device_prepare(struct platform_device *dev)
+> >> >> +{
+> >> >> +     struct device_node *np;
+> >> >> +     int i, irq_index;
+> >> >> +     struct resource *res;
+> >> >> +
+> >> >> +     /*
+> >> >> +      * This function applies only devices described in the DT.
+> >> >> +      * Other platform devices have their ressources already populated.
+> >> >> +      */
+> >> >> +     np = dev->dev.of_node;
+> >> >> +     if (!np)
+> >> >> +             return 0;
+> >> >
+> >> > I believe we already talked about the above test. This function must
+> >> > only process devices created by of_platform_populate(). Merely checking
+> >> > the of_node pointer is not a sufficient test because there are other
+> >> > paths in the kernel for creating platform_devices that might get a node
+> >> > pointer attached to it.
+> >> Yes we talked about this, but only to move it into of_platform_device_prepare().
+> >> Is there an existing way to know for sure that the device has been
+> >> created by of_platform_populate() ? I could not find one.
 > >
-> > Sounds good to me. The last patch is actually fine, but you'll have to
-> > fix the context to apply it without the other two.
-> 
-> As a note, if we now boot a Lager with DT on 3.14-rc3 series the USB
-> controllers no longer work with full 2GiB RAM enabled in the device
-> tree.
+> > No there isn't. That information is used at population time and then
+> > discarded. We'd need to add a flag or registry to mark those devices.
+> OK. As I see it, this could be done either by adding a new flag to
+> struct device or by maintaining a private list of "of created" devices
+> in of/platform.c.
+> I favor modifying struct device as it's is by far the simplest but
+> it's also more intrusive. Any advice ?
 
-Did it work before these patches got applied initially?
+I think that by far is the easiest. It is that, or
+of_platform_populate() would need to maintain a list of devices that are
+to be used as a platform bus.
 
-> Could we work around this by having 1GiB of memory defined in the
-> 32bit memory and then add the rest of the 3GiB from the >32bit
-> area via LPAE? Will the kernel ever try to allocate DMA memory from
-> anything >32bit?
+g.
 
-You can solve the case for dma_alloc_coherent() this way, or by
-setting the mask correctly. It won't help you for dma_map_* though,
-which still requires someone to add support for swiotlb or using
-an IOMMU if present.
-
-	Arnd
