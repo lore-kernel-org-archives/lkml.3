@@ -1,85 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933196AbaCTLnO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:43:14 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:35549 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932623AbaCTLnK (ORCPT
+	id S1757555AbaCTLpJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:45:09 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:51982 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757056AbaCTLpF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:43:10 -0400
-Message-ID: <532AD44A.90409@monstr.eu>
-Date: Thu, 20 Mar 2014 12:43:06 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Soren Brinkmann <soren.brinkmann@xilinx.com>,
-        Russell King <linux@arm.linux.org.uk>, Jiri Slaby <jslaby@suse.cz>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+	Thu, 20 Mar 2014 07:45:05 -0400
+Date: Thu, 20 Mar 2014 12:44:18 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Henrik Rydberg" <rydberg@euromail.se>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v3 0/9] tty: xuartps: Rebranding + DT documentation
-References: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1394650983-24780-1-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Simon Budig <simon.budig@kernelconcepts.de>
+Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+Message-ID: <20140320124418.55b79a3e@ipc1.ka-ro>
+In-Reply-To: <c9718f7215eb41439606b0107a8e2a02@BLUPR03MB373.namprd03.prod.outlook.com>
+References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
+	<1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
+	<c9718f7215eb41439606b0107a8e2a02@BLUPR03MB373.namprd03.prod.outlook.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+Hi,
 
-On 03/12/2014 08:02 PM, Soren Brinkmann wrote:
-> Here is a fixed and extended v3. I picked up Michal's patches and
-> incorporated them into the series. Those are the first two patches.
-> The 'rebranding' patch is correspondingly extended to convert the new
-> code as well.
+fugang.duan@freescale.com wrote:
+> From: Lothar Waßmann <LW@KARO-electronics.de>
+> Data: Wednesday, March 19, 2014 9:09 PM
 > 
-> The erroneously changed compatibility string has been reverted back to
-> what it should be.
+> >To: Dmitry Torokhov; Duan Fugang-B38611; Grant Likely; Henrik Rydberg; Ian
+> >Campbell; Jingoo Han; Kumar Gala; Mark Rutland; Pawel Moll; Rob Herring; Rob
+> >Landley; Sachin Kamat; devicetree@vger.kernel.org; linux-doc@vger.kernel.org;
+> >linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Simon Budig; Lothar
+> >Waßmann
+> >Subject: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+> >
+> >
+No need to quote the mail headers here.
+
+[...]
+> >diff --git a/drivers/input/touchscreen/edt-ft5x06.c
+> >b/drivers/input/touchscreen/edt-ft5x06.c
+> >index 7b4470d..257a1c8 100644
+> >--- a/drivers/input/touchscreen/edt-ft5x06.c
+> >+++ b/drivers/input/touchscreen/edt-ft5x06.c
+> >@@ -33,6 +33,7 @@
+> > #include <linux/debugfs.h>
+> > #include <linux/slab.h>
+> > #include <linux/gpio.h>
+> >+#include <linux/of_gpio.h>
+> > #include <linux/input/mt.h>
+> > #include <linux/input/edt-ft5x06.h>
+> >
+> [...]
+> >+#ifdef CONFIG_OF
+> >+static int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
+> >+				struct edt_ft5x06_ts_data *tsdata)
+> >+{
+> >+	struct device_node *np = dev->of_node;
+> >+
+> >+	if (!np)
+> >+		return -ENODEV;
+> Don't need to check the device node valid. If the device node is not existed, the driver don't run probe.
 > 
-> 	Sören
-> 
-> Michal Simek (2):
->   tty: xuartps: Fix kernel-doc errors in the driver
->   tty: xuartps: Initialize ports according to aliases
-> 
-> Soren Brinkmann (7):
->   tty: xuartps: Clean up
->   tty: xuartps: Print warning in clock notifier
->   tty: xuartps: Refactor read-modify-writes
->   tty: xuartps: Don't write IRQ disable register to enable interrupts
->   tty: xuartps: Rebrand driver as Cadence UART
->   tty: cadence: Document DT binding
->   ARM: zynq: DT: Migrate UART to Cadence binding
+Perfectly right. I'll drop this in the next version.
 
-I have done boot test and console is still there
-that's why
-Tested-by: Michal Simek <michal.simek@xilinx.com>
 
-I think that 1/9 - 8/9 should go through your tree
-and 9/9 should go through arm-soc because there could
-be some conflicts in dtsi.
-
-Can you please apply that patches and I will take the rest
-through arm-soc tree?
-
-Thanks,
-Michal
-
+Lothar Waßmann
 -- 
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+___________________________________________________________
 
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
