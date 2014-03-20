@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684AbaCTNpc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 09:45:32 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:52102 "EHLO
+	id S932530AbaCTNqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 09:46:06 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:52111 "EHLO
 	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307AbaCTNp1 (ORCPT
+	with ESMTP id S1758578AbaCTNpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 09:45:27 -0400
+	Thu, 20 Mar 2014 09:45:32 -0400
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Fugang Duan <B38611@freescale.com>,
@@ -22,13 +22,12 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Simon Budig <simon.budig@kernelconcepts.de>,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
         Daniel Wagener <daniel.wagener@kernelconcepts.de>
-Subject: [PATCHv5 3/5] Input: edt-ft5x06: Adjust delays to conform datasheet
-Date: Thu, 20 Mar 2014 14:44:33 +0100
-Message-Id: <1395323075-12146-4-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCHv5 0/5] Input: edt-ft5x06: Add DT support
+Date: Thu, 20 Mar 2014 14:44:30 +0100
+Message-Id: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
 References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
- <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -36,43 +35,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FT5x06 datasheet specifies a minimum reset width of 5ms and a
-delay between deassertion of reset and start of reporting of 300ms.
-Adjust the delays to conform to the datasheet.
+Changes wrt. v1:
+addressed the comments from Jingoo Han and Mark Rutland
+- added another patch to convert the driver to use devm_* functions
+- removed sysfs reference from bindings documentation
+- changed '_' to '-' in property name
+- added 'edt,' prefix to properties names
+- added sanity check for parameters read from DT
+- cleaned up the gpio handling code
 
-With the original delays I sometimes experienced communication
-timeouts when initializing the controller.
+Changes wrt. v2:
+- fixed the devm_* messup reported by Dmitry Torokhov
+- added unit for report-rate property to the binding doc
+- added separate patch to fix the reset delays
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/input/touchscreen/edt-ft5x06.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Changes wrt: v3:
+- removed patches that have already been applied in the mean time
+- ignore touchdown events, since those may report bad coordinates
+- added support for a new firmware version
 
-diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
-index 03dab2f..0298568 100644
---- a/drivers/input/touchscreen/edt-ft5x06.c
-+++ b/drivers/input/touchscreen/edt-ft5x06.c
-@@ -635,7 +635,7 @@ static int edt_ft5x06_ts_reset(struct i2c_client *client,
- 			return error;
- 		}
- 
--		mdelay(5);
-+		msleep(5);
- 		gpio_set_value(tsdata->wake_pin, 1);
- 	}
- 	if (gpio_is_valid(tsdata->reset_pin)) {
-@@ -650,9 +650,9 @@ static int edt_ft5x06_ts_reset(struct i2c_client *client,
- 			return error;
- 		}
- 
--		mdelay(50);
-+		msleep(5);
- 		gpio_set_value(tsdata->reset_pin, 1);
--		mdelay(100);
-+		msleep(300);
- 	}
- 
- 	return 0;
--- 
-1.7.10.4
+Changes wrt: v4:
+- removed some empty lines in the cleanup patch
+- addressed comments by Mark Rutland concerning the binding doc
+- use of_property_read_u32() instead of of_property_get()
+- dropped the 'report_rate' property
+- addressed comments by Fugang Duan
+- added Daniel Wagener and myself to the Copyright header in the
+  source file
+- use msleep() rather than mdelay() for the reset/wake pin timing
 
