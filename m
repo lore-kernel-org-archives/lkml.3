@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965141AbaCTAN6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 Mar 2014 20:13:58 -0400
+	id S964936AbaCTAN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 Mar 2014 20:13:56 -0400
 Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:3452 "EHLO
 	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933816AbaCTANu (ORCPT
+	with ESMTP id S1755935AbaCTANt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 Mar 2014 20:13:50 -0400
+	Wed, 19 Mar 2014 20:13:49 -0400
 X-IronPort-AV: E=Sophos;i="4.97,690,1389772800"; 
-   d="scan'208";a="20592176"
+   d="scan'208";a="20592166"
 From: Tim Kryger <tim.kryger@linaro.org>
 To: Thierry Reding <thierry.reding@gmail.com>,
         Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -25,9 +25,9 @@ CC: Tim Kryger <tim.kryger@linaro.org>,
         Broadcom Kernel Feedback List 
 	<bcm-kernel-feedback-list@broadcom.com>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v4 1/5] Documentation: dt: Add Kona PWM binding
-Date: Wed, 19 Mar 2014 17:12:24 -0700
-Message-ID: <1395274348-25259-2-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v4 3/5] ARM: dts: Declare the PWM for bcm11351 (bcm281xx)
+Date: Wed, 19 Mar 2014 17:12:26 -0700
+Message-ID: <1395274348-25259-4-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1395274348-25259-1-git-send-email-tim.kryger@linaro.org>
 References: <1395274348-25259-1-git-send-email-tim.kryger@linaro.org>
@@ -37,44 +37,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the binding description for the Kona PWM controller found on Broadcom's
-mobile SoCs.
+Add the device tree node for the PWM on bcm11351 SoCs.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- .../devicetree/bindings/pwm/bcm-kona-pwm.txt       |   21 ++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+ arch/arm/boot/dts/bcm11351.dtsi |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-new file mode 100644
-index 0000000..8eae9fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-@@ -0,0 +1,21 @@
-+Broadcom Kona PWM controller device tree bindings
+diff --git a/arch/arm/boot/dts/bcm11351.dtsi b/arch/arm/boot/dts/bcm11351.dtsi
+index 64d069b..6b05ae6 100644
+--- a/arch/arm/boot/dts/bcm11351.dtsi
++++ b/arch/arm/boot/dts/bcm11351.dtsi
+@@ -193,6 +193,14 @@
+ 		status = "disabled";
+ 	};
+ 
++	pwm: pwm@3e01a000 {
++		compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
++		reg = <0x3e01a000 0xcc>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_PWM>;
++		#pwm-cells = <3>;
++		status = "disabled";
++	};
 +
-+This controller has 6 channels.
-+
-+Required Properties :
-+- compatible: should contain "brcm,kona-pwm"
-+- reg: physical base address and length of the controller's registers
-+- clocks: phandle + clock specifier pair for the external clock
-+- #pwm-cells: Should be 3. See pwm.txt in this directory for a
-+  description of the cells format.
-+
-+Refer to clocks/clock-bindings.txt for generic clock consumer properties.
-+
-+Example:
-+
-+pwm: pwm@3e01a000 {
-+	compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
-+	reg = <0x3e01a000 0xc4>;
-+	clocks = <&pwm_clk>;
-+	#pwm-cells = <3>;
-+};
+ 	clocks {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
 -- 
 1.7.0.4
 
