@@ -1,60 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759799AbaCTUYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 16:24:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:52729 "EHLO gate.crashing.org"
+	id S1759938AbaCTUYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 16:24:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56764 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759725AbaCTUYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 16:24:19 -0400
-Message-ID: <1395346982.3460.23.camel@pasglop>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: torvalds@linux-foundation.org
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, tglx@linutronix.de,
-        mingo@kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, paulus@samba.org,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>,
-        Davidlohr Bueso <davidlohr@hp.com>
-Date: Fri, 21 Mar 2014 07:23:02 +1100
-In-Reply-To: <1395333093.14694.3.camel@buesod1.americas.hpqcorp.net>
-References: <20140319152619.GB10406@linux.vnet.ibm.com>
-	 <20140319154705.GB8557@laptop.programming.kicks-ass.net>
-	 <20140319170829.GD8557@laptop.programming.kicks-ass.net>
-	 <20140320053350.GB30295@linux.vnet.ibm.com>
-	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	 <1395333093.14694.3.camel@buesod1.americas.hpqcorp.net>
+	id S1759800AbaCTUYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 16:24:50 -0400
+Message-ID: <1395347087.632.38.camel@ul30vt.home>
+Subject: Re: [PATCH 4/4] KVM: ioapic: reinject pending interrupts on
+ KVM_SET_IRQCHIP
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, gleb@kernel.org, mtosatti@redhat.com,
+        kvm@vger.kernel.org
+Date: Thu, 20 Mar 2014 14:24:47 -0600
+In-Reply-To: <1395154495-22807-5-git-send-email-pbonzini@redhat.com>
+References: <1395154495-22807-1-git-send-email-pbonzini@redhat.com>
+	 <1395154495-22807-5-git-send-email-pbonzini@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-20 at 09:31 -0700, Davidlohr Bueso wrote:
-> hmmm looking at ppc spinlock code, it seems that it doesn't have ticket
-> spinlocks -- in fact Torsten Duwe has been trying to get them upstream
-> very recently. Since we rely on the counter for detecting waiters, this
-> might explain the issue. Could someone confirm this spinlock
-> implementation difference? 
+On Tue, 2014-03-18 at 15:54 +0100, Paolo Bonzini wrote:
+> After the previous patches, an interrupt whose bit is set in the IRR
+> register will never be in the LAPIC's IRR and has never been injected
+> on the migration source.  So inject it on the destination.
+> 
+> This fixes migration of Windows guests without HPET (they use the RTC
+> to trigger the scheduler tick, and lose it after migration).
+> 
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+> ---
+>  virt/kvm/ioapic.c | 16 +++++++++++++++-
+>  1 file changed, 15 insertions(+), 1 deletion(-)
+> 
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 7a573f1bb79e..63fb432ab502 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -201,6 +201,19 @@ out:
+>  	return ret;
+>  }
+>  
+> +void kvm_ioapic_inject_all(struct kvm_ioapic *ioapic, unsigned long irr)
+> +{
 
-Indeed. I haven't merged ticket locks because they break lockref :-(
+nit, kvm_ioapic_state.irr is a u32
 
-We have a problem here because we need to store the lock holder so we
-can yield to the lock holder partition on contention and we are running
-out of space in the spinlock.
+> +	u32 idx;
+> +
+> +	rtc_irq_eoi_tracking_reset(ioapic);
+> +	for_each_set_bit(idx, &irr, 32) {
 
-The lock holder doesn't have to be atomic, so in theory we could have
-the tickets and the lockref in the same 64-bit and the holder separately
-but the way the layers are stacked at the moment that's not workable,
-at least not without duplicating the whole lockref implementation and
-breaking the spinlock in two, a "base" lock without older and the separate
-variant with holder field. A mess...
+Can we use IOAPIC_NUM_PINS in place of 32?
 
-I want to try sorting that out at some stage but haven't had a chance yet.
+> +		printk("ioapic_service for GSI %d\n", idx);
 
-Cheers,
-Ben.
+Is this leftover debugging?  Maybe give it a loglevel if it's
+intentional.  Looks reasonable otherwise.  Thanks,
+
+Alex
+
+> +		ioapic_set_irq(ioapic, idx, 1, true);
+> +	}
+> +	kvm_rtc_eoi_tracking_restore_all(ioapic);
+> +}
+> +
+> +
+>  static void update_handled_vectors(struct kvm_ioapic *ioapic)
+>  {
+>  	DECLARE_BITMAP(handled_vectors, 256);
+> @@ -601,9 +614,10 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
+>  
+>  	spin_lock(&ioapic->lock);
+>  	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
+> +	ioapic->irr = 0;
+>  	update_handled_vectors(ioapic);
+>  	kvm_vcpu_request_scan_ioapic(kvm);
+> -	kvm_rtc_eoi_tracking_restore_all(ioapic);
+> +	kvm_ioapic_inject_all(ioapic, state->irr);
+>  	spin_unlock(&ioapic->lock);
+>  	return 0;
+>  }
+
 
 
