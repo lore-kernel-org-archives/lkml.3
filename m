@@ -1,78 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759587AbaCTTyt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:54:49 -0400
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:53192 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759230AbaCTTyq (ORCPT
+	id S1758894AbaCTTzj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:55:39 -0400
+Received: from www.linutronix.de ([62.245.132.108]:45262 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759230AbaCTTzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:54:46 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140320155732.GB25092@ulmo>
-References: <1394655346-30048-1-git-send-email-tim.kryger@linaro.org>
-	<1394655346-30048-3-git-send-email-tim.kryger@linaro.org>
-	<20140318215231.GH5917@mithrandir>
-	<CAAYSxhri0evgrbCPew6-MTXVmpzm7Oa6TpmJTSGZpTcV=876HQ@mail.gmail.com>
-	<20140320155732.GB25092@ulmo>
-Date: Thu, 20 Mar 2014 12:54:46 -0700
-Message-ID: <CAAYSxhothsZp6k2pKnA4XdTKf06+_rw95GPGJqRb2=xP6gJPNQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/5] pwm: kona: Introduce Kona PWM controller support
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Christian Daudt <bcm@fixthebug.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Linux PWM List <linux-pwm@vger.kernel.org>,
-        Device Tree List <devicetree@vger.kernel.org>,
-        Linux Doc List <linux-doc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 20 Mar 2014 15:55:33 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Alan Tull <atull@altera.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dinh Nguyen <dinguyen@altera.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        devicetree@vger.kernel.org
+Subject: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
+Date: Thu, 20 Mar 2014 20:55:24 +0100
+Message-Id: <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 8:57 AM, Thierry Reding
-<thierry.reding@gmail.com> wrote:
-> On Tue, Mar 18, 2014 at 04:47:36PM -0700, Tim Kryger wrote:
->> On Tue, Mar 18, 2014 at 2:52 PM, Thierry Reding
->> <thierry.reding@gmail.com> wrote:
->> > On Wed, Mar 12, 2014 at 01:15:43PM -0700, Tim Kryger wrote:
+The cycloneV has three gpio controllers, each one with 29 gpios. This patch
+adds the three controller with the gpio driver which is now sitting the
+gpio tree.
 
->> >> +     tristate "Kona PWM support"
->> >> +     depends on ARCH_BCM_MOBILE
->> >> +     default y
->> >
->> > No "default y", please.
->>
->> Even though it depends on ARCH_BCM_MOBILE?  It seems like a reasonable
->> default.
->
-> Well, that's only true until somebody decides to turn that dependency
-> into something like:
->
->         depends on ARCH_BCM_MOBILE || COMPILE_TEST
+Cc: devicetree@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ arch/arm/boot/dts/socfpga.dtsi | 60 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
 
-Do you expect someone would actually make such a change?
+diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+index 537f1a5..c3a97e1 100644
+--- a/arch/arm/boot/dts/socfpga.dtsi
++++ b/arch/arm/boot/dts/socfpga.dtsi
+@@ -463,6 +463,66 @@
+ 			status = "disabled";
+ 		};
+ 
++		gpio@ff708000 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "snps,dw-apb-gpio";
++			reg = <0xff708000 0x1000>;
++			clocks = <&per_base_clk>;
++			status = "disabled";
++
++			gpio0: gpio-controller@0 {
++				compatible = "snps,dw-apb-gpio-port";
++				gpio-controller;
++				#gpio-cells = <1>;
++				snps,nr-gpios = <29>;
++				reg = <0>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				interrupts = <0 164 4>;
++			};
++		};
++
++		gpio@ff709000 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "snps,dw-apb-gpio";
++			reg = <0xff709000 0x1000>;
++			clocks = <&per_base_clk>;
++			status = "disabled";
++
++			gpio1: gpio-controller@0 {
++				compatible = "snps,dw-apb-gpio-port";
++				gpio-controller;
++				#gpio-cells = <1>;
++				snps,nr-gpios = <29>;
++				reg = <0>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				interrupts = <0 165 4>;
++			};
++		};
++
++		gpio@ff70a000 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			compatible = "snps,dw-apb-gpio";
++			reg = <0xff70a000 0x1000>;
++			clocks = <&per_base_clk>;
++			status = "disabled";
++
++			gpio2: gpio-controller@0 {
++				compatible = "snps,dw-apb-gpio-port";
++				gpio-controller;
++				#gpio-cells = <1>;
++				snps,nr-gpios = <29>;
++				reg = <0>;
++				interrupt-controller;
++				#interrupt-cells = <2>;
++				interrupts = <0 166 4>;
++			};
++		};
++
+ 		L2: l2-cache@fffef000 {
+ 			compatible = "arm,pl310-cache";
+ 			reg = <0xfffef000 0x1000>;
+-- 
+1.9.1
 
->
->> These SoCs target mobile phones which almost always have a backlight
->> controlled by the PWM.
->
-> And you can easily turn it on in bcm_defconfig and/or multi_v7_defconfig
-> if you want it enabled "by default".
-
-Except that is not what default means.
-
-Having a sensible default value in the Kconfig is convenient and
-enables savedefconfig to create minimal configuration files.
-
-Are you firmly opposed to this?
-
-Thanks Again,
-Tim
