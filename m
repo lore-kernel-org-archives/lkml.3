@@ -1,79 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160AbaCTLvx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 07:51:53 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:27686 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757082AbaCTLvv (ORCPT
+	id S933274AbaCTLyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 07:54:14 -0400
+Received: from mail.kernelconcepts.de ([212.60.202.196]:45935 "EHLO
+	mail.kernelconcepts.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932608AbaCTLyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 07:51:51 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-60-532ad65405fa
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Pratyush Anand <pratyush.anand@st.com>
-Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@gmail.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH 4/4] ata: add new-style AHCI platform driver for ST
- SPEAr1340 AHCI controller
-Date: Thu, 20 Mar 2014 12:51:32 +0100
-Message-id: <3482323.3pWPcG8rCe@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <20140320085717.GC4607@pratyush-vbox>
-References: <1395081118-15248-1-git-send-email-b.zolnierkie@samsung.com>
- <1395081118-15248-5-git-send-email-b.zolnierkie@samsung.com>
- <20140320085717.GC4607@pratyush-vbox>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jQd3Qa1rBBm/FLP5OOsZuce5WA6vF
-	nRXMFpseX2O1OLbjEZPF5V1z2Cw2Tv3FaLG/dwOTRfslZYs/H/Qs5szYzGrxa/lRRouVF/8y
-	O/B6/P41idHj+qv/TB47Z91l99i0qpPNY860JhaPkxdOsnhsXlLv8fTHXmaP4ze2M3l83iQX
-	wBXFZZOSmpNZllqkb5fAlbFo70WmgntsFdeWtTE1MG5n7WLk5JAQMJG4Ou0lO4QtJnHh3nq2
-	LkYuDiGB6YwSe9sfsUM4LUwS667MZAGpYhOwkpjYvooRxBYR0JJ4tmMRWAezwF0WiTu9B8HG
-	CgskSzQd6QcrYhFQlbi/4DkziM0roCnx98s9JhBbVMBTYsf2lWwgNqeAkcTSzh2sENvWM0qc
-	7HjLDtEgKPFj8j2wzcwC8hL79k9lhbC1JNbvPM40gVFgFpKyWUjKZiEpW8DIvIpRNLUguaA4
-	KT3XSK84Mbe4NC9dLzk/dxMjOJ6eSe9gXNVgcYhRgINRiYd3xR7NYCHWxLLiytxDjBIczEoi
-	vEsuawUL8aYkVlalFuXHF5XmpBYfYpTmYFES5z3Yah0oJJCeWJKanZpakFoEk2Xi4JRqYGxv
-	uRLacvyoTEZAfU/bl/BcPZVpx5iao36da3y8Vs8oatbhPt/ENVc5nkqefFNuk5CxLmn7zW1v
-	Nf6qFHj9fnpn3oU38jkee6weTM87fZ4l2P+rZZdjrFhlho9s7urw/qt/zxgy7JvT/v1QUQfz
-	BqbWB7MNFVcvKlytVRGcxd52qMbh5FRjbSWW4oxEQy3mouJEANcyOM+jAgAA
+	Thu, 20 Mar 2014 07:54:12 -0400
+Message-ID: <532ACE72.6030807@kernelconcepts.de>
+Date: Thu, 20 Mar 2014 12:18:10 +0100
+From: Simon Budig <simon.budig@kernelconcepts.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>,
+        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@karo-electronics.de>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Fugang Duan <B38611@freescale.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Henrik Rydberg <rydberg@euromail.se>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
+        Pawel Moll <Pawel.Moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Rob Landley <rob@landley.net>, Sachin Kamat <sachin.kamat@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
+References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de> <1395234563-11034-3-git-send-email-LW@KARO-electronics.de> <20140320093719.GB14420@e106331-lin.cambridge.arm.com>
+In-Reply-To: <20140320093719.GB14420@e106331-lin.cambridge.arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="xqvuqOQtrhkAKdn4NtqigxkfFc2kKccsf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--xqvuqOQtrhkAKdn4NtqigxkfFc2kKccsf
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On 20/03/14 10:37, Mark Rutland wrote:
+> On Wed, Mar 19, 2014 at 01:09:20PM +0000, Lothar Wa=C3=9Fmann wrote:
+>> +FocalTech EDT-FT5x06 Polytouch driver
+>> +=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+>> +
+>> +Required properties:
+>> + - compatible:  "edt,edt-ft5x06"
+>=20
+> Is the 'x' part of a particular product name, or is this a class of
+> devices?
 
-On Thursday, March 20, 2014 02:27:17 PM Pratyush Anand wrote:
-> On Tue, Mar 18, 2014 at 02:31:58AM +0800, Bartlomiej Zolnierkiewicz wrote:
-> > The new driver is named ahci_spear1340 and is only compile tested.  Once
-> > it is tested on the real hardware and verified to work correctly, the legacy
-> > platform code (which depends on the deprecated struct ahci_platform_data)
-> > can be removed.
-> > 
-> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> 
-> This patch will not be needed any more, since SPEAr sata platform code has
-> already been cleaned up.
-> 
-> See:
-> https://lkml.org/lkml/2014/2/28/174
+The driver is intended for the EDT "polytouch" family touches, which are
+based on a focaltec controller. The current line of touches uses e.g.
+the ft5306 as well as the ft5406 focaltec controller.
 
-OK.  Conversion of SPEAr1340 AHCI platform code to PHY driver is even better
-than adding custom AHCI driver.
+> It's preferable to have a specific string which another similar variant=
+s
+> can claim compatibility with (while also additionally having a more
+> specific string), as this makes it possible to handle variants more
+> specially in future, target workarounds, etc.
 
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+I chose the driver name since I wanted to differentiate from other EDT
+touches, which used a different controller. With hindsight it was
+unfortunately confusing, since I get quite some request from people, who
+also have a device based on the focaltec controllers, but with a very
+different firmware (and communication protocol). They got tricked into
+thinking that this driver would be suitable...
 
+If I were to chose the name again I'd probably pick "edt-polytouch" or
+something like this. But I doubt that it is useful to change the name now=
+=2E
+
+Bye,
+        Simon
+
+--=20
+       Simon Budig                        kernel concepts GmbH
+       simon.budig@kernelconcepts.de      Sieghuetter Hauptweg 48
+       +49-271-771091-17                  D-57072 Siegen
+
+
+
+--xqvuqOQtrhkAKdn4NtqigxkfFc2kKccsf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlMqznIACgkQO2O/RXesiHCNyACbBPXVJSQzQv9OvjDS1iKaIFuE
+PtgAn0MD54DVQUguggi+oifaTxLL5xYx
+=QYF/
+-----END PGP SIGNATURE-----
+
+--xqvuqOQtrhkAKdn4NtqigxkfFc2kKccsf--
