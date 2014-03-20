@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756141AbaCTMaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 08:30:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:41327 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264AbaCTMaJ (ORCPT
+	id S1756041AbaCTMeJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 08:34:09 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:41384 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751883AbaCTMeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 08:30:09 -0400
-Date: Thu, 20 Mar 2014 13:30:14 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stefani Seibold <stefani@seibold.net>
-cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        mingo@redhat.com, hpa@zytor.com, ak@linux.intel.com,
-        aarcange@redhat.com, john.stultz@linaro.org, luto@amacapital.net,
-        xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com, Martin.Runge@rohde-schwarz.com,
-        Andreas.Brief@rohde-schwarz.com
-Subject: Re: [PATCH] x86, vdso32: fix out of memory handling setup vDSO
-In-Reply-To: <1395315494.1127.3.camel@vger.seibold.net>
-Message-ID: <alpine.DEB.2.02.1403201328520.18573@ionos.tec.linutronix.de>
-References: <1395301511-5908-1-git-send-email-stefani@seibold.net>  <alpine.DEB.2.02.1403201039400.18573@ionos.tec.linutronix.de> <1395315494.1127.3.camel@vger.seibold.net>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Thu, 20 Mar 2014 08:34:07 -0400
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: akpm@linux-foundation.org, tangchen@cn.fujitsu.com,
+        zhangyanfei@cn.fujitsu.com, phacht@linux.vnet.ibm.com,
+        yinghai@kernel.org, grygorii.strashko@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [PATCH 0/3] memblock: add physmem list and convert s390 to memblock
+Date: Thu, 20 Mar 2014 13:33:47 +0100
+Message-Id: <1395318830-7435-1-git-send-email-schwidefsky@de.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032012-5024-0000-0000-00000937735A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014, Stefani Seibold wrote:
-> Am Donnerstag, den 20.03.2014, 10:53 +0100 schrieb Thomas Gleixner:
-> > On Thu, 20 Mar 2014, Stefani Seibold wrote:
-> > 
-> > > This patch add a correct out of memory handling for setup a 32 bit vDSO.
-> > > 
-> > > The patch is against tip commit 4e40112c4ff6a577dd06d92b2a54cdf06265bf74
-> > > 
-> > > Signed-off-by: Stefani Seibold <stefani@seibold.net>
-> > > ---
-> > >  arch/x86/vdso/vdso32-setup.c | 17 ++++++++++++++++-
-> > >  1 file changed, 16 insertions(+), 1 deletion(-)
-> > > 
-> > > diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-> > > index 0bc363a..e1171c2 100644
-> > > --- a/arch/x86/vdso/vdso32-setup.c
-> > > +++ b/arch/x86/vdso/vdso32-setup.c
-> > > @@ -134,8 +134,14 @@ int __init sysenter_setup(void)
-> > >  	}
-> > >  
-> > >  	vdso32_size = (vdso_len + PAGE_SIZE - 1) / PAGE_SIZE;
-> > > -	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC); 
-> > > +
-> > > +	vdso32_pages = kmalloc(sizeof(*vdso32_pages) * vdso32_size, GFP_ATOMIC);
-> > 
-> > Why is this GFP_ATOMIC and not GFP_ATOMIC ?
-> > 
-> > That code is called either from identify_boot_cpu(), where GFP_KERNEL
-> > is perfectly valid and from subsys_initcall(sysenter_setup) which is
-> > way late in the boot process where GFP_KERNEL is the RightThing.
-> > 
-> > Aside of that, why do we need to call it early for X86_32 and late for
-> > X86_64?
-> > 
-> > We need the vdso before we head off to user space, but not in the
-> > early boot process.
-> > 
-> 
-> All complains are design decisions not made by me. I will send a patch
-> for the GFP_ATOMIC thing. For the other one it would be the best to ask
-> Andy for the reason.
+Greetings,
 
-I'm not saying it's your fault, but if we rework code, then we really
-should question such things. What happens if you remove the x32 call
-and make the x64 subsys thing valid for both cases?
+this is our current patch series to convert s390 to memblock.
 
-Thanks,
+The list of excluded memory that has been proposed by Philipp in
+his patch from January is gone, it has been replaced by the list
+of physically available memory. The available memory is initially
+added to both the 'memory' and the 'physmem' list, but memory is
+only removed from the 'memory' list. A typical use case is the
+'mem=' parameter to limit the kdump kernel to a small part of the
+memory while the physmem list still contains all physically
+available memory.
 
-	tglx
+To avoid code duplication for the physmem list the first of the
+three patches refactors the memblock code a bit, with no functional
+change for the existing memblock API.
+
+The second patch adds support for the physmem list to memblock,
+to enable it the option HAVE_MEMBLOCK_PHYS_MAP needs to be
+selected by the architecture Kconfig file.
+
+The third patch is the s390 conversion to memblock.
+
+>From my point of view this code is now nice and clean and I would
+like to add it to the s390 features branch in the near future.
+As 3.14 is close I would suggest doing this after the next merge
+window has closed.
+
+blue skies,
+  Martin.
+
+Philipp Hachtmann (3):
+  mm/memblock: Do some refactoring, enhance API
+  mm/memblock: add physical memory list
+  s390/mm: Convert bootmem to memblock
+
+ arch/s390/Kconfig             |    3 +-
+ arch/s390/include/asm/setup.h |   16 +-
+ arch/s390/kernel/crash_dump.c |   83 ++++----
+ arch/s390/kernel/early.c      |    6 +
+ arch/s390/kernel/head31.S     |    1 -
+ arch/s390/kernel/setup.c      |  451 +++++++++++++++--------------------------
+ arch/s390/kernel/topology.c   |    4 +-
+ arch/s390/mm/mem_detect.c     |  138 ++++---------
+ arch/s390/mm/vmem.c           |   30 ++-
+ drivers/s390/char/zcore.c     |   44 ++--
+ include/linux/memblock.h      |   79 ++++++--
+ mm/Kconfig                    |    3 +
+ mm/memblock.c                 |  205 ++++++++++++-------
+ 13 files changed, 476 insertions(+), 587 deletions(-)
+
+-- 
+1.7.9.5
+
