@@ -1,159 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933235AbaCTQqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 12:46:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53438 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754990AbaCTQqs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 12:46:48 -0400
-Message-ID: <532B1B67.5050104@canonical.com>
-Date: Thu, 20 Mar 2014 12:46:31 -0400
-From: Joseph Salisbury <joseph.salisbury@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org
-Subject: Re: please fix FUSION (Was: [v3.13][v3.14][Regression] kthread:makekthread_create()killable)
-References: <20140316162512.GA9467@redhat.com> <201403172138.GFB43278.OOOFFSQLVHJMtF@I-love.SAKURA.ne.jp> <20140317142246.GA27453@redhat.com> <201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp> <20140318171620.GA10636@redhat.com> <201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp> <5329C22A.5070206@canonical.com> <20140319175253.GB11923@redhat.com> <20140319182910.GA14511@redhat.com> <20140319194232.GA6207@redhat.com>
-In-Reply-To: <20140319194232.GA6207@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757951AbaCTQrU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 12:47:20 -0400
+Received: from mga11.intel.com ([192.55.52.93]:33130 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271AbaCTQrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 12:47:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,695,1389772800"; 
+   d="scan'208";a="502913935"
+Message-ID: <1395333736.22077.32.camel@acox1-desk.ger.corp.intel.com>
+Subject: Re: hci_ldsic nested locking problem
+From: Alan Cox <alan@linux.intel.com>
+To: balbi@ti.com
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Muralidharan Karicheri <m-karicheri2@ti.com>,
+        linux-bluetooth@vger.kernel.org, linux-serial@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 20 Mar 2014 16:42:16 +0000
+In-Reply-To: <20140320163435.GH32692@saruman.home>
+References: <20140320163435.GH32692@saruman.home>
+Organization: Intel Corporation
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5 (3.8.5-2.fc19) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/19/2014 03:42 PM, Oleg Nesterov wrote:
-> On 03/19, Oleg Nesterov wrote:
->> On 03/19, Oleg Nesterov wrote:
->>> But please do not forget that the kernel crashes. Whatever else we do, this
->>> should be fixed anyway. And this should be fixed in driver.
->> drivers/message/fusion/ is obviously buggy.
-> Perhaps this is the only problem and Tetsuo is right, this driver
-> really needs more than 30 secs to probe...
->
-> But if you have a bit of free time, perhaps you can try the stupid
-> debugging patch below ;) Not sure it will help, but who knows.
->
-> Oleg.
+On Thu, 2014-03-20 at 11:34 -0500, Felipe Balbi wrote:
+> Hi,
+> 
+> when 8250 driver calls uart_write_wakeup(), the tty port lock is already
+> taken. hci_ldisc.c's implementation of ->write_wakeup() calls
+> tty->ops->write() to actually send the characters, but that call will
+> try to acquire the same port lock again.
+> 
+> Looking at other line disciplines that looks like a bug in hci_ldisc.c.
+> Am I correct to assume that ->write_wakeup() is supposed to *just*
+> wakeup the bottom half so we handle ->write() in another context ?
+> 
+> Is it legal to call tty->ops->write() from within ->write_wakeup() ?
 
-There was some testing done with your test kernel.  The data collected
-while running your kernel is available in the bug report:
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705/comments/58
+It isn't because you might send all the bytes and go
 
-Thanks again for the assistance!
+	write
+		write_wakeup
+			write
+				write wakeup
+					...
 
->
-> diff --git a/drivers/message/fusion/mptsas.c b/drivers/message/fusion/mptsas.c
-> index 00d339c..5ecc27e 100644
-> --- a/drivers/message/fusion/mptsas.c
-> +++ b/drivers/message/fusion/mptsas.c
-> @@ -5400,12 +5400,16 @@ mptsas_init(void)
->  {
->  	int error;
->  
-> +	printk(KERN_CRIT "mptsas_init start\n");
-> +	current->flags |= 0x1;
->  	show_mptmod_ver(my_NAME, my_VERSION);
->  
->  	mptsas_transport_template =
->  	    sas_attach_transport(&mptsas_transport_functions);
-> -	if (!mptsas_transport_template)
-> -		return -ENODEV;
-> +	if (!mptsas_transport_template) {
-> +		error = -ENODEV;
-> +		goto out;
-> +	}
->  	mptsas_transport_template->eh_timed_out = mptsas_eh_timed_out;
->  
->  	mptsasDoneCtx = mpt_register(mptscsih_io_done, MPTSAS_DRIVER,
-> @@ -5428,6 +5432,9 @@ mptsas_init(void)
->  	if (error)
->  		sas_release_transport(mptsas_transport_template);
->  
-> +out:
-> +	current->flags &= ~0x1;
-> +	printk(KERN_CRIT "mptsas_init end\n");
->  	return error;
->  }
->  
-> diff --git a/kernel/kthread.c b/kernel/kthread.c
-> index b5ae3ee..78e643d 100644
-> --- a/kernel/kthread.c
-> +++ b/kernel/kthread.c
-> @@ -291,6 +291,13 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
->  	 * the OOM killer while kthreadd is trying to allocate memory for
->  	 * new kernel thread.
->  	 */
-> +
-> +	if (current->flags & 1) {
-> +		pr_crit("mptsas no killable wait: %d %d\n",
-> +			signal_pending(current), __fatal_signal_pending(current));
-> +		goto wait;
-> +	}
-> +
->  	if (unlikely(wait_for_completion_killable(&done))) {
->  		/*
->  		 * If I was SIGKILLed before kthreadd (or new kernel thread)
-> @@ -303,6 +310,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
->  		 * kthreadd (or new kernel thread) will call complete()
->  		 * shortly.
->  		 */
-> +wait:
->  		wait_for_completion(&done);
->  	}
->  	task = create->result;
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index b46131e..2b202bd 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -2655,6 +2655,14 @@ static void __sched __schedule(void)
->  	unsigned long *switch_count;
->  	struct rq *rq;
->  	int cpu;
-> +	bool trace;
-> +
-> +	trace = (current->flags & 1) && current->state && !(preempt_count() & PREEMPT_ACTIVE);
-> +	if (trace) {
-> +		pr_crit("mptsas sched: %lx %d %d\n", current->state,
-> +			signal_pending(current), __fatal_signal_pending(current));
-> +		show_stack(NULL, NULL);
-> +	}
->  
->  need_resched:
->  	preempt_disable();
-> @@ -2733,6 +2741,11 @@ need_resched:
->  	sched_preempt_enable_no_resched();
->  	if (need_resched())
->  		goto need_resched;
-> +
-> +	if (trace) {
-> +		pr_crit("mptsas wake: %d %d\n",
-> +			signal_pending(current), __fatal_signal_pending(current));
-> +	}
->  }
->  
->  static inline void sched_submit_work(struct task_struct *tsk)
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 52f881d..d121944 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -1152,6 +1152,11 @@ static int send_signal(int sig, struct siginfo *info, struct task_struct *t,
->  {
->  	int from_ancestor_ns = 0;
->  
-> +	if (t->flags & 1) {
-> +		pr_crit("mptsas killed %d\n", sig);
-> +		sched_show_task(t);
-> +	}
-> +
->  #ifdef CONFIG_PID_NS
->  	from_ancestor_ns = si_fromuser(info) &&
->  			   !task_pid_nr_ns(current, task_active_pid_ns(t));
->
+and recurse
+
+Alan
+
 
