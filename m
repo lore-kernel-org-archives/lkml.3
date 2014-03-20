@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759549AbaCTTUE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 15:20:04 -0400
-Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:39634 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754030AbaCTTUB (ORCPT
+	id S1759616AbaCTTWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 15:22:12 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:51659 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758670AbaCTTWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 15:20:01 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1538:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3834:3865:3866:3867:3870:3871:3872:3873:4321:4560:5007:6119:6120:7652:7901:7903:10004:10400:10848:11232:11658:11914:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: knife66_1cc8faa059021
-X-Filterd-Recvd-Size: 1345
-Message-ID: <1395343195.7776.37.camel@joe-AO722>
-Subject: Re: [PATCH] rtc: add support for maxim dallas rtc ds1347
-From: Joe Perches <joe@perches.com>
-To: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-Cc: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Date: Thu, 20 Mar 2014 12:19:55 -0700
-In-Reply-To: <532B3AB9.5050809@gmail.com>
-References: <532B3AB9.5050809@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	Thu, 20 Mar 2014 15:22:09 -0400
+Message-ID: <532B3FDD.1090108@linaro.org>
+Date: Thu, 20 Mar 2014 12:22:05 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: David Herrmann <dh.herrmann@gmail.com>, linux-kernel@vger.kernel.org
+CC: Hugh Dickins <hughd@google.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Matthew Wilcox <matthew@wil.cx>,
+        Karol Lewandowski <k.lewandowsk@samsung.com>,
+        Kay Sievers <kay@vrfy.org>, Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        =?ISO-8859-1?Q?Kristian_H=F8gsberg?= <krh@bitplanet.net>,
+        Greg Kroah-Hartman <greg@kroah.com>, Tejun Heo <tj@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, dri-devel@lists.freedesktop.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ryan Lortie <desrt@desrt.ca>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Colin Cross <ccross@android.com>
+Subject: Re: [PATCH 3/6] shm: add memfd_create() syscall
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com> <1395256011-2423-4-git-send-email-dh.herrmann@gmail.com>
+In-Reply-To: <1395256011-2423-4-git-send-email-dh.herrmann@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 00:30 +0530, RAGHAVENDRA GANIGA wrote:
-> This is a patch to add support for
-> maxim dallas rtc ds1347
-[]
-> diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
-[]
-> +static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
-> +{
-[]
-> +	/* year in linux is from 1900 i.e in range of 100
-> +	in rtc it is from 00 to 99 so subtract
-> +	the linux year by 100 */
+On 03/19/2014 12:06 PM, David Herrmann wrote:
+> memfd_create() is similar to mmap(MAP_ANON), but returns a file-descriptor
+> that you can pass to mmap(). It explicitly allows sealing and
+> avoids any connection to user-visible mount-points. Thus, it's not
+> subject to quotas on mounted file-systems, but can be used like
+> malloc()'ed memory, but with a file-descriptor to it.
+>
+> memfd_create() does not create a front-FD, but instead returns the raw
+> shmem file, so calls like ftruncate() can be used. Also calls like fstat()
+> will return proper information and mark the file as regular file. Sealing
+> is explicitly supported on memfds.
+>
+> Compared to O_TMPFILE, it does not require a tmpfs mount-point and is not
+> subject to quotas and alike.
 
-> +	if (dt->tm_year >= 100)
-> +		dt->tm_year -= 100;
+This syscall would also be useful to Android, since it would satisfy the
+requirement for providing atomically unlinked tmpfs fds that ashmem
+provides (although upstreamed solutions to ashmem's other
+functionalities are still needed).
 
-This depends on how long you want to live, but it could be
+My only comment is that I think memfd_* is sort of a new namespace.
+Since this is providing shmem files, it seems it might be better named
+something like shmfd_create() or my earlier suggestion of shmget_fd(). 
+Otherwise, when talking about functionality like sealing, which is only
+available on shmfs, we'll have to say "shmfs/tmpfs/memfd" or risk
+confusing folks who might not initially grasp that its all the same
+underneath.
 
-	while (dt->tm_year >= 100)
+thanks
+-john
+
+
+
+
+
 
 
