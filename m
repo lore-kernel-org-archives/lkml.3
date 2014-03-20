@@ -1,188 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751407AbaCTFT0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 01:19:26 -0400
-Received: from mail-bl2lp0207.outbound.protection.outlook.com ([207.46.163.207]:24434
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750963AbaCTFTX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 01:19:23 -0400
-From: "fugang.duan@freescale.com" <fugang.duan@freescale.com>
-To: =?utf-8?B?TG90aGFyIFdhw59tYW5u?= <LW@KARO-electronics.de>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Henrik Rydberg" <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Simon Budig <simon.budig@kernelconcepts.de>
-Subject: RE: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-Thread-Topic: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
-Thread-Index: AQHPQ3SIiQdBVrJHfUKTZpUIUin2yJroYfcAgAEM6iA=
-Date: Thu, 20 Mar 2014 05:19:03 +0000
-Message-ID: <c9718f7215eb41439606b0107a8e2a02@BLUPR03MB373.namprd03.prod.outlook.com>
-References: <1395234563-11034-1-git-send-email-LW@KARO-electronics.de>
- <1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
-In-Reply-To: <1395234563-11034-3-git-send-email-LW@KARO-electronics.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.158.215]
-x-forefront-prvs: 01565FED4C
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(51704005)(377454003)(97186001)(51856001)(19580405001)(19580395003)(83322001)(56776001)(50986001)(81686001)(2201001)(81816001)(85852003)(83072002)(74366001)(90146001)(56816005)(92566001)(74316001)(54356001)(80976001)(4396001)(53806001)(47446002)(74662001)(31966008)(97336001)(49866001)(74502001)(93136001)(47736001)(54316002)(47976001)(76786001)(76796001)(76576001)(76482001)(46102001)(85306002)(74706001)(2656002)(74876001)(77982001)(59766001)(69226001)(94946001)(81542001)(87936001)(66066001)(79102001)(86362001)(95666003)(94316002)(80022001)(87266001)(65816001)(63696002)(20776003)(95416001)(81342001)(33646001)(93516002)(1121002)(921003)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUPR03MB373;H:BLUPR03MB373.namprd03.prod.outlook.com;FPR:A8FBCAD2.A0C0B418.7DFB9B0F.C8D7DA72.2041D;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751925AbaCTFU7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 01:20:59 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33944 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751653AbaCTFU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 01:20:58 -0400
+Message-ID: <532A7AB3.8000706@ti.com>
+Date: Thu, 20 Mar 2014 10:50:51 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <gregkh@linuxfoundation.org>, <balbi@ti.com>, <myungjoo.ham@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 1/2] extcon: of: Remove unnecessary function call by using
+ the name of device_node
+References: <1395144280-23240-1-git-send-email-cw00.choi@samsung.com> <1395144280-23240-2-git-send-email-cw00.choi@samsung.com> <532988DA.8030002@ti.com> <532A50CD.7030601@samsung.com>
+In-Reply-To: <532A50CD.7030601@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2K5JpeB019472
 
-From: Lothar Wa√ümann <LW@KARO-electronics.de>
-Data: Wednesday, March 19, 2014 9:09 PM
+Hi,
 
->To: Dmitry Torokhov; Duan Fugang-B38611; Grant Likely; Henrik Rydberg; Ian
->Campbell; Jingoo Han; Kumar Gala; Mark Rutland; Pawel Moll; Rob Herring; Rob
->Landley; Sachin Kamat; devicetree@vger.kernel.org; linux-doc@vger.kernel.org;
->linux-input@vger.kernel.org; linux-kernel@vger.kernel.org; Simon Budig; Lothar
->Wa√ümann
->Subject: [PATCHv4 2/5] Input: edt-ft5x06: Add DT support
->
->
->Signed-off-by: Lothar Wa√ümann <LW@KARO-electronics.de>
->---
-> .../bindings/input/touchscreen/edt-ft5x06.txt      |   41 ++++++
-> drivers/input/touchscreen/edt-ft5x06.c             |  144 +++++++++++++++-----
-> 2 files changed, 154 insertions(+), 31 deletions(-)  create mode 100644
->Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
->
->diff --git a/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
->b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
->new file mode 100644
->index 0000000..e5adc76
->--- /dev/null
->+++ b/Documentation/devicetree/bindings/input/touchscreen/edt-ft5x06.txt
->@@ -0,0 +1,41 @@
->+FocalTech EDT-FT5x06 Polytouch driver
->+=====================================
->+
->+Required properties:
->+ - compatible:  "edt,edt-ft5x06"
->+ - reg:         I2C slave address of the chip (0x38)
->+ - interrupt-parent: a phandle pointing to the interrupt controller
->+                     serving the interrupt for this chip
->+ - interrupts:       interrupt specification for this chip
->+
->+Optional properties:
->+ - reset-gpios: GPIO specification for the RESET input
->+ - wake-gpios:  GPIO specification for the WAKE input
->+
->+ - pinctrl-names: should be "default"
->+ - pinctrl-0:   a phandle pointing to the pin settings for the
->+                control gpios
->+
->+ - threshold:   allows setting the "click"-threshold in the range
->+                from 20 to 80.
->+
->+ - gain:        allows setting the sensitivity in the range from 0 to
->+                31. Note that lower values indicate higher
->+                sensitivity.
->+
->+ - offset:      allows setting the edge compensation in the range from
->+                0 to 31.
->+ - report_rate: allows setting the report rate in the range from 3 to
->+                14.
->+
->+Example:
->+	polytouch: edt-ft5x06@38 {
->+		compatible = "edt,edt-ft5x06";
->+		reg = <0x38>;
->+		pinctrl-names = "default";
->+		pinctrl-0 = <&edt_ft5x06_pins>;
->+		interrupt-parent = <&gpio2>;
->+		interrupts = <5 0>;
->+		reset-gpios = <&gpio2 6 1>;
->+		wake-gpios = <&gpio4 9 0>;
->+	};
->diff --git a/drivers/input/touchscreen/edt-ft5x06.c
->b/drivers/input/touchscreen/edt-ft5x06.c
->index 7b4470d..257a1c8 100644
->--- a/drivers/input/touchscreen/edt-ft5x06.c
->+++ b/drivers/input/touchscreen/edt-ft5x06.c
->@@ -33,6 +33,7 @@
-> #include <linux/debugfs.h>
-> #include <linux/slab.h>
-> #include <linux/gpio.h>
->+#include <linux/of_gpio.h>
-> #include <linux/input/mt.h>
-> #include <linux/input/edt-ft5x06.h>
->
-[...]
->+#ifdef CONFIG_OF
->+static int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
->+				struct edt_ft5x06_ts_data *tsdata)
->+{
->+	struct device_node *np = dev->of_node;
->+
->+	if (!np)
->+		return -ENODEV;
-Don't need to check the device node valid. If the device node is not existed, the driver don't run probe.
+On Thursday 20 March 2014 07:52 AM, Chanwoo Choi wrote:
+> Hi,
+> 
+> On 03/19/2014 09:08 PM, Kishon Vijay Abraham I wrote:
+>> Hi,
+>>
+>> On Tuesday 18 March 2014 05:34 PM, Chanwoo Choi wrote:
+>>> This patch remove unnecessary function call in of_extcon_get_extcon_dev()
+>>> by using the name of device_node structure.
+>>>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> ---
+>>>  drivers/extcon/of_extcon.c | 12 ++----------
+>>>  1 file changed, 2 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/drivers/extcon/of_extcon.c b/drivers/extcon/of_extcon.c
+>>> index 72173ec..0a29f82 100644
+>>> --- a/drivers/extcon/of_extcon.c
+>>> +++ b/drivers/extcon/of_extcon.c
+>>> @@ -32,7 +32,6 @@ struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+>>>  {
+>>>  	struct device_node *node;
+>>>  	struct extcon_dev *edev;
+>>> -	struct platform_device *extcon_parent_dev;
+>>>  
+>>>  	if (!dev->of_node) {
+>>>  		dev_dbg(dev, "device does not have a device node entry\n");
+>>> @@ -46,16 +45,9 @@ struct extcon_dev *of_extcon_get_extcon_dev(struct device *dev, int index)
+>>>  		return ERR_PTR(-ENODEV);
+>>>  	}
+>>>  
+>>> -	extcon_parent_dev = of_find_device_by_node(node);
+>>> -	if (!extcon_parent_dev) {
+>>> -		dev_dbg(dev, "unable to find device by node\n");
+>>> -		return ERR_PTR(-EPROBE_DEFER);
+>>> -	}
+>>> -
+>>> -	edev = extcon_get_extcon_dev(dev_name(&extcon_parent_dev->dev));
+>>> +	edev = extcon_get_extcon_dev(node->name);
+>>
+>> Since you no longer want to use device names I think you should add this too to
+>> warn users if they rely on using the device name.
+> 
+> Previous of_extcon_get_extcon_dev() support only platform device using of_find_device_by_node.
+> 
+> If extcon device is based on i2c/spi/pci and so on, of_extcon_get_extcon_dev() can't
+> find device instance for device name. So, I change device name from the name of platform device
+> to the name of dt node.
 
->+
->+	/*
->+	 * irq_pin is not needed for DT setup.
->+	 * irq is associated via 'interrupts' property in DT
->+	 */
->+	tsdata->irq_pin = -EINVAL;
->+	tsdata->reset_pin = of_get_named_gpio(np, "reset-gpios", 0);
->+	tsdata->wake_pin = of_get_named_gpio(np, "wake-gpios", 0);
->+
->+	return 0;
->+}
->+#else
->+static inline int edt_ft5x06_i2c_ts_probe_dt(struct device *dev,
->+					struct edt_ft5x06_i2c_ts_data *tsdata) {
->+	return -ENODEV;
->+}
->+#endif
->+
-> static int edt_ft5x06_ts_probe(struct i2c_client *client,
-> 					 const struct i2c_device_id *id)
-> {
->@@ -714,32 +775,40 @@ static int edt_ft5x06_ts_probe(struct i2c_client *client,
->
-> 	dev_dbg(&client->dev, "probing for EDT FT5x06 I2C\n");
->
->+	tsdata = devm_kzalloc(&client->dev, sizeof(*tsdata), GFP_KERNEL);
->+	if (!tsdata) {
->+		dev_err(&client->dev, "failed to allocate driver data.\n");
->+		return -ENOMEM;
->+	}
->+
-> 	if (!pdata) {
->-		dev_err(&client->dev, "no platform data?\n");
->-		return -EINVAL;
->+		error = edt_ft5x06_i2c_ts_probe_dt(&client->dev, tsdata);
->+		if (error) {
->+			dev_err(&client->dev,
->+				"DT probe failed and no platform data present\n");
->+			return error;
->+		}
->+	} else {
->+		tsdata->reset_pin = pdata->reset_pin;
->+		tsdata->irq_pin = pdata->irq_pin;
->+		tsdata->wake_pin = -EINVAL;
-> 	}
-[...]
+That's fine. But we have to fix extcon_dev_register() too, to not use device
+names right? We have to warn extcon users not to use device names right?
+> 
+> 
+>> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+>> index bc4c789..025eb39 100644
+>> --- a/drivers/extcon/extcon-class.c
+>> +++ b/drivers/extcon/extcon-class.c
+>> @@ -601,7 +601,6 @@ int extcon_dev_register(struct extcon_dev *edev)
+>>         edev->dev.class = extcon_class;
+>>         edev->dev.release = extcon_dev_release;
+>>
+>> -       edev->name = edev->name ? edev->name : dev_name(edev->dev.parent);
+>> //The user should always pass the 'name' as we no longer use device name while
+>> getting extcon device. And this name should also be the 'node' name?
+>>         if (IS_ERR_OR_NULL(edev->name)) {
+>>                 dev_err(&edev->dev,
+>>                         "extcon device name is null\n");
+>>
+>> Btw changing to node name from device name breaks dwc3 in OMAP5 and you would
+>> need this too..
+>>
+>> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+>> index 2aea4bc..cea8cd3 100644
+>> --- a/drivers/extcon/extcon-palmas.c
+>> +++ b/drivers/extcon/extcon-palmas.c
+>> @@ -188,6 +188,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
+>>
+>>         palmas_usb->edev.supported_cable = palmas_extcon_cable;
+>>         palmas_usb->edev.dev.parent = palmas_usb->dev;
+>> +       palmas_usb->edev.name = "palmas_usb";
+>>         palmas_usb->edev.mutually_exclusive = mutually_exclusive;
+>>
+>>         status = extcon_dev_register(&palmas_usb->edev);
+>>
+>> Cheers
+>> Kishon
+>>
+> 
+> If node name is same as extcon device name, don't need some modification.
+> Also, you can modify node name in some OMAP dts file insead of modification of extcon-palmas.c
 
-Thanks,
-Andy
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+node name in OMAP dts is already 'palmas_usb'. But since we were not setting
+'edev.name' in extcon-palmas.c, extcon_dev_register used device name of palmas
+(palmas_usb.7 in my case). So extcon-palmas.c needs the fix.
+
+Cheers
+Kishon
