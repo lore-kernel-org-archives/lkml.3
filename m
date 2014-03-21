@@ -1,177 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759218AbaCUGyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 02:54:16 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:63613 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755431AbaCUGyO (ORCPT
+	id S1759494AbaCUG6y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:58:54 -0400
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:58716 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174AbaCUG6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 02:54:14 -0400
-Message-ID: <1395384848.32206.1.camel@phoenix>
-Subject: [PATCH RFT] regulator: s5m8767: Convert to use
- regulator_[enable|disable|is_enabled]_regmap
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 21 Mar 2014 14:54:08 +0800
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Mar 2014 02:58:52 -0400
+Date: Fri, 21 Mar 2014 09:55:02 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jerome Marchand <jmarchan@redhat.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] zram: include err.h in zram_drv
+Message-ID: <20140321065502.GB442@swordfish>
+References: <1395349323-18838-1-git-send-email-sergey.senozhatsky@gmail.com>
+ <20140320144441.68662e5efa9c5d6f4abd581e@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140320144441.68662e5efa9c5d6f4abd581e@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit ca5d1b3524b4d
-"regulator: helpers: Modify helpers enabling multi-bit control",
-we can set enable_val setting for device that use multiple bits for control.
+On (03/20/14 14:44), Andrew Morton wrote:
+> > zcomp returns error-valued pointer, also include err.h header
+> > in zram_drv.
+> > 
+> > Per Arnd Bergmann:
+> > The zram driver uses the ERR_PTR macro defined in <linux/err.h>
+> > and relies on this header to be included implicitly through
+> > other headers, which is not (always) the case on the ARM architecture.
+> > 
+> > ...
+> >
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -31,6 +31,7 @@
+> >  #include <linux/slab.h>
+> >  #include <linux/string.h>
+> >  #include <linux/vmalloc.h>
+> > +#include <linux/err.h>
+> >  
+> >  #include "zram_drv.h"
+> 
+> I can find no occurrence of ERR_PTR in any version of
+> drivers/block/zram/zram_drv.c which I can find.
+> 
+> zram-return-error-valued-pointer-from-zcomp_create.patch adds IS_ERR to
+> drivers/block/zram/zram_drv.c which is presumably what you meant.  
+> 
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/s5m8767.c | 78 +++++++++++----------------------------------
- 1 file changed, 19 insertions(+), 59 deletions(-)
+yes. sorry for inconvenience.
 
-diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
-index 342a66ab..f05bada 100644
---- a/drivers/regulator/s5m8767.c
-+++ b/drivers/regulator/s5m8767.c
-@@ -167,12 +167,11 @@ static unsigned int s5m8767_opmode_reg[][4] = {
- 	{0x0, 0x3, 0x1, 0x1}, /* BUCK9 */
- };
- 
--static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
--				int *enable_ctrl)
-+static int s5m8767_get_register(struct s5m8767_info *s5m8767, int reg_id,
-+				int *reg, int *enable_ctrl)
- {
--	int i, reg_id = rdev_get_id(rdev);
-+	int i;
- 	unsigned int mode;
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
- 
- 	switch (reg_id) {
- 	case S5M8767_LDO1 ... S5M8767_LDO2:
-@@ -211,53 +210,6 @@ static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
- 	return 0;
- }
- 
--static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
--{
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int ret, reg;
--	int enable_ctrl;
--	unsigned int val;
--
--	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
--	if (ret == -EINVAL)
--		return 1;
--	else if (ret)
--		return ret;
--
--	ret = regmap_read(s5m8767->iodev->regmap_pmic, reg, &val);
--	if (ret)
--		return ret;
--
--	return (val & S5M8767_ENCTRL_MASK) == enable_ctrl;
--}
--
--static int s5m8767_reg_enable(struct regulator_dev *rdev)
--{
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int ret, reg;
--	int enable_ctrl;
--
--	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
--	if (ret)
--		return ret;
--
--	return regmap_update_bits(s5m8767->iodev->regmap_pmic, reg,
--			S5M8767_ENCTRL_MASK, enable_ctrl);
--}
--
--static int s5m8767_reg_disable(struct regulator_dev *rdev)
--{
--	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
--	int ret, reg, enable_ctrl;
--
--	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
--	if (ret)
--		return ret;
--
--	return regmap_update_bits(s5m8767->iodev->regmap_pmic, reg,
--			S5M8767_ENCTRL_MASK, ~S5M8767_ENCTRL_MASK);
--}
--
- static int s5m8767_get_vsel_reg(int reg_id, struct s5m8767_info *s5m8767)
- {
- 	int reg;
-@@ -407,9 +359,9 @@ static int s5m8767_set_voltage_time_sel(struct regulator_dev *rdev,
- 
- static struct regulator_ops s5m8767_ops = {
- 	.list_voltage		= regulator_list_voltage_linear,
--	.is_enabled		= s5m8767_reg_is_enabled,
--	.enable			= s5m8767_reg_enable,
--	.disable		= s5m8767_reg_disable,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= s5m8767_set_voltage_sel,
- 	.set_voltage_time_sel	= s5m8767_set_voltage_time_sel,
-@@ -417,9 +369,9 @@ static struct regulator_ops s5m8767_ops = {
- 
- static struct regulator_ops s5m8767_buck78_ops = {
- 	.list_voltage		= regulator_list_voltage_linear,
--	.is_enabled		= s5m8767_reg_is_enabled,
--	.enable			= s5m8767_reg_enable,
--	.disable		= s5m8767_reg_disable,
-+	.is_enabled		= regulator_is_enabled_regmap,
-+	.enable			= regulator_enable_regmap,
-+	.disable		= regulator_disable_regmap,
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
- };
-@@ -524,12 +476,13 @@ static void s5m8767_regulator_config_ext_control(struct s5m8767_info *s5m8767,
- static int s5m8767_enable_ext_control(struct s5m8767_info *s5m8767,
- 		struct regulator_dev *rdev)
- {
-+	int id = rdev_get_id(rdev);
- 	int ret, reg, enable_ctrl;
- 
--	if (rdev_get_id(rdev) != S5M8767_BUCK9)
-+	if (id != S5M8767_BUCK9)
- 		return -EINVAL;
- 
--	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
-+	ret = s5m8767_get_register(s5m8767, id, &reg, &enable_ctrl);
- 	if (ret)
- 		return ret;
- 
-@@ -984,6 +937,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 	for (i = 0; i < pdata->num_regulators; i++) {
- 		const struct sec_voltage_desc *desc;
- 		int id = pdata->regulators[i].id;
-+		int enable_reg, enable_val;
- 
- 		desc = reg_voltage_map[id];
- 		if (desc) {
-@@ -997,6 +951,12 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
- 				regulators[id].vsel_mask = 0x3f;
- 			else
- 				regulators[id].vsel_mask = 0xff;
-+
-+			s5m8767_get_register(s5m8767, id, &enable_reg,
-+					     &enable_val);
-+			regulators[id].enable_reg = enable_reg;
-+			regulators[id].enable_mask = S5M8767_ENCTRL_MASK;
-+			regulators[id].enable_val = enable_val;
- 		}
- 
- 		config.dev = s5m8767->dev;
--- 
-1.8.1.2
+> zram-return-error-valued-pointer-from-zcomp_create.patch also adds
+> ERR_PTR() calls into drivers/block/zram/zcomp.c so that file should
+> include err.h also.
+> 
+
+missing direct include of err.h in zcomp.h was reported and fixed by
+Arnd Bergmann
+https://lkml.org/lkml/2014/3/15/39
 
 
+	-ss
 
+> 
+> Here's what I added, as
+> zram-return-error-valued-pointer-from-zcomp_create-fix-2.patch
+> 
+> From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Subject: zram: include err.h
+> 
+> [akpm@linux-foundation.org: fix zcomp.h as well]
+> Signed-off-by: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+> Reported-by: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  drivers/block/zram/zcomp.c    |    1 +
+>  drivers/block/zram/zram_drv.c |    1 +
+>  2 files changed, 2 insertions(+)
+> 
+> diff -puN drivers/block/zram/zram_drv.c~zram-include-errh-in-zram_drv drivers/block/zram/zram_drv.c
+> --- a/drivers/block/zram/zram_drv.c~zram-include-errh-in-zram_drv
+> +++ a/drivers/block/zram/zram_drv.c
+> @@ -31,6 +31,7 @@
+>  #include <linux/slab.h>
+>  #include <linux/string.h>
+>  #include <linux/vmalloc.h>
+> +#include <linux/err.h>
+>  
+>  #include "zram_drv.h"
+>  
+> diff -puN drivers/block/zram/zcomp.c~zram-include-errh-in-zram_drv drivers/block/zram/zcomp.c
+> --- a/drivers/block/zram/zcomp.c~zram-include-errh-in-zram_drv
+> +++ a/drivers/block/zram/zcomp.c
+> @@ -9,6 +9,7 @@
+>  
+>  #include <linux/kernel.h>
+>  #include <linux/string.h>
+> +#include <linux/err.h>
+>  #include <linux/slab.h>
+>  #include <linux/wait.h>
+>  #include <linux/sched.h>
+> _
+> 
