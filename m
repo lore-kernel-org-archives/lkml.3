@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1030210AbaCUAor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:44:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37021 "EHLO
+	id S966569AbaCUApb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:45:31 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965811AbaCUAIh (ORCPT
+	with ESMTP id S965737AbaCUAIg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:37 -0400
+	Thu, 20 Mar 2014 20:08:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
+        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 06/85] neigh: recompute reachabletime before returning from neigh_periodic_work()
-Date: Thu, 20 Mar 2014 17:09:09 -0700
-Message-Id: <20140321000559.478860034@linuxfoundation.org>
+Subject: [PATCH 3.10 05/85] net-tcp: fastopen: fix high order allocations
+Date: Thu, 20 Mar 2014 17:09:08 -0700
+Message-Id: <20140321000559.340180451@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,42 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+From: Eric Dumazet <edumazet@google.com>
 
-[ Upstream commit feff9ab2e7fa773b6a3965f77375fe89f7fd85cf ]
+[ Upstream commit f5ddcbbb40aa0ba7fbfe22355d287603dbeeaaac ]
 
-If the neigh table's entries is less than gc_thresh1, the function
-will return directly, and the reachabletime will not be recompute,
-so the reachabletime can be guessed.
+This patch fixes two bugs in fastopen :
 
-Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
+1) The tcp_sendmsg(...,  @size) argument was ignored.
+
+   Code was relying on user not fooling the kernel with iovec mismatches
+
+2) When MTU is about 64KB, tcp_send_syn_data() attempts order-5
+allocations, which are likely to fail when memory gets fragmented.
+
+Fixes: 783237e8daf13 ("net-tcp: Fast Open client - sending SYN-data")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Tested-by: Yuchung Cheng <ycheng@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/core/neighbour.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/net/tcp.h     |    3 ++-
+ net/ipv4/tcp.c        |    8 +++++---
+ net/ipv4/tcp_output.c |    7 ++++++-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/net/core/neighbour.c
-+++ b/net/core/neighbour.c
-@@ -764,9 +764,6 @@ static void neigh_periodic_work(struct w
- 	nht = rcu_dereference_protected(tbl->nht,
- 					lockdep_is_held(&tbl->lock));
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1308,7 +1308,8 @@ struct tcp_fastopen_request {
+ 	/* Fast Open cookie. Size 0 means a cookie request */
+ 	struct tcp_fastopen_cookie	cookie;
+ 	struct msghdr			*data;  /* data in MSG_FASTOPEN */
+-	u16				copied;	/* queued in tcp_connect() */
++	size_t				size;
++	int				copied;	/* queued in tcp_connect() */
+ };
+ void tcp_free_fastopen_req(struct tcp_sock *tp);
  
--	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
--		goto out;
--
- 	/*
- 	 *	periodically recompute ReachableTime from random function
- 	 */
-@@ -779,6 +776,9 @@ static void neigh_periodic_work(struct w
- 				neigh_rand_reach_time(p->base_reachable_time);
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1001,7 +1001,8 @@ void tcp_free_fastopen_req(struct tcp_so
  	}
+ }
  
-+	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
-+		goto out;
+-static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg, int *size)
++static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
++				int *copied, size_t size)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	int err, flags;
+@@ -1016,11 +1017,12 @@ static int tcp_sendmsg_fastopen(struct s
+ 	if (unlikely(tp->fastopen_req == NULL))
+ 		return -ENOBUFS;
+ 	tp->fastopen_req->data = msg;
++	tp->fastopen_req->size = size;
+ 
+ 	flags = (msg->msg_flags & MSG_DONTWAIT) ? O_NONBLOCK : 0;
+ 	err = __inet_stream_connect(sk->sk_socket, msg->msg_name,
+ 				    msg->msg_namelen, flags);
+-	*size = tp->fastopen_req->copied;
++	*copied = tp->fastopen_req->copied;
+ 	tcp_free_fastopen_req(tp);
+ 	return err;
+ }
+@@ -1040,7 +1042,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
+ 
+ 	flags = msg->msg_flags;
+ 	if (flags & MSG_FASTOPEN) {
+-		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn);
++		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
+ 		if (err == -EINPROGRESS && copied_syn > 0)
+ 			goto out;
+ 		else if (err)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2892,7 +2892,12 @@ static int tcp_send_syn_data(struct sock
+ 	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
+ 		MAX_TCP_OPTION_SPACE;
+ 
+-	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
++	space = min_t(size_t, space, fo->size);
 +
- 	for (i = 0 ; i < (1 << nht->hash_shift); i++) {
- 		np = &nht->hash_buckets[i];
- 
++	/* limit to order-0 allocations */
++	space = min_t(size_t, space, SKB_MAX_HEAD(MAX_TCP_HEADER));
++
++	syn_data = skb_copy_expand(syn, MAX_TCP_HEADER, space,
+ 				   sk->sk_allocation);
+ 	if (syn_data == NULL)
+ 		goto fallback;
 
 
