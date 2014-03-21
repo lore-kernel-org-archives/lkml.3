@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966655AbaCUArW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:47:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36997 "EHLO
+	id S966934AbaCUArs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:47:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36986 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965792AbaCUAIc (ORCPT
+	with ESMTP id S965779AbaCUAIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:32 -0400
+	Thu, 20 Mar 2014 20:08:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeang Daniel <dyjeong@qca.qualcomm.com>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 18/85] ath9k: Fix ETSI compliance for AR9462 2.0
-Date: Thu, 20 Mar 2014 17:09:21 -0700
-Message-Id: <20140321000601.180128798@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 15/85] mac80211: dont validate unchanged AP bandwidth while tracking
+Date: Thu, 20 Mar 2014 17:09:18 -0700
+Message-Id: <20140321000600.779842384@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,45 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
+commit 963a1852fbac4f75a2d938fa2e734ef1e6d4c044 upstream.
 
-The minimum CCA power threshold values have to be adjusted
-for existing cards to be in compliance with new regulations.
-Newer cards will make use of the values obtained from EEPROM,
-support for this was added earlier. To make sure that cards
-that are already in use and don't have proper values in EEPROM,
-do not violate regulations, use the initvals instead.
+The MLME code in mac80211 must track whether or not the AP changed
+bandwidth, but if there's no change while tracking it shouldn't do
+anything, otherwise regulatory updates can make it impossible to
+connect to certain APs if the regulatory database doesn't match the
+information from the AP. See the precise scenario described in the
+code.
 
-Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This still leaves some possible problems with CSA or if the AP
+actually changed bandwidth, but those cases are less common and
+won't completely prevent using it.
+
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70881
+
+Reported-and-tested-by: Nate Carlson <kernel@natecarlson.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/mac80211/mlme.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
---- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-@@ -56,7 +56,7 @@ static const u32 ar9462_2p0_baseband_pos
- 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3236605e, 0x32365a5e},
- 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
--	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
-+	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
- 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
- 	{0x00009e3c, 0xcf946220, 0xcf946220, 0xcfd5c782, 0xcfd5c282},
- 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
-@@ -95,7 +95,7 @@ static const u32 ar9462_2p0_baseband_pos
- 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
- 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
--	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
-+	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
- 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
- };
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -359,6 +359,28 @@ ieee80211_determine_chantype(struct ieee
+ 	ret = 0;
  
+ out:
++	/*
++	 * When tracking the current AP, don't do any further checks if the
++	 * new chandef is identical to the one we're currently using for the
++	 * connection. This keeps us from playing ping-pong with regulatory,
++	 * without it the following can happen (for example):
++	 *  - connect to an AP with 80 MHz, world regdom allows 80 MHz
++	 *  - AP advertises regdom US
++	 *  - CRDA loads regdom US with 80 MHz prohibited (old database)
++	 *  - the code below detects an unsupported channel, downgrades, and
++	 *    we disconnect from the AP in the caller
++	 *  - disconnect causes CRDA to reload world regdomain and the game
++	 *    starts anew.
++	 * (see https://bugzilla.kernel.org/show_bug.cgi?id=70881)
++	 *
++	 * It seems possible that there are still scenarios with CSA or real
++	 * bandwidth changes where a this could happen, but those cases are
++	 * less common and wouldn't completely prevent using the AP.
++	 */
++	if (tracking &&
++	    cfg80211_chandef_identical(chandef, &sdata->vif.bss_conf.chandef))
++		return ret;
++
+ 	/* don't print the message below for VHT mismatch if VHT is disabled */
+ 	if (ret & IEEE80211_STA_DISABLE_VHT)
+ 		vht_chandef = *chandef;
 
 
