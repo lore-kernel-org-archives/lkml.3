@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760453AbaCUJZs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:25:48 -0400
-Received: from mga01.intel.com ([192.55.52.88]:8039 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427AbaCUJZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:25:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,702,1389772800"; 
-   d="scan'208";a="496583701"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <linux-usb@vger.kernel.org>
-Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
-        <linux-kernel@vger.kernel.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [RFC v4 0/4] xhci: re-work command queue management
-Date: Fri, 21 Mar 2014 11:35:13 +0200
-Message-Id: <1395394517-31451-1-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1760588AbaCUJ0E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:26:04 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:26174 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760552AbaCUJZ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:25:57 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-de-532c05a37884
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spear-devel@list.st.com
+Subject: Re: [PATCH v2 0/3] ata: ahci_platform related cleanups
+Date: Fri, 21 Mar 2014 10:25:34 +0100
+Message-id: <3053465.Mc0SLxBG1L@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <532B3F3F.1050508@redhat.com>
+References: <1395340026-3969-1-git-send-email-b.zolnierkie@samsung.com>
+ <532B3F3F.1050508@redhat.com>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+xoO5iVp1gg/eN1hbnbjWwWrw5Pp3J
+	4s4KZotNj6+xWhzb8YjJ4vKuOWwW+3s3MFk0dPewW8yZsZnV4tfyo4wWKy/+ZXbg9rj+6j+T
+	x85Zd9k9Nq3qZPOYM62JxePkhZMsHpuX1Hu833eVzePpj73MHsdvbGfy+LxJLoArissmJTUn
+	syy1SN8ugStj4u/HLAXfuSq+vD7I0sC4n6OLkZNDQsBEYuLJQ8wQtpjEhXvr2boYuTiEBKYz
+	Srxc3MAE4bQwScx8NYMVpIpNwEpiYvsqRhBbREBdYmpHD1gHs8AzJolN87aAjRIWsJdoezQd
+	rIFFQFXi+/kNTCA2r4CmxLMp29hAbFEBT4kd21cC2RwcnAJaElMXlIOEhQTSJVa/m8gKUS4o
+	8WPyPRYQm1lAXmLf/qmsELaOxP7WaWwTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoT
+	c4tL89L1kvNzNzGCo+eZ1A7GlQ0WhxgFOBiVeHgrOLWDhVgTy4orcw8xSnAwK4nwLv0FFOJN
+	SaysSi3Kjy8qzUktPsQozcGiJM57oNU6EOjqxJLU7NTUgtQimCwTB6dUA2P4w10Hi7XkPT6m
+	6iS7tv+5zOTtXBec/GO3pJxtelhEzYaAXX/zLXY/v/Pe7+vNO0EH9s8R26G+dfmGlfL/N3/k
+	80gSs3PRmxHzmfOHOKPhSbePl0utNmkwzdd8znTbQybWz09g/rNJj6MmCrrk2bxmr9M58sXt
+	GpvSv7bGW+anF8TPN7jY/1qJpTgj0VCLuag4EQDgfuJumgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-changes since v3:
-   
-    * Use GFP_ATOMIC in xhci_stop_device() because we hold a spinlock
-    * Don't queue commands if host is dying.
-    * Flush command queue when host is dying (delete all commands in queue, call
-    pending completions/free commands).   
 
-changes since v2:
+Hi,
 
-    squash first 7 patches together that all just created commands 
-    and avoid some nasty mid-patch series memory leaking          
+On Thursday, March 20, 2014 08:19:27 PM Hans de Goede wrote:
+> Hi,
+> 
+> On 03/20/2014 07:27 PM, Bartlomiej Zolnierkiewicz wrote:
+> > [ v1 was named "ata: add remaining new-style AHCI platform drivers"
+> >   but we are down from 2 drivers to 1 driver so the title of the patch
+> >   series no longer was valid :) ]
+> > 
+> > Hi,
+> > 
+> > This patch series:
+> > - fixes ahci_platform_data->suspend() handling
+> > - moves library AHCI platform code to its own file
+> > - adds a new-style AHCI platform driver for DaVinci DA850 AHCI controller
+> > 
+> > Changes since v1:
+> > - dropped no longer needed patch #4 (ST SPEAr1340 AHCI controller driver)
+> > - adressed review comments for patch #3 from Sekhar Nori
+> > - updated patch descriptions
+> 
+> I assume that the spear patch has been dropped since the spear code has
+> already been converted now and thus is no longer using ahci_platform_data ?
 
-changes since v1: 
+Yes, the SPEAr platform AHCI code has been replaced by a proper PHY driver.
 
-    Fixing smatch warnings and errors.
-    Check for null return from alloc_command, release lock in error path and
-    don't dereference possible null pointer in error path.
+> In that case I think it would best to replace patch 1 with a patch just dropping
+> the suspend and resume callbacks from ahci_platform_data, as they then no
+> longer have any users.
 
-    release lock in xhci_stop_dev() error path.
-    
-This is the fourth attempt to re-work and solve the issues in xhci command
-queue management that Sarah has described earlier:
+I have this on my TODO but since the SPEAr changes are not yet merged upstream
+this have to wait a bit.
 
-Right now, the command management in the xHCI driver is rather ad-hock.  
-Different parts of the driver all submit commands, including interrupt 
-handling routines, functions called from the USB core (with or without the
-bus bandwidth mutex held).
-Some times they need to wait for the command to complete, and sometimes 
-they just issue the command and don't care about the result of the command.
-
-The places that wait on a command all time the command for five seconds,
-and then attempt to cancel the command.  
-Unfortunately, that means if several commands are issued at once, and one of
-them times out, all the commands timeout, even though the host hasn't gotten
-a chance to service them yet.
-
-This is apparent with some devices that take a long time to respond to the 
-Set Address command during device enumeration (when the device is plugged in).
-If a driver for a different device attempts to change alternate interface
-settings at the same time (causing a Configure Endpoint command to be issued),
-both commands timeout.
-
-Instead of having each command timeout after five seconds, the driver should
-wait indefinitely in an uninterruptible sleep on the command completion.  
-A global command queue manager should time whatever command is currently
-running, and cancel that command after five seconds.
-
-If the commands were in a list, like TDs currently are, it may be easier to keep
-track of where the command ring dequeue pointer is, and avoid racing with events.
-We may need to have parts of the driver that issue commands without waiting on
-them still put the commands in the command list.
-
-The Implementation:
--------------------
-
-First step is to create a list of the commands submitted to the command queue.
-To accomplish this each command is required to be submitted with a properly
-filled command structure containing completion, status variable and a pointer to
-the command TRB that will be used.
-
-The first patch is all about creating these command structures and
-submitting them when we queue commands.
-The command structures are allocated on the fly, the commands that are submitted
-in interrupt context are allocated with GFP_ATOMIC.
-
-Next, the global command queue is introduced. Commands structures are added to 
-the queue when trb's are queued, and removed when the command completes. 
-Also switch to use the status variable and completion in the command struct.
-
-A new timer handles command timeout, the timer is kicked every time when a 
-command finishes and there's a new command waiting in the queue, or when a new
-command is submitted to an _empty_ command queue.
-Timer is deleted when the the last command on the queue finishes (empty queue)
-
-The old cancel_cmd_list is removed. 
-When the timer expires we simply tag the current command as "ABORTED" and start
-the ring abortion process. Functions waiting for an aborted command to finish are
-called after the command abortion is completed.
-
-
-Mathias Nyman (4):
-  xhci: Use command structures when queuing commands on the command ring
-  xhci: Add a global command queue
-  xhci: Use completion and status in global command queue
-  xhci: rework command timeout and cancellation,
-
- drivers/usb/host/xhci-hub.c  |  43 ++--
- drivers/usb/host/xhci-mem.c  |  18 +-
- drivers/usb/host/xhci-ring.c | 545 +++++++++++++++---------------------------
- drivers/usb/host/xhci.c      | 264 +++++++++++----------
- drivers/usb/host/xhci.h      |  44 ++--
- 5 files changed, 385 insertions(+), 529 deletions(-)
-
--- 
-1.8.3.2
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
