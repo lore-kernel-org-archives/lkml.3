@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965675AbaCUNej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:34:39 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:41154 "EHLO relay.sw.ru"
+	id S965767AbaCUNfX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:35:23 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:28920 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761019AbaCUNeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:34:37 -0400
+	id S1761025AbaCUNei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 09:34:38 -0400
 From: Andrey Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
 Cc: criu@openvz.org, netdev@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
@@ -16,46 +16,30 @@ Cc: criu@openvz.org, netdev@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
         Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH RFC 0/3] tcp: allow to repair a tcp connections in closing states
-Date: Fri, 21 Mar 2014 17:32:58 +0400
-Message-Id: <1395408781-8145-1-git-send-email-avagin@openvz.org>
+Subject: [PATCH 1/3] tcp: allow to enable repair mode for sockets in any state
+Date: Fri, 21 Mar 2014 17:32:59 +0400
+Message-Id: <1395408781-8145-2-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1395408781-8145-1-git-send-email-avagin@openvz.org>
+References: <1395408781-8145-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently connections only in the TCP_ESTABLISHED state can be dumped and
-restored. This series allows to restore connections in the FIN_WAIT_1,
-FIN_WAIT_2, LAST_ACK, CLOSE_WAIT or CLOSING states.
+The repair mode is used for dumping state of tcp connections
+(sequence numbers, queues, options, etc).
 
-For restoring closing states we need an ability to restore a fin packet
-in a queue. In this series I suggest to use the interface of control
-messages for that.
+Currently the repair mode can be enalbed only for sockets in the
+TCP_ESTABLISHED state. If a socket in another state, its internal
+state can not be dumped.
 
-Here is an example of user-space code:
+Same time there is no guarantee that a connection won't be in other
+states when we are dumping it, thus to be able to dump and restore
+such states we need to get rid of CLOSE,ESTABLISHED in-kernel
+limitation.
 
-msg.msg_control = buf;
-msg.msg_controllen = sizeof buf;
-cmsg = CMSG_FIRSTHDR(&msg);
-cmsg->cmsg_level = SOL_TCP;
-cmsg->cmsg_type = TCP_CMSG_SEND_FIN;
-cmsg->cmsg_len = CMSG_LEN(0);
-msg.msg_controllen = cmsg->cmsg_len;
-if (sendmsg(sk, &msg, 0) < 0) {
-	pr_perror("sendmsg");
-	return -1;
-}
-
-Andrey Vagin (3):
-  tcp: allow to enable repair mode for sockets in any state
-  tcp: check repair before fastopen in tcp_sendmsg
-  tcp: add ability to restore a fin packet
-
- include/net/tcp.h        |  1 +
- include/uapi/linux/tcp.h |  3 +++
- net/ipv4/tcp.c           | 69 +++++++++++++++++++++++++++++++++++++-----------
- net/ipv4/tcp_input.c     |  2 +-
- 4 files changed, 59 insertions(+), 16 deletions(-)
+I see nothing wrong to allow enabling of the repair mode for connected
+sockets in any states.
 
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
@@ -66,7 +50,46 @@ Cc: Eric Dumazet <edumazet@google.com>
 Cc: Pavel Emelyanov <xemul@parallels.com>
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ net/ipv4/tcp.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 97c8f56..267adb7 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1106,15 +1106,18 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	}
+ 
+ 	if (unlikely(tp->repair)) {
++		err = -EINVAL;
++		if (tp->repair_queue == TCP_NO_QUEUE)
++			goto out_err;
++
++		if (sk->sk_state != TCP_ESTABLISHED)
++			goto out_err;
++
+ 		if (tp->repair_queue == TCP_RECV_QUEUE) {
+ 			copied = tcp_send_rcvq(sk, msg, size);
+ 			goto out;
+ 		}
+ 
+-		err = -EINVAL;
+-		if (tp->repair_queue == TCP_NO_QUEUE)
+-			goto out_err;
+-
+ 		/* 'common' sending to sendq */
+ 	}
+ 
+@@ -2375,7 +2378,7 @@ void tcp_sock_destruct(struct sock *sk)
+ static inline bool tcp_can_repair_sock(const struct sock *sk)
+ {
+ 	return ns_capable(sock_net(sk)->user_ns, CAP_NET_ADMIN) &&
+-		((1 << sk->sk_state) & (TCPF_CLOSE | TCPF_ESTABLISHED));
++		(sk->sk_state != TCP_LISTEN);
+ }
+ 
+ static int tcp_repair_options_est(struct tcp_sock *tp,
 -- 
 1.8.5.3
 
