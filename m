@@ -1,311 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760614AbaCUJmX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:42:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28523 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760576AbaCUJmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:42:18 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH RFC V2 2/4] vhost: basic tracepoints
-Date: Fri, 21 Mar 2014 17:41:51 +0800
-Message-Id: <1395394913-19548-3-git-send-email-jasowang@redhat.com>
-In-Reply-To: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
-References: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
+	id S1760724AbaCUJoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:44:34 -0400
+Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:57650 "EHLO
+	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760135AbaCUJo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:44:29 -0400
+Message-ID: <532C09F7.3010003@codethink.co.uk>
+Date: Fri, 21 Mar 2014 10:44:23 +0100
+From: Ben Dooks <ben.dooks@codethink.co.uk>
+Organization: Codethink Limited.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+MIME-Version: 1.0
+To: Jisheng Zhang <jszhang@marvell.com>
+CC: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Antoine Tenart <antoine.tenart@free-electrons.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/2] ARM: berlin: SMP support
+References: <1395347986-30203-1-git-send-email-sebastian.hesselbarth@gmail.com> <20140321111457.6bed5091@xhacker>
+In-Reply-To: <20140321111457.6bed5091@xhacker>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To help for the performance optimizations and debugging, this patch tracepoints
-for vhost. Two kinds of activities were traced: virtio and vhost work
-queuing/wakeup.
+On 21/03/14 04:14, Jisheng Zhang wrote:
+> On Thu, 20 Mar 2014 13:39:44 -0700
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>
+>> This is a small patch set for SMP support on Marvell Berlin BG2
+>> and recently provided BG2Q. Nothing spectacular, as it basically
+>> copies SMP holding pen mechanism from mach-prima2 and plat-versatile
+>> with minor Berlin specific code for SCU and general purpose registers
+>> used by secondary CPUs to get their boot address.
+>>
+>> There was some IRC discussion with Alexandre about using
+>> scu_get_base() instead of a DT node. Although BG2Q is true A9
+>> and provides SCU base; BG2 with PJ4b does not and I decided to
+>> depend on a DT node for SCU in both cases, which is fine I guess.
+>>
+>> I tested this on BG2, and BG2CD (which is UP). I expect the
+>> Free-Electrons guys to test on BG2Q.
+>
+> Although BG2Q and future SoCs will go through PSCI code path finally. But
+> currently, it's OK to use the pen mechanism.
+>
+> So for both of these two patches,
 
-Signed-off-by: Jason Wang <jasowang@redhat.com>
----
- drivers/vhost/net.c   |   1 +
- drivers/vhost/trace.h | 175 ++++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/vhost.c |  14 +++-
- 3 files changed, 189 insertions(+), 1 deletion(-)
- create mode 100644 drivers/vhost/trace.h
+Can you not just avoid starting CPUs until the kernel asks
+them to be booted?
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 85d666c..7353204 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -1,3 +1,4 @@
-+
- /* Copyright (C) 2009 Red Hat, Inc.
-  * Author: Michael S. Tsirkin <mst@redhat.com>
-  *
-diff --git a/drivers/vhost/trace.h b/drivers/vhost/trace.h
-new file mode 100644
-index 0000000..e380942
---- /dev/null
-+++ b/drivers/vhost/trace.h
-@@ -0,0 +1,175 @@
-+#if !defined(_TRACE_VHOST_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_VHOST_H
-+
-+#include <linux/tracepoint.h>
-+#include "vhost.h"
-+
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM vhost
-+
-+/*
-+ * Tracepoint for updating used flag.
-+ */
-+TRACE_EVENT(vhost_virtio_update_used_flags,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+                __field(u16, queue_index)
-+		__field(u16, used_flags)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+                __entry->queue_index = vq->queue_index;
-+		__entry->used_flags = vq->used_flags;
-+	),
-+
-+	TP_printk("vhost update used flag %x to vq %d notify %s",
-+		  __entry->used_flags, __entry->queue_index,
-+		  (__entry->used_flags & VRING_USED_F_NO_NOTIFY) ?
-+		  "disabled" : "enabled")
-+);
-+
-+/*
-+ * Tracepoint for updating avail event.
-+ */
-+TRACE_EVENT(vhost_virtio_update_avail_event,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(u16, queue_index)
-+		__field(u16, avail_idx)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->queue_index = vq->queue_index;
-+		__entry->avail_idx = vq->avail_idx;
-+	),
-+
-+	TP_printk("vhost update avail event %u(%u) for vq %d",
-+		  __entry->avail_idx, __entry->avail_idx %
-+		  __entry->vq->num, __entry->queue_index)
-+);
-+
-+/*
-+ * Tracepoint for updating used index.
-+ */
-+TRACE_EVENT(vhost_virtio_update_used_idx,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(u16, queue_index)
-+		__field(u16, used_idx)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->queue_index = vq->queue_index;
-+		__entry->used_idx = vq->last_used_idx;
-+	),
-+
-+	TP_printk("vhost update used index %u(%u) for vq %d",
-+		  __entry->used_idx, __entry->used_idx %
-+		  __entry->vq->num, __entry->queue_index)
-+);
-+
-+/*
-+ * Tracepoint for processing descriptor.
-+ */
-+TRACE_EVENT(vhost_virtio_get_vq_desc,
-+	TP_PROTO(struct vhost_virtqueue *vq, unsigned int index,
-+		 unsigned out, unsigned int in),
-+	TP_ARGS(vq, index, out, in),
-+
-+	TP_STRUCT__entry(
-+		__field(struct vhost_virtqueue *, vq)
-+		__field(u16, queue_index)
-+		__field(unsigned int, head)
-+		__field(unsigned int, out)
-+		__field(unsigned int, in)
-+                __field(u16, last_avail_idx)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->vq = vq;
-+		__entry->queue_index = vq->queue_index;
-+		__entry->head = index;
-+		__entry->out = out;
-+		__entry->in = in;
-+                __entry->last_avail_idx = vq->last_avail_idx;
-+	),
-+
-+	TP_printk("vhost get vq %d desc last avail index %u(%u), "
-+                  "head %u out %u in %u",
-+		  __entry->queue_index,
-+		  __entry->last_avail_idx,
-+                  __entry->last_avail_idx % __entry->vq->num,
-+                  __entry->head, __entry->out, __entry->in)
-+);
-+
-+/*
-+ * Tracepoint for signal guest.
-+ */
-+TRACE_EVENT(vhost_virtio_signal,
-+	TP_PROTO(struct vhost_virtqueue *vq),
-+	TP_ARGS(vq),
-+
-+	TP_STRUCT__entry(
-+		__field(u16, queue_index)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->queue_index = vq->queue_index;
-+	),
-+
-+	TP_printk("vhost signal vq %d", __entry->queue_index)
-+);
-+
-+DECLARE_EVENT_CLASS(vhost_work_template,
-+	TP_PROTO(struct vhost_work *work),
-+	TP_ARGS(work),
-+
-+	TP_STRUCT__entry(
-+		__field(void *, function)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->function = work->fn;
-+	),
-+
-+        TP_printk("%pf", __entry->function)
-+);
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_queue_wakeup,
-+	TP_PROTO(struct vhost_work *work),
-+	TP_ARGS(work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_work_queue_coalesce,
-+	TP_PROTO(struct vhost_work *work),
-+	TP_ARGS(work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_poll_start,
-+	TP_PROTO(struct vhost_work *work),
-+	TP_ARGS(work));
-+
-+DEFINE_EVENT(vhost_work_template, vhost_poll_stop,
-+	TP_PROTO(struct vhost_work *work),
-+	TP_ARGS(work));
-+
-+#endif /* _TRACE_VHOST_H */
-+
-+#undef TRACE_INCLUDE_PATH
-+#define TRACE_INCLUDE_PATH ../../drivers/vhost
-+#undef TRACE_INCLUDE_FILE
-+#define TRACE_INCLUDE_FILE trace
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 78987e4..7cf3d6e 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -28,6 +28,8 @@
- #include <linux/module.h>
- 
- #include "vhost.h"
-+#define CREATE_TRACE_POINTS
-+#include "trace.h"
- 
- enum {
- 	VHOST_MEMORY_MAX_NREGIONS = 64,
-@@ -45,6 +47,7 @@ static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
- 	poll = container_of(pt, struct vhost_poll, table);
- 	poll->wqh = wqh;
- 	add_wait_queue(wqh, &poll->wait);
-+	trace_vhost_poll_start(&poll->work);
- }
- 
- static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
-@@ -114,6 +117,7 @@ void vhost_poll_stop(struct vhost_poll *poll)
- 		remove_wait_queue(poll->wqh, &poll->wait);
- 		poll->wqh = NULL;
- 	}
-+	trace_vhost_poll_stop(&poll->work);
- }
- EXPORT_SYMBOL_GPL(vhost_poll_stop);
- 
-@@ -163,8 +167,10 @@ void vhost_work_queue(struct vhost_dev *dev, struct vhost_work *work)
- 		work->queue_seq++;
- 		spin_unlock_irqrestore(&dev->work_lock, flags);
- 		wake_up_process(dev->worker);
-+		trace_vhost_work_queue_wakeup(work);
- 	} else {
- 		spin_unlock_irqrestore(&dev->work_lock, flags);
-+		trace_vhost_work_queue_coalesce(work);
- 	}
- }
- EXPORT_SYMBOL_GPL(vhost_work_queue);
-@@ -1008,6 +1014,7 @@ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
- 		if (vq->log_ctx)
- 			eventfd_signal(vq->log_ctx, 1);
- 	}
-+	trace_vhost_virtio_update_used_flags(vq);
- 	return 0;
- }
- 
-@@ -1027,6 +1034,7 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
- 		if (vq->log_ctx)
- 			eventfd_signal(vq->log_ctx, 1);
- 	}
-+	trace_vhost_virtio_update_avail_event(vq);
- 	return 0;
- }
- 
-@@ -1311,6 +1319,7 @@ int vhost_get_vq_desc(struct vhost_dev *dev, struct vhost_virtqueue *vq,
- 		}
- 	} while ((i = next_desc(&desc)) != -1);
- 
-+	trace_vhost_virtio_get_vq_desc(vq, head, *out_num, *in_num);
- 	/* On success, increment avail index. */
- 	vq->last_avail_idx++;
- 
-@@ -1405,6 +1414,7 @@ int vhost_add_used_n(struct vhost_virtqueue *vq, struct vring_used_elem *heads,
- 		vq_err(vq, "Failed to increment used idx");
- 		return -EFAULT;
- 	}
-+	trace_vhost_virtio_update_used_idx(vq);
- 	if (unlikely(vq->log_used)) {
- 		/* Log used index update. */
- 		log_write(vq->log_base,
-@@ -1457,8 +1467,10 @@ static bool vhost_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- {
- 	/* Signal the Guest tell them we used something up. */
--	if (vq->call_ctx && vhost_notify(dev, vq))
-+	if (vq->call_ctx && vhost_notify(dev, vq)) {
- 		eventfd_signal(vq->call_ctx, 1);
-+		trace_vhost_virtio_signal(vq);
-+	}
- }
- EXPORT_SYMBOL_GPL(vhost_signal);
- 
 -- 
-1.8.3.2
-
+Ben Dooks				http://www.codethink.co.uk/
+Senior Engineer				Codethink - Providing Genius
