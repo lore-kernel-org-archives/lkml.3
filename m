@@ -1,106 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083AbaCUGo3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 02:44:29 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:38327 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526AbaCUGo1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 02:44:27 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2L6hQGM003014, This message is accepted by code: ctloc85258
-Message-ID: <532BDF8D.2060402@realtek.com>
-Date: Fri, 21 Mar 2014 14:43:25 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <cjb@laptop.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
-        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v4 3/3] memstick: Add realtek USB memstick host driver
-References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>	<1392199238-14500-4-git-send-email-rogerable@realtek.com> <20140320161827.5904bc407f9d3490514fd84e@linux-foundation.org>
-In-Reply-To: <20140320161827.5904bc407f9d3490514fd84e@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
+	id S1759686AbaCUGqJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:46:09 -0400
+Received: from ozlabs.org ([203.10.76.45]:59260 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753331AbaCUGqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 02:46:07 -0400
+Date: Fri, 21 Mar 2014 17:45:55 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mark Salter <msalter@redhat.com>
+Subject: linux-next: manual merge of the akpm tree with the tip tree
+Message-Id: <20140321174555.c6df4e9a1fcd20e606813f35@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 07:18 AM, Andrew Morton wrote:
-> On Wed, 12 Feb 2014 18:00:38 +0800 <rogerable@realtek.com> wrote:
->
->> From: Roger Tseng <rogerable@realtek.com>
->>
->> Realtek USB memstick host driver provides memstick host support based on the
->> Realtek USB card reader MFD driver.
->>
-...
->> +static int rtsx_usb_ms_drv_probe(struct platform_device *pdev)
->> +{
->> +	struct memstick_host *msh;
->> +	struct rtsx_usb_ms *host;
->> +	struct rtsx_ucr *ucr;
->> +	int err;
->> +
->> +	ucr = usb_get_intfdata(to_usb_interface(pdev->dev.parent));
->> +	if (!ucr)
->> +		return -ENXIO;
->> +
->> +	dev_dbg(&(pdev->dev),
->> +			"Realtek USB Memstick controller found\n");
->> +
->> +	msh = memstick_alloc_host(sizeof(*host), &pdev->dev);
->> +	if (!msh)
->> +		return -ENOMEM;
->> +
->> +	host = memstick_priv(msh);
->> +	host->ucr = ucr;
->> +	host->msh = msh;
->> +	host->pdev = pdev;
->> +	host->power_mode = MEMSTICK_POWER_OFF;
->> +	platform_set_drvdata(pdev, host);
->> +
->> +	mutex_init(&host->host_mutex);
->> +	INIT_WORK(&host->handle_req, rtsx_usb_ms_handle_req);
->> +
->> +	init_completion(&host->detect_ms_exit);
->> +	host->detect_ms = kthread_create(rtsx_usb_detect_ms_card, host,
->> +			"rtsx_usb_ms_%d", pdev->id);
->> +	if (IS_ERR(host->detect_ms)) {
->> +		dev_dbg(&(pdev->dev),
->> +				"Unable to create polling thread.\n");
->> +		err = PTR_ERR(host->detect_ms);
->> +		goto err_out;
->> +	}
->> +
->> +	msh->request = rtsx_usb_ms_request;
->> +	msh->set_param = rtsx_usb_ms_set_param;
->> +	msh->caps = MEMSTICK_CAP_PAR4;
->> +
->> +	pm_runtime_enable(&pdev->dev);
->> +	err = memstick_add_host(msh);
->> +	if (err)
->> +		goto err_out;
->
-> Isn't that kernel thread still running?
->
-The kernel thread is created(kthread_create) but should not start before 
-the "goto".
+--Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Did I miss anything or will it be better to move all kthread things 
-after here?
->> +	wake_up_process(host->detect_ms);
->> +	return 0;
->> +err_out:
->> +	memstick_free_host(msh);
->> +	return err;
->> +}
+Hi Andrew,
 
-Best regards,
-Roger Tseng
+Today's linux-next merge of the akpm tree got a conflict in
+arch/x86/include/asm/Kbuild between commit 073d8224d299 ("arch: Remove
+stub cputime.h headers") from the tip tree and commit "x86: use generic
+early_ioremap" from the akpm tree.
+
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/x86/include/asm/Kbuild
+index 4acddc43ee0c,c98cd05d1cdf..000000000000
+--- a/arch/x86/include/asm/Kbuild
++++ b/arch/x86/include/asm/Kbuild
+@@@ -5,5 -5,5 +5,6 @@@ genhdr-y +=3D unistd_64.
+  genhdr-y +=3D unistd_x32.h
+ =20
+  generic-y +=3D clkdev.h
+ +generic-y +=3D cputime.h
++ generic-y +=3D early_ioremap.h
+  generic-y +=3D mcs_spinlock.h
+
+--Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTK+AsAAoJEMDTa8Ir7ZwVmYIP/jcvQq0En3LmnwBd6Jw9eLYr
+f7P1OSikDnkRu/1XrbL4qlEptbe6FR4BZxuh0RPs5i11jVoSNUHF8e5e619KHoMh
+87bfx+RRertPnkzEdffUNxvLChycsZ0cSU6EMfrU0WpPN0RF/YBWLmKzr1s8XXsG
+ZY+nLhgkaJ3Vm3dZlUrFx1T2QmyUdsRraDra7nv6t5FhYmuRfIeTjcdUP2FPTn/U
+i5ZVEotnqzMU8NNIQ+i0NtLEI6h+N5EG5xJu7SRKz5baU3jY7Tv4uLJL6Rw1cb5X
+a2/LUZpJOkV7q20ZIHsytoEd2tofBWA1kxpy3KR7wpMBQeCHkl0Nh+9ioZCzwX9z
+QglGPT9Attg7lnex+2Gs+nl5ku1jUown0n1vNa2bro4AHmC1b9bPqEDn+WM/DLt4
+8trEHapsifvKjEu/r2UDQK2gr8xM0usykZe12d1B1BNW51MAv3ofAg9hmlajccA6
+W7oAPWQlVBWdlZ2xF1rNqwCZ4/aGWWjvztouhJTPzZ8AHY1nEw+dNUIEUKfAlwB6
+W2stB6tt2fJOvkfTU10fz2hTFGN+boq3x7CTxEeJ/gviOIRjy1a2IHFABKWNWVJc
+pgtDWUnkdbhTp1KOc0WUSOxAA07zEyK4NG8HRjYiVStPAEv3mg+gB2sYR1sk/GUe
+XKwImFZ7YPHaVc4SN8Ca
+=y8L0
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ--
