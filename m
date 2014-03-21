@@ -1,116 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965290AbaCUKog (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:44:36 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:43842 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933349AbaCUKod (ORCPT
+	id S965393AbaCUKpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:45:51 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:60125 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933349AbaCUKpt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:44:33 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-8c-532c180f3e1b
-Message-id: <532C1808.6090409@samsung.com>
-Date: Fri, 21 Mar 2014 11:44:24 +0100
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Grant Likely <grant.likely@linaro.org>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
- drivers/media/v4l2-core to drivers/of
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
- <139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com>
- <1883687.VdfitvQEN3@samsung.com> <avalon@samsung.com>
- <20140320172302.CD320C4067A@trevor.secretlab.ca>
-In-reply-to: <20140320172302.CD320C4067A@trevor.secretlab.ca>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xq7r8EjrBBmfb+C3mHznHanHgzw5G
-	i7NNb9gtOicuYbe4vGsOm0XPhq2sFrcv81pcXCdvcffeCRaLrfPOMVq07j3CbvH92zc2i7/b
-	N7FYHH7Tzmqxfv4tNgd+j5bmHjaPnbPusnvM7pjJ6rFpVSebx51re9g8+v8aePRtWcXocfzG
-	diaPz5vkAjijuGxSUnMyy1KL9O0SuDJ+3t7MUrBXtGLqwh1MDYyTBbsYOTgkBEwkPv2o6WLk
-	BDLFJC7cW8/WxcjFISSwlFHi24KJ7BDOJ0aJjY/nMIJU8QpoSZzb3wRmswioSpx5upYVxGYT
-	0JT4u/kmG4gtKhAhMXfiZjaIekGJH5PvsYDYIgI9jBL/d7iCDGUWOMwi0TZvGRNIQlggVWLt
-	4dusENueM0rc3X8VbCqngK3E1Z5PYDazgI7E/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYw
-	Mq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECImtLzsYFx+zOsQowMGoxMNbwakdLMSaWFZc
-	mXuIUYKDWUmEd+kvoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGrSYbqecmLBeuJX86p/z+2n7l
-	FV1PdE4WST9Xm6vWc8rcZuPtTenh9xleW95tCmuq0wze+i5Trf+vrZbmZaY7i87kGM70uvZL
-	qm3mGr3vUzWfHXTfV51tdDWUIfdka/bZlwI5Ry4/sd5nfbrPUj5ohp90zDTe3v7LhafyF3so
-	vZc9v9u4XElOiaU4I9FQi7moOBEAqS1ZDYsCAAA=
+	Fri, 21 Mar 2014 06:45:49 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <532B3691.1070602@hurleysoftware.com>
+References: <532B3691.1070602@hurleysoftware.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 21 Mar 2014 11:45:28 +0100
+Message-ID: <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
+Subject: Re: man termios
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Ivan <athlon_@mail.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 06:23 PM, Grant Likely wrote:
-> On Tue, 11 Mar 2014 14:16:37 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
->> On Tuesday 11 March 2014 14:59:20 Tomi Valkeinen wrote:
->>> So depending on the use case, the endpoints would point to opposite
->>> direction from the encoder's point of view.
->>>
->>> And if I gathered Grant's opinion correctly (correct me if I'm wrong),
->>> he thinks things should be explicit, i.e. the bindings for, say, an
->>> encoder should state that the encoder's output endpoint _must_ contain a
->>> remote-endpoint property, whereas the encoder's input endpoint _must
->>> not_ contain a remote-endpoint property.
->>
->> Actually my understand was that DT links would have the same direction as the 
->> data flow. There would be no ambiguity in that case as the direction of the 
->> data flow is known. What happens for bidirectional data flows still need to be 
->> discussed though. And if we want to use the of-graph bindings to describe 
->> graphs without a data flow, a decision will need to be taken there too.
-> 
-> On further thinking, I would say linkage direction should be in the
-> direction that would be considered the dependency order... I'm going to
-> soften my position though. I think the generic pattern should still
-> recommend unidirection links in direction of device dependency, but
+Hello Peter,
 
-I am not sure what you mean by 'device dependency' but I am sure it will
-not be difficult to present problematic cases, maybe circular
-dependencies, two-way dependencies, etc.
+On Thu, Mar 20, 2014 at 7:42 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> Hi Michael,
+>
+> Some issues have arisen [1] regarding a discrepancy between the Linux
+> behavior of
+> read() on a tty and 'man termios' and 'Linux Programming Interface', Chapter
+> 62.
+>
+> Firstly, if MIN==0 and TIME==0 and no input is available, read() returns 0,
+> even if O_NONBLOCK is set.
 
-The only problem of unidirectional links from programming point of view
-is that destination port/interface should be exposed using some
-framework and driver of source link should grab it using the same
-framework, using port/endpoint node for identification. In case of
-bi-directional links the same process should happen but DT do not
-dictates who should expose and who grabs.
+Yes.
 
-So from programming point of view it should be easy to handle
-unidirectional links regardless of the direction. So I guess the best
-is to use data flow direction as it seems to be the most natural.
+> This is also true of the other non-canonical
+> read()'s with
+> timeout (TIME > 0).
 
+Here, if I understand you correctly, you mean this case:
+* TIME > 0
+* MIN == 0
+* O_NONBLOCK set on the FD
+* No input available
 
-> I'm okay with allowing the bidirection option if the helper functions
-> are modified to validate the target endpoint. I think it needs to test
-> for the following:
-> - Make sure the endpoint either:
->   - does not have a backlink, or
->   - the backlink points back to the origin node
-> - If the target is an endpoint node, then make sure the parent doesn't
->   have a link of any kind
-> - If the target is a port node, make sure it doesn't have any endpoint
->   children nodes at all.
+You are saying that read() returns 0 in this case? This doesn't appear
+to me to be correct (on Linux). How did you verify this?
 
-I think link validation can be done at dts compile time.
+> 'man termios' is silent here, but 62.6.2 in LPI implies that O_NONBLOCK will
+> return
+> -1 with errno==EAGAIN; it does not.
 
-Regards
-Andrzej
+I guess you are referring to this text in TLPI:
 
-> 
-> g.
-> 
-> 
+[[
+This mode is somewhat similar to setting the O_NONBLOCK flag for the
+terminal (Section 5.9). However, with O_NONBLOCK, if no bytes are
+available for reading, then read() returns –1 with the error
+EAGAIN.
+]]
 
+Oops. The text was not meant to imply that. Rather the comparison was
+intended to be with O_NONBLOCK *in canonical mode*. However, I agree
+that I could have made that more explicit. (I'll add an erratum to
+mention canonical mode.)
+
+> This is unspecified by POSIX (11.1.7).
+
+Yep, I see. XBD 11.1.7 says:
+
+[[
+Therefore, if O_NONBLOCK is set, read( ) may return immediately,
+regardless of the setting of MIN or TIME. Also, if no data is
+available, read( ) may either return 0, or return -1 with errno set to
+[EAGAIN].
+]]
+
+So, it seems to be saying that either behavior is allowed, right? And
+as far as I can see, for the TIME>0 case on Linux, read() returns -1 +
+EGAIN.
+
+In any case, I've added this text to termios(3):
+
+       POSIX  does  not  specify whether the setting of the O_NONBLOCK
+       file status flag takes precedence over the MIN  and  TIME  set‐
+       tings.  If O_NONBLOCK is set, a read() in noncanonical mode may
+       return immediately, regardless of the setting of MIN  or  TIME.
+       Furthermore, if no data is available, POSIX permits a read() in
+       noncanonical mode to return either 0, or -1 with errno  set  to
+       EAGAIN.
+
+> Secondly, in all 4 of the non-canonical read() modes, the MIN value does not
+> limit
+> the number of bytes which may be returned by the read(). Only the 'count'
+> parameter
+> to read() has this effect.
+>
+> LPI has this to say (man-pages reads similar):
+>
+> "MIN > 0, TIME == 0 (blocking read)
+>
+> The read() blocks (possibly indefinitely) until the lesser of the number of
+> bytes
+> requested or MIN bytes are available, and returns the lesser of the two
+> values."
+>
+> However, read() may unblock when MIN bytes are available but return up to
+> the
+> 'count' parameter if more input arrives in between waking and copying into
+> the
+> user buffer.
+
+Yup, you are obviously correct. It would make no sense for read() to
+return the lesser of [MIN, count]. I got myself into a small thinko as
+I wrote that text.
+
+I've applied this patch to the termios.3 page:
+
+[[
+diff --git a/man3/termios.3 b/man3/termios.3
+index b069ec0..63aba07 100644
+--- a/man3/termios.3
++++ b/man3/termios.3
+@@ -728,8 +728,7 @@ completes; there are four distinct cases:
+ MIN == 0; TIME == 0:
+ If data is available,
+ .BR read (2)
+-returns immediately, with the lesser of the number of bytes
+-available, or the number of bytes requested.
++returns immediately, returning up to the number of bytes requested.
+ If no data is available,
+ .BR read (2)
+ returns 0.
+]]
+
+I'll write a similar erratum for TLPI.
+
+[...]
+
+> Finally, if the 'count' parameter is less than MIN, read() may return before
+> MIN
+> bytes have been received, if 'count' bytes have been received.
+
+Yes. But it's not clear to me here: do you mean that something in the
+man page (or in TLPI) needs fixing?
+
+Thanks for the report, Peter.
+
+Cheers,
+
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
