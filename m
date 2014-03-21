@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaCUVSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:18:54 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:48256 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaCUVSA (ORCPT
+	id S1752202AbaCUVTR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:19:17 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:61053 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751685AbaCUVR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:18:00 -0400
+	Fri, 21 Mar 2014 17:17:59 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -22,9 +22,9 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 4/5] vrange: Set affected pages referenced when marking volatile
-Date: Fri, 21 Mar 2014 14:17:34 -0700
-Message-Id: <1395436655-21670-5-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 3/5] vrange: Add page purging logic & SIGBUS trap
+Date: Fri, 21 Mar 2014 14:17:33 -0700
+Message-Id: <1395436655-21670-4-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
 References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
@@ -32,49 +32,14 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One issue that some potential users were concerned about, was that
-they wanted to ensure that all the pages from one volatile range
-were purged before we purge pages from a different volatile range.
-This would prevent the case where they have 4 large objects, and
-the system purges one page from each object, casuing all of the
-objects to have to be re-created.
+This patch adds the hooks in the vmscan logic to discard volatile pages
+and mark their pte as purged. With this, volatile pages will be purged
+under pressure, and their ptes swap entry's marked. If the purged pages
+are accessed before being marked non-volatile, we catch this and send a
+SIGBUS.
 
-The counter-point to this case, is when an application is using the
-SIGBUS semantics to continue to access pages after they have been
-marked volatile. In that case, the desire was that the most recently
-touched pages be purged last, and only the "cold" pages be purged
-from the specified range.
-
-Instead of adding option flags for the various usage model (at least
-initially), one way of getting a solutoin for both uses would be to
-have the act of marking pages as volatile in effect mark the pages
-as accessed. Since all of the pages in the range would be marked
-together, they would be of the same "age" and would (approximately)
-be purged together. Further, if any pages in the range were accessed
-after being marked volatile, they would be moved to the end of the
-lru and be purged later.
-
-This patch provides this solution by walking the pages in the range
-and setting them accessed when set volatile.
-
-This does have a performance impact, as we have to touch each page
-when setting them volatile. Additionally, while setting all the
-pages to the same age solves the basic problem, there is still an
-open question of: What age all the pages should be set to?
-
-One could consider them all recently accessed, which would put them
-at the end of the active lru. Or one could possibly move them all to
-the end of the inactive lru, making them more likely to be purged
-sooner.
-
-Another possibility would be to not affect the pages at all when
-marking them as volatile, and allow applications to use madvise
-prior to marking any pages as volatile to age them together, if
-that behavior was needed. In that case this patch would be
-unnecessary.
-
-Thoughts on the best approach would be greatly appreciated.
-
+This is a simplified implementation that uses logic from Minchan's earlier
+efforts, so credit to Minchan for his work.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -96,98 +61,268 @@ Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- mm/vrange.c | 71 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 71 insertions(+)
+ include/linux/vrange.h |   2 +
+ mm/internal.h          |   2 -
+ mm/memory.c            |  21 +++++++++
+ mm/rmap.c              |   5 +++
+ mm/vmscan.c            |  12 ++++++
+ mm/vrange.c            | 114 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 154 insertions(+), 2 deletions(-)
 
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index 986fa85..d93ad21 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -8,4 +8,6 @@
+ #define VRANGE_VOLATILE 1
+ #define VRANGE_VALID_FLAGS (0) /* Don't yet support any flags */
+ 
++extern int discard_vpage(struct page *page);
++
+ #endif /* _LINUX_VRANGE_H */
+diff --git a/mm/internal.h b/mm/internal.h
+index 29e1e76..ea66bf9 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -225,10 +225,8 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
+ 
+ extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
+ 
+-#ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ extern unsigned long vma_address(struct page *page,
+ 				 struct vm_area_struct *vma);
+-#endif
+ #else /* !CONFIG_MMU */
+ static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
+ {
+diff --git a/mm/memory.c b/mm/memory.c
+index 22dfa61..db5f4da 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -60,6 +60,7 @@
+ #include <linux/migrate.h>
+ #include <linux/string.h>
+ #include <linux/dma-debug.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/io.h>
+ #include <asm/pgalloc.h>
+@@ -3643,6 +3644,8 @@ static int handle_pte_fault(struct mm_struct *mm,
+ 
+ 	entry = *pte;
+ 	if (!pte_present(entry)) {
++		swp_entry_t vrange_entry;
++retry:
+ 		if (pte_none(entry)) {
+ 			if (vma->vm_ops) {
+ 				if (likely(vma->vm_ops->fault))
+@@ -3652,6 +3655,24 @@ static int handle_pte_fault(struct mm_struct *mm,
+ 			return do_anonymous_page(mm, vma, address,
+ 						 pte, pmd, flags);
+ 		}
++
++		vrange_entry = pte_to_swp_entry(entry);
++		if (unlikely(is_vpurged_entry(vrange_entry))) {
++			if (vma->vm_flags & VM_VOLATILE)
++				return VM_FAULT_SIGBUS;
++
++			/* zap pte */
++			ptl = pte_lockptr(mm, pmd);
++			spin_lock(ptl);
++			if (unlikely(!pte_same(*pte, entry)))
++				goto unlock;
++			flush_cache_page(vma, address, pte_pfn(*pte));
++			ptep_clear_flush(vma, address, pte);
++			pte_unmap_unlock(pte, ptl);
++			goto retry;
++		}
++
++
+ 		if (pte_file(entry))
+ 			return do_nonlinear_fault(mm, vma, address,
+ 					pte, pmd, flags, entry);
+diff --git a/mm/rmap.c b/mm/rmap.c
+index d9d4231..2b6f079 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -728,6 +728,11 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
+ 				referenced++;
+ 		}
+ 		pte_unmap_unlock(pte, ptl);
++		if (vma->vm_flags & VM_VOLATILE) {
++			pra->mapcount = 0;
++			pra->vm_flags |= VM_VOLATILE;
++			return SWAP_FAIL;
++		}
+ 	}
+ 
+ 	if (referenced) {
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index a9c74b4..34f159a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -43,6 +43,7 @@
+ #include <linux/sysctl.h>
+ #include <linux/oom.h>
+ #include <linux/prefetch.h>
++#include <linux/vrange.h>
+ 
+ #include <asm/tlbflush.h>
+ #include <asm/div64.h>
+@@ -683,6 +684,7 @@ enum page_references {
+ 	PAGEREF_RECLAIM,
+ 	PAGEREF_RECLAIM_CLEAN,
+ 	PAGEREF_KEEP,
++	PAGEREF_DISCARD,
+ 	PAGEREF_ACTIVATE,
+ };
+ 
+@@ -703,6 +705,13 @@ static enum page_references page_check_references(struct page *page,
+ 	if (vm_flags & VM_LOCKED)
+ 		return PAGEREF_RECLAIM;
+ 
++	/*
++	 * If volatile page is reached on LRU's tail, we discard the
++	 * page without considering recycle the page.
++	 */
++	if (vm_flags & VM_VOLATILE)
++		return PAGEREF_DISCARD;
++
+ 	if (referenced_ptes) {
+ 		if (PageSwapBacked(page))
+ 			return PAGEREF_ACTIVATE;
+@@ -930,6 +939,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ 		switch (references) {
+ 		case PAGEREF_ACTIVATE:
+ 			goto activate_locked;
++		case PAGEREF_DISCARD:
++			if (may_enter_fs && !discard_vpage(page))
++				goto free_it;
+ 		case PAGEREF_KEEP:
+ 			goto keep_locked;
+ 		case PAGEREF_RECLAIM:
 diff --git a/mm/vrange.c b/mm/vrange.c
-index 28ceb6f..9be8f45 100644
+index 1ff3cbd..28ceb6f 100644
 --- a/mm/vrange.c
 +++ b/mm/vrange.c
-@@ -79,6 +79,73 @@ static int vrange_check_purged(struct mm_struct *mm,
- 
+@@ -246,3 +246,117 @@ SYSCALL_DEFINE5(vrange, unsigned long, start, size_t, len, unsigned long, mode,
+ out:
+ 	return ret;
  }
- 
++
 +
 +/**
-+ * vrange_mark_accessed_pte - Marks pte pages in range accessed
++ * try_to_discard_one - Purge a volatile page from a vma
 + *
-+ * Iterates over the ptes in the pmd and marks the coresponding page
-+ * as accessed. This ensures all the pages in the range are of the
-+ * same "age", so that when pages are purged, we will most likely purge
-+ * them together.
++ * Finds the pte for a page in a vma, marks the pte as purged
++ * and release the page.
 + */
-+static int vrange_mark_accessed_pte(pmd_t *pmd, unsigned long addr,
-+					unsigned long end, struct mm_walk *walk)
++static void try_to_discard_one(struct page *page, struct vm_area_struct *vma)
 +{
-+	struct vm_area_struct *vma = walk->private;
++	struct mm_struct *mm = vma->vm_mm;
 +	pte_t *pte;
++	pte_t pteval;
 +	spinlock_t *ptl;
++	unsigned long addr;
 +
-+	if (pmd_trans_huge(*pmd))
-+		return 0;
-+	if (pmd_trans_unstable(pmd))
-+		return 0;
++	VM_BUG_ON(!PageLocked(page));
 +
-+	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-+	for (; addr != end; pte++, addr += PAGE_SIZE) {
-+		if (pte_present(*pte)) {
-+			struct page *page;
++	addr = vma_address(page, vma);
++	pte = page_check_address(page, mm, addr, &ptl, 0);
++	if (!pte)
++		return;
 +
-+			page = vm_normal_page(vma, addr, *pte);
-+			if (IS_ERR_OR_NULL(page))
-+				break;
-+			get_page(page);
-+			/*
-+			 * XXX - So here we may want to do something
-+			 * else other then marking the page accessed.
-+			 * Setting them to all be the same "age" ensures
-+			 * they are pruged together, but its not clear
-+			 * what that "age" should be.
-+			 */
-+			mark_page_accessed(page);
-+			put_page(page);
-+		}
++	BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|VM_HUGETLB));
++
++	flush_cache_page(vma, addr, page_to_pfn(page));
++	pteval = ptep_clear_flush(vma, addr, pte);
++
++	update_hiwater_rss(mm);
++	if (PageAnon(page))
++		dec_mm_counter(mm, MM_ANONPAGES);
++	else
++		dec_mm_counter(mm, MM_FILEPAGES);
++
++	page_remove_rmap(page);
++	page_cache_release(page);
++
++	set_pte_at(mm, addr, pte,
++				swp_entry_to_pte(make_vpurged_entry()));
++
++	pte_unmap_unlock(pte, ptl);
++	mmu_notifier_invalidate_page(mm, addr);
++
++}
++
++/**
++ * try_to_discard_vpage - check vma chain and discard from vmas marked volatile
++ *
++ * Goes over all the vmas that hold a page, and where the vmas are volatile,
++ * purge the page from the vma.
++ *
++ * Returns 0 on success, -1 on error.
++ */
++static int try_to_discard_vpage(struct page *page)
++{
++	struct anon_vma *anon_vma;
++	struct anon_vma_chain *avc;
++	pgoff_t pgoff;
++
++	anon_vma = page_lock_anon_vma_read(page);
++	if (!anon_vma)
++		return -1;
++
++	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
++	/*
++	 * During interating the loop, some processes could see a page as
++	 * purged while others could see a page as not-purged because we have
++	 * no global lock between parent and child for protecting vrange system
++	 * call during this loop. But it's not a problem because the page is
++	 * not *SHARED* page but *COW* page so parent and child can see other
++	 * data anytime. The worst case by this race is a page was purged
++	 * but couldn't be discarded so it makes unnecessary page fault but
++	 * it wouldn't be severe.
++	 */
++	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
++		struct vm_area_struct *vma = avc->vma;
++
++		if (!(vma->vm_flags & VM_VOLATILE))
++			continue;
++		try_to_discard_one(page, vma);
 +	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+
++	page_unlock_anon_vma_read(anon_vma);
 +	return 0;
 +}
 +
 +
 +/**
-+ * vrange_mark_range_accessed - Sets up a mm_walk to mark pages accessed
++ * discard_vpage - If possible, discard the specified volatile page
 + *
-+ * Sets up and calls wa_page_range() to mark affected pages as accessed.
++ * Attempts to discard a volatile page, and if needed frees the swap page
++ *
++ * Returns 0 on success, -1 on error.
 + */
-+static void vrange_mark_range_accessed(struct vm_area_struct *vma,
-+						unsigned long start,
-+						unsigned long end)
++int discard_vpage(struct page *page)
 +{
-+	struct mm_walk vrange_walk = {
-+		.pmd_entry = vrange_mark_accessed_pte,
-+		.mm = vma->vm_mm,
-+		.private = vma,
-+	};
++	VM_BUG_ON(!PageLocked(page));
++	VM_BUG_ON(PageLRU(page));
 +
-+	walk_page_range(start, end, &vrange_walk);
++	/* XXX - for now we only support anonymous volatile pages */
++	if (!PageAnon(page))
++		return -1;
++
++	if (!try_to_discard_vpage(page)) {
++		if (PageSwapCache(page))
++			try_to_free_swap(page);
++
++		if (page_freeze_refs(page, 1)) {
++			unlock_page(page);
++			return 0;
++		}
++	}
++
++	return -1;
 +}
-+
-+
- /**
-  * do_vrange - Marks or clears VMAs in the range (start-end) as VM_VOLATILE
-  *
-@@ -165,6 +232,10 @@ static ssize_t do_vrange(struct mm_struct *mm, unsigned long start,
- success:
- 		vma->vm_flags = new_flags;
- 
-+		/* Mark the vma range as accessed */
-+		if (mode == VRANGE_VOLATILE)
-+			vrange_mark_range_accessed(vma, start, tmp);
-+
- 		/* update count to distance covered so far*/
- 		count = tmp - orig_start;
- 
 -- 
 1.8.3.2
 
