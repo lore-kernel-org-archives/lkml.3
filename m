@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966565AbaCUA42 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:56:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36857 "EHLO
+	id S966936AbaCUA4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:56:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965530AbaCUAEn (ORCPT
+	with ESMTP id S965539AbaCUAEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:04:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinz Mauelshagen <heinzm@redhat.com>,
+        Apollon Oikonomopoulos <apoikos@debian.org>, edwillam1007@gmail.com,
+        Teng-Feng Yang <shinrairis@gmail.com>, Joe Thornber <ejt@redhat.com>,
         Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 121/149] dm cache mq: fix memory allocation failure for large cache devices
-Date: Thu, 20 Mar 2014 17:04:44 -0700
-Message-Id: <20140321000441.147583070@linuxfoundation.org>
+Subject: [PATCH 3.13 122/149] dm space map metadata: fix refcount decrement below 0 which caused corruption
+Date: Thu, 20 Mar 2014 17:04:45 -0700
+Message-Id: <20140321000441.181514430@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,75 +30,257 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 14f398ca2f26a2ed6236aec54395e0fa06ec8a82 upstream.
+commit cebc2de44d3bce53e46476e774126c298ca2c8a9 upstream.
 
-The memory allocated for the multiqueue policy's hash table doesn't need
-to be physically contiguous.  Use vzalloc() instead of kzalloc().
-Fedora has been carrying this fix since 10/10/2013.
+This has been a relatively long-standing issue that wasn't nailed down
+until Teng-Feng Yang's meticulous bug report to dm-devel on 3/7/2014,
+see: http://www.redhat.com/archives/dm-devel/2014-March/msg00021.html
 
-Failure seen during creation of a 10TB cached device with a 2048 sector
-block size and 411GB cache size:
+>From that report:
+  "When decreasing the reference count of a metadata block with its
+  reference count equals 3, we will call dm_btree_remove() to remove
+  this enrty from the B+tree which keeps the reference count info in
+  metadata device.
 
- dmsetup: page allocation failure: order:9, mode:0x10c0d0
- CPU: 11 PID: 29235 Comm: dmsetup Not tainted 3.10.4 #3
- Hardware name: Supermicro X8DTL/X8DTL, BIOS 2.1a       12/30/2011
-  000000000010c0d0 ffff880090941898 ffffffff81387ab4 ffff880090941928
-  ffffffff810bb26f 0000000000000009 000000000010c0d0 ffff880090941928
-  ffffffff81385dbc ffffffff815f3840 ffffffff00000000 000002000010c0d0
- Call Trace:
-  [<ffffffff81387ab4>] dump_stack+0x19/0x1b
-  [<ffffffff810bb26f>] warn_alloc_failed+0x110/0x124
-  [<ffffffff81385dbc>] ? __alloc_pages_direct_compact+0x17c/0x18e
-  [<ffffffff810bda2e>] __alloc_pages_nodemask+0x6c7/0x75e
-  [<ffffffff810bdad7>] __get_free_pages+0x12/0x3f
-  [<ffffffff810ea148>] kmalloc_order_trace+0x29/0x88
-  [<ffffffff810ec1fd>] __kmalloc+0x36/0x11b
-  [<ffffffffa031eeed>] ? mq_create+0x1dc/0x2cf [dm_cache_mq]
-  [<ffffffffa031efc0>] mq_create+0x2af/0x2cf [dm_cache_mq]
-  [<ffffffffa0314605>] dm_cache_policy_create+0xa7/0xd2 [dm_cache]
-  [<ffffffffa0312530>] ? cache_ctr+0x245/0xa13 [dm_cache]
-  [<ffffffffa031263e>] cache_ctr+0x353/0xa13 [dm_cache]
-  [<ffffffffa012b916>] dm_table_add_target+0x227/0x2ce [dm_mod]
-  [<ffffffffa012e8e4>] table_load+0x286/0x2ac [dm_mod]
-  [<ffffffffa012e65e>] ? dev_wait+0x8a/0x8a [dm_mod]
-  [<ffffffffa012e324>] ctl_ioctl+0x39a/0x3c2 [dm_mod]
-  [<ffffffffa012e35a>] dm_ctl_ioctl+0xe/0x12 [dm_mod]
-  [<ffffffff81101181>] vfs_ioctl+0x21/0x34
-  [<ffffffff811019d3>] do_vfs_ioctl+0x3b1/0x3f4
-  [<ffffffff810f4d2e>] ? ____fput+0x9/0xb
-  [<ffffffff81050b6c>] ? task_work_run+0x7e/0x92
-  [<ffffffff81101a68>] SyS_ioctl+0x52/0x82
-  [<ffffffff81391d92>] system_call_fastpath+0x16/0x1b
+  The B+tree will try to rebalance the entry of the child nodes in each
+  node it traversed, and the rebalance process contains the following
+  steps.
 
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+  (1) Finding the corresponding children in current node (shadow_current(s))
+  (2) Shadow the children block (issue BOP_INC)
+  (3) redistribute keys among children, and free children if necessary (issue BOP_DEC)
+
+  Since the update of a metadata block's reference count could be
+  recursive, we will stash these reference count update operations in
+  smm->uncommitted and then process them in a FILO fashion.
+
+  The problem is that step(3) could free the children which is created
+  in step(2), so the BOP_DEC issued in step(3) will be carried out
+  before the BOP_INC issued in step(2) since these BOPs will be
+  processed in FILO fashion. Once the BOP_DEC from step(3) tries to
+  decrease the reference count of newly shadow block, it will report
+  failure for its reference equals 0 before decreasing. It looks like we
+  can solve this issue by processing these BOPs in a FIFO fashion
+  instead of FILO."
+
+Commit 5b564d80 ("dm space map: disallow decrementing a reference count
+below zero") changed the code to report an error for this temporary
+refcount decrement below zero.  So what was previously a harmless
+invalid refcount became a hard failure due to the new error path:
+
+ device-mapper: space map common: unable to decrement a reference count below 0
+ device-mapper: thin: 253:6: dm_thin_insert_block() failed: error = -22
+ device-mapper: thin: 253:6: switching pool to read-only mode
+
+This bug is in dm persistent-data code that is common to the DM thin and
+cache targets.  So any users of those targets should apply this fix.
+
+Fix this by applying recursive space map operations in FIFO order rather
+than FILO.
+
+Resolves: https://bugzilla.kernel.org/show_bug.cgi?id=68801
+
+Reported-by: Apollon Oikonomopoulos <apoikos@debian.org>
+Reported-by: edwillam1007@gmail.com
+Reported-by: Teng-Feng Yang <shinrairis@gmail.com>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-policy-mq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/md/persistent-data/dm-space-map-metadata.c |  113 +++++++++++++++++----
+ 1 file changed, 92 insertions(+), 21 deletions(-)
 
---- a/drivers/md/dm-cache-policy-mq.c
-+++ b/drivers/md/dm-cache-policy-mq.c
-@@ -869,7 +869,7 @@ static void mq_destroy(struct dm_cache_p
+--- a/drivers/md/persistent-data/dm-space-map-metadata.c
++++ b/drivers/md/persistent-data/dm-space-map-metadata.c
+@@ -91,6 +91,69 @@ struct block_op {
+ 	dm_block_t block;
+ };
+ 
++struct bop_ring_buffer {
++	unsigned begin;
++	unsigned end;
++	struct block_op bops[MAX_RECURSIVE_ALLOCATIONS + 1];
++};
++
++static void brb_init(struct bop_ring_buffer *brb)
++{
++	brb->begin = 0;
++	brb->end = 0;
++}
++
++static bool brb_empty(struct bop_ring_buffer *brb)
++{
++	return brb->begin == brb->end;
++}
++
++static unsigned brb_next(struct bop_ring_buffer *brb, unsigned old)
++{
++	unsigned r = old + 1;
++	return (r >= (sizeof(brb->bops) / sizeof(*brb->bops))) ? 0 : r;
++}
++
++static int brb_push(struct bop_ring_buffer *brb,
++		    enum block_op_type type, dm_block_t b)
++{
++	struct block_op *bop;
++	unsigned next = brb_next(brb, brb->end);
++
++	/*
++	 * We don't allow the last bop to be filled, this way we can
++	 * differentiate between full and empty.
++	 */
++	if (next == brb->begin)
++		return -ENOMEM;
++
++	bop = brb->bops + brb->end;
++	bop->type = type;
++	bop->block = b;
++
++	brb->end = next;
++
++	return 0;
++}
++
++static int brb_pop(struct bop_ring_buffer *brb, struct block_op *result)
++{
++	struct block_op *bop;
++
++	if (brb_empty(brb))
++		return -ENODATA;
++
++	bop = brb->bops + brb->begin;
++	result->type = bop->type;
++	result->block = bop->block;
++
++	brb->begin = brb_next(brb, brb->begin);
++
++	return 0;
++}
++
++/*----------------------------------------------------------------*/
++
+ struct sm_metadata {
+ 	struct dm_space_map sm;
+ 
+@@ -101,25 +164,20 @@ struct sm_metadata {
+ 
+ 	unsigned recursion_count;
+ 	unsigned allocated_this_transaction;
+-	unsigned nr_uncommitted;
+-	struct block_op uncommitted[MAX_RECURSIVE_ALLOCATIONS];
++	struct bop_ring_buffer uncommitted;
+ 
+ 	struct threshold threshold;
+ };
+ 
+ static int add_bop(struct sm_metadata *smm, enum block_op_type type, dm_block_t b)
  {
- 	struct mq_policy *mq = to_mq_policy(p);
+-	struct block_op *op;
++	int r = brb_push(&smm->uncommitted, type, b);
  
--	kfree(mq->table);
-+	vfree(mq->table);
- 	epool_exit(&mq->cache_pool);
- 	epool_exit(&mq->pre_cache_pool);
- 	kfree(mq);
-@@ -1224,7 +1224,7 @@ static struct dm_cache_policy *mq_create
+-	if (smm->nr_uncommitted == MAX_RECURSIVE_ALLOCATIONS) {
++	if (r) {
+ 		DMERR("too many recursive allocations");
+ 		return -ENOMEM;
+ 	}
  
- 	mq->nr_buckets = next_power(from_cblock(cache_size) / 2, 16);
- 	mq->hash_bits = ffs(mq->nr_buckets) - 1;
--	mq->table = kzalloc(sizeof(*mq->table) * mq->nr_buckets, GFP_KERNEL);
-+	mq->table = vzalloc(sizeof(*mq->table) * mq->nr_buckets);
- 	if (!mq->table)
- 		goto bad_alloc_table;
+-	op = smm->uncommitted + smm->nr_uncommitted++;
+-	op->type = type;
+-	op->block = b;
+-
+ 	return 0;
+ }
  
+@@ -158,11 +216,17 @@ static int out(struct sm_metadata *smm)
+ 		return -ENOMEM;
+ 	}
+ 
+-	if (smm->recursion_count == 1 && smm->nr_uncommitted) {
+-		while (smm->nr_uncommitted && !r) {
+-			smm->nr_uncommitted--;
+-			r = commit_bop(smm, smm->uncommitted +
+-				       smm->nr_uncommitted);
++	if (smm->recursion_count == 1) {
++		while (!brb_empty(&smm->uncommitted)) {
++			struct block_op bop;
++
++			r = brb_pop(&smm->uncommitted, &bop);
++			if (r) {
++				DMERR("bug in bop ring buffer");
++				break;
++			}
++
++			r = commit_bop(smm, &bop);
+ 			if (r)
+ 				break;
+ 		}
+@@ -217,7 +281,8 @@ static int sm_metadata_get_nr_free(struc
+ static int sm_metadata_get_count(struct dm_space_map *sm, dm_block_t b,
+ 				 uint32_t *result)
+ {
+-	int r, i;
++	int r;
++	unsigned i;
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
+ 	unsigned adjustment = 0;
+ 
+@@ -225,8 +290,10 @@ static int sm_metadata_get_count(struct
+ 	 * We may have some uncommitted adjustments to add.  This list
+ 	 * should always be really short.
+ 	 */
+-	for (i = 0; i < smm->nr_uncommitted; i++) {
+-		struct block_op *op = smm->uncommitted + i;
++	for (i = smm->uncommitted.begin;
++	     i != smm->uncommitted.end;
++	     i = brb_next(&smm->uncommitted, i)) {
++		struct block_op *op = smm->uncommitted.bops + i;
+ 
+ 		if (op->block != b)
+ 			continue;
+@@ -254,7 +321,8 @@ static int sm_metadata_get_count(struct
+ static int sm_metadata_count_is_more_than_one(struct dm_space_map *sm,
+ 					      dm_block_t b, int *result)
+ {
+-	int r, i, adjustment = 0;
++	int r, adjustment = 0;
++	unsigned i;
+ 	struct sm_metadata *smm = container_of(sm, struct sm_metadata, sm);
+ 	uint32_t rc;
+ 
+@@ -262,8 +330,11 @@ static int sm_metadata_count_is_more_tha
+ 	 * We may have some uncommitted adjustments to add.  This list
+ 	 * should always be really short.
+ 	 */
+-	for (i = 0; i < smm->nr_uncommitted; i++) {
+-		struct block_op *op = smm->uncommitted + i;
++	for (i = smm->uncommitted.begin;
++	     i != smm->uncommitted.end;
++	     i = brb_next(&smm->uncommitted, i)) {
++
++		struct block_op *op = smm->uncommitted.bops + i;
+ 
+ 		if (op->block != b)
+ 			continue;
+@@ -671,7 +742,7 @@ int dm_sm_metadata_create(struct dm_spac
+ 	smm->begin = superblock + 1;
+ 	smm->recursion_count = 0;
+ 	smm->allocated_this_transaction = 0;
+-	smm->nr_uncommitted = 0;
++	brb_init(&smm->uncommitted);
+ 	threshold_init(&smm->threshold);
+ 
+ 	memcpy(&smm->sm, &bootstrap_ops, sizeof(smm->sm));
+@@ -713,7 +784,7 @@ int dm_sm_metadata_open(struct dm_space_
+ 	smm->begin = 0;
+ 	smm->recursion_count = 0;
+ 	smm->allocated_this_transaction = 0;
+-	smm->nr_uncommitted = 0;
++	brb_init(&smm->uncommitted);
+ 	threshold_init(&smm->threshold);
+ 
+ 	memcpy(&smm->old_ll, &smm->ll, sizeof(smm->old_ll));
 
 
