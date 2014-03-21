@@ -1,107 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965625AbaCUN2Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:28:25 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:61428 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760509AbaCUN2U convert rfc822-to-8bit (ORCPT
+	id S1760934AbaCUNcU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:32:20 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:62328 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752094AbaCUNcQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:28:20 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18LgoKipaJBo7vwid7Fcy5R2Ph0FGsAlQk=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 7D84F548A64
-Date: Fri, 21 Mar 2014 09:28:16 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Teodora =?utf-8?B?QsSDbHXFo8SD?= <teobaluta@gmail.com>
-Cc: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-Message-ID: <20140321132816.GW15608@titan.lakedaemon.net>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
- <20140319201838.GA11403@redhat.com>
- <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Mar 2014 09:32:16 -0400
+Message-ID: <532C40B0.3000805@gmail.com>
+Date: Fri, 21 Mar 2014 14:37:52 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Jean-Francois Moine <moinejf@free.fr>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org
+CC: linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i2c: tda998x: Change the compatible strings
+References: <20140321115541.01cbbb06@armhf>
+In-Reply-To: <20140321115541.01cbbb06@armhf>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 19, 2014 at 10:38:30PM +0200, Teodora Băluţă wrote:
-> On Wed, Mar 19, 2014 at 10:18 PM, Dave Jones <davej@redhat.com> wrote:
-> > On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
-> >  > This feature encodes Oops messages into a QR barcode that is scannable by
-> >  > any device with a camera.
-> >
-> >  ...
-> >
-> >  >  include/linux/print_oops.h |   11 +
-> >  >  include/linux/qrencode.h   |  546 +++++++++++++
-> >  >  kernel/Makefile            |    1 +
-> >  >  kernel/panic.c             |    5 +
-> >  >  kernel/print_oops.c        |  173 +++++
-> >  >  kernel/printk/printk.c     |    9 +-
-> >  >  lib/Kconfig                |    5 +
-> >  >  lib/Kconfig.debug          |   11 +
-> >  >  lib/Makefile               |    3 +
-> >  >  lib/qr/Makefile            |    6 +
-> >  >  lib/qr/bitstream.c         |  233 ++++++
-> >  >  lib/qr/bitstream.h         |   37 +
-> >  >  lib/qr/mask.c              |  320 ++++++++
-> >  >  lib/qr/mask.h              |   39 +
-> >  >  lib/qr/mmask.c             |  175 +++++
-> >  >  lib/qr/mmask.h             |   36 +
-> >  >  lib/qr/mqrspec.c           |  259 +++++++
-> >  >  lib/qr/mqrspec.h           |  155 ++++
-> >  >  lib/qr/qrencode.c          |  871 +++++++++++++++++++++
-> >  >  lib/qr/qrencode.h          |  546 +++++++++++++
-> >  >  lib/qr/qrinput.c           | 1834 ++++++++++++++++++++++++++++++++++++++++++++
-> >  >  lib/qr/qrinput.h           |  129 ++++
-> >  >  lib/qr/qrspec.c            |  543 +++++++++++++
-> >  >  lib/qr/qrspec.h            |  178 +++++
-> >  >  lib/qr/rscode.c            |  325 ++++++++
-> >  >  lib/qr/rscode.h            |   38 +
-> >  >  lib/qr/split.c             |  331 ++++++++
-> >  >  lib/qr/split.h             |   44 ++
-> >  >  28 files changed, 6860 insertions(+), 3 deletions(-)
-> >
-> > That's a ton of code we're adding into one of the most fragile parts of the kernel.
-> >
-> > A lot of what libqrencode does would seem to be superfluous to the requirements
-> > here, as we don't output kernel oopses in kanji for eg, and won't care about
-> > multiple versions of the qr spec.
-> 
-> That's true. I didn't do that much cleanup in the library afraid of
-> breaking something and focused that I get this done one way or
-> another. Indeed, the library is userspace and is made to be versatile
-> rather than small.
+On 03/21/2014 11:55 AM, Jean-Francois Moine wrote:
+> The tda998x driver accepts only 3 chips from the TDA998x family.
+> This patch changes the driver compatible strings to these chips.
 
-Perhaps you could add libqr to the staging tree?  As long as it
-compiles, it can go there.  Then you can focus on cleanups and bloat
-removal.  In the process, you'll get a larger testing base because it
-will be in mainline.
+Jean-Francois,
 
-You may be interested in objdiff [1] which I'm using for merging code
-into the staging tree [2].  It provides an automated way to determine
-that code cleanups didn't change the resultant object code.  You can see
-an example run here [3].
+be careful with building a DT binding from a Linux driver. Although
+we constantly struggle to define a binding independent of Linux, it
+should not reflect what Linux is capable of but describe the HW in
+general.
 
-I would definitely like to see the QR output incorporated into a
-kernel.org url.  That would remove the need for installing another app,
-and would ease bug reporting.
+> Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+> ---
+> v2: change the subject to drm/i2c
+> This patch applies after
+> 	drm/i2c: tda998x: Fix lack of required reg in DT documentation
+> ---
+>   Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 4 ++--
+>   drivers/gpu/drm/i2c/tda998x_drv.c                     | 4 +++-
+>   2 files changed, 5 insertions(+), 3 deletions(-)
+> diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> index fc7effa..e3f3d65 100644
+> --- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> +++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
+> @@ -1,7 +1,7 @@
+>   Device-Tree bindings for the NXP TDA998x HDMI transmitter
+>
+>   Required properties;
+> -  - compatible: must be "nxp,tda998x"
+> +  - compatible: may be "nxp,tda9989", "nxp,tda19988" or "nxp,tda19989"
 
-Anyway, if you're interested, I'll be re-posting a patch for objdiff
-separately maybe today or this weekend.
+There is a "DT is ABI" policy and although there is no mainline Linux
+user of current compatible, the correct way would be to deprecate
+"nxp,tda998x" and introduce new compatibles.
 
-thx,
+Also, as long as we don't know about any major differences between
+9989, 1998[89] it is fine to just have one of them defined. As soon
+as we discover any difference that cannot be solved in another way,
+we can add a new compatible.
 
-Jason.
+What we _know_ is that 998[134] are different from 9989,1998[89]
+with respect to additional CEC feature. But we also _know_ that the
+exact version/revision of 9989,1998[89] can be probed from i2c
+registers.
 
-[1] https://lkml.kernel.org/r/cc773270b6481ffe69516d994fbe98c13bcfdb5a.1394570067.git.jason@lakedaemon.net
-[2] https://lkml.kernel.org/r/cover.1394570067.git.jason@lakedaemon.net
-[3] https://lkml.kernel.org/r/20140312165501.GC7811@titan.lakedaemon.net
+DT maintainers will know better, but as long as we have no prove that
+998[134] can also be properly distinguished by i2c registers, just add
+"nxp,tda9989" (which was probably the first revision released) and
+assume 1998[89] are "compatible enough". Or add all three and make
+"nxp,tda9989" the mandatory compatible.
+
+You can leave out 998[134] for now.
+
+>     - reg: I2C address
+>
+
+The line above and below reg property look like there is a tab. If
+so, can you please get rid of the blank line above and fix the line
+below?
+
+> @@ -20,7 +20,7 @@ Optional properties:
+>   Example:
+>
+>   	tda998x: hdmi-encoder {
+> -		compatible = "nxp,tda998x";
+> +		compatible = "nxp,tda19988";
+
+Depending on above decision this becomes either
+
+compatible = "nxp,tda9989";
+
+or
+
+compatible = "nxp,tda19988", "nxp,tda9989";
+
+>   		reg = <0x70>;
+>   		interrupt-parent = <&gpio0>;
+>   		interrupts = <27 2>;		/* falling edge */
+> diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+> index 48af5ca..fd6751c 100644
+> --- a/drivers/gpu/drm/i2c/tda998x_drv.c
+> +++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+> @@ -1367,7 +1367,9 @@ fail:
+>
+>   #ifdef CONFIG_OF
+>   static const struct of_device_id tda998x_dt_ids[] = {
+> -	{ .compatible = "nxp,tda998x", },
+> +	{ .compatible = "nxp,tda9989", },
+> +	{ .compatible = "nxp,tda19988", },
+> +	{ .compatible = "nxp,tda19989", },
+
+Independent of the decision above, just "nxp,tda9989" is
+sufficient.
+
+Sebastian
+
+>   	{ }
+>   };
+>   MODULE_DEVICE_TABLE(of, tda998x_dt_ids);
+>
+
