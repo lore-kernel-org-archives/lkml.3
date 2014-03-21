@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967154AbaCUBeM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:34:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36383 "EHLO
+	id S1760226AbaCUBeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:34:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36376 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760105AbaCUADL (ORCPT
+	with ESMTP id S1760101AbaCUADK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:11 -0400
+	Thu, 20 Mar 2014 20:03:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Stancek <jstancek@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 002/149] mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
-Date: Thu, 20 Mar 2014 17:02:45 -0700
-Message-Id: <20140321000436.690101517@linuxfoundation.org>
+        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 011/149] net-tcp: fastopen: fix high order allocations
+Date: Thu, 20 Mar 2014 17:02:54 -0700
+Message-Id: <20140321000437.334028399@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -32,92 +29,94 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Weiner <hannes@cmpxchg.org>
+From: Eric Dumazet <edumazet@google.com>
 
-commit 27329369c9ecf37771b2a65202cbf5578cff3331 upstream.
+[ Upstream commit f5ddcbbb40aa0ba7fbfe22355d287603dbeeaaac ]
 
-Jan Stancek reports manual page migration encountering allocation
-failures after some pages when there is still plenty of memory free, and
-bisected the problem down to commit 81c0a2bb515f ("mm: page_alloc: fair
-zone allocator policy").
+This patch fixes two bugs in fastopen :
 
-The problem is that GFP_THISNODE obeys the zone fairness allocation
-batches on one hand, but doesn't reset them and wake kswapd on the other
-hand.  After a few of those allocations, the batches are exhausted and
-the allocations fail.
+1) The tcp_sendmsg(...,  @size) argument was ignored.
 
-Fixing this means either having GFP_THISNODE wake up kswapd, or
-GFP_THISNODE not participating in zone fairness at all.  The latter
-seems safer as an acute bugfix, we can clean up later.
+   Code was relying on user not fooling the kernel with iovec mismatches
 
-Reported-by: Jan Stancek <jstancek@redhat.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+2) When MTU is about 64KB, tcp_send_syn_data() attempts order-5
+allocations, which are likely to fail when memory gets fragmented.
+
+Fixes: 783237e8daf13 ("net-tcp: Fast Open client - sending SYN-data")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Yuchung Cheng <ycheng@google.com>
+Acked-by: Yuchung Cheng <ycheng@google.com>
+Tested-by: Yuchung Cheng <ycheng@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- mm/page_alloc.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ include/net/tcp.h     |    3 ++-
+ net/ipv4/tcp.c        |    8 +++++---
+ net/ipv4/tcp_output.c |    7 ++++++-
+ 3 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1211,6 +1211,15 @@ void drain_zone_pages(struct zone *zone,
+--- a/include/net/tcp.h
++++ b/include/net/tcp.h
+@@ -1312,7 +1312,8 @@ struct tcp_fastopen_request {
+ 	/* Fast Open cookie. Size 0 means a cookie request */
+ 	struct tcp_fastopen_cookie	cookie;
+ 	struct msghdr			*data;  /* data in MSG_FASTOPEN */
+-	u16				copied;	/* queued in tcp_connect() */
++	size_t				size;
++	int				copied;	/* queued in tcp_connect() */
+ };
+ void tcp_free_fastopen_req(struct tcp_sock *tp);
+ 
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1002,7 +1002,8 @@ void tcp_free_fastopen_req(struct tcp_so
  	}
- 	local_irq_restore(flags);
  }
-+static bool gfp_thisnode_allocation(gfp_t gfp_mask)
-+{
-+	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
-+}
-+#else
-+static bool gfp_thisnode_allocation(gfp_t gfp_mask)
-+{
-+	return false;
-+}
- #endif
  
- /*
-@@ -1547,7 +1556,13 @@ again:
- 					  get_pageblock_migratetype(page));
- 	}
+-static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg, int *size)
++static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
++				int *copied, size_t size)
+ {
+ 	struct tcp_sock *tp = tcp_sk(sk);
+ 	int err, flags;
+@@ -1017,11 +1018,12 @@ static int tcp_sendmsg_fastopen(struct s
+ 	if (unlikely(tp->fastopen_req == NULL))
+ 		return -ENOBUFS;
+ 	tp->fastopen_req->data = msg;
++	tp->fastopen_req->size = size;
  
--	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-+	/*
-+	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
-+	 * aging protocol, so they can't be fair.
-+	 */
-+	if (!gfp_thisnode_allocation(gfp_flags))
-+		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+ 	flags = (msg->msg_flags & MSG_DONTWAIT) ? O_NONBLOCK : 0;
+ 	err = __inet_stream_connect(sk->sk_socket, msg->msg_name,
+ 				    msg->msg_namelen, flags);
+-	*size = tp->fastopen_req->copied;
++	*copied = tp->fastopen_req->copied;
+ 	tcp_free_fastopen_req(tp);
+ 	return err;
+ }
+@@ -1041,7 +1043,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
+ 
+ 	flags = msg->msg_flags;
+ 	if (flags & MSG_FASTOPEN) {
+-		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn);
++		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
+ 		if (err == -EINPROGRESS && copied_syn > 0)
+ 			goto out;
+ 		else if (err)
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -2887,7 +2887,12 @@ static int tcp_send_syn_data(struct sock
+ 	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
+ 		MAX_TCP_OPTION_SPACE;
+ 
+-	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
++	space = min_t(size_t, space, fo->size);
 +
- 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
- 	zone_statistics(preferred_zone, zone, gfp_flags);
- 	local_irq_restore(flags);
-@@ -1919,8 +1934,12 @@ zonelist_scan:
- 		 * ultimately fall back to remote zones that do not
- 		 * partake in the fairness round-robin cycle of this
- 		 * zonelist.
-+		 *
-+		 * NOTE: GFP_THISNODE allocations do not partake in
-+		 * the kswapd aging protocol, so they can't be fair.
- 		 */
--		if (alloc_flags & ALLOC_WMARK_LOW) {
-+		if ((alloc_flags & ALLOC_WMARK_LOW) &&
-+		    !gfp_thisnode_allocation(gfp_mask)) {
- 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
- 				continue;
- 			if (!zone_local(preferred_zone, zone))
-@@ -2486,8 +2505,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
- 	 * allowed per node queues are empty and that nodes are
- 	 * over allocated.
- 	 */
--	if (IS_ENABLED(CONFIG_NUMA) &&
--			(gfp_mask & GFP_THISNODE) == GFP_THISNODE)
-+	if (gfp_thisnode_allocation(gfp_mask))
- 		goto nopage;
- 
- restart:
++	/* limit to order-0 allocations */
++	space = min_t(size_t, space, SKB_MAX_HEAD(MAX_TCP_HEADER));
++
++	syn_data = skb_copy_expand(syn, MAX_TCP_HEADER, space,
+ 				   sk->sk_allocation);
+ 	if (syn_data == NULL)
+ 		goto fallback;
 
 
