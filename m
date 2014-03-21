@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966260AbaCUAUe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:20:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37343 "EHLO
+	id S966329AbaCUAU6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:20:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37340 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966093AbaCUAJc (ORCPT
+	with ESMTP id S966099AbaCUAJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:32 -0400
+	Thu, 20 Mar 2014 20:09:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3.4 11/35] ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
-Date: Thu, 20 Mar 2014 17:11:02 -0700
-Message-Id: <20140321001054.507600830@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.4 02/35] ocfs2 syncs the wrong range...
+Date: Thu, 20 Mar 2014 17:10:53 -0700
+Message-Id: <20140321001054.199616861@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -28,32 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Volkov <v1ron@mail.ru>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 3dd77654fb1d7f68b9739f3039bad8dbbc0739f8 upstream.
+commit 1b56e98990bcdbb20b9fab163654b9315bf158e8 upstream.
 
-Actually CS4245 connected to the I2S channel 1 for
-capture, not channel 2. Otherwise capturing and
-playback does not work for CS4245.
-
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/oxygen/xonar_dg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/ocfs2/file.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -597,7 +597,7 @@ struct oxygen_model model_xonar_dg = {
- 	.model_data_size = sizeof(struct dg),
- 	.device_config = PLAYBACK_0_TO_I2S |
- 			 PLAYBACK_1_TO_SPDIF |
--			 CAPTURE_0_FROM_I2S_2 |
-+			 CAPTURE_0_FROM_I2S_1 |
- 			 CAPTURE_1_FROM_SPDIF,
- 	.dac_channels_pcm = 6,
- 	.dac_channels_mixer = 0,
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2389,8 +2389,8 @@ out_dio:
+ 
+ 	if (((file->f_flags & O_DSYNC) && !direct_io) || IS_SYNC(inode) ||
+ 	    ((file->f_flags & O_DIRECT) && !direct_io)) {
+-		ret = filemap_fdatawrite_range(file->f_mapping, pos,
+-					       pos + count - 1);
++		ret = filemap_fdatawrite_range(file->f_mapping, *ppos,
++					       *ppos + count - 1);
+ 		if (ret < 0)
+ 			written = ret;
+ 
+@@ -2403,8 +2403,8 @@ out_dio:
+ 		}
+ 
+ 		if (!ret)
+-			ret = filemap_fdatawait_range(file->f_mapping, pos,
+-						      pos + count - 1);
++			ret = filemap_fdatawait_range(file->f_mapping, *ppos,
++						      *ppos + count - 1);
+ 	}
+ 
+ 	/*
 
 
