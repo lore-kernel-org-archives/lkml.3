@@ -1,59 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966502AbaCUAW1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:22:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5735 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966084AbaCUAWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:22:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,699,1389772800"; 
-   d="scan'208";a="496240032"
-Message-ID: <532B8630.8030607@linux.intel.com>
-Date: Fri, 21 Mar 2014 08:22:08 +0800
-From: "Lu, Baolu" <baolu.lu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S966073AbaCUAJ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:09:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37256 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965756AbaCUAJS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:09:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.10 64/85] dm cache: fix access beyond end of origin device
+Date: Thu, 20 Mar 2014 17:10:07 -0700
+Message-Id: <20140321000607.803496718@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
+References: <20140321000558.606667505@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: linux-acpi@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: [asus-nb-wmi] thermal device detected by asus-nb-wmi platform driver
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-I booted Ubuntu13.10 onto ASUS T100 Tablet and upgraded it with upstream
-kernel (3.14.0-rc7+). There is a thermal device under
-/sys/devices/platform/asus-nb-wmi.
+------------------
 
-root@t100:~/linux# tree /sys/class/hwmon/
-/sys/class/hwmon/
-├── hwmon0 -> ../../devices/platform/coretemp.0/hwmon/hwmon0
-└── hwmon1 -> ../../devices/platform/asus-nb-wmi/hwmon/hwmon1
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-root@t100:/sys/devices/platform/asus-nb-wmi# ls
-cpufv driver hwmon input modalias power subsystem uevent
+commit e893fba90c09f9b57fb97daae204ea9cc2c52fa5 upstream.
 
-root@t100:~/linux# sensors
-coretemp-isa-0000
-Adapter: ISA adapter
-Core 0: +38.0°C (high = +90.0°C, crit = +90.0°C)
-Core 1: +38.0°C (high = +90.0°C, crit = +90.0°C)
-Core 2: +39.0°C (high = +90.0°C, crit = +90.0°C)
-Core 3: +38.0°C (high = +90.0°C, crit = +90.0°C)
+In order to avoid wasting cache space a partial block at the end of the
+origin device is not cached.  Unfortunately, the check for such a
+partial block at the end of the origin device was flawed.
 
-asus-isa-0000
-Adapter: ISA adapter
-temp1: +6280.0°C
+Fix accesses beyond the end of the origin device that occured due to
+attempted promotion of an undetected partial block by:
 
-I didn't get any information about thermal interface in
-"Documentation/ABI/testing/sysfs-platform-asus-wmi". Is this a thermal
-sensor? If it's the fact, how can I change the environment so that this
-sensor gives me variable data?
+- initializing the per bio data struct to allow cache_end_io to work properly
+- recognizing access to the partial block at the end of the origin device
+- avoiding out of bounds access to the discard bitset
 
-Thanks,
-baolu
+Otherwise, users can experience errors like the following:
+
+ attempt to access beyond end of device
+ dm-5: rw=0, want=20971520, limit=20971456
+ ...
+ device-mapper: cache: promotion failed; couldn't copy block
+
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/md/dm-cache-target.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
+
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2175,20 +2175,18 @@ static int cache_map(struct dm_target *t
+ 	bool discarded_block;
+ 	struct dm_bio_prison_cell *cell;
+ 	struct policy_result lookup_result;
+-	struct per_bio_data *pb;
++	struct per_bio_data *pb = init_per_bio_data(bio, pb_data_size);
+ 
+-	if (from_oblock(block) > from_oblock(cache->origin_blocks)) {
++	if (unlikely(from_oblock(block) >= from_oblock(cache->origin_blocks))) {
+ 		/*
+ 		 * This can only occur if the io goes to a partial block at
+ 		 * the end of the origin device.  We don't cache these.
+ 		 * Just remap to the origin and carry on.
+ 		 */
+-		remap_to_origin_clear_discard(cache, bio, block);
++		remap_to_origin(cache, bio);
+ 		return DM_MAPIO_REMAPPED;
+ 	}
+ 
+-	pb = init_per_bio_data(bio, pb_data_size);
+-
+ 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA | REQ_DISCARD)) {
+ 		defer_bio(cache, bio);
+ 		return DM_MAPIO_SUBMITTED;
+
 
