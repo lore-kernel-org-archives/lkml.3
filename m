@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760415AbaCUADm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36514 "EHLO
+	id S1030252AbaCUBUr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:20:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36565 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760152AbaCUADe (ORCPT
+	with ESMTP id S1760427AbaCUADp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:34 -0400
+	Thu, 20 Mar 2014 20:03:45 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 042/149] mwifiex: save and copy APs VHT capability info correctly
-Date: Thu, 20 Mar 2014 17:03:25 -0700
-Message-Id: <20140321000438.420785875@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.13 057/149] DRM: armada: fix use of kfifo_put()
+Date: Thu, 20 Mar 2014 17:03:40 -0700
+Message-Id: <20140321000438.936695826@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,57 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit d51246481c7f28bbfa1f814ded2da65e531cd4b2 upstream.
+commit d13c46c67e546bb1dc1c4dc7c43e388d0119276b upstream.
 
-While preparing association request, intersection of device's
-VHT capability information and corresponding field advertised
-by AP is used.
+The kfifo_put() API changed in 498d319bb512 (kfifo API type safety)
+which now results in the wrong pointer being added to the kfifo ring,
+which then causes an oops.  Fix this.
 
-This patch fixes a couple errors while saving and copying vht_cap
-and vht_oper fields from AP's beacon.
-
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11ac.c |    3 +--
- drivers/net/wireless/mwifiex/scan.c |    8 ++++----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/armada/armada_drv.c |   10 +---------
+ 1 file changed, 1 insertion(+), 9 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/11ac.c
-+++ b/drivers/net/wireless/mwifiex/11ac.c
-@@ -189,8 +189,7 @@ int mwifiex_cmd_append_11ac_tlv(struct m
- 		vht_cap->header.len  =
- 				cpu_to_le16(sizeof(struct ieee80211_vht_cap));
- 		memcpy((u8 *)vht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *)bss_desc->bcn_vht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_vht_cap,
- 		       le16_to_cpu(vht_cap->header.len));
+--- a/drivers/gpu/drm/armada/armada_drv.c
++++ b/drivers/gpu/drm/armada/armada_drv.c
+@@ -68,15 +68,7 @@ void __armada_drm_queue_unref_work(struc
+ {
+ 	struct armada_private *priv = dev->dev_private;
  
- 		mwifiex_fill_vht_cap_tlv(priv, vht_cap, bss_desc->bss_band);
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -2101,12 +2101,12 @@ mwifiex_save_curr_bcn(struct mwifiex_pri
- 			 curr_bss->ht_info_offset);
+-	/*
+-	 * Yes, we really must jump through these hoops just to store a
+-	 * _pointer_ to something into the kfifo.  This is utterly insane
+-	 * and idiotic, because it kfifo requires the _data_ pointed to by
+-	 * the pointer const, not the pointer itself.  Not only that, but
+-	 * you have to pass a pointer _to_ the pointer you want stored.
+-	 */
+-	const struct drm_framebuffer *silly_api_alert = fb;
+-	WARN_ON(!kfifo_put(&priv->fb_unref, &silly_api_alert));
++	WARN_ON(!kfifo_put(&priv->fb_unref, fb));
+ 	schedule_work(&priv->fb_unref_work);
+ }
  
- 	if (curr_bss->bcn_vht_cap)
--		curr_bss->bcn_ht_cap = (void *)(curr_bss->beacon_buf +
--						curr_bss->vht_cap_offset);
-+		curr_bss->bcn_vht_cap = (void *)(curr_bss->beacon_buf +
-+						 curr_bss->vht_cap_offset);
- 
- 	if (curr_bss->bcn_vht_oper)
--		curr_bss->bcn_ht_oper = (void *)(curr_bss->beacon_buf +
--						 curr_bss->vht_info_offset);
-+		curr_bss->bcn_vht_oper = (void *)(curr_bss->beacon_buf +
-+						  curr_bss->vht_info_offset);
- 
- 	if (curr_bss->bcn_bss_co_2040)
- 		curr_bss->bcn_bss_co_2040 =
 
 
