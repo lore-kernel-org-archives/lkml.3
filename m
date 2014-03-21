@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966762AbaCUAch (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:32:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37107 "EHLO
+	id S966747AbaCUAcf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:32:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965929AbaCUAI7 (ORCPT
+	with ESMTP id S965937AbaCUAJC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:59 -0400
+	Thu, 20 Mar 2014 20:09:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.10 55/85] drm/radeon/atom: select the proper number of lanes in transmitter setup
-Date: Thu, 20 Mar 2014 17:09:58 -0700
-Message-Id: <20140321000606.576724177@linuxfoundation.org>
+        Daniel J Blueman <daniel@numascale.com>,
+        Steffen Persvold <sp@numascale.com>, Borislav Petkov <bp@suse.de>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 39/85] x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+Date: Thu, 20 Mar 2014 17:09:42 -0700
+Message-Id: <20140321000604.333506808@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,33 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Daniel J Blueman <daniel@numascale.com>
 
-commit d03874c881a049a50e12f285077ab1f9fc2686e1 upstream.
+commit 847d7970defb45540735b3fb4e88471c27cacd85 upstream.
 
-We need to check for DVI vs. HDMI when setting up duallink since
-HDMI is single link only.  Fixes 4k modes on newer asics.
+For systems with multiple servers and routed fabric, all
+northbridges get assigned to the first server. Fix this by also
+using the node reported from the PCI bus. For single-fabric
+systems, the northbriges are on PCI bus 0 by definition, which
+are on NUMA node 0 by definition, so this is invarient on most
+systems.
 
-bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=75223
+Tested on fam10h and fam15h single and multi-fabric systems and
+candidate for stable.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Signed-off-by: Daniel J Blueman <daniel@numascale.com>
+Acked-by: Steffen Persvold <sp@numascale.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Link: http://lkml.kernel.org/r/1394710981-3596-1-git-send-email-daniel@numascale.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
+ arch/x86/kernel/quirks.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1281,7 +1281,7 @@ atombios_dig_transmitter_setup(struct dr
- 			}
- 			if (is_dp)
- 				args.v5.ucLaneNum = dp_lane_count;
--			else if (radeon_encoder->pixel_clock > 165000)
-+			else if (radeon_dig_monitor_is_duallink(encoder, radeon_encoder->pixel_clock))
- 				args.v5.ucLaneNum = 8;
- 			else
- 				args.v5.ucLaneNum = 4;
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -529,7 +529,7 @@ static void quirk_amd_nb_node(struct pci
+ 		return;
+ 
+ 	pci_read_config_dword(nb_ht, 0x60, &val);
+-	node = val & 7;
++	node = pcibus_to_node(dev->bus) | (val & 7);
+ 	/*
+ 	 * Some hardware may return an invalid node ID,
+ 	 * so check it first:
 
 
