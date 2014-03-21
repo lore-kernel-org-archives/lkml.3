@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966971AbaCUBVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:21:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36537 "EHLO
+	id S967066AbaCUBWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:22:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36534 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760395AbaCUADk (ORCPT
+	with ESMTP id S1760385AbaCUADk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:03:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 036/149] iwlwifi: disable TX AMPDU by default for iwldvm
-Date: Thu, 20 Mar 2014 17:03:19 -0700
-Message-Id: <20140321000438.211533422@linuxfoundation.org>
+Subject: [PATCH 3.13 035/149] iwlwifi: mvm: dont WARN when statistics are handled late
+Date: Thu, 20 Mar 2014 17:03:18 -0700
+Message-Id: <20140321000438.179403145@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,152 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 205e2210daa975d92ace485a65a31ccc4077fe1a upstream.
+commit 1e9291996c4eedf79883f47ec635235e39d3d6cd upstream.
 
-NICs supported by iwldvm don't handle well TX AMPDU.
-Disable it by default, still leave the possibility to
-the user to force enable it with a debug parameter.
+Since the statistics handler is asynchrous, it can very well
+be that we will handle the statistics (hence the RSSI
+fluctuation) when we already disassociated.
+Don't WARN on this case.
 
-NICs supported by iwlmvm don't suffer from the same issue,
-leave TX AMPDU enabled by default for these.
+This solves: https://bugzilla.redhat.com/show_bug.cgi?id=1071998
 
+Fixes: 2b76ef13086f ("iwlwifi: mvm: implement reduced Tx power")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/mac80211.c  |   22 ++++++++++++++++++++--
- drivers/net/wireless/iwlwifi/iwl-drv.c       |    2 +-
- drivers/net/wireless/iwlwifi/iwl-modparams.h |   11 +++++++----
- drivers/net/wireless/iwlwifi/mvm/mac80211.c  |   22 ++++++++++++++++++++--
- 4 files changed, 48 insertions(+), 9 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/bt-coex.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
-@@ -704,6 +704,24 @@ static int iwlagn_mac_set_key(struct iee
- 	return ret;
- }
+--- a/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
++++ b/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
+@@ -871,8 +871,11 @@ void iwl_mvm_bt_rssi_event(struct iwl_mv
  
-+static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
-+{
-+	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
-+		return false;
-+	return true;
-+}
-+
-+static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
-+{
-+	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
-+		return false;
-+	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
-+		return true;
-+
-+	/* disabled by default */
-+	return false;
-+}
-+
- static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
- 				   struct ieee80211_vif *vif,
- 				   enum ieee80211_ampdu_mlme_action action,
-@@ -725,7 +743,7 @@ static int iwlagn_mac_ampdu_action(struc
+ 	lockdep_assert_held(&mvm->mutex);
  
- 	switch (action) {
- 	case IEEE80211_AMPDU_RX_START:
--		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
-+		if (!iwl_enable_rx_ampdu(priv->cfg))
- 			break;
- 		IWL_DEBUG_HT(priv, "start Rx\n");
- 		ret = iwl_sta_rx_agg_start(priv, sta, tid, *ssn);
-@@ -737,7 +755,7 @@ static int iwlagn_mac_ampdu_action(struc
- 	case IEEE80211_AMPDU_TX_START:
- 		if (!priv->trans->ops->txq_enable)
- 			break;
--		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
-+		if (!iwl_enable_tx_ampdu(priv->cfg))
- 			break;
- 		IWL_DEBUG_HT(priv, "start Tx\n");
- 		ret = iwlagn_tx_agg_start(priv, vif, sta, tid, ssn);
---- a/drivers/net/wireless/iwlwifi/iwl-drv.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-drv.c
-@@ -1247,7 +1247,7 @@ module_param_named(swcrypto, iwlwifi_mod
- MODULE_PARM_DESC(swcrypto, "using crypto in software (default 0 [hardware])");
- module_param_named(11n_disable, iwlwifi_mod_params.disable_11n, uint, S_IRUGO);
- MODULE_PARM_DESC(11n_disable,
--	"disable 11n functionality, bitmap: 1: full, 2: agg TX, 4: agg RX");
-+	"disable 11n functionality, bitmap: 1: full, 2: disable agg TX, 4: disable agg RX, 8 enable agg TX");
- module_param_named(amsdu_size_8K, iwlwifi_mod_params.amsdu_size_8K,
- 		   int, S_IRUGO);
- MODULE_PARM_DESC(amsdu_size_8K, "enable 8K amsdu size (default 0)");
---- a/drivers/net/wireless/iwlwifi/iwl-modparams.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-modparams.h
-@@ -79,9 +79,12 @@ enum iwl_power_level {
- 	IWL_POWER_NUM
- };
+-	/* Rssi update while not associated ?! */
+-	if (WARN_ON_ONCE(mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT))
++	/*
++	 * Rssi update while not associated - can happen since the statistics
++	 * are handled asynchronously
++	 */
++	if (mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT)
+ 		return;
  
--#define IWL_DISABLE_HT_ALL	BIT(0)
--#define IWL_DISABLE_HT_TXAGG	BIT(1)
--#define IWL_DISABLE_HT_RXAGG	BIT(2)
-+enum iwl_disable_11n {
-+	IWL_DISABLE_HT_ALL	 = BIT(0),
-+	IWL_DISABLE_HT_TXAGG	 = BIT(1),
-+	IWL_DISABLE_HT_RXAGG	 = BIT(2),
-+	IWL_ENABLE_HT_TXAGG	 = BIT(3),
-+};
- 
- /**
-  * struct iwl_mod_params
-@@ -90,7 +93,7 @@ enum iwl_power_level {
-  *
-  * @sw_crypto: using hardware encryption, default = 0
-  * @disable_11n: disable 11n capabilities, default = 0,
-- *	use IWL_DISABLE_HT_* constants
-+ *	use IWL_[DIS,EN]ABLE_HT_* constants
-  * @amsdu_size_8K: enable 8K amsdu size, default = 0
-  * @restart_fw: restart firmware, default = 1
-  * @wd_disable: enable stuck queue check, default = 0
---- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
-@@ -321,6 +321,24 @@ static void iwl_mvm_mac_tx(struct ieee80
- 	ieee80211_free_txskb(hw, skb);
- }
- 
-+static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
-+{
-+	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
-+		return false;
-+	return true;
-+}
-+
-+static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
-+{
-+	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
-+		return false;
-+	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
-+		return true;
-+
-+	/* enabled by default */
-+	return true;
-+}
-+
- static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
- 				    struct ieee80211_vif *vif,
- 				    enum ieee80211_ampdu_mlme_action action,
-@@ -340,7 +358,7 @@ static int iwl_mvm_mac_ampdu_action(stru
- 
- 	switch (action) {
- 	case IEEE80211_AMPDU_RX_START:
--		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG) {
-+		if (!iwl_enable_rx_ampdu(mvm->cfg)) {
- 			ret = -EINVAL;
- 			break;
- 		}
-@@ -350,7 +368,7 @@ static int iwl_mvm_mac_ampdu_action(stru
- 		ret = iwl_mvm_sta_rx_agg(mvm, sta, tid, 0, false);
- 		break;
- 	case IEEE80211_AMPDU_TX_START:
--		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG) {
-+		if (!iwl_enable_tx_ampdu(mvm->cfg)) {
- 			ret = -EINVAL;
- 			break;
- 		}
+ 	/* No BT - reports should be disabled */
 
 
