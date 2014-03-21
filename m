@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966789AbaCUBEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:04:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36774 "EHLO
+	id S966757AbaCUBEH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:04:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36786 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965331AbaCUAEY (ORCPT
+	with ESMTP id S965352AbaCUAE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:24 -0400
+	Thu, 20 Mar 2014 20:04:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 108/149] drm/radeon: fix minor typos in si_dpm.c
-Date: Thu, 20 Mar 2014 17:04:31 -0700
-Message-Id: <20140321000440.710135192@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 112/149] ASoC: si476x: Fix IO setup
+Date: Thu, 20 Mar 2014 17:04:35 -0700
+Message-Id: <20140321000440.844630921@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,39 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 407b6dfd9afa30cf963fa99bca91870e47965612 upstream.
+commit 58d4d3c976b33784a1443c446a3d7203bf2153f0 upstream.
 
-Copy/paste typos from the ni code. Should not
-have any functional change.
+The si476x is a MFD device and the CODEC driver is using the regmap struct of
+the parent device, hence automatic IO setup will not work and we need to
+manually call snd_soc_codec_set_cache_io(). The issue was introduced commit
+d6173df35f ("ASoC: si476x: Remove custom register I/O implementation")
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Fixes: d6173df35f ("ASoC: si476x: Remove custom register I/O implementation")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/si_dpm.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/si476x.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/radeon/si_dpm.c
-+++ b/drivers/gpu/drm/radeon/si_dpm.c
-@@ -2396,7 +2396,7 @@ static int si_populate_sq_ramping_values
- 	if (SISLANDS_DPM2_SQ_RAMP_STI_SIZE > (STI_SIZE_MASK >> STI_SIZE_SHIFT))
- 		enable_sq_ramping = false;
+--- a/sound/soc/codecs/si476x.c
++++ b/sound/soc/codecs/si476x.c
+@@ -210,7 +210,7 @@ out:
+ static int si476x_codec_probe(struct snd_soc_codec *codec)
+ {
+ 	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
+-	return 0;
++	return snd_soc_codec_set_cache_io(codec, 0, 0, SND_SOC_REGMAP);
+ }
  
--	if (NISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
-+	if (SISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
- 		enable_sq_ramping = false;
- 
- 	for (i = 0; i < state->performance_level_count; i++) {
-@@ -5413,7 +5413,7 @@ static void si_populate_mc_reg_addresses
- 
- 	for (i = 0, j = 0; j < si_pi->mc_reg_table.last; j++) {
- 		if (si_pi->mc_reg_table.valid_flag & (1 << j)) {
--			if (i >= SMC_NISLANDS_MC_REGISTER_ARRAY_SIZE)
-+			if (i >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
- 				break;
- 			mc_reg_table->address[i].s0 =
- 				cpu_to_be16(si_pi->mc_reg_table.mc_reg_address[j].s0);
+ static struct snd_soc_dai_ops si476x_dai_ops = {
 
 
