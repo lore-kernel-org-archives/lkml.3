@@ -1,63 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831AbaCUWuu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:50:50 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:57066 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaCUWuV (ORCPT
+	id S1752384AbaCUWvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:51:13 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:49701 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbaCUWvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:50:21 -0400
-Message-ID: <532CC215.1000107@ahsoftware.de>
-Date: Fri, 21 Mar 2014 23:49:57 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] initramfs: print error and shell out for unsupported
- content
-References: <CAAsK9AEeobOG1j6NHUoqkZaZ5h8GGK_fL+gyh9MhSvguQjyU_w@mail.gmail.com>	<1395352845-7435-1-git-send-email-holler@ahsoftware.de> <20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>
-In-Reply-To: <20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Mar 2014 18:51:04 -0400
+From: Yu Zhao <yuzhao@google.com>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        jamieliu@google.com, suleiman@google.com, Yu Zhao <yuzhao@google.com>
+Subject: [PATCH 2/3] swap: do not store private swap files on swap_list
+Date: Fri, 21 Mar 2014 15:50:33 -0700
+Message-Id: <1395442234-7493-3-git-send-email-yuzhao@google.com>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1395442234-7493-1-git-send-email-yuzhao@google.com>
+References: <1395442234-7493-1-git-send-email-yuzhao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.03.2014 22:03, schrieb Andrew Morton:
-> On Thu, 20 Mar 2014 23:00:45 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
-> 
->> The initramfs generation is broken for file and directory names which contain
->> colons or spaces. Print an error and don't try to continue.
+From: Jamie Liu <jamieliu@google.com>
 
-> It would be better to fix the it-doesnt-work-with-all-filenames bug. 
-> Any details on that?
+swap_list is used by get_swap_page() to find public swap files to swap
+to; in the case that there are many private swap files and few public
+swap files, get_swap_page() may waste time iterating through private
+swap files it can't swap to. Change _enable_swap_info() to not insert
+private swap files onto swap_list; this improves the performance of
+get_swap_page() in such cases, at the cost of making
+swap_store_swap_device() and swapoff() minutely slower (both of which
+are non-critical).
 
-IMHO not worth the time. The whole process which is curently used is
-extremly fragile.
+Signed-off-by: Jamie Liu <jamieliu@google.com>
+Signed-off-by: Yu Zhao <yuzhao@google.com>
+---
+ mm/swapfile.c | 84 +++++++++++++++++++++++++++++++++--------------------------
+ 1 file changed, 47 insertions(+), 37 deletions(-)
 
-E.g it's almost guaranteed to fail trying to include arbitrary filenames
-as dependencies in a Makefile. Besides the one problem I've discoverd
-with colons, there could be much more things happen, e.g. with filenames
-which do include other special Makefile characters you all would have to
-escape correctly.
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 18a8eee..27e147b 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -712,14 +712,14 @@ int swap_store_swap_device(const char *buf, int *_type)
+ 
+ 	mapping = victim->f_mapping;
+ 	spin_lock(&swap_lock);
+-	for (type = swap_list.head; type >= 0; type = swap_info[type]->next) {
++	for (type = 0; type < nr_swapfiles; type++) {
+ 		si = swap_info[type];
+ 		if ((si->flags & SWP_WRITEOK) == SWP_WRITEOK) {
+ 			if (si->swap_file->f_mapping == mapping)
+ 				break;
+ 		}
+ 	}
+-	if (type < 0) {
++	if (type == nr_swapfiles) {
+ 		err = -EINVAL;
+ 	} else {
+ 		err = 0;
+@@ -803,10 +803,7 @@ swp_entry_t get_swap_page(struct page *page)
+ 			spin_unlock(&si->lock);
+ 			continue;
+ 		}
+-		if (si->flags & SWP_PRIVATE) {
+-			spin_unlock(&si->lock);
+-			continue;
+-		}
++		BUG_ON(si->flags & SWP_PRIVATE);
+ 
+ 		swap_list.next = next;
+ 
+@@ -957,11 +954,12 @@ static unsigned char swap_entry_free(struct swap_info_struct *p,
+ 			p->lowest_bit = offset;
+ 		if (offset > p->highest_bit)
+ 			p->highest_bit = offset;
+-		set_highest_priority_index(p->type);
+ 		if (p->flags & SWP_PRIVATE)
+ 			atomic_long_inc(&nr_private_swap_pages);
+-		else
++		else {
+ 			atomic_long_inc(&nr_public_swap_pages);
++			set_highest_priority_index(p->type);
++		}
+ 		p->inuse_pages--;
+ 		frontswap_invalidate_page(p->type, offset);
+ 		if (p->flags & SWP_BLKDEV) {
+@@ -1899,6 +1897,8 @@ static void _enable_swap_info(struct swap_info_struct *p, int prio,
+ 
+ 	if (prio >= 0)
+ 		p->prio = prio;
++	else if (p->flags & SWP_PRIVATE)
++		p->prio = 0;
+ 	else
+ 		p->prio = --least_priority;
+ 	p->swap_map = swap_map;
+@@ -1910,19 +1910,19 @@ static void _enable_swap_info(struct swap_info_struct *p, int prio,
+ 	} else {
+ 		atomic_long_add(p->pages, &nr_public_swap_pages);
+ 		total_public_swap_pages += p->pages;
++		/* insert swap space into swap_list: */
++		prev = -1;
++		for (i = swap_list.head; i >= 0; i = swap_info[i]->next) {
++			if (p->prio >= swap_info[i]->prio)
++				break;
++			prev = i;
++		}
++		p->next = i;
++		if (prev < 0)
++			swap_list.head = swap_list.next = p->type;
++		else
++			swap_info[prev]->next = p->type;
+ 	}
+-	/* insert swap space into swap_list: */
+-	prev = -1;
+-	for (i = swap_list.head; i >= 0; i = swap_info[i]->next) {
+-		if (p->prio >= swap_info[i]->prio)
+-			break;
+-		prev = i;
+-	}
+-	p->next = i;
+-	if (prev < 0)
+-		swap_list.head = swap_list.next = p->type;
+-	else
+-		swap_info[prev]->next = p->type;
+ }
+ 
+ static void enable_swap_info(struct swap_info_struct *p, int prio,
+@@ -1978,15 +1978,25 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 	mapping = victim->f_mapping;
+ 	prev = -1;
+ 	spin_lock(&swap_lock);
+-	for (type = swap_list.head; type >= 0; type = swap_info[type]->next) {
++	for (type = 0; type < nr_swapfiles; type++) {
+ 		p = swap_info[type];
+ 		if (p->flags & SWP_WRITEOK) {
+-			if (p->swap_file->f_mapping == mapping)
++			if (p->swap_file->f_mapping == mapping) {
++				/* Private swapfiles aren't in swap_list */
++				if (p->flags & SWP_PRIVATE)
++					break;
++				/* Find type's predecessor in swap_list */
++				for (i = swap_list.head; i >= 0;
++				     i = swap_info[i]->next) {
++					if (type == i)
++						break;
++					prev = i;
++				}
+ 				break;
++			}
+ 		}
+-		prev = type;
+ 	}
+-	if (type < 0) {
++	if (type == nr_swapfiles) {
+ 		err = -EINVAL;
+ 		spin_unlock(&swap_lock);
+ 		goto out_dput;
+@@ -1998,24 +2008,24 @@ SYSCALL_DEFINE1(swapoff, const char __user *, specialfile)
+ 		spin_unlock(&swap_lock);
+ 		goto out_dput;
+ 	}
+-	if (prev < 0)
+-		swap_list.head = p->next;
+-	else
+-		swap_info[prev]->next = p->next;
+-	if (type == swap_list.next) {
+-		/* just pick something that's safe... */
+-		swap_list.next = swap_list.head;
+-	}
+ 	spin_lock(&p->lock);
+-	if (p->prio < 0) {
+-		for (i = p->next; i >= 0; i = swap_info[i]->next)
+-			swap_info[i]->prio = p->prio--;
+-		least_priority++;
+-	}
+ 	if (p->flags & SWP_PRIVATE) {
+ 		atomic_long_sub(p->pages, &nr_private_swap_pages);
+ 		total_private_swap_pages -= p->pages;
+ 	} else {
++		if (prev < 0)
++			swap_list.head = p->next;
++		else
++			swap_info[prev]->next = p->next;
++		if (type == swap_list.next) {
++			/* just pick something that's safe... */
++			swap_list.next = swap_list.head;
++		}
++		if (p->prio < 0) {
++			for (i = p->next; i >= 0; i = swap_info[i]->next)
++				swap_info[i]->prio = p->prio--;
++			least_priority++;
++		}
+ 		atomic_long_sub(p->pages, &nr_public_swap_pages);
+ 		total_public_swap_pages -= p->pages;
+ 	}
+-- 
+1.9.1.423.g4596e3a
 
-And the problem with spaces isn't as easy to fix as it first does look
-like. I think it might be easier to write the whole stuff new instead of
-trying to escape the spaces in various ways needed to end up correctly
-in the cpio (it first goes through shell code and is then feeded as some
-list to a C program).
-
-And I think that just isn't worth the time. Using find | cpio works just
-fine to generate a cpio archive and usually an initramfs just contains
-some megabytes. So it isn't a problem at all to rebuild the complete
-cpio archive with every call of make, it doesn't need much more than
-about a second or similiar on almost any machine.
-
-And for the records, I indeed had a deeper look, trying to fix it. But,
-as said, quickly realized that it will need too much effort and doesn't
-make sense, if it will be doable correctly at all.
-
-Regards,
-
-Alexander Holler
