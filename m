@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964925AbaCUGMU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 02:12:20 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62383 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498AbaCUGMT (ORCPT
+	id S1755576AbaCUGdM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:33:12 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:38810 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754363AbaCUGdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 02:12:19 -0400
-From: Michal Simek <michal.simek@xilinx.com>
-To: linux-kernel@vger.kernel.org, monstr@monstr.eu
-Cc: microblaze-uclinux@itee.uq.edu.au,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH v2] MAINTAINERS: microblaze: Use LKML as mailing list
-Date: Fri, 21 Mar 2014 07:12:11 +0100
-Message-Id: <74820135ca159475c5369977a4843b2b1101d597.1395382312.git.michal.simek@xilinx.com>
-X-Mailer: git-send-email 1.8.2.3
-Content-Type: multipart/signed;
-    boundary="=_mimegpg-monstr-desktop-6741-1395382331-0001";
-    micalg=pgp-sha1; protocol="application/pgp-signature"
+	Fri, 21 Mar 2014 02:33:08 -0400
+From: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+To: snitzer@redhat.com, agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: =?UTF-8?q?Matias=20Bj=C3=B8rling?= <m@bjorling.me>
+Subject: [PATCH RFC v1 00/01] dm-lightnvm introduction
+Date: Thu, 20 Mar 2014 23:32:17 -0700
+Message-Id: <1395383538-18019-1-git-send-email-m@bjorling.me>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME GnuPG-signed message.  If you see this text, it means that
-your E-mail or Usenet software does not support MIME signed messages.
-The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
-To open this message correctly you will need to install E-mail or Usenet
-software that supports modern Internet standards.
+Hi,
 
---=_mimegpg-monstr-desktop-6741-1395382331-0001
+Users that have custom firmware SSDs, may choose to expose their flash directly.
+This allows the host to control logical to physical address mappings, garbage
+collection strategy, wear-leveling, and so on.
 
-microblaze-uclinux mailing list is almost dead and
-it is just causing troubles for non subscribers which are
-getting email about waiting for moderator.
-Approval never happens. Move it to LKML.
+This is beneficial when you either want to strip the cost of a costly controller
+or want detailed control over an SSD. Such as implementing key-value stores,
+object-stored, atomic I/Os, etc.
 
-Reported-by: Richard Guy Briggs <rgb@redhat.com>
-Signed-off-by: Michal Simek <michal.simek@xilinx.com>
----
+LightNVM implements the host-side core. It supports two modes. Users that
+doesn't have hardware available and want to emulate an SSD, and users with a
+physical SSD, that has a LightNVM compatible firmware.
 
-Changes in v2:
- - LKML is default mailing list, remove mailing list line
-   from Microblaze fragment
+The behavior of the core can be exposed through the various components that make
+up an FTL. Thus, it is not single implementation, but instead possible to
+mix the best algorithms for the user-space application workloads.
 
- MAINTAINERS | 1 -
- 1 file changed, 1 deletion(-)
+Currently, LightNVM implements a page-based FTL, cost-based GC and simple
+wear-leveling. Additionally, it allows simulation of flash timings when hardware
+isn't available. There's work on getting it to the OpenSSD platform with a
+custom firmware and getting it stable for broad use.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index b3fdb0f..f6fe453 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5702,7 +5702,6 @@ F:	fs/imgdafs/
+There is still much work to do. I'm looking for feedback on the approach, dm
+integration, and more. Any feedback is greatly appreciated.
 
- MICROBLAZE ARCHITECTURE
- M:	Michal Simek <monstr@monstr.eu>
--L:	microblaze-uclinux@itee.uq.edu.au (moderated for non-subscribers)
- W:	http://www.monstr.eu/fdt/
- T:	git git://git.monstr.eu/linux-2.6-microblaze.git
- S:	Supported
---
-1.8.2.3
+A presentation was given at the recent Non-Volatile Memory Workshop (NVMW)
+workshop. Slides are available at: http://bjorling.me/NVMW2014-LightNVM.pdf
 
+Major todo's:
+ * Patch has TODO and FIXME in places that needs to be cleaned.
+ * LightNVM compatible firmware for the OpenSSD platform and integration.
+ * Performance regressions during GC.
+ * Durability during power failure.
 
---=_mimegpg-monstr-desktop-6741-1395382331-0001
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
+Thanks,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Matias
 
-iEYEABECAAYFAlMr2DsACgkQykllyylKDCFBvwCdHVInG1o2bRfLaOqzq/2OTwtj
-MGkAnRK2CiGOty58M/i5Hh9EJLHfeTn3
-=rdGB
------END PGP SIGNATURE-----
+Matias Bjørling (1):
+  dm-lightnvm: An open FTL for open firmware SSDs
 
---=_mimegpg-monstr-desktop-6741-1395382331-0001--
+ drivers/md/Kconfig             |   1 +
+ drivers/md/Makefile            |   1 +
+ drivers/md/lightnvm/Kconfig    |  14 +
+ drivers/md/lightnvm/Makefile   |   1 +
+ drivers/md/lightnvm/core.c     | 705 +++++++++++++++++++++++++++++++++++++++++
+ drivers/md/lightnvm/gc.c       | 208 ++++++++++++
+ drivers/md/lightnvm/lightnvm.c | 589 ++++++++++++++++++++++++++++++++++
+ drivers/md/lightnvm/lightnvm.h | 592 ++++++++++++++++++++++++++++++++++
+ drivers/md/lightnvm/reg.c      |  41 +++
+ 9 files changed, 2152 insertions(+)
+ create mode 100644 drivers/md/lightnvm/Kconfig
+ create mode 100644 drivers/md/lightnvm/Makefile
+ create mode 100644 drivers/md/lightnvm/core.c
+ create mode 100644 drivers/md/lightnvm/gc.c
+ create mode 100644 drivers/md/lightnvm/lightnvm.c
+ create mode 100644 drivers/md/lightnvm/lightnvm.h
+ create mode 100644 drivers/md/lightnvm/reg.c
+
+-- 
+1.8.3.2
+
