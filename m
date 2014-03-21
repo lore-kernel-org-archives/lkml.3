@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966055AbaCUAJY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37260 "EHLO
+	id S966552AbaCUAYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:24:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37286 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965778AbaCUAJT (ORCPT
+	with ESMTP id S966046AbaCUAJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:19 -0400
+	Thu, 20 Mar 2014 20:09:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 65/85] net: unix socket code abuses csum_partial
-Date: Thu, 20 Mar 2014 17:10:08 -0700
-Message-Id: <20140321000607.966742899@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 80/85] iwlwifi: mvm: dont WARN when statistics are handled late
+Date: Thu, 20 Mar 2014 17:10:23 -0700
+Message-Id: <20140321000610.193496183@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,83 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
+commit 1e9291996c4eedf79883f47ec635235e39d3d6cd upstream.
 
-The unix socket code is using the result of csum_partial to
-hash into a lookup table:
+Since the statistics handler is asynchrous, it can very well
+be that we will handle the statistics (hence the RSSI
+fluctuation) when we already disassociated.
+Don't WARN on this case.
 
-	unix_hash_fold(csum_partial(sunaddr, len, 0));
+This solves: https://bugzilla.redhat.com/show_bug.cgi?id=1071998
 
-csum_partial is only guaranteed to produce something that can be
-folded into a checksum, as its prototype explains:
-
- * returns a 32-bit number suitable for feeding into itself
- * or csum_tcpudp_magic
-
-The 32bit value should not be used directly.
-
-Depending on the alignment, the ppc64 csum_partial will return
-different 32bit partial checksums that will fold into the same
-16bit checksum.
-
-This difference causes the following testcase (courtesy of
-Gustavo) to sometimes fail:
-
-#include <sys/socket.h>
-#include <stdio.h>
-
-int main()
-{
-	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	int i = 1;
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
-
-	struct sockaddr addr;
-	addr.sa_family = AF_LOCAL;
-	bind(fd, &addr, 2);
-
-	listen(fd, 128);
-
-	struct sockaddr_storage ss;
-	socklen_t sslen = (socklen_t)sizeof(ss);
-	getsockname(fd, (struct sockaddr*)&ss, &sslen);
-
-	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
-		perror(NULL);
-		return 1;
-	}
-	printf("OK\n");
-	return 0;
-}
-
-As suggested by davem, fix this by using csum_fold to fold the
-partial 32bit checksum into a 16bit checksum before using it.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: 2b76ef13086f ("iwlwifi: mvm: implement reduced Tx power")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- net/unix/af_unix.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -160,9 +160,8 @@ static inline void unix_set_secdata(stru
+---
+ drivers/net/wireless/iwlwifi/mvm/bt-coex.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
++++ b/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
+@@ -523,8 +523,11 @@ void iwl_mvm_bt_rssi_event(struct iwl_mv
  
- static inline unsigned int unix_hash_fold(__wsum n)
- {
--	unsigned int hash = (__force unsigned int)n;
-+	unsigned int hash = (__force unsigned int)csum_fold(n);
+ 	mutex_lock(&mvm->mutex);
  
--	hash ^= hash>>16;
- 	hash ^= hash>>8;
- 	return hash&(UNIX_HASH_SIZE-1);
- }
+-	/* Rssi update while not associated ?! */
+-	if (WARN_ON_ONCE(mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT))
++	/*
++	 * Rssi update while not associated - can happen since the statistics
++	 * are handled asynchronously
++	 */
++	if (mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT)
+ 		goto out_unlock;
+ 
+ 	/* No open connection - reports should be disabled */
 
 
