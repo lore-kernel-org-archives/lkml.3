@@ -1,35 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760903AbaCUNOP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:14:15 -0400
-Received: from mx.oic.lv ([195.13.171.2]:50325 "EHLO mx.oic.lv"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751786AbaCUNOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:14:12 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Fri, 21 Mar 2014 18:29:44 +0530
-From: "@webmail.lnc" <livijaunko@oic.lv>
-To: undisclosed-recipients:;
-Subject: Din webmail kvot har =?UTF-8?Q?=C3=B6verskridit=20kvoten=2C=20som?=
- =?UTF-8?Q?=20=C3=A4r=20=32=20GB?=
-Message-ID: <e4e5c6404e106a774f4748574896e5e2@mail.oic.lv>
-User-Agent: Roundcube Webmail/0.8.0
+	id S1760940AbaCUNOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:14:43 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:63065 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760874AbaCUNOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 09:14:41 -0400
+Message-ID: <1395407680.6030.81.camel@marge.simpson.net>
+Subject: RE: Bug 71331 - mlock yields processor to lower priority process
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: jimmie.davis@l-3com.com
+Cc: artem_fetishev@epam.com, peterz@infradead.org,
+        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Date: Fri, 21 Mar 2014 14:14:40 +0100
+In-Reply-To: <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>
+References: <20140321200248.GB6264@owamsq.epam.com>
+	 ,<1395393822.6030.59.camel@marge.simpson.net>
+	 <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Din webmail kvot har överskridit kvoten, som är 2 GB. För närvarande är 
-2.3 GB.
-För att återuppliva och öka sin andel av webmail, klicka på följande 
-länk eller kopiera länken och uppdatera din webmail konto
-För att aktivera.
+On Fri, 2014-03-21 at 12:18 +0000, jimmie.davis@l-3com.com wrote:
 
-http://www.form2pay.com/publish/publish_form/135981
+> As the submitter of the bug, let me give you my perspective.
+> SCHED_FIFO means run my task until it blocks or a higher priority task
+> pre-empts it.  Period.
 
+It blocked.
+> 
+> mlock() doesn't block. check the man page.
+> 
+I don't see that specified.
 
-Om inte, kan resultera i uppsägning av din webmail konto.
-Tack och ledsen för olägenheten
-Admin/Webmaster/localhost
+(or how it could be, but what do I know, IANIPL)
+
+> Any other way and you are not able to use priority based scheduling. 
+
+Sure you can, allocate and lock down resources before entering critical
+sections.
+
+If you think donning a SCHED_FIFO super-suit should make your task
+unstoppable, you're gonna be very disappointed.  Fact is if your
+Juggernaut bumps ever so gently into a contended sleeping variety lock
+(and in the rt kernel that means nearly every lock), it will block.
+
+-Mike
+
