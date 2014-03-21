@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760666AbaCUBJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:09:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36718 "EHLO
+	id S1760687AbaCUBKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:10:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965167AbaCUAEO (ORCPT
+	with ESMTP id S965156AbaCUAEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:14 -0400
+	Thu, 20 Mar 2014 20:04:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 094/149] iser-target: Fix post_send_buf_count for RDMA READ/WRITE
-Date: Thu, 20 Mar 2014 17:04:17 -0700
-Message-Id: <20140321000440.213026135@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 085/149] NFSv4: Fix another nfs4_sequence corruptor
+Date: Thu, 20 Mar 2014 17:04:08 -0700
+Message-Id: <20140321000439.896675221@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,98 +28,86 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit b6b87a1df604678ed1be40158080db012a99ccca upstream.
+commit b7e63a1079b266866a732cf699d8c4d61391bbda upstream.
 
-This patch fixes the incorrect setting of ->post_send_buf_count
-related to RDMA WRITEs + READs where isert_rdma_rw->send_wr_num
-was not being taken into account.
+nfs4_release_lockowner needs to set the rpc_message reply to point to
+the nfs4_sequence_res in order to avoid another Oopsable situation
+in nfs41_assign_slot.
 
-This includes incrementing ->post_send_buf_count within
-isert_put_datain() + isert_get_dataout(), decrementing within
-__isert_send_completion() + isert_response_completion(), and
-clearing wr->send_wr_num within isert_completion_rdma_read()
-
-This is necessary because even though IB_SEND_SIGNALED is
-not set for RDMA WRITEs + READs, during a QP failure event
-the work requests will be returned with exception status
-from the TX completion queue.
-
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Fixes: fbd4bfd1d9d21 (NFS: Add nfs4_sequence calls for RELEASE_LOCKOWNER)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ fs/nfs/nfs4proc.c       |   10 +++++-----
+ include/linux/nfs_xdr.h |    5 +++++
+ 2 files changed, 10 insertions(+), 5 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1532,6 +1532,7 @@ isert_completion_rdma_read(struct iser_t
- 	iscsit_stop_dataout_timer(cmd);
- 	device->unreg_rdma_mem(isert_cmd, isert_conn);
- 	cmd->write_data_done = wr->cur_rdma_length;
-+	wr->send_wr_num = 0;
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -5831,8 +5831,7 @@ struct nfs_release_lockowner_data {
+ 	struct nfs4_lock_state *lsp;
+ 	struct nfs_server *server;
+ 	struct nfs_release_lockowner_args args;
+-	struct nfs4_sequence_args seq_args;
+-	struct nfs4_sequence_res seq_res;
++	struct nfs_release_lockowner_res res;
+ 	unsigned long timestamp;
+ };
  
- 	pr_debug("Cmd: %p RDMA_READ comp calling execute_cmd\n", isert_cmd);
- 	spin_lock_bh(&cmd->istate_lock);
-@@ -1596,6 +1597,7 @@ isert_response_completion(struct iser_tx
- 			  struct ib_device *ib_dev)
+@@ -5840,7 +5839,7 @@ static void nfs4_release_lockowner_prepa
  {
- 	struct iscsi_cmd *cmd = isert_cmd->iscsi_cmd;
-+	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+ 	struct nfs_release_lockowner_data *data = calldata;
+ 	nfs40_setup_sequence(data->server,
+-				&data->seq_args, &data->seq_res, task);
++				&data->args.seq_args, &data->res.seq_res, task);
+ 	data->timestamp = jiffies;
+ }
  
- 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
- 	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
-@@ -1607,7 +1609,7 @@ isert_response_completion(struct iser_tx
- 		queue_work(isert_comp_wq, &isert_cmd->comp_work);
- 		return;
- 	}
--	atomic_dec(&isert_conn->post_send_buf_count);
-+	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+@@ -5849,7 +5848,7 @@ static void nfs4_release_lockowner_done(
+ 	struct nfs_release_lockowner_data *data = calldata;
+ 	struct nfs_server *server = data->server;
  
- 	cmd->i_state = ISTATE_SENT_STATUS;
- 	isert_completion_put(tx_desc, isert_cmd, ib_dev);
-@@ -1645,7 +1647,7 @@ __isert_send_completion(struct iser_tx_d
- 	case ISER_IB_RDMA_READ:
- 		pr_debug("isert_send_completion: Got ISER_IB_RDMA_READ:\n");
+-	nfs40_sequence_done(task, &data->seq_res);
++	nfs40_sequence_done(task, &data->res.seq_res);
  
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 		isert_completion_rdma_read(tx_desc, isert_cmd);
- 		break;
- 	default:
-@@ -2377,12 +2379,12 @@ isert_put_datain(struct iscsi_conn *conn
- 	isert_init_send_wr(isert_conn, isert_cmd,
- 			   &isert_cmd->tx_desc.send_wr, true);
+ 	switch (task->tk_status) {
+ 	case 0:
+@@ -5890,7 +5889,6 @@ static int nfs4_release_lockowner(struct
+ 	data = kmalloc(sizeof(*data), GFP_NOFS);
+ 	if (!data)
+ 		return -ENOMEM;
+-	nfs4_init_sequence(&data->seq_args, &data->seq_res, 0);
+ 	data->lsp = lsp;
+ 	data->server = server;
+ 	data->args.lock_owner.clientid = server->nfs_client->cl_clientid;
+@@ -5898,6 +5896,8 @@ static int nfs4_release_lockowner(struct
+ 	data->args.lock_owner.s_dev = server->s_dev;
  
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+ 	msg.rpc_argp = &data->args;
++	msg.rpc_resp = &data->res;
++	nfs4_init_sequence(&data->args.seq_args, &data->res.seq_res, 0);
+ 	rpc_call_async(server->client, &msg, 0, &nfs4_release_lockowner_ops, data);
+ 	return 0;
+ }
+--- a/include/linux/nfs_xdr.h
++++ b/include/linux/nfs_xdr.h
+@@ -467,9 +467,14 @@ struct nfs_lockt_res {
+ };
  
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_WRITE\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Cmd: %p posted RDMA_WRITE + Response for iSER Data READ\n",
- 		 isert_cmd);
-@@ -2410,12 +2412,12 @@ isert_get_dataout(struct iscsi_conn *con
- 		return rc;
- 	}
+ struct nfs_release_lockowner_args {
++	struct nfs4_sequence_args	seq_args;
+ 	struct nfs_lowner	lock_owner;
+ };
  
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_READ\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Cmd: %p posted RDMA_READ memory for ISER Data WRITE\n",
- 		 isert_cmd);
++struct nfs_release_lockowner_res {
++	struct nfs4_sequence_res	seq_res;
++};
++
+ struct nfs4_delegreturnargs {
+ 	struct nfs4_sequence_args	seq_args;
+ 	const struct nfs_fh *fhandle;
 
 
