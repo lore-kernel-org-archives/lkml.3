@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965655AbaCUAPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:15:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37416 "EHLO
+	id S966248AbaCUAQi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:16:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966170AbaCUAJo (ORCPT
+	with ESMTP id S966159AbaCUAJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:44 -0400
+	Thu, 20 Mar 2014 20:09:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.4 28/35] can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
-Date: Thu, 20 Mar 2014 17:11:19 -0700
-Message-Id: <20140321001055.079675280@linuxfoundation.org>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.4 18/35] tracing: Do not add event files for modules that fail tracepoints
+Date: Thu, 20 Mar 2014 17:11:09 -0700
+Message-Id: <20140321001054.767910333@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -28,39 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 7e9e148af01ef388efb6e2490805970be4622792 upstream.
+commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
 
-If flexcan_chip_start() in flexcan_open() fails, the interrupt is not freed,
-this patch adds the missing cleanup.
+If a module fails to add its tracepoints due to module tainting, do not
+create the module event infrastructure in the debugfs directory. As the events
+will not work and worse yet, they will silently fail, making the user wonder
+why the events they enable do not display anything.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Having a warning on module load and the events not visible to the users
+will make the cause of the problem much clearer.
+
+Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
+
+Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ include/linux/tracepoint.h  |    6 ++++++
+ kernel/trace/trace_events.c |   10 ++++++++++
+ kernel/tracepoint.c         |    7 ++++++-
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -805,7 +805,7 @@ static int flexcan_open(struct net_devic
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -60,6 +60,12 @@ struct tp_module {
+ 	unsigned int num_tracepoints;
+ 	struct tracepoint * const *tracepoints_ptrs;
+ };
++bool trace_module_has_bad_taint(struct module *mod);
++#else
++static inline bool trace_module_has_bad_taint(struct module *mod)
++{
++	return false;
++}
+ #endif /* CONFIG_MODULES */
  
- 	err = request_irq(dev->irq, flexcan_irq, IRQF_SHARED, dev->name, dev);
- 	if (err)
--		goto out_close;
-+		goto out_free_irq;
+ struct tracepoint_iter {
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1354,6 +1354,16 @@ static void trace_module_add_events(stru
+ 	struct ftrace_module_file_ops *file_ops = NULL;
+ 	struct ftrace_event_call **call, **start, **end;
  
- 	/* start chip and queuing */
- 	err = flexcan_chip_start(dev);
-@@ -816,6 +816,8 @@ static int flexcan_open(struct net_devic
++	if (!mod->num_trace_events)
++		return;
++
++	/* Don't add infrastructure for mods without tracepoints */
++	if (trace_module_has_bad_taint(mod)) {
++		pr_err("%s: module has bad taint, not creating trace events\n",
++		       mod->name);
++		return;
++	}
++
+ 	start = mod->trace_events;
+ 	end = mod->trace_events + mod->num_trace_events;
  
- 	return 0;
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -628,6 +628,11 @@ void tracepoint_iter_reset(struct tracep
+ EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
  
-+ out_free_irq:
-+	free_irq(dev->irq, dev);
-  out_close:
- 	close_candev(dev);
-  out:
+ #ifdef CONFIG_MODULES
++bool trace_module_has_bad_taint(struct module *mod)
++{
++	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
++}
++
+ static int tracepoint_module_coming(struct module *mod)
+ {
+ 	struct tp_module *tp_mod, *iter;
+@@ -638,7 +643,7 @@ static int tracepoint_module_coming(stru
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+ 	 * Staging and out-of-tree GPL modules are fine.
+ 	 */
+-	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
++	if (trace_module_has_bad_taint(mod))
+ 		return 0;
+ 	mutex_lock(&tracepoints_mutex);
+ 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 
 
