@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966389AbaCUAdo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:33:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37119 "EHLO
+	id S966766AbaCUAeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:34:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37117 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965924AbaCUAI7 (ORCPT
+	with ESMTP id S965918AbaCUAI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:59 -0400
+	Thu, 20 Mar 2014 20:08:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.10 37/85] x86: Ignore NMIs that come in during early boot
-Date: Thu, 20 Mar 2014 17:09:40 -0700
-Message-Id: <20140321000604.039236407@linuxfoundation.org>
+        Artem Fetishev <artem_fetishev@epam.com>,
+        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
+        wiebittewas@gmail.com, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 54/85] fs/proc/base.c: fix GPF in /proc/$PID/map_files
+Date: Thu, 20 Mar 2014 17:09:57 -0700
+Message-Id: <20140321000606.423408907@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,83 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-commit 5fa10196bdb5f190f595ebd048490ee52dddea0f upstream.
+commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
 
-Don Zickus reports:
+The expected logic of proc_map_files_get_link() is either to return 0
+and initialize 'path' or return an error and leave 'path' uninitialized.
 
-A customer generated an external NMI using their iLO to test kdump
-worked.  Unfortunately, the machine hung.  Disabling the nmi_watchdog
-made things work.
+By the time dname_to_vma_addr() returns 0 the corresponding vma may have
+already be gone.  In this case the path is not initialized but the
+return value is still 0.  This results in 'general protection fault'
+inside d_path().
 
-I speculated the external NMI fired, caused the machine to panic (as
-expected) and the perf NMI from the watchdog came in and was latched.
-My guess was this somehow caused the hang.
+Steps to reproduce:
 
-   ----
+  CONFIG_CHECKPOINT_RESTORE=y
 
-It appears that the latched NMI stays latched until the early page
-table generation on 64 bits, which causes exceptions to happen which
-end in IRET, which re-enable NMI.  Therefore, ignore NMIs that come in
-during early execution, until we have proper exception handling.
+    fd = open(...);
+    while (1) {
+        mmap(fd, ...);
+        munmap(fd, ...);
+    }
 
-Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
-Link: http://lkml.kernel.org/r/1394221143-29713-1-git-send-email-dzickus@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+  ls -la /proc/$PID/map_files
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
+
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
+Reported-by: <wiebittewas@gmail.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/head_32.S |    7 ++++++-
- arch/x86/kernel/head_64.S |    6 +++++-
- 2 files changed, 11 insertions(+), 2 deletions(-)
+ fs/proc/base.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kernel/head_32.S
-+++ b/arch/x86/kernel/head_32.S
-@@ -566,6 +566,10 @@ ENDPROC(early_idt_handlers)
- 	/* This is global to keep gas from relaxing the jumps */
- ENTRY(early_idt_handler)
- 	cld
-+
-+	cmpl $X86_TRAP_NMI,(%esp)
-+	je is_nmi		# Ignore NMI
-+
- 	cmpl $2,%ss:early_recursion_flag
- 	je hlt_loop
- 	incl %ss:early_recursion_flag
-@@ -616,8 +620,9 @@ ex_entry:
- 	pop %edx
- 	pop %ecx
- 	pop %eax
--	addl $8,%esp		/* drop vector number and error code */
- 	decl %ss:early_recursion_flag
-+is_nmi:
-+	addl $8,%esp		/* drop vector number and error code */
- 	iret
- ENDPROC(early_idt_handler)
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1825,6 +1825,7 @@ static int proc_map_files_get_link(struc
+ 	if (rc)
+ 		goto out_mmput;
  
---- a/arch/x86/kernel/head_64.S
-+++ b/arch/x86/kernel/head_64.S
-@@ -343,6 +343,9 @@ early_idt_handlers:
- ENTRY(early_idt_handler)
- 	cld
- 
-+	cmpl $X86_TRAP_NMI,(%rsp)
-+	je is_nmi		# Ignore NMI
-+
- 	cmpl $2,early_recursion_flag(%rip)
- 	jz  1f
- 	incl early_recursion_flag(%rip)
-@@ -405,8 +408,9 @@ ENTRY(early_idt_handler)
- 	popq %rdx
- 	popq %rcx
- 	popq %rax
--	addq $16,%rsp		# drop vector number and error code
- 	decl early_recursion_flag(%rip)
-+is_nmi:
-+	addq $16,%rsp		# drop vector number and error code
- 	INTERRUPT_RETURN
- ENDPROC(early_idt_handler)
- 
++	rc = -ENOENT;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_exact_vma(mm, vm_start, vm_end);
+ 	if (vma && vma->vm_file) {
 
 
