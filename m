@@ -1,122 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760689AbaCUJmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:42:44 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:59069 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760576AbaCUJmi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:42:38 -0400
-From: Linus Walleij <linus.walleij@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/2] pinctrl: nomadik: factor in platform data container
-Date: Fri, 21 Mar 2014 10:42:32 +0100
-Message-Id: <1395394952-31545-1-git-send-email-linus.walleij@linaro.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1760645AbaCUJm1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:42:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48829 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760576AbaCUJmY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:42:24 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>
+Subject: [PATCH RFC V2 3/4] vhost_net: add basic tracepoints for vhost_net
+Date: Fri, 21 Mar 2014 17:41:52 +0800
+Message-Id: <1395394913-19548-4-git-send-email-jasowang@redhat.com>
+In-Reply-To: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
+References: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old platform data struct is just a leftover from the times
-when the driver was not probed exclusively from the device tree.
-Factor this into the general state container and simplify the
-probe path.
+To help performance analyze and debugging, this patch introduces
+tracepoints for vhost_net. Two tracepoints were introduced, packets
+sending and receiving.
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
 ---
- drivers/pinctrl/pinctrl-nomadik.c | 39 +++++++++------------------------------
- 1 file changed, 9 insertions(+), 30 deletions(-)
+ drivers/vhost/net.c       |  5 +++++
+ drivers/vhost/net_trace.h | 53 +++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 58 insertions(+)
+ create mode 100644 drivers/vhost/net_trace.h
 
-diff --git a/drivers/pinctrl/pinctrl-nomadik.c b/drivers/pinctrl/pinctrl-nomadik.c
-index ee6a8ca264fc..51f28c927c7e 100644
---- a/drivers/pinctrl/pinctrl-nomadik.c
-+++ b/drivers/pinctrl/pinctrl-nomadik.c
-@@ -246,19 +246,6 @@ enum nmk_gpio_slpm {
- 	NMK_GPIO_SLPM_WAKEUP_DISABLE = NMK_GPIO_SLPM_NOCHANGE,
- };
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 7353204..8ac83a9 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -30,6 +30,9 @@
  
--/*
-- * Platform data to register a block: only the initial gpio/irq number.
-- */
--struct nmk_gpio_platform_data {
--	char *name;
--	int first_gpio;
--	int first_irq;
--	int num_gpio;
--	u32 (*get_latent_status)(unsigned int bank);
--	void (*set_ioforce)(bool enable);
--	bool supports_sleepmode;
--};
--
- struct nmk_gpio_chip {
- 	struct gpio_chip chip;
- 	struct irq_domain *domain;
-@@ -1240,39 +1227,33 @@ static const struct irq_domain_ops nmk_gpio_irq_simple_ops = {
+ #include "vhost.h"
  
- static int nmk_gpio_probe(struct platform_device *dev)
- {
--	struct nmk_gpio_platform_data *pdata;
- 	struct device_node *np = dev->dev.of_node;
- 	struct nmk_gpio_chip *nmk_chip;
- 	struct gpio_chip *chip;
- 	struct resource *res;
- 	struct clk *clk;
- 	int latent_irq;
-+	bool supports_sleepmode;
- 	void __iomem *base;
- 	int irq;
- 	int ret;
- 
--	pdata = devm_kzalloc(&dev->dev, sizeof(*pdata), GFP_KERNEL);
--	if (!pdata)
--		return -ENOMEM;
--
- 	if (of_get_property(np, "st,supports-sleepmode", NULL))
--		pdata->supports_sleepmode = true;
-+		supports_sleepmode = true;
-+	else
-+		supports_sleepmode = false;
- 
- 	if (of_property_read_u32(np, "gpio-bank", &dev->id)) {
- 		dev_err(&dev->dev, "gpio-bank property not found\n");
- 		return -EINVAL;
- 	}
- 
--	pdata->first_gpio = dev->id * NMK_GPIO_PER_CHIP;
--	pdata->num_gpio = NMK_GPIO_PER_CHIP;
--
- 	irq = platform_get_irq(dev, 0);
- 	if (irq < 0)
- 		return irq;
- 
-+	/* It's OK for this IRQ not to be present */
- 	latent_irq = platform_get_irq(dev, 1);
--	if (latent_irq >= 0 && !pdata->get_latent_status)
--		return -EINVAL;
- 
- 	res = platform_get_resource(dev, IORESOURCE_MEM, 0);
- 	base = devm_ioremap_resource(&dev->dev, res);
-@@ -1298,15 +1279,13 @@ static int nmk_gpio_probe(struct platform_device *dev)
- 	nmk_chip->chip = nmk_gpio_template;
- 	nmk_chip->parent_irq = irq;
- 	nmk_chip->latent_parent_irq = latent_irq;
--	nmk_chip->get_latent_status = pdata->get_latent_status;
--	nmk_chip->set_ioforce = pdata->set_ioforce;
--	nmk_chip->sleepmode = pdata->supports_sleepmode;
-+	nmk_chip->sleepmode = supports_sleepmode;
- 	spin_lock_init(&nmk_chip->lock);
- 
- 	chip = &nmk_chip->chip;
--	chip->base = pdata->first_gpio;
--	chip->ngpio = pdata->num_gpio;
--	chip->label = pdata->name ?: dev_name(&dev->dev);
-+	chip->base = dev->id * NMK_GPIO_PER_CHIP;
-+	chip->ngpio = NMK_GPIO_PER_CHIP;
-+	chip->label = dev_name(&dev->dev);
- 	chip->dev = &dev->dev;
- 	chip->owner = THIS_MODULE;
- 
++#define CREATE_TRACE_POINTS
++#include "net_trace.h"
++
+ static int experimental_zcopytx = 1;
+ module_param(experimental_zcopytx, int, 0444);
+ MODULE_PARM_DESC(experimental_zcopytx, "Enable Zero Copy TX;"
+@@ -444,6 +447,7 @@ static void handle_tx(struct vhost_net *net)
+ 		if (err != len)
+ 			pr_debug("Truncated TX packet: "
+ 				 " len %d != %zd\n", err, len);
++		trace_vhost_net_tx(zcopy_used, len);
+ 		if (!zcopy_used)
+ 			vhost_add_used_and_signal(&net->dev, vq, head, 0);
+ 		else
+@@ -620,6 +624,7 @@ static void handle_rx(struct vhost_net *net)
+ 			vhost_discard_vq_desc(vq, headcount);
+ 			continue;
+ 		}
++		trace_vhost_net_rx(sock_len);
+ 		if (unlikely(vhost_hlen) &&
+ 		    memcpy_toiovecend(nvq->hdr, (unsigned char *)&hdr, 0,
+ 				      vhost_hlen)) {
+diff --git a/drivers/vhost/net_trace.h b/drivers/vhost/net_trace.h
+new file mode 100644
+index 0000000..a99a799
+--- /dev/null
++++ b/drivers/vhost/net_trace.h
+@@ -0,0 +1,53 @@
++#if !defined(_TRACE_VHOST_NET_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_VHOST_NET_H
++
++#include <linux/tracepoint.h>
++#include "vhost.h"
++
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM vhost_net
++
++TRACE_EVENT(vhost_net_tx,
++	TP_PROTO(bool zerocopy, int len),
++	TP_ARGS(zerocopy, len),
++
++	TP_STRUCT__entry(
++		__field(bool, zerocopy)
++		__field(int, len)
++	),
++
++	TP_fast_assign(
++		__entry->zerocopy = zerocopy;
++		__entry->len = len;
++	),
++
++	TP_printk("vhost_net send packet mode %s length %d\n",
++		__entry->zerocopy ? "zerocopy" : "datacopy",
++		__entry->len)
++);
++
++TRACE_EVENT(vhost_net_rx,
++	TP_PROTO(int len),
++	TP_ARGS(len),
++
++	TP_STRUCT__entry(
++		__field(int, len)
++	),
++
++	TP_fast_assign(
++		__entry->len = len;
++	),
++
++	TP_printk("vhost_net receive packet length %d\n",
++		__entry->len)
++);
++
++#endif /* _TRACE_VHOST_NET_H */
++
++#undef TRACE_INCLUDE_PATH
++#define TRACE_INCLUDE_PATH ../../drivers/vhost
++#undef TRACE_INCLUDE_FILE
++#define TRACE_INCLUDE_FILE net_trace
++
++/* This part must be outside protection */
++#include <trace/define_trace.h>
 -- 
-1.8.5.3
+1.8.3.2
 
