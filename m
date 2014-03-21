@@ -1,353 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933962AbaCUBly (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:41:54 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:53644 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932713AbaCUBlw (ORCPT
+	id S965411AbaCUBmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:42:22 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:38667 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964953AbaCUBmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 21:41:52 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: shaun@xresource.ca, sachin.kamat@linaro.org, ebru.akagunduz@gmail.com,
-        dulshani.gunawardhana89@gmail.com, speiro@ai2.upv.es,
-        gulsah.1004@gmail.com, himangi774@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, fempsci@gmail.com,
-        nandu.hgowda@gmail.com, sima.baymani@gmail.com,
-        viro@zeniv.linux.org.uk, dhowells@redhat.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        tklauser@distanz.ch
-Subject: [PATCH] staging: cxt1e1: replace kmalloc/kfree with OS_kmalloc/OS_kfree
-Date: Fri, 21 Mar 2014 10:41:39 +0900
-Message-ID: <1438070.BphUZIHYWT@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
+	Thu, 20 Mar 2014 21:42:20 -0400
+Message-ID: <532B98F8.1080001@gmail.com>
+Date: Thu, 20 Mar 2014 18:42:16 -0700
+From: Andrey Zonov <andrey.zonov@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: SCSI: race condition between scsi_remove_target and scsi_probe_and_add_lun
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Replace kmalloc/kfree with OS_kmalloc/OS_kfree.
-And also some allocation doesn't need to use GFP_DMA
-so just use GFP_KERNEL.
+I've got kernel panic on my box which works as FibreChannel initiator.
+I was able to reproduce this panic by setting dev_loss_tmo=2 and
+enabling/disabling ports every 5 seconds on the switch in 5 minutes.  I
+added some debug points in the kernel code and that's what I've got so far:
 
-c4_new() function is never called, remove it.
+1. system is inserting new device into __devices list
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-I'm not sure what GFP_DMA use correctly for km{,z}alloc().
-Please review this. 
-And this patch has coding style issues. coding style issues will be
-fixed with another one. 
+DEBUG: scsi_sysfs_device_initialize(): sdev=ffff88046a931000 7:0:5:0
+Pid: 910, comm: kworker/u:2 Tainted: P           O 3.2.48-swt9004 #33
+Call Trace:
+[<ffffffff81245c42>] ? scsi_alloc_sdev+0x1d2/0x240
+[<ffffffff8123d4bd>] ? scsi_device_lookup_by_target+0x8d/0xc0
+[<ffffffff8124623a>] ? scsi_probe_and_add_lun+0x42a/0xb20
+[<ffffffff811acb7d>] ? kobject_set_name_vargs+0x6d/0x80
+[<ffffffff81230b4f>] ? dev_set_name+0x3f/0x50
+[<ffffffff811ac782>] ? kobject_get+0x12/0x20
+[<ffffffffa000b3e4>] ? fc_host_match+0x14/0x70 [scsi_transport_fc]
+[<ffffffff8123726f>] ? attribute_container_add_device+0x4f/0x160
+[<ffffffff811ac782>] ? kobject_get+0x12/0x20
+[<ffffffff812304e4>] ? get_device+0x14/0x20
+[<ffffffff812459c5>] ? scsi_alloc_target+0x295/0x2d0
+[<ffffffff81230bca>] ? device_release+0x1a/0x80
+[<ffffffff81246bce>] ? __scsi_scan_target+0xce/0x5f0
+[<ffffffff8102ec22>] ? dequeue_task_fair+0x52/0x150
+[<ffffffff8139a91d>] ? __schedule+0x25d/0x7d0
+[<ffffffff812477b6>] ? scsi_scan_target+0xc6/0xe0
+[<ffffffffa000e75f>] ? fc_scsi_scan_rport+0xaf/0xc0 [scsi_transport_fc]
+[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
+[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff81052f06>] ? kthread+0x96/0xa0
+[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
+[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
+[<ffffffff8139f130>] ? gs_change+0xb/0xb
 
- drivers/staging/cxt1e1/hwprobe.c             |    2 +-
- drivers/staging/cxt1e1/linux.c               |   21 +++++------
- drivers/staging/cxt1e1/musycc.c              |   12 ++++---
- drivers/staging/cxt1e1/pmcc4_drv.c           |   47 +++++---------------------
- drivers/staging/cxt1e1/sbecom_inline_linux.h |   23 +------------
- drivers/staging/cxt1e1/sbecrc.c              |    5 ++-
- drivers/staging/cxt1e1/sbeproc.c             |    2 +-
- 7 files changed, 32 insertions(+), 80 deletions(-)
+2. later in scsi_probe_and_add_lun() this device is removing
 
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 9b4198b..6e207f5 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -205,7 +205,7 @@ cleanup_devs(void)
- #ifdef CONFIG_SBE_PMCC4_NCOMM
- 		free_irq(hi->pdev[1]->irq, hi->ndev);
- #endif
--		OS_kfree(hi->ndev);
-+		kfree(hi->ndev);
- 	}
+DEBUG: __scsi_remove_device(): sdev=ffff88046a931000 7:0:5:0
+Pid: 910, comm: kworker/u:2 Tainted: P           O 3.2.48-swt9004 #33
+Call Trace:
+[<ffffffff81248c66>] ? __scsi_remove_device+0x46/0x110
+[<ffffffff81246268>] ? scsi_probe_and_add_lun+0x458/0xb20
+[<ffffffff81230b4f>] ? dev_set_name+0x3f/0x50
+[<ffffffff811ac782>] ? kobject_get+0x12/0x20
+[<ffffffff812459c5>] ? scsi_alloc_target+0x295/0x2d0
+[<ffffffff81230bca>] ? device_release+0x1a/0x80
+[<ffffffff81246bce>] ? __scsi_scan_target+0xce/0x5f0
+[<ffffffff8102ec22>] ? dequeue_task_fair+0x52/0x150
+[<ffffffff8139a91d>] ? __schedule+0x25d/0x7d0
+[<ffffffff812477b6>] ? scsi_scan_target+0xc6/0xe0
+[<ffffffffa000e75f>] ? fc_scsi_scan_rport+0xaf/0xc0 [scsi_transport_fc]
+[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
+[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff81052f06>] ? kthread+0x96/0xa0
+[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
+[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
+[<ffffffff8139f130>] ? gs_change+0xb/0xb
+
+3. another thread is trying to remove this device because of timeout
+
+DEBUG: __scsi_remove_device(): sdev=ffff88046a931000 7:0:5:0
+Pid: 4, comm: kworker/0:0 Tainted: P           O 3.2.48-swt9004 #33
+Call Trace:
+[<ffffffff81248c66>] ? __scsi_remove_device+0x46/0x110
+[<ffffffff8139b63a>] ? mutex_lock+0x1a/0x40
+[<ffffffff81248d58>] ? scsi_remove_device+0x28/0x40
+[<ffffffff81242a00>] ? scsi_kmap_atomic_sg+0x180/0x180
+[<ffffffff81248ed1>] ? scsi_remove_target+0x141/0x1e0
+[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
+[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff81052f06>] ? kthread+0x96/0xa0
+[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
+[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
+[<ffffffff8139f130>] ? gs_change+0xb/0xb
+
+and it's got dead sdev object.  I don't understand how this can happen
+because __scsi_remove_target() iterating over __devices and getting sdev
+reference under host_lock and that should be enough.
+
+DEBUG: kref_put(): kref=ffff88046a9312e0 val=-1
+------------[ cut here ]------------
+WARNING: at lib/kref.c:61 kref_put+0x88/0xc0()
+Hardware name: X9DRi-LN4+/X9DR3-LN4+
+Modules linked in: qla2xxx(O) igb ehci_hcd scsi_transport_fc
+Pid: 4, comm: kworker/0:0 Tainted: P           O 3.2.48-swt9004 #33
+Call Trace:
+[<ffffffff81037bfb>] ? warn_slowpath_common+0x7b/0xc0
+[<ffffffff811ac6c0>] ? kobject_del+0x30/0x30
+[<ffffffff811adb08>] ? kref_put+0x88/0xc0
+[<ffffffff81248cac>] ? __scsi_remove_device+0x8c/0x110
+[<ffffffff8139b63a>] ? mutex_lock+0x1a/0x40
+[<ffffffff81248d58>] ? scsi_remove_device+0x28/0x40
+[<ffffffff81242a00>] ? scsi_kmap_atomic_sg+0x180/0x180
+[<ffffffff81248ed1>] ? scsi_remove_target+0x141/0x1e0
+[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
+[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
+[<ffffffff81052f06>] ? kthread+0x96/0xa0
+[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
+[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
+[<ffffffff8139f130>] ? gs_change+0xb/0xb
+
+Here is the patch which helped me:
+
+diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
+index 9117d0b..676e5ff 100644
+--- a/drivers/scsi/scsi_sysfs.c
++++ b/drivers/scsi/scsi_sysfs.c
+@@ -1094,6 +1094,7 @@ static void __scsi_remove_target(struct
+scsi_target *starget)
+        unsigned long flags;
+        struct scsi_device *sdev;
+
++       mutex_lock(&shost->scan_mutex);
+        spin_lock_irqsave(shost->host_lock, flags);
+  restart:
+        list_for_each_entry(sdev, &shost->__devices, siblings) {
+@@ -1102,12 +1103,13 @@ static void __scsi_remove_target(struct
+scsi_target *starget)
+                    scsi_device_get(sdev))
+                        continue;
+                spin_unlock_irqrestore(shost->host_lock, flags);
+-               scsi_remove_device(sdev);
++               __scsi_remove_device(sdev);
+                scsi_device_put(sdev);
+                spin_lock_irqsave(shost->host_lock, flags);
+                goto restart;
+        }
+        spin_unlock_irqrestore(shost->host_lock, flags);
++       mutex_unlock(&shost->scan_mutex);
  }
- 
-diff --git a/drivers/staging/cxt1e1/linux.c b/drivers/staging/cxt1e1/linux.c
-index b02f5ade..4b4609d 100644
---- a/drivers/staging/cxt1e1/linux.c
-+++ b/drivers/staging/cxt1e1/linux.c
-@@ -60,7 +60,6 @@ status_t    c4_chan_work_init(mpi_t *, mch_t *);
- void        musycc_wq_chan_restart(void *);
- status_t __init c4_init(ci_t *, u_char *, u_char *);
- status_t __init c4_init2(ci_t *);
--ci_t       *__init c4_new(void *);
- int __init  c4hw_attach_all(void);
- void __init hdw_sn_get(hdw_info_t *, int);
- 
-@@ -418,7 +417,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
- 		struct c4_priv *priv;
- 
- 		/* allocate then fill in private data structure */
--		priv = OS_kmalloc(sizeof(struct c4_priv));
-+		priv = kzalloc(sizeof(struct c4_priv), GFP_KERNEL);
- 		if (!priv) {
- 			pr_warning("%s: no memory for net_device !\n",
- 				   ci->devname);
-@@ -428,7 +427,7 @@ create_chan(struct net_device *ndev, ci_t *ci,
- 		if (!dev) {
- 			pr_warning("%s: no memory for hdlc_device !\n",
- 				   ci->devname);
--			OS_kfree(priv);
-+			kfree(priv);
- 			return NULL;
- 		}
- 		priv->ci = ci;
-@@ -972,8 +971,8 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
- 
- 	if (register_netdev(ndev) ||
- 		(c4_init(ci, (u_char *) f0, (u_char *) f1) != SBE_DRVR_SUCCESS)) {
--		OS_kfree(netdev_priv(ndev));
--		OS_kfree(ndev);
-+		kfree(netdev_priv(ndev));
-+		kfree(ndev);
- 		error_flag = -ENODEV;
- 		return NULL;
- 	}
-@@ -998,8 +997,8 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
- 		pr_warning("%s: MUSYCC could not get irq: %d\n",
- 			   ndev->name, irq0);
- 		unregister_netdev(ndev);
--		OS_kfree(netdev_priv(ndev));
--		OS_kfree(ndev);
-+		kfree(netdev_priv(ndev));
-+		kfree(ndev);
- 		error_flag = -EIO;
- 		return NULL;
- 	}
-@@ -1008,8 +1007,8 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
- 		pr_warning("%s: EBUS could not get irq: %d\n", hi->devname, irq1);
- 		unregister_netdev(ndev);
- 		free_irq(irq0, ndev);
--		OS_kfree(netdev_priv(ndev));
--		OS_kfree(ndev);
-+		kfree(netdev_priv(ndev));
-+		kfree(ndev);
- 		error_flag = -EIO;
- 		return NULL;
- 	}
-@@ -1068,8 +1067,8 @@ c4_add_dev(hdw_info_t *hi, int brdno, unsigned long f0, unsigned long f1,
- 		unregister_netdev(ndev);
- 		free_irq(irq1, ndev);
- 		free_irq(irq0, ndev);
--		OS_kfree(netdev_priv(ndev));
--		OS_kfree(ndev);
-+		kfree(netdev_priv(ndev));
-+		kfree(ndev);
- 		/* failure, error_flag is set */
- 		return NULL;
- 	}
-diff --git a/drivers/staging/cxt1e1/musycc.c b/drivers/staging/cxt1e1/musycc.c
-index 7b4f6f2..c174f6d 100644
---- a/drivers/staging/cxt1e1/musycc.c
-+++ b/drivers/staging/cxt1e1/musycc.c
-@@ -744,7 +744,8 @@ musycc_init(ci_t *ci)
- 
- #define INT_QUEUE_BOUNDARY  4
- 
--    regaddr = OS_kmalloc((INT_QUEUE_SIZE + 1) * sizeof(u_int32_t));
-+	regaddr = kmalloc((INT_QUEUE_SIZE + 1) * sizeof(u_int32_t),
-+			  GFP_KERNEL | GFP_DMA);
-     if (!regaddr)
- 	return -ENOMEM;
-     ci->iqd_p_saved = regaddr;      /* save orig value for free's usage */
-@@ -765,11 +766,12 @@ musycc_init(ci_t *ci)
- 
- #define GROUP_BOUNDARY   0x800
- 
--	regaddr = OS_kmalloc(sizeof(struct musycc_groupr) + GROUP_BOUNDARY);
-+	regaddr = kmalloc(sizeof(struct musycc_groupr) + GROUP_BOUNDARY,
-+			  GFP_KERNEL | GFP_DMA);
- 	if (!regaddr) {
- 	    for (gchan = 0; gchan < i; gchan++) {
- 		pi = &ci->port[gchan];
--		OS_kfree(pi->reg);
-+		kfree(pi->reg);
- 		pi->reg = NULL;
- 	    }
- 	    return -ENOMEM;
-@@ -1576,10 +1578,10 @@ musycc_chan_down(ci_t *dummy, int channum)
- 	if (ch->mdr[i].mem_token)
- 	    OS_mem_token_free(ch->mdr[i].mem_token);
- 
--    OS_kfree(ch->mdr);
-+    kfree(ch->mdr);
-     ch->mdr = NULL;
-     ch->rxd_num = 0;
--    OS_kfree(ch->mdt);
-+    kfree(ch->mdt);
-     ch->mdt = NULL;
-     ch->txd_num = 0;
- 
-diff --git a/drivers/staging/cxt1e1/pmcc4_drv.c b/drivers/staging/cxt1e1/pmcc4_drv.c
-index 621a729..76bebdd 100644
---- a/drivers/staging/cxt1e1/pmcc4_drv.c
-+++ b/drivers/staging/cxt1e1/pmcc4_drv.c
-@@ -122,35 +122,6 @@ c4_find_chan (int channum)
-     return NULL;
- }
- 
--
--ci_t       *__init
--c4_new (void *hi)
--{
--    ci_t       *ci;
--
--#ifdef SBE_MAP_DEBUG
--    pr_warning("c4_new() entered, ci needs %u.\n",
--               (unsigned int) sizeof (ci_t));
--#endif
--
--    ci = (ci_t *) OS_kmalloc (sizeof (ci_t));
--    if (ci)
--    {
--        ci->hdw_info = hi;
--        ci->state = C_INIT;         /* mark as hardware not available */
--        ci->next = c4_list;
--        c4_list = ci;
--        ci->brdno = ci->next ? ci->next->brdno + 1 : 0;
--    } else
--        pr_warning("failed CI malloc, size %u.\n",
--                   (unsigned int) sizeof (ci_t));
--
--    if (!CI)
--        CI = ci;                    /* DEBUG, only board 0 usage */
--    return ci;
--}
--
--
- /***
-  * Check port state and set LED states using watchdog or ioctl...
-  * also check for in-band SF loopback commands (& cause results if they are there)
-@@ -485,12 +456,12 @@ c4_cleanup (void)
-             for (j = 0; j < MUSYCC_NCHANS; j++)
-             {
-                 if (pi->chan[j])
--                    OS_kfree (pi->chan[j]);     /* free mch_t struct */
-+                    kfree(pi->chan[j]);     /* free mch_t struct */
-             }
--            OS_kfree (pi->regram_saved);
-+            kfree(pi->regram_saved);
-         }
--        OS_kfree (ci->iqd_p_saved);
--        OS_kfree (ci);
-+        kfree(ci->iqd_p_saved);
-+        kfree(ci);
-         ci = next;                  /* cleanup next board, if any */
-     }
- }
-@@ -619,7 +590,7 @@ c4_init (ci_t *ci, u_char *func0, u_char *func1)
-         /* allocate channel structures for this port */
-         for (j = 0; j < MUSYCC_NCHANS; j++)
-         {
--            ch = OS_kmalloc (sizeof (mch_t));
-+		ch = kzalloc(sizeof(mch_t), GFP_KERNEL | GFP_DMA);
-             if (ch)
-             {
-                 pi->chan[j] = ch;
-@@ -1368,8 +1339,8 @@ c4_chan_up (ci_t *ci, int channum)
-     ch->txd_num = txnum;
-     ch->rxix_irq_srv = 0;
- 
--    ch->mdr = OS_kmalloc (sizeof (struct mdesc) * rxnum);
--    ch->mdt = OS_kmalloc (sizeof (struct mdesc) * txnum);
-+	ch->mdr = kzalloc(sizeof(struct mdesc) * rxnum, GFP_KERNEL | GFP_DMA);
-+	ch->mdt = kzalloc(sizeof(struct mdesc) * txnum, GFP_KERNEL | GFP_DMA);
-     if (ch->p.chan_mode == CFG_CH_PROTO_TRANS)
-                tmp = __constant_cpu_to_le32 (cxt1e1_max_mru | EOBIRQ_ENABLE);
-     else
-@@ -1462,10 +1433,10 @@ errfree:
-         i--;
-         OS_mem_token_free (ch->mdr[i].mem_token);
-     }
--    OS_kfree (ch->mdt);
-+    kfree(ch->mdt);
-     ch->mdt = NULL;
-     ch->txd_num = 0;
--    OS_kfree (ch->mdr);
-+    kfree(ch->mdr);
-     ch->mdr = NULL;
-     ch->rxd_num = 0;
-     ch->state = DOWN;
-diff --git a/drivers/staging/cxt1e1/sbecom_inline_linux.h b/drivers/staging/cxt1e1/sbecom_inline_linux.h
-index ba3ff3e..f5835c2 100644
---- a/drivers/staging/cxt1e1/sbecom_inline_linux.h
-+++ b/drivers/staging/cxt1e1/sbecom_inline_linux.h
-@@ -39,27 +39,6 @@ void        pci_write_32 (u_int32_t *p, u_int32_t v);
-  * system dependent callbacks
-  */
- 
--/**********/
--/* malloc */
--/**********/
--
--static inline void *
--OS_kmalloc (size_t size)
--{
--    char       *ptr = kmalloc (size, GFP_KERNEL | GFP_DMA);
--
--    if (ptr)
--        memset (ptr, 0, size);
--    return ptr;
--}
--
--static inline void
--OS_kfree (void *x)
--{
--    kfree (x);
--}
--
--
- /****************/
- /* memory token */
- /****************/
-@@ -197,7 +176,7 @@ static inline int
- OS_free_watchdog (struct watchdog *wd)
+
+ /**
+
+I'm not sure about the fix is correct, but I was not able to reproduce
+the panic.
+
+
+P.S. Here is another patch which help to detect reference count underflow
+
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index 484604d..05dd2b3 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -68,9 +68,13 @@ static inline void kref_get(struct kref *kref)
+ static inline int kref_sub(struct kref *kref, unsigned int count,
+             void (*release)(struct kref *kref))
  {
-     OS_stop_watchdog (wd);
--    OS_kfree (wd);
-+    kfree(wd);
-     return 0;
- }
- 
-diff --git a/drivers/staging/cxt1e1/sbecrc.c b/drivers/staging/cxt1e1/sbecrc.c
-index 81fa8a3..f4a3548 100644
---- a/drivers/staging/cxt1e1/sbecrc.c
-+++ b/drivers/staging/cxt1e1/sbecrc.c
-@@ -101,7 +101,8 @@ sbeCrc(u_int8_t *buffer,          /* data buffer to crc */
- 		tbl = &CRCTable;
- 		genCrcTable(tbl);
- #else
--		tbl = (u_int32_t *) OS_kmalloc(CRC_TABLE_ENTRIES * sizeof(u_int32_t));
-+		tbl = kmalloc(CRC_TABLE_ENTRIES * sizeof(u_int32_t),
-+			      GFP_KERNEL);
- 		if (!tbl) {
- 			*result = 0;   /* dummy up return value due to malloc
- 					* failure */
-@@ -125,7 +126,7 @@ sbeCrc(u_int8_t *buffer,          /* data buffer to crc */
- 
- #ifndef STATIC_CRC_TABLE
- 	crcTableInit = 0;
--	OS_kfree(tbl);
-+	kfree(tbl);
- #endif
- }
- 
-diff --git a/drivers/staging/cxt1e1/sbeproc.c b/drivers/staging/cxt1e1/sbeproc.c
-index 840c647..1c2e52e 100644
---- a/drivers/staging/cxt1e1/sbeproc.c
-+++ b/drivers/staging/cxt1e1/sbeproc.c
-@@ -72,7 +72,7 @@ static int sbecom_proc_get_sbe_info(struct seq_file *m, void *v)
- 	char       *spd;
- 	struct sbe_brd_info *bip;
- 
--	bip = OS_kmalloc(sizeof(struct sbe_brd_info));
-+	bip = kzalloc(sizeof(struct sbe_brd_info), GFP_KERNEL | GFP_DMA);
- 	if (!bip)
- 		return -ENOMEM;
- 
++       long refs;
++
+        WARN_ON(release == NULL);
+
+-       if (atomic_sub_and_test((int) count, &kref->refcount)) {
++       refs = atomic_sub_return((int) count, &kref->refcount);
++       WARN_ON(refs < 0);
++       if (refs == 0) {
+                release(kref);
+                return 1;
+        }
+
 -- 
-1.7.4.4
-
-
+Andrey Zonov
