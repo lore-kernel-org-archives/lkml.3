@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966593AbaCUAoM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:44:12 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37017 "EHLO
+	id S966877AbaCUAoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:44:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37025 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965819AbaCUAIi (ORCPT
+	with ESMTP id S965816AbaCUAIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:38 -0400
+	Thu, 20 Mar 2014 20:08:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 08/85] ipv6: reuse ip6_frag_id from ip6_ufo_append_data
-Date: Thu, 20 Mar 2014 17:09:11 -0700
-Message-Id: <20140321000559.730152737@linuxfoundation.org>
+Subject: [PATCH 3.10 07/85] virtio-net: alloc big buffers also when guest can receive UFO
+Date: Thu, 20 Mar 2014 17:09:10 -0700
+Message-Id: <20140321000559.580495105@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,38 +31,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Jason Wang <jasowang@redhat.com>
 
-[ Upstream commit 916e4cf46d0204806c062c8c6c4d1f633852c5b6 ]
+[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
 
-Currently we generate a new fragmentation id on UFO segmentation. It
-is pretty hairy to identify the correct net namespace and dst there.
-Especially tunnels use IFF_XMIT_DST_RELEASE and thus have no skb_dst
-available at all.
+We should alloc big buffers also when guest can receive UFO
+packets to let the big packets fit into guest rx buffer.
 
-This causes unreliable or very predictable ipv6 fragmentation id
-generation while segmentation.
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
 
-Luckily we already have pregenerated the ip6_frag_id in
-ip6_ufo_append_data and can use it here.
-
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/udp_offload.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/virtio_net.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/net/ipv6/udp_offload.c
-+++ b/net/ipv6/udp_offload.c
-@@ -108,7 +108,7 @@ static struct sk_buff *udp6_ufo_fragment
- 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
- 	fptr->nexthdr = nexthdr;
- 	fptr->reserved = 0;
--	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
-+	fptr->identification = skb_shinfo(skb)->ip6_frag_id;
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1597,7 +1597,8 @@ static int virtnet_probe(struct virtio_d
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
  
- 	/* Fragment the skb. ipv6 header and the remaining fields of the
- 	 * fragment header are updated in ipv6_gso_segment()
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
 
 
