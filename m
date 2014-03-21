@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760379AbaCUB20 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:28:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36464 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760212AbaCUADY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760259AbaCUADY (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:03:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36439 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760212AbaCUADT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:03:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tim Nelson <tim.l.nelson@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.13 026/149] mac80211: fix association to 20/40 MHz VHT networks
-Date: Thu, 20 Mar 2014 17:03:09 -0700
-Message-Id: <20140321000437.876883540@linuxfoundation.org>
+        Wolfgang Walter <linux@stwm.de>, Cong Wang <xiyou.wangcong@gmail.com>,
+        Tom Herbert <therbert@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 015/149] ipv4: ipv6: better estimate tunnel header cut for correct ufo handling
+Date: Thu, 20 Mar 2014 17:02:58 -0700
+Message-Id: <20140321000437.474279840@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,37 +32,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit cb664981607a6b5b3d670ad57bbda893b2528d96 upstream.
+[ Upstream commit 91a48a2e85a3b70ce10ead34b4ab5347f8d215c9 ]
 
-When a VHT network uses 20 or 40 MHz as per the HT operation
-information, the channel center frequency segment 0 field in
-the VHT operation information is reserved, so ignore it.
+Currently the UFO fragmentation process does not correctly handle inner
+UDP frames.
 
-This fixes association with such networks when the AP puts 0
-into the field, previously we'd disconnect due to an invalid
-channel with the message
-wlan0: AP VHT information is invalid, disable VHT
+(The following tcpdumps are captured on the parent interface with ufo
+disabled while tunnel has ufo enabled, 2000 bytes payload, mtu 1280,
+both sit device):
 
-Fixes: f2d9d270c15ae ("mac80211: support VHT association")
-Reported-by: Tim Nelson <tim.l.nelson@gmail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+IPv6:
+16:39:10.031613 IP (tos 0x0, ttl 64, id 3208, offset 0, flags [DF], proto IPv6 (41), length 1300)
+    192.168.122.151 > 1.1.1.1: IP6 (hlim 64, next-header Fragment (44) payload length: 1240) 2001::1 > 2001::8: frag (0x00000001:0|1232) 44883 > distinct: UDP, length 2000
+16:39:10.031709 IP (tos 0x0, ttl 64, id 3209, offset 0, flags [DF], proto IPv6 (41), length 844)
+    192.168.122.151 > 1.1.1.1: IP6 (hlim 64, next-header Fragment (44) payload length: 784) 2001::1 > 2001::8: frag (0x00000001:0|776) 58979 > 46366: UDP, length 5471
+
+We can see that fragmentation header offset is not correctly updated.
+(fragmentation id handling is corrected by 916e4cf46d0204 ("ipv6: reuse
+ip6_frag_id from ip6_ufo_append_data")).
+
+IPv4:
+16:39:57.737761 IP (tos 0x0, ttl 64, id 3209, offset 0, flags [DF], proto IPIP (4), length 1296)
+    192.168.122.151 > 1.1.1.1: IP (tos 0x0, ttl 64, id 57034, offset 0, flags [none], proto UDP (17), length 1276)
+    192.168.99.1.35961 > 192.168.99.2.distinct: UDP, length 2000
+16:39:57.738028 IP (tos 0x0, ttl 64, id 3210, offset 0, flags [DF], proto IPIP (4), length 792)
+    192.168.122.151 > 1.1.1.1: IP (tos 0x0, ttl 64, id 57035, offset 0, flags [none], proto UDP (17), length 772)
+    192.168.99.1.13531 > 192.168.99.2.20653: UDP, length 51109
+
+In this case fragmentation id is incremented and offset is not updated.
+
+First, I aligned inet_gso_segment and ipv6_gso_segment:
+* align naming of flags
+* ipv6_gso_segment: setting skb->encapsulation is unnecessary, as we
+  always ensure that the state of this flag is left untouched when
+  returning from upper gso segmenation function
+* ipv6_gso_segment: move skb_reset_inner_headers below updating the
+  fragmentation header data, we don't care for updating fragmentation
+  header data
+* remove currently unneeded comment indicating skb->encapsulation might
+  get changed by upper gso_segment callback (gre and udp-tunnel reset
+  encapsulation after segmentation on each fragment)
+
+If we encounter an IPIP or SIT gso skb we now check for the protocol ==
+IPPROTO_UDP and that we at least have already traversed another ip(6)
+protocol header.
+
+The reason why we have to special case GSO_IPIP and GSO_SIT is that
+we reset skb->encapsulation to 0 while skb_mac_gso_segment the inner
+protocol of GSO_UDP_TUNNEL or GSO_GRE packets.
+
+Reported-by: Wolfgang Walter <linux@stwm.de>
+Cc: Cong Wang <xiyou.wangcong@gmail.com>
+Cc: Tom Herbert <therbert@google.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- net/mac80211/mlme.c |    1 +
- 1 file changed, 1 insertion(+)
+ net/ipv4/af_inet.c     |    7 +++++--
+ net/ipv6/ip6_offload.c |   20 ++++++++++++--------
+ 2 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -222,6 +222,7 @@ ieee80211_determine_chantype(struct ieee
- 	switch (vht_oper->chan_width) {
- 	case IEEE80211_VHT_CHANWIDTH_USE_HT:
- 		vht_chandef.width = chandef->width;
-+		vht_chandef.center_freq1 = chandef->center_freq1;
- 		break;
- 	case IEEE80211_VHT_CHANWIDTH_80MHZ:
- 		vht_chandef.width = NL80211_CHAN_WIDTH_80;
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -1299,8 +1299,11 @@ static struct sk_buff *inet_gso_segment(
+ 
+ 	segs = ERR_PTR(-EPROTONOSUPPORT);
+ 
+-	/* Note : following gso_segment() might change skb->encapsulation */
+-	udpfrag = !skb->encapsulation && proto == IPPROTO_UDP;
++	if (skb->encapsulation &&
++	    skb_shinfo(skb)->gso_type & (SKB_GSO_SIT|SKB_GSO_IPIP))
++		udpfrag = proto == IPPROTO_UDP && encap;
++	else
++		udpfrag = proto == IPPROTO_UDP && !skb->encapsulation;
+ 
+ 	ops = rcu_dereference(inet_offloads[proto]);
+ 	if (likely(ops && ops->callbacks.gso_segment))
+--- a/net/ipv6/ip6_offload.c
++++ b/net/ipv6/ip6_offload.c
+@@ -89,7 +89,7 @@ static struct sk_buff *ipv6_gso_segment(
+ 	unsigned int unfrag_ip6hlen;
+ 	u8 *prevhdr;
+ 	int offset = 0;
+-	bool tunnel;
++	bool encap, udpfrag;
+ 	int nhoff;
+ 
+ 	if (unlikely(skb_shinfo(skb)->gso_type &
+@@ -110,8 +110,8 @@ static struct sk_buff *ipv6_gso_segment(
+ 	if (unlikely(!pskb_may_pull(skb, sizeof(*ipv6h))))
+ 		goto out;
+ 
+-	tunnel = SKB_GSO_CB(skb)->encap_level > 0;
+-	if (tunnel)
++	encap = SKB_GSO_CB(skb)->encap_level > 0;
++	if (encap)
+ 		features = skb->dev->hw_enc_features & netif_skb_features(skb);
+ 	SKB_GSO_CB(skb)->encap_level += sizeof(*ipv6h);
+ 
+@@ -121,6 +121,12 @@ static struct sk_buff *ipv6_gso_segment(
+ 
+ 	proto = ipv6_gso_pull_exthdrs(skb, ipv6h->nexthdr);
+ 
++	if (skb->encapsulation &&
++	    skb_shinfo(skb)->gso_type & (SKB_GSO_SIT|SKB_GSO_IPIP))
++		udpfrag = proto == IPPROTO_UDP && encap;
++	else
++		udpfrag = proto == IPPROTO_UDP && !skb->encapsulation;
++
+ 	ops = rcu_dereference(inet6_offloads[proto]);
+ 	if (likely(ops && ops->callbacks.gso_segment)) {
+ 		skb_reset_transport_header(skb);
+@@ -133,13 +139,9 @@ static struct sk_buff *ipv6_gso_segment(
+ 	for (skb = segs; skb; skb = skb->next) {
+ 		ipv6h = (struct ipv6hdr *)(skb_mac_header(skb) + nhoff);
+ 		ipv6h->payload_len = htons(skb->len - nhoff - sizeof(*ipv6h));
+-		if (tunnel) {
+-			skb_reset_inner_headers(skb);
+-			skb->encapsulation = 1;
+-		}
+ 		skb->network_header = (u8 *)ipv6h - skb->head;
+ 
+-		if (!tunnel && proto == IPPROTO_UDP) {
++		if (udpfrag) {
+ 			unfrag_ip6hlen = ip6_find_1stfragopt(skb, &prevhdr);
+ 			fptr = (struct frag_hdr *)((u8 *)ipv6h + unfrag_ip6hlen);
+ 			fptr->frag_off = htons(offset);
+@@ -148,6 +150,8 @@ static struct sk_buff *ipv6_gso_segment(
+ 			offset += (ntohs(ipv6h->payload_len) -
+ 				   sizeof(struct frag_hdr));
+ 		}
++		if (encap)
++			skb_reset_inner_headers(skb);
+ 	}
+ 
+ out:
 
 
