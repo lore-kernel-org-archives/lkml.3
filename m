@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965562AbaCUAEr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36827 "EHLO
+	id S967009AbaCUAx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:53:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965474AbaCUAEh (ORCPT
+	with ESMTP id S965554AbaCUAEq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:37 -0400
+	Thu, 20 Mar 2014 20:04:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.13 126/149] can: flexcan: fix shutdown: first disable chip, then all interrupts
-Date: Thu, 20 Mar 2014 17:04:49 -0700
-Message-Id: <20140321000441.320323419@linuxfoundation.org>
+Subject: [PATCH 3.13 130/149] can: flexcan: flexcan_remove(): add missing netif_napi_del()
+Date: Thu, 20 Mar 2014 17:04:53 -0700
+Message-Id: <20140321000441.461431723@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,42 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 5be93bdda64e85450598c6e97f79fb8f6acf30e0 upstream.
+commit d96e43e8fce28cf97df576a07af9d65657a41a6f upstream.
 
-When shutting down the CAN interface (ifconfig canX down) during high CAN bus
-loads, the CAN core might hang and freeze the whole CPU.
-
-This patch fixes the shutdown sequence by first disabling the CAN core then
-disabling all interrupts.
+This patch adds the missing netif_napi_del() to the flexcan_remove() function.
 
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/flexcan.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/can/flexcan.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
 --- a/drivers/net/can/flexcan.c
 +++ b/drivers/net/can/flexcan.c
-@@ -824,14 +824,16 @@ static void flexcan_chip_stop(struct net
- 	struct flexcan_regs __iomem *regs = priv->base;
- 	u32 reg;
+@@ -1143,9 +1143,10 @@ static int flexcan_probe(struct platform
+ static int flexcan_remove(struct platform_device *pdev)
+ {
+ 	struct net_device *dev = platform_get_drvdata(pdev);
++	struct flexcan_priv *priv = netdev_priv(dev);
  
--	/* Disable all interrupts */
--	flexcan_write(0, &regs->imask1);
+ 	unregister_flexcandev(dev);
 -
- 	/* Disable + halt module */
- 	reg = flexcan_read(&regs->mcr);
- 	reg |= FLEXCAN_MCR_MDIS | FLEXCAN_MCR_HALT;
- 	flexcan_write(reg, &regs->mcr);
++	netif_napi_del(&priv->napi);
+ 	free_candev(dev);
  
-+	/* Disable all interrupts */
-+	flexcan_write(0, &regs->imask1);
-+	flexcan_write(priv->reg_ctrl_default & ~FLEXCAN_CTRL_ERR_ALL,
-+		      &regs->ctrl);
-+
- 	if (priv->reg_xceiver)
- 		regulator_disable(priv->reg_xceiver);
- 	priv->can.state = CAN_STATE_STOPPED;
+ 	return 0;
 
 
