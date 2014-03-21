@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760621AbaCUBIr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:08:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36726 "EHLO
+	id S1760637AbaCUBIs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:08:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965211AbaCUAEP (ORCPT
+	with ESMTP id S965019AbaCUAEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:15 -0400
+	Thu, 20 Mar 2014 20:04:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.13 096/149] mm/readahead.c: fix do_readahead() for no readpage(s)
-Date: Thu, 20 Mar 2014 17:04:19 -0700
-Message-Id: <20140321000440.279414488@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 097/149] iscsi-target: Fix iscsit_get_tpg_from_np tpg_state bug
+Date: Thu, 20 Mar 2014 17:04:20 -0700
+Message-Id: <20140321000440.319138691@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -32,77 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Rutland <mark.rutland@arm.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 58d5640ebdb273cc817b0d0cda7bcf2efbbc2ff7 upstream.
+commit a2a99cea5ec7c1e47825559f0e75a4efbcf8aee3 upstream.
 
-Commit 63d0f0a3c7e1 ("mm/readahead.c:do_readhead(): don't check for
-->readpage") unintentionally made do_readahead return 0 for all valid
-files regardless of whether readahead was supported, rather than the
-expected -EINVAL.  This gets forwarded on to userspace, and results in
-sys_readahead appearing to succeed in cases that don't make sense (e.g.
-when called on pipes or sockets).  This issue is detected by the LTP
-readahead01 testcase.
+This patch fixes a bug in iscsit_get_tpg_from_np() where the
+tpg->tpg_state sanity check was looking for TPG_STATE_FREE,
+instead of != TPG_STATE_ACTIVE.
 
-As the exact return value of force_page_cache_readahead is currently
-never used, we can simplify it to return only 0 or -EINVAL (when
-readpage or readpages is missing).  With that in place we can simply
-forward on the return value of force_page_cache_readahead in
-do_readahead.
+The latter is expected during a normal TPG shutdown once the
+tpg_state goes into TPG_STATE_INACTIVE in order to reject any
+new incoming login attempts.
 
-This patch performs said change, restoring the expected semantics.
-
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/readahead.c |   15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+ drivers/target/iscsi/iscsi_target_tpg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -211,8 +211,6 @@ out:
- int force_page_cache_readahead(struct address_space *mapping, struct file *filp,
- 		pgoff_t offset, unsigned long nr_to_read)
- {
--	int ret = 0;
--
- 	if (unlikely(!mapping->a_ops->readpage && !mapping->a_ops->readpages))
- 		return -EINVAL;
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -137,7 +137,7 @@ struct iscsi_portal_group *iscsit_get_tp
+ 	list_for_each_entry(tpg, &tiqn->tiqn_tpg_list, tpg_list) {
  
-@@ -226,15 +224,13 @@ int force_page_cache_readahead(struct ad
- 			this_chunk = nr_to_read;
- 		err = __do_page_cache_readahead(mapping, filp,
- 						offset, this_chunk, 0);
--		if (err < 0) {
--			ret = err;
--			break;
--		}
--		ret += err;
-+		if (err < 0)
-+			return err;
-+
- 		offset += this_chunk;
- 		nr_to_read -= this_chunk;
- 	}
--	return ret;
-+	return 0;
- }
- 
- /*
-@@ -576,8 +572,7 @@ do_readahead(struct address_space *mappi
- 	if (!mapping || !mapping->a_ops)
- 		return -EINVAL;
- 
--	force_page_cache_readahead(mapping, filp, index, nr);
--	return 0;
-+	return force_page_cache_readahead(mapping, filp, index, nr);
- }
- 
- SYSCALL_DEFINE3(readahead, int, fd, loff_t, offset, size_t, count)
+ 		spin_lock(&tpg->tpg_state_lock);
+-		if (tpg->tpg_state == TPG_STATE_FREE) {
++		if (tpg->tpg_state != TPG_STATE_ACTIVE) {
+ 			spin_unlock(&tpg->tpg_state_lock);
+ 			continue;
+ 		}
 
 
