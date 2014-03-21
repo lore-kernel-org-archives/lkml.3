@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaCUTyj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:54:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaCUTyi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:54:38 -0400
-Date: Fri, 21 Mar 2014 15:54:03 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: linux-kernel@vger.kernel.org, Artem Bityutskiy <dedekind1@gmail.com>,
-        linux-mtd@lists.infradead.org
-Subject: [RFC PATCH] UBI: fix rb_tree node comparison in add_map
-Message-ID: <20140321195403.GA32529@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751241AbaCUUA6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 16:00:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47856 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750738AbaCUUA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 16:00:56 -0400
+Date: Fri, 21 Mar 2014 13:00:55 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-Id: <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+In-Reply-To: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comparisons used in add_vol() shouldn't be identical.  Pretty sure
-the following is correct but it is completely untested.
+On Fri, 21 Mar 2014 17:18:30 +0100 Fabian Frederick <fabf@skynet.be> wrote:
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- drivers/mtd/ubi/fastmap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Loop around congestion_wait on allocation failure/alloc_journal_list
+> like already fixed in other FS.
+> 
+> ...
+>
+> --- a/fs/reiserfs/journal.c
+> +++ b/fs/reiserfs/journal.c
+> @@ -2487,8 +2487,13 @@ static int journal_read(struct super_block *sb)
+>  static struct reiserfs_journal_list *alloc_journal_list(struct super_block *s)
+>  {
+>  	struct reiserfs_journal_list *jl;
+> -	jl = kzalloc(sizeof(struct reiserfs_journal_list),
+> -		     GFP_NOFS | __GFP_NOFAIL);
+> +
+> +	do {
+> +		jl = kzalloc(sizeof(struct reiserfs_journal_list), GFP_NOFS);
+> +		if (unlikely(!jl))
+> +			congestion_wait(BLK_RW_ASYNC, HZ/50);
+> +	} while (!jl)
+> +
 
-NOTE: I stumbled upon this code while implementing some rb_tree code
-      (and looking for some existing rb_tree code as a reference).
+Dammit, who has been running around converting __GFP_NOFAIL into
+open-coded congestion_wait() loops?
 
-diff --git a/drivers/mtd/ubi/fastmap.c b/drivers/mtd/ubi/fastmap.c
-index ead8613..60c7a20 100644
---- a/drivers/mtd/ubi/fastmap.c
-+++ b/drivers/mtd/ubi/fastmap.c
-@@ -125,9 +125,9 @@ static struct ubi_ainf_volume *add_vol(struct ubi_attach_info *ai, int vol_id,
- 		parent = *p;
- 		av = rb_entry(parent, struct ubi_ainf_volume, rb);
- 
--		if (vol_id > av->vol_id)
-+		if (vol_id < av->vol_id)
- 			p = &(*p)->rb_left;
--		else if (vol_id > av->vol_id)
-+		else
- 			p = &(*p)->rb_right;
- 	}
- 
+The whole point of __GFP_NOFAIL is to centralise this
+wait-for-memory-for-ever operation.  So it is implemented in a common
+(core) place and so that we can easily locate these problematic
+callers.
+
+This comment in ext4:
+
+			/*
+			 * If __GFP_FS is not present, then we may be
+			 * being called from inside the fs writeback
+			 * layer, so we MUST NOT fail.  Since
+			 * __GFP_NOFAIL is going away, we will arrange
+			 * to retry the allocation ourselves.
+			 */
+
+is exactly wrong.  Yes, we'd like __GFP_NOFAIL to go away, but it
+cannot go away until buggy callsites such as this one are *fixed*. 
+Removing the __GFP_NOFAIL usage simply hides the buggy code from casual
+searchers.
+
+argh.
+
+What we should do is to fix all these call sites so they can handle
+memory exhaustion.  That's hard so in the interim they should be using
+__GFP_NOFAIL.
+
