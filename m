@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934036AbaCUAO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:14:29 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:58165 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966188AbaCUAJr convert rfc822-to-8bit (ORCPT
+	id S934101AbaCUAO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:14:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37421 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966173AbaCUAJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:47 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Mar 2014 20:09:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        David Milburn <dmilburn@redhat.com>, Xun Ni <xun.ni@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 29/35] SCSI: isci: fix reset timeout handling
+Date: Thu, 20 Mar 2014 17:11:20 -0700
+Message-Id: <20140321001055.116321239@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
+References: <20140321001054.038170009@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sascha Hauer <s.hauer@pengutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <20140305112828.GN24917@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org
-References: <1389885175-14174-1-git-send-email-s.hauer@pengutronix.de>
- <20140305112828.GN24917@pengutronix.de>
-Message-ID: <20140321000930.21989.11808@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH] clk: turn rate change failed warning into pr_debug
-Date: Thu, 20 Mar 2014 17:09:30 -0700
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sascha Hauer (2014-03-05 03:28:28)
-> Mike,
-> 
-> Any objections to this patch?
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-None at all. Taken into clk-next.
+------------------
 
-Thanks,
-Mike
+From: Dan Williams <dan.j.williams@intel.com>
 
-> 
-> Sascha
-> 
-> On Thu, Jan 16, 2014 at 04:12:55PM +0100, Sascha Hauer wrote:
-> > If a rate change failed it's the opportunity of the caller to handle
-> > this. Do not spam the log with a message.
-> > 
-> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: linux-kernel@vger.kernel.org
-> > ---
-> >  drivers/clk/clk.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> > 
-> > diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> > index 2cf2ea6..f0124d4 100644
-> > --- a/drivers/clk/clk.c
-> > +++ b/drivers/clk/clk.c
-> > @@ -1460,7 +1460,7 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
-> >       /* notify that we are about to change rates */
-> >       fail_clk = clk_propagate_rate_change(top, PRE_RATE_CHANGE);
-> >       if (fail_clk) {
-> > -             pr_warn("%s: failed to set %s rate\n", __func__,
-> > +             pr_debug("%s: failed to set %s rate\n", __func__,
-> >                               fail_clk->name);
-> >               clk_propagate_rate_change(top, ABORT_RATE_CHANGE);
-> >               ret = -EBUSY;
-> > -- 
-> > 1.8.5.2
-> > 
-> > 
-> 
-> -- 
-> Pengutronix e.K.                           |                             |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-> Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-> Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+commit ddfadd7736b677de2d4ca2cd5b4b655368c85a7a upstream.
+
+Remove an erroneous BUG_ON() in the case of a hard reset timeout.  The
+reset timeout handler puts the port into the "awaiting link-up" state.
+The timeout causes the device to be disconnected and we need to be in
+the awaiting link-up state to re-connect the port.  The BUG_ON() made
+the incorrect assumption that resets never timeout and we always
+complete the reset in the "resetting" state.
+
+Testing this patch also uncovered that libata continues to attempt to
+reset the port long after the driver has torn down the context.  Once
+the driver has committed to abandoning the link it must indicate to
+libata that recovery ends by returning -ENODEV from
+->lldd_I_T_nexus_reset().
+
+Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reported-by: David Milburn <dmilburn@redhat.com>
+Reported-by: Xun Ni <xun.ni@intel.com>
+Tested-by: Xun Ni <xun.ni@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/scsi/isci/port_config.c |    7 -------
+ drivers/scsi/isci/task.c        |    2 +-
+ 2 files changed, 1 insertion(+), 8 deletions(-)
+
+--- a/drivers/scsi/isci/port_config.c
++++ b/drivers/scsi/isci/port_config.c
+@@ -619,13 +619,6 @@ static void sci_apc_agent_link_up(struct
+ 					  SCIC_SDS_APC_WAIT_LINK_UP_NOTIFICATION);
+ 	} else {
+ 		/* the phy is already the part of the port */
+-		u32 port_state = iport->sm.current_state_id;
+-
+-		/* if the PORT'S state is resetting then the link up is from
+-		 * port hard reset in this case, we need to tell the port
+-		 * that link up is recieved
+-		 */
+-		BUG_ON(port_state != SCI_PORT_RESETTING);
+ 		port_agent->phy_ready_mask |= 1 << phy_index;
+ 		sci_port_link_up(iport, iphy);
+ 	}
+--- a/drivers/scsi/isci/task.c
++++ b/drivers/scsi/isci/task.c
+@@ -1312,7 +1312,7 @@ int isci_task_I_T_nexus_reset(struct dom
+ 		/* XXX: need to cleanup any ireqs targeting this
+ 		 * domain_device
+ 		 */
+-		ret = TMF_RESP_FUNC_COMPLETE;
++		ret = -ENODEV;
+ 		goto out;
+ 	}
+ 
+
+
