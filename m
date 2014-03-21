@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966232AbaCUBOW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:14:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36649 "EHLO
+	id S966352AbaCUBOw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:14:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36641 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964898AbaCUAEB (ORCPT
+	with ESMTP id S933181AbaCUAD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:01 -0400
+	Thu, 20 Mar 2014 20:03:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marios Andreopoulos <opensource@andmarios.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.13 078/149] libata: disable queued TRIM for Crucial M500 mSATA SSDs
-Date: Thu, 20 Mar 2014 17:04:01 -0700
-Message-Id: <20140321000439.666831422@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3.13 044/149] perf trace: Decode architecture-specific signal numbers
+Date: Thu, 20 Mar 2014 17:03:27 -0700
+Message-Id: <20140321000438.498460764@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,32 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marios Andreopoulos <opensource@andmarios.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 2564338b13e6e132ee224edb63e1e872adf431f4 upstream.
+commit 02c5bb4a352a4cca56e9b5d3a2a57d61062eb2e1 upstream.
 
-Queued TRIM commands cause problems and silent file system corruption
-on Crucial M500 SSDs. This patch disables them for the mSATA model of
-the drive.
+SIGSTKFLT is not defined on alpha, mips or sparc.
 
-Signed-off-by: Marios Andreopoulos <opensource@andmarios.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=71371
+SIGEMT and SIGSWI are defined on some architectures and should be
+decoded here if so.
+
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Fixes: 8bad5b0abfdb ('perf trace: Beautify signal number arg in several syscalls')
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1391648441.3003.101.camel@deadeye.wl.decadent.org.uk
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/builtin-trace.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4225,6 +4225,7 @@ static const struct ata_blacklist_entry
- 	/* devices that don't properly handle queued TRIM commands */
- 	{ "Micron_M500*",		NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
- 	{ "Crucial_CT???M500SSD1",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
-+	{ "Crucial_CT???M500SSD3",	NULL,	ATA_HORKAGE_NO_NCQ_TRIM, },
+--- a/tools/perf/builtin-trace.c
++++ b/tools/perf/builtin-trace.c
+@@ -821,7 +821,6 @@ static size_t syscall_arg__scnprintf_sig
+ 	P_SIGNUM(PIPE);
+ 	P_SIGNUM(ALRM);
+ 	P_SIGNUM(TERM);
+-	P_SIGNUM(STKFLT);
+ 	P_SIGNUM(CHLD);
+ 	P_SIGNUM(CONT);
+ 	P_SIGNUM(STOP);
+@@ -837,6 +836,15 @@ static size_t syscall_arg__scnprintf_sig
+ 	P_SIGNUM(IO);
+ 	P_SIGNUM(PWR);
+ 	P_SIGNUM(SYS);
++#ifdef SIGEMT
++	P_SIGNUM(EMT);
++#endif
++#ifdef SIGSTKFLT
++	P_SIGNUM(STKFLT);
++#endif
++#ifdef SIGSWI
++	P_SIGNUM(SWI);
++#endif
+ 	default: break;
+ 	}
  
- 	/*
- 	 * Some WD SATA-I drives spin up and down erratically when the link
 
 
