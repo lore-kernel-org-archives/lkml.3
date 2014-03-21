@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966715AbaCUAbv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:31:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37166 "EHLO
+	id S966721AbaCUAcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:32:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37160 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965944AbaCUAJF (ORCPT
+	with ESMTP id S965940AbaCUAJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:05 -0400
+	Thu, 20 Mar 2014 20:09:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Xiaoming Wang <xiaoming.wang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 42/85] genirq: Remove racy waitqueue_active check
-Date: Thu, 20 Mar 2014 17:09:45 -0700
-Message-Id: <20140321000604.743453767@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH 3.10 41/85] usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
+Date: Thu, 20 Mar 2014 17:09:44 -0700
+Message-Id: <20140321000604.593457650@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,61 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Julius Werner <jwerner@chromium.org>
 
-commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
+commit d86db25e53fa69e3e97f3b55dd82a70689787c5d upstream.
 
-We hit one rare case below:
+The DELAY_INIT quirk only reduces the frequency of enumeration failures
+with the Logitech HD Pro C920 and C930e webcams, but does not quite
+eliminate them. We have found that adding a delay of 100ms between the
+first and second Get Configuration request makes the device enumerate
+perfectly reliable even after several weeks of extensive testing. The
+reasons for that are anyone's guess, but since the DELAY_INIT quirk
+already delays enumeration by a whole second, wating for another 10th of
+that isn't really a big deal for the one other device that uses it, and
+it will resolve the problems with these webcams.
 
-T1 calling disable_irq(), but hanging at synchronize_irq()
-always;
-The corresponding irq thread is in sleeping state;
-And all CPUs are in idle state;
-
-After analysis, we found there is one possible scenerio which
-causes T1 is waiting there forever:
-CPU0                                       CPU1
- synchronize_irq()
-  wait_event()
-    spin_lock()
-                                           atomic_dec_and_test(&threads_active)
-      insert the __wait into queue
-    spin_unlock()
-                                           if(waitqueue_active)
-    atomic_read(&threads_active)
-                                             wake_up()
-
-Here after inserted the __wait into queue on CPU0, and before
-test if queue is empty on CPU1, there is no barrier, it maybe
-cause it is not visible for CPU1 immediately, although CPU0 has
-updated the queue list.
-It is similar for CPU0 atomic_read() threads_active also.
-
-So we'd need one smp_mb() before waitqueue_active.that, but removing
-the waitqueue_active() check solves it as wel l and it makes
-things simple and clear.
-
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Xiaoming Wang <xiaoming.wang@intel.com>
-Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/usb/core/config.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -802,8 +802,7 @@ static irqreturn_t irq_thread_fn(struct
- 
- static void wake_threads_waitq(struct irq_desc *desc)
- {
--	if (atomic_dec_and_test(&desc->threads_active) &&
--	    waitqueue_active(&desc->wait_for_threads))
-+	if (atomic_dec_and_test(&desc->threads_active))
- 		wake_up(&desc->wait_for_threads);
- }
- 
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -718,6 +718,10 @@ int usb_get_configuration(struct usb_dev
+ 			result = -ENOMEM;
+ 			goto err;
+ 		}
++
++		if (dev->quirks & USB_QUIRK_DELAY_INIT)
++			msleep(100);
++
+ 		result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno,
+ 		    bigbuffer, length);
+ 		if (result < 0) {
 
 
