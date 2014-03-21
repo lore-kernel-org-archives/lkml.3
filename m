@@ -1,129 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759462AbaCUGjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 02:39:41 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:53553 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaCUGjj (ORCPT
+	id S1756083AbaCUGo3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:44:29 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:38327 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754526AbaCUGo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 02:39:39 -0400
-From: behanw@converseincode.com
-To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
-        pageexec@freemail.hu,
-        =?UTF-8?q?Jan-Simon=20M=C3=B6ller?= <dl9pf@gmx.de>,
-        Behan Webster <behanw@converseincode.com>,
-        =?UTF-8?q?Vin=C3=ADcius=20Tinti?= <viniciustinti@gmail.com>,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: [PATCH v4] mac80211: LLVMLinux: Remove VLAIS usage from mac80211
-Date: Thu, 20 Mar 2014 23:39:32 -0700
-Message-Id: <1395383972-20372-1-git-send-email-behanw@converseincode.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395237113.4142.5.camel@jlt4.sipsolutions.net>
-References: <1395237113.4142.5.camel@jlt4.sipsolutions.net>
+	Fri, 21 Mar 2014 02:44:27 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2L6hQGM003014, This message is accepted by code: ctloc85258
+Message-ID: <532BDF8D.2060402@realtek.com>
+Date: Fri, 21 Mar 2014 14:43:25 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <cjb@laptop.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <driverdev-devel@linuxdriverproject.org>,
+        <wei_wang@realsil.com.cn>, <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v4 3/3] memstick: Add realtek USB memstick host driver
+References: <1392199238-14500-1-git-send-email-rogerable@realtek.com>	<1392199238-14500-4-git-send-email-rogerable@realtek.com> <20140320161827.5904bc407f9d3490514fd84e@linux-foundation.org>
+In-Reply-To: <20140320161827.5904bc407f9d3490514fd84e@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jan-Simon Möller <dl9pf@gmx.de>
+On 03/21/2014 07:18 AM, Andrew Morton wrote:
+> On Wed, 12 Feb 2014 18:00:38 +0800 <rogerable@realtek.com> wrote:
+>
+>> From: Roger Tseng <rogerable@realtek.com>
+>>
+>> Realtek USB memstick host driver provides memstick host support based on the
+>> Realtek USB card reader MFD driver.
+>>
+...
+>> +static int rtsx_usb_ms_drv_probe(struct platform_device *pdev)
+>> +{
+>> +	struct memstick_host *msh;
+>> +	struct rtsx_usb_ms *host;
+>> +	struct rtsx_ucr *ucr;
+>> +	int err;
+>> +
+>> +	ucr = usb_get_intfdata(to_usb_interface(pdev->dev.parent));
+>> +	if (!ucr)
+>> +		return -ENXIO;
+>> +
+>> +	dev_dbg(&(pdev->dev),
+>> +			"Realtek USB Memstick controller found\n");
+>> +
+>> +	msh = memstick_alloc_host(sizeof(*host), &pdev->dev);
+>> +	if (!msh)
+>> +		return -ENOMEM;
+>> +
+>> +	host = memstick_priv(msh);
+>> +	host->ucr = ucr;
+>> +	host->msh = msh;
+>> +	host->pdev = pdev;
+>> +	host->power_mode = MEMSTICK_POWER_OFF;
+>> +	platform_set_drvdata(pdev, host);
+>> +
+>> +	mutex_init(&host->host_mutex);
+>> +	INIT_WORK(&host->handle_req, rtsx_usb_ms_handle_req);
+>> +
+>> +	init_completion(&host->detect_ms_exit);
+>> +	host->detect_ms = kthread_create(rtsx_usb_detect_ms_card, host,
+>> +			"rtsx_usb_ms_%d", pdev->id);
+>> +	if (IS_ERR(host->detect_ms)) {
+>> +		dev_dbg(&(pdev->dev),
+>> +				"Unable to create polling thread.\n");
+>> +		err = PTR_ERR(host->detect_ms);
+>> +		goto err_out;
+>> +	}
+>> +
+>> +	msh->request = rtsx_usb_ms_request;
+>> +	msh->set_param = rtsx_usb_ms_set_param;
+>> +	msh->caps = MEMSTICK_CAP_PAR4;
+>> +
+>> +	pm_runtime_enable(&pdev->dev);
+>> +	err = memstick_add_host(msh);
+>> +	if (err)
+>> +		goto err_out;
+>
+> Isn't that kernel thread still running?
+>
+The kernel thread is created(kthread_create) but should not start before 
+the "goto".
 
-Replaced the use of a Variable Length Array In Struct (VLAIS) with a C99
-compliant equivalent. This is the original VLAIS struct.
+Did I miss anything or will it be better to move all kthread things 
+after here?
+>> +	wake_up_process(host->detect_ms);
+>> +	return 0;
+>> +err_out:
+>> +	memstick_free_host(msh);
+>> +	return err;
+>> +}
 
-struct {
-	struct aead_request     req;
-	u8                      priv[crypto_aead_reqsize(tfm)];
-} aead_req;
-
-This patch instead allocates the appropriate amount of memory using an char
-array.
-
-The new code can be compiled with both gcc and clang.
-
-Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
-Signed-off-by: Behan Webster <behanw@converseincode.com>
-Signed-off-by: Vinícius Tinti <viniciustinti@gmail.com>
-Signed-off-by: Mark Charlebois <charlebm@gmail.com>
----
- net/mac80211/aes_ccm.c | 37 ++++++++++++++++++-------------------
- 1 file changed, 18 insertions(+), 19 deletions(-)
-
-diff --git a/net/mac80211/aes_ccm.c b/net/mac80211/aes_ccm.c
-index 7c7df47..71e2abd 100644
---- a/net/mac80211/aes_ccm.c
-+++ b/net/mac80211/aes_ccm.c
-@@ -23,12 +23,12 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			       u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
- 
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request) +
-+				crypto_aead_reqsize(tfm)]
-+				__aligned(__alignof__(struct aead_request));
-+	struct aead_request *aead_req = (void *) aead_req_data;
-+	memset(aead_req, 0, sizeof(aead_req_data));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -36,23 +36,22 @@ void ieee80211_aes_ccm_encrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, &pt, ct, data_len, b_0);
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, &pt, ct, data_len, b_0);
- 
--	crypto_aead_encrypt(&aead_req.req);
-+	crypto_aead_encrypt(aead_req);
- }
- 
- int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 			      u8 *data, size_t data_len, u8 *mic)
- {
- 	struct scatterlist assoc, pt, ct[2];
--	struct {
--		struct aead_request	req;
--		u8			priv[crypto_aead_reqsize(tfm)];
--	} aead_req;
--
--	memset(&aead_req, 0, sizeof(aead_req));
-+	char aead_req_data[sizeof(struct aead_request) +
-+				crypto_aead_reqsize(tfm)]
-+				__aligned(__alignof__(struct aead_request));
-+	struct aead_request *aead_req = (void *) aead_req_data;
-+	memset(aead_req, 0, sizeof(aead_req_data));
- 
- 	sg_init_one(&pt, data, data_len);
- 	sg_init_one(&assoc, &aad[2], be16_to_cpup((__be16 *)aad));
-@@ -60,12 +59,12 @@ int ieee80211_aes_ccm_decrypt(struct crypto_aead *tfm, u8 *b_0, u8 *aad,
- 	sg_set_buf(&ct[0], data, data_len);
- 	sg_set_buf(&ct[1], mic, IEEE80211_CCMP_MIC_LEN);
- 
--	aead_request_set_tfm(&aead_req.req, tfm);
--	aead_request_set_assoc(&aead_req.req, &assoc, assoc.length);
--	aead_request_set_crypt(&aead_req.req, ct, &pt,
-+	aead_request_set_tfm(aead_req, tfm);
-+	aead_request_set_assoc(aead_req, &assoc, assoc.length);
-+	aead_request_set_crypt(aead_req, ct, &pt,
- 			       data_len + IEEE80211_CCMP_MIC_LEN, b_0);
- 
--	return crypto_aead_decrypt(&aead_req.req);
-+	return crypto_aead_decrypt(aead_req);
- }
- 
- struct crypto_aead *ieee80211_aes_key_setup_encrypt(const u8 key[])
--- 
-1.8.3.2
-
+Best regards,
+Roger Tseng
