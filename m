@@ -1,699 +1,591 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965714AbaCUAHr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:07:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36895 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965596AbaCUAEy (ORCPT
+	id S965753AbaCUAIK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:08:10 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:56922 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S965737AbaCUAIE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:54 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.13 138/149] Btrfs: fix tree mod logging
-Date: Thu, 20 Mar 2014 17:05:01 -0700
-Message-Id: <20140321000441.736534822@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
-References: <20140321000436.377902063@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Mar 2014 20:08:04 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: ACPI and PM material for v3.15-rc1 (current queue)
+Date: Fri, 21 Mar 2014 01:23:34 +0100
+Message-ID: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+Hi All,
 
-------------------
+My queue for the first pull request during the upcoming 3.15 merge window
+contains the material below.  Following the rule that everything I send
+pull requests for should spend at least one day in linux-next, I'm not
+going to add any more new commits to it at this point.
 
-From: Filipe David Borba Manana <fdmanana@gmail.com>
+Most likely, there will be more ACPI+PM pull request during the 3.15 cycle,
+so if I missed something, it still may be possible to get that into that
+kernel, but there has to be a good reason for it.
 
-commit 5de865eebb8330eee19c37b31fb6f315a09d4273 upstream.
+Kind regards,
+Rafael
 
-While running the test btrfs/004 from xfstests in a loop, it failed
-about 1 time out of 20 runs in my desktop. The failure happened in
-the backref walking part of the test, and the test's error message was
-like this:
 
-#  btrfs/004 93s ... [failed, exit status 1] - output mismatch (see /home/fdmanana/git/hub/xfstests_2/results//btrfs/004.out.bad)
-#      --- tests/btrfs/004.out	2013-11-26 18:25:29.263333714 +0000
-#      +++ /home/fdmanana/git/hub/xfstests_2/results//btrfs/004.out.bad	2013-12-10 15:25:10.327518516 +0000
-#      @@ -1,3 +1,8 @@
-#       QA output created by 004
-#       *** test backref walking
-#      -*** done
-#      +unexpected output from
-#      +	/home/fdmanana/git/hub/btrfs-progs/btrfs inspect-internal logical-resolve -P 141512704 /home/fdmanana/btrfs-tests/scratch_1
-#      +expected inum: 405, expected address: 454656, file: /home/fdmanana/btrfs-tests/scratch_1/snap1/p0/d6/d3d/d156/fce, got:
-#      +
-       ...
-       (Run 'diff -u tests/btrfs/004.out /home/fdmanana/git/hub/xfstests_2/results//btrfs/004.out.bad' to see the entire diff)
-  Ran: btrfs/004
-  Failures: btrfs/004
-  Failed 1 of 1 tests
+---------------
 
-But immediately after the test finished, the btrfs inspect-internal command
-returned the expected output:
+Aaron Lu (2):
+      ACPI / fan: do nothing in suspend and poweroff callback
+      ACPI / thermal: make acpi_thermal_check asynchronous on resume
 
-  $ btrfs inspect-internal logical-resolve -P 141512704 /home/fdmanana/btrfs-tests/scratch_1
-  inode 405 offset 454656 root 258
-  inode 405 offset 454656 root 5
+Al Stone (1):
+      ACPI: introduce CONFIG_ACPI_REDUCED_HARDWARE_ONLY
 
-It turned out this was because the btrfs_search_old_slot() calls performed
-during backref walking (backref.c:__resolve_indirect_ref) were not finding
-anything. The reason for this turned out to be that the tree mod logging
-code was not logging some node multi-step operations atomically, therefore
-btrfs_search_old_slot() callers iterated often over an incomplete tree that
-wasn't fully consistent with any tree state from the past. Besides missing
-items, this often (but not always) resulted in -EIO errors during old slot
-searches, reported in dmesg like this:
+Alexander Mezin (3):
+      ACPI / battery: move some ACPI_BATTERY_* definitions to header
+      ACPI / battery: call ACPI notifier chain in acpi_battery_notify
+      ACPI / AC: recheck adapter status upon battery status changes
 
-[ 4299.933936] ------------[ cut here ]------------
-[ 4299.933949] WARNING: CPU: 0 PID: 23190 at fs/btrfs/ctree.c:1343 btrfs_search_old_slot+0x57b/0xab0 [btrfs]()
-[ 4299.933950] Modules linked in: btrfs raid6_pq xor pci_stub vboxpci(O) vboxnetadp(O) vboxnetflt(O) vboxdrv(O) bnep rfcomm bluetooth parport_pc ppdev binfmt_misc joydev snd_hda_codec_h
-[ 4299.933977] CPU: 0 PID: 23190 Comm: btrfs Tainted: G        W  O 3.12.0-fdm-btrfs-next-16+ #70
-[ 4299.933978] Hardware name: To Be Filled By O.E.M. To Be Filled By O.E.M./Z77 Pro4, BIOS P1.50 09/04/2012
-[ 4299.933979]  000000000000053f ffff8806f3fd98f8 ffffffff8176d284 0000000000000007
-[ 4299.933982]  0000000000000000 ffff8806f3fd9938 ffffffff8104a81c ffff880659c64b70
-[ 4299.933984]  ffff880659c643d0 ffff8806599233d8 ffff880701e2e938 0000160000000000
-[ 4299.933987] Call Trace:
-[ 4299.933991]  [<ffffffff8176d284>] dump_stack+0x55/0x76
-[ 4299.933994]  [<ffffffff8104a81c>] warn_slowpath_common+0x8c/0xc0
-[ 4299.933997]  [<ffffffff8104a86a>] warn_slowpath_null+0x1a/0x20
-[ 4299.934003]  [<ffffffffa065d3bb>] btrfs_search_old_slot+0x57b/0xab0 [btrfs]
-[ 4299.934005]  [<ffffffff81775f3b>] ? _raw_read_unlock+0x2b/0x50
-[ 4299.934010]  [<ffffffffa0655001>] ? __tree_mod_log_search+0x81/0xc0 [btrfs]
-[ 4299.934019]  [<ffffffffa06dd9b0>] __resolve_indirect_refs+0x130/0x5f0 [btrfs]
-[ 4299.934027]  [<ffffffffa06a21f1>] ? free_extent_buffer+0x61/0xc0 [btrfs]
-[ 4299.934034]  [<ffffffffa06de39c>] find_parent_nodes+0x1fc/0xe40 [btrfs]
-[ 4299.934042]  [<ffffffffa06b13e0>] ? defrag_lookup_extent+0xe0/0xe0 [btrfs]
-[ 4299.934048]  [<ffffffffa06b13e0>] ? defrag_lookup_extent+0xe0/0xe0 [btrfs]
-[ 4299.934056]  [<ffffffffa06df980>] iterate_extent_inodes+0xe0/0x250 [btrfs]
-[ 4299.934058]  [<ffffffff817762db>] ? _raw_spin_unlock+0x2b/0x50
-[ 4299.934065]  [<ffffffffa06dfb82>] iterate_inodes_from_logical+0x92/0xb0 [btrfs]
-[ 4299.934071]  [<ffffffffa06b13e0>] ? defrag_lookup_extent+0xe0/0xe0 [btrfs]
-[ 4299.934078]  [<ffffffffa06b7015>] btrfs_ioctl+0xf65/0x1f60 [btrfs]
-[ 4299.934080]  [<ffffffff811658b8>] ? handle_mm_fault+0x278/0xb00
-[ 4299.934083]  [<ffffffff81075563>] ? up_read+0x23/0x40
-[ 4299.934085]  [<ffffffff8177a41c>] ? __do_page_fault+0x20c/0x5a0
-[ 4299.934088]  [<ffffffff811b2946>] do_vfs_ioctl+0x96/0x570
-[ 4299.934090]  [<ffffffff81776e23>] ? error_sti+0x5/0x6
-[ 4299.934093]  [<ffffffff810b71e8>] ? trace_hardirqs_off_caller+0x28/0xd0
-[ 4299.934096]  [<ffffffff81776a09>] ? retint_swapgs+0xe/0x13
-[ 4299.934098]  [<ffffffff811b2eb1>] SyS_ioctl+0x91/0xb0
-[ 4299.934100]  [<ffffffff813eecde>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[ 4299.934102]  [<ffffffff8177ef12>] system_call_fastpath+0x16/0x1b
-[ 4299.934102]  [<ffffffff8177ef12>] system_call_fastpath+0x16/0x1b
-[ 4299.934104] ---[ end trace 48f0cfc902491414 ]---
-[ 4299.934378] btrfs bad fsid on block 0
+Bob Moore (20):
+      ACPICA: Improve support for 32/64 bit physical addresses in printf().
+      ACPICA: Deploy new 32/64 printf support for table override mechanism.
+      ACPICA: Utilities: Load of local test tables is now optional.
+      ACPICA: Improve parameter validation for acpi_install_gpe_block.
+      ACPICA: Update ACPICA copyrights to 2014.
+      ACPICA: Correctly support references in the union acpi_object.
+      ACPICA: Debugger: Add new command to read/write/compare all namespace objects.
+      ACPICA: Update version to 20140114.
+      ACPICA: Add "Windows 2013" string to _OSI support.
+      ACPICA: Headers: Deploy #pragma pack (push) and (pop).
+      ACPICA: Predefined names: Add support for the _PRP method.
+      ACPICA: Harden _PRT repair code; check for minimum package length.
+      ACPICA: Do not abort _PRT repair on a single subpackage failure.
+      ACPICA: Comment update - no functional change.
+      ACPICA: Update for _PRP predefined name.
+      ACPICA: Add text: ACPICA policy for new _OSI strings. No functional change.
+      ACPICA: Debugger: Add missing objects; Traverse linked lists
+      ACPICA: Prevent infinite loops when traversing corrupted lists.
+      ACPICA: Update version to 20140214.
+      ACPICA: Revert "Headers: Deploy #pragma pack (push) and (pop)."
 
-These tree mod log operations that must be performed atomically, tree_mod_log_free_eb,
-tree_mod_log_eb_copy, tree_mod_log_insert_root and tree_mod_log_insert_move, used to
-be performed atomically before the following commit:
+Chew, Chiau Ee (1):
+      ACPI / LPSS: Add Intel BayTrail ACPI mode PWM
 
-  c8cc6341653721b54760480b0d0d9b5f09b46741
-  (Btrfs: stop using GFP_ATOMIC for the tree mod log allocations)
+Dirk Brandewie (4):
+      intel_pstate: remove unneeded sample buffers
+      intel_pstate: fix pid_reset to use fixed point values
+      cpufreq: Add stop CPU callback to cpufreq_driver interface
+      intel_pstate: Set core to min P state during core offline
 
-That change removed the atomicity of such operations. This patch restores the
-atomicity while still not doing the GFP_ATOMIC allocations of tree_mod_elem
-structures, so it has to do the allocations using GFP_NOFS before acquiring
-the mod log lock.
+Geert Uytterhoeven (5):
+      PM / Runtime: Add missing "it" in comment
+      PM / Hibernate: Spelling s/anonymouns/anonymous/
+      PM: Add missing "freeze" state
+      PM / Runtime: Update runtime_idle() documentation for return value meaning
+      PM / sleep: Correct whitespace errors in <linux/pm.h>
 
-This issue has been experienced by several users recently, such as for example:
+Hanjun Guo (2):
+      ACPI / tables: Replace printk with pr_*
+      ACPI: Remove duplicate definitions of PREFIX
 
-  http://www.spinics.net/lists/linux-btrfs/msg28574.html
+Jacob Pan (2):
+      powercap / intel_rapl: relax sanity check on energy counters
+      powercap / intel_rapl: spell out SoC names
 
-After running the btrfs/004 test for 679 consecutive iterations with this
-patch applied, I didn't ran into the issue anymore.
+Jean Delvare (5):
+      ACPI / video: fix ACPI_VIDEO dependencies
+      ACPI / gpu / drm: Stop selecting VIDEO_OUTPUT_CONTROL
+      acer-wmi: Stop selecting VIDEO_OUTPUT_CONTROL
+      fujitsu-laptop: Drop unneeded include
+      video / output: Drop display output class support
 
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Jiang Liu (5):
+      ACPI: rename acpi_evaluate_hotplug_ost() to acpi_evaluate_ost()
+      ACPI / PAD: use acpi_evaluate_ost() to replace open-coded version
+      ACPI / PAD / xen: use acpi_evaluate_ost() to replace open-coded version
+      ACPI / processor: use acpi_evaluate_ost() to replace open-coded version
+      ACPI: use device name LNXSYBUS.xx for ACPI \_SB and \_TZ objects
 
----
- fs/btrfs/ctree.c |  385 ++++++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 296 insertions(+), 89 deletions(-)
+Joe Perches (1):
+      cpufreq: Reformat printk() statements
 
---- a/fs/btrfs/ctree.c
-+++ b/fs/btrfs/ctree.c
-@@ -39,7 +39,7 @@ static int balance_node_right(struct btr
- 			      struct extent_buffer *src_buf);
- static void del_ptr(struct btrfs_root *root, struct btrfs_path *path,
- 		    int level, int slot);
--static void tree_mod_log_free_eb(struct btrfs_fs_info *fs_info,
-+static int tree_mod_log_free_eb(struct btrfs_fs_info *fs_info,
- 				 struct extent_buffer *eb);
- static int btrfs_prev_leaf(struct btrfs_root *root, struct btrfs_path *path);
- 
-@@ -475,6 +475,8 @@ void btrfs_put_tree_mod_seq(struct btrfs
-  * the index is the shifted logical of the *new* root node for root replace
-  * operations, or the shifted logical of the affected block for all other
-  * operations.
-+ *
-+ * Note: must be called with write lock (tree_mod_log_write_lock).
-  */
- static noinline int
- __tree_mod_log_insert(struct btrfs_fs_info *fs_info, struct tree_mod_elem *tm)
-@@ -483,24 +485,9 @@ __tree_mod_log_insert(struct btrfs_fs_in
- 	struct rb_node **new;
- 	struct rb_node *parent = NULL;
- 	struct tree_mod_elem *cur;
--	int ret = 0;
- 
- 	BUG_ON(!tm);
- 
--	tree_mod_log_write_lock(fs_info);
--	if (list_empty(&fs_info->tree_mod_seq_list)) {
--		tree_mod_log_write_unlock(fs_info);
--		/*
--		 * Ok we no longer care about logging modifications, free up tm
--		 * and return 0.  Any callers shouldn't be using tm after
--		 * calling tree_mod_log_insert, but if they do we can just
--		 * change this to return a special error code to let the callers
--		 * do their own thing.
--		 */
--		kfree(tm);
--		return 0;
--	}
--
- 	spin_lock(&fs_info->tree_mod_seq_lock);
- 	tm->seq = btrfs_inc_tree_mod_seq_minor(fs_info);
- 	spin_unlock(&fs_info->tree_mod_seq_lock);
-@@ -518,18 +505,13 @@ __tree_mod_log_insert(struct btrfs_fs_in
- 			new = &((*new)->rb_left);
- 		else if (cur->seq > tm->seq)
- 			new = &((*new)->rb_right);
--		else {
--			ret = -EEXIST;
--			kfree(tm);
--			goto out;
--		}
-+		else
-+			return -EEXIST;
- 	}
- 
- 	rb_link_node(&tm->node, parent, new);
- 	rb_insert_color(&tm->node, tm_root);
--out:
--	tree_mod_log_write_unlock(fs_info);
--	return ret;
-+	return 0;
- }
- 
- /*
-@@ -545,19 +527,38 @@ static inline int tree_mod_dont_log(stru
- 		return 1;
- 	if (eb && btrfs_header_level(eb) == 0)
- 		return 1;
-+
-+	tree_mod_log_write_lock(fs_info);
-+	if (list_empty(&(fs_info)->tree_mod_seq_list)) {
-+		tree_mod_log_write_unlock(fs_info);
-+		return 1;
-+	}
-+
- 	return 0;
- }
- 
--static inline int
--__tree_mod_log_insert_key(struct btrfs_fs_info *fs_info,
--			  struct extent_buffer *eb, int slot,
--			  enum mod_log_op op, gfp_t flags)
-+/* Similar to tree_mod_dont_log, but doesn't acquire any locks. */
-+static inline int tree_mod_need_log(const struct btrfs_fs_info *fs_info,
-+				    struct extent_buffer *eb)
-+{
-+	smp_mb();
-+	if (list_empty(&(fs_info)->tree_mod_seq_list))
-+		return 0;
-+	if (eb && btrfs_header_level(eb) == 0)
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static struct tree_mod_elem *
-+alloc_tree_mod_elem(struct extent_buffer *eb, int slot,
-+		    enum mod_log_op op, gfp_t flags)
- {
- 	struct tree_mod_elem *tm;
- 
- 	tm = kzalloc(sizeof(*tm), flags);
- 	if (!tm)
--		return -ENOMEM;
-+		return NULL;
- 
- 	tm->index = eb->start >> PAGE_CACHE_SHIFT;
- 	if (op != MOD_LOG_KEY_ADD) {
-@@ -567,8 +568,9 @@ __tree_mod_log_insert_key(struct btrfs_f
- 	tm->op = op;
- 	tm->slot = slot;
- 	tm->generation = btrfs_node_ptr_generation(eb, slot);
-+	RB_CLEAR_NODE(&tm->node);
- 
--	return __tree_mod_log_insert(fs_info, tm);
-+	return tm;
- }
- 
- static noinline int
-@@ -576,10 +578,27 @@ tree_mod_log_insert_key(struct btrfs_fs_
- 			struct extent_buffer *eb, int slot,
- 			enum mod_log_op op, gfp_t flags)
- {
--	if (tree_mod_dont_log(fs_info, eb))
-+	struct tree_mod_elem *tm;
-+	int ret;
-+
-+	if (!tree_mod_need_log(fs_info, eb))
-+		return 0;
-+
-+	tm = alloc_tree_mod_elem(eb, slot, op, flags);
-+	if (!tm)
-+		return -ENOMEM;
-+
-+	if (tree_mod_dont_log(fs_info, eb)) {
-+		kfree(tm);
- 		return 0;
-+	}
- 
--	return __tree_mod_log_insert_key(fs_info, eb, slot, op, flags);
-+	ret = __tree_mod_log_insert(fs_info, tm);
-+	tree_mod_log_write_unlock(fs_info);
-+	if (ret)
-+		kfree(tm);
-+
-+	return ret;
- }
- 
- static noinline int
-@@ -587,53 +606,95 @@ tree_mod_log_insert_move(struct btrfs_fs
- 			 struct extent_buffer *eb, int dst_slot, int src_slot,
- 			 int nr_items, gfp_t flags)
- {
--	struct tree_mod_elem *tm;
--	int ret;
-+	struct tree_mod_elem *tm = NULL;
-+	struct tree_mod_elem **tm_list = NULL;
-+	int ret = 0;
- 	int i;
-+	int locked = 0;
- 
--	if (tree_mod_dont_log(fs_info, eb))
-+	if (!tree_mod_need_log(fs_info, eb))
- 		return 0;
- 
-+	tm_list = kzalloc(nr_items * sizeof(struct tree_mod_elem *), flags);
-+	if (!tm_list)
-+		return -ENOMEM;
-+
-+	tm = kzalloc(sizeof(*tm), flags);
-+	if (!tm) {
-+		ret = -ENOMEM;
-+		goto free_tms;
-+	}
-+
-+	tm->index = eb->start >> PAGE_CACHE_SHIFT;
-+	tm->slot = src_slot;
-+	tm->move.dst_slot = dst_slot;
-+	tm->move.nr_items = nr_items;
-+	tm->op = MOD_LOG_MOVE_KEYS;
-+
-+	for (i = 0; i + dst_slot < src_slot && i < nr_items; i++) {
-+		tm_list[i] = alloc_tree_mod_elem(eb, i + dst_slot,
-+		    MOD_LOG_KEY_REMOVE_WHILE_MOVING, flags);
-+		if (!tm_list[i]) {
-+			ret = -ENOMEM;
-+			goto free_tms;
-+		}
-+	}
-+
-+	if (tree_mod_dont_log(fs_info, eb))
-+		goto free_tms;
-+	locked = 1;
-+
- 	/*
- 	 * When we override something during the move, we log these removals.
- 	 * This can only happen when we move towards the beginning of the
- 	 * buffer, i.e. dst_slot < src_slot.
- 	 */
- 	for (i = 0; i + dst_slot < src_slot && i < nr_items; i++) {
--		ret = __tree_mod_log_insert_key(fs_info, eb, i + dst_slot,
--				MOD_LOG_KEY_REMOVE_WHILE_MOVING, GFP_NOFS);
--		BUG_ON(ret < 0);
-+		ret = __tree_mod_log_insert(fs_info, tm_list[i]);
-+		if (ret)
-+			goto free_tms;
- 	}
- 
--	tm = kzalloc(sizeof(*tm), flags);
--	if (!tm)
--		return -ENOMEM;
-+	ret = __tree_mod_log_insert(fs_info, tm);
-+	if (ret)
-+		goto free_tms;
-+	tree_mod_log_write_unlock(fs_info);
-+	kfree(tm_list);
- 
--	tm->index = eb->start >> PAGE_CACHE_SHIFT;
--	tm->slot = src_slot;
--	tm->move.dst_slot = dst_slot;
--	tm->move.nr_items = nr_items;
--	tm->op = MOD_LOG_MOVE_KEYS;
-+	return 0;
-+free_tms:
-+	for (i = 0; i < nr_items; i++) {
-+		if (tm_list[i] && !RB_EMPTY_NODE(&tm_list[i]->node))
-+			rb_erase(&tm_list[i]->node, &fs_info->tree_mod_log);
-+		kfree(tm_list[i]);
-+	}
-+	if (locked)
-+		tree_mod_log_write_unlock(fs_info);
-+	kfree(tm_list);
-+	kfree(tm);
- 
--	return __tree_mod_log_insert(fs_info, tm);
-+	return ret;
- }
- 
--static inline void
--__tree_mod_log_free_eb(struct btrfs_fs_info *fs_info, struct extent_buffer *eb)
-+static inline int
-+__tree_mod_log_free_eb(struct btrfs_fs_info *fs_info,
-+		       struct tree_mod_elem **tm_list,
-+		       int nritems)
- {
--	int i;
--	u32 nritems;
-+	int i, j;
- 	int ret;
- 
--	if (btrfs_header_level(eb) == 0)
--		return;
--
--	nritems = btrfs_header_nritems(eb);
- 	for (i = nritems - 1; i >= 0; i--) {
--		ret = __tree_mod_log_insert_key(fs_info, eb, i,
--				MOD_LOG_KEY_REMOVE_WHILE_FREEING, GFP_NOFS);
--		BUG_ON(ret < 0);
-+		ret = __tree_mod_log_insert(fs_info, tm_list[i]);
-+		if (ret) {
-+			for (j = nritems - 1; j > i; j--)
-+				rb_erase(&tm_list[j]->node,
-+					 &fs_info->tree_mod_log);
-+			return ret;
-+		}
- 	}
-+
-+	return 0;
- }
- 
- static noinline int
-@@ -642,17 +703,38 @@ tree_mod_log_insert_root(struct btrfs_fs
- 			 struct extent_buffer *new_root, gfp_t flags,
- 			 int log_removal)
- {
--	struct tree_mod_elem *tm;
-+	struct tree_mod_elem *tm = NULL;
-+	struct tree_mod_elem **tm_list = NULL;
-+	int nritems = 0;
-+	int ret = 0;
-+	int i;
- 
--	if (tree_mod_dont_log(fs_info, NULL))
-+	if (!tree_mod_need_log(fs_info, NULL))
- 		return 0;
- 
--	if (log_removal)
--		__tree_mod_log_free_eb(fs_info, old_root);
-+	if (log_removal && btrfs_header_level(old_root) > 0) {
-+		nritems = btrfs_header_nritems(old_root);
-+		tm_list = kzalloc(nritems * sizeof(struct tree_mod_elem *),
-+				  flags);
-+		if (!tm_list) {
-+			ret = -ENOMEM;
-+			goto free_tms;
-+		}
-+		for (i = 0; i < nritems; i++) {
-+			tm_list[i] = alloc_tree_mod_elem(old_root, i,
-+			    MOD_LOG_KEY_REMOVE_WHILE_FREEING, flags);
-+			if (!tm_list[i]) {
-+				ret = -ENOMEM;
-+				goto free_tms;
-+			}
-+		}
-+	}
- 
- 	tm = kzalloc(sizeof(*tm), flags);
--	if (!tm)
--		return -ENOMEM;
-+	if (!tm) {
-+		ret = -ENOMEM;
-+		goto free_tms;
-+	}
- 
- 	tm->index = new_root->start >> PAGE_CACHE_SHIFT;
- 	tm->old_root.logical = old_root->start;
-@@ -660,7 +742,30 @@ tree_mod_log_insert_root(struct btrfs_fs
- 	tm->generation = btrfs_header_generation(old_root);
- 	tm->op = MOD_LOG_ROOT_REPLACE;
- 
--	return __tree_mod_log_insert(fs_info, tm);
-+	if (tree_mod_dont_log(fs_info, NULL))
-+		goto free_tms;
-+
-+	if (tm_list)
-+		ret = __tree_mod_log_free_eb(fs_info, tm_list, nritems);
-+	if (!ret)
-+		ret = __tree_mod_log_insert(fs_info, tm);
-+
-+	tree_mod_log_write_unlock(fs_info);
-+	if (ret)
-+		goto free_tms;
-+	kfree(tm_list);
-+
-+	return ret;
-+
-+free_tms:
-+	if (tm_list) {
-+		for (i = 0; i < nritems; i++)
-+			kfree(tm_list[i]);
-+		kfree(tm_list);
-+	}
-+	kfree(tm);
-+
-+	return ret;
- }
- 
- static struct tree_mod_elem *
-@@ -729,31 +834,75 @@ tree_mod_log_search(struct btrfs_fs_info
- 	return __tree_mod_log_search(fs_info, start, min_seq, 0);
- }
- 
--static noinline void
-+static noinline int
- tree_mod_log_eb_copy(struct btrfs_fs_info *fs_info, struct extent_buffer *dst,
- 		     struct extent_buffer *src, unsigned long dst_offset,
- 		     unsigned long src_offset, int nr_items)
- {
--	int ret;
-+	int ret = 0;
-+	struct tree_mod_elem **tm_list = NULL;
-+	struct tree_mod_elem **tm_list_add, **tm_list_rem;
- 	int i;
-+	int locked = 0;
- 
--	if (tree_mod_dont_log(fs_info, NULL))
--		return;
-+	if (!tree_mod_need_log(fs_info, NULL))
-+		return 0;
- 
- 	if (btrfs_header_level(dst) == 0 && btrfs_header_level(src) == 0)
--		return;
-+		return 0;
-+
-+	tm_list = kzalloc(nr_items * 2 * sizeof(struct tree_mod_elem *),
-+			  GFP_NOFS);
-+	if (!tm_list)
-+		return -ENOMEM;
- 
-+	tm_list_add = tm_list;
-+	tm_list_rem = tm_list + nr_items;
- 	for (i = 0; i < nr_items; i++) {
--		ret = __tree_mod_log_insert_key(fs_info, src,
--						i + src_offset,
--						MOD_LOG_KEY_REMOVE, GFP_NOFS);
--		BUG_ON(ret < 0);
--		ret = __tree_mod_log_insert_key(fs_info, dst,
--						     i + dst_offset,
--						     MOD_LOG_KEY_ADD,
--						     GFP_NOFS);
--		BUG_ON(ret < 0);
-+		tm_list_rem[i] = alloc_tree_mod_elem(src, i + src_offset,
-+		    MOD_LOG_KEY_REMOVE, GFP_NOFS);
-+		if (!tm_list_rem[i]) {
-+			ret = -ENOMEM;
-+			goto free_tms;
-+		}
-+
-+		tm_list_add[i] = alloc_tree_mod_elem(dst, i + dst_offset,
-+		    MOD_LOG_KEY_ADD, GFP_NOFS);
-+		if (!tm_list_add[i]) {
-+			ret = -ENOMEM;
-+			goto free_tms;
-+		}
-+	}
-+
-+	if (tree_mod_dont_log(fs_info, NULL))
-+		goto free_tms;
-+	locked = 1;
-+
-+	for (i = 0; i < nr_items; i++) {
-+		ret = __tree_mod_log_insert(fs_info, tm_list_rem[i]);
-+		if (ret)
-+			goto free_tms;
-+		ret = __tree_mod_log_insert(fs_info, tm_list_add[i]);
-+		if (ret)
-+			goto free_tms;
- 	}
-+
-+	tree_mod_log_write_unlock(fs_info);
-+	kfree(tm_list);
-+
-+	return 0;
-+
-+free_tms:
-+	for (i = 0; i < nr_items * 2; i++) {
-+		if (tm_list[i] && !RB_EMPTY_NODE(&tm_list[i]->node))
-+			rb_erase(&tm_list[i]->node, &fs_info->tree_mod_log);
-+		kfree(tm_list[i]);
-+	}
-+	if (locked)
-+		tree_mod_log_write_unlock(fs_info);
-+	kfree(tm_list);
-+
-+	return ret;
- }
- 
- static inline void
-@@ -778,12 +927,52 @@ tree_mod_log_set_node_key(struct btrfs_f
- 	BUG_ON(ret < 0);
- }
- 
--static noinline void
-+static noinline int
- tree_mod_log_free_eb(struct btrfs_fs_info *fs_info, struct extent_buffer *eb)
- {
-+	struct tree_mod_elem **tm_list = NULL;
-+	int nritems = 0;
-+	int i;
-+	int ret = 0;
-+
-+	if (btrfs_header_level(eb) == 0)
-+		return 0;
-+
-+	if (!tree_mod_need_log(fs_info, NULL))
-+		return 0;
-+
-+	nritems = btrfs_header_nritems(eb);
-+	tm_list = kzalloc(nritems * sizeof(struct tree_mod_elem *),
-+			  GFP_NOFS);
-+	if (!tm_list)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < nritems; i++) {
-+		tm_list[i] = alloc_tree_mod_elem(eb, i,
-+		    MOD_LOG_KEY_REMOVE_WHILE_FREEING, GFP_NOFS);
-+		if (!tm_list[i]) {
-+			ret = -ENOMEM;
-+			goto free_tms;
-+		}
-+	}
-+
- 	if (tree_mod_dont_log(fs_info, eb))
--		return;
--	__tree_mod_log_free_eb(fs_info, eb);
-+		goto free_tms;
-+
-+	ret = __tree_mod_log_free_eb(fs_info, tm_list, nritems);
-+	tree_mod_log_write_unlock(fs_info);
-+	if (ret)
-+		goto free_tms;
-+	kfree(tm_list);
-+
-+	return 0;
-+
-+free_tms:
-+	for (i = 0; i < nritems; i++)
-+		kfree(tm_list[i]);
-+	kfree(tm_list);
-+
-+	return ret;
- }
- 
- static noinline void
-@@ -1041,8 +1230,13 @@ static noinline int __btrfs_cow_block(st
- 		btrfs_set_node_ptr_generation(parent, parent_slot,
- 					      trans->transid);
- 		btrfs_mark_buffer_dirty(parent);
--		if (last_ref)
--			tree_mod_log_free_eb(root->fs_info, buf);
-+		if (last_ref) {
-+			ret = tree_mod_log_free_eb(root->fs_info, buf);
-+			if (ret) {
-+				btrfs_abort_transaction(trans, root, ret);
-+				return ret;
-+			}
-+		}
- 		btrfs_free_tree_block(trans, root, buf, parent_start,
- 				      last_ref);
- 	}
-@@ -3022,8 +3216,12 @@ static int push_node_left(struct btrfs_t
- 	} else
- 		push_items = min(src_nritems - 8, push_items);
- 
--	tree_mod_log_eb_copy(root->fs_info, dst, src, dst_nritems, 0,
--			     push_items);
-+	ret = tree_mod_log_eb_copy(root->fs_info, dst, src, dst_nritems, 0,
-+				   push_items);
-+	if (ret) {
-+		btrfs_abort_transaction(trans, root, ret);
-+		return ret;
-+	}
- 	copy_extent_buffer(dst, src,
- 			   btrfs_node_key_ptr_offset(dst_nritems),
- 			   btrfs_node_key_ptr_offset(0),
-@@ -3093,8 +3291,12 @@ static int balance_node_right(struct btr
- 				      (dst_nritems) *
- 				      sizeof(struct btrfs_key_ptr));
- 
--	tree_mod_log_eb_copy(root->fs_info, dst, src, 0,
--			     src_nritems - push_items, push_items);
-+	ret = tree_mod_log_eb_copy(root->fs_info, dst, src, 0,
-+				   src_nritems - push_items, push_items);
-+	if (ret) {
-+		btrfs_abort_transaction(trans, root, ret);
-+		return ret;
-+	}
- 	copy_extent_buffer(dst, src,
- 			   btrfs_node_key_ptr_offset(0),
- 			   btrfs_node_key_ptr_offset(src_nritems - push_items),
-@@ -3295,7 +3497,12 @@ static noinline int split_node(struct bt
- 			    btrfs_header_chunk_tree_uuid(split),
- 			    BTRFS_UUID_SIZE);
- 
--	tree_mod_log_eb_copy(root->fs_info, split, c, 0, mid, c_nritems - mid);
-+	ret = tree_mod_log_eb_copy(root->fs_info, split, c, 0,
-+				   mid, c_nritems - mid);
-+	if (ret) {
-+		btrfs_abort_transaction(trans, root, ret);
-+		return ret;
-+	}
- 	copy_extent_buffer(split, c,
- 			   btrfs_node_key_ptr_offset(0),
- 			   btrfs_node_key_ptr_offset(mid),
+Lad, Prabhakar (1):
+      PM: fix typo in comment
 
+Lan Tianyu (1):
+      ACPI / button: Add ACPI Button event via netlink routine
+
+Liu, Chuansheng (5):
+      PM / sleep: Two flags for async suspend_noirq and suspend_late
+      PM / sleep: Asynchronous threads for resume_noirq
+      PM / sleep: Asynchronous threads for resume_early
+      PM / sleep: Asynchronous threads for suspend_noirq
+      PM / sleep: Asynchronous threads for suspend_late
+
+Lv Zheng (9):
+      ACPICA: Update the conditions to enable the utility resource dump strings.
+      ACPICA: Add support for extra, optional OS-specific header file.
+      ACPICA: acpidump: Add sparse declarators support.
+      ACPICA: acpidump: Remove integer types translation protection.
+      ACPICA: Add boot option to disable auto return object repair
+      ACPICA: Update conditional compilation flags for resource dump functions.
+      ACPICA: Properly handle NULL entries in _PRT return packages.
+      ACPICA: Restore code that repairs NULL package elements in return values.
+      ACPICA: Cleanup/improve global variable declarations.
+
+Paul Bolle (1):
+      ACPI: Remove Kconfig symbol ACPI_PROCFS
+
+Paul Burton (1):
+      cpuidle: delay enabling interrupts until all coupled CPUs leave idle
+
+Philipp Zabel (1):
+      PM / domains: Turn latency warning into debug message
+
+Rafael J. Wysocki (48):
+      ACPI / hotplug / PCI: Simplify disable_slot()
+      ACPI / hotplug / PCI: Proper kerneldoc comments for enumeration/removal
+      ACPI / hotplug / PCI: Simplify register_slot()
+      ACPI / hotplug / PCI: Drop acpiphp_bus_trim()
+      ACPI / hotplug / PCI: Rework acpiphp_no_hotplug()
+      ACPI / hotplug / PCI: Store acpi_device pointer in acpiphp_context
+      ACPI / hotplug / PCI: Drop acpiphp_bus_add()
+      ACPI / hotplug / PCI: Drop crit_sect locking
+      ACPI / hotplug / PCI: Simplify hotplug_event()
+      ACPI / hotplug / PCI: Use acpi_handle_debug() in hotplug_event()
+      ACPI / hotplug / PCI: Do not pass ACPI handle to hotplug_event()
+      ACPICA: Introduce acpi_get_data_full() and rework acpi_get_data()
+      ACPI / hotplug: Fix potential race in acpi_bus_notify()
+      ACPI / hotplug / PCI: Define hotplug context lock in the core
+      ACPI / hotplug / PCI: Consolidate ACPIPHP with ACPI core hotplug
+      ACPI / hotplug / PCI: Rework the handling of eject requests
+      ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
+      ACPI / hotplug / PCI: Hotplug notifications from acpi_bus_notify()
+      ACPI / hotplug / PCI: Rework acpiphp_check_host_bridge()
+      ACPI / hotplug / PCI: Execute _EJ0 under the ACPI scan lock
+      PM / QoS: Rename device resume latency QoS items
+      PM / QoS: Add no_constraints_value field to struct pm_qos_constraints
+      PM / QoS: Introcuce latency tolerance device PM QoS type
+      ACPI / scan: Add bind/unbind callbacks to struct acpi_scan_handler
+      ACPI / LPSS: Support for device latency tolerance PM QoS
+      PM / QoS: Add type to dev_pm_qos_add_ancestor_request() arguments
+      ACPI / hotplug / PCI: Rename register_slot() to acpiphp_add_context()
+      ACPI / hotplug / PCI: Add ACPIPHP contexts to devices handled by PCIeHP
+      ACPI / dock: Dispatch dock notifications from the global notify handler
+      ACPI / dock: Pass ACPI device pointer to acpi_device_is_battery()
+      ACPI / dock: Associate dock platform devices with ACPI device objects
+      ACPI / hotplug / PCI: Do not clear event callback pointer for docks
+      ACPI / hotplug: Add .fixup() callback to struct acpi_hotplug_context
+      ACPI / dock: Use ACPI device object pointers instead of ACPI handles
+      ACPI / dock: Use callback pointers from devices' ACPI hotplug contexts
+      ACPI / dock: Add .uevent() callback to struct acpi_hotplug_context
+      ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
+      ACPI / dock: Drop struct acpi_dock_ops and all code related to it
+      ACPI / dock: Drop remove_dock_dependent_devices()
+      ACPI / dock: Update copyright notice
+      ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
+      cpufreq: Refactor cpufreq_set_policy()
+      ACPI / PM: Resume runtime-suspended devices later during system suspend
+      PCI / PM: Resume runtime-suspended devices later during system suspend
+      ACPI / hotplug: Rework deferred execution of acpi_device_hotplug()
+      ACPI / hotplug / PCI: Use pci_device_is_present()
+      cpufreq: Do not allow ->setpolicy drivers to provide ->target
+      MAINTAINERS: Reorder maintainer addresses for PM and ACPI
+
+Rashika Kheria (3):
+      cpufreq: Mark function as static in cpufreq.c
+      PM / sleep: Move prototype declaration to header file kernel/power/power.h
+      PM / wakeup: Include appropriate header file in kernel/power/wakelock.c
+
+Rob Herring (1):
+      cpufreq: enable ARM drivers on arm64
+
+Saravana Kannan (3):
+      cpufreq: stats: Remove redundant cpufreq_cpu_get() call
+      cpufreq: stats: Fix error handling in __cpufreq_stats_create_table()
+      cpufreq: stats: Refactor common code into __cpufreq_stats_create_table()
+
+Sebastian Capella (1):
+      PM / hibernate: use name_to_dev_t to parse resume
+
+Stratos Karafotis (2):
+      cpufreq: Fix checkpatch errors and warnings
+      cpufreq: Remove unnecessary braces
+
+Tomasz Nowicki (2):
+      ACPI / APEI: Remove X86 redundant dependency for APEI GHES.
+      ACPI / PCI: Do not call ISA-specific code if ISA is not supported
+
+Tuukka Tikkanen (6):
+      cpuidle: rename expected_us to next_timer_us in menu governor
+      cpuidle: Use actual state latency in menu governor
+      cpuidle: Ensure menu coefficients stay within domain
+      cpuidle: Do not substract exit latency from assumed sleep length
+      cpuidle: Move perf multiplier calculation out of the selection loop
+      cpuidle: poll state can measure residency
+
+Ulf Hansson (3):
+      PM / sleep: Set pm_generic functions to NULL for !CONFIG_PM_SLEEP
+      PM / runtime: Fetch runtime PM callbacks using a macro
+      PM: Add pm_runtime_suspend|resume_force functions
+
+Viresh Kumar (16):
+      cpufreq: don't call cpufreq_update_policy() on CPU addition
+      cpufreq: Return error if ->get() failed in cpufreq_update_policy()
+      cpufreq: suspend governors on system suspend/hibernate
+      cpufreq: Implement cpufreq_generic_suspend()
+      cpufreq: exynos: Use cpufreq_generic_suspend()
+      cpufreq: s5pv210: Use cpufreq_generic_suspend()
+      cpufreq: Tegra: Use cpufreq_generic_suspend()
+      PM / suspend: Remove unnecessary !!
+      cpufreq: add 'freq_table' in struct cpufreq_policy
+      cpufreq: Remove cpufreq_generic_exit()
+      cpufreq: Remove unnecessary variable/parameter 'frozen'
+      cpufreq: SPEAr: Instantiate as platform_driver
+      cpufreq: remove unused notifier: CPUFREQ_{SUSPENDCHANGE|RESUMECHANGE}
+      cpufreq: move call to __find_governor() to cpufreq_init_policy()
+      cpufreq: arm_big_little: make vexpress driver depend on bL core driver
+      cpufreq: arm_big_little: set 'physical_cluster' for each CPU
+
+Zhuoyu Zhang (1):
+      cpufreq: powerpc: add cpufreq transition latency for FSL e500mc SoCs
+
+---------------
+
+ Documentation/ABI/testing/sysfs-devices-power |  27 +-
+ Documentation/ABI/testing/sysfs-power         |   5 +-
+ Documentation/cpu-freq/core.txt               |   4 -
+ Documentation/cpu-freq/cpu-drivers.txt        |   8 +-
+ Documentation/kernel-parameters.txt           |   8 +
+ Documentation/power/pm_qos_interface.txt      |  82 ++--
+ Documentation/trace/events-power.txt          |   2 +-
+ MAINTAINERS                                   |   8 +-
+ arch/arm/kernel/smp.c                         |   3 +-
+ arch/arm/kernel/smp_twd.c                     |   2 +-
+ arch/arm/mach-pxa/viper.c                     |   3 -
+ arch/arm/mach-spear/spear1310.c               |   1 +
+ arch/arm/mach-spear/spear1340.c               |   1 +
+ arch/arm64/Kconfig                            |   8 +
+ arch/ia64/configs/generic_defconfig           |   1 -
+ arch/ia64/configs/tiger_defconfig             |   1 -
+ arch/ia64/configs/zx1_defconfig               |   1 -
+ arch/powerpc/oprofile/op_model_cell.c         |   3 +-
+ arch/sparc/kernel/time_64.c                   |   3 +-
+ arch/x86/configs/i386_defconfig               |   1 -
+ arch/x86/configs/x86_64_defconfig             |   1 -
+ arch/x86/kernel/tsc.c                         |   3 +-
+ drivers/acpi/Kconfig                          |  28 +-
+ drivers/acpi/ac.c                             |  25 ++
+ drivers/acpi/acpi_cmos_rtc.c                  |   2 -
+ drivers/acpi/acpi_lpss.c                      |  82 +++-
+ drivers/acpi/acpi_pad.c                       |  24 +-
+ drivers/acpi/acpica/Makefile                  |   4 +-
+ drivers/acpi/acpica/accommon.h                |   2 +-
+ drivers/acpi/acpica/acdebug.h                 |   4 +-
+ drivers/acpi/acpica/acdispat.h                |   2 +-
+ drivers/acpi/acpica/acevents.h                |   2 +-
+ drivers/acpi/acpica/acglobal.h                | 355 +++++++++--------
+ drivers/acpi/acpica/achware.h                 |   2 +-
+ drivers/acpi/acpica/acinterp.h                |   6 +-
+ drivers/acpi/acpica/aclocal.h                 |   2 +-
+ drivers/acpi/acpica/acmacros.h                |  16 +-
+ drivers/acpi/acpica/acnamesp.h                |   2 +-
+ drivers/acpi/acpica/acobject.h                |   2 +-
+ drivers/acpi/acpica/acopcode.h                |   2 +-
+ drivers/acpi/acpica/acparser.h                |   2 +-
+ drivers/acpi/acpica/acpredef.h                |  16 +-
+ drivers/acpi/acpica/acresrc.h                 |   2 +-
+ drivers/acpi/acpica/acstruct.h                |   2 +-
+ drivers/acpi/acpica/actables.h                |   2 +-
+ drivers/acpi/acpica/acutils.h                 |   4 +-
+ drivers/acpi/acpica/amlcode.h                 |   2 +-
+ drivers/acpi/acpica/amlresrc.h                |   2 +-
+ drivers/acpi/acpica/dsargs.c                  |   2 +-
+ drivers/acpi/acpica/dscontrol.c               |   2 +-
+ drivers/acpi/acpica/dsfield.c                 |   2 +-
+ drivers/acpi/acpica/dsinit.c                  |   2 +-
+ drivers/acpi/acpica/dsmethod.c                |   2 +-
+ drivers/acpi/acpica/dsmthdat.c                |   2 +-
+ drivers/acpi/acpica/dsobject.c                |   2 +-
+ drivers/acpi/acpica/dsopcode.c                |   2 +-
+ drivers/acpi/acpica/dsutils.c                 |   2 +-
+ drivers/acpi/acpica/dswexec.c                 |   2 +-
+ drivers/acpi/acpica/dswload.c                 |   2 +-
+ drivers/acpi/acpica/dswload2.c                |   2 +-
+ drivers/acpi/acpica/dswscope.c                |   2 +-
+ drivers/acpi/acpica/dswstate.c                |   2 +-
+ drivers/acpi/acpica/evevent.c                 |   2 +-
+ drivers/acpi/acpica/evglock.c                 |   2 +-
+ drivers/acpi/acpica/evgpe.c                   |   2 +-
+ drivers/acpi/acpica/evgpeblk.c                |   2 +-
+ drivers/acpi/acpica/evgpeinit.c               |   2 +-
+ drivers/acpi/acpica/evgpeutil.c               |   2 +-
+ drivers/acpi/acpica/evhandler.c               |   2 +-
+ drivers/acpi/acpica/evmisc.c                  |   2 +-
+ drivers/acpi/acpica/evregion.c                |  13 +-
+ drivers/acpi/acpica/evrgnini.c                |   2 +-
+ drivers/acpi/acpica/evsci.c                   |   2 +-
+ drivers/acpi/acpica/evxface.c                 |   2 +-
+ drivers/acpi/acpica/evxfevnt.c                |   2 +-
+ drivers/acpi/acpica/evxfgpe.c                 |  21 +-
+ drivers/acpi/acpica/evxfregn.c                |   2 +-
+ drivers/acpi/acpica/exconfig.c                |   2 +-
+ drivers/acpi/acpica/exconvrt.c                |   2 +-
+ drivers/acpi/acpica/excreate.c                |   2 +-
+ drivers/acpi/acpica/exdebug.c                 |   2 +-
+ drivers/acpi/acpica/exdump.c                  | 231 ++++++++++--
+ drivers/acpi/acpica/exfield.c                 |   2 +-
+ drivers/acpi/acpica/exfldio.c                 |   2 +-
+ drivers/acpi/acpica/exmisc.c                  |   2 +-
+ drivers/acpi/acpica/exmutex.c                 |   2 +-
+ drivers/acpi/acpica/exnames.c                 |   2 +-
+ drivers/acpi/acpica/exoparg1.c                |   2 +-
+ drivers/acpi/acpica/exoparg2.c                |   2 +-
+ drivers/acpi/acpica/exoparg3.c                |   2 +-
+ drivers/acpi/acpica/exoparg6.c                |   2 +-
+ drivers/acpi/acpica/exprep.c                  |   2 +-
+ drivers/acpi/acpica/exregion.c                |   2 +-
+ drivers/acpi/acpica/exresnte.c                |   2 +-
+ drivers/acpi/acpica/exresolv.c                |   2 +-
+ drivers/acpi/acpica/exresop.c                 |   2 +-
+ drivers/acpi/acpica/exstore.c                 |   2 +-
+ drivers/acpi/acpica/exstoren.c                |   2 +-
+ drivers/acpi/acpica/exstorob.c                |   2 +-
+ drivers/acpi/acpica/exsystem.c                |   2 +-
+ drivers/acpi/acpica/exutils.c                 |   2 +-
+ drivers/acpi/acpica/hwacpi.c                  |   2 +-
+ drivers/acpi/acpica/hwesleep.c                |   2 +-
+ drivers/acpi/acpica/hwgpe.c                   |   2 +-
+ drivers/acpi/acpica/hwpci.c                   |   2 +-
+ drivers/acpi/acpica/hwregs.c                  |   2 +-
+ drivers/acpi/acpica/hwsleep.c                 |   2 +-
+ drivers/acpi/acpica/hwtimer.c                 |   2 +-
+ drivers/acpi/acpica/hwvalid.c                 |   2 +-
+ drivers/acpi/acpica/hwxface.c                 |   2 +-
+ drivers/acpi/acpica/hwxfsleep.c               |   2 +-
+ drivers/acpi/acpica/nsaccess.c                |   2 +-
+ drivers/acpi/acpica/nsalloc.c                 |   2 +-
+ drivers/acpi/acpica/nsarguments.c             |   2 +-
+ drivers/acpi/acpica/nsconvert.c               |   2 +-
+ drivers/acpi/acpica/nsdump.c                  |   2 +-
+ drivers/acpi/acpica/nsdumpdv.c                |   2 +-
+ drivers/acpi/acpica/nseval.c                  |   2 +-
+ drivers/acpi/acpica/nsinit.c                  |   2 +-
+ drivers/acpi/acpica/nsload.c                  |   2 +-
+ drivers/acpi/acpica/nsnames.c                 |   2 +-
+ drivers/acpi/acpica/nsobject.c                |  12 +-
+ drivers/acpi/acpica/nsparse.c                 |   2 +-
+ drivers/acpi/acpica/nspredef.c                |   2 +-
+ drivers/acpi/acpica/nsprepkg.c                |  42 +--
+ drivers/acpi/acpica/nsrepair.c                |  31 +-
+ drivers/acpi/acpica/nsrepair2.c               |  39 +-
+ drivers/acpi/acpica/nssearch.c                |   2 +-
+ drivers/acpi/acpica/nsutils.c                 |   2 +-
+ drivers/acpi/acpica/nswalk.c                  |   2 +-
+ drivers/acpi/acpica/nsxfeval.c                |  35 +-
+ drivers/acpi/acpica/nsxfname.c                |   2 +-
+ drivers/acpi/acpica/nsxfobj.c                 |   2 +-
+ drivers/acpi/acpica/psargs.c                  |   2 +-
+ drivers/acpi/acpica/psloop.c                  |   2 +-
+ drivers/acpi/acpica/psobject.c                |   2 +-
+ drivers/acpi/acpica/psopcode.c                |   2 +-
+ drivers/acpi/acpica/psopinfo.c                |   2 +-
+ drivers/acpi/acpica/psparse.c                 |   2 +-
+ drivers/acpi/acpica/psscope.c                 |   2 +-
+ drivers/acpi/acpica/pstree.c                  |   2 +-
+ drivers/acpi/acpica/psutils.c                 |   2 +-
+ drivers/acpi/acpica/pswalk.c                  |   2 +-
+ drivers/acpi/acpica/psxface.c                 |   2 +-
+ drivers/acpi/acpica/rsaddr.c                  |   2 +-
+ drivers/acpi/acpica/rscalc.c                  |   4 +-
+ drivers/acpi/acpica/rscreate.c                |  12 +-
+ drivers/acpi/acpica/rsdump.c                  |   5 +-
+ drivers/acpi/acpica/rsdumpinfo.c              |   4 +-
+ drivers/acpi/acpica/rsinfo.c                  |   6 +-
+ drivers/acpi/acpica/rsio.c                    |   2 +-
+ drivers/acpi/acpica/rsirq.c                   |   2 +-
+ drivers/acpi/acpica/rslist.c                  |   2 +-
+ drivers/acpi/acpica/rsmemory.c                |   2 +-
+ drivers/acpi/acpica/rsmisc.c                  |   2 +-
+ drivers/acpi/acpica/rsserial.c                |   2 +-
+ drivers/acpi/acpica/rsutils.c                 |   2 +-
+ drivers/acpi/acpica/rsxface.c                 |   2 +-
+ drivers/acpi/acpica/tbfadt.c                  |   2 +-
+ drivers/acpi/acpica/tbfind.c                  |   2 +-
+ drivers/acpi/acpica/tbinstal.c                |  17 +-
+ drivers/acpi/acpica/tbprint.c                 |  22 +-
+ drivers/acpi/acpica/tbutils.c                 |   2 +-
+ drivers/acpi/acpica/tbxface.c                 |   2 +-
+ drivers/acpi/acpica/tbxfload.c                |   2 +-
+ drivers/acpi/acpica/tbxfroot.c                |   2 +-
+ drivers/acpi/acpica/utaddress.c               |   2 +-
+ drivers/acpi/acpica/utalloc.c                 |   2 +-
+ drivers/acpi/acpica/utbuffer.c                |   2 +-
+ drivers/acpi/acpica/utcache.c                 |   2 +-
+ drivers/acpi/acpica/utcopy.c                  |   8 +-
+ drivers/acpi/acpica/utdebug.c                 |   2 +-
+ drivers/acpi/acpica/utdecode.c                |   2 +-
+ drivers/acpi/acpica/utdelete.c                |  17 +-
+ drivers/acpi/acpica/uterror.c                 |   2 +-
+ drivers/acpi/acpica/uteval.c                  |   2 +-
+ drivers/acpi/acpica/utexcep.c                 |   2 +-
+ drivers/acpi/acpica/utglobal.c                |  39 +-
+ drivers/acpi/acpica/utids.c                   |   2 +-
+ drivers/acpi/acpica/utinit.c                  |   2 +-
+ drivers/acpi/acpica/utlock.c                  |   2 +-
+ drivers/acpi/acpica/utmath.c                  |   2 +-
+ drivers/acpi/acpica/utmisc.c                  |   2 +-
+ drivers/acpi/acpica/utmutex.c                 |   2 +-
+ drivers/acpi/acpica/utobject.c                |   2 +-
+ drivers/acpi/acpica/utosi.c                   |  28 +-
+ drivers/acpi/acpica/utownerid.c               |   2 +-
+ drivers/acpi/acpica/utpredef.c                |   2 +-
+ drivers/acpi/acpica/utresrc.c                 |   5 +-
+ drivers/acpi/acpica/utstate.c                 |   2 +-
+ drivers/acpi/acpica/utstring.c                |   2 +-
+ drivers/acpi/acpica/uttrack.c                 |   5 +-
+ drivers/acpi/acpica/utxface.c                 |   2 +-
+ drivers/acpi/acpica/utxferror.c               |   2 +-
+ drivers/acpi/acpica/utxfinit.c                |   2 +-
+ drivers/acpi/acpica/utxfmutex.c               |   2 +-
+ drivers/acpi/apei/Kconfig                     |   2 +-
+ drivers/acpi/battery.c                        |   7 +-
+ drivers/acpi/battery.h                        |  10 +
+ drivers/acpi/bus.c                            |  63 ++--
+ drivers/acpi/button.c                         |   4 +
+ drivers/acpi/container.c                      |   5 +-
+ drivers/acpi/device_pm.c                      |  41 +-
+ drivers/acpi/dock.c                           | 454 ++++++----------------
+ drivers/acpi/fan.c                            |  13 +-
+ drivers/acpi/glue.c                           |  12 +
+ drivers/acpi/internal.h                       |  13 +-
+ drivers/acpi/osl.c                            |  27 +-
+ drivers/acpi/pci_irq.c                        |  36 +-
+ drivers/acpi/pci_link.c                       |   2 -
+ drivers/acpi/pci_root.c                       |   4 +-
+ drivers/acpi/power.c                          |   2 -
+ drivers/acpi/processor_core.c                 |   1 -
+ drivers/acpi/processor_driver.c               |   2 -
+ drivers/acpi/processor_perflib.c              |  14 +-
+ drivers/acpi/sbs.c                            |   2 +-
+ drivers/acpi/scan.c                           | 261 ++++++++-----
+ drivers/acpi/sysfs.c                          |   2 -
+ drivers/acpi/tables.c                         | 128 +++----
+ drivers/acpi/thermal.c                        |  37 +-
+ drivers/acpi/utils.c                          |  16 +-
+ drivers/acpi/video.c                          |   2 -
+ drivers/acpi/video_detect.c                   |   2 -
+ drivers/ata/libata-acpi.c                     |  72 ++--
+ drivers/base/power/Makefile                   |   3 +-
+ drivers/base/power/domain.c                   |   2 +-
+ drivers/base/power/main.c                     | 280 +++++++++++---
+ drivers/base/power/power.h                    |   4 +-
+ drivers/base/power/qos.c                      | 220 ++++++++---
+ drivers/base/power/runtime.c                  | 164 ++++++--
+ drivers/base/power/sysfs.c                    |  97 +++--
+ drivers/cpufreq/Kconfig                       |   2 +-
+ drivers/cpufreq/Kconfig.arm                   |  17 +-
+ drivers/cpufreq/acpi-cpufreq.c                |   1 -
+ drivers/cpufreq/arm_big_little.c              |   6 +-
+ drivers/cpufreq/blackfin-cpufreq.c            |   1 -
+ drivers/cpufreq/cpufreq-cpu0.c                |   1 -
+ drivers/cpufreq/cpufreq.c                     | 446 +++++++++++-----------
+ drivers/cpufreq/cpufreq_stats.c               |  38 +-
+ drivers/cpufreq/cris-artpec3-cpufreq.c        |   1 -
+ drivers/cpufreq/cris-etraxfs-cpufreq.c        |   1 -
+ drivers/cpufreq/davinci-cpufreq.c             |   1 -
+ drivers/cpufreq/e_powersaver.c                |   1 -
+ drivers/cpufreq/elanfreq.c                    |   1 -
+ drivers/cpufreq/exynos-cpufreq.c              |  97 +----
+ drivers/cpufreq/exynos5440-cpufreq.c          |   1 -
+ drivers/cpufreq/freq_table.c                  |  46 +--
+ drivers/cpufreq/ia64-acpi-cpufreq.c           |   1 -
+ drivers/cpufreq/imx6q-cpufreq.c               |   1 -
+ drivers/cpufreq/intel_pstate.c                |  45 +--
+ drivers/cpufreq/kirkwood-cpufreq.c            |   1 -
+ drivers/cpufreq/longhaul.c                    |   1 -
+ drivers/cpufreq/loongson2_cpufreq.c           |   1 -
+ drivers/cpufreq/omap-cpufreq.c                |   1 -
+ drivers/cpufreq/p4-clockmod.c                 |   1 -
+ drivers/cpufreq/pasemi-cpufreq.c              |   1 -
+ drivers/cpufreq/powernow-k6.c                 |   1 -
+ drivers/cpufreq/powernow-k7.c                 |   2 -
+ drivers/cpufreq/powernow-k8.c                 |   2 -
+ drivers/cpufreq/ppc-corenet-cpufreq.c         |   5 +-
+ drivers/cpufreq/ppc_cbe_cpufreq.c             |   1 -
+ drivers/cpufreq/pxa2xx-cpufreq.c              |   1 -
+ drivers/cpufreq/pxa3xx-cpufreq.c              |   1 -
+ drivers/cpufreq/s5pv210-cpufreq.c             |  49 +--
+ drivers/cpufreq/sc520_freq.c                  |   1 -
+ drivers/cpufreq/sh-cpufreq.c                  |   1 -
+ drivers/cpufreq/sparc-us2e-cpufreq.c          |   4 +-
+ drivers/cpufreq/sparc-us3-cpufreq.c           |   4 +-
+ drivers/cpufreq/spear-cpufreq.c               |  14 +-
+ drivers/cpufreq/speedstep-centrino.c          |   2 -
+ drivers/cpufreq/speedstep-ich.c               |   1 -
+ drivers/cpufreq/speedstep-smi.c               |   1 -
+ drivers/cpufreq/tegra-cpufreq.c               |  47 +--
+ drivers/cpuidle/cpuidle.c                     |   3 +-
+ drivers/cpuidle/driver.c                      |   2 +-
+ drivers/cpuidle/governors/menu.c              |  75 ++--
+ drivers/gpu/drm/gma500/Kconfig                |   1 -
+ drivers/gpu/drm/i915/Kconfig                  |   1 -
+ drivers/gpu/drm/nouveau/Kconfig               |   3 +-
+ drivers/input/touchscreen/st1232.c            |   3 +-
+ drivers/mtd/nand/sh_flctl.c                   |   2 +-
+ drivers/pci/hotplug/acpiphp.h                 |  16 +-
+ drivers/pci/hotplug/acpiphp_glue.c            | 523 +++++++++-----------------
+ drivers/pci/pci-driver.c                      |  33 +-
+ drivers/pcmcia/sa11xx_base.c                  |   3 -
+ drivers/platform/x86/Kconfig                  |   2 -
+ drivers/platform/x86/fujitsu-laptop.c         |   1 -
+ drivers/powercap/intel_rapl.c                 |  17 +-
+ drivers/tty/serial/sh-sci.c                   |   3 +-
+ drivers/video/Kconfig                         |   6 -
+ drivers/video/Makefile                        |   2 -
+ drivers/video/output.c                        | 133 -------
+ drivers/xen/xen-acpi-cpuhotplug.c             |   2 +-
+ drivers/xen/xen-acpi-memhotplug.c             |   2 +-
+ drivers/xen/xen-acpi-pad.c                    |  26 +-
+ include/acpi/acbuffer.h                       |   2 +-
+ include/acpi/acconfig.h                       |   2 +-
+ include/acpi/acexcep.h                        |   2 +-
+ include/acpi/acnames.h                        |   2 +-
+ include/acpi/acoutput.h                       |   2 +-
+ include/acpi/acpi.h                           |   5 +-
+ include/acpi/acpi_bus.h                       |  49 ++-
+ include/acpi/acpi_drivers.h                   |  26 +-
+ include/acpi/acpiosxf.h                       |   2 +-
+ include/acpi/acpixf.h                         |   8 +-
+ include/acpi/acrestyp.h                       |   2 +-
+ include/acpi/actbl.h                          |   2 +-
+ include/acpi/actbl1.h                         |   2 +-
+ include/acpi/actbl2.h                         |   2 +-
+ include/acpi/actbl3.h                         |   2 +-
+ include/acpi/actypes.h                        |  66 ++--
+ include/acpi/platform/acenv.h                 |   2 +-
+ include/acpi/platform/acgcc.h                 |   2 +-
+ include/acpi/platform/aclinux.h               |  20 +-
+ include/linux/cpufreq.h                       |  25 +-
+ include/linux/pci-acpi.h                      |   4 +-
+ include/linux/pm.h                            |  71 ++--
+ include/linux/pm_qos.h                        |  34 +-
+ include/linux/pm_runtime.h                    |   4 +
+ include/linux/video_output.h                  |  57 ---
+ include/trace/events/power.h                  |   4 +-
+ kernel/power/hibernate.c                      |  22 +-
+ kernel/power/main.c                           |   4 +-
+ kernel/power/power.h                          |   2 +
+ kernel/power/qos.c                            |  18 +-
+ kernel/power/snapshot.c                       |   2 +-
+ kernel/power/suspend.c                        |   2 +-
+ kernel/power/wakelock.c                       |   2 +
+ 328 files changed, 3060 insertions(+), 2725 deletions(-)
 
