@@ -1,243 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760313AbaCUPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:07:28 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:16661 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753675AbaCUPHX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:07:23 -0400
-Date: Fri, 21 Mar 2014 11:07:19 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Pavel Shilovsky <piastry@etersoft.ru>, LKML <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        Steve French <sfrench@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        uobergfe@redhat.com
-Subject: [PATCH v2] cifs: Fix possible deadlock with cifs and work queues
-Message-ID: <20140321110719.43a6b017@gandalf.local.home>
-In-Reply-To: <20140321084128.3f499e5c@tlielax.poochiereds.net>
-References: <20140319151252.16ed3ac6@gandalf.local.home>
-	<20140320152833.216d81a0@tlielax.poochiereds.net>
-	<20140320165703.522c7c5c@gandalf.local.home>
-	<20140320170239.51d20a0e@tlielax.poochiereds.net>
-	<20140320222343.4faaa137@gandalf.local.home>
-	<CAKywueT4xRHZGomoPvnA9rob3FpzkPYuuUPe+vEDiOFvTbUiGA@mail.gmail.com>
-	<20140321081706.271e390c@gandalf.local.home>
-	<20140321084128.3f499e5c@tlielax.poochiereds.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1760337AbaCUPJw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:09:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798AbaCUPJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 11:09:48 -0400
+Date: Fri, 21 Mar 2014 11:09:42 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
+Cc: agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC v1 01/01] dm-lightnvm: An open FTL for open firmware
+ SSDs
+Message-ID: <20140321150942.GA29731@redhat.com>
+References: <1395383538-18019-1-git-send-email-m@bjorling.me>
+ <1395383538-18019-2-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395383538-18019-2-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 21 2014 at  2:32am -0400,
+Matias Bjørling <m@bjorling.me> wrote:
 
-We just had a customer report a deadlock in their 3.8-rt kernel.
-Looking into this, it is very possible to have the same deadlock in
-mainline in Linus's tree as it stands today.
+> LightNVM implements the internal logic of an SSD within the host system.
+> This includes logic such as translation tables for logical to physical
+> address translation, garbage collection and wear-leveling.
+> 
+> It is designed to be used either standalone or with a LightNVM
+> compatible firmware. If used standalone, NVM memory can be simulated
+> by passing timings to the dm target table. If used with a LightNVM
+> compatible device, the device will be queued upon initialized for the
+> relevant values.
+> 
+> The last part is still in progress and a fully working prototype will be
+> presented in upcoming patches.
+> 
+> Contributions to make this possible by the following people:
+> 
+> Aviad Zuck <aviadzuc@tau.ac.il>
+> Jesper Madsen <jmad@itu.dk>
+> 
+> Signed-off-by: Matias Bjorling <m@bjorling.me>
+...
+> diff --git a/drivers/md/lightnvm/core.c b/drivers/md/lightnvm/core.c
+> new file mode 100644
+> index 0000000..113fde9
+> --- /dev/null
+> +++ b/drivers/md/lightnvm/core.c
+> @@ -0,0 +1,705 @@
+> +#include "lightnvm.h"
+> +
+> +/* alloc pbd, but also decorate it with bio */
+> +static struct per_bio_data *alloc_init_pbd(struct nvmd *nvmd, struct bio *bio)
+> +{
+> +	struct per_bio_data *pb = mempool_alloc(nvmd->per_bio_pool, GFP_NOIO);
+> +
+> +	if (!pb) {
+> +		DMERR("Couldn't allocate per_bio_data");
+> +		return NULL;
+> +	}
+> +
+> +	pb->bi_end_io = bio->bi_end_io;
+> +	pb->bi_private = bio->bi_private;
+> +
+> +	bio->bi_private = pb;
+> +
+> +	return pb;
+> +}
+> +
+> +static void free_pbd(struct nvmd *nvmd, struct per_bio_data *pb)
+> +{
+> +	mempool_free(pb, nvmd->per_bio_pool);
+> +}
+> +
+> +/* bio to be stripped from the pbd structure */
+> +static void exit_pbd(struct per_bio_data *pb, struct bio *bio)
+> +{
+> +	bio->bi_private = pb->bi_private;
+> +	bio->bi_end_io = pb->bi_end_io;
+> +}
+> +
 
-It is much easier to deadlock in the -rt kernel because reader locks
-are serialized, where a down_read() can block another down_read(). But
-because rwsems are fair locks, if a writer is waiting, a new reader
-will then block. This means that if it is possible for a reader to
-deadlock another reader, this can happen if a write comes along and
-blocks on a current reader. That will prevent another reader from
-running, and if that new reader requires to wake up a reader that owns
-the lock, you have your deadlock.
+Hi Matias,
 
-Here's the situation with CIFS and workqueues:
+This looks like it'll be very interesting!  But I won't have time to do
+a proper review of this code for ~1.5 weeks (traveling early next week
+and then need to finish some high priority work on dm-thin once I'm
+back).
 
-The cifs system has several workqueues used in file.c and other places.
-One of them is used for completion of a read and to release the
-page_lock which wakes up the reader. There are several other workqueues
-that do various other tasks.
+But a couple quick things I noticed:
 
-A holder of the reader lock can sleep on a page_lock() and expect the
-reader workqueue to wake it up (page_unlock()). The reader workqueue
-takes no locks so this does not seem to be a problem (but it is).
+1) you don't need to roll your own per-bio-data allocation code any
+more.  The core block layer provides per_bio_data now.
 
-The other workqueues can take the rwsem for read or for write. But our
-issue that we tripped over was that it grabs it for read (remember in
--rt readers are serialized). But this can also happen if a separate
-writer is waiting on the lock as that would cause a reader to block on
-another reader too.
+And the DM targets have been converted to make use of it.  See callers
+of dm_per_bio_data() and how the associated targets set
+ti->per_bio_data_size
 
-All the workqueue callbacks are executed on the same workqueue:
+2) Also, if you're chaining bi_end_io (like it appears you're doing)
+you'll definitely need to call atomic_inc(&bio->bi_remaining); after you
+restore bio->bi_end_io.  This is a new requirement of the 3.14 kernel
+(due to the block core's immutable biovec changes).
 
-	queue_work(cifsiod_wq, &rdata->work);
-	[...]
-	queue_work(cifsiod_wq, &cfile->oplock_break);
-
-Now if the reader workqueue callback is queued after one of these
-workqueues that can take the rwsem, we can hit a deadlock. The
-workqueue code looks to be able to prevent deadlocks of these kinds,
-but I do not totally understand the workqueue scheduled work structure
-and perhaps if the kworker thread structure blocks hard it wont move
-works around.
-
-Here's what we see:
-
-	rdata->work is scheduled after cfile->oplock_break
-
-	CPU0						CPU1
-	----						----
-
-  do_sync_read()
-    cifs_strict_readv()
-      down_read(cinode->lock_sem);
-      generic_file_aio_read()
-        __lock_page_killable()
-          __wait_on_bit_lock()
-
-       * BLOCKED *
-
-						process_one_work()
-						  cifs_oplock_break()
-						    cifs_has_mand_locks()
-						      down_read(cinode->lock_sem);
-
-						   * BLOCKED *
-
-					      [ note, cifs_oplock_break() can
-					        also call cifs_push_locks which takes
-					        the lock with down_write() ]
-
-The key to remember is that the work to wake up the lock owner is queued
-behind the oplock work which is blocked on the same lock.
-
-We noticed that the rdata->work was queued to run under the same
-workqueue task and this work is to wake up the owner of the semaphore.
-But because the workqueue task is blocked waiting on that lock, it will
-never wake it up.
-
-By adding another workqueue that runs all the work that might take a mutex
-we should be able to avoid this deadlock.
-
-Link: http://lkml.kernel.org/r/20140319151252.16ed3ac6@gandalf.local.home
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- fs/cifs/cifsfs.c   | 17 ++++++++++++++++-
- fs/cifs/cifsglob.h |  1 +
- fs/cifs/misc.c     |  2 +-
- fs/cifs/smb2misc.c |  6 +++---
- 4 files changed, 21 insertions(+), 5 deletions(-)
-
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index 849f613..b0761c8 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -86,6 +86,12 @@ extern mempool_t *cifs_req_poolp;
- extern mempool_t *cifs_mid_poolp;
- 
- struct workqueue_struct	*cifsiod_wq;
-+/*
-+ * The oplock workqueue must be separate to prevent it from blocking
-+ * other work that is queued. Work that requires to grab mutex locks
-+ * must use the 'l' version.
-+ */
-+struct workqueue_struct	*cifsiold_wq;
- 
- #ifdef CONFIG_CIFS_SMB2
- __u8 cifs_client_guid[SMB2_CLIENT_GUID_SIZE];
-@@ -1199,9 +1205,15 @@ init_cifs(void)
- 		goto out_clean_proc;
- 	}
- 
-+	cifsiold_wq = alloc_workqueue("cifsiold", WQ_FREEZABLE|WQ_MEM_RECLAIM, 0);
-+	if (!cifsiold_wq) {
-+		rc = -ENOMEM;
-+		goto out_destroy_wq;
-+	}
-+
- 	rc = cifs_fscache_register();
- 	if (rc)
--		goto out_destroy_wq;
-+		goto out_destroy_rwq;
- 
- 	rc = cifs_init_inodecache();
- 	if (rc)
-@@ -1249,6 +1261,8 @@ out_destroy_inodecache:
- 	cifs_destroy_inodecache();
- out_unreg_fscache:
- 	cifs_fscache_unregister();
-+out_destroy_rwq:
-+	destroy_workqueue(cifsiold_wq);
- out_destroy_wq:
- 	destroy_workqueue(cifsiod_wq);
- out_clean_proc:
-@@ -1273,6 +1287,7 @@ exit_cifs(void)
- 	cifs_destroy_inodecache();
- 	cifs_fscache_unregister();
- 	destroy_workqueue(cifsiod_wq);
-+	destroy_workqueue(cifsiold_wq);
- 	cifs_proc_clean();
- }
- 
-diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
-index c0f3718..6c2b5c8 100644
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -1561,6 +1561,7 @@ void cifs_oplock_break(struct work_struct *work);
- 
- extern const struct slow_work_ops cifs_oplock_break_ops;
- extern struct workqueue_struct *cifsiod_wq;
-+extern struct workqueue_struct *cifsiold_wq;
- 
- extern mempool_t *cifs_mid_poolp;
- 
-diff --git a/fs/cifs/misc.c b/fs/cifs/misc.c
-index 2f9f379..1bc94e9 100644
---- a/fs/cifs/misc.c
-+++ b/fs/cifs/misc.c
-@@ -468,7 +468,7 @@ is_valid_oplock_break(char *buffer, struct TCP_Server_Info *srv)
- 
- 				cifs_set_oplock_level(pCifsInode,
- 					pSMB->OplockLevel ? OPLOCK_READ : 0);
--				queue_work(cifsiod_wq,
-+				queue_work(cifsiold_wq,
- 					   &netfile->oplock_break);
- 				netfile->oplock_break_cancelled = false;
- 
-diff --git a/fs/cifs/smb2misc.c b/fs/cifs/smb2misc.c
-index fb39662..ffea93f 100644
---- a/fs/cifs/smb2misc.c
-+++ b/fs/cifs/smb2misc.c
-@@ -447,7 +447,7 @@ smb2_tcon_has_lease(struct cifs_tcon *tcon, struct smb2_lease_break *rsp,
- 		else
- 			cfile->oplock_break_cancelled = true;
- 
--		queue_work(cifsiod_wq, &cfile->oplock_break);
-+		queue_work(cifsiold_wq, &cfile->oplock_break);
- 		kfree(lw);
- 		return true;
- 	}
-@@ -463,7 +463,7 @@ smb2_tcon_has_lease(struct cifs_tcon *tcon, struct smb2_lease_break *rsp,
- 			memcpy(lw->lease_key, open->lease_key,
- 			       SMB2_LEASE_KEY_SIZE);
- 			lw->tlink = cifs_get_tlink(open->tlink);
--			queue_work(cifsiod_wq, &lw->lease_break);
-+			queue_work(cifsiold_wq, &lw->lease_break);
- 		}
- 
- 		cifs_dbg(FYI, "found in the pending open list\n");
-@@ -579,7 +579,7 @@ smb2_is_valid_oplock_break(char *buffer, struct TCP_Server_Info *server)
- 				  rsp->OplockLevel ? SMB2_OPLOCK_LEVEL_II : 0,
- 				  0, NULL);
- 
--				queue_work(cifsiod_wq, &cfile->oplock_break);
-+				queue_work(cifsiold_wq, &cfile->oplock_break);
- 
- 				spin_unlock(&cifs_file_list_lock);
- 				spin_unlock(&cifs_tcp_ses_lock);
--- 
-1.8.1.4
-
+Please sort these issues out, re-test on 3.14, and post v2, thanks!
+Mike
