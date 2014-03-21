@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966516AbaCUAWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:22:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37304 "EHLO
+	id S966529AbaCUAXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:23:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37300 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966067AbaCUAJ0 (ORCPT
+	with ESMTP id S966059AbaCUAJ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 83/85] iscsi/iser-target: Use list_del_init for ->i_conn_node
-Date: Thu, 20 Mar 2014 17:10:26 -0700
-Message-Id: <20140321000610.638579692@linuxfoundation.org>
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Wang Nan <wangnan0@huawei.com>
+Subject: [PATCH 3.10 82/85] ARM: ignore memory below PHYS_OFFSET
+Date: Thu, 20 Mar 2014 17:10:25 -0700
+Message-Id: <20140321000610.480098563@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,152 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 5159d763f60af693a3fcec45dce2021f66e528a4 upstream.
+commit 571b14375019c3a66ef70d4d4a7083f4238aca30 upstream.
 
-There are a handful of uses of list_empty() for cmd->i_conn_node
-within iser-target code that expect to return false once a cmd
-has been removed from the per connect list.
+If the kernel is loaded higher in physical memory than normal, and we
+calculate PHYS_OFFSET higher than the start of RAM, this leads to
+boot problems as we attempt to map part of this RAM into userspace.
+Rather than struggle with this, just truncate the mapping.
 
-This patch changes all uses of list_del -> list_del_init in order
-to ensure that list_empty() returns false as expected.
-
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Cc: <stable@vger.kernel.org> #3.10+
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wang Nan <wangnan0@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/infiniband/ulp/isert/ib_isert.c  |    6 +++---
- drivers/target/iscsi/iscsi_target.c      |    4 ++--
- drivers/target/iscsi/iscsi_target_erl2.c |   16 ++++++++--------
- 3 files changed, 13 insertions(+), 13 deletions(-)
+ arch/arm/kernel/setup.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1213,7 +1213,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_SCSI_CMD:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		if (cmd->data_direction == DMA_TO_DEVICE)
-@@ -1225,7 +1225,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_SCSI_TMFUNC:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		transport_generic_free_cmd(&cmd->se_cmd, 0);
-@@ -1234,7 +1234,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_NOOP_OUT:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		/*
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -3653,7 +3653,7 @@ iscsit_immediate_queue(struct iscsi_conn
- 		break;
- 	case ISTATE_REMOVE:
- 		spin_lock_bh(&conn->cmd_lock);
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		iscsit_free_cmd(cmd, false);
-@@ -4099,7 +4099,7 @@ static void iscsit_release_commands_from
- 	spin_lock_bh(&conn->cmd_lock);
- 	list_for_each_entry_safe(cmd, cmd_tmp, &conn->conn_cmd_list, i_conn_node) {
- 
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		iscsit_increment_maxcmdsn(cmd, sess);
---- a/drivers/target/iscsi/iscsi_target_erl2.c
-+++ b/drivers/target/iscsi/iscsi_target_erl2.c
-@@ -140,7 +140,7 @@ void iscsit_free_connection_recovery_ent
- 		list_for_each_entry_safe(cmd, cmd_tmp,
- 				&cr->conn_recovery_cmd_list, i_conn_node) {
- 
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			cmd->conn = NULL;
- 			spin_unlock(&cr->conn_recovery_cmd_lock);
- 			iscsit_free_cmd(cmd, true);
-@@ -162,7 +162,7 @@ void iscsit_free_connection_recovery_ent
- 		list_for_each_entry_safe(cmd, cmd_tmp,
- 				&cr->conn_recovery_cmd_list, i_conn_node) {
- 
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			cmd->conn = NULL;
- 			spin_unlock(&cr->conn_recovery_cmd_lock);
- 			iscsit_free_cmd(cmd, true);
-@@ -218,7 +218,7 @@ int iscsit_remove_cmd_from_connection_re
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -564,6 +564,20 @@ int __init arm_add_memory(phys_addr_t st
  	}
- 	cr = cmd->cr;
+ #endif
  
--	list_del(&cmd->i_conn_node);
-+	list_del_init(&cmd->i_conn_node);
- 	return --cr->cmd_count;
- }
++	if (aligned_start < PHYS_OFFSET) {
++		if (aligned_start + size <= PHYS_OFFSET) {
++			pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
++				aligned_start, aligned_start + size);
++			return -EINVAL;
++		}
++
++		pr_info("Ignoring memory below PHYS_OFFSET: 0x%08llx-0x%08llx\n",
++			aligned_start, (u64)PHYS_OFFSET);
++
++		size -= PHYS_OFFSET - aligned_start;
++		aligned_start = PHYS_OFFSET;
++	}
++
+ 	bank->start = aligned_start;
+ 	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
  
-@@ -299,7 +299,7 @@ int iscsit_discard_unacknowledged_ooo_cm
- 		if (!(cmd->cmd_flags & ICF_OOO_CMDSN))
- 			continue;
- 
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 
- 		spin_unlock_bh(&conn->cmd_lock);
- 		iscsit_free_cmd(cmd, true);
-@@ -337,7 +337,7 @@ int iscsit_prepare_cmds_for_realligance(
- 	/*
- 	 * Only perform connection recovery on ISCSI_OP_SCSI_CMD or
- 	 * ISCSI_OP_NOOP_OUT opcodes.  For all other opcodes call
--	 * list_del(&cmd->i_conn_node); to release the command to the
-+	 * list_del_init(&cmd->i_conn_node); to release the command to the
- 	 * session pool and remove it from the connection's list.
- 	 *
- 	 * Also stop the DataOUT timer, which will be restarted after
-@@ -353,7 +353,7 @@ int iscsit_prepare_cmds_for_realligance(
- 				" CID: %hu\n", cmd->iscsi_opcode,
- 				cmd->init_task_tag, cmd->cmd_sn, conn->cid);
- 
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			spin_unlock_bh(&conn->cmd_lock);
- 			iscsit_free_cmd(cmd, true);
- 			spin_lock_bh(&conn->cmd_lock);
-@@ -373,7 +373,7 @@ int iscsit_prepare_cmds_for_realligance(
- 		 */
- 		if (!(cmd->cmd_flags & ICF_OOO_CMDSN) && !cmd->immediate_cmd &&
- 		     iscsi_sna_gte(cmd->cmd_sn, conn->sess->exp_cmd_sn)) {
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			spin_unlock_bh(&conn->cmd_lock);
- 			iscsit_free_cmd(cmd, true);
- 			spin_lock_bh(&conn->cmd_lock);
-@@ -395,7 +395,7 @@ int iscsit_prepare_cmds_for_realligance(
- 
- 		cmd->sess = conn->sess;
- 
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		iscsit_free_all_datain_reqs(cmd);
 
 
