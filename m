@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965663AbaCUAFH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:05:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36938 "EHLO
+	id S965643AbaCUAFF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:05:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760530AbaCUAE7 (ORCPT
+	with ESMTP id S1760417AbaCUAE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:59 -0400
+	Thu, 20 Mar 2014 20:04:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Steve Capper <steve.capper@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.13 148/149] arm64: mm: Add double logical invert to pte accessors
-Date: Thu, 20 Mar 2014 17:05:11 -0700
-Message-Id: <20140321000442.091645252@linuxfoundation.org>
+        "Oleg Drokin:" <green@linuxhacker.ru>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.13 145/149] Fix mountpoint reference leakage in linkat
+Date: Thu, 20 Mar 2014 17:05:08 -0700
+Message-Id: <20140321000441.983465676@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,48 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steve Capper <steve.capper@linaro.org>
+From: Oleg Drokin <green@linuxhacker.ru>
 
-commit 84fe6826c28f69d8708bd575faed7f75e6b6f57f upstream.
+commit d22e6338db7f613dd4f6095c190682fcc519e4b7 upstream.
 
-Page table entries on ARM64 are 64 bits, and some pte functions such as
-pte_dirty return a bitwise-and of a flag with the pte value. If the
-flag to be tested resides in the upper 32 bits of the pte, then we run
-into the danger of the result being dropped if downcast.
+Recent changes to retry on ESTALE in linkat
+(commit 442e31ca5a49e398351b2954b51f578353fdf210)
+introduced a mountpoint reference leak and a small memory
+leak in case a filesystem link operation returns ESTALE
+which is pretty normal for distributed filesystems like
+lustre, nfs and so on.
+Free old_path in such a case.
 
-For example:
-	gather_stats(page, md, pte_dirty(*pte), 1);
-where pte_dirty(*pte) is downcast to an int.
+[AV: there was another missing path_put() nearby - on the previous
+goto retry]
 
-This patch adds a double logical invert to all the pte_ accessors to
-ensure predictable downcasting.
-
-Signed-off-by: Steve Capper <steve.capper@linaro.org>
-[steve.capper@linaro.org: rebased patch to leave pte_write alone to
-allow for merge with 3.13 stable]
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Signed-off-by: Oleg Drokin: <green@linuxhacker.ru>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/include/asm/pgtable.h |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/namei.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -136,10 +136,10 @@ extern struct page *empty_zero_page;
- /*
-  * The following only work if pte_present(). Undefined behaviour otherwise.
-  */
--#define pte_present(pte)	(pte_val(pte) & (PTE_VALID | PTE_PROT_NONE))
--#define pte_dirty(pte)		(pte_val(pte) & PTE_DIRTY)
--#define pte_young(pte)		(pte_val(pte) & PTE_AF)
--#define pte_special(pte)	(pte_val(pte) & PTE_SPECIAL)
-+#define pte_present(pte)	(!!(pte_val(pte) & (PTE_VALID | PTE_PROT_NONE)))
-+#define pte_dirty(pte)		(!!(pte_val(pte) & PTE_DIRTY))
-+#define pte_young(pte)		(!!(pte_val(pte) & PTE_AF))
-+#define pte_special(pte)	(!!(pte_val(pte) & PTE_SPECIAL))
- #define pte_write(pte)		(!(pte_val(pte) & PTE_RDONLY))
- #define pte_exec(pte)		(!(pte_val(pte) & PTE_UXN))
- 
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3945,10 +3945,13 @@ out_dput:
+ 	done_path_create(&new_path, new_dentry);
+ 	if (delegated_inode) {
+ 		error = break_deleg_wait(&delegated_inode);
+-		if (!error)
++		if (!error) {
++			path_put(&old_path);
+ 			goto retry;
++		}
+ 	}
+ 	if (retry_estale(error, how)) {
++		path_put(&old_path);
+ 		how |= LOOKUP_REVAL;
+ 		goto retry;
+ 	}
 
 
