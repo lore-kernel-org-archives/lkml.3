@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965690AbaCUAHO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:07:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36919 "EHLO
+	id S965732AbaCUAHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:07:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36900 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759652AbaCUAEz (ORCPT
+	with ESMTP id S965607AbaCUAEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:55 -0400
+	Thu, 20 Mar 2014 20:04:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3.13 143/149] ALSA: oxygen: modify adjust_dg_dac_routing function
-Date: Thu, 20 Mar 2014 17:05:06 -0700
-Message-Id: <20140321000441.916722815@linuxfoundation.org>
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.13 129/149] can: flexcan: factor out transceiver {en,dis}able into seperate functions
+Date: Thu, 20 Mar 2014 17:04:52 -0700
+Message-Id: <20140321000441.427282218@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,44 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Volkov <v1ron@mail.ru>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
+commit f003698e23f6f56a791774f14d0ac35d04872490 upstream.
 
-When selecting the audio output destinations (headphones,
-FP headphones, multichannel output), the channel routing
-should be changed depending on what destination selected.
-Also unnecessary I2S channels are digitally muted. This
-function called when the user selects the destination
-in the ALSA mixer.
+This patch moves the transceiver enable and disable into seperate functions,
+where the NULL pointer check is hidden.
 
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- sound/pci/oxygen/xonar_dg.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/can/flexcan.c |   27 ++++++++++++++++++++-------
+ 1 file changed, 20 insertions(+), 7 deletions(-)
 
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -261,6 +261,22 @@ static inline void flexcan_write(u32 val
+ }
+ #endif
+ 
++static inline int flexcan_transceiver_enable(const struct flexcan_priv *priv)
++{
++	if (!priv->reg_xceiver)
++		return 0;
++
++	return regulator_enable(priv->reg_xceiver);
++}
++
++static inline int flexcan_transceiver_disable(const struct flexcan_priv *priv)
++{
++	if (!priv->reg_xceiver)
++		return 0;
++
++	return regulator_disable(priv->reg_xceiver);
++}
++
+ static inline int flexcan_has_and_handle_berr(const struct flexcan_priv *priv,
+ 					      u32 reg_esr)
+ {
+@@ -805,11 +821,9 @@ static int flexcan_chip_start(struct net
+ 	if (priv->devtype_data->features & FLEXCAN_HAS_V10_FEATURES)
+ 		flexcan_write(0x0, &regs->rxfgmask);
+ 
+-	if (priv->reg_xceiver)	{
+-		err = regulator_enable(priv->reg_xceiver);
+-		if (err)
+-			goto out;
+-	}
++	err = flexcan_transceiver_enable(priv);
++	if (err)
++		goto out;
+ 
+ 	/* synchronize with the can bus */
+ 	reg_mcr = flexcan_read(&regs->mcr);
+@@ -854,8 +868,7 @@ static void flexcan_chip_stop(struct net
+ 	flexcan_write(priv->reg_ctrl_default & ~FLEXCAN_CTRL_ERR_ALL,
+ 		      &regs->ctrl);
+ 
+-	if (priv->reg_xceiver)
+-		regulator_disable(priv->reg_xceiver);
++	flexcan_transceiver_disable(priv);
+ 	priv->can.state = CAN_STATE_STOPPED;
+ 
+ 	return;
 
 
