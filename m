@@ -1,86 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759795AbaCUFkc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:40:32 -0400
-Received: from [65.55.88.14] ([65.55.88.14]:44183 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1754005AbaCUFjJ (ORCPT
+	id S932912AbaCUFuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:50:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:51568 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbaCUFuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:39:09 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>
-CC: <broonie@kernel.org>, <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
-        Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 1/3] pwm: ftm-pwm: Clean up the code.
-Date: Fri, 21 Mar 2014 12:53:08 +0800
-Message-ID: <1395377590-23537-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	Fri, 21 Mar 2014 01:50:12 -0400
+Message-ID: <1395381008.6030.26.camel@marge.simpson.net>
+Subject: Re: [BUG] Paravirtual time accounting / IRQ time accounting
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Glauber Costa <glommer@gmail.com>
+Cc: lwcheng@cs.hku.hk, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Mar 2014 06:50:08 +0100
+In-Reply-To: <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
+References: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk>
+	 <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/pwm/pwm-fsl-ftm.c | 13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
+On Thu, 2014-03-20 at 12:01 -0300, Glauber Costa wrote: 
+> On Wed, Mar 19, 2014 at 6:42 AM,  <lwcheng@cs.hku.hk> wrote:
+> > In consolidated environments, when there are multiple virtual machines (VMs)
+> > running on one CPU core, timekeeping will be a problem to the guest OS.
+> > Here, I report my findings about Linux process scheduler.
+> >
+> >
+> > Description
+> > ------------
+> > Linux CFS relies on rq->clock_task to charge each task, determine vruntime,
+> > etc.
+> >
+> > When CONFIG_IRQ_TIME_ACCOUNTING is enabled, the time spent on serving IRQ
+> > will be excluded from updating rq->clock_task.
+> > When CONFIG_PARAVIRT_TIME_ACCOUNTING is enabled, the time stolen by the
+> > hypervisor
+> > will also be excluded from updating rq->clock_task.
+> >
+> > With "both" CONFIG_IRQ_TIME_ACCOUNTING and CONFIG_PARAVIRT_TIME_ACCOUNTING
+> > enabled,
+> > I put three KVM guests on one core and run hackbench in each guest. I find
+> > that
+> > in the guests, rq->clock_task stays *unchanged*. The malfunction embarrasses
+> > CFS.
+> > ------------
+> >
+> >
+> > Analysis
+> > ------------
+> > [src/kernel/sched/core.c]
+> > static void update_rq_clock_task(struct rq *rq, s64 delta)
+> > {
+> >     ... ...
+> > #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+> >     irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
+> >     ... ...
+> >     rq->prev_irq_time += irq_delta;
+> >     delta -= irq_delta;
+> > #endif
+> >
+> > #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
+> >     if (static_key_false((&paravirt_steal_rq_enabled))) {
+> >         steal = paravirt_steal_clock(cpu_of(rq));
+> >         steal -= rq->prev_steal_time_rq;
+> >         ... ...
+> >         rq->prev_steal_time_rq += steal;
+> >         delta -= steal;
+> >     }
+> > #endif
+> >
+> >     rq->clock_task += delta;
+> >     ... ...
+> > }
+> > --
+> > "delta" -> the intended increment to rq->clock_task
+> > "irq_delta" -> the time spent on serving IRQ (hard + soft)
+> > "steal" -> the time stolen by the underlying hypervisor
+> > --
+> > "irq_delta" is calculated based on sched_clock_cpu(), which is vulnerable
+> > to VM scheduling delays.
+> 
+> This looks like a real problem indeed. The main problem in searching
+> for a solution, is that of course not all of the irq time is steal
+> time and vice versa. In this case, we could subtract irq_time from
+> steal, and add only the steal part time that is in excess. I don't
+> think this is 100 % guaranteed, but maybe it is a good approximation.
+> 
+> Rik, do you have an opinion on this ?
 
-diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
-index 420169e..4a4ad58 100644
---- a/drivers/pwm/pwm-fsl-ftm.c
-+++ b/drivers/pwm/pwm-fsl-ftm.c
-@@ -21,11 +21,10 @@
- #include <linux/slab.h>
- 
- #define FTM_SC		0x00
--#define FTM_SC_CLK_MASK	0x3
--#define FTM_SC_CLK_SHIFT	3
--#define FTM_SC_CLK(c)	(((c) + 1) << FTM_SC_CLK_SHIFT)
-+#define FTM_SC_CLK_MASK_SHIFT	3
-+#define FTM_SC_CLK_MASK	(3 << FTM_SC_CLK_MASK_SHIFT)
-+#define FTM_SC_CLK(c)	(((c) + 1) << FTM_SC_CLK_MASK_SHIFT)
- #define FTM_SC_PS_MASK	0x7
--#define FTM_SC_PS_SHIFT	0
- 
- #define FTM_CNT		0x04
- #define FTM_MOD		0x08
-@@ -258,7 +257,7 @@ static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 		}
- 
- 		val = readl(fpc->base + FTM_SC);
--		val &= ~(FTM_SC_PS_MASK << FTM_SC_PS_SHIFT);
-+		val &= ~FTM_SC_PS_MASK;
- 		val |= fpc->clk_ps;
- 		writel(val, fpc->base + FTM_SC);
- 		writel(period - 1, fpc->base + FTM_MOD);
-@@ -305,7 +304,7 @@ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
- 
- 	/* select counter clock source */
- 	val = readl(fpc->base + FTM_SC);
--	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
-+	val &= ~FTM_SC_CLK_MASK;
- 	val |= FTM_SC_CLK(fpc->cnt_select);
- 	writel(val, fpc->base + FTM_SC);
- 
-@@ -357,7 +356,7 @@ static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
- 
- 	/* no users left, disable PWM counter clock */
- 	val = readl(fpc->base + FTM_SC);
--	val &= ~(FTM_SC_CLK_MASK << FTM_SC_CLK_SHIFT);
-+	val &= ~FTM_SC_CLK_MASK;
- 	writel(val, fpc->base + FTM_SC);
- 
- 	clk_disable_unprepare(fpc->clk[FSL_PWM_CLK_CNTEN]);
--- 
-1.8.4
+Hrm, on my little Q6600 box, I'm running 3 VMS all pinned to CPU3, all
+running hackbench -l zillion, one of them also running crash, staring at
+it's sole rq->clock_task as I write this, with kernels (3.11.10) on both
+host and guest configured as reported.
 
+  clock_task = 631322187004, 
+  clock_task = 631387807452, 
+  clock_task = 631474214294, 
+  clock_task = 631523864893, 
+  clock_task = 631604646268, 
+  clock_task = 631643276025, 
+
+Maybe 3 VMs isn't enough overload for such a beastly CPU.  Top reports
+some very funky utilization numbers, but other than that, the things
+seem to work fine here.  perf thinks scheduling work too.
+
+-Mike
 
