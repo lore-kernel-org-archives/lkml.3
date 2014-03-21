@@ -1,60 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220AbaCUVXi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:23:38 -0400
-Received: from smtp4-g21.free.fr ([212.27.42.4]:52684 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750917AbaCUVXg convert rfc822-to-8bit (ORCPT
+	id S1751778AbaCUVbT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:31:19 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:64582 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289AbaCUVbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:23:36 -0400
-Date: Fri, 21 Mar 2014 22:23:20 +0100
-From: Eric =?ISO-8859-1?B?QuluYXJk?= <eric@eukrea.com>
-To: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        shawn.guo@linaro.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH] ARM: i.MX6: update KSZ9031 phy fixup
-Message-ID: <20140321222320.14370739@e6520eb>
-In-Reply-To: <1395421687-12934-1-git-send-email-hchaumette@adeneo-embedded.com>
-References: <1395421687-12934-1-git-send-email-hchaumette@adeneo-embedded.com>
-Organization: =?ISO-8859-1?B?RXVrculh?= Electromatique
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Mar 2014 17:31:14 -0400
+Message-ID: <532CAF9D.3020303@gmail.com>
+Date: Fri, 21 Mar 2014 22:31:09 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] clk: berlin: add berlin clocks DT bindings documentation
+References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com> <1395432521-11055-3-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1395432521-11055-3-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hubert,
+On 03/21/2014 09:08 PM, Alexandre Belloni wrote:
+> Document the device tree bindings for the PLLs found on the Marvell Berlin SoCs.
+>
+> Cc: devicetree@vger.kernel.org
 
-Le Fri, 21 Mar 2014 18:08:07 +0100,
-Hubert Chaumette <hchaumette@adeneo-embedded.com> a écrit :
+You forgot to add Mark Rutland's Reviewed-by. He didn't mentioned it
+explicitly but his "Otherwise this looks fine to me" on v1, is as good
+as a Reviewed-by. But, no need to resend, I'll fix it up.
 
-> 
-> Update KSZ9031RN phy fixup for Congatec conga-QEVAL and conga-QMX6 combo :
-> set RGMII GTX_CLK and RX_CLK pad skew to +0.96ns.
-> 
-> Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+Also, everything above the '---' will be part of your commit log. While
+the Signed-off-by and Reviewed-by should be in there, Cc's really don't
+need to.
+
+You can add another '---' to separate commit message and some stuff
+you want to have early in you email with:
+
+Blablabla commit message.
+
+Signed-off-by: ...
+Reviewed-by: ...
+---
+Changelog:
+- blabla
+
+Cc: cc-me-recipient
+...
+---
+    .../devicetree/bindings/clock/berlin-clock.txt     | 29 
+++++++++++++++++++++++
+    1 file changed, 29 insertions(+)
+    create mode 100644 
+Documentation/devicetree/bindings/clock/berlin-clock.txt
+
+  diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt 
+b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+...
+
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 > ---
->  arch/arm/mach-imx/mach-imx6q.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/arm/mach-imx/mach-imx6q.c b/arch/arm/mach-imx/mach-imx6q.c
-> index 76e5db4..db307c2 100644
-> --- a/arch/arm/mach-imx/mach-imx6q.c
-> +++ b/arch/arm/mach-imx/mach-imx6q.c
-> @@ -77,6 +77,9 @@ static int ksz9031rn_phy_fixup(struct phy_device *dev)
->  	mmd_write_reg(dev, 2, 5, 0);
->  	mmd_write_reg(dev, 2, 8, 0x003ff);
->  
-> +	/* For Congatec conga-QMX6 board */
-> +	mmd_write_reg(dev, 0x02, 0x06, 0xffff);
+>   .../devicetree/bindings/clock/berlin-clock.txt     | 29 ++++++++++++++++++++++
+>   1 file changed, 29 insertions(+)
+>   create mode 100644 Documentation/devicetree/bindings/clock/berlin-clock.txt
+>
+> diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> new file mode 100644
+> index 000000000000..49b7860bffb8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> @@ -0,0 +1,29 @@
+> +Device Tree Clock bindings for Marvell Berlin clocks
 > +
->  	return 0;
->  }
->  
-that's board specific (the needed delay depends on the routing delay on
-the PCB), so this should not go in a generic file.
+> +This binding uses the common clock binding[1].
+> +
+> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +
+> +Required properties:
+> +- compatible: shall be one of the following:
+> +	"marvell,berlin2-pll",
+> +	"marvell,berlin2q-pll":
+> +		CPU PLL and System PLL
+> +- reg: Address and length of the clock register set.
+> +- #clock-cells: from common clock binding; shall be set to 0.
+> +- clocks: from common clock binding
+> +
+> +smclk: sysmgr-clock {
+> +	compatible = "fixed-clock";
+> +	#clock-cells = <0>;
+> +	clock-frequency = <25000000>;
+> +};
+> +
+> +cpupll: cpupll@ea003c {
+> +	compatible = "marvell,berlin2-pll";
+> +	clocks = <&smclk>;
+> +	#clock-cells = <0>;
+> +	reg = <0xea003c 0x8>;
+> +};
+> +
+> +
+>
 
-Eric
