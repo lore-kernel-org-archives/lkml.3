@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967138AbaCUBZn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:25:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36498 "EHLO
+	id S966948AbaCUBZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:25:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36500 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760319AbaCUADa (ORCPT
+	with ESMTP id S1760320AbaCUADa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:03:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jeang Daniel <dyjeong@qca.qualcomm.com>,
-        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 028/149] ath9k: Fix ETSI compliance for AR9462 2.0
-Date: Thu, 20 Mar 2014 17:03:11 -0700
-Message-Id: <20140321000437.938933338@linuxfoundation.org>
+Subject: [PATCH 3.13 037/149] mwifiex: clean pcie ring only when device is present
+Date: Thu, 20 Mar 2014 17:03:20 -0700
+Message-Id: <20140321000438.244664354@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,45 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+From: Avinash Patil <patila@marvell.com>
 
-commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
+commit 4f7ba432202c8330cc03ab959c6228d0de5dc4a3 upstream.
 
-The minimum CCA power threshold values have to be adjusted
-for existing cards to be in compliance with new regulations.
-Newer cards will make use of the values obtained from EEPROM,
-support for this was added earlier. To make sure that cards
-that are already in use and don't have proper values in EEPROM,
-do not violate regulations, use the initvals instead.
+Write io memory to clean PCIe buffer only when PCIe device is
+present else this results into crash because of invalid memory
+access.
 
-Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
-Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: Avinash Patil <patila@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/wmm.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-@@ -56,7 +56,7 @@ static const u32 ar9462_2p0_baseband_pos
- 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3236605e, 0x32365a5e},
- 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
--	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
-+	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
- 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
- 	{0x00009e3c, 0xcf946220, 0xcf946220, 0xcfd5c782, 0xcfd5c282},
- 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
-@@ -95,7 +95,7 @@ static const u32 ar9462_2p0_baseband_pos
- 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
- 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
--	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
-+	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
- 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
- };
+--- a/drivers/net/wireless/mwifiex/wmm.c
++++ b/drivers/net/wireless/mwifiex/wmm.c
+@@ -559,7 +559,8 @@ mwifiex_clean_txrx(struct mwifiex_privat
+ 	mwifiex_wmm_delete_all_ralist(priv);
+ 	memcpy(tos_to_tid, ac_to_tid, sizeof(tos_to_tid));
  
+-	if (priv->adapter->if_ops.clean_pcie_ring)
++	if (priv->adapter->if_ops.clean_pcie_ring &&
++	    !priv->adapter->surprise_removed)
+ 		priv->adapter->if_ops.clean_pcie_ring(priv->adapter);
+ 	spin_unlock_irqrestore(&priv->wmm.ra_list_spinlock, flags);
+ }
 
 
