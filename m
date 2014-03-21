@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759003AbaCUFhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:37:52 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47041 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758121AbaCUFht (ORCPT
+	id S1759428AbaCUFh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:37:59 -0400
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:43812 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759220AbaCUFhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:37:49 -0400
+	Fri, 21 Mar 2014 01:37:55 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
         linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
-Date: Fri, 21 Mar 2014 11:04:30 +0530
-Message-Id: <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+Subject: [PATCH V4 2/3] cpufreq: Convert existing drivers to use cpufreq_freq_transition_{begin|end}
+Date: Fri, 21 Mar 2014 11:04:31 +0530
+Message-Id: <6c531c2fb48c3092bba1098459ef0862a6179375.1395379422.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1395379422.git.viresh.kumar@linaro.org>
 References: <cover.1395379422.git.viresh.kumar@linaro.org>
@@ -25,203 +25,306 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CPUFreq core has new infrastructure that would guarantee serialized calls to
+target() or target_index() callbacks. These are called
+cpufreq_freq_transition_begin() and cpufreq_freq_transition_end().
 
-Whenever we change the frequency of a CPU, we call the PRECHANGE and POSTCHANGE
-notifiers. They must be serialized, i.e. PRECHANGE and POSTCHANGE notifiers
-should strictly alternate, thereby preventing two different sets of PRECHANGE or
-POSTCHANGE notifiers from interleaving arbitrarily.
+This patch converts existing drivers to use these new set of routines.
 
-The following examples illustrate why this is important:
-
-Scenario 1:
------------
-A thread reading the value of cpuinfo_cur_freq, will call
-__cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()
-
-The ondemand governor can decide to change the frequency of the CPU at the same
-time and hence it can end up sending the notifications via ->target().
-
-If the notifiers are not serialized, the following sequence can occur:
-- PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
-- PRECHANGE Notification for freq B (from target())
-- Freq changed by target() to B
-- POSTCHANGE Notification for freq B
-- POSTCHANGE Notification for freq A
-
-We can see from the above that the last POSTCHANGE Notification happens for freq
-A but the hardware is set to run at freq B.
-
-Where would we break then?: adjust_jiffies() in cpufreq.c & cpufreq_callback()
-in arch/arm/kernel/smp.c (which also adjusts the jiffies). All the
-loops_per_jiffy calculations will get messed up.
-
-Scenario 2:
------------
-The governor calls __cpufreq_driver_target() to change the frequency. At the
-same time, if we change scaling_{min|max}_freq from sysfs, it will end up
-calling the governor's CPUFREQ_GOV_LIMITS notification, which will also call
-__cpufreq_driver_target(). And hence we end up issuing concurrent calls to
-->target().
-
-Typically, platforms have the following logic in their ->target() routines:
-(Eg: cpufreq-cpu0, omap, exynos, etc)
-
-A. If new freq is more than old: Increase voltage
-B. Change freq
-C. If new freq is less than old: decrease voltage
-
-Now, if the two concurrent calls to ->target() are X and Y, where X is trying to
-increase the freq and Y is trying to decrease it, we get the following race
-condition:
-
-X.A: voltage gets increased for larger freq
-Y.A: nothing happens
-Y.B: freq gets decreased
-Y.C: voltage gets decreased
-X.B: freq gets increased
-X.C: nothing happens
-
-Thus we can end up setting a freq which is not supported by the voltage we have
-set. That will probably make the clock to the CPU unstable and the system might
-not work properly anymore.
-
-This patch introduces a set of synchronization primitives to serialize frequency
-transitions, which are to be used as shown below:
-
-cpufreq_freq_transition_begin();
-
-//Perform the frequency change
-
-cpufreq_freq_transition_end();
-
-The _begin() call sends the PRECHANGE notification whereas the _end() call sends
-the POSTCHANGE notification. Also, all the necessary synchronization is handled
-within these calls. In particular, even drivers which set the ASYNC_NOTIFICATION
-flag can also use these APIs for performing frequency transitions (ie., you can
-call _begin() from one task, and call the corresponding _end() from a different
-task).
-
-The actual synchronization underneath is not that complicated:
-
-The key challenge is to allow drivers to begin the transition from one thread
-and end it in a completely different thread (this is to enable drivers that do
-asynchronous POSTCHANGE notification from bottom-halves, to also use the same
-interface).
-
-To achieve this, a 'transition_ongoing' flag, a 'transition_lock' spinlock and a
-wait-queue are added per-policy. The flag and the wait-queue are used in
-conjunction to create an "uninterrupted flow" from _begin() to _end(). The
-spinlock is used to ensure that only one such "flow" is in flight at any given
-time. Put together, this provides us all the necessary synchronization.
-
-Based-on-patch-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
+ drivers/cpufreq/cpufreq-nforce2.c    | 4 ++--
+ drivers/cpufreq/cpufreq.c            | 9 ++++-----
+ drivers/cpufreq/exynos5440-cpufreq.c | 4 ++--
+ drivers/cpufreq/gx-suspmod.c         | 4 ++--
+ drivers/cpufreq/integrator-cpufreq.c | 4 ++--
+ drivers/cpufreq/longhaul.c           | 4 ++--
+ drivers/cpufreq/pcc-cpufreq.c        | 4 ++--
+ drivers/cpufreq/powernow-k6.c        | 4 ++--
+ drivers/cpufreq/powernow-k7.c        | 4 ++--
+ drivers/cpufreq/powernow-k8.c        | 4 ++--
+ drivers/cpufreq/s3c24xx-cpufreq.c    | 4 ++--
+ drivers/cpufreq/sh-cpufreq.c         | 4 ++--
+ drivers/cpufreq/unicore2-cpufreq.c   | 4 ++--
+ 13 files changed, 28 insertions(+), 29 deletions(-)
 
-I have kept your Authorship for this patch as is and did few modifications:
--  removed 'state' parameter from begin/end routines.
-- added 'trasition_failed' parameter to end routine.
-- changed mutex with spinlock as discussed earlier.
-- Added WARN_ON() as discussed.
-- Exported these new routines.
-- Removed locks from end.
-
- drivers/cpufreq/cpufreq.c | 37 +++++++++++++++++++++++++++++++++++++
- include/linux/cpufreq.h   | 10 ++++++++++
- 2 files changed, 47 insertions(+)
-
+diff --git a/drivers/cpufreq/cpufreq-nforce2.c b/drivers/cpufreq/cpufreq-nforce2.c
+index a05b876..379cc2c 100644
+--- a/drivers/cpufreq/cpufreq-nforce2.c
++++ b/drivers/cpufreq/cpufreq-nforce2.c
+@@ -270,7 +270,7 @@ static int nforce2_target(struct cpufreq_policy *policy,
+ 	pr_debug("Old CPU frequency %d kHz, new %d kHz\n",
+ 	       freqs.old, freqs.new);
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	/* Disable IRQs */
+ 	/* local_irq_save(flags); */
+@@ -285,7 +285,7 @@ static int nforce2_target(struct cpufreq_policy *policy,
+ 	/* Enable IRQs */
+ 	/* local_irq_restore(flags); */
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	return 0;
+ }
 diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index b349406..4279cc9 100644
+index 4279cc9..b63e7e4 100644
 --- a/drivers/cpufreq/cpufreq.c
 +++ b/drivers/cpufreq/cpufreq.c
-@@ -353,6 +353,41 @@ void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+@@ -1503,8 +1503,8 @@ static void cpufreq_out_of_sync(unsigned int cpu, unsigned int old_freq,
+ 	policy = per_cpu(cpufreq_cpu_data, cpu);
+ 	read_unlock_irqrestore(&cpufreq_driver_lock, flags);
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
++	cpufreq_freq_transition_end(policy, &freqs, false);
  }
- EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
  
-+void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
-+		struct cpufreq_freqs *freqs)
-+{
-+wait:
-+	wait_event(policy->transition_wait, !policy->transition_ongoing);
-+
-+	spin_lock(&policy->transition_lock);
-+
-+	if (unlikely(policy->transition_ongoing)) {
-+		spin_unlock(&policy->transition_lock);
-+		goto wait;
-+	}
-+
-+	policy->transition_ongoing = true;
-+
-+	spin_unlock(&policy->transition_lock);
-+
-+	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_freq_transition_begin);
-+
-+void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
-+		struct cpufreq_freqs *freqs, int transition_failed)
-+{
-+	if (unlikely(WARN_ON(!policy->transition_ongoing)))
-+		return;
-+
-+	cpufreq_notify_post_transition(policy, freqs, transition_failed);
-+
-+	policy->transition_ongoing = false;
-+
-+	wake_up(&policy->transition_wait);
-+}
-+EXPORT_SYMBOL_GPL(cpufreq_freq_transition_end);
-+
+ /**
+@@ -1864,8 +1864,7 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			pr_debug("%s: cpu: %d, oldfreq: %u, new freq: %u\n",
+ 				 __func__, policy->cpu, freqs.old, freqs.new);
  
- /*********************************************************************
-  *                          SYSFS INTERFACE                          *
-@@ -982,6 +1017,8 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
+-			cpufreq_notify_transition(policy, &freqs,
+-					CPUFREQ_PRECHANGE);
++			cpufreq_freq_transition_begin(policy, &freqs);
+ 		}
  
- 	INIT_LIST_HEAD(&policy->policy_list);
- 	init_rwsem(&policy->rwsem);
-+	spin_lock_init(&policy->transition_lock);
-+	init_waitqueue_head(&policy->transition_wait);
+ 		retval = cpufreq_driver->target_index(policy, index);
+@@ -1874,7 +1873,7 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
+ 			       __func__, retval);
  
- 	return policy;
+ 		if (notify)
+-			cpufreq_notify_post_transition(policy, &freqs, retval);
++			cpufreq_freq_transition_end(policy, &freqs, retval);
+ 	}
  
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index 70929bc..263173d 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -16,6 +16,7 @@
- #include <linux/completion.h>
- #include <linux/kobject.h>
- #include <linux/notifier.h>
-+#include <linux/spinlock.h>
- #include <linux/sysfs.h>
+ out:
+diff --git a/drivers/cpufreq/exynos5440-cpufreq.c b/drivers/cpufreq/exynos5440-cpufreq.c
+index 7f776aa..3655e7d 100644
+--- a/drivers/cpufreq/exynos5440-cpufreq.c
++++ b/drivers/cpufreq/exynos5440-cpufreq.c
+@@ -219,7 +219,7 @@ static int exynos_target(struct cpufreq_policy *policy, unsigned int index)
+ 	freqs.old = policy->cur;
+ 	freqs.new = freq_table[index].frequency;
  
- /*********************************************************************
-@@ -104,6 +105,11 @@ struct cpufreq_policy {
- 	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	/* Set the target frequency in all C0_3_PSTATE register */
+ 	for_each_cpu(i, policy->cpus) {
+@@ -258,7 +258,7 @@ static void exynos_cpufreq_work(struct work_struct *work)
+ 		dev_crit(dvfs_info->dev, "New frequency out of range\n");
+ 		freqs.new = freqs.old;
+ 	}
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	cpufreq_cpu_put(policy);
+ 	mutex_unlock(&cpufreq_lock);
+diff --git a/drivers/cpufreq/gx-suspmod.c b/drivers/cpufreq/gx-suspmod.c
+index d83e826..fe85673 100644
+--- a/drivers/cpufreq/gx-suspmod.c
++++ b/drivers/cpufreq/gx-suspmod.c
+@@ -265,7 +265,7 @@ static void gx_set_cpuspeed(struct cpufreq_policy *policy, unsigned int khz)
+ 
+ 	freqs.new = new_khz;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 	local_irq_save(flags);
+ 
+ 	if (new_khz != stock_freq) {
+@@ -314,7 +314,7 @@ static void gx_set_cpuspeed(struct cpufreq_policy *policy, unsigned int khz)
+ 
+ 	gx_params->pci_suscfg = suscfg;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	pr_debug("suspend modulation w/ duration of ON:%d us, OFF:%d us\n",
+ 		gx_params->on_duration * 32, gx_params->off_duration * 32);
+diff --git a/drivers/cpufreq/integrator-cpufreq.c b/drivers/cpufreq/integrator-cpufreq.c
+index 0e27844..771f422 100644
+--- a/drivers/cpufreq/integrator-cpufreq.c
++++ b/drivers/cpufreq/integrator-cpufreq.c
+@@ -122,7 +122,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
+ 		return 0;
+ 	}
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	cm_osc = __raw_readl(cm_base + INTEGRATOR_HDR_OSC_OFFSET);
+ 
+@@ -143,7 +143,7 @@ static int integrator_set_target(struct cpufreq_policy *policy,
  	 */
- 	struct rw_semaphore	rwsem;
-+
-+	/* Synchronization for frequency transitions */
-+	bool			transition_ongoing; /* Tracks transition status */
-+	spinlock_t		transition_lock;
-+	wait_queue_head_t	transition_wait;
- };
+ 	set_cpus_allowed(current, cpus_allowed);
  
- /* Only for ACPI */
-@@ -336,6 +342,10 @@ void cpufreq_notify_transition(struct cpufreq_policy *policy,
- 		struct cpufreq_freqs *freqs, unsigned int state);
- void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
- 		struct cpufreq_freqs *freqs, int transition_failed);
-+void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
-+		struct cpufreq_freqs *freqs);
-+void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
-+		struct cpufreq_freqs *freqs, int transition_failed);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
  
- #else /* CONFIG_CPU_FREQ */
- static inline int cpufreq_register_notifier(struct notifier_block *nb,
+ 	return 0;
+ }
+diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
+index 7b94da3..c599af9 100644
+--- a/drivers/cpufreq/longhaul.c
++++ b/drivers/cpufreq/longhaul.c
+@@ -269,7 +269,7 @@ static void longhaul_setstate(struct cpufreq_policy *policy,
+ 	freqs.old = calc_speed(longhaul_get_cpu_mult());
+ 	freqs.new = speed;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	pr_debug("Setting to FSB:%dMHz Mult:%d.%dx (%s)\n",
+ 			fsb, mult/10, mult%10, print_speed(speed/1000));
+@@ -386,7 +386,7 @@ retry_loop:
+ 		}
+ 	}
+ 	/* Report true CPU frequency */
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	if (!bm_timeout)
+ 		printk(KERN_INFO PFX "Warning: Timeout while waiting for "
+diff --git a/drivers/cpufreq/pcc-cpufreq.c b/drivers/cpufreq/pcc-cpufreq.c
+index 1c0f106..728a2d8 100644
+--- a/drivers/cpufreq/pcc-cpufreq.c
++++ b/drivers/cpufreq/pcc-cpufreq.c
+@@ -215,7 +215,7 @@ static int pcc_cpufreq_target(struct cpufreq_policy *policy,
+ 
+ 	freqs.old = policy->cur;
+ 	freqs.new = target_freq;
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	input_buffer = 0x1 | (((target_freq * 100)
+ 			       / (ioread32(&pcch_hdr->nominal) * 1000)) << 8);
+@@ -231,7 +231,7 @@ static int pcc_cpufreq_target(struct cpufreq_policy *policy,
+ 	status = ioread16(&pcch_hdr->status);
+ 	iowrite16(0, &pcch_hdr->status);
+ 
+-	cpufreq_notify_post_transition(policy, &freqs, status != CMD_COMPLETE);
++	cpufreq_freq_transition_end(policy, &freqs, status != CMD_COMPLETE);
+ 	spin_unlock(&pcc_lock);
+ 
+ 	if (status != CMD_COMPLETE) {
+diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
+index ce27e6c..882d673 100644
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -148,11 +148,11 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+ 	freqs.old = busfreq * powernow_k6_get_cpu_multiplier();
+ 	freqs.new = busfreq * clock_ratio[best_i].driver_data;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	powernow_k6_set_cpu_multiplier(best_i);
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/cpufreq/powernow-k7.c b/drivers/cpufreq/powernow-k7.c
+index 0e68e02..30a6c48 100644
+--- a/drivers/cpufreq/powernow-k7.c
++++ b/drivers/cpufreq/powernow-k7.c
+@@ -269,7 +269,7 @@ static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
+ 
+ 	freqs.new = powernow_table[index].frequency;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 
+ 	/* Now do the magic poking into the MSRs.  */
+ 
+@@ -290,7 +290,7 @@ static int powernow_target(struct cpufreq_policy *policy, unsigned int index)
+ 	if (have_a0 == 1)
+ 		local_irq_enable();
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 27eb2be..770a9e1 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -963,9 +963,9 @@ static int transition_frequency_fidvid(struct powernow_k8_data *data,
+ 	policy = cpufreq_cpu_get(smp_processor_id());
+ 	cpufreq_cpu_put(policy);
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 	res = transition_fid_vid(data, fid, vid);
+-	cpufreq_notify_post_transition(policy, &freqs, res);
++	cpufreq_freq_transition_end(policy, &freqs, res);
+ 
+ 	return res;
+ }
+diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+index 2506974..d5ef905 100644
+--- a/drivers/cpufreq/s3c24xx-cpufreq.c
++++ b/drivers/cpufreq/s3c24xx-cpufreq.c
+@@ -217,7 +217,7 @@ static int s3c_cpufreq_settarget(struct cpufreq_policy *policy,
+ 	s3c_cpufreq_updateclk(clk_pclk, cpu_new.freq.pclk);
+ 
+ 	/* start the frequency change */
+-	cpufreq_notify_transition(policy, &freqs.freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs.freqs);
+ 
+ 	/* If hclk is staying the same, then we do not need to
+ 	 * re-write the IO or the refresh timings whilst we are changing
+@@ -261,7 +261,7 @@ static int s3c_cpufreq_settarget(struct cpufreq_policy *policy,
+ 	local_irq_restore(flags);
+ 
+ 	/* notify everyone we've done this */
+-	cpufreq_notify_transition(policy, &freqs.freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs.freqs, false);
+ 
+ 	s3c_freq_dbg("%s: finished\n", __func__);
+ 	return 0;
+diff --git a/drivers/cpufreq/sh-cpufreq.c b/drivers/cpufreq/sh-cpufreq.c
+index 696170e..f63abf3 100644
+--- a/drivers/cpufreq/sh-cpufreq.c
++++ b/drivers/cpufreq/sh-cpufreq.c
+@@ -68,10 +68,10 @@ static int sh_cpufreq_target(struct cpufreq_policy *policy,
+ 	freqs.new	= (freq + 500) / 1000;
+ 	freqs.flags	= 0;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 	set_cpus_allowed_ptr(current, &cpus_allowed);
+ 	clk_set_rate(cpuclk, freq);
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_POSTCHANGE);
++	cpufreq_freq_transition_end(policy, &freqs, false);
+ 
+ 	dev_dbg(dev, "set frequency %lu Hz\n", freq);
+ 
+diff --git a/drivers/cpufreq/unicore2-cpufreq.c b/drivers/cpufreq/unicore2-cpufreq.c
+index 36cc330..13be802 100644
+--- a/drivers/cpufreq/unicore2-cpufreq.c
++++ b/drivers/cpufreq/unicore2-cpufreq.c
+@@ -44,9 +44,9 @@ static int ucv2_target(struct cpufreq_policy *policy,
+ 	freqs.old = policy->cur;
+ 	freqs.new = target_freq;
+ 
+-	cpufreq_notify_transition(policy, &freqs, CPUFREQ_PRECHANGE);
++	cpufreq_freq_transition_begin(policy, &freqs);
+ 	ret = clk_set_rate(policy->mclk, target_freq * 1000);
+-	cpufreq_notify_post_transition(policy, &freqs, ret);
++	cpufreq_freq_transition_end(policy, &freqs, ret);
+ 
+ 	return ret;
+ }
 -- 
 1.7.12.rc2.18.g61b472e
 
