@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966347AbaCUAM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:12:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37446 "EHLO
+	id S966360AbaCUAN0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:13:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37441 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966205AbaCUAJu (ORCPT
+	with ESMTP id S966199AbaCUAJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:50 -0400
+	Thu, 20 Mar 2014 20:09:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Yan, Zheng" <zheng.z.yan@intel.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.4 22/35] NFS: Fix a delegation callback race
-Date: Thu, 20 Mar 2014 17:11:13 -0700
-Message-Id: <20140321001054.898386564@linuxfoundation.org>
+        Nicholas <arealityfarbetween@googlemail.com>,
+        Michele Baldessari <michele@acksyn.org>,
+        Guilherme Amadio <guilherme.amadio@gmail.com>,
+        Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3.4 21/35] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
+Date: Thu, 20 Mar 2014 17:11:12 -0700
+Message-Id: <20140321001054.866739557@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -29,49 +31,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit 755a48a7a4eb05b9c8424e3017d947b2961a60e0 upstream.
+commit b28a613e9138e4b3a64649bd60b13436f4b4b49b upstream.
 
-The clean-up in commit 36281caa839f ended up removing a NULL pointer check
-that is needed in order to prevent an Oops in
-nfs_async_inode_return_delegation().
+Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
+for Seagate Momentus SpinPoint M8" we added a quirk for disks named
+"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
 
-Reported-by: "Yan, Zheng" <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/5313E9F6.2020405@intel.com
-Fixes: 36281caa839f (NFSv4: Further clean-ups of delegation stateid validation)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
+we need to also add firmware revision 2BA30001 as it is broken as well.
+
+Reported-by: Nicholas <arealityfarbetween@googlemail.com>
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/delegation.c |   11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
+ drivers/ata/libata-core.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -540,16 +540,19 @@ int nfs_async_inode_return_delegation(st
+--- a/drivers/ata/libata-core.c
++++ b/drivers/ata/libata-core.c
+@@ -4106,6 +4106,7 @@ static const struct ata_blacklist_entry
  
- 	rcu_read_lock();
- 	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation == NULL)
-+		goto out_enoent;
+ 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
+ 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
++	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
  
--	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid)) {
--		rcu_read_unlock();
--		return -ENOENT;
--	}
-+	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid))
-+		goto out_enoent;
- 	nfs_mark_return_delegation(server, delegation);
- 	rcu_read_unlock();
- 
- 	nfs_delegation_run_state_manager(clp);
- 	return 0;
-+out_enoent:
-+	rcu_read_unlock();
-+	return -ENOENT;
- }
- 
- static struct inode *
+ 	/* Blacklist entries taken from Silicon Image 3124/3132
+ 	   Windows driver .inf file - also several Linux problem reports */
 
 
