@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965893AbaCUAIx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:08:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37083 "EHLO
+	id S966240AbaCUAhc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:37:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37107 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965868AbaCUAIs (ORCPT
+	with ESMTP id S965892AbaCUAIx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:48 -0400
+	Thu, 20 Mar 2014 20:08:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 27/85] mwifiex: save and copy APs VHT capability info correctly
-Date: Thu, 20 Mar 2014 17:09:30 -0700
-Message-Id: <20140321000602.506794753@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net
+Subject: [PATCH 3.10 47/85] firewire: dont use PREPARE_DELAYED_WORK
+Date: Thu, 20 Mar 2014 17:09:50 -0700
+Message-Id: <20140321000605.424382486@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,57 +29,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit d51246481c7f28bbfa1f814ded2da65e531cd4b2 upstream.
+commit 70044d71d31d6973665ced5be04ef39ac1c09a48 upstream.
 
-While preparing association request, intersection of device's
-VHT capability information and corresponding field advertised
-by AP is used.
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-This patch fixes a couple errors while saving and copying vht_cap
-and vht_oper fields from AP's beacon.
+firewire core-device and sbp2 have been been multiplexing work items
+with multiple work functions.  Introduce fw_device_workfn() and
+sbp2_lu_workfn() which invoke fw_device->workfn and
+sbp2_logical_unit->workfn respectively and always use the two
+functions as the work functions and update the users to set the
+->workfn fields instead of overriding work functions using
+PREPARE_DELAYED_WORK().
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This fixes a variety of possible regressions since a2c1c57be8d9
+"workqueue: consider work function when searching for busy work items"
+due to which fw_workqueue lost its required non-reentrancy property.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11ac.c |    3 +--
- drivers/net/wireless/mwifiex/scan.c |    8 ++++----
- 2 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/firewire/core-device.c |   22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        |   17 +++++++++++++----
+ include/linux/firewire.h       |    1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/11ac.c
-+++ b/drivers/net/wireless/mwifiex/11ac.c
-@@ -189,8 +189,7 @@ int mwifiex_cmd_append_11ac_tlv(struct m
- 		vht_cap->header.len  =
- 				cpu_to_le16(sizeof(struct ieee80211_vht_cap));
- 		memcpy((u8 *)vht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *)bss_desc->bcn_vht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_vht_cap,
- 		       le16_to_cpu(vht_cap->header.len));
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -895,7 +895,7 @@ static int lookup_existing_device(struct
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
  
- 		mwifiex_fill_vht_cap_tlv(priv, vht_cap, bss_desc->bss_band);
---- a/drivers/net/wireless/mwifiex/scan.c
-+++ b/drivers/net/wireless/mwifiex/scan.c
-@@ -2040,12 +2040,12 @@ mwifiex_save_curr_bcn(struct mwifiex_pri
- 			 curr_bss->ht_info_offset);
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
  
- 	if (curr_bss->bcn_vht_cap)
--		curr_bss->bcn_ht_cap = (void *)(curr_bss->beacon_buf +
--						curr_bss->vht_cap_offset);
-+		curr_bss->bcn_vht_cap = (void *)(curr_bss->beacon_buf +
-+						 curr_bss->vht_cap_offset);
+ 		if (current_node == card->root_node)
+@@ -1054,7 +1054,7 @@ static void fw_device_init(struct work_s
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1175,13 +1175,20 @@ static void fw_device_refresh(struct wor
+ 		  dev_name(&device->device), fw_rcode_string(ret));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
  
- 	if (curr_bss->bcn_vht_oper)
--		curr_bss->bcn_ht_oper = (void *)(curr_bss->beacon_buf +
--						 curr_bss->vht_info_offset);
-+		curr_bss->bcn_vht_oper = (void *)(curr_bss->beacon_buf +
-+						  curr_bss->vht_info_offset);
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
++
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1231,7 +1238,8 @@ void fw_node_event(struct fw_card *card,
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
+ 		 */
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
  
- 	if (curr_bss->bcn_bss_co_2040)
- 		curr_bss->bcn_bss_co_2040 =
+@@ -1247,7 +1255,7 @@ void fw_node_event(struct fw_card *card,
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1262,7 +1270,7 @@ void fw_node_event(struct fw_card *card,
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1287,7 +1295,7 @@ void fw_node_event(struct fw_card *card,
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struc
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
+ 
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struc
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_s
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_s
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -200,6 +200,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
 
 
