@@ -1,83 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965123AbaCUOuj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:50:39 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:64626 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757638AbaCUOt5 (ORCPT
+	id S965261AbaCUOvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:51:21 -0400
+Received: from smtp2out.l-3com.com ([166.20.51.112]:6755 "EHLO
+	smtp2out.l-3com.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786AbaCUOvQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:49:57 -0400
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: grant.likely@secretlab.ca
-Cc: devicetree@vger.kernel.org, gregkh@linuxfoundation.org,
-        linux-kernel@vger.kernel.org, robh+dt@kernel.org,
-        gregory.clement@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: [PATCH v3 1/2] of: irq: Added of_find_irq_domain() to get the domain of an irq
-Date: Fri, 21 Mar 2014 15:46:24 +0100
-Message-Id: <1395413185-29763-2-git-send-email-jjhiblot@traphandler.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1395413185-29763-1-git-send-email-jjhiblot@traphandler.com>
-References: <20140320161118.B7075C4067A@trevor.secretlab.ca>
- <1395413185-29763-1-git-send-email-jjhiblot@traphandler.com>
+	Fri, 21 Mar 2014 10:51:16 -0400
+X-filenames: 
+X-filesizes: None
+X-filetypes: 
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,704,1389744000"; 
+   d="scan'208";a="226562700"
+X-IronPort-AV: E=Sophos;i="4.97,704,1389765600"; 
+   d="scan'208";a="5331384"
+From: <jimmie.davis@l-3com.com>
+To: <umgwanakikbuti@gmail.com>
+CC: <oneukum@suse.de>, <artem_fetishev@epam.com>, <peterz@infradead.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: RE: Bug 71331 - mlock yields processor to lower priority process
+Thread-Topic: Bug 71331 - mlock yields processor to lower priority process
+Thread-Index: AQHPRNwZPC5PRgt+P0GtAN8yDFKRX5rrmJkA///XPHuAAG8YgP//rVNFgABlNQD//6xjLQ==
+Date: Fri, 21 Mar 2014 14:50:34 +0000
+Message-ID: <FFF95760268D324AB6DD9426E83C8DF70B2E595F@ARLEXCHMBX01.lst.link.l-3com.com>
+References: <20140321200248.GB6264@owamsq.epam.com>
+	 ,<1395393822.6030.59.camel@marge.simpson.net>
+	 <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>
+	 ,<1395408925.9455.3.camel@linux-fkkt.site>
+	 <FFF95760268D324AB6DD9426E83C8DF70B2E58FB@ARLEXCHMBX01.lst.link.l-3com.com>,<1395412904.6030.126.camel@marge.simpson.net>
+In-Reply-To: <1395412904.6030.126.camel@marge.simpson.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [130.210.49.246]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This functions does the same parsing as irq_of_parse_and_map but instead
-of doing the mapping, it returns a pointer to the irq domain
 
-Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
----
- drivers/of/irq.c       | 20 ++++++++++++++++++++
- include/linux/of_irq.h |  2 ++
- 2 files changed, 22 insertions(+)
+________________________________________
+From: Mike Galbraith [umgwanakikbuti@gmail.com]
+Sent: Friday, March 21, 2014 9:41 AM
+To: Davis, Bud @ SSG - Link
+Cc: oneukum@suse.de; artem_fetishev@epam.com; peterz@infradead.org; kosaki.motohiro@jp.fujitsu.com; linux-kernel@vger.kernel.org
+Subject: RE: Bug 71331 - mlock yields processor to lower priority process
 
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 9bcf2cf..7d3184f 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -46,6 +46,26 @@ unsigned int irq_of_parse_and_map(struct device_node *dev, int index)
- EXPORT_SYMBOL_GPL(irq_of_parse_and_map);
+On Fri, 2014-03-21 at 14:01 +0000, jimmie.davis@l-3com.com wrote:
+
+> If you call mlock () from a SCHED_FIFO task, you expect it to return
+> when done.  You don't expect it to block, and your task to be
+> pre-empted.
+
+Say some of your pages are sitting in an nfs swapfile orbiting Neptune,
+how do they get home, and what should we do meanwhile?
+
+-Mike
+
+Two options.
+
+#1. Return with a status value of EAGAIN.
+
+or 
+
+#2.  Don't return until you can do it.
+
+If SCHED_FIFO is used, and mlock() is called, the intention of the user is very clear.  Run this task until
+it is completed or it blocks (and until a bit ago, mlock() did not block).
+
+SCHED_FIFO users don't care about fairness.  They want the system to do what it is told.
+
+regards,
+Bud Davis
+
+
+
+
  
- /**
-+ * of_find_irq_domain - Parse the DT and returns a pointer to the irq domain
-+ * @dev: Device node of the device whose interrupt is concerned
-+ * @index: Index of the interrupt to get the domain for
-+ *
-+ * This function is a wrapper that chains of_irq_parse_one() and
-+ * irq_find_host() to make things easier to callers
-+ */
-+struct irq_domain *of_find_irq_domain(struct device_node *dev, int index)
-+{
-+	int rc;
-+	struct of_phandle_args oirq;
-+
-+	rc = of_irq_parse_one(dev, index, &oirq);
-+	if (rc)
-+		return ERR_PTR(rc);
-+
-+	return irq_find_host(oirq.np);
-+}
-+
-+/**
-  * of_irq_find_parent - Given a device node, find its interrupt parent node
-  * @child: pointer to device node
-  *
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 3f23b44..600ff0a 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -58,6 +58,8 @@ static inline int of_irq_count(struct device_node *dev)
-  * so declare it here regardless of the CONFIG_OF_IRQ setting.
-  */
- extern unsigned int irq_of_parse_and_map(struct device_node *node, int index);
-+extern struct irq_domain *of_find_irq_domain(struct device_node *dev,
-+					     int index);
- extern struct device_node *of_irq_find_parent(struct device_node *child);
  
- #else /* !CONFIG_OF */
--- 
-1.9.0
 
+ 
