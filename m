@@ -1,139 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760649AbaCUMDa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:03:30 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:38132 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078AbaCUMD2 (ORCPT
+	id S1760778AbaCUMD4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:03:56 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:44949 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760703AbaCUMDy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:03:28 -0400
-Message-ID: <532C2A9D.2080505@linaro.org>
-Date: Fri, 21 Mar 2014 07:03:41 -0500
-From: Alex Elder <elder@linaro.org>
+	Fri, 21 Mar 2014 08:03:54 -0400
+Message-ID: <532C2ACD.7070107@arm.com>
+Date: Fri, 21 Mar 2014 12:04:29 +0000
+From: Sudeep Holla <sudeep.holla@arm.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
-        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
-        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org
-CC: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/12] clk: bcm281xx: updates for 3.15
-References: <1393373752-30875-1-git-send-email-elder@linaro.org>
-In-Reply-To: <1393373752-30875-1-git-send-email-elder@linaro.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: Sudeep Holla <sudeep.holla@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic
+ cacheinfo infrastructure
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-7-git-send-email-sudeep.holla@arm.com> <531945D1.7010503@linux.vnet.ibm.com> <531963D9.5040701@linux.vnet.ibm.com> <531D9E3A.7040109@arm.com> <532BB5AC.3000904@linux.vnet.ibm.com>
+In-Reply-To: <532BB5AC.3000904@linux.vnet.ibm.com>
+X-OriginalArrivalTime: 21 Mar 2014 12:04:04.0895 (UTC) FILETIME=[A7C1E2F0:01CF44FD]
+X-MC-Unique: 114032112035203501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike, I've given up on getting these in for 3.15, but
-I want to be sure they're considered ASAP for 3.16.
+Hi Anshuman,
 
-You indicated you had questions about the prerequisite
-clocks I proposed.  What I'd like to do is resend only the
-first 7 patches of this series, leaving the patches that
-implement prerequisite clock functionality to work out
-separately.
+On 21/03/14 03:44, Anshuman Khandual wrote:
+> On 03/10/2014 04:42 PM, Sudeep Holla wrote:
+>> Hi Anshuman,
+>>
+>> On 07/03/14 06:14, Anshuman Khandual wrote:
+>>> On 03/07/2014 09:36 AM, Anshuman Khandual wrote:
+>>>> On 02/19/2014 09:36 PM, Sudeep Holla wrote:
+>>>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>>>
+>>>>> This patch removes the redundant sysfs cacheinfo code by making use of
+>>>>> the newly introduced generic cacheinfo infrastructure.
 
-In that case there is no special device tree dependency
-that would require the patches be taken through arm-soc.
+[...]
 
-They do, however, still depend on the previous work that
-was queued through arm-soc, so they don't apply on your
-current clk-next branch.
-
-How would you like me to handle this?
-
-Thanks.
-
-					-Alex
-
-http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-Branch review/bcm-clk-next-v2
-
-bc38518 clk: bcm281xx: add clock hysteresis support
-84f8738 clk: bcm281xx: add clock policy support
-825179f clk: bcm281xx: define CCU clock data statically
-1d2fbb7 clk: bcm281xx: initialize CCU structures statically
-d362801 clk: bcm281xx: change some symbol names
-bcacfe5 clk: bcm281xx: use init_data.name for clock name
-270dc8f clk: bcm281xx: warn if ccu_wait_bit() fails
-
-(based on)
-c771cfb ARM: dts: bcm281xx: define real clocks
-14a091d clk: bcm281xx: don't disable unused peripheral clocks
-44bc5c4 clk: bcm281xx: add initial clock framework support
-dcb99fd Linux 3.14-rc7
-
-
-
-On 02/25/2014 06:15 PM, Alex Elder wrote:
-> This series includes updates for the bcm281xx clock code for 3.15.
-> I had held off posting this until the code on which this is based
-> was queued for 3.14, and it now has been:
->     https://github.com/broadcom/mach-bcm/
->     Branch armsoc/for-3.15/drivers
-> 	clk: bcm281xx: don't disable unused peripheral clocks
-> 	clk: bcm281xx: add initial clock framework support
-> followed by:
->     (same repository)
->     Branch armsoc/for-3.15/dt
-> 	ARM: dts: bcm281xx: define real clocks
+>>>> When it is UNIFIED we return index 0, which is correct. But the index
+>>>> for instruction and data cache seems to be swapped which wrong. This
+>>>> will fetch invalid properties for any given cache type.
+>>>>
+>>
+>> Ah, that's silly mistake on my side, will fix it.
+>>
+>>>> I have done some initial review and testing for this patch's impact on
+>>>> PowerPC (ppc64 POWER specifically). I am trying to do some code clean-up
+>>>> and re-arrangements. Will post out soon. Thanks !
+>>
+>> Thanks for taking time for testing and reviewing these patches.
 > 
-> The patches in this series are available here:
->     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
->     Branch review/bcm-clk-next-v2
+> Now that you got some of the problems to work on and resend the patches, I will
+> hold on to the clean up patches I had.
 > 
-> I've grouped them, and offer a little explanation of each of the
-> groups below.
-> 
-> Note:  The final (DT) patch *must* be committed last.
-> 
-> The first version of this series had a patch from the middle of the
-> series that shouldn't have been there, and it has been removed in
-> this version (that patch affected mach-bcm, not clk).  I also split
-> the final patch into two, with the second one isolating the change
-> to a device tree file.
-> 
-> 		    					-Alex
-> 
-> Alex Elder (12):
->   clk: bcm281xx: warn if ccu_wait_bit() fails
->   clk: bcm281xx: use init_data.name for clock name
->   clk: bcm281xx: change some symbol names
->        	Three small code improvements.
-> 
->   clk: bcm281xx: initialize CCU structures statically
->   clk: bcm281xx: define CCU clock data statically
-> 	Rearrange the way CCUs and the clocks they provide are
-> 	defined, so that they're defined statically to the extent
-> 	possible rather than allocating and initializing things at
-> 	runtime.
-> 
->   clk: bcm281xx: add clock policy support
->   clk: bcm281xx: add clock hysteresis support
->   clk: bcm281xx: add an initialized flag
->   clk: bcm281xx: implement prerequisite clocks
->   clk: bcm281xx: add bus clock support
->   clk: bcm281xx: define a bus clock
-> 	Add a few new features, ultimately for the purpose of adding
-> 	support for another type of Kona clock.  Currently only
-> 	peripheral clocks are supported; this adds the ability to
-> 	define and control bus clocks.  In addition, support is
-> 	added for clocks to identify a prerequisite clock; a clock
-> 	won't be initialized until after its prerequisite has been.
-> 
->   ARM: dts: add bus clock bsc3_apb for bcm281xx
->   	Add the new bus clock to the device tree.
-> 
->  arch/arm/boot/dts/bcm11351.dtsi      |    3 +-
->  drivers/clk/bcm/clk-bcm281xx.c       |  254 ++++++++++++--------------
->  drivers/clk/bcm/clk-kona-setup.c     |  331 +++++++++++++++++++++++++++-------
->  drivers/clk/bcm/clk-kona.c           |  331 ++++++++++++++++++++++++++++++++--
->  drivers/clk/bcm/clk-kona.h           |  189 ++++++++++++++++---
->  include/dt-bindings/clock/bcm281xx.h |    3 +-
->  6 files changed, 872 insertions(+), 239 deletions(-)
-> 
+
+I have done most of the changes but still unable to find why the shared_cpu_map
+is getting incorrect on PPC. All the other wrong entries are fixed. Any clue on
+shared_cpu_map ?
+
+Regards,
+Sudeep
 
