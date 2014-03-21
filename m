@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188AbaCUNrM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:47:12 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:47419 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751019AbaCUNrJ (ORCPT
+	id S1760837AbaCUNvG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:51:06 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:39336 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaCUNvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:47:09 -0400
-Message-ID: <1395409625.6441.4.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [RFC] csum experts, csum_replace2() is too expensive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Patrick McHardy <kaber@trash.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        Michael Dalton <mwdalton@google.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Mar 2014 06:47:05 -0700
-In-Reply-To: <1395408778.6441.2.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
-	 <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <1395408778.6441.2.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Fri, 21 Mar 2014 09:51:02 -0400
+Message-ID: <532C4515.3040500@gmail.com>
+Date: Fri, 21 Mar 2014 14:56:37 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Rob Herring <robherring2@gmail.com>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Subject: Re: [PATCH v3 3/7] OF: DT-Overlay configfs interface
+References: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com> <1395179766-31575-4-git-send-email-pantelis.antoniou@konsulko.com> <CAL_JsqKJqakXGWDEKPAoJ9P5myYXnodcYCdvowV6MPuZXgwVmw@mail.gmail.com>
+In-Reply-To: <CAL_JsqKJqakXGWDEKPAoJ9P5myYXnodcYCdvowV6MPuZXgwVmw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 06:32 -0700, Eric Dumazet wrote:
-> On Fri, 2014-03-21 at 05:50 -0700, Eric Dumazet wrote:
-> 
-> > Or the fact that we mix 16 bit stores and 32bit loads ?
-> > 
-> > iph->tot_len = newlen;
-> > iph->check = 0;
-> > iph->check = ip_fast_csum(iph, 5);
-> 
-> Yep definitely. Using 16 bit loads in ip_fast_csum() totally removes the
-> stall. I no longer see inet_gro_complete() in perf top...
-> 
-> +       if (__builtin_constant_p(ihl) && ihl == 5) {
-> +               asm("  movw (%[iph]), %w[sum]\n"        /* ihl/version/tos */
-> +                   "  addw 2(%[iph]), %w[sum]\n"       /* tot_len      */
-> +                   "  adcw 8(%[iph]), %w[sum]\n"       /* ttl/protocol */
-> +                   "  adcw 10(%[iph]), %w[sum]\n"      /* check        */
-> +                   "  adcl 4(%[iph]), %[sum]\n"        /* id/frag_off  */
-> +                   "  adcl 12(%[iph]), %[sum]\n"       /* saddr        */
-> +                   "  adcl 16(%[iph]), %[sum]\n"       /* daddr        */
-> +                   "  adcl $0, %[sum]\n"
-> +                   : [sum] "=r" (sum)
-> +                   : [iph] "r" (iph)
-> +                   );
-> +               return csum_fold(sum);
-> 
+On 03/21/2014 02:39 PM, Rob Herring wrote:
+> On Tue, Mar 18, 2014 at 4:56 PM, Pantelis Antoniou
+> <pantelis.antoniou@konsulko.com> wrote:
+>> Add a runtime interface to using configfs for generic device tree overlay
+>> usage.
+>>
+>> A device-tree configfs entry is created in /config/device-tree/overlays
+>>
+>> To create an overlay you mkdir the directory and then echo the overlay
+>> firmware file to the path property file.
+>>
+>>          # mkdir /config/device-tree/overlays/foo
+>>          # echo foo.dtbo >/config/device-tree/overlays/foo/path
+[...]
+>> +static ssize_t cfs_overlay_item_status_show(struct cfs_overlay_item *overlay,
+>> +               char *page)
+>> +{
+>> +       return sprintf(page, "%s\n",
+>> +                       overlay->applied ? "applied" : "unapplied");
+>> +}
+>
+> This needs to be added to the above mentioned documentation along with
+> any other files.
 
-Another idea would be to move the ip_fast_csum() call at the end of
-inet_gro_complete()
+It is also terrible to grep for. Maybe just have the file named
+"applied" and use a bool instead?
 
-I'll try this :
+Sebastian
 
-diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
-index 8c54870db792..0ca8f350a532 100644
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -1434,8 +1434,8 @@ static int inet_gro_complete(struct sk_buff *skb, int nhoff)
-        int proto = iph->protocol;
-        int err = -ENOSYS;
- 
--       csum_replace2(&iph->check, iph->tot_len, newlen);
-        iph->tot_len = newlen;
-+       iph->check = 0;
- 
-        rcu_read_lock();
-        ops = rcu_dereference(inet_offloads[proto]);
-@@ -1447,6 +1447,7 @@ static int inet_gro_complete(struct sk_buff *skb, int nhoff)
-         * inet_gro_receive().
-         */
-        err = ops->callbacks.gro_complete(skb, nhoff + sizeof(*iph));
-+       iph->check = ip_fast_csum((u8 *)iph, 5);
- 
- out_unlock:
-        rcu_read_unlock();
-
+>> +
+>> +CFS_OVERLAY_ITEM_ATTR(path, S_IRUGO | S_IWUSR, \
+>> +               cfs_overlay_item_path_show, cfs_overlay_item_path_store);
+>> +CFS_OVERLAY_ITEM_ATTR_RO(status, cfs_overlay_item_status_show);
+>> +
+>> +static struct configfs_attribute *cfs_overlay_attrs[] = {
+>> +       &cfs_overlay_item_attr_path.attr,
+>> +       &cfs_overlay_item_attr_status.attr,
+>> +       NULL,
+>> +};
 
