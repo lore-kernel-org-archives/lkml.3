@@ -1,66 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760359AbaCUIja (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:39:30 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:51017 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751488AbaCUIj2 (ORCPT
+	id S1760289AbaCUImP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:42:15 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:29311 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689AbaCUImM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:39:28 -0400
-X-Sasl-enc: qV4WMRg2st7AeoAkOn5ZR37us7Fpd09ujKHV3wBo4MVS 1395391161
-Message-ID: <532BFAB2.2000007@fastmail.fm>
-Date: Fri, 21 Mar 2014 16:39:14 +0800
-From: Michalis Pappas <mpappas@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131204 Thunderbird/17.0.11
+	Fri, 21 Mar 2014 04:42:12 -0400
+Message-ID: <532BFB50.7060601@huawei.com>
+Date: Fri, 21 Mar 2014 16:41:52 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] staging: gdm72xx: Removed direct comparisons on jiffies
-References: <532BF9B0.2080008@fastmail.fm>
-In-Reply-To: <532BF9B0.2080008@fastmail.fm>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: "zheng.li" <zheng.x.li@oracle.com>, Jay Vosburgh <fubar@us.ibm.com>
+CC: <netdev@vger.kernel.org>, <andy@greyhouse.net>,
+        <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
+        <joe.jin@oracle.com>
+Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
+ value to 1.
+References: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com> <3119.1395334953@death.nxdomain> <532BA648.6060600@oracle.com>
+In-Reply-To: <532BA648.6060600@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2014/3/21 10:39, zheng.li wrote:
+> 于 2014年03月21日 01:02, Jay Vosburgh 写道:
+>> Zheng Li <zheng.x.li@oracle.com> wrote:
+>>
+>>> Except bond mode 1, in other bond modes, inactive slaves should keep
+>>> inactive flag to 1 to refuse to receive broadcast packets. Now, active
+>>> slave send broadcast packets (for example ARP requests) which will
+>>> arrive inactive slaves on same host from switch, but inactive slave's
+>>> inactive flag is zero that cause bridge receive the broadcast packets
+>>> to produce a wrong entry in forward table. Typical situation is domu
+>>> send some ARP request which go out from dom0 bond's active slave, then
+>>> the ARP broadcast request packets go back to inactive slave from
+>>> switch, because the inactive slave's inactive flag is zero, kernel will
+>>> receive the packets and pass them to bridge, that cause dom0's bridge
+>>> map domu's MAC address to port of bond, bridge should map domu's MAC to
+>>> port of vif.
+>>
+>> 	I suspect this will break LACP (802.3ad) and Etherchannel
+>> (balance-xor, balance-rr) modes, as those modes can receive broadcast or
+>> multicast on any slave.  In those cases, the switch knows about the
+>> aggregation, and will only send the broadcast / multicast to one of the
+>> ports, but the port selected is not always the same one.
+>>
+>> 	In which mode are you having trouble?
+>>
+>> 	-J
+> 
+> Except bond mode 1, in other modes (major test in mode 6, and test all
+> other mode,  except mode 1, all other modes has the bug), the bridge
+> make a wrong entry which map guest MAC to the port of bond, it should
+> map guest MAC to the port of vif.
+> 
+> Env description: dom0's bridge contains bond1 and vif ports, bond1 as
+> port 1 , vif as port 2, bond1 has two slaves which connect a switch.
+> when from guest ping others ,the arp broadcast request will go out from
+> bond1's active slave, and then go back to itself inactive slave from
+> switch , in function of bond_should_deliver_exact_match will return
+> false by inactive is zero, return false will cause bridge receive the
+> arp request packets whose original is from guest through vif that let
+> bridge consider the SRC MAC of guest is from bond1 by analyzing the arp
+> broadcast packets, then make a wrong forward entry "MAC of guest, from
+> port 1 (bond1)" , the correct entry should be "MAC of guest , from port
+> 2 (vif)".
+> 
+> 
+> bond_should_deliver_exact_match(struct sk_buff *skb,
+> 					    struct slave *slave,
+> 					    struct bonding *bond)
+> {
+> 	if (bond_is_slave_inactive(slave)) {
+> 		if (bond->params.mode == BOND_MODE_ALB &&
+> 		    skb->pkt_type != PACKET_BROADCAST &&
+> 		    skb->pkt_type != PACKET_MULTICAST)
+> 			return false;
+> 		return true;
+> 	}
+> 	return false;
+> }
+> 
+> Thanks,
+> Zheng Li
+> 
 
-Replaced comparisons on jiffies values with wrap-safe functions.
 
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
----
- drivers/staging/gdm72xx/gdm_usb.c   | 2 +-
- drivers/staging/gdm72xx/sdio_boot.c | 4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+I know the problems of yours, but you can't fix the problem by the follow way, it will break
+the original mode such as 802.3ad, if you want to fix the problem, I think you need a better
+solution.
 
-diff --git a/drivers/staging/gdm72xx/gdm_usb.c b/drivers/staging/gdm72xx/gdm_usb.c
-index 20539d8..9ddf8f5 100644
---- a/drivers/staging/gdm72xx/gdm_usb.c
-+++ b/drivers/staging/gdm72xx/gdm_usb.c
-@@ -730,7 +730,7 @@ static int k_mode_thread(void *arg)
- 			spin_unlock_irqrestore(&k_lock, flags2);
-  			expire = jiffies + K_WAIT_TIME;
--			while (jiffies < expire)
-+			while (time_before(jiffies, expire))
- 				schedule_timeout(K_WAIT_TIME);
-  			spin_lock_irqsave(&rx->lock, flags);
-diff --git a/drivers/staging/gdm72xx/sdio_boot.c b/drivers/staging/gdm72xx/sdio_boot.c
-index cbe5dcf..2c02842 100644
---- a/drivers/staging/gdm72xx/sdio_boot.c
-+++ b/drivers/staging/gdm72xx/sdio_boot.c
-@@ -41,11 +41,11 @@ static u8 *tx_buf;
-  static int ack_ready(struct sdio_func *func)
- {
--	unsigned long start = jiffies;
-+	unsigned long wait = jiffies + HZ;
- 	u8 val;
- 	int ret;
- -	while ((jiffies - start) < HZ) {
-+	while (time_before(jiffies, wait)) {
- 		val = sdio_readb(func, 0x13, &ret);
- 		if (val & 0x01)
- 			return 1;
--- 
-1.7.12.1
+Ding
+
+> 
+>>
+>>>
+>>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>>> ---
+>>> drivers/net/bonding/bond_main.c |    2 +-
+>>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>>> index e5628fc..2f73f18 100644
+>>> --- a/drivers/net/bonding/bond_main.c
+>>> +++ b/drivers/net/bonding/bond_main.c
+>>> @@ -3063,7 +3063,7 @@ static int bond_open(struct net_device *bond_dev)
+>>> 				bond_set_slave_inactive_flags(slave,
+>>> 							      BOND_SLAVE_NOTIFY_NOW);
+>>> 			} else {
+>>> -				bond_set_slave_active_flags(slave,
+>>> +				bond_set_slave_state(slave, BOND_STATE_ACTIVE,
+>>> 							    BOND_SLAVE_NOTIFY_NOW);
+>>> 			}
+>>> 		}
+>>> -- 
+>>> 1.7.6.5
+>>>
+>>
+>> ---
+>> 	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> .
+> 
 
 
