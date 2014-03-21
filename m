@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965462AbaCUNWX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:22:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43284 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752094AbaCUNWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:22:21 -0400
-Message-ID: <1395408140.9455.1.camel@linux-fkkt.site>
-Subject: Re: Check if usb device is suspended
-From: Oliver Neukum <oneukum@suse.de>
-To: Jagdish Gedia <jvgediya@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Mar 2014 14:22:20 +0100
-In-Reply-To: <CAOAoqGuiBrg_tYhdNXd3r48YC9KQ5GNm7jrV4ttNiMjNkrCKRA@mail.gmail.com>
-References: <CAOAoqGt_Y_weA2FjA8x-NrZS7zj+=Zw-TH5Xv+QUQDJQixmdsw@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1403131017430.1292-100000@iolanthe.rowland.org>
-	 <CAOAoqGuiBrg_tYhdNXd3r48YC9KQ5GNm7jrV4ttNiMjNkrCKRA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
+	id S965600AbaCUNXe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:23:34 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:45118 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965502AbaCUNXb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 09:23:31 -0400
+Date: Fri, 21 Mar 2014 13:22:37 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: jon@ringle.org, gregkh@linuxfoundation.org, jslaby@suse.cz,
+        shc_work@mail.ru, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, devicetree@vger.kernel.org,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH v2] tty: serial: sc16is7xx
+Message-ID: <20140321132237.7aebefcf@alan.etchedpixels.co.uk>
+In-Reply-To: <20140321082609.GA3801@xps8300>
+References: <1395324333-21221-1-git-send-email-jon@ringle.org>
+	<20140321082609.GA3801@xps8300>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 17:17 +0530, Jagdish Gedia wrote:
-> I want to resume the usb device on some event, so i want to check if
-> it is suspended. I think by above method i can check if the device is
-> already suspended, but may be i will miss to resume the device if it
-> is suspending. Is there any way through which i can check if device is
-> suspending?
+On Fri, 21 Mar 2014 10:26:09 +0200
+Heikki Krogerus <heikki.krogerus@linux.intel.com> wrote:
 
-Just don't do that. If a device needs to be awake for some operation,
-call usb_autopm_get(). If the device is already awake, it is a nop
-besides keeping the device awake.
-Checking is not a sensible strategy.
+> Hi,
+> 
+> On Thu, Mar 20, 2014 at 10:05:33AM -0400, jon@ringle.org wrote:
+> > From: Jon Ringle <jringle@gridpoint.com>
+> > 
+> > The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
+> > high performance UART. The SC16IS7xx’s internal register set is
+> > backward-compatible with the widely used and widely popular 16C450.
+> 
+> So couldn't this be just a probe driver for 8250?
 
-	Regards
-		Oliver
+That was my first thought but if you look at 8250 and its locking
+assumptions it is a very poor fit. Better for now it is separate I think.
 
-
+Alan
