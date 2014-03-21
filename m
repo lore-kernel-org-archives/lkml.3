@@ -1,322 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760389AbaCUJUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:20:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54931 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753842AbaCUJUv (ORCPT
+	id S1760451AbaCUJVJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:21:09 -0400
+Received: from mail-ob0-f182.google.com ([209.85.214.182]:49491 "EHLO
+	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760403AbaCUJVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:20:51 -0400
-Message-ID: <532C0471.4020706@free-electrons.com>
-Date: Fri, 21 Mar 2014 10:20:49 +0100
-From: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 05:21:03 -0400
 MIME-Version: 1.0
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ARM: berlin: add SMP support
-References: <1395347986-30203-1-git-send-email-sebastian.hesselbarth@gmail.com> <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1395347986-30203-3-git-send-email-sebastian.hesselbarth@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <532BFB77.5060107@linux.vnet.ibm.com>
+References: <cover.1395379422.git.viresh.kumar@linaro.org>
+	<f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+	<532BEE64.3090501@linux.vnet.ibm.com>
+	<CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
+	<532BFB77.5060107@linux.vnet.ibm.com>
+Date: Fri, 21 Mar 2014 14:51:02 +0530
+Message-ID: <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/03/2014 21:39, Sebastian Hesselbarth wrote:
-> This adds SMP support to Marvell Berlin2 SoCs. Secondary CPUs boot into
-> BootROM, wait for interrupt, and read SW generic register 1 with actual
-> boot code address. Synchronization by holding pen is copied from
-> plat-versatile and mach-prima2.
+On 21 March 2014 14:12, Srivatsa S. Bhat
+<srivatsa.bhat@linux.vnet.ibm.com> wrote:
+>> You can find some information on this in
+>> Documentation/memory-barriers.txt
 >
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> Yep, I know, I have read it several times, but I'm no expert ;-)
 
-Acked-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+Not me either :) .. That file has so complex stuff in there that its
+difficult to
+understand what's all it says.. I read it several times the last time I went for
+a interview (Almost 2 years back) and don't remember anything now :)
 
-Also tested on the BG2Q,
-
-Tested-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-
-> ---
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Antoine Tenart <antoine.tenart@free-electrons.com>
-> Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->   arch/arm/mach-berlin/Kconfig   |   1 +
->   arch/arm/mach-berlin/Makefile  |   1 +
->   arch/arm/mach-berlin/berlin.c  |   3 +
->   arch/arm/mach-berlin/common.h  |  18 ++++++
->   arch/arm/mach-berlin/headsmp.S |  43 +++++++++++++
->   arch/arm/mach-berlin/platsmp.c | 139 +++++++++++++++++++++++++++++++++++++++++
->   6 files changed, 205 insertions(+)
->   create mode 100644 arch/arm/mach-berlin/common.h
->   create mode 100644 arch/arm/mach-berlin/headsmp.S
->   create mode 100644 arch/arm/mach-berlin/platsmp.c
+> I found this interesting section on "SLEEP AND WAKE-UP FUNCTIONS". It
+> says that doing:
 >
-> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-> index 7a02d222c378..eecec99c3096 100644
-> --- a/arch/arm/mach-berlin/Kconfig
-> +++ b/arch/arm/mach-berlin/Kconfig
-> @@ -15,6 +15,7 @@ config MACH_BERLIN_BG2
->   	bool "Marvell Armada 1500 (BG2)"
->   	select CACHE_L2X0
->   	select CPU_PJ4B
-> +	select HAVE_ARM_SCU if SMP
->   	select HAVE_ARM_TWD if SMP
->   	select HAVE_SMP
+> policy->transition_ongoing = false;
+> wake_up(&policy->transition_wait);
 >
-> diff --git a/arch/arm/mach-berlin/Makefile b/arch/arm/mach-berlin/Makefile
-> index ab69fe956f49..e11b1b0be4dd 100644
-> --- a/arch/arm/mach-berlin/Makefile
-> +++ b/arch/arm/mach-berlin/Makefile
-> @@ -1 +1,2 @@
->   obj-y += berlin.o
-> +obj-$(CONFIG_SMP)	+= platsmp.o headsmp.o
-> diff --git a/arch/arm/mach-berlin/berlin.c b/arch/arm/mach-berlin/berlin.c
-> index 025bcb5473eb..1bbca793174d 100644
-> --- a/arch/arm/mach-berlin/berlin.c
-> +++ b/arch/arm/mach-berlin/berlin.c
-> @@ -18,6 +18,8 @@
->   #include <asm/hardware/cache-l2x0.h>
->   #include <asm/mach/arch.h>
->
-> +#include "common.h"
-> +
->   static void __init berlin_init_machine(void)
->   {
->   	/*
-> @@ -36,4 +38,5 @@ static const char * const berlin_dt_compat[] = {
->   DT_MACHINE_START(BERLIN_DT, "Marvell Berlin")
->   	.dt_compat	= berlin_dt_compat,
->   	.init_machine	= berlin_init_machine,
-> +	.smp		= smp_ops(berlin_smp_ops),
->   MACHINE_END
-> diff --git a/arch/arm/mach-berlin/common.h b/arch/arm/mach-berlin/common.h
-> new file mode 100644
-> index 000000000000..57c97669af0a
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/common.h
-> @@ -0,0 +1,18 @@
-> +/*
-> + * Marvell Berlin SoCs common include.
-> + *
-> + * Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + */
-> +
-> +#ifndef __ARCH_BERLIN_COMMON_H
-> +#define __ARCH_BERLIN_COMMON_H
-> +
-> +extern void berlin_secondary_startup(void);
-> +
-> +extern struct smp_operations berlin_smp_ops;
-> +
-> +#endif
-> diff --git a/arch/arm/mach-berlin/headsmp.S b/arch/arm/mach-berlin/headsmp.S
-> new file mode 100644
-> index 000000000000..bd187257fefd
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/headsmp.S
-> @@ -0,0 +1,43 @@
-> +/*
-> + * linux/arch/arm/mach-berlin/headsmp.S
-> + *
-> + * Based on linux/arch/arm/mach-prima2/headsmp.S
-> + *
-> + * Copyright (c) 2003 ARM Limited
-> + * All Rights Reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + */
-> +#include <linux/linkage.h>
-> +#include <linux/init.h>
-> +#include <asm/assembler.h>
-> +
-> +/*
-> + * Entry point for secondary CPUs, this provides a "holding pen" into which
-> + * all secondary cores are held until we're ready for them to initialise.
-> + */
-> +ENTRY(berlin_secondary_startup)
-> + ARM_BE8(setend be)
-> +	bl	v7_invalidate_l1
-> +	mrc	p15, 0, r0, c0, c0, 5
-> +	and	r0, r0, #15
-> +	adr	r4, 1f
-> +	ldmia	r4, {r5, r6}
-> +	sub	r4, r4, r5
-> +	add	r6, r6, r4
-> +pen:	ldr	r7, [r6]
-> +	cmp	r7, r0
-> +	bne	pen
-> +
-> +	/*
-> +	 * we've been released from the holding pen: secondary_stack
-> +	 * should now contain the SVC stack for this core
-> +	 */
-> +	b	secondary_startup
-> +ENDPROC(berlin_secondary_startup)
-> +
-> +	.align
-> +1:	.long	.
-> +	.long	pen_release
-> diff --git a/arch/arm/mach-berlin/platsmp.c b/arch/arm/mach-berlin/platsmp.c
-> new file mode 100644
-> index 000000000000..5c83941b0918
-> --- /dev/null
-> +++ b/arch/arm/mach-berlin/platsmp.c
-> @@ -0,0 +1,139 @@
-> +/*
-> + * linux/arch/arm/mach-berlin/platsmp.c
-> + *
-> + * Based on linux/arch/arm/plat-versatile/platsmp.c
-> + *
-> + * Copyright (C) 2002 ARM Ltd.
-> + * All Rights Reserved
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> +*/
-> +
-> +#include <linux/init.h>
-> +#include <linux/delay.h>
-> +#include <linux/errno.h>
-> +#include <linux/io.h>
-> +#include <linux/jiffies.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/smp.h>
-> +
-> +#include <asm/cacheflush.h>
-> +#include <asm/smp_plat.h>
-> +#include <asm/smp_scu.h>
-> +
-> +#include "common.h"
-> +
-> +/*
-> + * Write pen_release in a way that is guaranteed to be visible to all
-> + * observers, irrespective of whether they're taking part in coherency
-> + * or not.  This is necessary for the hotplug code to work reliably.
-> + */
-> +static void write_pen_release(int val)
-> +{
-> +	pen_release = val;
-> +	/* write and flush pen_release to memory */
-> +	smp_wmb();
-> +	sync_cache_w(&pen_release);
-> +}
-> +
-> +static DEFINE_SPINLOCK(boot_lock);
-> +
-> +static void berlin_secondary_init(unsigned int cpu)
-> +{
-> +	/*
-> +	 * let the primary processor know we're out of the
-> +	 * pen, then head off into the C entry point
-> +	 */
-> +	write_pen_release(-1);
-> +
-> +	/*
-> +	 * Synchronise with the boot thread.
-> +	 */
-> +	spin_lock(&boot_lock);
-> +	spin_unlock(&boot_lock);
-> +}
-> +
-> +static int berlin_boot_secondary(unsigned int cpu, struct task_struct *idle)
-> +{
-> +	unsigned long timeout;
-> +
-> +	/*
-> +	 * Set synchronisation state between this boot processor
-> +	 * and the secondary one
-> +	 */
-> +	spin_lock(&boot_lock);
-> +
-> +	/*
-> +	 * This is really belt and braces; we hold unintended secondary
-> +	 * CPUs in the holding pen until we're ready for them.  However,
-> +	 * since we haven't sent them a soft interrupt, they shouldn't
-> +	 * be there.
-> +	 */
-> +	write_pen_release(cpu_logical_map(cpu));
-> +
-> +	/*
-> +	 * Send the secondary CPU a soft interrupt, thereby causing
-> +	 * the boot monitor to read the system wide flags register,
-> +	 * and branch to the address found there.
-> +	 */
-> +	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
-> +
-> +	timeout = jiffies + (1 * HZ);
-> +	while (time_before(jiffies, timeout)) {
-> +		/* pen_release SMP read barrier */
-> +		smp_rmb();
-> +		if (pen_release == -1)
-> +			break;
-> +
-> +		udelay(10);
-> +	}
-> +
-> +	/*
-> +	 * now the secondary core is starting up let it run its
-> +	 * calibrations, then wait for it to finish
-> +	 */
-> +	spin_unlock(&boot_lock);
-> +
-> +	return pen_release != -1 ? -ENOSYS : 0;
-> +}
-> +
-> +static void __init berlin_smp_prepare_cpus(unsigned int max_cpus)
-> +{
-> +	struct device_node *np;
-> +	void __iomem *scu_base;
-> +	void __iomem *gpr_base;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "arm,cortex-a9-scu");
-> +	scu_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!scu_base)
-> +		return;
-> +
-> +	np = of_find_compatible_node(NULL, NULL, "marvell,berlin-generic-regs");
-> +	gpr_base = of_iomap(np, 0);
-> +	of_node_put(np);
-> +	if (!gpr_base) {
-> +		iounmap(scu_base);
-> +		return;
-> +	}
-> +
-> +	/*
-> +	 * Enable SCU and write the address of secondary startup into the
-> +	 * global SW generic register 1. The secondary CPU waits for an
-> +	 * interrupt and then branches to the address stored in the SW
-> +	 * generic register 1.
-> +	 */
-> +	scu_enable(scu_base);
-> +	writel(virt_to_phys(berlin_secondary_startup), gpr_base + 0x04);
-> +	iounmap(scu_base);
-> +	iounmap(gpr_base);
-> +}
-> +
-> +struct smp_operations berlin_smp_ops __initdata = {
-> +	.smp_prepare_cpus	= berlin_smp_prepare_cpus,
-> +	.smp_secondary_init	= berlin_secondary_init,
-> +	.smp_boot_secondary	= berlin_boot_secondary,
-> +};
->
+> is safe (as long as some tasks are woken up). So we don't have to worry
+> about that part.
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Okay..
+
+> So only the first part remains to be solved: ensuring
+> that the assignment occurs _after_ completing the invocation of the
+> POSTCHANGE notifiers.
+>
+> For that, we can do:
+>
+> cpufreq_notify_post_transition();
+>
+> smp_mb();
+>
+> policy->transition_ongoing = false;
+>
+> That should take care of everything.
+>
+>> I don't think compiler or CPU will reorder calls to a function and
+>> updates of a variable.
+>
+> I'm not sure about that. I think it is free to do so if it finds
+> that there is no dependency that prevents it from reordering. In this
+> case the update to the flag has no "visible" dependency on the call
+> to post_transition().
+>
+>> And so this code might simply work. And
+>> I hope there would be plenty of such code in kernel.
+>>
+>
+> Sure, there are plenty of examples in the kernel where we call functions
+> and update variables. But in this particular case, our synchronization
+> _depends_ on those operations happening in a particular order. Hence
+> we need to ensure the ordering is right. Otherwise the synchronization
+> might get broken.
+
+I still don't buy that.. Lets call an expert :)
+
+> Here are some examples where memory barriers are inserted to avoid
+> reordering of variable updates and function calls:
+>
+> kernel/rcu/torture.c: rcu_torture_barrier_cbs()
+
+rcutorture.c instead.
+
+> kernel/smp.c: kick_all_cpus_sync()
+
+These examples are a bit different than what we have here..
+
+@Catalin: We have a problem here and need your expert advice. After changing
+CPU frequency we need to call this code:
+
+cpufreq_notify_post_transition();
+policy->transition_ongoing = false;
+
+And the sequence must be like this only. Is this guaranteed without any
+memory barriers? cpufreq_notify_post_transition() isn't touching
+transition_ongoing at all..
+
+--
+thanks..
