@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966494AbaCUAjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:39:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37085 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965870AbaCUAIt (ORCPT
+	id S966821AbaCUAjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:39:49 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:62121 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965815AbaCUAjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:49 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Wang Weidong <wangweidong1@huawei.com>
-Subject: [PATCH 3.10 28/85] ARM: 7811/1: locks: use early clobber in arch_spin_trylock
-Date: Thu, 20 Mar 2014 17:09:31 -0700
-Message-Id: <20140321000602.636108124@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
-References: <20140321000558.606667505@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 20 Mar 2014 20:39:44 -0400
+Message-ID: <532B8A4B.9000808@linaro.org>
+Date: Fri, 21 Mar 2014 08:39:39 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: ACPI and PM material for v3.15-rc1 (current queue)
+References: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
+In-Reply-To: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+Hi Rafael,
 
-------------------
+On 2014年03月21日 08:23, Rafael J. Wysocki wrote:
+> Hi All,
+>
+> My queue for the first pull request during the upcoming 3.15 merge window
+> contains the material below.  Following the rule that everything I send
+> pull requests for should spend at least one day in linux-next, I'm not
+> going to add any more new commits to it at this point.
+>
+> Most likely, there will be more ACPI+PM pull request during the 3.15 cycle,
+> so if I missed something, it still may be possible to get that into that
+> kernel, but there has to be a good reason for it.
+>
+> Kind regards,
+> Rafael
+>
+>
+> ---------------
+>
+> Hanjun Guo (2):
+>        ACPI / tables: Replace printk with pr_*
+>        ACPI: Remove duplicate definitions of PREFIX
 
-From: Will Deacon <will.deacon@arm.com>
+It seems that you missed some of my patches:
+ACPI: Move BAD_MADT_ENTRY() to linux/acpi.h
+ACPI / idle: Make idle_boot_override depend on x86 and ia64
+ACPI / trivial: Fix the return value type of acpi_processor_eval_pdc()
+ACPI / processor: Replace hard-coded "ACPI0007" with 
+ACPI_PROCESSOR_DEVICE_HID
 
-commit afa31d8eb86fc2f25083e675d57ac8173a98f999 upstream.
+I think those 4 patches can be merged in 3.15 and you already accepted them.
 
-The res variable is written before we've finished with the input
-operands (namely the lock address), so ensure that we mark it as `early
-clobber' to avoid unintended register sharing.
+and this patch still need more acks and then you will accept it:
+ACPI / processor_core: Rework _PDC related stuff to make it more 
+arch-independent
 
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Wang Weidong <wangweidong1@huawei.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+and this patch was reverted from your tree suggested by Catalin and Sudeep,
+ACPI / processor: Introduce map_gic_id() to get apic id from MADT or 
+_MAT method
 
----
- arch/arm/include/asm/spinlock.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Sorry for the confusion if I missed something.
 
---- a/arch/arm/include/asm/spinlock.h
-+++ b/arch/arm/include/asm/spinlock.h
-@@ -107,7 +107,7 @@ static inline int arch_spin_trylock(arch
- 		"	subs	%1, %0, %0, ror #16\n"
- 		"	addeq	%0, %0, %4\n"
- 		"	strexeq	%2, %0, [%3]"
--		: "=&r" (slock), "=&r" (contended), "=r" (res)
-+		: "=&r" (slock), "=&r" (contended), "=&r" (res)
- 		: "r" (&lock->slock), "I" (1 << TICKET_SHIFT)
- 		: "cc");
- 	} while (res);
-
-
+Thanks
+Hanjun
