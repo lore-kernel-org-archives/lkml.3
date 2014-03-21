@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966576AbaCUAY4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:24:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37275 "EHLO
+	id S966026AbaCUAJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:09:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37185 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966035AbaCUAJW (ORCPT
+	with ESMTP id S965867AbaCUAJJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:22 -0400
+	Thu, 20 Mar 2014 20:09:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 78/85] bio-integrity: Fix bio_integrity_verify segment start bug
-Date: Thu, 20 Mar 2014 17:10:21 -0700
-Message-Id: <20140321000609.910176125@linuxfoundation.org>
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.10 69/85] SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+Date: Thu, 20 Mar 2014 17:10:12 -0700
+Message-Id: <20140321000608.546817613@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,47 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
 
-commit 5837c80e870bc3b12ac6a98cdc9ce7a9522a8fb6 upstream.
+commit b77ed25c9f8402e8b3e49e220edb4ef09ecfbb53 upstream.
 
-This patch addresses a bug in bio_integrity_verify() code that has
-been causing DIF READ verify operations to be silently skipped.
-
-The issue is that bio->bi_idx will have been incremented within
-bio_advance() code in the normal blk_update_request() ->
-req_bio_endio() completion path, and bio_integrity_verify() is
-using bio_for_each_segment() which starts the bio segment walk
-at the current bio->bi_idx.
-
-So instead use bio_for_each_segment_all() to always start the bio
-segment walk from zero, regardless of the current bio->bi_idx
-value after bio_advance() has been called.
-
-(Context change for v3.10.y -> v3.13.y code - nab)
-
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- fs/bio-integrity.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/qla_def.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -458,7 +458,7 @@ static int bio_integrity_verify(struct b
- 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	bix.sector_size = bi->sector_size;
- 
--	bio_for_each_segment(bv, bio, i) {
-+	bio_for_each_segment_all(bv, bio, i) {
- 		void *kaddr = kmap_atomic(bv->bv_page);
- 		bix.data_buf = kaddr + bv->bv_offset;
- 		bix.data_size = bv->bv_len;
+--- a/drivers/scsi/qla2xxx/qla_def.h
++++ b/drivers/scsi/qla2xxx/qla_def.h
+@@ -2980,8 +2980,7 @@ struct qla_hw_data {
+ 				IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+ 				IS_QLA82XX(ha) || IS_QLA83XX(ha))
+ #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
+-#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+-			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
++#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
+ #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
 
 
