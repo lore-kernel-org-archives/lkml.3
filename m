@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966636AbaCUA1c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:27:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37207 "EHLO
+	id S966649AbaCUA1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:27:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37216 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966001AbaCUAJN (ORCPT
+	with ESMTP id S965625AbaCUAJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
-        Jens Axboe <axboe@kernel.dk>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Christian Borntraeger <christian@borntraeger.net>
-Subject: [PATCH 3.10 75/85] s390/dasd: hold request queue sysfs lock when calling elevator_init()
-Date: Thu, 20 Mar 2014 17:10:18 -0700
-Message-Id: <20140321000609.441627130@linuxfoundation.org>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        John Stultz <john.stultz@linaro.org>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Kevin Easton <kevin@guarana.org>,
+        Josh Triplett <josh@joshtriplett.org>
+Subject: [PATCH 3.10 74/85] jiffies: Avoid undefined behavior from signed overflow
+Date: Thu, 20 Mar 2014 17:10:17 -0700
+Message-Id: <20140321000609.256780216@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,45 +35,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-commit ef0899410ff630b2e75306da49996dbbfa318165 upstream.
+commit 5a581b367b5df0531265311fc681c2abd377e5e6 upstream.
 
-"elevator: Fix a race in elevator switching and md device initialization"
-changed the semantics of elevator_init() in a way that now enforces to hold
-the corresponding request queue's sysfs_lock when calling elevator_init()
-to fix a race.
-The patch did not convert the s390 dasd device driver which is the only
-device driver which also calls elevator_init(). So add the missing locking.
+According to the C standard 3.4.3p3, overflow of a signed integer results
+in undefined behavior.  This commit therefore changes the definitions
+of time_after(), time_after_eq(), time_after64(), and time_after_eq64()
+to avoid this undefined behavior.  The trick is that the subtraction
+is done using unsigned arithmetic, which according to 6.2.5p9 cannot
+overflow because it is defined as modulo arithmetic.  This has the added
+(though admittedly quite small) benefit of shortening four lines of code
+by four characters each.
 
-Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
-Cc: Christian Borntraeger <christian@borntraeger.net>
+Note that the C standard considers the cast from unsigned to
+signed to be implementation-defined, see 6.3.1.3p3.  However, on a
+two's-complement system, an implementation that defines anything other
+than a reinterpretation of the bits is free to come to me, and I will be
+happy to act as a witness for its being committed to an insane asylum.
+(Although I have nothing against saturating arithmetic or signals in some
+cases, these things really should not be the default when compiling an
+operating-system kernel.)
+
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Kevin Easton <kevin@guarana.org>
+[ paulmck: Included time_after64() and time_after_eq64(), as suggested
+  by Eric Dumazet, also fixed commit message.]
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Ruchi Kandoi <kandoiruchi@google.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/s390/block/dasd.c |    8 ++++----
+ include/linux/jiffies.h |    8 ++++----
  1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/s390/block/dasd.c
-+++ b/drivers/s390/block/dasd.c
-@@ -2879,12 +2879,12 @@ static int dasd_alloc_queue(struct dasd_
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -101,13 +101,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after(a,b)		\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(b) - (long)(a) < 0))
++	 ((long)((b) - (a)) < 0))
+ #define time_before(a,b)	time_after(b,a)
  
- 	elevator_exit(block->request_queue->elevator);
- 	block->request_queue->elevator = NULL;
-+	mutex_lock(&block->request_queue->sysfs_lock);
- 	rc = elevator_init(block->request_queue, "deadline");
--	if (rc) {
-+	if (rc)
- 		blk_cleanup_queue(block->request_queue);
--		return rc;
--	}
--	return 0;
-+	mutex_unlock(&block->request_queue->sysfs_lock);
-+	return rc;
- }
+ #define time_after_eq(a,b)	\
+ 	(typecheck(unsigned long, a) && \
+ 	 typecheck(unsigned long, b) && \
+-	 ((long)(a) - (long)(b) >= 0))
++	 ((long)((a) - (b)) >= 0))
+ #define time_before_eq(a,b)	time_after_eq(b,a)
+ 
+ /*
+@@ -130,13 +130,13 @@ static inline u64 get_jiffies_64(void)
+ #define time_after64(a,b)	\
+ 	(typecheck(__u64, a) &&	\
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(b) - (__s64)(a) < 0))
++	 ((__s64)((b) - (a)) < 0))
+ #define time_before64(a,b)	time_after64(b,a)
+ 
+ #define time_after_eq64(a,b)	\
+ 	(typecheck(__u64, a) && \
+ 	 typecheck(__u64, b) && \
+-	 ((__s64)(a) - (__s64)(b) >= 0))
++	 ((__s64)((a) - (b)) >= 0))
+ #define time_before_eq64(a,b)	time_after_eq64(b,a)
  
  /*
 
