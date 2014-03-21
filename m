@@ -1,107 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718AbaCULW2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:22:28 -0400
-Received: from mx07-00178001.pphosted.com ([62.209.51.94]:52757 "EHLO
-	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760658AbaCULW1 (ORCPT
+	id S1760754AbaCULYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:24:42 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:34767 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760730AbaCULYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:22:27 -0400
-Message-ID: <532C206E.1020907@st.com>
-Date: Fri, 21 Mar 2014 12:20:14 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 07:24:39 -0400
+Message-ID: <532C2160.4030909@linux.vnet.ibm.com>
+Date: Fri, 21 Mar 2014 16:54:16 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
-Cc: <mark.rutland@arm.com>, <mturquette@linaro.org>,
-        <gregkh@linuxfoundation.org>, <t.figa@samsung.com>,
-        <sw0312.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
-        <kyungmin.park@samsung.com>, <robh+dt@kernel.org>,
-        <galak@codeaurora.org>, <grant.likely@linaro.org>,
-        <linux@arm.linux.org.uk>, <m.szyprowski@samsung.com>,
-        <t-kristo@ti.com>
-Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents
- and rates
-References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com> <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
-In-Reply-To: <532AE239.9000800@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+References: <cover.1395379422.git.viresh.kumar@linaro.org> <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org> <532BEE64.3090501@linux.vnet.ibm.com> <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com> <532BFB77.5060107@linux.vnet.ibm.com> <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com> <20140321110559.GB13596@arm.com>
+In-Reply-To: <20140321110559.GB13596@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.129.4.202]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-21_03:2014-03-21,2014-03-21,1970-01-01 signatures=0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032111-0260-0000-0000-000004932AD0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 03/20/2014 01:42 PM, Sylwester Nawrocki wrote:
-> Hi Maxime,
->
-> On 06/03/14 14:45, Maxime Coquelin wrote:
->> Hi Sylwester,
+On 03/21/2014 04:35 PM, Catalin Marinas wrote:
+> On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
+>> @Catalin: We have a problem here and need your expert advice. After changing
+>> CPU frequency we need to call this code:
 >>
->> 	I like the principle of your implementation, but I have two questions:
->> 	1 - How can we manage PM with this solution, as the parent/rate will be
->> set only once at probe time?
->> 	2 - How to set the parent of a parent clock (which can be shared with
->> other devices)? Same question about the parent rates.
+>> cpufreq_notify_post_transition();
+>> policy->transition_ongoing = false;
+>>
+>> And the sequence must be like this only. Is this guaranteed without any
+>> memory barriers? cpufreq_notify_post_transition() isn't touching
+>> transition_ongoing at all..
+> 
+> The above sequence doesn't say much. As rmk said, the compiler wouldn't
+> reorder the transition_ongoing write before the function call. I think
+> most architectures (not sure about Alpha) don't do speculative stores,
+> so hardware wouldn't reorder them either. However, other stores inside
+> the cpufreq_notify_post_transition() could be reordered after
+> transition_ongoing store. The same for memory accesses after the
+> transition_ongoing update, they could be reordered before.
+> 
+> So what we actually need to know is what are the other relevant memory
+> accesses that require strict ordering with transition_ongoing.
 >
-> Thanks for your feedback and apologies for late reply.
-No problem! Apologies accepted ;)
 
->
-> IIUC your first concern is about a situation when clocks need to be
-> reconfigured upon each resume from system sleep or runtime PM resume ?
+Hmm.. The thing is, _everything_ inside the post_transition() function
+should complete before writing to transition_ongoing. Because, setting the
+flag to 'false' indicates the end of the critical section, and the next
+contending task can enter the critical section.
 
-Yes. This is the case of the STi SoCs.
-When resuming from system sleep, the clocks-related registers are 
-restored at their boot state.
+So, I think we should use smp_mb() before setting transition_ongoing = false.
+That way we'll be safe.
 
-> As I mentioned in v1 of the RFC I was considering having individual
-> drivers calling explicitly the clocks set up routine. Presumably this
-> would allow to resolve the power management related issue.
- From a functional point of view, that would indeed resolve the PM 
-related issue.
-But I'm not sure that on a performance point of view, parsing the DT at 
-each driver's resume call is an efficient way.
+> What I find strange in your patch is that
+> cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
+> update but cpufreq_freq_transition_end() doesn't.
+> 
 
-> One example I'm aware the approach as in this RFC wouldn't work is
-> when a device in a SoC belongs to a power domain, which needs to be
-> first switched on before we can start setting up and the clocks'
-> configuration get lost after the power domain switch off.
-Yes, that's another case to handle.
-I don't know which platforms are in that case, but not STi SoCs for your 
-information.
+The reason is that, by the time we drop the spinlock, we would have set
+the transition_ongoing flag to true, which prevents any other task from
+entering the critical section. Hence, when we call the _end() function,
+we are 100% sure that only one task is executing it. Hence locks are not
+necessary around that second update. In fact, that very update marks the
+end of the critical section (which acts much like a spin_unlock(&lock)
+in a "regular" critical section).
 
->
-> OTOH I suspect devices for which one-time clocks setup is sufficient
-> will be quite common. And for these there would need to be a single
-> call to the setup routine in probe() I guess, since it wouldn't be
-> possible to figure out just from the DT data when the actual call
-> should be made.
->
-> For a global clocks configuration, I thought about specifying that
-> in the clocks controller node, and then to have the setup routine
-> called e.g. from of_clk_init(). I think that could work well enough,
-> together with the patch [1], adding clock dependencies handling.
-> But then the clock frequency set up function would need to be
-> modified to respect the clock parent relationships, similarly as
-> in patch series [2]. A just noticed [2] recently, after posting
-> this RFC (adding Tero at Cc).
-OK, I agree with the approach.
-There is still the PM issue remaining with these clocks, but I think 
-that is not related to your series as we already have the issue currently.
+I know the "critical section" and the synchronization used in this patch
+is a bit unconventional, but that's because the scenario itself is
+unconventional : we need to able to start the critical section in one
+task, and end it in another task! That's where all the complication
+arises :-)  It sounds weird, but in this cpufreq case, its actually valid
+and surprisingly, makes sense too! :-)
 
-Thanks,
-Maxime
+Regards,
+Srivatsa S. Bhat
 
->
-> --
-> Regards,
-> Sylwester
->
-> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
-> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
->
