@@ -1,25 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966766AbaCUAeE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:34:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37117 "EHLO
+	id S966782AbaCUAe1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:34:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37114 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965918AbaCUAI6 (ORCPT
+	with ESMTP id S965846AbaCUAI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:58 -0400
+	Thu, 20 Mar 2014 20:08:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Fetishev <artem_fetishev@epam.com>,
-        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
-        wiebittewas@gmail.com, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 54/85] fs/proc/base.c: fix GPF in /proc/$PID/map_files
-Date: Thu, 20 Mar 2014 17:09:57 -0700
-Message-Id: <20140321000606.423408907@linuxfoundation.org>
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 53/85] iscsi-target: Fix iscsit_get_tpg_from_np tpg_state bug
+Date: Thu, 20 Mar 2014 17:09:56 -0700
+Message-Id: <20140321000606.274059353@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -34,55 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
+commit a2a99cea5ec7c1e47825559f0e75a4efbcf8aee3 upstream.
 
-The expected logic of proc_map_files_get_link() is either to return 0
-and initialize 'path' or return an error and leave 'path' uninitialized.
+This patch fixes a bug in iscsit_get_tpg_from_np() where the
+tpg->tpg_state sanity check was looking for TPG_STATE_FREE,
+instead of != TPG_STATE_ACTIVE.
 
-By the time dname_to_vma_addr() returns 0 the corresponding vma may have
-already be gone.  In this case the path is not initialized but the
-return value is still 0.  This results in 'general protection fault'
-inside d_path().
+The latter is expected during a normal TPG shutdown once the
+tpg_state goes into TPG_STATE_INACTIVE in order to reject any
+new incoming login attempts.
 
-Steps to reproduce:
-
-  CONFIG_CHECKPOINT_RESTORE=y
-
-    fd = open(...);
-    while (1) {
-        mmap(fd, ...);
-        munmap(fd, ...);
-    }
-
-  ls -la /proc/$PID/map_files
-
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
-
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
-Reported-by: <wiebittewas@gmail.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/base.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/target/iscsi/iscsi_target_tpg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -1825,6 +1825,7 @@ static int proc_map_files_get_link(struc
- 	if (rc)
- 		goto out_mmput;
+--- a/drivers/target/iscsi/iscsi_target_tpg.c
++++ b/drivers/target/iscsi/iscsi_target_tpg.c
+@@ -138,7 +138,7 @@ struct iscsi_portal_group *iscsit_get_tp
+ 	list_for_each_entry(tpg, &tiqn->tiqn_tpg_list, tpg_list) {
  
-+	rc = -ENOENT;
- 	down_read(&mm->mmap_sem);
- 	vma = find_exact_vma(mm, vm_start, vm_end);
- 	if (vma && vma->vm_file) {
+ 		spin_lock(&tpg->tpg_state_lock);
+-		if (tpg->tpg_state == TPG_STATE_FREE) {
++		if (tpg->tpg_state != TPG_STATE_ACTIVE) {
+ 			spin_unlock(&tpg->tpg_state_lock);
+ 			continue;
+ 		}
 
 
