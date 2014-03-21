@@ -1,37 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760887AbaCUMrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:47:01 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:54561 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760392AbaCUMrA (ORCPT
+	id S1760908AbaCUMu4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:50:56 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:34215 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760684AbaCUMux (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:47:00 -0400
-X-Hashcash: 1:20:140321:david.woodhouse@intel.com::d7JphP95RFRyKTxo:00000000000000000000000000000000000090iK
-X-Hashcash: 1:20:140321:linux-kernel@vger.kernel.org::BgPD3+0iC+Pae29W:0000000000000000000000000000000000G0b
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: David Woodhouse <David.Woodhouse@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Comment added in 63662139e "params: Fix potential memory leak in add_sysfs_param()"
-Organization: D03
-Date: Fri, 21 Mar 2014 13:46:56 +0100
-Message-ID: <878us367nj.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 21 Mar 2014 08:50:53 -0400
+Message-ID: <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [RFC] csum experts, csum_replace2() is too expensive
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Patrick McHardy <kaber@trash.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "H.K. Jerry Chu" <hkchu@google.com>,
+        Michael Dalton <mwdalton@google.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Mar 2014 05:50:50 -0700
+In-Reply-To: <87a9cknwk4.fsf@tassilo.jf.intel.com>
+References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2014-03-20 at 18:56 -0700, Andi Kleen wrote:
+> Eric Dumazet <eric.dumazet@gmail.com> writes:
+> >
+> > I saw csum_partial() consuming 1% of cpu cycles in a GRO workload, that
+> > is insane...
+> 
+> 
+> Couldn't it just be the cache miss?
 
-I'm not at all convinced by the comment added in commit
-63662139e519ce. If krealloc(attrs, ...) fails, nothing seems to free attrs;
-the krealloc() call certainly doesn't do it. If attrs was NULL to begin
-with, no harm done, but otherwise it is "attrs = mk->mp->grp.attrs;",
-and mk->mp is NULL'ed on the error path fail_free_new: (and the value of
-mk->mp is anyway invalidated by the krealloc() above).
+Or the fact that we mix 16 bit stores and 32bit loads ?
 
-Am I missing something?
+iph->tot_len = newlen;
+iph->check = 0;
+iph->check = ip_fast_csum(iph, 5);
 
-Rasmus
+-> following perf annotation :
+
+         :      ffffffff81538e70 <inet_gro_complete>:
+    0.49 :      ffffffff81538e70:       callq  ffffffff81578c80 <__entry_text_start>
+    0.49 :      ffffffff81538e75:       push   %rbp
+    1.46 :      ffffffff81538e76:       movzwl 0x60(%rdi),%edx
+    0.00 :      ffffffff81538e7a:       movslq %esi,%rax
+    0.00 :      ffffffff81538e7d:       add    0xc8(%rdi),%rax
+    1.46 :      ffffffff81538e84:       mov    %rsp,%rbp
+    0.00 :      ffffffff81538e87:       sub    %esi,%edx
+    0.00 :      ffffffff81538e89:       rol    $0x8,%dx
+    0.00 :      ffffffff81538e8d:       movzbl 0x9(%rax),%ecx
+    0.98 :      ffffffff81538e91:       mov    %dx,0x2(%rax)     iph->tot_len = newlen;
+    0.49 :      ffffffff81538e95:       xor    %edx,%edx
+    0.00 :      ffffffff81538e97:       mov    %dx,0xa(%rax)     iph->check = 0;
+    0.00 :      ffffffff81538e9b:       mov    (%rax),%edx       // 32bit load  -> stall 
+   86.34 :      ffffffff81538e9d:       add    0x4(%rax),%edx
+    0.49 :      ffffffff81538ea0:       adc    0x8(%rax),%edx
+    0.49 :      ffffffff81538ea3:       adc    0xc(%rax),%edx
+    0.98 :      ffffffff81538ea6:       adc    0x10(%rax),%edx
+    0.49 :      ffffffff81538ea9:       adc    $0x0,%edx
+    0.00 :      ffffffff81538eac:       mov    %edx,%r8d
+    0.49 :      ffffffff81538eaf:       xor    %dx,%dx
+    0.00 :      ffffffff81538eb2:       shl    $0x10,%r8d
+    0.98 :      ffffffff81538eb6:       add    %r8d,%edx
+    0.98 :      ffffffff81538eb9:       adc    $0xffff,%edx
+    0.98 :      ffffffff81538ebf:       not    %edx
+    0.00 :      ffffffff81538ec1:       shr    $0x10,%edx
+    0.49 :      ffffffff81538ec4:       mov    %dx,0xa(%rax)
+    0.00 :      ffffffff81538ec8:       movslq %ecx,%rax
+    0.00 :      ffffffff81538ecb:       mov    -0x7e734f40(,%rax,8),%rax
+    0.00 :      ffffffff81538ed3:       test   %rax,%rax
+    0.00 :      ffffffff81538ed6:       je     ffffffff81538ef0 <inet_gro_complete+0x80>
+
+BTW, any idea why ip_fast_csum() on x86 contains a "memory" constraint ?
+It looks like a barrier() would be more appropriate.
+
+Following patch seems to help, but the stall seems to be the fact that
+we write on iph->check (16bits) before doing the checksum using 32bit
+loads.
+
+Note that we could share same ip_fast_csum() implementation between x86
+32/64 bits...
+
+diff --git a/arch/x86/include/asm/checksum_64.h b/arch/x86/include/asm/checksum_64.h
+index e6fd8a026c7b..a81cc3a5facc 100644
+--- a/arch/x86/include/asm/checksum_64.h
++++ b/arch/x86/include/asm/checksum_64.h
+@@ -46,6 +46,24 @@ static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
+ {
+ 	unsigned int sum;
+ 
++	/*
++	 * Callers might clear iph->check before calling us, make sure
++	 * compiler wont mess things...
++	 */
++	barrier();
++
++	if (__builtin_constant_p(ihl) && ihl == 5) {
++		asm("  movl (%[iph]), %[sum]\n"
++		    "  addl 4(%[iph]), %[sum]\n"
++		    "  adcl 8(%[iph]), %[sum]\n"
++		    "  adcl 12(%[iph]), %[sum]\n"
++		    "  adcl 16(%[iph]), %[sum]\n"
++		    "  adcl $0, %[sum]\n"
++		    : [sum] "=r" (sum)
++		    : [iph] "r" (iph)
++		    );
++		return csum_fold(sum);
++	}
+ 	asm("  movl (%1), %0\n"
+ 	    "  subl $4, %2\n"
+ 	    "  jbe 2f\n"
+@@ -68,7 +86,7 @@ static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
+ 	   will assume they contain their original values. */
+ 	    : "=r" (sum), "=r" (iph), "=r" (ihl)
+ 	    : "1" (iph), "2" (ihl)
+-	    : "memory");
++	    );
+ 	return (__force __sum16)sum;
+ }
+ 
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index 8c54870db792..90aa562dfbf5 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -1434,8 +1434,9 @@ static int inet_gro_complete(struct sk_buff *skb, int nhoff)
+ 	int proto = iph->protocol;
+ 	int err = -ENOSYS;
+ 
+-	csum_replace2(&iph->check, iph->tot_len, newlen);
+ 	iph->tot_len = newlen;
++	iph->check = 0;
++	iph->check = ip_fast_csum((u8 *)iph, 5);
+ 
+ 	rcu_read_lock();
+ 	ops = rcu_dereference(inet_offloads[proto]);
+
+
