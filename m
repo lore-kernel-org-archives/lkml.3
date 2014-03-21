@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760402AbaCUBGr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:06:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36755 "EHLO
+	id S1760535AbaCUBHG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:07:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965271AbaCUAEU (ORCPT
+	with ESMTP id S965255AbaCUAEU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:04:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 091/149] iscsi/iser-target: Use list_del_init for ->i_conn_node
-Date: Thu, 20 Mar 2014 17:04:14 -0700
-Message-Id: <20140321000440.110053016@linuxfoundation.org>
+        Adam Williamson <awilliam@redhat.com>,
+        Aubrey Li <aubrey.li@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 090/149] ACPI / sleep: Add extra checks for HW Reduced ACPI mode sleep states
+Date: Thu, 20 Mar 2014 17:04:13 -0700
+Message-Id: <20140321000440.080535636@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,159 +30,110 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit 5159d763f60af693a3fcec45dce2021f66e528a4 upstream.
+commit a4e90bed511220ff601d064c9e5d583e91308f65 upstream.
 
-There are a handful of uses of list_empty() for cmd->i_conn_node
-within iser-target code that expect to return false once a cmd
-has been removed from the per connect list.
+If the HW Reduced ACPI mode bit is set in the FADT, ACPICA uses
+the optional sleep control and sleep status registers for making
+the system enter sleep states (including S5), so it is not possible
+to use system sleep states or power it off using ACPI if the HW
+Reduced ACPI mode bit is set and those registers are not available.
 
-This patch changes all uses of list_del -> list_del_init in order
-to ensure that list_empty() returns false as expected.
+For this reason, add a new function, acpi_sleep_state_supported(),
+checking if the HW Reduced ACPI mode bit is set and whether or not
+system sleep states are usable in that case in addition to checking
+the return value of acpi_get_sleep_type_data() and make the ACPI
+sleep setup routines use that function to check the availability of
+system sleep states.
 
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Among other things, this prevents the kernel from attempting to
+use ACPI for powering off HW Reduced ACPI systems without the sleep
+control and sleep status registers, because ACPI power off doesn't
+have a chance to work on them.  That allows alternative power off
+mechanisms that may actually work to be used on those systems.  The
+affected machines include Dell Venue 8 Pro, Asus T100TA, Haswell
+Desktop SDP and Ivy Bridge EP Demo depot.
+
+References: https://bugzilla.kernel.org/show_bug.cgi?id=70931
+Reported-by: Adam Williamson <awilliam@redhat.com>
+Tested-by: Aubrey Li <aubrey.li@linux.intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c  |    6 +++---
- drivers/target/iscsi/iscsi_target.c      |    6 +++---
- drivers/target/iscsi/iscsi_target_erl2.c |   16 ++++++++--------
- 3 files changed, 14 insertions(+), 14 deletions(-)
+ drivers/acpi/sleep.c |   32 +++++++++++++++-----------------
+ 1 file changed, 15 insertions(+), 17 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1447,7 +1447,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_SCSI_CMD:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		if (cmd->data_direction == DMA_TO_DEVICE)
-@@ -1459,7 +1459,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_SCSI_TMFUNC:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		transport_generic_free_cmd(&cmd->se_cmd, 0);
-@@ -1469,7 +1469,7 @@ isert_put_cmd(struct isert_cmd *isert_cm
- 	case ISCSI_OP_TEXT:
- 		spin_lock_bh(&conn->cmd_lock);
- 		if (!list_empty(&cmd->i_conn_node))
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		/*
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -785,7 +785,7 @@ static void iscsit_ack_from_expstatsn(st
- 	spin_unlock_bh(&conn->cmd_lock);
- 
- 	list_for_each_entry_safe(cmd, cmd_p, &ack_list, i_conn_node) {
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		iscsit_free_cmd(cmd, false);
- 	}
- }
-@@ -3708,7 +3708,7 @@ iscsit_immediate_queue(struct iscsi_conn
- 		break;
- 	case ISTATE_REMOVE:
- 		spin_lock_bh(&conn->cmd_lock);
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		iscsit_free_cmd(cmd, false);
-@@ -4151,7 +4151,7 @@ static void iscsit_release_commands_from
- 	spin_lock_bh(&conn->cmd_lock);
- 	list_for_each_entry_safe(cmd, cmd_tmp, &conn->conn_cmd_list, i_conn_node) {
- 
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
- 
- 		iscsit_increment_maxcmdsn(cmd, sess);
---- a/drivers/target/iscsi/iscsi_target_erl2.c
-+++ b/drivers/target/iscsi/iscsi_target_erl2.c
-@@ -138,7 +138,7 @@ void iscsit_free_connection_recovery_ent
- 		list_for_each_entry_safe(cmd, cmd_tmp,
- 				&cr->conn_recovery_cmd_list, i_conn_node) {
- 
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			cmd->conn = NULL;
- 			spin_unlock(&cr->conn_recovery_cmd_lock);
- 			iscsit_free_cmd(cmd, true);
-@@ -160,7 +160,7 @@ void iscsit_free_connection_recovery_ent
- 		list_for_each_entry_safe(cmd, cmd_tmp,
- 				&cr->conn_recovery_cmd_list, i_conn_node) {
- 
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			cmd->conn = NULL;
- 			spin_unlock(&cr->conn_recovery_cmd_lock);
- 			iscsit_free_cmd(cmd, true);
-@@ -216,7 +216,7 @@ int iscsit_remove_cmd_from_connection_re
- 	}
- 	cr = cmd->cr;
- 
--	list_del(&cmd->i_conn_node);
-+	list_del_init(&cmd->i_conn_node);
- 	return --cr->cmd_count;
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -75,6 +75,17 @@ static int acpi_sleep_prepare(u32 acpi_s
+ 	return 0;
  }
  
-@@ -297,7 +297,7 @@ int iscsit_discard_unacknowledged_ooo_cm
- 		if (!(cmd->cmd_flags & ICF_OOO_CMDSN))
- 			continue;
++static bool acpi_sleep_state_supported(u8 sleep_state)
++{
++	acpi_status status;
++	u8 type_a, type_b;
++
++	status = acpi_get_sleep_type_data(sleep_state, &type_a, &type_b);
++	return ACPI_SUCCESS(status) && (!acpi_gbl_reduced_hardware
++		|| (acpi_gbl_FADT.sleep_control.address
++			&& acpi_gbl_FADT.sleep_status.address));
++}
++
+ #ifdef CONFIG_ACPI_SLEEP
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
  
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
+@@ -608,15 +619,9 @@ static void acpi_sleep_suspend_setup(voi
+ {
+ 	int i;
  
- 		spin_unlock_bh(&conn->cmd_lock);
- 		iscsit_free_cmd(cmd, true);
-@@ -335,7 +335,7 @@ int iscsit_prepare_cmds_for_realligance(
- 	/*
- 	 * Only perform connection recovery on ISCSI_OP_SCSI_CMD or
- 	 * ISCSI_OP_NOOP_OUT opcodes.  For all other opcodes call
--	 * list_del(&cmd->i_conn_node); to release the command to the
-+	 * list_del_init(&cmd->i_conn_node); to release the command to the
- 	 * session pool and remove it from the connection's list.
- 	 *
- 	 * Also stop the DataOUT timer, which will be restarted after
-@@ -351,7 +351,7 @@ int iscsit_prepare_cmds_for_realligance(
- 				" CID: %hu\n", cmd->iscsi_opcode,
- 				cmd->init_task_tag, cmd->cmd_sn, conn->cid);
+-	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++) {
+-		acpi_status status;
+-		u8 type_a, type_b;
+-
+-		status = acpi_get_sleep_type_data(i, &type_a, &type_b);
+-		if (ACPI_SUCCESS(status)) {
++	for (i = ACPI_STATE_S1; i < ACPI_STATE_S4; i++)
++		if (acpi_sleep_state_supported(i))
+ 			sleep_states[i] = 1;
+-		}
+-	}
  
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			spin_unlock_bh(&conn->cmd_lock);
- 			iscsit_free_cmd(cmd, true);
- 			spin_lock_bh(&conn->cmd_lock);
-@@ -371,7 +371,7 @@ int iscsit_prepare_cmds_for_realligance(
- 		 */
- 		if (!(cmd->cmd_flags & ICF_OOO_CMDSN) && !cmd->immediate_cmd &&
- 		     iscsi_sna_gte(cmd->cmd_sn, conn->sess->exp_cmd_sn)) {
--			list_del(&cmd->i_conn_node);
-+			list_del_init(&cmd->i_conn_node);
- 			spin_unlock_bh(&conn->cmd_lock);
- 			iscsit_free_cmd(cmd, true);
- 			spin_lock_bh(&conn->cmd_lock);
-@@ -393,7 +393,7 @@ int iscsit_prepare_cmds_for_realligance(
+ 	suspend_set_ops(old_suspend_ordering ?
+ 		&acpi_suspend_ops_old : &acpi_suspend_ops);
+@@ -747,11 +752,7 @@ static const struct platform_hibernation
  
- 		cmd->sess = conn->sess;
+ static void acpi_sleep_hibernate_setup(void)
+ {
+-	acpi_status status;
+-	u8 type_a, type_b;
+-
+-	status = acpi_get_sleep_type_data(ACPI_STATE_S4, &type_a, &type_b);
+-	if (ACPI_FAILURE(status))
++	if (!acpi_sleep_state_supported(ACPI_STATE_S4))
+ 		return;
  
--		list_del(&cmd->i_conn_node);
-+		list_del_init(&cmd->i_conn_node);
- 		spin_unlock_bh(&conn->cmd_lock);
+ 	hibernation_set_ops(old_suspend_ordering ?
+@@ -800,8 +801,6 @@ static void acpi_power_off(void)
  
- 		iscsit_free_all_datain_reqs(cmd);
+ int __init acpi_sleep_init(void)
+ {
+-	acpi_status status;
+-	u8 type_a, type_b;
+ 	char supported[ACPI_S_STATE_COUNT * 3 + 1];
+ 	char *pos = supported;
+ 	int i;
+@@ -816,8 +815,7 @@ int __init acpi_sleep_init(void)
+ 	acpi_sleep_suspend_setup();
+ 	acpi_sleep_hibernate_setup();
+ 
+-	status = acpi_get_sleep_type_data(ACPI_STATE_S5, &type_a, &type_b);
+-	if (ACPI_SUCCESS(status)) {
++	if (acpi_sleep_state_supported(ACPI_STATE_S5)) {
+ 		sleep_states[ACPI_STATE_S5] = 1;
+ 		pm_power_off_prepare = acpi_power_off_prepare;
+ 		pm_power_off = acpi_power_off;
 
 
