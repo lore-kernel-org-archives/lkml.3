@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966544AbaCUAXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:23:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37296 "EHLO
+	id S966055AbaCUAJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:09:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37260 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965778AbaCUAJZ (ORCPT
+	with ESMTP id S965778AbaCUAJT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:25 -0400
+	Thu, 20 Mar 2014 20:09:19 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Magnus Damm <damm@opensource.se>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Wang Nan <wangnan0@huawei.com>
-Subject: [PATCH 3.10 81/85] ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
-Date: Thu, 20 Mar 2014 17:10:24 -0700
-Message-Id: <20140321000610.341404134@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 65/85] net: unix socket code abuses csum_partial
+Date: Thu, 20 Mar 2014 17:10:08 -0700
+Message-Id: <20140321000607.966742899@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,67 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Magnus Damm <damm@opensource.se>
+From: Anton Blanchard <anton@samba.org>
 
-commit 6d7d5da7d75c6df676c8b72d32b02ff024438f0c upstream.
+commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
 
-Use CONFIG_ARCH_PHYS_ADDR_T_64BIT to determine
-if ignoring or truncating of memory banks is
-neccessary. This may be needed in the case of
-64-bit memory bank addresses but when phys_addr_t
-is kept 32-bit.
+The unix socket code is using the result of csum_partial to
+hash into a lookup table:
 
-Signed-off-by: Magnus Damm <damm@opensource.se>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Cc: Wang Nan <wangnan0@huawei.com>
+	unix_hash_fold(csum_partial(sunaddr, len, 0));
+
+csum_partial is only guaranteed to produce something that can be
+folded into a checksum, as its prototype explains:
+
+ * returns a 32-bit number suitable for feeding into itself
+ * or csum_tcpudp_magic
+
+The 32bit value should not be used directly.
+
+Depending on the alignment, the ppc64 csum_partial will return
+different 32bit partial checksums that will fold into the same
+16bit checksum.
+
+This difference causes the following testcase (courtesy of
+Gustavo) to sometimes fail:
+
+#include <sys/socket.h>
+#include <stdio.h>
+
+int main()
+{
+	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	int i = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
+
+	struct sockaddr addr;
+	addr.sa_family = AF_LOCAL;
+	bind(fd, &addr, 2);
+
+	listen(fd, 128);
+
+	struct sockaddr_storage ss;
+	socklen_t sslen = (socklen_t)sizeof(ss);
+	getsockname(fd, (struct sockaddr*)&ss, &sslen);
+
+	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
+		perror(NULL);
+		return 1;
+	}
+	printf("OK\n");
+	return 0;
+}
+
+As suggested by davem, fix this by using csum_fold to fold the
+partial 32bit checksum into a 16bit checksum before using it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/kernel/setup.c |   16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ net/unix/af_unix.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/arch/arm/kernel/setup.c
-+++ b/arch/arm/kernel/setup.c
-@@ -530,6 +530,7 @@ void __init dump_machine_table(void)
- int __init arm_add_memory(phys_addr_t start, phys_addr_t size)
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -160,9 +160,8 @@ static inline void unix_set_secdata(stru
+ 
+ static inline unsigned int unix_hash_fold(__wsum n)
  {
- 	struct membank *bank = &meminfo.bank[meminfo.nr_banks];
-+	u64 aligned_start;
+-	unsigned int hash = (__force unsigned int)n;
++	unsigned int hash = (__force unsigned int)csum_fold(n);
  
- 	if (meminfo.nr_banks >= NR_BANKS) {
- 		printk(KERN_CRIT "NR_BANKS too low, "
-@@ -542,10 +543,16 @@ int __init arm_add_memory(phys_addr_t st
- 	 * Size is appropriately rounded down, start is rounded up.
- 	 */
- 	size -= start & ~PAGE_MASK;
--	bank->start = PAGE_ALIGN(start);
-+	aligned_start = PAGE_ALIGN(start);
- 
--#ifndef CONFIG_ARM_LPAE
--	if (bank->start + size < bank->start) {
-+#ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
-+	if (aligned_start > ULONG_MAX) {
-+		printk(KERN_CRIT "Ignoring memory at 0x%08llx outside "
-+		       "32-bit physical address space\n", (long long)start);
-+		return -EINVAL;
-+	}
-+
-+	if (aligned_start + size > ULONG_MAX) {
- 		printk(KERN_CRIT "Truncating memory at 0x%08llx to fit in "
- 			"32-bit physical address space\n", (long long)start);
- 		/*
-@@ -553,10 +560,11 @@ int __init arm_add_memory(phys_addr_t st
- 		 * 32 bits, we use ULONG_MAX as the upper limit rather than 4GB.
- 		 * This means we lose a page after masking.
- 		 */
--		size = ULONG_MAX - bank->start;
-+		size = ULONG_MAX - aligned_start;
- 	}
- #endif
- 
-+	bank->start = aligned_start;
- 	bank->size = size & ~(phys_addr_t)(PAGE_SIZE - 1);
- 
- 	/*
+-	hash ^= hash>>16;
+ 	hash ^= hash>>8;
+ 	return hash&(UNIX_HASH_SIZE-1);
+ }
 
 
