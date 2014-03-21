@@ -1,196 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964998AbaCUOQx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:16:53 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:50387 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751681AbaCUOQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:16:51 -0400
-Date: Fri, 21 Mar 2014 09:16:49 -0500
-From: Dimitri Sivanich <sivanich@sgi.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH] x86/UV: Set n_lshift based on GAM_GR_CONFIG MMR for UV3
-Message-ID: <20140321141649.GA14917@sgi.com>
-References: <20140320191354.GA30582@sgi.com>
- <20140321075416.GA23556@gmail.com>
+	id S1760015AbaCUOSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:18:01 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:34826 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaCUOR7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 10:17:59 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140321075416.GA23556@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <532C46BD.1000208@hurleysoftware.com>
+References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
+ <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com> <532C46BD.1000208@hurleysoftware.com>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Fri, 21 Mar 2014 15:17:28 +0100
+Message-ID: <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
+Subject: Re: man termios
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Ivan <athlon_@mail.ru>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 08:54:16AM +0100, Ingo Molnar wrote:
-> Please use the customary changelog style we use in the kernel:
-> 
->   " Current code does (A), this has a problem when (B).
->     We can improve this doing (C), because (D)."
-> 
-> (Of if it's a cleanup only with no functional effects then please 
-> state it so in the title and changelog.)
+On Fri, Mar 21, 2014 at 3:03 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+> On 03/21/2014 09:15 AM, Michael Kerrisk (man-pages) wrote:
+>>
+>> On 03/21/2014 12:21 PM, Peter Hurley wrote:
+>>>
+>>> On 03/21/2014 06:45 AM, Michael Kerrisk (man-pages) wrote:
 >
- 
-The value of n_lshift for UV is currently set based on the socket m_val.
+>
+>>>>> Finally, if the 'count' parameter is less than MIN, read() may return
+>>>>> before
+>>>>> MIN bytes have been received, if 'count' bytes have been received.
+>>>>
+>>>>
+>>>> Yes. But it's not clear to me here: do you mean that something in the
+>>>> man page (or in TLPI) needs fixing?
+>>>
+>>>
+>>> Well, what I mean here is that read() may also _not_ return until MIN
+>>> bytes have
+>>> been received, even if 'count' bytes have been received.
+>>
+>>
+>> Ahh -- I see what you mean. And, it looks like there is a point here where
+>> Linux
+>> differs from POSIX and (at least) Solaris. See the current man-page text
+>> below,
+>> in particular the MIN>0, TIME>0 case. I've also attached a simple test
+>> program
+>> that I used, below.
+>>
+>>         In noncanonical mode input is available immediately (without  the
+>>         user  having  to  type a line-delimiter character), no input pro‐
+>>         cessing is performed, and line editing is disabled.  The settings
+>>         of  MIN (c_cc[VMIN]) and TIME (c_cc[VTIME]) determine the circum‐
+>>         stances in which a read(2) completes;  there  are  four  distinct
+>>         cases:
+>>
+>>         MIN == 0; TIME == 0:
+>>                If  data  is  available, read(2) returns immediately, with
+>>                the lesser of the number of bytes available, or the number
+>>                of  bytes  requested.   If  no  data is available, read(2)
+>>                returns 0.
+>>
+>>         MIN > 0; TIME == 0:
+>>                read(2) blocks until MIN bytes are available, and  returns
+>>                up to the number of bytes requested.
+>>
+>>         MIN == 0; TIME > 0:
+>>                TIME  specifies  the limit for a timer in tenths of a sec‐
+>>                ond.   The  timer  is  started  when  read(2)  is  called.
+>>                read(2)  returns  either when at least one byte of data is
+>>                available, or  when  the  timer  expires.   If  the  timer
+>>                expires  without  any  input  becoming  available, read(2)
+>>                returns 0.  If data is already available at  the  time  of
+>>                the call to read() the call behaves as though the data was
+>>                received immediately after the call.
+>>
+>>         MIN > 0; TIME > 0:
+>>                TIME specifies the limit for a timer in tenths of  a  sec‐
+>>                ond.  Once an initial byte of input becomes available, the
+>>                timer is restarted after each further  byte  is  received.
+>>                read(2)  returns  when  any of the following conditions is
+>>                met:
+>>
+>>                *  MIN bytes have been received.
+>>
+>>                *  The interbyte timer expires.
+>>
+>>                *  The number of  bytes  requested  by  read(2)  has  been
+>>                   received.   (POSIX  does  not  specify this termination
+>>                   condition, and on  some  other  implementations  read()
+>>                   does not return in this case.)
+>>
+>>                Because  the  timer is started only after the initial byte
+>>                becomes available, at least one byte  will  be  read.   If
+>>                data  is  already  available  at  the  time of the call to
+>>                read() the call behaves as though the  data  was  received
+>>                immediately after the call.
+>>
+>>         POSIX does not specify whether the setting of the O_NONBLOCK file
+>>         status flag takes precedence over the MIN and TIME settings.   If
+>>         O_NONBLOCK is set, a read() in noncanonical mode may return imme‐
+>>         diately, regardless of the setting of MIN or TIME.   Furthermore,
+>>         if  no  data is available, POSIX permits a read() in noncanonical
+>>         mode to return either 0, or -1 with errno set to EAGAIN.
+>
+>
+> All looks good.
 
-For UV3, set the n_lshift value based on the GAM_GR_CONFIG MMR.  This will
-allow bios to control the n_lshift value independent of the socket m_val.
-Then n_lshift can be assigned a fixed value across a multi-partition system,
-allowing for a fixed common global physical address format that is independent
-of socket m_val.
+Peter, do you agree that Linux appears to differ from POSIX here? (Not
+sure if you tried my test program to verify...)
 
-Cleanup unneeded macros.
+Cheers,
 
-Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
----
- arch/x86/include/asm/uv/uv_hub.h   |   12 ---------
- arch/x86/include/asm/uv/uv_mmrs.h  |   42 ++++++++++++++++++++++++++++++++-
- arch/x86/kernel/apic/x2apic_uv_x.c |   15 +++++++++--
- 3 files changed, 54 insertions(+), 15 deletions(-)
+Michael
 
-Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
-===================================================================
---- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
-+++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV APIC functions (note: not an Intel compatible APIC)
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- #include <linux/cpumask.h>
- #include <linux/hardirq.h>
-@@ -843,12 +843,14 @@ void uv_cpu_init(void)
- void __init uv_system_init(void)
- {
- 	union uvh_rh_gam_config_mmr_u  m_n_config;
-+	union uv3h_gr0_gam_gr_config_u m_gr_config;
- 	union uvh_node_id_u node_id;
- 	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
- 	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
- 	int gnode_extra, min_pnode = 999999, max_pnode = -1;
- 	unsigned long mmr_base, present, paddr;
- 	unsigned short pnode_mask;
-+	unsigned char n_lshift;
- 	char *hub = (is_uv1_hub() ? "UV1" :
- 		    (is_uv2_hub() ? "UV2" :
- 				    "UV3"));
-@@ -859,6 +861,14 @@ void __init uv_system_init(void)
- 	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
- 	m_val = m_n_config.s.m_skt;
- 	n_val = m_n_config.s.n_skt;
-+	if (is_uv1_hub())
-+		n_lshift = m_val;
-+	else if (is_uv2_hub())
-+		n_lshift = m_val == 40 ? 40 : 39;
-+	else {
-+		m_gr_config.v = uv_read_local_mmr(UV3H_GR0_GAM_GR_CONFIG);
-+		n_lshift = m_gr_config.s3.m_skt;
-+	}
- 	pnode_mask = (1 << n_val) - 1;
- 	mmr_base =
- 	    uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR) &
-@@ -935,8 +945,7 @@ void __init uv_system_init(void)
- 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
- 
- 		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
--		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
--				(m_val == 40 ? 40 : 39) : m_val;
-+		uv_cpu_hub_info(cpu)->n_lshift = n_lshift;
- 
- 		pnode = uv_apicid_to_pnode(apicid);
- 		blade = boot_pnode_to_blade(pnode);
-Index: linux/arch/x86/include/asm/uv/uv_mmrs.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_mmrs.h
-+++ linux/arch/x86/include/asm/uv/uv_mmrs.h
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV MMR definitions
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_MMRS_H
-@@ -2803,6 +2803,46 @@ union uv1h_lb_target_physical_apic_id_ma
- };
- 
- /* ========================================================================= */
-+/*                          UV3H_GR0_GAM_GR_CONFIG                           */
-+/* ========================================================================= */
-+#define UV3H_GR0_GAM_GR_CONFIG				0xc00028UL
-+
-+#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_SHFT		0
-+#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_SHFT		10
-+#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
-+#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
-+
-+union uv3h_gr0_gam_gr_config_u {
-+	unsigned long	v;
-+	struct uv3h_gr0_gam_gr_config_s {
-+		unsigned long	m_skt:6;			/* RW */
-+		unsigned long	undef_6_9:4;			/* Undefined */
-+		unsigned long	subspace:1;			/* RW */
-+		unsigned long	reserved:53;
-+	} s3;
-+};
-+
-+/* ========================================================================= */
-+/*                          UV3H_GR1_GAM_GR_CONFIG                           */
-+/* ========================================================================= */
-+#define UV3H_GR1_GAM_GR_CONFIG				0x1000028UL
-+
-+#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_SHFT		0
-+#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_SHFT		10
-+#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
-+#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
-+
-+union uv3h_gr1_gam_gr_config_u {
-+	unsigned long	v;
-+	struct uv3h_gr1_gam_gr_config_s {
-+		unsigned long	m_skt:6;			/* RW */
-+		unsigned long	undef_6_9:4;			/* Undefined */
-+		unsigned long	subspace:1;			/* RW */
-+		unsigned long	reserved:53;
-+	} s3;
-+};
-+
-+/* ========================================================================= */
- /*                   UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR                   */
- /* ========================================================================= */
- #define UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR		0x1603000UL
-Index: linux/arch/x86/include/asm/uv/uv_hub.h
-===================================================================
---- linux.orig/arch/x86/include/asm/uv/uv_hub.h
-+++ linux/arch/x86/include/asm/uv/uv_hub.h
-@@ -5,7 +5,7 @@
-  *
-  * SGI UV architectural definitions
-  *
-- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
-+ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
-  */
- 
- #ifndef _ASM_X86_UV_UV_HUB_H
-@@ -204,16 +204,6 @@ static inline int is_uvx_hub(void)
- 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
- }
- 
--static inline int is_uv2_1_hub(void)
--{
--	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
--}
--
--static inline int is_uv2_2_hub(void)
--{
--	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
--}
--
- union uvh_apicid {
-     unsigned long       v;
-     struct uvh_apicid_s {
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
