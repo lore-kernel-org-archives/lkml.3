@@ -1,79 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760265AbaCUOjT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:39:19 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:51821 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594AbaCUOjP (ORCPT
+	id S1760353AbaCUOkI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:40:08 -0400
+Received: from smtp4out.l-3com.com ([128.170.207.112]:61720 "EHLO
+	smtp4out.l-3com.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687AbaCUOkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:39:15 -0400
-Date: Fri, 21 Mar 2014 09:36:04 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com, broonie@kernel.org
-Subject: Re: [PATCH] regulator: Add new driver for ST's PWM controlled
- voltage regulators
-Message-ID: <20140321143604.GY18529@joshc.qualcomm.com>
-References: <1395397296-8196-1-git-send-email-lee.jones@linaro.org>
+	Fri, 21 Mar 2014 10:40:06 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 10:40:05 EDT
+X-filenames: 
+X-filesizes: None
+X-filetypes: 
+X-IronPort-AV: E=Sophos;i="4.97,704,1389744000"; 
+   d="scan'208";a="218388464"
+X-IronPort-AV: E=Sophos;i="4.97,704,1389765600"; 
+   d="scan'208";a="5331188"
+From: <jimmie.davis@l-3com.com>
+To: <umgwanakikbuti@gmail.com>
+CC: <artem_fetishev@epam.com>, <peterz@infradead.org>,
+        <kosaki.motohiro@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>
+Subject: RE: Bug 71331 - mlock yields processor to lower priority process
+Thread-Topic: Bug 71331 - mlock yields processor to lower priority process
+Thread-Index: AQHPRNwZPC5PRgt+P0GtAN8yDFKRX5rrmJkA///XPHuAAGlMAP//uUn5
+Date: Fri, 21 Mar 2014 14:34:19 +0000
+Message-ID: <FFF95760268D324AB6DD9426E83C8DF70B2E5925@ARLEXCHMBX01.lst.link.l-3com.com>
+References: <20140321200248.GB6264@owamsq.epam.com>
+	 ,<1395393822.6030.59.camel@marge.simpson.net>
+	 <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>,<1395407680.6030.81.camel@marge.simpson.net>
+In-Reply-To: <1395407680.6030.81.camel@marge.simpson.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [130.210.49.246]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395397296-8196-1-git-send-email-lee.jones@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 10:21:36AM +0000, Lee Jones wrote:
-> +static int st_pwm_regulator_set_voltage_sel(struct regulator_dev *dev,
-> +					    unsigned selector)
-> +{
-> +	struct st_pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
-> +	int dutycycle;
-> +	int ret;
-> +
-> +	if (selector >= dev->desc->n_voltages)
-> +		return -EINVAL;
 
-If this case is ever hit, I would argue it's a bug in the regulator
-core.
+________________________________________
+From: Mike Galbraith [umgwanakikbuti@gmail.com]
+Sent: Friday, March 21, 2014 8:14 AM
+To: Davis, Bud @ SSG - Link
+Cc: artem_fetishev@epam.com; peterz@infradead.org; kosaki.motohiro@jp.fujitsu.com; linux-kernel@vger.kernel.org
+Subject: RE: Bug 71331 - mlock yields processor to lower priority process
 
-> +static struct st_pwm_voltages b2105_duty_cycle_table[] = {
+On Fri, 2014-03-21 at 12:18 +0000, jimmie.davis@l-3com.com wrote:
 
-const?
+> As the submitter of the bug, let me give you my perspective.
+> SCHED_FIFO means run my task until it blocks or a higher priority task
+> pre-empts it.  Period.
 
-> +	{ .uV = 1114000, .dutycycle = 0,  },
-> +	{ .uV = 1095000, .dutycycle = 10, },
-> +	{ .uV = 1076000, .dutycycle = 20, },
-> +	{ .uV = 1056000, .dutycycle = 30, },
-> +	{ .uV = 1036000, .dutycycle = 40, },
-> +	{ .uV = 1016000, .dutycycle = 50, },
-> +	/* WARNING: Values above 50% duty-cycle cause boot failures. */
-> +};
-> +
-> +static const struct regulator_desc b2105_desc = {
-> +	.name		= "b2105-pwm-regulator",
-> +	.ops		= &st_pwm_regulator_voltage_ops,
-> +	.type		= REGULATOR_VOLTAGE,
-> +	.owner		= THIS_MODULE,
-> +	.n_voltages	= ARRAY_SIZE(b2105_duty_cycle_table),
-> +	.supply_name    = "pwm",
-> +};
-> +
-> +static const struct st_pwm_regulator_pdata b2105_info = {
-> +	.desc		  = &b2105_desc,
-> +	.duty_cycle_table = b2105_duty_cycle_table,
-> +};
-> +
-> +static struct of_device_id st_pwm_of_match[] = {
+It blocked.
+>
+> mlock() doesn't block. check the man page.
+>
+I don't see that specified.
 
-const?
+(or how it could be, but what do I know, IANIPL)
 
-Other than that:
+> Any other way and you are not able to use priority based scheduling.
 
-Reviewed-by: Josh Cartwright <joshc@codeaurora.org>
+Sure you can, allocate and lock down resources before entering critical
+sections.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+If you think donning a SCHED_FIFO super-suit should make your task
+unstoppable, you're gonna be very disappointed.  Fact is if your
+Juggernaut bumps ever so gently into a contended sleeping variety lock
+(and in the rt kernel that means nearly every lock), it will block.
+
+-Mike
+
+------------------------------------------------------------------------------------------------
+Mike,
+
+There are several problem domains where you protect critical sections by assigning multiple
+threads to a single CPU and use priorities and SCHED_FIFO to ensure data integrity.
+
+In this kind of design you don't make many syscalls.  The ones you do make, have to be clearly understood
+if they block.   
+
+So, yes, I expect that a SCHED_FIFO task, that uses a subset of syscalls known to be non-blocking, will not block.  
+
+If it is not 'unstoppable', then there is a defect in the OS.
+
+In the past, a call to mlock() was known to be OK.  It would not block.  It might take a while, but it would run to completion.  It does not do that any more.
+
+If mlock() is now a blocking call, then fine.  It only needs to be called on occasion, and this can be accounted for
+in the application design.  Does write() block ?  Yes, the man pages talks all about it.  Does clock_gettime() block ?
+No, blocking is not mentioned in the man page.  Blocking behaviour is rare, when it exists it is documented.
+
+My point is, this is either a defect to be fixed, or a change that warrants updating the documentation.
+
+regards,
+Bud Davis
+
+ 
+
+
+
+
+
+
+
+   
+
+ 
+
+
+
+
+
+
+
+
+
+
