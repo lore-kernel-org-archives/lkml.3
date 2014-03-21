@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751088AbaCUXWG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 19:22:06 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:44573 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750733AbaCUXWC (ORCPT
+	id S1751883AbaCUXWx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 19:22:53 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:49398 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaCUXWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 19:22:02 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AoUGALbILFNR8cxj/2dsb2JhbABZgwbDdIEZF3SCJQEBAQMBOhwjBQsIAw4KLjkeBhOHcQwBz0YXjmoHhDgBA45SiXYBilmHWIMuPA
-Date: Sat, 22 Mar 2014 00:21:59 +0100
-From: Fabian Frederick <fabf@skynet.be>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
-Message-Id: <20140322002159.e1428d6a58899b38b379733c@skynet.be>
-In-Reply-To: <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
-References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
-	<20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+	Fri, 21 Mar 2014 19:22:43 -0400
+Message-ID: <1395444158.25974.1.camel@phoenix>
+Subject: [PATCH] regulator: st-pwm: Convert to get_voltage_sel
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Date: Sat, 22 Mar 2014 07:22:38 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Mar 2014 13:00:55 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Also remove test for selector in st_pwm_regulator_set_voltage_sel, the checking
+is already done in .list_voltage.
 
-> On Fri, 21 Mar 2014 17:18:30 +0100 Fabian Frederick <fabf@skynet.be> wrote:
-> 
-> > Loop around congestion_wait on allocation failure/alloc_journal_list
-> > like already fixed in other FS.
-> > 
-> > ...
-> >
-> > --- a/fs/reiserfs/journal.c
-> > +++ b/fs/reiserfs/journal.c
-> > @@ -2487,8 +2487,13 @@ static int journal_read(struct super_block *sb)
-> >  static struct reiserfs_journal_list *alloc_journal_list(struct super_block *s)
-> >  {
-> >  	struct reiserfs_journal_list *jl;
-> > -	jl = kzalloc(sizeof(struct reiserfs_journal_list),
-> > -		     GFP_NOFS | __GFP_NOFAIL);
-> > +
-> > +	do {
-> > +		jl = kzalloc(sizeof(struct reiserfs_journal_list), GFP_NOFS);
-> > +		if (unlikely(!jl))
-> > +			congestion_wait(BLK_RW_ASYNC, HZ/50);
-> > +	} while (!jl)
-> > +
-> 
-> Dammit, who has been running around converting __GFP_NOFAIL into
-> open-coded congestion_wait() loops?
-> 
-> The whole point of __GFP_NOFAIL is to centralise this
-> wait-for-memory-for-ever operation.  So it is implemented in a common
-> (core) place and so that we can easily locate these problematic
-> callers.
-> 
-> This comment in ext4:
-> 
-> 			/*
-> 			 * If __GFP_FS is not present, then we may be
-> 			 * being called from inside the fs writeback
-> 			 * layer, so we MUST NOT fail.  Since
-> 			 * __GFP_NOFAIL is going away, we will arrange
-> 			 * to retry the allocation ourselves.
-> 			 */
-> 
-> is exactly wrong.  Yes, we'd like __GFP_NOFAIL to go away, but it
-> cannot go away until buggy callsites such as this one are *fixed*. 
-> Removing the __GFP_NOFAIL usage simply hides the buggy code from casual
-> searchers.
-> 
-> argh.
-> 
-> What we should do is to fix all these call sites so they can handle
-> memory exhaustion.  That's hard so in the interim they should be using
-> __GFP_NOFAIL.
-> 
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/st-pwm.c | 9 +++------
+ 1 file changed, 3 insertions(+), 6 deletions(-)
 
-Ok, if even ext4 comments are wrong, things gonna be very difficult :)
-Any sample of a callsite transition done well ?  (git id ?)
+diff --git a/drivers/regulator/st-pwm.c b/drivers/regulator/st-pwm.c
+index 6ef569f..e367af1 100644
+--- a/drivers/regulator/st-pwm.c
++++ b/drivers/regulator/st-pwm.c
+@@ -39,11 +39,11 @@ struct st_pwm_voltages {
+ 	unsigned int dutycycle;
+ };
+ 
+-static int st_pwm_regulator_get_voltage(struct regulator_dev *dev)
++static int st_pwm_regulator_get_voltage_sel(struct regulator_dev *dev)
+ {
+ 	struct st_pwm_regulator_data *drvdata = rdev_get_drvdata(dev);
+ 
+-	return drvdata->pdata->duty_cycle_table[drvdata->state].uV;
++	return drvdata->state;
+ }
+ 
+ static int st_pwm_regulator_set_voltage_sel(struct regulator_dev *dev,
+@@ -53,9 +53,6 @@ static int st_pwm_regulator_set_voltage_sel(struct regulator_dev *dev,
+ 	int dutycycle;
+ 	int ret;
+ 
+-	if (selector >= dev->desc->n_voltages)
+-		return -EINVAL;
+-
+ 	dutycycle = (ST_PWM_REG_PERIOD / 100) *
+ 		drvdata->pdata->duty_cycle_table[selector].dutycycle;
+ 
+@@ -92,7 +89,7 @@ static int st_pwm_regulator_list_voltage(struct regulator_dev *dev,
+ 
+ static struct regulator_ops st_pwm_regulator_voltage_ops = {
+ 	.set_voltage_sel = st_pwm_regulator_set_voltage_sel,
+-	.get_voltage     = st_pwm_regulator_get_voltage,
++	.get_voltage_sel = st_pwm_regulator_get_voltage_sel,
+ 	.list_voltage    = st_pwm_regulator_list_voltage,
+ 	.map_voltage     = regulator_map_voltage_iterate,
+ };
+-- 
+1.8.3.2
+
+
+
