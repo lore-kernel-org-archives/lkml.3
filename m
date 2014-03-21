@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966579AbaCUAnd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:43:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37039 "EHLO
+	id S966593AbaCUAoM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:44:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37017 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965826AbaCUAIk (ORCPT
+	with ESMTP id S965819AbaCUAIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:40 -0400
+	Thu, 20 Mar 2014 20:08:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Avinash Patil <patila@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 22/85] mwifiex: clean pcie ring only when device is present
-Date: Thu, 20 Mar 2014 17:09:25 -0700
-Message-Id: <20140321000601.790081640@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 08/85] ipv6: reuse ip6_frag_id from ip6_ufo_append_data
+Date: Thu, 20 Mar 2014 17:09:11 -0700
+Message-Id: <20140321000559.730152737@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,34 +29,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Avinash Patil <patila@marvell.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-commit 4f7ba432202c8330cc03ab959c6228d0de5dc4a3 upstream.
+[ Upstream commit 916e4cf46d0204806c062c8c6c4d1f633852c5b6 ]
 
-Write io memory to clean PCIe buffer only when PCIe device is
-present else this results into crash because of invalid memory
-access.
+Currently we generate a new fragmentation id on UFO segmentation. It
+is pretty hairy to identify the correct net namespace and dst there.
+Especially tunnels use IFF_XMIT_DST_RELEASE and thus have no skb_dst
+available at all.
 
-Signed-off-by: Avinash Patil <patila@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This causes unreliable or very predictable ipv6 fragmentation id
+generation while segmentation.
+
+Luckily we already have pregenerated the ip6_frag_id in
+ip6_ufo_append_data and can use it here.
+
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- drivers/net/wireless/mwifiex/wmm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/ipv6/udp_offload.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/wmm.c
-+++ b/drivers/net/wireless/mwifiex/wmm.c
-@@ -556,7 +556,8 @@ mwifiex_clean_txrx(struct mwifiex_privat
- 	mwifiex_wmm_delete_all_ralist(priv);
- 	memcpy(tos_to_tid, ac_to_tid, sizeof(tos_to_tid));
+--- a/net/ipv6/udp_offload.c
++++ b/net/ipv6/udp_offload.c
+@@ -108,7 +108,7 @@ static struct sk_buff *udp6_ufo_fragment
+ 	fptr = (struct frag_hdr *)(skb_network_header(skb) + unfrag_ip6hlen);
+ 	fptr->nexthdr = nexthdr;
+ 	fptr->reserved = 0;
+-	ipv6_select_ident(fptr, (struct rt6_info *)skb_dst(skb));
++	fptr->identification = skb_shinfo(skb)->ip6_frag_id;
  
--	if (priv->adapter->if_ops.clean_pcie_ring)
-+	if (priv->adapter->if_ops.clean_pcie_ring &&
-+	    !priv->adapter->surprise_removed)
- 		priv->adapter->if_ops.clean_pcie_ring(priv->adapter);
- 	spin_unlock_irqrestore(&priv->wmm.ra_list_spinlock, flags);
- }
+ 	/* Fragment the skb. ipv6 header and the remaining fields of the
+ 	 * fragment header are updated in ipv6_gso_segment()
 
 
