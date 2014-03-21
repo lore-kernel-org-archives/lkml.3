@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761033AbaCUOIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:08:04 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40662 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752484AbaCUOH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761017AbaCUOIA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:08:00 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:61603 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751634AbaCUOH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Mar 2014 10:07:58 -0400
-Message-ID: <532C47B6.70106@ti.com>
-Date: Fri, 21 Mar 2014 16:07:50 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jim Davis <jim.epost@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] drivers/video: fix mb862xx_i2c depends issue build failure
-References: <1395328560-48497-1-git-send-email-paul.gortmaker@windriver.com> <532C3F64.2020601@ti.com> <532C4476.2030706@windriver.com>
-In-Reply-To: <532C4476.2030706@windriver.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg"
+From: Matei Oprea <eu@opreamatei.ro>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Matei Oprea <eu@opreamatei.ro>,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Subject: [PATCH] staging: rtl8192u: r8192U_wx: Fix sparse warnings
+Date: Fri, 21 Mar 2014 16:07:49 +0200
+Message-Id: <1395410869-19362-1-git-send-email-eu@opreamatei.ro>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Fix sparse "should be static" warnings. Those structures are
+only referenced in file scope so they can be marked as static.
 
-On 21/03/14 15:53, Paul Gortmaker wrote:
-> On 14-03-21 09:32 AM, Tomi Valkeinen wrote:
->> Hi,
->>
->> On 20/03/14 17:16, Paul Gortmaker wrote:
->>> Any randconfig that sets I2C=3Dm and FB_MB862XX_I2C=3Dy will
->>> encounter a final link failure that looks like this:
->>
->> It compiles fine with I2C=3Dm, FB_MB862XX=3Dm and FB_MB862XX_I2C=3Dy.
->>
->>> drivers/built-in.o: In function `mb862xx_i2c_init':
->>> drivers/video/mb862xx/mb862xx-i2c.c:165: undefined reference to `i2c_=
-add_adapter'
->>> drivers/built-in.o: In function `mb862xx_i2c_exit':
->>> drivers/video/mb862xx/mb862xx-i2c.c:176: undefined reference to `i2c_=
-del_adapter'
->>>
->>> Since FB_MB862XX_I2C is a bool and not tristate, simply
->>> don't offer it at all if core I2C support is not built in.
->>
->> FB_MB862XX_I2C is not a driver, it just adds the i2c support to
->> FB_MB862XX. The relevant thing is whether FB_MB862XX is m or y, so
->> compiling with:
->>
->> I2C=3Dm, FB_MB862XX=3Dy and FB_MB862XX_I2C=3Dy
->>
->> will fail.
->=20
-> How would you suggest we fix it then?  Perhaps we could simplify the
-> Kconfig space and just get rid of FB_MB862XX_I2C entirely?  Is there
-> ever a reason why someone would want it turned off when I2C is present?=
+Signed-off-by: Matei Oprea <eu@opreamatei.ro>
+Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
+---
+ drivers/staging/rtl8192u/r8192U_wx.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/staging/rtl8192u/r8192U_wx.c b/drivers/staging/rtl8192u/r8192U_wx.c
+index c70af01..1a3e80d 100644
+--- a/drivers/staging/rtl8192u/r8192U_wx.c
++++ b/drivers/staging/rtl8192u/r8192U_wx.c
+@@ -24,7 +24,7 @@
+ #include "dot11d.h"
+ 
+ #define RATE_COUNT 12
+-u32 rtl8180_rates[] = {1000000,2000000,5500000,11000000,
++static u32 rtl8180_rates[] = {1000000,2000000,5500000,11000000,
+ 	6000000,9000000,12000000,18000000,24000000,36000000,48000000,54000000};
+ 
+ 
+@@ -979,7 +979,7 @@ static iw_handler r8192_private_handler[] = {
+ };
+ 
+ //#if WIRELESS_EXT >= 17
+-struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
++static struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ {
+        struct r8192_priv *priv = ieee80211_priv(dev);
+ 	struct ieee80211_device *ieee = priv->ieee80211;
+@@ -1010,7 +1010,7 @@ struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ //#endif
+ 
+ 
+-struct iw_handler_def  r8192_wx_handlers_def={
++static struct iw_handler_def  r8192_wx_handlers_def={
+ 	.standard = r8192_wx_handlers,
+ 	.num_standard = ARRAY_SIZE(r8192_wx_handlers),
+ 	.private = r8192_private_handler,
+-- 
+1.7.9.5
 
-I'm not familiar with the driver and devices that use it, so I can't
-really say. But you could probably have a board with the FB_MB862XX,
-without i2c displays, while still you'd have I2C for other uses. So
-there you could minimally reduce the kernel size by leaving out the
-FB_MB862XX_I2C.
-
-I'm fine with that solution, though. But how would it work in practice?
-Did you mean that FB_MB862XX would depend on I2C? That's not a good
-option, but how would you otherwise make the i2c dependency correct?
-
-Actually, I'm fine with the original patch also, as I believe the case
-where I2C=3Dm is somewhat theoretical (correct me if I'm wrong). But the
-patch description was totally wrong, and if that solution is preferred,
-it should also clearly state that the patch prevents the I2C support
-when I2C is built as a module. But I think your proposal in this mail is
-better.
-
-Maybe there are even better ways to handle it in the Kconfig, as such
-"add feature X to the driver" sounds quite common to me.
-
- Tomi
-
-
-
---r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTLEe2AAoJEPo9qoy8lh71t0AP/3ASgiLwo2DwIj4gWJ1gQINl
-oHj7wpY9nGEkv4qMO58B6DiX6JDpjafsFpAznX8GcH5J42pAh5EXU4uJGyTCriWm
-H/lk0FK7xiz1abYWuVevPuT5posuaRUwlTX6zLerhu+QHmYEgkAHw8BM4mFnY2Dg
-zyp9qQXCfp2sJ7epG4wPc6VDBfkfYK7myjBVae2O9cWksEOk8uoWzxplFZXz3FP2
-Z1c/04QYFLeEiCPXYPHRUJLvHhwqABxuv3lB+U4L1pbS1uKOVeIUS+G1cNIGfJJb
-0w5+d3PFjy6mJPp2m8KYI9/AAvmJzPendjwH5tsPXDlxS4gqzkKgIfYnBm0hw93v
-bu8Y8k6r53rjkjwuG77u3aLavGZaFh63ILMDBHkzdfRINsF2jBfIMwg8iKQLpzJ+
-flNsVL2UwATJzoDiHGrTMMnzg5oBDI9TrIjfoZBE5bCjmmq0QRUqkOu3triGiqZq
-q/sIbLveAN0uGu1CsZq04P8EyWH1h3GcmK6/yeuznTvMRWPtR4PNhubvjlCovZ3P
-cum9k+beiiwcw+1NnWzKNMlMvoHsVqAUmTxboED10tcbP5nPkP6ImmSArWaGtv7L
-l/9VJRG1eydGDJdVqn+HApMAgs+iHCCtiHLJDI7nuWrx9EA9tpNguHeftDQYTMVN
-lPBTEQwQ/2fTuMRRHkfL
-=zjXF
------END PGP SIGNATURE-----
-
---r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg--
