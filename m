@@ -1,81 +1,385 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760924AbaCUMnE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:43:04 -0400
-Received: from mail-la0-f41.google.com ([209.85.215.41]:58636 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760681AbaCUMm6 (ORCPT
+	id S1760943AbaCUMoC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:44:02 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:45830 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760681AbaCUMn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:42:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140321082609.GA3801@xps8300>
-References: <1395324333-21221-1-git-send-email-jon@ringle.org>
-	<20140321082609.GA3801@xps8300>
-Date: Fri, 21 Mar 2014 08:42:56 -0400
-X-Google-Sender-Auth: GpXUBntEMBcC-RxUJAfbOlvaTG8
-Message-ID: <CAMwGMjxeiCNxFbz4v3eQzKL5-pcMHAjX2WiHoX8-uArz-q_tNA@mail.gmail.com>
-Subject: Re: [PATCH v2] tty: serial: sc16is7xx
-From: Jon Ringle <jon@ringle.org>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, jslaby@suse.cz,
-        Alexander Shiyan <shc_work@mail.ru>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, devicetree@vger.kernel.org,
-        Jon Ringle <jringle@gridpoint.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Mar 2014 08:43:59 -0400
+Message-ID: <532C355C.3090606@gmail.com>
+Date: Fri, 21 Mar 2014 13:49:32 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 1/5] clk: berlin: add support for berlin plls
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com> <1395402220-23503-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1395402220-23503-2-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 4:26 AM, Heikki Krogerus
-<heikki.krogerus@linux.intel.com> wrote:
-> Hi,
+On 03/21/2014 12:43 PM, Alexandre Belloni wrote:
+> This drivers allows to provide DT clocks for the cpu and system PLLs found on
+> Marvell Berlin SoCs.
 >
-> On Thu, Mar 20, 2014 at 10:05:33AM -0400, jon@ringle.org wrote:
->> From: Jon Ringle <jringle@gridpoint.com>
->>
->> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
->> high performance UART. The SC16IS7xx's internal register set is
->> backward-compatible with the widely used and widely popular 16C450.
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   drivers/clk/Makefile              |   1 +
+>   drivers/clk/berlin/Makefile       |   1 +
+>   drivers/clk/berlin/clk.h          |  35 +++++++++++++
+>   drivers/clk/berlin/pll-berlin2.c  |  41 ++++++++++++++++
+>   drivers/clk/berlin/pll-berlin2q.c |  41 ++++++++++++++++
+>   drivers/clk/berlin/pll.c          | 100 ++++++++++++++++++++++++++++++++++++++
+>   6 files changed, 219 insertions(+)
+>   create mode 100644 drivers/clk/berlin/Makefile
+>   create mode 100644 drivers/clk/berlin/clk.h
+>   create mode 100644 drivers/clk/berlin/pll-berlin2.c
+>   create mode 100644 drivers/clk/berlin/pll-berlin2q.c
+>   create mode 100644 drivers/clk/berlin/pll.c
 >
-> So couldn't this be just a probe driver for 8250?
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index a367a9831717..4a2602737c27 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -29,6 +29,7 @@ obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
+>   obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
+>   obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
+>   obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
+> +obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
+>   obj-$(CONFIG_ARCH_HI3xxx)		+= hisilicon/
+>   obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
 
-8250 UART has a MMIO-access, but this driver communicate through I2C
-bus (and potentially SPI bus, if anyone cares to add that support,
-which should be fairly easy to do). This is completely different
-handling.
+I'll have a look at clk/Makefile later myself, but alphabetic ordering
+seems to be broken by ARCH_HI3xxx already. Anyway, we shouldn't just
+add another violator.
 
-To achieve acceptable throughput, it is necessary to use threaded irq
-and also bulk i2c transfers for RX and TX using
-regmap_raw_{read,write}() to optimize the use of the i2c bus.
+>   ifeq ($(CONFIG_COMMON_CLK), y)
+> diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
+> new file mode 100644
+> index 000000000000..4f6580e2a3ee
+> --- /dev/null
+> +++ b/drivers/clk/berlin/Makefile
+> @@ -0,0 +1 @@
+> +obj-y += pll.o pll-berlin2.o pll-berlin2q.o
 
-This is not a good fit for 8250.
+obj-y += pll.o
+obj-$(CONFIG_MACH_BERLIN_BG2)	+= pll-berlin2.o
+obj-$(CONFIG_MACH_BERLIN_BG2CD)	+= pll-berlin2.o
+obj-$(CONFIG_MACH_BERLIN_BG2Q)	+= pll-berlin2q.o
 
+Which reminds me, that we forgot to add MACH_BERLIN_BG2Q to
+arch/arm/mach-berlin/Kconfig. Can you spin a patch?
+
+> diff --git a/drivers/clk/berlin/clk.h b/drivers/clk/berlin/clk.h
+
+I prefer to have this include named "common.h" as I guess we will
+dump all common declarations in here.
+
+> new file mode 100644
+> index 000000000000..41459db31a02
+> --- /dev/null
+> +++ b/drivers/clk/berlin/clk.h
+> @@ -0,0 +1,35 @@
+> +/*
+> + * Copyright (c) 2013 Marvell Technology Group Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#ifndef __BERLIN_CLK_H
+> +#define __BERLIN_CLK_H
+> +
+> +#include <linux/clk-provider.h>
+
+What is this include good for in here?
+
+You will need struct device_node declared, but a simple
+
+struct device_node;
+
+should be sufficient.
+
+> +struct berlin_pllmap {
+> +	const u8	*vcodiv;
+> +	u32		fbdiv_mask;
+> +	u32		rfdiv_mask;
+> +	u32		divsel_mask;
+> +	u8		fbdiv_shift;
+> +	u8		rfdiv_shift;
+> +	u8		divsel_shift;
+> +	u8		mult;
+> +};
+> +
+> +extern void __init berlin_pll_setup(struct device_node *np,
+> +				struct berlin_pllmap *map);
+> +
+> +#endif /* BERLIN_CLK_H */
+> diff --git a/drivers/clk/berlin/pll-berlin2.c b/drivers/clk/berlin/pll-berlin2.c
+> new file mode 100644
+> index 000000000000..5f5b4674f811
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll-berlin2.c
+> @@ -0,0 +1,41 @@
+> +/*
+> + * Copyright (c) 2014 Marvell Technology Group Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/kernel.h>
+> +#include <linux/clk-provider.h>
+
+Please sort includes alphabetically, it will save us some pain
+in the future.
+
+> +#include "clk.h"
+
+#include "common.h"
+
+> +static const u8 vcodiv_berlin2[] = {10, 15, 20, 25, 30, 40, 50, 60, 80};
+> +
+> +static struct berlin_pllmap berlin_pll_map = {
+> +	.vcodiv = vcodiv_berlin2,
+> +	.fbdiv_mask = 0x1FF,
+> +	.rfdiv_mask = 0x1F,
+> +	.divsel_mask = 0xF,
+
+divsel_mask allows 16 possible values, vcodiv_berlin2[] only provides
+9, and common pll driver below does not know how many valid vcodiv
+values are passed. That can become dangerous..
+
+I'd rather extend vcodiv_berlin2 to full divsel range and provide
+safe (=1) divisiors. This way wrong/new register values will only
+break clock frequency derived.
+
+> +	.fbdiv_shift = 6,
+> +	.rfdiv_shift = 1,
+> +	.divsel_shift = 7,
+
+Have .foo_mask and .foo_shift together?
+
+> +	.mult = 10,
+> +};
+> +
+> +static void __init berlin2_pll_setup(struct device_node *np)
+> +{
+> +	berlin_pll_setup(np, &berlin_pll_map);
+> +}
+> +CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2-pll", berlin2_pll_setup);
+> +
+> diff --git a/drivers/clk/berlin/pll-berlin2q.c b/drivers/clk/berlin/pll-berlin2q.c
+> new file mode 100644
+> index 000000000000..8ddfa69cf8c4
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll-berlin2q.c
+> @@ -0,0 +1,41 @@
+> +/*
+> + * Copyright (c) 2013 Marvell Technology Group Ltd.
+
+nit: 2014?
+
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/kernel.h>
+> +#include <linux/clk-provider.h>
+
+same as above.
+
+> +#include "clk.h"
+
+ditto.
+
+> +static const u8 vcodiv_berlin2q[] = {1, 0, 2, 0, 3, 4, 0, 6, 8};
+> +
+> +static struct berlin_pllmap berlin2q_pll_map = {
+> +	.vcodiv = vcodiv_berlin2q,
+> +	.fbdiv_mask = 0x1FF,
+> +	.rfdiv_mask = 0x1F,
+> +	.divsel_mask = 0xF,
+> +	.fbdiv_shift = 7,
+> +	.rfdiv_shift = 2,
+> +	.divsel_shift = 9,
+> +	.mult = 1,
+> +};
+
+ditto.
+
+> +static void __init berlin2q_pll_setup(struct device_node *np)
+> +{
+> +	berlin_pll_setup(np, &berlin2q_pll_map);
+> +}
+> +CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2q-pll", berlin2q_pll_setup);
+> +
+> diff --git a/drivers/clk/berlin/pll.c b/drivers/clk/berlin/pll.c
+> new file mode 100644
+> index 000000000000..188b385af436
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll.c
+> @@ -0,0 +1,100 @@
+> +/*
+> + * Copyright (c) 2013 Marvell Technology Group Ltd.
+
+nit: 2014?
+
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/io.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/slab.h>
+> +#include <linux/kernel.h>
+> +#include <linux/clk-provider.h>
+
+same as above.
+
+> +#include "clk.h"
+
+ditto.
+
+> +struct berlin_pll {
+> +	struct clk_hw	hw;
+> +	void __iomem	*base;
+> +	void		*data;
+
+struct berlin2_pllmap *map instead?
+
+> +};
+> +
+> +#define to_berlin_pll(hw)	container_of(hw, struct berlin_pll, hw)
+> +
+> +#define PLL_CTRL0	0x00
+> +#define PLL_CTRL1	0x04
+> +
+> +static inline u32 berlin_pll_read(struct berlin_pll *pll, unsigned long offset)
+> +{
+> +	return readl_relaxed(pll->base + offset);
+> +}
+> +
+> +static unsigned long berlin_pll_recalc_rate(struct clk_hw *hw,
+> +					unsigned long parent_rate)
+
+Maybe have a nice little comment on how pll output frequency is
+calculated out of the 5 variables?
+
+> +{
+> +	struct berlin_pll *pll = to_berlin_pll(hw);
+> +	struct berlin_pllmap *map = pll->data;
+> +	u32 val, fbdiv, rfdiv, vcodivsel;
+> +
+> +	val = berlin_pll_read(pll, PLL_CTRL0);
+> +	fbdiv = (val >> map->fbdiv_shift) & map->fbdiv_mask;
+> +	rfdiv = (val >> map->rfdiv_shift) & map->rfdiv_mask;
+> +	if (rfdiv == 0)
+> +		rfdiv = 1;
+> +
+> +	val = berlin_pll_read(pll, PLL_CTRL1);
+> +	vcodivsel = (val >> map->divsel_shift) & map->divsel_mask;
+> +
+> +	return parent_rate * fbdiv * map->mult / rfdiv /
+> +		map->vcodiv[vcodivsel];
+
+IMHO
+
+parent_rate *= fbdiv * map->mult;
+parent_rate /= rfdiv;
+return parent_rate / map->vcodiv[vcodivsel];
+
+makes it slightly more readable, but that is up to you.
+
+> +}
+> +
+> +static const struct clk_ops berlin_pll_ops = {
+> +	.recalc_rate	= berlin_pll_recalc_rate,
+> +};
+> +
+> +void __init berlin_pll_setup(struct device_node *np,
+> +			struct berlin_pllmap *map)
+> +{
+> +	struct clk_init_data init;
+> +	struct berlin_pll *pll;
+> +	const char *parent_name;
+> +	struct clk *clk;
+> +	int ret;
+> +
+> +	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+> +	if (WARN_ON(!pll))
+> +		return;
+> +
+> +	pll->base = of_iomap(np, 0);
+> +	if (WARN_ON(!pll->base))
+> +		return;
+> +
+> +	pll->data = map;
+
+pll->map = map;
+
+> +
+> +	init.name = np->name;
+> +	init.ops = &berlin_pll_ops;
+> +	parent_name = of_clk_get_parent_name(np, 0);
+> +	init.parent_names = &parent_name;
+> +	init.num_parents = 1;
+> +
+> +	pll->hw.init = &init;
+> +
+> +	clk = clk_register(NULL, &pll->hw);
+> +	if (WARN_ON(IS_ERR(clk)))
+> +		return;
+> +
+> +	ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +	if (WARN_ON(ret))
+> +		return;
+> +}
+> +
 >
->> +/* SC16IS7XX register definitions */
->> +#define SC16IS7XX_RHR_REG            (0x00) /* RX FIFO */
->> +#define SC16IS7XX_THR_REG            (0x00) /* TX FIFO */
->> +#define SC16IS7XX_IER_REG            (0x01) /* Interrupt enable */
->> +#define SC16IS7XX_IIR_REG            (0x02) /* Interrupt Identification */
->> +#define SC16IS7XX_FCR_REG            (0x02) /* FIFO control */
->> +#define SC16IS7XX_LCR_REG            (0x03) /* Line Control */
->> +#define SC16IS7XX_MCR_REG            (0x04) /* Modem Control */
->> +#define SC16IS7XX_LSR_REG            (0x05) /* Line Status */
->> +#define SC16IS7XX_MSR_REG            (0x06) /* Modem Status */
->> +#define SC16IS7XX_SPR_REG            (0x07) /* Scratch Pad */
->
-> At least there should not be any need to redefine those register or
-> their bits. Just include serial_reg.h.
 
-I started off doing that, but got frustrated enough by
-incompatibilities between the register bit definitions that I
-abandoned that and decided to make the driver self contained regarding
-the register and bit definitions. For example:
-
-serial_reg.h defines:
-#define UART_MCR_TCRTLR        0x40 /* Access TCR/TLR (TI16C752, EFR[4]=1) */
-
-but this is wrong for sc16is7xx. I need:
-#define SC16IS7XX_MCR_TCRTLR_BIT    (1 << 2) /* TCR/TLR register enable */
-
-Jon
