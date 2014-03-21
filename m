@@ -1,76 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967022AbaCUAyz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:54:55 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:45410 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965248AbaCUAyw (ORCPT
+	id S966902AbaCUAz3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:55:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36854 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965544AbaCUAEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:54:52 -0400
-Message-ID: <532B9BE0.5050802@cogentembedded.com>
-Date: Fri, 21 Mar 2014 04:54:40 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 20 Mar 2014 20:04:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        Serge Hallyn <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 114/149] ipc: Fix 2 bugs in msgrcv() MSG_COPY implementation
+Date: Thu, 20 Mar 2014 17:04:37 -0700
+Message-Id: <20140321000440.913844726@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
+References: <20140321000436.377902063@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: =?UTF-8?B?Q8OpZHJpYyBDYWJlc3Nh?= <ced@ryick.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] coding style: fix line over 80 characters
-References: <1395266697-8699-1-git-send-email-ced@ryick.net> <1395266697-8699-3-git-send-email-ced@ryick.net> <532B5ED1.8060406@cogentembedded.com>
-In-Reply-To: <532B5ED1.8060406@cogentembedded.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 12:34 AM, Sergei Shtylyov wrote:
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
->> Signed-off-by: Cédric Cabessa <ced@ryick.net>
->> ---
->>   drivers/staging/usbip/vhci_hcd.c | 33 ++++++++++++++++++++++-----------
->>   1 file changed, 22 insertions(+), 11 deletions(-)
+------------------
 
->> diff --git a/drivers/staging/usbip/vhci_hcd.c
->> b/drivers/staging/usbip/vhci_hcd.c
->> index f690668..1e84577 100644
->> --- a/drivers/staging/usbip/vhci_hcd.c
->> +++ b/drivers/staging/usbip/vhci_hcd.c
-[...]
->> @@ -539,7 +546,9 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct
->> urb *urb,
->>
->>           default:
->>               /* NOT REACHED */
->> -            dev_err(dev, "invalid request to devnum 0 bRequest %u, wValue
->> %u\n", ctrlreq->bRequest,
->> +            dev_err(dev,
->> +                "invalid request to devnum 0 bRequest %u, wValue %u\n",
->> +                ctrlreq->bRequest,
->>                   ctrlreq->wValue);
->>               ret =  -EINVAL;
->>               goto no_need_xmit;
->> @@ -1060,7 +1069,9 @@ static int vhci_hcd_suspend(struct platform_device
->> *pdev, pm_message_t state)
->>       spin_unlock(&the_controller->lock);
->>
->>       if (connected > 0) {
->> -        dev_info(&pdev->dev, "We have %d active connection%s. Do not
->> suspend.\n", connected, (connected == 1 ? "" : "s"));
->> +        dev_info(&pdev->dev,
->> +             "We have %d active connection%s. Do not suspend.\n",
->> +             connected, (connected == 1 ? "" : "s"));
->>           ret =  -EBUSY;
->>       } else {
->>           dev_info(&pdev->dev, "suspend vhci_hcd");
+From: Michael Kerrisk <mtk.manpages@gmail.com>
 
->     Hm, I don't see checkpatch.pl complaints about these either in the
-> 'usb-next' branch of Greg's tree.
+commit 4f87dac386cc43d5525da7a939d4b4e7edbea22c upstream.
 
-    Sorry, I forgot about Greg's separate staging.git repo. The patch looks 
-correct in this context.
+While testing and documenting the msgrcv() MSG_COPY flag that Stanislav
+Kinsbursky added in commit 4a674f34ba04 ("ipc: introduce message queue
+copy feature" => kernel 3.8), I discovered a couple of bugs in the
+implementation.  The two bugs concern MSG_COPY interactions with other
+msgrcv() flags, namely:
 
-WBR, Sergei
+ (A) MSG_COPY + MSG_EXCEPT
+ (B) MSG_COPY + !IPC_NOWAIT
+
+The bugs are distinct (and the fix for the first one is obvious),
+however my fix for both is a single-line patch, which is why I'm
+combining them in a single mail, rather than writing two mails+patches.
+
+ ===== (A) MSG_COPY + MSG_EXCEPT =====
+
+With the addition of the MSG_COPY flag, there are now two msgrcv()
+flags--MSG_COPY and MSG_EXCEPT--that modify the meaning of the 'msgtyp'
+argument in unrelated ways.  Specifying both in the same call is a
+logical error that is currently permitted, with the effect that MSG_COPY
+has priority and MSG_EXCEPT is ignored.  The call should give an error
+if both flags are specified.  The patch below implements that behavior.
+
+ ===== (B) (B) MSG_COPY + !IPC_NOWAIT =====
+
+The test code that was submitted in commit 3a665531a3b7 ("selftests: IPC
+message queue copy feature test") shows MSG_COPY being used in
+conjunction with IPC_NOWAIT.  In other words, if there is no message at
+the position 'msgtyp'.  return immediately with the error in ENOMSG.
+
+What was not (fully) tested is the behavior if MSG_COPY is specified
+*without* IPC_NOWAIT, and there is an odd behavior.  If the queue
+contains less than 'msgtyp' messages, then the call blocks until the
+next message is written to the queue.  At that point, the msgrcv() call
+returns a copy of the newly added message, regardless of whether that
+message is at the ordinal position 'msgtyp'.  This is clearly bogus, and
+problematic for applications that might want to make use of the MSG_COPY
+flag.
+
+I considered the following possible solutions to this problem:
+
+ (1) Force the call to block until a message *does* appear at the
+     position 'msgtyp'.
+
+ (2) If the MSG_COPY flag is specified, the kernel should implicitly add
+     IPC_NOWAIT, so that the call fails with ENOMSG for this case.
+
+ (3) If the MSG_COPY flag is specified, but IPC_NOWAIT is not, generate
+     an error (probably, EINVAL is the right one).
+
+I do not know if any application would really want to have the
+functionality of solution (1), especially since an application can
+determine in advance the number of messages in the queue using msgctl()
+IPC_STAT.  Obviously, this solution would be the most work to implement.
+
+Solution (2) would have the effect of silently fixing any applications
+that tried to employ broken behavior.  However, it would mean that if we
+later decided to implement solution (1), then user-space could not
+easily detect what the kernel supports (but, since I'm somewhat doubtful
+that solution (1) is needed, I'm not sure that this is much of a
+problem).
+
+Solution (3) would have the effect of informing broken applications that
+they are doing something broken.  The downside is that this would cause
+a ABI breakage for any applications that are currently employing the
+broken behavior.  However:
+
+a) Those applications are almost certainly not getting the results they
+   expect.
+b) Possibly, those applications don't even exist, because MSG_COPY is
+   currently hidden behind CONFIG_CHECKPOINT_RESTORE.
+
+The upside of solution (3) is that if we later decided to implement
+solution (1), user-space could determine what the kernel supports, via
+the error return.
+
+In my view, solution (3) is mildly preferable to solution (2), and
+solution (1) could still be done later if anyone really cares.  The
+patch below implements solution (3).
+
+PS.  For anyone out there still listening, it's the usual story:
+documenting an API (and the thinking about, and the testing of the API,
+that documentation entails) is the one of the single best ways of
+finding bugs in the API, as I've learned from a lot of experience.  Best
+to do that documentation before releasing the API.
+
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Acked-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Cc: Serge Hallyn <serge.hallyn@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ ipc/msg.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -885,6 +885,8 @@ long do_msgrcv(int msqid, void __user *b
+ 		return -EINVAL;
+ 
+ 	if (msgflg & MSG_COPY) {
++		if ((msgflg & MSG_EXCEPT) || !(msgflg & IPC_NOWAIT))
++			return -EINVAL;
+ 		copy = prepare_copy(buf, min_t(size_t, bufsz, ns->msg_ctlmax));
+ 		if (IS_ERR(copy))
+ 			return PTR_ERR(copy);
+
 
