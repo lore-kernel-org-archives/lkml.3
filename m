@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759821AbaCUOXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:23:33 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45361 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752673AbaCUOXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:23:19 -0400
-Message-ID: <532C4B3C.4030406@ti.com>
-Date: Fri, 21 Mar 2014 16:22:52 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-CC: Grant Likely <grant.likely@linaro.org>,
+	id S1754421AbaCUO2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:28:35 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:41641 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322AbaCUO2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 10:28:32 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
         Philipp Zabel <p.zabel@pengutronix.de>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Rob Herring <robh+dt@kernel.org>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <linux-media@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        devicetree@vger.kernel.org,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core
- to drivers/of
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <2848953.vVjghJyYNE@avalon> <532C408D.4070002@ti.com> <1755937.SSGT2MZJMC@avalon>
-In-Reply-To: <1755937.SSGT2MZJMC@avalon>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="TpKimeAtlT82Mp8Dp6nm0aT5FTdRosD2V"
+Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
+Date: Fri, 21 Mar 2014 15:30:20 +0100
+Message-ID: <1658201.GilyGRJEEa@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <532C4B3C.4030406@ti.com>
+References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <1755937.SSGT2MZJMC@avalon> <532C4B3C.4030406@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="nextPart1422452.LVKZ4jzxXA"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---TpKimeAtlT82Mp8Dp6nm0aT5FTdRosD2V
-Content-Type: text/plain; charset=ISO-8859-1
+
+--nextPart1422452.LVKZ4jzxXA
 Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="us-ascii"
 
-On 21/03/14 16:13, Laurent Pinchart wrote:
-> Hi Tomi,
+Hi Tomi,
+
+On Friday 21 March 2014 16:22:52 Tomi Valkeinen wrote:
+> On 21/03/14 16:13, Laurent Pinchart wrote:
+> > On Friday 21 March 2014 15:37:17 Tomi Valkeinen wrote:
+> >> On 21/03/14 00:32, Laurent Pinchart wrote:
+> >>> The OF graph bindings documentation could just specify the ports =
+node as
+> >>> optional and mandate individual device bindings to specify it as
+> >>> mandatory or forbidden (possibly with a default behaviour to avoi=
+d
+> >>> making all device bindings too verbose).
+> >>=20
+> >> Isn't it so that if the device has one port, it can always do with=
+out
+> >> 'ports', but if it has multiple ports, it always has to use 'ports=
+' so
+> >> that #address-cells and #size-cells can be defined?
+> >=20
+> > You can put the #address-cells and #size-cells property in the devi=
+ce node
+> > directly without requiring a ports subnode.
 >=20
-> On Friday 21 March 2014 15:37:17 Tomi Valkeinen wrote:
->> On 21/03/14 00:32, Laurent Pinchart wrote:
->>> The OF graph bindings documentation could just specify the ports node=
- as
->>> optional and mandate individual device bindings to specify it as mand=
-atory
->>> or forbidden (possibly with a default behaviour to avoid making all
->>> device bindings too verbose).
->>
->> Isn't it so that if the device has one port, it can always do without
->> 'ports', but if it has multiple ports, it always has to use 'ports' so=
+> Ah, right. So 'ports' is only needed when the device node has other c=
+hildren
+> nodes than the ports and those nodes need different #address-cells an=
+d
+> #size-cells than the ports.
 
->> that #address-cells and #size-cells can be defined?
->=20
-> You can put the #address-cells and #size-cells property in the device n=
-ode=20
-> directly without requiring a ports subnode.
+I would rephrase that as the ports node being required only in that cas=
+e. It=20
+can also be useful to cleanly group ports together when the device node=
+ has=20
+other unrelated children, even though no technical requirement exist (y=
+et ?)=20
+in that case.
 
-Ah, right. So 'ports' is only needed when the device node has other
-children nodes than the ports and those nodes need different
-#address-cells and #size-cells than the ports.
+> In that case it sounds fine to leave it for the driver bindings to de=
+cide.
 
-In that case it sounds fine to leave it for the driver bindings to decide=
-=2E
+=2D-=20
+Regards,
 
- Tomi
+Laurent Pinchart
 
-
-
---TpKimeAtlT82Mp8Dp6nm0aT5FTdRosD2V
+--nextPart1422452.LVKZ4jzxXA
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+Content-Description: This is a digitally signed message part.
+Content-Transfer-Encoding: 7Bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTLEs8AAoJEPo9qoy8lh71GcwP/0kBttUEuj1RVh9tRFqGc3h3
-HiU40Qo60ze7+tEaPrNlcQg4RCWU5UgmVplxgqmArXM4NjCFhuwDXt0saxO7igmk
-KaC7o6Quguve2NvhWKSj0UUmZGHQ5fTZtRn53jFI4xRLwhctAkLFM2iVGR3MGmgn
-O9LeY7gZ3yo4Z7jwYUX0TpZIaPEWMGFk/xeH7/0p6AWysjd0jYxRPUTRXMdCYVjE
-gi+/TBx+xhFmJ7t0fh44UVmeYAAySs7j9RbS9ZWH43tEqyA8KXTeH9ZXXtUBcGXE
-AQIqubLUtyGBDmh0jpyIR8TC5mWcHFzcMugmP0Gybj9DAG5ZAGGEvKnjnJAb9Doe
-AHeBY86Vi4QK5qngsJCIhXjgsj+8oIqVLLbqgx0yXPqS196XdiXttC1tP90FGZf4
-5P0QIqgiZhiQHoTi/lbGT225bY3KhPbeIY5g+6eEQNdadX2TGcqxhVWIV3B4QBlb
-q7/k6YDv0YX9wN2VDgFSUUVz5SzBaXyO4cwhWp0JNGhe9zDDfaMrfN55GYivE3A/
-ZajvfVXGvPEEYPEH4bMZTTu2ziMNafRVhiTsAbAiJgNKOYyVhmf5d3BI8iKS9SeY
-3c8lkTuwK1LB/ca0WtTZKDrWIu0jZXuz37NKOSTM+0HGDgbPjxrDwYIsMe7NTYyQ
-+E318fWANuKomR4MFuEG
-=Nnlz
+iQEcBAABAgAGBQJTLEz8AAoJEIkPb2GL7hl1VvAIAKrdmomDTdcBJr1NaaefFaQK
+2pA7MWuE/RRkUmMe2HjAfqqapyEW1sMJ9A0R5NUy3JC/7xmu+rEtm6VyBja5v6kZ
+O8bd3mFpER6KPWS8GZPQJ2QT3cnTOQKpuybZRDmIFPMGhfnqq9nfW69U4QjlbfKs
+VFghO8k3I+fUzEql8meii6GRwtSdMWWPsyncf94a8Wj93mY+tNhtibfpeFoxhmU/
+UiKm1+xYcRxJ5gWuG567BMlGACsYaI9uSv/WWDmLZHW0CMJ2J2NWMSYSvxBNFtlm
++aVRGBHVVMAPfj8zI8LKelHqtz/ieJpDxuyNHWuXE3LJiAhWUPhvW2dkhBCGlWo=
+=Qk0J
 -----END PGP SIGNATURE-----
 
---TpKimeAtlT82Mp8Dp6nm0aT5FTdRosD2V--
+--nextPart1422452.LVKZ4jzxXA--
+
