@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760978AbaCUNdI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:33:08 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:34706 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaCUNdB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:33:01 -0400
-Message-ID: <1395408778.6441.2.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [RFC] csum experts, csum_replace2() is too expensive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Patrick McHardy <kaber@trash.net>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "H.K. Jerry Chu" <hkchu@google.com>,
-        Michael Dalton <mwdalton@google.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Mar 2014 06:32:58 -0700
-In-Reply-To: <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
-	 <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S965751AbaCUNeo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:34:44 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:47418 "EHLO relay.sw.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965450AbaCUNej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 09:34:39 -0400
+From: Andrey Vagin <avagin@openvz.org>
+To: linux-kernel@vger.kernel.org
+Cc: criu@openvz.org, netdev@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>
+Subject: [PATCH 2/3] tcp: check repair before fastopen in tcp_sendmsg
+Date: Fri, 21 Mar 2014 17:33:00 +0400
+Message-Id: <1395408781-8145-3-git-send-email-avagin@openvz.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1395408781-8145-1-git-send-email-avagin@openvz.org>
+References: <1395408781-8145-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 05:50 -0700, Eric Dumazet wrote:
+First of all it is logical.
 
-> Or the fact that we mix 16 bit stores and 32bit loads ?
-> 
-> iph->tot_len = newlen;
-> iph->check = 0;
-> iph->check = ip_fast_csum(iph, 5);
+And I found that sk_stream_wait_connect can be called if a socket
+isn't in the TCP_ESTABLISHED state. In this case we get -EPIPE.
 
-Yep definitely. Using 16 bit loads in ip_fast_csum() totally removes the
-stall. I no longer see inet_gro_complete() in perf top...
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Cc: James Morris <jmorris@namei.org>
+Cc: Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>
+Cc: Patrick McHardy <kaber@trash.net>
+Cc: Eric Dumazet <edumazet@google.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>
+Signed-off-by: Andrey Vagin <avagin@openvz.org>
+---
+ net/ipv4/tcp.c | 33 +++++++++++++++++----------------
+ 1 file changed, 17 insertions(+), 16 deletions(-)
 
-+       if (__builtin_constant_p(ihl) && ihl == 5) {
-+               asm("  movw (%[iph]), %w[sum]\n"        /* ihl/version/tos */
-+                   "  addw 2(%[iph]), %w[sum]\n"       /* tot_len      */
-+                   "  adcw 8(%[iph]), %w[sum]\n"       /* ttl/protocol */
-+                   "  adcw 10(%[iph]), %w[sum]\n"      /* check        */
-+                   "  adcl 4(%[iph]), %[sum]\n"        /* id/frag_off  */
-+                   "  adcl 12(%[iph]), %[sum]\n"       /* saddr        */
-+                   "  adcl 16(%[iph]), %[sum]\n"       /* daddr        */
-+                   "  adcl $0, %[sum]\n"
-+                   : [sum] "=r" (sum)
-+                   : [iph] "r" (iph)
-+                   );
-+               return csum_fold(sum);
-
+diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
+index 267adb7..4cd0e87 100644
+--- a/net/ipv4/tcp.c
++++ b/net/ipv4/tcp.c
+@@ -1084,6 +1084,23 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 	lock_sock(sk);
+ 
+ 	flags = msg->msg_flags;
++
++	if (unlikely(tp->repair)) {
++		err = -EINVAL;
++		if (tp->repair_queue == TCP_NO_QUEUE)
++			goto out_err;
++
++		if (sk->sk_state != TCP_ESTABLISHED)
++			goto out_err;
++
++		if (tp->repair_queue == TCP_RECV_QUEUE) {
++			copied = tcp_send_rcvq(sk, msg, size);
++			goto out;
++		}
++
++		/* 'common' sending to sendq */
++	}
++
+ 	if (flags & MSG_FASTOPEN) {
+ 		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
+ 		if (err == -EINPROGRESS && copied_syn > 0)
+@@ -1105,22 +1122,6 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
+ 			goto do_error;
+ 	}
+ 
+-	if (unlikely(tp->repair)) {
+-		err = -EINVAL;
+-		if (tp->repair_queue == TCP_NO_QUEUE)
+-			goto out_err;
+-
+-		if (sk->sk_state != TCP_ESTABLISHED)
+-			goto out_err;
+-
+-		if (tp->repair_queue == TCP_RECV_QUEUE) {
+-			copied = tcp_send_rcvq(sk, msg, size);
+-			goto out;
+-		}
+-
+-		/* 'common' sending to sendq */
+-	}
+-
+ 	/* This should be in poll */
+ 	clear_bit(SOCK_ASYNC_NOSPACE, &sk->sk_socket->flags);
+ 
+-- 
+1.8.5.3
 
