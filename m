@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966426AbaCUAfW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:35:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37122 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965906AbaCUAI4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965911AbaCUAI4 (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:08:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37078 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965846AbaCUAIs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:08:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.10 51/85] NFSv4: nfs4_stateid_is_current should return true for an invalid stateid
-Date: Thu, 20 Mar 2014 17:09:54 -0700
-Message-Id: <20140321000605.993433327@linuxfoundation.org>
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 26/85] mwifiex: copy APs HT capability info correctly
+Date: Thu, 20 Mar 2014 17:09:29 -0700
+Message-Id: <20140321000602.386630547@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,40 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit e1253be0ece1a95a02c7f5843194877471af8179 upstream.
+commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
 
-When nfs4_set_rw_stateid() can fails by returning EIO to indicate that
-the stateid is completely invalid, then it makes no sense to have it
-trigger a retry of the READ or WRITE operation. Instead, we should just
-have it fall through and attempt a recovery.
+While preparing association request, intersection of device's HT
+capability information and corresponding fields advertised by AP
+is used.
 
-This fixes an infinite loop in which the client keeps replaying the same
-bad stateid back to the server.
+This patch fixes an error while copying this field from AP's
+beacon.
 
-Reported-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1393954269-3974-1-git-send-email-andros@netapp.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/net/wireless/mwifiex/11n.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -3607,8 +3607,9 @@ static bool nfs4_stateid_is_current(nfs4
- {
- 	nfs4_stateid current_stateid;
+--- a/drivers/net/wireless/mwifiex/11n.c
++++ b/drivers/net/wireless/mwifiex/11n.c
+@@ -307,8 +307,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifie
+ 		ht_cap->header.len =
+ 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
+ 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
+-		       (u8 *) bss_desc->bcn_ht_cap +
+-		       sizeof(struct ieee_types_header),
++		       (u8 *)bss_desc->bcn_ht_cap,
+ 		       le16_to_cpu(ht_cap->header.len));
  
--	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode))
--		return false;
-+	/* If the current stateid represents a lost lock, then exit */
-+	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode) == -EIO)
-+		return true;
- 	return nfs4_stateid_match(stateid, &current_stateid);
- }
- 
+ 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
 
 
