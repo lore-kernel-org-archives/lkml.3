@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759983AbaCUDV2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 23:21:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35144 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613AbaCUDV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 23:21:26 -0400
-From: WANG Chao <chaowang@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>, Greg Pearson <greg.pearson@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>, bhe@redhat.com
-Cc: kexec@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] vmcore: continue vmcore initialization if PT_NOTE is found empty
-Date: Fri, 21 Mar 2014 11:20:53 +0800
-Message-Id: <1395372053-19794-1-git-send-email-chaowang@redhat.com>
+	id S965063AbaCUDW1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 23:22:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59151 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760076AbaCUDWY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 23:22:24 -0400
+Date: Thu, 20 Mar 2014 20:21:51 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de
+In-Reply-To: <2ce2ce18447d8a0b78d44a278a066b6c0af06b32.1395366931.git.luto@amacapital.net>
+References: <2ce2ce18447d8a0b78d44a278a066b6c0af06b32.1395366931.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Finish removing VDSO32_PRELINK
+Git-Commit-ID: 3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently when an empty PT_NOTE is detected, vmcore initialization
-fails. It sounds too harsh. Because PT_NOTE could be empty, for example,
-one offlined a cpu but never restarted kdump service, and after crash,
-PT_NOTE program header is there but no data contains. It's better to
-warn about the empty PT_NOTE and continue to initialise vmcore.
+Commit-ID:  3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c
+Gitweb:     http://git.kernel.org/tip/3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Thu, 20 Mar 2014 18:57:19 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 20 Mar 2014 20:20:18 -0700
 
-And ultimately the multiple PT_NOTE are merged into a single one, all
-empty PT_NOTE are discarded naturally during the merge. So empty PT_NOTE
-is not visible to user space and vmcore is as good as expected.
+x86, vdso: Finish removing VDSO32_PRELINK
 
-Signed-off-by: WANG Chao <chaowang@redhat.com>
+It's a declaration of a nonexistent symbol.  We can get rid of the
+64-bit versions, too, but that's more intrusive.
+
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Stefani Seibold <stefani@seibold.net>
+Link: http://lkml.kernel.org/r/2ce2ce18447d8a0b78d44a278a066b6c0af06b32.1395366931.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 ---
- fs/proc/vmcore.c | 2 --
+ arch/x86/include/asm/vdso.h | 2 --
  1 file changed, 2 deletions(-)
 
-diff --git a/fs/proc/vmcore.c b/fs/proc/vmcore.c
-index 88d4585..dc71bf9 100644
---- a/fs/proc/vmcore.c
-+++ b/fs/proc/vmcore.c
-@@ -484,7 +484,6 @@ static int __init update_note_header_size_elf64(const Elf64_Ehdr *ehdr_ptr)
- 		phdr_ptr->p_memsz = real_sz;
- 		if (real_sz == 0) {
- 			pr_warn("Warning: Zero PT_NOTE entries found\n");
--			return -EINVAL;
- 		}
- 	}
+diff --git a/arch/x86/include/asm/vdso.h b/arch/x86/include/asm/vdso.h
+index 7622a65..d1dc554 100644
+--- a/arch/x86/include/asm/vdso.h
++++ b/arch/x86/include/asm/vdso.h
+@@ -41,8 +41,6 @@ DECLARE_VDSO_IMAGE(vdso32_syscall);
+ #endif
+ DECLARE_VDSO_IMAGE(vdso32_sysenter);
  
-@@ -671,7 +670,6 @@ static int __init update_note_header_size_elf32(const Elf32_Ehdr *ehdr_ptr)
- 		phdr_ptr->p_memsz = real_sz;
- 		if (real_sz == 0) {
- 			pr_warn("Warning: Zero PT_NOTE entries found\n");
--			return -EINVAL;
- 		}
- 	}
- 
--- 
-1.8.5.3
-
+-extern const char VDSO32_PRELINK[];
+-
+ /*
+  * Given a pointer to the vDSO image, find the pointer to VDSO32_name
+  * as that symbol is defined in the vDSO sources or linker script.
