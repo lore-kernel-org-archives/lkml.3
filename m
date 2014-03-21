@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966686AbaCUA33 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:29:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37189 "EHLO
+	id S966691AbaCUA3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:29:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37180 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965983AbaCUAJK (ORCPT
+	with ESMTP id S965978AbaCUAJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:10 -0400
+	Thu, 20 Mar 2014 20:09:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ales Novak <alnovak@suse.cz>, Thomas Abraham <tabraham@suse.com>,
-        Jiri Kosina <jkosina@suse.cz>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        Lukasz Dorau <lukasz.dorau@intel.com>,
+        Maciej Patelczyk <maciej.patelczyk@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>,
         James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 70/85] SCSI: storvsc: NULL pointer dereference fix
-Date: Thu, 20 Mar 2014 17:10:13 -0700
-Message-Id: <20140321000608.711367720@linuxfoundation.org>
+Subject: [PATCH 3.10 68/85] SCSI: isci: correct erroneous for_each_isci_host macro
+Date: Thu, 20 Mar 2014 17:10:11 -0700
+Message-Id: <20140321000608.393574246@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,51 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ales Novak <alnovak@suse.cz>
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-commit b12bb60d6c350b348a4e1460cd68f97ccae9822e upstream.
+commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
 
-If the initialization of storvsc fails, the storvsc_device_destroy()
-causes NULL pointer dereference.
+In the first place, the loop 'for' in the macro 'for_each_isci_host'
+(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
+the 3rd element of 2 element array. After the 2nd iteration it executes
+the instruction:
+        ihost = to_pci_info(pdev)->hosts[2]
+(while the size of the 'hosts' array equals 2) and reads an
+out of range element.
 
-storvsc_bus_scan()
-  scsi_scan_target()
-    __scsi_scan_target()
-      scsi_probe_and_add_lun(hostdata=NULL)
-        scsi_alloc_sdev(hostdata=NULL)
+In the second place, this loop is incorrectly optimized by GCC v4.8
+(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
+As a result, on platforms with two SCU controllers,
+the loop is executed more times than it can be (for i=0,1 and 2).
+It causes kernel panic during entering the S3 state
+and the following oops after 'rmmod isci':
 
-	  sdev->hostdata = hostdata
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Oops: 0000 [#1] SMP
+RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Call Trace:
+  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
+  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
+  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
+  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
+  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
+  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
+  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
+  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
+  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
+  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
+  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
+  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
+  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
+  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
+  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
+  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
 
-	  now the host allocation fails
+The loop has been corrected.
+This patch fixes kernel panic during entering the S3 state
+and the above oops.
 
-          __scsi_remove_device(sdev)
-
-	  calls sdev->host->hostt->slave_destroy() ==
-	  storvsc_device_destroy(sdev)
-	    access of sdev->hostdata->request_mempool
-
-Signed-off-by: Ales Novak <alnovak@suse.cz>
-Signed-off-by: Thomas Abraham <tabraham@suse.com>
-Reviewed-by: Jiri Kosina <jkosina@suse.cz>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
+Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/storvsc_drv.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/scsi/isci/host.h |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1189,6 +1189,9 @@ static void storvsc_device_destroy(struc
- {
- 	struct stor_mem_pools *memp = sdevice->hostdata;
+--- a/drivers/scsi/isci/host.h
++++ b/drivers/scsi/isci/host.h
+@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost
+ }
  
-+	if (!memp)
-+		return;
-+
- 	mempool_destroy(memp->request_mempool);
- 	kmem_cache_destroy(memp->request_pool);
- 	kfree(memp);
+ #define for_each_isci_host(id, ihost, pdev) \
+-	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+-	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+-	     ihost = to_pci_info(pdev)->hosts[++id])
++	for (id = 0; id < SCI_MAX_CONTROLLERS && \
++	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
+ 
+ static inline void wait_for_start(struct isci_host *ihost)
+ {
 
 
