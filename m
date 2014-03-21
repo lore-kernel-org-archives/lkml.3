@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965605AbaCUAEy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:54 -0400
+	id S1030227AbaCUAu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:50:59 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:36842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965474AbaCUAEs (ORCPT
+	with ESMTP id S965592AbaCUAEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:48 -0400
+	Thu, 20 Mar 2014 20:04:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 141/149] intel_pstate: Add setting voltage value for baytrail P states.
-Date: Thu, 20 Mar 2014 17:05:04 -0700
-Message-Id: <20140321000441.842318370@linuxfoundation.org>
+        Filipe David Borba Manana <fdmanana@gmail.com>,
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.13 137/149] Btrfs: return immediately if tree log mod is not necessary
+Date: Thu, 20 Mar 2014 17:05:00 -0700
+Message-Id: <20140321000441.706715123@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,152 +29,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dirk Brandewie <dirk.j.brandewie@intel.com>
+From: Filipe David Borba Manana <fdmanana@gmail.com>
 
-commit 007bea098b869945a462420a1f9d442ff169f722 upstream.
+commit 783577663507411e36e459390ef056556e93ef29 upstream.
 
-Baytrail requires setting P state and voltage pairs when adjusting the
-requested P state.  Add function for retrieving the valid voltage
-values and modify *_set_pstate() functions to caluclate the
-appropriate voltage for the requested P state.
+In ctree.c:tree_mod_log_set_node_key() we were calling
+__tree_mod_log_insert_key() even when the modification doesn't need
+to be logged. This would allocate a tree_mod_elem structure, fill it
+and pass it to  __tree_mod_log_insert(), which would just acquire
+the tree mod log write lock and then free the tree_mod_elem structure
+and return (that is, a no-op).
 
-Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Therefore call tree_mod_log_insert() instead of __tree_mod_log_insert()
+which just returns immediately if the modification doesn't need to be
+logged (without allocating the structure, fill it, acquire write lock,
+free structure).
+
+Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/intel_pstate.c |   58 ++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 54 insertions(+), 4 deletions(-)
+ fs/btrfs/ctree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/cpufreq/intel_pstate.c
-+++ b/drivers/cpufreq/intel_pstate.c
-@@ -35,6 +35,7 @@
- #define SAMPLE_COUNT		3
- 
- #define BYT_RATIOS	0x66a
-+#define BYT_VIDS        0x66b
- 
- #define FRAC_BITS 8
- #define int_tofp(X) ((int64_t)(X) << FRAC_BITS)
-@@ -64,6 +65,12 @@ struct pstate_data {
- 	int	turbo_pstate;
- };
- 
-+struct vid_data {
-+	int32_t min;
-+	int32_t max;
-+	int32_t ratio;
-+};
-+
- struct _pid {
- 	int setpoint;
- 	int32_t integral;
-@@ -82,6 +89,7 @@ struct cpudata {
- 	struct timer_list timer;
- 
- 	struct pstate_data pstate;
-+	struct vid_data vid;
- 	struct _pid pid;
- 
- 	int min_pstate_count;
-@@ -106,7 +114,8 @@ struct pstate_funcs {
- 	int (*get_max)(void);
- 	int (*get_min)(void);
- 	int (*get_turbo)(void);
--	void (*set)(int pstate);
-+	void (*set)(struct cpudata*, int pstate);
-+	void (*get_vid)(struct cpudata *);
- };
- 
- struct cpu_defaults {
-@@ -358,6 +367,42 @@ static int byt_get_max_pstate(void)
- 	return (value >> 16) & 0xFF;
- }
- 
-+static void byt_set_pstate(struct cpudata *cpudata, int pstate)
-+{
-+	u64 val;
-+	int32_t vid_fp;
-+	u32 vid;
-+
-+	val = pstate << 8;
-+	if (limits.no_turbo)
-+		val |= (u64)1 << 32;
-+
-+	vid_fp = cpudata->vid.min + mul_fp(
-+		int_tofp(pstate - cpudata->pstate.min_pstate),
-+		cpudata->vid.ratio);
-+
-+	vid_fp = clamp_t(int32_t, vid_fp, cpudata->vid.min, cpudata->vid.max);
-+	vid = fp_toint(vid_fp);
-+
-+	val |= vid;
-+
-+	wrmsrl(MSR_IA32_PERF_CTL, val);
-+}
-+
-+static void byt_get_vid(struct cpudata *cpudata)
-+{
-+	u64 value;
-+
-+	rdmsrl(BYT_VIDS, value);
-+	cpudata->vid.min = int_tofp((value >> 8) & 0x7f);
-+	cpudata->vid.max = int_tofp((value >> 16) & 0x7f);
-+	cpudata->vid.ratio = div_fp(
-+		cpudata->vid.max - cpudata->vid.min,
-+		int_tofp(cpudata->pstate.max_pstate -
-+			cpudata->pstate.min_pstate));
-+}
-+
-+
- static int core_get_min_pstate(void)
+--- a/fs/btrfs/ctree.c
++++ b/fs/btrfs/ctree.c
+@@ -772,7 +772,7 @@ tree_mod_log_set_node_key(struct btrfs_f
  {
- 	u64 value;
-@@ -384,7 +429,7 @@ static int core_get_turbo_pstate(void)
- 	return ret;
- }
+ 	int ret;
  
--static void core_set_pstate(int pstate)
-+static void core_set_pstate(struct cpudata *cpudata, int pstate)
- {
- 	u64 val;
- 
-@@ -425,7 +470,8 @@ static struct cpu_defaults byt_params =
- 		.get_max = byt_get_max_pstate,
- 		.get_min = byt_get_min_pstate,
- 		.get_turbo = byt_get_max_pstate,
--		.set = core_set_pstate,
-+		.set = byt_set_pstate,
-+		.get_vid = byt_get_vid,
- 	},
- };
- 
-@@ -462,7 +508,7 @@ static void intel_pstate_set_pstate(stru
- 
- 	cpu->pstate.current_pstate = pstate;
- 
--	pstate_funcs.set(pstate);
-+	pstate_funcs.set(cpu, pstate);
- }
- 
- static inline void intel_pstate_pstate_increase(struct cpudata *cpu, int steps)
-@@ -488,6 +534,9 @@ static void intel_pstate_get_cpu_pstates
- 	cpu->pstate.max_pstate = pstate_funcs.get_max();
- 	cpu->pstate.turbo_pstate = pstate_funcs.get_turbo();
- 
-+	if (pstate_funcs.get_vid)
-+		pstate_funcs.get_vid(cpu);
-+
- 	/*
- 	 * goto max pstate so we don't slow up boot if we are built-in if we are
- 	 * a module we will take care of it during normal operation
-@@ -782,6 +831,7 @@ static void copy_cpu_funcs(struct pstate
- 	pstate_funcs.get_min   = funcs->get_min;
- 	pstate_funcs.get_turbo = funcs->get_turbo;
- 	pstate_funcs.set       = funcs->set;
-+	pstate_funcs.get_vid   = funcs->get_vid;
- }
- 
- #if IS_ENABLED(CONFIG_ACPI)
+-	ret = __tree_mod_log_insert_key(fs_info, eb, slot,
++	ret = tree_mod_log_insert_key(fs_info, eb, slot,
+ 					MOD_LOG_KEY_REPLACE,
+ 					atomic ? GFP_ATOMIC : GFP_NOFS);
+ 	BUG_ON(ret < 0);
 
 
