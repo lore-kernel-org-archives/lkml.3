@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760648AbaCUKef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:34:35 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:35552 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759943AbaCUKee (ORCPT
+	id S1760674AbaCUKem (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:34:42 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:46607 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759943AbaCUKei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:34:34 -0400
-Message-ID: <532C23BF.4040208@cogentembedded.com>
-Date: Fri, 21 Mar 2014 14:34:23 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 21 Mar 2014 06:34:38 -0400
+Date: Fri, 21 Mar 2014 10:34:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] regulator: arizona-ldo1: Add processing of init_data
+ from device tree
+Message-ID: <20140321103432.GF15213@lee--X1>
+References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Zheng Li <zheng.x.li@oracle.com>, netdev@vger.kernel.org, fubar@us.ibm.com,
-        andy@greyhouse.net
-CC: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
- value to 1.
-References: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com>
-In-Reply-To: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
-
-On 03/20/2014 11:51 AM, Zheng Li wrote:
-
-> Except bond mode 1, in other bond modes, inactive slaves should keep inactive flag to
-> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
-> (for example ARP requests) which will arrive inactive slaves on same host from switch,
-> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
-> packets to produce a wrong entry in forward table. Typical situation is domu send some
-> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
-> packets go back to inactive slave from switch, because the inactive slave's inactive
-> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
-> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
-
-> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 > ---
->   drivers/net/bonding/bond_main.c |    2 +-
->   1 files changed, 1 insertions(+), 1 deletions(-)
+>  Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++
 
-> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-> index e5628fc..2f73f18 100644
-> --- a/drivers/net/bonding/bond_main.c
-> +++ b/drivers/net/bonding/bond_main.c
-> @@ -3063,7 +3063,7 @@ static int bond_open(struct net_device *bond_dev)
->   				bond_set_slave_inactive_flags(slave,
->   							      BOND_SLAVE_NOTIFY_NOW);
->   			} else {
-> -				bond_set_slave_active_flags(slave,
-> +				bond_set_slave_state(slave, BOND_STATE_ACTIVE,
->   							    BOND_SLAVE_NOTIFY_NOW);
+I can see why you're doing it like this, but it's probably best to do
+all of the document changes in one single (separate) patch.
 
-    Now you have to re-indent this line to start right under 'state'.
+>  drivers/regulator/arizona-ldo1.c                  |   46 +++++++++++++++++++-
+>  2 files changed, 50 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
+> index 36a0c3d..9d54c70 100644
+> --- a/Documentation/devicetree/bindings/mfd/arizona.txt
+> +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
+> @@ -42,6 +42,13 @@ Optional properties:
+>      the chip default will be used.  If present exactly five values must
+>      be specified.
+>  
+> +  - ldo1 : Initial data for the LDO1 regulator, as covered in
+> +    Documentation/devicetree/bindings/regulator/regulator.txt
+> +
+> +  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
+> +    externally supplied. As covered in
+> +    Documentation/devicetree/bindings/regulator/regulator.txt
+> +
 
-WBR, Sergei
+Looks fine to me again, but I'd still like a regulator and/or DT guy
+to Ack.
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
