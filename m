@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965817AbaCUBMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:12:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36684 "EHLO
+	id S965013AbaCUAEE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965046AbaCUAEI (ORCPT
+	with ESMTP id S964875AbaCUAEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:08 -0400
+	Thu, 20 Mar 2014 20:04:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 072/149] ACPI / resources: ignore invalid ACPI device resources
-Date: Thu, 20 Mar 2014 17:03:55 -0700
-Message-Id: <20140321000439.452672105@linuxfoundation.org>
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Xiaoming Wang <xiaoming.wang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.13 069/149] genirq: Remove racy waitqueue_active check
+Date: Thu, 20 Mar 2014 17:03:52 -0700
+Message-Id: <20140321000439.349747588@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,71 +30,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Zhang Rui <rui.zhang@intel.com>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
+commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
 
-ACPI table may export resource entry with 0 length.
-But the current code interprets this kind of resource in a wrong way.
-It will create a resource structure with
-res->end = acpi_resource->start + acpi_resource->len - 1;
+We hit one rare case below:
 
-This patch fixes a problem on my machine that a platform device fails
-to be created because one of its ACPI IO resource entry (start = 0,
-end = 0, length = 0) is translated into a generic resource with
-start = 0, end = 0xffffffff.
+T1 calling disable_irq(), but hanging at synchronize_irq()
+always;
+The corresponding irq thread is in sleeping state;
+And all CPUs are in idle state;
 
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+After analysis, we found there is one possible scenerio which
+causes T1 is waiting there forever:
+CPU0                                       CPU1
+ synchronize_irq()
+  wait_event()
+    spin_lock()
+                                           atomic_dec_and_test(&threads_active)
+      insert the __wait into queue
+    spin_unlock()
+                                           if(waitqueue_active)
+    atomic_read(&threads_active)
+                                             wake_up()
+
+Here after inserted the __wait into queue on CPU0, and before
+test if queue is empty on CPU1, there is no barrier, it maybe
+cause it is not visible for CPU1 immediately, although CPU0 has
+updated the queue list.
+It is similar for CPU0 atomic_read() threads_active also.
+
+So we'd need one smp_mb() before waitqueue_active.that, but removing
+the waitqueue_active() check solves it as wel l and it makes
+things simple and clear.
+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: Xiaoming Wang <xiaoming.wang@intel.com>
+Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/resource.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ kernel/irq/manage.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/acpi/resource.c
-+++ b/drivers/acpi/resource.c
-@@ -77,18 +77,24 @@ bool acpi_dev_resource_memory(struct acp
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_MEMORY24:
- 		memory24 = &ares->data.memory24;
-+		if (!memory24->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory24->minimum,
- 					 memory24->address_length,
- 					 memory24->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_MEMORY32:
- 		memory32 = &ares->data.memory32;
-+		if (!memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, memory32->minimum,
- 					 memory32->address_length,
- 					 memory32->write_protect);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_MEMORY32:
- 		fixed_memory32 = &ares->data.fixed_memory32;
-+		if (!fixed_memory32->address_length)
-+			return false;
- 		acpi_dev_get_memresource(res, fixed_memory32->address,
- 					 fixed_memory32->address_length,
- 					 fixed_memory32->write_protect);
-@@ -144,12 +150,16 @@ bool acpi_dev_resource_io(struct acpi_re
- 	switch (ares->type) {
- 	case ACPI_RESOURCE_TYPE_IO:
- 		io = &ares->data.io;
-+		if (!io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, io->minimum,
- 					io->address_length,
- 					io->io_decode);
- 		break;
- 	case ACPI_RESOURCE_TYPE_FIXED_IO:
- 		fixed_io = &ares->data.fixed_io;
-+		if (!fixed_io->address_length)
-+			return false;
- 		acpi_dev_get_ioresource(res, fixed_io->address,
- 					fixed_io->address_length,
- 					ACPI_DECODE_10);
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -802,8 +802,7 @@ static irqreturn_t irq_thread_fn(struct
+ 
+ static void wake_threads_waitq(struct irq_desc *desc)
+ {
+-	if (atomic_dec_and_test(&desc->threads_active) &&
+-	    waitqueue_active(&desc->wait_for_threads))
++	if (atomic_dec_and_test(&desc->threads_active))
+ 		wake_up(&desc->wait_for_threads);
+ }
+ 
 
 
