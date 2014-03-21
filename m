@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977AbaCUQnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 12:43:00 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:46514 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760765AbaCUQm5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 12:42:57 -0400
-Message-ID: <532C6C0E.3040608@bjorling.me>
-Date: Fri, 21 Mar 2014 09:42:54 -0700
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard.weinberger@gmail.com>
-CC: snitzer@redhat.com, agk@redhat.com, dm-devel@redhat.com,
-        NeilBrown <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC v1 00/01] dm-lightnvm introduction
-References: <1395383538-18019-1-git-send-email-m@bjorling.me> <CAFLxGvxVYZtXS+PAD4gzGHb6U8HbPOajqT_sF692S-kM5bNJ9A@mail.gmail.com>
-In-Reply-To: <CAFLxGvxVYZtXS+PAD4gzGHb6U8HbPOajqT_sF692S-kM5bNJ9A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	id S965156AbaCUQor (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 12:44:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8964 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753680AbaCUQon (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 12:44:43 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        hadi@mojatatu.com, davem@davemloft.net
+Subject: [PATCH] netlink: simplify nfnetlink_bind
+Date: Fri, 21 Mar 2014 12:44:09 -0400
+Message-Id: <d9a410952c6b88e5855d36f91c06d466d2ce9bed.1395418617.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 08:32 AM, Richard Weinberger wrote:
-> On Fri, Mar 21, 2014 at 7:32 AM, Matias Bjørling <m@bjorling.me> wrote:
-<snip>
-> 
-> This sounds very interesting!
-> 
-> Is there also a way to expose the flash directly as MTD device?
-> I'm thinking of UBI. Maybe both projects can benefit from each others.
-> 
+Remove duplicity and simplify code flow by moving the rcu_read_unlock() above
+the condition and let the flow control exit naturally at the end of the
+function.
 
-Hi Richard,
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ net/netfilter/nfnetlink.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-Yes, mostly. It's different from MTD, in that all flash is exposed
-through a linear address space, from which the FTL is layered on top.
-This allows the device to still do some work, such as ECC, RAID, etc. if
-it choose to, but also allows the host to do it.
-
-I think UBI could be a good choice for maintaining each of the flash
-"partitions" as there's a lot of small subtle details that have to be
-taken care of.
-
-- Matias
+diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+index 046aa13..75619f9 100644
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -399,12 +399,10 @@ static void nfnetlink_bind(int group)
+ 
+ 	rcu_read_lock();
+ 	ss = nfnetlink_get_subsys(type);
++	rcu_read_unlock();
+ 	if (!ss) {
+-		rcu_read_unlock();
+ 		request_module("nfnetlink-subsys-%d", type);
+-		return;
+ 	}
+-	rcu_read_unlock();
+ }
+ #endif
+ 
+-- 
+1.7.1
 
