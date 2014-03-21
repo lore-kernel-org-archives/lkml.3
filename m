@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760706AbaCUBKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:10:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36702 "EHLO
+	id S1760722AbaCUBKq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:10:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965139AbaCUAEM (ORCPT
+	with ESMTP id S965125AbaCUAEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:04:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.13 068/149] Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
-Date: Thu, 20 Mar 2014 17:03:51 -0700
-Message-Id: <20140321000439.316701395@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net
+Subject: [PATCH 3.13 077/149] firewire: dont use PREPARE_DELAYED_WORK
+Date: Thu, 20 Mar 2014 17:04:00 -0700
+Message-Id: <20140321000439.632091848@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,72 +29,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit e2ed511400d41e0d136089d5a55ceab57c6a2426 upstream.
+commit 70044d71d31d6973665ced5be04ef39ac1c09a48 upstream.
 
-This reverts commit 247bf557273dd775505fb9240d2d152f4f20d304.
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-This commit, together with commit 3804fad45411b48233b48003e33a78f290d227c8
-"USBNET: ax88179_178a: enable tso if usb host supports sg dma" were
-origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
-working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
-buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
-storage devices to fail more frequently.
+firewire core-device and sbp2 have been been multiplexing work items
+with multiple work functions.  Introduce fw_device_workfn() and
+sbp2_lu_workfn() which invoke fw_device->workfn and
+sbp2_logical_unit->workfn respectively and always use the two
+functions as the work functions and update the users to set the
+->workfn fields instead of overriding work functions using
+PREPARE_DELAYED_WORK().
 
-USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
-the TD fragment rules could have caused an occasional disk glitch.
-Now the devices *will* fail, instead of theoretically failing.
->From a user perspective, this looks like a regression; the USB device obviously
-fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
+This fixes a variety of possible regressions since a2c1c57be8d9
+"workqueue: consider work function when searching for busy work items"
+due to which fw_workqueue lost its required non-reentrancy property.
 
-The proper soluition is to implement the TD fragment rules required, but for now
-this patch needs to be reverted to get USB 3.0 mass storage devices working at the
-level they used to.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci.c |   14 +++-----------
- 1 file changed, 3 insertions(+), 11 deletions(-)
+ drivers/firewire/core-device.c |   22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        |   17 +++++++++++++----
+ include/linux/firewire.h       |    1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -4719,6 +4719,9 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 	/* Accept arbitrarily long scatter-gather lists */
- 	hcd->self.sg_tablesize = ~0;
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -916,7 +916,7 @@ static int lookup_existing_device(struct
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
  
-+	/* support to build packet from discontinuous buffers */
-+	hcd->self.no_sg_constraint = 1;
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
+ 
+ 		if (current_node == card->root_node)
+@@ -1075,7 +1075,7 @@ static void fw_device_init(struct work_s
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1196,13 +1196,20 @@ static void fw_device_refresh(struct wor
+ 		  dev_name(&device->device), fw_rcode_string(ret));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
+ 
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
 +
- 	/* XHCI controllers don't stop the ep queue on short packets :| */
- 	hcd->self.no_stop_on_short = 1;
- 
-@@ -4743,14 +4746,6 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 		/* xHCI private pointer was set in xhci_pci_probe for the second
- 		 * registered roothub.
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1252,7 +1259,8 @@ void fw_node_event(struct fw_card *card,
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
  		 */
--		xhci = hcd_to_xhci(hcd);
--		/*
--		 * Support arbitrarily aligned sg-list entries on hosts without
--		 * TD fragment rules (which are currently unsupported).
--		 */
--		if (xhci->hci_version < 0x100)
--			hcd->self.no_sg_constraint = 1;
--
- 		return 0;
- 	}
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
  
-@@ -4777,9 +4772,6 @@ int xhci_gen_setup(struct usb_hcd *hcd,
- 	if (xhci->hci_version > 0x96)
- 		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+@@ -1268,7 +1276,7 @@ void fw_node_event(struct fw_card *card,
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1283,7 +1291,7 @@ void fw_node_event(struct fw_card *card,
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1308,7 +1316,7 @@ void fw_node_event(struct fw_card *card,
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struc
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
  
--	if (xhci->hci_version < 0x100)
--		hcd->self.no_sg_constraint = 1;
--
- 	/* Make sure the HC is halted. */
- 	retval = xhci_halt(xhci);
- 	if (retval)
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struc
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_s
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_s
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -200,6 +200,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
 
 
