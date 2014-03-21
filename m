@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966402AbaCUAjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:39:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37094 "EHLO
+	id S966818AbaCUAjJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:39:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37070 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965875AbaCUAIu (ORCPT
+	with ESMTP id S965862AbaCUAIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:50 -0400
+	Thu, 20 Mar 2014 20:08:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 36/85] regulator: core: Replace direct ops->enable usage
-Date: Thu, 20 Mar 2014 17:09:39 -0700
-Message-Id: <20140321000603.890191952@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.10 34/85] powerpc: Align p_dyn, p_rela and p_st symbols
+Date: Thu, 20 Mar 2014 17:09:37 -0700
+Message-Id: <20140321000603.540207357@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,67 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Anton Blanchard <anton@samba.org>
 
-commit 30c219710358c5cca2f8bd2e9e547c6aadf7cf8b upstream.
+commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
 
-There are some direct ops->enable in the regulator core driver. This is
-a potential issue as the function _regulator_do_enable() handles gpio
-regulators and the normal ops->enable calls. These gpio regulators are
-simply ignored when ops->enable is called directly.
+The 64bit relocation code places a few symbols in the text segment.
+These symbols are only 4 byte aligned where they need to be 8 byte
+aligned. Add an explicit alignment.
 
-One possible bug is that boot-on and always-on gpio regulators are not
-enabled on registration.
-
-This patch replaces all ops->enable calls by _regulator_do_enable.
-
-[Handle missing enable operations -- broonie]
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/regulator/core.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ arch/powerpc/kernel/reloc_64.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -919,6 +919,8 @@ static int machine_constraints_voltage(s
- 	return 0;
- }
+--- a/arch/powerpc/kernel/reloc_64.S
++++ b/arch/powerpc/kernel/reloc_64.S
+@@ -81,6 +81,7 @@ _GLOBAL(relocate)
  
-+static int _regulator_do_enable(struct regulator_dev *rdev);
-+
- /**
-  * set_machine_constraints - sets regulator constraints
-  * @rdev: regulator source
-@@ -975,10 +977,9 @@ static int set_machine_constraints(struc
- 	/* If the constraints say the regulator should be on at this point
- 	 * and we have control then make sure it is enabled.
- 	 */
--	if ((rdev->constraints->always_on || rdev->constraints->boot_on) &&
--	    ops->enable) {
--		ret = ops->enable(rdev);
--		if (ret < 0) {
-+	if (rdev->constraints->always_on || rdev->constraints->boot_on) {
-+		ret = _regulator_do_enable(rdev);
-+		if (ret < 0 && ret != -EINVAL) {
- 			rdev_err(rdev, "failed to enable\n");
- 			goto out;
- 		}
-@@ -3790,9 +3791,8 @@ int regulator_suspend_finish(void)
- 		struct regulator_ops *ops = rdev->desc->ops;
+ 6:	blr
  
- 		mutex_lock(&rdev->mutex);
--		if ((rdev->use_count > 0  || rdev->constraints->always_on) &&
--				ops->enable) {
--			error = ops->enable(rdev);
-+		if (rdev->use_count > 0  || rdev->constraints->always_on) {
-+			error = _regulator_do_enable(rdev);
- 			if (error)
- 				ret = error;
- 		} else {
++.balign 8
+ p_dyn:	.llong	__dynamic_start - 0b
+ p_rela:	.llong	__rela_dyn_start - 0b
+ p_st:	.llong	_stext - 0b
 
 
