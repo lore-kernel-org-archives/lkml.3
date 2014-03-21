@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966552AbaCUAYI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:24:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37286 "EHLO
+	id S966563AbaCUAYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:24:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37282 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966046AbaCUAJX (ORCPT
+	with ESMTP id S966041AbaCUAJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 80/85] iwlwifi: mvm: dont WARN when statistics are handled late
-Date: Thu, 20 Mar 2014 17:10:23 -0700
-Message-Id: <20140321000610.193496183@linuxfoundation.org>
+        Prarit Bhargava <prarit@redhat.com>, athorlton@sgi.com,
+        CAI Qian <caiqian@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH 3.10 79/85] tick: Make oneshot broadcast robust vs. CPU offlining
+Date: Thu, 20 Mar 2014 17:10:22 -0700
+Message-Id: <20140321000610.050155107@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,42 +30,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-commit 1e9291996c4eedf79883f47ec635235e39d3d6cd upstream.
+commit c9b5a266b103af873abb9ac03bc3d067702c8f4b upstream.
 
-Since the statistics handler is asynchrous, it can very well
-be that we will handle the statistics (hence the RSSI
-fluctuation) when we already disassociated.
-Don't WARN on this case.
+In periodic mode we remove offline cpus from the broadcast propagation
+mask. In oneshot mode we fail to do so. This was not a problem so far,
+but the recent changes to the broadcast propagation introduced a
+constellation which can result in a NULL pointer dereference.
 
-This solves: https://bugzilla.redhat.com/show_bug.cgi?id=1071998
+What happens is:
 
-Fixes: 2b76ef13086f ("iwlwifi: mvm: implement reduced Tx power")
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+CPU0			CPU1
+			idle()
+			  arch_idle()
+			    tick_broadcast_oneshot_control(OFF);
+			      set cpu1 in tick_broadcast_force_mask
+			  if (cpu_offline())
+			     arch_cpu_dead()
+
+cpu_dead_cleanup(cpu1)
+ cpu1 tickdevice pointer = NULL
+
+broadcast interrupt
+  dereference cpu1 tickdevice pointer -> OOPS
+
+We dereference the pointer because cpu1 is still set in
+tick_broadcast_force_mask and tick_do_broadcast() expects a valid
+cpumask and therefor lacks any further checks.
+
+Remove the cpu from the tick_broadcast_force_mask before we set the
+tick device pointer to NULL. Also add a sanity check to the oneshot
+broadcast function, so we can detect such issues w/o crashing the
+machine.
+
+Reported-by: Prarit Bhargava <prarit@redhat.com>
+Cc: athorlton@sgi.com
+Cc: CAI Qian <caiqian@redhat.com>
+Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- drivers/net/wireless/iwlwifi/mvm/bt-coex.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ kernel/time/tick-broadcast.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/bt-coex.c
-@@ -523,8 +523,11 @@ void iwl_mvm_bt_rssi_event(struct iwl_mv
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -594,6 +594,13 @@ again:
+ 	cpumask_clear(tick_broadcast_force_mask);
  
- 	mutex_lock(&mvm->mutex);
- 
--	/* Rssi update while not associated ?! */
--	if (WARN_ON_ONCE(mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT))
-+	/*
-+	 * Rssi update while not associated - can happen since the statistics
-+	 * are handled asynchronously
+ 	/*
++	 * Sanity check. Catch the case where we try to broadcast to
++	 * offline cpus.
 +	 */
-+	if (mvmvif->ap_sta_id == IWL_MVM_STATION_COUNT)
- 		goto out_unlock;
++	if (WARN_ON_ONCE(!cpumask_subset(tmpmask, cpu_online_mask)))
++		cpumask_and(tmpmask, tmpmask, cpu_online_mask);
++
++	/*
+ 	 * Wakeup the cpus which have an expired event.
+ 	 */
+ 	tick_do_broadcast(tmpmask);
+@@ -834,10 +841,12 @@ void tick_shutdown_broadcast_oneshot(uns
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
  
- 	/* No open connection - reports should be disabled */
+ 	/*
+-	 * Clear the broadcast mask flag for the dead cpu, but do not
+-	 * stop the broadcast device!
++	 * Clear the broadcast masks for the dead cpu, but do not stop
++	 * the broadcast device!
+ 	 */
+ 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
++	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
++	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
+ 
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
 
 
