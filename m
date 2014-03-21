@@ -1,79 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaCUFLq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:11:46 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:8362
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750987AbaCUFLo convert rfc822-to-8bit (ORCPT
+	id S1754332AbaCUFRY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:17:24 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:57190 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaCUFRW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:11:44 -0400
-From: "suresh.gupta@freescale.com" <suresh.gupta@freescale.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: "balbi@ti.com" <balbi@ti.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2] USB: Gadget: fsl driver pullup fix
-Thread-Topic: [PATCH v2] USB: Gadget: fsl driver pullup fix
-Thread-Index: AQHPREywH86woTwtqECkodyrB5sINJrqI0MAgADb4qA=
-Date: Fri, 21 Mar 2014 05:11:41 +0000
-Message-ID: <e0bac17b63014214aaab07750d1b9cc2@BN1PR03MB251.namprd03.prod.outlook.com>
-References: <1395347238-22518-1-git-send-email-suresh.gupta@freescale.com>
- <20140320160328.GB18120@kroah.com>
-In-Reply-To: <20140320160328.GB18120@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.88.169.1]
-x-forefront-prvs: 0157DEB61B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(377454003)(189002)(199002)(51704005)(13464003)(77096001)(76796001)(76786001)(76576001)(46102001)(94316002)(51856001)(74876001)(66066001)(80022001)(65816001)(79102001)(77982001)(59766001)(81342001)(94946001)(74706001)(85306002)(63696002)(20776003)(95416001)(69226001)(54316002)(56776001)(93516002)(54356001)(33646001)(53806001)(81542001)(86362001)(92566001)(83072002)(85852003)(49866001)(47736001)(81686001)(74366001)(4396001)(81816001)(93136001)(47976001)(50986001)(56816005)(2656002)(76482001)(97186001)(97336001)(90146001)(87266001)(95666003)(87936001)(80976001)(74316001)(19580395003)(19580405001)(83322001)(74662001)(74502001)(47446002)(31966008)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1PR03MB252;H:BN1PR03MB251.namprd03.prod.outlook.com;FPR:68387966.A6379FE6.B1F539E5.C1E2FAF9.2024C;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Mar 2014 01:17:22 -0400
+Date: Thu, 20 Mar 2014 22:16:21 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+cc: Shaohua Li <shli@kernel.org>, sasha.levin@oracle.com, linux-mm@kvack.org,
+        akpm@linux-foundation.org, mpm@selenic.com, cpw@sgi.com,
+        kosaki.motohiro@jp.fujitsu.com, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
+        aneesh.kumar@linux.vnet.ibm.com, xemul@parallels.com, riel@redhat.com,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] madvise: fix locking in force_swapin_readahead() (Re:
+ [PATCH 08/11] madvise: redefine callback functions for page table walker)
+In-Reply-To: <532ba74e.48c70e0a.7b9e.119cSMTPIN_ADDED_BROKEN@mx.google.com>
+Message-ID: <alpine.LSU.2.11.1403202159190.1488@eggly.anvils>
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-9-git-send-email-n-horiguchi@ah.jp.nec.com> <532B9A18.8020606@oracle.com> <532ba74e.48c70e0a.7b9e.119cSMTPIN_ADDED_BROKEN@mx.google.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 20 Mar 2014, Naoya Horiguchi wrote:
+> On Thu, Mar 20, 2014 at 09:47:04PM -0400, Sasha Levin wrote:
+> > On 02/10/2014 04:44 PM, Naoya Horiguchi wrote:
+> > >swapin_walk_pmd_entry() is defined as pmd_entry(), but it has no code
+> > >about pmd handling (except pmd_none_or_trans_huge_or_clear_bad, but the
+> > >same check are now done in core page table walk code).
+> > >So let's move this function on pte_entry() as swapin_walk_pte_entry().
+> > >
+> > >Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
+> > 
+> > This patch seems to generate:
+> 
+> Sasha, thank you for reporting.
+> I forgot to unlock ptlock before entering read_swap_cache_async() which
+> holds page lock in it, as a result lock ordering rule (written in mm/rmap.c)
+> was violated (we should take in the order of mmap_sem -> page lock -> ptlock.)
+> The following patch should fix this. Could you test with it?
+> 
+> ---
+> From c0d56af5874dc40467c9b3a0f9e53b39b3c4f1c5 Mon Sep 17 00:00:00 2001
+> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Date: Thu, 20 Mar 2014 22:30:51 -0400
+> Subject: [PATCH] madvise: fix locking in force_swapin_readahead()
+> 
+> We take mmap_sem and ptlock in walking over ptes with swapin_walk_pte_entry(),
+> but inside it we call read_swap_cache_async() which holds page lock.
+> So we should unlock ptlock to call read_swap_cache_async() to meet lock order
+> rule (mmap_sem -> page lock -> ptlock).
+> 
+> Reported-by: Sasha Levin <sasha.levin@oracle.com>
+> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
+NAK.  You are now unlocking and relocking the spinlock, good; but on
+arm frv or i386 CONFIG_HIGHPTE you are leaving the page table atomically
+kmapped across read_swap_cache_async(), which (never mind lock ordering)
+is quite likely to block waiting to allocate memory.
 
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Thursday, March 20, 2014 9:33 PM
-> To: Gupta Suresh-B42813
-> Cc: balbi@ti.com; linux-usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH v2] USB: Gadget: fsl driver pullup fix
+I do not see
+madvise-redefine-callback-functions-for-page-table-walker.patch
+as an improvement.  I can see what's going on in Shaohua's original
+code, whereas this style makes bugs more likely.  Please drop it.
+
+Hugh
+
+> ---
+>  mm/madvise.c | 11 +++++++++++
+>  1 file changed, 11 insertions(+)
 > 
-> On Fri, Mar 21, 2014 at 01:57:18AM +0530, Suresh Gupta wrote:
-> > This fix the fsl usb gadget driver in a way that the usb device will
-> > be only "pulled up" on requests only when vbus is powered
-> >
-> > Signed-off-by: Suresh Gupta <suresh.gupta@freescale.com>
-> > ---
-> > Changes from previous version:
-> > * Removed re-factored code, Will send another patch for re-factoring
-> >   duplicated code
-> > * Changed Description
-> >
-> >  drivers/usb/gadget/fsl_udc_core.c | 4 ++++
-> >  1 file changed, 4 insertions(+)
-> >
-> > diff --git a/drivers/usb/gadget/fsl_udc_core.c
-> > b/drivers/usb/gadget/fsl_udc_core.c
-> > index 35cb972..49d66779 100644
-> > --- a/drivers/usb/gadget/fsl_udc_core.c
-> > +++ b/drivers/usb/gadget/fsl_udc_core.c
-> > @@ -1219,6 +1219,10 @@ static int fsl_pullup(struct usb_gadget *gadget,
-> int is_on)
-> >  	struct fsl_udc *udc;
-> >
-> >  	udc = container_of(gadget, struct fsl_udc, gadget);
-> > +
-> > +	if(!udc->vbus_active)
-> > +		return -EOPNOTSUPP;
+> diff --git a/mm/madvise.c b/mm/madvise.c
+> index 5e957b984c14..ed9c31e3b5ff 100644
+> --- a/mm/madvise.c
+> +++ b/mm/madvise.c
+> @@ -141,24 +141,35 @@ static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
+>  	swp_entry_t entry;
+>  	struct page *page;
+>  	struct vm_area_struct *vma = walk->vma;
+> +	spinlock_t *ptl = (spinlock_t *)walk->private;
+>  
+>  	if (pte_present(*pte) || pte_none(*pte) || pte_file(*pte))
+>  		return 0;
+>  	entry = pte_to_swp_entry(*pte);
+>  	if (unlikely(non_swap_entry(entry)))
+>  		return 0;
+> +	spin_unlock(ptl);
+>  	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
+>  				     vma, start);
+> +	spin_lock(ptl);
+>  	if (page)
+>  		page_cache_release(page);
+>  	return 0;
+>  }
+>  
+> +static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
+> +	unsigned long end, struct mm_walk *walk)
+> +{
+> +	walk->private = pte_lockptr(walk->mm, pmd);
+> +	return 0;
+> +}
+> +
+>  static void force_swapin_readahead(struct vm_area_struct *vma,
+>  		unsigned long start, unsigned long end)
+>  {
+>  	struct mm_walk walk = {
+>  		.mm = vma->vm_mm,
+> +		.pmd_entry = swapin_walk_pmd_entry,
+>  		.pte_entry = swapin_walk_pte_entry,
+>  	};
+>  
+> -- 
+> 1.8.5.3
 > 
-> Always run your patches through scripts/checkpatch.pl so they don't get
-> rejected for silly things like the wrong coding style...
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 > 
-Accepted, Sorry for such a inane mistake 
