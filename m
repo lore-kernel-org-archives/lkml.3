@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966854AbaCUBRN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:17:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36610 "EHLO
+	id S966889AbaCUBRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:17:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36613 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760493AbaCUADy (ORCPT
+	with ESMTP id S1760492AbaCUADy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:03:54 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3.13 047/149] ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
-Date: Thu, 20 Mar 2014 17:03:30 -0700
-Message-Id: <20140321000438.599004503@linuxfoundation.org>
+        Julius Werner <jwerner@chromium.org>
+Subject: [PATCH 3.13 067/149] usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
+Date: Thu, 20 Mar 2014 17:03:50 -0700
+Message-Id: <20140321000439.281636567@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,32 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Volkov <v1ron@mail.ru>
+From: Julius Werner <jwerner@chromium.org>
 
-commit 3dd77654fb1d7f68b9739f3039bad8dbbc0739f8 upstream.
+commit d86db25e53fa69e3e97f3b55dd82a70689787c5d upstream.
 
-Actually CS4245 connected to the I2S channel 1 for
-capture, not channel 2. Otherwise capturing and
-playback does not work for CS4245.
+The DELAY_INIT quirk only reduces the frequency of enumeration failures
+with the Logitech HD Pro C920 and C930e webcams, but does not quite
+eliminate them. We have found that adding a delay of 100ms between the
+first and second Get Configuration request makes the device enumerate
+perfectly reliable even after several weeks of extensive testing. The
+reasons for that are anyone's guess, but since the DELAY_INIT quirk
+already delays enumeration by a whole second, wating for another 10th of
+that isn't really a big deal for the one other device that uses it, and
+it will resolve the problems with these webcams.
 
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Signed-off-by: Julius Werner <jwerner@chromium.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/oxygen/xonar_dg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/core/config.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -596,7 +596,7 @@ struct oxygen_model model_xonar_dg = {
- 	.model_data_size = sizeof(struct dg),
- 	.device_config = PLAYBACK_0_TO_I2S |
- 			 PLAYBACK_1_TO_SPDIF |
--			 CAPTURE_0_FROM_I2S_2 |
-+			 CAPTURE_0_FROM_I2S_1 |
- 			 CAPTURE_1_FROM_SPDIF,
- 	.dac_channels_pcm = 6,
- 	.dac_channels_mixer = 0,
+--- a/drivers/usb/core/config.c
++++ b/drivers/usb/core/config.c
+@@ -718,6 +718,10 @@ int usb_get_configuration(struct usb_dev
+ 			result = -ENOMEM;
+ 			goto err;
+ 		}
++
++		if (dev->quirks & USB_QUIRK_DELAY_INIT)
++			msleep(100);
++
+ 		result = usb_get_descriptor(dev, USB_DT_CONFIG, cfgno,
+ 		    bigbuffer, length);
+ 		if (result < 0) {
 
 
