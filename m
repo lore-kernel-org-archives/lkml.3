@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760521AbaCUAD5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36605 "EHLO
+	id S966430AbaCUBPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:15:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36637 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760479AbaCUADv (ORCPT
+	with ESMTP id S1760526AbaCUAD7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:51 -0400
+	Thu, 20 Mar 2014 20:03:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 3.13 065/149] Revert "USBNET: ax88179_178a: enable tso if usb host supports sg dma"
-Date: Thu, 20 Mar 2014 17:03:48 -0700
-Message-Id: <20140321000439.216740065@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.13 053/149] ALSA: hda - Fix loud click noise with IdeaPad 410Y
+Date: Thu, 20 Mar 2014 17:03:36 -0700
+Message-Id: <20140321000438.798978039@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,57 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 469d417b68958a064c09e7875646c97c6e783dfc upstream.
+commit 9b745ab897199c2af9f21ca9681ef86d5b971002 upstream.
 
-This reverts commit 3804fad45411b48233b48003e33a78f290d227c8.
+Lenovo IdeaPad 410Y with ALC282 codec makes loud click noises at boot
+and shutdown.  Also, it wrongly misdetects the acpi_thinkpad hook.
+This patch adds a device-specific fixup for disabling the shutup
+callback that is the cause of the click noise and also avoiding the
+thinpad_helper calls.
 
-This commit, together with commit 247bf557273dd775505fb9240d2d152f4f20d304
-"xhci 1.0: Limit arbitrarily-aligned scatter gather." were
-origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
-working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
-buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
-storage devices to fail more frequently.
-
-USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
-the TD fragment rules could have caused an occasional disk glitch.
-Now the devices *will* fail, instead of theoretically failing.
->From a user perspective, this looks like a regression; the USB device obviously
-fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
-
-The proper soluition is to implement the TD fragment rules for xHCI 1.0 hosts,
-but for now, revert this patch until scatter gather can be properly supported.
-
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=71511
+Reported-and-tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/usb/ax88179_178a.c |    8 --------
- 1 file changed, 8 deletions(-)
+ sound/pci/hda/patch_realtek.c |   19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
---- a/drivers/net/usb/ax88179_178a.c
-+++ b/drivers/net/usb/ax88179_178a.c
-@@ -1030,20 +1030,12 @@ static int ax88179_bind(struct usbnet *d
- 	dev->mii.phy_id = 0x03;
- 	dev->mii.supports_gmii = 1;
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3559,6 +3559,19 @@ static void alc_fixup_auto_mute_via_amp(
+ 	}
+ }
  
--	if (usb_device_no_sg_constraint(dev->udev))
--		dev->can_dma_sg = 1;
--
- 	dev->net->features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 			      NETIF_F_RXCSUM;
- 
- 	dev->net->hw_features |= NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM |
- 				 NETIF_F_RXCSUM;
- 
--	if (dev->can_dma_sg) {
--		dev->net->features |= NETIF_F_SG | NETIF_F_TSO;
--		dev->net->hw_features |= NETIF_F_SG | NETIF_F_TSO;
--	}
--
- 	/* Enable checksum offload */
- 	*tmp = AX_RXCOE_IP | AX_RXCOE_TCP | AX_RXCOE_UDP |
- 	       AX_RXCOE_TCPV6 | AX_RXCOE_UDPV6;
++static void alc_no_shutup(struct hda_codec *codec)
++{
++}
++
++static void alc_fixup_no_shutup(struct hda_codec *codec,
++				const struct hda_fixup *fix, int action)
++{
++	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
++		struct alc_spec *spec = codec->spec;
++		spec->shutup = alc_no_shutup;
++	}
++}
++
+ static void alc_fixup_headset_mode_alc668(struct hda_codec *codec,
+ 				const struct hda_fixup *fix, int action)
+ {
+@@ -3870,6 +3883,7 @@ enum {
+ 	ALC269_FIXUP_HP_GPIO_LED,
+ 	ALC269_FIXUP_INV_DMIC,
+ 	ALC269_FIXUP_LENOVO_DOCK,
++	ALC269_FIXUP_NO_SHUTUP,
+ 	ALC286_FIXUP_SONY_MIC_NO_PRESENCE,
+ 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
+ 	ALC269_FIXUP_DELL1_MIC_NO_PRESENCE,
+@@ -4042,6 +4056,10 @@ static const struct hda_fixup alc269_fix
+ 		.type = HDA_FIXUP_FUNC,
+ 		.v.func = alc_fixup_inv_dmic_0x12,
+ 	},
++	[ALC269_FIXUP_NO_SHUTUP] = {
++		.type = HDA_FIXUP_FUNC,
++		.v.func = alc_fixup_no_shutup,
++	},
+ 	[ALC269_FIXUP_LENOVO_DOCK] = {
+ 		.type = HDA_FIXUP_PINS,
+ 		.v.pins = (const struct hda_pintbl[]) {
+@@ -4344,6 +4362,7 @@ static const struct snd_pci_quirk alc269
+ 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
+ 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
+ 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
++	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
+ 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
+ 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
+ 	SND_PCI_QUIRK(0x17aa, 0x5026, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
 
 
