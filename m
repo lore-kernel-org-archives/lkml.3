@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966370AbaCUARZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:17:25 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37397 "EHLO
+	id S966379AbaCUARp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:17:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37393 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966148AbaCUAJl (ORCPT
+	with ESMTP id S966143AbaCUAJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:41 -0400
+	Thu, 20 Mar 2014 20:09:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Jeang Daniel <dyjeong@qca.qualcomm.com>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 09/35] mwifiex: copy APs HT capability info correctly
-Date: Thu, 20 Mar 2014 17:11:00 -0700
-Message-Id: <20140321001054.440791070@linuxfoundation.org>
+Subject: [PATCH 3.4 08/35] ath9k: Fix ETSI compliance for AR9462 2.0
+Date: Thu, 20 Mar 2014 17:10:59 -0700
+Message-Id: <20140321001054.405844010@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -29,37 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
+commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
 
-While preparing association request, intersection of device's HT
-capability information and corresponding fields advertised by AP
-is used.
+The minimum CCA power threshold values have to be adjusted
+for existing cards to be in compliance with new regulations.
+Newer cards will make use of the values obtained from EEPROM,
+support for this was added earlier. To make sure that cards
+that are already in use and don't have proper values in EEPROM,
+do not violate regulations, use the initvals instead.
 
-This patch fixes an error while copying this field from AP's
-beacon.
-
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/11n.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -340,8 +340,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifie
- 		ht_cap->header.len =
- 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
- 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *) bss_desc->bcn_ht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_ht_cap,
- 		       le16_to_cpu(ht_cap->header.len));
+--- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
+@@ -55,7 +55,7 @@ static const u32 ar9462_2p0_baseband_pos
+ 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3376605e, 0x33795d5e},
+ 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
+-	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
++	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
+ 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
+ 	{0x00009e3c, 0xcf946220, 0xcf946220, 0xcfd5c782, 0xcfd5c282},
+ 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
+@@ -94,7 +94,7 @@ static const u32 ar9462_2p0_baseband_pos
+ 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
+ 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
+-	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
++	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
+ 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
+ };
  
- 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
 
 
