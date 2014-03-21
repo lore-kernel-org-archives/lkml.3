@@ -1,22 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967030AbaCUBcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:32:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36400 "EHLO
+	id S966987AbaCUBcu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:32:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36392 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760076AbaCUADO (ORCPT
+	with ESMTP id S1760110AbaCUADO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:03:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hugh Dickins <hughd@google.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>, Greg Thelen <gthelen@google.com>,
+        Vlastimil Babka <vbabka@suse.cz>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Thomas Hellstrom <thellstrom@vmware.com>,
+        John David Anglin <dave.anglin@bell.net>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Konstantin Khlebnikov <khlebnikov@openvz.org>,
+        Carsten Otte <cotte@de.ibm.com>, Jared Hulbert <jaredeh@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Rik van Riel <riel@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 006/149] memcg: fix endless loop in __mem_cgroup_iter_next()
-Date: Thu, 20 Mar 2014 17:02:49 -0700
-Message-Id: <20140321000437.113505531@linuxfoundation.org>
+Subject: [PATCH 3.13 003/149] mm: include VM_MIXEDMAP flag in the VM_SPECIAL list to avoid m(un)locking
+Date: Thu, 20 Mar 2014 17:02:46 -0700
+Message-Id: <20140321000436.820193965@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -31,48 +39,103 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hugh Dickins <hughd@google.com>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit ce48225fe3b1b0d1fc9fceb96ac3d8a879e45114 upstream.
+commit 9050d7eba40b3d79551668f54e68fd6f51945ef3 upstream.
 
-Commit 0eef615665ed ("memcg: fix css reference leak and endless loop in
-mem_cgroup_iter") got the interaction with the commit a few before it
-d8ad30559715 ("mm/memcg: iteration skip memcgs not yet fully
-initialized") slightly wrong, and we didn't notice at the time.
+Daniel Borkmann reported a VM_BUG_ON assertion failing:
 
-It's elusive, and harder to get than the original, but for a couple of
-days before rc1, I several times saw a endless loop similar to that
-supposedly being fixed.
+  ------------[ cut here ]------------
+  kernel BUG at mm/mlock.c:528!
+  invalid opcode: 0000 [#1] SMP
+  Modules linked in: ccm arc4 iwldvm [...]
+   video
+  CPU: 3 PID: 2266 Comm: netsniff-ng Not tainted 3.14.0-rc2+ #8
+  Hardware name: LENOVO 2429BP3/2429BP3, BIOS G4ET37WW (1.12 ) 05/29/2012
+  task: ffff8801f87f9820 ti: ffff88002cb44000 task.ti: ffff88002cb44000
+  RIP: 0010:[<ffffffff81171ad0>]  [<ffffffff81171ad0>] munlock_vma_pages_range+0x2e0/0x2f0
+  Call Trace:
+    do_munmap+0x18f/0x3b0
+    vm_munmap+0x41/0x60
+    SyS_munmap+0x22/0x30
+    system_call_fastpath+0x1a/0x1f
+  RIP   munlock_vma_pages_range+0x2e0/0x2f0
+  ---[ end trace a0088dcf07ae10f2 ]---
 
-This time it was a tighter loop in __mem_cgroup_iter_next(): because we
-can get here when our root has already been offlined, and the ordering
-of conditions was such that we then just cycled around forever.
+because munlock_vma_pages_range() thinks it's unexpectedly in the middle
+of a THP page.  This can be reproduced with default config since 3.11
+kernels.  A reproducer can be found in the kernel's selftest directory
+for networking by running ./psock_tpacket.
 
-Fixes: 0eef615665ed ("memcg: fix css reference leak and endless loop in mem_cgroup_iter").
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Greg Thelen <gthelen@google.com>
+The problem is that an order=2 compound page (allocated by
+alloc_one_pg_vec_page() is part of the munlocked VM_MIXEDMAP vma (mapped
+by packet_mmap()) and mistaken for a THP page and assumed to be order=9.
+
+The checks for THP in munlock came with commit ff6a6da60b89 ("mm:
+accelerate munlock() treatment of THP pages"), i.e.  since 3.9, but did
+not trigger a bug.  It just makes munlock_vma_pages_range() skip such
+compound pages until the next 512-pages-aligned page, when it encounters
+a head page.  This is however not a problem for vma's where mlocking has
+no effect anyway, but it can distort the accounting.
+
+Since commit 7225522bb429 ("mm: munlock: batch non-THP page isolation
+and munlock+putback using pagevec") this can trigger a VM_BUG_ON in
+PageTransHuge() check.
+
+This patch fixes the issue by adding VM_MIXEDMAP flag to VM_SPECIAL, a
+list of flags that make vma's non-mlockable and non-mergeable.  The
+reasoning is that VM_MIXEDMAP vma's are similar to VM_PFNMAP, which is
+already on the VM_SPECIAL list, and both are intended for non-LRU pages
+where mlocking makes no sense anyway.  Related Lkml discussion can be
+found in [2].
+
+ [1] tools/testing/selftests/net/psock_tpacket
+ [2] https://lkml.org/lkml/2014/1/10/427
+
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
+Reported-by: Daniel Borkmann <dborkman@redhat.com>
+Tested-by: Daniel Borkmann <dborkman@redhat.com>
+Cc: Thomas Hellstrom <thellstrom@vmware.com>
+Cc: John David Anglin <dave.anglin@bell.net>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Carsten Otte <cotte@de.ibm.com>
+Cc: Jared Hulbert <jaredeh@gmail.com>
+Tested-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Cc: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/memcontrol.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/mm.h |    2 +-
+ mm/huge_memory.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1108,8 +1108,8 @@ skip_node:
- 	 * skipping css reference should be safe.
- 	 */
- 	if (next_css) {
--		if ((next_css->flags & CSS_ONLINE) &&
--				(next_css == &root->css || css_tryget(next_css)))
-+		if ((next_css == &root->css) ||
-+		    ((next_css->flags & CSS_ONLINE) && css_tryget(next_css)))
- 			return mem_cgroup_from_css(next_css);
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -165,7 +165,7 @@ extern unsigned int kobjsize(const void
+  * Special vmas that are non-mergable, non-mlock()able.
+  * Note: mm/huge_memory.c VM_NO_THP depends on this definition.
+  */
+-#define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_PFNMAP)
++#define VM_SPECIAL (VM_IO | VM_DONTEXPAND | VM_PFNMAP | VM_MIXEDMAP)
  
- 		prev_css = next_css;
+ /*
+  * mapping from the currently active vm_flags protection bits (the
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -1960,7 +1960,7 @@ out:
+ 	return ret;
+ }
+ 
+-#define VM_NO_THP (VM_SPECIAL|VM_MIXEDMAP|VM_HUGETLB|VM_SHARED|VM_MAYSHARE)
++#define VM_NO_THP (VM_SPECIAL | VM_HUGETLB | VM_SHARED | VM_MAYSHARE)
+ 
+ int hugepage_madvise(struct vm_area_struct *vma,
+ 		     unsigned long *vm_flags, int advice)
 
 
