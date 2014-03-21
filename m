@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966584AbaCUAww (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:52:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36842 "EHLO
+	id S966994AbaCUAxP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:53:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36879 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965573AbaCUAEu (ORCPT
+	with ESMTP id S965565AbaCUAEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:50 -0400
+	Thu, 20 Mar 2014 20:04:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.13 133/149] SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
-Date: Thu, 20 Mar 2014 17:04:56 -0700
-Message-Id: <20140321000441.563583269@linuxfoundation.org>
+        Eric Paris <eparis@redhat.com>, Gao feng <gaofeng@cn.fujitsu.com>,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: [PATCH 3.13 140/149] audit: dont generate loginuid log when audit disabled
+Date: Thu, 20 Mar 2014 17:05:03 -0700
+Message-Id: <20140321000441.808617210@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,30 +29,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+From: Gao feng <gaofeng@cn.fujitsu.com>
 
-commit b77ed25c9f8402e8b3e49e220edb4ef09ecfbb53 upstream.
+commit c2412d91c68426e22add16550f97ae5cd988a159 upstream.
 
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+If audit is disabled, we shouldn't generate loginuid audit
+log.
+
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Gao feng <gaofeng@cn.fujitsu.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Signed-off-by: Eric Paris <eparis@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_def.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/auditsc.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -2993,8 +2993,7 @@ struct qla_hw_data {
- 				IS_QLA82XX(ha) || IS_QLA83XX(ha) || \
- 				IS_QLA8044(ha))
- #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
--#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
--			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
-+#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
- #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1971,6 +1971,9 @@ static void audit_log_set_loginuid(kuid_
+ 	struct audit_buffer *ab;
+ 	uid_t uid, ologinuid, nloginuid;
+ 
++	if (!audit_enabled)
++		return;
++
+ 	uid = from_kuid(&init_user_ns, task_uid(current));
+ 	ologinuid = from_kuid(&init_user_ns, koldloginuid);
+ 	nloginuid = from_kuid(&init_user_ns, kloginuid),
 
 
