@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965532AbaCUAEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36825 "EHLO
+	id S966565AbaCUA42 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:56:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36857 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965473AbaCUAEg (ORCPT
+	with ESMTP id S965530AbaCUAEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:36 -0400
+	Thu, 20 Mar 2014 20:04:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 125/149] net: unix socket code abuses csum_partial
-Date: Thu, 20 Mar 2014 17:04:48 -0700
-Message-Id: <20140321000441.289039505@linuxfoundation.org>
+        Heinz Mauelshagen <heinzm@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 121/149] dm cache mq: fix memory allocation failure for large cache devices
+Date: Thu, 20 Mar 2014 17:04:44 -0700
+Message-Id: <20140321000441.147583070@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,83 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
+commit 14f398ca2f26a2ed6236aec54395e0fa06ec8a82 upstream.
 
-The unix socket code is using the result of csum_partial to
-hash into a lookup table:
+The memory allocated for the multiqueue policy's hash table doesn't need
+to be physically contiguous.  Use vzalloc() instead of kzalloc().
+Fedora has been carrying this fix since 10/10/2013.
 
-	unix_hash_fold(csum_partial(sunaddr, len, 0));
+Failure seen during creation of a 10TB cached device with a 2048 sector
+block size and 411GB cache size:
 
-csum_partial is only guaranteed to produce something that can be
-folded into a checksum, as its prototype explains:
+ dmsetup: page allocation failure: order:9, mode:0x10c0d0
+ CPU: 11 PID: 29235 Comm: dmsetup Not tainted 3.10.4 #3
+ Hardware name: Supermicro X8DTL/X8DTL, BIOS 2.1a       12/30/2011
+  000000000010c0d0 ffff880090941898 ffffffff81387ab4 ffff880090941928
+  ffffffff810bb26f 0000000000000009 000000000010c0d0 ffff880090941928
+  ffffffff81385dbc ffffffff815f3840 ffffffff00000000 000002000010c0d0
+ Call Trace:
+  [<ffffffff81387ab4>] dump_stack+0x19/0x1b
+  [<ffffffff810bb26f>] warn_alloc_failed+0x110/0x124
+  [<ffffffff81385dbc>] ? __alloc_pages_direct_compact+0x17c/0x18e
+  [<ffffffff810bda2e>] __alloc_pages_nodemask+0x6c7/0x75e
+  [<ffffffff810bdad7>] __get_free_pages+0x12/0x3f
+  [<ffffffff810ea148>] kmalloc_order_trace+0x29/0x88
+  [<ffffffff810ec1fd>] __kmalloc+0x36/0x11b
+  [<ffffffffa031eeed>] ? mq_create+0x1dc/0x2cf [dm_cache_mq]
+  [<ffffffffa031efc0>] mq_create+0x2af/0x2cf [dm_cache_mq]
+  [<ffffffffa0314605>] dm_cache_policy_create+0xa7/0xd2 [dm_cache]
+  [<ffffffffa0312530>] ? cache_ctr+0x245/0xa13 [dm_cache]
+  [<ffffffffa031263e>] cache_ctr+0x353/0xa13 [dm_cache]
+  [<ffffffffa012b916>] dm_table_add_target+0x227/0x2ce [dm_mod]
+  [<ffffffffa012e8e4>] table_load+0x286/0x2ac [dm_mod]
+  [<ffffffffa012e65e>] ? dev_wait+0x8a/0x8a [dm_mod]
+  [<ffffffffa012e324>] ctl_ioctl+0x39a/0x3c2 [dm_mod]
+  [<ffffffffa012e35a>] dm_ctl_ioctl+0xe/0x12 [dm_mod]
+  [<ffffffff81101181>] vfs_ioctl+0x21/0x34
+  [<ffffffff811019d3>] do_vfs_ioctl+0x3b1/0x3f4
+  [<ffffffff810f4d2e>] ? ____fput+0x9/0xb
+  [<ffffffff81050b6c>] ? task_work_run+0x7e/0x92
+  [<ffffffff81101a68>] SyS_ioctl+0x52/0x82
+  [<ffffffff81391d92>] system_call_fastpath+0x16/0x1b
 
- * returns a 32-bit number suitable for feeding into itself
- * or csum_tcpudp_magic
-
-The 32bit value should not be used directly.
-
-Depending on the alignment, the ppc64 csum_partial will return
-different 32bit partial checksums that will fold into the same
-16bit checksum.
-
-This difference causes the following testcase (courtesy of
-Gustavo) to sometimes fail:
-
-#include <sys/socket.h>
-#include <stdio.h>
-
-int main()
-{
-	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	int i = 1;
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
-
-	struct sockaddr addr;
-	addr.sa_family = AF_LOCAL;
-	bind(fd, &addr, 2);
-
-	listen(fd, 128);
-
-	struct sockaddr_storage ss;
-	socklen_t sslen = (socklen_t)sizeof(ss);
-	getsockname(fd, (struct sockaddr*)&ss, &sslen);
-
-	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
-		perror(NULL);
-		return 1;
-	}
-	printf("OK\n");
-	return 0;
-}
-
-As suggested by davem, fix this by using csum_fold to fold the
-partial 32bit checksum into a 16bit checksum before using it.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/unix/af_unix.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/md/dm-cache-policy-mq.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -161,9 +161,8 @@ static inline void unix_set_secdata(stru
- 
- static inline unsigned int unix_hash_fold(__wsum n)
+--- a/drivers/md/dm-cache-policy-mq.c
++++ b/drivers/md/dm-cache-policy-mq.c
+@@ -869,7 +869,7 @@ static void mq_destroy(struct dm_cache_p
  {
--	unsigned int hash = (__force unsigned int)n;
-+	unsigned int hash = (__force unsigned int)csum_fold(n);
+ 	struct mq_policy *mq = to_mq_policy(p);
  
--	hash ^= hash>>16;
- 	hash ^= hash>>8;
- 	return hash&(UNIX_HASH_SIZE-1);
- }
+-	kfree(mq->table);
++	vfree(mq->table);
+ 	epool_exit(&mq->cache_pool);
+ 	epool_exit(&mq->pre_cache_pool);
+ 	kfree(mq);
+@@ -1224,7 +1224,7 @@ static struct dm_cache_policy *mq_create
+ 
+ 	mq->nr_buckets = next_power(from_cblock(cache_size) / 2, 16);
+ 	mq->hash_bits = ffs(mq->nr_buckets) - 1;
+-	mq->table = kzalloc(sizeof(*mq->table) * mq->nr_buckets, GFP_KERNEL);
++	mq->table = vzalloc(sizeof(*mq->table) * mq->nr_buckets);
+ 	if (!mq->table)
+ 		goto bad_alloc_table;
+ 
 
 
