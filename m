@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965470AbaCUAEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36791 "EHLO
+	id S965502AbaCUAEk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36823 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965356AbaCUAE2 (ORCPT
+	with ESMTP id S965469AbaCUAEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:28 -0400
+	Thu, 20 Mar 2014 20:04:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, Wolfram Sang <wsa@the-dreams.de>
-Subject: [PATCH 3.13 113/149] i2c: Remove usage of orphaned symbol OF_I2C
-Date: Thu, 20 Mar 2014 17:04:36 -0700
-Message-Id: <20140321000440.876284913@linuxfoundation.org>
+        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: [PATCH 3.13 124/149] dm cache: fix access beyond end of origin device
+Date: Thu, 20 Mar 2014 17:04:47 -0700
+Message-Id: <20140321000441.254518075@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,32 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Heinz Mauelshagen <heinzm@redhat.com>
 
-commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
+commit e893fba90c09f9b57fb97daae204ea9cc2c52fa5 upstream.
 
-The symbol is an orphan, don't depend on it anymore.
+In order to avoid wasting cache space a partial block at the end of the
+origin device is not cached.  Unfortunately, the check for such a
+partial block at the end of the origin device was flawed.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-[wsa: enhanced commit message]
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
+Fix accesses beyond the end of the origin device that occured due to
+attempted promotion of an undetected partial block by:
+
+- initializing the per bio data struct to allow cache_end_io to work properly
+- recognizing access to the partial block at the end of the origin device
+- avoiding out of bounds access to the discard bitset
+
+Otherwise, users can experience errors like the following:
+
+ attempt to access beyond end of device
+ dm-5: rw=0, want=20971520, limit=20971456
+ ...
+ device-mapper: cache: promotion failed; couldn't copy block
+
+Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/i2c/busses/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/md/dm-cache-target.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/i2c/busses/Kconfig
-+++ b/drivers/i2c/busses/Kconfig
-@@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
+--- a/drivers/md/dm-cache-target.c
++++ b/drivers/md/dm-cache-target.c
+@@ -2454,20 +2454,18 @@ static int cache_map(struct dm_target *t
+ 	bool discarded_block;
+ 	struct dm_bio_prison_cell *cell;
+ 	struct policy_result lookup_result;
+-	struct per_bio_data *pb;
++	struct per_bio_data *pb = init_per_bio_data(bio, pb_data_size);
  
- config I2C_CPM
- 	tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
--	depends on (CPM1 || CPM2) && OF_I2C
-+	depends on CPM1 || CPM2
- 	help
- 	  This supports the use of the I2C interface on Freescale
- 	  processors with CPM1 or CPM2.
+-	if (from_oblock(block) > from_oblock(cache->origin_blocks)) {
++	if (unlikely(from_oblock(block) >= from_oblock(cache->origin_blocks))) {
+ 		/*
+ 		 * This can only occur if the io goes to a partial block at
+ 		 * the end of the origin device.  We don't cache these.
+ 		 * Just remap to the origin and carry on.
+ 		 */
+-		remap_to_origin_clear_discard(cache, bio, block);
++		remap_to_origin(cache, bio);
+ 		return DM_MAPIO_REMAPPED;
+ 	}
+ 
+-	pb = init_per_bio_data(bio, pb_data_size);
+-
+ 	if (bio->bi_rw & (REQ_FLUSH | REQ_FUA | REQ_DISCARD)) {
+ 		defer_bio(cache, bio);
+ 		return DM_MAPIO_SUBMITTED;
 
 
