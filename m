@@ -1,66 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760851AbaCUQMc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 12:12:32 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:55304 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaCUQMa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 12:12:30 -0400
-Date: Fri, 21 Mar 2014 09:11:11 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-To: Jean Delvare <jdelvare@suse.de>
-Cc: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch on Kconfig files
-Message-ID: <20140321161111.GA18068@roeck-us.net>
-References: <20140321094239.18aebf02@endymion.delvare>
+	id S1760920AbaCUQNp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 12:13:45 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54600 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751948AbaCUQNo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 12:13:44 -0400
+Date: Fri, 21 Mar 2014 11:13:42 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH] x86/UV: Fix conditional in gru_exit
+Message-ID: <20140321161342.GA17081@sgi.com>
+References: <20140320203646.GA603@sgi.com>
+ <20140321075549.GB23556@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140321094239.18aebf02@endymion.delvare>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140321075549.GB23556@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 09:42:39AM +0100, Jean Delvare wrote:
-> Hi Andy, hi Joe,
+On Fri, Mar 21, 2014 at 08:55:49AM +0100, Ingo Molnar wrote:
+> > -	if (!is_uv_system())
+> > +	if (!is_uv_system() || (is_uvx_hub() && !is_uv2_hub()))
+> >  		return;
 > 
-> When running checkpatch on a patch which tweaks many Kconfig entries, I
-> got the following output:
-> 
-> WARNING: please write a paragraph that describes the config symbol fully
-> #74: FILE: drivers/hid/Kconfig:142:
->  config HID_BELKIN
-> 
-> WARNING: please write a paragraph that describes the config symbol fully
-> #82: FILE: drivers/hid/Kconfig:149:
->  config HID_CHERRY
-> 
-> WARNING: please write a paragraph that describes the config symbol fully
-> #135: FILE: drivers/hid/Kconfig:415:
->  config HID_MICROSOFT
-> 
-> total: 0 errors, 3 warnings, 88 lines checked
-> 
-> I am not adding these entries, just tweaking the dependencies. Thus I
-> don't think it makes sense to print these warnings, they aren't
-> relevant to the changes I am making. There comment in checkpatch says:
-> 
-> # check for Kconfig help text having a real description
-> # Only applies when adding the entry originally, after that we do not have
-> # sufficient context to determine whether it is indeed long enough.
-> 
-> So I suspect these warnings aren't supposed to be displayed. I recall
-> hitting this many times in the past, in fact I think this is the most
-> frequent and oldest false positive I get from checkpatch. So I would
-> appreciate if this could be fixed, either by really limiting the
-> warning to Kconfig entries being added (if you can) or by dropping the
-> check altogether (if you can't.)
-> 
-For my part this is the one and only checkpatch warning which I don't
-enfore and happily ignore myself. Might be interesting to get feedback
-from others if they think it is useful or just annoying.
+> Such an amalgation of three system specific conditionals is 
+> disgusting, please at minimum factor out a helper routine so that such 
+> mismatches cannot happen.
+>
+Agreed.  Here's a new patch.
 
-Guenter
+
+Fix supported system conditional in gru_exit.
+
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ drivers/misc/sgi-gru/grufile.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+Index: linux/drivers/misc/sgi-gru/grufile.c
+===================================================================
+--- linux.orig/drivers/misc/sgi-gru/grufile.c
++++ linux/drivers/misc/sgi-gru/grufile.c
+@@ -58,6 +58,10 @@ static int max_user_cbrs, max_user_dsr_b
+ 
+ static struct miscdevice gru_miscdev;
+ 
++static int gru_unsupported(void)
++{
++	return !is_uv_system() || (is_uvx_hub() && !is_uv2_hub());
++}
+ 
+ /*
+  * gru_vma_close
+@@ -518,7 +522,7 @@ static int __init gru_init(void)
+ {
+ 	int ret;
+ 
+-	if (!is_uv_system() || (is_uvx_hub() && !is_uv2_hub()))
++	if (gru_unsupported())
+ 		return 0;
+ 
+ #if defined CONFIG_IA64
+@@ -573,7 +577,7 @@ exit0:
+ 
+ static void __exit gru_exit(void)
+ {
+-	if (!is_uv_system())
++	if (gru_unsupported())
+ 		return;
+ 
+ 	gru_teardown_tlb_irqs();
