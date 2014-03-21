@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967033AbaCUBdu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:33:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36400 "EHLO
+	id S967154AbaCUBeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:34:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36383 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760117AbaCUADN (ORCPT
+	with ESMTP id S1760105AbaCUADL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:13 -0400
+	Thu, 20 Mar 2014 20:03:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.de>,
+        Jan Stancek <jstancek@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 004/149] ocfs2: fix quota file corruption
-Date: Thu, 20 Mar 2014 17:02:47 -0700
-Message-Id: <20140321000436.903559988@linuxfoundation.org>
+Subject: [PATCH 3.13 002/149] mm: page_alloc: exempt GFP_THISNODE allocations from zone fairness
+Date: Thu, 20 Mar 2014 17:02:45 -0700
+Message-Id: <20140321000436.690101517@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -31,88 +32,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
+commit 27329369c9ecf37771b2a65202cbf5578cff3331 upstream.
 
-Global quota files are accessed from different nodes.  Thus we cannot
-cache offset of quota structure in the quota file after we drop our node
-reference count to it because after that moment quota structure may be
-freed and reallocated elsewhere by a different node resulting in
-corruption of quota file.
+Jan Stancek reports manual page migration encountering allocation
+failures after some pages when there is still plenty of memory free, and
+bisected the problem down to commit 81c0a2bb515f ("mm: page_alloc: fair
+zone allocator policy").
 
-Fix the problem by clearing dq_off when we are releasing dquot structure.
-We also remove the DB_READ_B handling because it is useless -
-DQ_ACTIVE_B is set iff DQ_READ_B is set.
+The problem is that GFP_THISNODE obeys the zone fairness allocation
+batches on one hand, but doesn't reset them and wake kswapd on the other
+hand.  After a few of those allocations, the batches are exhausted and
+the allocations fail.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Fixing this means either having GFP_THISNODE wake up kswapd, or
+GFP_THISNODE not participating in zone fairness at all.  The latter
+seems safer as an acute bugfix, we can clean up later.
+
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/quota_global.c |   27 +++++++++++++++++----------
- fs/ocfs2/quota_local.c  |    4 ----
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ mm/page_alloc.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
---- a/fs/ocfs2/quota_global.c
-+++ b/fs/ocfs2/quota_global.c
-@@ -717,6 +717,12 @@ static int ocfs2_release_dquot(struct dq
- 	 */
- 	if (status < 0)
- 		mlog_errno(status);
-+	/*
-+	 * Clear dq_off so that we search for the structure in quota file next
-+	 * time we acquire it. The structure might be deleted and reallocated
-+	 * elsewhere by another node while our dquot structure is on freelist.
-+	 */
-+	dquot->dq_off = 0;
- 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
- out_trans:
- 	ocfs2_commit_trans(osb, handle);
-@@ -756,16 +762,17 @@ static int ocfs2_acquire_dquot(struct dq
- 	status = ocfs2_lock_global_qf(info, 1);
- 	if (status < 0)
- 		goto out;
--	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
--		status = ocfs2_qinfo_lock(info, 0);
--		if (status < 0)
--			goto out_dq;
--		status = qtree_read_dquot(&info->dqi_gi, dquot);
--		ocfs2_qinfo_unlock(info, 0);
--		if (status < 0)
--			goto out_dq;
--	}
--	set_bit(DQ_READ_B, &dquot->dq_flags);
-+	status = ocfs2_qinfo_lock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
-+	/*
-+	 * We always want to read dquot structure from disk because we don't
-+	 * know what happened with it while it was on freelist.
-+	 */
-+	status = qtree_read_dquot(&info->dqi_gi, dquot);
-+	ocfs2_qinfo_unlock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
- 
- 	OCFS2_DQUOT(dquot)->dq_use_count++;
- 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -1303,10 +1303,6 @@ int ocfs2_local_release_dquot(handle_t *
- 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
- 
- out:
--	/* Clear the read bit so that next time someone uses this
--	 * dquot he reads fresh info from disk and allocates local
--	 * dquot structure */
--	clear_bit(DQ_READ_B, &dquot->dq_flags);
- 	return status;
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1211,6 +1211,15 @@ void drain_zone_pages(struct zone *zone,
+ 	}
+ 	local_irq_restore(flags);
  }
++static bool gfp_thisnode_allocation(gfp_t gfp_mask)
++{
++	return (gfp_mask & GFP_THISNODE) == GFP_THISNODE;
++}
++#else
++static bool gfp_thisnode_allocation(gfp_t gfp_mask)
++{
++	return false;
++}
+ #endif
  
+ /*
+@@ -1547,7 +1556,13 @@ again:
+ 					  get_pageblock_migratetype(page));
+ 	}
+ 
+-	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++	/*
++	 * NOTE: GFP_THISNODE allocations do not partake in the kswapd
++	 * aging protocol, so they can't be fair.
++	 */
++	if (!gfp_thisnode_allocation(gfp_flags))
++		__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
++
+ 	__count_zone_vm_events(PGALLOC, zone, 1 << order);
+ 	zone_statistics(preferred_zone, zone, gfp_flags);
+ 	local_irq_restore(flags);
+@@ -1919,8 +1934,12 @@ zonelist_scan:
+ 		 * ultimately fall back to remote zones that do not
+ 		 * partake in the fairness round-robin cycle of this
+ 		 * zonelist.
++		 *
++		 * NOTE: GFP_THISNODE allocations do not partake in
++		 * the kswapd aging protocol, so they can't be fair.
+ 		 */
+-		if (alloc_flags & ALLOC_WMARK_LOW) {
++		if ((alloc_flags & ALLOC_WMARK_LOW) &&
++		    !gfp_thisnode_allocation(gfp_mask)) {
+ 			if (zone_page_state(zone, NR_ALLOC_BATCH) <= 0)
+ 				continue;
+ 			if (!zone_local(preferred_zone, zone))
+@@ -2486,8 +2505,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, u
+ 	 * allowed per node queues are empty and that nodes are
+ 	 * over allocated.
+ 	 */
+-	if (IS_ENABLED(CONFIG_NUMA) &&
+-			(gfp_mask & GFP_THISNODE) == GFP_THISNODE)
++	if (gfp_thisnode_allocation(gfp_mask))
+ 		goto nopage;
+ 
+ restart:
 
 
