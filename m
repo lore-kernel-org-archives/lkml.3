@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966546AbaCUAlp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:41:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37058 "EHLO
+	id S966535AbaCUAmF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:42:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37047 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965825AbaCUAIo (ORCPT
+	with ESMTP id S965836AbaCUAIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:44 -0400
+	Thu, 20 Mar 2014 20:08:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 31/85] ALSA: usb-audio: Add quirk for Logitech Webcam C500
-Date: Thu, 20 Mar 2014 17:09:34 -0700
-Message-Id: <20140321000603.023431889@linuxfoundation.org>
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 24/85] mwifiex: fix cmd and Tx data timeout issue for PCIe cards
+Date: Thu, 20 Mar 2014 17:09:27 -0700
+Message-Id: <20140321000602.060206409@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,29 +29,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
+commit 1c97560f6d751a620978504a4a888c631192b71a upstream.
 
-Logitech C500 (046d:0807) needs the same workaround like other
-Logitech Webcams.
+We are sending sleep confirm done interrupt in the middle of
+sleep handshake. There is a corner case when Tx done interrupt
+is received from firmware during sleep handshake due to which
+host and firmware power states go out of sync causing cmd and
+Tx data timeout problem.
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Hence sleep confirm done interrupt is sent at the end of sleep
+handshake to fix the problem.
+
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/mwifiex/pcie.c |   28 +++++++++++-----------------
+ 1 file changed, 11 insertions(+), 17 deletions(-)
 
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -883,6 +883,7 @@ static void volume_control_quirks(struct
- 		}
- 		break;
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -1515,6 +1515,14 @@ static int mwifiex_pcie_process_cmd_comp
+ 		if (adapter->ps_state == PS_STATE_SLEEP_CFM) {
+ 			mwifiex_process_sleep_confirm_resp(adapter, skb->data,
+ 							   skb->len);
++			mwifiex_pcie_enable_host_int(adapter);
++			if (mwifiex_write_reg(adapter,
++					      PCIE_CPU_INT_EVENT,
++					      CPU_INTR_SLEEP_CFM_DONE)) {
++				dev_warn(adapter->dev,
++					 "Write register failed\n");
++				return -1;
++			}
+ 			while (reg->sleep_cookie && (count++ < 10) &&
+ 			       mwifiex_pcie_ok_to_access_hw(adapter))
+ 				usleep_range(50, 60);
+@@ -1985,23 +1993,9 @@ static void mwifiex_interrupt_status(str
+ 		adapter->int_status |= pcie_ireg;
+ 		spin_unlock_irqrestore(&adapter->int_lock, flags);
  
-+	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+-		if (pcie_ireg & HOST_INTR_CMD_DONE) {
+-			if ((adapter->ps_state == PS_STATE_SLEEP_CFM) ||
+-			    (adapter->ps_state == PS_STATE_SLEEP)) {
+-				mwifiex_pcie_enable_host_int(adapter);
+-				if (mwifiex_write_reg(adapter,
+-						      PCIE_CPU_INT_EVENT,
+-						      CPU_INTR_SLEEP_CFM_DONE)
+-						      ) {
+-					dev_warn(adapter->dev,
+-						 "Write register failed\n");
+-					return;
+-
+-				}
+-			}
+-		} else if (!adapter->pps_uapsd_mode &&
+-			   adapter->ps_state == PS_STATE_SLEEP &&
+-			   mwifiex_pcie_ok_to_access_hw(adapter)) {
++		if (!adapter->pps_uapsd_mode &&
++		    adapter->ps_state == PS_STATE_SLEEP &&
++		    mwifiex_pcie_ok_to_access_hw(adapter)) {
+ 				/* Potentially for PCIe we could get other
+ 				 * interrupts like shared. Don't change power
+ 				 * state until cookie is set */
 
 
