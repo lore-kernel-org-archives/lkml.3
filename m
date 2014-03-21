@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965317AbaCUFjR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:39:17 -0400
-Received: from [65.55.88.15] ([65.55.88.15]:27686 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1759512AbaCUFjL (ORCPT
+	id S965369AbaCUFjU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:39:20 -0400
+Received: from [216.32.180.14] ([216.32.180.14]:7824 "EHLO
+	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1759606AbaCUFjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Mar 2014 01:39:11 -0400
 X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(z551bizda00hdc73hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
 From: Xiubo Li <Li.Xiubo@freescale.com>
 To: <thierry.reding@gmail.com>, <linux-pwm@vger.kernel.org>
 CC: <broonie@kernel.org>, <swarren@nvidia.com>, <linux-kernel@vger.kernel.org>,
         Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 0/3] FTM PWM adds regmap and endianness support.
-Date: Fri, 21 Mar 2014 12:53:07 +0800
-Message-ID: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+Subject: [PATCH 2/3] pwm: ftm-pwm: Convert to direct regmap API usage.
+Date: Fri, 21 Mar 2014 12:53:09 +0800
+Message-ID: <1395377590-23537-3-git-send-email-Li.Xiubo@freescale.com>
 X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1395377590-23537-1-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-OriginatorOrg: freescale.com
@@ -27,15 +29,224 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/pwm/pwm-fsl-ftm.c | 83 +++++++++++++++++++++++++----------------------
+ 1 file changed, 44 insertions(+), 39 deletions(-)
 
-Xiubo Li (3):
-  pwm: ftm-pwm: Clean up the code.
-  pwm: ftm-pwm: Convert to direct regmap API usage.
-  pwm: ftm-pwm: Add big-endian support
-
- drivers/pwm/pwm-fsl-ftm.c | 96 ++++++++++++++++++++++++++---------------------
- 1 file changed, 53 insertions(+), 43 deletions(-)
-
+diff --git a/drivers/pwm/pwm-fsl-ftm.c b/drivers/pwm/pwm-fsl-ftm.c
+index 4a4ad58..5d999c1 100644
+--- a/drivers/pwm/pwm-fsl-ftm.c
++++ b/drivers/pwm/pwm-fsl-ftm.c
+@@ -18,6 +18,7 @@
+ #include <linux/of_address.h>
+ #include <linux/platform_device.h>
+ #include <linux/pwm.h>
++#include <linux/regmap.h>
+ #include <linux/slab.h>
+ 
+ #define FTM_SC		0x00
+@@ -82,7 +83,7 @@ struct fsl_pwm_chip {
+ 	unsigned int cnt_select;
+ 	unsigned int clk_ps;
+ 
+-	void __iomem *base;
++	struct regmap *regmap;
+ 
+ 	int period_ns;
+ 
+@@ -218,10 +219,11 @@ static unsigned long fsl_pwm_calculate_duty(struct fsl_pwm_chip *fpc,
+ 					    unsigned long period_ns,
+ 					    unsigned long duty_ns)
+ {
+-	unsigned long long val, duty;
++	unsigned long long duty;
++	u32 val;
+ 
+-	val = readl(fpc->base + FTM_MOD);
+-	duty = duty_ns * (val + 1);
++	regmap_read(fpc->regmap, FTM_MOD, &val);
++	duty = (unsigned long long)duty_ns * (val + 1);
+ 	do_div(duty, period_ns);
+ 
+ 	return (unsigned long)duty;
+@@ -231,7 +233,7 @@ static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 			  int duty_ns, int period_ns)
+ {
+ 	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+-	u32 val, period, duty;
++	u32 period, duty;
+ 
+ 	mutex_lock(&fpc->lock);
+ 
+@@ -256,11 +258,9 @@ static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 			return -EINVAL;
+ 		}
+ 
+-		val = readl(fpc->base + FTM_SC);
+-		val &= ~FTM_SC_PS_MASK;
+-		val |= fpc->clk_ps;
+-		writel(val, fpc->base + FTM_SC);
+-		writel(period - 1, fpc->base + FTM_MOD);
++		regmap_update_bits(fpc->regmap, FTM_SC, FTM_SC_PS_MASK,
++				   fpc->clk_ps);
++		regmap_write(fpc->regmap, FTM_MOD, period - 1);
+ 
+ 		fpc->period_ns = period_ns;
+ 	}
+@@ -269,8 +269,9 @@ static int fsl_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
+ 
+ 	duty = fsl_pwm_calculate_duty(fpc, period_ns, duty_ns);
+ 
+-	writel(FTM_CSC_MSB | FTM_CSC_ELSB, fpc->base + FTM_CSC(pwm->hwpwm));
+-	writel(duty, fpc->base + FTM_CV(pwm->hwpwm));
++	regmap_write(fpc->regmap, FTM_CSC(pwm->hwpwm),
++		     FTM_CSC_MSB | FTM_CSC_ELSB);
++	regmap_write(fpc->regmap, FTM_CV(pwm->hwpwm), duty);
+ 
+ 	return 0;
+ }
+@@ -282,31 +283,28 @@ static int fsl_pwm_set_polarity(struct pwm_chip *chip,
+ 	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+ 	u32 val;
+ 
+-	val = readl(fpc->base + FTM_POL);
++	regmap_read(fpc->regmap, FTM_POL, &val);
+ 
+ 	if (polarity == PWM_POLARITY_INVERSED)
+ 		val |= BIT(pwm->hwpwm);
+ 	else
+ 		val &= ~BIT(pwm->hwpwm);
+ 
+-	writel(val, fpc->base + FTM_POL);
++	regmap_write(fpc->regmap, FTM_POL, val);
+ 
+ 	return 0;
+ }
+ 
+ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+ {
+-	u32 val;
+ 	int ret;
+ 
+ 	if (fpc->use_count != 0)
+ 		return 0;
+ 
+ 	/* select counter clock source */
+-	val = readl(fpc->base + FTM_SC);
+-	val &= ~FTM_SC_CLK_MASK;
+-	val |= FTM_SC_CLK(fpc->cnt_select);
+-	writel(val, fpc->base + FTM_SC);
++	regmap_update_bits(fpc->regmap, FTM_SC, FTM_SC_CLK_MASK,
++			   FTM_SC_CLK(fpc->cnt_select));
+ 
+ 	ret = clk_prepare_enable(fpc->clk[fpc->cnt_select]);
+ 	if (ret)
+@@ -326,13 +324,10 @@ static int fsl_counter_clock_enable(struct fsl_pwm_chip *fpc)
+ static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ {
+ 	struct fsl_pwm_chip *fpc = to_fsl_chip(chip);
+-	u32 val;
+ 	int ret;
+ 
+ 	mutex_lock(&fpc->lock);
+-	val = readl(fpc->base + FTM_OUTMASK);
+-	val &= ~BIT(pwm->hwpwm);
+-	writel(val, fpc->base + FTM_OUTMASK);
++	regmap_update_bits(fpc->regmap, FTM_OUTMASK, BIT(pwm->hwpwm), 0);
+ 
+ 	ret = fsl_counter_clock_enable(fpc);
+ 	mutex_unlock(&fpc->lock);
+@@ -342,8 +337,6 @@ static int fsl_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 
+ static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
+ {
+-	u32 val;
+-
+ 	/*
+ 	 * already disabled, do nothing
+ 	 */
+@@ -355,9 +348,7 @@ static void fsl_counter_clock_disable(struct fsl_pwm_chip *fpc)
+ 		return;
+ 
+ 	/* no users left, disable PWM counter clock */
+-	val = readl(fpc->base + FTM_SC);
+-	val &= ~FTM_SC_CLK_MASK;
+-	writel(val, fpc->base + FTM_SC);
++	regmap_update_bits(fpc->regmap, FTM_SC, FTM_SC_CLK_MASK, 0);
+ 
+ 	clk_disable_unprepare(fpc->clk[FSL_PWM_CLK_CNTEN]);
+ 	clk_disable_unprepare(fpc->clk[fpc->cnt_select]);
+@@ -369,14 +360,12 @@ static void fsl_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
+ 	u32 val;
+ 
+ 	mutex_lock(&fpc->lock);
+-	val = readl(fpc->base + FTM_OUTMASK);
+-	val |= BIT(pwm->hwpwm);
+-	writel(val, fpc->base + FTM_OUTMASK);
++	regmap_update_bits(fpc->regmap, FTM_OUTMASK, BIT(pwm->hwpwm),
++			   BIT(pwm->hwpwm));
+ 
+ 	fsl_counter_clock_disable(fpc);
+ 
+-	val = readl(fpc->base + FTM_OUTMASK);
+-
++	regmap_read(fpc->regmap, FTM_OUTMASK, &val);
+ 	if ((val & 0xFF) == 0xFF)
+ 		fpc->period_ns = 0;
+ 
+@@ -401,19 +390,28 @@ static int fsl_pwm_init(struct fsl_pwm_chip *fpc)
+ 	if (ret)
+ 		return ret;
+ 
+-	writel(0x00, fpc->base + FTM_CNTIN);
+-	writel(0x00, fpc->base + FTM_OUTINIT);
+-	writel(0xFF, fpc->base + FTM_OUTMASK);
++	regmap_write(fpc->regmap, FTM_CNTIN, 0x00);
++	regmap_write(fpc->regmap, FTM_OUTINIT, 0x00);
++	regmap_write(fpc->regmap, FTM_OUTMASK, 0xFF);
+ 
+ 	clk_disable_unprepare(fpc->clk[FSL_PWM_CLK_SYS]);
+ 
+ 	return 0;
+ }
+ 
++static struct regmap_config fsl_pwm_regmap_config = {
++	.reg_bits = 32,
++	.reg_stride = 4,
++	.val_bits = 32,
++
++	.max_register = FTM_PWMLOAD,
++};
++
+ static int fsl_pwm_probe(struct platform_device *pdev)
+ {
+ 	struct fsl_pwm_chip *fpc;
+ 	struct resource *res;
++	void __iomem *base;
+ 	int ret;
+ 
+ 	fpc = devm_kzalloc(&pdev->dev, sizeof(*fpc), GFP_KERNEL);
+@@ -425,9 +423,16 @@ static int fsl_pwm_probe(struct platform_device *pdev)
+ 	fpc->chip.dev = &pdev->dev;
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	fpc->base = devm_ioremap_resource(&pdev->dev, res);
+-	if (IS_ERR(fpc->base))
+-		return PTR_ERR(fpc->base);
++	base = devm_ioremap_resource(&pdev->dev, res);
++	if (IS_ERR(base))
++		return PTR_ERR(base);
++
++	fpc->regmap = devm_regmap_init_mmio_clk(&pdev->dev, NULL, base,
++						&fsl_pwm_regmap_config);
++	if (IS_ERR(fpc->regmap)) {
++		dev_err(&pdev->dev, "regmap init failed\n");
++		return PTR_ERR(fpc->regmap);
++	}
+ 
+ 	fpc->clk[FSL_PWM_CLK_SYS] = devm_clk_get(&pdev->dev, "ftm_sys");
+ 	if (IS_ERR(fpc->clk[FSL_PWM_CLK_SYS])) {
 -- 
 1.8.4
 
