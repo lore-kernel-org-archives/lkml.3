@@ -1,24 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966641AbaCUBbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:31:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36400 "EHLO
+	id S966729AbaCUBcS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:32:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36405 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760185AbaCUADQ (ORCPT
+	with ESMTP id S1760161AbaCUADP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:16 -0400
+	Thu, 20 Mar 2014 20:03:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 008/149] rapidio/tsi721: fix tasklet termination in dma channel release
-Date: Thu, 20 Mar 2014 17:02:51 -0700
-Message-Id: <20140321000437.234306839@linuxfoundation.org>
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH 3.13 005/149] ocfs2 syncs the wrong range...
+Date: Thu, 20 Mar 2014 17:02:48 -0700
+Message-Id: <20140321000436.976807024@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -33,131 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
+commit 1b56e98990bcdbb20b9fab163654b9315bf158e8 upstream.
 
-This patch is a modification of the patch originally proposed by
-Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-This new version disables DMA channel interrupts and ensures that the
-tasklet wil not be scheduled again before calling tasklet_kill().
-
-Unfortunately the updated patch was not released at that time due to
-planned rework of Tsi721 mport driver to use threaded interrupts (which
-has yet to happen).  Recently the issue was reported again:
-https://lkml.org/lkml/2014/2/19/762.
-
-Description from the original Xiaotian's patch:
-
- "Some drivers use tasklet_disable in device remove/release process,
-  tasklet_disable will inc tasklet->count and return.  If the tasklet is
-  not handled yet under some softirq pressure, the tasklet will be
-  placed on the tasklet_vec, never have a chance to be excuted.  This
-  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
-  but tasklet is disabled.  tasklet_kill should be used in this case."
-
-This patch is applicable to kernel versions starting from v3.5.
-
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.h     |    1 +
- drivers/rapidio/devices/tsi721_dma.c |   27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 9 deletions(-)
+ fs/ocfs2/file.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
- 	struct list_head	free_list;
- 	dma_cookie_t		completed_cookie;
- 	struct tasklet_struct	tasklet;
-+	bool			active;
- };
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2370,8 +2370,8 @@ out_dio:
  
- #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_b
- {
- 	/* Disable BDMA channel interrupts */
- 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
--
--	tasklet_schedule(&bdma_chan->tasklet);
-+	if (bdma_chan->active)
-+		tasklet_schedule(&bdma_chan->tasklet);
- }
+ 	if (((file->f_flags & O_DSYNC) && !direct_io) || IS_SYNC(inode) ||
+ 	    ((file->f_flags & O_DIRECT) && !direct_io)) {
+-		ret = filemap_fdatawrite_range(file->f_mapping, pos,
+-					       pos + count - 1);
++		ret = filemap_fdatawrite_range(file->f_mapping, *ppos,
++					       *ppos + count - 1);
+ 		if (ret < 0)
+ 			written = ret;
  
- #ifdef CONFIG_PCI_MSI
-@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(s
+@@ -2384,8 +2384,8 @@ out_dio:
+ 		}
+ 
+ 		if (!ret)
+-			ret = filemap_fdatawait_range(file->f_mapping, pos,
+-						      pos + count - 1);
++			ret = filemap_fdatawait_range(file->f_mapping, *ppos,
++						      *ppos + count - 1);
  	}
- #endif /* CONFIG_PCI_MSI */
  
--	tasklet_enable(&bdma_chan->tasklet);
-+	bdma_chan->active = true;
- 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
- 
- 	return bdma_chan->bd_num - 1;
-@@ -576,9 +576,7 @@ err_out:
- static void tsi721_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
--#ifdef CONFIG_PCI_MSI
- 	struct tsi721_device *priv = to_tsi721(dchan->device);
--#endif
- 	LIST_HEAD(list);
- 
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
-@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(s
- 	BUG_ON(!list_empty(&bdma_chan->active_list));
- 	BUG_ON(!list_empty(&bdma_chan->queue));
- 
--	tasklet_disable(&bdma_chan->tasklet);
-+	tsi721_bdma_interrupt_enable(bdma_chan, 0);
-+	bdma_chan->active = false;
-+
-+#ifdef CONFIG_PCI_MSI
-+	if (priv->flags & TSI721_USING_MSIX) {
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-+					   bdma_chan->id].vector);
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
-+					   bdma_chan->id].vector);
-+	} else
-+#endif
-+	synchronize_irq(priv->pdev->irq);
-+
-+	tasklet_kill(&bdma_chan->tasklet);
- 
- 	spin_lock_bh(&bdma_chan->lock);
- 	list_splice_init(&bdma_chan->free_list, &list);
- 	spin_unlock_bh(&bdma_chan->lock);
- 
--	tsi721_bdma_interrupt_enable(bdma_chan, 0);
--
- #ifdef CONFIG_PCI_MSI
- 	if (priv->flags & TSI721_USING_MSIX) {
- 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_de
- 		bdma_chan->dchan.cookie = 1;
- 		bdma_chan->dchan.chan_id = i;
- 		bdma_chan->id = i;
-+		bdma_chan->active = false;
- 
- 		spin_lock_init(&bdma_chan->lock);
- 
-@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_de
- 
- 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
- 			     (unsigned long)bdma_chan);
--		tasklet_disable(&bdma_chan->tasklet);
- 		list_add_tail(&bdma_chan->dchan.device_node,
- 			      &mport->dma.channels);
- 	}
+ 	/*
 
 
