@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966735AbaCUBDl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:03:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36793 "EHLO
+	id S966789AbaCUBEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:04:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965363AbaCUAE2 (ORCPT
+	with ESMTP id S965331AbaCUAEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:28 -0400
+	Thu, 20 Mar 2014 20:04:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 100/149] drm/radeon/dpm: fix typo in EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters
-Date: Thu, 20 Mar 2014 17:04:23 -0700
-Message-Id: <20140321000440.429454906@linuxfoundation.org>
+Subject: [PATCH 3.13 108/149] drm/radeon: fix minor typos in si_dpm.c
+Date: Thu, 20 Mar 2014 17:04:31 -0700
+Message-Id: <20140321000440.710135192@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,32 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 13714323f83ffa5a772fe0d8b74e0fa32ee08819 upstream.
+commit 407b6dfd9afa30cf963fa99bca91870e47965612 upstream.
 
-Should be at 0x8 rather than 0.
-
-fixes:
-https://bugzilla.kernel.org/show_bug.cgi?id=60523
-
-Noticed by ArtForz on #radeon
+Copy/paste typos from the ni code. Should not
+have any functional change.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/evergreen_smc.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/si_dpm.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/gpu/drm/radeon/evergreen_smc.h
-+++ b/drivers/gpu/drm/radeon/evergreen_smc.h
-@@ -57,7 +57,7 @@ typedef struct SMC_Evergreen_MCRegisters
+--- a/drivers/gpu/drm/radeon/si_dpm.c
++++ b/drivers/gpu/drm/radeon/si_dpm.c
+@@ -2396,7 +2396,7 @@ static int si_populate_sq_ramping_values
+ 	if (SISLANDS_DPM2_SQ_RAMP_STI_SIZE > (STI_SIZE_MASK >> STI_SIZE_SHIFT))
+ 		enable_sq_ramping = false;
  
- #define EVERGREEN_SMC_FIRMWARE_HEADER_LOCATION 0x100
+-	if (NISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
++	if (SISLANDS_DPM2_SQ_RAMP_LTI_RATIO <= (LTI_RATIO_MASK >> LTI_RATIO_SHIFT))
+ 		enable_sq_ramping = false;
  
--#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x0
-+#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x8
- #define EVERGREEN_SMC_FIRMWARE_HEADER_stateTable      0xC
- #define EVERGREEN_SMC_FIRMWARE_HEADER_mcRegisterTable 0x20
+ 	for (i = 0; i < state->performance_level_count; i++) {
+@@ -5413,7 +5413,7 @@ static void si_populate_mc_reg_addresses
  
+ 	for (i = 0, j = 0; j < si_pi->mc_reg_table.last; j++) {
+ 		if (si_pi->mc_reg_table.valid_flag & (1 << j)) {
+-			if (i >= SMC_NISLANDS_MC_REGISTER_ARRAY_SIZE)
++			if (i >= SMC_SISLANDS_MC_REGISTER_ARRAY_SIZE)
+ 				break;
+ 			mc_reg_table->address[i].s0 =
+ 				cpu_to_be16(si_pi->mc_reg_table.mc_reg_address[j].s0);
 
 
