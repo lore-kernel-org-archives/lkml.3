@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966491AbaCUAlX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:41:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37060 "EHLO
+	id S965844AbaCUAIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:08:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37032 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965850AbaCUAIp (ORCPT
+	with ESMTP id S965825AbaCUAIj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:45 -0400
+	Thu, 20 Mar 2014 20:08:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marius Knaust <marius.knaust@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 32/85] ALSA: hda - Added inverted digital-mic handling for Acer TravelMate 8371
-Date: Thu, 20 Mar 2014 17:09:35 -0700
-Message-Id: <20140321000603.193489884@linuxfoundation.org>
+        Edward Cree <ecree@solarflare.com>,
+        Shradha Shah <sshah@solarflare.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 09/85] sfc: check for NULL efx->ptp_data in efx_ptp_event
+Date: Thu, 20 Mar 2014 17:09:12 -0700
+Message-Id: <20140321000559.873176591@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,27 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marius Knaust <marius.knaust@gmail.com>
+From: Edward Cree <ecree@solarflare.com>
 
-commit a6b92b6650d010d58b6e6fe42c6271266e0b1134 upstream.
+[ Upstream commit 8f355e5cee63c2c0c145d8206c4245d0189f47ff ]
 
-Signed-off-by: Marius Knaust <marius.knaust@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+If we receive a PTP event from the NIC when we haven't set up PTP state
+in the driver, we attempt to read through a NULL pointer efx->ptp_data,
+triggering a panic.
+
+Signed-off-by: Edward Cree <ecree@solarflare.com>
+Acked-by: Shradha Shah <sshah@solarflare.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/ethernet/sfc/ptp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3648,6 +3648,7 @@ static const struct hda_fixup alc269_fix
- };
+--- a/drivers/net/ethernet/sfc/ptp.c
++++ b/drivers/net/ethernet/sfc/ptp.c
+@@ -1319,6 +1319,13 @@ void efx_ptp_event(struct efx_nic *efx,
+ 	struct efx_ptp_data *ptp = efx->ptp_data;
+ 	int code = EFX_QWORD_FIELD(*ev, MCDI_EVENT_CODE);
  
- static const struct snd_pci_quirk alc269_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0283, "Acer TravelMate 8371", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1028, 0x05bd, "Dell", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
++	if (!ptp) {
++		if (net_ratelimit())
++			netif_warn(efx, drv, efx->net_dev,
++				   "Received PTP event but PTP not set up\n");
++		return;
++	}
++
+ 	if (!ptp->enabled)
+ 		return;
+ 
 
 
