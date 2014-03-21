@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966462AbaCUATt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:19:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37352 "EHLO
+	id S966447AbaCUATr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:19:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966113AbaCUAJd (ORCPT
+	with ESMTP id S966114AbaCUAJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:33 -0400
+	Thu, 20 Mar 2014 20:09:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.4 13/35] powerpc: Align p_dyn, p_rela and p_st symbols
-Date: Thu, 20 Mar 2014 17:11:04 -0700
-Message-Id: <20140321001054.588675077@linuxfoundation.org>
+        Andrea Adami <andrea.adami@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.4 14/35] ARM: 7991/1: sa1100: fix compile problem on Collie
+Date: Thu, 20 Mar 2014 17:11:05 -0700
+Message-Id: <20140321001054.628465375@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -30,32 +31,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
+commit 052450fdc55894a39fbae93d9bbe43947956f663 upstream.
 
-The 64bit relocation code places a few symbols in the text segment.
-These symbols are only 4 byte aligned where they need to be 8 byte
-aligned. Add an explicit alignment.
+Due to a problem in the MFD Kconfig it was not possible to
+compile the UCB battery driver for the Collie SA1100 system,
+in turn making it impossible to compile in the battery driver.
+(See patch "mfd: include all drivers in subsystem menu".)
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+After fixing the MFD Kconfig (separate patch) a compile error
+appears in the Collie battery driver due to the <mach/collie.h>
+implicitly requiring <mach/hardware.h> through <linux/gpio.h>
+via <mach/gpio.h> prior to commit
+40ca061b "ARM: 7841/1: sa1100: remove complex GPIO interface".
+
+Fix this up by including the required header into
+<mach/collie.h>.
+
+Cc: Andrea Adami <andrea.adami@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/reloc_64.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/mach-sa1100/include/mach/collie.h |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/arch/powerpc/kernel/reloc_64.S
-+++ b/arch/powerpc/kernel/reloc_64.S
-@@ -81,6 +81,7 @@ _GLOBAL(relocate)
+--- a/arch/arm/mach-sa1100/include/mach/collie.h
++++ b/arch/arm/mach-sa1100/include/mach/collie.h
+@@ -13,6 +13,8 @@
+ #ifndef __ASM_ARCH_COLLIE_H
+ #define __ASM_ARCH_COLLIE_H
  
- 6:	blr
++#include "hardware.h" /* Gives GPIO_MAX */
++
+ extern void locomolcd_power(int on);
  
-+.balign 8
- p_dyn:	.llong	__dynamic_start - 0b
- p_rela:	.llong	__rela_dyn_start - 0b
- p_st:	.llong	_stext - 0b
+ #define COLLIE_SCOOP_GPIO_BASE	(GPIO_MAX + 1)
 
 
