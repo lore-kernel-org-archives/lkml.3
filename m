@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966563AbaCUAYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:24:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37282 "EHLO
+	id S966576AbaCUAY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:24:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37275 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966041AbaCUAJX (ORCPT
+	with ESMTP id S966035AbaCUAJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:23 -0400
+	Thu, 20 Mar 2014 20:09:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Prarit Bhargava <prarit@redhat.com>, athorlton@sgi.com,
-        CAI Qian <caiqian@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [PATCH 3.10 79/85] tick: Make oneshot broadcast robust vs. CPU offlining
-Date: Thu, 20 Mar 2014 17:10:22 -0700
-Message-Id: <20140321000610.050155107@linuxfoundation.org>
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 78/85] bio-integrity: Fix bio_integrity_verify segment start bug
+Date: Thu, 20 Mar 2014 17:10:21 -0700
+Message-Id: <20140321000609.910176125@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,82 +30,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit c9b5a266b103af873abb9ac03bc3d067702c8f4b upstream.
+commit 5837c80e870bc3b12ac6a98cdc9ce7a9522a8fb6 upstream.
 
-In periodic mode we remove offline cpus from the broadcast propagation
-mask. In oneshot mode we fail to do so. This was not a problem so far,
-but the recent changes to the broadcast propagation introduced a
-constellation which can result in a NULL pointer dereference.
+This patch addresses a bug in bio_integrity_verify() code that has
+been causing DIF READ verify operations to be silently skipped.
 
-What happens is:
+The issue is that bio->bi_idx will have been incremented within
+bio_advance() code in the normal blk_update_request() ->
+req_bio_endio() completion path, and bio_integrity_verify() is
+using bio_for_each_segment() which starts the bio segment walk
+at the current bio->bi_idx.
 
-CPU0			CPU1
-			idle()
-			  arch_idle()
-			    tick_broadcast_oneshot_control(OFF);
-			      set cpu1 in tick_broadcast_force_mask
-			  if (cpu_offline())
-			     arch_cpu_dead()
+So instead use bio_for_each_segment_all() to always start the bio
+segment walk from zero, regardless of the current bio->bi_idx
+value after bio_advance() has been called.
 
-cpu_dead_cleanup(cpu1)
- cpu1 tickdevice pointer = NULL
+(Context change for v3.10.y -> v3.13.y code - nab)
 
-broadcast interrupt
-  dereference cpu1 tickdevice pointer -> OOPS
-
-We dereference the pointer because cpu1 is still set in
-tick_broadcast_force_mask and tick_do_broadcast() expects a valid
-cpumask and therefor lacks any further checks.
-
-Remove the cpu from the tick_broadcast_force_mask before we set the
-tick device pointer to NULL. Also add a sanity check to the oneshot
-broadcast function, so we can detect such issues w/o crashing the
-machine.
-
-Reported-by: Prarit Bhargava <prarit@redhat.com>
-Cc: athorlton@sgi.com
-Cc: CAI Qian <caiqian@redhat.com>
-Link: http://lkml.kernel.org/r/alpine.DEB.2.02.1306261303260.4013@ionos.tec.linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Martin K. Petersen <martin.petersen@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Christoph Hellwig <hch@lst.de>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- kernel/time/tick-broadcast.c |   13 +++++++++++--
- 1 file changed, 11 insertions(+), 2 deletions(-)
 
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -594,6 +594,13 @@ again:
- 	cpumask_clear(tick_broadcast_force_mask);
+---
+ fs/bio-integrity.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/fs/bio-integrity.c
++++ b/fs/bio-integrity.c
+@@ -458,7 +458,7 @@ static int bio_integrity_verify(struct b
+ 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
+ 	bix.sector_size = bi->sector_size;
  
- 	/*
-+	 * Sanity check. Catch the case where we try to broadcast to
-+	 * offline cpus.
-+	 */
-+	if (WARN_ON_ONCE(!cpumask_subset(tmpmask, cpu_online_mask)))
-+		cpumask_and(tmpmask, tmpmask, cpu_online_mask);
-+
-+	/*
- 	 * Wakeup the cpus which have an expired event.
- 	 */
- 	tick_do_broadcast(tmpmask);
-@@ -834,10 +841,12 @@ void tick_shutdown_broadcast_oneshot(uns
- 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
- 
- 	/*
--	 * Clear the broadcast mask flag for the dead cpu, but do not
--	 * stop the broadcast device!
-+	 * Clear the broadcast masks for the dead cpu, but do not stop
-+	 * the broadcast device!
- 	 */
- 	cpumask_clear_cpu(cpu, tick_broadcast_oneshot_mask);
-+	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
-+	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
- 
- 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
- }
+-	bio_for_each_segment(bv, bio, i) {
++	bio_for_each_segment_all(bv, bio, i) {
+ 		void *kaddr = kmap_atomic(bv->bv_page);
+ 		bix.data_buf = kaddr + bv->bv_offset;
+ 		bix.data_size = bv->bv_len;
 
 
