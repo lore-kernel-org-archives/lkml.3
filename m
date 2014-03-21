@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaCUVoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:44:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:40802 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751171AbaCUVoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:44:07 -0400
-Date: Fri, 21 Mar 2014 17:44:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v8 02/26] kprobes/x86: Allow to handle reentered
- kprobe on singlestepping
-Message-ID: <20140321174400.581551a2@gandalf.local.home>
-In-Reply-To: <20140305115857.22766.61414.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140305115857.22766.61414.stgit@ltc230.yrl.intra.hitachi.co.jp>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1751171AbaCUVvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:51:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30622 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750759AbaCUVvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 17:51:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,706,1389772800"; 
+   d="scan'208";a="504196656"
+From: Andi Kleen <andi@firstfloor.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Wu <peter@lekensteyn.nl>, Peter Zijlstra <peterz@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
+References: <4055058.qLAukpngnj@al>
+	<20140321192938.GJ3132@tassilo.jf.intel.com>
+	<970fd799-8d4c-4759-8a96-1291b411f307@email.android.com>
+	<20140321213753.GK3132@tassilo.jf.intel.com>
+	<532CB21B.4040502@zytor.com>
+Date: Fri, 21 Mar 2014 14:48:37 -0700
+In-Reply-To: <532CB21B.4040502@zytor.com> (H. Peter Anvin's message of "Fri,
+	21 Mar 2014 14:41:47 -0700")
+Message-ID: <8761n7nryi.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Mar 2014 20:58:57 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+"H. Peter Anvin" <hpa@zytor.com> writes:
+>
+> That's why at least to some extent The Right Thing is not to try to
+> pretend to be a CPU you don't even know how to emulate.
+>
+> But again, that has its own issues, too, mostly with userspace
+> optimization, and making the Linux code more resilient wouldn't hurt.
+> In that sense #GP(0) is *much* better than 0: it unambiguously gives an
+> error to work with.
 
-> Since the NMI handlers(e.g. perf) can interrupt in the
-> single stepping (or preparing the single stepping, do_debug
-> etc.), we should consider a kprobe is hit in the NMI
-> handler. Even in that case, the kprobe is allowed to be
-> reentered as same as the kprobes hit in kprobe handlers
-> (KPROBE_HIT_ACTIVE or KPROBE_HIT_SSDONE).
-> The real issue will happen when a kprobe hit while another
-> reentered kprobe is processing (KPROBE_REENTER), because
-> we already consumed a saved-area for the previous kprobe.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
+That means we could just throw rdmsr() away and it would be completely
+replaced with rdmsr_safe(). But then that will likely cause all kinds
+of problems with how to handle these errors and where and how to handle
+these exceptions.
 
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+I much prefer just to fix KVM. I cannot think of any case
+where 0 would cause a major issue.
 
--- Steve
+After all it's virtualization not "rewrite complete kernel for it"
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
