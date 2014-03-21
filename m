@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaCUTkF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:40:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:64659 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750954AbaCUTkC (ORCPT
+	id S1751944AbaCUTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:40:25 -0400
+Received: from mail-pa0-f73.google.com ([209.85.220.73]:60056 "EHLO
+	mail-pa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaCUTkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:40:02 -0400
-Date: Fri, 21 Mar 2014 15:40:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: Re: [PATCH v7 2/2] Tracepoint: register/unregister struct
- tracepoint
-Message-ID: <20140321154000.19939515@gandalf.local.home>
-In-Reply-To: <1395379142-2118-3-git-send-email-mathieu.desnoyers@efficios.com>
-References: <1395379142-2118-1-git-send-email-mathieu.desnoyers@efficios.com>
-	<1395379142-2118-3-git-send-email-mathieu.desnoyers@efficios.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+	Fri, 21 Mar 2014 15:40:15 -0400
+From: Yufeng Shen <miletus@chromium.org>
+To: linux-input@vger.kernel.org
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Yufeng Shen <miletus@chromium.org>,
+        adlr@chromium.org
+Subject: [PATCH] Add quirk HID_QUIRK_NO_INIT_REPORTS for RNDPLUS touchscreen
+Date: Fri, 21 Mar 2014 15:39:58 -0400
+Message-Id: <1395430798-25606-1-git-send-email-miletus@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Mar 2014 01:19:02 -0400
+There is timeout error during initialization:
+kernel: [   14.167086] hid-multitouch 0003:2512:5003.0001: usb_submit_urb(ctrl) failed: -1
+kernel: [   14.167135] hid-multitouch 0003:2512:5003.0001: timeout initializing reports
+kernel: [   14.167407] input: RNDPLUS Co., LTD   PULSEIR TSR4601 as /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input14
+kernel: [   14.167975] cpufreq_interactive: monitoring input on RNDPLUS Co., LTD   PULSEIR TSR4601
+kernel: [   14.168266] hid-multitouch 0003:2512:5003.0001: input,hiddev0,hidraw1: USB HID v1.10 Mouse [RNDPLUS Co., LTD   PULSEIR TSR4601] on usb-0000:00:1d.0-1.3/input0
 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 4e4cc28..1592c1c 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -230,6 +230,7 @@ struct ftrace_event_call {
->  	struct list_head	list;
->  	struct ftrace_event_class *class;
->  	char			*name;
-> +	struct tracepoint	*tp;
+Adding quirk HID_QUIRK_NO_INIT_REPORTS can solve the problem.
 
+Signed-off-by: Yufeng Shen <miletus@chromium.org>
+---
+ drivers/hid/hid-ids.h           | 5 +++++
+ drivers/hid/usbhid/hid-quirks.c | 3 +++
+ 2 files changed, 8 insertions(+)
 
-This change right here just added 17K to the kernel (on a minimum config):
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index f9304cb..772f937 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -442,6 +442,11 @@
+ #define USB_DEVICE_ID_IDEACOM_IDC6650	0x6650
+ #define USB_DEVICE_ID_IDEACOM_IDC6651	0x6651
+ 
++#define USB_VENDOR_ID_IDSPULSE          0x2512
++#define USB_DEVICE_ID_IDSPULSE_EVIR1    0x5003
++#define USB_DEVICE_ID_IDSPULSE_EVIR2    0x5004
++#define USB_DEVICE_ID_IDSPULSE_EVIR3    0x5005
++
+ #define USB_VENDOR_ID_ILITEK		0x222a
+ #define USB_DEVICE_ID_ILITEK_MULTITOUCH	0x0001
+ 
+diff --git a/drivers/hid/usbhid/hid-quirks.c b/drivers/hid/usbhid/hid-quirks.c
+index 0db9a67..e59ad07 100644
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -72,6 +72,9 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_FREESCALE, USB_DEVICE_ID_FREESCALE_MX28, HID_QUIRK_NOGET },
++	{ USB_VENDOR_ID_IDSPULSE, USB_DEVICE_ID_IDSPULSE_EVIR1, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_IDSPULSE, USB_DEVICE_ID_IDSPULSE_EVIR2, HID_QUIRK_NO_INIT_REPORTS },
++	{ USB_VENDOR_ID_IDSPULSE, USB_DEVICE_ID_IDSPULSE_EVIR3, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_MGE, USB_DEVICE_ID_MGE_UPS, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_MSI, USB_DEVICE_ID_MSI_GX680R_LED_PANEL, HID_QUIRK_NO_INIT_REPORTS },
+ 	{ USB_VENDOR_ID_NOVATEK, USB_DEVICE_ID_NOVATEK_MOUSE, HID_QUIRK_NO_INIT_REPORTS },
+-- 
+1.9.1.423.g4596e3a
 
-   text	   data	    bss	    dec	    hex	filename
-8425515	2018936	1302528	11746979	 b33ea3	vmlinux.orig
-8424914	2036472	1302528	11763914	 b380ca	vmlinux
-
-The two are redundant. Might as well remove .name and then
-use .tp->name for referencing the name of the event.
-
--- Steve
-
-
->  	struct trace_event	event;
->  	const char		*print_fmt;
->  	struct event_filter	*filter;
