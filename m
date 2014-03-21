@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966360AbaCUAN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:13:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37441 "EHLO
+	id S933953AbaCUANs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:13:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37436 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966199AbaCUAJt (ORCPT
+	with ESMTP id S966196AbaCUAJs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:49 -0400
+	Thu, 20 Mar 2014 20:09:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas <arealityfarbetween@googlemail.com>,
-        Michele Baldessari <michele@acksyn.org>,
-        Guilherme Amadio <guilherme.amadio@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.4 21/35] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
-Date: Thu, 20 Mar 2014 17:11:12 -0700
-Message-Id: <20140321001054.866739557@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        linux1394-devel@lists.sourceforge.net
+Subject: [PATCH 3.4 20/35] firewire: dont use PREPARE_DELAYED_WORK
+Date: Thu, 20 Mar 2014 17:11:11 -0700
+Message-Id: <20140321001054.829592114@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,36 +29,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michele Baldessari <michele@acksyn.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit b28a613e9138e4b3a64649bd60b13436f4b4b49b upstream.
+commit 70044d71d31d6973665ced5be04ef39ac1c09a48 upstream.
 
-Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
-for Seagate Momentus SpinPoint M8" we added a quirk for disks named
-"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
+PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
+and a nasty surprise in terms of reentrancy guarantee as workqueue
+considers work items to be different if they don't have the same work
+function.
 
-As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
-we need to also add firmware revision 2BA30001 as it is broken as well.
+firewire core-device and sbp2 have been been multiplexing work items
+with multiple work functions.  Introduce fw_device_workfn() and
+sbp2_lu_workfn() which invoke fw_device->workfn and
+sbp2_logical_unit->workfn respectively and always use the two
+functions as the work functions and update the users to set the
+->workfn fields instead of overriding work functions using
+PREPARE_DELAYED_WORK().
 
-Reported-by: Nicholas <arealityfarbetween@googlemail.com>
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
-Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
+This fixes a variety of possible regressions since a2c1c57be8d9
+"workqueue: consider work function when searching for busy work items"
+due to which fw_workqueue lost its required non-reentrancy property.
+
 Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux1394-devel@lists.sourceforge.net
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/firewire/core-device.c |   22 +++++++++++++++-------
+ drivers/firewire/sbp2.c        |   17 +++++++++++++----
+ include/linux/firewire.h       |    1 +
+ 3 files changed, 29 insertions(+), 11 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4106,6 +4106,7 @@ static const struct ata_blacklist_entry
+--- a/drivers/firewire/core-device.c
++++ b/drivers/firewire/core-device.c
+@@ -878,7 +878,7 @@ static int lookup_existing_device(struct
+ 		old->config_rom_retries = 0;
+ 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
  
- 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
- 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
-+	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
+-		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
++		old->workfn = fw_device_update;
+ 		fw_schedule_device_work(old, 0);
  
- 	/* Blacklist entries taken from Silicon Image 3124/3132
- 	   Windows driver .inf file - also several Linux problem reports */
+ 		if (current_node == card->root_node)
+@@ -1040,7 +1040,7 @@ static void fw_device_init(struct work_s
+ 	if (atomic_cmpxchg(&device->state,
+ 			   FW_DEVICE_INITIALIZING,
+ 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
+-		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++		device->workfn = fw_device_shutdown;
+ 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+ 	} else {
+ 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
+@@ -1172,13 +1172,20 @@ static void fw_device_refresh(struct wor
+ 		  dev_name(&device->device));
+  gone:
+ 	atomic_set(&device->state, FW_DEVICE_GONE);
+-	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++	device->workfn = fw_device_shutdown;
+ 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
+  out:
+ 	if (node_id == card->root_node->node_id)
+ 		fw_schedule_bm_work(card, 0);
+ }
+ 
++static void fw_device_workfn(struct work_struct *work)
++{
++	struct fw_device *device = container_of(to_delayed_work(work),
++						struct fw_device, work);
++	device->workfn(work);
++}
++
+ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
+ {
+ 	struct fw_device *device;
+@@ -1228,7 +1235,8 @@ void fw_node_event(struct fw_card *card,
+ 		 * power-up after getting plugged in.  We schedule the
+ 		 * first config rom scan half a second after bus reset.
+ 		 */
+-		INIT_DELAYED_WORK(&device->work, fw_device_init);
++		device->workfn = fw_device_init;
++		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
+ 		fw_schedule_device_work(device, INITIAL_DELAY);
+ 		break;
+ 
+@@ -1244,7 +1252,7 @@ void fw_node_event(struct fw_card *card,
+ 		if (atomic_cmpxchg(&device->state,
+ 			    FW_DEVICE_RUNNING,
+ 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
++			device->workfn = fw_device_refresh;
+ 			fw_schedule_device_work(device,
+ 				device->is_local ? 0 : INITIAL_DELAY);
+ 		}
+@@ -1259,7 +1267,7 @@ void fw_node_event(struct fw_card *card,
+ 		smp_wmb();  /* update node_id before generation */
+ 		device->generation = card->generation;
+ 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
++			device->workfn = fw_device_update;
+ 			fw_schedule_device_work(device, 0);
+ 		}
+ 		break;
+@@ -1284,7 +1292,7 @@ void fw_node_event(struct fw_card *card,
+ 		device = node->data;
+ 		if (atomic_xchg(&device->state,
+ 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
+-			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
++			device->workfn = fw_device_shutdown;
+ 			fw_schedule_device_work(device,
+ 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
+ 		}
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
+ 	 */
+ 	int generation;
+ 	int retries;
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	bool has_sdev;
+ 	bool blocked;
+@@ -865,7 +866,7 @@ static void sbp2_login(struct work_struc
+ 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
+ 	sbp2_set_busy_timeout(lu);
+ 
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
++	lu->workfn = sbp2_reconnect;
+ 	sbp2_agent_reset(lu);
+ 
+ 	/* This was a re-login. */
+@@ -919,7 +920,7 @@ static void sbp2_login(struct work_struc
+ 	 * If a bus reset happened, sbp2_update will have requeued
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+-	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
+ }
+ 
+ static void sbp2_reconnect(struct work_struct *work)
+@@ -953,7 +954,7 @@ static void sbp2_reconnect(struct work_s
+ 		    lu->retries++ >= 5) {
+ 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
+ 			lu->retries = 0;
+-			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++			lu->workfn = sbp2_login;
+ 		}
+ 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+ 
+@@ -973,6 +974,13 @@ static void sbp2_reconnect(struct work_s
+ 	sbp2_conditionally_unblock(lu);
+ }
+ 
++static void sbp2_lu_workfn(struct work_struct *work)
++{
++	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
++						struct sbp2_logical_unit, work);
++	lu->workfn(work);
++}
++
+ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
+ {
+ 	struct sbp2_logical_unit *lu;
+@@ -999,7 +1007,8 @@ static int sbp2_add_logical_unit(struct
+ 	lu->blocked  = false;
+ 	++tgt->dont_block;
+ 	INIT_LIST_HEAD(&lu->orb_list);
+-	INIT_DELAYED_WORK(&lu->work, sbp2_login);
++	lu->workfn = sbp2_login;
++	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
+ 
+ 	list_add_tail(&lu->link, &tgt->lu_list);
+ 	return 0;
+--- a/include/linux/firewire.h
++++ b/include/linux/firewire.h
+@@ -186,6 +186,7 @@ struct fw_device {
+ 	unsigned irmc:1;
+ 	unsigned bc_implemented:2;
+ 
++	work_func_t workfn;
+ 	struct delayed_work work;
+ 	struct fw_attribute_group attribute_group;
+ };
 
 
