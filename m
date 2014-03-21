@@ -1,86 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760588AbaCUJ0E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:26:04 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:26174 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760552AbaCUJZ5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:25:57 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-de-532c05a37884
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        spear-devel@list.st.com
-Subject: Re: [PATCH v2 0/3] ata: ahci_platform related cleanups
-Date: Fri, 21 Mar 2014 10:25:34 +0100
-Message-id: <3053465.Mc0SLxBG1L@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <532B3F3F.1050508@redhat.com>
-References: <1395340026-3969-1-git-send-email-b.zolnierkie@samsung.com>
- <532B3F3F.1050508@redhat.com>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42I5/e+xoO5iVp1gg/eN1hbnbjWwWrw5Pp3J
-	4s4KZotNj6+xWhzb8YjJ4vKuOWwW+3s3MFk0dPewW8yZsZnV4tfyo4wWKy/+ZXbg9rj+6j+T
-	x85Zd9k9Nq3qZPOYM62JxePkhZMsHpuX1Hu833eVzePpj73MHsdvbGfy+LxJLoArissmJTUn
-	syy1SN8ugStj4u/HLAXfuSq+vD7I0sC4n6OLkZNDQsBEYuLJQ8wQtpjEhXvr2boYuTiEBKYz
-	Srxc3MAE4bQwScx8NYMVpIpNwEpiYvsqRhBbREBdYmpHD1gHs8AzJolN87aAjRIWsJdoezQd
-	rIFFQFXi+/kNTCA2r4CmxLMp29hAbFEBT4kd21cC2RwcnAJaElMXlIOEhQTSJVa/m8gKUS4o
-	8WPyPRYQm1lAXmLf/qmsELaOxP7WaWwTGAVmISmbhaRsFpKyBYzMqxhFUwuSC4qT0nMN9YoT
-	c4tL89L1kvNzNzGCo+eZ1A7GlQ0WhxgFOBiVeHgrOLWDhVgTy4orcw8xSnAwK4nwLv0FFOJN
-	SaysSi3Kjy8qzUktPsQozcGiJM57oNU6EOjqxJLU7NTUgtQimCwTB6dUA2P4w10Hi7XkPT6m
-	6iS7tv+5zOTtXBec/GO3pJxtelhEzYaAXX/zLXY/v/Pe7+vNO0EH9s8R26G+dfmGlfL/N3/k
-	80gSs3PRmxHzmfOHOKPhSbePl0utNmkwzdd8znTbQybWz09g/rNJj6MmCrrk2bxmr9M58sXt
-	GpvSv7bGW+anF8TPN7jY/1qJpTgj0VCLuag4EQDgfuJumgIAAA==
+	id S1760627AbaCUJ0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:26:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44969 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760573AbaCUJ0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:26:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,702,1389772800"; 
+   d="scan'208";a="496583961"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <linux-usb@vger.kernel.org>
+Cc: <sarah.a.sharp@linux.intel.com>, <dan.j.williams@intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [RFC v4 3/4] xhci: Use completion and status in global command queue
+Date: Fri, 21 Mar 2014 11:35:16 +0200
+Message-Id: <1395394517-31451-4-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395394517-31451-1-git-send-email-mathias.nyman@linux.intel.com>
+References: <1395394517-31451-1-git-send-email-mathias.nyman@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove the per-device command list and handle_cmd_in_cmd_wait_list()
+and use the completion and status variables found in the
+command structure in the global command list.
 
-Hi,
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+---
+ drivers/usb/host/xhci-hub.c  | 11 ------
+ drivers/usb/host/xhci-mem.c  |  1 -
+ drivers/usb/host/xhci-ring.c | 84 ++++++++------------------------------------
+ drivers/usb/host/xhci.c      | 16 ++-------
+ drivers/usb/host/xhci.h      |  3 --
+ 5 files changed, 17 insertions(+), 98 deletions(-)
 
-On Thursday, March 20, 2014 08:19:27 PM Hans de Goede wrote:
-> Hi,
-> 
-> On 03/20/2014 07:27 PM, Bartlomiej Zolnierkiewicz wrote:
-> > [ v1 was named "ata: add remaining new-style AHCI platform drivers"
-> >   but we are down from 2 drivers to 1 driver so the title of the patch
-> >   series no longer was valid :) ]
-> > 
-> > Hi,
-> > 
-> > This patch series:
-> > - fixes ahci_platform_data->suspend() handling
-> > - moves library AHCI platform code to its own file
-> > - adds a new-style AHCI platform driver for DaVinci DA850 AHCI controller
-> > 
-> > Changes since v1:
-> > - dropped no longer needed patch #4 (ST SPEAr1340 AHCI controller driver)
-> > - adressed review comments for patch #3 from Sekhar Nori
-> > - updated patch descriptions
-> 
-> I assume that the spear patch has been dropped since the spear code has
-> already been converted now and thus is no longer using ahci_platform_data ?
-
-Yes, the SPEAr platform AHCI code has been replaced by a proper PHY driver.
-
-> In that case I think it would best to replace patch 1 with a patch just dropping
-> the suspend and resume callbacks from ahci_platform_data, as they then no
-> longer have any users.
-
-I have this on my TODO but since the SPEAr changes are not yet merged upstream
-this have to wait a bit.
-
-Best regards,
---
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index fca8061..252441d 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -299,7 +299,6 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 						 suspend);
+ 		}
+ 	}
+-	list_add_tail(&cmd->cmd_list, &virt_dev->cmd_list);
+ 	xhci_queue_stop_endpoint(xhci, cmd, slot_id, 0, suspend);
+ 	xhci_ring_cmd_db(xhci);
+ 	spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -311,18 +310,8 @@ static int xhci_stop_device(struct xhci_hcd *xhci, int slot_id, int suspend)
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for stop endpoint command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		spin_lock_irqsave(&xhci->lock, flags);
+-		/* The timeout might have raced with the event ring handler, so
+-		 * only delete from the list if the item isn't poisoned.
+-		 */
+-		if (cmd->cmd_list.next != LIST_POISON1)
+-			list_del(&cmd->cmd_list);
+-		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		ret = -ETIME;
+-		goto command_cleanup;
+ 	}
+-
+-command_cleanup:
+ 	xhci_free_command(xhci, cmd);
+ 	return ret;
+ }
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+index b070a17..38dc721 100644
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -1020,7 +1020,6 @@ int xhci_alloc_virt_device(struct xhci_hcd *xhci, int slot_id,
+ 	dev->num_rings_cached = 0;
+ 
+ 	init_completion(&dev->cmd_completion);
+-	INIT_LIST_HEAD(&dev->cmd_list);
+ 	dev->udev = udev;
+ 
+ 	/* Point to output device context in dcbaa. */
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 5ee07c5..ff6ea85 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -69,10 +69,6 @@
+ #include "xhci.h"
+ #include "xhci-trace.h"
+ 
+-static int handle_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+-		struct xhci_virt_device *virt_dev,
+-		struct xhci_event_cmd *event);
+-
+ /*
+  * Returns zero if the TRB isn't in this segment, otherwise it returns the DMA
+  * address of the TRB.
+@@ -763,7 +759,6 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 		union xhci_trb *trb, struct xhci_event_cmd *event)
+ {
+ 	unsigned int ep_index;
+-	struct xhci_virt_device *virt_dev;
+ 	struct xhci_ring *ep_ring;
+ 	struct xhci_virt_ep *ep;
+ 	struct list_head *entry;
+@@ -773,11 +768,7 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
+ 	struct xhci_dequeue_state deq_state;
+ 
+ 	if (unlikely(TRB_TO_SUSPEND_PORT(le32_to_cpu(trb->generic.field[3])))) {
+-		virt_dev = xhci->devs[slot_id];
+-		if (virt_dev)
+-			handle_cmd_in_cmd_wait_list(xhci, virt_dev,
+-				event);
+-		else
++		if (!xhci->devs[slot_id])
+ 			xhci_warn(xhci, "Stop endpoint command "
+ 				"completion for disabled slot %u\n",
+ 				slot_id);
+@@ -1230,29 +1221,6 @@ static void xhci_complete_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+ }
+ 
+ 
+-/* Check to see if a command in the device's command queue matches this one.
+- * Signal the completion or free the command, and return 1.  Return 0 if the
+- * completed command isn't at the head of the command list.
+- */
+-static int handle_cmd_in_cmd_wait_list(struct xhci_hcd *xhci,
+-		struct xhci_virt_device *virt_dev,
+-		struct xhci_event_cmd *event)
+-{
+-	struct xhci_command *command;
+-
+-	if (list_empty(&virt_dev->cmd_list))
+-		return 0;
+-
+-	command = list_entry(virt_dev->cmd_list.next,
+-			struct xhci_command, cmd_list);
+-	if (xhci->cmd_ring->dequeue != command->command_trb)
+-		return 0;
+-
+-	xhci_complete_cmd_in_cmd_wait_list(xhci, command,
+-			GET_COMP_CODE(le32_to_cpu(event->status)));
+-	return 1;
+-}
+-
+ /*
+  * Finding the command trb need to be cancelled and modifying it to
+  * NO OP command. And if the command is in device's command wait
+@@ -1404,7 +1372,6 @@ static void xhci_handle_cmd_enable_slot(struct xhci_hcd *xhci, int slot_id,
+ 		xhci->slot_id = slot_id;
+ 	else
+ 		xhci->slot_id = 0;
+-	complete(&xhci->addr_dev);
+ }
+ 
+ static void xhci_handle_cmd_disable_slot(struct xhci_hcd *xhci, int slot_id)
+@@ -1429,9 +1396,6 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	unsigned int ep_state;
+ 	u32 add_flags, drop_flags;
+ 
+-	virt_dev = xhci->devs[slot_id];
+-	if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
+-		return;
+ 	/*
+ 	 * Configure endpoint commands can come from the USB core
+ 	 * configuration or alt setting changes, or because the HW
+@@ -1440,6 +1404,7 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	 * If the command was for a halted endpoint, the xHCI driver
+ 	 * is not waiting on the configure endpoint command.
+ 	 */
++	virt_dev = xhci->devs[slot_id];
+ 	ctrl_ctx = xhci_get_input_control_ctx(xhci, virt_dev->in_ctx);
+ 	if (!ctrl_ctx) {
+ 		xhci_warn(xhci, "Could not get input context, bad type.\n");
+@@ -1475,35 +1440,11 @@ static void xhci_handle_cmd_config_ep(struct xhci_hcd *xhci, int slot_id,
+ 	return;
+ }
+ 
+-static void xhci_handle_cmd_eval_ctx(struct xhci_hcd *xhci, int slot_id,
+-		struct xhci_event_cmd *event, u32 cmd_comp_code)
+-{
+-	struct xhci_virt_device *virt_dev;
+-
+-	virt_dev = xhci->devs[slot_id];
+-	if (handle_cmd_in_cmd_wait_list(xhci, virt_dev, event))
+-		return;
+-	virt_dev->cmd_status = cmd_comp_code;
+-	complete(&virt_dev->cmd_completion);
+-}
+-
+-static void xhci_handle_cmd_addr_dev(struct xhci_hcd *xhci, int slot_id,
+-		u32 cmd_comp_code)
+-{
+-	xhci->devs[slot_id]->cmd_status = cmd_comp_code;
+-	complete(&xhci->addr_dev);
+-}
+-
+ static void xhci_handle_cmd_reset_dev(struct xhci_hcd *xhci, int slot_id,
+ 		struct xhci_event_cmd *event)
+ {
+-	struct xhci_virt_device *virt_dev;
+-
+ 	xhci_dbg(xhci, "Completed reset device command.\n");
+-	virt_dev = xhci->devs[slot_id];
+-	if (virt_dev)
+-		handle_cmd_in_cmd_wait_list(xhci, virt_dev, event);
+-	else
++	if (!xhci->devs[slot_id])
+ 		xhci_warn(xhci, "Reset device command completion "
+ 				"for disabled slot %u\n", slot_id);
+ }
+@@ -1521,18 +1462,23 @@ static void xhci_handle_cmd_nec_get_fw(struct xhci_hcd *xhci,
+ 			NEC_FW_MINOR(le32_to_cpu(event->status)));
+ }
+ 
+-static void xhci_del_and_free_cmd(struct xhci_command *cmd)
++static void xhci_complete_del_and_free_cmd(struct xhci_command *cmd, u32 status)
+ {
+ 	list_del(&cmd->cmd_list);
+-	if (!cmd->completion)
++
++	if (cmd->completion) {
++		cmd->status = status;
++		complete(cmd->completion);
++	} else {
+ 		kfree(cmd);
++	}
+ }
+ 
+ void xhci_cleanup_command_queue(struct xhci_hcd *xhci)
+ {
+ 	struct xhci_command *cur_cmd, *tmp_cmd;
+ 	list_for_each_entry_safe(cur_cmd, tmp_cmd, &xhci->cmd_list, cmd_list)
+-		xhci_del_and_free_cmd(cur_cmd);
++		xhci_complete_del_and_free_cmd(cur_cmd, COMP_CMD_ABORT);
+ }
+ 
+ static void handle_cmd_completion(struct xhci_hcd *xhci,
+@@ -1599,13 +1545,13 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		xhci_handle_cmd_disable_slot(xhci, slot_id);
+ 		break;
+ 	case TRB_CONFIG_EP:
+-		xhci_handle_cmd_config_ep(xhci, slot_id, event, cmd_comp_code);
++		if (!cmd->completion)
++			xhci_handle_cmd_config_ep(xhci, slot_id, event,
++						  cmd_comp_code);
+ 		break;
+ 	case TRB_EVAL_CONTEXT:
+-		xhci_handle_cmd_eval_ctx(xhci, slot_id, event, cmd_comp_code);
+ 		break;
+ 	case TRB_ADDR_DEV:
+-		xhci_handle_cmd_addr_dev(xhci, slot_id, cmd_comp_code);
+ 		break;
+ 	case TRB_STOP_RING:
+ 		WARN_ON(slot_id != TRB_TO_SLOT_ID(
+@@ -1638,7 +1584,7 @@ static void handle_cmd_completion(struct xhci_hcd *xhci,
+ 		break;
+ 	}
+ 
+-	xhci_del_and_free_cmd(cmd);
++	xhci_complete_del_and_free_cmd(cmd, cmd_comp_code);
+ 
+ 	inc_deq(xhci, xhci->cmd_ring);
+ }
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index a8d0c50..4568cbe 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -2626,8 +2626,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 		return -ENOMEM;
+ 	}
+ 
+-	list_add_tail(&command->cmd_list, &virt_dev->cmd_list);
+-
+ 	if (!ctx_change)
+ 		ret = xhci_queue_configure_endpoint(xhci, command,
+ 				command->in_ctx->dma,
+@@ -2637,7 +2635,6 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 				command->in_ctx->dma,
+ 				udev->slot_id, must_succeed);
+ 	if (ret < 0) {
+-		list_del(&command->cmd_list);
+ 		if ((xhci->quirks & XHCI_EP_LIMIT_QUIRK))
+ 			xhci_free_host_resources(xhci, ctrl_ctx);
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+@@ -3500,11 +3497,9 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	/* Attempt to submit the Reset Device command to the command ring */
+ 	spin_lock_irqsave(&xhci->lock, flags);
+ 
+-	list_add_tail(&reset_device_cmd->cmd_list, &virt_dev->cmd_list);
+ 	ret = xhci_queue_reset_device(xhci, reset_device_cmd, slot_id);
+ 	if (ret) {
+ 		xhci_dbg(xhci, "FIXME: allocate a command ring segment\n");
+-		list_del(&reset_device_cmd->cmd_list);
+ 		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		goto command_cleanup;
+ 	}
+@@ -3518,13 +3513,6 @@ int xhci_discover_or_reset_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for reset device command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		spin_lock_irqsave(&xhci->lock, flags);
+-		/* The timeout might have raced with the event ring handler, so
+-		 * only delete from the list if the item isn't poisoned.
+-		 */
+-		if (reset_device_cmd->cmd_list.next != LIST_POISON1)
+-			list_del(&reset_device_cmd->cmd_list);
+-		spin_unlock_irqrestore(&xhci->lock, flags);
+ 		ret = -ETIME;
+ 		goto command_cleanup;
+ 	}
+@@ -3893,7 +3881,7 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,
+ 		return -ETIME;
+ 	}
+ 
+-	switch (virt_dev->cmd_status) {
++	switch (command->status) {
+ 	case COMP_CTX_STATE:
+ 	case COMP_EBADSLT:
+ 		xhci_err(xhci, "Setup ERROR: setup %s command for slot %d.\n",
+@@ -3916,7 +3904,7 @@ static int xhci_setup_device(struct usb_hcd *hcd, struct usb_device *udev,
+ 	default:
+ 		xhci_err(xhci,
+ 			 "ERROR: unexpected setup %s command completion code 0x%x.\n",
+-			 act, virt_dev->cmd_status);
++			 act, command->status);
+ 		xhci_dbg(xhci, "Slot ID %d Output Context:\n", udev->slot_id);
+ 		xhci_dbg_ctx(xhci, virt_dev->out_ctx, 2);
+ 		trace_xhci_address_ctx(xhci, virt_dev->out_ctx, 1);
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index 4f816e3..0682a09 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -939,9 +939,6 @@ struct xhci_virt_device {
+ #define	XHCI_MAX_RINGS_CACHED	31
+ 	struct xhci_virt_ep		eps[31];
+ 	struct completion		cmd_completion;
+-	/* Status of the last command issued for this device */
+-	u32				cmd_status;
+-	struct list_head		cmd_list;
+ 	u8				fake_port;
+ 	u8				real_port;
+ 	struct xhci_interval_bw_table	*bw_table;
+-- 
+1.8.3.2
 
