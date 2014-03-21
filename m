@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760259AbaCUADY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36439 "EHLO
+	id S1760776AbaCUB2t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:28:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36461 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760212AbaCUADT (ORCPT
+	with ESMTP id S1760250AbaCUADX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:19 -0400
+	Thu, 20 Mar 2014 20:03:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Wolfgang Walter <linux@stwm.de>, Cong Wang <xiyou.wangcong@gmail.com>,
-        Tom Herbert <therbert@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 015/149] ipv4: ipv6: better estimate tunnel header cut for correct ufo handling
-Date: Thu, 20 Mar 2014 17:02:58 -0700
-Message-Id: <20140321000437.474279840@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.13 025/149] mac80211: dont validate unchanged AP bandwidth while tracking
+Date: Thu, 20 Mar 2014 17:03:08 -0700
+Message-Id: <20140321000437.836131031@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -32,143 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Johannes Berg <johannes.berg@intel.com>
 
-[ Upstream commit 91a48a2e85a3b70ce10ead34b4ab5347f8d215c9 ]
+commit 963a1852fbac4f75a2d938fa2e734ef1e6d4c044 upstream.
 
-Currently the UFO fragmentation process does not correctly handle inner
-UDP frames.
+The MLME code in mac80211 must track whether or not the AP changed
+bandwidth, but if there's no change while tracking it shouldn't do
+anything, otherwise regulatory updates can make it impossible to
+connect to certain APs if the regulatory database doesn't match the
+information from the AP. See the precise scenario described in the
+code.
 
-(The following tcpdumps are captured on the parent interface with ufo
-disabled while tunnel has ufo enabled, 2000 bytes payload, mtu 1280,
-both sit device):
+This still leaves some possible problems with CSA or if the AP
+actually changed bandwidth, but those cases are less common and
+won't completely prevent using it.
 
-IPv6:
-16:39:10.031613 IP (tos 0x0, ttl 64, id 3208, offset 0, flags [DF], proto IPv6 (41), length 1300)
-    192.168.122.151 > 1.1.1.1: IP6 (hlim 64, next-header Fragment (44) payload length: 1240) 2001::1 > 2001::8: frag (0x00000001:0|1232) 44883 > distinct: UDP, length 2000
-16:39:10.031709 IP (tos 0x0, ttl 64, id 3209, offset 0, flags [DF], proto IPv6 (41), length 844)
-    192.168.122.151 > 1.1.1.1: IP6 (hlim 64, next-header Fragment (44) payload length: 784) 2001::1 > 2001::8: frag (0x00000001:0|776) 58979 > 46366: UDP, length 5471
+This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70881
 
-We can see that fragmentation header offset is not correctly updated.
-(fragmentation id handling is corrected by 916e4cf46d0204 ("ipv6: reuse
-ip6_frag_id from ip6_ufo_append_data")).
-
-IPv4:
-16:39:57.737761 IP (tos 0x0, ttl 64, id 3209, offset 0, flags [DF], proto IPIP (4), length 1296)
-    192.168.122.151 > 1.1.1.1: IP (tos 0x0, ttl 64, id 57034, offset 0, flags [none], proto UDP (17), length 1276)
-    192.168.99.1.35961 > 192.168.99.2.distinct: UDP, length 2000
-16:39:57.738028 IP (tos 0x0, ttl 64, id 3210, offset 0, flags [DF], proto IPIP (4), length 792)
-    192.168.122.151 > 1.1.1.1: IP (tos 0x0, ttl 64, id 57035, offset 0, flags [none], proto UDP (17), length 772)
-    192.168.99.1.13531 > 192.168.99.2.20653: UDP, length 51109
-
-In this case fragmentation id is incremented and offset is not updated.
-
-First, I aligned inet_gso_segment and ipv6_gso_segment:
-* align naming of flags
-* ipv6_gso_segment: setting skb->encapsulation is unnecessary, as we
-  always ensure that the state of this flag is left untouched when
-  returning from upper gso segmenation function
-* ipv6_gso_segment: move skb_reset_inner_headers below updating the
-  fragmentation header data, we don't care for updating fragmentation
-  header data
-* remove currently unneeded comment indicating skb->encapsulation might
-  get changed by upper gso_segment callback (gre and udp-tunnel reset
-  encapsulation after segmentation on each fragment)
-
-If we encounter an IPIP or SIT gso skb we now check for the protocol ==
-IPPROTO_UDP and that we at least have already traversed another ip(6)
-protocol header.
-
-The reason why we have to special case GSO_IPIP and GSO_SIT is that
-we reset skb->encapsulation to 0 while skb_mac_gso_segment the inner
-protocol of GSO_UDP_TUNNEL or GSO_GRE packets.
-
-Reported-by: Wolfgang Walter <linux@stwm.de>
-Cc: Cong Wang <xiyou.wangcong@gmail.com>
-Cc: Tom Herbert <therbert@google.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-and-tested-by: Nate Carlson <kernel@natecarlson.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv4/af_inet.c     |    7 +++++--
- net/ipv6/ip6_offload.c |   20 ++++++++++++--------
- 2 files changed, 17 insertions(+), 10 deletions(-)
 
---- a/net/ipv4/af_inet.c
-+++ b/net/ipv4/af_inet.c
-@@ -1299,8 +1299,11 @@ static struct sk_buff *inet_gso_segment(
- 
- 	segs = ERR_PTR(-EPROTONOSUPPORT);
- 
--	/* Note : following gso_segment() might change skb->encapsulation */
--	udpfrag = !skb->encapsulation && proto == IPPROTO_UDP;
-+	if (skb->encapsulation &&
-+	    skb_shinfo(skb)->gso_type & (SKB_GSO_SIT|SKB_GSO_IPIP))
-+		udpfrag = proto == IPPROTO_UDP && encap;
-+	else
-+		udpfrag = proto == IPPROTO_UDP && !skb->encapsulation;
- 
- 	ops = rcu_dereference(inet_offloads[proto]);
- 	if (likely(ops && ops->callbacks.gso_segment))
---- a/net/ipv6/ip6_offload.c
-+++ b/net/ipv6/ip6_offload.c
-@@ -89,7 +89,7 @@ static struct sk_buff *ipv6_gso_segment(
- 	unsigned int unfrag_ip6hlen;
- 	u8 *prevhdr;
- 	int offset = 0;
--	bool tunnel;
-+	bool encap, udpfrag;
- 	int nhoff;
- 
- 	if (unlikely(skb_shinfo(skb)->gso_type &
-@@ -110,8 +110,8 @@ static struct sk_buff *ipv6_gso_segment(
- 	if (unlikely(!pskb_may_pull(skb, sizeof(*ipv6h))))
- 		goto out;
- 
--	tunnel = SKB_GSO_CB(skb)->encap_level > 0;
--	if (tunnel)
-+	encap = SKB_GSO_CB(skb)->encap_level > 0;
-+	if (encap)
- 		features = skb->dev->hw_enc_features & netif_skb_features(skb);
- 	SKB_GSO_CB(skb)->encap_level += sizeof(*ipv6h);
- 
-@@ -121,6 +121,12 @@ static struct sk_buff *ipv6_gso_segment(
- 
- 	proto = ipv6_gso_pull_exthdrs(skb, ipv6h->nexthdr);
- 
-+	if (skb->encapsulation &&
-+	    skb_shinfo(skb)->gso_type & (SKB_GSO_SIT|SKB_GSO_IPIP))
-+		udpfrag = proto == IPPROTO_UDP && encap;
-+	else
-+		udpfrag = proto == IPPROTO_UDP && !skb->encapsulation;
-+
- 	ops = rcu_dereference(inet6_offloads[proto]);
- 	if (likely(ops && ops->callbacks.gso_segment)) {
- 		skb_reset_transport_header(skb);
-@@ -133,13 +139,9 @@ static struct sk_buff *ipv6_gso_segment(
- 	for (skb = segs; skb; skb = skb->next) {
- 		ipv6h = (struct ipv6hdr *)(skb_mac_header(skb) + nhoff);
- 		ipv6h->payload_len = htons(skb->len - nhoff - sizeof(*ipv6h));
--		if (tunnel) {
--			skb_reset_inner_headers(skb);
--			skb->encapsulation = 1;
--		}
- 		skb->network_header = (u8 *)ipv6h - skb->head;
- 
--		if (!tunnel && proto == IPPROTO_UDP) {
-+		if (udpfrag) {
- 			unfrag_ip6hlen = ip6_find_1stfragopt(skb, &prevhdr);
- 			fptr = (struct frag_hdr *)((u8 *)ipv6h + unfrag_ip6hlen);
- 			fptr->frag_off = htons(offset);
-@@ -148,6 +150,8 @@ static struct sk_buff *ipv6_gso_segment(
- 			offset += (ntohs(ipv6h->payload_len) -
- 				   sizeof(struct frag_hdr));
- 		}
-+		if (encap)
-+			skb_reset_inner_headers(skb);
- 	}
+---
+ net/mac80211/mlme.c |   22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
+
+--- a/net/mac80211/mlme.c
++++ b/net/mac80211/mlme.c
+@@ -271,6 +271,28 @@ ieee80211_determine_chantype(struct ieee
+ 	ret = 0;
  
  out:
++	/*
++	 * When tracking the current AP, don't do any further checks if the
++	 * new chandef is identical to the one we're currently using for the
++	 * connection. This keeps us from playing ping-pong with regulatory,
++	 * without it the following can happen (for example):
++	 *  - connect to an AP with 80 MHz, world regdom allows 80 MHz
++	 *  - AP advertises regdom US
++	 *  - CRDA loads regdom US with 80 MHz prohibited (old database)
++	 *  - the code below detects an unsupported channel, downgrades, and
++	 *    we disconnect from the AP in the caller
++	 *  - disconnect causes CRDA to reload world regdomain and the game
++	 *    starts anew.
++	 * (see https://bugzilla.kernel.org/show_bug.cgi?id=70881)
++	 *
++	 * It seems possible that there are still scenarios with CSA or real
++	 * bandwidth changes where a this could happen, but those cases are
++	 * less common and wouldn't completely prevent using the AP.
++	 */
++	if (tracking &&
++	    cfg80211_chandef_identical(chandef, &sdata->vif.bss_conf.chandef))
++		return ret;
++
+ 	/* don't print the message below for VHT mismatch if VHT is disabled */
+ 	if (ret & IEEE80211_STA_DISABLE_VHT)
+ 		vht_chandef = *chandef;
 
 
