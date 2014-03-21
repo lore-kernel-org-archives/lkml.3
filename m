@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760480AbaCUADu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36559 "EHLO
+	id S965470AbaCUAEg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760422AbaCUADo (ORCPT
+	with ESMTP id S965356AbaCUAE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:44 -0400
+	Thu, 20 Mar 2014 20:04:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 056/149] powerpc: Align p_dyn, p_rela and p_st symbols
-Date: Thu, 20 Mar 2014 17:03:39 -0700
-Message-Id: <20140321000438.903322962@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>, Wolfram Sang <wsa@the-dreams.de>
+Subject: [PATCH 3.13 113/149] i2c: Remove usage of orphaned symbol OF_I2C
+Date: Thu, 20 Mar 2014 17:04:36 -0700
+Message-Id: <20140321000440.876284913@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,32 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Richard Weinberger <richard@nod.at>
 
-commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
+commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
 
-The 64bit relocation code places a few symbols in the text segment.
-These symbols are only 4 byte aligned where they need to be 8 byte
-aligned. Add an explicit alignment.
+The symbol is an orphan, don't depend on it anymore.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+[wsa: enhanced commit message]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/reloc_64.S |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/i2c/busses/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/reloc_64.S
-+++ b/arch/powerpc/kernel/reloc_64.S
-@@ -81,6 +81,7 @@ _GLOBAL(relocate)
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
  
- 6:	blr
- 
-+.balign 8
- p_dyn:	.llong	__dynamic_start - 0b
- p_rela:	.llong	__rela_dyn_start - 0b
- p_st:	.llong	_stext - 0b
+ config I2C_CPM
+ 	tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
+-	depends on (CPM1 || CPM2) && OF_I2C
++	depends on CPM1 || CPM2
+ 	help
+ 	  This supports the use of the I2C interface on Freescale
+ 	  processors with CPM1 or CPM2.
 
 
