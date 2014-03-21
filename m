@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751118AbaCUSc2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 14:32:28 -0400
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:57198 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaCUSc0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 14:32:26 -0400
+	id S1751126AbaCUSeh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 14:34:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52259 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750733AbaCUSec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 14:34:32 -0400
+Date: Fri, 21 Mar 2014 15:34:26 -0300
+From: Eduardo Habkost <ehabkost@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
+        mtosatti@redhat.com, alex.williamson@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 2/4] KVM: ioapic: clear IRR for edge-triggered
+ interrupts at delivery
+Message-ID: <20140321183426.GD10819@otherpad.lan.raisama.net>
+References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
+ <1395394081-16252-3-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20140214235849.GA30703@www.outflux.net>
-References: <20140214235849.GA30703@www.outflux.net>
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-Date: Fri, 21 Mar 2014 14:31:54 -0400
-X-Google-Sender-Auth: p6VS0TDbm1J_rSe8K5r2BY68M-E
-Message-ID: <CAP=VYLpYhOR3xoX5AjvENR_FRLNsgGE4w275_SZEvBa_UwZrmw@mail.gmail.com>
-Subject: Re: [PATCH] lkdtm: include cacheflush.h
-To: Kees Cook <keescook@chromium.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395394081-16252-3-git-send-email-pbonzini@redhat.com>
+X-Fnord: you can see the fnord
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Feb 14, 2014 at 6:58 PM, Kees Cook <keescook@chromium.org> wrote:
-> Some architectures need cacheflush.h explicitly included (mips) for
-> use of flush_icache_range():
->
->     config: make ARCH=mips allmodconfig
->     All error/warnings:
->     >> ERROR: "flush_icache_range" undefined!
-
-The linux-next builds still fail with a similar error:
-
-http://kisskb.ellerman.id.au/kisskb/buildresult/10808358/
-
-I'm not sure if it ever was a compile error, or if it was always
-a missing export symbol type error as it is apparently now.
-
-Paul.
---
-
->
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Kees Cook <keescook@chromium.org>
+On Fri, Mar 21, 2014 at 10:27:59AM +0100, Paolo Bonzini wrote:
+> This ensures that IRR bits are set in the KVM_GET_IRQCHIP result only if
+> the interrupt is still sitting in the IOAPIC.  After the next patches, it
+> avoids spurious reinjection of the interrupt when KVM_SET_IRQCHIP is
+> called.
+> 
+> Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 > ---
->  drivers/misc/lkdtm.c |    1 +
->  1 file changed, 1 insertion(+)
->
-> diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
-> index 47ed2d321351..2ebd52e05773 100644
-> --- a/drivers/misc/lkdtm.c
-> +++ b/drivers/misc/lkdtm.c
-> @@ -46,6 +46,7 @@
->  #include <linux/debugfs.h>
->  #include <linux/vmalloc.h>
->  #include <linux/mman.h>
-> +#include <asm/cacheflush.h>
->
->  #ifdef CONFIG_IDE
->  #include <linux/ide.h>
-> --
-> 1.7.9.5
->
->
-> --
-> Kees Cook
-> Chrome OS Security
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  virt/kvm/ioapic.c | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
+> index 0b4914147b9d..25e16a6898ed 100644
+> --- a/virt/kvm/ioapic.c
+> +++ b/virt/kvm/ioapic.c
+> @@ -288,6 +288,9 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
+>  	irqe.level = 1;
+>  	irqe.shorthand = 0;
+>  
+> +	if (irqe.trig_mode == IOAPIC_EDGE_TRIG)
+> +		ioapic->irr &= ~(1 << irq);
+> +
+
+Now, every call to ioapic_service() for an edge interrupt clears the IRR
+bit immediately (assuming the mask is unset).
+
+If the IRR bit is immediately zero on delivery, why won't this break the
+edge detection logic on kvm_ioapic_set_irq()? Am I missing some
+additional detail?
+
+In other words, won't this cause spurious interrupts if
+kvm_ioapic_set_irq(..., true) is called twice?
+
+-- 
+Eduardo
