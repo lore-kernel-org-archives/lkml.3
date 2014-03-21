@@ -1,249 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760569AbaCUOfs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:35:48 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:33424 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaCUOfq (ORCPT
+	id S1760632AbaCUOf5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:35:57 -0400
+Received: from wst.daktronics.com ([63.85.214.45]:48445 "EHLO
+	wst.daktronics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760561AbaCUOft convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:35:46 -0400
-Message-ID: <532C4E3C.8030404@gmail.com>
-Date: Fri, 21 Mar 2014 20:05:40 +0530
-From: RAGHAVENDRA GANIGA <ravi23ganiga@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	Fri, 21 Mar 2014 10:35:49 -0400
+X-Greylist: delayed 936 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 10:35:48 EDT
+From: Matt Sickler <Matt.Sickler@daktronics.com>
+To: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH]: UIO read(2)/write(2) overrides
+Thread-Topic: [PATCH]: UIO read(2)/write(2) overrides
+Thread-Index: Ac9FDxO9KmNAPrQNTAiN9FrBa597DA==
+Date: Fri, 21 Mar 2014 14:20:11 +0000
+Message-ID: <8FAD17D1809CB042A0963E8337B9FE3DD7D823@MB-EXC-04.daktronics.lan>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.5.14.89]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com
-Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0fd7f9ab5c0cb5e857b7b4d6893a8e68ac7763fd Mon Sep 17 00:00:00 2001
-From: Raghavendra Ganiga <ravi23ganiga@gmail.com>
-Date: Fri, 21 Mar 2014 19:53:36 +0530
-Subject: [PATCH] rtc: add support for maxim dallas rtc ds1347
+Tiny patch to let uio-based drivers override the read(2), write(2), and poll(2) syscalls.
+The rationale is that some uio-based drivers might want the mmap(2) functionality
+of UIO, but have no need for the IRQ semantics of read(2) and write(2).
 
-This is a patch to add support for
-maxim dallas rtc ds1347
-
-Signed-off-by: Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
+Signed-Off-by: Matt Sickler <Matt.Sickler@daktronics.com>
 ---
- drivers/rtc/Kconfig      |   12 ++++
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-ds1347.c |  167 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 180 insertions(+)
- create mode 100644 drivers/rtc/rtc-ds1347.c
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index a673e5b..da1bfc8 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -505,6 +505,9 @@ static unsigned int uio_poll(struct file *filep, poll_table *wait)
+    struct uio_listener *listener = filep->private_data;
+    struct uio_device *idev = listener->dev;
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index db933de..2e565f8 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -573,6 +573,18 @@ config RTC_DRV_DS1305
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-ds1305.
- 
-+config RTC_DRV_DS1347
-+	tristate "Dallas/Maxim DS1347"
-+	help
-+	  If you say yes here you get support for the
-+	  Dallas/Maxim DS1347 chips.
++   if (idev->info->poll)
++       return idev->info->poll(filep, wait);
 +
-+	  This driver only supports the RTC feature, and not other chip
-+	  features such as alarms.
+    if (!idev->info->irq)
+        return -EIO;
+
+@@ -523,6 +526,9 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
+    ssize_t retval;
+    s32 event_count;
+
++   if (idev->info->read)
++       return idev->info->read(filep, buf, count, ppos);
 +
-+	  This driver can also be built as a module. If so, the module
-+	  will be called rtc-ds1347.
+    if (!idev->info->irq)
+        return -EIO;
+
+@@ -571,6 +577,9 @@ static ssize_t uio_write(struct file *filep, const char __user *buf,
+    ssize_t retval;
+    s32 irq_on;
+
++   if (idev->info->write)
++       return idev->info->write(filep, buf, count, ppos);
 +
- config RTC_DRV_DS1390
- 	tristate "Dallas/Maxim DS1390/93/94"
- 	help
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index b427bf7..40a0991 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -40,6 +40,7 @@ obj-$(CONFIG_RTC_DRV_DS1286)	+= rtc-ds1286.o
- obj-$(CONFIG_RTC_DRV_DS1302)	+= rtc-ds1302.o
- obj-$(CONFIG_RTC_DRV_DS1305)	+= rtc-ds1305.o
- obj-$(CONFIG_RTC_DRV_DS1307)	+= rtc-ds1307.o
-+obj-$(CONFIG_RTC_DRV_DS1347)	+= rtc-ds1347.o
- obj-$(CONFIG_RTC_DRV_DS1374)	+= rtc-ds1374.o
- obj-$(CONFIG_RTC_DRV_DS1390)	+= rtc-ds1390.o
- obj-$(CONFIG_RTC_DRV_DS1511)	+= rtc-ds1511.o
-diff --git a/drivers/rtc/rtc-ds1347.c b/drivers/rtc/rtc-ds1347.c
-new file mode 100644
-index 0000000..fffa51f
---- /dev/null
-+++ b/drivers/rtc/rtc-ds1347.c
-@@ -0,0 +1,167 @@
-+/* rtc-ds1347.c
-+ *
-+ * Driver for Dallas Semiconductor DS1347 Low Current, SPI Compatible
-+ * Real Time Clock
-+ *
-+ * Author : Raghavendra Chandra Ganiga <ravi23ganiga@gmail.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/spi/spi.h>
-+#include <linux/bcd.h>
-+
-+/* Registers in ds1347 rtc */
-+
-+#define DS1347_SECONDS_REG	0x01
-+#define DS1347_MINUTES_REG	0x03
-+#define DS1347_HOURS_REG	0x05
-+#define DS1347_DATE_REG		0x07
-+#define DS1347_MONTH_REG	0x09
-+#define DS1347_DAY_REG		0x0B
-+#define DS1347_YEAR_REG		0x0D
-+#define DS1347_CONTROL_REG	0x0F
-+#define DS1347_STATUS_REG	0x17
-+#define DS1347_CLOCK_BURST	0x3F
-+
-+static int ds1347_read_reg(struct device *dev, unsigned char address,
-+				unsigned char *data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+
-+	*data = address | 0x80;
-+
-+	return spi_write_then_read(spi, data, 1, data, 1);
-+}
-+
-+static int ds1347_write_reg(struct device *dev, unsigned char address,
-+				unsigned char data)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char buf[2];
-+
-+	buf[0] = address & 0x7F;
-+	buf[1] = data;
-+
-+	return spi_write_then_read(spi, buf, 2, NULL, 0);
-+}
-+
-+static int ds1347_read_time(struct device *dev, struct rtc_time *dt)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	int err;
-+	unsigned char buf[8];
-+
-+	buf[0] = DS1347_CLOCK_BURST | 0x80;
-+
-+	err = spi_write_then_read(spi, buf, 1, buf, 8);
-+	if (err)
-+		return err;
-+
-+	dt->tm_sec = bcd2bin(buf[0]);
-+	dt->tm_min = bcd2bin(buf[1]);
-+	dt->tm_hour = bcd2bin(buf[2] & 0x3F);
-+	dt->tm_mday = bcd2bin(buf[3]);
-+	dt->tm_mon = bcd2bin(buf[4]) - 1;
-+	dt->tm_wday = bcd2bin(buf[5]) - 1;
-+	dt->tm_year = bcd2bin(buf[6]) + 100;
-+
-+	return rtc_valid_tm(dt);
-+}
-+
-+static int ds1347_set_time(struct device *dev, struct rtc_time *dt)
-+{
-+	struct spi_device *spi = to_spi_device(dev);
-+	unsigned char buf[9];
-+
-+	buf[0] = DS1347_CLOCK_BURST & 0x7F;
-+	buf[1] = bin2bcd(dt->tm_sec);
-+	buf[2] = bin2bcd(dt->tm_min);
-+	buf[3] = (bin2bcd(dt->tm_hour) & 0x3F);
-+	buf[4] = bin2bcd(dt->tm_mday);
-+	buf[5] = bin2bcd(dt->tm_mon + 1);
-+	buf[6] = bin2bcd(dt->tm_wday + 1);
-+
-+	/* year in linux is from 1900 i.e in range of 100
-+	in rtc it is from 00 to 99 */
-+	dt->tm_year = dt->tm_year % 100;
-+
-+	buf[7] = bin2bcd(dt->tm_year);
-+	buf[8] = bin2bcd(0x00);
-+
-+	/* write the rtc settings */
-+	return spi_write_then_read(spi, buf, 9, NULL, 0);
-+}
-+
-+static const struct rtc_class_ops ds1347_rtc_ops = {
-+	.read_time = ds1347_read_time,
-+	.set_time = ds1347_set_time,
-+};
-+
-+static int ds1347_probe(struct spi_device *spi)
-+{
-+	struct rtc_device *rtc;
-+	unsigned char data;
-+	int res;
-+
-+	/* spi setup with ds1347 in mode 3 and bits per word as 8 */
-+	spi->mode = SPI_MODE_3;
-+	spi->bits_per_word = 8;
-+	spi_setup(spi);
-+
-+	/* RTC Settings */
-+	res = ds1347_read_reg(&spi->dev, DS1347_SECONDS_REG, &data);
-+	if (res)
-+		return res;
-+
-+	/* Disable the write protect of rtc */
-+	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-+	data = data & ~(1<<7);
-+	ds1347_write_reg(&spi->dev, DS1347_CONTROL_REG, data);
-+
-+	/* Enable the oscillator , disable the oscillator stop flag,
-+	 and glitch filter to reduce current consumption */
-+	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-+	data = data & 0x1B;
-+	ds1347_write_reg(&spi->dev, DS1347_STATUS_REG, data);
-+
-+	/* display the settings */
-+	ds1347_read_reg(&spi->dev, DS1347_CONTROL_REG, &data);
-+	dev_info(&spi->dev, "DS1347 RTC CTRL Reg = 0x%02x\n", data);
-+
-+	ds1347_read_reg(&spi->dev, DS1347_STATUS_REG, &data);
-+	dev_info(&spi->dev, "DS1347 RTC Status Reg = 0x%02x\n", data);
-+
-+	rtc = devm_rtc_device_register(&spi->dev, "ds1347",
-+				&ds1347_rtc_ops, THIS_MODULE);
-+
-+	if (IS_ERR(rtc))
-+		return PTR_ERR(rtc);
-+
-+	spi_set_drvdata(spi, rtc);
-+
-+	return 0;
-+}
-+
-+static struct spi_driver ds1347_driver = {
-+	.driver = {
-+		.name = "ds1347",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = ds1347_probe,
-+};
-+
-+module_spi_driver(ds1347_driver);
-+
-+MODULE_DESCRIPTION("DS1347 SPI RTC DRIVER");
-+MODULE_AUTHOR("Raghavendra C Ganiga <ravi23ganiga@gmail.com>");
-+MODULE_LICENSE("GPL v2");
-+
--- 
-1.7.10.4
+    if (!idev->info->irq)
+        return -EIO;
+
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index 1ad4724..f15ace1 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -16,6 +16,7 @@
+
+ #include <linux/fs.h>
+ #include <linux/interrupt.h>
++#include <linux/poll.h>
+
+ struct module;
+ struct uio_map;
+@@ -95,6 +96,11 @@ struct uio_info {
+    int (*open)(struct uio_info *info, struct inode *inode);
+    int (*release)(struct uio_info *info, struct inode *inode);
+    int (*irqcontrol)(struct uio_info *info, s32 irq_on);
++   unsigned int (*poll)(struct file *filep, poll_table *wait);
++   ssize_t (*read)(struct file *filep, char __user *buf,
++                   size_t count, loff_t *ppos);
++   ssize_t (*write)(struct file *filep, const char __user *buf,
++                    size_t count, loff_t *ppos);
+ };
+
+ extern int __must_check
+
