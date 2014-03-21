@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966877AbaCUAoo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:44:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37025 "EHLO
+	id S1030210AbaCUAor (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:44:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37021 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965816AbaCUAIh (ORCPT
+	with ESMTP id S965811AbaCUAIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:08:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 07/85] virtio-net: alloc big buffers also when guest can receive UFO
-Date: Thu, 20 Mar 2014 17:09:10 -0700
-Message-Id: <20140321000559.580495105@linuxfoundation.org>
+Subject: [PATCH 3.10 06/85] neigh: recompute reachabletime before returning from neigh_periodic_work()
+Date: Thu, 20 Mar 2014 17:09:09 -0700
+Message-Id: <20140321000559.478860034@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,39 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
+[ Upstream commit feff9ab2e7fa773b6a3965f77375fe89f7fd85cf ]
 
-We should alloc big buffers also when guest can receive UFO
-packets to let the big packets fit into guest rx buffer.
+If the neigh table's entries is less than gc_thresh1, the function
+will return directly, and the reachabletime will not be recompute,
+so the reachabletime can be guessed.
 
-Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-(virtio-net: Allow UFO feature to be set and advertised.)
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/virtio_net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/core/neighbour.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1597,7 +1597,8 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -764,9 +764,6 @@ static void neigh_periodic_work(struct w
+ 	nht = rcu_dereference_protected(tbl->nht,
+ 					lockdep_is_held(&tbl->lock));
  
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+-	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
+-		goto out;
+-
+ 	/*
+ 	 *	periodically recompute ReachableTime from random function
+ 	 */
+@@ -779,6 +776,9 @@ static void neigh_periodic_work(struct w
+ 				neigh_rand_reach_time(p->base_reachable_time);
+ 	}
+ 
++	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
++		goto out;
++
+ 	for (i = 0 ; i < (1 << nht->hash_shift); i++) {
+ 		np = &nht->hash_buckets[i];
+ 
 
 
