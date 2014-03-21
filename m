@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751853AbaCUVJm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:09:42 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:52224 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954AbaCUVJk (ORCPT
+	id S1752017AbaCUVJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:09:53 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:58217 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaCUVJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:09:40 -0400
+	Fri, 21 Mar 2014 17:09:43 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org
@@ -15,69 +15,42 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>,
         Will Deacon <will.deacon@arm.com>, x86@kernel.org,
         Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>
-Subject: [PATCH 0/8] Generic serial earlycon
-Date: Fri, 21 Mar 2014 16:08:40 -0500
-Message-Id: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 3/8] arm64: enable FIX_EARLYCON_MEM kconfig
+Date: Fri, 21 Mar 2014 16:08:43 -0500
+Message-Id: <1395436128-11244-4-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-This started out as an attempt to add arm64's earlyprintk support to ARM
-in order to get an earlier, runtime setup console on multi-platform
-kernels. The first issue was needing the fixmap support which
-conveniently Mark Salter was working on and is mostly in place now. Like
-many things on ARM and arm64 now, it then became where do I put the now
-common, shared code. After digging more into various early console/printk
-support, it turns out the 8250_early.c setup code was the best starting
-point. 
+In order to support earlycon on arm64, we need to enable earlycon fixmap
+support.
 
-This is based on Mark Salter's fixmap support currently in linux-next.
-This is tested on arm64 and ARM with pl011 and 8250. The ARM support
-also requires fixmap and fixed mapping support which are not yet in place.
-I have some patches in my tree to support fixmap, but they need some more
-work. Fortunately, once fixmap is in place, it is just a Kconfig option
-to enable earlycon support on ARM. A git tree is available here[1].
+Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm64/Kconfig | 3 +++
+ 1 file changed, 3 insertions(+)
 
-Based on this series, I would like to add support for doing earlycon
-setup using DT.
-
-Rob
-
-[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git earlycon
-
-Rob Herring (8):
-  x86: move FIX_EARLYCON_MEM kconfig into x86
-  arm64: add FIXMAP_PAGE_NOCACHE definition
-  arm64: enable FIX_EARLYCON_MEM kconfig
-  tty/serial: add generic serial earlycon
-  tty/serial: convert 8250 to generic earlycon
-  tty/serial: pl011: add generic earlycon support
-  tty/serial: add arm64 semihosting earlycon
-  arm64: remove arch specific earlyprintk
-
- Documentation/kernel-parameters.txt        |   6 +-
- arch/arm64/Kconfig                         |   3 +
- arch/arm64/Kconfig.debug                   |   9 --
- arch/arm64/include/asm/fixmap.h            |   3 +-
- arch/arm64/kernel/Makefile                 |   1 -
- arch/arm64/kernel/early_printk.c           | 158 -----------------------------
- arch/x86/Kconfig                           |   3 +
- drivers/tty/serial/8250/8250_early.c       | 138 +++----------------------
- drivers/tty/serial/8250/Kconfig            |   5 -
- drivers/tty/serial/Kconfig                 |  24 ++++-
- drivers/tty/serial/Makefile                |   3 +
- drivers/tty/serial/amba-pl011.c            |  30 +++++-
- drivers/tty/serial/earlycon-arm-semihost.c |  44 ++++++++
- drivers/tty/serial/earlycon.c              | 148 +++++++++++++++++++++++++++
- include/linux/serial_core.h                |  16 +++
- 15 files changed, 287 insertions(+), 304 deletions(-)
- delete mode 100644 arch/arm64/kernel/early_printk.c
- create mode 100644 drivers/tty/serial/earlycon-arm-semihost.c
- create mode 100644 drivers/tty/serial/earlycon.c
-
+diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+index e2424f9..a839444 100644
+--- a/arch/arm64/Kconfig
++++ b/arch/arm64/Kconfig
+@@ -112,6 +112,9 @@ config IOMMU_HELPER
+ config KERNEL_MODE_NEON
+ 	def_bool y
+ 
++config FIX_EARLYCON_MEM
++	def_bool y
++
+ source "init/Kconfig"
+ 
+ source "kernel/Kconfig.freezer"
 -- 
 1.8.3.2
 
