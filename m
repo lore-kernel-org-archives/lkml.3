@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965336AbaCUAEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36738 "EHLO
+	id S966976AbaCUBEt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:04:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36771 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965252AbaCUAER (ORCPT
+	with ESMTP id S965320AbaCUAEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:17 -0400
+	Thu, 20 Mar 2014 20:04:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andy Adamson <andros@netapp.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 087/149] NFSv4: nfs4_stateid_is_current should return true for an invalid stateid
-Date: Thu, 20 Mar 2014 17:04:10 -0700
-Message-Id: <20140321000439.971937366@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.13 099/149] drm/radeon/atom: select the proper number of lanes in transmitter setup
+Date: Thu, 20 Mar 2014 17:04:22 -0700
+Message-Id: <20140321000440.391092951@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,40 +28,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e1253be0ece1a95a02c7f5843194877471af8179 upstream.
+commit d03874c881a049a50e12f285077ab1f9fc2686e1 upstream.
 
-When nfs4_set_rw_stateid() can fails by returning EIO to indicate that
-the stateid is completely invalid, then it makes no sense to have it
-trigger a retry of the READ or WRITE operation. Instead, we should just
-have it fall through and attempt a recovery.
+We need to check for DVI vs. HDMI when setting up duallink since
+HDMI is single link only.  Fixes 4k modes on newer asics.
 
-This fixes an infinite loop in which the client keeps replaying the same
-bad stateid back to the server.
+bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=75223
 
-Reported-by: Andy Adamson <andros@netapp.com>
-Link: http://lkml.kernel.org/r/1393954269-3974-1-git-send-email-andros@netapp.com
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nfs/nfs4proc.c |    5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/radeon/atombios_encoders.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/nfs/nfs4proc.c
-+++ b/fs/nfs/nfs4proc.c
-@@ -4012,8 +4012,9 @@ static bool nfs4_stateid_is_current(nfs4
- {
- 	nfs4_stateid current_stateid;
- 
--	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode))
--		return false;
-+	/* If the current stateid represents a lost lock, then exit */
-+	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode) == -EIO)
-+		return true;
- 	return nfs4_stateid_match(stateid, &current_stateid);
- }
- 
+--- a/drivers/gpu/drm/radeon/atombios_encoders.c
++++ b/drivers/gpu/drm/radeon/atombios_encoders.c
+@@ -1313,7 +1313,7 @@ atombios_dig_transmitter_setup(struct dr
+ 			}
+ 			if (is_dp)
+ 				args.v5.ucLaneNum = dp_lane_count;
+-			else if (radeon_encoder->pixel_clock > 165000)
++			else if (radeon_dig_monitor_is_duallink(encoder, radeon_encoder->pixel_clock))
+ 				args.v5.ucLaneNum = 8;
+ 			else
+ 				args.v5.ucLaneNum = 4;
 
 
