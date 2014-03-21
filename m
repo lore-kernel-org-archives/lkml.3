@@ -1,96 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760632AbaCUOf5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:35:57 -0400
-Received: from wst.daktronics.com ([63.85.214.45]:48445 "EHLO
-	wst.daktronics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760561AbaCUOft convert rfc822-to-8bit (ORCPT
+	id S1760664AbaCUOhd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:37:33 -0400
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:55508 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752673AbaCUOhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:35:49 -0400
-X-Greylist: delayed 936 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 10:35:48 EDT
-From: Matt Sickler <Matt.Sickler@daktronics.com>
-To: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH]: UIO read(2)/write(2) overrides
-Thread-Topic: [PATCH]: UIO read(2)/write(2) overrides
-Thread-Index: Ac9FDxO9KmNAPrQNTAiN9FrBa597DA==
-Date: Fri, 21 Mar 2014 14:20:11 +0000
-Message-ID: <8FAD17D1809CB042A0963E8337B9FE3DD7D823@MB-EXC-04.daktronics.lan>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.5.14.89]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Mar 2014 10:37:31 -0400
 MIME-Version: 1.0
+In-Reply-To: <20140321122434.06755C40567@trevor.secretlab.ca>
+References: <20140317185542.fe4554210fc1893b44289008@canb.auug.org.au>
+ <20140317182953.GA10565@kroah.com> <20140319153008.GC31293@kroah.com> <20140321122434.06755C40567@trevor.secretlab.ca>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Fri, 21 Mar 2014 14:37:10 +0000
+X-Google-Sender-Auth: r9GC5vBIEH1pk26Mfd5XjZSym74
+Message-ID: <CACxGe6uUauuF=JUVvoc-se+neJVbCU9TbxORPvbahp66qJY4Jg@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb tree
+To: Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tiny patch to let uio-based drivers override the read(2), write(2), and poll(2) syscalls.
-The rationale is that some uio-based drivers might want the mmap(2) functionality
-of UIO, but have no need for the IRQ semantics of read(2) and write(2).
+On Fri, Mar 21, 2014 at 12:24 PM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Wed, 19 Mar 2014 08:30:08 -0700, Greg KH <greg@kroah.com> wrote:
+>> On Mon, Mar 17, 2014 at 10:27:36PM +0000, Russell King wrote:
+>> > However, I still find myself coming back to a fundamental question: why
+>> > were these bindings fine in April 2013, passed review, and were acked,
+>> > but not fine today.  Here's the links to the emails acking their
+>> > introduction which Sylwester Nawrocki sent me:
+>> >
+>> >   http://www.spinics.net/lists/linux-media/msg61899.html
+>> >   http://www.spinics.net/lists/linux-media/msg62458.html
+>> >
+>> > So... *shrug*.  Make of this what you will.
+>>
+>> Thanks for the details, I'll just leave my tree as-is for now, as that
+>> seems the simplest thing to do.
+>
+> Yes, please leave it in your tree. I've caused noise and trouble than I
+> should, and could have handled it differently. I apologize.
 
-Signed-Off-by: Matt Sickler <Matt.Sickler@daktronics.com>
----
-diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
-index a673e5b..da1bfc8 100644
---- a/drivers/uio/uio.c
-+++ b/drivers/uio/uio.c
-@@ -505,6 +505,9 @@ static unsigned int uio_poll(struct file *filep, poll_table *wait)
-    struct uio_listener *listener = filep->private_data;
-    struct uio_device *idev = listener->dev;
+s/should/should not have/
 
-+   if (idev->info->poll)
-+       return idev->info->poll(filep, wait);
-+
-    if (!idev->info->irq)
-        return -EIO;
-
-@@ -523,6 +526,9 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
-    ssize_t retval;
-    s32 event_count;
-
-+   if (idev->info->read)
-+       return idev->info->read(filep, buf, count, ppos);
-+
-    if (!idev->info->irq)
-        return -EIO;
-
-@@ -571,6 +577,9 @@ static ssize_t uio_write(struct file *filep, const char __user *buf,
-    ssize_t retval;
-    s32 irq_on;
-
-+   if (idev->info->write)
-+       return idev->info->write(filep, buf, count, ppos);
-+
-    if (!idev->info->irq)
-        return -EIO;
-
-diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
-index 1ad4724..f15ace1 100644
---- a/include/linux/uio_driver.h
-+++ b/include/linux/uio_driver.h
-@@ -16,6 +16,7 @@
-
- #include <linux/fs.h>
- #include <linux/interrupt.h>
-+#include <linux/poll.h>
-
- struct module;
- struct uio_map;
-@@ -95,6 +96,11 @@ struct uio_info {
-    int (*open)(struct uio_info *info, struct inode *inode);
-    int (*release)(struct uio_info *info, struct inode *inode);
-    int (*irqcontrol)(struct uio_info *info, s32 irq_on);
-+   unsigned int (*poll)(struct file *filep, poll_table *wait);
-+   ssize_t (*read)(struct file *filep, char __user *buf,
-+                   size_t count, loff_t *ppos);
-+   ssize_t (*write)(struct file *filep, const char __user *buf,
-+                    size_t count, loff_t *ppos);
- };
-
- extern int __must_check
-
+g.
