@@ -1,76 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaCUUKG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 16:10:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58687 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751831AbaCUUI6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 16:08:58 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        devicetree@vger.kernel.org
-Subject: [PATCH v2 2/5] clk: berlin: add berlin clocks DT bindings documentation
-Date: Fri, 21 Mar 2014 21:08:38 +0100
-Message-Id: <1395432521-11055-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com>
+	id S1752102AbaCUULX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 16:11:23 -0400
+Received: from mga09.intel.com ([134.134.136.24]:44541 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751179AbaCUULT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 16:11:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,705,1389772800"; 
+   d="scan'208";a="477597593"
+Date: Fri, 21 Mar 2014 16:11:09 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: liaohengquan1986 <liaohengquan1986@163.com>
+Cc: "Alexander Gordeev" <agordeev@redhat.com>, linux-kernel@vger.kernel.org,
+        "Keith Busch" <keith.busch@intel.com>, linux-nvme@lists.infradead.org
+Subject: Re: A question about NVMe's nvme-irq
+Message-ID: <20140321201109.GC5705@linux.intel.com>
+References: <cover.1390897693.git.agordeev@redhat.com>
+ <20140311150841.GA25564@dhcp-26-207.brq.redhat.com>
+ <196070e8.d690.144bb7e553f.Coremail.liaohengquan1986@163.com>
+ <20140313192045.GD6091@linux.intel.com>
+ <785daaf7.5696.144e2af49b0.Coremail.liaohengquan1986@163.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <785daaf7.5696.144e2af49b0.Coremail.liaohengquan1986@163.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the device tree bindings for the PLLs found on the Marvell Berlin SoCs.
+On Fri, Mar 21, 2014 at 11:29:02AM +0800, liaohengquan1986 wrote:
+> hello,
+>          There is question confusing me recently. In the function of nvme-irq as belows:
+>           static irqreturn_t nvme_irq(int irq, void *data)
+>           {
+>                  irqreturn_t result;
+>                  struct nvme_queue *nvmeq = data;
+>                  spin_lock(&nvmeq->q_lock);
+>                  nvme_process_cq(nvmeq);
+>                  result = nvmeq->cqe_seen ? IRQ_HANDLED : IRQ_NONE;
+>                  nvmeq->cqe_seen = 0;
+>                  spin_unlock(&nvmeq->q_lock);
+>                  return result;
+>        }
+>        If there are two cqes which trigger two irqs, but they are so closed that the first nvme-irq() handles both the cqes( including the second cqe which triggers the second irq),
+>       then the second nvme_process_cq() will find there is no cqe in the CQ and return nvmeq->cqe_seen = 0, and nvme-irq will return IRQ_NONE.
+>       I think maybe this is a bug, because there actually are two irqs, it's not right to return IRQ_NONE, isn't it?
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- .../devicetree/bindings/clock/berlin-clock.txt     | 29 ++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/clock/berlin-clock.txt
+        /* If the controller ignores the cq head doorbell and continuously
+         * writes to the queue, it is theoretically possible to wrap around
+         * the queue twice and mistakenly return IRQ_NONE.  Linux only
+         * requires that 0.1% of your interrupts are handled, so this isn't
+         * a big problem.
+         */
 
-diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-new file mode 100644
-index 000000000000..49b7860bffb8
---- /dev/null
-+++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-@@ -0,0 +1,29 @@
-+Device Tree Clock bindings for Marvell Berlin clocks
-+
-+This binding uses the common clock binding[1].
-+
-+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-+
-+Required properties:
-+- compatible: shall be one of the following:
-+	"marvell,berlin2-pll",
-+	"marvell,berlin2q-pll":
-+		CPU PLL and System PLL
-+- reg: Address and length of the clock register set.
-+- #clock-cells: from common clock binding; shall be set to 0.
-+- clocks: from common clock binding
-+
-+smclk: sysmgr-clock {
-+	compatible = "fixed-clock";
-+	#clock-cells = <0>;
-+	clock-frequency = <25000000>;
-+};
-+
-+cpupll: cpupll@ea003c {
-+	compatible = "marvell,berlin2-pll";
-+	clocks = <&smclk>;
-+	#clock-cells = <0>;
-+	reg = <0xea003c 0x8>;
-+};
-+
-+
--- 
-1.8.3.2
+I should probably update & move that comment, but nevertheless, it
+applies to your situation too.
 
+> 
