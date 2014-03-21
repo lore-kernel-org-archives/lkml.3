@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966015AbaCUAPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:15:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37415 "EHLO
+	id S965655AbaCUAPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:15:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37416 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966164AbaCUAJo (ORCPT
+	with ESMTP id S966170AbaCUAJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Neil Horman <nhorman@tuxdriver.com>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 27/35] vmxnet3: fix building without CONFIG_PCI_MSI
-Date: Thu, 20 Mar 2014 17:11:18 -0700
-Message-Id: <20140321001055.045069564@linuxfoundation.org>
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.4 28/35] can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
+Date: Thu, 20 Mar 2014 17:11:19 -0700
+Message-Id: <20140321001055.079675280@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,51 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Arnd Bergmann <arnd@arndb.de>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit 0a8d8c446b5429d15ff2d48f46e00d8a08552303 upstream.
+commit 7e9e148af01ef388efb6e2490805970be4622792 upstream.
 
-Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
-the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
-because it unconditionally references the vmxnet3_msix_rx()
-function.
+If flexcan_chip_start() in flexcan_open() fails, the interrupt is not freed,
+this patch adds the missing cleanup.
 
-To fix this, use the same #ifdef in the caller that exists around
-the function definition.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
-Cc: "VMware, Inc." <pv-drivers@vmware.com>
-Cc: "David S. Miller" <davem@davemloft.net>
-Acked-by: Neil Horman <nhorman@tuxdriver.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ drivers/net/can/flexcan.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -1728,13 +1728,16 @@ static void
- vmxnet3_netpoll(struct net_device *netdev)
- {
- 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
--	int i;
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -805,7 +805,7 @@ static int flexcan_open(struct net_devic
  
- 	switch (adapter->intr.type) {
--	case VMXNET3_IT_MSIX:
-+#ifdef CONFIG_PCI_MSI
-+	case VMXNET3_IT_MSIX: {
-+		int i;
- 		for (i = 0; i < adapter->num_rx_queues; i++)
- 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
- 		break;
-+	}
-+#endif
- 	case VMXNET3_IT_MSI:
- 	default:
- 		vmxnet3_intr(0, adapter->netdev);
+ 	err = request_irq(dev->irq, flexcan_irq, IRQF_SHARED, dev->name, dev);
+ 	if (err)
+-		goto out_close;
++		goto out_free_irq;
+ 
+ 	/* start chip and queuing */
+ 	err = flexcan_chip_start(dev);
+@@ -816,6 +816,8 @@ static int flexcan_open(struct net_devic
+ 
+ 	return 0;
+ 
++ out_free_irq:
++	free_irq(dev->irq, dev);
+  out_close:
+ 	close_candev(dev);
+  out:
 
 
