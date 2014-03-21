@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966818AbaCUAjJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:39:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37070 "EHLO
+	id S966494AbaCUAjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:39:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37085 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965862AbaCUAIq (ORCPT
+	with ESMTP id S965870AbaCUAIt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:46 -0400
+	Thu, 20 Mar 2014 20:08:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.10 34/85] powerpc: Align p_dyn, p_rela and p_st symbols
-Date: Thu, 20 Mar 2014 17:09:37 -0700
-Message-Id: <20140321000603.540207357@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Wang Weidong <wangweidong1@huawei.com>
+Subject: [PATCH 3.10 28/85] ARM: 7811/1: locks: use early clobber in arch_spin_trylock
+Date: Thu, 20 Mar 2014 17:09:31 -0700
+Message-Id: <20140321000602.636108124@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,32 +30,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Will Deacon <will.deacon@arm.com>
 
-commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
+commit afa31d8eb86fc2f25083e675d57ac8173a98f999 upstream.
 
-The 64bit relocation code places a few symbols in the text segment.
-These symbols are only 4 byte aligned where they need to be 8 byte
-aligned. Add an explicit alignment.
+The res variable is written before we've finished with the input
+operands (namely the lock address), so ensure that we mark it as `early
+clobber' to avoid unintended register sharing.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Wang Weidong <wangweidong1@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/reloc_64.S |    1 +
- 1 file changed, 1 insertion(+)
+ arch/arm/include/asm/spinlock.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/reloc_64.S
-+++ b/arch/powerpc/kernel/reloc_64.S
-@@ -81,6 +81,7 @@ _GLOBAL(relocate)
- 
- 6:	blr
- 
-+.balign 8
- p_dyn:	.llong	__dynamic_start - 0b
- p_rela:	.llong	__rela_dyn_start - 0b
- p_st:	.llong	_stext - 0b
+--- a/arch/arm/include/asm/spinlock.h
++++ b/arch/arm/include/asm/spinlock.h
+@@ -107,7 +107,7 @@ static inline int arch_spin_trylock(arch
+ 		"	subs	%1, %0, %0, ror #16\n"
+ 		"	addeq	%0, %0, %4\n"
+ 		"	strexeq	%2, %0, [%3]"
+-		: "=&r" (slock), "=&r" (contended), "=r" (res)
++		: "=&r" (slock), "=&r" (contended), "=&r" (res)
+ 		: "r" (&lock->slock), "I" (1 << TICKET_SHIFT)
+ 		: "cc");
+ 	} while (res);
 
 
