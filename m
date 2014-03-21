@@ -1,44 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760807AbaCUKzp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:55:45 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:46666 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760120AbaCUKzj (ORCPT
+	id S1760606AbaCULG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:06:26 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:22608 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759943AbaCULGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:55:39 -0400
-Date: Fri, 21 Mar 2014 10:55:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, patches@opensource.wolfsonmicro.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] mfd: arizona: Mark DSP clocking register as volatile
-Message-ID: <20140321105534.GK15213@lee--X1>
-References: <1395334164-3012-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1395334164-3012-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 21 Mar 2014 07:06:24 -0400
+Date: Fri, 21 Mar 2014 11:05:59 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are
+ serialized
+Message-ID: <20140321110559.GB13596@arm.com>
+References: <cover.1395379422.git.viresh.kumar@linaro.org>
+ <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+ <532BEE64.3090501@linux.vnet.ibm.com>
+ <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
+ <532BFB77.5060107@linux.vnet.ibm.com>
+ <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395334164-3012-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+In-Reply-To: <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The DSPs will often control there own clock speeds whilst running as
-> such we should mark the registers controlling this as volatile.
+On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
+> @Catalin: We have a problem here and need your expert advice. After changing
+> CPU frequency we need to call this code:
 > 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  drivers/mfd/wm5102-tables.c |    1 +
->  drivers/mfd/wm5110-tables.c |    4 ++++
->  2 files changed, 5 insertions(+), 0 deletions(-)
+> cpufreq_notify_post_transition();
+> policy->transition_ongoing = false;
+> 
+> And the sequence must be like this only. Is this guaranteed without any
+> memory barriers? cpufreq_notify_post_transition() isn't touching
+> transition_ongoing at all..
 
-Applied, thanks.
+The above sequence doesn't say much. As rmk said, the compiler wouldn't
+reorder the transition_ongoing write before the function call. I think
+most architectures (not sure about Alpha) don't do speculative stores,
+so hardware wouldn't reorder them either. However, other stores inside
+the cpufreq_notify_post_transition() could be reordered after
+transition_ongoing store. The same for memory accesses after the
+transition_ongoing update, they could be reordered before.
+
+So what we actually need to know is what are the other relevant memory
+accesses that require strict ordering with transition_ongoing.
+
+What I find strange in your patch is that
+cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
+update but cpufreq_freq_transition_end() doesn't.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Catalin
