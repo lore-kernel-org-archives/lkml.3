@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751578AbaCUVRy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:17:54 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:44613 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaCUVRv (ORCPT
+	id S1751831AbaCUVSB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:18:01 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:42671 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaCUVRz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:17:51 -0400
+	Fri, 21 Mar 2014 17:17:55 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
@@ -22,140 +22,23 @@ Cc: John Stultz <john.stultz@linaro.org>,
         Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
-Date: Fri, 21 Mar 2014 14:17:30 -0700
-Message-Id: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
+Date: Fri, 21 Mar 2014 14:17:32 -0700
+Message-Id: <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just wanted to send out an updated patch set that includes changes from
-some of the reviews. Hopefully folks will have some time to look them
-over prior to the LSF-MM discussion on volatile ranges on Tuesday (see
-below for LSF-MM discussion points to think about).
+Users of volatile ranges will need to know if memory was discarded.
+This patch adds the purged state tracking required to inform userland
+when it marks memory as non-volatile that some memory in that range
+was purged and needs to be regenerated.
 
-New changes are:
-----------------
-o Added flags argument to the syscall, which is unused, but per
-  https://lwn.net/Articles/585415/ seems like a good idea.
-o Minor vma traversing cleanups suggested by Jan
-o Return an error when trying to mark unmapped regions
-o First pass implementation of marking pages referenced when
-  they are marked volatile, so the pages in a range are set to
-  the same "age" and will be approximately purged together.
-  This behavior is still open for discussion.
-o Very naive implementation of anonymous page aging on swapless
-  systems. This has clear performance issues, as we burn time
-  overly scanning anonymous pages, but provides something
-  concrete upon which to discuss what the best way would be to
-  solve this.
-o Other minor code cleanups
-
-The first three patches are still the core functionality, which
-I'd really like further review on. The last two patches in this
-series are more discussion starters, and are less serious.
-
-
-Potential discussion items for LSF-MM to think about:
-----------------------------------------------------
-o How to increase reviewer interest?
-    - Lots of interest from application world
-o Page aging semantics when marking volatile.
-    - Should marking volatile be the same as accessing pages?
-    - Should volatile ranges be put on end of inactive lru?
-    - Should we just punt this and have applications combine madvise()
-      use with vrange() to specify range age?
-o Volatile page & purged page accounting
-    - Volatility is stored in per-process vma, not page
-    - vmstats are page based, how do we deal w/ COWed pages?
-o Aging anonymous memory on swapless systems
-    - Any thoughts on improving over naive method?
-    - Better volatile page accounting might help?
-    - Do we need a separate volatile LRU?
-o Shared volatility on tmpfs/shm/memfd (required for ashmem)
-    - Johannes idea for clearing dirty bits?
-    - vma-like structure on the address space?
-
-thanks
--john
-
-
-Volatile ranges provides a method for userland to inform the kernel that
-a range of memory is safe to discard (ie: can be regenerated) but
-userspace may want to try access it in the future.  It can be thought of
-as similar to MADV_DONTNEED, but that the actual freeing of the memory
-is delayed and only done under memory pressure, and the user can try to
-cancel the action and be able to quickly access any unpurged pages. The
-idea originated from Android's ashmem, but I've since learned that other
-OSes provide similar functionality.
-
-This functionality allows for a number of interesting uses. One such
-example is: Userland caches that have kernel triggered eviction under
-memory pressure. This allows for the kernel to "rightsize" userspace
-caches for current system-wide workload. Things like image bitmap
-caches, or rendered HTML in a hidden browser tab, where the data is
-not visible and can be regenerated if needed, are good examples.
-
-Both Chrome and Firefox already make use of volatile ranges via the
-ashmem interface:
-https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t/rev/a32c32b24a34
-
-https://chromium.googlesource.com/chromium/src/base/+/47617a69b9a57796935e03d78931bd01b4806e70/memory/discardable_memory_allocator_android.cc
-
-
-There are two basic ways volatile ranges can be used:
-
-Explicit marking method:
-1) Userland marks a range of memory that can be regenerated if necessary
-as volatile
-2) Before accessing the memory again, userland marks the memory as
-nonvolatile, and the kernel will provide notification if any pages in the
-range has been purged.
-
-Optimistic method:
-1) Userland marks a large range of data as volatile
-2) Userland continues to access the data as it needs.
-3) If userland accesses a page that has been purged, the kernel will
-send a SIGBUS
-4) Userspace can trap the SIGBUS, mark the affected pages as
-non-volatile, and refill the data as needed before continuing on
-
-
-You can read more about the history of volatile ranges here (~reverse
-chronological order):
-https://lwn.net/Articles/590991/
-http://permalink.gmane.org/gmane.linux.kernel.mm/98848
-http://permalink.gmane.org/gmane.linux.kernel.mm/98676
-https://lwn.net/Articles/522135/
-https://lwn.net/Kernel/Index/#Volatile_ranges
-
-
-Continuing from the last release, this revision is reduced in scope
-when compared to earlier attempts. I've only focused on handled
-volatility on anonymous memory, and we're storing the volatility in
-the VMA.  This may have performance implications compared with the earlier
-approach, but it does simplify the approach. I'm open to expanding
-functionality via flags arugments, but for now I'm wanting to keep focus
-on what the right default behavior should be and keep the use cases
-restricted to help get reviewer interest.
-
-Further, the page discarding happens via normal vmscanning, which due to
-anonymous pages not being aged on swapless systems, means we'll only purge
-pages when swap is enabled. In this version I've included a naive
-implementation of enabling anonymous scanning on swapless systems, which
-clearly has performance issues, but hopefully will trigger some discussion
-on how to best do this.
-
-Additionally, since we don't handle volatility on tmpfs files with this
-version of the patch, it is not able to be used to implement semantics
-similar to Android's ashmem. But since shared volatiltiy on files is
-more complex, my hope is to start small and hopefully grow from there.
-
-Again, much of the logic in this patchset is based on Minchan's earlier
-efforts, so I do want to make sure the credit goes to him for his major
-contribution!
-
+This simplified implementation which uses some of the logic from
+Minchan's earlier efforts, so credit to Minchan for his work.
 
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Android Kernel Team <kernel-team@android.com>
@@ -175,31 +58,168 @@ Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: Michel Lespinasse <walken@google.com>
 Cc: Minchan Kim <minchan@kernel.org>
 Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/swap.h    | 15 ++++++++--
+ include/linux/swapops.h | 10 +++++++
+ include/linux/vrange.h  |  3 ++
+ mm/vrange.c             | 75 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 101 insertions(+), 2 deletions(-)
 
-
-John Stultz (5):
-  vrange: Add vrange syscall and handle splitting/merging and marking
-    vmas
-  vrange: Add purged page detection on setting memory non-volatile
-  vrange: Add page purging logic & SIGBUS trap
-  vrange: Set affected pages referenced when marking volatile
-  vmscan: Age anonymous memory even when swap is off.
-
- arch/x86/syscalls/syscall_64.tbl |   1 +
- include/linux/mm.h               |   1 +
- include/linux/swap.h             |  15 +-
- include/linux/swapops.h          |  10 +
- include/linux/vrange.h           |  13 ++
- mm/Makefile                      |   2 +-
- mm/internal.h                    |   2 -
- mm/memory.c                      |  21 ++
- mm/rmap.c                        |   5 +
- mm/vmscan.c                      |  38 ++--
- mm/vrange.c                      | 433 +++++++++++++++++++++++++++++++++++++++
- 11 files changed, 514 insertions(+), 27 deletions(-)
- create mode 100644 include/linux/vrange.h
- create mode 100644 mm/vrange.c
-
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 46ba0c6..18c12f9 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -70,8 +70,19 @@ static inline int current_is_kswapd(void)
+ #define SWP_HWPOISON_NUM 0
+ #endif
+ 
+-#define MAX_SWAPFILES \
+-	((1 << MAX_SWAPFILES_SHIFT) - SWP_MIGRATION_NUM - SWP_HWPOISON_NUM)
++
++/*
++ * Purged volatile range pages
++ */
++#define SWP_VRANGE_PURGED_NUM 1
++#define SWP_VRANGE_PURGED (MAX_SWAPFILES + SWP_HWPOISON_NUM + SWP_MIGRATION_NUM)
++
++
++#define MAX_SWAPFILES ((1 << MAX_SWAPFILES_SHIFT)	\
++				- SWP_MIGRATION_NUM	\
++				- SWP_HWPOISON_NUM	\
++				- SWP_VRANGE_PURGED_NUM	\
++			)
+ 
+ /*
+  * Magic header for a swap area. The first part of the union is
+diff --git a/include/linux/swapops.h b/include/linux/swapops.h
+index c0f7526..84f43d9 100644
+--- a/include/linux/swapops.h
++++ b/include/linux/swapops.h
+@@ -161,6 +161,16 @@ static inline int is_write_migration_entry(swp_entry_t entry)
+ 
+ #endif
+ 
++static inline swp_entry_t make_vpurged_entry(void)
++{
++	return swp_entry(SWP_VRANGE_PURGED, 0);
++}
++
++static inline int is_vpurged_entry(swp_entry_t entry)
++{
++	return swp_type(entry) == SWP_VRANGE_PURGED;
++}
++
+ #ifdef CONFIG_MEMORY_FAILURE
+ /*
+  * Support for hardware poisoned pages
+diff --git a/include/linux/vrange.h b/include/linux/vrange.h
+index 6e5331e..986fa85 100644
+--- a/include/linux/vrange.h
++++ b/include/linux/vrange.h
+@@ -1,6 +1,9 @@
+ #ifndef _LINUX_VRANGE_H
+ #define _LINUX_VRANGE_H
+ 
++#include <linux/swap.h>
++#include <linux/swapops.h>
++
+ #define VRANGE_NONVOLATILE 0
+ #define VRANGE_VOLATILE 1
+ #define VRANGE_VALID_FLAGS (0) /* Don't yet support any flags */
+diff --git a/mm/vrange.c b/mm/vrange.c
+index 2f8e2ce..1ff3cbd 100644
+--- a/mm/vrange.c
++++ b/mm/vrange.c
+@@ -8,6 +8,76 @@
+ #include <linux/mm_inline.h>
+ #include "internal.h"
+ 
++struct vrange_walker {
++	struct vm_area_struct *vma;
++	int page_was_purged;
++};
++
++
++/**
++ * vrange_check_purged_pte - Checks ptes for purged pages
++ *
++ * Iterates over the ptes in the pmd checking if they have
++ * purged swap entries.
++ *
++ * Sets the vrange_walker.pages_purged to 1 if any were purged.
++ */
++static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
++					unsigned long end, struct mm_walk *walk)
++{
++	struct vrange_walker *vw = walk->private;
++	pte_t *pte;
++	spinlock_t *ptl;
++
++	if (pmd_trans_huge(*pmd))
++		return 0;
++	if (pmd_trans_unstable(pmd))
++		return 0;
++
++	pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
++	for (; addr != end; pte++, addr += PAGE_SIZE) {
++		if (!pte_present(*pte)) {
++			swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
++
++			if (unlikely(is_vpurged_entry(vrange_entry))) {
++				vw->page_was_purged = 1;
++				break;
++			}
++		}
++	}
++	pte_unmap_unlock(pte - 1, ptl);
++	cond_resched();
++
++	return 0;
++}
++
++
++/**
++ * vrange_check_purged - Sets up a mm_walk to check for purged pages
++ *
++ * Sets up and calls wa_page_range() to check for purge pages.
++ *
++ * Returns 1 if pages in the range were purged, 0 otherwise.
++ */
++static int vrange_check_purged(struct mm_struct *mm,
++					 struct vm_area_struct *vma,
++					 unsigned long start,
++					 unsigned long end)
++{
++	struct vrange_walker vw;
++	struct mm_walk vrange_walk = {
++		.pmd_entry = vrange_check_purged_pte,
++		.mm = vma->vm_mm,
++		.private = &vw,
++	};
++	vw.page_was_purged = 0;
++	vw.vma = vma;
++
++	walk_page_range(start, end, &vrange_walk);
++
++	return vw.page_was_purged;
++
++}
+ 
+ /**
+  * do_vrange - Marks or clears VMAs in the range (start-end) as VM_VOLATILE
+@@ -106,6 +176,11 @@ success:
+ 		vma = prev->vm_next;
+ 	}
+ out:
++	if (count && (mode == VRANGE_NONVOLATILE))
++		*purged = vrange_check_purged(mm, vma,
++						orig_start,
++						orig_start+count);
++
+ 	up_read(&mm->mmap_sem);
+ 
+ 	/* report bytes successfully marked, even if we're exiting on error */
 -- 
 1.8.3.2
 
