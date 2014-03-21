@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965977AbaCUAJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37143 "EHLO
+	id S966518AbaCUAaR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:30:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37178 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965867AbaCUAJA (ORCPT
+	with ESMTP id S965969AbaCUAJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:00 -0400
+	Thu, 20 Mar 2014 20:09:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick Lai <plai@codeaurora.org>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 56/85] ASoC: pcm: free path list before exiting from error conditions
-Date: Thu, 20 Mar 2014 17:09:59 -0700
-Message-Id: <20140321000606.724570655@linuxfoundation.org>
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.10 59/85] PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
+Date: Thu, 20 Mar 2014 17:10:02 -0700
+Message-Id: <20140321000607.166787730@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,48 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick Lai <plai@codeaurora.org>
+From: Bjorn Helgaas <bhelgaas@google.com>
 
-commit e4ad1accb28d0ed8cea6f12395d58686ad344ca7 upstream.
+commit 3cdeb713dc66057b50682048c151eae07b186c42 upstream.
 
-dpcm_path_get() allocates dynamic memory to hold path list.
-Corresponding dpcm_path_put() must be called to free the memory.
-dpcm_path_put() is not called under several error conditions.
-This leads to memory leak.
+Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
+them disabled"), pciehp surprise removal stopped working.
 
-Signed-off-by: Patrick Lai <plai@codeaurora.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This happens because pci_reenable_device() on the hotplug bridge (used in
+the pciehp_configure_device() path) clears the Interrupt Disable bit, which
+apparently breaks the bridge's MSI hotplug event reporting.
+
+Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
+which is used by both pci_enable_device() and pci_reenable_device().  But
+we use pci_reenable_device() after the driver may have enabled MSI or
+MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+
+This patch clears Interrupt Disable only when MSI/MSI-X has not been
+enabled.
+
+Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
+Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-pcm.c |    3 +++
+ drivers/pci/pci.c |    3 +++
  1 file changed, 3 insertions(+)
 
---- a/sound/soc/soc-pcm.c
-+++ b/sound/soc/soc-pcm.c
-@@ -1864,6 +1864,7 @@ int soc_dpcm_runtime_update(struct snd_s
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1130,6 +1130,9 @@ static int do_pci_enable_device(struct p
+ 		return err;
+ 	pci_fixup_device(pci_fixup_enable, dev);
  
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_PLAYBACK, &list);
- 		if (paths < 0) {
-+			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "playback");
- 			mutex_unlock(&card->mutex);
-@@ -1893,6 +1894,7 @@ capture:
- 
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_CAPTURE, &list);
- 		if (paths < 0) {
-+			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "capture");
- 			mutex_unlock(&card->mutex);
-@@ -1957,6 +1959,7 @@ static int dpcm_fe_dai_open(struct snd_p
- 	fe->dpcm[stream].runtime = fe_substream->runtime;
- 
- 	if (dpcm_path_get(fe, stream, &list) <= 0) {
-+		dpcm_path_put(&list);
- 		dev_dbg(fe->dev, "ASoC: %s no valid %s route\n",
- 			fe->dai_link->name, stream ? "capture" : "playback");
- 	}
++	if (dev->msi_enabled || dev->msix_enabled)
++		return 0;
++
+ 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+ 	if (pin) {
+ 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
 
 
