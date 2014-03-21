@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967093AbaCUBWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:22:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36528 "EHLO
+	id S967077AbaCUBW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:22:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36531 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760379AbaCUADi (ORCPT
+	with ESMTP id S1760335AbaCUADj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:38 -0400
+	Thu, 20 Mar 2014 20:03:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Johannes Berg <johannes.berg@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 033/149] iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
-Date: Thu, 20 Mar 2014 17:03:16 -0700
-Message-Id: <20140321000438.110993510@linuxfoundation.org>
+Subject: [PATCH 3.13 034/149] iwlwifi: fix TX status for aggregated packets
+Date: Thu, 20 Mar 2014 17:03:17 -0700
+Message-Id: <20140321000438.144122637@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,36 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit ec6f678c74dbdb06a6a775bbb00f1d26c17c404b upstream.
+commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
 
-We set IWL_STA_UCODE_INPROGRESS flag when we add a station
-and clear it when we send the LQ command for it. But the LQ
-command is sent only when the association succeeds.
-If the association doesn't succeed, we would leave this flag
-set and that wouldn't indicate the station entry as vacant.
+Only the first packet is currently handled correctly, but then
+all others are assumed to have failed which is problematic. Fix
+this, marking them all successful instead (since if they're not
+then the firmware will have transmitted them as single frames.)
 
-This probably fixes:
-https://bugzilla.redhat.com/show_bug.cgi?id=1065663
+This fixes the lost packet reporting.
 
-Reviewed-by: Johannes Berg <johannes.berg@intel.com>
+Also do a tiny variable scoping cleanup.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[Add the dvm part]
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/sta.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++++++++-----
+ drivers/net/wireless/iwlwifi/mvm/tx.c |   18 +++++++++---------
+ 2 files changed, 18 insertions(+), 14 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/sta.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/sta.c
-@@ -590,6 +590,7 @@ void iwl_deactivate_station(struct iwl_p
- 			sizeof(priv->tid_data[sta_id][tid]));
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -1291,8 +1291,6 @@ int iwlagn_rx_reply_compressed_ba(struct
+ 	struct iwl_compressed_ba_resp *ba_resp = (void *)pkt->data;
+ 	struct iwl_ht_agg *agg;
+ 	struct sk_buff_head reclaimed_skbs;
+-	struct ieee80211_tx_info *info;
+-	struct ieee80211_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	int sta_id;
+ 	int tid;
+@@ -1379,22 +1377,28 @@ int iwlagn_rx_reply_compressed_ba(struct
+ 	freed = 0;
  
- 	priv->stations[sta_id].used &= ~IWL_STA_DRIVER_ACTIVE;
-+	priv->stations[sta_id].used &= ~IWL_STA_UCODE_INPROGRESS;
+ 	skb_queue_walk(&reclaimed_skbs, skb) {
+-		hdr = (struct ieee80211_hdr *)skb->data;
++		struct ieee80211_hdr *hdr = (void *)skb->data;
++		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
  
- 	priv->num_stations--;
+ 		if (ieee80211_is_data_qos(hdr->frame_control))
+ 			freed++;
+ 		else
+ 			WARN_ON_ONCE(1);
  
+-		info = IEEE80211_SKB_CB(skb);
+ 		iwl_trans_free_tx_cmd(priv->trans, info->driver_data[1]);
+ 
++		memset(&info->status, 0, sizeof(info->status));
++		/* Packet was transmitted successfully, failures come as single
++		 * frames because before failing a frame the firmware transmits
++		 * it without aggregation at least once.
++		 */
++		info->flags |= IEEE80211_TX_STAT_ACK;
++
+ 		if (freed == 1) {
+ 			/* this is the first skb we deliver in this batch */
+ 			/* put the rate scaling data there */
+ 			info = IEEE80211_SKB_CB(skb);
+ 			memset(&info->status, 0, sizeof(info->status));
+-			info->flags |= IEEE80211_TX_STAT_ACK;
+ 			info->flags |= IEEE80211_TX_STAT_AMPDU;
+ 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
+ 			info->status.ampdu_len = ba_resp->txed;
+--- a/drivers/net/wireless/iwlwifi/mvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
+@@ -822,16 +822,12 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
+ 	struct iwl_mvm_ba_notif *ba_notif = (void *)pkt->data;
+ 	struct sk_buff_head reclaimed_skbs;
+ 	struct iwl_mvm_tid_data *tid_data;
+-	struct ieee80211_tx_info *info;
+ 	struct ieee80211_sta *sta;
+ 	struct iwl_mvm_sta *mvmsta;
+-	struct ieee80211_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	int sta_id, tid, freed;
+-
+ 	/* "flow" corresponds to Tx queue */
+ 	u16 scd_flow = le16_to_cpu(ba_notif->scd_flow);
+-
+ 	/* "ssn" is start of block-ack Tx window, corresponds to index
+ 	 * (in Tx queue's circular buffer) of first TFD/frame in window */
+ 	u16 ba_resp_scd_ssn = le16_to_cpu(ba_notif->scd_ssn);
+@@ -888,22 +884,26 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
+ 	freed = 0;
+ 
+ 	skb_queue_walk(&reclaimed_skbs, skb) {
+-		hdr = (struct ieee80211_hdr *)skb->data;
++		struct ieee80211_hdr *hdr = (void *)skb->data;
++		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 
+ 		if (ieee80211_is_data_qos(hdr->frame_control))
+ 			freed++;
+ 		else
+ 			WARN_ON_ONCE(1);
+ 
+-		info = IEEE80211_SKB_CB(skb);
+ 		iwl_trans_free_tx_cmd(mvm->trans, info->driver_data[1]);
+ 
++		memset(&info->status, 0, sizeof(info->status));
++		/* Packet was transmitted successfully, failures come as single
++		 * frames because before failing a frame the firmware transmits
++		 * it without aggregation at least once.
++		 */
++		info->flags |= IEEE80211_TX_STAT_ACK;
++
+ 		if (freed == 1) {
+ 			/* this is the first skb we deliver in this batch */
+ 			/* put the rate scaling data there */
+-			info = IEEE80211_SKB_CB(skb);
+-			memset(&info->status, 0, sizeof(info->status));
+-			info->flags |= IEEE80211_TX_STAT_ACK;
+ 			info->flags |= IEEE80211_TX_STAT_AMPDU;
+ 			info->status.ampdu_ack_len = ba_notif->txed_2_done;
+ 			info->status.ampdu_len = ba_notif->txed;
 
 
