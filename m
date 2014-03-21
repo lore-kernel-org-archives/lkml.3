@@ -1,127 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751151AbaCUSOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 14:14:18 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:49351 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750729AbaCUSOO (ORCPT
+	id S1750917AbaCUSUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 14:20:55 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48961 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaCUSUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 14:14:14 -0400
+	Fri, 21 Mar 2014 14:20:54 -0400
+Date: Fri, 21 Mar 2014 18:20:39 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kernel@stlinux.com, joshc@codeaurora.org
+Message-ID: <20140321182039.GQ552@sirena.org.uk>
+References: <1395397296-8196-1-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
-References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
-	<1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
-Date: Fri, 21 Mar 2014 13:14:13 -0500
-Message-ID: <CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="CVXKxAdNG2kQIXaJ"
+Content-Disposition: inline
+In-Reply-To: <1395397296-8196-1-git-send-email-lee.jones@linaro.org>
+X-Cookie: Contents may settle during shipment.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Add new driver for ST's PWM controlled
+ voltage regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 2:55 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
-> The cycloneV has three gpio controllers, each one with 29 gpios. This patch
-> adds the three controller with the gpio driver which is now sitting the
-> gpio tree.
->
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  arch/arm/boot/dts/socfpga.dtsi | 60 ++++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 60 insertions(+)
->
-> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
-> index 537f1a5..c3a97e1 100644
-> --- a/arch/arm/boot/dts/socfpga.dtsi
-> +++ b/arch/arm/boot/dts/socfpga.dtsi
-> @@ -463,6 +463,66 @@
->                         status = "disabled";
->                 };
->
-> +               gpio@ff708000 {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +                       compatible = "snps,dw-apb-gpio";
-> +                       reg = <0xff708000 0x1000>;
-> +                       clocks = <&per_base_clk>;
-> +                       status = "disabled";
-> +
-> +                       gpio0: gpio-controller@0 {
-> +                               compatible = "snps,dw-apb-gpio-port";
-> +                               gpio-controller;
-> +                               #gpio-cells = <1>;
 
-#gpio-cells = <2>;
+--CVXKxAdNG2kQIXaJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-I applied this patch, fixed the gpio-cells, tested on a cyclone5 soc
-devkit, and see that it breaks the interrupts.  Did you test this?
+On Fri, Mar 21, 2014 at 10:21:36AM +0000, Lee Jones wrote:
+> On some STMicroelectronics hardware reside regulators consisting
+> partly of a PWM input connected to the feedback loop. As the PWM
+> duty-cycle is varied the output voltage adapts. This driver
+> allows us to vary the output voltage by adapting the PWM input
+> duty-cycle.
 
-Alan
+Applied, thanks.  Please send incremental fixes for the things Josh
+mentioned.
 
-> +                               snps,nr-gpios = <29>;
-> +                               reg = <0>;
-> +                               interrupt-controller;
-> +                               #interrupt-cells = <2>;
-> +                               interrupts = <0 164 4>;
-> +                       };
-> +               };
-> +
-> +               gpio@ff709000 {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +                       compatible = "snps,dw-apb-gpio";
-> +                       reg = <0xff709000 0x1000>;
-> +                       clocks = <&per_base_clk>;
-> +                       status = "disabled";
-> +
-> +                       gpio1: gpio-controller@0 {
-> +                               compatible = "snps,dw-apb-gpio-port";
-> +                               gpio-controller;
-> +                               #gpio-cells = <1>;
-> +                               snps,nr-gpios = <29>;
-> +                               reg = <0>;
-> +                               interrupt-controller;
-> +                               #interrupt-cells = <2>;
-> +                               interrupts = <0 165 4>;
-> +                       };
-> +               };
-> +
-> +               gpio@ff70a000 {
-> +                       #address-cells = <1>;
-> +                       #size-cells = <0>;
-> +                       compatible = "snps,dw-apb-gpio";
-> +                       reg = <0xff70a000 0x1000>;
-> +                       clocks = <&per_base_clk>;
-> +                       status = "disabled";
-> +
-> +                       gpio2: gpio-controller@0 {
-> +                               compatible = "snps,dw-apb-gpio-port";
-> +                               gpio-controller;
-> +                               #gpio-cells = <1>;
-> +                               snps,nr-gpios = <29>;
-> +                               reg = <0>;
-> +                               interrupt-controller;
-> +                               #interrupt-cells = <2>;
-> +                               interrupts = <0 166 4>;
-> +                       };
-> +               };
-> +
->                 L2: l2-cache@fffef000 {
->                         compatible = "arm,pl310-cache";
->                         reg = <0xfffef000 0x1000>;
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe devicetree" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+--CVXKxAdNG2kQIXaJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTLIL0AAoJELSic+t+oim9TMgP/2lU31I+hVdWrO4DJloGoe6w
+OwIN4c+fr3FfernXm4UjeUPGUogr/li1oqETyQfi1Qkwl6P0163is9uMKeoULfHd
+Hjn/9IcQ470r9cWwRxluQHIJrs1CZ0PJZMWXSNyO+Uc7EN+scnIFzfQ9dgg4cbi3
+zBa2UD6wLtFYlSSvjzH7SHXSGI00sMElXkm3A6mkXR8w4EupoEaNlaVSZ6LQFJfz
+lZ9/0FRam3dk/QNu38ZXiOMeCrMY14PWkdzqJGRQUvxtgaU1cZHXRiuicJbavfs0
+JIgM7qETZGgZ/UikbHg4NHdHMPKkrt4KfBVdL+vf8l6TqlGRI/rZ4dRE9kmi2+9o
+kOCv2zGl/kKyXSSm8GJV0GC/lmJHTinv9VGN3HZeBWDKaVmYCV2X51gHaiNB1IKK
+LONrBMK5vtR3cgOZ7inCvew2CFJV+wtdM2jqTcQalHr2EJu5rD+buVNtCXKjEYva
+3WTh7LQvDDYkDOhTyvoqGM7jWx08rZ65iOtEq8LTgE47ERPOqhrvcOf5qZs0gpJT
+5NxMvAxS0p0jYO1F758jgVrO0dO+PKwZBfmZe7Pa+NkNx/SDYUgUa+GCUafdC+yp
+djiPt0OayQknEkEzi+RgxAdCyXsNoBPv0Elm/WNmMMgIVlc6DrACpiXDKayHlFMc
+ocAtV9zv3w/PlhYNIcAL
+=4s7A
+-----END PGP SIGNATURE-----
+
+--CVXKxAdNG2kQIXaJ--
