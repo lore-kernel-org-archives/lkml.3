@@ -1,150 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966829AbaCUAmE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:42:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37050 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965842AbaCUAIm (ORCPT
+	id S966849AbaCUAm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:42:26 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39351 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965836AbaCUAmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:42 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.10 20/85] iwlwifi: fix TX status for aggregated packets
-Date: Thu, 20 Mar 2014 17:09:23 -0700
-Message-Id: <20140321000601.460120355@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
-References: <20140321000558.606667505@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Mar 2014 20:42:24 -0400
+From: Conrad Meyer <cemeyer@uw.edu>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Conrad Meyer <cse.cem@gmail.com>
+Subject: [PATCH] Staging: vt6655: Fix sparse-indicated type mismatch to kmalloc
+Date: Thu, 20 Mar 2014 17:42:09 -0700
+Message-Id: <1395362529-17182-1-git-send-email-cse.cem@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
-
-------------------
-
-From: Johannes Berg <johannes.berg@intel.com>
-
-commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
-
-Only the first packet is currently handled correctly, but then
-all others are assumed to have failed which is problematic. Fix
-this, marking them all successful instead (since if they're not
-then the firmware will have transmitted them as single frames.)
-
-This fixes the lost packet reporting.
-
-Also do a tiny variable scoping cleanup.
-
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[Add the dvm part]
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
 ---
- drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++++++++-----
- drivers/net/wireless/iwlwifi/mvm/tx.c |   18 +++++++++---------
- 2 files changed, 18 insertions(+), 14 deletions(-)
+Patch is against next-20140320. Fixes a minor sparse warning in the staging
+driver vt6655. p->length is u16; implicit cast to size_t is fine. No reason to
+cast GFP_KERNEL...
+---
+ drivers/staging/vt6655/wpactl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
-@@ -1322,8 +1322,6 @@ int iwlagn_rx_reply_compressed_ba(struct
- 	struct iwl_compressed_ba_resp *ba_resp = (void *)pkt->data;
- 	struct iwl_ht_agg *agg;
- 	struct sk_buff_head reclaimed_skbs;
--	struct ieee80211_tx_info *info;
--	struct ieee80211_hdr *hdr;
- 	struct sk_buff *skb;
- 	int sta_id;
- 	int tid;
-@@ -1410,22 +1408,28 @@ int iwlagn_rx_reply_compressed_ba(struct
- 	freed = 0;
+diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
+index d17224f..c27ed5d 100644
+--- a/drivers/staging/vt6655/wpactl.c
++++ b/drivers/staging/vt6655/wpactl.c
+@@ -855,11 +855,11 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
  
- 	skb_queue_walk(&reclaimed_skbs, skb) {
--		hdr = (struct ieee80211_hdr *)skb->data;
-+		struct ieee80211_hdr *hdr = (void *)skb->data;
-+		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 	if (p->length < sizeof(struct viawget_wpa_param) ||
+ 	    p->length > VIAWGET_WPA_MAX_BUF_SIZE || !p->pointer)
+ 		return -EINVAL;
  
- 		if (ieee80211_is_data_qos(hdr->frame_control))
- 			freed++;
- 		else
- 			WARN_ON_ONCE(1);
+-	param = kmalloc((int)p->length, (int)GFP_KERNEL);
++	param = kmalloc(p->length, GFP_KERNEL);
+ 	if (param == NULL)
+ 		return -ENOMEM;
  
--		info = IEEE80211_SKB_CB(skb);
- 		iwl_trans_free_tx_cmd(priv->trans, info->driver_data[1]);
- 
-+		memset(&info->status, 0, sizeof(info->status));
-+		/* Packet was transmitted successfully, failures come as single
-+		 * frames because before failing a frame the firmware transmits
-+		 * it without aggregation at least once.
-+		 */
-+		info->flags |= IEEE80211_TX_STAT_ACK;
-+
- 		if (freed == 1) {
- 			/* this is the first skb we deliver in this batch */
- 			/* put the rate scaling data there */
- 			info = IEEE80211_SKB_CB(skb);
- 			memset(&info->status, 0, sizeof(info->status));
--			info->flags |= IEEE80211_TX_STAT_ACK;
- 			info->flags |= IEEE80211_TX_STAT_AMPDU;
- 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
- 			info->status.ampdu_len = ba_resp->txed;
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -819,16 +819,12 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
- 	struct iwl_mvm_ba_notif *ba_notif = (void *)pkt->data;
- 	struct sk_buff_head reclaimed_skbs;
- 	struct iwl_mvm_tid_data *tid_data;
--	struct ieee80211_tx_info *info;
- 	struct ieee80211_sta *sta;
- 	struct iwl_mvm_sta *mvmsta;
--	struct ieee80211_hdr *hdr;
- 	struct sk_buff *skb;
- 	int sta_id, tid, freed;
--
- 	/* "flow" corresponds to Tx queue */
- 	u16 scd_flow = le16_to_cpu(ba_notif->scd_flow);
--
- 	/* "ssn" is start of block-ack Tx window, corresponds to index
- 	 * (in Tx queue's circular buffer) of first TFD/frame in window */
- 	u16 ba_resp_scd_ssn = le16_to_cpu(ba_notif->scd_ssn);
-@@ -885,22 +881,26 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
- 	freed = 0;
- 
- 	skb_queue_walk(&reclaimed_skbs, skb) {
--		hdr = (struct ieee80211_hdr *)skb->data;
-+		struct ieee80211_hdr *hdr = (void *)skb->data;
-+		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
- 
- 		if (ieee80211_is_data_qos(hdr->frame_control))
- 			freed++;
- 		else
- 			WARN_ON_ONCE(1);
- 
--		info = IEEE80211_SKB_CB(skb);
- 		iwl_trans_free_tx_cmd(mvm->trans, info->driver_data[1]);
- 
-+		memset(&info->status, 0, sizeof(info->status));
-+		/* Packet was transmitted successfully, failures come as single
-+		 * frames because before failing a frame the firmware transmits
-+		 * it without aggregation at least once.
-+		 */
-+		info->flags |= IEEE80211_TX_STAT_ACK;
-+
- 		if (freed == 1) {
- 			/* this is the first skb we deliver in this batch */
- 			/* put the rate scaling data there */
--			info = IEEE80211_SKB_CB(skb);
--			memset(&info->status, 0, sizeof(info->status));
--			info->flags |= IEEE80211_TX_STAT_ACK;
- 			info->flags |= IEEE80211_TX_STAT_AMPDU;
- 			info->status.ampdu_ack_len = ba_notif->txed_2_done;
- 			info->status.ampdu_len = ba_notif->txed;
-
+ 	if (copy_from_user(param, p->pointer, p->length)) {
+ 		ret = -EFAULT;
+-- 
+1.8.5.3
 
