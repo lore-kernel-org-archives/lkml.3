@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966750AbaCUA4A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:56:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36838 "EHLO
+	id S965532AbaCUAEn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36825 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965540AbaCUAEo (ORCPT
+	with ESMTP id S965473AbaCUAEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:44 -0400
+	Thu, 20 Mar 2014 20:04:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.13 123/149] dm cache: fix truncation bug when copying a block to/from >2TB fast device
-Date: Thu, 20 Mar 2014 17:04:46 -0700
-Message-Id: <20140321000441.220523206@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 125/149] net: unix socket code abuses csum_partial
+Date: Thu, 20 Mar 2014 17:04:48 -0700
+Message-Id: <20140321000441.289039505@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,48 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit 8b9d96666529a979acf4825391efcc7c8a3e9f12 upstream.
+commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
 
-During demotion or promotion to a cache's >2TB fast device we must not
-truncate the cache block's associated sector to 32bits.  The 32bit
-temporary result of from_cblock() caused a 32bit multiplication when
-calculating the sector of the fast device in issue_copy_real().
+The unix socket code is using the result of csum_partial to
+hash into a lookup table:
 
-Use an intermediate 64bit type to store the 32bit from_cblock() to allow
-for proper 64bit multiplication.
+	unix_hash_fold(csum_partial(sunaddr, len, 0));
 
-Here is an example of how this bug manifests on an ext4 filesystem:
+csum_partial is only guaranteed to produce something that can be
+folded into a checksum, as its prototype explains:
 
- EXT4-fs error (device dm-0): ext4_mb_generate_buddy:756: group 17136, 32768 clusters in bitmap, 30688 in gd; block bitmap corrupt.
- JBD2: Spotted dirty metadata buffer (dev = dm-0, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
+ * returns a 32-bit number suitable for feeding into itself
+ * or csum_tcpudp_magic
 
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+The 32bit value should not be used directly.
+
+Depending on the alignment, the ppc64 csum_partial will return
+different 32bit partial checksums that will fold into the same
+16bit checksum.
+
+This difference causes the following testcase (courtesy of
+Gustavo) to sometimes fail:
+
+#include <sys/socket.h>
+#include <stdio.h>
+
+int main()
+{
+	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	int i = 1;
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
+
+	struct sockaddr addr;
+	addr.sa_family = AF_LOCAL;
+	bind(fd, &addr, 2);
+
+	listen(fd, 128);
+
+	struct sockaddr_storage ss;
+	socklen_t sslen = (socklen_t)sizeof(ss);
+	getsockname(fd, (struct sockaddr*)&ss, &sslen);
+
+	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
+
+	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
+		perror(NULL);
+		return 1;
+	}
+	printf("OK\n");
+	return 0;
+}
+
+As suggested by davem, fix this by using csum_fold to fold the
+partial 32bit checksum into a 16bit checksum before using it.
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ net/unix/af_unix.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -970,12 +970,13 @@ static void issue_copy_real(struct dm_ca
- 	int r;
- 	struct dm_io_region o_region, c_region;
- 	struct cache *cache = mg->cache;
-+	sector_t cblock = from_cblock(mg->cblock);
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -161,9 +161,8 @@ static inline void unix_set_secdata(stru
  
- 	o_region.bdev = cache->origin_dev->bdev;
- 	o_region.count = cache->sectors_per_block;
+ static inline unsigned int unix_hash_fold(__wsum n)
+ {
+-	unsigned int hash = (__force unsigned int)n;
++	unsigned int hash = (__force unsigned int)csum_fold(n);
  
- 	c_region.bdev = cache->cache_dev->bdev;
--	c_region.sector = from_cblock(mg->cblock) * cache->sectors_per_block;
-+	c_region.sector = cblock * cache->sectors_per_block;
- 	c_region.count = cache->sectors_per_block;
- 
- 	if (mg->writeback || mg->demote) {
+-	hash ^= hash>>16;
+ 	hash ^= hash>>8;
+ 	return hash&(UNIX_HASH_SIZE-1);
+ }
 
 
