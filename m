@@ -1,128 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332AbaCUFRY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:17:24 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:57190 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaCUFRW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:17:22 -0400
-Date: Thu, 20 Mar 2014 22:16:21 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-cc: Shaohua Li <shli@kernel.org>, sasha.levin@oracle.com, linux-mm@kvack.org,
-        akpm@linux-foundation.org, mpm@selenic.com, cpw@sgi.com,
-        kosaki.motohiro@jp.fujitsu.com, hannes@cmpxchg.org,
-        kamezawa.hiroyu@jp.fujitsu.com, mhocko@suse.cz,
-        aneesh.kumar@linux.vnet.ibm.com, xemul@parallels.com, riel@redhat.com,
-        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] madvise: fix locking in force_swapin_readahead() (Re:
- [PATCH 08/11] madvise: redefine callback functions for page table walker)
-In-Reply-To: <532ba74e.48c70e0a.7b9e.119cSMTPIN_ADDED_BROKEN@mx.google.com>
-Message-ID: <alpine.LSU.2.11.1403202159190.1488@eggly.anvils>
-References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-9-git-send-email-n-horiguchi@ah.jp.nec.com> <532B9A18.8020606@oracle.com> <532ba74e.48c70e0a.7b9e.119cSMTPIN_ADDED_BROKEN@mx.google.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754893AbaCUFTQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:19:16 -0400
+Received: from mail.efficios.com ([78.47.125.74]:35979 "EHLO mail.efficios.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754453AbaCUFTO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 01:19:14 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: [PATCH v7 0/2] Tracepoint API simplification/cleanup
+Date: Fri, 21 Mar 2014 01:19:00 -0400
+Message-Id: <1395379142-2118-1-git-send-email-mathieu.desnoyers@efficios.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014, Naoya Horiguchi wrote:
-> On Thu, Mar 20, 2014 at 09:47:04PM -0400, Sasha Levin wrote:
-> > On 02/10/2014 04:44 PM, Naoya Horiguchi wrote:
-> > >swapin_walk_pmd_entry() is defined as pmd_entry(), but it has no code
-> > >about pmd handling (except pmd_none_or_trans_huge_or_clear_bad, but the
-> > >same check are now done in core page table walk code).
-> > >So let's move this function on pte_entry() as swapin_walk_pte_entry().
-> > >
-> > >Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
-> > 
-> > This patch seems to generate:
-> 
-> Sasha, thank you for reporting.
-> I forgot to unlock ptlock before entering read_swap_cache_async() which
-> holds page lock in it, as a result lock ordering rule (written in mm/rmap.c)
-> was violated (we should take in the order of mmap_sem -> page lock -> ptlock.)
-> The following patch should fix this. Could you test with it?
-> 
-> ---
-> From c0d56af5874dc40467c9b3a0f9e53b39b3c4f1c5 Mon Sep 17 00:00:00 2001
-> From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Date: Thu, 20 Mar 2014 22:30:51 -0400
-> Subject: [PATCH] madvise: fix locking in force_swapin_readahead()
-> 
-> We take mmap_sem and ptlock in walking over ptes with swapin_walk_pte_entry(),
-> but inside it we call read_swap_cache_async() which holds page lock.
-> So we should unlock ptlock to call read_swap_cache_async() to meet lock order
-> rule (mmap_sem -> page lock -> ptlock).
-> 
-> Reported-by: Sasha Levin <sasha.levin@oracle.com>
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Here is v7 of the tracepoint register/unregister API simplification,
+submitted for 3.15.
 
-NAK.  You are now unlocking and relocking the spinlock, good; but on
-arm frv or i386 CONFIG_HIGHPTE you are leaving the page table atomically
-kmapped across read_swap_cache_async(), which (never mind lock ordering)
-is quite likely to block waiting to allocate memory.
+Changes since v1:
+- Adapt ftrace/perf callers,
+- Update tracepoint.h macro,
+- Build tested.
 
-I do not see
-madvise-redefine-callback-functions-for-page-table-walker.patch
-as an improvement.  I can see what's going on in Shaohua's original
-code, whereas this style makes bugs more likely.  Please drop it.
+Changes since v2:
+- Introduce for_each_tracepoint() iterator to allow listing the
+  currently loaded tracepoints, for modules using coming/going
+  notifiers to track tracepoints.
 
-Hugh
+Changes since v3:
+- Introduce module coming and going notifiers each with their own
+  priority to ensure that other coming notifiers are called after, and
+  coming notifiers are called before the tracepoint notifiers.
+- Fix: move for_each_tracepoint() outside of the CONFIG_MODULE ifdef.
 
-> ---
->  mm/madvise.c | 11 +++++++++++
->  1 file changed, 11 insertions(+)
-> 
-> diff --git a/mm/madvise.c b/mm/madvise.c
-> index 5e957b984c14..ed9c31e3b5ff 100644
-> --- a/mm/madvise.c
-> +++ b/mm/madvise.c
-> @@ -141,24 +141,35 @@ static int swapin_walk_pte_entry(pte_t *pte, unsigned long start,
->  	swp_entry_t entry;
->  	struct page *page;
->  	struct vm_area_struct *vma = walk->vma;
-> +	spinlock_t *ptl = (spinlock_t *)walk->private;
->  
->  	if (pte_present(*pte) || pte_none(*pte) || pte_file(*pte))
->  		return 0;
->  	entry = pte_to_swp_entry(*pte);
->  	if (unlikely(non_swap_entry(entry)))
->  		return 0;
-> +	spin_unlock(ptl);
->  	page = read_swap_cache_async(entry, GFP_HIGHUSER_MOVABLE,
->  				     vma, start);
-> +	spin_lock(ptl);
->  	if (page)
->  		page_cache_release(page);
->  	return 0;
->  }
->  
-> +static int swapin_walk_pmd_entry(pmd_t *pmd, unsigned long start,
-> +	unsigned long end, struct mm_walk *walk)
-> +{
-> +	walk->private = pte_lockptr(walk->mm, pmd);
-> +	return 0;
-> +}
-> +
->  static void force_swapin_readahead(struct vm_area_struct *vma,
->  		unsigned long start, unsigned long end)
->  {
->  	struct mm_walk walk = {
->  		.mm = vma->vm_mm,
-> +		.pmd_entry = swapin_walk_pmd_entry,
->  		.pte_entry = swapin_walk_pte_entry,
->  	};
->  
-> -- 
-> 1.8.5.3
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Changes since v4:
+- Split tracepoints_mutex into two locks: tp_modlist_mutex, which
+  protects the tracepoint list of modules, and a tracepoint_mutex, which
+  protects the tracepoints per se. tracepoint_mutex nests inside
+  tp_modlist_mutex.
+- Introduce a tracepoint module notifier, to ensure consistency between
+  iteration on tracepoints with for_each_tracepoint() and module coming
+  and going notifications. This consistency is ensured by holding
+  tp_modlist_mutex when calling the notifier and when iterating on the
+  tracepoint module list.
+
+Changes since v5:
+- Remove tracepoint_add_old_probes within "Tracepoint cleanup: remove
+  unused API functions" rather than in later patch.
+- Remove struct tp_probes "old probes" list within "Tracepoint cleanup:
+  remove unused API functions", as it is not needed anymore.
+- Within "Tracepoint cleanup: remove unused API functions", simply add
+  the new module to tail of list, since there is no need to keep it
+  ordered anymore.
+
+Changes since v6:
+- Remove unused struct list_head list from struct tp_probes in patch
+  "Tracepoint: register/unregister struct tracepoint",
+- Rename for_each_tracepoint() to for_each_kernel_tracepoint(). Only
+  iterate on kernel tracepoints,
+- Registered tracepoint module notifiers now receive struct tp_module
+  pointer rather than struct module pointer,
+- register_tracepoint_module_notifier and
+  unregister_tracepoint_module_notifier now iterate on all modules and
+  call coming/going notifiers. This ensures notifier registration and
+  listing of already loaded modules are done atomically (protected by
+  tp_modlist_mutex).
+
+Thanks!
+
+Mathieu
+
+Mathieu Desnoyers (2):
+  Tracepoint cleanup: remove unused API functions
+  Tracepoint: register/unregister struct tracepoint
+
+ include/linux/ftrace_event.h |    1 +
+ include/linux/tracepoint.h   |   60 ++--
+ include/trace/ftrace.h       |    2 +
+ kernel/trace/trace_events.c  |    8 +-
+ kernel/tracepoint.c          |  705 ++++++++++++++----------------------------
+ 5 files changed, 260 insertions(+), 516 deletions(-)
+
+-- 
+1.7.10.4
+
