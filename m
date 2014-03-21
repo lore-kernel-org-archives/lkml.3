@@ -1,129 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964977AbaCUF3b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:29:31 -0400
-Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53689 "EHLO
-	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968AbaCUF32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:29:28 -0400
-X-AuditID: 9c93016f-b7c71ae000000e71-74-532bce360419
-Date: Fri, 21 Mar 2014 14:29:36 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Jan Kara <jack@suse.cz>
-Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
-Message-ID: <20140321052936.GB7450@bbox>
-References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
- <20140318151113.GA10724@gmail.com>
- <CALAqxLV=uRV825taKrnH2=p_kAf5f1PbQ7=J5MopFt9ATj=a3A@mail.gmail.com>
- <20140319004918.GB13475@bbox>
- <20140319101202.GE26358@quack.suse.cz>
- <20140320010954.GE16478@bbox>
- <20140320081359.GB32080@quack.suse.cz>
+	id S965082AbaCUFaC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:30:02 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:56154 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964998AbaCUF37 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 01:29:59 -0400
+Date: Fri, 21 Mar 2014 05:29:57 +0000 (GMT)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1403210523570.13860@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320081359.GB32080@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-2096126696-1395379797=:13860"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 09:13:59AM +0100, Jan Kara wrote:
-> On Thu 20-03-14 10:09:54, Minchan Kim wrote:
-> > Hello,
-> > 
-> > On Wed, Mar 19, 2014 at 11:12:02AM +0100, Jan Kara wrote:
-> > > On Wed 19-03-14 09:49:18, Minchan Kim wrote:
-> > > > On Tue, Mar 18, 2014 at 11:07:50AM -0700, John Stultz wrote:
-> > > > > On Tue, Mar 18, 2014 at 8:11 AM, Minchan Kim <minchan@kernel.org> wrote:
-> > > > > > 1) SIGBUS
-> > > > > >
-> > > > > > It's one of the arguable issue because some user want to get a
-> > > > > > SIGBUS(ex, Firefox) while other want a just zero page(ex, Google
-> > > > > > address sanitizer) without signal so it should be option.
-> > > > > >
-> > > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO, &purged);
-> > > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL, &purged);
-> > > > > 
-> > > > > So, the zero-fill on volatile access feels like a *very* special case
-> > > > > to me, since a null page could be valid data in many cases. Since
-> > > > > support/interest for volatile ranges has been middling at best, I want
-> > > > > to start culling the stranger use cases. I'm open in the future to
-> > > > > adding a special flag or something if it really make sense, but at
-> > > > > this point, lets just get the more general volatile range use cases
-> > > > > supported.
-> > > > 
-> > > > I'm not sure it's special case. Because some user could reserve
-> > > > a big volatile VMA and want to use the range by circle queue for
-> > > > caching so overwriting could happen easily.
-> > > > We should call vrange(NOVOLATILE) to prevent SIGBUS right before
-> > > > overwriting. I feel it's unnecessary overhead and we could avoid
-> > > > the cost with VRANGE_ZERO.
-> > > > Do you think this usecase would be rare?
-> > >   If I understand it correctly the buffer would be volatile all the time
-> > > and userspace would like to opportunistically access it. Hum, but then with
-> > > your automatic zero-filling it could see half of the page with data and
-> > > half of the page zeroed out (the page got evicted in the middle of
-> > > userspace reading it). I don't think that's a very comfortable interface to
-> > > work with (you would have to very carefully verify the data you've read is
-> > > really valid). And frankly in most cases I'm afraid the application would
-> > > fail to do proper verification and crash randomly under memory pressure. So
-> > > I wouldn't provide VRANGE_ZERO unless I come across real people for which
-> > > avoiding marking the range as NONVOLATILE is a big deal and they are OK with
-> > > handling all the odd situations that can happen.
-> > 
-> > Plaes think following usecase.
-> > 
-> > Let's assume big volatile cacne.
-> > If there is request for cache, it should find a object in a cache
-> > and if it found, it should call vrange(NOVOLATILE) right before
-> > passing it to the user and investigate it was purged or not.
-> > If it wasn't purged, cache manager could pass the object to the user.
-> > But it's circular cache so if there is no request from user, cache manager
-> > always overwrites objects so it could encounter SIGBUS easily
-> > so as current sematic, cache manager always should call vrange(NOVOLATILE)
-> > right before the overwriting. Otherwise, it should register SIGBUS handler
-> > to unmark volatile by page unit. SIGH.
-> > 
-> > If we support VRANGE_ZERO, cache manager could overwrite object without
-> > SIGBUS handling or vrange(NOVOLATILE) call. Just need is vrange(NOVOLATILE)
-> > call while cache manager pass it to the user.
->   OK, that makes some sense but I don't think we have to implement this
-> functionality in the beginning...
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yeb, I am not strong against the idea which starts syscall as simple one
-but make room for future but I believe scenario I mentioned is one of
-typical usecase for volatile cache and it could avoid vrange(NOVOLATILE)
-which is heavier than vrange(VOLATILE) because NOVOLATILE should enumerate
-all of ptes in the range at current implementation so reducing NOVOATILE
-call looks important to me.
+--29444707-2096126696-1395379797=:13860
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
 
-> 								Honza
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Hi Linus,
 
--- 
-Kind regards,
-Minchan Kim
+Some final few intel fixes, all regressions, all stable cc, and one exynos 
+oops fixer, the biggest is probably the intel display error irqs one, but 
+it seems to fix a few crashes on startup, and one use after free in drm 
+core.
+
+Dave.
+
+The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15:
+
+  Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
+
+are available in the git repository at:
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to 004e5cf743086990e5fc04a14437b3966d7fa9a2:
+
+  Merge branch 'exynos-drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/daeinki/drm-exynos into drm-fixes (2014-03-20 13:20:00 +1000)
+
+----------------------------------------------------------------
+
+Ben Widawsky (1):
+      drm/i915: Fix PSR programming
+
+Chris Wilson (1):
+      drm/i915: Disable stolen memory when DMAR is active
+
+Daniel Kurtz (1):
+      drm/exynos: Fix (more) freeing issues in exynos_drm_drv.c
+
+Daniel Vetter (2):
+      drm/i915: Don't enable display error interrupts from the start
+      drm: Fix use-after-free in the shadow-attache exit code
+
+Dave Airlie (3):
+      Merge tag 'drm-intel-fixes-2014-03-17' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge tag 'drm-intel-fixes-2014-03-19' of git://anongit.freedesktop.org/drm-intel into drm-fixes
+      Merge branch 'exynos-drm-fixes' of git://git.kernel.org/.../daeinki/drm-exynos into drm-fixes
+
+Jani Nikula (1):
+      Revert "drm/i915: don't touch the VDD when disabling the panel"
+
+Ville Syrjälä (2):
+      drm/i915: Add a workaround for HSW scanline counter weirdness
+      drm/i915: Fix scanline counter fixup on BDW
+
+ drivers/gpu/drm/drm_pci.c               |  2 +-
+ drivers/gpu/drm/exynos/exynos_drm_drv.c | 10 +++--
+ drivers/gpu/drm/i915/i915_gem_stolen.c  |  7 ++++
+ drivers/gpu/drm/i915/i915_irq.c         | 71 +++++++++++++++++++--------------
+ drivers/gpu/drm/i915/intel_ddi.c        |  1 +
+ drivers/gpu/drm/i915/intel_dp.c         | 12 +++++-
+ 6 files changed, 67 insertions(+), 36 deletions(-)
+--29444707-2096126696-1395379797=:13860--
