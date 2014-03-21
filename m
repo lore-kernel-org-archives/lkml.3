@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966849AbaCUAm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:42:26 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39351 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965836AbaCUAmY (ORCPT
+	id S966483AbaCUAnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:43:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37043 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965829AbaCUAIl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:42:24 -0400
-From: Conrad Meyer <cemeyer@uw.edu>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Conrad Meyer <cse.cem@gmail.com>
-Subject: [PATCH] Staging: vt6655: Fix sparse-indicated type mismatch to kmalloc
-Date: Thu, 20 Mar 2014 17:42:09 -0700
-Message-Id: <1395362529-17182-1-git-send-email-cse.cem@gmail.com>
-X-Mailer: git-send-email 1.8.5.3
+	Thu, 20 Mar 2014 20:08:41 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.10 23/85] mwifiex: add NULL check for PCIe Rx skb
+Date: Thu, 20 Mar 2014 17:09:26 -0700
+Message-Id: <20140321000601.915342969@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
+References: <20140321000558.606667505@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
----
-Patch is against next-20140320. Fixes a minor sparse warning in the staging
-driver vt6655. p->length is u16; implicit cast to size_t is fine. No reason to
-cast GFP_KERNEL...
----
- drivers/staging/vt6655/wpactl.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index d17224f..c27ed5d 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -855,11 +855,11 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
+------------------
+
+From: Amitkumar Karwar <akarwar@marvell.com>
+
+commit bb8e6a1ee881d131e404f0f1f5e8dc9281002771 upstream.
+
+We may get a NULL pointer here if skb allocation for Rx packet
+was failed earlier.
+
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/net/wireless/mwifiex/pcie.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
+
+--- a/drivers/net/wireless/mwifiex/pcie.c
++++ b/drivers/net/wireless/mwifiex/pcie.c
+@@ -1195,6 +1195,12 @@ static int mwifiex_pcie_process_recv_dat
+ 		rd_index = card->rxbd_rdptr & reg->rx_mask;
+ 		skb_data = card->rx_buf_list[rd_index];
  
- 	if (p->length < sizeof(struct viawget_wpa_param) ||
- 	    p->length > VIAWGET_WPA_MAX_BUF_SIZE || !p->pointer)
- 		return -EINVAL;
- 
--	param = kmalloc((int)p->length, (int)GFP_KERNEL);
-+	param = kmalloc(p->length, GFP_KERNEL);
- 	if (param == NULL)
- 		return -ENOMEM;
- 
- 	if (copy_from_user(param, p->pointer, p->length)) {
- 		ret = -EFAULT;
--- 
-1.8.5.3
++		/* If skb allocation was failed earlier for Rx packet,
++		 * rx_buf_list[rd_index] would have been left with a NULL.
++		 */
++		if (!skb_data)
++			return -ENOMEM;
++
+ 		MWIFIEX_SKB_PACB(skb_data, &buf_pa);
+ 		pci_unmap_single(card->dev, buf_pa, MWIFIEX_RX_DATA_BUF_SIZE,
+ 				 PCI_DMA_FROMDEVICE);
+
 
