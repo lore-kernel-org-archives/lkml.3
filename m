@@ -1,159 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760222AbaCUPLd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:11:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59819 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751948AbaCUPL2 (ORCPT
+	id S1760716AbaCUPLo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:11:44 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:38563 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaCUPLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:11:28 -0400
-Date: Fri, 21 Mar 2014 15:11:26 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Message-ID: <20140321151126.GR23372@e106331-lin.cambridge.arm.com>
-References: <1395222155-22205-1-git-send-email-jean.pihet@linaro.org>
- <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
+	Fri, 21 Mar 2014 11:11:36 -0400
+Date: Fri, 21 Mar 2014 16:11:31 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Peter Senna Tschudin <peter.senna@gmail.com>
+Cc: Jani Nikula <jani.nikula@linux.intel.com>, David Airlie <airlied@linux.ie>,
+        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>
+Subject: Re: I915: OOPSes on linux-3.14-rc7
+Message-ID: <20140321151131.GC30571@phenom.ffwll.local>
+Mail-Followup-To: Peter Senna Tschudin <peter.senna@gmail.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <CA+MoWDoS77tLjmENha9TkrM=-J4EeVHSVZgWEEF7jAfTraRuGQ@mail.gmail.com>
+ <20140320211738.GV30571@phenom.ffwll.local>
+ <CA+MoWDqjgiBn75QJZsoUPcVxgQNEc5k-t7yjOo-AfbFpNm-qUg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
-Thread-Topic: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CA+MoWDqjgiBn75QJZsoUPcVxgQNEc5k-t7yjOo-AfbFpNm-qUg@mail.gmail.com>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jean,
-
-On Wed, Mar 19, 2014 at 09:42:33AM +0000, Jean Pihet wrote:
-> Introducing perf_regs_load function, which is going
-> to be used for dwarf unwind test in following patches.
+On Fri, Mar 21, 2014 at 12:26:51PM +0100, Peter Senna Tschudin wrote:
+> On Thu, Mar 20, 2014 at 10:17 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> > On Thu, Mar 20, 2014 at 05:56:20PM +0100, Peter Senna Tschudin wrote:
+> >> When Fedora updated the Kernel package from 3.12 to 3.13 my notebook
+> >> stopped booting (Kernel freezes) when a 2560 x 1440 high res monitor
+> >> is attached. I have tried using 3.13.6 from kernel.org and the problem
+> >> persists. The problem can be partially solved by passing nomodeset to
+> >> Kernel which will make the Kernel to boot, but the screens never comes
+> >> to life. When using 3.14-rc7 it boots again, the screen works, but
+> >> with some oops messages.
+> >>
+> >> How can I help fixing this issue?
+> >>
+> >> I've reported te bug at:
+> >> https://bugzilla.redhat.com/show_bug.cgi?id=1072557
+> >
+> > For the oops message (well it's just a WARNING, a real oops would kill
+> > your driver for real) please file a bug report on bugs.freedesktop.org
+> > against dri -> drm (intel).
+> >
+> > The information we need is the full dmesg fore the entire boot when
+> > enabling drm.debug=0xe on the kernel cmdline.
+> It is attached.
 > 
-> It takes single argument as a pointer to the regs dump
-> buffer and populates it with current registers values, as
-> expected by the perf built-in unwinding test.
-> 
-> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> Cc: Steve Capper <steve.capper@linaro.org>
-> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Namhyung Kim <namhyung@kernel.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Jiri Olsa <jolsa@redhat.com>
-> ---
->  tools/perf/arch/arm64/Makefile            |  1 +
->  tools/perf/arch/arm64/include/perf_regs.h |  2 ++
->  tools/perf/arch/arm64/tests/regs_load.S   | 39 +++++++++++++++++++++++++++++++
->  3 files changed, 42 insertions(+)
->  create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
-> 
-> diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
-> index 67e9b3d..9b8f87e 100644
-> --- a/tools/perf/arch/arm64/Makefile
-> +++ b/tools/perf/arch/arm64/Makefile
-> @@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
->  endif
->  ifndef NO_LIBUNWIND
->  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
->  endif
-> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
-> index 2359546..1e052f1 100644
-> --- a/tools/perf/arch/arm64/include/perf_regs.h
-> +++ b/tools/perf/arch/arm64/include/perf_regs.h
-> @@ -9,6 +9,8 @@
->  #define PERF_REG_IP	PERF_REG_ARM64_PC
->  #define PERF_REG_SP	PERF_REG_ARM64_SP
->  
-> +void perf_regs_load(u64 *regs);
-> +
->  static inline const char *perf_reg_name(int id)
->  {
->  	switch (id) {
-> diff --git a/tools/perf/arch/arm64/tests/regs_load.S b/tools/perf/arch/arm64/tests/regs_load.S
-> new file mode 100644
-> index 0000000..92ab968
-> --- /dev/null
-> +++ b/tools/perf/arch/arm64/tests/regs_load.S
-> @@ -0,0 +1,39 @@
-> +#include <linux/linkage.h>
-> +
-> +/*
-> + * Implementation of void perf_regs_load(u64 *regs);
-> + *
-> + * This functions fills in the 'regs' buffer from the actual registers values,
-> + * in the way the perf built-in unwinding test expects them:
-> + * - the PC at the time at the call to this function. Since this function
-> + *   is called using a bl instruction, the PC value is taken from LR,
+> >
+> > For the boot hang you've reported on the redhat bz if you want to move it
+> > forward I suggest to do a reverse bisect betwen 3.13 and 3.14-rc7 to
+> > figure out which bug _fixed_ your problem and then tell me that. I'll
+> > submit it for backporting to stable kernels. Google should find you some
+> > nice howtos for reverse bisecting kerneels.
+> Thank you. I'll do that.
 
-Is it guaranteed that this function is always invoked with a branch with
-link instruction, or is that just what current compiler versions are
-doing? I couldn't see where we would get that guarantee from.
+It's an issue with our fastboot clock readout code. Please apply the below
+patch and add an updated dmesg (again with drm.debug=0xe) to your bug
+report.
+-Daniel
 
-If it is called with a branch with link, then the LR value will be the
-PC at call time + 4, rather than just the exact PC at call time. If not
-then we don't have a guaranteed relationship between the PC at call time
-and the current LR value.
-
-If the only place that perf_regs_load is used is a single test which
-doesn't care about the precise PC at the time of the call, then it's
-probably OK to use the LR value, but we should be careful to document
-what the faked-up PC actually is and how we expect it to be used.
-
-> + * - the current SP (not touched by this function),
-> + * - the current value of LR is merely retrieved and stored because the
-> + *   value before the call to this function is unknown at this time; it will
-> + *   be unwound from the dwarf information in unwind__get_entries.
-> + */
-> +
-> +.text
-> +.type perf_regs_load,%function
-> +ENTRY(perf_regs_load)
-> +	stp x0,  x1,  [x0], #16	// store x0..x29
-> +	stp x2,  x3,  [x0], #16
-> +	stp x4,  x5,  [x0], #16
-> +	stp x6,  x7,  [x0], #16
-> +	stp x8,  x9,  [x0], #16
-> +	stp x10, x11, [x0], #16
-> +	stp x12, x13, [x0], #16
-> +	stp x14, x15, [x0], #16
-> +	stp x16, x17, [x0], #16
-> +	stp x18, x19, [x0], #16
-> +	stp x20, x21, [x0], #16
-> +	stp x22, x23, [x0], #16
-> +	stp x24, x25, [x0], #16
-> +	stp x26, x27, [x0], #16
-> +	stp x28, x29, [x0], #16
-> +	mov x1,  sp
-> +	stp x30, x1,  [x0], #16	// store lr and sp
-> +	str x30, [x0]		// store pc as lr in order to skip the call
-> +				//  to this function
-
-It might be better to word this a "store the lr in place of the pc". To
-me at least the current wording implies the opposite of what the code
-seems to be doing.
-
-Cheers,
-Mark.
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 7be5984431bb..3c0f8f095a6b 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -450,6 +450,8 @@ static void i9xx_clock(int refclk, intel_clock_t *clock)
+ {
+ 	clock->m = i9xx_dpll_compute_m(clock);
+ 	clock->p = clock->p1 * clock->p2;
++	printk("p1 = %u, p2 = %u, n = %u\n", clock->p1, clock->p2,
++	       clock->n);
+ 	if (WARN_ON(clock->n + 2 == 0 || clock->p == 0))
+ 		return;
+ 	clock->vco = DIV_ROUND_CLOSEST(refclk * clock->m, clock->n + 2);
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
