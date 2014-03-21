@@ -1,104 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776AbaCUDij (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 23:38:39 -0400
-Received: from numascale.com ([213.162.240.84]:54568 "EHLO numascale.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757146AbaCUDih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 23:38:37 -0400
-Message-ID: <532BB431.7020501@numascale.com>
-Date: Fri, 21 Mar 2014 11:38:25 +0800
-From: Daniel J Blueman <daniel@numascale.com>
-Organization: Numascale AS
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1758706AbaCUDqU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 23:46:20 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:34305 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbaCUDqS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 23:46:18 -0400
+Message-ID: <532BB5AC.3000904@linux.vnet.ibm.com>
+Date: Fri, 21 Mar 2014 09:14:44 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-        Borislav Petkov <bp@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steffen Persvold <sp@numascale.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
-        kim.naru@amd.com,
-        Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>,
-        Myron Stowe <myron.stowe@redhat.com>
-Subject: Re: [PATCH] Fix northbridge quirk to assign correct NUMA node
-References: <1394710981-3596-1-git-send-email-daniel@numascale.com> <CAErSpo6psgDr3XYh6m+vYcAOix2Vttrwz1jK7bS47Liy2Lw-=g@mail.gmail.com>
-In-Reply-To: <CAErSpo6psgDr3XYh6m+vYcAOix2Vttrwz1jK7bS47Liy2Lw-=g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Sudeep Holla <sudeep.holla@arm.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic
+ cacheinfo infrastructure
+References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-7-git-send-email-sudeep.holla@arm.com> <531945D1.7010503@linux.vnet.ibm.com> <531963D9.5040701@linux.vnet.ibm.com> <531D9E3A.7040109@arm.com>
+In-Reply-To: <531D9E3A.7040109@arm.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-OutGoing-Spam-Status: No, score=-2.9
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - cpanel21.proisp.no
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - numascale.com
-X-Get-Message-Sender-Via: cpanel21.proisp.no: authenticated_id: daniel@numascale.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032103-2000-0000-0000-00001048644B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/2014 06:07, Bjorn Helgaas wrote:
-> [+cc linux-pci, Myron, Suravee, Kim, Aravind]
->
-> On Thu, Mar 13, 2014 at 5:43 AM, Daniel J Blueman <daniel@numascale.com> wrote:
->> For systems with multiple servers and routed fabric, all northbridges get
->> assigned to the first server. Fix this by also using the node reported from
->> the PCI bus. For single-fabric systems, the northbriges are on PCI bus 0
->> by definition, which are on NUMA node 0 by definition, so this is invarient
->> on most systems.
->>
->> Tested on fam10h and fam15h single and multi-fabric systems and candidate
->> for stable.
+On 03/10/2014 04:42 PM, Sudeep Holla wrote:
+> Hi Anshuman,
+> 
+> On 07/03/14 06:14, Anshuman Khandual wrote:
+>> On 03/07/2014 09:36 AM, Anshuman Khandual wrote:
+>>> On 02/19/2014 09:36 PM, Sudeep Holla wrote:
+>>>> From: Sudeep Holla <sudeep.holla@arm.com>
+>>>>
+>>>> This patch removes the redundant sysfs cacheinfo code by making use of
+>>>> the newly introduced generic cacheinfo infrastructure.
+>>>>
+>>>> Signed-off-by: Sudeep Holla <sudeep.holla@arm.com>
+>>>> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+>>>> Cc: Paul Mackerras <paulus@samba.org>
+>>>> Cc: linuxppc-dev@lists.ozlabs.org
+>>>> ---
+>>>>   arch/powerpc/kernel/cacheinfo.c | 831
+>>>> ++++++----------------------------------
+>>>>   arch/powerpc/kernel/cacheinfo.h |   8 -
+>>>>   arch/powerpc/kernel/sysfs.c     |   4 -
+>>>>   3 files changed, 109 insertions(+), 734 deletions(-)
+>>>>   delete mode 100644 arch/powerpc/kernel/cacheinfo.h
+>>>>
+>>>> diff --git a/arch/powerpc/kernel/cacheinfo.c
+>>>> b/arch/powerpc/kernel/cacheinfo.c
+>>>> index 2912b87..05b7580 100644
+>>>> --- a/arch/powerpc/kernel/cacheinfo.c
+>>>> +++ b/arch/powerpc/kernel/cacheinfo.c
+>>>> @@ -10,38 +10,10 @@
+>>>>    * 2 as published by the Free Software Foundation.
+>>>>    */
+>>>>
+>>>> +#include <linux/cacheinfo.h>
+>>>>   #include <linux/cpu.h>
+>>>> -#include <linux/cpumask.h>
+>>>>   #include <linux/kernel.h>
+>>>> -#include <linux/kobject.h>
+>>>> -#include <linux/list.h>
+>>>> -#include <linux/notifier.h>
+>>>>   #include <linux/of.h>
+>>>> -#include <linux/percpu.h>
+>>>> -#include <linux/slab.h>
+>>>> -#include <asm/prom.h>
+>>>> -
+>>>> -#include "cacheinfo.h"
+>>>> -
+>>>> -/* per-cpu object for tracking:
+>>>> - * - a "cache" kobject for the top-level directory
+>>>> - * - a list of "index" objects representing the cpu's local cache
+>>>> hierarchy
+>>>> - */
+>>>> -struct cache_dir {
+>>>> -    struct kobject *kobj; /* bare (not embedded) kobject for cache
+>>>> -                   * directory */
+>>>> -    struct cache_index_dir *index; /* list of index objects */
+>>>> -};
+>>>> -
+>>>> -/* "index" object: each cpu's cache directory has an index
+>>>> - * subdirectory corresponding to a cache object associated with the
+>>>> - * cpu.  This object's lifetime is managed via the embedded kobject.
+>>>> - */
+>>>> -struct cache_index_dir {
+>>>> -    struct kobject kobj;
+>>>> -    struct cache_index_dir *next; /* next index in parent directory */
+>>>> -    struct cache *cache;
+>>>> -};
+>>>>
+>>>>   /* Template for determining which OF properties to query for a given
+>>>>    * cache type */
+>>>> @@ -60,11 +32,6 @@ struct cache_type_info {
+>>>>       const char *nr_sets_prop;
+>>>>   };
+>>>>
+>>>> -/* These are used to index the cache_type_info array. */
+>>>> -#define CACHE_TYPE_UNIFIED     0
+>>>> -#define CACHE_TYPE_INSTRUCTION 1
+>>>> -#define CACHE_TYPE_DATA        2
+>>>> -
+>>>>   static const struct cache_type_info cache_type_info[] = {
+>>>>       {
+>>>>           /* PowerPC Processor binding says the [di]-cache-*
+>>>> @@ -77,246 +44,115 @@ static const struct cache_type_info
+>>>> cache_type_info[] = {
+>>>>           .nr_sets_prop    = "d-cache-sets",
+>>>>       },
+>>>>       {
+>>>> -        .name            = "Instruction",
+>>>> -        .size_prop       = "i-cache-size",
+>>>> -        .line_size_props = { "i-cache-line-size",
+>>>> -                     "i-cache-block-size", },
+>>>> -        .nr_sets_prop    = "i-cache-sets",
+>>>> -    },
+>>>> -    {
+>>>>           .name            = "Data",
+>>>>           .size_prop       = "d-cache-size",
+>>>>           .line_size_props = { "d-cache-line-size",
+>>>>                        "d-cache-block-size", },
+>>>>           .nr_sets_prop    = "d-cache-sets",
+>>>>       },
+>>>> +    {
+>>>> +        .name            = "Instruction",
+>>>> +        .size_prop       = "i-cache-size",
+>>>> +        .line_size_props = { "i-cache-line-size",
+>>>> +                     "i-cache-block-size", },
+>>>> +        .nr_sets_prop    = "i-cache-sets",
+>>>> +    },
+>>>>   };
+>>>
+>>>
+>>> Hey Sudeep,
+>>>
+>>> After applying this patch, the cache_type_info array looks like this.
+>>>
+>>> static const struct cache_type_info cache_type_info[] = {
+>>>          {
+>>>                  /*
+>>>                   * PowerPC Processor binding says the [di]-cache-*
+>>>                   * must be equal on unified caches, so just use
+>>>                   * d-cache properties.
+>>>                   */
+>>>                  .name            = "Unified",
+>>>                  .size_prop       = "d-cache-size",
+>>>                  .line_size_props = { "d-cache-line-size",
+>>>                                       "d-cache-block-size", },
+>>>                  .nr_sets_prop    = "d-cache-sets",
+>>>          },
+>>>          {
+>>>                  .name            = "Data",
+>>>                  .size_prop       = "d-cache-size",
+>>>                  .line_size_props = { "d-cache-line-size",
+>>>                                       "d-cache-block-size", },
+>>>                  .nr_sets_prop    = "d-cache-sets",
+>>>          },
+>>>          {
+>>>                  .name            = "Instruction",
+>>>                  .size_prop       = "i-cache-size",
+>>>                  .line_size_props = { "i-cache-line-size",
+>>>                                       "i-cache-block-size", },
+>>>                  .nr_sets_prop    = "i-cache-sets",
+>>>          },
+>>> };
+>>>
+>>> and this function computes the the array index for any given cache type
+>>> define for PowerPC.
+>>>
+>>> static inline int get_cacheinfo_idx(enum cache_type type)
+>>> {
+>>>          if (type == CACHE_TYPE_UNIFIED)
+>>>                  return 0;
+>>>          else
+>>>                  return type;
+>>> }
+>>>
+>>> These types are define in include/linux/cacheinfo.h as
+>>>
+>>> enum cache_type {
+>>>          CACHE_TYPE_NOCACHE = 0,
+>>>          CACHE_TYPE_INST = BIT(0),        ---> 1
+>>>          CACHE_TYPE_DATA = BIT(1),        ---> 2
+>>>          CACHE_TYPE_SEPARATE = CACHE_TYPE_INST | CACHE_TYPE_DATA,
+>>>          CACHE_TYPE_UNIFIED = BIT(2),
+>>> };
+>>>
+>>> When it is UNIFIED we return index 0, which is correct. But the index
+>>> for instruction and data cache seems to be swapped which wrong. This
+>>> will fetch invalid properties for any given cache type.
+>>>
+> 
+> Ah, that's silly mistake on my side, will fix it.
+> 
+>>> I have done some initial review and testing for this patch's impact on
+>>> PowerPC (ppc64 POWER specifically). I am trying to do some code clean-up
+>>> and re-arrangements. Will post out soon. Thanks !
+> 
+> Thanks for taking time for testing and reviewing these patches.
 
-> I wish this had been cc'd to linux-pci.  We're talking about a related
-> change by Suravee there.  In fact, we were hoping this quirk could be
-> removed altogether.
+Now that you got some of the problems to work on and resend the patches, I will
+hold on to the clean up patches I had.
 
-Noted.
-
-> I don't understand what this quirk is doing.  Normally we discover the
-> NUMA node for a PCI host bridge via the ACPI _PXM method.  The way
-> _PXM works is that every PCI device in the hierarchy below the bridge
-> inherits the same node number as the host bridge.  I first thought
-> this might be a workaround for a system that lacks _PXM, but I don't
-> think that can be right, because you're only changing the node for a
-> few devices, not the whole hierarchy.
- >
-> So I suspect the problem is more complicated, and maybe _PXM is
-> insufficient to describe the topology?  Are there subtrees that should
-> have nodes different from the host bridge?
-
-Yes; see below.
-
-> I know this patch is already in v3.14-rc7, but I'd still like to
-> understand it so we can do the right thing with Suravee's patch.
-
-The _PXM method associates each northbridge with the first NUMA node, 0 
-in single-fabric systems, and eg 4 for the second server in a 
-multi-fabric system with 2 dual-module Opterons (with 2 NUMA nodes 
-internally) etc, since the northbridges appear in the PCI tree, under 
-the host bridge, not above it [1].
-
-With _PXM, the rest of the PCI bus hierarchy has the right NUMA node 
-associated, but the northbridge PCI devices should be associated with 
-their actual NUMA node, 0, 1, 2, 3 for the first server in this example. 
-The quirk fixes this up; irqbalance at least uses this NUMA data exposed 
-in /sys.
-
-The alternative to the quirk may be to explicitly express the 
-northbridge PCI devices in the AML with their own _PXM methods. If it's 
-valid, it may be the honest approach, though the quirk may be needed for 
-most BIOSs; I can check the AML on a few servers to confirm if helpful.
-
-Thanks,
-   Daniel
-
-[1] http://quora.org/2014/lspci.txt
--- 
-Daniel J Blueman
-Principal Software Engineer, Numascale
