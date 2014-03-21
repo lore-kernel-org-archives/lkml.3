@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760415AbaCUO6R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:58:17 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43644 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754143AbaCUO6M (ORCPT
+	id S1760648AbaCUPDG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:03:06 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:36370 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751488AbaCUPDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:58:12 -0400
-Date: Fri, 21 Mar 2014 07:59:37 -0700
-From: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-To: Matt Sickler <Matt.Sickler@daktronics.com>
-Cc: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH]: UIO read(2)/write(2) overrides
-Message-ID: <20140321145937.GA30227@kroah.com>
-References: <8FAD17D1809CB042A0963E8337B9FE3DD7D823@MB-EXC-04.daktronics.lan>
- <20140321142429.GA25833@kroah.com>
- <8FAD17D1809CB042A0963E8337B9FE3DD7D871@MB-EXC-04.daktronics.lan>
+	Fri, 21 Mar 2014 11:03:02 -0400
+X-Authority-Analysis: v=2.0 cv=GbyVbHrL c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=h2n2wN--3AMA:10 a=IBrS0yOrj2QA:10 a=S1A5HrydsesA:10 a=Qsx_du5GiBkA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=QfKxxUxMAAAA:8 a=qYczfrIZeFRGOLxBN1oA:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
+X-Cloudmark-Score: 0
+X-Authenticated-User: 
+X-Originating-IP: 67.78.168.186
+Message-ID: <532C54A3.3030903@ubuntu.com>
+Date: Fri, 21 Mar 2014 11:02:59 -0400
+From: Phillip Susi <psusi@ubuntu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8FAD17D1809CB042A0963E8337B9FE3DD7D871@MB-EXC-04.daktronics.lan>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Karel Zak <kzak@redhat.com>,
+        Janani Venkataraman <jananive@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, util-linux@vger.kernel.org
+Subject: Re: [PATCH 00/33] [RFC] Non disruptive application core dump infrastructure
+References: <20140320093040.14878.903.stgit@localhost.localdomain> <20140321080855.GE26374@x2.net.home>
+In-Reply-To: <20140321080855.GE26374@x2.net.home>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 02:49:28PM +0000, Matt Sickler wrote:
-> From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
-> >
-> >On Fri, Mar 21, 2014 at 02:20:11PM +0000, Matt Sickler wrote:
-> >> Tiny patch to let uio-based drivers override the read(2), write(2), and poll(2) syscalls.
-> >> The rationale is that some uio-based drivers might want the mmap(2)
-> >> functionality of UIO, but have no need for the IRQ semantics of read(2) and write(2).
-> >
-> >Can you submit a driver that uses these new interfaces as well?  I don't want to add something that isn't used in the kernel.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+On 3/21/2014 4:17 AM, Karel Zak wrote:
+> The gencore command looks like a good idea, but why we need the 
+> client-server infrastructure? At least at first glance it seems 
+> like overkill.
+
+Yes, the server seems pointless.
+
+>> We would like to push this to one of the following packages: a)
+>> util-linux b) coreutils c) procps-ng
 > 
-> We're developing a driver for a new product but the driver is still in
-> a state of flux, so it's not ready for posting yet.
-> We will definitely get this out there once it's more polished.
-> If you want to hold off applying this patch until we have something to
-> submit that uses it, I'm fine with that. 
+> d) somewhere near to gdb :-)
 
-Yes, we will have to wait until we see that driver, thanks.
+gdb already has such a thing; it's called gcore.  Kind of makes this
+work seem redundant?
 
-greg k-h
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQEcBAEBAgAGBQJTLFSjAAoJEI5FoCIzSKrwuTIH/jGtc3dB1WKgtDSE2wtXXHO0
+0WxhWDbVkpJ0Q+tkG/tjw4wudYtEJ+XAHsCIK3vH7OMX7i4PMOLDgjT/FyxTPrWl
+W+eUCazi4vRPNGscii5mRFlsthgEd2pofotlx5UB7Br9D05/QZqErtEMJMqD935V
+94wlvJSvJI0n3hfAUgcM8apxTgxYr/TIPEQPfqLem3xTZIw3lTRic613Qji2Kwif
+l+kqs0WLy/AHEwBLRrXDQahnv5n2IhOVUn3KDwm9Su56rbrmAF7LAvK0+uxRyoQk
+IVC5h8BdBQ4QMYl7KYYEPy+n+0Qbe1EQ4tLmYvaEBwXP5c0QDGX0M5VUkko+eGI=
+=zFoW
+-----END PGP SIGNATURE-----
