@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966587AbaCUAZd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:25:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37252 "EHLO
+	id S966601AbaCUAZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:25:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37247 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966021AbaCUAJR (ORCPT
+	with ESMTP id S966016AbaCUAJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Heinz Mauelshagen <heinzm@redhat.com>, Joe Thornber <ejt@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: [PATCH 3.10 63/85] dm cache: fix truncation bug when copying a block to/from >2TB fast device
-Date: Thu, 20 Mar 2014 17:10:06 -0700
-Message-Id: <20140321000607.651422265@linuxfoundation.org>
+        Laura Abbott <lauraa@codeaurora.org>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 62/85] mm/compaction: break out of loop on !PageBuddy in isolate_freepages_block
+Date: Thu, 20 Mar 2014 17:10:05 -0700
+Message-Id: <20140321000607.528974990@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,48 +34,120 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Heinz Mauelshagen <heinzm@redhat.com>
+From: Laura Abbott <lauraa@codeaurora.org>
 
-commit 8b9d96666529a979acf4825391efcc7c8a3e9f12 upstream.
+commit 2af120bc040c5ebcda156df6be6a66610ab6957f upstream.
 
-During demotion or promotion to a cache's >2TB fast device we must not
-truncate the cache block's associated sector to 32bits.  The 32bit
-temporary result of from_cblock() caused a 32bit multiplication when
-calculating the sector of the fast device in issue_copy_real().
+We received several reports of bad page state when freeing CMA pages
+previously allocated with alloc_contig_range:
 
-Use an intermediate 64bit type to store the 32bit from_cblock() to allow
-for proper 64bit multiplication.
+    BUG: Bad page state in process Binder_A  pfn:63202
+    page:d21130b0 count:0 mapcount:1 mapping:  (null) index:0x7dfbf
+    page flags: 0x40080068(uptodate|lru|active|swapbacked)
 
-Here is an example of how this bug manifests on an ext4 filesystem:
+Based on the page state, it looks like the page was still in use.  The
+page flags do not make sense for the use case though.  Further debugging
+showed that despite alloc_contig_range returning success, at least one
+page in the range still remained in the buddy allocator.
 
- EXT4-fs error (device dm-0): ext4_mb_generate_buddy:756: group 17136, 32768 clusters in bitmap, 30688 in gd; block bitmap corrupt.
- JBD2: Spotted dirty metadata buffer (dev = dm-0, blocknr = 0). There's a risk of filesystem corruption in case of system crash.
+There is an issue with isolate_freepages_block.  In strict mode (which
+CMA uses), if any pages in the range cannot be isolated,
+isolate_freepages_block should return failure 0.  The current check
+keeps track of the total number of isolated pages and compares against
+the size of the range:
 
-Signed-off-by: Heinz Mauelshagen <heinzm@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+        if (strict && nr_strict_required > total_isolated)
+                total_isolated = 0;
+
+After taking the zone lock, if one of the pages in the range is not in
+the buddy allocator, we continue through the loop and do not increment
+total_isolated.  If in the last iteration of the loop we isolate more
+than one page (e.g.  last page needed is a higher order page), the check
+for total_isolated may pass and we fail to detect that a page was
+skipped.  The fix is to bail out if the loop immediately if we are in
+strict mode.  There's no benfit to continuing anyway since we need all
+pages to be isolated.  Additionally, drop the error checking based on
+nr_strict_required and just check the pfn ranges.  This matches with
+what isolate_freepages_range does.
+
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+Acked-by: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Acked-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Acked-by: Michal Nazarewicz <mina86@mina86.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/md/dm-cache-target.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ mm/compaction.c |   20 +++++++++++++-------
+ 1 file changed, 13 insertions(+), 7 deletions(-)
 
---- a/drivers/md/dm-cache-target.c
-+++ b/drivers/md/dm-cache-target.c
-@@ -861,12 +861,13 @@ static void issue_copy_real(struct dm_ca
- 	int r;
- 	struct dm_io_region o_region, c_region;
- 	struct cache *cache = mg->cache;
-+	sector_t cblock = from_cblock(mg->cblock);
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -252,7 +252,6 @@ static unsigned long isolate_freepages_b
+ {
+ 	int nr_scanned = 0, total_isolated = 0;
+ 	struct page *cursor, *valid_page = NULL;
+-	unsigned long nr_strict_required = end_pfn - blockpfn;
+ 	unsigned long flags;
+ 	bool locked = false;
  
- 	o_region.bdev = cache->origin_dev->bdev;
- 	o_region.count = cache->sectors_per_block;
+@@ -265,11 +264,12 @@ static unsigned long isolate_freepages_b
  
- 	c_region.bdev = cache->cache_dev->bdev;
--	c_region.sector = from_cblock(mg->cblock) * cache->sectors_per_block;
-+	c_region.sector = cblock * cache->sectors_per_block;
- 	c_region.count = cache->sectors_per_block;
+ 		nr_scanned++;
+ 		if (!pfn_valid_within(blockpfn))
+-			continue;
++			goto isolate_fail;
++
+ 		if (!valid_page)
+ 			valid_page = page;
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
  
- 	if (mg->writeback || mg->demote) {
+ 		/*
+ 		 * The zone lock must be held to isolate freepages.
+@@ -290,12 +290,10 @@ static unsigned long isolate_freepages_b
+ 
+ 		/* Recheck this is a buddy page under lock */
+ 		if (!PageBuddy(page))
+-			continue;
++			goto isolate_fail;
+ 
+ 		/* Found a free page, break it into order-0 pages */
+ 		isolated = split_free_page(page);
+-		if (!isolated && strict)
+-			break;
+ 		total_isolated += isolated;
+ 		for (i = 0; i < isolated; i++) {
+ 			list_add(&page->lru, freelist);
+@@ -306,7 +304,15 @@ static unsigned long isolate_freepages_b
+ 		if (isolated) {
+ 			blockpfn += isolated - 1;
+ 			cursor += isolated - 1;
++			continue;
+ 		}
++
++isolate_fail:
++		if (strict)
++			break;
++		else
++			continue;
++
+ 	}
+ 
+ 	trace_mm_compaction_isolate_freepages(nr_scanned, total_isolated);
+@@ -316,7 +322,7 @@ static unsigned long isolate_freepages_b
+ 	 * pages requested were isolated. If there were any failures, 0 is
+ 	 * returned and CMA will fail.
+ 	 */
+-	if (strict && nr_strict_required > total_isolated)
++	if (strict && blockpfn < end_pfn)
+ 		total_isolated = 0;
+ 
+ 	if (locked)
 
 
