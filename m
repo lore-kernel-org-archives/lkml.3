@@ -1,95 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaCUTgQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:36:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:53533 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750745AbaCUTgM (ORCPT
+	id S1751757AbaCUTgt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:36:49 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:64466 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377AbaCUTgs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:36:12 -0400
-Message-ID: <532C94B0.9090602@windriver.com>
-Date: Fri, 21 Mar 2014 15:36:16 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 15:36:48 -0400
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Fengguang Wu <fengguang.wu@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH] lkdtm: include cacheflush.h
-References: <20140214235849.GA30703@www.outflux.net>	<CAP=VYLpYhOR3xoX5AjvENR_FRLNsgGE4w275_SZEvBa_UwZrmw@mail.gmail.com> <CAGXu5jKZwxPbhE1a0MfjQBRe0Dzxip0iiR2Rp4JFn38YRQFk_Q@mail.gmail.com>
-In-Reply-To: <CAGXu5jKZwxPbhE1a0MfjQBRe0Dzxip0iiR2Rp4JFn38YRQFk_Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.56.57]
+In-Reply-To: <CAMbOQaVGZZjAvvx+PGkTdiBQfYc9xGxkiP1_3P7i304Kg+d_hw@mail.gmail.com>
+References: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
+	<20140319190119.GC16906@thunk.org>
+	<CAMbOQaVt+KSHwejbLFGy9qzgFG2DG3K84KZE0KOAh3Vyy8YHog@mail.gmail.com>
+	<CAMbOQaVGZZjAvvx+PGkTdiBQfYc9xGxkiP1_3P7i304Kg+d_hw@mail.gmail.com>
+Date: Sat, 22 Mar 2014 01:06:47 +0530
+Message-ID: <CAMbOQaX97CXBWtKAs7YA2vtTL8jFP_saDoB_PRb6eLJCNiSOdg@mail.gmail.com>
+Subject: Re: Page cache corruption with mount/unmount of USB with Fat file system
+From: Nilesh More <nilesh99999@gmail.com>
+To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
+        Prafull Suryawanshi <prafull.net@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14-03-21 03:33 PM, Kees Cook wrote:
-> On Fri, Mar 21, 2014 at 12:31 PM, Paul Gortmaker
-> <paul.gortmaker@windriver.com> wrote:
->> On Fri, Feb 14, 2014 at 6:58 PM, Kees Cook <keescook@chromium.org> wrote:
->>> Some architectures need cacheflush.h explicitly included (mips) for
->>> use of flush_icache_range():
->>>
->>>     config: make ARCH=mips allmodconfig
->>>     All error/warnings:
->>>     >> ERROR: "flush_icache_range" undefined!
->>
->> The linux-next builds still fail with a similar error:
->>
->> http://kisskb.ellerman.id.au/kisskb/buildresult/10808358/
->>
->> I'm not sure if it ever was a compile error, or if it was always
->> a missing export symbol type error as it is apparently now.
-> 
-> It seems no one picked up this fix? Greg, you normally take my lkdtm work...
+Just to keep the thread updated with latest findngs : (Let me know if
+anybody has any inputs)
 
-No, the "fix" is there, in linux-next, but it doesn't work.  :)
+Skipping the measureExactStorage and measureApproximateStorage calls
+seems to help. These are called as a part of auto-mount sequence when
+USB is hotplugged. I will dig-in further to understand if it could be
+issue with these calls, may be these calls aren't supposed to be made
+before USB mount. Or, is it just exposing file system bug?
 
-Paul.
---
+/android/settings/deviceinfo/StorageMeasurement.java
 
-> 
-> -Kees
-> 
+public void handleMessage(Message msg) {
+
+case MSG_CONNECTED: {
+
+measureApproximateStorage(imcs);  // Skipping these calls seems to
+help
+                                                 measureExactStorage(imcs);
+                                                 break;
+                                                }
+
+On Fri, Mar 21, 2014 at 12:09 AM, Nilesh More <nilesh99999@gmail.com> wrote:
+> I now know the source of page allocations between add_disk call and
+> mount call. The auto mount service triggers disk check operation which
+> eventually calls checkfilesys(). This function does open and close
+> calls which results into page allocations and de-allocations. If I do
+> an early return from this function, I don't this issue of ext4 file
+> system corruption.
+>
+>  Though the file check operation might be expected before mount, it
+> may be exposing a linux-kernel bug.
+>
+> Can anybody please comment if the checkfilesys() operation is expected
+> before actually mounting the file system ? If 'yes', how does it know
+> about the superblock location, directory structure etc. ?
+>
+> What should be the next step here ? I am thinking to try and track
+> down all page/buffer allocations because of open/close calls from auto
+> mount service - checkfilesys() and see why it is resulting into ext4
+> corruption.
+>
+> Thank you,
+> Nilesh
+>
+> On Thu, Mar 20, 2014 at 12:38 AM, Nilesh More <nilesh99999@gmail.com> wrote:
+>> Hi Ted,
 >>
->> Paul.
->> --
+>>>And I'll repeat the comments I made a few weeks ago.  Last time you
+>>>reported this, you included a dmesg output which included this:
 >>
+>>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
+>>> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
+>>> #81827: block 328308: comm installd...
+>>
+>>  > Are you seeing the same thing?  If so, the fundamental high level
+>> issue is that the USB driver is reporting a device disconnect,
+>> presumably of a USB device different from the one that you just
+>> plugged in.   Are you still seeing this?
+>>
+>> The dmesg output that I attached earlier was when I saw the prints
+>> after actually disconnecting the USB. I am pretty certain that USB
+>> driver does not report any false disconnect. This issue occurs when I
+>> connect the USBdrive on android tablet with USB mount support. This
+>> issue may or may not occur the first time I hotplug the USB drive. It
+>> might require couple of hotplug/hotunplug to see this issue.
+>>
+>> Thank you,
+>> Nilesh
+>>
+>> On Thu, Mar 20, 2014 at 12:31 AM,  <tytso@mit.edu> wrote:
+>>> On Thu, Mar 20, 2014 at 12:05:44AM +0530, Nilesh More wrote:
+>>>> Hi all,
+>>>>
+>>>> First of all sorry for the lengthy mail but I did not want to miss out
+>>>> on any details.
+>>>>
+>>>> The following issue that I am reporting occurs when I plugin the USB
+>>>> drive on android tablet with USB mount support. Please note that this
+>>>> issue may or may not occur the first time I hotplug the USB drive. It
+>>>> might require couple of hotplug/hotunplug to see this issue. If
+>>>> anybody has/gets any clue about the possible root cause, please let me
+>>>> know.
 >>>
->>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>> ---
->>>  drivers/misc/lkdtm.c |    1 +
->>>  1 file changed, 1 insertion(+)
+>>> And I'll repeat the comments I made a few weeks ago.  Last time you
+>>> reported this, you included a dmesg output which included this:
 >>>
->>> diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
->>> index 47ed2d321351..2ebd52e05773 100644
->>> --- a/drivers/misc/lkdtm.c
->>> +++ b/drivers/misc/lkdtm.c
->>> @@ -46,6 +46,7 @@
->>>  #include <linux/debugfs.h>
->>>  #include <linux/vmalloc.h>
->>>  #include <linux/mman.h>
->>> +#include <asm/cacheflush.h>
+>>>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
+>>>> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
+>>>> #81827: block 328308: comm installd...
 >>>
->>>  #ifdef CONFIG_IDE
->>>  #include <linux/ide.h>
->>> --
->>> 1.7.9.5
+>>> Are you seeing the same thing?  If so, the fundamental high level
+>>> issue is that the USB driver is reporting a device disconnect,
+>>> presumably of a USB device different from the one that you just
+>>> plugged in.   Are you still seeing this?
 >>>
+>>> If so, it's important if you want to root cause this issue to
+>>> determine why the USB disconnect is happening, and not try to comment
+>>> out the page invalidations which happens *after* the USB device is
+>>> reported as disconnected.
 >>>
->>> --
->>> Kees Cook
->>> Chrome OS Security
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
+>>> If I had to guess, it's probably some hardware issue where when you
+>>> plug in a USB device that draws too much power, it's destablizing the
+>>> USB bus and causing some other USB device to report a disconnect.
+>>>
+>>>                                           - Ted
