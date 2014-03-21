@@ -1,68 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044AbaCUHfB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 03:35:01 -0400
-Received: from smtp-out-034.synserver.de ([212.40.185.34]:1077 "EHLO
-	smtp-out-025.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756886AbaCUHe7 (ORCPT
+	id S1754421AbaCUHrL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 03:47:11 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:35563 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756AbaCUHrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 03:34:59 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 17179
-Message-ID: <532BEBCD.3020002@metafoo.de>
-Date: Fri, 21 Mar 2014 08:35:41 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Fri, 21 Mar 2014 03:47:07 -0400
+Message-ID: <532BEE64.3090501@linux.vnet.ibm.com>
+Date: Fri, 21 Mar 2014 13:16:44 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Jimmy Li <coder.liss@gmail.com>
-CC: Jonathan Cameron <jic23@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fix some coding style in drivers/staging/iio
-References: <20140321044546.GA12515@gmail.com>
-In-Reply-To: <20140321044546.GA12515@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+References: <cover.1395379422.git.viresh.kumar@linaro.org> <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+In-Reply-To: <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032107-1396-0000-0000-0000048057E8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[...]
-> diff --git a/drivers/staging/iio/accel/adis16220_core.c b/drivers/staging/iio/accel/adis16220_core.c
-> index 6f38ca9..31c7a9d 100644
-> --- a/drivers/staging/iio/accel/adis16220_core.c
-> +++ b/drivers/staging/iio/accel/adis16220_core.c
-> @@ -392,7 +392,8 @@ static const struct iio_info adis16220_info = {
->   };
+On 03/21/2014 11:04 AM, Viresh Kumar wrote:
+> From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+> 
+> Whenever we change the frequency of a CPU, we call the PRECHANGE and POSTCHANGE
+> notifiers. They must be serialized, i.e. PRECHANGE and POSTCHANGE notifiers
+> should strictly alternate, thereby preventing two different sets of PRECHANGE or
+> POSTCHANGE notifiers from interleaving arbitrarily.
+> 
+> The following examples illustrate why this is important:
+> 
+> Scenario 1:
+> -----------
+> A thread reading the value of cpuinfo_cur_freq, will call
+> __cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()
+> 
+> The ondemand governor can decide to change the frequency of the CPU at the same
+> time and hence it can end up sending the notifications via ->target().
+> 
+> If the notifiers are not serialized, the following sequence can occur:
+> - PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
+> - PRECHANGE Notification for freq B (from target())
+> - Freq changed by target() to B
+> - POSTCHANGE Notification for freq B
+> - POSTCHANGE Notification for freq A
+> 
+> We can see from the above that the last POSTCHANGE Notification happens for freq
+> A but the hardware is set to run at freq B.
+> 
+> Where would we break then?: adjust_jiffies() in cpufreq.c & cpufreq_callback()
+> in arch/arm/kernel/smp.c (which also adjusts the jiffies). All the
+> loops_per_jiffy calculations will get messed up.
+> 
+> Scenario 2:
+> -----------
+> The governor calls __cpufreq_driver_target() to change the frequency. At the
+> same time, if we change scaling_{min|max}_freq from sysfs, it will end up
+> calling the governor's CPUFREQ_GOV_LIMITS notification, which will also call
+> __cpufreq_driver_target(). And hence we end up issuing concurrent calls to
+> ->target().
+> 
+> Typically, platforms have the following logic in their ->target() routines:
+> (Eg: cpufreq-cpu0, omap, exynos, etc)
+> 
+> A. If new freq is more than old: Increase voltage
+> B. Change freq
+> C. If new freq is less than old: decrease voltage
+> 
+> Now, if the two concurrent calls to ->target() are X and Y, where X is trying to
+> increase the freq and Y is trying to decrease it, we get the following race
+> condition:
+> 
+> X.A: voltage gets increased for larger freq
+> Y.A: nothing happens
+> Y.B: freq gets decreased
+> Y.C: voltage gets decreased
+> X.B: freq gets increased
+> X.C: nothing happens
+> 
+> Thus we can end up setting a freq which is not supported by the voltage we have
+> set. That will probably make the clock to the CPU unstable and the system might
+> not work properly anymore.
+> 
+> This patch introduces a set of synchronization primitives to serialize frequency
+> transitions, which are to be used as shown below:
+> 
+> cpufreq_freq_transition_begin();
+> 
+> //Perform the frequency change
+> 
+> cpufreq_freq_transition_end();
+> 
+> The _begin() call sends the PRECHANGE notification whereas the _end() call sends
+> the POSTCHANGE notification. Also, all the necessary synchronization is handled
+> within these calls. In particular, even drivers which set the ASYNC_NOTIFICATION
+> flag can also use these APIs for performing frequency transitions (ie., you can
+> call _begin() from one task, and call the corresponding _end() from a different
+> task).
+> 
+> The actual synchronization underneath is not that complicated:
+> 
+> The key challenge is to allow drivers to begin the transition from one thread
+> and end it in a completely different thread (this is to enable drivers that do
+> asynchronous POSTCHANGE notification from bottom-halves, to also use the same
+> interface).
+> 
+> To achieve this, a 'transition_ongoing' flag, a 'transition_lock' spinlock and a
+> wait-queue are added per-policy. The flag and the wait-queue are used in
+> conjunction to create an "uninterrupted flow" from _begin() to _end(). The
+> spinlock is used to ensure that only one such "flow" is in flight at any given
+> time. Put together, this provides us all the necessary synchronization.
+> 
+> Based-on-patch-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> I have kept your Authorship for this patch as is and did few modifications:
+> -  removed 'state' parameter from begin/end routines.
+> - added 'trasition_failed' parameter to end routine.
+> - changed mutex with spinlock as discussed earlier.
+> - Added WARN_ON() as discussed.
+> - Exported these new routines.
+> - Removed locks from end.
 >
->   static const char * const adis16220_status_error_msgs[] = {
-> -	[ADIS16220_DIAG_STAT_VIOLATION_BIT] = "Capture period violation/interruption",
-> +	[ADIS16220_DIAG_STAT_VIOLATION_BIT] =
-> +		"Capture period violation/interruption",
 
-This does not improve legibility. The 80 chars per line rule is to improve 
-legibility, if it doesn't it's better to ignore it.
+Wonderful! I was going to do this today, but thanks a lot for taking
+care of this for me!
 
->   	[ADIS16220_DIAG_STAT_SPI_FAIL_BIT] = "SPI failure",
->   	[ADIS16220_DIAG_STAT_FLASH_UPT_BIT] = "Flash update failed",
->   	[ADIS16220_DIAG_STAT_POWER_HIGH_BIT] = "Power supply above 3.625V",
-[...]
-> diff --git a/drivers/staging/iio/resolver/ad2s1200.c b/drivers/staging/iio/resolver/ad2s1200.c
-> index 36eedd8..d38df2e 100644
-> --- a/drivers/staging/iio/resolver/ad2s1200.c
-> +++ b/drivers/staging/iio/resolver/ad2s1200.c
-> @@ -70,6 +70,7 @@ static int ad2s1200_read_raw(struct iio_dev *indio_dev,
->   		vel = (((s16)(st->rx[0])) << 4) | ((st->rx[1] & 0xF0) >> 4);
->   		vel = (vel << 4) >> 4;
->   		*val = vel;
-> +		/* fall through */
+The patch looks good, but I have one comment below.
 
-This not a coding style issue, here is actually a break missing.
+>  drivers/cpufreq/cpufreq.c | 37 +++++++++++++++++++++++++++++++++++++
+>  include/linux/cpufreq.h   | 10 ++++++++++
+>  2 files changed, 47 insertions(+)
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index b349406..4279cc9 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -353,6 +353,41 @@ void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+>  }
+>  EXPORT_SYMBOL_GPL(cpufreq_notify_post_transition);
+> 
+> +void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs)
+> +{
+> +wait:
+> +	wait_event(policy->transition_wait, !policy->transition_ongoing);
+> +
+> +	spin_lock(&policy->transition_lock);
+> +
+> +	if (unlikely(policy->transition_ongoing)) {
+> +		spin_unlock(&policy->transition_lock);
+> +		goto wait;
+> +	}
+> +
+> +	policy->transition_ongoing = true;
+> +
+> +	spin_unlock(&policy->transition_lock);
+> +
+> +	cpufreq_notify_transition(policy, freqs, CPUFREQ_PRECHANGE);
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_freq_transition_begin);
+> +
+> +void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs, int transition_failed)
+> +{
+> +	if (unlikely(WARN_ON(!policy->transition_ongoing)))
+> +		return;
+> +
+> +	cpufreq_notify_post_transition(policy, freqs, transition_failed);
+> +
+> +	policy->transition_ongoing = false;
 
->   	default:
->   		mutex_unlock(&st->lock);
->   		return -EINVAL;
->
+We need this assignment to happen exactly at this point, that is, *after*
+the call to post_transition() completes and before calling wake_up().
+
+If the compiler or the CPU reorders the instructions and moves this
+assignment to some other place, then we will be in trouble!
+
+We might need memory barriers to ensure this doesn't get reordered.
+Alternatively, we can simply hold the spin-lock around this assignment,
+since locks automatically imply memory barriers. As an added advantage,
+the code will then look more intuitive and easier to understand as well.
+
+Thoughts?
+
+Regards,
+Srivatsa S. Bhat
+
+> +
+> +	wake_up(&policy->transition_wait);
+> +}
+> +EXPORT_SYMBOL_GPL(cpufreq_freq_transition_end);
+> +
+> 
+>  /*********************************************************************
+>   *                          SYSFS INTERFACE                          *
+> @@ -982,6 +1017,8 @@ static struct cpufreq_policy *cpufreq_policy_alloc(void)
+> 
+>  	INIT_LIST_HEAD(&policy->policy_list);
+>  	init_rwsem(&policy->rwsem);
+> +	spin_lock_init(&policy->transition_lock);
+> +	init_waitqueue_head(&policy->transition_wait);
+> 
+>  	return policy;
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index 70929bc..263173d 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -16,6 +16,7 @@
+>  #include <linux/completion.h>
+>  #include <linux/kobject.h>
+>  #include <linux/notifier.h>
+> +#include <linux/spinlock.h>
+>  #include <linux/sysfs.h>
+> 
+>  /*********************************************************************
+> @@ -104,6 +105,11 @@ struct cpufreq_policy {
+>  	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
+>  	 */
+>  	struct rw_semaphore	rwsem;
+> +
+> +	/* Synchronization for frequency transitions */
+> +	bool			transition_ongoing; /* Tracks transition status */
+> +	spinlock_t		transition_lock;
+> +	wait_queue_head_t	transition_wait;
+>  };
+> 
+>  /* Only for ACPI */
+> @@ -336,6 +342,10 @@ void cpufreq_notify_transition(struct cpufreq_policy *policy,
+>  		struct cpufreq_freqs *freqs, unsigned int state);
+>  void cpufreq_notify_post_transition(struct cpufreq_policy *policy,
+>  		struct cpufreq_freqs *freqs, int transition_failed);
+> +void cpufreq_freq_transition_begin(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs);
+> +void cpufreq_freq_transition_end(struct cpufreq_policy *policy,
+> +		struct cpufreq_freqs *freqs, int transition_failed);
+> 
+>  #else /* CONFIG_CPU_FREQ */
+>  static inline int cpufreq_register_notifier(struct notifier_block *nb,
+> 
+
 
