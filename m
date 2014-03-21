@@ -1,192 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750838AbaCURn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:43:29 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:43748 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750745AbaCURnL convert rfc822-to-8bit (ORCPT
+	id S1750984AbaCURpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:45:50 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44706 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaCURpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:43:11 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: "zheng.li" <zheng.x.li@oracle.com>
-cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's value to 1.
-In-reply-to: <532BA648.6060600@oracle.com>
-References: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com> <3119.1395334953@death.nxdomain> <532BA648.6060600@oracle.com>
-Comments: In-reply-to "zheng.li" <zheng.x.li@oracle.com>
-   message dated "Fri, 21 Mar 2014 10:39:04 +0800."
-X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.3.50
+	Fri, 21 Mar 2014 13:45:47 -0400
+Date: Fri, 21 Mar 2014 17:45:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Randy Dunlap <rdunlap@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-spi@vger.kernel.org,
+        Wenyou Yang <wenyou.yang@atmel.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Message-ID: <20140321174537.GC552@sirena.org.uk>
+References: <532C6085.9070203@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 21 Mar 2014 10:43:05 -0700
-Message-ID: <13028.1395423785@death.nxdomain>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032117-7182-0000-0000-00000A1C5A22
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lMM8JwqTlfDpEaS6"
+Content-Disposition: inline
+In-Reply-To: <532C6085.9070203@infradead.org>
+X-Cookie: Contents may settle during shipment.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi: fix spi-atmel.c printk format warnings
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-zheng.li <zheng.x.li@oracle.com> wrote:
 
->于 2014年03月21日 01:02, Jay Vosburgh 写道:
->> Zheng Li <zheng.x.li@oracle.com> wrote:
->> 
->>> Except bond mode 1, in other bond modes, inactive slaves should keep
->>> inactive flag to 1 to refuse to receive broadcast packets. Now, active
->>> slave send broadcast packets (for example ARP requests) which will
->>> arrive inactive slaves on same host from switch, but inactive slave's
->>> inactive flag is zero that cause bridge receive the broadcast packets
->>> to produce a wrong entry in forward table. Typical situation is domu
->>> send some ARP request which go out from dom0 bond's active slave, then
->>> the ARP broadcast request packets go back to inactive slave from
->>> switch, because the inactive slave's inactive flag is zero, kernel will
->>> receive the packets and pass them to bridge, that cause dom0's bridge
->>> map domu's MAC address to port of bond, bridge should map domu's MAC to
->>> port of vif.
->> 
->> 	I suspect this will break LACP (802.3ad) and Etherchannel
->> (balance-xor, balance-rr) modes, as those modes can receive broadcast or
->> multicast on any slave.  In those cases, the switch knows about the
->> aggregation, and will only send the broadcast / multicast to one of the
->> ports, but the port selected is not always the same one.
->> 
->> 	In which mode are you having trouble?
->> 
->> 	-J
->
->Except bond mode 1, in other modes (major test in mode 6, and test all
->other mode,  except mode 1, all other modes has the bug), the bridge
->make a wrong entry which map guest MAC to the port of bond, it should
->map guest MAC to the port of vif.
->
->Env description: dom0's bridge contains bond1 and vif ports, bond1 as
->port 1 , vif as port 2, bond1 has two slaves which connect a switch.
->when from guest ping others ,the arp broadcast request will go out from
->bond1's active slave, and then go back to itself inactive slave from
->switch , in function of bond_should_deliver_exact_match will return
->false by inactive is zero, return false will cause bridge receive the
->arp request packets whose original is from guest through vif that let
->bridge consider the SRC MAC of guest is from bond1 by analyzing the arp
->broadcast packets, then make a wrong forward entry "MAC of guest, from
->port 1 (bond1)" , the correct entry should be "MAC of guest , from port
->2 (vif)".
+--lMM8JwqTlfDpEaS6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	I believe I understand; the crux of the problem is that the
-broadcast is looped by the switch to the other bond port, which then
-processes it as a received packet.
+On Fri, Mar 21, 2014 at 08:53:41AM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <rdunlap@infradead.org>
+>=20
+> Fix printk format warning by using %p extension 'ad' for dma_addr_t.
 
-	For the tlb and alb modes, you're logically correct; the slaves
-other than the active slave should be set to inactive when the bond is
-opened.  This is how they are set when configured normally to limit
-inbound broadcast and multicast traffic to just one slave (because these
-modes do not configure the switch ports into channel groups or
-aggregators; the switch has no knowledge of the bond).
+Applied, thanks.  Please try to use subject lines matching the style for
+the subsystem.
 
-	Your patch is still incorrect, though; the slaves should be set
-to actually be inactive via bond_set_slave_inactive_flags, not left
-"semi-active," i.e., BOND_STATE_ACTIVE but slave->inactive set. More on
-the slave->inactive flag handling later, though.
+--lMM8JwqTlfDpEaS6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-	For the balance-rr/-xor and 802.3ad modes, I suspect you have a
-configuration problem of some sort.  For those modes, the switch should
-not loop back the broadcast as you describe when correctly configured.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-	The balance-rr/-xor modes should be connected to switch ports
-that are configured into a single Etherchannel group (static link
-aggregation).  If they are not, the looping back behavior you describe
-is expected, as the switch will flood the broadcast to all ports.
+iQIcBAEBAgAGBQJTLHq9AAoJELSic+t+oim9b+8QAJMYskCpPnc47sJZOdUho0Kc
+bJDlYHGghzz/1K+5GYxSvYB9fifnf1rVSxeHH3Rt0TovBtaelkeUaUJwk8S8vR4p
+6VvP9bYDCT/CJWsulk7p8NYyqu94gi5CC0rDJUeJG82TkzmaercLFO5/mRuM8+H2
+F/SpEdW51DgbKzEwg+GqcB7HimrXNqPKk4z2PPuz7N25amNO7nhdqK7U0Knzpwx3
+Ygkrkt8MhtRLSg5CW5D85DKhek7hRClpm5MNDjuUoVSxcTpJJXbBQ/SYSCgNx+cG
+Aehu+umXS+TGrIC5nrjL+WAYg2/Y04CnxLMPBvZGHXS+7uQiuDU0PW7U5LE7WfY0
+KzH++EEX3CcQup0Z1t7PgtlMuPFsYV9AZC/hSlmNqLtnlTSUUOuQcCH7rE7yyI9Z
+Ia6R/IDjwcASOk6syijDvtVdnR1jOTcz2XqSql6oVWcyB6Z2g9HFq8NitP66Ewos
+5TxMiW6nJCG+9XDc7wHgmRGqHwUXxOJdt/SnPC7m4HJW1nrY4C5JXjyBEGC8ltFd
+/Hft0gVl/OjjY463VG0P/1iP7TnmZEQC1hq29kgdpaP/P6eOhTg2kqiEDeFvqLni
+urtSO+oKGLufy44yUKVjj7ijqpZs1xx1lr3sGi/KkoNl0HFG3UI7XlFSVERgPFmr
+Qc69/U9h2rf81EUz+pdg
+=VRFP
+-----END PGP SIGNATURE-----
 
-	Similarly, the 802.3ad mode should be connected to a switch with
-the ports configured for LACP, in which case the ports will
-automatically configure into one or more aggregators, and again, the
-switch will limit broadcast and multicast traffic to just one member of
-an aggregator.
-
-	The -rr/-xor/802.3ad modes must have all slaves set to active in
-order for them to correctly process incoming broadcast and multicast
-traffic in their proper configuration.  Setting them to inactive will
-cause packet loss in those configurations.
-
-	The 802.3ad mode is probably the easiest to examine; if you
-configure the switch ports for LACP mode, the /proc/net/bonding/bond0
-file should indicate that all the slaves are in the same aggregator
-(have the same Aggregator ID), and that that aggregator is the active
-one.  The switch should have similar indications, although the format is
-vendor-specific.  If your switch is configured for LACP and you still
-have issues, please post the /proc/net/bonding/bond0 contents.
-
-	Finally, getting back to the slave->inactive flag.  The only
-difference between bond_set_slave_active_flags or _inactive_flags and
-bond_set_slave_state is that the slave->inactive flag (whose only
-purpose is duplicate suppression for incoming packets) is cleared by the
-first (_flags variant), but not by the second.  Right now, the only
-caller of _set_slave_state are the _active/_inactive_flags functions, so
-it all works.  If _set_slave_state is called independently, then the
-slave->inactive flag and the actual state may become unsynchronized.
-
-	In summary, it looks to me like:
-
-	(a) bond_set_slave_state should fix slave->inactive to match the
-slave state if there are going to be callers other than
-bond_set_slave_active_flags or _inactive_flags, or remove the
-slave->inactive field entirely and have bond_is_slave_inactive use
-slave->back directly.
-
-	and, the immediate problem here,
-
-	(b) bond_open should call bond_set_slave_active_flags or
-_inactive_flags based on the mode and whether or not the slave is the
-curr_active_slave.  For active-backup, alb and tlb modes, the active
-slave is active, the others are inactive; for -rr, -xor and 802.3ad
-modes, all slaves are active.  I dunno what to do with broadcast mode;
-make 'em all active, I guess.
-
-	-J
-
->bond_should_deliver_exact_match(struct sk_buff *skb,
->					    struct slave *slave,
->					    struct bonding *bond)
->{
->	if (bond_is_slave_inactive(slave)) {
->		if (bond->params.mode == BOND_MODE_ALB &&
->		    skb->pkt_type != PACKET_BROADCAST &&
->		    skb->pkt_type != PACKET_MULTICAST)
->			return false;
->		return true;
->	}
->	return false;
->}
->
->Thanks,
->Zheng Li
->
->
->> 
->>>
->>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->>> ---
->>> drivers/net/bonding/bond_main.c |    2 +-
->>> 1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->>> index e5628fc..2f73f18 100644
->>> --- a/drivers/net/bonding/bond_main.c
->>> +++ b/drivers/net/bonding/bond_main.c
->>> @@ -3063,7 +3063,7 @@ static int bond_open(struct net_device *bond_dev)
->>> 				bond_set_slave_inactive_flags(slave,
->>> 							      BOND_SLAVE_NOTIFY_NOW);
->>> 			} else {
->>> -				bond_set_slave_active_flags(slave,
->>> +				bond_set_slave_state(slave, BOND_STATE_ACTIVE,
->>> 							    BOND_SLAVE_NOTIFY_NOW);
->>> 			}
->>> 		}
->>> -- 
->>> 1.7.6.5
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
-
+--lMM8JwqTlfDpEaS6--
