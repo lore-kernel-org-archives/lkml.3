@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726AbaCUOqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:46:11 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:41575 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322AbaCUOqH (ORCPT
+	id S1756044AbaCUOtc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:49:32 -0400
+Received: from wst.daktronics.com ([63.85.214.45]:51905 "EHLO
+	wst.daktronics.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750870AbaCUOtb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:46:07 -0400
-Date: Fri, 21 Mar 2014 09:43:28 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: Felipe Balbi <balbi@ti.com>, <robh+dt@kernel.org>, <pawel.moll@arm.com>,
-        <mark.rutland@arm.com>, <ijc+devicetree@hellion.org.uk>,
-        <galak@codeaurora.org>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm: boot: dts: build keystone devicetree blob
-Message-ID: <20140321144328.GC12310@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1394639330-1288-1-git-send-email-balbi@ti.com>
- <53208CDD.7030106@ti.com>
- <532C4F40.5010903@ti.com>
+	Fri, 21 Mar 2014 10:49:31 -0400
+From: Matt Sickler <Matt.Sickler@daktronics.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
+CC: "hjk@hansjkoch.de" <hjk@hansjkoch.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH]: UIO read(2)/write(2) overrides
+Thread-Topic: [PATCH]: UIO read(2)/write(2) overrides
+Thread-Index: Ac9FDxO9KmNAPrQNTAiN9FrBa597DAALBoCAAApAKZA=
+Date: Fri, 21 Mar 2014 14:49:28 +0000
+Message-ID: <8FAD17D1809CB042A0963E8337B9FE3DD7D871@MB-EXC-04.daktronics.lan>
+References: <8FAD17D1809CB042A0963E8337B9FE3DD7D823@MB-EXC-04.daktronics.lan>
+ <20140321142429.GA25833@kroah.com>
+In-Reply-To: <20140321142429.GA25833@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.5.14.89]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="bajzpZikUji1w+G9"
-Content-Disposition: inline
-In-Reply-To: <532C4F40.5010903@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bajzpZikUji1w+G9
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: gregkh@linuxfoundation.org [mailto:gregkh@linuxfoundation.org]
+>
+>On Fri, Mar 21, 2014 at 02:20:11PM +0000, Matt Sickler wrote:
+>> Tiny patch to let uio-based drivers override the read(2), write(2), and poll(2) syscalls.
+>> The rationale is that some uio-based drivers might want the mmap(2)
+>> functionality of UIO, but have no need for the IRQ semantics of read(2) and write(2).
+>
+>Can you submit a driver that uses these new interfaces as well?  I don't want to add something that isn't used in the kernel.
 
-On Fri, Mar 21, 2014 at 10:40:00AM -0400, Santosh Shilimkar wrote:
-> On Wednesday 12 March 2014 12:35 PM, Santosh Shilimkar wrote:
-> > On Wednesday 12 March 2014 11:48 PM, Felipe Balbi wrote:
-> >> Currently, even when building keystone only
-> >> kernel builds, DTB won't get build because
-> >> we lack a Makefile rule to get it compiled.
-> >>
-> >> This patch adds that rule so mainline kernel
-> >> users have a chance to use up-to-date DTB on
-> >> keystone 2 platforms.
-> >>
-> >> Signed-off-by: Felipe Balbi <balbi@ti.com>
-> >> ---
-> >>
-> > We have been building dtbs with explicit command
-> > instead of dtbs since it was just one dtb so far
-> > supported. Was planning to add the rule once more
-> > boards get added. Now with Lamarr and Edision in
-> > for next merge window, will do that post 3.15-rc1.
-> >=20
-> Just to close the loop, I added a patch as part
-> of my 3.15 fixes which builds all keystone dt
-> blobs.
+We're developing a driver for a new product but the driver is still in a state of flux, so it's not ready for posting yet.
+We will definitely get this out there once it's more polished.
+If you want to hold off applying this patch until we have something to submit that uses it, I'm fine with that. 
+I wanted to get the community's thoughts about this patch too.  (This is my first, now second, email to LKML).
 
-cool, thanks
 
---=20
-balbi
+>> Signed-Off-by: Matt Sickler <Matt.Sickler@daktronics.com>
+>> ---
+>> diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c index
+>> a673e5b..da1bfc8 100644
+>> --- a/drivers/uio/uio.c
+>> +++ b/drivers/uio/uio.c
+>> @@ -505,6 +505,9 @@ static unsigned int uio_poll(struct file *filep, poll_table *wait)
+>>     struct uio_listener *listener = filep->private_data;
+>>     struct uio_device *idev = listener->dev;
+>>
+>> +   if (idev->info->poll)
+>> +       return idev->info->poll(filep, wait);
+>> +
+>
+>Your email client ate all the tabs and created a patch that can't be applied :(
 
---bajzpZikUji1w+G9
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTLFAQAAoJEIaOsuA1yqREXFcP/R4yqPwfWn9XJOG2KoL1MBDE
-ufKpq1yOjk+jEeNj5Ph0dj4pIMA7+WqA84f88kkftKDjaF/90sYxlfYuobKCVqzZ
-PtfwKajjZvGoQq70pNk+hEPfADUD4t5tDjPQG5he3rW0vFbG2ugppBe8/cG1wIcK
-93o60cnLX9PtKEB+rdKx7gCQeXJU6Xf0iKWzvTrbNzMYD8tkywUJbtB0LK0CIS5h
-IDqxRZE1riRZj4v5LROmWEjFV0pgBf+SJhHYlqOGvOmhCyv2VI3LCCYuxTbNI9NJ
-D15+SVq0N10U3h1bMKk0+O5tf/DN8gzHfs19HdRFi47tqqOwPEyzoId4tP/EYHRC
-juNsb4iwiEr9wUh9hxhkk5DwzYFWQMiam7tHvl536OUbSjh1x4iSEa/BgTMYstrl
-VMqXrtQxfp29n4DHd3cCehz+XFNIoS3T2HXx49bsMA8BX4aE/9SfoI/a1TOq+vyB
-u+sSET7pjegJ1Kyg4OJsxtYArIZdKn3jhVRTvv3oWekK9u85CeZHbW36XbtuuRqJ
-ORXRfcyjUKIWdzs7gbcWAEBtHDzjZCaveC8PT+Ud2J5FfBVp0rd1hNG9XB4eYOVQ
-Fv0C2ofaC1xuqEgaUk5bZem2uKTap4NL6mfQn+qRof3QkK4XUUmADhwwxWqYY17Z
-eBvfxQ93ztUPupz2Z3Ld
-=xYn9
------END PGP SIGNATURE-----
-
---bajzpZikUji1w+G9--
+Apologies, "Enterprise" email clients tend to do that.
+This patch should be correctly formatted, if it's not I'll suffer through making mutt talk to Exchange.
+---
+diff --git a/drivers/uio/uio.c b/drivers/uio/uio.c
+index a673e5b..da1bfc8 100644
+--- a/drivers/uio/uio.c
++++ b/drivers/uio/uio.c
+@@ -505,6 +505,9 @@ static unsigned int uio_poll(struct file *filep, poll_table *wait)
+ 	struct uio_listener *listener = filep->private_data;
+ 	struct uio_device *idev = listener->dev;
+ 
++	if (idev->info->poll)
++		return idev->info->poll(filep, wait);
++
+ 	if (!idev->info->irq)
+ 		return -EIO;
+ 
+@@ -523,6 +526,9 @@ static ssize_t uio_read(struct file *filep, char __user *buf,
+ 	ssize_t retval;
+ 	s32 event_count;
+ 
++	if (idev->info->read)
++		return idev->info->read(filep, buf, count, ppos);
++
+ 	if (!idev->info->irq)
+ 		return -EIO;
+ 
+@@ -571,6 +577,9 @@ static ssize_t uio_write(struct file *filep, const char __user *buf,
+ 	ssize_t retval;
+ 	s32 irq_on;
+ 
++	if (idev->info->write)
++		return idev->info->write(filep, buf, count, ppos);
++
+ 	if (!idev->info->irq)
+ 		return -EIO;
+ 
+diff --git a/include/linux/uio_driver.h b/include/linux/uio_driver.h
+index 1ad4724..f15ace1 100644
+--- a/include/linux/uio_driver.h
++++ b/include/linux/uio_driver.h
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/fs.h>
+ #include <linux/interrupt.h>
++#include <linux/poll.h>
+ 
+ struct module;
+ struct uio_map;
+@@ -95,6 +96,11 @@ struct uio_info {
+ 	int (*open)(struct uio_info *info, struct inode *inode);
+ 	int (*release)(struct uio_info *info, struct inode *inode);
+ 	int (*irqcontrol)(struct uio_info *info, s32 irq_on);
++	unsigned int (*poll)(struct file *filep, poll_table *wait);
++	ssize_t (*read)(struct file *filep, char __user *buf,
++	                size_t count, loff_t *ppos);
++	ssize_t (*write)(struct file *filep, const char __user *buf,
++	                 size_t count, loff_t *ppos);
+ };
+ 
+ extern int __must_check
