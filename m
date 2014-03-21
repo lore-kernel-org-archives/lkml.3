@@ -1,65 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760172AbaCUIQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:16:37 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:54639 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760124AbaCUIQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:16:30 -0400
-Message-ID: <1395389784.29259.2.camel@phoenix>
-Subject: [PATCH 2/2] regulator: s2mps11: Don't check enable_shift before
- setting enable ramp rate
-From: Axel Lin <axel.lin@ingics.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Sachin Kamat <sachin.kamat@linaro.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Date: Fri, 21 Mar 2014 16:16:24 +0800
-In-Reply-To: <1395389720.29259.1.camel@phoenix>
-References: <1395389720.29259.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760225AbaCUIRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:17:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53576 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756038AbaCUIRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 04:17:21 -0400
+Date: Fri, 21 Mar 2014 09:17:18 +0100
+From: Karel Zak <kzak@redhat.com>
+To: Janani Venkataraman <jananive@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, util-linux@vger.kernel.org
+Subject: Re: [PATCH 00/33] [RFC] Non disruptive application core dump
+ infrastructure
+Message-ID: <20140321080855.GE26374@x2.net.home>
+References: <20140320093040.14878.903.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140320093040.14878.903.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current code misses updating the register when enable_shift is 0.
-e.g. S2MPS11_BUCK9_RAMP_SHIFT and S2MPS11_BUCK6_RAMP_EN_SHIFT are 0.
+On Thu, Mar 20, 2014 at 03:09:03PM +0530, Janani Venkataraman wrote:
+> Gencore Daemon
+> 
+> The programs can request a dump using gencore() API, provided through
+> libgencore. This is implemented through a daemon which listens on a UNIX File
+> socket. The daemon is started immediately post installation.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
----
- drivers/regulator/s2mps11.c | 12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ The gencore command looks like a good idea, but why we need the
+ client-server infrastructure? At least at first glance it seems
+ like overkill.
 
-diff --git a/drivers/regulator/s2mps11.c b/drivers/regulator/s2mps11.c
-index 68fd547..e713c16 100644
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -202,13 +202,11 @@ static int s2mps11_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
- 	if (!ramp_enable)
- 		goto ramp_disable;
- 
--	if (enable_shift) {
--		ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
--					1 << enable_shift, 1 << enable_shift);
--		if (ret) {
--			dev_err(&rdev->dev, "failed to enable ramp rate\n");
--			return ret;
--		}
-+	ret = regmap_update_bits(rdev->regmap, S2MPS11_REG_RAMP,
-+				 1 << enable_shift, 1 << enable_shift);
-+	if (ret) {
-+		dev_err(&rdev->dev, "failed to enable ramp rate\n");
-+		return ret;
- 	}
- 
- 	ramp_val = get_ramp_delay(ramp_delay);
+> We would like to push this to one of the following packages:
+> a) util-linux
+> b) coreutils
+> c) procps-ng
+
+  d) somewhere near to gdb :-)
+
+    Karel
+
 -- 
-1.8.3.2
-
-
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
