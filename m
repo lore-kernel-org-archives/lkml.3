@@ -1,328 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752202AbaCUVTR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:19:17 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:61053 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751685AbaCUVR7 (ORCPT
+	id S1752043AbaCUVWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:22:43 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:63818 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaCUVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:17:59 -0400
-From: John Stultz <john.stultz@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH 3/5] vrange: Add page purging logic & SIGBUS trap
-Date: Fri, 21 Mar 2014 14:17:33 -0700
-Message-Id: <1395436655-21670-4-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+	Fri, 21 Mar 2014 17:22:40 -0400
+Message-ID: <532CAD99.4060307@gmail.com>
+Date: Fri, 21 Mar 2014 22:22:33 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH v2 1/5] clk: berlin: add support for berlin plls
+References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com> <1395432521-11055-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1395432521-11055-2-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the hooks in the vmscan logic to discard volatile pages
-and mark their pte as purged. With this, volatile pages will be purged
-under pressure, and their ptes swap entry's marked. If the purged pages
-are accessed before being marked non-volatile, we catch this and send a
-SIGBUS.
+On 03/21/2014 09:08 PM, Alexandre Belloni wrote:
+> This drivers allows to provide DT clocks for the cpu and system PLLs found on
+> Marvell Berlin SoCs.
 
-This is a simplified implementation that uses logic from Minchan's earlier
-efforts, so credit to Minchan for his work.
+Alexandre,
 
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Android Kernel Team <kernel-team@android.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Robert Love <rlove@google.com>
-Cc: Mel Gorman <mel@csn.ul.ie>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: Dave Hansen <dave@sr71.net>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Mike Hommey <mh@glandium.org>
-Cc: Taras Glek <tglek@mozilla.com>
-Cc: Jan Kara <jack@suse.cz>
-Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Minchan Kim <minchan@kernel.org>
-Cc: linux-mm@kvack.org <linux-mm@kvack.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/vrange.h |   2 +
- mm/internal.h          |   2 -
- mm/memory.c            |  21 +++++++++
- mm/rmap.c              |   5 +++
- mm/vmscan.c            |  12 ++++++
- mm/vrange.c            | 114 +++++++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 154 insertions(+), 2 deletions(-)
+as mentioned on IRC, I now had a closer look on it. Some minor
+remarks below. Sorry, I didn't mention them earlier.
 
-diff --git a/include/linux/vrange.h b/include/linux/vrange.h
-index 986fa85..d93ad21 100644
---- a/include/linux/vrange.h
-+++ b/include/linux/vrange.h
-@@ -8,4 +8,6 @@
- #define VRANGE_VOLATILE 1
- #define VRANGE_VALID_FLAGS (0) /* Don't yet support any flags */
- 
-+extern int discard_vpage(struct page *page);
-+
- #endif /* _LINUX_VRANGE_H */
-diff --git a/mm/internal.h b/mm/internal.h
-index 29e1e76..ea66bf9 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -225,10 +225,8 @@ static inline void mlock_migrate_page(struct page *newpage, struct page *page)
- 
- extern pmd_t maybe_pmd_mkwrite(pmd_t pmd, struct vm_area_struct *vma);
- 
--#ifdef CONFIG_TRANSPARENT_HUGEPAGE
- extern unsigned long vma_address(struct page *page,
- 				 struct vm_area_struct *vma);
--#endif
- #else /* !CONFIG_MMU */
- static inline int mlocked_vma_newpage(struct vm_area_struct *v, struct page *p)
- {
-diff --git a/mm/memory.c b/mm/memory.c
-index 22dfa61..db5f4da 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -60,6 +60,7 @@
- #include <linux/migrate.h>
- #include <linux/string.h>
- #include <linux/dma-debug.h>
-+#include <linux/vrange.h>
- 
- #include <asm/io.h>
- #include <asm/pgalloc.h>
-@@ -3643,6 +3644,8 @@ static int handle_pte_fault(struct mm_struct *mm,
- 
- 	entry = *pte;
- 	if (!pte_present(entry)) {
-+		swp_entry_t vrange_entry;
-+retry:
- 		if (pte_none(entry)) {
- 			if (vma->vm_ops) {
- 				if (likely(vma->vm_ops->fault))
-@@ -3652,6 +3655,24 @@ static int handle_pte_fault(struct mm_struct *mm,
- 			return do_anonymous_page(mm, vma, address,
- 						 pte, pmd, flags);
- 		}
-+
-+		vrange_entry = pte_to_swp_entry(entry);
-+		if (unlikely(is_vpurged_entry(vrange_entry))) {
-+			if (vma->vm_flags & VM_VOLATILE)
-+				return VM_FAULT_SIGBUS;
-+
-+			/* zap pte */
-+			ptl = pte_lockptr(mm, pmd);
-+			spin_lock(ptl);
-+			if (unlikely(!pte_same(*pte, entry)))
-+				goto unlock;
-+			flush_cache_page(vma, address, pte_pfn(*pte));
-+			ptep_clear_flush(vma, address, pte);
-+			pte_unmap_unlock(pte, ptl);
-+			goto retry;
-+		}
-+
-+
- 		if (pte_file(entry))
- 			return do_nonlinear_fault(mm, vma, address,
- 					pte, pmd, flags, entry);
-diff --git a/mm/rmap.c b/mm/rmap.c
-index d9d4231..2b6f079 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -728,6 +728,11 @@ int page_referenced_one(struct page *page, struct vm_area_struct *vma,
- 				referenced++;
- 		}
- 		pte_unmap_unlock(pte, ptl);
-+		if (vma->vm_flags & VM_VOLATILE) {
-+			pra->mapcount = 0;
-+			pra->vm_flags |= VM_VOLATILE;
-+			return SWAP_FAIL;
-+		}
- 	}
- 
- 	if (referenced) {
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a9c74b4..34f159a 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -43,6 +43,7 @@
- #include <linux/sysctl.h>
- #include <linux/oom.h>
- #include <linux/prefetch.h>
-+#include <linux/vrange.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -683,6 +684,7 @@ enum page_references {
- 	PAGEREF_RECLAIM,
- 	PAGEREF_RECLAIM_CLEAN,
- 	PAGEREF_KEEP,
-+	PAGEREF_DISCARD,
- 	PAGEREF_ACTIVATE,
- };
- 
-@@ -703,6 +705,13 @@ static enum page_references page_check_references(struct page *page,
- 	if (vm_flags & VM_LOCKED)
- 		return PAGEREF_RECLAIM;
- 
-+	/*
-+	 * If volatile page is reached on LRU's tail, we discard the
-+	 * page without considering recycle the page.
-+	 */
-+	if (vm_flags & VM_VOLATILE)
-+		return PAGEREF_DISCARD;
-+
- 	if (referenced_ptes) {
- 		if (PageSwapBacked(page))
- 			return PAGEREF_ACTIVATE;
-@@ -930,6 +939,9 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 		switch (references) {
- 		case PAGEREF_ACTIVATE:
- 			goto activate_locked;
-+		case PAGEREF_DISCARD:
-+			if (may_enter_fs && !discard_vpage(page))
-+				goto free_it;
- 		case PAGEREF_KEEP:
- 			goto keep_locked;
- 		case PAGEREF_RECLAIM:
-diff --git a/mm/vrange.c b/mm/vrange.c
-index 1ff3cbd..28ceb6f 100644
---- a/mm/vrange.c
-+++ b/mm/vrange.c
-@@ -246,3 +246,117 @@ SYSCALL_DEFINE5(vrange, unsigned long, start, size_t, len, unsigned long, mode,
- out:
- 	return ret;
- }
-+
-+
-+/**
-+ * try_to_discard_one - Purge a volatile page from a vma
-+ *
-+ * Finds the pte for a page in a vma, marks the pte as purged
-+ * and release the page.
-+ */
-+static void try_to_discard_one(struct page *page, struct vm_area_struct *vma)
-+{
-+	struct mm_struct *mm = vma->vm_mm;
-+	pte_t *pte;
-+	pte_t pteval;
-+	spinlock_t *ptl;
-+	unsigned long addr;
-+
-+	VM_BUG_ON(!PageLocked(page));
-+
-+	addr = vma_address(page, vma);
-+	pte = page_check_address(page, mm, addr, &ptl, 0);
-+	if (!pte)
-+		return;
-+
-+	BUG_ON(vma->vm_flags & (VM_SPECIAL|VM_LOCKED|VM_MIXEDMAP|VM_HUGETLB));
-+
-+	flush_cache_page(vma, addr, page_to_pfn(page));
-+	pteval = ptep_clear_flush(vma, addr, pte);
-+
-+	update_hiwater_rss(mm);
-+	if (PageAnon(page))
-+		dec_mm_counter(mm, MM_ANONPAGES);
-+	else
-+		dec_mm_counter(mm, MM_FILEPAGES);
-+
-+	page_remove_rmap(page);
-+	page_cache_release(page);
-+
-+	set_pte_at(mm, addr, pte,
-+				swp_entry_to_pte(make_vpurged_entry()));
-+
-+	pte_unmap_unlock(pte, ptl);
-+	mmu_notifier_invalidate_page(mm, addr);
-+
-+}
-+
-+/**
-+ * try_to_discard_vpage - check vma chain and discard from vmas marked volatile
-+ *
-+ * Goes over all the vmas that hold a page, and where the vmas are volatile,
-+ * purge the page from the vma.
-+ *
-+ * Returns 0 on success, -1 on error.
-+ */
-+static int try_to_discard_vpage(struct page *page)
-+{
-+	struct anon_vma *anon_vma;
-+	struct anon_vma_chain *avc;
-+	pgoff_t pgoff;
-+
-+	anon_vma = page_lock_anon_vma_read(page);
-+	if (!anon_vma)
-+		return -1;
-+
-+	pgoff = page->index << (PAGE_CACHE_SHIFT - PAGE_SHIFT);
-+	/*
-+	 * During interating the loop, some processes could see a page as
-+	 * purged while others could see a page as not-purged because we have
-+	 * no global lock between parent and child for protecting vrange system
-+	 * call during this loop. But it's not a problem because the page is
-+	 * not *SHARED* page but *COW* page so parent and child can see other
-+	 * data anytime. The worst case by this race is a page was purged
-+	 * but couldn't be discarded so it makes unnecessary page fault but
-+	 * it wouldn't be severe.
-+	 */
-+	anon_vma_interval_tree_foreach(avc, &anon_vma->rb_root, pgoff, pgoff) {
-+		struct vm_area_struct *vma = avc->vma;
-+
-+		if (!(vma->vm_flags & VM_VOLATILE))
-+			continue;
-+		try_to_discard_one(page, vma);
-+	}
-+	page_unlock_anon_vma_read(anon_vma);
-+	return 0;
-+}
-+
-+
-+/**
-+ * discard_vpage - If possible, discard the specified volatile page
-+ *
-+ * Attempts to discard a volatile page, and if needed frees the swap page
-+ *
-+ * Returns 0 on success, -1 on error.
-+ */
-+int discard_vpage(struct page *page)
-+{
-+	VM_BUG_ON(!PageLocked(page));
-+	VM_BUG_ON(PageLRU(page));
-+
-+	/* XXX - for now we only support anonymous volatile pages */
-+	if (!PageAnon(page))
-+		return -1;
-+
-+	if (!try_to_discard_vpage(page)) {
-+		if (PageSwapCache(page))
-+			try_to_free_swap(page);
-+
-+		if (page_freeze_refs(page, 1)) {
-+			unlock_page(page);
-+			return 0;
-+		}
-+	}
-+
-+	return -1;
-+}
--- 
-1.8.3.2
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+[...]
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll-berlin2.c
+> @@ -0,0 +1,42 @@
+> +/*
+> + * Copyright (c) 2014 Marvell Technology Group Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/of.h>
+> +
+> +#include "common.h"
+> +
+> +static const u8 vcodiv_berlin2[] = {10, 15, 20, 25, 30, 40, 50, 60, 80,
+> +				    1, 1, 1, 1, 1, 1, 1};
+
+As there are already zeroes in vcodiv_berlin2q below, we should rather
+make the above
+
+static const u8 vcodiv_berlin2[16] = {10, 15, 20, 25, 30, 40, 50, 60, 80};
+
+And check for vcodiv == 0 in berlin_pll_recalc_rate below.
+
+> +static struct berlin_pllmap berlin_pll_map = {
+> +	.vcodiv = vcodiv_berlin2,
+> +	.fbdiv_mask = 0x1FF,
+> +	.fbdiv_shift = 6,
+> +	.rfdiv_mask = 0x1F,
+> +	.rfdiv_shift = 1,
+> +	.divsel_mask = 0xF,
+> +	.divsel_shift = 7,
+> +	.mult = 10,
+> +};
+> +
+> +static void __init berlin2_pll_setup(struct device_node *np)
+> +{
+> +	berlin_pll_setup(np, &berlin_pll_map);
+> +}
+> +CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2-pll", berlin2_pll_setup);
+
+s/berlin2q_pll/berlin2_pll
+
+> +
+
+Remove empty line above.
+
+> diff --git a/drivers/clk/berlin/pll-berlin2q.c b/drivers/clk/berlin/pll-berlin2q.c
+> new file mode 100644
+> index 000000000000..0a2e9968cc09
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll-berlin2q.c
+> @@ -0,0 +1,42 @@
+> +/*
+> + * Copyright (c) 2014 Marvell Technology Group Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/of.h>
+> +
+> +#include "common.h"
+> +
+> +static const u8 vcodiv_berlin2q[] = {1, 0, 2, 0, 3, 4, 0, 6, 8,
+> +				     1, 1, 1, 1, 1, 1, 1};
+
+Same comment as for vcodiv_berlin2.
+
+> +static struct berlin_pllmap berlin2q_pll_map = {
+> +	.vcodiv = vcodiv_berlin2q,
+> +	.fbdiv_mask = 0x1FF,
+> +	.fbdiv_shift = 7,
+> +	.rfdiv_mask = 0x1F,
+> +	.rfdiv_shift = 2,
+> +	.divsel_mask = 0xF,
+> +	.divsel_shift = 9,
+> +	.mult = 1,
+> +};
+> +
+> +static void __init berlin2q_pll_setup(struct device_node *np)
+> +{
+> +	berlin_pll_setup(np, &berlin2q_pll_map);
+> +}
+> +CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2q-pll", berlin2q_pll_setup);
+> +
+
+Remove empty line above.
+
+> diff --git a/drivers/clk/berlin/pll.c b/drivers/clk/berlin/pll.c
+> new file mode 100644
+> index 000000000000..264c48d6e797
+> --- /dev/null
+> +++ b/drivers/clk/berlin/pll.c
+> @@ -0,0 +1,107 @@
+> +/*
+> + * Copyright (c) 2014 Marvell Technology Group Ltd.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +#include <linux/clk-provider.h>
+> +#include <linux/io.h>
+> +#include <linux/kernel.h>
+> +#include <linux/of.h>
+> +#include <linux/of_address.h>
+> +#include <linux/slab.h>
+> +
+> +#include "common.h"
+> +
+> +struct berlin_pll {
+> +	struct clk_hw		hw;
+> +	void __iomem		*base;
+> +	struct berlin_pllmap	*map;
+> +};
+> +
+> +#define to_berlin_pll(hw)	container_of(hw, struct berlin_pll, hw)
+> +
+> +#define PLL_CTRL0	0x00
+> +#define PLL_CTRL1	0x04
+> +
+> +static inline u32 berlin_pll_read(struct berlin_pll *pll, unsigned long offset)
+> +{
+> +	return readl_relaxed(pll->base + offset);
+> +}
+> +
+> +/*
+> + * The output frequency formula for the pll is:
+> + * clkout = fbdiv / refdiv * parent / vcodiv
+
+That comment is enough, remove the one below.
+
+> + * Note that for BG2, BG2CD and BG2Q, the parent clock is provided by the SM
+> + * oscillator and is always 25MHz.
+> + */
+> +static unsigned long berlin_pll_recalc_rate(struct clk_hw *hw,
+> +					unsigned long parent_rate)
+> +{
+> +	struct berlin_pll *pll = to_berlin_pll(hw);
+> +	struct berlin_pllmap *map = pll->map;
+> +	u32 val, fbdiv, rfdiv, vcodivsel;
+> +
+> +	val = berlin_pll_read(pll, PLL_CTRL0);
+> +	fbdiv = (val >> map->fbdiv_shift) & map->fbdiv_mask;
+> +	rfdiv = (val >> map->rfdiv_shift) & map->rfdiv_mask;
+> +	if (rfdiv == 0)
+> +		rfdiv = 1;
+
+if (rfdiv) {
+	pr_warn("%s has zero rfdiv\n", __clk_get_name(hw->clk));
+	rfdiv = 1;
+}
+
+> +
+> +	val = berlin_pll_read(pll, PLL_CTRL1);
+> +	vcodivsel = (val >> map->divsel_shift) & map->divsel_mask;
+
+As map->vcodiv can contain zeros, we should rather do
+
+vcodiv = map->vcodiv[vcodivsel];
+if (vcodiv) {
+	pr_warn("%s has zero vcodiv\n", __clk_get_name(hw->clk));
+	vcodiv = 1;
+}
+
+> +	parent_rate *= fbdiv * map->mult;
+> +	parent_rate /= rfdiv;
+> +	return parent_rate / map->vcodiv[vcodivsel];
+
+With parent_rate = 25M and max(fbdiv) == 511 we can possibly
+exceed 32b range. So, we should rather switch to u64 here:
+
+#include <asm/div64.h>
+
+u64 rate = parent_rate;
+
+...
+
+rate *= fbdiv * map->mult;
+do_div(rate, vcodiv * rfdiv);
+return (unsigned long)rate;
+
+Besides the comments, this really looks good to me. We may have
+to rebase some of it onto v3.15-rc1 as soon as it drops, but I
+can take care of it.
+
+Sebastian
+
+> +}
+> +
+> +static const struct clk_ops berlin_pll_ops = {
+> +	.recalc_rate	= berlin_pll_recalc_rate,
+> +};
+> +
+> +void __init berlin_pll_setup(struct device_node *np,
+> +			struct berlin_pllmap *map)
+> +{
+> +	struct clk_init_data init;
+> +	struct berlin_pll *pll;
+> +	const char *parent_name;
+> +	struct clk *clk;
+> +	int ret;
+> +
+> +	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
+> +	if (WARN_ON(!pll))
+> +		return;
+> +
+> +	pll->base = of_iomap(np, 0);
+> +	if (WARN_ON(!pll->base))
+> +		return;
+> +
+> +	pll->map = map;
+> +
+> +	init.name = np->name;
+> +	init.ops = &berlin_pll_ops;
+> +	parent_name = of_clk_get_parent_name(np, 0);
+> +	init.parent_names = &parent_name;
+> +	init.num_parents = 1;
+> +
+> +	pll->hw.init = &init;
+> +
+> +	clk = clk_register(NULL, &pll->hw);
+> +	if (WARN_ON(IS_ERR(clk)))
+> +		return;
+> +
+> +	ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
+> +	if (WARN_ON(ret))
+> +		return;
+> +}
+> +
+>
 
