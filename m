@@ -1,72 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760778AbaCUMD4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:03:56 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:44949 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760703AbaCUMDy convert rfc822-to-8bit (ORCPT
+	id S1760799AbaCUMF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:05:59 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:61650 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755147AbaCUMF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:03:54 -0400
-Message-ID: <532C2ACD.7070107@arm.com>
-Date: Fri, 21 Mar 2014 12:04:29 +0000
-From: Sudeep Holla <sudeep.holla@arm.com>
+	Fri, 21 Mar 2014 08:05:57 -0400
+Message-ID: <532C2C71.4010703@gmail.com>
+Date: Fri, 21 Mar 2014 13:11:29 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-CC: Sudeep Holla <sudeep.holla@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>
-Subject: Re: [PATCH RFC/RFT v3 6/9] powerpc: move cacheinfo sysfs to generic
- cacheinfo infrastructure
-References: <1392825976-17633-1-git-send-email-sudeep.holla@arm.com> <1392825976-17633-7-git-send-email-sudeep.holla@arm.com> <531945D1.7010503@linux.vnet.ibm.com> <531963D9.5040701@linux.vnet.ibm.com> <531D9E3A.7040109@arm.com> <532BB5AC.3000904@linux.vnet.ibm.com>
-In-Reply-To: <532BB5AC.3000904@linux.vnet.ibm.com>
-X-OriginalArrivalTime: 21 Mar 2014 12:04:04.0895 (UTC) FILETIME=[A7C1E2F0:01CF44FD]
-X-MC-Unique: 114032112035203501
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 3/5] ARM: berlin/dt: add cpupll and syspll support to
+ BG2Q
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com> <1395402220-23503-4-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1395402220-23503-4-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anshuman,
+On 03/21/2014 12:43 PM, Alexandre Belloni wrote:
 
-On 21/03/14 03:44, Anshuman Khandual wrote:
-> On 03/10/2014 04:42 PM, Sudeep Holla wrote:
->> Hi Anshuman,
->>
->> On 07/03/14 06:14, Anshuman Khandual wrote:
->>> On 03/07/2014 09:36 AM, Anshuman Khandual wrote:
->>>> On 02/19/2014 09:36 PM, Sudeep Holla wrote:
->>>>> From: Sudeep Holla <sudeep.holla@arm.com>
->>>>>
->>>>> This patch removes the redundant sysfs cacheinfo code by making use of
->>>>> the newly introduced generic cacheinfo infrastructure.
+Alexandre,
 
-[...]
+Thanks for starting this! I'll start with the most obvious
+things first and have a closer look on it later.
 
->>>> When it is UNIFIED we return index 0, which is correct. But the index
->>>> for instruction and data cache seems to be swapped which wrong. This
->>>> will fetch invalid properties for any given cache type.
->>>>
->>
->> Ah, that's silly mistake on my side, will fix it.
->>
->>>> I have done some initial review and testing for this patch's impact on
->>>> PowerPC (ppc64 POWER specifically). I am trying to do some code clean-up
->>>> and re-arrangements. Will post out soon. Thanks !
->>
->> Thanks for taking time for testing and reviewing these patches.
-> 
-> Now that you got some of the problems to work on and resend the patches, I will
-> hold on to the clean up patches I had.
-> 
+Missing commit description here.
 
-I have done most of the changes but still unable to find why the shared_cpu_map
-is getting incorrect on PPC. All the other wrong entries are fixed. Any clue on
-shared_cpu_map ?
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>   arch/arm/boot/dts/berlin2q.dtsi | 20 ++++++++++++++++++--
+>   1 file changed, 18 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 07452a7483fa..19d2c82b0664 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -59,10 +59,26 @@
+>   		clock-frequency = <100000000>;
+>   	};
+>
+> +	syspll: syspll {
 
-Regards,
-Sudeep
+syspll: pll@ea0030 {
+
+and sort it in between other SoC nodes below. This will
+most likely break clocks in v3.14 but v3.15 will receive
+proper clock init ordering.
+
+> +		compatible = "marvell,berlin2q-pll";
+> +		clocks = <&smclk>;
+> +		#clock-cells = <0>;
+> +		reg = <0xf7ea0030 8>;
+> +	};
+> +
+> +	cpupll: cpupll {
+
+dito.
+
+> +		compatible = "marvell,berlin2q-pll";
+> +		clocks = <&smclk>;
+> +		#clock-cells = <0>;
+> +		reg = <0xf7dd0170 8>;
+> +	};
+> +
+>   	cpuclk: cpu-clock {
+> -		compatible = "fixed-clock";
+> +		compatible = "fixed-factor-clock";
+> +		clocks = <&cpupll>;
+>   		#clock-cells = <0>;
+> -		clock-frequency = <1200000000>;
+> +		clock-div = <1>;
+> +		clock-mult = <1>;
+
+Hmm, you probably know better than me, but if cpuclk == cpupll
+is always true we don't need another clk layer here. If you
+can scale down cpuclk from cpupll and we just have no driver
+for it, I am fine with it.
+
+Sebastian
+
+>   	};
+>
+>   	twdclk: twdclk {
+>
 
