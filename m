@@ -1,148 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751277AbaCUWPT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:15:19 -0400
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:54009 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaCUWPP (ORCPT
+	id S1751787AbaCUWU2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:20:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59242 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750759AbaCUWU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:15:15 -0400
+	Fri, 21 Mar 2014 18:20:26 -0400
+Date: Fri, 21 Mar 2014 23:20:22 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, Jimmy Xu <zmxu@marvell.com>,
+        Jisheng Zhang <jszhang@marvell.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] clk: berlin: add berlin clocks DT bindings
+ documentation
+Message-ID: <20140321222022.GJ6443@piout.net>
+References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1395432521-11055-3-git-send-email-alexandre.belloni@free-electrons.com>
+ <532CAF9D.3020303@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com>
-References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
-	<1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
-	<CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com>
-Date: Fri, 21 Mar 2014 17:15:14 -0500
-Message-ID: <CANk1AXSQVFZvRmvYt+JF+TDVpfX-_RLiUcQXotGzpHoTMUVymQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
-From: delicious quinoa <delicious.quinoa@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532CAF9D.3020303@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 1:14 PM, delicious quinoa
-<delicious.quinoa@gmail.com> wrote:
-> On Thu, Mar 20, 2014 at 2:55 PM, Sebastian Andrzej Siewior
-> <bigeasy@linutronix.de> wrote:
->> The cycloneV has three gpio controllers, each one with 29 gpios. This patch
->> adds the three controller with the gpio driver which is now sitting the
->> gpio tree.
->>
->> Cc: devicetree@vger.kernel.org
->> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> ---
->>  arch/arm/boot/dts/socfpga.dtsi | 60 ++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 60 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
->> index 537f1a5..c3a97e1 100644
->> --- a/arch/arm/boot/dts/socfpga.dtsi
->> +++ b/arch/arm/boot/dts/socfpga.dtsi
->> @@ -463,6 +463,66 @@
->>                         status = "disabled";
->>                 };
->>
->> +               gpio@ff708000 {
->> +                       #address-cells = <1>;
->> +                       #size-cells = <0>;
->> +                       compatible = "snps,dw-apb-gpio";
->> +                       reg = <0xff708000 0x1000>;
->> +                       clocks = <&per_base_clk>;
->> +                       status = "disabled";
->> +
->> +                       gpio0: gpio-controller@0 {
->> +                               compatible = "snps,dw-apb-gpio-port";
->> +                               gpio-controller;
->> +                               #gpio-cells = <1>;
->
-> #gpio-cells = <2>;
->
-> I applied this patch, fixed the gpio-cells, tested on a cyclone5 soc
-> devkit, and see that it breaks the interrupts.  Did you test this?
->
-> Alan
->
->> +                               snps,nr-gpios = <29>;
->> +                               reg = <0>;
->> +                               interrupt-controller;
->> +                               #interrupt-cells = <2>;
->> +                               interrupts = <0 164 4>;
->> +                       };
->> +               };
->> +
->> +               gpio@ff709000 {
->> +                       #address-cells = <1>;
->> +                       #size-cells = <0>;
->> +                       compatible = "snps,dw-apb-gpio";
->> +                       reg = <0xff709000 0x1000>;
->> +                       clocks = <&per_base_clk>;
->> +                       status = "disabled";
->> +
->> +                       gpio1: gpio-controller@0 {
->> +                               compatible = "snps,dw-apb-gpio-port";
->> +                               gpio-controller;
->> +                               #gpio-cells = <1>;
->> +                               snps,nr-gpios = <29>;
->> +                               reg = <0>;
->> +                               interrupt-controller;
->> +                               #interrupt-cells = <2>;
->> +                               interrupts = <0 165 4>;
->> +                       };
->> +               };
->> +
->> +               gpio@ff70a000 {
->> +                       #address-cells = <1>;
->> +                       #size-cells = <0>;
->> +                       compatible = "snps,dw-apb-gpio";
->> +                       reg = <0xff70a000 0x1000>;
->> +                       clocks = <&per_base_clk>;
->> +                       status = "disabled";
->> +
->> +                       gpio2: gpio-controller@0 {
->> +                               compatible = "snps,dw-apb-gpio-port";
->> +                               gpio-controller;
->> +                               #gpio-cells = <1>;
->> +                               snps,nr-gpios = <29>;
+On 21/03/2014 at 22:31:09 +0100, Sebastian Hesselbarth wrote :
+> On 03/21/2014 09:08 PM, Alexandre Belloni wrote:
+> >Document the device tree bindings for the PLLs found on the Marvell Berlin SoCs.
+> >
+> >Cc: devicetree@vger.kernel.org
+> 
+> You forgot to add Mark Rutland's Reviewed-by. He didn't mentioned it
+> explicitly but his "Otherwise this looks fine to me" on v1, is as good
+> as a Reviewed-by. But, no need to resend, I'll fix it up.
+> 
 
-snps,nr-gpios = <27>;
+Ok, I would have preferred an explicit one ;)
 
-As noted on other thread, gpio2 is 27 wide, despite what the
-documentation says.  When I made that change and remove your other two
-patches the gpios worked for me on a cyclone5 devkit board.
+> Also, everything above the '---' will be part of your commit log. While
+> the Signed-off-by and Reviewed-by should be in there, Cc's really don't
+> need to.
+> 
 
-So if you fix the "#gpio-cells = <2>;" for all 3 gpios and fix
-"snps,nr-gpios = <27>;" for gpio2, then this one patch looks good to
-me.  With these changes,
+Ok, it seemed common practice to put it in the commit log:
 
-Acked-by: Alan Tull <atull@altera.com>
+$ git log | grep "    Cc:" | wc -l
+157126
 
-Alan Tull
-aka
-delicous quinoa
+But I'll do as you suggest from now. Actually, I didn't know you could
+do like that.
 
+> You can add another '---' to separate commit message and some stuff
+> you want to have early in you email with:
+> 
+> Blablabla commit message.
+> 
+> Signed-off-by: ...
+> Reviewed-by: ...
+> ---
+> Changelog:
+> - blabla
+> 
+> Cc: cc-me-recipient
+> ...
+> ---
+>    .../devicetree/bindings/clock/berlin-clock.txt     | 29
+> ++++++++++++++++++++++
+>    1 file changed, 29 insertions(+)
+>    create mode 100644
+> Documentation/devicetree/bindings/clock/berlin-clock.txt
+> 
+>  diff --git
+> a/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> ...
+> 
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >---
+> >  .../devicetree/bindings/clock/berlin-clock.txt     | 29 ++++++++++++++++++++++
+> >  1 file changed, 29 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/clock/berlin-clock.txt
+> >
+> >diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> >new file mode 100644
+> >index 000000000000..49b7860bffb8
+> >--- /dev/null
+> >+++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
+> >@@ -0,0 +1,29 @@
+> >+Device Tree Clock bindings for Marvell Berlin clocks
+> >+
+> >+This binding uses the common clock binding[1].
+> >+
+> >+[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
+> >+
+> >+Required properties:
+> >+- compatible: shall be one of the following:
+> >+	"marvell,berlin2-pll",
+> >+	"marvell,berlin2q-pll":
+> >+		CPU PLL and System PLL
+> >+- reg: Address and length of the clock register set.
+> >+- #clock-cells: from common clock binding; shall be set to 0.
+> >+- clocks: from common clock binding
+> >+
+> >+smclk: sysmgr-clock {
+> >+	compatible = "fixed-clock";
+> >+	#clock-cells = <0>;
+> >+	clock-frequency = <25000000>;
+> >+};
+> >+
+> >+cpupll: cpupll@ea003c {
+> >+	compatible = "marvell,berlin2-pll";
+> >+	clocks = <&smclk>;
+> >+	#clock-cells = <0>;
+> >+	reg = <0xea003c 0x8>;
+> >+};
+> >+
+> >+
+> >
+> 
 
->> +                               reg = <0>;
->> +                               interrupt-controller;
->> +                               #interrupt-cells = <2>;
->> +                               interrupts = <0 166 4>;
->> +                       };
->> +               };
->> +
->>                 L2: l2-cache@fffef000 {
->>                         compatible = "arm,pl310-cache";
->>                         reg = <0xfffef000 0x1000>;
->> --
->> 1.9.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe devicetree" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
