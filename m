@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760952AbaCUOGz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:06:55 -0400
-Received: from eso.teric.us ([69.164.192.171]:38656 "EHLO eso.teric.us"
+	id S1761033AbaCUOIE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:08:04 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40662 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276AbaCUOGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:06:52 -0400
-X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 10:06:52 EDT
-Date: Fri, 21 Mar 2014 09:01:33 -0500
-From: Josh Cartwright <joshc@eso.teric.us>
-To: Matei Oprea <eu@opreamatei.ro>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Subject: Re: [PATCH] drivers: staging: cxt1e1: hwprobe Fix different address
- spaces
-Message-ID: <20140321140133.GS25913@kryptos>
-References: <1395409943-19023-1-git-send-email-eu@opreamatei.ro>
+	id S1752484AbaCUOH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 10:07:58 -0400
+Message-ID: <532C47B6.70106@ti.com>
+Date: Fri, 21 Mar 2014 16:07:50 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395409943-19023-1-git-send-email-eu@opreamatei.ro>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jim Davis <jim.epost@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers/video: fix mb862xx_i2c depends issue build failure
+References: <1395328560-48497-1-git-send-email-paul.gortmaker@windriver.com> <532C3F64.2020601@ti.com> <532C4476.2030706@windriver.com>
+In-Reply-To: <532C4476.2030706@windriver.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 03:52:23PM +0200, Matei Oprea wrote:
-> Fix different address spaces when unmapping IO. hi->addr_mapped[0]
-> and hi->addr_mapped[1] should be tagged __iomem.
-> 
-> Signed-off-by: Matei Oprea <eu@opreamatei.ro>
-> Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
-> ---
->  drivers/staging/cxt1e1/hwprobe.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-> index 9b4198b..f55c27e 100644
-> --- a/drivers/staging/cxt1e1/hwprobe.c
-> +++ b/drivers/staging/cxt1e1/hwprobe.c
-> @@ -174,12 +174,12 @@ cleanup_ioremap(void)
->  		if (hi->pci_slot == 0xff)
->  			break;
->  		if (hi->addr_mapped[0]) {
-> -			iounmap((void *)(hi->addr_mapped[0]));
-> +			iounmap((void __iomem *)(hi->addr_mapped[0]));
+--r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-While this may "fix" the sparse warning, it's far from ideal.  Like I
-had suggested on IRC, a much better cleanup would be to make the
-addr_mapped member an array of __iomem-tagged pointers, and fixup the
-users.
+On 21/03/14 15:53, Paul Gortmaker wrote:
+> On 14-03-21 09:32 AM, Tomi Valkeinen wrote:
+>> Hi,
+>>
+>> On 20/03/14 17:16, Paul Gortmaker wrote:
+>>> Any randconfig that sets I2C=3Dm and FB_MB862XX_I2C=3Dy will
+>>> encounter a final link failure that looks like this:
+>>
+>> It compiles fine with I2C=3Dm, FB_MB862XX=3Dm and FB_MB862XX_I2C=3Dy.
+>>
+>>> drivers/built-in.o: In function `mb862xx_i2c_init':
+>>> drivers/video/mb862xx/mb862xx-i2c.c:165: undefined reference to `i2c_=
+add_adapter'
+>>> drivers/built-in.o: In function `mb862xx_i2c_exit':
+>>> drivers/video/mb862xx/mb862xx-i2c.c:176: undefined reference to `i2c_=
+del_adapter'
+>>>
+>>> Since FB_MB862XX_I2C is a bool and not tristate, simply
+>>> don't offer it at all if core I2C support is not built in.
+>>
+>> FB_MB862XX_I2C is not a driver, it just adds the i2c support to
+>> FB_MB862XX. The relevant thing is whether FB_MB862XX is m or y, so
+>> compiling with:
+>>
+>> I2C=3Dm, FB_MB862XX=3Dy and FB_MB862XX_I2C=3Dy
+>>
+>> will fail.
+>=20
+> How would you suggest we fix it then?  Perhaps we could simplify the
+> Kconfig space and just get rid of FB_MB862XX_I2C entirely?  Is there
+> ever a reason why someone would want it turned off when I2C is present?=
 
-  Josh
+
+I'm not familiar with the driver and devices that use it, so I can't
+really say. But you could probably have a board with the FB_MB862XX,
+without i2c displays, while still you'd have I2C for other uses. So
+there you could minimally reduce the kernel size by leaving out the
+FB_MB862XX_I2C.
+
+I'm fine with that solution, though. But how would it work in practice?
+Did you mean that FB_MB862XX would depend on I2C? That's not a good
+option, but how would you otherwise make the i2c dependency correct?
+
+Actually, I'm fine with the original patch also, as I believe the case
+where I2C=3Dm is somewhat theoretical (correct me if I'm wrong). But the
+patch description was totally wrong, and if that solution is preferred,
+it should also clearly state that the patch prevents the I2C support
+when I2C is built as a module. But I think your proposal in this mail is
+better.
+
+Maybe there are even better ways to handle it in the Kconfig, as such
+"add feature X to the driver" sounds quite common to me.
+
+ Tomi
+
+
+
+--r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQIcBAEBAgAGBQJTLEe2AAoJEPo9qoy8lh71t0AP/3ASgiLwo2DwIj4gWJ1gQINl
+oHj7wpY9nGEkv4qMO58B6DiX6JDpjafsFpAznX8GcH5J42pAh5EXU4uJGyTCriWm
+H/lk0FK7xiz1abYWuVevPuT5posuaRUwlTX6zLerhu+QHmYEgkAHw8BM4mFnY2Dg
+zyp9qQXCfp2sJ7epG4wPc6VDBfkfYK7myjBVae2O9cWksEOk8uoWzxplFZXz3FP2
+Z1c/04QYFLeEiCPXYPHRUJLvHhwqABxuv3lB+U4L1pbS1uKOVeIUS+G1cNIGfJJb
+0w5+d3PFjy6mJPp2m8KYI9/AAvmJzPendjwH5tsPXDlxS4gqzkKgIfYnBm0hw93v
+bu8Y8k6r53rjkjwuG77u3aLavGZaFh63ILMDBHkzdfRINsF2jBfIMwg8iKQLpzJ+
+flNsVL2UwATJzoDiHGrTMMnzg5oBDI9TrIjfoZBE5bCjmmq0QRUqkOu3triGiqZq
+q/sIbLveAN0uGu1CsZq04P8EyWH1h3GcmK6/yeuznTvMRWPtR4PNhubvjlCovZ3P
+cum9k+beiiwcw+1NnWzKNMlMvoHsVqAUmTxboED10tcbP5nPkP6ImmSArWaGtv7L
+l/9VJRG1eydGDJdVqn+HApMAgs+iHCCtiHLJDI7nuWrx9EA9tpNguHeftDQYTMVN
+lPBTEQwQ/2fTuMRRHkfL
+=zjXF
+-----END PGP SIGNATURE-----
+
+--r5f8iUxr2vWlQ8WUx9wSnjx2oHM83NRRg--
