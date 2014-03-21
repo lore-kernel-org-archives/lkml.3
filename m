@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760716AbaCUPLo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:11:44 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:38563 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaCUPLg (ORCPT
+	id S1760367AbaCUPST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:18:19 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:47323 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002AbaCUPSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:11:36 -0400
-Date: Fri, 21 Mar 2014 16:11:31 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>, David Airlie <airlied@linux.ie>,
-        intel-gfx@lists.freedesktop.org, dri-devel@lists.freedesktop.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: I915: OOPSes on linux-3.14-rc7
-Message-ID: <20140321151131.GC30571@phenom.ffwll.local>
-Mail-Followup-To: Peter Senna Tschudin <peter.senna@gmail.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <CA+MoWDoS77tLjmENha9TkrM=-J4EeVHSVZgWEEF7jAfTraRuGQ@mail.gmail.com>
- <20140320211738.GV30571@phenom.ffwll.local>
- <CA+MoWDqjgiBn75QJZsoUPcVxgQNEc5k-t7yjOo-AfbFpNm-qUg@mail.gmail.com>
+	Fri, 21 Mar 2014 11:18:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+MoWDqjgiBn75QJZsoUPcVxgQNEc5k-t7yjOo-AfbFpNm-qUg@mail.gmail.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CF26C56A.2E864%dbanerje@akamai.com>
+References: <1392352954-29905-1-git-send-email-dbanerje@akamai.com>
+	<CA+55aFy7yrNuJaFLcLh5-DVFTzuFYeZ_K9s6CNGtemQDCO90mQ@mail.gmail.com>
+	<CF26B239.2E7B4%dbanerje@akamai.com>
+	<CA+55aFyiEcMBegoypWVTZXnb4aLj1PD4FRHWV83X2DY=8VHz7w@mail.gmail.com>
+	<CF26BC6D.2E80E%dbanerje@akamai.com>
+	<CA+55aFyywOm7pWrX4=04LTEJ6xYK4xDTxGRqes-MOT212PnWPw@mail.gmail.com>
+	<CF26C56A.2E864%dbanerje@akamai.com>
+Date: Fri, 21 Mar 2014 10:18:13 -0500
+Message-ID: <CAKA=qzYGmfCyon-UcsQxMUwuP+ppmEHgrf4iKBOz+16_HaNTDA@mail.gmail.com>
+Subject: Re: [PATCH] printk: Fix discarding of records
+From: Josh Hunt <joshhunt00@gmail.com>
+To: "Banerjee, Debabrata" <dbanerje@akamai.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeff Mahoney <jeffm@suse.com>,
+        "dbavatar@gmail.com" <dbavatar@gmail.com>,
+        "Hunt, Joshua" <johunt@akamai.com>, stable <stable@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 12:26:51PM +0100, Peter Senna Tschudin wrote:
-> On Thu, Mar 20, 2014 at 10:17 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > On Thu, Mar 20, 2014 at 05:56:20PM +0100, Peter Senna Tschudin wrote:
-> >> When Fedora updated the Kernel package from 3.12 to 3.13 my notebook
-> >> stopped booting (Kernel freezes) when a 2560 x 1440 high res monitor
-> >> is attached. I have tried using 3.13.6 from kernel.org and the problem
-> >> persists. The problem can be partially solved by passing nomodeset to
-> >> Kernel which will make the Kernel to boot, but the screens never comes
-> >> to life. When using 3.14-rc7 it boots again, the screen works, but
-> >> with some oops messages.
-> >>
-> >> How can I help fixing this issue?
-> >>
-> >> I've reported te bug at:
-> >> https://bugzilla.redhat.com/show_bug.cgi?id=1072557
-> >
-> > For the oops message (well it's just a WARNING, a real oops would kill
-> > your driver for real) please file a bug report on bugs.freedesktop.org
-> > against dri -> drm (intel).
-> >
-> > The information we need is the full dmesg fore the entire boot when
-> > enabling drm.debug=0xe on the kernel cmdline.
-> It is attached.
-> 
-> >
-> > For the boot hang you've reported on the redhat bz if you want to move it
-> > forward I suggest to do a reverse bisect betwen 3.13 and 3.14-rc7 to
-> > figure out which bug _fixed_ your problem and then tell me that. I'll
-> > submit it for backporting to stable kernels. Google should find you some
-> > nice howtos for reverse bisecting kerneels.
-> Thank you. I'll do that.
+On Sun, Feb 16, 2014 at 8:38 PM, Banerjee, Debabrata
+<dbanerje@akamai.com> wrote:
+> On 2/16/14, 7:41 PM, "Linus Torvalds" <torvalds@linux-foundation.org>
+> wrote:
+>
+>>On Sun, Feb 16, 2014 at 4:19 PM, Banerjee, Debabrata
+>><dbanerje@akamai.com> wrote:
+>>>
+>>> No that can't be right, the prev value after every loop is the
+>>>msg->flags
+>>> from the *last* line in the list, which has no relation to the *first*,
+>>>so
+>>> reusing it for the top of the next loop is nonsense.
+>>
+>>Please, Debabrata, humor me, and just try the patch.
+>>
+>>And try reading the source code. Because your statement is BS.
+> ...
+>>No, I haven't tested my patch, and maybe it's broken for some subtle
+>>reason I'm missing too.
+>
+> Yes my explanation was wrong, your patch works for me. I assumed printing
+> the prefix was desired, but if not, great.
 
-It's an issue with our fastboot clock readout code. Please apply the below
-patch and add an updated dmesg (again with drm.debug=0xe) to your bug
-report.
--Daniel
+The resulting patch from this discussion:
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 7be5984431bb..3c0f8f095a6b 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -450,6 +450,8 @@ static void i9xx_clock(int refclk, intel_clock_t *clock)
- {
- 	clock->m = i9xx_dpll_compute_m(clock);
- 	clock->p = clock->p1 * clock->p2;
-+	printk("p1 = %u, p2 = %u, n = %u\n", clock->p1, clock->p2,
-+	       clock->n);
- 	if (WARN_ON(clock->n + 2 == 0 || clock->p == 0))
- 		return;
- 	clock->vco = DIV_ROUND_CLOSEST(refclk * clock->m, clock->n + 2);
+commit e4178d809fdaee32a56833fff1f5056c99e90a1a
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Mon Feb 17 12:24:45 2014 -0800
+
+    printk: fix syslog() overflowing user buffer
+
+has not made it into stable yet. Can we add it to the stable queue?
+I'm not sure if it needs more bake time, etc.
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Josh
