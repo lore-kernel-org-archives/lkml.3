@@ -1,80 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761078AbaCURYJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:24:09 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:39472 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaCURYD (ORCPT
+	id S1761133AbaCURYo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:24:44 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:54787 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754599AbaCURYi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:24:03 -0400
-Message-ID: <532C75B0.9040405@codeaurora.org>
-Date: Fri, 21 Mar 2014 13:24:00 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Fri, 21 Mar 2014 13:24:38 -0400
+X-Auth-Info: ukhHopmnVBsSmgPWTKYMm7fk2DVUWzGSuWMOoQqLT6A=
+Date: Fri, 21 Mar 2014 18:24:34 +0100
+From: Gerhard Sittig <gsi@denx.de>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Dinh Nguyen <dinguyen@altera.com>,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
+Message-ID: <20140321172434.GB3998@book.gsilab.sittig.org>
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+ <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-arm-kernel@lists.infradead.org, Andy Whitcroft <apw@canonical.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] checkpatch.pl: Add check for Change-Id
-References: <1395255293-3419-1-git-send-email-cov@codeaurora.org> <1395310100.7776.3.camel@joe-AO722>
-In-Reply-To: <1395310100.7776.3.camel@joe-AO722>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
+Organization: DENX Software Engineering GmbH
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
-
-On 03/20/2014 06:08 AM, Joe Perches wrote:
-> On Wed, 2014-03-19 at 14:54 -0400, Christopher Covington wrote:
->> A commit hook for the Gerrit code review server inserts change
->> identifiers so Gerrit can track patches through multiple revisions.
->> These identifiers are noise in the context of the upstream kernel.
->> (Many Gerrit servers are private. Even given a public instance,
->> given only a Change-Id, one must guess which server a change was
->> tracked on. Patches submitted to the Linux kernel mailing lists
->> should be able to stand on their own. If it's truly useful to
->> reference code review on a Gerrit server, a URL is a much clearer
->> way to do so.) Thus, issue an error when a Change-Id: line is
->> encountered.
-> []
->> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> []
->> @@ -1891,6 +1891,12 @@ sub process {
->>  			}
->>  		}
->>  
->> +# Check for unwanted Gerrit info
->> +		if ($line =~ /^\s*change-id:/i) {
->> +			ERROR("BAD_SIGN_OFF",
->> +			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
->> +		}
->> +
+On Thu, Mar 20, 2014 at 20:55 +0100, Sebastian Andrzej Siewior wrote:
 > 
-> I think this needs an "$in_commit_log" test added
-> 
-> 		if ($in_commit_log &&
-> 		    $line =~ /^\s*change-id:/i) {
+> The cycloneV has three gpio controllers, each one with 29 gpios. This patch
+> adds the three controller with the gpio driver which is now sitting the
+> gpio tree.
 
-This would mean that Change-Id lines that follow a Signed-off-by line will not
-get caught. I expect that the common case is to use the commit hook shipped
-with Gerrit [1], which inserts the Change-Id above the Signed-off-by, so the
-proposed change is fine by me.
+The third bank should have 27 pins, only the first two have 29.
 
-1.
-https://gerrit.googlesource.com/gerrit/+/master/gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg
+The commit message probably should not discuss which git tree a
+driver currently resides in.  This is just a temporary detail
+which no longer applies to the mainline source base where your
+patch will end up in.
 
-> And maybe use a separate "TYPE", not "BAD_SIGN_OFF".
-> Maybe "GERRIT_CHANGE_ID"
-> 
 
-Will do.
-
-Thanks,
-Christopher
-
+virtually yours
+Gerhard Sittig
 -- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
+HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
+Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
