@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966664AbaCUA1y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:27:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37207 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965998AbaCUAJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965996AbaCUAJM (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:09:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37155 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965934AbaCUAJC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:09:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3.10 73/85] ALSA: oxygen: modify adjust_dg_dac_routing function
-Date: Thu, 20 Mar 2014 17:10:16 -0700
-Message-Id: <20140321000609.120207603@linuxfoundation.org>
+        Don Zickus <dzickus@redhat.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 38/85] x86: fix compile error due to X86_TRAP_NMI use in asm files
+Date: Thu, 20 Mar 2014 17:09:41 -0700
+Message-Id: <20140321000604.190177933@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,44 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Roman Volkov <v1ron@mail.ru>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
+commit b01d4e68933ec23e43b1046fa35d593cefcf37d1 upstream.
 
-When selecting the audio output destinations (headphones,
-FP headphones, multichannel output), the channel routing
-should be changed depending on what destination selected.
-Also unnecessary I2S channels are digitally muted. This
-function called when the user selects the destination
-in the ALSA mixer.
+It's an enum, not a #define, you can't use it in asm files.
 
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Introduced in commit 5fa10196bdb5 ("x86: Ignore NMIs that come in during
+early boot"), and sadly I didn't compile-test things like I should have
+before pushing out.
+
+My weak excuse is that the x86 tree generally doesn't introduce stupid
+things like this (and the ARM pull afterwards doesn't cause me to do a
+compile-test either, since I don't cross-compile).
+
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- sound/pci/oxygen/xonar_dg.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ arch/x86/kernel/head_32.S |    2 +-
+ arch/x86/kernel/head_64.S |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -567,7 +567,7 @@ ENDPROC(early_idt_handlers)
+ ENTRY(early_idt_handler)
+ 	cld
+ 
+-	cmpl $X86_TRAP_NMI,(%esp)
++	cmpl $2,(%esp)		# X86_TRAP_NMI
+ 	je is_nmi		# Ignore NMI
+ 
+ 	cmpl $2,%ss:early_recursion_flag
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -343,7 +343,7 @@ early_idt_handlers:
+ ENTRY(early_idt_handler)
+ 	cld
+ 
+-	cmpl $X86_TRAP_NMI,(%rsp)
++	cmpl $2,(%rsp)		# X86_TRAP_NMI
+ 	je is_nmi		# Ignore NMI
+ 
+ 	cmpl $2,early_recursion_flag(%rip)
 
 
