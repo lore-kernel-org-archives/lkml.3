@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965431AbaCUBCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:02:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36805 "EHLO
+	id S966281AbaCUBCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:02:39 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965412AbaCUAEb (ORCPT
+	with ESMTP id S965396AbaCUAEa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:31 -0400
+	Thu, 20 Mar 2014 20:04:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 104/149] drm/radeon: fix runpm disabling on non-PX harder
-Date: Thu, 20 Mar 2014 17:04:27 -0700
-Message-Id: <20140321000440.570433788@linuxfoundation.org>
+Subject: [PATCH 3.13 103/149] drm/radeon: re-order firmware loading in preparation for dpm rework
+Date: Thu, 20 Mar 2014 17:04:26 -0700
+Message-Id: <20140321000440.526841032@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,43 +30,285 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit 7848865914c6a63ead674f0f5604b77df7d3874f upstream.
+commit 01ac8794a77192236a4b91c33adf4177ac5a21f0 upstream.
 
-Make sure runtime pm is disabled on non-PX hardware.
-Should fix powerdown problems without displays attached.
+We need to reorder the driver init sequence to better accomodate
+dpm which needs to be loaded earlier in the init sequence.  Move
+fw init up so that it's available for dpm init.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/radeon_kms.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/cik.c       |   42 +++++++++++++++++++------------------
+ drivers/gpu/drm/radeon/evergreen.c |   33 +++++++++++++++--------------
+ drivers/gpu/drm/radeon/ni.c        |   36 ++++++++++++++++---------------
+ drivers/gpu/drm/radeon/r600.c      |   16 +++++++-------
+ drivers/gpu/drm/radeon/rv770.c     |   16 +++++++-------
+ drivers/gpu/drm/radeon/si.c        |   18 +++++++--------
+ 6 files changed, 84 insertions(+), 77 deletions(-)
 
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -33,6 +33,13 @@
- #include <linux/vga_switcheroo.h>
- #include <linux/slab.h>
- #include <linux/pm_runtime.h>
+--- a/drivers/gpu/drm/radeon/cik.c
++++ b/drivers/gpu/drm/radeon/cik.c
+@@ -7498,26 +7498,7 @@ static int cik_startup(struct radeon_dev
+ 
+ 	cik_mc_program(rdev);
+ 
+-	if (rdev->flags & RADEON_IS_IGP) {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+-		    !rdev->mec_fw || !rdev->sdma_fw || !rdev->rlc_fw) {
+-			r = cik_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
+-	} else {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+-		    !rdev->mec_fw || !rdev->sdma_fw || !rdev->rlc_fw ||
+-		    !rdev->mc_fw) {
+-			r = cik_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
+-
++	if (!(rdev->flags & RADEON_IS_IGP)) {
+ 		r = ci_mc_load_microcode(rdev);
+ 		if (r) {
+ 			DRM_ERROR("Failed to load MC firmware!\n");
+@@ -7830,6 +7811,27 @@ int cik_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
++	if (rdev->flags & RADEON_IS_IGP) {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
++		    !rdev->mec_fw || !rdev->sdma_fw || !rdev->rlc_fw) {
++			r = cik_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	} else {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
++		    !rdev->mec_fw || !rdev->sdma_fw || !rdev->rlc_fw ||
++		    !rdev->mc_fw) {
++			r = cik_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	}
 +
-+#if defined(CONFIG_VGA_SWITCHEROO)
-+bool radeon_is_px(void);
-+#else
-+static inline bool radeon_is_px(void) { return false; }
-+#endif
-+
- /**
-  * radeon_driver_unload_kms - Main unload function for KMS.
-  *
-@@ -130,7 +137,8 @@ int radeon_driver_load_kms(struct drm_de
- 				"Error during ACPI methods call\n");
+ 	ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+ 	ring->ring_obj = NULL;
+ 	r600_ring_init(rdev, ring, 1024 * 1024);
+--- a/drivers/gpu/drm/radeon/evergreen.c
++++ b/drivers/gpu/drm/radeon/evergreen.c
+@@ -5110,26 +5110,11 @@ static int evergreen_startup(struct rade
+ 	evergreen_mc_program(rdev);
+ 
+ 	if (ASIC_IS_DCE5(rdev)) {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
+-			r = ni_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
+ 		r = ni_mc_load_microcode(rdev);
+ 		if (r) {
+ 			DRM_ERROR("Failed to load MC firmware!\n");
+ 			return r;
+ 		}
+-	} else {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+-			r = r600_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
  	}
  
--	if (radeon_runtime_pm != 0) {
-+	if ((radeon_runtime_pm == 1) ||
-+	    ((radeon_runtime_pm == -1) && radeon_is_px())) {
- 		pm_runtime_use_autosuspend(dev->dev);
- 		pm_runtime_set_autosuspend_delay(dev->dev, 5000);
- 		pm_runtime_set_active(dev->dev);
+ 	if (rdev->flags & RADEON_IS_AGP) {
+@@ -5357,6 +5342,24 @@ int evergreen_init(struct radeon_device
+ 	if (r)
+ 		return r;
+ 
++	if (ASIC_IS_DCE5(rdev)) {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
++			r = ni_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	} else {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
++			r = r600_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	}
++
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/ni.c
++++ b/drivers/gpu/drm/radeon/ni.c
+@@ -1876,23 +1876,7 @@ static int cayman_startup(struct radeon_
+ 
+ 	evergreen_mc_program(rdev);
+ 
+-	if (rdev->flags & RADEON_IS_IGP) {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+-			r = ni_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
+-	} else {
+-		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
+-			r = ni_init_microcode(rdev);
+-			if (r) {
+-				DRM_ERROR("Failed to load firmware!\n");
+-				return r;
+-			}
+-		}
+-
++	if (!(rdev->flags & RADEON_IS_IGP)) {
+ 		r = ni_mc_load_microcode(rdev);
+ 		if (r) {
+ 			DRM_ERROR("Failed to load MC firmware!\n");
+@@ -2143,6 +2127,24 @@ int cayman_init(struct radeon_device *rd
+ 	if (r)
+ 		return r;
+ 
++	if (rdev->flags & RADEON_IS_IGP) {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
++			r = ni_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	} else {
++		if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw || !rdev->mc_fw) {
++			r = ni_init_microcode(rdev);
++			if (r) {
++				DRM_ERROR("Failed to load firmware!\n");
++				return r;
++			}
++		}
++	}
++
+ 	ring->ring_obj = NULL;
+ 	r600_ring_init(rdev, ring, 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/r600.c
++++ b/drivers/gpu/drm/radeon/r600.c
+@@ -2776,14 +2776,6 @@ static int r600_startup(struct radeon_de
+ 
+ 	r600_mc_program(rdev);
+ 
+-	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+-		r = r600_init_microcode(rdev);
+-		if (r) {
+-			DRM_ERROR("Failed to load firmware!\n");
+-			return r;
+-		}
+-	}
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		r600_agp_enable(rdev);
+ 	} else {
+@@ -2971,6 +2963,14 @@ int r600_init(struct radeon_device *rdev
+ 	if (r)
+ 		return r;
+ 
++	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
++		r = r600_init_microcode(rdev);
++		if (r) {
++			DRM_ERROR("Failed to load firmware!\n");
++			return r;
++		}
++	}
++
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/rv770.c
++++ b/drivers/gpu/drm/radeon/rv770.c
+@@ -1665,14 +1665,6 @@ static int rv770_startup(struct radeon_d
+ 
+ 	rv770_mc_program(rdev);
+ 
+-	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
+-		r = r600_init_microcode(rdev);
+-		if (r) {
+-			DRM_ERROR("Failed to load firmware!\n");
+-			return r;
+-		}
+-	}
+-
+ 	if (rdev->flags & RADEON_IS_AGP) {
+ 		rv770_agp_enable(rdev);
+ 	} else {
+@@ -1876,6 +1868,14 @@ int rv770_init(struct radeon_device *rde
+ 	if (r)
+ 		return r;
+ 
++	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->rlc_fw) {
++		r = r600_init_microcode(rdev);
++		if (r) {
++			DRM_ERROR("Failed to load firmware!\n");
++			return r;
++		}
++	}
++
+ 	rdev->ring[RADEON_RING_TYPE_GFX_INDEX].ring_obj = NULL;
+ 	r600_ring_init(rdev, &rdev->ring[RADEON_RING_TYPE_GFX_INDEX], 1024 * 1024);
+ 
+--- a/drivers/gpu/drm/radeon/si.c
++++ b/drivers/gpu/drm/radeon/si.c
+@@ -6328,15 +6328,6 @@ static int si_startup(struct radeon_devi
+ 
+ 	si_mc_program(rdev);
+ 
+-	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
+-	    !rdev->rlc_fw || !rdev->mc_fw) {
+-		r = si_init_microcode(rdev);
+-		if (r) {
+-			DRM_ERROR("Failed to load firmware!\n");
+-			return r;
+-		}
+-	}
+-
+ 	r = si_mc_load_microcode(rdev);
+ 	if (r) {
+ 		DRM_ERROR("Failed to load MC firmware!\n");
+@@ -6604,6 +6595,15 @@ int si_init(struct radeon_device *rdev)
+ 	if (r)
+ 		return r;
+ 
++	if (!rdev->me_fw || !rdev->pfp_fw || !rdev->ce_fw ||
++	    !rdev->rlc_fw || !rdev->mc_fw) {
++		r = si_init_microcode(rdev);
++		if (r) {
++			DRM_ERROR("Failed to load firmware!\n");
++			return r;
++		}
++	}
++
+ 	ring = &rdev->ring[RADEON_RING_TYPE_GFX_INDEX];
+ 	ring->ring_obj = NULL;
+ 	r600_ring_init(rdev, ring, 1024 * 1024);
 
 
