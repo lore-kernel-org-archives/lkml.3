@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966156AbaCUAJm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:42 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37367 "EHLO
+	id S966370AbaCUARZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:17:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37397 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966128AbaCUAJf (ORCPT
+	with ESMTP id S966148AbaCUAJl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:35 -0400
+	Thu, 20 Mar 2014 20:09:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chuansheng Liu <chuansheng.liu@intel.com>,
-        Xiaoming Wang <xiaoming.wang@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.4 16/35] genirq: Remove racy waitqueue_active check
-Date: Thu, 20 Mar 2014 17:11:07 -0700
-Message-Id: <20140321001054.703908423@linuxfoundation.org>
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.4 09/35] mwifiex: copy APs HT capability info correctly
+Date: Thu, 20 Mar 2014 17:11:00 -0700
+Message-Id: <20140321001054.440791070@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -30,61 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuansheng Liu <chuansheng.liu@intel.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
+commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
 
-We hit one rare case below:
+While preparing association request, intersection of device's HT
+capability information and corresponding fields advertised by AP
+is used.
 
-T1 calling disable_irq(), but hanging at synchronize_irq()
-always;
-The corresponding irq thread is in sleeping state;
-And all CPUs are in idle state;
+This patch fixes an error while copying this field from AP's
+beacon.
 
-After analysis, we found there is one possible scenerio which
-causes T1 is waiting there forever:
-CPU0                                       CPU1
- synchronize_irq()
-  wait_event()
-    spin_lock()
-                                           atomic_dec_and_test(&threads_active)
-      insert the __wait into queue
-    spin_unlock()
-                                           if(waitqueue_active)
-    atomic_read(&threads_active)
-                                             wake_up()
-
-Here after inserted the __wait into queue on CPU0, and before
-test if queue is empty on CPU1, there is no barrier, it maybe
-cause it is not visible for CPU1 immediately, although CPU0 has
-updated the queue list.
-It is similar for CPU0 atomic_read() threads_active also.
-
-So we'd need one smp_mb() before waitqueue_active.that, but removing
-the waitqueue_active() check solves it as wel l and it makes
-things simple and clear.
-
-Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
-Cc: Xiaoming Wang <xiaoming.wang@intel.com>
-Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/irq/manage.c |    3 +--
+ drivers/net/wireless/mwifiex/11n.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -777,8 +777,7 @@ static irqreturn_t irq_thread_fn(struct
+--- a/drivers/net/wireless/mwifiex/11n.c
++++ b/drivers/net/wireless/mwifiex/11n.c
+@@ -340,8 +340,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifie
+ 		ht_cap->header.len =
+ 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
+ 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
+-		       (u8 *) bss_desc->bcn_ht_cap +
+-		       sizeof(struct ieee_types_header),
++		       (u8 *)bss_desc->bcn_ht_cap,
+ 		       le16_to_cpu(ht_cap->header.len));
  
- static void wake_threads_waitq(struct irq_desc *desc)
- {
--	if (atomic_dec_and_test(&desc->threads_active) &&
--	    waitqueue_active(&desc->wait_for_threads))
-+	if (atomic_dec_and_test(&desc->threads_active))
- 		wake_up(&desc->wait_for_threads);
- }
- 
+ 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
 
 
