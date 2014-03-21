@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761081AbaCURil (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:38:41 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:49200 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755770AbaCURid (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:38:33 -0400
-Date: Fri, 21 Mar 2014 10:38:32 -0700 (PDT)
-From: Sage Weil <sage@inktank.com>
-X-X-Sender: sage@cobra.newdream.net
-To: Fabian Frederick <fabf@skynet.be>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>, ceph-devel@vger.kernel.org
-Subject: Re: [PATCH 1/1 RESEND] fs/ceph/inode.c: Remove get/set acl on
- symlinks
-In-Reply-To: <20140321174001.3a2c665e84aed66f387ca4fc@skynet.be>
-Message-ID: <alpine.DEB.2.00.1403211037400.5823@cobra.newdream.net>
-References: <20140321174001.3a2c665e84aed66f387ca4fc@skynet.be>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1761184AbaCURkA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:40:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30150 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754374AbaCURjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 13:39:54 -0400
+Date: Fri, 21 Mar 2014 14:39:44 -0300
+From: Eduardo Habkost <ehabkost@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
+        mtosatti@redhat.com, alex.williamson@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 1/4] KVM: ioapic: merge ioapic_deliver into
+ ioapic_service
+Message-ID: <20140321173944.GC10819@otherpad.lan.raisama.net>
+References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
+ <1395394081-16252-2-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395394081-16252-2-git-send-email-pbonzini@redhat.com>
+X-Fnord: you can see the fnord
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We've pulled this into the Ceph tree.
-
-Thanks, Fabian!
-sage
-
-
-On Fri, 21 Mar 2014, Fabian Frederick wrote:
-
-> Remove unsupported symlink operations.
+On Fri, Mar 21, 2014 at 10:27:58AM +0100, Paolo Bonzini wrote:
+> Commonize the handling of masking, which was absent for kvm_ioapic_set_irq.
+> Setting remote_irr does not need a separate function either, and merging
+> the two functions avoids confusion.
 > 
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/ceph/inode.c | 2 --
->  1 file changed, 2 deletions(-)
-> 
-> diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
-> index 32d519d..704d714 100644
-> --- a/fs/ceph/inode.c
-> +++ b/fs/ceph/inode.c
-> @@ -1616,8 +1616,6 @@ static const struct inode_operations ceph_symlink_iops = {
->  	.getxattr = ceph_getxattr,
->  	.listxattr = ceph_listxattr,
->  	.removexattr = ceph_removexattr,
-> -	.get_acl = ceph_get_acl,
-> -	.set_acl = ceph_set_acl,
->  };
->  
->  /*
-> -- 
-> 1.8.4.5
-> 
-> 
+> Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
+> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+
+Reviewed-by: Eduardo Habkost <ehabkost@redhat.com>
+
+Just code movement, no functional changes.
+
+(The change from entry->fields.trig_mode to irqe.trig_mode is not purely
+code movement, but kvm_irq_delivery_to_apic() doesn't change
+irq->trig_mode, so it's OK).
+
+-- 
+Eduardo
