@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760108AbaCUAGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:06:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36943 "EHLO
+	id S965690AbaCUAHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:07:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36919 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759799AbaCUAE7 (ORCPT
+	with ESMTP id S1759652AbaCUAEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:59 -0400
+	Thu, 20 Mar 2014 20:04:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe Brandenburger <filbranden@google.com>,
-        Hugh Dickins <hughd@google.com>, Tejun Heo <tj@kernel.org>,
-        Michal Hocko <mhocko@suse.cz>, Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 149/149] memcg: reparent charges of children before processing parent
-Date: Thu, 20 Mar 2014 17:05:12 -0700
-Message-Id: <20140321000442.129914482@linuxfoundation.org>
+        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH 3.13 143/149] ALSA: oxygen: modify adjust_dg_dac_routing function
+Date: Thu, 20 Mar 2014 17:05:06 -0700
+Message-Id: <20140321000441.916722815@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -32,71 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe Brandenburger <filbranden@google.com>
+From: Roman Volkov <v1ron@mail.ru>
 
-commit 4fb1a86fb5e4209a7d4426d4e586c58e9edc74ac upstream.
+commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
 
-Sometimes the cleanup after memcg hierarchy testing gets stuck in
-mem_cgroup_reparent_charges(), unable to bring non-kmem usage down to 0.
+When selecting the audio output destinations (headphones,
+FP headphones, multichannel output), the channel routing
+should be changed depending on what destination selected.
+Also unnecessary I2S channels are digitally muted. This
+function called when the user selects the destination
+in the ALSA mixer.
 
-There may turn out to be several causes, but a major cause is this: the
-workitem to offline parent can get run before workitem to offline child;
-parent's mem_cgroup_reparent_charges() circles around waiting for the
-child's pages to be reparented to its lrus, but it's holding
-cgroup_mutex which prevents the child from reaching its
-mem_cgroup_reparent_charges().
-
-Further testing showed that an ordered workqueue for cgroup_destroy_wq
-is not always good enough: percpu_ref_kill_and_confirm's call_rcu_sched
-stage on the way can mess up the order before reaching the workqueue.
-
-Instead, when offlining a memcg, call mem_cgroup_reparent_charges() on
-all its children (and grandchildren, in the correct order) to have their
-charges reparented first.
-
-Fixes: e5fca243abae ("cgroup: use a dedicated workqueue for cgroup destruction")
-Signed-off-by: Filipe Brandenburger <filbranden@google.com>
-Signed-off-by: Hugh Dickins <hughd@google.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Acked-by: Michal Hocko <mhocko@suse.cz>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: <stable@vger.kernel.org>	[v3.10+]
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Roman Volkov <v1ron@mail.ru>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- mm/memcontrol.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ sound/pci/oxygen/xonar_dg.c |   10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6360,11 +6360,24 @@ static void mem_cgroup_invalidate_reclai
- static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+	struct cgroup_subsys_state *iter;
- 
- 	kmem_cgroup_css_offline(memcg);
- 
- 	mem_cgroup_invalidate_reclaim_iterators(memcg);
--	mem_cgroup_reparent_charges(memcg);
-+
-+	/*
-+	 * This requires that offlining is serialized.  Right now that is
-+	 * guaranteed because css_killed_work_fn() holds the cgroup_mutex.
-+	 */
-+	rcu_read_lock();
-+	css_for_each_descendant_post(iter, css) {
-+		rcu_read_unlock();
-+		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
-+		rcu_read_lock();
-+	}
-+	rcu_read_unlock();
-+
- 	mem_cgroup_destroy_all_caches(memcg);
- 	vmpressure_cleanup(&memcg->vmpressure);
- }
+--- a/sound/pci/oxygen/xonar_dg.c
++++ b/sound/pci/oxygen/xonar_dg.c
+@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_
+ 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
+ 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
+ 				      GPIO_HP_REAR);
++		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
++				     data->output_sel == 0 ?
++				     OXYGEN_PLAY_MUTE01 :
++				     OXYGEN_PLAY_MUTE23 |
++				     OXYGEN_PLAY_MUTE45 |
++				     OXYGEN_PLAY_MUTE67,
++				     OXYGEN_PLAY_MUTE01 |
++				     OXYGEN_PLAY_MUTE23 |
++				     OXYGEN_PLAY_MUTE45 |
++				     OXYGEN_PLAY_MUTE67);
+ 	}
+ 	mutex_unlock(&chip->mutex);
+ 	return changed;
 
 
