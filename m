@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760528AbaCUJmM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:42:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42986 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760303AbaCUJmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:42:10 -0400
-From: Jason Wang <jasowang@redhat.com>
-To: mst@redhat.com, kvm@vger.kernel.org, virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Jason Wang <jasowang@redhat.com>
-Subject: [PATCH RFC V2 0/4] Adding tracepoints to vhost/net
-Date: Fri, 21 Mar 2014 17:41:49 +0800
-Message-Id: <1395394913-19548-1-git-send-email-jasowang@redhat.com>
+	id S933875AbaCUJrO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:47:14 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:47221 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965033AbaCUJq5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:46:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140318231401.GA2459@kroah.com>
+References: <1395181999-29433-1-git-send-email-eu@opreamatei.ro>
+	<20140318231401.GA2459@kroah.com>
+Date: Fri, 21 Mar 2014 11:46:57 +0200
+Message-ID: <CABeAxacohJoL0NqBJmg3CKw=Ptcg=DFRZPyt9ExH0hD8J-E8iw@mail.gmail.com>
+Subject: Re: [PATCH] staging: cxt1e1: hwprobe: Fix sparse warning
+From: Matei Oprea <eu@opreamatei.ro>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: sachin.kamat@linaro.org, Shaun Laing <shaun@xresource.ca>,
+        driverdev <devel@driverdev.osuosl.org>, linux-kernel@vger.kernel.org,
+        ROSEdu Kernel Community <firefly@lists.rosedu.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recent debugging on vhost net zerocopy shows the need of
-tracepoints. So to help in vhost{net} debugging and performance
-analyzing, the following series adding basic tracepoints to
-vhost. Operations of both vhost and vhost_net were traced in current
-implementation.
+I did it against your master branch of staging.git. I guess that's why
+doesn't apply at all. I switched branches to staging-next after your
+e-mail.
 
-A top-like satistics displaying script were introduced to help the
-troubleshooting:
-vhost statistics
+Thanks and sorry !
 
- vhost_virtio_update_used_idx               1215215       0
- vhost_virtio_get_vq_desc                   1215215       0
- vhost_work_queue_wakeup                     986808       0
- vhost_virtio_signal                         811601       0
- vhost_net_tx                                611457       0
- vhost_net_rx                                603758       0
- vhost_net_tx(datacopy)                      601903       0
- vhost_work_queue_wakeup(rx_net)             565081       0
- vhost_virtio_signal(rx)                     461603       0
- vhost_work_queue_wakeup(tx_kick)            421718       0
- vhost_virtio_update_avail_event             417346       0
- vhost_virtio_signal(tx)                     349998       0
- vhost_work_queue_coalesce                    39384       0
- vhost_work_queue_coalesce(rx_net)            38677       0
- vhost_net_tx(zerocopy)                        9554       0
- vhost_work_queue_coalesce(tx_kick)             707       0
- vhost_work_queue_wakeup(rx_kick)                 9       0
+On Wed, Mar 19, 2014 at 1:14 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Wed, Mar 19, 2014 at 12:33:19AM +0200, Matei Oprea wrote:
+>> This fixes the following sparse warning:
+>> * drivers/staging/cxt1e1/hwprobe.c:43:19:
+>> warning: symbol 'hdw_info' was not declared. Should it be static?
+>> * drivers/staging/cxt1e1/hwprobe.c:47:1:
+>> warning: symbol 'show_two' was not declared. Should it be static?
+>> * drivers/staging/cxt1e1/hwprobe.c:99:1:
+>> warning: symbol 'hdw_sn_get' was not declared. Should it be static?
+>> *drivers/staging/cxt1e1/hwprobe.c:149:1:
+>> warning: symbol 'prep_hdw_info' was not declared. Should it be static?
+>> * drivers/staging/cxt1e1/hwprobe.c:169:1:
+>> warning: symbol 'cleanup_ioremap' was not declared. Should it be static?
+>> * drivers/staging/cxt1e1/hwprobe.c:195:1:
+>> warning: symbol 'cleanup_devs' was not declared. Should it be static?
+>> drivers/staging/cxt1e1/hwprobe.c:293:1:
+>> * warning: symbol 'c4hw_attach_all' was not declared. Should it be static?
+>>
+>> Signed-off-by: Matei Oprea <eu@opreamatei.ro>
+>> Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
+>> ---
+>>  drivers/staging/cxt1e1/hwprobe.c |   14 +++++++-------
+>>  1 file changed, 7 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
+>> index 02b4f8f..694047a 100644
+>> --- a/drivers/staging/cxt1e1/hwprobe.c
+>> +++ b/drivers/staging/cxt1e1/hwprobe.c
+>> @@ -40,10 +40,10 @@ void        c4_stopwd (ci_t *);
+>>  struct net_device * __init c4_add_dev (hdw_info_t *, int, unsigned long, unsigned long, int, int);
+>>
+>>
+>> -struct s_hdw_info hdw_info[MAX_BOARDS];
+>> +static struct s_hdw_info hdw_info[MAX_BOARDS];
+>>
+>>
+>> -void        __init
+>> +static void        __init
+>>  show_two (hdw_info_t *hi, int brdno)
+>>  {
+>>      ci_t       *ci;
+>> @@ -95,7 +95,7 @@ show_two (hdw_info_t *hi, int brdno)
+>
+>
+> This patch doesn't apply at all, did you do it against my staging-next
+> branch of staging.git or linux-next?  Or did you do it against Linus's
+> tree?  If Linus's tree, that's quite "old" for development stuff, always
+> work against linux-next to avoid making the same changes others already
+> have in the past.
+>
+> greg k-h
 
-TODO:
-- performance test
-- finalize which should be traced
 
-Reference:
-- V1: https://lkml.org/lkml/2012/4/9/478
-
-Jason Wang (4):
-  vhost: introduce queue_index for tracing
-  vhost: basic tracepoints
-  vhost_net: add basic tracepoints for vhost_net
-  tools: virtio: add a top-like utility for displaying vhost satistics
-
- drivers/vhost/net.c       |   7 +
- drivers/vhost/net_trace.h |  53 +++++++
- drivers/vhost/trace.h     | 175 ++++++++++++++++++++++
- drivers/vhost/vhost.c     |  14 +-
- drivers/vhost/vhost.h     |   3 +
- tools/virtio/vhost_stat   | 375 ++++++++++++++++++++++++++++++++++++++++++++++
- 6 files changed, 626 insertions(+), 1 deletion(-)
- create mode 100644 drivers/vhost/net_trace.h
- create mode 100644 drivers/vhost/trace.h
- create mode 100755 tools/virtio/vhost_stat
 
 -- 
-1.8.3.2
+Oprea Matei
 
+ᐧ
