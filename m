@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966821AbaCUAjt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:39:49 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:62121 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965815AbaCUAjo (ORCPT
+	id S966412AbaCUAk4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:40:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37064 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965856AbaCUAIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:39:44 -0400
-Message-ID: <532B8A4B.9000808@linaro.org>
-Date: Fri, 21 Mar 2014 08:39:39 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	Thu, 20 Mar 2014 20:08:45 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 33/85] ALSA: hda - Add missing loopback merge path for AD1884/1984 codecs
+Date: Thu, 20 Mar 2014 17:09:36 -0700
+Message-Id: <20140321000603.343421752@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
+References: <20140321000558.606667505@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: Re: ACPI and PM material for v3.15-rc1 (current queue)
-References: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
-In-Reply-To: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-On 2014年03月21日 08:23, Rafael J. Wysocki wrote:
-> Hi All,
->
-> My queue for the first pull request during the upcoming 3.15 merge window
-> contains the material below.  Following the rule that everything I send
-> pull requests for should spend at least one day in linux-next, I'm not
-> going to add any more new commits to it at this point.
->
-> Most likely, there will be more ACPI+PM pull request during the 3.15 cycle,
-> so if I missed something, it still may be possible to get that into that
-> kernel, but there has to be a good reason for it.
->
-> Kind regards,
-> Rafael
->
->
-> ---------------
->
-> Hanjun Guo (2):
->        ACPI / tables: Replace printk with pr_*
->        ACPI: Remove duplicate definitions of PREFIX
+------------------
 
-It seems that you missed some of my patches:
-ACPI: Move BAD_MADT_ENTRY() to linux/acpi.h
-ACPI / idle: Make idle_boot_override depend on x86 and ia64
-ACPI / trivial: Fix the return value type of acpi_processor_eval_pdc()
-ACPI / processor: Replace hard-coded "ACPI0007" with 
-ACPI_PROCESSOR_DEVICE_HID
+From: Takashi Iwai <tiwai@suse.de>
 
-I think those 4 patches can be merged in 3.15 and you already accepted them.
+commit c5eda4c1bf6214332c46fb2f4e7c42a85e5e5643 upstream.
 
-and this patch still need more acks and then you will accept it:
-ACPI / processor_core: Rework _PDC related stuff to make it more 
-arch-independent
+The mixer widget (NID 0x20) of AD1884 and AD1984 codecs isn't
+connected directly to the actual I/O paths but only via another mixer
+widget (NID 0x21).  We need a similar fix as we did for AD1882.
 
-and this patch was reverted from your tree suggested by Catalin and Sudeep,
-ACPI / processor: Introduce map_gic_id() to get apic id from MADT or 
-_MAT method
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Sorry for the confusion if I missed something.
+---
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Thanks
-Hanjun
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -3667,6 +3667,7 @@ static int ad1884_parse_auto_config(stru
+ 	spec = codec->spec;
+ 
+ 	spec->gen.mixer_nid = 0x20;
++	spec->gen.mixer_merge_nid = 0x21;
+ 	spec->gen.beep_nid = 0x10;
+ 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
+ 
+
+
