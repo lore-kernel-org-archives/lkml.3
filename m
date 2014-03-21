@@ -1,65 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760674AbaCUKem (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:34:42 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:46607 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759943AbaCUKei (ORCPT
+	id S1760708AbaCUKfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:35:22 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:34385 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760391AbaCUKfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:34:38 -0400
-Date: Fri, 21 Mar 2014 10:34:32 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] regulator: arizona-ldo1: Add processing of init_data
- from device tree
-Message-ID: <20140321103432.GF15213@lee--X1>
-References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+	Fri, 21 Mar 2014 06:35:19 -0400
+X-IronPort-AV: E=Sophos;i="4.97,703,1389744000"; 
+   d="scan'208";a="112218793"
+Message-ID: <532C15E1.4070501@citrix.com>
+Date: Fri, 21 Mar 2014 10:35:13 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395224338-3709-5-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Graf <tgraf@redhat.com>, Jesse Gross <jesse@nicira.com>,
+        <pshelar@nicira.com>, <dev@openvswitch.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com> <532B6A3D.1060600@redhat.com>
+In-Reply-To: <532B6A3D.1060600@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> ---
->  Documentation/devicetree/bindings/mfd/arizona.txt |    7 +++
+On 20/03/14 22:22, Thomas Graf wrote:
+> On 03/20/2014 05:02 PM, Zoltan Kiss wrote:
+>> --- a/net/openvswitch/datapath.c
+>> +++ b/net/openvswitch/datapath.c
+>> @@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath
+>> *dp, struct sk_buff *skb,
+>>       }
+>>       nla->nla_len = nla_attr_size(skb->len);
+>>
+>> -    skb_zerocopy(user_skb, skb, skb->len, hlen);
+>> +    err = skb_zerocopy(user_skb, skb, skb->len, hlen);
+>> +    if (err)
+>> +        goto out;
+>>
+>>       /* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
+>>       if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
+>> @@ -478,6 +480,7 @@ static int queue_userspace_packet(struct datapath
+>> *dp, struct sk_buff *skb,
+>>
+>>       err = genlmsg_unicast(ovs_dp_get_net(dp), user_skb,
+>> upcall_info->portid);
+>>   out:
+>> +    skb_tx_error(skb);
+>
+> Really sorry to bug you again. We'll get this right ;-)
+>
+> Patch looks great except for this call to skb_tx_error() which is now
+> done in the error *and* success path. Make the call conditional on
+> if (err) and we're good.
+Ah, sorry, I'm really sloppy with this patch. I've sent a fixed one.
 
-I can see why you're doing it like this, but it's probably best to do
-all of the document changes in one single (separate) patch.
-
->  drivers/regulator/arizona-ldo1.c                  |   46 +++++++++++++++++++-
->  2 files changed, 50 insertions(+), 3 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/arizona.txt b/Documentation/devicetree/bindings/mfd/arizona.txt
-> index 36a0c3d..9d54c70 100644
-> --- a/Documentation/devicetree/bindings/mfd/arizona.txt
-> +++ b/Documentation/devicetree/bindings/mfd/arizona.txt
-> @@ -42,6 +42,13 @@ Optional properties:
->      the chip default will be used.  If present exactly five values must
->      be specified.
->  
-> +  - ldo1 : Initial data for the LDO1 regulator, as covered in
-> +    Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +  - DCVDD-supply : Power supply, only needs to be specified if DCVDD is being
-> +    externally supplied. As covered in
-> +    Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-
-Looks fine to me again, but I'd still like a regulator and/or DT guy
-to Ack.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Zoli
