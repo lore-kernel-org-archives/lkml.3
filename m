@@ -1,82 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760279AbaCUIgj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:36:39 -0400
-Received: from out1-smtp.messagingengine.com ([66.111.4.25]:44716 "EHLO
-	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755522AbaCUIgh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:36:37 -0400
-X-Sasl-enc: 4gey6/bj7VfCKbL64wVrfS20jz7W2r09zuSILzGPMDFD 1395390996
-Message-ID: <532BFA0E.4000309@fastmail.fm>
-Date: Fri, 21 Mar 2014 16:36:30 +0800
-From: Michalis Pappas <mpappas@fastmail.fm>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131204 Thunderbird/17.0.11
+	id S1760317AbaCUIhy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:37:54 -0400
+Received: from sam.nabble.com ([216.139.236.26]:51405 "EHLO sam.nabble.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545AbaCUIhw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 04:37:52 -0400
+Date: Fri, 21 Mar 2014 01:37:51 -0700 (PDT)
+From: ivory <ich7@gmx-topmail.de>
+To: linux-kernel@vger.kernel.org
+Message-ID: <1395391071859-827938.post@n7.nabble.com>
+In-Reply-To: <tip-0y9dqmmsousf69wutxwl3kkf@git.kernel.org>
+References: <tip-0y9dqmmsousf69wutxwl3kkf@git.kernel.org>
+Subject: Re: [tip:x86/mm] x86, mm: Move reserving low memory later in
+ initialization
 MIME-Version: 1.0
-To: gregkh@linuxfoundation.org
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] staging: gdm72xx: Coding style fixes
-References: <532BF9B0.2080008@fastmail.fm>
-In-Reply-To: <532BF9B0.2080008@fastmail.fm>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch seems to make the bios_corruption_check not to cover the lowest
+64kB of memory anymore but only the lowest 4kB. Was this deliberate?
+When I use kernel 3.9 or higher I always get low mem corruption message from
+the bios corruption checker when I resume from suspend.
 
-Minor white-space fixes as suggested by checkpatch.pl.
+Below kernel 3.9 I see this boot message:
+e820 update range: 0000000000000000 - 0000000000010000 (usable) ==>
+(reserved)
+... which is the 64kB.
 
-Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
----
- drivers/staging/gdm72xx/gdm_qos.c   | 2 +-
- drivers/staging/gdm72xx/gdm_wimax.c | 2 ++
- drivers/staging/gdm72xx/usb_boot.c  | 1 +
- 3 files changed, 4 insertions(+), 1 deletion(-)
+But on newer kernels the message changed to:
+e820: update [mem 0x00000000-0x00000fff] usable ==> reserved
+... which is only 4kB.
 
-diff --git a/drivers/staging/gdm72xx/gdm_qos.c b/drivers/staging/gdm72xx/gdm_qos.c
-index 50d43ad..245109e 100644
---- a/drivers/staging/gdm72xx/gdm_qos.c
-+++ b/drivers/staging/gdm72xx/gdm_qos.c
-@@ -377,7 +377,7 @@ void gdm_recv_qos_hci_packet(void *nic_ptr, u8 *buf, int size)
- 	index = get_csr(qcb, SFID, 1);
- 	if (index == -1) {
- 		netdev_err(nic->netdev,
--			   "QoS ERROR: csr Update Error / Wrong index (%d) \n",
-+			   "QoS ERROR: csr Update Error / Wrong index (%d)\n",
- 			   index);
- 		return;
- 	}
-diff --git a/drivers/staging/gdm72xx/gdm_wimax.c b/drivers/staging/gdm72xx/gdm_wimax.c
-index 05ce2a2..5d05cdb 100644
---- a/drivers/staging/gdm72xx/gdm_wimax.c
-+++ b/drivers/staging/gdm72xx/gdm_wimax.c
-@@ -199,6 +199,7 @@ static void gdm_wimax_event_rcv(struct net_device *dev, u16 type, void *msg,
- 	u8 *buf = (u8 *) msg;
- 	u16 hci_cmd =  (buf[0]<<8) | buf[1];
- 	u16 hci_len = (buf[2]<<8) | buf[3];
-+
- 	netdev_dbg(dev, "H=>D: 0x%04x(%d)\n", hci_cmd, hci_len);
-  	gdm_wimax_send(nic, msg, len);
-@@ -310,6 +311,7 @@ static int gdm_wimax_event_send(struct net_device *dev, char *buf, int size)
-  	u16 hci_cmd =  ((u8)buf[0]<<8) | (u8)buf[1];
- 	u16 hci_len = ((u8)buf[2]<<8) | (u8)buf[3];
-+
- 	netdev_dbg(dev, "D=>H: 0x%04x(%d)\n", hci_cmd, hci_len);
-  	spin_lock_irqsave(&wm_event.evt_lock, flags);
-diff --git a/drivers/staging/gdm72xx/usb_boot.c b/drivers/staging/gdm72xx/usb_boot.c
-index 0d45eb6..4d7c61c 100644
---- a/drivers/staging/gdm72xx/usb_boot.c
-+++ b/drivers/staging/gdm72xx/usb_boot.c
-@@ -67,6 +67,7 @@ struct fw_info {
- static void array_le32_to_cpu(u32 *arr, int num)
- {
- 	int i;
-+
- 	for (i = 0; i < num; i++, arr++)
- 		*arr = __le32_to_cpu(*arr);
- }
--- 
-1.7.12.1
+The corrupted low mem areas I get the message for after resuming from
+suspend is this:
+ Corrupted low memory at c0002d00 (2d00 phys) = 11060000
+ Corrupted low memory at c0002d04 (2d04 phys) = 80805122
+ Corrupted low memory at c0002d08 (2d08 phys) = 00860003
+
+How to fix this in kernel 3.9 and higher?
+
+Thanks for your help and best regards.
 
 
+
+--
+View this message in context: http://linux-kernel.2935.n7.nabble.com/tip-x86-mm-x86-mm-Move-reserving-low-memory-later-in-initialization-tp601280p827938.html
+Sent from the Linux Kernel mailing list archive at Nabble.com.
