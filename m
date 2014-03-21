@@ -1,160 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760596AbaCULVb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:21:31 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:41937 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760185AbaCULVa (ORCPT
+	id S1760718AbaCULW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:22:28 -0400
+Received: from mx07-00178001.pphosted.com ([62.209.51.94]:52757 "EHLO
+	mx07-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760658AbaCULW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:21:30 -0400
-Message-ID: <532C20B7.2070806@hurleysoftware.com>
-Date: Fri, 21 Mar 2014 07:21:27 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
+	Fri, 21 Mar 2014 07:22:27 -0400
+Message-ID: <532C206E.1020907@st.com>
+Date: Fri, 21 Mar 2014 12:20:14 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: mtk.manpages@gmail.com
-CC: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ivan <athlon_@mail.ru>
-Subject: Re: man termios
-References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
-In-Reply-To: <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Cc: <mark.rutland@arm.com>, <mturquette@linaro.org>,
+        <gregkh@linuxfoundation.org>, <t.figa@samsung.com>,
+        <sw0312.kim@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <kyungmin.park@samsung.com>, <robh+dt@kernel.org>,
+        <galak@codeaurora.org>, <grant.likely@linaro.org>,
+        <linux@arm.linux.org.uk>, <m.szyprowski@samsung.com>,
+        <t-kristo@ti.com>
+Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents
+ and rates
+References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com> <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
+In-Reply-To: <532AE239.9000800@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.129.4.202]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-21_03:2014-03-21,2014-03-21,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 06:45 AM, Michael Kerrisk (man-pages) wrote:
->> This is also true of the other non-canonical
->> read()'s with timeout (TIME > 0).
+
+
+On 03/20/2014 01:42 PM, Sylwester Nawrocki wrote:
+> Hi Maxime,
 >
-> Here, if I understand you correctly, you mean this case:
-> * TIME > 0
-> * MIN == 0
-> * O_NONBLOCK set on the FD
-> * No input available
->
-> You are saying that read() returns 0 in this case? This doesn't appear
-> to me to be correct (on Linux). How did you verify this?
-
-Apologies, my mistake here.
-
-(aside: O_NONBLOCK can be changed while the reader is blocked, but that's
-not what I meant originally, and I wouldn't document it there)
-
->> 'man termios' is silent here, but 62.6.2 in LPI implies that O_NONBLOCK will
->> return -1 with errno==EAGAIN; it does not.
->
-> I guess you are referring to this text in TLPI:
-
-Yes.
-
-> [[
-> This mode is somewhat similar to setting the O_NONBLOCK flag for the
-> terminal (Section 5.9). However, with O_NONBLOCK, if no bytes are
-> available for reading, then read() returns –1 with the error
-> EAGAIN.
-> ]]
->
-> Oops. The text was not meant to imply that. Rather the comparison was
-> intended to be with O_NONBLOCK *in canonical mode*. However, I agree
-> that I could have made that more explicit. (I'll add an erratum to
-> mention canonical mode.)
->
->> This is unspecified by POSIX (11.1.7).
->
-> Yep, I see. XBD 11.1.7 says:
->
-> [[
-> Therefore, if O_NONBLOCK is set, read( ) may return immediately,
-> regardless of the setting of MIN or TIME. Also, if no data is
-> available, read( ) may either return 0, or return -1 with errno set to
-> [EAGAIN].
-> ]]
->
-> So, it seems to be saying that either behavior is allowed, right?
-
-Exactly.
-
-> And as far as I can see, for the TIME>0 case on Linux, read() returns
-> -1 + EGAIN.
-
-You're right about the TIME>0 case.
-
-> In any case, I've added this text to termios(3):
->
->         POSIX  does  not  specify whether the setting of the O_NONBLOCK
->         file status flag takes precedence over the MIN  and  TIME  set‐
->         tings.  If O_NONBLOCK is set, a read() in noncanonical mode may
->         return immediately, regardless of the setting of MIN  or  TIME.
->         Furthermore, if no data is available, POSIX permits a read() in
->         noncanonical mode to return either 0, or -1 with errno  set  to
->         EAGAIN.
-
-
-Great; I think that will really help clarify the usage wrt O_NONBLOCK.
-
-
->> Secondly, in all 4 of the non-canonical read() modes, the MIN value does not
->> limit the number of bytes which may be returned by the read(). Only the
->> 'count' parameter to read() has this effect.
+> On 06/03/14 14:45, Maxime Coquelin wrote:
+>> Hi Sylwester,
 >>
->> LPI has this to say (man-pages reads similar):
->>
->> "MIN > 0, TIME == 0 (blocking read)
->>
->> The read() blocks (possibly indefinitely) until the lesser of the number of
->> bytes requested or MIN bytes are available, and returns the lesser of the
->> two values."
->>
->> However, read() may unblock when MIN bytes are available but return up to
->> the 'count' parameter if more input arrives in between waking and copying
->> into the user buffer.
+>> 	I like the principle of your implementation, but I have two questions:
+>> 	1 - How can we manage PM with this solution, as the parent/rate will be
+>> set only once at probe time?
+>> 	2 - How to set the parent of a parent clock (which can be shared with
+>> other devices)? Same question about the parent rates.
 >
-> Yup, you are obviously correct. It would make no sense for read() to
-> return the lesser of [MIN, count]. I got myself into a small thinko as
-> I wrote that text.
+> Thanks for your feedback and apologies for late reply.
+No problem! Apologies accepted ;)
+
 >
-> I've applied this patch to the termios.3 page:
+> IIUC your first concern is about a situation when clocks need to be
+> reconfigured upon each resume from system sleep or runtime PM resume ?
+
+Yes. This is the case of the STi SoCs.
+When resuming from system sleep, the clocks-related registers are 
+restored at their boot state.
+
+> As I mentioned in v1 of the RFC I was considering having individual
+> drivers calling explicitly the clocks set up routine. Presumably this
+> would allow to resolve the power management related issue.
+ From a functional point of view, that would indeed resolve the PM 
+related issue.
+But I'm not sure that on a performance point of view, parsing the DT at 
+each driver's resume call is an efficient way.
+
+> One example I'm aware the approach as in this RFC wouldn't work is
+> when a device in a SoC belongs to a power domain, which needs to be
+> first switched on before we can start setting up and the clocks'
+> configuration get lost after the power domain switch off.
+Yes, that's another case to handle.
+I don't know which platforms are in that case, but not STi SoCs for your 
+information.
+
 >
-> [[
-> diff --git a/man3/termios.3 b/man3/termios.3
-> index b069ec0..63aba07 100644
-> --- a/man3/termios.3
-> +++ b/man3/termios.3
-> @@ -728,8 +728,7 @@ completes; there are four distinct cases:
->   MIN == 0; TIME == 0:
->   If data is available,
->   .BR read (2)
-> -returns immediately, with the lesser of the number of bytes
-> -available, or the number of bytes requested.
-> +returns immediately, returning up to the number of bytes requested.
->   If no data is available,
->   .BR read (2)
->   returns 0.
-> ]]
+> OTOH I suspect devices for which one-time clocks setup is sufficient
+> will be quite common. And for these there would need to be a single
+> call to the setup routine in probe() I guess, since it wouldn't be
+> possible to figure out just from the DT data when the actual call
+> should be made.
 >
-> I'll write a similar erratum for TLPI.
+> For a global clocks configuration, I thought about specifying that
+> in the clocks controller node, and then to have the setup routine
+> called e.g. from of_clk_init(). I think that could work well enough,
+> together with the patch [1], adding clock dependencies handling.
+> But then the clock frequency set up function would need to be
+> modified to respect the clock parent relationships, similarly as
+> in patch series [2]. A just noticed [2] recently, after posting
+> this RFC (adding Tero at Cc).
+OK, I agree with the approach.
+There is still the PM issue remaining with these clocks, but I think 
+that is not related to your series as we already have the issue currently.
 
-Thanks.
+Thanks,
+Maxime
 
-> [...]
 >
->> Finally, if the 'count' parameter is less than MIN, read() may return before
->> MIN bytes have been received, if 'count' bytes have been received.
+> --
+> Regards,
+> Sylwester
 >
-> Yes. But it's not clear to me here: do you mean that something in the
-> man page (or in TLPI) needs fixing?
-
-Well, what I mean here is that read() may also _not_ return until MIN bytes have
-been received, even if 'count' bytes have been received.
-
-Regards,
-Peter Hurley
-
-
-
+> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
+> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
+>
