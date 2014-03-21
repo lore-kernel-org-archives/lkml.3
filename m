@@ -1,97 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760494AbaCULxt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:53:49 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54091 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750892AbaCULxq (ORCPT
+	id S1760692AbaCULzO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:55:14 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39738 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752119AbaCULzM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:53:46 -0400
-Date: Fri, 21 Mar 2014 11:53:18 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Antoine =?utf-8?Q?T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/5] clk: berlin: add berlin clocks DT bindings
- documentation
-Message-ID: <20140321115318.GP23372@e106331-lin.cambridge.arm.com>
-References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395402220-23503-3-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 21 Mar 2014 07:55:12 -0400
+Date: Fri, 21 Mar 2014 11:54:47 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        mingo@kernel.org, will.deacon@arm.com, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 07/31] arch,arm64: Convert smp_mb__*
+Message-ID: <20140321115447.GB14251@arm.com>
+References: <20140319064729.660482086@infradead.org>
+ <20140319065204.150839038@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395402220-23503-3-git-send-email-alexandre.belloni@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140319065204.150839038@infradead.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 11:43:37AM +0000, Alexandre Belloni wrote:
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  .../devicetree/bindings/clock/berlin-clock.txt     | 29 ++++++++++++++++++++++
->  1 file changed, 29 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/clock/berlin-clock.txt
+On Wed, Mar 19, 2014 at 07:47:36AM +0100, Peter Zijlstra wrote:
+> AARGH64 uses ll/sc primitives that do not imply any barriers for the
+> normal atomics, therefore smp_mb__{before,after} should be a full
+> barrier.
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-> new file mode 100644
-> index 000000000000..ebc78f9b93a9
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-> @@ -0,0 +1,29 @@
-> +Device Tree Clock bindings for Marvell Berlin clocks
-> +
-> +This binding uses the common clock binding[1].
-> +
-> +[1] Documentation/devicetree/bindings/clock/clock-bindings.txt
-> +
-> +Required properties:
-> +- compatible : shall be one of the following:
-> +	"marvell,berlin2-pll" or
-> +	"marvell,berlin2q-pll":
-> +		CPU PLL and System PLL
-> +- reg : Address and length of the clock register set.
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall be the input parent clock phandle for the clock.
+> Since AARGH64 doesn't use asm-generic/barrier.h, add the required
+> definitions to its asm/barrier.h.
 
-Nit: clocks aren't just phandles. Either define the full type (phandle +
-clock-specifier pair), or don't define the type at all given it's a
-standard property.
+There is a typo above ;)
 
-Otherwise this looks fine to me.
+Otherwise,
 
-Cheers,
-Mark.
-
-> +
-> +smclk: sysmgr-clock {
-> +	compatible = "fixed-clock";
-> +	#clock-cells = <0>;
-> +	clock-frequency = <25000000>;
-> +};
-> +
-> +cpupll: cpupll {
-> +	compatible = "marvell,berlin2-pll";
-> +	clocks = <&smclk>;
-> +	#clock-cells = <0>;
-> +	reg = <0xf7ea003c 8>;
-> +};
-> +
-> +
-> -- 
-> 1.8.3.2
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
