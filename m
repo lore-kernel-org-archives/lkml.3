@@ -1,51 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761133AbaCURYo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:24:44 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:54787 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754599AbaCURYi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:24:38 -0400
-X-Auth-Info: ukhHopmnVBsSmgPWTKYMm7fk2DVUWzGSuWMOoQqLT6A=
-Date: Fri, 21 Mar 2014 18:24:34 +0100
-From: Gerhard Sittig <gsi@denx.de>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-gpio@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dinh Nguyen <dinguyen@altera.com>,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
-Message-ID: <20140321172434.GB3998@book.gsilab.sittig.org>
-References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
- <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
+	id S1755226AbaCUR1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:27:52 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:60212 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752933AbaCUR1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 13:27:50 -0400
+Date: Fri, 21 Mar 2014 18:27:42 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Matthias Graf <matthias.graf@st.ovgu.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
+Message-ID: <20140321172742.GA2846@pd.tnic>
+References: <532C727F.1080803@st.ovgu.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
-Organization: DENX Software Engineering GmbH
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <532C727F.1080803@st.ovgu.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 20, 2014 at 20:55 +0100, Sebastian Andrzej Siewior wrote:
+On Fri, Mar 21, 2014 at 06:10:23PM +0100, Matthias Graf wrote:
+> Please CC me on replies.
 > 
-> The cycloneV has three gpio controllers, each one with 29 gpios. This patch
-> adds the three controller with the gpio driver which is now sitting the
-> gpio tree.
+> [1.] Kernel panic: Fatal Machine Check after booting >=
+> 3.13.5-101.fc19.x86_64; 3.12.11-201.fc19.x86_64 works fine!
+> [2.] Screen freezes a few seconds after Gnome appears. The error message
+> (see attachement) is seldom still printed to the screen. Booting
+> 3.12.11-201 with otherwise the same setup, I do not see the panic.
+> Booting on different hardware (my laptop) does not produce the panic. I
+> also notice low frames per seconds after gnome started up, right before
+> the panic occures. I therefore suppose this is graphics hardware related.
+> [3.] Fatal Machine Check Exception, RIP Inexact, apic_timer_interrupt,
+> Kernel panic
+> [4.] 3.13.6-100.fc19.x86_64 && 3.13.5-103.fc19.x86 && 3.13.5-101.fc19.x86_64
+> [5.] OCRed: (see Attachement for photo)
+> 
+> Started Accounts Service.
+> [ 34.348483] mce: [Hardware Error]: CPU 3: Machine Check Exception: 5 Bank 8: bZ88884888888888
+> [ 44.468168] mce: [Hardware Error]: HIP ?IHEXﬁCT? 18:<ffffffff816881f8> {apicgtimer_interrupt+8x8/8x88}
+> I 44.468168] mce: [Hardware Error]: TSC 36S??8ad8c
+> f 44.468168] mce: [Hardware Error]: PROCESSOR 8:6fb TIM 138471666? SOCKET 8 HPIC 2 microcode ba
+> I 44.468168] mce: [Hardware Error]: Run the above through 'mcelog ~~ascii’
 
-The third bank should have 27 pins, only the first two have 29.
+This looks like you had some text recognition done on the jpeg. :-)
 
-The commit message probably should not discuss which git tree a
-driver currently resides in.  This is just a temporary detail
-which no longer applies to the mainline source base where your
-patch will end up in.
+Please correct the error message to be exactly as in the jpeg and run it
+through mcelog --ascii to see what that bank 8 is trying to tell us.
 
+Thanks.
 
-virtually yours
-Gerhard Sittig
 -- 
-DENX Software Engineering GmbH,     MD: Wolfgang Denk & Detlev Zundel
-HRB 165235 Munich, Office: Kirchenstr. 5, D-82194 Groebenzell, Germany
-Phone: +49-8142-66989-0 Fax: +49-8142-66989-80  Email: office@denx.de
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
