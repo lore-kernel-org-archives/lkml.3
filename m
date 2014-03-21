@@ -1,329 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaCUUOH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 16:14:07 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:41718 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaCUUOD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 16:14:03 -0400
-Date: Fri, 21 Mar 2014 21:13:52 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Matthias Graf <matthias.graf@st.ovgu.de>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
-Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
-Message-ID: <20140321201352.GC1338@pd.tnic>
-References: <532C727F.1080803@st.ovgu.de>
- <20140321172742.GA2846@pd.tnic>
- <532C97DF.9010201@st.ovgu.de>
+	id S1751171AbaCUUZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 16:25:30 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32988 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCUUZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 16:25:28 -0400
+Message-ID: <532CA02C.40505@oracle.com>
+Date: Fri, 21 Mar 2014 16:25:16 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <532C97DF.9010201@st.ovgu.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bjorn Helgaas <bhelgaas@google.com>, Ming Lei <tom.leiming@gmail.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Pekka Enberg <penberg@kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+Subject: Re: [PATCH 8/9] PCI: Ignore BAR contents when firmware left decoding
+ disabled
+References: <20140226192614.10125.68711.stgit@bhelgaas-glaptop.roam.corp.google.com> <20140226193757.10125.81865.stgit@bhelgaas-glaptop.roam.corp.google.com> <CACVXFVOqBuCcQC6ku0abqstkgJWGe21ZztB-eTsyDwsvDvXNZw@mail.gmail.com> <CAErSpo4ngU60XQCD=DbFJbqNOMkOwwhHB1oau1mmr7rJQQ2+pg@mail.gmail.com> <CACVXFVMz+6DaSgT0EHeVfyBOsXfWDYnZQ0wy7pwcey5ahM6rUA@mail.gmail.com> <20140318002700.GA22356@google.com> <CACVXFVNbzjYa7dJpH+k-F02Cap7yBBi7TkngjVu_KthXw-WKJA@mail.gmail.com> <CACVXFVO2rR+H7X2Xv_d-U0NeikT4dR97ffQ7PuV7+i0fN=_k3w@mail.gmail.com> <CAErSpo5qsosqLXdkS2__d2J7sM4T2nBfO1ewKg1=kFri3mcdrQ@mail.gmail.com> <CACVXFVPq2nQ8jcn+v424roieO+v_asyfXcHUHv=uSOABYHJ4eg@mail.gmail.com> <CAErSpo6zjOA43yrwk-4F8PDGTS-8G4piDBq+z-zv+L6_KkKFHQ@mail.gmail.com>
+In-Reply-To: <CAErSpo6zjOA43yrwk-4F8PDGTS-8G4piDBq+z-zv+L6_KkKFHQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Tony.
+On 03/21/2014 04:07 PM, Bjorn Helgaas wrote:
+> I think I figured out what the problem is.  In virtio_pci__init(), we
+> allocate some address space with pci_get_io_space_block(), save its
+> address in vpci->mmio_addr, and hook that address space up to
+> virtio_pci__io_mmio_callback with kvm__register_mmio().
+>
+> But when we update the BAR value in pci__config_wr(), the address
+> space mapping is never updated.  I think this means that virtio-pci
+> can't tolerate its devices being moved by the OS.
+>
+> In my opinion, this is a bug in linux-kvm.  We've managed to avoid
+> triggering this bug by preventing Linux from moving the BAR (either by
+> me reverting my patch, or by Sasha's linux-kvm change [1]).  But it's
+> not very robust to assume that the OS will never change the BAR, so
+> it's quite possible that you'll trip over this again in the future.
 
-Provided the decode is correct and I'm reading it right, this looks
-like the cores get to livelock for some reason without any forward
-progress. The MCEs signal that there hasn't been any instruction retired
-in relatively long time, thus a stall.
+The purpose of KVM tool is to implement as much as possible of the KVM
+interface and the virtio spec so that we'll have a good development/testing
+environment with a very simple to understand codebase.
 
-You say, this happens when gnome starts. Does it also happen if you
-don't start gnome, i.e. don't start X at all? Try booting into a
-runlevel without graphics.
+The issue you've mentioned is the "evil" side of the KVM tool. It never
+tried (or claimed) to implement anything close to legacy hardware
+interfaces. This means, for example, that it doesn't run any BIOS, there's
+very lacking APIC support and the kernel is just injected into the virtual
+RAM and gets run from there.
 
-Tony, any other ideas?
+It also means that we went into the PCI spec deep enough to get the code
+to work with the kernel. The only reason we implemented MSI interrupts
+for example is because they provide improved performance with KVM, not
+because we were trying to get a complete implementation of the PCI spec.
 
-Also, can you send full dmesg of both a working boot, without the MCEs
-and one with?
+So yes, the PCI implementation in the KVM tool is lacking and what we
+have there might be broken by making the kernel conform more closely
+to the spec, but we are always happy to adapt and improve our code to
+work with any changes in the kernel.
 
-Leaving in the rest.
-
-On Fri, Mar 21, 2014 at 08:49:51PM +0100, Matthias Graf wrote:
-> (Please CC me on all replies)
-> 
-> mcelog output for all mces:
-> 
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 3 BANK 0
-> MCG status:RIPV MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access
-> Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 3 BANK 5
-> MCG status:RIPV MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200220024080400 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 1 BANK 0
-> MCG status:MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access
-> Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 1 BANK 5
-> MCG status:MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200220010040400 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 2 BANK 0
-> MCG status:MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access
-> Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 2 BANK 5
-> MCG status:MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200221010040400 MCGSTATUS 4
-> 
-> Hardware event. This is not a software error.
-> CPU 0 BANK 5
-> MCG status:RIPV MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200221024080400 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 0 BANK 0
-> MCG status:RIPV MCIP
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access
-> Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 5
-> 
-> 
-> 
-> Am 21.03.2014 18:27, schrieb Borislav Petkov:
-> > On Fri, Mar 21, 2014 at 06:10:23PM +0100, Matthias Graf wrote:
-> >> Please CC me on replies.
-> >>
-> >> [1.] Kernel panic: Fatal Machine Check after booting >=
-> >> 3.13.5-101.fc19.x86_64; 3.12.11-201.fc19.x86_64 works fine!
-> >> [2.] Screen freezes a few seconds after Gnome appears. The error message
-> >> (see attachement) is seldom still printed to the screen. Booting
-> >> 3.12.11-201 with otherwise the same setup, I do not see the panic.
-> >> Booting on different hardware (my laptop) does not produce the panic. I
-> >> also notice low frames per seconds after gnome started up, right before
-> >> the panic occures. I therefore suppose this is graphics hardware related.
-> >> [3.] Fatal Machine Check Exception, RIP Inexact, apic_timer_interrupt,
-> >> Kernel panic
-> >> [4.] 3.13.6-100.fc19.x86_64 && 3.13.5-103.fc19.x86 && 3.13.5-101.fc19.x86_64
-> >> [5.] OCRed: (see Attachement for photo)
-> >>
-> >> Started Accounts Service.
-> >> [ 34.348483] mce: [Hardware Error]: CPU 3: Machine Check Exception: 5 Bank 8: bZ88884888888888
-> >> [ 44.468168] mce: [Hardware Error]: HIP ?IHEXﬁCT? 18:<ffffffff816881f8> {apicgtimer_interrupt+8x8/8x88}
-> >> I 44.468168] mce: [Hardware Error]: TSC 36S??8ad8c
-> >> f 44.468168] mce: [Hardware Error]: PROCESSOR 8:6fb TIM 138471666? SOCKET 8 HPIC 2 microcode ba
-> >> I 44.468168] mce: [Hardware Error]: Run the above through 'mcelog ~~ascii’
-> > 
-> > This looks like you had some text recognition done on the jpeg. :-)
-> > 
-> > Please correct the error message to be exactly as in the jpeg and run it
-> > through mcelog --ascii to see what that bank 8 is trying to tell us.
-> > 
-> > Thanks.
-> > 
-
-> [ 34.348483] mce: [Hardware Error]: CPU 3: Machine Check Exception: 5 Bank 0: b200004000000800
-> [ 44.468168] mce: [Hardware Error]: RIP !INEXACT! 10:<ffffffff816901f0> {apic_timer_interrupt+0x0/0x80}
-> [ 44.468168] mce: [Hardware Error]: TSC 365779ad0c
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 2 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 3: Machine Check Exception: 5 Bank 5: b200220024080400
-> [ 44.468168] mce: [Hardware Error]: RIP !INEXACT! 10:<ffffffff816901f0> {apic_timer_interrupt+0x0/0x80}
-> [ 44.468168] mce: [Hardware Error]: TSC 365779ad0c
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 2 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 1: Machine Check Exception: 4 Bank 0: b200004000000800
-> [ 44.468168] mce: [Hardware Error]: TSC 365779ad42
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 3 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 1: Machine Check Exception: 4 Bank 5: b200220010040400
-> [ 44.468168] mce: [Hardware Error]: TSC 365779ad42
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 3 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 2: Machine Check Exception: 4 Bank 0: b200004000000800
-> [ 44.468168] mce: [Hardware Error]: TSC 365779aeaa
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 1 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 2: Machine Check Exception: 4 Bank 5: b200221010040400
-> [ 44.468168] mce: [Hardware Error]: TSC 365779aeaa
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 1 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 0: Machine Check Exception: 5 Bank 5: b200221024080400
-> [ 44.468168] mce: [Hardware Error]: RIP !INEXACT! 10:<ffffffff816901f0> {apic_timer_interrupt+0x0/0x80}
-> [ 44.468168] mce: [Hardware Error]: TSC 365779aece
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 0 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: CPU 0: Machine Check Exception: 5 Bank 0: b200004000000800
-> [ 44.468168] mce: [Hardware Error]: RIP !INEXACT! 10:<ffffffff816901f0> {apic_timer_interrupt+0x0/0x80}
-> [ 44.468168] mce: [Hardware Error]: TSC 365779aece
-> [ 44.468168] mce: [Hardware Error]: PROCESSOR 0:6fb TIME 1394716667 SOCKET 0 APIC 0 microcode ba
-> [ 44.468168] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-> [ 44.468168] mce: [Hardware Error]: Machine check: Processor context corrupt
-> [ 44.468168] Kernel panic — not syncing: Fatal Machine check
-> [ 44.468168] drm_kms_helper: panic occurred, switching back to text console
-> [ 44.468168] Rebooting in 30 seconds..
-
-> Hardware event. This is not a software error.
-> CPU 3 BANK 0 
-> MCG status:RIPV MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 3 BANK 5 
-> MCG status:RIPV MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200220024080400 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 1 BANK 0 
-> MCG status:MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 1 BANK 5 
-> MCG status:MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200220010040400 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 2 BANK 0 
-> MCG status:MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 4
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 2 BANK 5 
-> MCG status:MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200221010040400 MCGSTATUS 4
-> 
-> Hardware event. This is not a software error.
-> CPU 0 BANK 5 
-> MCG status:RIPV MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: Internal Timer error
-> STATUS b200221024080400 MCGSTATUS 5
-> 
-> 
-> Hardware event. This is not a software error.
-> CPU 0 BANK 0 
-> MCG status:RIPV MCIP 
-> MCi status:
-> Uncorrected error
-> Error enabled
-> Processor context corrupt
-> MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access Request-did-not-timeout Error
-> BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
-> timeout BINIT (ROB timeout). No micro-instruction retired for some time
-> STATUS b200004000000800 MCGSTATUS 5
-> 
+To sum it up, If you'll end up adding a change to the kernel that is
+valid according to the spec but breaks the KVM tool we'll just go ahead
+and fix the tool. You really don't need to worry about breaking it.
 
 
-
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Thanks,
+Sasha
