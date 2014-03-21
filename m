@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966365AbaCUAvX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:51:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36872 "EHLO
+	id S966267AbaCUAw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:52:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36895 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965585AbaCUAEw (ORCPT
+	with ESMTP id S965576AbaCUAEv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:52 -0400
+	Thu, 20 Mar 2014 20:04:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Maarten Baert <maarten-baert@hotmail.com>,
-        Nate Eldredge <nate@thatsmathematics.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>, George Spelvin <linux@horizon.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.13 136/149] x86, fpu: Check tsk_used_math() in kernel_fpu_end() for eager FPU
-Date: Thu, 20 Mar 2014 17:04:59 -0700
-Message-Id: <20140321000441.673328385@linuxfoundation.org>
+        Chad Dupuis <chad.dupuis@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.13 134/149] SCSI: qla2xxx: Fix multiqueue MSI-X registration.
+Date: Thu, 20 Mar 2014 17:04:57 -0700
+Message-Id: <20140321000441.601520912@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -32,82 +30,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Suresh Siddha <sbsiddha@gmail.com>
+From: Chad Dupuis <chad.dupuis@qlogic.com>
 
-commit 731bd6a93a6e9172094a2322bd0ee964bb1f4d63 upstream.
+commit f324777ea88bab2522602671e46fc0851d7d5e35 upstream.
 
-For non-eager fpu mode, thread's fpu state is allocated during the first
-fpu usage (in the context of device not available exception). This
-(math_state_restore()) can be a blocking call and hence we enable
-interrupts (which were originally disabled when the exception happened),
-allocate memory and disable interrupts etc.
+This fixes requesting of the MSI-X vectors for the base response queue.
+The iteration in the for loop in qla24xx_enable_msix() was incorrect.
+We should only iterate of the first two MSI-X vectors and not the total
+number of MSI-X vectors that have given to the driver for this device
+from pci_enable_msix() in this function.
 
-But the eager-fpu mode, call's the same math_state_restore() from
-kernel_fpu_end(). The assumption being that tsk_used_math() is always
-set for the eager-fpu mode and thus avoid the code path of enabling
-interrupts, allocating fpu state using blocking call and disable
-interrupts etc.
-
-But the below issue was noticed by Maarten Baert, Nate Eldredge and
-few others:
-
-If a user process dumps core on an ecrypt fs while aesni-intel is loaded,
-we get a BUG() in __find_get_block() complaining that it was called with
-interrupts disabled; then all further accesses to our ecrypt fs hang
-and we have to reboot.
-
-The aesni-intel code (encrypting the core file that we are writing) needs
-the FPU and quite properly wraps its code in kernel_fpu_{begin,end}(),
-the latter of which calls math_state_restore(). So after kernel_fpu_end(),
-interrupts may be disabled, which nobody seems to expect, and they stay
-that way until we eventually get to __find_get_block() which barfs.
-
-For eager fpu, most the time, tsk_used_math() is true. At few instances
-during thread exit, signal return handling etc, tsk_used_math() might
-be false.
-
-In kernel_fpu_end(), for eager-fpu, call math_state_restore()
-only if tsk_used_math() is set. Otherwise, don't bother. Kernel code
-path which cleared tsk_used_math() knows what needs to be done
-with the fpu state.
-
-Reported-by: Maarten Baert <maarten-baert@hotmail.com>
-Reported-by: Nate Eldredge <nate@thatsmathematics.com>
-Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
-Link: http://lkml.kernel.org/r/1391410583.3801.6.camel@europa
-Cc: George Spelvin <linux@horizon.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Chad Dupuis <chad.dupuis@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/i387.c |   15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/scsi/qla2xxx/qla_isr.c |   46 ++++++++++++++++++++++++++---------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
 
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -86,10 +86,19 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
- 
- void __kernel_fpu_end(void)
+--- a/drivers/scsi/qla2xxx/qla_isr.c
++++ b/drivers/scsi/qla2xxx/qla_isr.c
+@@ -2829,6 +2829,7 @@ static int
+ qla24xx_enable_msix(struct qla_hw_data *ha, struct rsp_que *rsp)
  {
--	if (use_eager_fpu())
--		math_state_restore();
--	else
-+	if (use_eager_fpu()) {
-+		/*
-+		 * For eager fpu, most the time, tsk_used_math() is true.
-+		 * Restore the user math as we are done with the kernel usage.
-+		 * At few instances during thread exit, signal handling etc,
-+		 * tsk_used_math() is false. Those few places will take proper
-+		 * actions, so we don't need to restore the math here.
-+		 */
-+		if (likely(tsk_used_math(current)))
-+			math_state_restore();
-+	} else {
- 		stts();
-+	}
- }
- EXPORT_SYMBOL(__kernel_fpu_end);
+ #define MIN_MSIX_COUNT	2
++#define ATIO_VECTOR	2
+ 	int i, ret;
+ 	struct msix_entry *entries;
+ 	struct qla_msix_entry *qentry;
+@@ -2885,34 +2886,47 @@ msix_failed:
+ 	}
  
+ 	/* Enable MSI-X vectors for the base queue */
+-	for (i = 0; i < ha->msix_count; i++) {
++	for (i = 0; i < 2; i++) {
+ 		qentry = &ha->msix_entries[i];
+-		if (QLA_TGT_MODE_ENABLED() && IS_ATIO_MSIX_CAPABLE(ha)) {
+-			ret = request_irq(qentry->vector,
+-				qla83xx_msix_entries[i].handler,
+-				0, qla83xx_msix_entries[i].name, rsp);
+-		} else if (IS_P3P_TYPE(ha)) {
++		if (IS_P3P_TYPE(ha))
+ 			ret = request_irq(qentry->vector,
+ 				qla82xx_msix_entries[i].handler,
+ 				0, qla82xx_msix_entries[i].name, rsp);
+-		} else {
++		else
+ 			ret = request_irq(qentry->vector,
+ 				msix_entries[i].handler,
+ 				0, msix_entries[i].name, rsp);
+-		}
+-		if (ret) {
+-			ql_log(ql_log_fatal, vha, 0x00cb,
+-			    "MSI-X: unable to register handler -- %x/%d.\n",
+-			    qentry->vector, ret);
+-			qla24xx_disable_msix(ha);
+-			ha->mqenable = 0;
+-			goto msix_out;
+-		}
++		if (ret)
++			goto msix_register_fail;
+ 		qentry->have_irq = 1;
+ 		qentry->rsp = rsp;
+ 		rsp->msix = qentry;
+ 	}
+ 
++	/*
++	 * If target mode is enable, also request the vector for the ATIO
++	 * queue.
++	 */
++	if (QLA_TGT_MODE_ENABLED() && IS_ATIO_MSIX_CAPABLE(ha)) {
++		qentry = &ha->msix_entries[ATIO_VECTOR];
++		ret = request_irq(qentry->vector,
++			qla83xx_msix_entries[ATIO_VECTOR].handler,
++			0, qla83xx_msix_entries[ATIO_VECTOR].name, rsp);
++		qentry->have_irq = 1;
++		qentry->rsp = rsp;
++		rsp->msix = qentry;
++	}
++
++msix_register_fail:
++	if (ret) {
++		ql_log(ql_log_fatal, vha, 0x00cb,
++		    "MSI-X: unable to register handler -- %x/%d.\n",
++		    qentry->vector, ret);
++		qla24xx_disable_msix(ha);
++		ha->mqenable = 0;
++		goto msix_out;
++	}
++
+ 	/* Enable MSI-X vector for response queue update for queue 0 */
+ 	if (IS_QLA83XX(ha)) {
+ 		if (ha->msixbase && ha->mqiobase &&
 
 
