@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966669AbaCUA2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:28:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37202 "EHLO
+	id S966679AbaCUA3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:29:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37197 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965994AbaCUAJL (ORCPT
+	with ESMTP id S965991AbaCUAJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:09:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 72/85] Btrfs: fix data corruption when reading/updating compressed extents
-Date: Thu, 20 Mar 2014 17:10:15 -0700
-Message-Id: <20140321000608.979529111@linuxfoundation.org>
+        Maarten Baert <maarten-baert@hotmail.com>,
+        Nate Eldredge <nate@thatsmathematics.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>, George Spelvin <linux@horizon.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 71/85] x86, fpu: Check tsk_used_math() in kernel_fpu_end() for eager FPU
+Date: Thu, 20 Mar 2014 17:10:14 -0700
+Message-Id: <20140321000608.830183391@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,83 +32,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Filipe David Borba Manana <fdmanana@gmail.com>
+From: Suresh Siddha <sbsiddha@gmail.com>
 
-commit a2aa75e18a21b21952dc6daa9bac7c9f4426f81f upstream.
+commit 731bd6a93a6e9172094a2322bd0ee964bb1f4d63 upstream.
 
-When using a mix of compressed file extents and prealloc extents, it
-is possible to fill a page of a file with random, garbage data from
-some unrelated previous use of the page, instead of a sequence of zeroes.
+For non-eager fpu mode, thread's fpu state is allocated during the first
+fpu usage (in the context of device not available exception). This
+(math_state_restore()) can be a blocking call and hence we enable
+interrupts (which were originally disabled when the exception happened),
+allocate memory and disable interrupts etc.
 
-A simple sequence of steps to get into such case, taken from the test
-case I made for xfstests, is:
+But the eager-fpu mode, call's the same math_state_restore() from
+kernel_fpu_end(). The assumption being that tsk_used_math() is always
+set for the eager-fpu mode and thus avoid the code path of enabling
+interrupts, allocating fpu state using blocking call and disable
+interrupts etc.
 
-   _scratch_mkfs
-   _scratch_mount "-o compress-force=lzo"
-   $XFS_IO_PROG -f -c "pwrite -S 0x06 -b 18670 266978 18670" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "falloc 26450 665194" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "truncate 542872" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "fsync" $SCRATCH_MNT/foobar
+But the below issue was noticed by Maarten Baert, Nate Eldredge and
+few others:
 
-This results in the following file items in the fs tree:
+If a user process dumps core on an ecrypt fs while aesni-intel is loaded,
+we get a BUG() in __find_get_block() complaining that it was called with
+interrupts disabled; then all further accesses to our ecrypt fs hang
+and we have to reboot.
 
-   item 4 key (257 INODE_ITEM 0) itemoff 15879 itemsize 160
-       inode generation 6 transid 6 size 542872 block group 0 mode 100600
-   item 5 key (257 INODE_REF 256) itemoff 15863 itemsize 16
-       inode ref index 2 namelen 6 name: foobar
-   item 6 key (257 EXTENT_DATA 0) itemoff 15810 itemsize 53
-       extent data disk byte 0 nr 0 gen 6
-       extent data offset 0 nr 24576 ram 266240
-       extent compression 0
-   item 7 key (257 EXTENT_DATA 24576) itemoff 15757 itemsize 53
-       prealloc data disk byte 12849152 nr 241664 gen 6
-       prealloc data offset 0 nr 241664
-   item 8 key (257 EXTENT_DATA 266240) itemoff 15704 itemsize 53
-       extent data disk byte 12845056 nr 4096 gen 6
-       extent data offset 0 nr 20480 ram 20480
-       extent compression 2
-   item 9 key (257 EXTENT_DATA 286720) itemoff 15651 itemsize 53
-       prealloc data disk byte 13090816 nr 405504 gen 6
-       prealloc data offset 0 nr 258048
+The aesni-intel code (encrypting the core file that we are writing) needs
+the FPU and quite properly wraps its code in kernel_fpu_{begin,end}(),
+the latter of which calls math_state_restore(). So after kernel_fpu_end(),
+interrupts may be disabled, which nobody seems to expect, and they stay
+that way until we eventually get to __find_get_block() which barfs.
 
-The on disk extent at offset 266240 (which corresponds to 1 single disk block),
-contains 5 compressed chunks of file data. Each of the first 4 compress 4096
-bytes of file data, while the last one only compresses 3024 bytes of file data.
-Therefore a read into the file region [285648 ; 286720[ (length = 4096 - 3024 =
-1072 bytes) should always return zeroes (our next extent is a prealloc one).
+For eager fpu, most the time, tsk_used_math() is true. At few instances
+during thread exit, signal return handling etc, tsk_used_math() might
+be false.
 
-The solution here is the compression code path to zero the remaining (untouched)
-bytes of the last page it uncompressed data into, as the information about how
-much space the file data consumes in the last page is not known in the upper layer
-fs/btrfs/extent_io.c:__do_readpage(). In __do_readpage we were correctly zeroing
-the remainder of the page but only if it corresponds to the last page of the inode
-and if the inode's size is not a multiple of the page size.
+In kernel_fpu_end(), for eager-fpu, call math_state_restore()
+only if tsk_used_math() is set. Otherwise, don't bother. Kernel code
+path which cleared tsk_used_math() knows what needs to be done
+with the fpu state.
 
-This would cause not only returning random data on reads, but also permanently
-storing random data when updating parts of the region that should be zeroed.
-For the example above, it means updating a single byte in the region [285648 ; 286720[
-would store that byte correctly but also store random data on disk.
-
-A test case for xfstests follows soon.
-
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Reported-by: Maarten Baert <maarten-baert@hotmail.com>
+Reported-by: Nate Eldredge <nate@thatsmathematics.com>
+Suggested-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Suresh Siddha <sbsiddha@gmail.com>
+Link: http://lkml.kernel.org/r/1391410583.3801.6.camel@europa
+Cc: George Spelvin <linux@horizon.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/compression.c |    2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/i387.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -1009,6 +1009,8 @@ int btrfs_decompress_buf2page(char *buf,
- 		bytes = min(bytes, working_bytes);
- 		kaddr = kmap_atomic(page_out);
- 		memcpy(kaddr + *pg_offset, buf + buf_offset, bytes);
-+		if (*pg_index == (vcnt - 1) && *pg_offset == 0)
-+			memset(kaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
- 		kunmap_atomic(kaddr);
- 		flush_dcache_page(page_out);
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -86,10 +86,19 @@ EXPORT_SYMBOL(__kernel_fpu_begin);
+ 
+ void __kernel_fpu_end(void)
+ {
+-	if (use_eager_fpu())
+-		math_state_restore();
+-	else
++	if (use_eager_fpu()) {
++		/*
++		 * For eager fpu, most the time, tsk_used_math() is true.
++		 * Restore the user math as we are done with the kernel usage.
++		 * At few instances during thread exit, signal handling etc,
++		 * tsk_used_math() is false. Those few places will take proper
++		 * actions, so we don't need to restore the math here.
++		 */
++		if (likely(tsk_used_math(current)))
++			math_state_restore();
++	} else {
+ 		stts();
++	}
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
  
 
 
