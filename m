@@ -1,90 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965361AbaCUBqB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:46:01 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:35111 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759732AbaCUBp6 convert rfc822-to-8bit (ORCPT
+	id S1760033AbaCUBrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:47:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44236 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759465AbaCUBrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 21:45:58 -0400
-Content-Type: text/plain; charset="utf-8"
+	Thu, 20 Mar 2014 21:47:43 -0400
+Message-ID: <532B9A18.8020606@oracle.com>
+Date: Thu, 20 Mar 2014 21:47:04 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "Maxime Coquelin" <maxime.coquelin@st.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <532AE239.9000800@samsung.com>
-Cc: mark.rutland@arm.com, gregkh@linuxfoundation.org, t.figa@samsung.com,
-        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, linux@arm.linux.org.uk,
-        m.szyprowski@samsung.com, t-kristo@ti.com
-References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
- <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
-Message-ID: <20140321014551.21989.57253@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents and rates
-Date: Thu, 20 Mar 2014 18:45:51 -0700
+To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>, linux-mm@kvack.org
+CC: Andrew Morton <akpm@linux-foundation.org>, Matt Mackall <mpm@selenic.com>,
+        Cliff Wickman <cpw@sgi.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@parallels.com>, Rik van Riel <riel@redhat.com>,
+        kirill.shutemov@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/11] madvise: redefine callback functions for page table
+ walker
+References: <1392068676-30627-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1392068676-30627-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+In-Reply-To: <1392068676-30627-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Sylwester Nawrocki (2014-03-20 05:42:33)
-> Hi Maxime,
-> 
-> On 06/03/14 14:45, Maxime Coquelin wrote:
-> > Hi Sylwester,
-> > 
-> >       I like the principle of your implementation, but I have two questions:
-> >       1 - How can we manage PM with this solution, as the parent/rate will be 
-> > set only once at probe time?
-> >       2 - How to set the parent of a parent clock (which can be shared with 
-> > other devices)? Same question about the parent rates.
-> 
-> Thanks for your feedback and apologies for late reply.
-> 
-> IIUC your first concern is about a situation when clocks need to be
-> reconfigured upon each resume from system sleep or runtime PM resume ?
-> As I mentioned in v1 of the RFC I was considering having individual
-> drivers calling explicitly the clocks set up routine. Presumably this
-> would allow to resolve the power management related issue.
-> One example I'm aware the approach as in this RFC wouldn't work is
-> when a device in a SoC belongs to a power domain, which needs to be
-> first switched on before we can start setting up and the clocks'
-> configuration get lost after the power domain switch off.
+On 02/10/2014 04:44 PM, Naoya Horiguchi wrote:
+> swapin_walk_pmd_entry() is defined as pmd_entry(), but it has no code
+> about pmd handling (except pmd_none_or_trans_huge_or_clear_bad, but the
+> same check are now done in core page table walk code).
+> So let's move this function on pte_entry() as swapin_walk_pte_entry().
+>
+> Signed-off-by: Naoya Horiguchi<n-horiguchi@ah.jp.nec.com>
 
-I like Sylwester's approach of handling this one-time setup in the
-driver core.
+This patch seems to generate:
 
-Any kind of fine grained power management should not be hidden by DT,
-and by definition that logic belongs in the device driver. It can still
-be nicely abstracted away by runtime pm[1].
+[  305.267354] =================================
+[  305.268051] [ INFO: inconsistent lock state ]
+[  305.268678] 3.14.0-rc7-next-20140320-sasha-00015-gd752393-dirty #261 Tainted: G        W
+[  305.269992] ---------------------------------
+[  305.270152] inconsistent {IN-RECLAIM_FS-W} -> {RECLAIM_FS-ON-W} usage.
+[  305.270152] trinity-c57/13619 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[  305.270152]  (&(ptlock_ptr(page))->rlock#2){+.+.?.}, at: walk_pte_range (include/linux/spinlock.h:303 mm/pagewalk.c:33)
+[  305.270152] {IN-RECLAIM_FS-W} state was registered at:
+[  305.270152]   mark_irqflags (kernel/locking/lockdep.c:2821)
+[  305.270152]   __lock_acquire (kernel/locking/lockdep.c:3138)
+[  305.270152]   lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[  305.270152]   _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[  305.270152]   __page_check_address (include/linux/spinlock.h:303 mm/rmap.c:624)
+[  305.270152]   page_referenced_one (mm/rmap.c:706)
+[  305.270152]   rmap_walk_anon (mm/rmap.c:1613)
+[  305.270152]   rmap_walk (mm/rmap.c:1685)
+[  305.270152]   page_referenced (mm/rmap.c:802)
+[  305.270152]   shrink_active_list (mm/vmscan.c:1704)
+[  305.270152]   balance_pgdat (mm/vmscan.c:2741 mm/vmscan.c:2996)
+[  305.270152]   kswapd (mm/vmscan.c:3296)
+[  305.270152]   kthread (kernel/kthread.c:216)
+[  305.270152]   ret_from_fork (arch/x86/kernel/entry_64.S:555)
+[  305.270152] irq event stamp: 20863
+[  305.270152] hardirqs last  enabled at (20863): alloc_pages_vma (arch/x86/include/asm/paravirt.h:809 include/linux/seqlock.h:81 include/linux/seqlock.h:146 include/linux/cpus
+et.h:98 mm/mempolicy.c:1990)
+[  305.270152] hardirqs last disabled at (20862): alloc_pages_vma (include/linux/seqlock.h:79 include/linux/seqlock.h:146 include/linux/cpuset.h:98 mm/mempolicy.c:1990)
+[  305.270152] softirqs last  enabled at (19858): __do_softirq (arch/x86/include/asm/preempt.h:22 kernel/softirq.c:298)
+[  305.270152] softirqs last disabled at (19855): irq_exit (kernel/softirq.c:348 kernel/softirq.c:389)
+[  305.270152]
+[  305.270152] other info that might help us debug this:
+[  305.270152]  Possible unsafe locking scenario:
+[  305.270152]
+[  305.270152]        CPU0
+[  305.270152]        ----
+[  305.270152]   lock(&(ptlock_ptr(page))->rlock#2);
+[  305.270152]   <Interrupt>
+[  305.270152]     lock(&(ptlock_ptr(page))->rlock#2);
+[  305.270152]
+[  305.270152]  *** DEADLOCK ***
+[  305.270152]
+[  305.270152] 2 locks held by trinity-c57/13619:
+[  305.270152]  #0:  (&mm->mmap_sem){++++++}, at: SyS_madvise (arch/x86/include/asm/current.h:14 mm/madvise.c:492 mm/madvise.c:448)
+[  305.270152]  #1:  (&(ptlock_ptr(page))->rlock#2){+.+.?.}, at: walk_pte_range (include/linux/spinlock.h:303 mm/pagewalk.c:33)
+[  305.270152]
+[  305.270152] stack backtrace:
+[  305.270152] CPU: 23 PID: 13619 Comm: trinity-c57 Tainted: G        W     3.14.0-rc7-next-20140320-sasha-00015-gd752393-dirty #261
+[  305.270152]  ffff8804ab8e0d28 ffff8804ab9c5968 ffffffff844b76e7 0000000000000001
+[  305.270152]  ffff8804ab8e0000 ffff8804ab9c59c8 ffffffff811a55f7 0000000000000000
+[  305.270152]  0000000000000001 ffff880400000001 ffffffff87e18ed8 000000000000000a
+[  305.270152] Call Trace:
+[  305.270152]  dump_stack (lib/dump_stack.c:52)
+[  305.270152]  print_usage_bug (kernel/locking/lockdep.c:2254)
+[  305.270152]  ? check_usage_forwards (kernel/locking/lockdep.c:2371)
+[  305.270152]  mark_lock_irq (kernel/locking/lockdep.c:2465)
+[  305.270152]  mark_lock (kernel/locking/lockdep.c:2920)
+[  305.270152]  mark_held_locks (kernel/locking/lockdep.c:2523)
+[  305.270152]  lockdep_trace_alloc (kernel/locking/lockdep.c:2745 kernel/locking/lockdep.c:2760)
+[  305.270152]  __alloc_pages_nodemask (mm/page_alloc.c:2722)
+[  305.270152]  ? mark_held_locks (kernel/locking/lockdep.c:2523)
+[  305.270152]  ? alloc_pages_vma (arch/x86/include/asm/paravirt.h:809 include/linux/seqlock.h:81 include/linux/seqlock.h:146 include/linux/cpuset.h:98 mm/mempolicy.c:1990)
+[  305.270152]  alloc_pages_vma (include/linux/mempolicy.h:76 mm/mempolicy.c:2006)
+[  305.270152]  ? read_swap_cache_async (mm/swap_state.c:328)
+[  305.270152]  ? __const_udelay (arch/x86/lib/delay.c:126)
+[  305.270152]  read_swap_cache_async (mm/swap_state.c:328)
+[  305.270152]  ? walk_pte_range (include/linux/spinlock.h:303 mm/pagewalk.c:33)
+[  305.270152]  swapin_walk_pte_entry (mm/madvise.c:152)
+[  305.270152]  walk_pte_range (mm/pagewalk.c:47)
+[  305.270152]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[  305.270152]  walk_pmd_range (mm/pagewalk.c:90)
+[  305.270152]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[  305.270152]  ? kvm_clock_read (arch/x86/include/asm/preempt.h:90 arch/x86/kernel/kvmclock.c:86)
+[  305.270152]  walk_pud_range (mm/pagewalk.c:128)
+[  305.270152]  walk_pgd_range (mm/pagewalk.c:165)
+[  305.270152]  __walk_page_range (mm/pagewalk.c:259)
+[  305.270152]  walk_page_range (mm/pagewalk.c:333)
+[  305.270152]  madvise_willneed (mm/madvise.c:167 mm/madvise.c:211)
+[  305.270152]  ? madvise_hwpoison (mm/madvise.c:140)
+[  305.270152]  madvise_vma (mm/madvise.c:369)
+[  305.270152]  ? find_vma (mm/mmap.c:2021)
+[  305.270152]  SyS_madvise (mm/madvise.c:518 mm/madvise.c:448)
+[  305.270152]  ia32_do_call (arch/x86/ia32/ia32entry.S:430)
 
-Regards,
-Mike
 
-[1] Message-ID: <20140320114238.GQ7528@n2100.arm.linux.org.uk>
-
-> 
-> OTOH I suspect devices for which one-time clocks setup is sufficient
-> will be quite common. And for these there would need to be a single
-> call to the setup routine in probe() I guess, since it wouldn't be
-> possible to figure out just from the DT data when the actual call
-> should be made.
-> 
-> For a global clocks configuration, I thought about specifying that
-> in the clocks controller node, and then to have the setup routine
-> called e.g. from of_clk_init(). I think that could work well enough,
-> together with the patch [1], adding clock dependencies handling.
-> But then the clock frequency set up function would need to be
-> modified to respect the clock parent relationships, similarly as
-> in patch series [2]. A just noticed [2] recently, after posting
-> this RFC (adding Tero at Cc).
-> 
-> --
-> Regards,
-> Sylwester
-> 
-> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
-> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
+Thanks,
+Sasha
