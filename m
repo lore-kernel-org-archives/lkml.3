@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751126AbaCURsY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:48:24 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45027 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750763AbaCURsW (ORCPT
+	id S1750914AbaCURwD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:52:03 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56099 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbaCURv7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:48:22 -0400
-Date: Fri, 21 Mar 2014 17:48:14 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Axel Lin <axel.lin@ingics.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
-Message-ID: <20140321174814.GE552@sirena.org.uk>
-References: <1395384848.32206.1.camel@phoenix>
+	Fri, 21 Mar 2014 13:51:59 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Emilio =?iso-8859-1?q?L=F3pez?= <emilio@elopez.com.ar>
+Subject: Re: stmmac-socfpga breakage in arm-soc
+Date: Fri, 21 Mar 2014 18:51:17 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Dinh Nguyen <dinh.linux@gmail.com>,
+        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>, arm@kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Dinh Nguyen <dinguyen@altera.com>
+References: <201403191333.01095.arnd@arndb.de> <29079107.ja9Hu9mMY0@wuerfel> <5329CA2A.8030309@elopez.com.ar>
+In-Reply-To: <5329CA2A.8030309@elopez.com.ar>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zaRBsRFn0XYhEU69"
-Content-Disposition: inline
-In-Reply-To: <1395384848.32206.1.camel@phoenix>
-X-Cookie: Contents may settle during shipment.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH RFT] regulator: s5m8767: Convert to use
- regulator_[enable|disable|is_enabled]_regmap
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201403211851.17955.arnd@arndb.de>
+X-Provags-ID: V02:K0:S20ZmAnPaCVKQyLJITR524nft7vX2Ksee6xEQEYJ4z9
+ malE6KUxdIZpgpC67nknnzVHPpfGxZdyLqP8sxHxDJG6iTpmI/
+ 1Zl7QgCjGVXj3CJsb00CCgtCjx6kAaqceP7EhhWqK5SkB5I4qw
+ 8/zTLHeUz84rJE/RZSlYj3s3ZTmLiZtz5zMELWRNKbSl3B7ftW
+ 4wSyfvh22iJ1w1MGWdX2ztmoTzJSS4popHwbdNvzBnqW4C6kRP
+ ps7G/36ppSovC7rwBtLfqc9KQemFITJfslo5cDfrW1EQm75bcq
+ Boh+OZ9JBpOwGm7SKPmnu8/4OlB3BGbJQOlpXlVaRMh6+l5xxf
+ dAzj9uFOL8fTa7ihnh6N8x9jQ6ihzpOHiWbbQJbe1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday 19 March 2014, Emilio López wrote:
+> El 19/03/14 11:58, Arnd Bergmann escribió:
+> (snip)
+> > diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+> > index 5748351..19d5648 100644
+> > --- a/Documentation/devicetree/bindings/net/stmmac.txt
+> > +++ b/Documentation/devicetree/bindings/net/stmmac.txt
+> > @@ -31,6 +31,10 @@ Optional properties:
+> >   - reset-names: Should contain the reset signal name "stmmaceth", if a
+> >       reset phandle is given
+> >   - max-frame-size: See ethernet.txt file in the same directory
+> > +- clocks: If present, the first clock should be the GMAC main clock,
+> > +  further clocks may be specified in derived bindings
+> > +- clock-names: One name for each entry in the clocks property, the
+> > +  first one should be "stmmaceth".
+> >
+> >   Examples:
+> >
+> > @@ -43,4 +47,6 @@ Examples:
+> >               mac-address = [000000000000]; /* Filled in by U-Boot */
+> >               max-frame-size = <3800>;
+> >               phy-mode = "gmii";
+> > +             clocks = <&clock>;
+> > +             clock-names = "stmmaceth">
+> 
+> There's a small typo there on the ;
 
---zaRBsRFn0XYhEU69
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Fixed the typo locally. However, now we have another problem: I tried
+to apply the update patch to arm-soc and found that I originally based
+it on linux-next, which has a number of conflicting changes that are
+not in arm-soc.
 
-On Fri, Mar 21, 2014 at 02:54:08PM +0800, Axel Lin wrote:
-> Since commit ca5d1b3524b4d
-> "regulator: helpers: Modify helpers enabling multi-bit control",
-> we can set enable_val setting for device that use multiple bits for control.
+It's probably better if I remove the driver entirely from the arm-soc
+tree and instead send the modified version to David Miller for him
+to put it into the net tree.
 
-Applied, thanks.
-
---zaRBsRFn0XYhEU69
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTLHtbAAoJELSic+t+oim9C1MP/10gfb4+nVAlJxkKFO5kerLC
-t9hXHvDGv+Oz65H2sEcVkY3ZHRhJRLgSEScMoWqU7PRvaCu45kp24iWMsHccSf8e
-C9F/O5NYGdW2/ReJzqpENmO1SHgX5ZfkH3TufcCPaZNvM2bdLirSokxurY4E+9Ev
-Tc3mJl82xSL7GNCEOD/6wPl3Ueua+V3YL6+i9u9QedRVOaLE9erxeJ+hiKCcXafK
-MaHo7yWtyMxOj0DQf5bkFQ/SGTI63UuvA6LelFxLA7Nj06hW764tZTSmXObMMTX6
-NqhB6sMXqJCD7SRG/BKnlMh/U4OZvmJIunqE4gZrFqln6LATiRMKa2kt8m3gclya
-/uwMFdu7aEyoIt9WI5WR/W2nxhLlwBcsSL5HiMtls/7XXC9bjmPG0MXv/OcXNzgC
-wVDBe/k55MtDwoJUD2UZhymlWxWHNOISIQY6iZf19buKlAPvkKtgvRZwIi3sEbf5
-jKIAuU+EX2G/bp6C6kFFE9h3OaISGip19R/JtMxMx1qKb8W392GSfZ6SKC33ghaQ
-Ew2ajiS6h7tTYs8J/D62YqCKZx89vfa7bL/ZHH36T+AJ3PS8LRqVg9wVdvlYXUqo
-EX4uOCqxTwYoPiktAcXOjEYL1xJW/jaf/PDoTA/DwVGMkVh39vbLZ/QVrkJ8kxKN
-6OaMU0eQDZxU4EF8UzwG
-=ZQTv
------END PGP SIGNATURE-----
-
---zaRBsRFn0XYhEU69--
+	Arnd
