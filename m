@@ -1,73 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaCUTm4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:42:56 -0400
-Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.27]:53145 "EHLO
-	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750738AbaCUTmy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:42:54 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>
-Subject: RE: [PATCH net-next,v4] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Topic: [PATCH net-next,v4] hyperv: Add support for virtual Receive
- Side Scaling (vRSS)
-Thread-Index: AQHPRIRp2+tv4l9QfEGdVn3+gbBu6prsWQWAgAABaoD//459QIAAfAWA//+NAcA=
-Date: Fri, 21 Mar 2014 19:42:21 +0000
-Message-ID: <58b32963c3b7416b82e96267d42b926f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
-References: <20140321.144957.550032279989990583.davem@davemloft.net>
-	<20140321.145501.2003616654661701935.davem@davemloft.net>
-	<84837c9e73f24bcd8f652a24f616ff1e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
- <20140321.153237.2236797908349183626.davem@davemloft.net>
-In-Reply-To: <20140321.153237.2236797908349183626.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751974AbaCUTn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:43:26 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:54105 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751056AbaCUTnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 15:43:22 -0400
+X-IronPort-AV: E=Sophos;i="4.97,705,1389744000"; 
+   d="scan'208";a="113763178"
+Message-ID: <532C9389.4040908@citrix.com>
+Date: Fri, 21 Mar 2014 19:31:21 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(51704005)(13464003)(377454003)(199002)(189002)(44976005)(87266001)(85306002)(74366001)(2656002)(74706001)(80022001)(20776003)(2009001)(6806004)(97756001)(74876001)(19580395003)(80976001)(46406003)(63696002)(97336001)(66066001)(83322001)(19580405001)(97736001)(81686001)(84676001)(92566001)(81816001)(47776003)(85852003)(50466002)(65816001)(97186001)(83072002)(33646001)(77982001)(59766001)(31966008)(74502001)(76786001)(76482001)(4396001)(76796001)(53806001)(51856001)(50986001)(47976001)(47736001)(49866001)(90146001)(56776001)(54316002)(94316002)(54356001)(69226001)(86612001)(94946001)(95666003)(47446002)(74662001)(56816005)(87936001)(23726002)(93516002)(81342001)(46102001)(93136001)(95416001)(98676001)(79102001)(81542001)(93886001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB590;H:hybrid.exchange.microsoft.com;FPR:B896F882.3ED3913A.39F13B5E.A2E2AB39.201C1;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-Exchange-Antispam-Report-Test: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
-X-Forefront-PRVS: 0157DEB61B
-X-OriginatorOrg: msft.ccsctp.net
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next] xen-netback: Follow-up patch for grant mapping
+ series
+References: <1395343961-4744-1-git-send-email-zoltan.kiss@citrix.com>	 <1395343961-4744-2-git-send-email-zoltan.kiss@citrix.com> <1395394872.27358.11.camel@kazak.uk.xensource.com>
+In-Reply-To: <1395394872.27358.11.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21/03/14 09:41, Ian Campbell wrote:
+> On Thu, 2014-03-20 at 19:32 +0000, Zoltan Kiss wrote:
+>> Ian made some late comments about the grant mapping series, I incorporated the
+>> outcomes into this patch. Additional comments, refactoring etc.
+>
+> I don't know how davem feels about merging these kinds of thing into one
+> patch but from my point of view the least thing to do is to enumerate
+> the cleanups -- so that people can verify that the patch does infact do
+> exactly what it says it does, no more, no less.
+Ok, I'll make a detailed list in the commit message about what are the 
+changes, and fix up the typos you mentioned below.
+>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> ---
+>> diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+>> index 6837bfc..fa19538 100644
+>> --- a/drivers/net/xen-netback/interface.c
+>> +++ b/drivers/net/xen-netback/interface.c
+>> @@ -576,15 +576,15 @@ void xenvif_disconnect(struct xenvif *vif)
+>>   void xenvif_free(struct xenvif *vif)
+>>   {
+>>   	int i, unmap_timeout = 0;
+>> -	/* Here we want to avoid timeout messages if an skb can be legitimatly
+>> -	 * stucked somewhere else. Realisticly this could be an another vif's
+>> +	/* Here we want to avoid timeout messages if an skb can be legitimately
+>> +	 * stuck somewhere else. Realistically this could be an another vif's
+>>   	 * internal or QDisc queue. That another vif also has this
+>>   	 * rx_drain_timeout_msecs timeout, but the timer only ditches the
+>>   	 * internal queue. After that, the QDisc queue can put in worst case
+>>   	 * XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS skbs into that another vif's
+>>   	 * internal queue, so we need several rounds of such timeouts until we
+>>   	 * can be sure that no another vif should have skb's from us. We are
+>> -	 * not sending more skb's, so newly stucked packets are not interesting
+>> +	 * not sending more skb's, so newly stuck packets are not interesting
+>>   	 * for us here.
+>>   	 */
+>>   	unsigned int worst_case_skb_lifetime = (rx_drain_timeout_msecs/1000) *
+>> @@ -599,6 +599,13 @@ void xenvif_free(struct xenvif *vif)
+>>   				netdev_err(vif->dev,
+>>   					   "Page still granted! Index: %x\n",
+>>   					   i);
+>> +			/* If there are still unmapped pages, reset the loop to
+>> +			 * start mchecking again. We shouldn't exit here until
+>
+> "checking"
+>
+>> +			 * dealloc thread and NAPI instance release all the
+>> +			 * pages. If a kernel bug cause the skbs stall
+>
+> "causes the skbs to stall"
+>
+>> +			 * somewhere, the interface couldn't be brought down
+>> +			 * properly.
+>
+> I'm not sure what you are saying here exactly. Perhaps you means
+> s/couldn't/cannot/?
+>
+>> +			 */
+>>   			i = -1;
+>>   		}
+>>   	}
+>> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+>> index 1c336f6..0e46184b 100644
+>> --- a/drivers/net/xen-netback/netback.c
+>> +++ b/drivers/net/xen-netback/netback.c
+>> @@ -56,7 +56,7 @@ bool separate_tx_rx_irq = 1;
+>>   module_param(separate_tx_rx_irq, bool, 0644);
+>>
+>>   /* When guest ring is filled up, qdisc queues the packets for us, but we have
+>> - * to timeout them, otherwise other guests' packets can get stucked there
+>> + * to timeout them, otherwise other guests' packets can get stuck there
+>>    */
+>>   unsigned int rx_drain_timeout_msecs = 10000;
+>>   module_param(rx_drain_timeout_msecs, uint, 0444);
+>> @@ -99,6 +99,9 @@ static inline unsigned long idx_to_kaddr(struct xenvif *vif,
+>>   	return (unsigned long)pfn_to_kaddr(idx_to_pfn(vif, idx));
+>>   }
+>>
+>> +#define callback_param(vif, pending_idx) \
+>> +	(vif->pending_tx_info[pending_idx].callback_struct)
+>> +
+>>   /* Find the containing VIF's structure from a pointer in pending_tx_info array
+>>    */
+>>   static inline struct xenvif* ubuf_to_vif(struct ubuf_info *ubuf)
+>> @@ -1025,12 +1028,12 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
+>>   		/* If this is not the first frag, chain it to the previous*/
+>>   		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
+>>   			skb_shinfo(skb)->destructor_arg =
+>> -				&vif->pending_tx_info[pending_idx].callback_struct;
+>> +				&callback_param(vif, pending_idx);
+>>   		else if (likely(pending_idx != prev_pending_idx))
+>> -			vif->pending_tx_info[prev_pending_idx].callback_struct.ctx =
+>> -				&(vif->pending_tx_info[pending_idx].callback_struct);
+>> +			callback_param(vif, prev_pending_idx).ctx =
+>> +				&callback_param(vif, pending_idx);
+>>
+>> -		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
+>> +		callback_param(vif, pending_idx).ctx = NULL;
+>>   		prev_pending_idx = pending_idx;
+>>
+>>   		txp = &vif->pending_tx_info[pending_idx].req;
+>> @@ -1400,13 +1403,13 @@ static int xenvif_tx_submit(struct xenvif *vif)
+>>   		memcpy(skb->data,
+>>   		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
+>>   		       data_len);
+>> -		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
+>> +		callback_param(vif, pending_idx).ctx = NULL;
+>>   		if (data_len < txp->size) {
+>>   			/* Append the packet payload as a fragment. */
+>>   			txp->offset += data_len;
+>>   			txp->size -= data_len;
+>>   			skb_shinfo(skb)->destructor_arg =
+>> -				&vif->pending_tx_info[pending_idx].callback_struct;
+>> +				&callback_param(vif, pending_idx);
+>>   		} else {
+>>   			/* Schedule a response immediately. */
+>>   			xenvif_idx_unmap(vif, pending_idx);
+>> @@ -1550,7 +1553,6 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+>>   					    idx_to_kaddr(vif, pending_idx),
+>>   					    GNTMAP_host_map,
+>>   					    vif->grant_tx_handle[pending_idx]);
+>> -			/* Btw. already unmapped? */
+>>   			xenvif_grant_handle_reset(vif, pending_idx);
+>>   			++gop;
+>>   		}
+>> @@ -1683,12 +1685,20 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+>>   			    idx_to_kaddr(vif, pending_idx),
+>>   			    GNTMAP_host_map,
+>>   			    vif->grant_tx_handle[pending_idx]);
+>> -	/* Btw. already unmapped? */
+>>   	xenvif_grant_handle_reset(vif, pending_idx);
+>>
+>>   	ret = gnttab_unmap_refs(&tx_unmap_op, NULL,
+>>   				&vif->mmap_pages[pending_idx], 1);
+>> -	BUG_ON(ret);
+>> +	if (ret) {
+>> +		netdev_err(vif->dev,
+>> +			   "Unmap fail: ret: %d pending_idx: %d host_addr: %llx handle: %x status: %d\n",
+>> +			   ret,
+>> +			   pending_idx,
+>> +			   tx_unmap_op.host_addr,
+>> +			   tx_unmap_op.handle,
+>> +			   tx_unmap_op.status);
+>> +		BUG();
+>> +	}
+>>
+>>   	xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
+>>   }
+>
+>
 
-
-> -----Original Message-----
-> From: David Miller [mailto:davem@davemloft.net]
-> Sent: Friday, March 21, 2014 3:33 PM
-> To: Haiyang Zhang
-> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
-> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org
-> Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
-> Side Scaling (vRSS)
-> 
-> From: Haiyang Zhang <haiyangz@microsoft.com>
-> Date: Fri, 21 Mar 2014 19:12:43 +0000
-> 
-> > Could it be merged into net-next tree?
-> 
-> You submitted a patch against net-next, that means you are implicitly
-> stating that all dependencies are in place in _that_ tree and that
-> you tested it in _that_ tree.
-> 
-> If the situation is otherwise you must explicitly state this in your
-> patch submission.
-
-I will re-submit the vRSS patch with the dependency specified.
-Thanks,
-- Haiyang
