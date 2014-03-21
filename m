@@ -1,111 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966866AbaCUAx4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:53:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36857 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965558AbaCUAEq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:46 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Filipe David Borba Manana <fdmanana@gmail.com>,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.13 139/149] Btrfs: fix data corruption when reading/updating compressed extents
-Date: Thu, 20 Mar 2014 17:05:02 -0700
-Message-Id: <20140321000441.769965219@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
-References: <20140321000436.377902063@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S967017AbaCUAyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:54:37 -0400
+Received: from mail1.bemta7.messagelabs.com ([216.82.254.113]:6249 "EHLO
+	mail1.bemta7.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965308AbaCUAye convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:54:34 -0400
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 20:54:34 EDT
+X-Env-Sender: Seth.Bollinger@digi.com
+X-Msg-Ref: server-12.tower-200.messagelabs.com!1395362896!12566099!1
+X-Originating-IP: [66.77.174.14]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Bollinger, Seth" <Seth.Bollinger@digi.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>
+Subject: Re: Possible software flow problem in serial_core
+Thread-Topic: Possible software flow problem in serial_core
+Thread-Index: AQHPREKU9KCJrmW7V0KAljYo9hJjt5rq7RmA//+0KoCAAGS3AP//r/qA
+Date: Fri, 21 Mar 2014 00:48:14 +0000
+Message-ID: <CF50F620.6EC5%seth.bollinger@digi.com>
+References: <CF505B08.6E64%seth.bollinger@digi.com>
+ <532B743F.2030705@hurleysoftware.com>
+ <CF50E0EB.6E95%seth.bollinger@digi.com> <532B891E.80705@hurleysoftware.com>
+In-Reply-To: <532B891E.80705@hurleysoftware.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.3.9.131030
+x-originating-ip: [172.26.1.22]
+x-kse-antivirus-interceptor-info: scan successful
+x-kse-antivirus-info: Clean
+Content-Type: text/plain; charset="us-ascii"
+Content-ID: <0040CEEBC5F68448B2A7BF85A466E136@digi.com>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+>Yeah, you're right; thanks for catching this.
+>(I was busy looking at the ll driver and completely missed the bug in
+>the serial core).
+>
+>uart_start() should not be conditioning the call to start_tx() on
+>the ring buffer being empty; ll drivers should already be able to handle
+>that because CTS flow control change will start_tx regardless of the ring
+>buffer count.
+>
+>Will you send a patch?
 
-From: Filipe David Borba Manana <fdmanana@gmail.com>
+Sure thing.  Just to be clear, you want to remove the ring buffer tests
+and leave the tty tests, right?
 
-commit a2aa75e18a21b21952dc6daa9bac7c9f4426f81f upstream.
+This will have to wait for the morning though.  :)
 
-When using a mix of compressed file extents and prealloc extents, it
-is possible to fill a page of a file with random, garbage data from
-some unrelated previous use of the page, instead of a sequence of zeroes.
-
-A simple sequence of steps to get into such case, taken from the test
-case I made for xfstests, is:
-
-   _scratch_mkfs
-   _scratch_mount "-o compress-force=lzo"
-   $XFS_IO_PROG -f -c "pwrite -S 0x06 -b 18670 266978 18670" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "falloc 26450 665194" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "truncate 542872" $SCRATCH_MNT/foobar
-   $XFS_IO_PROG -c "fsync" $SCRATCH_MNT/foobar
-
-This results in the following file items in the fs tree:
-
-   item 4 key (257 INODE_ITEM 0) itemoff 15879 itemsize 160
-       inode generation 6 transid 6 size 542872 block group 0 mode 100600
-   item 5 key (257 INODE_REF 256) itemoff 15863 itemsize 16
-       inode ref index 2 namelen 6 name: foobar
-   item 6 key (257 EXTENT_DATA 0) itemoff 15810 itemsize 53
-       extent data disk byte 0 nr 0 gen 6
-       extent data offset 0 nr 24576 ram 266240
-       extent compression 0
-   item 7 key (257 EXTENT_DATA 24576) itemoff 15757 itemsize 53
-       prealloc data disk byte 12849152 nr 241664 gen 6
-       prealloc data offset 0 nr 241664
-   item 8 key (257 EXTENT_DATA 266240) itemoff 15704 itemsize 53
-       extent data disk byte 12845056 nr 4096 gen 6
-       extent data offset 0 nr 20480 ram 20480
-       extent compression 2
-   item 9 key (257 EXTENT_DATA 286720) itemoff 15651 itemsize 53
-       prealloc data disk byte 13090816 nr 405504 gen 6
-       prealloc data offset 0 nr 258048
-
-The on disk extent at offset 266240 (which corresponds to 1 single disk block),
-contains 5 compressed chunks of file data. Each of the first 4 compress 4096
-bytes of file data, while the last one only compresses 3024 bytes of file data.
-Therefore a read into the file region [285648 ; 286720[ (length = 4096 - 3024 =
-1072 bytes) should always return zeroes (our next extent is a prealloc one).
-
-The solution here is the compression code path to zero the remaining (untouched)
-bytes of the last page it uncompressed data into, as the information about how
-much space the file data consumes in the last page is not known in the upper layer
-fs/btrfs/extent_io.c:__do_readpage(). In __do_readpage we were correctly zeroing
-the remainder of the page but only if it corresponds to the last page of the inode
-and if the inode's size is not a multiple of the page size.
-
-This would cause not only returning random data on reads, but also permanently
-storing random data when updating parts of the region that should be zeroed.
-For the example above, it means updating a single byte in the region [285648 ; 286720[
-would store that byte correctly but also store random data on disk.
-
-A test case for xfstests follows soon.
-
-Signed-off-by: Filipe David Borba Manana <fdmanana@gmail.com>
-Signed-off-by: Chris Mason <clm@fb.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/btrfs/compression.c |    2 ++
- 1 file changed, 2 insertions(+)
-
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -1011,6 +1011,8 @@ int btrfs_decompress_buf2page(char *buf,
- 		bytes = min(bytes, working_bytes);
- 		kaddr = kmap_atomic(page_out);
- 		memcpy(kaddr + *pg_offset, buf + buf_offset, bytes);
-+		if (*pg_index == (vcnt - 1) && *pg_offset == 0)
-+			memset(kaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
- 		kunmap_atomic(kaddr);
- 		flush_dcache_page(page_out);
- 
-
+Seth
 
