@@ -1,80 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933805AbaCUJIf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:08:35 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:36716 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760186AbaCUJIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:08:31 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Cc: linux-serial@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH resend] serial_core: Fix pm imbalance on unbind
-Date: Fri, 21 Mar 2014 10:08:25 +0100
-Message-Id: <1395392905-29569-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1760334AbaCUJNj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:13:39 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:60260 "EHLO smtp.multi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758082AbaCUJNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:13:35 -0400
+Message-ID: <532BFB76.60709@mageia.org>
+Date: Fri, 21 Mar 2014 10:42:30 +0200
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 000/149] 3.13.7-stable review
+References: <20140321000436.377902063@linuxfoundation.org> <532BD009.7020204@roeck-us.net>
+In-Reply-To: <532BD009.7020204@roeck-us.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Guenter Roeck skrev 21.3.2014 07:37:
+> On 03/20/2014 05:02 PM, Greg Kroah-Hartman wrote:
+>> This is the start of the stable review cycle for the 3.13.7 release.
+>> There are 149 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+>>
+>> Responses should be made by Sun Mar 23 00:03:54 UTC 2014.
+>> Anything received after that time might be too late.
+>>
+>
+> Build results:
+>      total: 126 pass: 120 skipped: 4 fail: 2
+>
+> qemu tests all passed.
+>
+> There are two new build failures.
+>
+> Building powerpc:mpc85xx_defconfig ... failed
+> Building powerpc:mpc85xx_smp_defconfig ... failed
+>
+> The failure is the same in both cases.
+>
+> drivers/i2c/busses/i2c-cpm.c: In function 'cpm_i2c_setup':
+> drivers/i2c/busses/i2c-cpm.c:450:2: error: implicit declaration of
+> function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
+> drivers/i2c/busses/i2c-cpm.c:461:2: error: implicit declaration of
+> function 'of_iomap' [-Werror=implicit-function-declaration]
+>
+> It appears you picked this up from the latest mainline, where the
+> same builds fail with the same error. The problem was introduced
+> in mainline between rc6 and rc7.
+>
+> I have no immediate idea which patch causes the problem.
+> I can bisect tomorrow if needed.
 
-When a serial port is closed, uart_close() takes care of shutting down the
-hardware, and powering it down.
+Probably this one exposing additional code to be built:
 
-When a serial port is unbound while in use, uart_close() bypasses all of
-this, as this is supposed to be done through uart_hangup() (invoked via
-tty_vhangup() in uart_remove_one_port()).
 
-However, uart_hangup() does not set the hardware's power state, leaving it
-powered up.  This may also lead to unbounded nesting counts in clock and
-power management, depending on their internal implementation.
+ From 62c19c9d29e65086e5ae76df371ed2e6b23f00cd Mon Sep 17 00:00:00 2001
+From: Richard Weinberger <richard@nod.at>
+Date: Sun, 9 Feb 2014 19:47:40 +0100
+Subject: i2c: Remove usage of orphaned symbol OF_I2C
 
-Make sure to power down the port in uart_hangup(), except when the port is
-used as a serial console. For serial consoles, this must be postponed until
-after their deregistration in uart_remove_one_port() (symmetry with
-registration in uart_configure_port(), invoked from uart_add_one_port()).
+From: Richard Weinberger <richard@nod.at>
 
-After this, the module clock used by the sh-sci driver is disabled on
-unbind while the serial port is in use.
+commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+The symbol is an orphan, don't depend on it anymore.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+[wsa: enhanced commit message]
+Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
- drivers/tty/serial/serial_core.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+  drivers/i2c/busses/Kconfig |    2 +-
+  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index 2cf5649a6dc0..56dda84f82a5 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -1452,6 +1452,8 @@ static void uart_hangup(struct tty_struct *tty)
- 		clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
- 		spin_unlock_irqrestore(&port->lock, flags);
- 		tty_port_tty_set(port, NULL);
-+		if (!uart_console(state->uart_port))
-+			uart_change_pm(state, UART_PM_STATE_OFF);
- 		wake_up_interruptible(&port->open_wait);
- 		wake_up_interruptible(&port->delta_msr_wait);
- 	}
-@@ -2681,10 +2683,12 @@ int uart_remove_one_port(struct uart_driver *drv, struct uart_port *uport)
- 	}
- 
- 	/*
--	 * If the port is used as a console, unregister it
-+	 * If the port is used as a console, unregister it, and power it down
- 	 */
--	if (uart_console(uport))
-+	if (uart_console(uport)) {
- 		unregister_console(uport->cons);
-+		uart_change_pm(state, UART_PM_STATE_OFF);
-+	}
- 
- 	/*
- 	 * Free the port IO and memory resources, if any.
--- 
-1.7.9.5
+--- a/drivers/i2c/busses/Kconfig
++++ b/drivers/i2c/busses/Kconfig
+@@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
+
+  config I2C_CPM
+         tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
+-       depends on (CPM1 || CPM2) && OF_I2C
++       depends on CPM1 || CPM2
+         help
+           This supports the use of the I2C interface on Freescale
+           processors with CPM1 or CPM2.
+
 
