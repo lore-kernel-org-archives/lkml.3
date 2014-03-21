@@ -1,105 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760820AbaCUMkO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:40:14 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:53681 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755343AbaCUMkL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:40:11 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-30-532c3329531b
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Mike Turquette <mturquette@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Tushar Behera <tushar.behera@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH-next 1/2] clk: s2mps11: Add missing of_node_put and
- of_clk_del_provider
-Date: Fri, 21 Mar 2014 13:40:02 +0100
-Message-id: <1395405603-11772-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrOJMWRmVeSWpSXmKPExsVy+t/xa7qaxjrBBo0bFC02zljPavH6haHF
-	2aY37BabHl9jtbi8aw6bxYzz+5gs1h65y27xdMJFNov1M16zWLT/3cvmwOVx59oeNo/NS+o9
-	+rasYvT4vEkugCWKyyYlNSezLLVI3y6BK+Pq34lsBTsFKyb8m8LSwHiOr4uRk0NCwETies82
-	JghbTOLCvfVsXYxcHEICSxkl7i8+yA7h9DFJLPr9ghmkik3AWGLz8iVgVSICUxklNq5fxATi
-	MAtMZpJYtuwgI0iVsECkxL/1e1lBbBYBVYlNa36CxXkF3CUWNB0GmsQBtE9BYs4kmwmM3AsY
-	GVYxiqaWJhcUJ6XnGuoVJ+YWl+al6yXn525ihATOlx2Mi49ZHWIU4GBU4uGt4NQOFmJNLCuu
-	zD3EKMHBrCTCu9NAJ1iINyWxsiq1KD++qDQntfgQIxMHp1QD4yK/iYovD618E+JhulYjrUOx
-	7OyhmisCgWJ/vhrtYzsWrhh6VMU70HXlIoMnR77JmAodSv6tzrvFn/OIYu3di39PbvTRsOdk
-	jZmXOOH10nPx3xpfaNTEXn20P8Lg+OGPcfnXbmoVfW79WPaYJ9ZlhdDMsil5jw6WzVe2eTtZ
-	p2L+y1CtwpRGNiWW4oxEQy3mouJEABcBH7H6AQAA
+	id S1760889AbaCUMmN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:42:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22381 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759943AbaCUMmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 08:42:11 -0400
+Date: Fri, 21 Mar 2014 08:41:28 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, LKML <linux-kernel@vger.kernel.org>,
+        linux-cifs <linux-cifs@vger.kernel.org>,
+        Steve French <sfrench@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Clark Williams <williams@redhat.com>,
+        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        uobergfe@redhat.com
+Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
+ queues
+Message-ID: <20140321084128.3f499e5c@tlielax.poochiereds.net>
+In-Reply-To: <20140321081706.271e390c@gandalf.local.home>
+References: <20140319151252.16ed3ac6@gandalf.local.home>
+	<20140320152833.216d81a0@tlielax.poochiereds.net>
+	<20140320165703.522c7c5c@gandalf.local.home>
+	<20140320170239.51d20a0e@tlielax.poochiereds.net>
+	<20140320222343.4faaa137@gandalf.local.home>
+	<CAKywueT4xRHZGomoPvnA9rob3FpzkPYuuUPe+vEDiOFvTbUiGA@mail.gmail.com>
+	<20140321081706.271e390c@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add of_clk_del_provider to remove previously registered clock provider.
-Add of_node_put to decrement the ref count of clock nodes.
+On Fri, 21 Mar 2014 08:17:06 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/clk/clk-s2mps11.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+> On Fri, 21 Mar 2014 12:32:12 +0400
+> Pavel Shilovsky <piastry@etersoft.ru> wrote:
+> 
+> 
+> > Read and write codepaths both obtain lock_sem for read and then wait
+> > for cifsiod_wq to complete and release lock_sem. They don't do any
+> > lock_sem operations inside their work task queued to cifsiod_wq. But
+> > oplock code can obtain/release lock_sem in its work task. So, that's
+> > why I agree with Jeff and suggest to move the oplock code to a
+> > different work queue (cifsioopd_wq?) but leave read and write
+> > codepaths use cifsiod_wq.
+> 
+> OK, how about I submit a second patch that moves the reader and writer
+> to its own "safe" workqueue?
+> 
+> -- Steve
+> 
 
-diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
-index f2f62a1bf61a..843ec3646501 100644
---- a/drivers/clk/clk-s2mps11.c
-+++ b/drivers/clk/clk-s2mps11.c
-@@ -44,6 +44,7 @@ enum {
- 
- struct s2mps11_clk {
- 	struct sec_pmic_dev *iodev;
-+	struct device_node *clk_np;
- 	struct clk_hw hw;
- 	struct clk *clk;
- 	struct clk_lookup *lookup;
-@@ -156,7 +157,6 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- {
- 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
- 	struct s2mps11_clk *s2mps11_clks, *s2mps11_clk;
--	struct device_node *clk_np = NULL;
- 	unsigned int s2mps11_reg;
- 	int i, ret = 0;
- 	u32 val;
-@@ -168,9 +168,10 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 
- 	s2mps11_clk = s2mps11_clks;
- 
--	clk_np = s2mps11_clk_parse_dt(pdev);
--	if (IS_ERR(clk_np))
--		return PTR_ERR(clk_np);
-+	/* Store clocks of_node in first element of s2mps11_clks array */
-+	s2mps11_clks->clk_np = s2mps11_clk_parse_dt(pdev);
-+	if (IS_ERR(s2mps11_clks->clk_np))
-+		return PTR_ERR(s2mps11_clks->clk_np);
- 
- 	switch(platform_get_device_id(pdev)->driver_data) {
- 	case S2MPS11X:
-@@ -225,7 +226,8 @@ static int s2mps11_clk_probe(struct platform_device *pdev)
- 
- 		clk_data.clks = clk_table;
- 		clk_data.clk_num = S2MPS11_CLKS_NUM;
--		of_clk_add_provider(clk_np, of_clk_src_onecell_get, &clk_data);
-+		of_clk_add_provider(s2mps11_clks->clk_np,
-+				of_clk_src_onecell_get, &clk_data);
- 	}
- 
- 	platform_set_drvdata(pdev, s2mps11_clks);
-@@ -250,6 +252,10 @@ static int s2mps11_clk_remove(struct platform_device *pdev)
- 	struct s2mps11_clk *s2mps11_clks = platform_get_drvdata(pdev);
- 	int i;
- 
-+	of_clk_del_provider(s2mps11_clks[0].clk_np);
-+	/* Drop the reference obtained in s2mps11_clk_parse_dt */
-+	of_node_put(s2mps11_clks[0].clk_np);
-+
- 	for (i = 0; i < S2MPS11_CLKS_NUM; i++)
- 		clkdev_drop(s2mps11_clks[i].lookup);
- 
+That'd probably work fine too. The main point is to make sure oplock
+breaks run on a different workqueue from where read or write completion
+jobs run since they are operating on the lock_sem. The other jobs that
+get queued to cifsiod_wq don't touch the lock_sem and shouldn't be a
+problem.
+
 -- 
-1.7.9.5
-
+Jeff Layton <jlayton@redhat.com>
