@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966140AbaCUAha (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:37:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37114 "EHLO
+	id S966263AbaCUAiQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:38:16 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37105 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965868AbaCUAIx (ORCPT
+	with ESMTP id S965889AbaCUAIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:53 -0400
+	Thu, 20 Mar 2014 20:08:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nicholas <arealityfarbetween@googlemail.com>,
-        Michele Baldessari <michele@acksyn.org>,
-        Guilherme Amadio <guilherme.amadio@gmail.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3.10 48/85] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
-Date: Thu, 20 Mar 2014 17:09:51 -0700
-Message-Id: <20140321000605.534003599@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.10 46/85] firewire: net: fix use after free
+Date: Thu, 20 Mar 2014 17:09:49 -0700
+Message-Id: <20140321000605.305317953@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,36 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michele Baldessari <michele@acksyn.org>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit b28a613e9138e4b3a64649bd60b13436f4b4b49b upstream.
+commit 8987583366ae9e03c306c2b7d73bdb952df1d08d upstream.
 
-Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
-for Seagate Momentus SpinPoint M8" we added a quirk for disks named
-"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
+Commit 8408dc1c14c1 "firewire: net: use dev_printk API" introduced a
+use-after-free in a failure path.  fwnet_transmit_packet_failed(ptask)
+may free ptask, then the dev_err() call dereferenced it.  The fix is
+straightforward; simply reorder the two calls.
 
-As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
-we need to also add firmware revision 2BA30001 as it is broken as well.
-
-Reported-by: Nicholas <arealityfarbetween@googlemail.com>
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
-Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/ata/libata-core.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/firewire/net.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4152,6 +4152,7 @@ static const struct ata_blacklist_entry
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -929,8 +929,6 @@ static void fwnet_write_complete(struct
+ 	if (rcode == RCODE_COMPLETE) {
+ 		fwnet_transmit_packet_done(ptask);
+ 	} else {
+-		fwnet_transmit_packet_failed(ptask);
+-
+ 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
+ 			dev_err(&ptask->dev->netdev->dev,
+ 				"fwnet_write_complete failed: %x (skipped %d)\n",
+@@ -938,8 +936,10 @@ static void fwnet_write_complete(struct
  
- 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
- 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
-+	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
+ 			errors_skipped = 0;
+ 			last_rcode = rcode;
+-		} else
++		} else {
+ 			errors_skipped++;
++		}
++		fwnet_transmit_packet_failed(ptask);
+ 	}
+ }
  
- 	/* Blacklist entries taken from Silicon Image 3124/3132
- 	   Windows driver .inf file - also several Linux problem reports */
 
 
