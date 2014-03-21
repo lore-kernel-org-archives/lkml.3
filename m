@@ -1,93 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaCUWI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:08:28 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59203 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751152AbaCUWIZ (ORCPT
+	id S1751277AbaCUWPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:15:19 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:54009 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750759AbaCUWPP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:08:25 -0400
-Date: Fri, 21 Mar 2014 23:08:22 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Mike Turquette <mturquette@linaro.org>, Jimmy Xu <zmxu@marvell.com>,
-        Jisheng Zhang <jszhang@marvell.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Subject: Re: [PATCH v2 4/5] ARM: berlin/dt: add cpupll and syspll support to
- BG2CD
-Message-ID: <20140321220821.GI6443@piout.net>
-References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395432521-11055-5-git-send-email-alexandre.belloni@free-electrons.com>
- <532CB09E.5000408@gmail.com>
+	Fri, 21 Mar 2014 18:15:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532CB09E.5000408@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com>
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+	<1395345324-18299-4-git-send-email-bigeasy@linutronix.de>
+	<CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com>
+Date: Fri, 21 Mar 2014 17:15:14 -0500
+Message-ID: <CANk1AXSQVFZvRmvYt+JF+TDVpfX-_RLiUcQXotGzpHoTMUVymQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/03/2014 at 22:35:26 +0100, Sebastian Hesselbarth wrote :
-> On 03/21/2014 09:08 PM, Alexandre Belloni wrote:
-> >The Berlin BG2CD has two supported PLLs: CPU PLL and System PLL, add those to
-> >the SoC device tree.
-> >
-> >This also moves the remaining clocks from the clocks container node to the root.
-> >
-> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> >---
-> >  arch/arm/boot/dts/berlin2cd.dtsi | 48 ++++++++++++++++++++++++++--------------
-> >  1 file changed, 31 insertions(+), 17 deletions(-)
-> >
-> >diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-> >index 094968c27533..bd4e9dd4867e 100644
-> >--- a/arch/arm/boot/dts/berlin2cd.dtsi
-> >+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-> >@@ -30,24 +30,24 @@
-> [...]
-> >@@ -76,7 +76,21 @@
-> >  			compatible = "arm,cortex-a9-twd-timer";
-> >  			reg = <0xad0600 0x20>;
-> >  			interrupts = <GIC_PPI 13 IRQ_TYPE_LEVEL_HIGH>;
-> >-			clocks = <&sysclk>;
-> >+			clocks = <&twdclk>;
-> >+		};
-> >+
-> >+		syspll: syspll@ea0014 {
-> >+			compatible = "marvell,berlin2-pll";
-> >+			clocks = <&smclk>;
-> >+			#clock-cells = <0>;
-> >+			reg = <0xf7ea0014 8>;
-> 
-> nit: I prefer hex numbers all over for reg properties. berlin2q already
-> has them, and I'll fixup this and the one below myself.
-> 
+On Fri, Mar 21, 2014 at 1:14 PM, delicious quinoa
+<delicious.quinoa@gmail.com> wrote:
+> On Thu, Mar 20, 2014 at 2:55 PM, Sebastian Andrzej Siewior
+> <bigeasy@linutronix.de> wrote:
+>> The cycloneV has three gpio controllers, each one with 29 gpios. This patch
+>> adds the three controller with the gpio driver which is now sitting the
+>> gpio tree.
+>>
+>> Cc: devicetree@vger.kernel.org
+>> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> ---
+>>  arch/arm/boot/dts/socfpga.dtsi | 60 ++++++++++++++++++++++++++++++++++++++++++
+>>  1 file changed, 60 insertions(+)
+>>
+>> diff --git a/arch/arm/boot/dts/socfpga.dtsi b/arch/arm/boot/dts/socfpga.dtsi
+>> index 537f1a5..c3a97e1 100644
+>> --- a/arch/arm/boot/dts/socfpga.dtsi
+>> +++ b/arch/arm/boot/dts/socfpga.dtsi
+>> @@ -463,6 +463,66 @@
+>>                         status = "disabled";
+>>                 };
+>>
+>> +               gpio@ff708000 {
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       compatible = "snps,dw-apb-gpio";
+>> +                       reg = <0xff708000 0x1000>;
+>> +                       clocks = <&per_base_clk>;
+>> +                       status = "disabled";
+>> +
+>> +                       gpio0: gpio-controller@0 {
+>> +                               compatible = "snps,dw-apb-gpio-port";
+>> +                               gpio-controller;
+>> +                               #gpio-cells = <1>;
+>
+> #gpio-cells = <2>;
+>
+> I applied this patch, fixed the gpio-cells, tested on a cyclone5 soc
+> devkit, and see that it breaks the interrupts.  Did you test this?
+>
+> Alan
+>
+>> +                               snps,nr-gpios = <29>;
+>> +                               reg = <0>;
+>> +                               interrupt-controller;
+>> +                               #interrupt-cells = <2>;
+>> +                               interrupts = <0 164 4>;
+>> +                       };
+>> +               };
+>> +
+>> +               gpio@ff709000 {
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       compatible = "snps,dw-apb-gpio";
+>> +                       reg = <0xff709000 0x1000>;
+>> +                       clocks = <&per_base_clk>;
+>> +                       status = "disabled";
+>> +
+>> +                       gpio1: gpio-controller@0 {
+>> +                               compatible = "snps,dw-apb-gpio-port";
+>> +                               gpio-controller;
+>> +                               #gpio-cells = <1>;
+>> +                               snps,nr-gpios = <29>;
+>> +                               reg = <0>;
+>> +                               interrupt-controller;
+>> +                               #interrupt-cells = <2>;
+>> +                               interrupts = <0 165 4>;
+>> +                       };
+>> +               };
+>> +
+>> +               gpio@ff70a000 {
+>> +                       #address-cells = <1>;
+>> +                       #size-cells = <0>;
+>> +                       compatible = "snps,dw-apb-gpio";
+>> +                       reg = <0xff70a000 0x1000>;
+>> +                       clocks = <&per_base_clk>;
+>> +                       status = "disabled";
+>> +
+>> +                       gpio2: gpio-controller@0 {
+>> +                               compatible = "snps,dw-apb-gpio-port";
+>> +                               gpio-controller;
+>> +                               #gpio-cells = <1>;
+>> +                               snps,nr-gpios = <29>;
 
-Indeed, I did fix that for bg2q and documentation and forgot bg2 and
-bg2cd.
+snps,nr-gpios = <27>;
 
-> >+		};
-> >+
-> >+		cpupll: cpupll@ea003c {
-> >+			compatible = "marvell,berlin2-pll";
-> >+			clocks = <&smclk>;
-> >+			#clock-cells = <0>;
-> >+			reg = <0xf7ea003c 8>;
-> 
-> ditto.
-> 
-> Sebastian
-> 
-> >  		};
-> >
-> >  		apb@e80000 {
-> >
-> 
+As noted on other thread, gpio2 is 27 wide, despite what the
+documentation says.  When I made that change and remove your other two
+patches the gpios worked for me on a cyclone5 devkit board.
 
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+So if you fix the "#gpio-cells = <2>;" for all 3 gpios and fix
+"snps,nr-gpios = <27>;" for gpio2, then this one patch looks good to
+me.  With these changes,
+
+Acked-by: Alan Tull <atull@altera.com>
+
+Alan Tull
+aka
+delicous quinoa
+
+
+>> +                               reg = <0>;
+>> +                               interrupt-controller;
+>> +                               #interrupt-cells = <2>;
+>> +                               interrupts = <0 166 4>;
+>> +                       };
+>> +               };
+>> +
+>>                 L2: l2-cache@fffef000 {
+>>                         compatible = "arm,pl310-cache";
+>>                         reg = <0xfffef000 0x1000>;
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
