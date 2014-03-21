@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760803AbaCUPoH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:44:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42892 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753726AbaCUPoE (ORCPT
+	id S1760833AbaCUPpz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:45:55 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57479 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753761AbaCUPpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:44:04 -0400
-Date: Fri, 21 Mar 2014 15:44:00 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] mfd: arizona: Fix and factor out read of device
-	tree GPIOs
-Message-ID: <20140321154400.GF1665@opensource.wolfsonmicro.com>
-References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1395224338-3709-3-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140321105218.GH15213@lee--X1>
+	Fri, 21 Mar 2014 11:45:53 -0400
+Date: Fri, 21 Mar 2014 16:45:39 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 1/5] clk: berlin: add support for berlin plls
+Message-ID: <20140321154539.GD6443@piout.net>
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1395402220-23503-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <532C355C.3090606@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140321105218.GH15213@lee--X1>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <532C355C.3090606@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 10:52:18AM +0000, Lee Jones wrote:
-> On Wed, 19 Mar 2014, Charles Keepax wrote:
+[all commentis I agree on are snipped]
+
+On 21/03/2014 at 13:49:32 +0100, Sebastian Hesselbarth wrote :
+> On 03/21/2014 12:43 PM, Alexandre Belloni wrote:
+> obj-y += pll.o
+> obj-$(CONFIG_MACH_BERLIN_BG2)	+= pll-berlin2.o
+> obj-$(CONFIG_MACH_BERLIN_BG2CD)	+= pll-berlin2.o
+> obj-$(CONFIG_MACH_BERLIN_BG2Q)	+= pll-berlin2q.o
 > 
-> > On non-DT systems with device tree built in the current device tree GPIO
-> > reads will overwrite the pdata with zero when they fail. This patch
-> > factors out the reading of GPIOs for the Arizona devices into a helper
-> > function, and ensures that the pdata version will be preserved if the
-> > device tree read fails.
-> > 
-> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-> > ---
-> >  drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
-> >  include/linux/mfd/arizona/core.h |    3 +++
-> >  2 files changed, 27 insertions(+), 9 deletions(-)
-> > 
-> > diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
-> > index a45aab9..333621e 100644
-> > --- a/drivers/mfd/arizona-core.c
-> > +++ b/drivers/mfd/arizona-core.c
-> > @@ -512,19 +512,34 @@ int arizona_of_get_type(struct device *dev)
-> >  }
-> >  EXPORT_SYMBOL_GPL(arizona_of_get_type);
-> >  
-> > +int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
-> > +			      bool mandatory, int *gpio)
-> > +{
-> > +	int ret;
-> > +
-> > +	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
-> > +	if (ret >= 0) {
-> > +		*gpio = ret;
-> > +		return ret;
-> > +	}
-> > +
-> > +	/* Warn if GPIO is mandatory and not specified */
-> > +	if (mandatory && *gpio <= 0)
-> > +		dev_err(arizona->dev,
-> > +				"Mandatory DT gpio %s missing/malformed: %d\n",
-> > +				prop, ret);
-> > +
-> > +	return ret;
-> > +}
-> > +EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
-> > +
-> >  static int arizona_of_get_core_pdata(struct arizona *arizona)
-> >  {
-> > +	struct arizona_pdata *pdata = &arizona->pdata;
-> >  	int ret, i;
-> >  
-> > -	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
-> > -						 "wlf,reset", 0);
-> > -	if (arizona->pdata.reset < 0)
-> > -		arizona->pdata.reset = 0;
-> > -
-> > -	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
-> > -						  "wlf,ldoena", 0);
-> > -	if (arizona->pdata.ldoena < 0)
-> > -		arizona->pdata.ldoena = 0;
-> > +	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
-> > +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
-> >  
-> >  	ret = of_property_read_u32_array(arizona->dev->of_node,
-> >  					 "wlf,gpio-defaults",
+> Which reminds me, that we forgot to add MACH_BERLIN_BG2Q to
+> arch/arm/mach-berlin/Kconfig. Can you spin a patch?
 > 
-> This doesn't look correct to me at all. Have you tested it in the DT
-> and !DT case? By the looks of it arizona_of_get_core_pdata() is only
-> called if no platform data is present. Yet you are dereferencing it
-> here without allocated any memory.
 
-The pdata struct is contained within the arizona one so there is
-no need to allocate memory for it.
+I will do that.
 
+> >+static const u8 vcodiv_berlin2[] = {10, 15, 20, 25, 30, 40, 50, 60, 80};
+> >+
+> >+static struct berlin_pllmap berlin_pll_map = {
+> >+	.vcodiv = vcodiv_berlin2,
+> >+	.fbdiv_mask = 0x1FF,
+> >+	.rfdiv_mask = 0x1F,
+> >+	.divsel_mask = 0xF,
 > 
-> So how were any platform data passed variables being overwritten in
-> the first place?
+> divsel_mask allows 16 possible values, vcodiv_berlin2[] only provides
+> 9, and common pll driver below does not know how many valid vcodiv
+> values are passed. That can become dangerous..
+> 
+> I'd rather extend vcodiv_berlin2 to full divsel range and provide
+> safe (=1) divisiors. This way wrong/new register values will only
+> break clock frequency derived.
+> 
 
-Ah good point this is not called if the pdata exists, I will
-update the commit message.
+Good catch ! Then, what about simply shrinking the mask so that we don't
+overflow the table. We'll put it back to its supposed real value whant
+we know what are the remaining divisors (my guess is that they are already
+all listed here). I would say that we are getting the divisor wrong if
+divsel > 8 anyway.
 
-Thanks,
-Charles
+> >+	.fbdiv_shift = 6,
+> >+	.rfdiv_shift = 1,
+> >+	.divsel_shift = 7,
+> 
+> Have .foo_mask and .foo_shift together?
+> 
+
+This will make the struct larger but I don't really have an opinion.
+
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
