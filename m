@@ -1,113 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760337AbaCUPJw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:09:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43580 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752798AbaCUPJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:09:48 -0400
-Date: Fri, 21 Mar 2014 11:09:42 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
-Cc: agk@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC v1 01/01] dm-lightnvm: An open FTL for open firmware
- SSDs
-Message-ID: <20140321150942.GA29731@redhat.com>
-References: <1395383538-18019-1-git-send-email-m@bjorling.me>
- <1395383538-18019-2-git-send-email-m@bjorling.me>
+	id S1760222AbaCUPLd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:11:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59819 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751948AbaCUPL2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 11:11:28 -0400
+Date: Fri, 21 Mar 2014 15:11:26 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jean Pihet <jean.pihet@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>,
+        "patches@linaro.org" <patches@linaro.org>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
+ ARM64
+Message-ID: <20140321151126.GR23372@e106331-lin.cambridge.arm.com>
+References: <1395222155-22205-1-git-send-email-jean.pihet@linaro.org>
+ <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395383538-18019-2-git-send-email-m@bjorling.me>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
+Thread-Topic: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
+ ARM64
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21 2014 at  2:32am -0400,
-Matias Bjørling <m@bjorling.me> wrote:
+Hi Jean,
 
-> LightNVM implements the internal logic of an SSD within the host system.
-> This includes logic such as translation tables for logical to physical
-> address translation, garbage collection and wear-leveling.
+On Wed, Mar 19, 2014 at 09:42:33AM +0000, Jean Pihet wrote:
+> Introducing perf_regs_load function, which is going
+> to be used for dwarf unwind test in following patches.
 > 
-> It is designed to be used either standalone or with a LightNVM
-> compatible firmware. If used standalone, NVM memory can be simulated
-> by passing timings to the dm target table. If used with a LightNVM
-> compatible device, the device will be queued upon initialized for the
-> relevant values.
+> It takes single argument as a pointer to the regs dump
+> buffer and populates it with current registers values, as
+> expected by the perf built-in unwinding test.
 > 
-> The last part is still in progress and a fully working prototype will be
-> presented in upcoming patches.
+> Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> Cc: Steve Capper <steve.capper@linaro.org>
+> Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Namhyung Kim <namhyung@kernel.org>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Jiri Olsa <jolsa@redhat.com>
+> ---
+>  tools/perf/arch/arm64/Makefile            |  1 +
+>  tools/perf/arch/arm64/include/perf_regs.h |  2 ++
+>  tools/perf/arch/arm64/tests/regs_load.S   | 39 +++++++++++++++++++++++++++++++
+>  3 files changed, 42 insertions(+)
+>  create mode 100644 tools/perf/arch/arm64/tests/regs_load.S
 > 
-> Contributions to make this possible by the following people:
-> 
-> Aviad Zuck <aviadzuc@tau.ac.il>
-> Jesper Madsen <jmad@itu.dk>
-> 
-> Signed-off-by: Matias Bjorling <m@bjorling.me>
-...
-> diff --git a/drivers/md/lightnvm/core.c b/drivers/md/lightnvm/core.c
+> diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
+> index 67e9b3d..9b8f87e 100644
+> --- a/tools/perf/arch/arm64/Makefile
+> +++ b/tools/perf/arch/arm64/Makefile
+> @@ -4,4 +4,5 @@ LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
+>  endif
+>  ifndef NO_LIBUNWIND
+>  LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
+> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
+>  endif
+> diff --git a/tools/perf/arch/arm64/include/perf_regs.h b/tools/perf/arch/arm64/include/perf_regs.h
+> index 2359546..1e052f1 100644
+> --- a/tools/perf/arch/arm64/include/perf_regs.h
+> +++ b/tools/perf/arch/arm64/include/perf_regs.h
+> @@ -9,6 +9,8 @@
+>  #define PERF_REG_IP	PERF_REG_ARM64_PC
+>  #define PERF_REG_SP	PERF_REG_ARM64_SP
+>  
+> +void perf_regs_load(u64 *regs);
+> +
+>  static inline const char *perf_reg_name(int id)
+>  {
+>  	switch (id) {
+> diff --git a/tools/perf/arch/arm64/tests/regs_load.S b/tools/perf/arch/arm64/tests/regs_load.S
 > new file mode 100644
-> index 0000000..113fde9
+> index 0000000..92ab968
 > --- /dev/null
-> +++ b/drivers/md/lightnvm/core.c
-> @@ -0,0 +1,705 @@
-> +#include "lightnvm.h"
+> +++ b/tools/perf/arch/arm64/tests/regs_load.S
+> @@ -0,0 +1,39 @@
+> +#include <linux/linkage.h>
 > +
-> +/* alloc pbd, but also decorate it with bio */
-> +static struct per_bio_data *alloc_init_pbd(struct nvmd *nvmd, struct bio *bio)
-> +{
-> +	struct per_bio_data *pb = mempool_alloc(nvmd->per_bio_pool, GFP_NOIO);
-> +
-> +	if (!pb) {
-> +		DMERR("Couldn't allocate per_bio_data");
-> +		return NULL;
-> +	}
-> +
-> +	pb->bi_end_io = bio->bi_end_io;
-> +	pb->bi_private = bio->bi_private;
-> +
-> +	bio->bi_private = pb;
-> +
-> +	return pb;
-> +}
-> +
-> +static void free_pbd(struct nvmd *nvmd, struct per_bio_data *pb)
-> +{
-> +	mempool_free(pb, nvmd->per_bio_pool);
-> +}
-> +
-> +/* bio to be stripped from the pbd structure */
-> +static void exit_pbd(struct per_bio_data *pb, struct bio *bio)
-> +{
-> +	bio->bi_private = pb->bi_private;
-> +	bio->bi_end_io = pb->bi_end_io;
-> +}
-> +
+> +/*
+> + * Implementation of void perf_regs_load(u64 *regs);
+> + *
+> + * This functions fills in the 'regs' buffer from the actual registers values,
+> + * in the way the perf built-in unwinding test expects them:
+> + * - the PC at the time at the call to this function. Since this function
+> + *   is called using a bl instruction, the PC value is taken from LR,
 
-Hi Matias,
+Is it guaranteed that this function is always invoked with a branch with
+link instruction, or is that just what current compiler versions are
+doing? I couldn't see where we would get that guarantee from.
 
-This looks like it'll be very interesting!  But I won't have time to do
-a proper review of this code for ~1.5 weeks (traveling early next week
-and then need to finish some high priority work on dm-thin once I'm
-back).
+If it is called with a branch with link, then the LR value will be the
+PC at call time + 4, rather than just the exact PC at call time. If not
+then we don't have a guaranteed relationship between the PC at call time
+and the current LR value.
 
-But a couple quick things I noticed:
+If the only place that perf_regs_load is used is a single test which
+doesn't care about the precise PC at the time of the call, then it's
+probably OK to use the LR value, but we should be careful to document
+what the faked-up PC actually is and how we expect it to be used.
 
-1) you don't need to roll your own per-bio-data allocation code any
-more.  The core block layer provides per_bio_data now.
+> + * - the current SP (not touched by this function),
+> + * - the current value of LR is merely retrieved and stored because the
+> + *   value before the call to this function is unknown at this time; it will
+> + *   be unwound from the dwarf information in unwind__get_entries.
+> + */
+> +
+> +.text
+> +.type perf_regs_load,%function
+> +ENTRY(perf_regs_load)
+> +	stp x0,  x1,  [x0], #16	// store x0..x29
+> +	stp x2,  x3,  [x0], #16
+> +	stp x4,  x5,  [x0], #16
+> +	stp x6,  x7,  [x0], #16
+> +	stp x8,  x9,  [x0], #16
+> +	stp x10, x11, [x0], #16
+> +	stp x12, x13, [x0], #16
+> +	stp x14, x15, [x0], #16
+> +	stp x16, x17, [x0], #16
+> +	stp x18, x19, [x0], #16
+> +	stp x20, x21, [x0], #16
+> +	stp x22, x23, [x0], #16
+> +	stp x24, x25, [x0], #16
+> +	stp x26, x27, [x0], #16
+> +	stp x28, x29, [x0], #16
+> +	mov x1,  sp
+> +	stp x30, x1,  [x0], #16	// store lr and sp
+> +	str x30, [x0]		// store pc as lr in order to skip the call
+> +				//  to this function
 
-And the DM targets have been converted to make use of it.  See callers
-of dm_per_bio_data() and how the associated targets set
-ti->per_bio_data_size
+It might be better to word this a "store the lr in place of the pc". To
+me at least the current wording implies the opposite of what the code
+seems to be doing.
 
-2) Also, if you're chaining bi_end_io (like it appears you're doing)
-you'll definitely need to call atomic_inc(&bio->bi_remaining); after you
-restore bio->bi_end_io.  This is a new requirement of the 3.14 kernel
-(due to the block core's immutable biovec changes).
-
-Please sort these issues out, re-test on 3.14, and post v2, thanks!
-Mike
+Cheers,
+Mark.
