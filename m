@@ -1,86 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760676AbaCULcP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:32:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756015AbaCULcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:32:13 -0400
-Message-ID: <532C232E.5000607@redhat.com>
-Date: Fri, 21 Mar 2014 07:31:58 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Glauber Costa <glommer@gmail.com>, lwcheng@cs.hku.hk,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Paravirtual time accounting / IRQ time accounting
-References: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk> <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
-In-Reply-To: <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1760765AbaCULdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:33:16 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:64057 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760703AbaCULdO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 07:33:14 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        arm@kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@st.com
+Subject: [PATCH RESEND for ARM-SoC 0/2] ARM: STi: NOR Flash support
+Date: Fri, 21 Mar 2014 11:33:06 +0000
+Message-Id: <1395401588-8825-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 11:01 AM, Glauber Costa wrote:
-> On Wed, Mar 19, 2014 at 6:42 AM,  <lwcheng@cs.hku.hk> wrote:
+As requested by Arnd:
 
->> ------------
->> [src/kernel/sched/core.c]
->> static void update_rq_clock_task(struct rq *rq, s64 delta)
->> {
->>     ... ...
->> #ifdef CONFIG_IRQ_TIME_ACCOUNTING
->>     irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
->>     ... ...
->>     rq->prev_irq_time += irq_delta;
->>     delta -= irq_delta;
->> #endif
->>
->> #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
->>     if (static_key_false((&paravirt_steal_rq_enabled))) {
->>         steal = paravirt_steal_clock(cpu_of(rq));
->>         steal -= rq->prev_steal_time_rq;
->>         ... ...
->>         rq->prev_steal_time_rq += steal;
->>         delta -= steal;
->>     }
->> #endif
->>
->>     rq->clock_task += delta;
->>     ... ...
->> }
->> --
->> "delta" -> the intended increment to rq->clock_task
->> "irq_delta" -> the time spent on serving IRQ (hard + soft)
->> "steal" -> the time stolen by the underlying hypervisor
->> --
->> "irq_delta" is calculated based on sched_clock_cpu(), which is vulnerable
->> to VM scheduling delays.
-> 
-> This looks like a real problem indeed. The main problem in searching
-> for a solution, is that of course not all of the irq time is steal
-> time and vice versa. In this case, we could subtract irq_time from
-> steal, and add only the steal part time that is in excess. I don't
-> think this is 100 % guaranteed, but maybe it is a good approximation.
-> 
-> Rik, do you have an opinion on this ?
+ARM-SoC Maintainers,
 
-The other way around may be better, since steal time (when it
-happens) is likely to be of "time slice" magnitude, while irq
-time will happen more frequently, and in dozens-of-microseconds
-intervals.
+Please apply these two patches directly to ARM-SoC for inclusion
+into the v3.15 merge window. All maintainer Acks are applied.
 
-Furthermore, we have no way to measure what the irq time is,
-except by looking at how much real time elapsed. For steal time,
-however, the hypervisor tells us exactly how much time was stolen.
+Kind regards,
+Lee
 
-That means when steal time and irq time happen simultaneously,
-the amount of steal time should always be smaller than the
-calculated irq time for that period.
-
-actual irq_time = calculated irq time - reported steal time;
-
--- 
-All rights reversed
