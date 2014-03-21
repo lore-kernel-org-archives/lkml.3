@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965622AbaCUAFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:05:03 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36895 "EHLO
+	id S933900AbaCUAGD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:06:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36946 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760479AbaCUAE6 (ORCPT
+	with ESMTP id S1760537AbaCUAFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:58 -0400
+	Thu, 20 Mar 2014 20:05:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 147/149] bio-integrity: Fix bio_integrity_verify segment start bug
-Date: Thu, 20 Mar 2014 17:05:10 -0700
-Message-Id: <20140321000442.060057957@linuxfoundation.org>
+        Dirk Brandewie <dirk.j.brandewie@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 142/149] intel_pstate: Add support for Baytrail turbo P states
+Date: Thu, 20 Mar 2014 17:05:05 -0700
+Message-Id: <20140321000441.879183766@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,47 +29,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Dirk Brandewie <dirk.j.brandewie@intel.com>
 
-commit 5837c80e870bc3b12ac6a98cdc9ce7a9522a8fb6 upstream.
+commit 61d8d2abc15e9232c3914c55502b73e559366583 upstream.
 
-This patch addresses a bug in bio_integrity_verify() code that has
-been causing DIF READ verify operations to be silently skipped.
+A documentation update exposed the existance of the turbo ratio
+register. Update baytrail support to use the turbo range.
 
-The issue is that bio->bi_idx will have been incremented within
-bio_advance() code in the normal blk_update_request() ->
-req_bio_endio() completion path, and bio_integrity_verify() is
-using bio_for_each_segment() which starts the bio segment walk
-at the current bio->bi_idx.
-
-So instead use bio_for_each_segment_all() to always start the bio
-segment walk from zero, regardless of the current bio->bi_idx
-value after bio_advance() has been called.
-
-(Context change for v3.10.y -> v3.13.y code - nab)
-
-Cc: Martin K. Petersen <martin.petersen@oracle.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- fs/bio-integrity.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/cpufreq/intel_pstate.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/fs/bio-integrity.c
-+++ b/fs/bio-integrity.c
-@@ -458,7 +458,7 @@ static int bio_integrity_verify(struct b
- 	bix.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	bix.sector_size = bi->sector_size;
+--- a/drivers/cpufreq/intel_pstate.c
++++ b/drivers/cpufreq/intel_pstate.c
+@@ -34,8 +34,10 @@
  
--	bio_for_each_segment(bv, bio, i) {
-+	bio_for_each_segment_all(bv, bio, i) {
- 		void *kaddr = kmap_atomic(bv->bv_page);
- 		bix.data_buf = kaddr + bv->bv_offset;
- 		bix.data_size = bv->bv_len;
+ #define SAMPLE_COUNT		3
+ 
+-#define BYT_RATIOS	0x66a
+-#define BYT_VIDS        0x66b
++#define BYT_RATIOS		0x66a
++#define BYT_VIDS		0x66b
++#define BYT_TURBO_RATIOS	0x66c
++
+ 
+ #define FRAC_BITS 8
+ #define int_tofp(X) ((int64_t)(X) << FRAC_BITS)
+@@ -367,6 +369,13 @@ static int byt_get_max_pstate(void)
+ 	return (value >> 16) & 0xFF;
+ }
+ 
++static int byt_get_turbo_pstate(void)
++{
++	u64 value;
++	rdmsrl(BYT_TURBO_RATIOS, value);
++	return value & 0x3F;
++}
++
+ static void byt_set_pstate(struct cpudata *cpudata, int pstate)
+ {
+ 	u64 val;
+@@ -469,7 +478,7 @@ static struct cpu_defaults byt_params =
+ 	.funcs = {
+ 		.get_max = byt_get_max_pstate,
+ 		.get_min = byt_get_min_pstate,
+-		.get_turbo = byt_get_max_pstate,
++		.get_turbo = byt_get_turbo_pstate,
+ 		.set = byt_set_pstate,
+ 		.get_vid = byt_get_vid,
+ 	},
 
 
