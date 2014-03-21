@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759928AbaCUIMb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:12:31 -0400
-Received: from mail-wg0-f47.google.com ([74.125.82.47]:36467 "EHLO
-	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842AbaCUIMS (ORCPT
+	id S1759232AbaCUIPe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:15:34 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:47627 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755061AbaCUIP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:12:18 -0400
-Date: Fri, 21 Mar 2014 08:12:12 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Josh Cartwright <joshc@codeaurora.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, rtc-linux@googlegroups.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCH v3 6/6] mfd: devicetree: bindings: add pm8xxx RTC
- description
-Message-ID: <20140321081212.GB15213@lee--X1>
-References: <20140310151807.7274d58d3c50b884585244b6@linux-foundation.org>
- <1394644645-12818-1-git-send-email-joshc@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394644645-12818-1-git-send-email-joshc@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 21 Mar 2014 04:15:29 -0400
+Message-ID: <1395389720.29259.1.camel@phoenix>
+Subject: [PATCH 1/2] regulator: s2mpa01: Don't check enable_shift before
+ setting enable ramp rate
+From: Axel Lin <axel.lin@ingics.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 21 Mar 2014 16:15:20 +0800
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The PM8xxx family of PMICs contain an RTC.  This RTC is described as a
-> subnode of the PM8xxx.  Document these bindings, and replace the pwrkey
-> node in the example with the RTC, which is now described in this
-> document.
-> 
-> While we're here, add a short description to the device tree bindings
-> describing what the the PM8xxx devices are and how they are expected to
-> be used.
-> 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> ---
-> Andrew-
-> 
-> Here's a new 6/6.  Like mentioned earlier, this is based on the current MFD
-> document that's in Lee's tree pending for 3.15.  It may be best to get yours
-> and Rob's Ack and have Lee take it through his tree.
+Current code misses updating the register when enable_shift is 0.
+e.g. S2MPA01_BUCK4_RAMP_EN_SHIFT is 0.
 
-After discussing with Andrew, I think this is better to go through my
-tree as you suggested, in order to mitigate any merge conflicts during
-the merge window.
+Signed-off-by: Axel Lin <axel.lin@ingics.com>
+---
+ drivers/regulator/s2mpa01.c | 12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
-Patch applied to the MFD tree with Andrew's Ack, thanks.
-
+diff --git a/drivers/regulator/s2mpa01.c b/drivers/regulator/s2mpa01.c
+index 808b3aa..f19a30f 100644
+--- a/drivers/regulator/s2mpa01.c
++++ b/drivers/regulator/s2mpa01.c
+@@ -192,13 +192,11 @@ static int s2mpa01_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
+ 	if (!ramp_enable)
+ 		goto ramp_disable;
+ 
+-	if (enable_shift) {
+-		ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
+-					1 << enable_shift, 1 << enable_shift);
+-		if (ret) {
+-			dev_err(&rdev->dev, "failed to enable ramp rate\n");
+-			return ret;
+-		}
++	ret = regmap_update_bits(rdev->regmap, S2MPA01_REG_RAMP1,
++				 1 << enable_shift, 1 << enable_shift);
++	if (ret) {
++		dev_err(&rdev->dev, "failed to enable ramp rate\n");
++		return ret;
+ 	}
+ 
+ 	ramp_val = get_ramp_delay(ramp_delay);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.8.3.2
+
+
+
