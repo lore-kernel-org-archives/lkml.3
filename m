@@ -1,150 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965411AbaCUOvg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:51:36 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56084 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S965290AbaCUOve (ORCPT
+	id S1757329AbaCUOy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:54:59 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57105 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751488AbaCUOy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:51:34 -0400
-Message-ID: <532C51F3.8030205@hurleysoftware.com>
-Date: Fri, 21 Mar 2014 10:51:31 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 10:54:56 -0400
+Date: Fri, 21 Mar 2014 15:54:03 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 3/5] ARM: berlin/dt: add cpupll and syspll support to BG2Q
+Message-ID: <20140321145403.GC6443@piout.net>
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1395402220-23503-4-git-send-email-alexandre.belloni@free-electrons.com>
+ <532C2C71.4010703@gmail.com>
+ <20140321121741.GB6443@piout.net>
+ <532C30AB.5020108@gmail.com>
 MIME-Version: 1.0
-To: mtk.manpages@gmail.com
-CC: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ivan <athlon_@mail.ru>
-Subject: Re: man termios
-References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com> <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com> <532C46BD.1000208@hurleysoftware.com> <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
-In-Reply-To: <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532C30AB.5020108@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 10:17 AM, Michael Kerrisk (man-pages) wrote:
-> On Fri, Mar 21, 2014 at 3:03 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> On 03/21/2014 09:15 AM, Michael Kerrisk (man-pages) wrote:
->>>
->>> On 03/21/2014 12:21 PM, Peter Hurley wrote:
->>>>
->>>> On 03/21/2014 06:45 AM, Michael Kerrisk (man-pages) wrote:
->>
->>
->>>>>> Finally, if the 'count' parameter is less than MIN, read() may return
->>>>>> before
->>>>>> MIN bytes have been received, if 'count' bytes have been received.
->>>>>
->>>>>
->>>>> Yes. But it's not clear to me here: do you mean that something in the
->>>>> man page (or in TLPI) needs fixing?
->>>>
->>>>
->>>> Well, what I mean here is that read() may also _not_ return until MIN
->>>> bytes have
->>>> been received, even if 'count' bytes have been received.
->>>
->>>
->>> Ahh -- I see what you mean. And, it looks like there is a point here where
->>> Linux
->>> differs from POSIX and (at least) Solaris. See the current man-page text
->>> below,
->>> in particular the MIN>0, TIME>0 case. I've also attached a simple test
->>> program
->>> that I used, below.
->>>
->>>          In noncanonical mode input is available immediately (without  the
->>>          user  having  to  type a line-delimiter character), no input pro‐
->>>          cessing is performed, and line editing is disabled.  The settings
->>>          of  MIN (c_cc[VMIN]) and TIME (c_cc[VTIME]) determine the circum‐
->>>          stances in which a read(2) completes;  there  are  four  distinct
->>>          cases:
->>>
->>>          MIN == 0; TIME == 0:
->>>                 If  data  is  available, read(2) returns immediately, with
->>>                 the lesser of the number of bytes available, or the number
->>>                 of  bytes  requested.   If  no  data is available, read(2)
->>>                 returns 0.
->>>
->>>          MIN > 0; TIME == 0:
->>>                 read(2) blocks until MIN bytes are available, and  returns
->>>                 up to the number of bytes requested.
->>>
->>>          MIN == 0; TIME > 0:
->>>                 TIME  specifies  the limit for a timer in tenths of a sec‐
->>>                 ond.   The  timer  is  started  when  read(2)  is  called.
->>>                 read(2)  returns  either when at least one byte of data is
->>>                 available, or  when  the  timer  expires.   If  the  timer
->>>                 expires  without  any  input  becoming  available, read(2)
->>>                 returns 0.  If data is already available at  the  time  of
->>>                 the call to read() the call behaves as though the data was
->>>                 received immediately after the call.
->>>
->>>          MIN > 0; TIME > 0:
->>>                 TIME specifies the limit for a timer in tenths of  a  sec‐
->>>                 ond.  Once an initial byte of input becomes available, the
->>>                 timer is restarted after each further  byte  is  received.
->>>                 read(2)  returns  when  any of the following conditions is
->>>                 met:
->>>
->>>                 *  MIN bytes have been received.
->>>
->>>                 *  The interbyte timer expires.
->>>
->>>                 *  The number of  bytes  requested  by  read(2)  has  been
->>>                    received.   (POSIX  does  not  specify this termination
->>>                    condition, and on  some  other  implementations  read()
->>>                    does not return in this case.)
->>>
->>>                 Because  the  timer is started only after the initial byte
->>>                 becomes available, at least one byte  will  be  read.   If
->>>                 data  is  already  available  at  the  time of the call to
->>>                 read() the call behaves as though the  data  was  received
->>>                 immediately after the call.
->>>
->>>          POSIX does not specify whether the setting of the O_NONBLOCK file
->>>          status flag takes precedence over the MIN and TIME settings.   If
->>>          O_NONBLOCK is set, a read() in noncanonical mode may return imme‐
->>>          diately, regardless of the setting of MIN or TIME.   Furthermore,
->>>          if  no  data is available, POSIX permits a read() in noncanonical
->>>          mode to return either 0, or -1 with errno set to EAGAIN.
->>
->>
->> All looks good.
->
-> Peter, do you agree that Linux appears to differ from POSIX here? (Not
-> sure if you tried my test program to verify...)
+On 21/03/2014 at 13:29:31 +0100, Sebastian Hesselbarth wrote :
+> >>Hmm, you probably know better than me, but if cpuclk == cpupll
+> >>is always true we don't need another clk layer here. If you
+> >>can scale down cpuclk from cpupll and we just have no driver
+> >>for it, I am fine with it.
+> >>
+> >
+> >You can actually switch CPU clk from CPU pll to smclk. I'm not sure this
+> >is completely useful yet though, probably for suspend ?
+> 
+> Then it should be clk mux instead?
+> 
+> >Also, while I'm not sure this is a good reason, other clocks are derived
+> >from CPU pll and have another divider.
+> 
+> I have no strong opinion, but a fixed-factor-clock with 1:1 just to
+> rename cpupll to cpuclk seems a bit wasty ;)
+> 
+> If there is a mux, we should add it now - no matter if we are ever
+> going to make any use of it. For the derived clocks we should be
+> careful if they actually depend on cpuclk or always cpupll.
+> 
+> If your (current) knowledge of the berlin clock trees is almost as
+> bad as mine, we can also ignore cpuclk mux if you prefer.
+> 
 
-I did run the test program to validate that it's observed behavior is that
-implemented by Linux, with which I'm very familiar.
-I don't have a test setup for other *nixes.
+Yeah, fact is I know there is a mux but I don't know yet how to get/set
+its state so I will ignore it until we have more info.
 
-I would be interested to know the results of
-
-   ./noncanonical 0 5 3 0
-   hello
-
-and
-
-   ./noncanonical 0 5 3 2
-    hel
-
-on other platforms.
-
-With respect to POSIX compliance, it's hard to say. I'm not sure the
-spec contemplates the degenerate case where max bytes < MIN. And specifically
-with regard to terminal i/o behavior, POSIX is essentially ex post facto,
-and is really documenting existing behavior.
-
-Other than the degenerate case of max bytes < MIN, is there any other
-variation between Solaris and Linux in non-canonical mode?
-
-Regards,
-Peter Hurley
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
