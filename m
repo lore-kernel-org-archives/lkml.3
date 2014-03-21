@@ -1,308 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760698AbaCULoG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:44:06 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55799 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1760098AbaCULny (ORCPT
+	id S1760829AbaCULpV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:45:21 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:42865 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758075AbaCULpS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:43:54 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 1/5] clk: berlin: add support for berlin plls
-Date: Fri, 21 Mar 2014 12:43:36 +0100
-Message-Id: <1395402220-23503-2-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Fri, 21 Mar 2014 07:45:18 -0400
+Date: Fri, 21 Mar 2014 14:41:26 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alex Deucher <alexander.deucher@amd.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-next] WARNING at drm_mode_connector_list_update
+Message-ID: <20140321114126.GA406@swordfish.minsk.epam.com>
+References: <20140321103704.GA376@swordfish.minsk.epam.com>
+ <20140321104939.GB376@swordfish.minsk.epam.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140321104939.GB376@swordfish.minsk.epam.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This drivers allows to provide DT clocks for the cpu and system PLLs found on
-Marvell Berlin SoCs.
+On (03/21/14 13:49), Sergey Senozhatsky wrote:
+> On (03/21/14 13:37), Sergey Senozhatsky wrote:
+> > [   18.707077] WARNING: CPU: 2 PID: 175 at drivers/gpu/drm/drm_modes.c:1030 drm_mode_connector_list_update+0x2f/0xe8 [drm]()
+> >
+> [   18.704470] WARNING: CPU: 2 PID: 175 at drivers/gpu/drm/drm_modes.c:119 drm_mode_probed_add+0x2b/0x48 [drm]()
+>
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- drivers/clk/Makefile              |   1 +
- drivers/clk/berlin/Makefile       |   1 +
- drivers/clk/berlin/clk.h          |  35 +++++++++++++
- drivers/clk/berlin/pll-berlin2.c  |  41 ++++++++++++++++
- drivers/clk/berlin/pll-berlin2q.c |  41 ++++++++++++++++
- drivers/clk/berlin/pll.c          | 100 ++++++++++++++++++++++++++++++++++++++
- 6 files changed, 219 insertions(+)
- create mode 100644 drivers/clk/berlin/Makefile
- create mode 100644 drivers/clk/berlin/clk.h
- create mode 100644 drivers/clk/berlin/pll-berlin2.c
- create mode 100644 drivers/clk/berlin/pll-berlin2q.c
- create mode 100644 drivers/clk/berlin/pll.c
 
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index a367a9831717..4a2602737c27 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
- obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
- obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
- obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
-+obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
- obj-$(CONFIG_ARCH_HI3xxx)		+= hisilicon/
- obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
- ifeq ($(CONFIG_COMMON_CLK), y)
-diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
-new file mode 100644
-index 000000000000..4f6580e2a3ee
---- /dev/null
-+++ b/drivers/clk/berlin/Makefile
-@@ -0,0 +1 @@
-+obj-y += pll.o pll-berlin2.o pll-berlin2q.o
-diff --git a/drivers/clk/berlin/clk.h b/drivers/clk/berlin/clk.h
-new file mode 100644
-index 000000000000..41459db31a02
---- /dev/null
-+++ b/drivers/clk/berlin/clk.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (c) 2013 Marvell Technology Group Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __BERLIN_CLK_H
-+#define __BERLIN_CLK_H
-+
-+#include <linux/clk-provider.h>
-+
-+struct berlin_pllmap {
-+	const u8	*vcodiv;
-+	u32		fbdiv_mask;
-+	u32		rfdiv_mask;
-+	u32		divsel_mask;
-+	u8		fbdiv_shift;
-+	u8		rfdiv_shift;
-+	u8		divsel_shift;
-+	u8		mult;
-+};
-+
-+extern void __init berlin_pll_setup(struct device_node *np,
-+				struct berlin_pllmap *map);
-+
-+#endif /* BERLIN_CLK_H */
-diff --git a/drivers/clk/berlin/pll-berlin2.c b/drivers/clk/berlin/pll-berlin2.c
-new file mode 100644
-index 000000000000..5f5b4674f811
---- /dev/null
-+++ b/drivers/clk/berlin/pll-berlin2.c
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (c) 2014 Marvell Technology Group Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/kernel.h>
-+#include <linux/clk-provider.h>
-+
-+#include "clk.h"
-+
-+static const u8 vcodiv_berlin2[] = {10, 15, 20, 25, 30, 40, 50, 60, 80};
-+
-+static struct berlin_pllmap berlin_pll_map = {
-+	.vcodiv = vcodiv_berlin2,
-+	.fbdiv_mask = 0x1FF,
-+	.rfdiv_mask = 0x1F,
-+	.divsel_mask = 0xF,
-+	.fbdiv_shift = 6,
-+	.rfdiv_shift = 1,
-+	.divsel_shift = 7,
-+	.mult = 10,
-+};
-+
-+static void __init berlin2_pll_setup(struct device_node *np)
-+{
-+	berlin_pll_setup(np, &berlin_pll_map);
-+}
-+CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2-pll", berlin2_pll_setup);
-+
-diff --git a/drivers/clk/berlin/pll-berlin2q.c b/drivers/clk/berlin/pll-berlin2q.c
-new file mode 100644
-index 000000000000..8ddfa69cf8c4
---- /dev/null
-+++ b/drivers/clk/berlin/pll-berlin2q.c
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (c) 2013 Marvell Technology Group Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/kernel.h>
-+#include <linux/clk-provider.h>
-+
-+#include "clk.h"
-+
-+static const u8 vcodiv_berlin2q[] = {1, 0, 2, 0, 3, 4, 0, 6, 8};
-+
-+static struct berlin_pllmap berlin2q_pll_map = {
-+	.vcodiv = vcodiv_berlin2q,
-+	.fbdiv_mask = 0x1FF,
-+	.rfdiv_mask = 0x1F,
-+	.divsel_mask = 0xF,
-+	.fbdiv_shift = 7,
-+	.rfdiv_shift = 2,
-+	.divsel_shift = 9,
-+	.mult = 1,
-+};
-+
-+static void __init berlin2q_pll_setup(struct device_node *np)
-+{
-+	berlin_pll_setup(np, &berlin2q_pll_map);
-+}
-+CLK_OF_DECLARE(berlin2q_pll, "marvell,berlin2q-pll", berlin2q_pll_setup);
-+
-diff --git a/drivers/clk/berlin/pll.c b/drivers/clk/berlin/pll.c
-new file mode 100644
-index 000000000000..188b385af436
---- /dev/null
-+++ b/drivers/clk/berlin/pll.c
-@@ -0,0 +1,100 @@
-+/*
-+ * Copyright (c) 2013 Marvell Technology Group Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/io.h>
-+#include <linux/of.h>
-+#include <linux/of_address.h>
-+#include <linux/slab.h>
-+#include <linux/kernel.h>
-+#include <linux/clk-provider.h>
-+
-+#include "clk.h"
-+
-+struct berlin_pll {
-+	struct clk_hw	hw;
-+	void __iomem	*base;
-+	void		*data;
-+};
-+
-+#define to_berlin_pll(hw)	container_of(hw, struct berlin_pll, hw)
-+
-+#define PLL_CTRL0	0x00
-+#define PLL_CTRL1	0x04
-+
-+static inline u32 berlin_pll_read(struct berlin_pll *pll, unsigned long offset)
-+{
-+	return readl_relaxed(pll->base + offset);
-+}
-+
-+static unsigned long berlin_pll_recalc_rate(struct clk_hw *hw,
-+					unsigned long parent_rate)
-+{
-+	struct berlin_pll *pll = to_berlin_pll(hw);
-+	struct berlin_pllmap *map = pll->data;
-+	u32 val, fbdiv, rfdiv, vcodivsel;
-+
-+	val = berlin_pll_read(pll, PLL_CTRL0);
-+	fbdiv = (val >> map->fbdiv_shift) & map->fbdiv_mask;
-+	rfdiv = (val >> map->rfdiv_shift) & map->rfdiv_mask;
-+	if (rfdiv == 0)
-+		rfdiv = 1;
-+
-+	val = berlin_pll_read(pll, PLL_CTRL1);
-+	vcodivsel = (val >> map->divsel_shift) & map->divsel_mask;
-+
-+	return parent_rate * fbdiv * map->mult / rfdiv /
-+		map->vcodiv[vcodivsel];
-+}
-+
-+static const struct clk_ops berlin_pll_ops = {
-+	.recalc_rate	= berlin_pll_recalc_rate,
-+};
-+
-+void __init berlin_pll_setup(struct device_node *np,
-+			struct berlin_pllmap *map)
-+{
-+	struct clk_init_data init;
-+	struct berlin_pll *pll;
-+	const char *parent_name;
-+	struct clk *clk;
-+	int ret;
-+
-+	pll = kzalloc(sizeof(*pll), GFP_KERNEL);
-+	if (WARN_ON(!pll))
-+		return;
-+
-+	pll->base = of_iomap(np, 0);
-+	if (WARN_ON(!pll->base))
-+		return;
-+
-+	pll->data = map;
-+
-+	init.name = np->name;
-+	init.ops = &berlin_pll_ops;
-+	parent_name = of_clk_get_parent_name(np, 0);
-+	init.parent_names = &parent_name;
-+	init.num_parents = 1;
-+
-+	pll->hw.init = &init;
-+
-+	clk = clk_register(NULL, &pll->hw);
-+	if (WARN_ON(IS_ERR(clk)))
-+		return;
-+
-+	ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
-+	if (WARN_ON(ret))
-+		return;
-+}
-+
--- 
-1.8.3.2
+[   14.747677] WARNING: CPU: 2 PID: 189 at drivers/gpu/drm/drm_crtc_helper.c:256 drm_helper_crtc_in_use+0x2c/0x71 [drm_kms_helper]()
+[   14.748164] Modules linked in: radeon(+) i2c_algo_bit drm_kms_helper ttm crc32c_intel drm broadcom microcode psmouse evdev lpc_ich tg3 battery i2c_i801 button processor ac wmi ipv6 ehci_pci ehci_hcd usbcore sr_mod cdrom sd_mod ahci
+[   14.750668] CPU: 2 PID: 189 Comm: systemd-udevd Tainted: G        W     3.14.0-rc7-next-20140321-dbg-dirty #192
+[   14.751152] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+[   14.751655]  0000000000000000 ffff8801523cba08 ffffffff813ba2d7 0000000000000000
+[   14.752424]  ffff8801523cba40 ffffffff8103a3af ffffffffa0145355 ffff880098fbf000
+[   14.753183]  ffff88015277e800 ffff880098fbf000 0000000000000000 ffff8801523cba50
+[   14.753945] Call Trace:
+[   14.754237]  [<ffffffff813ba2d7>] dump_stack+0x4e/0x7a
+[   14.754537]  [<ffffffff8103a3af>] warn_slowpath_common+0x75/0x8e
+[   14.754836]  [<ffffffffa0145355>] ? drm_helper_crtc_in_use+0x2c/0x71 [drm_kms_helper]
+[   14.755346]  [<ffffffff8103a467>] warn_slowpath_null+0x15/0x17
+[   14.755648]  [<ffffffffa0145355>] drm_helper_crtc_in_use+0x2c/0x71 [drm_kms_helper]
+[   14.756148]  [<ffffffffa014545b>] drm_helper_disable_unused_functions+0xc1/0xfd [drm_kms_helper]
+[   14.756707]  [<ffffffffa01b4e9f>] radeon_fbdev_init+0xad/0xca [radeon]
+[   14.757056]  [<ffffffffa01b0b31>] radeon_modeset_init+0x75e/0x930 [radeon]
+[   14.757402]  [<ffffffffa01940ec>] radeon_driver_load_kms+0xc0/0x16c [radeon]
+[   14.757721]  [<ffffffffa015d49d>] drm_dev_register+0x79/0xef [drm]
+[   14.758033]  [<ffffffffa015ee0c>] drm_get_pci_dev+0xfa/0x1c5 [drm]
+[   14.758333]  [<ffffffff810d720f>] ? kfree+0xc8/0x123
+[   14.758687]  [<ffffffffa0191327>] ? radeon_pci_probe+0x91/0xaa [radeon]
+[   14.759029]  [<ffffffffa0191339>] radeon_pci_probe+0xa3/0xaa [radeon]
+[   14.759336]  [<ffffffff81224570>] pci_device_probe+0x6e/0xcf
+[   14.759634]  [<ffffffff8129a516>] driver_probe_device+0x98/0x1c2
+[   14.759934]  [<ffffffff8129a6d0>] __driver_attach+0x58/0x7a
+[   14.760232]  [<ffffffff8129a678>] ? __device_attach+0x38/0x38
+[   14.760530]  [<ffffffff81298ca1>] bus_for_each_dev+0x76/0x80
+[   14.760829]  [<ffffffff8129a0a9>] driver_attach+0x19/0x1b
+[   14.761123]  [<ffffffff81299d71>] bus_add_driver+0x101/0x1cb
+[   14.761422]  [<ffffffff8129ac29>] driver_register+0x89/0xc5
+[   14.761718]  [<ffffffffa02af000>] ? 0xffffffffa02aefff
+[   14.762016]  [<ffffffff81223bcd>] __pci_register_driver+0x46/0x48
+[   14.762330]  [<ffffffffa015ef40>] drm_pci_init+0x69/0xea [drm]
+[   14.762624]  [<ffffffffa02af000>] ? 0xffffffffa02aefff
+[   14.762960]  [<ffffffffa02af097>] radeon_init+0x97/0x1000 [radeon]
+[   14.763263]  [<ffffffff810002a3>] do_one_initcall+0x7f/0x105
+[   14.763573]  [<ffffffff8102f528>] ? set_memory_nx+0x3b/0x3d
+[   14.763870]  [<ffffffff8108c99c>] load_module+0x15a1/0x1ba9
+[   14.764168]  [<ffffffff8108a0e5>] ? store_uevent+0x35/0x35
+[   14.764469]  [<ffffffff810cd2e0>] ? map_vm_area+0x29/0x3b
+[   14.764767]  [<ffffffff810ce0ce>] ? __vmalloc_node_range+0x143/0x1a5
+[   14.765065]  [<ffffffff8108d044>] SyS_init_module+0xa0/0xaf
+[   14.765365]  [<ffffffff813bfd61>] tracesys+0xd4/0xd9
+[   14.765661] ---[ end trace f5ac5b2194c7ea98 ]---
+[   15.267565] ------------[ cut here ]------------
 
+
+[   15.267887] WARNING: CPU: 0 PID: 189 at drivers/gpu/drm/drm_crtc_helper.c:131 drm_helper_probe_single_connector_modes+0x40/0x2d1 [drm_kms_helper]()
+[   15.268361] Modules linked in: radeon(+) i2c_algo_bit drm_kms_helper ttm crc32c_intel drm broadcom microcode psmouse evdev lpc_ich tg3 battery i2c_i801 button processor ac wmi ipv6 ehci_pci ehci_hcd usbcore sr_mod cdrom sd_mod ahci
+[   15.270769] CPU: 0 PID: 189 Comm: systemd-udevd Tainted: G        W     3.14.0-rc7-next-20140321-dbg-dirty #192
+[   15.271235] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+[   15.271710]  0000000000000000 ffff8801523cb930 ffffffff813ba2d7 0000000000000000
+[   15.272430]  ffff8801523cb968 ffffffff8103a3af ffffffffa014647d ffff8801527a2400
+[   15.273143]  0000000000000000 ffff88015277e800 0000000000002000 ffff8801523cb978
+[   15.273857] Call Trace:
+[   15.274122]  [<ffffffff813ba2d7>] dump_stack+0x4e/0x7a
+[   15.274390]  [<ffffffff8103a3af>] warn_slowpath_common+0x75/0x8e
+[   15.274659]  [<ffffffffa014647d>] ? drm_helper_probe_single_connector_modes+0x40/0x2d1 [drm_kms_helper]
+[   15.275122]  [<ffffffff8103a467>] warn_slowpath_null+0x15/0x17
+[   15.275391]  [<ffffffffa014647d>] drm_helper_probe_single_connector_modes+0x40/0x2d1 [drm_kms_helper]
+[   15.275868]  [<ffffffffa01473a5>] drm_fb_helper_probe_connector_modes+0x41/0x54 [drm_kms_helper]
+[   15.276340]  [<ffffffffa0148894>] drm_fb_helper_initial_config+0x1ab/0x43c [drm_kms_helper]
+[   15.276803]  [<ffffffff8103a3be>] ? warn_slowpath_common+0x84/0x8e
+[   15.277071]  [<ffffffffa0145355>] ? drm_helper_crtc_in_use+0x2c/0x71 [drm_kms_helper]
+[   15.277531]  [<ffffffff8103a467>] ? warn_slowpath_null+0x15/0x17
+[   15.277833]  [<ffffffffa01b4eaa>] radeon_fbdev_init+0xb8/0xca [radeon]
+[   15.278128]  [<ffffffffa01b0b31>] radeon_modeset_init+0x75e/0x930 [radeon]
+[   15.278417]  [<ffffffffa01940ec>] radeon_driver_load_kms+0xc0/0x16c [radeon]
+[   15.278696]  [<ffffffffa015d49d>] drm_dev_register+0x79/0xef [drm]
+[   15.284786]  [<ffffffffa015ee0c>] drm_get_pci_dev+0xfa/0x1c5 [drm]
+[   15.285063]  [<ffffffff810d720f>] ? kfree+0xc8/0x123
+[   15.285352]  [<ffffffffa0191327>] ? radeon_pci_probe+0x91/0xaa [radeon]
+[   15.285638]  [<ffffffffa0191339>] radeon_pci_probe+0xa3/0xaa [radeon]
+[   15.285912]  [<ffffffff81224570>] pci_device_probe+0x6e/0xcf
+[   15.286181]  [<ffffffff8129a516>] driver_probe_device+0x98/0x1c2
+[   15.286449]  [<ffffffff8129a6d0>] __driver_attach+0x58/0x7a
+[   15.286717]  [<ffffffff8129a678>] ? __device_attach+0x38/0x38
+[   15.286985]  [<ffffffff81298ca1>] bus_for_each_dev+0x76/0x80
+[   15.287249]  [<ffffffff8129a0a9>] driver_attach+0x19/0x1b
+[   15.287526]  [<ffffffff81299d71>] bus_add_driver+0x101/0x1cb
+[   15.287797]  [<ffffffff8129ac29>] driver_register+0x89/0xc5
+[   15.288067]  [<ffffffffa02af000>] ? 0xffffffffa02aefff
+[   15.288335]  [<ffffffff81223bcd>] __pci_register_driver+0x46/0x48
+[   15.288611]  [<ffffffffa015ef40>] drm_pci_init+0x69/0xea [drm]
+[   15.288874]  [<ffffffffa02af000>] ? 0xffffffffa02aefff
+[   15.289158]  [<ffffffffa02af097>] radeon_init+0x97/0x1000 [radeon]
+[   15.289428]  [<ffffffff810002a3>] do_one_initcall+0x7f/0x105
+[   15.289697]  [<ffffffff8102f528>] ? set_memory_nx+0x3b/0x3d
+[   15.289964]  [<ffffffff8108c99c>] load_module+0x15a1/0x1ba9
+[   15.290230]  [<ffffffff8108a0e5>] ? store_uevent+0x35/0x35
+[   15.290496]  [<ffffffff810cd2e0>] ? map_vm_area+0x29/0x3b
+[   15.290763]  [<ffffffff810ce0ce>] ? __vmalloc_node_range+0x143/0x1a5
+[   15.291030]  [<ffffffff8108d044>] SyS_init_module+0xa0/0xaf
+[   15.291298]  [<ffffffff813bfd61>] tracesys+0xd4/0xd9
+[   15.291573] ---[ end trace f5ac5b2194c7ea99 ]---
+[   15.294242] ------------[ cut here ]------------
+
+
+	-ss
