@@ -1,102 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226AbaCUTPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:15:30 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:45500 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaCUTP1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:15:27 -0400
-From: Chirantan Ekbote <chirantan@chromium.org>
-To: linux@arm.linux.org.uk
-Cc: linux-mm@kvack.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, sonnyrao@chromium.org,
-        dianders@chromium.org, Chirantan Ekbote <chirantan@chromium.org>
-Subject: [PATCH] ARM: mm: Speed up page list initialization during boot
-Date: Fri, 21 Mar 2014 12:15:17 -0700
-Message-Id: <1395429317-10084-1-git-send-email-chirantan@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	id S1751629AbaCUTQH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:16:07 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:44256 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751305AbaCUTQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 15:16:04 -0400
+X-IronPort-AV: E=Sophos;i="4.97,704,1389744000"; 
+   d="scan'208";a="113755555"
+Message-ID: <532C8FF0.7090008@citrix.com>
+Date: Fri, 21 Mar 2014 19:16:00 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Ian Campbell <Ian.Campbell@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Subject: Re: [PATCH net-next] xen-netback: Stop using xenvif_tx_pending_slots_available
+References: <1395343961-4744-1-git-send-email-zoltan.kiss@citrix.com> <1395394603.27358.8.camel@kazak.uk.xensource.com>
+In-Reply-To: <1395394603.27358.8.camel@kazak.uk.xensource.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During boot, we populate the page lists by using the page freeing
-mechanism on every individual page.  Unfortunately, this is very
-inefficient because the memory manager spends a lot of time coalescing
-pairs of adjacent free pages into bigger blocks.
+On 21/03/14 09:36, Ian Campbell wrote:
+> On Thu, 2014-03-20 at 19:32 +0000, Zoltan Kiss wrote:
+>> Since the early days TX stops if there isn't enough free pending slots to
+>> consume a maximum sized (slot-wise) packet. Probably the reason for that is to
+>> avoid the case when we don't have enough free pending slot in the ring to finish
+>> the packet. But if we make sure that the pending ring has the same size as the
+>> shared ring, that shouldn't really happen. The frontend can only post packets
+>> which fit the to the free space of the shared ring. If it doesn't, the frontend
+>> has to stop, as it can only increase the req_prod when the whole packet fits
+>> onto the ring.
+>
+> My only real concern here is that by removing these checks we are
+> introducing a way for a malicious or buggy guest to trigger misbehaviour
+> in the backend, leading to e.g. a DoS.
+>
+> Should we need to some sanity checks which shutdown the ring if
+> something like this occurs? i.e. if we come to consume a packet and
+> there is insufficient space on the pending ring we kill the vif.
+The backend doesn't see what the guest does with the responses, and 
+that's OK, it's the guest's problem, after netback increased 
+rsp_prod_pvt it doesn't really care. But as soon as the guest start 
+placing new requests after rsp_prod_pvt, or just increasing req_prod so 
+req_prod-rsp_prod_pvt > XEN_NETIF_TX_RING_SIZE, it becomes an issue.
+So far this xenvif_tx_pending_slots_available indirectly saved us from 
+consuming requests overwriting still pending requests, but the guest 
+could still overwrote our responses. But again, that's still the guests 
+problem, we had the original request saved in the pending ring data. If 
+the guest went too far, build_gops killed the vif when req_prod-req_cons 
+ > XEN_NETIF_TX_RING_SIZE
+Indirect above means it only happened because the pending ring had the 
+same size, and the used slots has a 1-to-1 mapping for slots between 
+rsp_prod_pvt and req_cons. So xenvif_tx_pending_slots_available also 
+means (req_cons - rsp_prod_pvt) + XEN_NETBK_LEGACY_SLOTS_MAX < 
+XEN_NETIF_TX_RING_SIZE (does this look familiar? :)
+But consuming overrunning requests after rsp_prod_pvt is a problem:
+- NAPI instance races with dealloc thread over the slots. The first 
+reads them as requests, the second writes them as responses
+- the NAPI instance overwrites used pending slots as well, so skb frag 
+release go wrong etc.
+But the current RING_HAS_UNCONSUMED_REQUESTS fortunately saves us here, 
+let me explain it through an example:
+rsp_prod_pvt = 0
+req_cons = 253
+req_prod = 258
 
-Rather than adding a single order 0 page at a time, we can take
-advantage of the fact that we know that all the pages are available and
-free up big blocks of pages at a time instead.
+Therefore:
+req = 5
+rsp = 3
 
-Signed-off-by: Chirantan Ekbote <chirantan@chromium.org>
----
- arch/arm/mm/init.c  | 19 +++++++++++++++++--
- include/linux/gfp.h |  1 +
- mm/internal.h       |  1 -
- 3 files changed, 18 insertions(+), 3 deletions(-)
+So in xenvif_tx_build_gops work_to_do will be 3, and in 
+xenvif_count_requests we bail out when we see that the packet actually 
+exceeds that.
+So in the end, we are safe here, but we shouldn't change that macro I 
+suggested to refactor :)
 
-diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-index 97c293e..c7fc2d8 100644
---- a/arch/arm/mm/init.c
-+++ b/arch/arm/mm/init.c
-@@ -22,6 +22,7 @@
- #include <linux/memblock.h>
- #include <linux/dma-contiguous.h>
- #include <linux/sizes.h>
-+#include <linux/bitops.h>
- 
- #include <asm/mach-types.h>
- #include <asm/memblock.h>
-@@ -469,8 +470,22 @@ static void __init free_unused_memmap(struct meminfo *mi)
- #ifdef CONFIG_HIGHMEM
- static inline void free_area_high(unsigned long pfn, unsigned long end)
- {
--	for (; pfn < end; pfn++)
--		free_highmem_page(pfn_to_page(pfn));
-+	while (pfn < end) {
-+		struct page *page = pfn_to_page(pfn);
-+		unsigned long order = min(__ffs(pfn), MAX_ORDER - 1);
-+		unsigned long nr_pages = 1 << order;
-+		unsigned long rem = end - pfn;
-+
-+		if (nr_pages > rem) {
-+			order = __fls(rem);
-+			nr_pages = 1 << order;
-+		}
-+
-+		__free_pages_bootmem(page, order);
-+		totalram_pages += nr_pages;
-+		totalhigh_pages += nr_pages;
-+		pfn += nr_pages;
-+	}
- }
- #endif
- 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 39b81dc..a63d666 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -367,6 +367,7 @@ void *alloc_pages_exact_nid(int nid, size_t size, gfp_t gfp_mask);
- #define __get_dma_pages(gfp_mask, order) \
- 		__get_free_pages((gfp_mask) | GFP_DMA, (order))
- 
-+extern void __free_pages_bootmem(struct page *page, unsigned int order);
- extern void __free_pages(struct page *page, unsigned int order);
- extern void free_pages(unsigned long addr, unsigned int order);
- extern void free_hot_cold_page(struct page *page, int cold);
-diff --git a/mm/internal.h b/mm/internal.h
-index 29e1e76..d2b8738 100644
---- a/mm/internal.h
-+++ b/mm/internal.h
-@@ -93,7 +93,6 @@ extern pmd_t *mm_find_pmd(struct mm_struct *mm, unsigned long address);
- /*
-  * in mm/page_alloc.c
-  */
--extern void __free_pages_bootmem(struct page *page, unsigned int order);
- extern void prep_compound_page(struct page *page, unsigned long order);
- #ifdef CONFIG_MEMORY_FAILURE
- extern bool is_free_buddy_page(struct page *page);
--- 
-1.9.1.423.g4596e3a
+Zoli
+
+
+>
+> What's the invariant we are relying on here, is it:
+>      req_prod >= req_cons >= pending_prod >= pending_cons >= rsp_prod >= rsp_cons
+> ?
+>
+>> This patch avoid using this checking, makes sure the 2 ring has the same size,
+>> and remove a checking from the callback. As now we don't stop the NAPI instance
+>> on this condition, we don't have to wake it up if we free pending slots up.
+>>
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> ---
+>> diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+>> index bef37be..a800a8e 100644
+>> --- a/drivers/net/xen-netback/common.h
+>> +++ b/drivers/net/xen-netback/common.h
+>> @@ -81,7 +81,7 @@ struct xenvif_rx_meta {
+>>
+>>   #define MAX_BUFFER_OFFSET PAGE_SIZE
+>>
+>> -#define MAX_PENDING_REQS 256
+>> +#define MAX_PENDING_REQS XEN_NETIF_TX_RING_SIZE
+>
+> XEN_NETIF_TX_RING_SIZE is already == 256, right? (Just want to make sure
+> this is semantically no change).
+Yes, it is __CONST_RING_SIZE(xen_netif_tx, PAGE_SIZE)
+
 
