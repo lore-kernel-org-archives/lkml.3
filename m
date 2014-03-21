@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760899AbaCUNVY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:21:24 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:58676 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094AbaCUNVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:21:22 -0400
-Date: Fri, 21 Mar 2014 14:21:21 +0100
-From: Andi Kleen <andi@firstfloor.org>
-To: Joe Perches <joe@perches.com>
-Cc: Jean Delvare <jdelvare@suse.de>, Andi Kleen <andi@firstfloor.org>,
-        Andy Whitcroft <apw@canonical.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: checkpatch on Kconfig files
-Message-ID: <20140321132121.GL22728@two.firstfloor.org>
-References: <20140321094239.18aebf02@endymion.delvare>
- <1395392257.7776.74.camel@joe-AO722>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395392257.7776.74.camel@joe-AO722>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S965462AbaCUNWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:22:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43284 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752094AbaCUNWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 09:22:21 -0400
+Message-ID: <1395408140.9455.1.camel@linux-fkkt.site>
+Subject: Re: Check if usb device is suspended
+From: Oliver Neukum <oneukum@suse.de>
+To: Jagdish Gedia <jvgediya@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 21 Mar 2014 14:22:20 +0100
+In-Reply-To: <CAOAoqGuiBrg_tYhdNXd3r48YC9KQ5GNm7jrV4ttNiMjNkrCKRA@mail.gmail.com>
+References: <CAOAoqGt_Y_weA2FjA8x-NrZS7zj+=Zw-TH5Xv+QUQDJQixmdsw@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1403131017430.1292-100000@iolanthe.rowland.org>
+	 <CAOAoqGuiBrg_tYhdNXd3r48YC9KQ5GNm7jrV4ttNiMjNkrCKRA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I believe that was Andi Kleen's pet peeve,
-> so I'll punt it back to him.
+On Fri, 2014-03-21 at 17:17 +0530, Jagdish Gedia wrote:
+> I want to resume the usb device on some event, so i want to check if
+> it is suspended. I think by above method i can check if the device is
+> already suspended, but may be i will miss to resume the device if it
+> is suspending. Is there any way through which i can check if device is
+> suspending?
 
-This was always in checkpatch. If you touch/move some existing
-code it blames you for the issues that were already there.
+Just don't do that. If a device needs to be awake for some operation,
+call usb_autopm_get(). If the device is already awake, it is a nop
+besides keeping the device awake.
+Checking is not a sensible strategy.
 
-Not specific to this check.
+	Regards
+		Oliver
 
-If you disagree with the warnings just ignore them.
 
--Andi
