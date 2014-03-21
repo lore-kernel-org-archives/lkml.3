@@ -1,97 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760101AbaCUCqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 22:46:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61419 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671AbaCUCqf convert rfc822-to-8bit (ORCPT
+	id S933915AbaCUCyP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 22:54:15 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:24179 "EHLO
+	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932713AbaCUCyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 22:46:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,700,1389772800"; 
-   d="scan'208";a="503313303"
-From: "Dilger, Andreas" <andreas.dilger@intel.com>
-To: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Peng Tao <bergwolf@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, "Drokin, Oleg" <oleg.drokin@intel.com>
-Subject: Re: [PATCH 0/2] wait: introduce WQ_FLAG_EXCLUSIVE_HEAD
-Thread-Topic: [PATCH 0/2] wait: introduce WQ_FLAG_EXCLUSIVE_HEAD
-Thread-Index: AQHPRGVDSr7HR/JAHUWOja21VYaTsJrq52qA
-Date: Fri, 21 Mar 2014 02:45:47 +0000
-Message-ID: <CF5102D5.9B239%andreas.dilger@intel.com>
-References: <1395148208-2209-1-git-send-email-bergwolf@gmail.com>
- <20140318133331.GA23193@laptop.programming.kicks-ass.net>
- <CA+a=Yy74V9_N4L8DoG=6iLnjGyOb6=ifraAqs5jW7ZsCG0t7jw@mail.gmail.com>
- <20140318140504.GD23193@laptop.programming.kicks-ass.net>
- <20140318154724.GA5669@redhat.com>
- <CA+a=Yy4WPO9FQwqzDygz6AadT6xbOMEa_puwosZ6WFN17uCncw@mail.gmail.com>
- <20140319164907.GA10113@redhat.com>
- <20140319165747.GC8557@laptop.programming.kicks-ass.net>
- <20140319171906.GA11377@redhat.com> <20140320175111.GA7375@redhat.com>
-In-Reply-To: <20140320175111.GA7375@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.252.132.228]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <88B44CC901116F47B8958A66FDA2FC96@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 Mar 2014 22:54:12 -0400
+X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 Mar 2014 22:54:12 EDT
+Message-ID: <532BA898.90604@atmel.com>
+Date: Fri, 21 Mar 2014 10:48:56 +0800
+From: Bo Shen <voice.shen@atmel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, Boris BREZILLON <b.brezillon@overkiz.com>,
+        "Rob Herring" <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] ASoC: atmel: document clock properties of the wm8904
+ driver
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-8-git-send-email-voice.shen@atmel.com> <20140317115518.GD11706@sirena.org.uk> <532931C3.4080909@atmel.com> <20140319102800.GW11706@sirena.org.uk> <532A5481.6000008@atmel.com> <20140320134744.GF11706@sirena.org.uk>
+In-Reply-To: <20140320134744.GF11706@sirena.org.uk>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.168.5.13]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/03/20, 11:51 AM, "Oleg Nesterov" <oleg@redhat.com> wrote:
+Hi Mark Brown,
 
->On 03/19, Oleg Nesterov wrote:
->>
->> OK, I'll try to test/cleanup/resend tomorrow.
+On 03/20/2014 09:47 PM, Mark Brown wrote:
+> On Thu, Mar 20, 2014 at 10:37:53AM +0800, Bo Shen wrote:
 >
->Cough. Still un-tested, sorry. I will test it somehow and report,
->but I'd like to send this for review right now.
+>> For this, in my mind, I think we need add following parameters in DT.
+>> 1. sysclk_src_from_fll --> we need do nothing.
 >
->Because I simply can't decide what the new flag should actually
->do, so please ack/nack the semantics/naming at least.
+> No, how would this work?  If nothing else the FLL needs configuration.
+
+Only configure it in machine driver. Then no DT operation.
+
+>> 2. sysclk_src_from_mclk
+>>     2.1 use_external_xtal --> we need clock_frequency
+>>     2.2 !use_external_xtal --> we need retrieve clock and clock_frequency.
 >
->Changes:
+> No, this is all handled in the clock binding.  If there's a fixed rate
+> clock the device tree should have a fixed rate clock provided.
 >
->	1. I decided it would be better to change __wait_event()
->	   to accept wait.flags right now. This looks better in
->	   any case to me, and otherwise we need to introduce the
->	   __wait_exclusive_enum.
+>> Does this acceptable? Or any other better suggestion for this?
 >
->	   The change looks trivial (both actually), please tell
->	   me if you think it doesn't deserve a separate patch.
+> Just have the device tree describe the hardware and provide a way of
+> specifying an optional MCLK.
 >
->	2. I won't insist, but WQ_FLAG_EXCLUSIVE_HEAD can be used
->	   without WQ_FLAG_EXCLUSIVE.
->
->	   Unlikely this can be useful, but it looks more natural
->	   this way. Otherwise we need to add another check to
->	   ensure that WQ_FLAG_EXCLUSIVE_HEAD can't come alone.
->
->	   However, perhaps this means the new flag needs another
->	   name. I agree in advance with any.
 
-What about:
+I will implement an RFC patch, please help review it. Thanks.
 
-#define WQ_FLAG_HEAD	0x02
-
-#define WQ_FLAG_EXCLUSIVE_HEAD (WQ_FLAG_HEAD | WQ_FLAG_EXCLUSIVE)
-
-That avoids having WQ_FLAG_EXCLUSIVE_HEAD not actually meaning "exclusive"?
-
-Patches look reasonable at first glance.  The second patch would need
-to be changed to handle that WQ_FLAG_EXCLUSIVE_HEAD has both bits set
-(probably just replace uses of WQ_FLAG_EXCLUSIVE_HEAD with WQ_FLAG_HEAD).
-
-Cheers, Andreas
--- 
-Andreas Dilger
-
-Lustre Software Architect
-Intel High Performance Data Division
-
-
+Best Regards,
+Bo Shen
