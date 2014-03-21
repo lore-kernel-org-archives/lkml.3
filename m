@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760643AbaCUPz7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:55:59 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:59732 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331AbaCUPz6 (ORCPT
+	id S1760724AbaCUP4k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:56:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57557 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753133AbaCUP4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:55:58 -0400
+	Fri, 21 Mar 2014 11:56:36 -0400
+Date: Fri, 21 Mar 2014 16:56:33 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 1/5] clk: berlin: add support for berlin plls
+Message-ID: <20140321155633.GF6443@piout.net>
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1395402220-23503-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <532C355C.3090606@gmail.com>
 MIME-Version: 1.0
-X-Originating-IP: [84.73.67.144]
-In-Reply-To: <alpine.LNX.2.00.1403211621510.3690@pobox.suse.cz>
-References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz>
-	<alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz>
-	<alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz>
-	<CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
-	<alpine.LNX.2.00.1403101540140.3690@pobox.suse.cz>
-	<alpine.LNX.2.00.1403211621510.3690@pobox.suse.cz>
-Date: Fri, 21 Mar 2014 16:55:57 +0100
-Message-ID: <CAKMK7uHE+cpdf42oL80H8ui=j0QiQsY5+v_paz6E+YeC-Zzr_Q@mail.gmail.com>
-Subject: Re: i915 resume-from-hibernation problems on resume with current
- Linus' tree
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532C355C.3090606@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 4:23 PM, Jiri Kosina <jkosina@suse.cz> wrote:
-> So I am still seeing this with current Linus' tree rather regularly (but
-> it's not deterministic enough for a reliable bisect).
->
-> Unfortunately I haven't received any patches to test; what do you propose?
-> Would reporting this on bugs.freedesktop.org instead of ranting here
-> change anything?
+On 21/03/2014 at 13:49:32 +0100, Sebastian Hesselbarth wrote :
+> On 03/21/2014 12:43 PM, Alexandre Belloni wrote:
+> >diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> >index a367a9831717..4a2602737c27 100644
+> >--- a/drivers/clk/Makefile
+> >+++ b/drivers/clk/Makefile
+> >@@ -29,6 +29,7 @@ obj-$(CONFIG_ARCH_VT8500)		+= clk-vt8500.o
+> >  obj-$(CONFIG_COMMON_CLK_WM831X)		+= clk-wm831x.o
+> >  obj-$(CONFIG_COMMON_CLK_XGENE)		+= clk-xgene.o
+> >  obj-$(CONFIG_COMMON_CLK_AT91)		+= at91/
+> >+obj-$(CONFIG_ARCH_BERLIN)		+= berlin/
+> >  obj-$(CONFIG_ARCH_HI3xxx)		+= hisilicon/
+> >  obj-$(CONFIG_COMMON_CLK_KEYSTONE)	+= keystone/
+> 
+> I'll have a look at clk/Makefile later myself, but alphabetic ordering
+> seems to be broken by ARCH_HI3xxx already. Anyway, we shouldn't just
+> add another violator.
+> 
 
-Yeah, filing a bug on fdo to keep track of this should help. Please
-add a [gm45 regression] tag to the summary so that it shows up in our
-queries at the right spot ;-)
+BTW,  don't think there is any issue here, the Makefile states:
+# please keep this section sorted lexicographically by file/directory path name
 
-One thing to test would be to give -nightly (or drm-intel-testing as
-of today) a shot. We've merged a few patches recently to slightly
-improve the ring init sequence in the generic code, they might
-actually help here. Sorry for not correlating them with your patch
-when I've merged them, only just realized this now.
 
-Thanks, Daniel
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
