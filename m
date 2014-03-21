@@ -1,91 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbaCUVFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:05:10 -0400
-Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:43743 "EHLO
-	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750917AbaCUVFF (ORCPT
+	id S1751853AbaCUVJm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:09:42 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:52224 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaCUVJk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:05:05 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: m.chehab@samsung.com
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: [PATCH] media: em28xx-video - change em28xx_scaler_set() to use em28xx_reg_len()
-Date: Fri, 21 Mar 2014 15:04:50 -0600
-Message-Id: <1395435890-15100-1-git-send-email-shuah.kh@samsung.com>
+	Fri, 21 Mar 2014 17:09:40 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, x86@kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>
+Subject: [PATCH 0/8] Generic serial earlycon
+Date: Fri, 21 Mar 2014 16:08:40 -0500
+Message-Id: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change em28xx_scaler_set() to use em28xx_reg_len() to get register
-lengths for EM28XX_R30_HSCALELOW and EM28XX_R32_VSCALELOW registers,
-instead of hard-coding the length. Moved em28xx_reg_len() definition
-for it to be visible to em28xx_scaler_set().
+From: Rob Herring <robh@kernel.org>
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/media/usb/em28xx/em28xx-video.c |   29 ++++++++++++++++-------------
- 1 file changed, 16 insertions(+), 13 deletions(-)
+This started out as an attempt to add arm64's earlyprintk support to ARM
+in order to get an earlier, runtime setup console on multi-platform
+kernels. The first issue was needing the fixmap support which
+conveniently Mark Salter was working on and is mostly in place now. Like
+many things on ARM and arm64 now, it then became where do I put the now
+common, shared code. After digging more into various early console/printk
+support, it turns out the 8250_early.c setup code was the best starting
+point. 
 
-diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
-index 19af6b3..f8a91de 100644
---- a/drivers/media/usb/em28xx/em28xx-video.c
-+++ b/drivers/media/usb/em28xx/em28xx-video.c
-@@ -272,6 +272,18 @@ static void em28xx_capture_area_set(struct em28xx *dev, u8 hstart, u8 vstart,
- 	}
- }
- 
-+static int em28xx_reg_len(int reg)
-+{
-+	switch (reg) {
-+	case EM28XX_R40_AC97LSB:
-+	case EM28XX_R30_HSCALELOW:
-+	case EM28XX_R32_VSCALELOW:
-+		return 2;
-+	default:
-+		return 1;
-+	}
-+}
-+
- static int em28xx_scaler_set(struct em28xx *dev, u16 h, u16 v)
- {
- 	u8 mode;
-@@ -284,11 +296,13 @@ static int em28xx_scaler_set(struct em28xx *dev, u16 h, u16 v)
- 
- 		buf[0] = h;
- 		buf[1] = h >> 8;
--		em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf, 2);
-+		em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf,
-+				  em28xx_reg_len(EM28XX_R30_HSCALELOW));
- 
- 		buf[0] = v;
- 		buf[1] = v >> 8;
--		em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf, 2);
-+		em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf,
-+				  em28xx_reg_len(EM28XX_R32_VSCALELOW));
- 		/* it seems that both H and V scalers must be active
- 		   to work correctly */
- 		mode = (h || v) ? 0x30 : 0x00;
-@@ -1583,17 +1597,6 @@ static int vidioc_g_chip_info(struct file *file, void *priv,
- 	return 0;
- }
- 
--static int em28xx_reg_len(int reg)
--{
--	switch (reg) {
--	case EM28XX_R40_AC97LSB:
--	case EM28XX_R30_HSCALELOW:
--	case EM28XX_R32_VSCALELOW:
--		return 2;
--	default:
--		return 1;
--	}
--}
- 
- static int vidioc_g_register(struct file *file, void *priv,
- 			     struct v4l2_dbg_register *reg)
+This is based on Mark Salter's fixmap support currently in linux-next.
+This is tested on arm64 and ARM with pl011 and 8250. The ARM support
+also requires fixmap and fixed mapping support which are not yet in place.
+I have some patches in my tree to support fixmap, but they need some more
+work. Fortunately, once fixmap is in place, it is just a Kconfig option
+to enable earlycon support on ARM. A git tree is available here[1].
+
+Based on this series, I would like to add support for doing earlycon
+setup using DT.
+
+Rob
+
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/robh/linux.git earlycon
+
+Rob Herring (8):
+  x86: move FIX_EARLYCON_MEM kconfig into x86
+  arm64: add FIXMAP_PAGE_NOCACHE definition
+  arm64: enable FIX_EARLYCON_MEM kconfig
+  tty/serial: add generic serial earlycon
+  tty/serial: convert 8250 to generic earlycon
+  tty/serial: pl011: add generic earlycon support
+  tty/serial: add arm64 semihosting earlycon
+  arm64: remove arch specific earlyprintk
+
+ Documentation/kernel-parameters.txt        |   6 +-
+ arch/arm64/Kconfig                         |   3 +
+ arch/arm64/Kconfig.debug                   |   9 --
+ arch/arm64/include/asm/fixmap.h            |   3 +-
+ arch/arm64/kernel/Makefile                 |   1 -
+ arch/arm64/kernel/early_printk.c           | 158 -----------------------------
+ arch/x86/Kconfig                           |   3 +
+ drivers/tty/serial/8250/8250_early.c       | 138 +++----------------------
+ drivers/tty/serial/8250/Kconfig            |   5 -
+ drivers/tty/serial/Kconfig                 |  24 ++++-
+ drivers/tty/serial/Makefile                |   3 +
+ drivers/tty/serial/amba-pl011.c            |  30 +++++-
+ drivers/tty/serial/earlycon-arm-semihost.c |  44 ++++++++
+ drivers/tty/serial/earlycon.c              | 148 +++++++++++++++++++++++++++
+ include/linux/serial_core.h                |  16 +++
+ 15 files changed, 287 insertions(+), 304 deletions(-)
+ delete mode 100644 arch/arm64/kernel/early_printk.c
+ create mode 100644 drivers/tty/serial/earlycon-arm-semihost.c
+ create mode 100644 drivers/tty/serial/earlycon.c
+
 -- 
-1.7.10.4
+1.8.3.2
 
