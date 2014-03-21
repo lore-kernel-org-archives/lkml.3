@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966622AbaCUBQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:16:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36624 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760484AbaCUADz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1760504AbaCUADz (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:03:55 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36601 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760484AbaCUADv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:03:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marius Knaust <marius.knaust@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 049/149] ALSA: hda - Added inverted digital-mic handling for Acer TravelMate 8371
-Date: Thu, 20 Mar 2014 17:03:32 -0700
-Message-Id: <20140321000438.669500588@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>,
+        Guenter Roeck <linux@roeck-us.net>
+Subject: [PATCH 3.13 064/149] x86_pkg_temp_thermal: Do not expose as a hwmon device
+Date: Thu, 20 Mar 2014 17:03:47 -0700
+Message-Id: <20140321000439.179302053@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,27 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marius Knaust <marius.knaust@gmail.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit a6b92b6650d010d58b6e6fe42c6271266e0b1134 upstream.
+commit 79786880a47a8c5b4c8146c03432b3387a07a169 upstream.
 
-Signed-off-by: Marius Knaust <marius.knaust@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The temperature value reported by x86_pkg_temp_thermal is already
+reported by the coretemp driver. So, do not expose this thermal zone
+as a hwmon device, because it would be redundant.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: Eduardo Valentin <eduardo.valentin@ti.com>
+Acked-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Zhang Rui <rui.zhang@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/thermal/x86_pkg_temp_thermal.c |    6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4242,6 +4242,7 @@ static const struct hda_fixup alc269_fix
+--- a/drivers/thermal/x86_pkg_temp_thermal.c
++++ b/drivers/thermal/x86_pkg_temp_thermal.c
+@@ -68,6 +68,10 @@ struct phy_dev_entry {
+ 	struct thermal_zone_device *tzone;
  };
  
- static const struct snd_pci_quirk alc269_fixup_tbl[] = {
-+	SND_PCI_QUIRK(0x1025, 0x0283, "Acer TravelMate 8371", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x029b, "Acer 1810TZ", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x0349, "Acer AOD260", ALC269_FIXUP_INV_DMIC),
- 	SND_PCI_QUIRK(0x1025, 0x047c, "Acer AC700", ALC269_FIXUP_ACER_AC700),
++static const struct thermal_zone_params pkg_temp_tz_params = {
++	.no_hwmon	= true,
++};
++
+ /* List maintaining number of package instances */
+ static LIST_HEAD(phy_dev_list);
+ static DEFINE_MUTEX(phy_dev_list_mutex);
+@@ -446,7 +450,7 @@ static int pkg_temp_thermal_device_add(u
+ 			thres_count,
+ 			(thres_count == MAX_NUMBER_OF_TRIPS) ?
+ 				0x03 : 0x01,
+-			phy_dev_entry, &tzone_ops, NULL, 0, 0);
++			phy_dev_entry, &tzone_ops, &pkg_temp_tz_params, 0, 0);
+ 	if (IS_ERR(phy_dev_entry->tzone)) {
+ 		err = PTR_ERR(phy_dev_entry->tzone);
+ 		goto err_ret_free;
 
 
