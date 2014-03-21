@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760287AbaCUI2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:28:22 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:50080 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760274AbaCUI2R (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:28:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <532815A8.9090807@ahsoftware.de>
-References: <5316FFCE.1060603@ti.com>
-	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
-	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
-	<5322D529.4070904@ahsoftware.de>
-	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
-	<5326F8C5.5090406@ti.com>
-	<CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>
-	<532805AE.9000806@ti.com>
-	<532815A8.9090807@ahsoftware.de>
-Date: Fri, 21 Mar 2014 09:28:16 +0100
-Message-ID: <CACRpkdZwhP-wMDeNTEq6ELPsYC48xmppzGYTRLSzUewbqhrMvg@mail.gmail.com>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Alexander Holler <holler@ahsoftware.de>
-Cc: Sekhar Nori <nsekhar@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1760292AbaCUIau (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:30:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61273 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943AbaCUIaq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 04:30:46 -0400
+From: Jason Wang <jasowang@redhat.com>
+To: rusty@rustcorp.com.au, mst@redhat.com,
+        virtualization@lists.linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Jason Wang <jasowang@redhat.com>,
+        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Subject: [PATCH net] virtio-net: don't free skb immediately on kick failure
+Date: Fri, 21 Mar 2014 16:30:01 +0800
+Message-Id: <1395390601-13177-1-git-send-email-jasowang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 10:45 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+We free the skb immediately on kick failure during xmit without detaching it
+from the virtqueue. This may lead double free for the skb during
+free_unused_bufs(). This patch fixes this by not freeing it on kick failure and
+let it to be freed through free_unused_bufs().
 
-> But I don't need any rush here, I'm just unable to understand why the -rc
-> phase isn't used for bug fixing as I believe that's what this phase is for.
+Fixes 67975901183799af8e93ec60e322f9e2a1940b9b
+("virtio_net: verify if virtqueue_kick() succeeded").
 
-Right now it is mostly a practical issue to me, as I applied the patch to
-the devel (for-next) branch, then committed new development on top of
-it.
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+---
+ drivers/net/virtio_net.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-If I send it for fixes now the same patch will come in two ways as I
-really do not like to rebase my tree at this point.
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 5632a99..d833d38 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -882,8 +882,10 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 		if (net_ratelimit())
+ 			dev_warn(&dev->dev,
+ 				 "Unexpected TXQ (%d) queue failure: %d\n", qnum, err);
+-		dev->stats.tx_dropped++;
+-		kfree_skb(skb);
++		if (err) {
++			dev->stats.tx_dropped++;
++			kfree_skb(skb);
++		}
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+-- 
+1.8.3.2
 
-So I'd prefer to keep this for next and then have it tagged for stable as
-v3.14 is released, if that is OK?
-
-It's as simple as sending a mail to Greg once it's upstream.
-
-Yours,
-Linus Walleij
