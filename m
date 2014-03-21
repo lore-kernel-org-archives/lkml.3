@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966332AbaCUAMk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:12:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37466 "EHLO
+	id S966347AbaCUAM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:12:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37446 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966218AbaCUAJx (ORCPT
+	with ESMTP id S966205AbaCUAJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:53 -0400
+	Thu, 20 Mar 2014 20:09:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Shreyas Bhatewara <sbhatewara@vmware.com>,
-        "VMware, Inc." <pv-drivers@vmware.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 26/35] vmxnet3: fix netpoll race condition
-Date: Thu, 20 Mar 2014 17:11:17 -0700
-Message-Id: <20140321001055.016874270@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.4 22/35] NFS: Fix a delegation callback race
+Date: Thu, 20 Mar 2014 17:11:13 -0700
+Message-Id: <20140321001054.898386564@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,78 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit d25f06ea466ea521b563b76661180b4e44714ae6 upstream.
+commit 755a48a7a4eb05b9c8424e3017d947b2961a60e0 upstream.
 
-vmxnet3's netpoll driver is incorrectly coded.  It directly calls
-vmxnet3_do_poll, which is the driver internal napi poll routine.  As the netpoll
-controller method doesn't block real napi polls in any way, there is a potential
-for race conditions in which the netpoll controller method and the napi poll
-method run concurrently.  The result is data corruption causing panics such as this
-one recently observed:
-PID: 1371   TASK: ffff88023762caa0  CPU: 1   COMMAND: "rs:main Q:Reg"
- #0 [ffff88023abd5780] machine_kexec at ffffffff81038f3b
- #1 [ffff88023abd57e0] crash_kexec at ffffffff810c5d92
- #2 [ffff88023abd58b0] oops_end at ffffffff8152b570
- #3 [ffff88023abd58e0] die at ffffffff81010e0b
- #4 [ffff88023abd5910] do_trap at ffffffff8152add4
- #5 [ffff88023abd5970] do_invalid_op at ffffffff8100cf95
- #6 [ffff88023abd5a10] invalid_op at ffffffff8100bf9b
-    [exception RIP: vmxnet3_rq_rx_complete+1968]
-    RIP: ffffffffa00f1e80  RSP: ffff88023abd5ac8  RFLAGS: 00010086
-    RAX: 0000000000000000  RBX: ffff88023b5dcee0  RCX: 00000000000000c0
-    RDX: 0000000000000000  RSI: 00000000000005f2  RDI: ffff88023b5dcee0
-    RBP: ffff88023abd5b48   R8: 0000000000000000   R9: ffff88023a3b6048
-    R10: 0000000000000000  R11: 0000000000000002  R12: ffff8802398d4cd8
-    R13: ffff88023af35140  R14: ffff88023b60c890  R15: 0000000000000000
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff88023abd5b50] vmxnet3_do_poll at ffffffffa00f204a [vmxnet3]
- #8 [ffff88023abd5b80] vmxnet3_netpoll at ffffffffa00f209c [vmxnet3]
- #9 [ffff88023abd5ba0] netpoll_poll_dev at ffffffff81472bb7
+The clean-up in commit 36281caa839f ended up removing a NULL pointer check
+that is needed in order to prevent an Oops in
+nfs_async_inode_return_delegation().
 
-The fix is to do as other drivers do, and have the poll controller call the top
-half interrupt handler, which schedules a napi poll properly to recieve frames
-
-Tested by myself, successfully.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Shreyas Bhatewara <sbhatewara@vmware.com>
-CC: "VMware, Inc." <pv-drivers@vmware.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: "Yan, Zheng" <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/5313E9F6.2020405@intel.com
+Fixes: 36281caa839f (NFSv4: Further clean-ups of delegation stateid validation)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ fs/nfs/delegation.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -1728,12 +1728,18 @@ static void
- vmxnet3_netpoll(struct net_device *netdev)
- {
- 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
-+	int i;
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -540,16 +540,19 @@ int nfs_async_inode_return_delegation(st
  
--	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
--		vmxnet3_disable_all_intrs(adapter);
--
--	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
--	vmxnet3_enable_all_intrs(adapter);
-+	switch (adapter->intr.type) {
-+	case VMXNET3_IT_MSIX:
-+		for (i = 0; i < adapter->num_rx_queues; i++)
-+			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
-+		break;
-+	case VMXNET3_IT_MSI:
-+	default:
-+		vmxnet3_intr(0, adapter->netdev);
-+		break;
-+	}
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(inode)->delegation);
++	if (delegation == NULL)
++		goto out_enoent;
  
+-	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid)) {
+-		rcu_read_unlock();
+-		return -ENOENT;
+-	}
++	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid))
++		goto out_enoent;
+ 	nfs_mark_return_delegation(server, delegation);
+ 	rcu_read_unlock();
+ 
+ 	nfs_delegation_run_state_manager(clp);
+ 	return 0;
++out_enoent:
++	rcu_read_unlock();
++	return -ENOENT;
  }
- #endif	/* CONFIG_NET_POLL_CONTROLLER */
+ 
+ static struct inode *
 
 
