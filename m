@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750914AbaCURwD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:52:03 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:56099 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaCURv7 (ORCPT
+	id S1751198AbaCUSH7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 14:07:59 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46124 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751142AbaCUSHz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:51:59 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Emilio =?iso-8859-1?q?L=F3pez?= <emilio@elopez.com.ar>
-Subject: Re: stmmac-socfpga breakage in arm-soc
-Date: Fri, 21 Mar 2014 18:51:17 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Dinh Nguyen <dinh.linux@gmail.com>,
-        Srinivas Kandagatla <srinivas.kandagatla@st.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>, arm@kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Dinh Nguyen <dinguyen@altera.com>
-References: <201403191333.01095.arnd@arndb.de> <29079107.ja9Hu9mMY0@wuerfel> <5329CA2A.8030309@elopez.com.ar>
-In-Reply-To: <5329CA2A.8030309@elopez.com.ar>
+	Fri, 21 Mar 2014 14:07:55 -0400
+Date: Fri, 21 Mar 2014 18:07:23 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are
+ serialized
+Message-ID: <20140321180723.GM13596@arm.com>
+References: <cover.1395379422.git.viresh.kumar@linaro.org>
+ <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+ <532BEE64.3090501@linux.vnet.ibm.com>
+ <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
+ <532BFB77.5060107@linux.vnet.ibm.com>
+ <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+ <20140321110559.GB13596@arm.com>
+ <532C2160.4030909@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201403211851.17955.arnd@arndb.de>
-X-Provags-ID: V02:K0:S20ZmAnPaCVKQyLJITR524nft7vX2Ksee6xEQEYJ4z9
- malE6KUxdIZpgpC67nknnzVHPpfGxZdyLqP8sxHxDJG6iTpmI/
- 1Zl7QgCjGVXj3CJsb00CCgtCjx6kAaqceP7EhhWqK5SkB5I4qw
- 8/zTLHeUz84rJE/RZSlYj3s3ZTmLiZtz5zMELWRNKbSl3B7ftW
- 4wSyfvh22iJ1w1MGWdX2ztmoTzJSS4popHwbdNvzBnqW4C6kRP
- ps7G/36ppSovC7rwBtLfqc9KQemFITJfslo5cDfrW1EQm75bcq
- Boh+OZ9JBpOwGm7SKPmnu8/4OlB3BGbJQOlpXlVaRMh6+l5xxf
- dAzj9uFOL8fTa7ihnh6N8x9jQ6ihzpOHiWbbQJbe1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532C2160.4030909@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 March 2014, Emilio López wrote:
-> El 19/03/14 11:58, Arnd Bergmann escribió:
-> (snip)
-> > diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-> > index 5748351..19d5648 100644
-> > --- a/Documentation/devicetree/bindings/net/stmmac.txt
-> > +++ b/Documentation/devicetree/bindings/net/stmmac.txt
-> > @@ -31,6 +31,10 @@ Optional properties:
-> >   - reset-names: Should contain the reset signal name "stmmaceth", if a
-> >       reset phandle is given
-> >   - max-frame-size: See ethernet.txt file in the same directory
-> > +- clocks: If present, the first clock should be the GMAC main clock,
-> > +  further clocks may be specified in derived bindings
-> > +- clock-names: One name for each entry in the clocks property, the
-> > +  first one should be "stmmaceth".
-> >
-> >   Examples:
-> >
-> > @@ -43,4 +47,6 @@ Examples:
-> >               mac-address = [000000000000]; /* Filled in by U-Boot */
-> >               max-frame-size = <3800>;
-> >               phy-mode = "gmii";
-> > +             clocks = <&clock>;
-> > +             clock-names = "stmmaceth">
+On Fri, Mar 21, 2014 at 11:24:16AM +0000, Srivatsa S. Bhat wrote:
+> On 03/21/2014 04:35 PM, Catalin Marinas wrote:
+> > On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
+> >> @Catalin: We have a problem here and need your expert advice. After changing
+> >> CPU frequency we need to call this code:
+> >>
+> >> cpufreq_notify_post_transition();
+> >> policy->transition_ongoing = false;
+> >>
+> >> And the sequence must be like this only. Is this guaranteed without any
+> >> memory barriers? cpufreq_notify_post_transition() isn't touching
+> >> transition_ongoing at all..
+> > 
+> > The above sequence doesn't say much. As rmk said, the compiler wouldn't
+> > reorder the transition_ongoing write before the function call. I think
+> > most architectures (not sure about Alpha) don't do speculative stores,
+> > so hardware wouldn't reorder them either. However, other stores inside
+> > the cpufreq_notify_post_transition() could be reordered after
+> > transition_ongoing store. The same for memory accesses after the
+> > transition_ongoing update, they could be reordered before.
+> > 
+> > So what we actually need to know is what are the other relevant memory
+> > accesses that require strict ordering with transition_ongoing.
 > 
-> There's a small typo there on the ;
+> Hmm.. The thing is, _everything_ inside the post_transition() function
+> should complete before writing to transition_ongoing. Because, setting the
+> flag to 'false' indicates the end of the critical section, and the next
+> contending task can enter the critical section.
 
-Fixed the typo locally. However, now we have another problem: I tried
-to apply the update patch to arm-soc and found that I originally based
-it on linux-next, which has a number of conflicting changes that are
-not in arm-soc.
+smp_mb() is all about relative ordering. So if you want memory accesses
+in post_transition() to be visible to other observers before
+transition_ongoing = false, you also need to make sure that the readers
+of transition_ongoing have a barrier before subsequent memory accesses.
 
-It's probably better if I remove the driver entirely from the arm-soc
-tree and instead send the modified version to David Miller for him
-to put it into the net tree.
+> > What I find strange in your patch is that
+> > cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
+> > update but cpufreq_freq_transition_end() doesn't.
+> 
+> The reason is that, by the time we drop the spinlock, we would have set
+> the transition_ongoing flag to true, which prevents any other task from
+> entering the critical section. Hence, when we call the _end() function,
+> we are 100% sure that only one task is executing it. Hence locks are not
+> necessary around that second update. In fact, that very update marks the
+> end of the critical section (which acts much like a spin_unlock(&lock)
+> in a "regular" critical section).
 
-	Arnd
+OK, I start to get it. Is there a risk of missing a wake_up event? E.g.
+one thread waking up earlier, noticing that transition is in progress
+and waiting indefinitely?
+
+-- 
+Catalin
