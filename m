@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966934AbaCUArs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:47:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36986 "EHLO
+	id S966919AbaCUArr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:47:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965779AbaCUAIa (ORCPT
+	with ESMTP id S965780AbaCUAIb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:30 -0400
+	Thu, 20 Mar 2014 20:08:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Tim Nelson <tim.l.nelson@gmail.com>,
         Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 15/85] mac80211: dont validate unchanged AP bandwidth while tracking
-Date: Thu, 20 Mar 2014 17:09:18 -0700
-Message-Id: <20140321000600.779842384@linuxfoundation.org>
+Subject: [PATCH 3.10 16/85] mac80211: fix association to 20/40 MHz VHT networks
+Date: Thu, 20 Mar 2014 17:09:19 -0700
+Message-Id: <20140321000600.928581500@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,59 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Johannes Berg <johannes.berg@intel.com>
 
-commit 963a1852fbac4f75a2d938fa2e734ef1e6d4c044 upstream.
+commit cb664981607a6b5b3d670ad57bbda893b2528d96 upstream.
 
-The MLME code in mac80211 must track whether or not the AP changed
-bandwidth, but if there's no change while tracking it shouldn't do
-anything, otherwise regulatory updates can make it impossible to
-connect to certain APs if the regulatory database doesn't match the
-information from the AP. See the precise scenario described in the
-code.
+When a VHT network uses 20 or 40 MHz as per the HT operation
+information, the channel center frequency segment 0 field in
+the VHT operation information is reserved, so ignore it.
 
-This still leaves some possible problems with CSA or if the AP
-actually changed bandwidth, but those cases are less common and
-won't completely prevent using it.
+This fixes association with such networks when the AP puts 0
+into the field, previously we'd disconnect due to an invalid
+channel with the message
+wlan0: AP VHT information is invalid, disable VHT
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=70881
-
-Reported-and-tested-by: Nate Carlson <kernel@natecarlson.com>
+Fixes: f2d9d270c15ae ("mac80211: support VHT association")
+Reported-by: Tim Nelson <tim.l.nelson@gmail.com>
 Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mlme.c |   22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ net/mac80211/mlme.c |    1 +
+ 1 file changed, 1 insertion(+)
 
 --- a/net/mac80211/mlme.c
 +++ b/net/mac80211/mlme.c
-@@ -359,6 +359,28 @@ ieee80211_determine_chantype(struct ieee
- 	ret = 0;
- 
- out:
-+	/*
-+	 * When tracking the current AP, don't do any further checks if the
-+	 * new chandef is identical to the one we're currently using for the
-+	 * connection. This keeps us from playing ping-pong with regulatory,
-+	 * without it the following can happen (for example):
-+	 *  - connect to an AP with 80 MHz, world regdom allows 80 MHz
-+	 *  - AP advertises regdom US
-+	 *  - CRDA loads regdom US with 80 MHz prohibited (old database)
-+	 *  - the code below detects an unsupported channel, downgrades, and
-+	 *    we disconnect from the AP in the caller
-+	 *  - disconnect causes CRDA to reload world regdomain and the game
-+	 *    starts anew.
-+	 * (see https://bugzilla.kernel.org/show_bug.cgi?id=70881)
-+	 *
-+	 * It seems possible that there are still scenarios with CSA or real
-+	 * bandwidth changes where a this could happen, but those cases are
-+	 * less common and wouldn't completely prevent using the AP.
-+	 */
-+	if (tracking &&
-+	    cfg80211_chandef_identical(chandef, &sdata->vif.bss_conf.chandef))
-+		return ret;
-+
- 	/* don't print the message below for VHT mismatch if VHT is disabled */
- 	if (ret & IEEE80211_STA_DISABLE_VHT)
- 		vht_chandef = *chandef;
+@@ -310,6 +310,7 @@ ieee80211_determine_chantype(struct ieee
+ 	switch (vht_oper->chan_width) {
+ 	case IEEE80211_VHT_CHANWIDTH_USE_HT:
+ 		vht_chandef.width = chandef->width;
++		vht_chandef.center_freq1 = chandef->center_freq1;
+ 		break;
+ 	case IEEE80211_VHT_CHANWIDTH_80MHZ:
+ 		vht_chandef.width = NL80211_CHAN_WIDTH_80;
 
 
