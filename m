@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965403AbaCUJ2f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:28:35 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:49353 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965297AbaCUJ2W (ORCPT
+	id S965469AbaCUJ3a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:29:30 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:52786 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965237AbaCUJ2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:28:22 -0400
+	Fri, 21 Mar 2014 05:28:19 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: kvm@vger.kernel.org, gleb@kernel.org, mtosatti@redhat.com,
         alex.williamson@redhat.com, jan.kiszka@siemens.com
-Subject: [PATCH v2 4/4] KVM: ioapic: reinject pending interrupts on KVM_SET_IRQCHIP
-Date: Fri, 21 Mar 2014 10:28:01 +0100
-Message-Id: <1395394081-16252-5-git-send-email-pbonzini@redhat.com>
+Subject: [PATCH v2 3/4] KVM: ioapic: extract body of kvm_ioapic_set_irq
+Date: Fri, 21 Mar 2014 10:28:00 +0100
+Message-Id: <1395394081-16252-4-git-send-email-pbonzini@redhat.com>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
 References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
@@ -21,57 +21,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After the previous patches, an interrupt whose bit is set in the IRR
-register will never be in the LAPIC's IRR and has never been injected
-on the migration source.  So inject it on the destination.
+We will reuse it to process a nonzero IRR that is passed to KVM_SET_IRQCHIP.
 
-This fixes migration of Windows guests without HPET (they use the RTC
-to trigger the scheduler tick, and lose it after migration).
-
+Reviewed-by: Alex Williamson <alex.williamson@redhat.com>
 Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 ---
 	v1->v2:
-	use IOAPIC_NUM_PINS as a limit to for_each_set_bit
-	remove debug printk
+	more comments
+	change argument name from level to irq_level
 
- virt/kvm/ioapic.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ virt/kvm/ioapic.c | 74 +++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 50 insertions(+), 24 deletions(-)
 
 diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-index 270f7fe73f39..d4b601547f1f 100644
+index 25e16a6898ed..270f7fe73f39 100644
 --- a/virt/kvm/ioapic.c
 +++ b/virt/kvm/ioapic.c
-@@ -212,6 +212,18 @@ out:
- 	return ret;
+@@ -163,6 +163,55 @@ static bool rtc_irq_check_coalesced(struct kvm_ioapic *ioapic)
+ 	return false;
  }
  
-+static void kvm_ioapic_inject_all(struct kvm_ioapic *ioapic, unsigned long irr)
++static int ioapic_set_irq(struct kvm_ioapic *ioapic, unsigned int irq,
++		int irq_level, bool line_status)
 +{
-+	u32 idx;
++	union kvm_ioapic_redirect_entry entry;
++	u32 mask = 1 << irq;
++	u32 old_irr;
++	int edge, ret;
 +
-+	rtc_irq_eoi_tracking_reset(ioapic);
-+	for_each_set_bit(idx, &irr, IOAPIC_NUM_PINS)
-+		ioapic_set_irq(ioapic, idx, 1, true);
++	entry = ioapic->redirtbl[irq];
++	edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
 +
-+	kvm_rtc_eoi_tracking_restore_all(ioapic);
++	if (!irq_level) {
++		ioapic->irr &= ~mask;
++		ret = 1;
++		goto out;
++	}
++
++	/*
++	 * Return 0 for coalesced interrupts; for edge-triggered interrupts,
++	 * this only happens if a previous edge has not been delivered due
++	 * do masking.  For level interrupts, the remote_irr field tells
++	 * us if the interrupt is waiting for an EOI.
++	 *
++	 * RTC is special: it is edge-triggered, but userspace likes to know
++	 * if it has been already ack-ed via EOI because coalesced RTC
++	 * interrupts lead to time drift in Windows guests.  So we track
++	 * EOI manually for the RTC interrupt.
++	 */
++	if (irq == RTC_GSI && line_status &&
++		rtc_irq_check_coalesced(ioapic)) {
++		ret = 0;
++		goto out;
++	}
++
++	old_irr = ioapic->irr;
++	ioapic->irr |= mask;
++	if ((edge && old_irr == ioapic->irr) ||
++	    (!edge && entry.fields.remote_irr)) {
++		ret = 0;
++		goto out;
++	}
++
++	ret = ioapic_service(ioapic, irq, line_status);
++
++out:
++	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
++	return ret;
 +}
-+
 +
  static void update_handled_vectors(struct kvm_ioapic *ioapic)
  {
  	DECLARE_BITMAP(handled_vectors, 256);
-@@ -612,9 +624,10 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
+@@ -308,38 +357,15 @@ static int ioapic_service(struct kvm_ioapic *ioapic, int irq, bool line_status)
+ int kvm_ioapic_set_irq(struct kvm_ioapic *ioapic, int irq, int irq_source_id,
+ 		       int level, bool line_status)
+ {
+-	u32 old_irr;
+-	u32 mask = 1 << irq;
+-	union kvm_ioapic_redirect_entry entry;
+ 	int ret, irq_level;
+ 
+ 	BUG_ON(irq < 0 || irq >= IOAPIC_NUM_PINS);
  
  	spin_lock(&ioapic->lock);
- 	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
-+	ioapic->irr = 0;
- 	update_handled_vectors(ioapic);
- 	kvm_vcpu_request_scan_ioapic(kvm);
--	kvm_rtc_eoi_tracking_restore_all(ioapic);
-+	kvm_ioapic_inject_all(ioapic, state->irr);
+-	old_irr = ioapic->irr;
+ 	irq_level = __kvm_irq_line_state(&ioapic->irq_states[irq],
+ 					 irq_source_id, level);
+-	entry = ioapic->redirtbl[irq];
+-	if (!irq_level) {
+-		ioapic->irr &= ~mask;
+-		ret = 1;
+-	} else {
+-		int edge = (entry.fields.trig_mode == IOAPIC_EDGE_TRIG);
++	ret = ioapic_set_irq(ioapic, irq, irq_level, line_status);
+ 
+-		if (irq == RTC_GSI && line_status &&
+-			rtc_irq_check_coalesced(ioapic)) {
+-			ret = 0; /* coalesced */
+-			goto out;
+-		}
+-		ioapic->irr |= mask;
+-		if ((edge && old_irr != ioapic->irr) ||
+-		    (!edge && !entry.fields.remote_irr))
+-			ret = ioapic_service(ioapic, irq, line_status);
+-		else
+-			ret = 0; /* report coalesced interrupt */
+-	}
+-out:
+-	trace_kvm_ioapic_set_irq(entry.bits, irq, ret == 0);
  	spin_unlock(&ioapic->lock);
- 	return 0;
- }
+ 
+ 	return ret;
 -- 
 1.8.3.1
+
 
