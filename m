@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965942AbaCUBaJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:30:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36449 "EHLO
+	id S966170AbaCUBaq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:30:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36444 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760226AbaCUADV (ORCPT
+	with ESMTP id S1760213AbaCUADU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:21 -0400
+	Thu, 20 Mar 2014 20:03:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Florian Westphal <fw@strlen.de>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Vlad Yasevich <vyasevic@redhat.com>,
+        Duan Jiong <duanj.fnst@cn.fujitsu.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 022/149] macvlan: Add support for always_on offload features
-Date: Thu, 20 Mar 2014 17:03:05 -0700
-Message-Id: <20140321000437.720057891@linuxfoundation.org>
+Subject: [PATCH 3.13 012/149] neigh: recompute reachabletime before returning from neigh_periodic_work()
+Date: Thu, 20 Mar 2014 17:02:55 -0700
+Message-Id: <20140321000437.367230558@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -33,85 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Vlad Yasevich <vyasevic@redhat.com>
+From: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 
-[ Upstream commit 8b4703e9bd1172a5f8244276ebb94302e6153e26 ]
+[ Upstream commit feff9ab2e7fa773b6a3965f77375fe89f7fd85cf ]
 
-Macvlan currently inherits all of its features from the lower
-device.  When lower device disables offload support, this causes
-macvlan to disable offload support as well.  This causes
-performance regression when using macvlan/macvtap in bridge
-mode.
+If the neigh table's entries is less than gc_thresh1, the function
+will return directly, and the reachabletime will not be recompute,
+so the reachabletime can be guessed.
 
-It can be easily demonstrated by creating 2 namespaces using
-macvlan in bridge mode and running netperf between them:
-
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 10.0.0.1 () port 0 AF_INET
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
- 87380  16384  16384    20.00    1204.61
-
-To restore the performance, we add software offload features
-to the list of "always_on" features for macvlan.  This way
-when a namespace or a guest using macvtap initially sends a
-packet, this packet will not be segmented at macvlan level.
-It will only be segmented when macvlan sends the packet
-to the lower device.
-
-MIGRATED TCP STREAM TEST from 0.0.0.0 (0.0.0.0) port 0 AF_INET to 10.0.0.1 () port 0 AF_INET
-Recv   Send    Send
-Socket Socket  Message  Elapsed
-Size   Size    Size     Time     Throughput
-bytes  bytes   bytes    secs.    10^6bits/sec
-
- 87380  16384  16384    20.00    5507.35
-
-Fixes: 6acf54f1cf0a6747bac9fea26f34cfc5a9029523 (macvtap: Add support of packet capture on macvtap device.)
-Fixes: 797f87f83b60685ff8a13fa0572d2f10393c50d3 (macvlan: fix netdev feature propagation from lower device)
-CC: Florian Westphal <fw@strlen.de>
-CC: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Jason Wang <jasowang@redhat.com>
-CC: Michael S. Tsirkin <mst@redhat.com>
-Tested-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+Signed-off-by: Duan Jiong <duanj.fnst@cn.fujitsu.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/net/macvlan.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ net/core/neighbour.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/macvlan.c
-+++ b/drivers/net/macvlan.c
-@@ -507,6 +507,9 @@ static int macvlan_change_mtu(struct net
- static struct lock_class_key macvlan_netdev_xmit_lock_key;
- static struct lock_class_key macvlan_netdev_addr_lock_key;
+--- a/net/core/neighbour.c
++++ b/net/core/neighbour.c
+@@ -764,9 +764,6 @@ static void neigh_periodic_work(struct w
+ 	nht = rcu_dereference_protected(tbl->nht,
+ 					lockdep_is_held(&tbl->lock));
  
-+#define ALWAYS_ON_FEATURES \
-+	(NETIF_F_SG | NETIF_F_GEN_CSUM | NETIF_F_GSO_SOFTWARE | NETIF_F_LLTX)
+-	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
+-		goto out;
+-
+ 	/*
+ 	 *	periodically recompute ReachableTime from random function
+ 	 */
+@@ -779,6 +776,9 @@ static void neigh_periodic_work(struct w
+ 				neigh_rand_reach_time(p->base_reachable_time);
+ 	}
+ 
++	if (atomic_read(&tbl->entries) < tbl->gc_thresh1)
++		goto out;
 +
- #define MACVLAN_FEATURES \
- 	(NETIF_F_SG | NETIF_F_ALL_CSUM | NETIF_F_HIGHDMA | NETIF_F_FRAGLIST | \
- 	 NETIF_F_GSO | NETIF_F_TSO | NETIF_F_UFO | NETIF_F_GSO_ROBUST | \
-@@ -540,7 +543,7 @@ static int macvlan_init(struct net_devic
- 	dev->state		= (dev->state & ~MACVLAN_STATE_MASK) |
- 				  (lowerdev->state & MACVLAN_STATE_MASK);
- 	dev->features 		= lowerdev->features & MACVLAN_FEATURES;
--	dev->features		|= NETIF_F_LLTX;
-+	dev->features		|= ALWAYS_ON_FEATURES;
- 	dev->gso_max_size	= lowerdev->gso_max_size;
- 	dev->iflink		= lowerdev->ifindex;
- 	dev->hard_header_len	= lowerdev->hard_header_len;
-@@ -700,7 +703,7 @@ static netdev_features_t macvlan_fix_fea
- 	features = netdev_increment_features(vlan->lowerdev->features,
- 					     features,
- 					     mask);
--	features |= NETIF_F_LLTX;
-+	features |= ALWAYS_ON_FEATURES;
+ 	for (i = 0 ; i < (1 << nht->hash_shift); i++) {
+ 		np = &nht->hash_buckets[i];
  
- 	return features;
- }
 
 
