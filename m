@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760399AbaCUADl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36504 "EHLO
+	id S966971AbaCUBVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:21:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36537 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760328AbaCUADb (ORCPT
+	with ESMTP id S1760395AbaCUADk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:31 -0400
+	Thu, 20 Mar 2014 20:03:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 038/149] mwifiex: add NULL check for PCIe Rx skb
-Date: Thu, 20 Mar 2014 17:03:21 -0700
-Message-Id: <20140321000438.286208829@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.13 036/149] iwlwifi: disable TX AMPDU by default for iwldvm
+Date: Thu, 20 Mar 2014 17:03:19 -0700
+Message-Id: <20140321000438.211533422@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,36 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit bb8e6a1ee881d131e404f0f1f5e8dc9281002771 upstream.
+commit 205e2210daa975d92ace485a65a31ccc4077fe1a upstream.
 
-We may get a NULL pointer here if skb allocation for Rx packet
-was failed earlier.
+NICs supported by iwldvm don't handle well TX AMPDU.
+Disable it by default, still leave the possibility to
+the user to force enable it with a debug parameter.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+NICs supported by iwlmvm don't suffer from the same issue,
+leave TX AMPDU enabled by default for these.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/pcie.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c  |   22 ++++++++++++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-drv.c       |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-modparams.h |   11 +++++++----
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c  |   22 ++++++++++++++++++++--
+ 4 files changed, 48 insertions(+), 9 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -1211,6 +1211,12 @@ static int mwifiex_pcie_process_recv_dat
- 		rd_index = card->rxbd_rdptr & reg->rx_mask;
- 		skb_data = card->rx_buf_list[rd_index];
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -704,6 +704,24 @@ static int iwlagn_mac_set_key(struct iee
+ 	return ret;
+ }
  
-+		/* If skb allocation was failed earlier for Rx packet,
-+		 * rx_buf_list[rd_index] would have been left with a NULL.
-+		 */
-+		if (!skb_data)
-+			return -ENOMEM;
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
++}
 +
- 		MWIFIEX_SKB_PACB(skb_data, &buf_pa);
- 		pci_unmap_single(card->dev, buf_pa, MWIFIEX_RX_DATA_BUF_SIZE,
- 				 PCI_DMA_FROMDEVICE);
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* disabled by default */
++	return false;
++}
++
+ static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				   struct ieee80211_vif *vif,
+ 				   enum ieee80211_ampdu_mlme_action action,
+@@ -725,7 +743,7 @@ static int iwlagn_mac_ampdu_action(struc
+ 
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		if (!iwl_enable_rx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Rx\n");
+ 		ret = iwl_sta_rx_agg_start(priv, sta, tid, *ssn);
+@@ -737,7 +755,7 @@ static int iwlagn_mac_ampdu_action(struc
+ 	case IEEE80211_AMPDU_TX_START:
+ 		if (!priv->trans->ops->txq_enable)
+ 			break;
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		if (!iwl_enable_tx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Tx\n");
+ 		ret = iwlagn_tx_agg_start(priv, vif, sta, tid, ssn);
+--- a/drivers/net/wireless/iwlwifi/iwl-drv.c
++++ b/drivers/net/wireless/iwlwifi/iwl-drv.c
+@@ -1247,7 +1247,7 @@ module_param_named(swcrypto, iwlwifi_mod
+ MODULE_PARM_DESC(swcrypto, "using crypto in software (default 0 [hardware])");
+ module_param_named(11n_disable, iwlwifi_mod_params.disable_11n, uint, S_IRUGO);
+ MODULE_PARM_DESC(11n_disable,
+-	"disable 11n functionality, bitmap: 1: full, 2: agg TX, 4: agg RX");
++	"disable 11n functionality, bitmap: 1: full, 2: disable agg TX, 4: disable agg RX, 8 enable agg TX");
+ module_param_named(amsdu_size_8K, iwlwifi_mod_params.amsdu_size_8K,
+ 		   int, S_IRUGO);
+ MODULE_PARM_DESC(amsdu_size_8K, "enable 8K amsdu size (default 0)");
+--- a/drivers/net/wireless/iwlwifi/iwl-modparams.h
++++ b/drivers/net/wireless/iwlwifi/iwl-modparams.h
+@@ -79,9 +79,12 @@ enum iwl_power_level {
+ 	IWL_POWER_NUM
+ };
+ 
+-#define IWL_DISABLE_HT_ALL	BIT(0)
+-#define IWL_DISABLE_HT_TXAGG	BIT(1)
+-#define IWL_DISABLE_HT_RXAGG	BIT(2)
++enum iwl_disable_11n {
++	IWL_DISABLE_HT_ALL	 = BIT(0),
++	IWL_DISABLE_HT_TXAGG	 = BIT(1),
++	IWL_DISABLE_HT_RXAGG	 = BIT(2),
++	IWL_ENABLE_HT_TXAGG	 = BIT(3),
++};
+ 
+ /**
+  * struct iwl_mod_params
+@@ -90,7 +93,7 @@ enum iwl_power_level {
+  *
+  * @sw_crypto: using hardware encryption, default = 0
+  * @disable_11n: disable 11n capabilities, default = 0,
+- *	use IWL_DISABLE_HT_* constants
++ *	use IWL_[DIS,EN]ABLE_HT_* constants
+  * @amsdu_size_8K: enable 8K amsdu size, default = 0
+  * @restart_fw: restart firmware, default = 1
+  * @wd_disable: enable stuck queue check, default = 0
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -321,6 +321,24 @@ static void iwl_mvm_mac_tx(struct ieee80
+ 	ieee80211_free_txskb(hw, skb);
+ }
+ 
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
++}
++
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* enabled by default */
++	return true;
++}
++
+ static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				    struct ieee80211_vif *vif,
+ 				    enum ieee80211_ampdu_mlme_action action,
+@@ -340,7 +358,7 @@ static int iwl_mvm_mac_ampdu_action(stru
+ 
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG) {
++		if (!iwl_enable_rx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
+@@ -350,7 +368,7 @@ static int iwl_mvm_mac_ampdu_action(stru
+ 		ret = iwl_mvm_sta_rx_agg(mvm, sta, tid, 0, false);
+ 		break;
+ 	case IEEE80211_AMPDU_TX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG) {
++		if (!iwl_enable_tx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 
 
