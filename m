@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaCUWfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:35:46 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:55134 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbaCUWfm (ORCPT
+	id S1752700AbaCUWhZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:37:25 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:46464 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaCUWhX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:35:42 -0400
-Message-ID: <532CBEB9.70902@gmail.com>
-Date: Fri, 21 Mar 2014 23:35:37 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Mike Turquette <mturquette@linaro.org>, Jimmy Xu <zmxu@marvell.com>,
-        Jisheng Zhang <jszhang@marvell.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Subject: Re: [PATCH v2 1/5] clk: berlin: add support for berlin plls
-References: <1395432521-11055-1-git-send-email-alexandre.belloni@free-electrons.com> <1395432521-11055-2-git-send-email-alexandre.belloni@free-electrons.com> <532CAD99.4060307@gmail.com> <20140321222243.GK6443@piout.net>
-In-Reply-To: <20140321222243.GK6443@piout.net>
+	Fri, 21 Mar 2014 18:37:23 -0400
+Message-ID: <532CBF08.4030100@oracle.com>
+Date: Fri, 21 Mar 2014 18:36:56 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
+CC: Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
+        hhuang@redhat.com, knoel@redhat.com, aarcange@redhat.com,
+        Davidlohr Bueso <davidlohr@hp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: numa: Recheck for transhuge pages under lock during
+ protection changes
+References: <20140307182745.GD1931@suse.de>	<20140311162845.GA30604@suse.de>	<531F3F15.8050206@oracle.com>	<531F4128.8020109@redhat.com>	<531F48CC.303@oracle.com>	<20140311180652.GM10663@suse.de>	<531F616A.7060300@oracle.com>	<20140311122859.fb6c1e772d82d9f4edd02f52@linux-foundation.org>	<20140312103602.GN10663@suse.de>	<5323C5D9.2070902@oracle.com>	<20140319143831.GA4751@suse.de> <20140321150658.386926ac3afa263946b1a2aa@linux-foundation.org>
+In-Reply-To: <20140321150658.386926ac3afa263946b1a2aa@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 11:22 PM, Alexandre Belloni wrote:
-> On 21/03/2014 at 22:22:33 +0100, Sebastian Hesselbarth wrote :
->> On 03/21/2014 09:08 PM, Alexandre Belloni wrote:
->>> This drivers allows to provide DT clocks for the cpu and system PLLs found on
->>> Marvell Berlin SoCs.
->>
->> Alexandre,
->>
->> as mentioned on IRC, I now had a closer look on it. Some minor
->> remarks below. Sorry, I didn't mention them earlier.
+On 03/21/2014 06:06 PM, Andrew Morton wrote:
+> On Wed, 19 Mar 2014 14:38:32 +0000 Mel Gorman<mgorman@suse.de>  wrote:
 >
-> To clarify things, I'll just resend patch 1 and you are ready to take
-> 2-5, fixing up the remaining comments as soon as Mike takes it ?
+>> >On Fri, Mar 14, 2014 at 11:15:37PM -0400, Sasha Levin wrote:
+>>> > >On 03/12/2014 06:36 AM, Mel Gorman wrote:
+>>>> > > >Andrew, this should go with the patches
+>>>> > > >mmnuma-reorganize-change_pmd_range.patch
+>>>> > > >mmnuma-reorganize-change_pmd_range-fix.patch
+>>>> > > >move-mmu-notifier-call-from-change_protection-to-change_pmd_range.patch
+>>>> > > >in mmotm please.
+>>>> > > >
+>>>> > > >Thanks.
+>>>> > > >
+>>>> > > >---8<---
+>>>> > > >From: Mel Gorman<mgorman@suse.de>
+>>>> > > >Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during protection changes
+>>>> > > >
+>>>> > > >Sasha Levin reported the following bug using trinity
+>>> > >
+>>> > >I'm seeing a different issue with this patch. A NULL ptr deref occurs in the
+>>> > >pte_offset_map_lock() macro right before the new recheck code:
+>>> > >
+>> >
+>> >This on top?
+>> >
+>> >I tried testing it but got all sorts of carnage that trinity throw up
+>> >in the mix and ordinary testing does not trigger the race. I've no idea
+>> >which of the current mess of trinity-exposed bugs you've encountered and
+>> >got fixed already.
+>> >
+> Where are we at with this one?
 
-Yes, no need to resend 2-5. Just keep on incrementing version on 1/5.
-If you send a v3 for patch 1, I can also prepare a topic branch that
-we refer to until Mike either takes the single patch or pulls the topic
-branch.
+Looking good here, haven't seen any of the issues reported in this thread.
 
-I'll work it out with Mike, but for a single patch, I guess he'll
-take it through his tree.
 
-As we target this all for v3.16, I'll get back to this, as soon as I
-have proper branches on v3.15-rc1 and possibly also managed it to have
-a for-next branch that gets pulled into linux-next.
-
-Sebastian
-
+Thanks,
+Sasha
