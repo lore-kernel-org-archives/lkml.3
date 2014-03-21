@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966627AbaCUAp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:45:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37013 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965805AbaCUAIf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965802AbaCUAIf (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:08:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36983 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965737AbaCUAI3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:08:29 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexandre Bounine <alexandre.bounine@idt.com>,
-        Matt Porter <mporter@kernel.crashing.org>,
-        Xiaotian Feng <xtfeng@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Mike Galbraith <bitbucket@online.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 04/85] rapidio/tsi721: fix tasklet termination in dma channel release
-Date: Thu, 20 Mar 2014 17:09:07 -0700
-Message-Id: <20140321000559.216778208@linuxfoundation.org>
+        Yaara Rozenblum <yaara.rozenblum@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 14/85] mac80211: fix AP powersave TX vs. wakeup race
+Date: Thu, 20 Mar 2014 17:09:17 -0700
+Message-Id: <20140321000600.620200211@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -33,131 +31,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexandre Bounine <alexandre.bounine@idt.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
+commit 1d147bfa64293b2723c4fec50922168658e613ba upstream.
 
-This patch is a modification of the patch originally proposed by
-Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
-This new version disables DMA channel interrupts and ensures that the
-tasklet wil not be scheduled again before calling tasklet_kill().
+There is a race between the TX path and the STA wakeup: while
+a station is sleeping, mac80211 buffers frames until it wakes
+up, then the frames are transmitted. However, the RX and TX
+path are concurrent, so the packet indicating wakeup can be
+processed while a packet is being transmitted.
 
-Unfortunately the updated patch was not released at that time due to
-planned rework of Tsi721 mport driver to use threaded interrupts (which
-has yet to happen).  Recently the issue was reported again:
-https://lkml.org/lkml/2014/2/19/762.
+This can lead to a situation where the buffered frames list
+is emptied on the one side, while a frame is being added on
+the other side, as the station is still seen as sleeping in
+the TX path.
 
-Description from the original Xiaotian's patch:
+As a result, the newly added frame will not be send anytime
+soon. It might be sent much later (and out of order) when the
+station goes to sleep and wakes up the next time.
 
- "Some drivers use tasklet_disable in device remove/release process,
-  tasklet_disable will inc tasklet->count and return.  If the tasklet is
-  not handled yet under some softirq pressure, the tasklet will be
-  placed on the tasklet_vec, never have a chance to be excuted.  This
-  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
-  but tasklet is disabled.  tasklet_kill should be used in this case."
+Additionally, it can lead to the crash below.
 
-This patch is applicable to kernel versions starting from v3.5.
+Fix all this by synchronising both paths with a new lock.
+Both path are not fastpath since they handle PS situations.
 
-Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
-Cc: Matt Porter <mporter@kernel.crashing.org>
-Cc: Xiaotian Feng <xtfeng@gmail.com>
-Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Mike Galbraith <bitbucket@online.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+In a later patch we'll remove the extra skb queue locks to
+reduce locking overhead.
+
+BUG: unable to handle kernel
+NULL pointer dereference at 000000b0
+IP: [<ff6f1791>] ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+*pde = 00000000
+Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
+EIP: 0060:[<ff6f1791>] EFLAGS: 00210282 CPU: 1
+EIP is at ieee80211_report_used_skb+0x11/0x3e0 [mac80211]
+EAX: e5900da0 EBX: 00000000 ECX: 00000001 EDX: 00000000
+ESI: e41d00c0 EDI: e5900da0 EBP: ebe458e4 ESP: ebe458b0
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+CR0: 8005003b CR2: 000000b0 CR3: 25a78000 CR4: 000407d0
+DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+DR6: ffff0ff0 DR7: 00000400
+Process iperf (pid: 3934, ti=ebe44000 task=e757c0b0 task.ti=ebe44000)
+iwlwifi 0000:02:00.0: I iwl_pcie_enqueue_hcmd Sending command LQ_CMD (#4e), seq: 0x0903, 92 bytes at 3[3]:9
+Stack:
+ e403b32c ebe458c4 00200002 00200286 e403b338 ebe458cc c10960bb e5900da0
+ ff76a6ec ebe458d8 00000000 e41d00c0 e5900da0 ebe458f0 ff6f1b75 e403b210
+ ebe4598c ff723dc1 00000000 ff76a6ec e597c978 e403b758 00000002 00000002
+Call Trace:
+ [<ff6f1b75>] ieee80211_free_txskb+0x15/0x20 [mac80211]
+ [<ff723dc1>] invoke_tx_handlers+0x1661/0x1780 [mac80211]
+ [<ff7248a5>] ieee80211_tx+0x75/0x100 [mac80211]
+ [<ff7249bf>] ieee80211_xmit+0x8f/0xc0 [mac80211]
+ [<ff72550e>] ieee80211_subif_start_xmit+0x4fe/0xe20 [mac80211]
+ [<c149ef70>] dev_hard_start_xmit+0x450/0x950
+ [<c14b9aa9>] sch_direct_xmit+0xa9/0x250
+ [<c14b9c9b>] __qdisc_run+0x4b/0x150
+ [<c149f732>] dev_queue_xmit+0x2c2/0xca0
+
+Reported-by: Yaara Rozenblum <yaara.rozenblum@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Reviewed-by: Stanislaw Gruszka <sgruszka@redhat.com>
+[reword commit log, use a separate lock]
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/rapidio/devices/tsi721.h     |    1 +
- drivers/rapidio/devices/tsi721_dma.c |   27 ++++++++++++++++++---------
- 2 files changed, 19 insertions(+), 9 deletions(-)
+ net/mac80211/sta_info.c |    4 ++++
+ net/mac80211/sta_info.h |    7 +++----
+ net/mac80211/tx.c       |   15 +++++++++++++++
+ 3 files changed, 22 insertions(+), 4 deletions(-)
 
---- a/drivers/rapidio/devices/tsi721.h
-+++ b/drivers/rapidio/devices/tsi721.h
-@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
- 	struct list_head	free_list;
- 	dma_cookie_t		completed_cookie;
- 	struct tasklet_struct	tasklet;
-+	bool			active;
- };
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -339,6 +339,7 @@ struct sta_info *sta_info_alloc(struct i
+ 		return NULL;
  
- #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
---- a/drivers/rapidio/devices/tsi721_dma.c
-+++ b/drivers/rapidio/devices/tsi721_dma.c
-@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_b
- {
- 	/* Disable BDMA channel interrupts */
- 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
--
--	tasklet_schedule(&bdma_chan->tasklet);
-+	if (bdma_chan->active)
-+		tasklet_schedule(&bdma_chan->tasklet);
- }
+ 	spin_lock_init(&sta->lock);
++	spin_lock_init(&sta->ps_lock);
+ 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
+ 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
+ 	mutex_init(&sta->ampdu_mlme.mtx);
+@@ -1045,6 +1046,8 @@ void ieee80211_sta_ps_deliver_wakeup(str
  
- #ifdef CONFIG_PCI_MSI
-@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(s
+ 	skb_queue_head_init(&pending);
+ 
++	/* sync with ieee80211_tx_h_unicast_ps_buf */
++	spin_lock(&sta->ps_lock);
+ 	/* Send all buffered frames to the station */
+ 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
+ 		int count = skb_queue_len(&pending), tmp;
+@@ -1064,6 +1067,7 @@ void ieee80211_sta_ps_deliver_wakeup(str
  	}
- #endif /* CONFIG_PCI_MSI */
  
--	tasklet_enable(&bdma_chan->tasklet);
-+	bdma_chan->active = true;
- 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+ 	ieee80211_add_pending_skbs_fn(local, &pending, clear_sta_ps_flags, sta);
++	spin_unlock(&sta->ps_lock);
  
- 	return bdma_chan->bd_num - 1;
-@@ -576,9 +576,7 @@ err_out:
- static void tsi721_free_chan_resources(struct dma_chan *dchan)
- {
- 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
--#ifdef CONFIG_PCI_MSI
- 	struct tsi721_device *priv = to_tsi721(dchan->device);
--#endif
- 	LIST_HEAD(list);
+ 	local->total_ps_buffered -= buffered;
  
- 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
-@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(s
- 	BUG_ON(!list_empty(&bdma_chan->active_list));
- 	BUG_ON(!list_empty(&bdma_chan->queue));
+--- a/net/mac80211/sta_info.h
++++ b/net/mac80211/sta_info.h
+@@ -244,6 +244,7 @@ struct sta_ampdu_mlme {
+  * @drv_unblock_wk: used for driver PS unblocking
+  * @listen_interval: listen interval of this station, when we're acting as AP
+  * @_flags: STA flags, see &enum ieee80211_sta_info_flags, do not use directly
++ * @ps_lock: used for powersave (when mac80211 is the AP) related locking
+  * @ps_tx_buf: buffers (per AC) of frames to transmit to this station
+  *	when it leaves power saving state or polls
+  * @tx_filtered: buffers (per AC) of frames we already tried to
+@@ -324,10 +325,8 @@ struct sta_info {
+ 	/* use the accessors defined below */
+ 	unsigned long _flags;
  
--	tasklet_disable(&bdma_chan->tasklet);
-+	tsi721_bdma_interrupt_enable(bdma_chan, 0);
-+	bdma_chan->active = false;
+-	/*
+-	 * STA powersave frame queues, no more than the internal
+-	 * locking required.
+-	 */
++	/* STA powersave lock and frame queues */
++	spinlock_t ps_lock;
+ 	struct sk_buff_head ps_tx_buf[IEEE80211_NUM_ACS];
+ 	struct sk_buff_head tx_filtered[IEEE80211_NUM_ACS];
+ 	unsigned long driver_buffered_tids;
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -461,6 +461,20 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 		       sta->sta.addr, sta->sta.aid, ac);
+ 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
+ 			purge_old_ps_buffers(tx->local);
 +
-+#ifdef CONFIG_PCI_MSI
-+	if (priv->flags & TSI721_USING_MSIX) {
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-+					   bdma_chan->id].vector);
-+		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
-+					   bdma_chan->id].vector);
-+	} else
-+#endif
-+	synchronize_irq(priv->pdev->irq);
++		/* sync with ieee80211_sta_ps_deliver_wakeup */
++		spin_lock(&sta->ps_lock);
++		/*
++		 * STA woke up the meantime and all the frames on ps_tx_buf have
++		 * been queued to pending queue. No reordering can happen, go
++		 * ahead and Tx the packet.
++		 */
++		if (!test_sta_flag(sta, WLAN_STA_PS_STA) &&
++		    !test_sta_flag(sta, WLAN_STA_PS_DRIVER)) {
++			spin_unlock(&sta->ps_lock);
++			return TX_CONTINUE;
++		}
 +
-+	tasklet_kill(&bdma_chan->tasklet);
+ 		if (skb_queue_len(&sta->ps_tx_buf[ac]) >= STA_MAX_TX_BUFFER) {
+ 			struct sk_buff *old = skb_dequeue(&sta->ps_tx_buf[ac]);
+ 			ps_dbg(tx->sdata,
+@@ -474,6 +488,7 @@ ieee80211_tx_h_unicast_ps_buf(struct iee
+ 		info->control.vif = &tx->sdata->vif;
+ 		info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING;
+ 		skb_queue_tail(&sta->ps_tx_buf[ac], tx->skb);
++		spin_unlock(&sta->ps_lock);
  
- 	spin_lock_bh(&bdma_chan->lock);
- 	list_splice_init(&bdma_chan->free_list, &list);
- 	spin_unlock_bh(&bdma_chan->lock);
- 
--	tsi721_bdma_interrupt_enable(bdma_chan, 0);
--
- #ifdef CONFIG_PCI_MSI
- 	if (priv->flags & TSI721_USING_MSIX) {
- 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
-@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_de
- 		bdma_chan->dchan.cookie = 1;
- 		bdma_chan->dchan.chan_id = i;
- 		bdma_chan->id = i;
-+		bdma_chan->active = false;
- 
- 		spin_lock_init(&bdma_chan->lock);
- 
-@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_de
- 
- 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
- 			     (unsigned long)bdma_chan);
--		tasklet_disable(&bdma_chan->tasklet);
- 		list_add_tail(&bdma_chan->dchan.device_node,
- 			      &mport->dma.channels);
- 	}
+ 		if (!timer_pending(&local->sta_cleanup))
+ 			mod_timer(&local->sta_cleanup,
 
 
