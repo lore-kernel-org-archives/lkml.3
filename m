@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966349AbaCUAQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:16:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37406 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966128AbaCUAJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S966156AbaCUAJm (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:09:42 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37367 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966128AbaCUAJf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:09:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
-        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 01/35] ocfs2: fix quota file corruption
-Date: Thu, 20 Mar 2014 17:10:52 -0700
-Message-Id: <20140321001054.147694663@linuxfoundation.org>
+        Chuansheng Liu <chuansheng.liu@intel.com>,
+        Xiaoming Wang <xiaoming.wang@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.4 16/35] genirq: Remove racy waitqueue_active check
+Date: Thu, 20 Mar 2014 17:11:07 -0700
+Message-Id: <20140321001054.703908423@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,87 +30,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
+commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
 
-Global quota files are accessed from different nodes.  Thus we cannot
-cache offset of quota structure in the quota file after we drop our node
-reference count to it because after that moment quota structure may be
-freed and reallocated elsewhere by a different node resulting in
-corruption of quota file.
+We hit one rare case below:
 
-Fix the problem by clearing dq_off when we are releasing dquot structure.
-We also remove the DB_READ_B handling because it is useless -
-DQ_ACTIVE_B is set iff DQ_READ_B is set.
+T1 calling disable_irq(), but hanging at synchronize_irq()
+always;
+The corresponding irq thread is in sleeping state;
+And all CPUs are in idle state;
 
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
-Cc: Joel Becker <jlbec@evilplan.org>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+After analysis, we found there is one possible scenerio which
+causes T1 is waiting there forever:
+CPU0                                       CPU1
+ synchronize_irq()
+  wait_event()
+    spin_lock()
+                                           atomic_dec_and_test(&threads_active)
+      insert the __wait into queue
+    spin_unlock()
+                                           if(waitqueue_active)
+    atomic_read(&threads_active)
+                                             wake_up()
+
+Here after inserted the __wait into queue on CPU0, and before
+test if queue is empty on CPU1, there is no barrier, it maybe
+cause it is not visible for CPU1 immediately, although CPU0 has
+updated the queue list.
+It is similar for CPU0 atomic_read() threads_active also.
+
+So we'd need one smp_mb() before waitqueue_active.that, but removing
+the waitqueue_active() check solves it as wel l and it makes
+things simple and clear.
+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: Xiaoming Wang <xiaoming.wang@intel.com>
+Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/quota_global.c |   27 +++++++++++++++++----------
- fs/ocfs2/quota_local.c  |    4 ----
- 2 files changed, 17 insertions(+), 14 deletions(-)
+ kernel/irq/manage.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/ocfs2/quota_global.c
-+++ b/fs/ocfs2/quota_global.c
-@@ -712,6 +712,12 @@ static int ocfs2_release_dquot(struct dq
- 	 */
- 	if (status < 0)
- 		mlog_errno(status);
-+	/*
-+	 * Clear dq_off so that we search for the structure in quota file next
-+	 * time we acquire it. The structure might be deleted and reallocated
-+	 * elsewhere by another node while our dquot structure is on freelist.
-+	 */
-+	dquot->dq_off = 0;
- 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
- out_trans:
- 	ocfs2_commit_trans(osb, handle);
-@@ -750,16 +756,17 @@ static int ocfs2_acquire_dquot(struct dq
- 	status = ocfs2_lock_global_qf(info, 1);
- 	if (status < 0)
- 		goto out;
--	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
--		status = ocfs2_qinfo_lock(info, 0);
--		if (status < 0)
--			goto out_dq;
--		status = qtree_read_dquot(&info->dqi_gi, dquot);
--		ocfs2_qinfo_unlock(info, 0);
--		if (status < 0)
--			goto out_dq;
--	}
--	set_bit(DQ_READ_B, &dquot->dq_flags);
-+	status = ocfs2_qinfo_lock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
-+	/*
-+	 * We always want to read dquot structure from disk because we don't
-+	 * know what happened with it while it was on freelist.
-+	 */
-+	status = qtree_read_dquot(&info->dqi_gi, dquot);
-+	ocfs2_qinfo_unlock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -777,8 +777,7 @@ static irqreturn_t irq_thread_fn(struct
  
- 	OCFS2_DQUOT(dquot)->dq_use_count++;
- 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -1300,10 +1300,6 @@ int ocfs2_local_release_dquot(handle_t *
- 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
- 
- out:
--	/* Clear the read bit so that next time someone uses this
--	 * dquot he reads fresh info from disk and allocates local
--	 * dquot structure */
--	clear_bit(DQ_READ_B, &dquot->dq_flags);
- 	return status;
+ static void wake_threads_waitq(struct irq_desc *desc)
+ {
+-	if (atomic_dec_and_test(&desc->threads_active) &&
+-	    waitqueue_active(&desc->wait_for_threads))
++	if (atomic_dec_and_test(&desc->threads_active))
+ 		wake_up(&desc->wait_for_threads);
  }
  
 
