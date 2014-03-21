@@ -1,169 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759128AbaCUOQg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:16:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44097 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755576AbaCUOQe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:16:34 -0400
-Message-ID: <532C49BF.8090001@suse.cz>
-Date: Fri, 21 Mar 2014 15:16:31 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S964998AbaCUOQx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:16:53 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:50387 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751681AbaCUOQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 10:16:51 -0400
+Date: Fri, 21 Mar 2014 09:16:49 -0500
+From: Dimitri Sivanich <sivanich@sgi.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH] x86/UV: Set n_lshift based on GAM_GR_CONFIG MMR for UV3
+Message-ID: <20140321141649.GA14917@sgi.com>
+References: <20140320191354.GA30582@sgi.com>
+ <20140321075416.GA23556@gmail.com>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Mel Gorman <mgorman@suse.de>
-CC: Hugh Dickins <hughd@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mm/page_alloc: fix freeing of MIGRATE_RESERVE migratetype
- pages
-References: <3269714.29dGMiCR2L@amdc1032>
-In-Reply-To: <3269714.29dGMiCR2L@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140321075416.GA23556@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/06/2014 06:35 PM, Bartlomiej Zolnierkiewicz wrote:
-> Pages allocated from MIGRATE_RESERVE migratetype pageblocks
-> are not freed back to MIGRATE_RESERVE migratetype free
-> lists in free_pcppages_bulk()->__free_one_page() if we got
-> to free_pcppages_bulk() through drain_[zone_]pages().
-> The freeing through free_hot_cold_page() is okay because
-> freepage migratetype is set to pageblock migratetype before
-> calling free_pcppages_bulk().
+On Fri, Mar 21, 2014 at 08:54:16AM +0100, Ingo Molnar wrote:
+> Please use the customary changelog style we use in the kernel:
+> 
+>   " Current code does (A), this has a problem when (B).
+>     We can improve this doing (C), because (D)."
+> 
+> (Of if it's a cleanup only with no functional effects then please 
+> state it so in the title and changelog.)
+>
+ 
+The value of n_lshift for UV is currently set based on the socket m_val.
 
-I think this is somewhat misleading and got me confused for a while. 
-It's not about the call path of free_pcppages_bulk(), but about the
-fact that rmqueue_bulk() has been called at some point to fill up the 
-pcp lists, and had to resort to __rmqueue_fallback(). So, going through 
-free_hot_cold_page() might give you correct migratetype for the last 
-page freed, but the pcp lists may still contain misplaced pages from 
-earlier rmqueue_bulk().
+For UV3, set the n_lshift value based on the GAM_GR_CONFIG MMR.  This will
+allow bios to control the n_lshift value independent of the socket m_val.
+Then n_lshift can be assigned a fixed value across a multi-partition system,
+allowing for a fixed common global physical address format that is independent
+of socket m_val.
 
-> If pages of MIGRATE_RESERVE
-> migratetype end up on the free lists of other migratetype
-> whole Reserved pageblock may be later changed to the other
-> migratetype in __rmqueue_fallback() and it will be never
-> changed back to be a Reserved pageblock.  Fix the issue by
-> moving freepage migratetype setting from rmqueue_bulk() to
-> __rmqueue[_fallback]() and preserving freepage migratetype
-> as an original pageblock migratetype for MIGRATE_RESERVE
-> migratetype pages.
+Cleanup unneeded macros.
 
-Actually wouldn't the easiest solution to this particular problem to 
-check current pageblock migratetype in try_to_steal_freepages() and 
-disallow changing it. However I agree that preventing the misplaced page 
-in the first place would be even better.
+Signed-off-by: Dimitri Sivanich <sivanich@sgi.com>
+---
+ arch/x86/include/asm/uv/uv_hub.h   |   12 ---------
+ arch/x86/include/asm/uv/uv_mmrs.h  |   42 ++++++++++++++++++++++++++++++++-
+ arch/x86/kernel/apic/x2apic_uv_x.c |   15 +++++++++--
+ 3 files changed, 54 insertions(+), 15 deletions(-)
 
-> The problem was introduced in v2.6.31 by commit ed0ae21
-> ("page allocator: do not call get_pageblock_migratetype()
-> more than necessary").
->
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
-> Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Hugh Dickins <hughd@google.com>
-> ---
-> v2:
-> - updated patch description, there is no __zone_pcp_update()
->    in newer kernels
-> v3:
-> - set freepage migratetype in __rmqueue[_fallback]()
->    instead of rmqueue_bulk() (per Mel's request)
->
->   mm/page_alloc.c |   27 ++++++++++++++++++---------
->   1 file changed, 18 insertions(+), 9 deletions(-)
->
-> Index: b/mm/page_alloc.c
-> ===================================================================
-> --- a/mm/page_alloc.c	2014-03-06 18:10:21.884422983 +0100
-> +++ b/mm/page_alloc.c	2014-03-06 18:10:27.016422895 +0100
-> @@ -1094,7 +1094,7 @@ __rmqueue_fallback(struct zone *zone, in
->   	struct free_area *area;
->   	int current_order;
->   	struct page *page;
-> -	int migratetype, new_type, i;
-> +	int migratetype, new_type, mt = start_migratetype, i;
-
-A better naming would help, "mt" and "migratetype" are the same thing 
-and it gets too confusing.
-
->
->   	/* Find the largest possible block of pages in the other list */
->   	for (current_order = MAX_ORDER-1; current_order >= order;
-> @@ -1125,6 +1125,14 @@ __rmqueue_fallback(struct zone *zone, in
->   			expand(zone, page, order, current_order, area,
->   			       new_type);
->
-> +			if (IS_ENABLED(CONFIG_CMA)) {
-> +				mt = get_pageblock_migratetype(page);
-> +				if (!is_migrate_cma(mt) &&
-> +				    !is_migrate_isolate(mt))
-> +					mt = start_migratetype;
-> +			}
-> +			set_freepage_migratetype(page, mt);
-> +
->   			trace_mm_page_alloc_extfrag(page, order, current_order,
->   				start_migratetype, migratetype, new_type);
->
-> @@ -1147,7 +1155,9 @@ static struct page *__rmqueue(struct zon
->   retry_reserve:
->   	page = __rmqueue_smallest(zone, order, migratetype);
->
-> -	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
-> +	if (likely(page)) {
-> +		set_freepage_migratetype(page, migratetype);
-
-Are you sure that here the checking of of CMA and ISOLATE is not needed? 
-Did the original rmqueue_bulk() have this checking only for the 
-__rmqueue_fallback() case? Why wouldn't the check already be only in 
-__rmqueue_fallback() then?
-
-> +	} else if (migratetype != MIGRATE_RESERVE) {
->   		page = __rmqueue_fallback(zone, order, migratetype);
->
->   		/*
-> @@ -1174,7 +1184,7 @@ static int rmqueue_bulk(struct zone *zon
->   			unsigned long count, struct list_head *list,
->   			int migratetype, int cold)
->   {
-> -	int mt = migratetype, i;
-> +	int i;
->
->   	spin_lock(&zone->lock);
->   	for (i = 0; i < count; ++i) {
-> @@ -1195,16 +1205,15 @@ static int rmqueue_bulk(struct zone *zon
->   			list_add(&page->lru, list);
->   		else
->   			list_add_tail(&page->lru, list);
-> +		list = &page->lru;
->   		if (IS_ENABLED(CONFIG_CMA)) {
-> -			mt = get_pageblock_migratetype(page);
-> +			int mt = get_pageblock_migratetype(page);
->   			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
->   				mt = migratetype;
-> +			if (is_migrate_cma(mt))
-> +				__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
-> +						      -(1 << order));
->   		}
-> -		set_freepage_migratetype(page, mt);
-> -		list = &page->lru;
-> -		if (is_migrate_cma(mt))
-> -			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
-> -					      -(1 << order));
->   	}
->   	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
->   	spin_unlock(&zone->lock);
->
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
->
-
+Index: linux/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -5,7 +5,7 @@
+  *
+  * SGI UV APIC functions (note: not an Intel compatible APIC)
+  *
+- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
+  */
+ #include <linux/cpumask.h>
+ #include <linux/hardirq.h>
+@@ -843,12 +843,14 @@ void uv_cpu_init(void)
+ void __init uv_system_init(void)
+ {
+ 	union uvh_rh_gam_config_mmr_u  m_n_config;
++	union uv3h_gr0_gam_gr_config_u m_gr_config;
+ 	union uvh_node_id_u node_id;
+ 	unsigned long gnode_upper, lowmem_redir_base, lowmem_redir_size;
+ 	int bytes, nid, cpu, lcpu, pnode, blade, i, j, m_val, n_val;
+ 	int gnode_extra, min_pnode = 999999, max_pnode = -1;
+ 	unsigned long mmr_base, present, paddr;
+ 	unsigned short pnode_mask;
++	unsigned char n_lshift;
+ 	char *hub = (is_uv1_hub() ? "UV1" :
+ 		    (is_uv2_hub() ? "UV2" :
+ 				    "UV3"));
+@@ -859,6 +861,14 @@ void __init uv_system_init(void)
+ 	m_n_config.v = uv_read_local_mmr(UVH_RH_GAM_CONFIG_MMR );
+ 	m_val = m_n_config.s.m_skt;
+ 	n_val = m_n_config.s.n_skt;
++	if (is_uv1_hub())
++		n_lshift = m_val;
++	else if (is_uv2_hub())
++		n_lshift = m_val == 40 ? 40 : 39;
++	else {
++		m_gr_config.v = uv_read_local_mmr(UV3H_GR0_GAM_GR_CONFIG);
++		n_lshift = m_gr_config.s3.m_skt;
++	}
+ 	pnode_mask = (1 << n_val) - 1;
+ 	mmr_base =
+ 	    uv_read_local_mmr(UVH_RH_GAM_MMR_OVERLAY_CONFIG_MMR) &
+@@ -935,8 +945,7 @@ void __init uv_system_init(void)
+ 		uv_cpu_hub_info(cpu)->hub_revision = uv_hub_info->hub_revision;
+ 
+ 		uv_cpu_hub_info(cpu)->m_shift = 64 - m_val;
+-		uv_cpu_hub_info(cpu)->n_lshift = is_uv2_1_hub() ?
+-				(m_val == 40 ? 40 : 39) : m_val;
++		uv_cpu_hub_info(cpu)->n_lshift = n_lshift;
+ 
+ 		pnode = uv_apicid_to_pnode(apicid);
+ 		blade = boot_pnode_to_blade(pnode);
+Index: linux/arch/x86/include/asm/uv/uv_mmrs.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_mmrs.h
++++ linux/arch/x86/include/asm/uv/uv_mmrs.h
+@@ -5,7 +5,7 @@
+  *
+  * SGI UV MMR definitions
+  *
+- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
+  */
+ 
+ #ifndef _ASM_X86_UV_UV_MMRS_H
+@@ -2803,6 +2803,46 @@ union uv1h_lb_target_physical_apic_id_ma
+ };
+ 
+ /* ========================================================================= */
++/*                          UV3H_GR0_GAM_GR_CONFIG                           */
++/* ========================================================================= */
++#define UV3H_GR0_GAM_GR_CONFIG				0xc00028UL
++
++#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_SHFT		0
++#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_SHFT		10
++#define UV3H_GR0_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
++#define UV3H_GR0_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
++
++union uv3h_gr0_gam_gr_config_u {
++	unsigned long	v;
++	struct uv3h_gr0_gam_gr_config_s {
++		unsigned long	m_skt:6;			/* RW */
++		unsigned long	undef_6_9:4;			/* Undefined */
++		unsigned long	subspace:1;			/* RW */
++		unsigned long	reserved:53;
++	} s3;
++};
++
++/* ========================================================================= */
++/*                          UV3H_GR1_GAM_GR_CONFIG                           */
++/* ========================================================================= */
++#define UV3H_GR1_GAM_GR_CONFIG				0x1000028UL
++
++#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_SHFT		0
++#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_SHFT		10
++#define UV3H_GR1_GAM_GR_CONFIG_M_SKT_MASK		0x000000000000003fUL
++#define UV3H_GR1_GAM_GR_CONFIG_SUBSPACE_MASK		0x0000000000000400UL
++
++union uv3h_gr1_gam_gr_config_u {
++	unsigned long	v;
++	struct uv3h_gr1_gam_gr_config_s {
++		unsigned long	m_skt:6;			/* RW */
++		unsigned long	undef_6_9:4;			/* Undefined */
++		unsigned long	subspace:1;			/* RW */
++		unsigned long	reserved:53;
++	} s3;
++};
++
++/* ========================================================================= */
+ /*                   UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR                   */
+ /* ========================================================================= */
+ #define UV3H_RH_GAM_MMIOH_OVERLAY_CONFIG0_MMR		0x1603000UL
+Index: linux/arch/x86/include/asm/uv/uv_hub.h
+===================================================================
+--- linux.orig/arch/x86/include/asm/uv/uv_hub.h
++++ linux/arch/x86/include/asm/uv/uv_hub.h
+@@ -5,7 +5,7 @@
+  *
+  * SGI UV architectural definitions
+  *
+- * Copyright (C) 2007-2013 Silicon Graphics, Inc. All rights reserved.
++ * Copyright (C) 2007-2014 Silicon Graphics, Inc. All rights reserved.
+  */
+ 
+ #ifndef _ASM_X86_UV_UV_HUB_H
+@@ -204,16 +204,6 @@ static inline int is_uvx_hub(void)
+ 	return uv_hub_info->hub_revision >= UV2_HUB_REVISION_BASE;
+ }
+ 
+-static inline int is_uv2_1_hub(void)
+-{
+-	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE;
+-}
+-
+-static inline int is_uv2_2_hub(void)
+-{
+-	return uv_hub_info->hub_revision == UV2_HUB_REVISION_BASE + 1;
+-}
+-
+ union uvh_apicid {
+     unsigned long       v;
+     struct uvh_apicid_s {
