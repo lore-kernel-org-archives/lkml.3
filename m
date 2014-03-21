@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaCUXLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 19:11:10 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:53252 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaCUXLI (ORCPT
+	id S1751088AbaCUXWG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 19:22:06 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:44573 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750733AbaCUXWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 19:11:08 -0400
-Message-ID: <532CC707.9010405@infradead.org>
-Date: Fri, 21 Mar 2014 16:11:03 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jim Davis <jim.epost@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [PATCH] drivers/video: fix mb862xx_i2c depends issue build failure
-References: <1395328560-48497-1-git-send-email-paul.gortmaker@windriver.com> <532C3F64.2020601@ti.com> <532C4476.2030706@windriver.com>
-In-Reply-To: <532C4476.2030706@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Mar 2014 19:22:02 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AoUGALbILFNR8cxj/2dsb2JhbABZgwbDdIEZF3SCJQEBAQMBOhwjBQsIAw4KLjkeBhOHcQwBz0YXjmoHhDgBA45SiXYBilmHWIMuPA
+Date: Sat, 22 Mar 2014 00:21:59 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-Id: <20140322002159.e1428d6a58899b38b379733c@skynet.be>
+In-Reply-To: <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+	<20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 06:53 AM, Paul Gortmaker wrote:
-> On 14-03-21 09:32 AM, Tomi Valkeinen wrote:
->> Hi,
->>
->> On 20/03/14 17:16, Paul Gortmaker wrote:
->>> Any randconfig that sets I2C=m and FB_MB862XX_I2C=y will
->>> encounter a final link failure that looks like this:
->>
->> It compiles fine with I2C=m, FB_MB862XX=m and FB_MB862XX_I2C=y.
->>
->>> drivers/built-in.o: In function `mb862xx_i2c_init':
->>> drivers/video/mb862xx/mb862xx-i2c.c:165: undefined reference to `i2c_add_adapter'
->>> drivers/built-in.o: In function `mb862xx_i2c_exit':
->>> drivers/video/mb862xx/mb862xx-i2c.c:176: undefined reference to `i2c_del_adapter'
->>>
->>> Since FB_MB862XX_I2C is a bool and not tristate, simply
->>> don't offer it at all if core I2C support is not built in.
->>
->> FB_MB862XX_I2C is not a driver, it just adds the i2c support to
->> FB_MB862XX. The relevant thing is whether FB_MB862XX is m or y, so
->> compiling with:
->>
->> I2C=m, FB_MB862XX=y and FB_MB862XX_I2C=y
->>
->> will fail.
+On Fri, 21 Mar 2014 13:00:55 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Fri, 21 Mar 2014 17:18:30 +0100 Fabian Frederick <fabf@skynet.be> wrote:
 > 
-> How would you suggest we fix it then?  Perhaps we could simplify the
-> Kconfig space and just get rid of FB_MB862XX_I2C entirely?  Is there
-> ever a reason why someone would want it turned off when I2C is present?
+> > Loop around congestion_wait on allocation failure/alloc_journal_list
+> > like already fixed in other FS.
+> > 
+> > ...
+> >
+> > --- a/fs/reiserfs/journal.c
+> > +++ b/fs/reiserfs/journal.c
+> > @@ -2487,8 +2487,13 @@ static int journal_read(struct super_block *sb)
+> >  static struct reiserfs_journal_list *alloc_journal_list(struct super_block *s)
+> >  {
+> >  	struct reiserfs_journal_list *jl;
+> > -	jl = kzalloc(sizeof(struct reiserfs_journal_list),
+> > -		     GFP_NOFS | __GFP_NOFAIL);
+> > +
+> > +	do {
+> > +		jl = kzalloc(sizeof(struct reiserfs_journal_list), GFP_NOFS);
+> > +		if (unlikely(!jl))
+> > +			congestion_wait(BLK_RW_ASYNC, HZ/50);
+> > +	} while (!jl)
+> > +
 > 
-> Paul.
-> --
+> Dammit, who has been running around converting __GFP_NOFAIL into
+> open-coded congestion_wait() loops?
 > 
->>
->>> Reported-by: Jim Davis <jim.epost@gmail.com>
->>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
->>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
->>>
->>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
->>> index dade5b7699bc..aefd1b9a3cbd 100644
->>> --- a/drivers/video/Kconfig
->>> +++ b/drivers/video/Kconfig
->>> @@ -2338,7 +2338,7 @@ endchoice
->>>  
->>>  config FB_MB862XX_I2C
->>>  	bool "Support I2C bus on MB862XX GDC"
->>> -	depends on FB_MB862XX && I2C
->>> +	depends on FB_MB862XX && I2C=y
->>>  	default y
->>>  	help
->>>  	  Selecting this option adds Coral-P(A)/Lime GDC I2C bus adapter
->>
->> This fix is not correct, as it prevents the following, valid, config:
->>
->> I2C=m, FB_MB862XX=m and FB_MB862XX_I2C=y
+> The whole point of __GFP_NOFAIL is to centralise this
+> wait-for-memory-for-ever operation.  So it is implemented in a common
+> (core) place and so that we can easily locate these problematic
+> callers.
+> 
+> This comment in ext4:
+> 
+> 			/*
+> 			 * If __GFP_FS is not present, then we may be
+> 			 * being called from inside the fs writeback
+> 			 * layer, so we MUST NOT fail.  Since
+> 			 * __GFP_NOFAIL is going away, we will arrange
+> 			 * to retry the allocation ourselves.
+> 			 */
+> 
+> is exactly wrong.  Yes, we'd like __GFP_NOFAIL to go away, but it
+> cannot go away until buggy callsites such as this one are *fixed*. 
+> Removing the __GFP_NOFAIL usage simply hides the buggy code from casual
+> searchers.
+> 
+> argh.
+> 
+> What we should do is to fix all these call sites so they can handle
+> memory exhaustion.  That's hard so in the interim they should be using
+> __GFP_NOFAIL.
+> 
 
-If I am following this correctly, this kconfig situation is often handled
-by something like
-
-	depends on I2C=y || I2C=FB_MB862XX
-
-
-
--- 
-~Randy
+Ok, if even ext4 comments are wrong, things gonna be very difficult :)
+Any sample of a callsite transition done well ?  (git id ?)
