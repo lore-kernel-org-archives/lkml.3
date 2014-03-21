@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967104AbaCUBYP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:24:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36519 "EHLO
+	id S967122AbaCUBYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:24:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36512 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760351AbaCUADf (ORCPT
+	with ESMTP id S1760338AbaCUADd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:35 -0400
+	Thu, 20 Mar 2014 20:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 029/149] ath9k: protect tid->sched check
-Date: Thu, 20 Mar 2014 17:03:12 -0700
-Message-Id: <20140321000437.974958531@linuxfoundation.org>
+Subject: [PATCH 3.13 041/149] mwifiex: copy APs HT capability info correctly
+Date: Thu, 20 Mar 2014 17:03:24 -0700
+Message-Id: <20140321000438.386298558@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,70 +29,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Amitkumar Karwar <akarwar@marvell.com>
 
-commit 21f8aaee0c62708654988ce092838aa7df4d25d8 upstream.
+commit c99b1861c232e1f641f13b8645e0febb3712cc71 upstream.
 
-We check tid->sched without a lock taken on ath_tx_aggr_sleep(). That
-is race condition which can result of doing list_del(&tid->list) twice
-(second time with poisoned list node) and cause crash like shown below:
+While preparing association request, intersection of device's HT
+capability information and corresponding fields advertised by AP
+is used.
 
-[424271.637220] BUG: unable to handle kernel paging request at 00100104
-[424271.637328] IP: [<f90fc072>] ath_tx_aggr_sleep+0x62/0xe0 [ath9k]
-...
-[424271.639953] Call Trace:
-[424271.639998]  [<f90f6900>] ? ath9k_get_survey+0x110/0x110 [ath9k]
-[424271.640083]  [<f90f6942>] ath9k_sta_notify+0x42/0x50 [ath9k]
-[424271.640177]  [<f809cfef>] sta_ps_start+0x8f/0x1c0 [mac80211]
-[424271.640258]  [<c10f730e>] ? free_compound_page+0x2e/0x40
-[424271.640346]  [<f809e915>] ieee80211_rx_handlers+0x9d5/0x2340 [mac80211]
-[424271.640437]  [<c112f048>] ? kmem_cache_free+0x1d8/0x1f0
-[424271.640510]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640578]  [<c10fc23c>] ? put_page+0x2c/0x40
-[424271.640640]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640706]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640787]  [<f809dde3>] ? ieee80211_rx_handlers_result+0x73/0x1d0 [mac80211]
-[424271.640897]  [<f80a07a0>] ieee80211_prepare_and_rx_handle+0x520/0xad0 [mac80211]
-[424271.641009]  [<f809e22d>] ? ieee80211_rx_handlers+0x2ed/0x2340 [mac80211]
-[424271.641104]  [<c13846ce>] ? ip_output+0x7e/0xd0
-[424271.641182]  [<f80a1057>] ieee80211_rx+0x307/0x7c0 [mac80211]
-[424271.641266]  [<f90fa6ee>] ath_rx_tasklet+0x88e/0xf70 [ath9k]
-[424271.641358]  [<f80a0f2c>] ? ieee80211_rx+0x1dc/0x7c0 [mac80211]
-[424271.641445]  [<f90f82db>] ath9k_tasklet+0xcb/0x130 [ath9k]
+This patch fixes an error while copying this field from AP's
+beacon.
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=70551
-
-Reported-and-tested-by: Max Sydorenko <maxim.stargazer@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/xmit.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/wireless/mwifiex/11n.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1458,14 +1458,16 @@ void ath_tx_aggr_sleep(struct ieee80211_
- 	for (tidno = 0, tid = &an->tid[tidno];
- 	     tidno < IEEE80211_NUM_TIDS; tidno++, tid++) {
+--- a/drivers/net/wireless/mwifiex/11n.c
++++ b/drivers/net/wireless/mwifiex/11n.c
+@@ -308,8 +308,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifie
+ 		ht_cap->header.len =
+ 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
+ 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
+-		       (u8 *) bss_desc->bcn_ht_cap +
+-		       sizeof(struct ieee_types_header),
++		       (u8 *)bss_desc->bcn_ht_cap,
+ 		       le16_to_cpu(ht_cap->header.len));
  
--		if (!tid->sched)
--			continue;
--
- 		ac = tid->ac;
- 		txq = ac->txq;
- 
- 		ath_txq_lock(sc, txq);
- 
-+		if (!tid->sched) {
-+			ath_txq_unlock(sc, txq);
-+			continue;
-+		}
-+
- 		buffered = ath_tid_has_buffered(tid);
- 
- 		tid->sched = false;
+ 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
 
 
