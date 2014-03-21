@@ -1,141 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751142AbaCVHbr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 03:31:47 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:35175 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750978AbaCVHaz (ORCPT
+	id S1751238AbaCVHge (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 03:36:34 -0400
+Received: from 81.95.159.215-static.reverse.softlayer.com ([81.95.159.215]:54953
+	"EHLO demimalaysia.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750869AbaCVHgd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 03:30:55 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Lad Prabhakar <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH for v3.15 1/3] media: davinci: vpif_capture: fix releasing of active buffers
-Date: Sat, 22 Mar 2014 13:00:37 +0530
-Message-Id: <1395473439-18643-2-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395473439-18643-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1395473439-18643-1-git-send-email-prabhakar.csengg@gmail.com>
+	Sat, 22 Mar 2014 03:36:33 -0400
+Date: Thu, 20 Mar 2014 21:52:49 -0500
+From: Demi Malaysia <demimalaysiaku@demimalaysia.info>
+To: demimalaysia@demimalaysia.info
+Subject: Perlukah Rafizi Bermusuh Dengan Semua Orang?
+Message-ID: <20140321025249.GA2931@demimalaysia.info>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - demimalaysia.info
+X-AntiAbuse: Original Domain - demimalaysia.info
+X-AntiAbuse: Originator/Caller UID/GID - [500 500] / [47 12]
+X-AntiAbuse: Sender Address Domain - demimalaysia.info
+X-Get-Message-Sender-Via: demimalaysia.info: authenticated_id: demimala/primary_hostname/system user
+X-Source: /usr/bin/mutt
+X-Source-Args: mutt demimalaysia -s Perihal Parti Yang Nampak Bersih - Tapi Sekotor Tong Najis 
+X-Source-Dir: demimalaysia.info:/server-blast
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-
-from commit-id: b3379c6201bb3555298cdbf0aa004af260f2a6a4
-"vb2: only call start_streaming if sufficient buffers are queued"
-the vb2 framework warns on (WARN_ON()) if all the active buffers
-are not released when streaming is stopped, initially the vb2 silently
-released the buffer internally if the buffer was not released by
-the driver.
-Also this patch moves the disabling of interrupts from relase() callback
-to stop_streaming() callback as which needs to be done ideally.
-
-This patch fixes following issue:
-
-WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:2011 __vb2_queue_cancel+0x1a0/0x218()
-Modules linked in:
-CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
-[<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
-[<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
-[<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
-[<c001adec>] (warn_slowpath_null) from [<c0252e0c>] (__vb2_queue_cancel+0x1a0/0x218)
-[<c0252e0c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
-[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
-[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
-[<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
-[<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
-[<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
-[<c001cc28>] (do_exit) from [<c001d344>] (do_group_exit+0x48/0xdc)
-[<c001d344>] (do_group_exit) from [<c0029894>] (get_signal_to_deliver+0x2a0/0x5bc)
-[<c0029894>] (get_signal_to_deliver) from [<c000b888>] (do_signal+0x78/0x3a0)
-[<c000b888>] (do_signal) from [<c000bc54>] (do_work_pending+0xa4/0xb4)
-[<c000bc54>] (do_work_pending) from [<c00096dc>] (work_pending+0xc/0x20)
----[ end trace 5faa75e8c2f8a6a1 ]---
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:1095 vb2_buffer_done+0x1e0/0x224()
-Modules linked in:
-CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
-[<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
-[<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
-[<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
-[<c001adec>] (warn_slowpath_null) from [<c0252c28>] (vb2_buffer_done+0x1e0/0x224)
-[<c0252c28>] (vb2_buffer_done) from [<c0252e3c>] (__vb2_queue_cancel+0x1d0/0x218)
-[<c0252e3c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
-[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
-[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
-[<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
-[<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
-[<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
-[<c001cc28>] (do_exit) from [<c001d344>] (do_group_exit+0x48/0xdc)
-[<c001d344>] (do_group_exit) from [<c0029894>] (get_signal_to_deliver+0x2a0/0x5bc)
-[<c0029894>] (get_signal_to_deliver) from [<c000b888>] (do_signal+0x78/0x3a0)
-[<c000b888>] (do_signal) from [<c000bc54>] (do_work_pending+0xa4/0xb4)
-[<c000bc54>] (do_work_pending) from [<c00096dc>] (work_pending+0xc/0x20)
----[ end trace 5faa75e8c2f8a6a2 ]---
-
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/media/platform/davinci/vpif_capture.c |   34 +++++++++++++++++--------
- 1 file changed, 23 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
-index 756da78..8dea0b8 100644
---- a/drivers/media/platform/davinci/vpif_capture.c
-+++ b/drivers/media/platform/davinci/vpif_capture.c
-@@ -358,8 +358,31 @@ static int vpif_stop_streaming(struct vb2_queue *vq)
+Assalamualaikum Saudara-Saudari,
  
- 	common = &ch->common[VPIF_VIDEO_INDEX];
- 
-+	/* Disable channel as per its device type and channel id */
-+	if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
-+		enable_channel0(0);
-+		channel0_intr_enable(0);
-+	}
-+	if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
-+		(2 == common->started)) {
-+		enable_channel1(0);
-+		channel1_intr_enable(0);
-+	}
-+	common->started = 0;
-+
- 	/* release all active buffers */
- 	spin_lock_irqsave(&common->irqlock, flags);
-+	if (common->cur_frm == common->next_frm) {
-+		vb2_buffer_done(&common->cur_frm->vb, VB2_BUF_STATE_ERROR);
-+	} else {
-+		if (common->cur_frm != NULL)
-+			vb2_buffer_done(&common->cur_frm->vb,
-+					VB2_BUF_STATE_ERROR);
-+		if (common->next_frm != NULL)
-+			vb2_buffer_done(&common->next_frm->vb,
-+					VB2_BUF_STATE_ERROR);
-+	}
-+
- 	while (!list_empty(&common->dma_queue)) {
- 		common->next_frm = list_entry(common->dma_queue.next,
- 						struct vpif_cap_buffer, list);
-@@ -933,17 +956,6 @@ static int vpif_release(struct file *filep)
- 	if (fh->io_allowed[VPIF_VIDEO_INDEX]) {
- 		/* Reset io_usrs member of channel object */
- 		common->io_usrs = 0;
--		/* Disable channel as per its device type and channel id */
--		if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
--			enable_channel0(0);
--			channel0_intr_enable(0);
--		}
--		if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
--		    (2 == common->started)) {
--			enable_channel1(0);
--			channel1_intr_enable(0);
--		}
--		common->started = 0;
- 		/* Free buffers allocated */
- 		vb2_queue_release(&common->buffer_queue);
- 		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
--- 
-1.7.9.5
+Pengarah Strategi PKR, Rafizi Ramli mendakwa beliau terpaksa
+mendedahkan perkara itu selepas melihat calon bebas itu secara lantang
+membuat cabaran terhadap Ketua Umum PKR, Datuk Seri Anwar Ibrahim atas
+alasan ketelusan dan integriti.
 
+Rafizi memberitahu, dalam tempoh pendek setahun lebih menjadi anggota
+PKR, Zaid kata beliau tanpa segan silu cuba menggunakan kedudukan di
+dalam parti untuk mempengaruhi keputusan kerajaan negeri berhubung
+beberapa projek yang diusahakan oleh rakan atau pihak yang bersabit
+dengannya. 
+
+Selanjutnya, sila layari http://gelagatanwar.wordpress.com.
