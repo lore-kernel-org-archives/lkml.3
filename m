@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751291AbaCUXIJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 19:08:09 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58609 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbaCUXHm (ORCPT
+	id S1751707AbaCUXK1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 19:10:27 -0400
+Received: from mail-yk0-f172.google.com ([209.85.160.172]:61269 "EHLO
+	mail-yk0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaCUXKZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 19:07:42 -0400
-Message-ID: <532CC625.7020509@ahsoftware.de>
-Date: Sat, 22 Mar 2014 00:07:17 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 21 Mar 2014 19:10:25 -0400
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] initramfs: print error and shell out for unsupported
- content
-References: <CAAsK9AEeobOG1j6NHUoqkZaZ5h8GGK_fL+gyh9MhSvguQjyU_w@mail.gmail.com>	<1395352845-7435-1-git-send-email-holler@ahsoftware.de>	<20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>	<532CC215.1000107@ahsoftware.de> <20140321155517.51af1b28fe32656fb7506f97@linux-foundation.org>
-In-Reply-To: <20140321155517.51af1b28fe32656fb7506f97@linux-foundation.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAG-99FPk6kX3QO9g3M20SC1fq8VhpVv6iDLsgjZDAUd5KvzCOQ@mail.gmail.com>
+References: <1393223377-5744-1-git-send-email-tuukka.tikkanen@linaro.org>
+	<1393223377-5744-7-git-send-email-tuukka.tikkanen@linaro.org>
+	<CAJvTdKneVk_ToJ=Sv4GnMfn5a0r=ynfL4fRLOoKHsqMrDYr8JA@mail.gmail.com>
+	<CAG-99FPk6kX3QO9g3M20SC1fq8VhpVv6iDLsgjZDAUd5KvzCOQ@mail.gmail.com>
+Date: Fri, 21 Mar 2014 19:10:24 -0400
+X-Google-Sender-Auth: cDiplW91O8SBWI3Pf9-XWwVwV7E
+Message-ID: <CAJvTdKm3FfOgHbEkaDE+N2rwyL6FTnzXHF6Gn2iuxmhz3c9nnA@mail.gmail.com>
+Subject: Re: [PATCH 6/7] Cpuidle: Deal with timer expiring in the past
+From: Len Brown <lenb@kernel.org>
+To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Cc: Linux PM list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.03.2014 23:55, schrieb Andrew Morton:
-> On Fri, 21 Mar 2014 23:49:57 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
-> 
->> Am 21.03.2014 22:03, schrieb Andrew Morton:
->>> On Thu, 20 Mar 2014 23:00:45 +0100 Alexander Holler <holler@ahsoftware.de> wrote:
->>>
->>>> The initramfs generation is broken for file and directory names which contain
->>>> colons or spaces. Print an error and don't try to continue.
->>
->>> It would be better to fix the it-doesnt-work-with-all-filenames bug. 
->>> Any details on that?
->>
->> IMHO not worth the time. The whole process which is curently used is
->> extremly fragile.
->>
->> E.g it's almost guaranteed to fail trying to include arbitrary filenames
->> as dependencies in a Makefile. Besides the one problem I've discoverd
->> with colons, there could be much more things happen, e.g. with filenames
->> which do include other special Makefile characters you all would have to
->> escape correctly.
->>
->> And the problem with spaces isn't as easy to fix as it first does look
->> like. I think it might be easier to write the whole stuff new instead of
->> trying to escape the spaces in various ways needed to end up correctly
->> in the cpio (it first goes through shell code and is then feeded as some
->> list to a C program).
->>
->> And I think that just isn't worth the time. Using find | cpio works just
->> fine to generate a cpio archive and usually an initramfs just contains
->> some megabytes. So it isn't a problem at all to rebuild the complete
->> cpio archive with every call of make, it doesn't need much more than
->> about a second or similiar on almost any machine.
->>
->> And for the records, I indeed had a deeper look, trying to fix it. But,
->> as said, quickly realized that it will need too much effort and doesn't
->> make sense, if it will be doable correctly at all.
->>
-> 
-> huh, OK.
-> 
-> Should we check for \t and \n as well?
+Tuukka,
+I've reproduced this negative on a 48 thread 2-socket Xeon during boot
+(seen it only once, so far).
 
-Hmm, maybe. But usually there aren't filenames wich do contain those
-characters, and if you want to break (or exploit) the kernel build
-process, there are easier ways. But colons and spaces are more widely
-used, e.g. the colons in my initramfs were generated by bluez (look at
-/var/lib/bluetooth).
+expected_us gets calculated to be -1, which is truthful, since the
+next timer return value was about 500ns in the past
+and our math truncates.  This, in turn, confuses the heck out of
+menu's prediction of the next event to be
+over 500 sec in the future.
 
-I think the current process is good enough for most stuff one wants to
-put into an initramfs, and it has the great feature of the uid/guid
-translation.
-So just a quick check to avoid the most basic problems should be ok. And
-I don't really see a need to check for \t and \n too, because nobody
-sane uses them in filenames. But ok, that just would be a few chars more
-in the regex for find. ;)
+I suspect more breakage is lurking, so I'll poke some more...
 
-I leave that up to you.
-
-Regards,
-
-Alexander Holler
+Len Brown, Intel Open Source Technology Center
