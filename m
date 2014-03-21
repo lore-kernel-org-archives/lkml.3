@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaCUVmY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:42:24 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750710AbaCUVmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:42:21 -0400
-Message-ID: <532CB21B.4040502@zytor.com>
-Date: Fri, 21 Mar 2014 14:41:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: Peter Wu <peter@lekensteyn.nl>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-References: <4055058.qLAukpngnj@al> <20140321192938.GJ3132@tassilo.jf.intel.com> <970fd799-8d4c-4759-8a96-1291b411f307@email.android.com> <20140321213753.GK3132@tassilo.jf.intel.com>
-In-Reply-To: <20140321213753.GK3132@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752217AbaCUVmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:42:50 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:65004 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954AbaCUVmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 17:42:47 -0400
+Message-ID: <532CB252.6010702@gmail.com>
+Date: Fri, 21 Mar 2014 22:42:42 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>
+Subject: Re: [PATCH 1/2] ARM: berlin: add MACH_BERLIN_BG2Q symbol
+References: <1395430757-8677-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1395430757-8677-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 02:37 PM, Andi Kleen wrote:
-> On Fri, Mar 21, 2014 at 01:46:04PM -0700, H. Peter Anvin wrote:
->> Not really.  That is equally braindamaged.  The problem is that KVM is telling the host that our is something it simply cannot be.
-> 
-> Well it has to pick something. It's unlikely it will ever implement 100% of that particular CPU.
-> 0 is the best you can get in many cases.
-> 
-> Also I thought Xen did return 0.
-> 
+On 03/21/2014 08:39 PM, Alexandre Belloni wrote:
+> Now that we start supporting the Marvell Berlin BG2Q, add a symbol allowing to
+> differentiate that SoC from the other SoCs of the Berlin family.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-That's why at least to some extent The Right Thing is not to try to
-pretend to be a CPU you don't even know how to emulate.
+Applied to berlin/defconfig, Thanks!
 
-But again, that has its own issues, too, mostly with userspace
-optimization, and making the Linux code more resilient wouldn't hurt.
-In that sense #GP(0) is *much* better than 0: it unambiguously gives an
-error to work with.
-
-However, labeling it a bug in Linux is silly.
-
-	-hpa
+> ---
+>   arch/arm/mach-berlin/Kconfig | 7 +++++++
+>   1 file changed, 7 insertions(+)
+>
+> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+> index 7a02d222c378..0ff6f5877076 100644
+> --- a/arch/arm/mach-berlin/Kconfig
+> +++ b/arch/arm/mach-berlin/Kconfig
+> @@ -24,6 +24,13 @@ config MACH_BERLIN_BG2CD
+>   	select CPU_V7
+>   	select HAVE_ARM_TWD if SMP
+>
+> +config MACH_BERLIN_BG2Q
+> +	bool "Marvell Armada 1500 Pro (BG2-Q)"
+> +	select CACHE_L2X0
+> +	select CPU_V7
+> +	select HAVE_ARM_TWD if SMP
+> +	select HAVE_SMP
+> +
+>   endmenu
+>
+>   endif
+>
 
