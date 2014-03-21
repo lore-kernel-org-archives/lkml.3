@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965929AbaCUA6j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:58:39 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36836 "EHLO
+	id S966102AbaCUA70 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:59:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36832 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965492AbaCUAEj (ORCPT
+	with ESMTP id S965478AbaCUAEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:39 -0400
+	Thu, 20 Mar 2014 20:04:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Anton Blanchard <anton@samba.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 116/149] ibmveth: Fix endian issues with MAC addresses
-Date: Thu, 20 Mar 2014 17:04:39 -0700
-Message-Id: <20140321000440.982692228@linuxfoundation.org>
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.13 128/149] can: flexcan: fix transition from and to low power mode in chip_{en,dis}able
+Date: Thu, 20 Mar 2014 17:04:51 -0700
+Message-Id: <20140321000441.392533925@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,103 +28,153 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit d746ca9561440685edb62614d1bcbbc27ff50e66 upstream.
+commit 9b00b300e7bce032c467c36ca47fe2a776887fc2 upstream.
 
-The code to load a MAC address into a u64 for passing to the
-hypervisor via a register is broken on little endian.
+In flexcan_chip_enable() and flexcan_chip_disable() fixed delays are used.
+Experiments have shown that the transition from and to low power mode may take
+several microseconds.
 
-Create a helper function called ibmveth_encode_mac_addr
-which does the right thing in both big and little endian.
+This patch adds a while loop which polls the Low Power Mode ACK bit (LPM_ACK)
+that indicates a successfull mode change. If the function runs into a timeout a
+error value is returned.
 
-We were storing the MAC address in a long in struct ibmveth_adapter.
-It's never used so remove it - we don't need another place in the
-driver where we create endian issues with MAC addresses.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ibm/ibmveth.c |   25 ++++++++++++++++---------
- drivers/net/ethernet/ibm/ibmveth.h |    1 -
- 2 files changed, 16 insertions(+), 10 deletions(-)
+ drivers/net/can/flexcan.c |   50 ++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 38 insertions(+), 12 deletions(-)
 
---- a/drivers/net/ethernet/ibm/ibmveth.c
-+++ b/drivers/net/ethernet/ibm/ibmveth.c
-@@ -523,10 +523,21 @@ retry:
- 	return rc;
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -144,6 +144,8 @@
+ 
+ #define FLEXCAN_MB_CODE_MASK		(0xf0ffffff)
+ 
++#define FLEXCAN_TIMEOUT_US             (50)
++
+ /*
+  * FLEXCAN hardware feature flags
+  *
+@@ -266,26 +268,42 @@ static inline int flexcan_has_and_handle
+ 		(reg_esr & FLEXCAN_ESR_ERR_BUS);
  }
  
-+static u64 ibmveth_encode_mac_addr(u8 *mac)
-+{
-+	int i;
-+	u64 encoded = 0;
-+
-+	for (i = 0; i < ETH_ALEN; i++)
-+		encoded = (encoded << 8) | mac[i];
-+
-+	return encoded;
-+}
-+
- static int ibmveth_open(struct net_device *netdev)
+-static inline void flexcan_chip_enable(struct flexcan_priv *priv)
++static int flexcan_chip_enable(struct flexcan_priv *priv)
  {
- 	struct ibmveth_adapter *adapter = netdev_priv(netdev);
--	u64 mac_address = 0;
-+	u64 mac_address;
- 	int rxq_entries = 1;
- 	unsigned long lpar_rc;
- 	int rc;
-@@ -580,8 +591,7 @@ static int ibmveth_open(struct net_devic
- 	adapter->rx_queue.num_slots = rxq_entries;
- 	adapter->rx_queue.toggle = 1;
+ 	struct flexcan_regs __iomem *regs = priv->base;
++	unsigned int timeout = FLEXCAN_TIMEOUT_US / 10;
+ 	u32 reg;
  
--	memcpy(&mac_address, netdev->dev_addr, netdev->addr_len);
--	mac_address = mac_address >> 16;
-+	mac_address = ibmveth_encode_mac_addr(netdev->dev_addr);
+ 	reg = flexcan_read(&regs->mcr);
+ 	reg &= ~FLEXCAN_MCR_MDIS;
+ 	flexcan_write(reg, &regs->mcr);
  
- 	rxq_desc.fields.flags_len = IBMVETH_BUF_VALID |
- 					adapter->rx_queue.queue_len;
-@@ -1184,8 +1194,8 @@ static void ibmveth_set_multicast_list(s
- 		/* add the addresses to the filter table */
- 		netdev_for_each_mc_addr(ha, netdev) {
- 			/* add the multicast address to the filter table */
--			unsigned long mcast_addr = 0;
--			memcpy(((char *)&mcast_addr)+2, ha->addr, ETH_ALEN);
-+			u64 mcast_addr;
-+			mcast_addr = ibmveth_encode_mac_addr(ha->addr);
- 			lpar_rc = h_multicast_ctrl(adapter->vdev->unit_address,
- 						   IbmVethMcastAddFilter,
- 						   mcast_addr);
-@@ -1369,9 +1379,6 @@ static int ibmveth_probe(struct vio_dev
+-	udelay(10);
++	while (timeout-- && (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
++		usleep_range(10, 20);
++
++	if (flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK)
++		return -ETIMEDOUT;
++
++	return 0;
+ }
  
- 	netif_napi_add(netdev, &adapter->napi, ibmveth_poll, 16);
+-static inline void flexcan_chip_disable(struct flexcan_priv *priv)
++static int flexcan_chip_disable(struct flexcan_priv *priv)
+ {
+ 	struct flexcan_regs __iomem *regs = priv->base;
++	unsigned int timeout = FLEXCAN_TIMEOUT_US / 10;
+ 	u32 reg;
  
--	adapter->mac_addr = 0;
--	memcpy(&adapter->mac_addr, mac_addr_p, ETH_ALEN);
+ 	reg = flexcan_read(&regs->mcr);
+ 	reg |= FLEXCAN_MCR_MDIS;
+ 	flexcan_write(reg, &regs->mcr);
++
++	while (timeout-- && !(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
++		usleep_range(10, 20);
++
++	if (!(flexcan_read(&regs->mcr) & FLEXCAN_MCR_LPM_ACK))
++		return -ETIMEDOUT;
++
++	return 0;
+ }
+ 
+ static int flexcan_get_berr_counter(const struct net_device *dev,
+@@ -706,7 +724,9 @@ static int flexcan_chip_start(struct net
+ 	u32 reg_mcr, reg_ctrl;
+ 
+ 	/* enable module */
+-	flexcan_chip_enable(priv);
++	err = flexcan_chip_enable(priv);
++	if (err)
++		return err;
+ 
+ 	/* soft reset */
+ 	flexcan_write(FLEXCAN_MCR_SOFTRST, &regs->mcr);
+@@ -946,12 +966,16 @@ static int register_flexcandev(struct ne
+ 		goto out_disable_ipg;
+ 
+ 	/* select "bus clock", chip must be disabled */
+-	flexcan_chip_disable(priv);
++	err = flexcan_chip_disable(priv);
++	if (err)
++		goto out_disable_per;
+ 	reg = flexcan_read(&regs->ctrl);
+ 	reg |= FLEXCAN_CTRL_CLK_SRC;
+ 	flexcan_write(reg, &regs->ctrl);
+ 
+-	flexcan_chip_enable(priv);
++	err = flexcan_chip_enable(priv);
++	if (err)
++		goto out_chip_disable;
+ 
+ 	/* set freeze, halt and activate FIFO, restrict register access */
+ 	reg = flexcan_read(&regs->mcr);
+@@ -968,14 +992,15 @@ static int register_flexcandev(struct ne
+ 	if (!(reg & FLEXCAN_MCR_FEN)) {
+ 		netdev_err(dev, "Could not enable RX FIFO, unsupported core\n");
+ 		err = -ENODEV;
+-		goto out_disable_per;
++		goto out_chip_disable;
+ 	}
+ 
+ 	err = register_candev(dev);
+ 
+- out_disable_per:
+ 	/* disable core and turn off clocks */
++ out_chip_disable:
+ 	flexcan_chip_disable(priv);
++ out_disable_per:
+ 	clk_disable_unprepare(priv->clk_per);
+  out_disable_ipg:
+ 	clk_disable_unprepare(priv->clk_ipg);
+@@ -1118,8 +1143,11 @@ static int flexcan_suspend(struct device
+ {
+ 	struct net_device *dev = dev_get_drvdata(device);
+ 	struct flexcan_priv *priv = netdev_priv(dev);
++	int err;
+ 
+-	flexcan_chip_disable(priv);
++	err = flexcan_chip_disable(priv);
++	if (err)
++		return err;
+ 
+ 	if (netif_running(dev)) {
+ 		netif_stop_queue(dev);
+@@ -1140,9 +1168,7 @@ static int flexcan_resume(struct device
+ 		netif_device_attach(dev);
+ 		netif_start_queue(dev);
+ 	}
+-	flexcan_chip_enable(priv);
 -
- 	netdev->irq = dev->irq;
- 	netdev->netdev_ops = &ibmveth_netdev_ops;
- 	netdev->ethtool_ops = &netdev_ethtool_ops;
-@@ -1380,7 +1387,7 @@ static int ibmveth_probe(struct vio_dev
- 		NETIF_F_IP_CSUM | NETIF_F_IPV6_CSUM;
- 	netdev->features |= netdev->hw_features;
+-	return 0;
++	return flexcan_chip_enable(priv);
+ }
+ #endif /* CONFIG_PM_SLEEP */
  
--	memcpy(netdev->dev_addr, &adapter->mac_addr, netdev->addr_len);
-+	memcpy(netdev->dev_addr, mac_addr_p, ETH_ALEN);
- 
- 	for (i = 0; i < IBMVETH_NUM_BUFF_POOLS; i++) {
- 		struct kobject *kobj = &adapter->rx_buff_pool[i].kobj;
---- a/drivers/net/ethernet/ibm/ibmveth.h
-+++ b/drivers/net/ethernet/ibm/ibmveth.h
-@@ -139,7 +139,6 @@ struct ibmveth_adapter {
-     struct napi_struct napi;
-     struct net_device_stats stats;
-     unsigned int mcastFilterSize;
--    unsigned long mac_addr;
-     void * buffer_list_addr;
-     void * filter_list_addr;
-     dma_addr_t buffer_list_dma;
 
 
