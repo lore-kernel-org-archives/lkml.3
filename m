@@ -1,98 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751171AbaCUSpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 14:45:53 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:42118 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbaCUSpt (ORCPT
+	id S1751241AbaCUSrf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 14:47:35 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46372 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757AbaCUSra (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 14:45:49 -0400
+	Fri, 21 Mar 2014 14:47:30 -0400
+Message-ID: <532C8941.4090104@codeaurora.org>
+Date: Fri, 21 Mar 2014 11:47:29 -0700
+From: Laura Abbott <lauraa@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <532C64A1.6090807@hurleysoftware.com>
-References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
- <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com>
- <532C46BD.1000208@hurleysoftware.com> <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
- <532C51F3.8030205@hurleysoftware.com> <CAKgNAkhRu7yZSn+uB1eTcL0gPGPcGsd5Z36pXgfdKOLBcdOoBw@mail.gmail.com>
- <532C64A1.6090807@hurleysoftware.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 21 Mar 2014 19:45:23 +0100
-Message-ID: <CAKgNAkiwLaHM1xzdO59_PB9YR=6QJfAeE_92Wc2kqTbPuL9ahQ@mail.gmail.com>
-Subject: Re: man termios
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ivan <athlon_@mail.ru>
+To: Michal Nazarewicz <mina86@mina86.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [BUG] Circular locking dependency - DRM/CMA/MM/hotplug/...
+References: <20140211183543.GK26684@n2100.arm.linux.org.uk> <52FB9602.1000805@samsung.com> <20140212163317.GQ26684@n2100.arm.linux.org.uk> <53036D51.2070502@samsung.com> <xa1t8ut8wc2f.fsf@mina86.com>
+In-Reply-To: <xa1t8ut8wc2f.fsf@mina86.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just double checked things....
-
-On Fri, Mar 21, 2014 at 5:11 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-
-[...]
-
->>> and
+On 2/18/2014 9:44 AM, Michal Nazarewicz wrote:
+>> On 2014-02-12 17:33, Russell King - ARM Linux wrote:
+>>> What if we did these changes:
 >>>
->>>    ./noncanonical 0 5 3 2
->>>     hel
->>
->>
->> Solaris
->> read blocks()
->> OpenBSD
->> read blocks
->
->
-> If you type fast, Linux will complete this read() with 3 bytes.
-
-Sorry -- I got this one wrong. I was not typing fast enough, Solaris
-and OpenBSD are the same as Linux.
-
-[...]
-
->>> on other platforms.
+>>> struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+>>>                                         unsigned int align)
+>>> {
+>>> ...
+>>>          mutex_lock(&cma_mutex);
+>>> ...
+>>>          for (;;) {
+>>>                  pageno = bitmap_find_next_zero_area(cma->bitmap, cma->count,
+>>>                                                      start, count, mask);
+>>>                  if (pageno >= cma->count)
+>>>                          break;
 >>>
->>> With respect to POSIX compliance, it's hard to say. I'm not sure the
->>> spec contemplates the degenerate case where max bytes < MIN. And
->>
->>
->> Well, given the way the other implementations behave, I think it does
->> contemplate it, because it carefull avoids talking about the number of
->> bytes requested by read() in that case.
->
->
-> I agree that's certainly a valid interpretation.
-> I'll go back and see if this is a regression but I doubt it.
+>>>                  pfn = cma->base_pfn + pageno;
+>>> +               bitmap_set(cma->bitmap, pageno, count);
+>>> +               mutex_unlock(&cma_mutex);
+>>>                  ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
+>>> +               mutex_lock(&cma_mutex);
+>>>                  if (ret == 0) {
+>>> -                       bitmap_set(cma->bitmap, pageno, count);
+>>>                          page = pfn_to_page(pfn);
+>>>                          break;
+>>> -               } else if (ret != -EBUSY) {
+>>> +		}
+>>> +		bitmap_clear(cma->bitmap, pageno, count);
+>>> +		if (ret != -EBUSY) {
+>>>                          break;
+>>>                  }
+>>> ...
+>>>          mutex_unlock(&cma_mutex);
+>>>          pr_debug("%s(): returned %p\n", __func__, page);
+>>>          return page;
+>>> }
+> 
+> Like Marek said, this will fail if two concurrent calls to
+> alloc_contig_range are made such that they operate on the same pageblock
+> (which is possible as the allocated regions do not need to be pageblock
+> aligned).
+> 
+> Another mutex could be added just for this one call, but as I understand
+> this would not solve the problem.
+> 
+>>> bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+>>>                                   int count)
+>>> {
+>>> ...
+>>> +       free_contig_range(pfn, count);
+>>>          mutex_lock(&cma_mutex);
+>>>          bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
+>>> -       free_contig_range(pfn, count);
+>>>          mutex_unlock(&cma_mutex);
+>>> ...
+>>> }
+> 
+> This *should* be fine.  Didn't test it.
+> 
 
-I doubt it too. I suspect it's been like that forever, but it's a
-corner case that no-one cares about.
+I managed to hit a different deadlock that had a similar root cause.
+I also managed to independently come up with a similar solution. This
+has been tested somewhat but not in wide distribution.
 
->>> specifically
->>> with regard to terminal i/o behavior, POSIX is essentially ex post facto,
->>> and is really documenting existing behavior.
->>>
->>> Other than the degenerate case of max bytes < MIN, is there any other
->>> variation between Solaris and Linux in non-canonical mode?
->>
->>
->> The only one I've seen is the one I noted. I haven't tested too
->> exhaustively though.
->
->
-> Thanks again. Please feel free to direct mail my way if you find other
-> variation.
+Thanks,
+Laura
 
-Okay.
+----- 8< ------
+>From 2aa000fbd4189d967c45c4f1ac5aee812ed83082 Mon Sep 17 00:00:00 2001
+From: Laura Abbott <lauraa@codeaurora.org>
+Date: Tue, 25 Feb 2014 11:01:19 -0800
+Subject: [PATCH] cma: Remove potential deadlock situation
 
-Cheers,
+CMA locking is currently very coarse. The cma_mutex protects both
+the bitmap and avoids concurrency with alloc_contig_range. There
+are several situations which may result in a deadlock on the CMA
+mutex currently, mostly involving AB/BA situations with alloc and
+free. Fix this issue by protecting the bitmap with a mutex per CMA
+region and use the existing mutex for protecting against concurrency
+with alloc_contig_range.
 
-Michael
+Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
+---
+ drivers/base/dma-contiguous.c | 32 +++++++++++++++++++++++++-------
+ 1 file changed, 25 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/base/dma-contiguous.c b/drivers/base/dma-contiguous.c
+index 165c2c2..dfb48ef 100644
+--- a/drivers/base/dma-contiguous.c
++++ b/drivers/base/dma-contiguous.c
+@@ -37,6 +37,7 @@ struct cma {
+ 	unsigned long	base_pfn;
+ 	unsigned long	count;
+ 	unsigned long	*bitmap;
++	struct mutex	lock;
+ };
+ 
+ struct cma *dma_contiguous_default_area;
+@@ -161,6 +162,7 @@ static int __init cma_activate_area(struct cma *cma)
+ 		init_cma_reserved_pageblock(pfn_to_page(base_pfn));
+ 	} while (--i);
+ 
++	mutex_init(&cma->lock);
+ 	return 0;
+ }
+ 
+@@ -261,6 +263,13 @@ err:
+ 	return ret;
+ }
+ 
++static void clear_cma_bitmap(struct cma *cma, unsigned long pfn, int count)
++{
++	mutex_lock(&cma->lock);
++	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
++	mutex_unlock(&cma->lock);
++}
++
+ /**
+  * dma_alloc_from_contiguous() - allocate pages from contiguous area
+  * @dev:   Pointer to device for which the allocation is performed.
+@@ -294,30 +303,41 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
+ 
+ 	mask = (1 << align) - 1;
+ 
+-	mutex_lock(&cma_mutex);
+ 
+ 	for (;;) {
++		mutex_lock(&cma->lock);
+ 		pageno = bitmap_find_next_zero_area(cma->bitmap, cma->count,
+ 						    start, count, mask);
+-		if (pageno >= cma->count)
++		if (pageno >= cma->count) {
++			mutex_unlock(&cma_mutex);
+ 			break;
++		}
++		bitmap_set(cma->bitmap, pageno, count);
++		/*
++		 * It's safe to drop the lock here. We've marked this region for
++		 * our exclusive use. If the migration fails we will take the
++		 * lock again and unmark it.
++		 */
++		mutex_unlock(&cma->lock);
+ 
+ 		pfn = cma->base_pfn + pageno;
++		mutex_lock(&cma_mutex);
+ 		ret = alloc_contig_range(pfn, pfn + count, MIGRATE_CMA);
++		mutex_unlock(&cma_mutex);
+ 		if (ret == 0) {
+-			bitmap_set(cma->bitmap, pageno, count);
+ 			page = pfn_to_page(pfn);
+ 			break;
+ 		} else if (ret != -EBUSY) {
++			clear_cma_bitmap(cma, pfn, count);
+ 			break;
+ 		}
++		clear_cma_bitmap(cma, pfn, count);
+ 		pr_debug("%s(): memory range at %p is busy, retrying\n",
+ 			 __func__, pfn_to_page(pfn));
+ 		/* try again with a bit different memory target */
+ 		start = pageno + mask + 1;
+ 	}
+ 
+-	mutex_unlock(&cma_mutex);
+ 	pr_debug("%s(): returned %p\n", __func__, page);
+ 	return page;
+ }
+@@ -350,10 +370,8 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
+ 
+ 	VM_BUG_ON(pfn + count > cma->base_pfn + cma->count);
+ 
+-	mutex_lock(&cma_mutex);
+-	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
+ 	free_contig_range(pfn, count);
+-	mutex_unlock(&cma_mutex);
++	clear_cma_bitmap(cma, pfn, count);
+ 
+ 	return true;
+ }
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Code Aurora Forum chooses to take this file under the GPL v 2 license only.
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by The Linux Foundation
