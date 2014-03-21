@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966483AbaCUAnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:43:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37043 "EHLO
+	id S965822AbaCUAIi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:08:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36993 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965829AbaCUAIl (ORCPT
+	with ESMTP id S965786AbaCUAIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:41 -0400
+	Thu, 20 Mar 2014 20:08:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 23/85] mwifiex: add NULL check for PCIe Rx skb
-Date: Thu, 20 Mar 2014 17:09:26 -0700
-Message-Id: <20140321000601.915342969@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>
+Subject: [PATCH 3.10 17/85] mac80211: clear sequence/fragment number in QoS-null frames
+Date: Thu, 20 Mar 2014 17:09:20 -0700
+Message-Id: <20140321000601.076824239@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,36 +29,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit bb8e6a1ee881d131e404f0f1f5e8dc9281002771 upstream.
+commit 864a6040f395464003af8dd0d8ca86fed19866d4 upstream.
 
-We may get a NULL pointer here if skb allocation for Rx packet
-was failed earlier.
+Avoid leaking data by sending uninitialized memory and setting an
+invalid (non-zero) fragment number (the sequence number is ignored
+anyway) by setting the seq_ctrl field to zero.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Fixes: 3f52b7e328c5 ("mac80211: mesh power save basics")
+Fixes: ce662b44ce22 ("mac80211: send (QoS) Null if no buffered frames")
+Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/pcie.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ net/mac80211/mesh_ps.c  |    1 +
+ net/mac80211/sta_info.c |    1 +
+ 2 files changed, 2 insertions(+)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -1195,6 +1195,12 @@ static int mwifiex_pcie_process_recv_dat
- 		rd_index = card->rxbd_rdptr & reg->rx_mask;
- 		skb_data = card->rx_buf_list[rd_index];
+--- a/net/mac80211/mesh_ps.c
++++ b/net/mac80211/mesh_ps.c
+@@ -36,6 +36,7 @@ static struct sk_buff *mps_qos_null_get(
+ 				      sdata->vif.addr);
+ 	nullfunc->frame_control = fc;
+ 	nullfunc->duration_id = 0;
++	nullfunc->seq_ctrl = 0;
+ 	/* no address resolution for this frame -> set addr 1 immediately */
+ 	memcpy(nullfunc->addr1, sta->sta.addr, ETH_ALEN);
+ 	memset(skb_put(skb, 2), 0, 2); /* append QoS control field */
+--- a/net/mac80211/sta_info.c
++++ b/net/mac80211/sta_info.c
+@@ -1114,6 +1114,7 @@ static void ieee80211_send_null_response
+ 	memcpy(nullfunc->addr1, sta->sta.addr, ETH_ALEN);
+ 	memcpy(nullfunc->addr2, sdata->vif.addr, ETH_ALEN);
+ 	memcpy(nullfunc->addr3, sdata->vif.addr, ETH_ALEN);
++	nullfunc->seq_ctrl = 0;
  
-+		/* If skb allocation was failed earlier for Rx packet,
-+		 * rx_buf_list[rd_index] would have been left with a NULL.
-+		 */
-+		if (!skb_data)
-+			return -ENOMEM;
-+
- 		MWIFIEX_SKB_PACB(skb_data, &buf_pa);
- 		pci_unmap_single(card->dev, buf_pa, MWIFIEX_RX_DATA_BUF_SIZE,
- 				 PCI_DMA_FROMDEVICE);
+ 	skb->priority = tid;
+ 	skb_set_queue_mapping(skb, ieee802_1d_to_ac[tid]);
 
 
