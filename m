@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965383AbaCUAE3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36781 "EHLO
+	id S966735AbaCUBDl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:03:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36793 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965344AbaCUAEZ (ORCPT
+	with ESMTP id S965363AbaCUAE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:25 -0400
+	Thu, 20 Mar 2014 20:04:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Patrick Lai <plai@codeaurora.org>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 110/149] ASoC: pcm: free path list before exiting from error conditions
-Date: Thu, 20 Mar 2014 17:04:33 -0700
-Message-Id: <20140321000440.772268771@linuxfoundation.org>
+        Alex Deucher <alexander.deucher@amd.com>
+Subject: [PATCH 3.13 100/149] drm/radeon/dpm: fix typo in EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters
+Date: Thu, 20 Mar 2014 17:04:23 -0700
+Message-Id: <20140321000440.429454906@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,48 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Patrick Lai <plai@codeaurora.org>
+From: Alex Deucher <alexander.deucher@amd.com>
 
-commit e4ad1accb28d0ed8cea6f12395d58686ad344ca7 upstream.
+commit 13714323f83ffa5a772fe0d8b74e0fa32ee08819 upstream.
 
-dpcm_path_get() allocates dynamic memory to hold path list.
-Corresponding dpcm_path_put() must be called to free the memory.
-dpcm_path_put() is not called under several error conditions.
-This leads to memory leak.
+Should be at 0x8 rather than 0.
 
-Signed-off-by: Patrick Lai <plai@codeaurora.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+fixes:
+https://bugzilla.kernel.org/show_bug.cgi?id=60523
+
+Noticed by ArtForz on #radeon
+
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/soc-pcm.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/gpu/drm/radeon/evergreen_smc.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/sound/soc/soc-pcm.c
-+++ b/sound/soc/soc-pcm.c
-@@ -1886,6 +1886,7 @@ int soc_dpcm_runtime_update(struct snd_s
+--- a/drivers/gpu/drm/radeon/evergreen_smc.h
++++ b/drivers/gpu/drm/radeon/evergreen_smc.h
+@@ -57,7 +57,7 @@ typedef struct SMC_Evergreen_MCRegisters
  
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_PLAYBACK, &list);
- 		if (paths < 0) {
-+			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "playback");
- 			mutex_unlock(&card->mutex);
-@@ -1915,6 +1916,7 @@ capture:
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_LOCATION 0x100
  
- 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_CAPTURE, &list);
- 		if (paths < 0) {
-+			dpcm_path_put(&list);
- 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
- 					fe->dai_link->name,  "capture");
- 			mutex_unlock(&card->mutex);
-@@ -1979,6 +1981,7 @@ static int dpcm_fe_dai_open(struct snd_p
- 	fe->dpcm[stream].runtime = fe_substream->runtime;
+-#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x0
++#define EVERGREEN_SMC_FIRMWARE_HEADER_softRegisters   0x8
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_stateTable      0xC
+ #define EVERGREEN_SMC_FIRMWARE_HEADER_mcRegisterTable 0x20
  
- 	if (dpcm_path_get(fe, stream, &list) <= 0) {
-+		dpcm_path_put(&list);
- 		dev_dbg(fe->dev, "ASoC: %s no valid %s route\n",
- 			fe->dai_link->name, stream ? "capture" : "playback");
- 	}
 
 
