@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760900AbaCUNwb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:52:31 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:34579 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752094AbaCUNw3 (ORCPT
+	id S965551AbaCUNyA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:54:00 -0400
+Received: from mail1.windriver.com ([147.11.146.13]:52491 "EHLO
+	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965429AbaCUNxz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 09:52:29 -0400
-From: Matei Oprea <eu@opreamatei.ro>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Matei Oprea <eu@opreamatei.ro>,
-        ROSEdu Kernel Community <firefly@lists.rosedu.org>
-Subject: [PATCH] drivers: staging: cxt1e1: hwprobe Fix different address spaces
-Date: Fri, 21 Mar 2014 15:52:23 +0200
-Message-Id: <1395409943-19023-1-git-send-email-eu@opreamatei.ro>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 21 Mar 2014 09:53:55 -0400
+Message-ID: <532C4476.2030706@windriver.com>
+Date: Fri, 21 Mar 2014 09:53:58 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Tomi Valkeinen <tomi.valkeinen@ti.com>
+CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-fbdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jim Davis <jim.epost@gmail.com>, Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] drivers/video: fix mb862xx_i2c depends issue build failure
+References: <1395328560-48497-1-git-send-email-paul.gortmaker@windriver.com> <532C3F64.2020601@ti.com>
+In-Reply-To: <532C3F64.2020601@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.56.57]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix different address spaces when unmapping IO. hi->addr_mapped[0]
-and hi->addr_mapped[1] should be tagged __iomem.
+On 14-03-21 09:32 AM, Tomi Valkeinen wrote:
+> Hi,
+> 
+> On 20/03/14 17:16, Paul Gortmaker wrote:
+>> Any randconfig that sets I2C=m and FB_MB862XX_I2C=y will
+>> encounter a final link failure that looks like this:
+> 
+> It compiles fine with I2C=m, FB_MB862XX=m and FB_MB862XX_I2C=y.
+> 
+>> drivers/built-in.o: In function `mb862xx_i2c_init':
+>> drivers/video/mb862xx/mb862xx-i2c.c:165: undefined reference to `i2c_add_adapter'
+>> drivers/built-in.o: In function `mb862xx_i2c_exit':
+>> drivers/video/mb862xx/mb862xx-i2c.c:176: undefined reference to `i2c_del_adapter'
+>>
+>> Since FB_MB862XX_I2C is a bool and not tristate, simply
+>> don't offer it at all if core I2C support is not built in.
+> 
+> FB_MB862XX_I2C is not a driver, it just adds the i2c support to
+> FB_MB862XX. The relevant thing is whether FB_MB862XX is m or y, so
+> compiling with:
+> 
+> I2C=m, FB_MB862XX=y and FB_MB862XX_I2C=y
+> 
+> will fail.
 
-Signed-off-by: Matei Oprea <eu@opreamatei.ro>
-Cc: ROSEdu Kernel Community <firefly@lists.rosedu.org>
----
- drivers/staging/cxt1e1/hwprobe.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+How would you suggest we fix it then?  Perhaps we could simplify the
+Kconfig space and just get rid of FB_MB862XX_I2C entirely?  Is there
+ever a reason why someone would want it turned off when I2C is present?
 
-diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c
-index 9b4198b..f55c27e 100644
---- a/drivers/staging/cxt1e1/hwprobe.c
-+++ b/drivers/staging/cxt1e1/hwprobe.c
-@@ -174,12 +174,12 @@ cleanup_ioremap(void)
- 		if (hi->pci_slot == 0xff)
- 			break;
- 		if (hi->addr_mapped[0]) {
--			iounmap((void *)(hi->addr_mapped[0]));
-+			iounmap((void __iomem *)(hi->addr_mapped[0]));
- 			release_mem_region((long) hi->addr[0], hi->len[0]);
- 			hi->addr_mapped[0] = 0;
- 		}
- 		if (hi->addr_mapped[1]) {
--			iounmap((void *)(hi->addr_mapped[1]));
-+			iounmap((void __iomem *)(hi->addr_mapped[1]));
- 			release_mem_region((long) hi->addr[1], hi->len[1]);
- 			hi->addr_mapped[1] = 0;
- 		}
--- 
-1.7.9.5
+Paul.
+--
 
+> 
+>> Reported-by: Jim Davis <jim.epost@gmail.com>
+>> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+>> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+>>
+>> diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+>> index dade5b7699bc..aefd1b9a3cbd 100644
+>> --- a/drivers/video/Kconfig
+>> +++ b/drivers/video/Kconfig
+>> @@ -2338,7 +2338,7 @@ endchoice
+>>  
+>>  config FB_MB862XX_I2C
+>>  	bool "Support I2C bus on MB862XX GDC"
+>> -	depends on FB_MB862XX && I2C
+>> +	depends on FB_MB862XX && I2C=y
+>>  	default y
+>>  	help
+>>  	  Selecting this option adds Coral-P(A)/Lime GDC I2C bus adapter
+> 
+> This fix is not correct, as it prevents the following, valid, config:
+> 
+> I2C=m, FB_MB862XX=m and FB_MB862XX_I2C=y
+> 
+>  Tomi
+> 
+> 
