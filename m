@@ -1,80 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965181AbaCUKk5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:40:57 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:45787 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760643AbaCUKkz (ORCPT
+	id S965290AbaCUKog (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:44:36 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:43842 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933349AbaCUKod (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:40:55 -0400
-Date: Fri, 21 Mar 2014 13:37:04 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Alex Deucher <alexander.deucher@amd.com>
-Cc: Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [linux-next] WARNING at drm_mode_connector_list_update
-Message-ID: <20140321103704.GA376@swordfish.minsk.epam.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 21 Mar 2014 06:44:33 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-8c-532c180f3e1b
+Message-id: <532C1808.6090409@samsung.com>
+Date: Fri, 21 Mar 2014 11:44:24 +0100
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Grant Likely <grant.likely@linaro.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Rob Herring <robherring2@gmail.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Philipp Zabel <philipp.zabel@gmail.com>
+Subject: Re: [RFC PATCH] [media]: of: move graph helpers from
+ drivers/media/v4l2-core to drivers/of
+References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de>
+ <139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com>
+ <1883687.VdfitvQEN3@samsung.com> <avalon@samsung.com>
+ <20140320172302.CD320C4067A@trevor.secretlab.ca>
+In-reply-to: <20140320172302.CD320C4067A@trevor.secretlab.ca>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsVy+t/xq7r8EjrBBmfb+C3mHznHanHgzw5G
+	i7NNb9gtOicuYbe4vGsOm0XPhq2sFrcv81pcXCdvcffeCRaLrfPOMVq07j3CbvH92zc2i7/b
+	N7FYHH7Tzmqxfv4tNgd+j5bmHjaPnbPusnvM7pjJ6rFpVSebx51re9g8+v8aePRtWcXocfzG
+	diaPz5vkAjijuGxSUnMyy1KL9O0SuDJ+3t7MUrBXtGLqwh1MDYyTBbsYOTgkBEwkPv2o6WLk
+	BDLFJC7cW8/WxcjFISSwlFHi24KJ7BDOJ0aJjY/nMIJU8QpoSZzb3wRmswioSpx5upYVxGYT
+	0JT4u/kmG4gtKhAhMXfiZjaIekGJH5PvsYDYIgI9jBL/d7iCDGUWOMwi0TZvGRNIQlggVWLt
+	4dusENueM0rc3X8VbCqngK3E1Z5PYDazgI7E/tZpbBC2vMTmNW+ZJzAKzEKyZBaSsllIyhYw
+	Mq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECImtLzsYFx+zOsQowMGoxMNbwakdLMSaWFZc
+	mXuIUYKDWUmEd+kvoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZGrSYbqecmLBeuJX86p/z+2n7l
+	FV1PdE4WST9Xm6vWc8rcZuPtTenh9xleW95tCmuq0wze+i5Trf+vrZbmZaY7i87kGM70uvZL
+	qm3mGr3vUzWfHXTfV51tdDWUIfdka/bZlwI5Ry4/sd5nfbrPUj5ohp90zDTe3v7LhafyF3so
+	vZc9v9u4XElOiaU4I9FQi7moOBEAqS1ZDYsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 03/20/2014 06:23 PM, Grant Likely wrote:
+> On Tue, 11 Mar 2014 14:16:37 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
+>> On Tuesday 11 March 2014 14:59:20 Tomi Valkeinen wrote:
+>>> So depending on the use case, the endpoints would point to opposite
+>>> direction from the encoder's point of view.
+>>>
+>>> And if I gathered Grant's opinion correctly (correct me if I'm wrong),
+>>> he thinks things should be explicit, i.e. the bindings for, say, an
+>>> encoder should state that the encoder's output endpoint _must_ contain a
+>>> remote-endpoint property, whereas the encoder's input endpoint _must
+>>> not_ contain a remote-endpoint property.
+>>
+>> Actually my understand was that DT links would have the same direction as the 
+>> data flow. There would be no ambiguity in that case as the direction of the 
+>> data flow is known. What happens for bidirectional data flows still need to be 
+>> discussed though. And if we want to use the of-graph bindings to describe 
+>> graphs without a data flow, a decision will need to be taken there too.
+> 
+> On further thinking, I would say linkage direction should be in the
+> direction that would be considered the dependency order... I'm going to
+> soften my position though. I think the generic pattern should still
+> recommend unidirection links in direction of device dependency, but
 
-[   18.707077] WARNING: CPU: 2 PID: 175 at drivers/gpu/drm/drm_modes.c:1030 drm_mode_connector_list_update+0x2f/0xe8 [drm]()
-[   18.707086] Modules linked in: crc32c_intel microcode radeon(+) broadcom i2c_algo_bit psmouse drm_kms_helper tg3 ttm drm evdev wmi button battery processor ac lpc_ich i2c_i801 ipv6 ehci_pci ehci_hcd usbcore sr_mod cdrom sd_mod ahci
-[   18.707087] CPU: 2 PID: 175 Comm: systemd-udevd Tainted: G        W     3.14.0-rc7-next-20140321-dbg-dirty #189
-[   18.707088] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
-[   18.707090]  0000000000000000 ffff88015217f8f0 ffffffff813ba2d7 0000000000000000
-[   18.707091]  ffff88015217f928 ffffffff8103a3af ffffffffa0157ca1 ffff8801521e2000
-[   18.707093]  ffff8801521e2048 ffff88003747e000 ffff8801521e2000 ffff88015217f938
-[   18.707093] Call Trace:
-[   18.707095]  [<ffffffff813ba2d7>] dump_stack+0x4e/0x7a
-[   18.707097]  [<ffffffff8103a3af>] warn_slowpath_common+0x75/0x8e
-[   18.707107]  [<ffffffffa0157ca1>] ? drm_mode_connector_list_update+0x2f/0xe8 [drm]
-[   18.707109]  [<ffffffff8103a467>] warn_slowpath_null+0x15/0x17
-[   18.707119]  [<ffffffffa0157ca1>] drm_mode_connector_list_update+0x2f/0xe8 [drm]
-[   18.707122]  [<ffffffffa00de5aa>] drm_helper_probe_single_connector_modes+0x16d/0x2d1 [drm_kms_helper]
-[   18.707125]  [<ffffffffa00df3a5>] drm_fb_helper_probe_connector_modes+0x41/0x54 [drm_kms_helper]
-[   18.707129]  [<ffffffffa00e0894>] drm_fb_helper_initial_config+0x1ab/0x43c [drm_kms_helper]
-[   18.707131]  [<ffffffff8103a3be>] ? warn_slowpath_common+0x84/0x8e
-[   18.707133]  [<ffffffffa00dd355>] ? drm_helper_crtc_in_use+0x2c/0x71 [drm_kms_helper]
-[   18.707135]  [<ffffffff8103a467>] ? warn_slowpath_null+0x15/0x17
-[   18.707162]  [<ffffffffa01c7eaa>] radeon_fbdev_init+0xb8/0xca [radeon]
-[   18.707188]  [<ffffffffa01c3b31>] radeon_modeset_init+0x75e/0x930 [radeon]
-[   18.707211]  [<ffffffffa01a70ec>] radeon_driver_load_kms+0xc0/0x16c [radeon]
-[   18.707219]  [<ffffffffa014e49d>] drm_dev_register+0x79/0xef [drm]
-[   18.707227]  [<ffffffffa014fe0c>] drm_get_pci_dev+0xfa/0x1c5 [drm]
-[   18.707228]  [<ffffffff810d720f>] ? kfree+0xc8/0x123
-[   18.707250]  [<ffffffffa01a4327>] ? radeon_pci_probe+0x91/0xaa [radeon]
-[   18.707272]  [<ffffffffa01a4339>] radeon_pci_probe+0xa3/0xaa [radeon]
-[   18.707274]  [<ffffffff81224570>] pci_device_probe+0x6e/0xcf
-[   18.707275]  [<ffffffff8129a516>] driver_probe_device+0x98/0x1c2
-[   18.707277]  [<ffffffff8129a6d0>] __driver_attach+0x58/0x7a
-[   18.707278]  [<ffffffff8129a678>] ? __device_attach+0x38/0x38
-[   18.707280]  [<ffffffff81298ca1>] bus_for_each_dev+0x76/0x80
-[   18.707281]  [<ffffffff8129a0a9>] driver_attach+0x19/0x1b
-[   18.707283]  [<ffffffff81299d71>] bus_add_driver+0x101/0x1cb
-[   18.707284]  [<ffffffff8129ac29>] driver_register+0x89/0xc5
-[   18.707286]  [<ffffffffa02c2000>] ? 0xffffffffa02c1fff
-[   18.707287]  [<ffffffff81223bcd>] __pci_register_driver+0x46/0x48
-[   18.707295]  [<ffffffffa014ff40>] drm_pci_init+0x69/0xea [drm]
-[   18.707296]  [<ffffffffa02c2000>] ? 0xffffffffa02c1fff
-[   18.707316]  [<ffffffffa02c2097>] radeon_init+0x97/0x1000 [radeon]
-[   18.707318]  [<ffffffff810002a3>] do_one_initcall+0x7f/0x105
-[   18.707319]  [<ffffffff8102f528>] ? set_memory_nx+0x3b/0x3d
-[   18.707321]  [<ffffffff8108c99c>] load_module+0x15a1/0x1ba9
-[   18.707322]  [<ffffffff8108a0e5>] ? store_uevent+0x35/0x35
-[   18.707324]  [<ffffffff810cd2e0>] ? map_vm_area+0x29/0x3b
-[   18.707326]  [<ffffffff810ce0ce>] ? __vmalloc_node_range+0x143/0x1a5
-[   18.707328]  [<ffffffff8108d044>] SyS_init_module+0xa0/0xaf
-[   18.707330]  [<ffffffff813bfd61>] tracesys+0xd4/0xd9
-[   18.707331] ---[ end trace e3f98afba7245f57 ]---
+I am not sure what you mean by 'device dependency' but I am sure it will
+not be difficult to present problematic cases, maybe circular
+dependencies, two-way dependencies, etc.
+
+The only problem of unidirectional links from programming point of view
+is that destination port/interface should be exposed using some
+framework and driver of source link should grab it using the same
+framework, using port/endpoint node for identification. In case of
+bi-directional links the same process should happen but DT do not
+dictates who should expose and who grabs.
+
+So from programming point of view it should be easy to handle
+unidirectional links regardless of the direction. So I guess the best
+is to use data flow direction as it seems to be the most natural.
 
 
+> I'm okay with allowing the bidirection option if the helper functions
+> are modified to validate the target endpoint. I think it needs to test
+> for the following:
+> - Make sure the endpoint either:
+>   - does not have a backlink, or
+>   - the backlink points back to the origin node
+> - If the target is an endpoint node, then make sure the parent doesn't
+>   have a link of any kind
+> - If the target is a port node, make sure it doesn't have any endpoint
+>   children nodes at all.
 
-	-ss
+I think link validation can be done at dts compile time.
+
+Regards
+Andrzej
+
+> 
+> g.
+> 
+> 
+
