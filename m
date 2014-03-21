@@ -1,97 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760805AbaCUPlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:41:36 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:58589 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753122AbaCUPld (ORCPT
+	id S1760803AbaCUPoH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:44:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42892 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753726AbaCUPoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:41:33 -0400
+	Fri, 21 Mar 2014 11:44:04 -0400
+Date: Fri, 21 Mar 2014 15:44:00 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] mfd: arizona: Fix and factor out read of device
+	tree GPIOs
+Message-ID: <20140321154400.GF1665@opensource.wolfsonmicro.com>
+References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com> <1395224338-3709-3-git-send-email-ckeepax@opensource.wolfsonmicro.com> <20140321105218.GH15213@lee--X1>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <532C51F3.8030205@hurleysoftware.com>
-References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
- <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com>
- <532C46BD.1000208@hurleysoftware.com> <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
- <532C51F3.8030205@hurleysoftware.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 21 Mar 2014 16:41:11 +0100
-Message-ID: <CAKgNAkhRu7yZSn+uB1eTcL0gPGPcGsd5Z36pXgfdKOLBcdOoBw@mail.gmail.com>
-Subject: Re: man termios
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ivan <athlon_@mail.ru>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140321105218.GH15213@lee--X1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Peter, do you agree that Linux appears to differ from POSIX here? (Not
->> sure if you tried my test program to verify...)
->
->
-> I did run the test program to validate that it's observed behavior is that
-> implemented by Linux, with which I'm very familiar.
-> I don't have a test setup for other *nixes.
->
-> I would be interested to know the results of
->
->   ./noncanonical 0 5 3 0
->   hello
+On Fri, Mar 21, 2014 at 10:52:18AM +0000, Lee Jones wrote:
+> On Wed, 19 Mar 2014, Charles Keepax wrote:
+> 
+> > On non-DT systems with device tree built in the current device tree GPIO
+> > reads will overwrite the pdata with zero when they fail. This patch
+> > factors out the reading of GPIOs for the Arizona devices into a helper
+> > function, and ensures that the pdata version will be preserved if the
+> > device tree read fails.
+> > 
+> > Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> > ---
+> >  drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
+> >  include/linux/mfd/arizona/core.h |    3 +++
+> >  2 files changed, 27 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> > index a45aab9..333621e 100644
+> > --- a/drivers/mfd/arizona-core.c
+> > +++ b/drivers/mfd/arizona-core.c
+> > @@ -512,19 +512,34 @@ int arizona_of_get_type(struct device *dev)
+> >  }
+> >  EXPORT_SYMBOL_GPL(arizona_of_get_type);
+> >  
+> > +int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
+> > +			      bool mandatory, int *gpio)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
+> > +	if (ret >= 0) {
+> > +		*gpio = ret;
+> > +		return ret;
+> > +	}
+> > +
+> > +	/* Warn if GPIO is mandatory and not specified */
+> > +	if (mandatory && *gpio <= 0)
+> > +		dev_err(arizona->dev,
+> > +				"Mandatory DT gpio %s missing/malformed: %d\n",
+> > +				prop, ret);
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
+> > +
+> >  static int arizona_of_get_core_pdata(struct arizona *arizona)
+> >  {
+> > +	struct arizona_pdata *pdata = &arizona->pdata;
+> >  	int ret, i;
+> >  
+> > -	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
+> > -						 "wlf,reset", 0);
+> > -	if (arizona->pdata.reset < 0)
+> > -		arizona->pdata.reset = 0;
+> > -
+> > -	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
+> > -						  "wlf,ldoena", 0);
+> > -	if (arizona->pdata.ldoena < 0)
+> > -		arizona->pdata.ldoena = 0;
+> > +	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
+> > +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+> >  
+> >  	ret = of_property_read_u32_array(arizona->dev->of_node,
+> >  					 "wlf,gpio-defaults",
+> 
+> This doesn't look correct to me at all. Have you tested it in the DT
+> and !DT case? By the looks of it arizona_of_get_core_pdata() is only
+> called if no platform data is present. Yet you are dereferencing it
+> here without allocated any memory.
 
-Solaris 10:
-read() completes when 5 bytes received.
-OpenBSD 5.4
-read() completes when 5 bytes received.
+The pdata struct is contained within the arizona one so there is
+no need to allocate memory for it.
 
-> and
->
->   ./noncanonical 0 5 3 2
->    hel
+> 
+> So how were any platform data passed variables being overwritten in
+> the first place?
 
-Solaris
-read blocks()
-OpenBSD
-read blocks
+Ah good point this is not called if the pdata exists, I will
+update the commit message.
 
-
-Plus my test case where Linux differs:
-
-./noncanonical 100 5 3 0
-
-Linux: read() returns after 3 bytes input
-
-Solaris: read() returns only after 5 bytes input
-OpenBSD: read() returns only after 5 bytes input
-
-
-> on other platforms.
->
-> With respect to POSIX compliance, it's hard to say. I'm not sure the
-> spec contemplates the degenerate case where max bytes < MIN. And
-
-Well, given the way the other implementations behave, I think it does
-contemplate it, because it carefull avoids talking about the number of
-bytes requested by read() in that case.
-
-> specifically
-> with regard to terminal i/o behavior, POSIX is essentially ex post facto,
-> and is really documenting existing behavior.
->
-> Other than the degenerate case of max bytes < MIN, is there any other
-> variation between Solaris and Linux in non-canonical mode?
-
-The only one I've seen is the one I noted. I haven't tested too
-exhaustively though.
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks,
+Charles
