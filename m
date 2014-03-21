@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaCUV4P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:56:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40946 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750784AbaCUV4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:56:14 -0400
-Message-ID: <532CB54C.8020003@zytor.com>
-Date: Fri, 21 Mar 2014 14:55:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751735AbaCUWBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:01:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:59594 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750849AbaCUWBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 18:01:08 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        myungjoo.ham@gmail.com
+Subject: Re: [PULL REQUEST for Rafael] PM / devfreq: pull request
+Date: Fri, 21 Mar 2014 23:16:40 +0100
+Message-ID: <6984230.es0GY7P0qj@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1395369289-6416-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1395369289-6416-1-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Peter Wu <peter@lekensteyn.nl>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-References: <4055058.qLAukpngnj@al>	<20140321192938.GJ3132@tassilo.jf.intel.com>	<970fd799-8d4c-4759-8a96-1291b411f307@email.android.com>	<20140321213753.GK3132@tassilo.jf.intel.com>	<532CB21B.4040502@zytor.com> <8761n7nryi.fsf@tassilo.jf.intel.com>
-In-Reply-To: <8761n7nryi.fsf@tassilo.jf.intel.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 02:48 PM, Andi Kleen wrote:
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->>
->> That's why at least to some extent The Right Thing is not to try to
->> pretend to be a CPU you don't even know how to emulate.
->>
->> But again, that has its own issues, too, mostly with userspace
->> optimization, and making the Linux code more resilient wouldn't hurt.
->> In that sense #GP(0) is *much* better than 0: it unambiguously gives an
->> error to work with.
+On Friday, March 21, 2014 11:34:49 AM MyungJoo Ham wrote:
 > 
-> That means we could just throw rdmsr() away and it would be completely
-> replaced with rdmsr_safe(). But then that will likely cause all kinds
-> of problems with how to handle these errors and where and how to handle
-> these exceptions.
-> 
-> I much prefer just to fix KVM. I cannot think of any case
-> where 0 would cause a major issue.
-> 
-> After all it's virtualization not "rewrite complete kernel for it"
-> 
+> Dear Rafael,
 
-Actually, Ingo, Borislav and I have been discussing making rdmsr_safe()
-more of the default, especially for things like this where the error
-handling is obvious (doesn't work?  Disable the PMU.)
+Hi,
+ 
+> Here goes bugfix devfreq patch.
+> 
+> Recent patchset of device-tree support / exynos driver updates is omitted in this pull request
+> as there could be further updates on the patchset.
 
-	-hpa
+OK, pulled, but only because this is a fix.
+
+For new material, please do not send pull requests after -rc6 in the current
+cycle.  That is, a pull request with new material for 3.15 should have been
+send around 2 weeks ago.
 
 
+> The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15:
+> 
+>   Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git for-rafael
+> 
+> for you to fetch changes up to e35d35a1c0b3a7317d77e03e686a4a205cdd4eed:
+> 
+>   PM / devfreq: Rewrite devfreq_update_status() to fix multiple bugs (2014-03-21 11:16:30 +0900)
+> 
+> ----------------------------------------------------------------
+> Pull request for Rafael. Bugfix only.
+> (recence changes of DT/Exynos drivers need further work)
+> 
+> ----------------------------------------------------------------
+> Saravana Kannan (1):
+>       PM / devfreq: Rewrite devfreq_update_status() to fix multiple bugs
+> 
+>  drivers/devfreq/devfreq.c | 31 ++++++++++++++++++++-----------
+>  1 file changed, 20 insertions(+), 11 deletions(-)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
