@@ -1,81 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759686AbaCUGqJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 02:46:09 -0400
-Received: from ozlabs.org ([203.10.76.45]:59260 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753331AbaCUGqH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 02:46:07 -0400
-Date: Fri, 21 Mar 2014 17:45:55 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mark Salter <msalter@redhat.com>
-Subject: linux-next: manual merge of the akpm tree with the tip tree
-Message-Id: <20140321174555.c6df4e9a1fcd20e606813f35@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ"
+	id S1759900AbaCUGqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:46:24 -0400
+Received: from mail-bn1blp0182.outbound.protection.outlook.com ([207.46.163.182]:18880
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759815AbaCUGqU convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 02:46:20 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Mark Brown <broonie@kernel.org>
+CC: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "perex@perex.cz" <perex@perex.cz>, "tiwai@suse.de" <tiwai@suse.de>,
+        "Fabio.Estevam@freescale.com" <Fabio.Estevam@freescale.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
+ visible in Kconfig
+Thread-Topic: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
+ visible in Kconfig
+Thread-Index: AQHPJtx7vjnlwG7hYkWLGSOUXx6EvJq9cbFAgAAL8wCAAAZ4gIAtzMbQ
+Date: Fri, 21 Mar 2014 06:46:11 +0000
+Message-ID: <0bc01e5036fa4a11beaea10c56c283fe@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1392086825-15737-1-git-send-email-Li.Xiubo@freescale.com>
+ <1392086825-15737-2-git-send-email-Li.Xiubo@freescale.com>
+ <36d9c0a870604fbe87b129e95fea9da1@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140220024432.GU2669@sirena.org.uk> <20140220030739.GA26721@MrMyself>
+In-Reply-To: <20140220030739.GA26721@MrMyself>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 0157DEB61B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(377454003)(13464003)(199002)(189002)(51704005)(46102001)(81816001)(93516002)(86362001)(81686001)(95416001)(94946001)(51856001)(63696002)(79102001)(74706001)(77982001)(59766001)(20776003)(80022001)(80976001)(65816001)(54316002)(19580395003)(19580405001)(47446002)(74502001)(74662001)(31966008)(83322001)(69226001)(74876001)(76482001)(66066001)(97186001)(81542001)(54356001)(94316002)(53806001)(97336001)(83072002)(56776001)(81342001)(56816005)(49866001)(93136001)(85852003)(47976001)(47736001)(95666003)(2656002)(87266001)(76796001)(76576001)(85306002)(74316001)(74366001)(33646001)(50986001)(4396001)(92566001)(90146001)(87936001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB441;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:BEFDF7E6.2CD2E786.B8D095B4.AE68AF0.202E5;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Mark,
 
-Hi Andrew,
+Has this patch been missing? I couldn't found it anywhere in the next branch.
+:)
 
-Today's linux-next merge of the akpm tree got a conflict in
-arch/x86/include/asm/Kbuild between commit 073d8224d299 ("arch: Remove
-stub cputime.h headers") from the tip tree and commit "x86: use generic
-early_ioremap" from the akpm tree.
+Thanks very much,
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+--
+Best Regards,
+Xiubo
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/x86/include/asm/Kbuild
-index 4acddc43ee0c,c98cd05d1cdf..000000000000
---- a/arch/x86/include/asm/Kbuild
-+++ b/arch/x86/include/asm/Kbuild
-@@@ -5,5 -5,5 +5,6 @@@ genhdr-y +=3D unistd_64.
-  genhdr-y +=3D unistd_x32.h
- =20
-  generic-y +=3D clkdev.h
- +generic-y +=3D cputime.h
-+ generic-y +=3D early_ioremap.h
-  generic-y +=3D mcs_spinlock.h
 
---Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ
-Content-Type: application/pgp-signature
+> -----Original Message-----
+> From: Nicolin Chen [mailto:Guangyu.Chen@freescale.com]
+> Sent: Thursday, February 20, 2014 11:08 AM
+> To: Mark Brown
+> Cc: Xiubo Li-B47053; lgirdwood@gmail.com; shawn.guo@linaro.org; perex@perex.cz;
+> tiwai@suse.de; Estevam Fabio-R49496; alsa-devel@alsa-project.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH 2/2] ASoC: fsl: Make Freescale SAI/ESAI/SPDIF to be
+> visible in Kconfig
+> 
+> On Thu, Feb 20, 2014 at 11:44:32AM +0900, Mark Brown wrote:
+> > On Thu, Feb 20, 2014 at 02:06:20AM +0000, Li.Xiubo@freescale.com wrote:
+> >
+> > > I'm not very sure of this patch, maybe should we add one menu
+> > > in Kconfig for all visible CPU DAIs firstly like for code drivers?
+> >
+> > Allowing them to be individually selected is definitely useful if people
+> > are trying to minimise their kernel size and/or build time.  However
+> > none of the other Freescale people have commented on this patch (which
+> > I'd have expected) so I was giving them time and IIRC it needs a rebase
+> > against current code.
+> 
+> Last month I was revising a new CODEC driver for ESAI and meanwhile abort
+> to plan to try simple card for this combination but being suspended due to
+> some tough internal issues. So I think it should be a good idea for us to
+> move towards simple card starting from this patch.
+> 
+> Surely, Acked.
+> Nicolin Chen
+> 
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTK+AsAAoJEMDTa8Ir7ZwVmYIP/jcvQq0En3LmnwBd6Jw9eLYr
-f7P1OSikDnkRu/1XrbL4qlEptbe6FR4BZxuh0RPs5i11jVoSNUHF8e5e619KHoMh
-87bfx+RRertPnkzEdffUNxvLChycsZ0cSU6EMfrU0WpPN0RF/YBWLmKzr1s8XXsG
-ZY+nLhgkaJ3Vm3dZlUrFx1T2QmyUdsRraDra7nv6t5FhYmuRfIeTjcdUP2FPTn/U
-i5ZVEotnqzMU8NNIQ+i0NtLEI6h+N5EG5xJu7SRKz5baU3jY7Tv4uLJL6Rw1cb5X
-a2/LUZpJOkV7q20ZIHsytoEd2tofBWA1kxpy3KR7wpMBQeCHkl0Nh+9ioZCzwX9z
-QglGPT9Attg7lnex+2Gs+nl5ku1jUown0n1vNa2bro4AHmC1b9bPqEDn+WM/DLt4
-8trEHapsifvKjEu/r2UDQK2gr8xM0usykZe12d1B1BNW51MAv3ofAg9hmlajccA6
-W7oAPWQlVBWdlZ2xF1rNqwCZ4/aGWWjvztouhJTPzZ8AHY1nEw+dNUIEUKfAlwB6
-W2stB6tt2fJOvkfTU10fz2hTFGN+boq3x7CTxEeJ/gviOIRjy1a2IHFABKWNWVJc
-pgtDWUnkdbhTp1KOc0WUSOxAA07zEyK4NG8HRjYiVStPAEv3mg+gB2sYR1sk/GUe
-XKwImFZ7YPHaVc4SN8Ca
-=y8L0
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_Mar_2014_17_45_55_+1100_IgMWU8i1qHs7dwvQ--
