@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966430AbaCUBPL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:15:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36637 "EHLO
+	id S966524AbaCUBPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:15:37 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36631 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760526AbaCUAD7 (ORCPT
+	with ESMTP id S1760518AbaCUAD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:59 -0400
+	Thu, 20 Mar 2014 20:03:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.13 053/149] ALSA: hda - Fix loud click noise with IdeaPad 410Y
-Date: Thu, 20 Mar 2014 17:03:36 -0700
-Message-Id: <20140321000438.798978039@linuxfoundation.org>
+Subject: [PATCH 3.13 051/149] ALSA: hda - Add missing loopback merge path for AD1884/1984 codecs
+Date: Thu, 20 Mar 2014 17:03:34 -0700
+Message-Id: <20140321000438.736245406@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,71 +30,28 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Takashi Iwai <tiwai@suse.de>
 
-commit 9b745ab897199c2af9f21ca9681ef86d5b971002 upstream.
+commit c5eda4c1bf6214332c46fb2f4e7c42a85e5e5643 upstream.
 
-Lenovo IdeaPad 410Y with ALC282 codec makes loud click noises at boot
-and shutdown.  Also, it wrongly misdetects the acpi_thinkpad hook.
-This patch adds a device-specific fixup for disabling the shutup
-callback that is the cause of the click noise and also avoiding the
-thinpad_helper calls.
+The mixer widget (NID 0x20) of AD1884 and AD1984 codecs isn't
+connected directly to the actual I/O paths but only via another mixer
+widget (NID 0x21).  We need a similar fix as we did for AD1882.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=71511
-Reported-and-tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_realtek.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
+ sound/pci/hda/patch_analog.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -3559,6 +3559,19 @@ static void alc_fixup_auto_mute_via_amp(
- 	}
- }
+--- a/sound/pci/hda/patch_analog.c
++++ b/sound/pci/hda/patch_analog.c
+@@ -1091,6 +1091,7 @@ static int patch_ad1884(struct hda_codec
+ 	spec = codec->spec;
  
-+static void alc_no_shutup(struct hda_codec *codec)
-+{
-+}
-+
-+static void alc_fixup_no_shutup(struct hda_codec *codec,
-+				const struct hda_fixup *fix, int action)
-+{
-+	if (action == HDA_FIXUP_ACT_PRE_PROBE) {
-+		struct alc_spec *spec = codec->spec;
-+		spec->shutup = alc_no_shutup;
-+	}
-+}
-+
- static void alc_fixup_headset_mode_alc668(struct hda_codec *codec,
- 				const struct hda_fixup *fix, int action)
- {
-@@ -3870,6 +3883,7 @@ enum {
- 	ALC269_FIXUP_HP_GPIO_LED,
- 	ALC269_FIXUP_INV_DMIC,
- 	ALC269_FIXUP_LENOVO_DOCK,
-+	ALC269_FIXUP_NO_SHUTUP,
- 	ALC286_FIXUP_SONY_MIC_NO_PRESENCE,
- 	ALC269_FIXUP_PINCFG_NO_HP_TO_LINEOUT,
- 	ALC269_FIXUP_DELL1_MIC_NO_PRESENCE,
-@@ -4042,6 +4056,10 @@ static const struct hda_fixup alc269_fix
- 		.type = HDA_FIXUP_FUNC,
- 		.v.func = alc_fixup_inv_dmic_0x12,
- 	},
-+	[ALC269_FIXUP_NO_SHUTUP] = {
-+		.type = HDA_FIXUP_FUNC,
-+		.v.func = alc_fixup_no_shutup,
-+	},
- 	[ALC269_FIXUP_LENOVO_DOCK] = {
- 		.type = HDA_FIXUP_PINS,
- 		.v.pins = (const struct hda_pintbl[]) {
-@@ -4344,6 +4362,7 @@ static const struct snd_pci_quirk alc269
- 	SND_PCI_QUIRK(0x17aa, 0x2212, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2214, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x2215, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
-+	SND_PCI_QUIRK(0x17aa, 0x3978, "IdeaPad Y410P", ALC269_FIXUP_NO_SHUTUP),
- 	SND_PCI_QUIRK(0x17aa, 0x5013, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
- 	SND_PCI_QUIRK(0x17aa, 0x501a, "Thinkpad", ALC283_FIXUP_INT_MIC),
- 	SND_PCI_QUIRK(0x17aa, 0x5026, "Thinkpad", ALC269_FIXUP_LIMIT_INT_MIC_BOOST),
+ 	spec->gen.mixer_nid = 0x20;
++	spec->gen.mixer_merge_nid = 0x21;
+ 	spec->gen.beep_nid = 0x10;
+ 	set_beep_amp(spec, 0x10, 0, HDA_OUTPUT);
+ 
 
 
