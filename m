@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966757AbaCUBEH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:04:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36786 "EHLO
+	id S965336AbaCUAEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36738 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965352AbaCUAE1 (ORCPT
+	with ESMTP id S965252AbaCUAER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:27 -0400
+	Thu, 20 Mar 2014 20:04:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 112/149] ASoC: si476x: Fix IO setup
-Date: Thu, 20 Mar 2014 17:04:35 -0700
-Message-Id: <20140321000440.844630921@linuxfoundation.org>
+        Andy Adamson <andros@netapp.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 087/149] NFSv4: nfs4_stateid_is_current should return true for an invalid stateid
+Date: Thu, 20 Mar 2014 17:04:10 -0700
+Message-Id: <20140321000439.971937366@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,34 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 58d4d3c976b33784a1443c446a3d7203bf2153f0 upstream.
+commit e1253be0ece1a95a02c7f5843194877471af8179 upstream.
 
-The si476x is a MFD device and the CODEC driver is using the regmap struct of
-the parent device, hence automatic IO setup will not work and we need to
-manually call snd_soc_codec_set_cache_io(). The issue was introduced commit
-d6173df35f ("ASoC: si476x: Remove custom register I/O implementation")
+When nfs4_set_rw_stateid() can fails by returning EIO to indicate that
+the stateid is completely invalid, then it makes no sense to have it
+trigger a retry of the READ or WRITE operation. Instead, we should just
+have it fall through and attempt a recovery.
 
-Fixes: d6173df35f ("ASoC: si476x: Remove custom register I/O implementation")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This fixes an infinite loop in which the client keeps replaying the same
+bad stateid back to the server.
+
+Reported-by: Andy Adamson <andros@netapp.com>
+Link: http://lkml.kernel.org/r/1393954269-3974-1-git-send-email-andros@netapp.com
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/si476x.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/nfs/nfs4proc.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/sound/soc/codecs/si476x.c
-+++ b/sound/soc/codecs/si476x.c
-@@ -210,7 +210,7 @@ out:
- static int si476x_codec_probe(struct snd_soc_codec *codec)
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -4012,8 +4012,9 @@ static bool nfs4_stateid_is_current(nfs4
  {
- 	codec->control_data = dev_get_regmap(codec->dev->parent, NULL);
--	return 0;
-+	return snd_soc_codec_set_cache_io(codec, 0, 0, SND_SOC_REGMAP);
+ 	nfs4_stateid current_stateid;
+ 
+-	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode))
+-		return false;
++	/* If the current stateid represents a lost lock, then exit */
++	if (nfs4_set_rw_stateid(&current_stateid, ctx, l_ctx, fmode) == -EIO)
++		return true;
+ 	return nfs4_stateid_match(stateid, &current_stateid);
  }
  
- static struct snd_soc_dai_ops si476x_dai_ops = {
 
 
