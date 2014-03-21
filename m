@@ -1,64 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760590AbaCUKsQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:48:16 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:45069 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760282AbaCUKsO convert rfc822-to-8bit (ORCPT
+	id S1760664AbaCUKwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:52:25 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:40320 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760186AbaCUKwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:48:14 -0400
-Date: Fri, 21 Mar 2014 11:48:31 +0100
-From: Jean-Francois Moine <moinejf@free.fr>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        devicetree@vger.kernel.org
-Cc: dri-devel@lists.freedesktop.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] drm/i2c: tda998x: Fix lack of required reg in DT
- documentation
-Message-ID: <20140321114831.2ecb3059@armhf>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; arm-unknown-linux-gnueabihf)
+	Fri, 21 Mar 2014 06:52:24 -0400
+Date: Fri, 21 Mar 2014 10:52:18 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] mfd: arizona: Fix and factor out read of device tree
+ GPIOs
+Message-ID: <20140321105218.GH15213@lee--X1>
+References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1395224338-3709-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395224338-3709-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The I2C address (reg) is required for the TDA998x driver to be loaded
-and initialized.
+On Wed, 19 Mar 2014, Charles Keepax wrote:
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
-- v3
-	- change subject to drm/i2c
-- v2
-	- don't force the I2C address to be 0x70
-This patch applies to linux-next.
----
- Documentation/devicetree/bindings/drm/i2c/tda998x.txt | 2 ++
- 1 file changed, 2 insertions(+)
+> On non-DT systems with device tree built in the current device tree GPIO
+> reads will overwrite the pdata with zero when they fail. This patch
+> factors out the reading of GPIOs for the Arizona devices into a helper
+> function, and ensures that the pdata version will be preserved if the
+> device tree read fails.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c       |   33 ++++++++++++++++++++++++---------
+>  include/linux/mfd/arizona/core.h |    3 +++
+>  2 files changed, 27 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index a45aab9..333621e 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -512,19 +512,34 @@ int arizona_of_get_type(struct device *dev)
+>  }
+>  EXPORT_SYMBOL_GPL(arizona_of_get_type);
+>  
+> +int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
+> +			      bool mandatory, int *gpio)
+> +{
+> +	int ret;
+> +
+> +	ret = of_get_named_gpio(arizona->dev->of_node, prop, 0);
+> +	if (ret >= 0) {
+> +		*gpio = ret;
+> +		return ret;
+> +	}
+> +
+> +	/* Warn if GPIO is mandatory and not specified */
+> +	if (mandatory && *gpio <= 0)
+> +		dev_err(arizona->dev,
+> +				"Mandatory DT gpio %s missing/malformed: %d\n",
+> +				prop, ret);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(arizona_of_get_named_gpio);
+> +
+>  static int arizona_of_get_core_pdata(struct arizona *arizona)
+>  {
+> +	struct arizona_pdata *pdata = &arizona->pdata;
+>  	int ret, i;
+>  
+> -	arizona->pdata.reset = of_get_named_gpio(arizona->dev->of_node,
+> -						 "wlf,reset", 0);
+> -	if (arizona->pdata.reset < 0)
+> -		arizona->pdata.reset = 0;
+> -
+> -	arizona->pdata.ldoena = of_get_named_gpio(arizona->dev->of_node,
+> -						  "wlf,ldoena", 0);
+> -	if (arizona->pdata.ldoena < 0)
+> -		arizona->pdata.ldoena = 0;
+> +	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
+> +	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+>  
+>  	ret = of_property_read_u32_array(arizona->dev->of_node,
+>  					 "wlf,gpio-defaults",
 
-diff --git a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-index d7df01c..fc7effa 100644
---- a/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-+++ b/Documentation/devicetree/bindings/drm/i2c/tda998x.txt
-@@ -3,6 +3,8 @@ Device-Tree bindings for the NXP TDA998x HDMI transmitter
- Required properties;
-   - compatible: must be "nxp,tda998x"
- 
-+  - reg: I2C address
-+
- Optional properties:
-   - interrupts: interrupt number and trigger type
- 	default: polling
+This doesn't look correct to me at all. Have you tested it in the DT
+and !DT case? By the looks of it arizona_of_get_core_pdata() is only
+called if no platform data is present. Yet you are dereferencing it
+here without allocated any memory.
+
+So how were any platform data passed variables being overwritten in
+the first place?
+
+> diff --git a/include/linux/mfd/arizona/core.h b/include/linux/mfd/arizona/core.h
+> index 5cf8b91..16150cc 100644
+> --- a/include/linux/mfd/arizona/core.h
+> +++ b/include/linux/mfd/arizona/core.h
+> @@ -124,4 +124,7 @@ int wm5102_patch(struct arizona *arizona);
+>  int wm5110_patch(struct arizona *arizona);
+>  int wm8997_patch(struct arizona *arizona);
+>  
+> +extern int arizona_of_get_named_gpio(struct arizona *arizona, const char *prop,
+> +				     bool mandatory, int *gpio);
+> +
+>  #endif
+
 -- 
-1.9.1
-
-
--- 
-Ken ar c'hentañ	|	      ** Breizh ha Linux atav! **
-Jef		|		http://moinejf.free.fr/
-_______________________________________________
-dri-devel mailing list
-dri-devel@lists.freedesktop.org
-http://lists.freedesktop.org/mailman/listinfo/dri-devel
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
