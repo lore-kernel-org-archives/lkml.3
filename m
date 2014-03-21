@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966480AbaCUAVn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:21:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37312 "EHLO
+	id S966488AbaCUAWL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:22:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37308 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966084AbaCUAJ2 (ORCPT
+	with ESMTP id S965756AbaCUAJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:28 -0400
+	Thu, 20 Mar 2014 20:09:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.10 85/85] iser-target: Fix post_send_buf_count for RDMA READ/WRITE
-Date: Thu, 20 Mar 2014 17:10:28 -0700
-Message-Id: <20140321000610.906780970@linuxfoundation.org>
+Subject: [PATCH 3.10 84/85] iscsi/iser-target: Fix isert_conn->state hung shutdown issues
+Date: Thu, 20 Mar 2014 17:10:27 -0700
+Message-Id: <20140321000610.773424053@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,21 +31,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit b6b87a1df604678ed1be40158080db012a99ccca upstream.
+commit defd884845297fd5690594bfe89656b01f16d87e upstream.
 
-This patch fixes the incorrect setting of ->post_send_buf_count
-related to RDMA WRITEs + READs where isert_rdma_rw->send_wr_num
-was not being taken into account.
+This patch addresses a couple of different hug shutdown issues
+related to wait_event() + isert_conn->state.  First, it changes
+isert_conn->conn_wait + isert_conn->conn_wait_comp_err from
+waitqueues to completions, and sets ISER_CONN_TERMINATING from
+within isert_disconnect_work().
 
-This includes incrementing ->post_send_buf_count within
-isert_put_datain() + isert_get_dataout(), decrementing within
-__isert_send_completion() + isert_response_completion(), and
-clearing wr->send_wr_num within isert_completion_rdma_read()
+Second, it splits isert_free_conn() into isert_wait_conn() that
+is called earlier in iscsit_close_connection() to ensure that
+all outstanding commands have completed before continuing.
 
-This is necessary because even though IB_SEND_SIGNALED is
-not set for RDMA WRITEs + READs, during a QP failure event
-the work requests will be returned with exception status
-from the TX completion queue.
+Finally, it breaks isert_cq_comp_err() into seperate TX / RX
+related code, and adds logic in isert_cq_rx_comp_err() to wait
+for outstanding commands to complete before setting ISER_CONN_DOWN
+and calling complete(&isert_conn->conn_wait_comp_err).
 
 Acked-by: Sagi Grimberg <sagig@mellanox.com>
 Cc: Or Gerlitz <ogerlitz@mellanox.com>
@@ -54,74 +55,249 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |   14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |  104 ++++++++++++++------------------
+ drivers/infiniband/ulp/isert/ib_isert.h |    4 -
+ drivers/target/iscsi/iscsi_target.c     |    4 +
+ include/target/iscsi/iscsi_transport.h  |    1 
+ 4 files changed, 53 insertions(+), 60 deletions(-)
 
 --- a/drivers/infiniband/ulp/isert/ib_isert.c
 +++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1308,6 +1308,7 @@ isert_completion_rdma_read(struct iser_t
+@@ -392,8 +392,8 @@ isert_connect_request(struct rdma_cm_id
+ 	isert_conn->state = ISER_CONN_INIT;
+ 	INIT_LIST_HEAD(&isert_conn->conn_accept_node);
+ 	init_completion(&isert_conn->conn_login_comp);
+-	init_waitqueue_head(&isert_conn->conn_wait);
+-	init_waitqueue_head(&isert_conn->conn_wait_comp_err);
++	init_completion(&isert_conn->conn_wait);
++	init_completion(&isert_conn->conn_wait_comp_err);
+ 	kref_init(&isert_conn->conn_kref);
+ 	kref_get(&isert_conn->conn_kref);
+ 	mutex_init(&isert_conn->conn_mutex);
+@@ -550,11 +550,11 @@ isert_disconnect_work(struct work_struct
+ 
+ 	pr_debug("isert_disconnect_work(): >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+ 	mutex_lock(&isert_conn->conn_mutex);
+-	isert_conn->state = ISER_CONN_DOWN;
++	if (isert_conn->state == ISER_CONN_UP)
++		isert_conn->state = ISER_CONN_TERMINATING;
+ 
+ 	if (isert_conn->post_recv_buf_count == 0 &&
+ 	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+-		pr_debug("Calling wake_up(&isert_conn->conn_wait);\n");
+ 		mutex_unlock(&isert_conn->conn_mutex);
+ 		goto wake_up;
+ 	}
+@@ -574,7 +574,7 @@ isert_disconnect_work(struct work_struct
+ 	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ wake_up:
+-	wake_up(&isert_conn->conn_wait);
++	complete(&isert_conn->conn_wait);
+ 	isert_put_conn(isert_conn);
+ }
+ 
+@@ -1348,7 +1348,7 @@ isert_do_control_comp(struct work_struct
+ 		pr_debug("Calling iscsit_logout_post_handler >>>>>>>>>>>>>>\n");
+ 		/*
+ 		 * Call atomic_dec(&isert_conn->post_send_buf_count)
+-		 * from isert_free_conn()
++		 * from isert_wait_conn()
+ 		 */
+ 		isert_conn->logout_posted = true;
+ 		iscsit_logout_post_handler(cmd, cmd->conn);
+@@ -1426,31 +1426,38 @@ isert_send_completion(struct iser_tx_des
+ }
+ 
+ static void
+-isert_cq_comp_err(struct iser_tx_desc *tx_desc, struct isert_conn *isert_conn)
++isert_cq_tx_comp_err(struct iser_tx_desc *tx_desc, struct isert_conn *isert_conn)
+ {
+ 	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
++	struct isert_cmd *isert_cmd = tx_desc->isert_cmd;
+ 
+-	if (tx_desc) {
+-		struct isert_cmd *isert_cmd = tx_desc->isert_cmd;
++	if (!isert_cmd)
++		isert_unmap_tx_desc(tx_desc, ib_dev);
++	else
++		isert_completion_put(tx_desc, isert_cmd, ib_dev);
++}
+ 
+-		if (!isert_cmd)
+-			isert_unmap_tx_desc(tx_desc, ib_dev);
+-		else
+-			isert_completion_put(tx_desc, isert_cmd, ib_dev);
++static void
++isert_cq_rx_comp_err(struct isert_conn *isert_conn)
++{
++	struct iscsi_conn *conn = isert_conn->conn;
++
++	if (isert_conn->post_recv_buf_count)
++		return;
++
++	if (conn->sess) {
++		target_sess_cmd_list_set_waiting(conn->sess->se_sess);
++		target_wait_for_sess_cmds(conn->sess->se_sess);
  	}
  
- 	cmd->write_data_done = se_cmd->data_length;
-+	wr->send_wr_num = 0;
+-	if (isert_conn->post_recv_buf_count == 0 &&
+-	    atomic_read(&isert_conn->post_send_buf_count) == 0) {
+-		pr_debug("isert_cq_comp_err >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");
+-		pr_debug("Calling wake_up from isert_cq_comp_err\n");
++	while (atomic_read(&isert_conn->post_send_buf_count))
++		msleep(3000);
  
- 	pr_debug("isert_do_rdma_read_comp, calling target_execute_cmd\n");
- 	spin_lock_bh(&cmd->istate_lock);
-@@ -1367,6 +1368,7 @@ isert_response_completion(struct iser_tx
- 			  struct ib_device *ib_dev)
+-		mutex_lock(&isert_conn->conn_mutex);
+-		if (isert_conn->state != ISER_CONN_DOWN)
+-			isert_conn->state = ISER_CONN_TERMINATING;
+-		mutex_unlock(&isert_conn->conn_mutex);
++	mutex_lock(&isert_conn->conn_mutex);
++	isert_conn->state = ISER_CONN_DOWN;
++	mutex_unlock(&isert_conn->conn_mutex);
+ 
+-		wake_up(&isert_conn->conn_wait_comp_err);
+-	}
++	complete(&isert_conn->conn_wait_comp_err);
+ }
+ 
+ static void
+@@ -1475,7 +1482,7 @@ isert_cq_tx_work(struct work_struct *wor
+ 			pr_debug("TX wc.status != IB_WC_SUCCESS >>>>>>>>>>>>>>\n");
+ 			pr_debug("TX wc.status: 0x%08x\n", wc.status);
+ 			atomic_dec(&isert_conn->post_send_buf_count);
+-			isert_cq_comp_err(tx_desc, isert_conn);
++			isert_cq_tx_comp_err(tx_desc, isert_conn);
+ 		}
+ 	}
+ 
+@@ -1517,7 +1524,7 @@ isert_cq_rx_work(struct work_struct *wor
+ 				pr_debug("RX wc.status: 0x%08x\n", wc.status);
+ 
+ 			isert_conn->post_recv_buf_count--;
+-			isert_cq_comp_err(NULL, isert_conn);
++			isert_cq_rx_comp_err(isert_conn);
+ 		}
+ 	}
+ 
+@@ -2218,22 +2225,11 @@ isert_free_np(struct iscsi_np *np)
+ 	kfree(isert_np);
+ }
+ 
+-static int isert_check_state(struct isert_conn *isert_conn, int state)
+-{
+-	int ret;
+-
+-	mutex_lock(&isert_conn->conn_mutex);
+-	ret = (isert_conn->state == state);
+-	mutex_unlock(&isert_conn->conn_mutex);
+-
+-	return ret;
+-}
+-
+-static void isert_free_conn(struct iscsi_conn *conn)
++static void isert_wait_conn(struct iscsi_conn *conn)
  {
- 	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
-+	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
+ 	struct isert_conn *isert_conn = conn->context;
  
- 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
- 	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
-@@ -1377,7 +1379,7 @@ isert_response_completion(struct iser_tx
- 		queue_work(isert_comp_wq, &isert_cmd->comp_work);
+-	pr_debug("isert_free_conn: Starting \n");
++	pr_debug("isert_wait_conn: Starting \n");
+ 	/*
+ 	 * Decrement post_send_buf_count for special case when called
+ 	 * from isert_do_control_comp() -> iscsit_logout_post_handler()
+@@ -2243,38 +2239,29 @@ static void isert_free_conn(struct iscsi
+ 		atomic_dec(&isert_conn->post_send_buf_count);
+ 
+ 	if (isert_conn->conn_cm_id && isert_conn->state != ISER_CONN_DOWN) {
+-		pr_debug("Calling rdma_disconnect from isert_free_conn\n");
++		pr_debug("Calling rdma_disconnect from isert_wait_conn\n");
+ 		rdma_disconnect(isert_conn->conn_cm_id);
+ 	}
+ 	/*
+ 	 * Only wait for conn_wait_comp_err if the isert_conn made it
+ 	 * into full feature phase..
+ 	 */
+-	if (isert_conn->state == ISER_CONN_UP) {
+-		pr_debug("isert_free_conn: Before wait_event comp_err %d\n",
+-			 isert_conn->state);
+-		mutex_unlock(&isert_conn->conn_mutex);
+-
+-		wait_event(isert_conn->conn_wait_comp_err,
+-			  (isert_check_state(isert_conn, ISER_CONN_TERMINATING)));
+-
+-		wait_event(isert_conn->conn_wait,
+-			  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
+-
+-		isert_put_conn(isert_conn);
+-		return;
+-	}
+ 	if (isert_conn->state == ISER_CONN_INIT) {
+ 		mutex_unlock(&isert_conn->conn_mutex);
+-		isert_put_conn(isert_conn);
  		return;
  	}
--	atomic_dec(&isert_conn->post_send_buf_count);
-+	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+-	pr_debug("isert_free_conn: wait_event conn_wait %d\n",
+-		 isert_conn->state);
++	if (isert_conn->state == ISER_CONN_UP)
++		isert_conn->state = ISER_CONN_TERMINATING;
+ 	mutex_unlock(&isert_conn->conn_mutex);
  
- 	cmd->i_state = ISTATE_SENT_STATUS;
- 	isert_completion_put(tx_desc, isert_cmd, ib_dev);
-@@ -1415,7 +1417,7 @@ isert_send_completion(struct iser_tx_des
- 	case ISER_IB_RDMA_READ:
- 		pr_debug("isert_send_completion: Got ISER_IB_RDMA_READ:\n");
+-	wait_event(isert_conn->conn_wait,
+-		  (isert_check_state(isert_conn, ISER_CONN_DOWN)));
++	wait_for_completion(&isert_conn->conn_wait_comp_err);
++
++	wait_for_completion(&isert_conn->conn_wait);
++}
++
++static void isert_free_conn(struct iscsi_conn *conn)
++{
++	struct isert_conn *isert_conn = conn->context;
  
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 		isert_completion_rdma_read(tx_desc, isert_cmd);
- 		break;
- 	default:
-@@ -1834,12 +1836,12 @@ isert_put_datain(struct iscsi_conn *conn
- 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
- 	isert_init_send_wr(isert_cmd, &isert_cmd->tx_desc.send_wr);
+ 	isert_put_conn(isert_conn);
+ }
+@@ -2286,6 +2273,7 @@ static struct iscsit_transport iser_targ
+ 	.iscsit_setup_np	= isert_setup_np,
+ 	.iscsit_accept_np	= isert_accept_np,
+ 	.iscsit_free_np		= isert_free_np,
++	.iscsit_wait_conn	= isert_wait_conn,
+ 	.iscsit_free_conn	= isert_free_conn,
+ 	.iscsit_alloc_cmd	= isert_alloc_cmd,
+ 	.iscsit_get_login_rx	= isert_get_login_rx,
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -103,8 +103,8 @@ struct isert_conn {
+ 	struct isert_device	*conn_device;
+ 	struct work_struct	conn_logout_work;
+ 	struct mutex		conn_mutex;
+-	wait_queue_head_t	conn_wait;
+-	wait_queue_head_t	conn_wait_comp_err;
++	struct completion	conn_wait;
++	struct completion	conn_wait_comp_err;
+ 	struct kref		conn_kref;
+ };
  
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -4144,6 +4144,10 @@ int iscsit_close_connection(
+ 	iscsit_stop_timers_for_cmds(conn);
+ 	iscsit_stop_nopin_response_timer(conn);
+ 	iscsit_stop_nopin_timer(conn);
++
++	if (conn->conn_transport->iscsit_wait_conn)
++		conn->conn_transport->iscsit_wait_conn(conn);
++
+ 	iscsit_free_queue_reqs_for_conn(conn);
  
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_WRITE\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Posted RDMA_WRITE + Response for iSER Data READ\n");
- 	return 1;
-@@ -1942,12 +1944,12 @@ isert_get_dataout(struct iscsi_conn *con
- 		data_left -= data_len;
- 	}
- 
--	atomic_inc(&isert_conn->post_send_buf_count);
-+	atomic_add(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 
- 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
- 	if (rc) {
- 		pr_warn("ib_post_send() failed for IB_WR_RDMA_READ\n");
--		atomic_dec(&isert_conn->post_send_buf_count);
-+		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
- 	}
- 	pr_debug("Posted RDMA_READ memory for ISER Data WRITE\n");
- 	return 0;
+ 	/*
+--- a/include/target/iscsi/iscsi_transport.h
++++ b/include/target/iscsi/iscsi_transport.h
+@@ -11,6 +11,7 @@ struct iscsit_transport {
+ 	int (*iscsit_setup_np)(struct iscsi_np *, struct __kernel_sockaddr_storage *);
+ 	int (*iscsit_accept_np)(struct iscsi_np *, struct iscsi_conn *);
+ 	void (*iscsit_free_np)(struct iscsi_np *);
++	void (*iscsit_wait_conn)(struct iscsi_conn *);
+ 	void (*iscsit_free_conn)(struct iscsi_conn *);
+ 	struct iscsi_cmd *(*iscsit_alloc_cmd)(struct iscsi_conn *, gfp_t);
+ 	int (*iscsit_get_login_rx)(struct iscsi_conn *, struct iscsi_login *);
 
 
