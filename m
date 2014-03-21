@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965822AbaCUAIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:08:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36993 "EHLO
+	id S966863AbaCUAnf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:43:35 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37035 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965786AbaCUAIc (ORCPT
+	with ESMTP id S965786AbaCUAIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:32 -0400
+	Thu, 20 Mar 2014 20:08:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.10 17/85] mac80211: clear sequence/fragment number in QoS-null frames
-Date: Thu, 20 Mar 2014 17:09:20 -0700
-Message-Id: <20140321000601.076824239@linuxfoundation.org>
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 21/85] iwlwifi: disable TX AMPDU by default for iwldvm
+Date: Thu, 20 Mar 2014 17:09:24 -0700
+Message-Id: <20140321000601.606633724@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,44 +28,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 864a6040f395464003af8dd0d8ca86fed19866d4 upstream.
+commit 205e2210daa975d92ace485a65a31ccc4077fe1a upstream.
 
-Avoid leaking data by sending uninitialized memory and setting an
-invalid (non-zero) fragment number (the sequence number is ignored
-anyway) by setting the seq_ctrl field to zero.
+NICs supported by iwldvm don't handle well TX AMPDU.
+Disable it by default, still leave the possibility to
+the user to force enable it with a debug parameter.
 
-Fixes: 3f52b7e328c5 ("mac80211: mesh power save basics")
-Fixes: ce662b44ce22 ("mac80211: send (QoS) Null if no buffered frames")
-Reviewed-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+NICs supported by iwlmvm don't suffer from the same issue,
+leave TX AMPDU enabled by default for these.
+
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/mac80211/mesh_ps.c  |    1 +
- net/mac80211/sta_info.c |    1 +
- 2 files changed, 2 insertions(+)
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c  |   22 ++++++++++++++++++++--
+ drivers/net/wireless/iwlwifi/iwl-drv.c       |    2 +-
+ drivers/net/wireless/iwlwifi/iwl-modparams.h |   11 +++++++----
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c  |   22 ++++++++++++++++++++--
+ 4 files changed, 48 insertions(+), 9 deletions(-)
 
---- a/net/mac80211/mesh_ps.c
-+++ b/net/mac80211/mesh_ps.c
-@@ -36,6 +36,7 @@ static struct sk_buff *mps_qos_null_get(
- 				      sdata->vif.addr);
- 	nullfunc->frame_control = fc;
- 	nullfunc->duration_id = 0;
-+	nullfunc->seq_ctrl = 0;
- 	/* no address resolution for this frame -> set addr 1 immediately */
- 	memcpy(nullfunc->addr1, sta->sta.addr, ETH_ALEN);
- 	memset(skb_put(skb, 2), 0, 2); /* append QoS control field */
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -1114,6 +1114,7 @@ static void ieee80211_send_null_response
- 	memcpy(nullfunc->addr1, sta->sta.addr, ETH_ALEN);
- 	memcpy(nullfunc->addr2, sdata->vif.addr, ETH_ALEN);
- 	memcpy(nullfunc->addr3, sdata->vif.addr, ETH_ALEN);
-+	nullfunc->seq_ctrl = 0;
+--- a/drivers/net/wireless/iwlwifi/dvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/dvm/mac80211.c
+@@ -739,6 +739,24 @@ static int iwlagn_mac_set_key(struct iee
+ 	return ret;
+ }
  
- 	skb->priority = tid;
- 	skb_set_queue_mapping(skb, ieee802_1d_to_ac[tid]);
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
++}
++
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* disabled by default */
++	return false;
++}
++
+ static int iwlagn_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				   struct ieee80211_vif *vif,
+ 				   enum ieee80211_ampdu_mlme_action action,
+@@ -760,7 +778,7 @@ static int iwlagn_mac_ampdu_action(struc
+ 
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		if (!iwl_enable_rx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Rx\n");
+ 		ret = iwl_sta_rx_agg_start(priv, sta, tid, *ssn);
+@@ -772,7 +790,7 @@ static int iwlagn_mac_ampdu_action(struc
+ 	case IEEE80211_AMPDU_TX_START:
+ 		if (!priv->trans->ops->txq_enable)
+ 			break;
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		if (!iwl_enable_tx_ampdu(priv->cfg))
+ 			break;
+ 		IWL_DEBUG_HT(priv, "start Tx\n");
+ 		ret = iwlagn_tx_agg_start(priv, vif, sta, tid, ssn);
+--- a/drivers/net/wireless/iwlwifi/iwl-drv.c
++++ b/drivers/net/wireless/iwlwifi/iwl-drv.c
+@@ -1211,7 +1211,7 @@ module_param_named(swcrypto, iwlwifi_mod
+ MODULE_PARM_DESC(swcrypto, "using crypto in software (default 0 [hardware])");
+ module_param_named(11n_disable, iwlwifi_mod_params.disable_11n, uint, S_IRUGO);
+ MODULE_PARM_DESC(11n_disable,
+-	"disable 11n functionality, bitmap: 1: full, 2: agg TX, 4: agg RX");
++	"disable 11n functionality, bitmap: 1: full, 2: disable agg TX, 4: disable agg RX, 8 enable agg TX");
+ module_param_named(amsdu_size_8K, iwlwifi_mod_params.amsdu_size_8K,
+ 		   int, S_IRUGO);
+ MODULE_PARM_DESC(amsdu_size_8K, "enable 8K amsdu size (default 0)");
+--- a/drivers/net/wireless/iwlwifi/iwl-modparams.h
++++ b/drivers/net/wireless/iwlwifi/iwl-modparams.h
+@@ -79,9 +79,12 @@ enum iwl_power_level {
+ 	IWL_POWER_NUM
+ };
+ 
+-#define IWL_DISABLE_HT_ALL	BIT(0)
+-#define IWL_DISABLE_HT_TXAGG	BIT(1)
+-#define IWL_DISABLE_HT_RXAGG	BIT(2)
++enum iwl_disable_11n {
++	IWL_DISABLE_HT_ALL	 = BIT(0),
++	IWL_DISABLE_HT_TXAGG	 = BIT(1),
++	IWL_DISABLE_HT_RXAGG	 = BIT(2),
++	IWL_ENABLE_HT_TXAGG	 = BIT(3),
++};
+ 
+ /**
+  * struct iwl_mod_params
+@@ -90,7 +93,7 @@ enum iwl_power_level {
+  *
+  * @sw_crypto: using hardware encryption, default = 0
+  * @disable_11n: disable 11n capabilities, default = 0,
+- *	use IWL_DISABLE_HT_* constants
++ *	use IWL_[DIS,EN]ABLE_HT_* constants
+  * @amsdu_size_8K: enable 8K amsdu size, default = 0
+  * @restart_fw: restart firmware, default = 1
+  * @plcp_check: enable plcp health check, default = true
+--- a/drivers/net/wireless/iwlwifi/mvm/mac80211.c
++++ b/drivers/net/wireless/iwlwifi/mvm/mac80211.c
+@@ -278,6 +278,24 @@ static void iwl_mvm_mac_tx(struct ieee80
+ 	ieee80211_free_txskb(hw, skb);
+ }
+ 
++static inline bool iwl_enable_rx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG)
++		return false;
++	return true;
++}
++
++static inline bool iwl_enable_tx_ampdu(const struct iwl_cfg *cfg)
++{
++	if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG)
++		return false;
++	if (iwlwifi_mod_params.disable_11n & IWL_ENABLE_HT_TXAGG)
++		return true;
++
++	/* enabled by default */
++	return true;
++}
++
+ static int iwl_mvm_mac_ampdu_action(struct ieee80211_hw *hw,
+ 				    struct ieee80211_vif *vif,
+ 				    enum ieee80211_ampdu_mlme_action action,
+@@ -297,7 +315,7 @@ static int iwl_mvm_mac_ampdu_action(stru
+ 
+ 	switch (action) {
+ 	case IEEE80211_AMPDU_RX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_RXAGG) {
++		if (!iwl_enable_rx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
+@@ -307,7 +325,7 @@ static int iwl_mvm_mac_ampdu_action(stru
+ 		ret = iwl_mvm_sta_rx_agg(mvm, sta, tid, 0, false);
+ 		break;
+ 	case IEEE80211_AMPDU_TX_START:
+-		if (iwlwifi_mod_params.disable_11n & IWL_DISABLE_HT_TXAGG) {
++		if (!iwl_enable_tx_ampdu(mvm->cfg)) {
+ 			ret = -EINVAL;
+ 			break;
+ 		}
 
 
