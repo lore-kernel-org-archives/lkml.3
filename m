@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966250AbaCUAJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37453 "EHLO
+	id S966262AbaCUAKG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:10:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966186AbaCUAJv (ORCPT
+	with ESMTP id S966254AbaCUAJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:51 -0400
+	Thu, 20 Mar 2014 20:09:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Artem Fetishev <artem_fetishev@epam.com>,
-        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
-        wiebittewas@gmail.com, Pavel Emelyanov <xemul@parallels.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.4 23/35] fs/proc/base.c: fix GPF in /proc/$PID/map_files
-Date: Thu, 20 Mar 2014 17:11:14 -0700
-Message-Id: <20140321001054.926431163@linuxfoundation.org>
+        Ales Novak <alnovak@suse.cz>, Thomas Abraham <tabraham@suse.com>,
+        Jiri Kosina <jkosina@suse.cz>, "K. Y. Srinivasan" <kys@microsoft.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 32/35] SCSI: storvsc: NULL pointer dereference fix
+Date: Thu, 20 Mar 2014 17:11:23 -0700
+Message-Id: <20140321001055.206416544@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -34,55 +30,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Artem Fetishev <artem_fetishev@epam.com>
+From: Ales Novak <alnovak@suse.cz>
 
-commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
+commit b12bb60d6c350b348a4e1460cd68f97ccae9822e upstream.
 
-The expected logic of proc_map_files_get_link() is either to return 0
-and initialize 'path' or return an error and leave 'path' uninitialized.
+If the initialization of storvsc fails, the storvsc_device_destroy()
+causes NULL pointer dereference.
 
-By the time dname_to_vma_addr() returns 0 the corresponding vma may have
-already be gone.  In this case the path is not initialized but the
-return value is still 0.  This results in 'general protection fault'
-inside d_path().
+storvsc_bus_scan()
+  scsi_scan_target()
+    __scsi_scan_target()
+      scsi_probe_and_add_lun(hostdata=NULL)
+        scsi_alloc_sdev(hostdata=NULL)
 
-Steps to reproduce:
+	  sdev->hostdata = hostdata
 
-  CONFIG_CHECKPOINT_RESTORE=y
+	  now the host allocation fails
 
-    fd = open(...);
-    while (1) {
-        mmap(fd, ...);
-        munmap(fd, ...);
-    }
+          __scsi_remove_device(sdev)
 
-  ls -la /proc/$PID/map_files
+	  calls sdev->host->hostt->slave_destroy() ==
+	  storvsc_device_destroy(sdev)
+	    access of sdev->hostdata->request_mempool
 
-Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
-
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
-Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
-Reported-by: <wiebittewas@gmail.com>
-Acked-by: Pavel Emelyanov <xemul@parallels.com>
-Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
-Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ales Novak <alnovak@suse.cz>
+Signed-off-by: Thomas Abraham <tabraham@suse.com>
+Reviewed-by: Jiri Kosina <jkosina@suse.cz>
+Acked-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/proc/base.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/storvsc_drv.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2092,6 +2092,7 @@ static int proc_map_files_get_link(struc
- 	if (rc)
- 		goto out_mmput;
+--- a/drivers/scsi/storvsc_drv.c
++++ b/drivers/scsi/storvsc_drv.c
+@@ -1131,6 +1131,9 @@ static void storvsc_device_destroy(struc
+ {
+ 	struct stor_mem_pools *memp = sdevice->hostdata;
  
-+	rc = -ENOENT;
- 	down_read(&mm->mmap_sem);
- 	vma = find_exact_vma(mm, vm_start, vm_end);
- 	if (vma && vma->vm_file) {
++	if (!memp)
++		return;
++
+ 	mempool_destroy(memp->request_mempool);
+ 	kmem_cache_destroy(memp->request_pool);
+ 	kfree(memp);
 
 
