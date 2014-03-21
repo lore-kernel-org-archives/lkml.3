@@ -1,146 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965484AbaCUMAv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:00:51 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:35494 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965460AbaCUMAs (ORCPT
+	id S1760649AbaCUMDa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:03:30 -0400
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:38132 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754078AbaCUMD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:00:48 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH] OF: Add [__]of_find_node_by_full_name
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Matt Porter <matt.porter@linaro.org>,
-        Koen Kooi <koen@dominion.thruhere.net>,
-        Alison Chaiken <Alison_Chaiken@mentor.com>,
-        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
-        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
-        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
-        Dirk Behme <dirk.behme@gmail.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Michael Bohan <mbohan@codeaurora.org>,
-        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
-        Matt Ranostay <mranostay@gmail.com>, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Pete Popov <pete.popov@konsulko.com>,
-        Dan Malek <dan.malek@konsulko.com>,
-        Georgi Vlaev <georgi.vlaev@konsulko.com>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-In-Reply-To: <1395179560-31384-1-git-send-email-pantelis.antoniou@konsulko.com>
-References: <1395179560-31384-1-git-send-email-pantelis.antoniou@konsulko. com>
-Date: Fri, 21 Mar 2014 12:00:20 +0000
-Message-Id: <20140321120020.7D4FBC4052A@trevor.secretlab.ca>
+	Fri, 21 Mar 2014 08:03:28 -0400
+Message-ID: <532C2A9D.2080505@linaro.org>
+Date: Fri, 21 Mar 2014 07:03:41 -0500
+From: Alex Elder <elder@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        galak@codeaurora.org, ijc+devicetree@hellion.org.uk,
+        mark.rutland@arm.com, pawel.moll@arm.com, robh+dt@kernel.org
+CC: bcm-kernel-feedback-list@broadcom.com,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 00/12] clk: bcm281xx: updates for 3.15
+References: <1393373752-30875-1-git-send-email-elder@linaro.org>
+In-Reply-To: <1393373752-30875-1-git-send-email-elder@linaro.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 Mar 2014 23:52:40 +0200, Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
-> __of_find_node_by_full_name recursively searches for a matching node
-> with the given full name without taking any locks.
-> 
-> of_find_node_by_full_name takes locks and takes a reference on the
-> matching node.
-> 
-> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Mike, I've given up on getting these in for 3.15, but
+I want to be sure they're considered ASAP for 3.16.
 
-You should be able to use the of_find_node_by_path() patch as a base for
-this one. You should be able to split of_find_node_by_path() so that the
-core search going into this new function.
+You indicated you had questions about the prerequisite
+clocks I proposed.  What I'd like to do is resend only the
+first 7 patches of this series, leaving the patches that
+implement prerequisite clock functionality to work out
+separately.
 
-g.
+In that case there is no special device tree dependency
+that would require the patches be taken through arm-soc.
 
-> ---
->  drivers/of/base.c  | 58 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of.h |  4 ++++
->  2 files changed, 62 insertions(+)
+They do, however, still depend on the previous work that
+was queued through arm-soc, so they don't apply on your
+current clk-next branch.
+
+How would you like me to handle this?
+
+Thanks.
+
+					-Alex
+
+http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+Branch review/bcm-clk-next-v2
+
+bc38518 clk: bcm281xx: add clock hysteresis support
+84f8738 clk: bcm281xx: add clock policy support
+825179f clk: bcm281xx: define CCU clock data statically
+1d2fbb7 clk: bcm281xx: initialize CCU structures statically
+d362801 clk: bcm281xx: change some symbol names
+bcacfe5 clk: bcm281xx: use init_data.name for clock name
+270dc8f clk: bcm281xx: warn if ccu_wait_bit() fails
+
+(based on)
+c771cfb ARM: dts: bcm281xx: define real clocks
+14a091d clk: bcm281xx: don't disable unused peripheral clocks
+44bc5c4 clk: bcm281xx: add initial clock framework support
+dcb99fd Linux 3.14-rc7
+
+
+
+On 02/25/2014 06:15 PM, Alex Elder wrote:
+> This series includes updates for the bcm281xx clock code for 3.15.
+> I had held off posting this until the code on which this is based
+> was queued for 3.14, and it now has been:
+>     https://github.com/broadcom/mach-bcm/
+>     Branch armsoc/for-3.15/drivers
+> 	clk: bcm281xx: don't disable unused peripheral clocks
+> 	clk: bcm281xx: add initial clock framework support
+> followed by:
+>     (same repository)
+>     Branch armsoc/for-3.15/dt
+> 	ARM: dts: bcm281xx: define real clocks
 > 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index 19bcdb4..08156e6 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -1142,6 +1142,64 @@ static void *of_find_property_value_of_size(const struct device_node *np,
->  }
->  
->  /**
-> + * __of_find_node_by_full_name - Find a node with the full name recursively
-> + * @node:	Root of the tree to perform the search
-> + * @full_name:	Full name of the node to find.
-> + *
-> + * Find a node with the give full name by recursively following any of
-> + * the child node links.
-> + * Returns the matching node, or NULL if not found.
-> + * Note that the devtree lock is not taken, so this function is only
-> + * safe to call on either detached trees, or when devtree lock is already
-> + * taken.
-> + */
-> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> +		const char *full_name)
-> +{
-> +	struct device_node *child, *found;
-> +
-> +	if (node == NULL)
-> +		return NULL;
-> +
-> +	/* check */
-> +	if (of_node_cmp(node->full_name, full_name) == 0)
-> +		return node;
-> +
-> +	__for_each_child_of_node(node, child) {
-> +		found = __of_find_node_by_full_name(child, full_name);
-> +		if (found != NULL)
-> +			return found;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +EXPORT_SYMBOL(__of_find_node_by_full_name);
-> +
-> +/**
-> + * of_find_node_by_full_name - Find a node with the full name recursively
-> + * @node:	Root of the tree to perform the search
-> + * @full_name:	Full name of the node to find.
-> + *
-> + * Find a node with the give full name by recursively following any of
-> + * the child node links.
-> + * Returns the matching node (with a ref taken), or NULL if not found.
-> + */
-> +struct device_node *of_find_node_by_full_name(struct device_node *node,
-> +		const char *full_name)
-> +{
-> +	unsigned long flags;
-> +	struct device_node *np;
-> +
-> +	raw_spin_lock_irqsave(&devtree_lock, flags);
-> +	np = of_find_node_by_full_name(node, full_name);
-> +	of_node_get(np);
-> +	raw_spin_unlock_irqrestore(&devtree_lock, flags);
-> +
-> +	return np;
-> +}
-> +EXPORT_SYMBOL(of_find_node_by_full_name);
-> +
-> +/**
->   * of_property_read_u32_index - Find and read a u32 from a multi-value property.
->   *
->   * @np:		device node from which the property value is to be read.
-> diff --git a/include/linux/of.h b/include/linux/of.h
-> index a8b9dad..bef3d5b 100644
-> --- a/include/linux/of.h
-> +++ b/include/linux/of.h
-> @@ -223,6 +223,10 @@ extern struct device_node *of_find_matching_node_and_match(
->  
->  extern struct device_node *of_find_node_by_path(const char *path);
->  extern struct device_node *of_find_node_by_phandle(phandle handle);
-> +struct device_node *__of_find_node_by_full_name(struct device_node *node,
-> +						const char *full_name);
-> +struct device_node *of_find_node_by_full_name(struct device_node *node,
-> +						const char *full_name);
->  extern struct device_node *of_get_parent(const struct device_node *node);
->  extern struct device_node *of_get_next_parent(struct device_node *node);
->  extern struct device_node *of_get_next_child(const struct device_node *node,
-> -- 
-> 1.7.12
+> The patches in this series are available here:
+>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+>     Branch review/bcm-clk-next-v2
+> 
+> I've grouped them, and offer a little explanation of each of the
+> groups below.
+> 
+> Note:  The final (DT) patch *must* be committed last.
+> 
+> The first version of this series had a patch from the middle of the
+> series that shouldn't have been there, and it has been removed in
+> this version (that patch affected mach-bcm, not clk).  I also split
+> the final patch into two, with the second one isolating the change
+> to a device tree file.
+> 
+> 		    					-Alex
+> 
+> Alex Elder (12):
+>   clk: bcm281xx: warn if ccu_wait_bit() fails
+>   clk: bcm281xx: use init_data.name for clock name
+>   clk: bcm281xx: change some symbol names
+>        	Three small code improvements.
+> 
+>   clk: bcm281xx: initialize CCU structures statically
+>   clk: bcm281xx: define CCU clock data statically
+> 	Rearrange the way CCUs and the clocks they provide are
+> 	defined, so that they're defined statically to the extent
+> 	possible rather than allocating and initializing things at
+> 	runtime.
+> 
+>   clk: bcm281xx: add clock policy support
+>   clk: bcm281xx: add clock hysteresis support
+>   clk: bcm281xx: add an initialized flag
+>   clk: bcm281xx: implement prerequisite clocks
+>   clk: bcm281xx: add bus clock support
+>   clk: bcm281xx: define a bus clock
+> 	Add a few new features, ultimately for the purpose of adding
+> 	support for another type of Kona clock.  Currently only
+> 	peripheral clocks are supported; this adds the ability to
+> 	define and control bus clocks.  In addition, support is
+> 	added for clocks to identify a prerequisite clock; a clock
+> 	won't be initialized until after its prerequisite has been.
+> 
+>   ARM: dts: add bus clock bsc3_apb for bcm281xx
+>   	Add the new bus clock to the device tree.
+> 
+>  arch/arm/boot/dts/bcm11351.dtsi      |    3 +-
+>  drivers/clk/bcm/clk-bcm281xx.c       |  254 ++++++++++++--------------
+>  drivers/clk/bcm/clk-kona-setup.c     |  331 +++++++++++++++++++++++++++-------
+>  drivers/clk/bcm/clk-kona.c           |  331 ++++++++++++++++++++++++++++++++--
+>  drivers/clk/bcm/clk-kona.h           |  189 ++++++++++++++++---
+>  include/dt-bindings/clock/bcm281xx.h |    3 +-
+>  6 files changed, 872 insertions(+), 239 deletions(-)
 > 
 
