@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966447AbaCUATr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:19:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37356 "EHLO
+	id S966260AbaCUAUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:20:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966114AbaCUAJe (ORCPT
+	with ESMTP id S966093AbaCUAJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:34 -0400
+	Thu, 20 Mar 2014 20:09:32 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andrea Adami <andrea.adami@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.4 14/35] ARM: 7991/1: sa1100: fix compile problem on Collie
-Date: Thu, 20 Mar 2014 17:11:05 -0700
-Message-Id: <20140321001054.628465375@linuxfoundation.org>
+        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
+Subject: [PATCH 3.4 11/35] ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
+Date: Thu, 20 Mar 2014 17:11:02 -0700
+Message-Id: <20140321001054.507600830@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,44 +28,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Roman Volkov <v1ron@mail.ru>
 
-commit 052450fdc55894a39fbae93d9bbe43947956f663 upstream.
+commit 3dd77654fb1d7f68b9739f3039bad8dbbc0739f8 upstream.
 
-Due to a problem in the MFD Kconfig it was not possible to
-compile the UCB battery driver for the Collie SA1100 system,
-in turn making it impossible to compile in the battery driver.
-(See patch "mfd: include all drivers in subsystem menu".)
+Actually CS4245 connected to the I2S channel 1 for
+capture, not channel 2. Otherwise capturing and
+playback does not work for CS4245.
 
-After fixing the MFD Kconfig (separate patch) a compile error
-appears in the Collie battery driver due to the <mach/collie.h>
-implicitly requiring <mach/hardware.h> through <linux/gpio.h>
-via <mach/gpio.h> prior to commit
-40ca061b "ARM: 7841/1: sa1100: remove complex GPIO interface".
-
-Fix this up by including the required header into
-<mach/collie.h>.
-
-Cc: Andrea Adami <andrea.adami@gmail.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Roman Volkov <v1ron@mail.ru>
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-sa1100/include/mach/collie.h |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/pci/oxygen/xonar_dg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-sa1100/include/mach/collie.h
-+++ b/arch/arm/mach-sa1100/include/mach/collie.h
-@@ -13,6 +13,8 @@
- #ifndef __ASM_ARCH_COLLIE_H
- #define __ASM_ARCH_COLLIE_H
- 
-+#include "hardware.h" /* Gives GPIO_MAX */
-+
- extern void locomolcd_power(int on);
- 
- #define COLLIE_SCOOP_GPIO_BASE	(GPIO_MAX + 1)
+--- a/sound/pci/oxygen/xonar_dg.c
++++ b/sound/pci/oxygen/xonar_dg.c
+@@ -597,7 +597,7 @@ struct oxygen_model model_xonar_dg = {
+ 	.model_data_size = sizeof(struct dg),
+ 	.device_config = PLAYBACK_0_TO_I2S |
+ 			 PLAYBACK_1_TO_SPDIF |
+-			 CAPTURE_0_FROM_I2S_2 |
++			 CAPTURE_0_FROM_I2S_1 |
+ 			 CAPTURE_1_FROM_SPDIF,
+ 	.dac_channels_pcm = 6,
+ 	.dac_channels_mixer = 0,
 
 
