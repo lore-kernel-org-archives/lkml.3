@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966535AbaCUAmF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:42:05 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37047 "EHLO
+	id S966829AbaCUAmE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:42:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37050 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965836AbaCUAIm (ORCPT
+	with ESMTP id S965842AbaCUAIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:08:42 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 24/85] mwifiex: fix cmd and Tx data timeout issue for PCIe cards
-Date: Thu, 20 Mar 2014 17:09:27 -0700
-Message-Id: <20140321000602.060206409@linuxfoundation.org>
+        Johannes Berg <johannes.berg@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.10 20/85] iwlwifi: fix TX status for aggregated packets
+Date: Thu, 20 Mar 2014 17:09:23 -0700
+Message-Id: <20140321000601.460120355@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,71 +29,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 1c97560f6d751a620978504a4a888c631192b71a upstream.
+commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
 
-We are sending sleep confirm done interrupt in the middle of
-sleep handshake. There is a corner case when Tx done interrupt
-is received from firmware during sleep handshake due to which
-host and firmware power states go out of sync causing cmd and
-Tx data timeout problem.
+Only the first packet is currently handled correctly, but then
+all others are assumed to have failed which is problematic. Fix
+this, marking them all successful instead (since if they're not
+then the firmware will have transmitted them as single frames.)
 
-Hence sleep confirm done interrupt is sent at the end of sleep
-handshake to fix the problem.
+This fixes the lost packet reporting.
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Also do a tiny variable scoping cleanup.
+
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+[Add the dvm part]
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/pcie.c |   28 +++++++++++-----------------
- 1 file changed, 11 insertions(+), 17 deletions(-)
+ drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++++++++-----
+ drivers/net/wireless/iwlwifi/mvm/tx.c |   18 +++++++++---------
+ 2 files changed, 18 insertions(+), 14 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -1515,6 +1515,14 @@ static int mwifiex_pcie_process_cmd_comp
- 		if (adapter->ps_state == PS_STATE_SLEEP_CFM) {
- 			mwifiex_process_sleep_confirm_resp(adapter, skb->data,
- 							   skb->len);
-+			mwifiex_pcie_enable_host_int(adapter);
-+			if (mwifiex_write_reg(adapter,
-+					      PCIE_CPU_INT_EVENT,
-+					      CPU_INTR_SLEEP_CFM_DONE)) {
-+				dev_warn(adapter->dev,
-+					 "Write register failed\n");
-+				return -1;
-+			}
- 			while (reg->sleep_cookie && (count++ < 10) &&
- 			       mwifiex_pcie_ok_to_access_hw(adapter))
- 				usleep_range(50, 60);
-@@ -1985,23 +1993,9 @@ static void mwifiex_interrupt_status(str
- 		adapter->int_status |= pcie_ireg;
- 		spin_unlock_irqrestore(&adapter->int_lock, flags);
+--- a/drivers/net/wireless/iwlwifi/dvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
+@@ -1322,8 +1322,6 @@ int iwlagn_rx_reply_compressed_ba(struct
+ 	struct iwl_compressed_ba_resp *ba_resp = (void *)pkt->data;
+ 	struct iwl_ht_agg *agg;
+ 	struct sk_buff_head reclaimed_skbs;
+-	struct ieee80211_tx_info *info;
+-	struct ieee80211_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	int sta_id;
+ 	int tid;
+@@ -1410,22 +1408,28 @@ int iwlagn_rx_reply_compressed_ba(struct
+ 	freed = 0;
  
--		if (pcie_ireg & HOST_INTR_CMD_DONE) {
--			if ((adapter->ps_state == PS_STATE_SLEEP_CFM) ||
--			    (adapter->ps_state == PS_STATE_SLEEP)) {
--				mwifiex_pcie_enable_host_int(adapter);
--				if (mwifiex_write_reg(adapter,
--						      PCIE_CPU_INT_EVENT,
--						      CPU_INTR_SLEEP_CFM_DONE)
--						      ) {
--					dev_warn(adapter->dev,
--						 "Write register failed\n");
--					return;
+ 	skb_queue_walk(&reclaimed_skbs, skb) {
+-		hdr = (struct ieee80211_hdr *)skb->data;
++		struct ieee80211_hdr *hdr = (void *)skb->data;
++		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 
+ 		if (ieee80211_is_data_qos(hdr->frame_control))
+ 			freed++;
+ 		else
+ 			WARN_ON_ONCE(1);
+ 
+-		info = IEEE80211_SKB_CB(skb);
+ 		iwl_trans_free_tx_cmd(priv->trans, info->driver_data[1]);
+ 
++		memset(&info->status, 0, sizeof(info->status));
++		/* Packet was transmitted successfully, failures come as single
++		 * frames because before failing a frame the firmware transmits
++		 * it without aggregation at least once.
++		 */
++		info->flags |= IEEE80211_TX_STAT_ACK;
++
+ 		if (freed == 1) {
+ 			/* this is the first skb we deliver in this batch */
+ 			/* put the rate scaling data there */
+ 			info = IEEE80211_SKB_CB(skb);
+ 			memset(&info->status, 0, sizeof(info->status));
+-			info->flags |= IEEE80211_TX_STAT_ACK;
+ 			info->flags |= IEEE80211_TX_STAT_AMPDU;
+ 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
+ 			info->status.ampdu_len = ba_resp->txed;
+--- a/drivers/net/wireless/iwlwifi/mvm/tx.c
++++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
+@@ -819,16 +819,12 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
+ 	struct iwl_mvm_ba_notif *ba_notif = (void *)pkt->data;
+ 	struct sk_buff_head reclaimed_skbs;
+ 	struct iwl_mvm_tid_data *tid_data;
+-	struct ieee80211_tx_info *info;
+ 	struct ieee80211_sta *sta;
+ 	struct iwl_mvm_sta *mvmsta;
+-	struct ieee80211_hdr *hdr;
+ 	struct sk_buff *skb;
+ 	int sta_id, tid, freed;
 -
--				}
--			}
--		} else if (!adapter->pps_uapsd_mode &&
--			   adapter->ps_state == PS_STATE_SLEEP &&
--			   mwifiex_pcie_ok_to_access_hw(adapter)) {
-+		if (!adapter->pps_uapsd_mode &&
-+		    adapter->ps_state == PS_STATE_SLEEP &&
-+		    mwifiex_pcie_ok_to_access_hw(adapter)) {
- 				/* Potentially for PCIe we could get other
- 				 * interrupts like shared. Don't change power
- 				 * state until cookie is set */
+ 	/* "flow" corresponds to Tx queue */
+ 	u16 scd_flow = le16_to_cpu(ba_notif->scd_flow);
+-
+ 	/* "ssn" is start of block-ack Tx window, corresponds to index
+ 	 * (in Tx queue's circular buffer) of first TFD/frame in window */
+ 	u16 ba_resp_scd_ssn = le16_to_cpu(ba_notif->scd_ssn);
+@@ -885,22 +881,26 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
+ 	freed = 0;
+ 
+ 	skb_queue_walk(&reclaimed_skbs, skb) {
+-		hdr = (struct ieee80211_hdr *)skb->data;
++		struct ieee80211_hdr *hdr = (void *)skb->data;
++		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+ 
+ 		if (ieee80211_is_data_qos(hdr->frame_control))
+ 			freed++;
+ 		else
+ 			WARN_ON_ONCE(1);
+ 
+-		info = IEEE80211_SKB_CB(skb);
+ 		iwl_trans_free_tx_cmd(mvm->trans, info->driver_data[1]);
+ 
++		memset(&info->status, 0, sizeof(info->status));
++		/* Packet was transmitted successfully, failures come as single
++		 * frames because before failing a frame the firmware transmits
++		 * it without aggregation at least once.
++		 */
++		info->flags |= IEEE80211_TX_STAT_ACK;
++
+ 		if (freed == 1) {
+ 			/* this is the first skb we deliver in this batch */
+ 			/* put the rate scaling data there */
+-			info = IEEE80211_SKB_CB(skb);
+-			memset(&info->status, 0, sizeof(info->status));
+-			info->flags |= IEEE80211_TX_STAT_ACK;
+ 			info->flags |= IEEE80211_TX_STAT_AMPDU;
+ 			info->status.ampdu_ack_len = ba_notif->txed_2_done;
+ 			info->status.ampdu_len = ba_notif->txed;
 
 
