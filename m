@@ -1,131 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaCUTmS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:42:18 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:50071 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaCUTmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:42:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
-References: <1393410552-21497-1-git-send-email-marc.ceeeee@gmail.com>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Fri, 21 Mar 2014 12:41:30 -0700
-Message-ID: <CAGVrzcamYKmOenrcWvCXCioPXLKAhhQ1hPg1DaNpfr5cV7YiAQ@mail.gmail.com>
-Subject: Re: [PATCH v7 0/9] ARM: brcmstb: Add Broadcom STB SoC support
-To: Marc Carino <marc.ceeeee@gmail.com>
-Cc: Christian Daudt <bcm@fixthebug.org>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Matt Porter <matt.porter@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1751953AbaCUTm4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:42:56 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.27]:53145 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750738AbaCUTmy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 15:42:54 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Topic: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Index: AQHPRIRp2+tv4l9QfEGdVn3+gbBu6prsWQWAgAABaoD//459QIAAfAWA//+NAcA=
+Date: Fri, 21 Mar 2014 19:42:21 +0000
+Message-ID: <58b32963c3b7416b82e96267d42b926f@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <20140321.144957.550032279989990583.davem@davemloft.net>
+	<20140321.145501.2003616654661701935.davem@davemloft.net>
+	<84837c9e73f24bcd8f652a24f616ff1e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140321.153237.2236797908349183626.davem@davemloft.net>
+In-Reply-To: <20140321.153237.2236797908349183626.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:131.107.159.100;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(164054003)(51704005)(13464003)(377454003)(199002)(189002)(44976005)(87266001)(85306002)(74366001)(2656002)(74706001)(80022001)(20776003)(2009001)(6806004)(97756001)(74876001)(19580395003)(80976001)(46406003)(63696002)(97336001)(66066001)(83322001)(19580405001)(97736001)(81686001)(84676001)(92566001)(81816001)(47776003)(85852003)(50466002)(65816001)(97186001)(83072002)(33646001)(77982001)(59766001)(31966008)(74502001)(76786001)(76482001)(4396001)(76796001)(53806001)(51856001)(50986001)(47976001)(47736001)(49866001)(90146001)(56776001)(54316002)(94316002)(54356001)(69226001)(86612001)(94946001)(95666003)(47446002)(74662001)(56816005)(87936001)(23726002)(93516002)(81342001)(46102001)(93136001)(95416001)(98676001)(79102001)(81542001)(93886001)(142933001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BLUSR01MB590;H:hybrid.exchange.microsoft.com;FPR:B896F882.3ED3913A.39F13B5E.A2E2AB39.201C1;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Exchange-Antispam-Report-Test: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
+X-Forefront-PRVS: 0157DEB61B
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-02-26 2:29 GMT-08:00 Marc Carino <marc.ceeeee@gmail.com>:
-> This patchset contains the board support package for the
-> Broadcom BCM7445 ARM-based SoC [1]. These changes contain a
-> minimal set of code needed for a BCM7445-based board to boot
-> the Linux kernel.
->
-> These changes heavily leverage the OF/devicetree framework. The
-> machine is also built into the multi-platform ARMv7 image.
-
-It has been almost a month since this last submission was posted...
-
-Dmitry, David, can you review the drivers/power/ bits and ACK/NACK those?
-
-Thanks!
-
->
-> v7:
-> - rebase to v3.14-rc4
-> - detect and apply ARM erratum 798181 to Brahma15 CPUs
-> - split-up bcm7445.dts into a common dtsi and board-specific dts
->
-> v6 (https://lkml.org/lkml/2014/2/3/493):
-> - rebased to v3.14-rc1
-> - utilize common APIs for handling CPU power-down
-> - drop deprecated __cpuinit attributes
->
-> v5 (https://lkml.org/lkml/2014/1/21/640):
-> - rebased to v3.13 tag
-> - make UART DT node a child of 'rdb' node
-> - fix ordering of debug UART entries
->
-> v4 (https://lkml.org/lkml/2014/1/17/455):
-> - make a reboot driver and put it in the drivers folder
-> - rework DT bindings to leverage 'syscon'
-> - rework BSP code to use 'syscon' for all register mappings
-> - misc. tweaks per suggestions from v3
->
-> v3 (https://lkml.org/lkml/2014/1/14/696):
-> - rebased to v3.13-rc8
-> - switched to using 'multi_v7_defconfig'
-> - eliminated dependence on compile-time peripheral register access
-> - moved DT node iomap out from 'init_early'
-> - misc. minor cleanups from mailing-list discussion for v2
->
-> v2 (https://lkml.org/lkml/2013/11/26/570):
-> - rebased to v3.13-rc1
-> - moved implementation to 'mach-bcm' folder
-> - added CPU init for B16RM
->
-> v1:
-> - initial submission
->
-> [1] http://www.broadcom.com/products/Cable/Cable-Set-Top-Box-Solutions/BCM7445
->
-> Gregory Fong (1):
->   ARM: Enable erratum 798181 for Broadcom Brahma-B15
->
-> Marc Carino (8):
->   ARM: brcmstb: add infrastructure for ARM-based Broadcom STB SoCs
->   power: reset: Add reboot driver for brcmstb
->   ARM: brcmstb: add debug UART for earlyprintk support
->   ARM: do CPU-specific init for Broadcom Brahma15 cores
->   ARM: brcmstb: add CPU binding for Broadcom Brahma15
->   ARM: brcmstb: add misc. DT bindings for brcmstb
->   ARM: brcmstb: gic: add compatible string for Broadcom Brahma15
->   ARM: brcmstb: dts: add a reference DTS for Broadcom 7445
->
->  .../devicetree/bindings/arm/brcm-brcmstb.txt       |   95 ++++++
->  Documentation/devicetree/bindings/arm/cpus.txt     |    1 +
->  Documentation/devicetree/bindings/arm/gic.txt      |    1 +
->  arch/arm/Kconfig.debug                             |   15 +-
->  arch/arm/boot/dts/bcm7445-bcm97445svmb.dts         |   14 +
->  arch/arm/boot/dts/bcm7445.dtsi                     |  107 +++++++
->  arch/arm/configs/multi_v7_defconfig                |    1 +
->  arch/arm/kernel/smp_tlb.c                          |   20 +-
->  arch/arm/mach-bcm/Kconfig                          |   15 +
->  arch/arm/mach-bcm/Makefile                         |    4 +
->  arch/arm/mach-bcm/brcmstb.c                        |  104 +++++++
->  arch/arm/mach-bcm/brcmstb.h                        |   38 +++
->  arch/arm/mach-bcm/headsmp-brcmstb.S                |   33 ++
->  arch/arm/mach-bcm/hotplug-brcmstb.c                |  311 ++++++++++++++++++++
->  arch/arm/mm/proc-v7.S                              |   11 +
->  drivers/power/reset/Kconfig                        |   10 +
->  drivers/power/reset/Makefile                       |    1 +
->  drivers/power/reset/brcmstb-reboot.c               |  120 ++++++++
->  18 files changed, 892 insertions(+), 9 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/arm/brcm-brcmstb.txt
->  create mode 100644 arch/arm/boot/dts/bcm7445-bcm97445svmb.dts
->  create mode 100644 arch/arm/boot/dts/bcm7445.dtsi
->  create mode 100644 arch/arm/mach-bcm/brcmstb.c
->  create mode 100644 arch/arm/mach-bcm/brcmstb.h
->  create mode 100644 arch/arm/mach-bcm/headsmp-brcmstb.S
->  create mode 100644 arch/arm/mach-bcm/hotplug-brcmstb.c
->  create mode 100644 drivers/power/reset/brcmstb-reboot.c
->
 
 
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Friday, March 21, 2014 3:33 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+> Side Scaling (vRSS)
+> 
+> From: Haiyang Zhang <haiyangz@microsoft.com>
+> Date: Fri, 21 Mar 2014 19:12:43 +0000
+> 
+> > Could it be merged into net-next tree?
+> 
+> You submitted a patch against net-next, that means you are implicitly
+> stating that all dependencies are in place in _that_ tree and that
+> you tested it in _that_ tree.
+> 
+> If the situation is otherwise you must explicitly state this in your
+> patch submission.
 
--- 
-Florian
+I will re-submit the vRSS patch with the dependency specified.
+Thanks,
+- Haiyang
