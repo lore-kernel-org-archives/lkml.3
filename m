@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965153AbaCUAEN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36671 "EHLO
+	id S1760706AbaCUBKk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:10:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964875AbaCUAEF (ORCPT
+	with ESMTP id S965139AbaCUAEM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:05 -0400
+	Thu, 20 Mar 2014 20:04:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Philippe De Muyter <phdm@macqel.be>,
-        Huang Shijie <b32955@freescale.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 083/149] spi: spi-imx: spi_imx_remove: do not disable disabled clocks
-Date: Thu, 20 Mar 2014 17:04:06 -0700
-Message-Id: <20140321000439.833983129@linuxfoundation.org>
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH 3.13 068/149] Revert "xhci 1.0: Limit arbitrarily-aligned scatter gather."
+Date: Thu, 20 Mar 2014 17:03:51 -0700
+Message-Id: <20140321000439.316701395@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,71 +28,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Philippe De Muyter <phdm@macqel.be>
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-commit fd40dccb1a170ba689664481a3de83617b7194d2 upstream.
+commit e2ed511400d41e0d136089d5a55ceab57c6a2426 upstream.
 
-Currently, at module removal, one gets the following warnings:
-------------[ cut here ]------------
-WARNING: at drivers/clk/clk.c:780 clk_disable+0x18/0x24()
-Modules linked in: spi_imx(-) [last unloaded: ev76c560]
-CPU: 1 PID: 16337 Comm: rmmod Tainted: G        W    3.10.17-80548-g90191eb-dirty #33
-[<80013b4c>] (unwind_backtrace+0x0/0xf8) from [<800115dc>] (show_stack+0x10/0x14)
-[<800115dc>] (show_stack+0x10/0x14) from [<800257b8>] (warn_slowpath_common+0x4c/0x68)
-[<800257b8>] (warn_slowpath_common+0x4c/0x68) from [<800257f0>] (warn_slowpath_null+0x1c/0x24)
-[<800257f0>] (warn_slowpath_null+0x1c/0x24) from [<803f60ec>] (clk_disable+0x18/0x24)
-[<803f60ec>] (clk_disable+0x18/0x24) from [<7f02c9cc>] (spi_imx_remove+0x54/0x9c [spi_imx])
-[<7f02c9cc>] (spi_imx_remove+0x54/0x9c [spi_imx]) from [<8025868c>] (platform_drv_remove+0x18/0x1c)
-[<8025868c>] (platform_drv_remove+0x18/0x1c) from [<80256f60>] (__device_release_driver+0x70/0xcc)
-[<80256f60>] (__device_release_driver+0x70/0xcc) from [<80257770>] (driver_detach+0xcc/0xd0)
-[<80257770>] (driver_detach+0xcc/0xd0) from [<80256d90>] (bus_remove_driver+0x7c/0xc0)
-[<80256d90>] (bus_remove_driver+0x7c/0xc0) from [<80068668>] (SyS_delete_module+0x144/0x1f8)
-[<80068668>] (SyS_delete_module+0x144/0x1f8) from [<8000e080>] (ret_fast_syscall+0x0/0x30)
----[ end trace 1f5df9ad54996300 ]---
-------------[ cut here ]------------
-WARNING: at drivers/clk/clk.c:780 clk_disable+0x18/0x24()
-Modules linked in: spi_imx(-) [last unloaded: ev76c560]
-CPU: 1 PID: 16337 Comm: rmmod Tainted: G        W    3.10.17-80548-g90191eb-dirty #33
-[<80013b4c>] (unwind_backtrace+0x0/0xf8) from [<800115dc>] (show_stack+0x10/0x14)
-[<800115dc>] (show_stack+0x10/0x14) from [<800257b8>] (warn_slowpath_common+0x4c/0x68)
-[<800257b8>] (warn_slowpath_common+0x4c/0x68) from [<800257f0>] (warn_slowpath_null+0x1c/0x24)
-[<800257f0>] (warn_slowpath_null+0x1c/0x24) from [<803f60ec>] (clk_disable+0x18/0x24)
-[<803f60ec>] (clk_disable+0x18/0x24) from [<7f02c9e8>] (spi_imx_remove+0x70/0x9c [spi_imx])
-[<7f02c9e8>] (spi_imx_remove+0x70/0x9c [spi_imx]) from [<8025868c>] (platform_drv_remove+0x18/0x1c)
-[<8025868c>] (platform_drv_remove+0x18/0x1c) from [<80256f60>] (__device_release_driver+0x70/0xcc)
-[<80256f60>] (__device_release_driver+0x70/0xcc) from [<80257770>] (driver_detach+0xcc/0xd0)
-[<80257770>] (driver_detach+0xcc/0xd0) from [<80256d90>] (bus_remove_driver+0x7c/0xc0)
-[<80256d90>] (bus_remove_driver+0x7c/0xc0) from [<80068668>] (SyS_delete_module+0x144/0x1f8)
-[<80068668>] (SyS_delete_module+0x144/0x1f8) from [<8000e080>] (ret_fast_syscall+0x0/0x30)
----[ end trace 1f5df9ad54996301 ]---
+This reverts commit 247bf557273dd775505fb9240d2d152f4f20d304.
 
-Since commit 9e556dcc55774c9a1032f32baa0e5cfafede8b70, "spi: spi-imx: only
-enable the clocks when we start to transfer a message", clocks are always
-disabled except when transmitting messages.  There is thus no need to
-disable them at module removal.
+This commit, together with commit 3804fad45411b48233b48003e33a78f290d227c8
+"USBNET: ax88179_178a: enable tso if usb host supports sg dma" were
+origially added to get xHCI 1.0 hosts and usb ethernet ax88179_178a devices
+working together with scatter gather. xHCI 1.0 hosts pose some requirement on how transfer
+buffers are aligned, setting this requirement for 1.0 hosts caused USB 3.0 mass
+storage devices to fail more frequently.
 
-Fixes: 9e556dcc55774 (spi: spi-imx: only enable the clocks when we start to transfer a message)
-Signed-off-by: Philippe De Muyter <phdm@macqel.be>
-Acked-by: Huang Shijie <b32955@freescale.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+USB 3.0 mass storage devices used to work before 3.14-rc1.  Theoretically,
+the TD fragment rules could have caused an occasional disk glitch.
+Now the devices *will* fail, instead of theoretically failing.
+>From a user perspective, this looks like a regression; the USB device obviously
+fails on 3.14-rc1, and may sometimes silently fail on prior kernels.
+
+The proper soluition is to implement the TD fragment rules required, but for now
+this patch needs to be reverted to get USB 3.0 mass storage devices working at the
+level they used to.
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-imx.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/host/xhci.c |   14 +++-----------
+ 1 file changed, 3 insertions(+), 11 deletions(-)
 
---- a/drivers/spi/spi-imx.c
-+++ b/drivers/spi/spi-imx.c
-@@ -925,8 +925,8 @@ static int spi_imx_remove(struct platfor
- 	spi_bitbang_stop(&spi_imx->bitbang);
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -4719,6 +4719,9 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+ 	/* Accept arbitrarily long scatter-gather lists */
+ 	hcd->self.sg_tablesize = ~0;
  
- 	writel(0, spi_imx->base + MXC_CSPICTRL);
--	clk_disable_unprepare(spi_imx->clk_ipg);
--	clk_disable_unprepare(spi_imx->clk_per);
-+	clk_unprepare(spi_imx->clk_ipg);
-+	clk_unprepare(spi_imx->clk_per);
- 	spi_master_put(master);
++	/* support to build packet from discontinuous buffers */
++	hcd->self.no_sg_constraint = 1;
++
+ 	/* XHCI controllers don't stop the ep queue on short packets :| */
+ 	hcd->self.no_stop_on_short = 1;
  
- 	return 0;
+@@ -4743,14 +4746,6 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+ 		/* xHCI private pointer was set in xhci_pci_probe for the second
+ 		 * registered roothub.
+ 		 */
+-		xhci = hcd_to_xhci(hcd);
+-		/*
+-		 * Support arbitrarily aligned sg-list entries on hosts without
+-		 * TD fragment rules (which are currently unsupported).
+-		 */
+-		if (xhci->hci_version < 0x100)
+-			hcd->self.no_sg_constraint = 1;
+-
+ 		return 0;
+ 	}
+ 
+@@ -4777,9 +4772,6 @@ int xhci_gen_setup(struct usb_hcd *hcd,
+ 	if (xhci->hci_version > 0x96)
+ 		xhci->quirks |= XHCI_SPURIOUS_SUCCESS;
+ 
+-	if (xhci->hci_version < 0x100)
+-		hcd->self.no_sg_constraint = 1;
+-
+ 	/* Make sure the HC is halted. */
+ 	retval = xhci_halt(xhci);
+ 	if (retval)
 
 
