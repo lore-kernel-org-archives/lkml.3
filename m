@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760586AbaCUBH7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:07:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36745 "EHLO
+	id S1760604AbaCUBIU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:08:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36734 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965253AbaCUAET (ORCPT
+	with ESMTP id S965233AbaCUAER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:19 -0400
+	Thu, 20 Mar 2014 20:04:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 089/149] cpufreq: Skip current frequency initialization for ->setpolicy drivers
-Date: Thu, 20 Mar 2014 17:04:12 -0700
-Message-Id: <20140321000440.042523880@linuxfoundation.org>
+        "Yan, Zheng" <zheng.z.yan@intel.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 086/149] NFS: Fix a delegation callback race
+Date: Thu, 20 Mar 2014 17:04:09 -0700
+Message-Id: <20140321000439.935300143@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,61 +29,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit 2ed99e39cb9392312c100d9da591c20641c64d12 upstream.
+commit 755a48a7a4eb05b9c8424e3017d947b2961a60e0 upstream.
 
-After commit da60ce9f2fac (cpufreq: call cpufreq_driver->get() after
-calling ->init()) __cpufreq_add_dev() sometimes fails for CPUs handled
-by intel_pstate, because that driver may return 0 from its ->get()
-callback if it has not run long enough to collect enough samples on the
-given CPU.  That didn't happen before commit da60ce9f2fac which added
-policy->cur initialization to __cpufreq_add_dev() to help reduce code
-duplication in other cpufreq drivers.
+The clean-up in commit 36281caa839f ended up removing a NULL pointer check
+that is needed in order to prevent an Oops in
+nfs_async_inode_return_delegation().
 
-However, the code added by commit da60ce9f2fac need not be executed
-for cpufreq drivers having the ->setpolicy callback defined, because
-the subsequent invocation of cpufreq_set_policy() will use that
-callback to initialize the policy anyway and it doesn't need
-policy->cur to be initialized upfront.  The analogous code in
-cpufreq_update_policy() is also unnecessary for cpufreq drivers
-having ->setpolicy set and may be skipped for them as well.
-
-Since intel_pstate provides ->setpolicy, skipping the upfront
-policy->cur initialization for cpufreq drivers with that callback
-set will cover intel_pstate and the problem it's been having after
-commit da60ce9f2fac will be addressed.
-
-Fixes: da60ce9f2fac (cpufreq: call cpufreq_driver->get() after calling ->init())
-References: https://bugzilla.kernel.org/show_bug.cgi?id=71931
-Reported-and-tested-by: Patrik Lundquist <patrik.lundquist@gmail.com>
-Acked-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reported-by: "Yan, Zheng" <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/5313E9F6.2020405@intel.com
+Fixes: 36281caa839f (NFSv4: Further clean-ups of delegation stateid validation)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/cpufreq/cpufreq.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfs/delegation.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1051,7 +1051,7 @@ static int __cpufreq_add_dev(struct devi
- 		goto err_set_policy_cpu;
- 	}
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -659,16 +659,19 @@ int nfs_async_inode_return_delegation(st
  
--	if (cpufreq_driver->get) {
-+	if (cpufreq_driver->get && !cpufreq_driver->setpolicy) {
- 		policy->cur = cpufreq_driver->get(policy->cpu);
- 		if (!policy->cur) {
- 			pr_err("%s: ->get() failed\n", __func__);
-@@ -2051,7 +2051,7 @@ int cpufreq_update_policy(unsigned int c
- 	 * BIOS might change freq behind our back
- 	 * -> ask driver for current freq and notify governors about a change
- 	 */
--	if (cpufreq_driver->get) {
-+	if (cpufreq_driver->get && !cpufreq_driver->setpolicy) {
- 		new_policy.cur = cpufreq_driver->get(cpu);
- 		if (!policy->cur) {
- 			pr_debug("Driver did not initialize current freq");
+ 	rcu_read_lock();
+ 	delegation = rcu_dereference(NFS_I(inode)->delegation);
++	if (delegation == NULL)
++		goto out_enoent;
+ 
+-	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid)) {
+-		rcu_read_unlock();
+-		return -ENOENT;
+-	}
++	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid))
++		goto out_enoent;
+ 	nfs_mark_return_delegation(server, delegation);
+ 	rcu_read_unlock();
+ 
+ 	nfs_delegation_run_state_manager(clp);
+ 	return 0;
++out_enoent:
++	rcu_read_unlock();
++	return -ENOENT;
+ }
+ 
+ static struct inode *
 
 
