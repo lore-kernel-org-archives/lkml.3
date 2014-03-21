@@ -1,591 +1,411 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965753AbaCUAIK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:08:10 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:56922 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S965737AbaCUAIE (ORCPT
+	id S965776AbaCUAI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:08:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36955 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965737AbaCUAIZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:04 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PCI <linux-pci@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: ACPI and PM material for v3.15-rc1 (current queue)
-Date: Fri, 21 Mar 2014 01:23:34 +0100
-Message-ID: <2611540.GrpzWjVQ7v@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
+	Thu, 20 Mar 2014 20:08:25 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/85] 3.10.34-stable review
+Date: Thu, 20 Mar 2014 17:09:03 -0700
+Message-Id: <20140321000558.606667505@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+This is the start of the stable review cycle for the 3.10.34 release.
+There are 85 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-My queue for the first pull request during the upcoming 3.15 merge window
-contains the material below.  Following the rule that everything I send
-pull requests for should spend at least one day in linux-next, I'm not
-going to add any more new commits to it at this point.
+Responses should be made by Sun Mar 23 00:05:33 UTC 2014.
+Anything received after that time might be too late.
 
-Most likely, there will be more ACPI+PM pull request during the 3.15 cycle,
-so if I missed something, it still may be possible to get that into that
-kernel, but there has to be a good reason for it.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.34-rc1.gz
+and the diffstat can be found below.
 
-Kind regards,
-Rafael
+thanks,
+
+greg k-h
+
+-------------
+Pseudo-Shortlog of commits:
+
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.34-rc1
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iser-target: Fix post_send_buf_count for RDMA READ/WRITE
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi/iser-target: Fix isert_conn->state hung shutdown issues
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi/iser-target: Use list_del_init for ->i_conn_node
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    ARM: ignore memory below PHYS_OFFSET
+
+Magnus Damm <damm@opensource.se>
+    ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: mvm: don't WARN when statistics are handled late
+
+Thomas Gleixner <tglx@linutronix.de>
+    tick: Make oneshot broadcast robust vs. CPU offlining
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    bio-integrity: Fix bio_integrity_verify segment start bug
+
+Qais Yousef <qais.yousef@imgtec.com>
+    MIPS: include linux/types.h
+
+Oleg Drokin <green@linuxhacker.ru>
+    Fix mountpoint reference leakage in linkat
+
+Heiko Carstens <heiko.carstens@de.ibm.com>
+    s390/dasd: hold request queue sysfs lock when calling elevator_init()
+
+Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+    jiffies: Avoid undefined behavior from signed overflow
+
+Roman Volkov <v1ron@mail.ru>
+    ALSA: oxygen: modify adjust_dg_dac_routing function
+
+Filipe David Borba Manana <fdmanana@gmail.com>
+    Btrfs: fix data corruption when reading/updating compressed extents
+
+Suresh Siddha <sbsiddha@gmail.com>
+    x86, fpu: Check tsk_used_math() in kernel_fpu_end() for eager FPU
+
+Ales Novak <alnovak@suse.cz>
+    SCSI: storvsc: NULL pointer dereference fix
+
+Giridhar Malavali <giridhar.malavali@qlogic.com>
+    SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+
+Lukasz Dorau <lukasz.dorau@intel.com>
+    SCSI: isci: correct erroneous for_each_isci_host macro
+
+Dan Williams <dan.j.williams@intel.com>
+    SCSI: isci: fix reset timeout handling
+
+Marc Kleine-Budde <mkl@pengutronix.de>
+    can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
+
+Anton Blanchard <anton@samba.org>
+    net: unix socket code abuses csum_partial
+
+Heinz Mauelshagen <heinzm@redhat.com>
+    dm cache: fix access beyond end of origin device
+
+Heinz Mauelshagen <heinzm@redhat.com>
+    dm cache: fix truncation bug when copying a block to/from >2TB fast device
+
+Laura Abbott <lauraa@codeaurora.org>
+    mm/compaction: break out of loop on !PageBuddy in isolate_freepages_block
+
+Arnd Bergmann <arnd@arndb.de>
+    vmxnet3: fix building without CONFIG_PCI_MSI
+
+Neil Horman <nhorman@tuxdriver.com>
+    vmxnet3: fix netpoll race condition
+
+Bjorn Helgaas <bhelgaas@google.com>
+    PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
+
+Radim Krčmář <rkrcmar@redhat.com>
+    KVM: SVM: fix cr8 intercept window
+
+Michael Kerrisk <mtk.manpages@gmail.com>
+    ipc: Fix 2 bugs in msgrcv() MSG_COPY implementation
+
+Patrick Lai <plai@codeaurora.org>
+    ASoC: pcm: free path list before exiting from error conditions
+
+Alex Deucher <alexander.deucher@amd.com>
+    drm/radeon/atom: select the proper number of lanes in transmitter setup
+
+Artem Fetishev <artem_fetishev@epam.com>
+    fs/proc/base.c: fix GPF in /proc/$PID/map_files
+
+Nicholas Bellinger <nab@linux-iscsi.org>
+    iscsi-target: Fix iscsit_get_tpg_from_np tpg_state bug
+
+Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+    ACPI / sleep: Add extra checks for HW Reduced ACPI mode sleep states
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4: nfs4_stateid_is_current should return 'true' for an invalid stateid
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFS: Fix a delegation callback race
+
+Gabor Juhos <juhosg@openwrt.org>
+    spi: spi-ath79: fix initial GPIO CS line setup
+
+Michele Baldessari <michele@acksyn.org>
+    libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus SpinPoint M8 (2BA30001)
+
+Tejun Heo <tj@kernel.org>
+    firewire: don't use PREPARE_DELAYED_WORK
+
+Stefan Richter <stefanr@s5r6.in-berlin.de>
+    firewire: net: fix use after free
+
+Steven Rostedt (Red Hat) <rostedt@goodmis.org>
+    tracing: Do not add event files for modules that fail tracepoints
+
+Zhang Rui <rui.zhang@intel.com>
+    ACPI / resources: ignore invalid ACPI device resources
+
+Li Zefan <lizefan@huawei.com>
+    cpuset: fix a race condition in __cpuset_node_allowed_softwall()
+
+Chuansheng Liu <chuansheng.liu@intel.com>
+    genirq: Remove racy waitqueue_active check
+
+Julius Werner <jwerner@chromium.org>
+    usb: Make DELAY_INIT quirk wait 100ms between Get Configuration requests
+
+Julius Werner <jwerner@chromium.org>
+    usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
+
+Daniel J Blueman <daniel@numascale.com>
+    x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    x86: fix compile error due to X86_TRAP_NMI use in asm files
+
+H. Peter Anvin <hpa@linux.intel.com>
+    x86: Ignore NMIs that come in during early boot
+
+Markus Pargmann <mpa@pengutronix.de>
+    regulator: core: Replace direct ops->enable usage
+
+Linus Walleij <linus.walleij@linaro.org>
+    ARM: 7991/1: sa1100: fix compile problem on Collie
+
+Anton Blanchard <anton@samba.org>
+    powerpc: Align p_dyn, p_rela and p_st symbols
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: hda - Add missing loopback merge path for AD1884/1984 codecs
+
+Marius Knaust <marius.knaust@gmail.com>
+    ALSA: hda - Added inverted digital-mic handling for Acer TravelMate 8371
+
+Takashi Iwai <tiwai@suse.de>
+    ALSA: usb-audio: Add quirk for Logitech Webcam C500
+
+Roman Volkov <v1ron@mail.ru>
+    ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
+
+Rob Clark <rclark@redhat.com>
+    drm/ttm: don't oops if no invalidate_caches()
+
+Will Deacon <will.deacon@arm.com>
+    ARM: 7811/1: locks: use early clobber in arch_spin_trylock
+
+Amitkumar Karwar <akarwar@marvell.com>
+    mwifiex: save and copy AP's VHT capability info correctly
+
+Amitkumar Karwar <akarwar@marvell.com>
+    mwifiex: copy AP's HT capability info correctly
+
+Bing Zhao <bzhao@marvell.com>
+    mwifiex: do not advertise usb autosuspend support
+
+Amitkumar Karwar <akarwar@marvell.com>
+    mwifiex: fix cmd and Tx data timeout issue for PCIe cards
+
+Amitkumar Karwar <akarwar@marvell.com>
+    mwifiex: add NULL check for PCIe Rx skb
+
+Avinash Patil <patila@marvell.com>
+    mwifiex: clean pcie ring only when device is present
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: disable TX AMPDU by default for iwldvm
+
+Johannes Berg <johannes.berg@intel.com>
+    iwlwifi: fix TX status for aggregated packets
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
+
+Sujith Manoharan <c_manoha@qca.qualcomm.com>
+    ath9k: Fix ETSI compliance for AR9462 2.0
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: clear sequence/fragment number in QoS-null frames
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: fix association to 20/40 MHz VHT networks
+
+Johannes Berg <johannes.berg@intel.com>
+    mac80211: don't validate unchanged AP bandwidth while tracking
+
+Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+    mac80211: fix AP powersave TX vs. wakeup race
+
+Felix Fietkau <nbd@openwrt.org>
+    mac80211: send control port protocol frames to the VO queue
+
+Daniel Borkmann <dborkman@redhat.com>
+    net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH capable
+
+Michael Chan <mchan@broadcom.com>
+    tg3: Don't check undefined error bits in RXBD
+
+Hans Schillstrom <hans@schillstrom.com>
+    ipv6: ipv6_find_hdr restore prev functionality
+
+Edward Cree <ecree@solarflare.com>
+    sfc: check for NULL efx->ptp_data in efx_ptp_event
+
+Hannes Frederic Sowa <hannes@stressinduktion.org>
+    ipv6: reuse ip6_frag_id from ip6_ufo_append_data
+
+Jason Wang <jasowang@redhat.com>
+    virtio-net: alloc big buffers also when guest can receive UFO
+
+Duan Jiong <duanj.fnst@cn.fujitsu.com>
+    neigh: recompute reachabletime before returning from neigh_periodic_work()
+
+Eric Dumazet <edumazet@google.com>
+    net-tcp: fastopen: fix high order allocations
+
+Alexandre Bounine <alexandre.bounine@idt.com>
+    rapidio/tsi721: fix tasklet termination in dma channel release
+
+George McCollister <george.mccollister@gmail.com>
+    sched: Fix double normalization of vruntime
+
+Al Viro <viro@zeniv.linux.org.uk>
+    ocfs2 syncs the wrong range...
+
+Jan Kara <jack@suse.cz>
+    ocfs2: fix quota file corruption
 
 
----------------
+-------------
 
-Aaron Lu (2):
-      ACPI / fan: do nothing in suspend and poweroff callback
-      ACPI / thermal: make acpi_thermal_check asynchronous on resume
+Diffstat:
 
-Al Stone (1):
-      ACPI: introduce CONFIG_ACPI_REDUCED_HARDWARE_ONLY
+ Makefile                                           |   4 +-
+ arch/arm/include/asm/spinlock.h                    |   2 +-
+ arch/arm/kernel/setup.c                            |  30 ++++-
+ arch/arm/mach-sa1100/include/mach/collie.h         |   2 +
+ arch/mips/include/asm/mipsregs.h                   |   1 +
+ arch/powerpc/kernel/reloc_64.S                     |   1 +
+ arch/x86/kernel/head_32.S                          |   7 +-
+ arch/x86/kernel/head_64.S                          |   6 +-
+ arch/x86/kernel/i387.c                             |  15 ++-
+ arch/x86/kernel/quirks.c                           |   2 +-
+ arch/x86/kvm/svm.c                                 |   6 +-
+ drivers/acpi/resource.c                            |  10 ++
+ drivers/acpi/sleep.c                               |  32 +++---
+ drivers/ata/libata-core.c                          |   1 +
+ drivers/firewire/core-device.c                     |  22 ++--
+ drivers/firewire/net.c                             |   6 +-
+ drivers/firewire/sbp2.c                            |  17 ++-
+ drivers/gpu/drm/radeon/atombios_encoders.c         |   2 +-
+ drivers/gpu/drm/ttm/ttm_bo.c                       |   8 +-
+ drivers/infiniband/ulp/isert/ib_isert.c            | 124 ++++++++++-----------
+ drivers/infiniband/ulp/isert/ib_isert.h            |   4 +-
+ drivers/md/dm-cache-target.c                       |  11 +-
+ drivers/net/can/flexcan.c                          |   4 +-
+ drivers/net/ethernet/broadcom/tg3.c                |   3 +-
+ drivers/net/ethernet/broadcom/tg3.h                |   6 +-
+ drivers/net/ethernet/sfc/ptp.c                     |   7 ++
+ drivers/net/virtio_net.c                           |   3 +-
+ drivers/net/vmxnet3/vmxnet3_drv.c                  |  19 +++-
+ .../net/wireless/ath/ath9k/ar9462_2p0_initvals.h   |   4 +-
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c        |  22 +++-
+ drivers/net/wireless/iwlwifi/dvm/sta.c             |   1 +
+ drivers/net/wireless/iwlwifi/dvm/tx.c              |  14 ++-
+ drivers/net/wireless/iwlwifi/iwl-drv.c             |   2 +-
+ drivers/net/wireless/iwlwifi/iwl-modparams.h       |  11 +-
+ drivers/net/wireless/iwlwifi/mvm/bt-coex.c         |   7 +-
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c        |  22 +++-
+ drivers/net/wireless/iwlwifi/mvm/tx.c              |  18 +--
+ drivers/net/wireless/mwifiex/11ac.c                |   3 +-
+ drivers/net/wireless/mwifiex/11n.c                 |   3 +-
+ drivers/net/wireless/mwifiex/pcie.c                |  34 +++---
+ drivers/net/wireless/mwifiex/scan.c                |   8 +-
+ drivers/net/wireless/mwifiex/usb.c                 |   8 --
+ drivers/net/wireless/mwifiex/wmm.c                 |   3 +-
+ drivers/pci/pci.c                                  |   3 +
+ drivers/rapidio/devices/tsi721.h                   |   1 +
+ drivers/rapidio/devices/tsi721_dma.c               |  27 +++--
+ drivers/regulator/core.c                           |  14 +--
+ drivers/s390/block/dasd.c                          |   8 +-
+ drivers/scsi/isci/host.h                           |   5 +-
+ drivers/scsi/isci/port_config.c                    |   7 --
+ drivers/scsi/isci/task.c                           |   2 +-
+ drivers/scsi/qla2xxx/qla_def.h                     |   3 +-
+ drivers/scsi/storvsc_drv.c                         |   3 +
+ drivers/spi/spi-ath79.c                            |   4 +-
+ drivers/target/iscsi/iscsi_target.c                |   8 +-
+ drivers/target/iscsi/iscsi_target_erl2.c           |  16 +--
+ drivers/target/iscsi/iscsi_target_tpg.c            |   2 +-
+ drivers/usb/core/config.c                          |   4 +
+ drivers/usb/core/quirks.c                          |   4 +
+ fs/bio-integrity.c                                 |   2 +-
+ fs/btrfs/compression.c                             |   2 +
+ fs/namei.c                                         |   1 +
+ fs/nfs/delegation.c                                |  11 +-
+ fs/nfs/nfs4proc.c                                  |   5 +-
+ fs/ocfs2/file.c                                    |   8 +-
+ fs/ocfs2/quota_global.c                            |  27 +++--
+ fs/ocfs2/quota_local.c                             |   4 -
+ fs/proc/base.c                                     |   1 +
+ include/linux/firewire.h                           |   1 +
+ include/linux/jiffies.h                            |   8 +-
+ include/linux/tracepoint.h                         |   6 +
+ include/net/tcp.h                                  |   3 +-
+ include/target/iscsi/iscsi_transport.h             |   1 +
+ ipc/msg.c                                          |   2 +
+ kernel/cpuset.c                                    |   2 +-
+ kernel/irq/manage.c                                |   3 +-
+ kernel/sched/fair.c                                |   8 +-
+ kernel/time/tick-broadcast.c                       |  13 ++-
+ kernel/trace/trace_events.c                        |  10 ++
+ kernel/tracepoint.c                                |   7 +-
+ mm/compaction.c                                    |  20 ++--
+ net/core/neighbour.c                               |   6 +-
+ net/ipv4/tcp.c                                     |   8 +-
+ net/ipv4/tcp_output.c                              |   7 +-
+ net/ipv6/exthdrs_core.c                            |   2 +-
+ net/ipv6/udp_offload.c                             |   2 +-
+ net/mac80211/mesh_ps.c                             |   1 +
+ net/mac80211/mlme.c                                |  23 ++++
+ net/mac80211/sta_info.c                            |   5 +
+ net/mac80211/sta_info.h                            |   7 +-
+ net/mac80211/tx.c                                  |  15 +++
+ net/mac80211/wme.c                                 |   5 +
+ net/sctp/sm_statefuns.c                            |   7 ++
+ net/unix/af_unix.c                                 |   3 +-
+ sound/pci/hda/patch_analog.c                       |   1 +
+ sound/pci/hda/patch_realtek.c                      |   1 +
+ sound/pci/oxygen/xonar_dg.c                        |  12 +-
+ sound/soc/soc-pcm.c                                |   3 +
+ sound/usb/mixer.c                                  |   1 +
+ 99 files changed, 574 insertions(+), 306 deletions(-)
 
-Alexander Mezin (3):
-      ACPI / battery: move some ACPI_BATTERY_* definitions to header
-      ACPI / battery: call ACPI notifier chain in acpi_battery_notify
-      ACPI / AC: recheck adapter status upon battery status changes
-
-Bob Moore (20):
-      ACPICA: Improve support for 32/64 bit physical addresses in printf().
-      ACPICA: Deploy new 32/64 printf support for table override mechanism.
-      ACPICA: Utilities: Load of local test tables is now optional.
-      ACPICA: Improve parameter validation for acpi_install_gpe_block.
-      ACPICA: Update ACPICA copyrights to 2014.
-      ACPICA: Correctly support references in the union acpi_object.
-      ACPICA: Debugger: Add new command to read/write/compare all namespace objects.
-      ACPICA: Update version to 20140114.
-      ACPICA: Add "Windows 2013" string to _OSI support.
-      ACPICA: Headers: Deploy #pragma pack (push) and (pop).
-      ACPICA: Predefined names: Add support for the _PRP method.
-      ACPICA: Harden _PRT repair code; check for minimum package length.
-      ACPICA: Do not abort _PRT repair on a single subpackage failure.
-      ACPICA: Comment update - no functional change.
-      ACPICA: Update for _PRP predefined name.
-      ACPICA: Add text: ACPICA policy for new _OSI strings. No functional change.
-      ACPICA: Debugger: Add missing objects; Traverse linked lists
-      ACPICA: Prevent infinite loops when traversing corrupted lists.
-      ACPICA: Update version to 20140214.
-      ACPICA: Revert "Headers: Deploy #pragma pack (push) and (pop)."
-
-Chew, Chiau Ee (1):
-      ACPI / LPSS: Add Intel BayTrail ACPI mode PWM
-
-Dirk Brandewie (4):
-      intel_pstate: remove unneeded sample buffers
-      intel_pstate: fix pid_reset to use fixed point values
-      cpufreq: Add stop CPU callback to cpufreq_driver interface
-      intel_pstate: Set core to min P state during core offline
-
-Geert Uytterhoeven (5):
-      PM / Runtime: Add missing "it" in comment
-      PM / Hibernate: Spelling s/anonymouns/anonymous/
-      PM: Add missing "freeze" state
-      PM / Runtime: Update runtime_idle() documentation for return value meaning
-      PM / sleep: Correct whitespace errors in <linux/pm.h>
-
-Hanjun Guo (2):
-      ACPI / tables: Replace printk with pr_*
-      ACPI: Remove duplicate definitions of PREFIX
-
-Jacob Pan (2):
-      powercap / intel_rapl: relax sanity check on energy counters
-      powercap / intel_rapl: spell out SoC names
-
-Jean Delvare (5):
-      ACPI / video: fix ACPI_VIDEO dependencies
-      ACPI / gpu / drm: Stop selecting VIDEO_OUTPUT_CONTROL
-      acer-wmi: Stop selecting VIDEO_OUTPUT_CONTROL
-      fujitsu-laptop: Drop unneeded include
-      video / output: Drop display output class support
-
-Jiang Liu (5):
-      ACPI: rename acpi_evaluate_hotplug_ost() to acpi_evaluate_ost()
-      ACPI / PAD: use acpi_evaluate_ost() to replace open-coded version
-      ACPI / PAD / xen: use acpi_evaluate_ost() to replace open-coded version
-      ACPI / processor: use acpi_evaluate_ost() to replace open-coded version
-      ACPI: use device name LNXSYBUS.xx for ACPI \_SB and \_TZ objects
-
-Joe Perches (1):
-      cpufreq: Reformat printk() statements
-
-Lad, Prabhakar (1):
-      PM: fix typo in comment
-
-Lan Tianyu (1):
-      ACPI / button: Add ACPI Button event via netlink routine
-
-Liu, Chuansheng (5):
-      PM / sleep: Two flags for async suspend_noirq and suspend_late
-      PM / sleep: Asynchronous threads for resume_noirq
-      PM / sleep: Asynchronous threads for resume_early
-      PM / sleep: Asynchronous threads for suspend_noirq
-      PM / sleep: Asynchronous threads for suspend_late
-
-Lv Zheng (9):
-      ACPICA: Update the conditions to enable the utility resource dump strings.
-      ACPICA: Add support for extra, optional OS-specific header file.
-      ACPICA: acpidump: Add sparse declarators support.
-      ACPICA: acpidump: Remove integer types translation protection.
-      ACPICA: Add boot option to disable auto return object repair
-      ACPICA: Update conditional compilation flags for resource dump functions.
-      ACPICA: Properly handle NULL entries in _PRT return packages.
-      ACPICA: Restore code that repairs NULL package elements in return values.
-      ACPICA: Cleanup/improve global variable declarations.
-
-Paul Bolle (1):
-      ACPI: Remove Kconfig symbol ACPI_PROCFS
-
-Paul Burton (1):
-      cpuidle: delay enabling interrupts until all coupled CPUs leave idle
-
-Philipp Zabel (1):
-      PM / domains: Turn latency warning into debug message
-
-Rafael J. Wysocki (48):
-      ACPI / hotplug / PCI: Simplify disable_slot()
-      ACPI / hotplug / PCI: Proper kerneldoc comments for enumeration/removal
-      ACPI / hotplug / PCI: Simplify register_slot()
-      ACPI / hotplug / PCI: Drop acpiphp_bus_trim()
-      ACPI / hotplug / PCI: Rework acpiphp_no_hotplug()
-      ACPI / hotplug / PCI: Store acpi_device pointer in acpiphp_context
-      ACPI / hotplug / PCI: Drop acpiphp_bus_add()
-      ACPI / hotplug / PCI: Drop crit_sect locking
-      ACPI / hotplug / PCI: Simplify hotplug_event()
-      ACPI / hotplug / PCI: Use acpi_handle_debug() in hotplug_event()
-      ACPI / hotplug / PCI: Do not pass ACPI handle to hotplug_event()
-      ACPICA: Introduce acpi_get_data_full() and rework acpi_get_data()
-      ACPI / hotplug: Fix potential race in acpi_bus_notify()
-      ACPI / hotplug / PCI: Define hotplug context lock in the core
-      ACPI / hotplug / PCI: Consolidate ACPIPHP with ACPI core hotplug
-      ACPI / hotplug / PCI: Rework the handling of eject requests
-      ACPI / hotplug / PCI: Simplify acpi_install_hotplug_notify_handler()
-      ACPI / hotplug / PCI: Hotplug notifications from acpi_bus_notify()
-      ACPI / hotplug / PCI: Rework acpiphp_check_host_bridge()
-      ACPI / hotplug / PCI: Execute _EJ0 under the ACPI scan lock
-      PM / QoS: Rename device resume latency QoS items
-      PM / QoS: Add no_constraints_value field to struct pm_qos_constraints
-      PM / QoS: Introcuce latency tolerance device PM QoS type
-      ACPI / scan: Add bind/unbind callbacks to struct acpi_scan_handler
-      ACPI / LPSS: Support for device latency tolerance PM QoS
-      PM / QoS: Add type to dev_pm_qos_add_ancestor_request() arguments
-      ACPI / hotplug / PCI: Rename register_slot() to acpiphp_add_context()
-      ACPI / hotplug / PCI: Add ACPIPHP contexts to devices handled by PCIeHP
-      ACPI / dock: Dispatch dock notifications from the global notify handler
-      ACPI / dock: Pass ACPI device pointer to acpi_device_is_battery()
-      ACPI / dock: Associate dock platform devices with ACPI device objects
-      ACPI / hotplug / PCI: Do not clear event callback pointer for docks
-      ACPI / hotplug: Add .fixup() callback to struct acpi_hotplug_context
-      ACPI / dock: Use ACPI device object pointers instead of ACPI handles
-      ACPI / dock: Use callback pointers from devices' ACPI hotplug contexts
-      ACPI / dock: Add .uevent() callback to struct acpi_hotplug_context
-      ACPI / ATA: Add hotplug contexts to ACPI companions of SATA devices
-      ACPI / dock: Drop struct acpi_dock_ops and all code related to it
-      ACPI / dock: Drop remove_dock_dependent_devices()
-      ACPI / dock: Update copyright notice
-      ACPI: Drop acpi_evaluate_hotplug_ost() and ACPI_HOTPLUG_OST
-      cpufreq: Refactor cpufreq_set_policy()
-      ACPI / PM: Resume runtime-suspended devices later during system suspend
-      PCI / PM: Resume runtime-suspended devices later during system suspend
-      ACPI / hotplug: Rework deferred execution of acpi_device_hotplug()
-      ACPI / hotplug / PCI: Use pci_device_is_present()
-      cpufreq: Do not allow ->setpolicy drivers to provide ->target
-      MAINTAINERS: Reorder maintainer addresses for PM and ACPI
-
-Rashika Kheria (3):
-      cpufreq: Mark function as static in cpufreq.c
-      PM / sleep: Move prototype declaration to header file kernel/power/power.h
-      PM / wakeup: Include appropriate header file in kernel/power/wakelock.c
-
-Rob Herring (1):
-      cpufreq: enable ARM drivers on arm64
-
-Saravana Kannan (3):
-      cpufreq: stats: Remove redundant cpufreq_cpu_get() call
-      cpufreq: stats: Fix error handling in __cpufreq_stats_create_table()
-      cpufreq: stats: Refactor common code into __cpufreq_stats_create_table()
-
-Sebastian Capella (1):
-      PM / hibernate: use name_to_dev_t to parse resume
-
-Stratos Karafotis (2):
-      cpufreq: Fix checkpatch errors and warnings
-      cpufreq: Remove unnecessary braces
-
-Tomasz Nowicki (2):
-      ACPI / APEI: Remove X86 redundant dependency for APEI GHES.
-      ACPI / PCI: Do not call ISA-specific code if ISA is not supported
-
-Tuukka Tikkanen (6):
-      cpuidle: rename expected_us to next_timer_us in menu governor
-      cpuidle: Use actual state latency in menu governor
-      cpuidle: Ensure menu coefficients stay within domain
-      cpuidle: Do not substract exit latency from assumed sleep length
-      cpuidle: Move perf multiplier calculation out of the selection loop
-      cpuidle: poll state can measure residency
-
-Ulf Hansson (3):
-      PM / sleep: Set pm_generic functions to NULL for !CONFIG_PM_SLEEP
-      PM / runtime: Fetch runtime PM callbacks using a macro
-      PM: Add pm_runtime_suspend|resume_force functions
-
-Viresh Kumar (16):
-      cpufreq: don't call cpufreq_update_policy() on CPU addition
-      cpufreq: Return error if ->get() failed in cpufreq_update_policy()
-      cpufreq: suspend governors on system suspend/hibernate
-      cpufreq: Implement cpufreq_generic_suspend()
-      cpufreq: exynos: Use cpufreq_generic_suspend()
-      cpufreq: s5pv210: Use cpufreq_generic_suspend()
-      cpufreq: Tegra: Use cpufreq_generic_suspend()
-      PM / suspend: Remove unnecessary !!
-      cpufreq: add 'freq_table' in struct cpufreq_policy
-      cpufreq: Remove cpufreq_generic_exit()
-      cpufreq: Remove unnecessary variable/parameter 'frozen'
-      cpufreq: SPEAr: Instantiate as platform_driver
-      cpufreq: remove unused notifier: CPUFREQ_{SUSPENDCHANGE|RESUMECHANGE}
-      cpufreq: move call to __find_governor() to cpufreq_init_policy()
-      cpufreq: arm_big_little: make vexpress driver depend on bL core driver
-      cpufreq: arm_big_little: set 'physical_cluster' for each CPU
-
-Zhuoyu Zhang (1):
-      cpufreq: powerpc: add cpufreq transition latency for FSL e500mc SoCs
-
----------------
-
- Documentation/ABI/testing/sysfs-devices-power |  27 +-
- Documentation/ABI/testing/sysfs-power         |   5 +-
- Documentation/cpu-freq/core.txt               |   4 -
- Documentation/cpu-freq/cpu-drivers.txt        |   8 +-
- Documentation/kernel-parameters.txt           |   8 +
- Documentation/power/pm_qos_interface.txt      |  82 ++--
- Documentation/trace/events-power.txt          |   2 +-
- MAINTAINERS                                   |   8 +-
- arch/arm/kernel/smp.c                         |   3 +-
- arch/arm/kernel/smp_twd.c                     |   2 +-
- arch/arm/mach-pxa/viper.c                     |   3 -
- arch/arm/mach-spear/spear1310.c               |   1 +
- arch/arm/mach-spear/spear1340.c               |   1 +
- arch/arm64/Kconfig                            |   8 +
- arch/ia64/configs/generic_defconfig           |   1 -
- arch/ia64/configs/tiger_defconfig             |   1 -
- arch/ia64/configs/zx1_defconfig               |   1 -
- arch/powerpc/oprofile/op_model_cell.c         |   3 +-
- arch/sparc/kernel/time_64.c                   |   3 +-
- arch/x86/configs/i386_defconfig               |   1 -
- arch/x86/configs/x86_64_defconfig             |   1 -
- arch/x86/kernel/tsc.c                         |   3 +-
- drivers/acpi/Kconfig                          |  28 +-
- drivers/acpi/ac.c                             |  25 ++
- drivers/acpi/acpi_cmos_rtc.c                  |   2 -
- drivers/acpi/acpi_lpss.c                      |  82 +++-
- drivers/acpi/acpi_pad.c                       |  24 +-
- drivers/acpi/acpica/Makefile                  |   4 +-
- drivers/acpi/acpica/accommon.h                |   2 +-
- drivers/acpi/acpica/acdebug.h                 |   4 +-
- drivers/acpi/acpica/acdispat.h                |   2 +-
- drivers/acpi/acpica/acevents.h                |   2 +-
- drivers/acpi/acpica/acglobal.h                | 355 +++++++++--------
- drivers/acpi/acpica/achware.h                 |   2 +-
- drivers/acpi/acpica/acinterp.h                |   6 +-
- drivers/acpi/acpica/aclocal.h                 |   2 +-
- drivers/acpi/acpica/acmacros.h                |  16 +-
- drivers/acpi/acpica/acnamesp.h                |   2 +-
- drivers/acpi/acpica/acobject.h                |   2 +-
- drivers/acpi/acpica/acopcode.h                |   2 +-
- drivers/acpi/acpica/acparser.h                |   2 +-
- drivers/acpi/acpica/acpredef.h                |  16 +-
- drivers/acpi/acpica/acresrc.h                 |   2 +-
- drivers/acpi/acpica/acstruct.h                |   2 +-
- drivers/acpi/acpica/actables.h                |   2 +-
- drivers/acpi/acpica/acutils.h                 |   4 +-
- drivers/acpi/acpica/amlcode.h                 |   2 +-
- drivers/acpi/acpica/amlresrc.h                |   2 +-
- drivers/acpi/acpica/dsargs.c                  |   2 +-
- drivers/acpi/acpica/dscontrol.c               |   2 +-
- drivers/acpi/acpica/dsfield.c                 |   2 +-
- drivers/acpi/acpica/dsinit.c                  |   2 +-
- drivers/acpi/acpica/dsmethod.c                |   2 +-
- drivers/acpi/acpica/dsmthdat.c                |   2 +-
- drivers/acpi/acpica/dsobject.c                |   2 +-
- drivers/acpi/acpica/dsopcode.c                |   2 +-
- drivers/acpi/acpica/dsutils.c                 |   2 +-
- drivers/acpi/acpica/dswexec.c                 |   2 +-
- drivers/acpi/acpica/dswload.c                 |   2 +-
- drivers/acpi/acpica/dswload2.c                |   2 +-
- drivers/acpi/acpica/dswscope.c                |   2 +-
- drivers/acpi/acpica/dswstate.c                |   2 +-
- drivers/acpi/acpica/evevent.c                 |   2 +-
- drivers/acpi/acpica/evglock.c                 |   2 +-
- drivers/acpi/acpica/evgpe.c                   |   2 +-
- drivers/acpi/acpica/evgpeblk.c                |   2 +-
- drivers/acpi/acpica/evgpeinit.c               |   2 +-
- drivers/acpi/acpica/evgpeutil.c               |   2 +-
- drivers/acpi/acpica/evhandler.c               |   2 +-
- drivers/acpi/acpica/evmisc.c                  |   2 +-
- drivers/acpi/acpica/evregion.c                |  13 +-
- drivers/acpi/acpica/evrgnini.c                |   2 +-
- drivers/acpi/acpica/evsci.c                   |   2 +-
- drivers/acpi/acpica/evxface.c                 |   2 +-
- drivers/acpi/acpica/evxfevnt.c                |   2 +-
- drivers/acpi/acpica/evxfgpe.c                 |  21 +-
- drivers/acpi/acpica/evxfregn.c                |   2 +-
- drivers/acpi/acpica/exconfig.c                |   2 +-
- drivers/acpi/acpica/exconvrt.c                |   2 +-
- drivers/acpi/acpica/excreate.c                |   2 +-
- drivers/acpi/acpica/exdebug.c                 |   2 +-
- drivers/acpi/acpica/exdump.c                  | 231 ++++++++++--
- drivers/acpi/acpica/exfield.c                 |   2 +-
- drivers/acpi/acpica/exfldio.c                 |   2 +-
- drivers/acpi/acpica/exmisc.c                  |   2 +-
- drivers/acpi/acpica/exmutex.c                 |   2 +-
- drivers/acpi/acpica/exnames.c                 |   2 +-
- drivers/acpi/acpica/exoparg1.c                |   2 +-
- drivers/acpi/acpica/exoparg2.c                |   2 +-
- drivers/acpi/acpica/exoparg3.c                |   2 +-
- drivers/acpi/acpica/exoparg6.c                |   2 +-
- drivers/acpi/acpica/exprep.c                  |   2 +-
- drivers/acpi/acpica/exregion.c                |   2 +-
- drivers/acpi/acpica/exresnte.c                |   2 +-
- drivers/acpi/acpica/exresolv.c                |   2 +-
- drivers/acpi/acpica/exresop.c                 |   2 +-
- drivers/acpi/acpica/exstore.c                 |   2 +-
- drivers/acpi/acpica/exstoren.c                |   2 +-
- drivers/acpi/acpica/exstorob.c                |   2 +-
- drivers/acpi/acpica/exsystem.c                |   2 +-
- drivers/acpi/acpica/exutils.c                 |   2 +-
- drivers/acpi/acpica/hwacpi.c                  |   2 +-
- drivers/acpi/acpica/hwesleep.c                |   2 +-
- drivers/acpi/acpica/hwgpe.c                   |   2 +-
- drivers/acpi/acpica/hwpci.c                   |   2 +-
- drivers/acpi/acpica/hwregs.c                  |   2 +-
- drivers/acpi/acpica/hwsleep.c                 |   2 +-
- drivers/acpi/acpica/hwtimer.c                 |   2 +-
- drivers/acpi/acpica/hwvalid.c                 |   2 +-
- drivers/acpi/acpica/hwxface.c                 |   2 +-
- drivers/acpi/acpica/hwxfsleep.c               |   2 +-
- drivers/acpi/acpica/nsaccess.c                |   2 +-
- drivers/acpi/acpica/nsalloc.c                 |   2 +-
- drivers/acpi/acpica/nsarguments.c             |   2 +-
- drivers/acpi/acpica/nsconvert.c               |   2 +-
- drivers/acpi/acpica/nsdump.c                  |   2 +-
- drivers/acpi/acpica/nsdumpdv.c                |   2 +-
- drivers/acpi/acpica/nseval.c                  |   2 +-
- drivers/acpi/acpica/nsinit.c                  |   2 +-
- drivers/acpi/acpica/nsload.c                  |   2 +-
- drivers/acpi/acpica/nsnames.c                 |   2 +-
- drivers/acpi/acpica/nsobject.c                |  12 +-
- drivers/acpi/acpica/nsparse.c                 |   2 +-
- drivers/acpi/acpica/nspredef.c                |   2 +-
- drivers/acpi/acpica/nsprepkg.c                |  42 +--
- drivers/acpi/acpica/nsrepair.c                |  31 +-
- drivers/acpi/acpica/nsrepair2.c               |  39 +-
- drivers/acpi/acpica/nssearch.c                |   2 +-
- drivers/acpi/acpica/nsutils.c                 |   2 +-
- drivers/acpi/acpica/nswalk.c                  |   2 +-
- drivers/acpi/acpica/nsxfeval.c                |  35 +-
- drivers/acpi/acpica/nsxfname.c                |   2 +-
- drivers/acpi/acpica/nsxfobj.c                 |   2 +-
- drivers/acpi/acpica/psargs.c                  |   2 +-
- drivers/acpi/acpica/psloop.c                  |   2 +-
- drivers/acpi/acpica/psobject.c                |   2 +-
- drivers/acpi/acpica/psopcode.c                |   2 +-
- drivers/acpi/acpica/psopinfo.c                |   2 +-
- drivers/acpi/acpica/psparse.c                 |   2 +-
- drivers/acpi/acpica/psscope.c                 |   2 +-
- drivers/acpi/acpica/pstree.c                  |   2 +-
- drivers/acpi/acpica/psutils.c                 |   2 +-
- drivers/acpi/acpica/pswalk.c                  |   2 +-
- drivers/acpi/acpica/psxface.c                 |   2 +-
- drivers/acpi/acpica/rsaddr.c                  |   2 +-
- drivers/acpi/acpica/rscalc.c                  |   4 +-
- drivers/acpi/acpica/rscreate.c                |  12 +-
- drivers/acpi/acpica/rsdump.c                  |   5 +-
- drivers/acpi/acpica/rsdumpinfo.c              |   4 +-
- drivers/acpi/acpica/rsinfo.c                  |   6 +-
- drivers/acpi/acpica/rsio.c                    |   2 +-
- drivers/acpi/acpica/rsirq.c                   |   2 +-
- drivers/acpi/acpica/rslist.c                  |   2 +-
- drivers/acpi/acpica/rsmemory.c                |   2 +-
- drivers/acpi/acpica/rsmisc.c                  |   2 +-
- drivers/acpi/acpica/rsserial.c                |   2 +-
- drivers/acpi/acpica/rsutils.c                 |   2 +-
- drivers/acpi/acpica/rsxface.c                 |   2 +-
- drivers/acpi/acpica/tbfadt.c                  |   2 +-
- drivers/acpi/acpica/tbfind.c                  |   2 +-
- drivers/acpi/acpica/tbinstal.c                |  17 +-
- drivers/acpi/acpica/tbprint.c                 |  22 +-
- drivers/acpi/acpica/tbutils.c                 |   2 +-
- drivers/acpi/acpica/tbxface.c                 |   2 +-
- drivers/acpi/acpica/tbxfload.c                |   2 +-
- drivers/acpi/acpica/tbxfroot.c                |   2 +-
- drivers/acpi/acpica/utaddress.c               |   2 +-
- drivers/acpi/acpica/utalloc.c                 |   2 +-
- drivers/acpi/acpica/utbuffer.c                |   2 +-
- drivers/acpi/acpica/utcache.c                 |   2 +-
- drivers/acpi/acpica/utcopy.c                  |   8 +-
- drivers/acpi/acpica/utdebug.c                 |   2 +-
- drivers/acpi/acpica/utdecode.c                |   2 +-
- drivers/acpi/acpica/utdelete.c                |  17 +-
- drivers/acpi/acpica/uterror.c                 |   2 +-
- drivers/acpi/acpica/uteval.c                  |   2 +-
- drivers/acpi/acpica/utexcep.c                 |   2 +-
- drivers/acpi/acpica/utglobal.c                |  39 +-
- drivers/acpi/acpica/utids.c                   |   2 +-
- drivers/acpi/acpica/utinit.c                  |   2 +-
- drivers/acpi/acpica/utlock.c                  |   2 +-
- drivers/acpi/acpica/utmath.c                  |   2 +-
- drivers/acpi/acpica/utmisc.c                  |   2 +-
- drivers/acpi/acpica/utmutex.c                 |   2 +-
- drivers/acpi/acpica/utobject.c                |   2 +-
- drivers/acpi/acpica/utosi.c                   |  28 +-
- drivers/acpi/acpica/utownerid.c               |   2 +-
- drivers/acpi/acpica/utpredef.c                |   2 +-
- drivers/acpi/acpica/utresrc.c                 |   5 +-
- drivers/acpi/acpica/utstate.c                 |   2 +-
- drivers/acpi/acpica/utstring.c                |   2 +-
- drivers/acpi/acpica/uttrack.c                 |   5 +-
- drivers/acpi/acpica/utxface.c                 |   2 +-
- drivers/acpi/acpica/utxferror.c               |   2 +-
- drivers/acpi/acpica/utxfinit.c                |   2 +-
- drivers/acpi/acpica/utxfmutex.c               |   2 +-
- drivers/acpi/apei/Kconfig                     |   2 +-
- drivers/acpi/battery.c                        |   7 +-
- drivers/acpi/battery.h                        |  10 +
- drivers/acpi/bus.c                            |  63 ++--
- drivers/acpi/button.c                         |   4 +
- drivers/acpi/container.c                      |   5 +-
- drivers/acpi/device_pm.c                      |  41 +-
- drivers/acpi/dock.c                           | 454 ++++++----------------
- drivers/acpi/fan.c                            |  13 +-
- drivers/acpi/glue.c                           |  12 +
- drivers/acpi/internal.h                       |  13 +-
- drivers/acpi/osl.c                            |  27 +-
- drivers/acpi/pci_irq.c                        |  36 +-
- drivers/acpi/pci_link.c                       |   2 -
- drivers/acpi/pci_root.c                       |   4 +-
- drivers/acpi/power.c                          |   2 -
- drivers/acpi/processor_core.c                 |   1 -
- drivers/acpi/processor_driver.c               |   2 -
- drivers/acpi/processor_perflib.c              |  14 +-
- drivers/acpi/sbs.c                            |   2 +-
- drivers/acpi/scan.c                           | 261 ++++++++-----
- drivers/acpi/sysfs.c                          |   2 -
- drivers/acpi/tables.c                         | 128 +++----
- drivers/acpi/thermal.c                        |  37 +-
- drivers/acpi/utils.c                          |  16 +-
- drivers/acpi/video.c                          |   2 -
- drivers/acpi/video_detect.c                   |   2 -
- drivers/ata/libata-acpi.c                     |  72 ++--
- drivers/base/power/Makefile                   |   3 +-
- drivers/base/power/domain.c                   |   2 +-
- drivers/base/power/main.c                     | 280 +++++++++++---
- drivers/base/power/power.h                    |   4 +-
- drivers/base/power/qos.c                      | 220 ++++++++---
- drivers/base/power/runtime.c                  | 164 ++++++--
- drivers/base/power/sysfs.c                    |  97 +++--
- drivers/cpufreq/Kconfig                       |   2 +-
- drivers/cpufreq/Kconfig.arm                   |  17 +-
- drivers/cpufreq/acpi-cpufreq.c                |   1 -
- drivers/cpufreq/arm_big_little.c              |   6 +-
- drivers/cpufreq/blackfin-cpufreq.c            |   1 -
- drivers/cpufreq/cpufreq-cpu0.c                |   1 -
- drivers/cpufreq/cpufreq.c                     | 446 +++++++++++-----------
- drivers/cpufreq/cpufreq_stats.c               |  38 +-
- drivers/cpufreq/cris-artpec3-cpufreq.c        |   1 -
- drivers/cpufreq/cris-etraxfs-cpufreq.c        |   1 -
- drivers/cpufreq/davinci-cpufreq.c             |   1 -
- drivers/cpufreq/e_powersaver.c                |   1 -
- drivers/cpufreq/elanfreq.c                    |   1 -
- drivers/cpufreq/exynos-cpufreq.c              |  97 +----
- drivers/cpufreq/exynos5440-cpufreq.c          |   1 -
- drivers/cpufreq/freq_table.c                  |  46 +--
- drivers/cpufreq/ia64-acpi-cpufreq.c           |   1 -
- drivers/cpufreq/imx6q-cpufreq.c               |   1 -
- drivers/cpufreq/intel_pstate.c                |  45 +--
- drivers/cpufreq/kirkwood-cpufreq.c            |   1 -
- drivers/cpufreq/longhaul.c                    |   1 -
- drivers/cpufreq/loongson2_cpufreq.c           |   1 -
- drivers/cpufreq/omap-cpufreq.c                |   1 -
- drivers/cpufreq/p4-clockmod.c                 |   1 -
- drivers/cpufreq/pasemi-cpufreq.c              |   1 -
- drivers/cpufreq/powernow-k6.c                 |   1 -
- drivers/cpufreq/powernow-k7.c                 |   2 -
- drivers/cpufreq/powernow-k8.c                 |   2 -
- drivers/cpufreq/ppc-corenet-cpufreq.c         |   5 +-
- drivers/cpufreq/ppc_cbe_cpufreq.c             |   1 -
- drivers/cpufreq/pxa2xx-cpufreq.c              |   1 -
- drivers/cpufreq/pxa3xx-cpufreq.c              |   1 -
- drivers/cpufreq/s5pv210-cpufreq.c             |  49 +--
- drivers/cpufreq/sc520_freq.c                  |   1 -
- drivers/cpufreq/sh-cpufreq.c                  |   1 -
- drivers/cpufreq/sparc-us2e-cpufreq.c          |   4 +-
- drivers/cpufreq/sparc-us3-cpufreq.c           |   4 +-
- drivers/cpufreq/spear-cpufreq.c               |  14 +-
- drivers/cpufreq/speedstep-centrino.c          |   2 -
- drivers/cpufreq/speedstep-ich.c               |   1 -
- drivers/cpufreq/speedstep-smi.c               |   1 -
- drivers/cpufreq/tegra-cpufreq.c               |  47 +--
- drivers/cpuidle/cpuidle.c                     |   3 +-
- drivers/cpuidle/driver.c                      |   2 +-
- drivers/cpuidle/governors/menu.c              |  75 ++--
- drivers/gpu/drm/gma500/Kconfig                |   1 -
- drivers/gpu/drm/i915/Kconfig                  |   1 -
- drivers/gpu/drm/nouveau/Kconfig               |   3 +-
- drivers/input/touchscreen/st1232.c            |   3 +-
- drivers/mtd/nand/sh_flctl.c                   |   2 +-
- drivers/pci/hotplug/acpiphp.h                 |  16 +-
- drivers/pci/hotplug/acpiphp_glue.c            | 523 +++++++++-----------------
- drivers/pci/pci-driver.c                      |  33 +-
- drivers/pcmcia/sa11xx_base.c                  |   3 -
- drivers/platform/x86/Kconfig                  |   2 -
- drivers/platform/x86/fujitsu-laptop.c         |   1 -
- drivers/powercap/intel_rapl.c                 |  17 +-
- drivers/tty/serial/sh-sci.c                   |   3 +-
- drivers/video/Kconfig                         |   6 -
- drivers/video/Makefile                        |   2 -
- drivers/video/output.c                        | 133 -------
- drivers/xen/xen-acpi-cpuhotplug.c             |   2 +-
- drivers/xen/xen-acpi-memhotplug.c             |   2 +-
- drivers/xen/xen-acpi-pad.c                    |  26 +-
- include/acpi/acbuffer.h                       |   2 +-
- include/acpi/acconfig.h                       |   2 +-
- include/acpi/acexcep.h                        |   2 +-
- include/acpi/acnames.h                        |   2 +-
- include/acpi/acoutput.h                       |   2 +-
- include/acpi/acpi.h                           |   5 +-
- include/acpi/acpi_bus.h                       |  49 ++-
- include/acpi/acpi_drivers.h                   |  26 +-
- include/acpi/acpiosxf.h                       |   2 +-
- include/acpi/acpixf.h                         |   8 +-
- include/acpi/acrestyp.h                       |   2 +-
- include/acpi/actbl.h                          |   2 +-
- include/acpi/actbl1.h                         |   2 +-
- include/acpi/actbl2.h                         |   2 +-
- include/acpi/actbl3.h                         |   2 +-
- include/acpi/actypes.h                        |  66 ++--
- include/acpi/platform/acenv.h                 |   2 +-
- include/acpi/platform/acgcc.h                 |   2 +-
- include/acpi/platform/aclinux.h               |  20 +-
- include/linux/cpufreq.h                       |  25 +-
- include/linux/pci-acpi.h                      |   4 +-
- include/linux/pm.h                            |  71 ++--
- include/linux/pm_qos.h                        |  34 +-
- include/linux/pm_runtime.h                    |   4 +
- include/linux/video_output.h                  |  57 ---
- include/trace/events/power.h                  |   4 +-
- kernel/power/hibernate.c                      |  22 +-
- kernel/power/main.c                           |   4 +-
- kernel/power/power.h                          |   2 +
- kernel/power/qos.c                            |  18 +-
- kernel/power/snapshot.c                       |   2 +-
- kernel/power/suspend.c                        |   2 +-
- kernel/power/wakelock.c                       |   2 +
- 328 files changed, 3060 insertions(+), 2725 deletions(-)
 
