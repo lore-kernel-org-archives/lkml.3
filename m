@@ -1,75 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaCUWBP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:01:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59594 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750849AbaCUWBI (ORCPT
+	id S1751813AbaCUWEG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:04:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:47598 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750782AbaCUWED (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:01:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        myungjoo.ham@gmail.com
-Subject: Re: [PULL REQUEST for Rafael] PM / devfreq: pull request
-Date: Fri, 21 Mar 2014 23:16:40 +0100
-Message-ID: <6984230.es0GY7P0qj@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc6+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1395369289-6416-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1395369289-6416-1-git-send-email-myungjoo.ham@samsung.com>
+	Fri, 21 Mar 2014 18:04:03 -0400
+Date: Fri, 21 Mar 2014 18:04:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
+        mingo@redhat.com, Al Viro <viro@zeniv.linux.org.uk>,
+        systemtap@sourceware.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Seiji Aguchi <seiji.aguchi@hds.com>
+Subject: Re: [PATCH -tip v8 03/26] kprobes: Prohibit probing on .entry.text
+ code
+Message-ID: <20140321180400.0c1b2969@gandalf.local.home>
+In-Reply-To: <20140305115904.22766.57607.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305115904.22766.57607.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, March 21, 2014 11:34:49 AM MyungJoo Ham wrote:
-> 
-> Dear Rafael,
-
-Hi,
- 
-> Here goes bugfix devfreq patch.
-> 
-> Recent patchset of device-tree support / exynos driver updates is omitted in this pull request
-> as there could be further updates on the patchset.
-
-OK, pulled, but only because this is a fix.
-
-For new material, please do not send pull requests after -rc6 in the current
-cycle.  That is, a pull request with new material for 3.15 should have been
-send around 2 weeks ago.
+On Wed, 05 Mar 2014 20:59:04 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
 
-> The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15:
-> 
->   Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/mzx/devfreq.git for-rafael
-> 
-> for you to fetch changes up to e35d35a1c0b3a7317d77e03e686a4a205cdd4eed:
-> 
->   PM / devfreq: Rewrite devfreq_update_status() to fix multiple bugs (2014-03-21 11:16:30 +0900)
-> 
-> ----------------------------------------------------------------
-> Pull request for Rafael. Bugfix only.
-> (recence changes of DT/Exynos drivers need further work)
-> 
-> ----------------------------------------------------------------
-> Saravana Kannan (1):
->       PM / devfreq: Rewrite devfreq_update_status() to fix multiple bugs
-> 
->  drivers/devfreq/devfreq.c | 31 ++++++++++++++++++++-----------
->  1 file changed, 20 insertions(+), 11 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+>  struct kprobe_insn_cache {
+>  	struct mutex mutex;
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index ceeadfc..5b5ac76 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
+>  static struct kprobe_blackpoint kprobe_blacklist[] = {
+>  	{"preempt_schedule",},
+>  	{"native_get_debugreg",},
+> -	{"irq_entries_start",},
+> -	{"common_interrupt",},
+> -	{"mcount",},	/* mcount can be called from everywhere */
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Is mcount in the entry.text section? Also, what about ftrace_caller and
+friends.
+
+-- Steve
