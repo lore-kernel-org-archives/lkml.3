@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965714AbaCUAgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:36:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37117 "EHLO
+	id S966127AbaCUAg4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:36:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37749 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965899AbaCUAIy (ORCPT
+	with ESMTP id S965776AbaCUAgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:54 -0400
+	Thu, 20 Mar 2014 20:36:53 -0400
+Date: Thu, 20 Mar 2014 17:38:16 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ronald Wahl <ronald.wahl@raritan.com>,
-        Gabor Juhos <juhosg@openwrt.org>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 49/85] spi: spi-ath79: fix initial GPIO CS line setup
-Date: Thu, 20 Mar 2014 17:09:52 -0700
-Message-Id: <20140321000605.703866310@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
+To: Oleg Drokin <green@linuxhacker.ru>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH 3.10 76/85] Fix mountpoint reference leakage in linkat
+Message-ID: <20140321003816.GA26973@kroah.com>
 References: <20140321000558.606667505@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+ <20140321000609.596835128@linuxfoundation.org>
+ <3E72E44E-23C8-4040-8495-0A61C9C4316A@linuxhacker.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3E72E44E-23C8-4040-8495-0A61C9C4316A@linuxhacker.ru>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Mar 20, 2014 at 08:11:22PM -0400, Oleg Drokin wrote:
+> Hello!
+> 
+> On Mar 20, 2014, at 8:10 PM, Greg Kroah-Hartman wrote:
+> 
+> > 3.10-stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: Oleg Drokin <green@linuxhacker.ru>
+> > 
+> > commit d22e6338db7f613dd4f6095c190682fcc519e4b7 upstream.
+> > 
+> > Recent changes to retry on ESTALE in linkat
+> > (commit 442e31ca5a49e398351b2954b51f578353fdf210)
+> > introduced a mountpoint reference leak and a small memory
+> > leak in case a filesystem link operation returns ESTALE
+> > which is pretty normal for distributed filesystems like
+> > lustre, nfs and so on.
+> > Free old_path in such a case.
+> > 
+> > [AV: there was another missing path_put() nearby - on the previous
+> > goto retry]
+> 
+> This comment loses sense in this version because there's no previous goto retry,
+> though it might not be important due to it just being a port of an upstream commit, I guess.
 
-------------------
+True, but it's good to keep history around :)
 
-From: Gabor Juhos <juhosg@openwrt.org>
+thanks for the review.
 
-commit 61d1cf163c8653934cc8cd5d0b2a562d0990c265 upstream.
-
-The 'ath79_spi_setup_cs' function initializes the chip
-select line of a given SPI device in order to make sure
-that the device is inactive.
-
-If the SPI_CS_HIGH bit is set for a given device, it
-means that the CS line of that device is active HIGH
-so it must be set to LOW initially. In case of GPIO
-CS lines, the 'ath79_spi_setup_cs' function does the
-opposite of that due to the wrong GPIO flags.
-
-Fix the code to use the correct GPIO flags.
-
-Reported-by: Ronald Wahl <ronald.wahl@raritan.com>
-Signed-off-by: Gabor Juhos <juhosg@openwrt.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/spi/spi-ath79.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/spi/spi-ath79.c
-+++ b/drivers/spi/spi-ath79.c
-@@ -132,9 +132,9 @@ static int ath79_spi_setup_cs(struct spi
- 
- 		flags = GPIOF_DIR_OUT;
- 		if (spi->mode & SPI_CS_HIGH)
--			flags |= GPIOF_INIT_HIGH;
--		else
- 			flags |= GPIOF_INIT_LOW;
-+		else
-+			flags |= GPIOF_INIT_HIGH;
- 
- 		status = gpio_request_one(cdata->gpio, flags,
- 					  dev_name(&spi->dev));
-
-
+greg k-h
