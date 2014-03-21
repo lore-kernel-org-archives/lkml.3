@@ -1,68 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700AbaCUWhZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 18:37:25 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:46464 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaCUWhX (ORCPT
+	id S1751778AbaCUWl0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 18:41:26 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:37152 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751118AbaCUWlY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 18:37:23 -0400
-Message-ID: <532CBF08.4030100@oracle.com>
-Date: Fri, 21 Mar 2014 18:36:56 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 21 Mar 2014 18:41:24 -0400
+Message-ID: <532CC00F.3000501@hurleysoftware.com>
+Date: Fri, 21 Mar 2014 18:41:19 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>
-CC: Rik van Riel <riel@redhat.com>, David Rientjes <rientjes@google.com>,
-        hhuang@redhat.com, knoel@redhat.com, aarcange@redhat.com,
-        Davidlohr Bueso <davidlohr@hp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm: numa: Recheck for transhuge pages under lock during
- protection changes
-References: <20140307182745.GD1931@suse.de>	<20140311162845.GA30604@suse.de>	<531F3F15.8050206@oracle.com>	<531F4128.8020109@redhat.com>	<531F48CC.303@oracle.com>	<20140311180652.GM10663@suse.de>	<531F616A.7060300@oracle.com>	<20140311122859.fb6c1e772d82d9f4edd02f52@linux-foundation.org>	<20140312103602.GN10663@suse.de>	<5323C5D9.2070902@oracle.com>	<20140319143831.GA4751@suse.de> <20140321150658.386926ac3afa263946b1a2aa@linux-foundation.org>
-In-Reply-To: <20140321150658.386926ac3afa263946b1a2aa@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: Re: [PATCH resend] serial_core: Fix pm imbalance on unbind
+References: <1395392905-29569-1-git-send-email-geert@linux-m68k.org>	<532C394A.3050408@hurleysoftware.com> <CAMuHMdUBiUzpvTzkhaguOQoDc8XJH7NvnNe2Z+jL6UeEitpJPg@mail.gmail.com>
+In-Reply-To: <CAMuHMdUBiUzpvTzkhaguOQoDc8XJH7NvnNe2Z+jL6UeEitpJPg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 06:06 PM, Andrew Morton wrote:
-> On Wed, 19 Mar 2014 14:38:32 +0000 Mel Gorman<mgorman@suse.de>  wrote:
+Hi Geert,
+
+On 03/21/2014 09:23 AM, Geert Uytterhoeven wrote:
+> Hi Peter,
 >
->> >On Fri, Mar 14, 2014 at 11:15:37PM -0400, Sasha Levin wrote:
->>> > >On 03/12/2014 06:36 AM, Mel Gorman wrote:
->>>> > > >Andrew, this should go with the patches
->>>> > > >mmnuma-reorganize-change_pmd_range.patch
->>>> > > >mmnuma-reorganize-change_pmd_range-fix.patch
->>>> > > >move-mmu-notifier-call-from-change_protection-to-change_pmd_range.patch
->>>> > > >in mmotm please.
->>>> > > >
->>>> > > >Thanks.
->>>> > > >
->>>> > > >---8<---
->>>> > > >From: Mel Gorman<mgorman@suse.de>
->>>> > > >Subject: [PATCH] mm: numa: Recheck for transhuge pages under lock during protection changes
->>>> > > >
->>>> > > >Sasha Levin reported the following bug using trinity
->>> > >
->>> > >I'm seeing a different issue with this patch. A NULL ptr deref occurs in the
->>> > >pte_offset_map_lock() macro right before the new recheck code:
->>> > >
->> >
->> >This on top?
->> >
->> >I tried testing it but got all sorts of carnage that trinity throw up
->> >in the mix and ordinary testing does not trigger the race. I've no idea
->> >which of the current mess of trinity-exposed bugs you've encountered and
->> >got fixed already.
->> >
-> Where are we at with this one?
+> On Fri, Mar 21, 2014 at 2:06 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>>> @@ -2681,10 +2683,12 @@ int uart_remove_one_port(struct uart_driver *drv,
+>>> struct uart_port *uport)
+>>>          }
+>>>
+>>>          /*
+>>> -        * If the port is used as a console, unregister it
+>>> +        * If the port is used as a console, unregister it, and power it
+>>> down
+>>>           */
+>>> -       if (uart_console(uport))
+>>> +       if (uart_console(uport)) {
+>>>                  unregister_console(uport->cons);
+>>> +               uart_change_pm(state, UART_PM_STATE_OFF);
+>>
+>> Won't this power off the port while tty consoles may still be open?
+>
+> I didn't see that actually happening.
 
-Looking good here, haven't seen any of the issues reported in this thread.
+Ok, but I still think this isn't right. See below.
+
+>> I think the right thing here is to unregister_console then set uport->cons =
+>> NULL
+>>
+>> [uport->cons is properly reassigned when/if a port is re-added via
+>> uart_add_one_port()).]
+>
+> But indeed, for concistency/symmetry uport->state and uport->cons
+> should be resend, but that's something separate.
+
+I don't see this as being a "looks good" problem; I see this as being
+"what's the right way to teardown a uart device that's going away when
+a tty console is running on it", and there are too many problems with
+uart_remove_one_port() doing:
+
+      state->uart_port = NULL
+
+to keep with that solution.
+
+>> Then, uart_close() will power off the port when all ttys using the port have
+>> been closed.
+>
+> uart_close() won't get that far, so uart_change_pm() won't be called.
+
+And this is the central problem: uart_close() must complete normally
+if a tty console is still running on a device.
+
+For example, if uart_shutdown() isn't getting called, then who's freeing
+the ring buffer page?
 
 
-Thanks,
-Sasha
+> See also https://lkml.org/lkml/2014/3/10/651, and my workaround for the
+> crash https://lkml.org/lkml/2014/3/17/231.
+
+See my comments to the v2 patch there.
+
+Regards,
+Peter Hurley
