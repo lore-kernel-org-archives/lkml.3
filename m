@@ -1,47 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755603AbaCUF31 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:29:27 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:55353 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573AbaCUF3Z (ORCPT
+	id S964977AbaCUF3b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:29:31 -0400
+Received: from LGEMRELSE1Q.lge.com ([156.147.1.111]:53689 "EHLO
+	LGEMRELSE1Q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753968AbaCUF32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:29:25 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <532BCDE4.2060700@roeck-us.net>
-Date: Thu, 20 Mar 2014 22:28:04 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 01:29:28 -0400
+X-AuditID: 9c93016f-b7c71ae000000e71-74-532bce360419
+Date: Fri, 21 Mar 2014 14:29:36 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Jan Kara <jack@suse.cz>
+Cc: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 0/3] Volatile Ranges (v11)
+Message-ID: <20140321052936.GB7450@bbox>
+References: <1394822013-23804-1-git-send-email-john.stultz@linaro.org>
+ <20140318151113.GA10724@gmail.com>
+ <CALAqxLV=uRV825taKrnH2=p_kAf5f1PbQ7=J5MopFt9ATj=a3A@mail.gmail.com>
+ <20140319004918.GB13475@bbox>
+ <20140319101202.GE26358@quack.suse.cz>
+ <20140320010954.GE16478@bbox>
+ <20140320081359.GB32080@quack.suse.cz>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.10 00/85] 3.10.34-stable review
-References: <20140321000558.606667505@linuxfoundation.org>
-In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140320081359.GB32080@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 05:09 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.10.34 release.
-> There are 85 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sun Mar 23 00:05:33 UTC 2014.
-> Anything received after that time might be too late.
->
-Build results:
-	total: 126 pass: 121 skipped: 4 fail: 1
+On Thu, Mar 20, 2014 at 09:13:59AM +0100, Jan Kara wrote:
+> On Thu 20-03-14 10:09:54, Minchan Kim wrote:
+> > Hello,
+> > 
+> > On Wed, Mar 19, 2014 at 11:12:02AM +0100, Jan Kara wrote:
+> > > On Wed 19-03-14 09:49:18, Minchan Kim wrote:
+> > > > On Tue, Mar 18, 2014 at 11:07:50AM -0700, John Stultz wrote:
+> > > > > On Tue, Mar 18, 2014 at 8:11 AM, Minchan Kim <minchan@kernel.org> wrote:
+> > > > > > 1) SIGBUS
+> > > > > >
+> > > > > > It's one of the arguable issue because some user want to get a
+> > > > > > SIGBUS(ex, Firefox) while other want a just zero page(ex, Google
+> > > > > > address sanitizer) without signal so it should be option.
+> > > > > >
+> > > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_ZERO, &purged);
+> > > > > >         int vrange(start, len, VRANGE_VOLATILE|VRANGE_SIGNAL, &purged);
+> > > > > 
+> > > > > So, the zero-fill on volatile access feels like a *very* special case
+> > > > > to me, since a null page could be valid data in many cases. Since
+> > > > > support/interest for volatile ranges has been middling at best, I want
+> > > > > to start culling the stranger use cases. I'm open in the future to
+> > > > > adding a special flag or something if it really make sense, but at
+> > > > > this point, lets just get the more general volatile range use cases
+> > > > > supported.
+> > > > 
+> > > > I'm not sure it's special case. Because some user could reserve
+> > > > a big volatile VMA and want to use the range by circle queue for
+> > > > caching so overwriting could happen easily.
+> > > > We should call vrange(NOVOLATILE) to prevent SIGBUS right before
+> > > > overwriting. I feel it's unnecessary overhead and we could avoid
+> > > > the cost with VRANGE_ZERO.
+> > > > Do you think this usecase would be rare?
+> > >   If I understand it correctly the buffer would be volatile all the time
+> > > and userspace would like to opportunistically access it. Hum, but then with
+> > > your automatic zero-filling it could see half of the page with data and
+> > > half of the page zeroed out (the page got evicted in the middle of
+> > > userspace reading it). I don't think that's a very comfortable interface to
+> > > work with (you would have to very carefully verify the data you've read is
+> > > really valid). And frankly in most cases I'm afraid the application would
+> > > fail to do proper verification and crash randomly under memory pressure. So
+> > > I wouldn't provide VRANGE_ZERO unless I come across real people for which
+> > > avoiding marking the range as NONVOLATILE is a big deal and they are OK with
+> > > handling all the odd situations that can happen.
+> > 
+> > Plaes think following usecase.
+> > 
+> > Let's assume big volatile cacne.
+> > If there is request for cache, it should find a object in a cache
+> > and if it found, it should call vrange(NOVOLATILE) right before
+> > passing it to the user and investigate it was purged or not.
+> > If it wasn't purged, cache manager could pass the object to the user.
+> > But it's circular cache so if there is no request from user, cache manager
+> > always overwrites objects so it could encounter SIGBUS easily
+> > so as current sematic, cache manager always should call vrange(NOVOLATILE)
+> > right before the overwriting. Otherwise, it should register SIGBUS handler
+> > to unmark volatile by page unit. SIGH.
+> > 
+> > If we support VRANGE_ZERO, cache manager could overwrite object without
+> > SIGBUS handling or vrange(NOVOLATILE) call. Just need is vrange(NOVOLATILE)
+> > call while cache manager pass it to the user.
+>   OK, that makes some sense but I don't think we have to implement this
+> functionality in the beginning...
 
-qemu tests all passed.
+Yeb, I am not strong against the idea which starts syscall as simple one
+but make room for future but I believe scenario I mentioned is one of
+typical usecase for volatile cache and it could avoid vrange(NOVOLATILE)
+which is heavier than vrange(VOLATILE) because NOVOLATILE should enumerate
+all of ptes in the range at current implementation so reducing NOVOATILE
+call looks important to me.
 
-Results are as expected. Details are available at http://server.roeck-us.net:8010/builders.
 
-Guenter
+> 								Honza
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
+-- 
+Kind regards,
+Minchan Kim
