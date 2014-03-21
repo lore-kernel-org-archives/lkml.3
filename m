@@ -1,153 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760323AbaCUJBL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:01:11 -0400
-Received: from smtp.multi.fi ([85.134.37.151]:59803 "EHLO smtp.multi.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751488AbaCUJBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:01:08 -0400
-X-Greylist: delayed 1099 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 05:01:08 EDT
-Message-ID: <532BFFB9.1010307@mageia.org>
-Date: Fri, 21 Mar 2014 11:00:41 +0200
-From: Thomas Backlund <tmb@mageia.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org, geert@linux-m68k.org,
-        richard@nod.at, scottwood@freescale.com
-Subject: Re: [PATCH 3.13 000/149] 3.13.7-stable review
-References: <20140321000436.377902063@linuxfoundation.org> <532BD009.7020204@roeck-us.net> <532BFB76.60709@mageia.org>
-In-Reply-To: <532BFB76.60709@mageia.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760357AbaCUJCF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:02:05 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42463 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760087AbaCUJCC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:02:02 -0400
+X-AuditID: cbfec7f4-b7f796d000005a13-60-532c000702b2
+Message-id: <1395392518.17194.2.camel@AMDC1943>
+Subject: Re: [PATCH RFT] regulator: s5m8767: Convert to use
+ regulator_[enable|disable|is_enabled]_regmap
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Date: Fri, 21 Mar 2014 10:01:58 +0100
+In-reply-to: <1395384848.32206.1.camel@phoenix>
+References: <1395384848.32206.1.camel@phoenix>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMLMWRmVeSWpSXmKPExsVy+t/xK7rsDDrBBu9Wa1gcmfOV2WLqwyds
+	Ft+udDBZXN41h83i4oovTA6sHjtn3WX3aPtZ5rFpVSebR9+WVYwenzfJBbBGcdmkpOZklqUW
+	6dslcGW0NM9jKujSqujZfYGtgbFDqYuRk0NCwETi2MZ+VghbTOLCvfVsXYxcHEICSxkltr6f
+	wgLhfGaUOHr3GQtIFa+AvsTDDTvAbGGBLIn2MxuYQWw2AWOJzcuXsIHYIgJKEqvuXwZrZhbo
+	YZR42t4F5HBwsAioSiyeUwtSwwk0Z1LXfrA5QgJ6Eq+297KD2MwC6hKT5i1ihrhISWJ3eydU
+	XF5i85q3zBA3CEr8mHyPZQKjwCwkLbOQlM1CUraAkXkVo2hqaXJBcVJ6rqFecWJucWleul5y
+	fu4mRkhAf9nBuPiY1SFGAQ5GJR7eCk7tYCHWxLLiytxDjBIczEoivEt/AYV4UxIrq1KL8uOL
+	SnNSiw8xMnFwSjUwMm0t3+99VYHjtvHO/59nJW3+FHyW+9jDx7HF5/6kVEpc+5lXYHxfdvtG
+	77rdUf6L1ZNY+foKGf7dWbziSJrvDqXmVfYTYw8qrSk60H9qdVVdnD3nIQvlOU+yd2RlX6+q
+	M+A8c8sod9dNrvTHm6pWC97Z8m5y3coNqeKcCvct+p1tPe309/6IUGIpzkg01GIuKk4EAIVo
+	mZtGAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Backlund skrev 21.3.2014 10:42:
-> Guenter Roeck skrev 21.3.2014 07:37:
->> On 03/20/2014 05:02 PM, Greg Kroah-Hartman wrote:
->>> This is the start of the stable review cycle for the 3.13.7 release.
->>> There are 149 patches in this series, all will be posted as a response
->>> to this one.  If anyone has any issues with these being applied, please
->>> let me know.
->>>
->>> Responses should be made by Sun Mar 23 00:03:54 UTC 2014.
->>> Anything received after that time might be too late.
->>>
->>
->> Build results:
->>      total: 126 pass: 120 skipped: 4 fail: 2
->>
->> qemu tests all passed.
->>
->> There are two new build failures.
->>
->> Building powerpc:mpc85xx_defconfig ... failed
->> Building powerpc:mpc85xx_smp_defconfig ... failed
->>
->> The failure is the same in both cases.
->>
->> drivers/i2c/busses/i2c-cpm.c: In function 'cpm_i2c_setup':
->> drivers/i2c/busses/i2c-cpm.c:450:2: error: implicit declaration of
->> function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
->> drivers/i2c/busses/i2c-cpm.c:461:2: error: implicit declaration of
->> function 'of_iomap' [-Werror=implicit-function-declaration]
->>
->> It appears you picked this up from the latest mainline, where the
->> same builds fail with the same error. The problem was introduced
->> in mainline between rc6 and rc7.
->>
->> I have no immediate idea which patch causes the problem.
->> I can bisect tomorrow if needed.
->
-> Probably this one exposing additional code to be built:
->
->
->  From 62c19c9d29e65086e5ae76df371ed2e6b23f00cd Mon Sep 17 00:00:00 2001
-> From: Richard Weinberger <richard@nod.at>
-> Date: Sun, 9 Feb 2014 19:47:40 +0100
-> Subject: i2c: Remove usage of orphaned symbol OF_I2C
->
-> From: Richard Weinberger <richard@nod.at>
->
-> commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
->
-> The symbol is an orphan, don't depend on it anymore.
->
-> Signed-off-by: Richard Weinberger <richard@nod.at>
-> [wsa: enhanced commit message]
-> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-> Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
-> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->
+On Fri, 2014-03-21 at 14:54 +0800, Axel Lin wrote:
+> Since commit ca5d1b3524b4d
+> "regulator: helpers: Modify helpers enabling multi-bit control",
+> we can set enable_val setting for device that use multiple bits for control.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 > ---
->   drivers/i2c/busses/Kconfig |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
->
->   config I2C_CPM
->          tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
-> -       depends on (CPM1 || CPM2) && OF_I2C
-> +       depends on CPM1 || CPM2
->          help
->            This supports the use of the I2C interface on Freescale
->            processors with CPM1 or CPM2.
->
->
+>  drivers/regulator/s5m8767.c | 78 +++++++++++----------------------------------
+>  1 file changed, 19 insertions(+), 59 deletions(-)
+
+Hi,
 
 
-and the buildfix was posted to upstream and -stable a couple of days ago 
-(not in upstream linus tree yet), with subject:
+Works and looks great, thanks! Tested on board with S5M8767.
 
-[PATCH] i2c-cpm: Fix build by adding of_address.h and of_irq.h
-
-
-Fixes a build break due to the undeclared use of irq_of_parse_and_map()
-and of_iomap().  This build break was apparently introduced while the
-driver was unbuildable due to the bug fixed by
-62c19c9d29e65086e5ae76df371ed2e6b23f00cd ("i2c: Remove usage of
-orphaned symbol OF_I2C").  When 62c19c was added in v3.14-rc7,
-the driver was enabled again, breaking the powerpc mpc85xx_defconfig
-and mpc85xx_smp_defconfig.
-
-62c19c is marked for stable, so this should go there as well.
-
-Signed-off-by: Scott Wood <scottwood@freescale.com>
-Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Richard Weinberger <richard@nod.at>
-Cc: stable@kernel.org
----
-There are still warnings in this driver that suggest it is broken with
-CONFIG_PHYS_64BIT, but that part does not appear to be a regression.
-
-  drivers/i2c/busses/i2c-cpm.c | 2 ++
-  1 file changed, 2 insertions(+)
-
-diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-index be7f0a2..f3b89a4 100644
---- a/drivers/i2c/busses/i2c-cpm.c
-+++ b/drivers/i2c/busses/i2c-cpm.c
-@@ -39,7 +39,9 @@
-  #include <linux/i2c.h>
-  #include <linux/io.h>
-  #include <linux/dma-mapping.h>
-+#include <linux/of_address.h>
-  #include <linux/of_device.h>
-+#include <linux/of_irq.h>
-  #include <linux/of_platform.h>
-  #include <sysdev/fsl_soc.h>
-  #include <asm/cpm.h>
--- 
-1.8.3.2
+Tested-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Reviewed-by Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
 
---
-Thomas
+Best regards,
+Krzysztof
+
+> 
+> diff --git a/drivers/regulator/s5m8767.c b/drivers/regulator/s5m8767.c
+> index 342a66ab..f05bada 100644
+> --- a/drivers/regulator/s5m8767.c
+> +++ b/drivers/regulator/s5m8767.c
+> @@ -167,12 +167,11 @@ static unsigned int s5m8767_opmode_reg[][4] = {
+>  	{0x0, 0x3, 0x1, 0x1}, /* BUCK9 */
+>  };
+>  
+> -static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
+> -				int *enable_ctrl)
+> +static int s5m8767_get_register(struct s5m8767_info *s5m8767, int reg_id,
+> +				int *reg, int *enable_ctrl)
+>  {
+> -	int i, reg_id = rdev_get_id(rdev);
+> +	int i;
+>  	unsigned int mode;
+> -	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+>  
+>  	switch (reg_id) {
+>  	case S5M8767_LDO1 ... S5M8767_LDO2:
+> @@ -211,53 +210,6 @@ static int s5m8767_get_register(struct regulator_dev *rdev, int *reg,
+>  	return 0;
+>  }
+>  
+> -static int s5m8767_reg_is_enabled(struct regulator_dev *rdev)
+> -{
+> -	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+> -	int ret, reg;
+> -	int enable_ctrl;
+> -	unsigned int val;
+> -
+> -	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+> -	if (ret == -EINVAL)
+> -		return 1;
+> -	else if (ret)
+> -		return ret;
+> -
+> -	ret = regmap_read(s5m8767->iodev->regmap_pmic, reg, &val);
+> -	if (ret)
+> -		return ret;
+> -
+> -	return (val & S5M8767_ENCTRL_MASK) == enable_ctrl;
+> -}
+> -
+> -static int s5m8767_reg_enable(struct regulator_dev *rdev)
+> -{
+> -	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+> -	int ret, reg;
+> -	int enable_ctrl;
+> -
+> -	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+> -	if (ret)
+> -		return ret;
+> -
+> -	return regmap_update_bits(s5m8767->iodev->regmap_pmic, reg,
+> -			S5M8767_ENCTRL_MASK, enable_ctrl);
+> -}
+> -
+> -static int s5m8767_reg_disable(struct regulator_dev *rdev)
+> -{
+> -	struct s5m8767_info *s5m8767 = rdev_get_drvdata(rdev);
+> -	int ret, reg, enable_ctrl;
+> -
+> -	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+> -	if (ret)
+> -		return ret;
+> -
+> -	return regmap_update_bits(s5m8767->iodev->regmap_pmic, reg,
+> -			S5M8767_ENCTRL_MASK, ~S5M8767_ENCTRL_MASK);
+> -}
+> -
+>  static int s5m8767_get_vsel_reg(int reg_id, struct s5m8767_info *s5m8767)
+>  {
+>  	int reg;
+> @@ -407,9 +359,9 @@ static int s5m8767_set_voltage_time_sel(struct regulator_dev *rdev,
+>  
+>  static struct regulator_ops s5m8767_ops = {
+>  	.list_voltage		= regulator_list_voltage_linear,
+> -	.is_enabled		= s5m8767_reg_is_enabled,
+> -	.enable			= s5m8767_reg_enable,
+> -	.disable		= s5m8767_reg_disable,
+> +	.is_enabled		= regulator_is_enabled_regmap,
+> +	.enable			= regulator_enable_regmap,
+> +	.disable		= regulator_disable_regmap,
+>  	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+>  	.set_voltage_sel	= s5m8767_set_voltage_sel,
+>  	.set_voltage_time_sel	= s5m8767_set_voltage_time_sel,
+> @@ -417,9 +369,9 @@ static struct regulator_ops s5m8767_ops = {
+>  
+>  static struct regulator_ops s5m8767_buck78_ops = {
+>  	.list_voltage		= regulator_list_voltage_linear,
+> -	.is_enabled		= s5m8767_reg_is_enabled,
+> -	.enable			= s5m8767_reg_enable,
+> -	.disable		= s5m8767_reg_disable,
+> +	.is_enabled		= regulator_is_enabled_regmap,
+> +	.enable			= regulator_enable_regmap,
+> +	.disable		= regulator_disable_regmap,
+>  	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+>  	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
+>  };
+> @@ -524,12 +476,13 @@ static void s5m8767_regulator_config_ext_control(struct s5m8767_info *s5m8767,
+>  static int s5m8767_enable_ext_control(struct s5m8767_info *s5m8767,
+>  		struct regulator_dev *rdev)
+>  {
+> +	int id = rdev_get_id(rdev);
+>  	int ret, reg, enable_ctrl;
+>  
+> -	if (rdev_get_id(rdev) != S5M8767_BUCK9)
+> +	if (id != S5M8767_BUCK9)
+>  		return -EINVAL;
+>  
+> -	ret = s5m8767_get_register(rdev, &reg, &enable_ctrl);
+> +	ret = s5m8767_get_register(s5m8767, id, &reg, &enable_ctrl);
+>  	if (ret)
+>  		return ret;
+>  
+> @@ -984,6 +937,7 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+>  	for (i = 0; i < pdata->num_regulators; i++) {
+>  		const struct sec_voltage_desc *desc;
+>  		int id = pdata->regulators[i].id;
+> +		int enable_reg, enable_val;
+>  
+>  		desc = reg_voltage_map[id];
+>  		if (desc) {
+> @@ -997,6 +951,12 @@ static int s5m8767_pmic_probe(struct platform_device *pdev)
+>  				regulators[id].vsel_mask = 0x3f;
+>  			else
+>  				regulators[id].vsel_mask = 0xff;
+> +
+> +			s5m8767_get_register(s5m8767, id, &enable_reg,
+> +					     &enable_val);
+> +			regulators[id].enable_reg = enable_reg;
+> +			regulators[id].enable_mask = S5M8767_ENCTRL_MASK;
+> +			regulators[id].enable_val = enable_val;
+>  		}
+>  
+>  		config.dev = s5m8767->dev;
 
