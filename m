@@ -1,132 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761035AbaCURXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:23:18 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:48433 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760575AbaCURXM (ORCPT
+	id S1761078AbaCURYJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:24:09 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:39472 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaCURYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:23:12 -0400
-X-IronPort-AV: E=Sophos;i="4.97,704,1389744000"; 
-   d="scan'208";a="112350918"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next] Revert "xen-netback: Aggregate TX unmap operations"
-Date: Fri, 21 Mar 2014 17:23:04 +0000
-Message-ID: <1395422584-16213-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 21 Mar 2014 13:24:03 -0400
+Message-ID: <532C75B0.9040405@codeaurora.org>
+Date: Fri, 21 Mar 2014 13:24:00 -0400
+From: Christopher Covington <cov@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+To: Joe Perches <joe@perches.com>
+CC: linux-arm-kernel@lists.infradead.org, Andy Whitcroft <apw@canonical.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] checkpatch.pl: Add check for Change-Id
+References: <1395255293-3419-1-git-send-email-cov@codeaurora.org> <1395310100.7776.3.camel@joe-AO722>
+In-Reply-To: <1395310100.7776.3.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit e9275f5e2df1b2098a8cc405d87b88b9affd73e6. This commit is the
-last in the netback grant mapping series, and it tries to do more aggressive
-aggreagtion of unmap operations. However practical use showed almost no
-positive effect, whilst with certain frontends it causes significant performance
-regression.
+Hi Joe,
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
- drivers/net/xen-netback/common.h    |    2 --
- drivers/net/xen-netback/interface.c |    2 --
- drivers/net/xen-netback/netback.c   |   34 +---------------------------------
- 3 files changed, 1 insertion(+), 37 deletions(-)
+On 03/20/2014 06:08 AM, Joe Perches wrote:
+> On Wed, 2014-03-19 at 14:54 -0400, Christopher Covington wrote:
+>> A commit hook for the Gerrit code review server inserts change
+>> identifiers so Gerrit can track patches through multiple revisions.
+>> These identifiers are noise in the context of the upstream kernel.
+>> (Many Gerrit servers are private. Even given a public instance,
+>> given only a Change-Id, one must guess which server a change was
+>> tracked on. Patches submitted to the Linux kernel mailing lists
+>> should be able to stand on their own. If it's truly useful to
+>> reference code review on a Gerrit server, a URL is a much clearer
+>> way to do so.) Thus, issue an error when a Change-Id: line is
+>> encountered.
+> []
+>> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> []
+>> @@ -1891,6 +1891,12 @@ sub process {
+>>  			}
+>>  		}
+>>  
+>> +# Check for unwanted Gerrit info
+>> +		if ($line =~ /^\s*change-id:/i) {
+>> +			ERROR("BAD_SIGN_OFF",
+>> +			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
+>> +		}
+>> +
+> 
+> I think this needs an "$in_commit_log" test added
+> 
+> 		if ($in_commit_log &&
+> 		    $line =~ /^\s*change-id:/i) {
 
-diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
-index bef37be..0355f87 100644
---- a/drivers/net/xen-netback/common.h
-+++ b/drivers/net/xen-netback/common.h
-@@ -137,8 +137,6 @@ struct xenvif {
- 	u16 dealloc_ring[MAX_PENDING_REQS];
- 	struct task_struct *dealloc_task;
- 	wait_queue_head_t dealloc_wq;
--	struct timer_list dealloc_delay;
--	bool dealloc_delay_timed_out;
- 
- 	/* Use kthread for guest RX */
- 	struct task_struct *task;
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index a6a8c15..23bb2f4 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -407,7 +407,6 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
- 			  .desc = i };
- 		vif->grant_tx_handle[i] = NETBACK_INVALID_HANDLE;
- 	}
--	init_timer(&vif->dealloc_delay);
- 
- 	/*
- 	 * Initialise a dummy MAC address. We choose the numerically
-@@ -556,7 +555,6 @@ void xenvif_disconnect(struct xenvif *vif)
- 	}
- 
- 	if (vif->dealloc_task) {
--		del_timer_sync(&vif->dealloc_delay);
- 		kthread_stop(vif->dealloc_task);
- 		vif->dealloc_task = NULL;
- 	}
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 5a8c4a4..1f595e5 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -133,11 +133,6 @@ static inline pending_ring_idx_t pending_index(unsigned i)
- 	return i & (MAX_PENDING_REQS-1);
- }
- 
--static inline pending_ring_idx_t nr_free_slots(struct xen_netif_tx_back_ring *ring)
--{
--	return ring->nr_ents -	(ring->sring->req_prod - ring->rsp_prod_pvt);
--}
--
- bool xenvif_rx_ring_slots_available(struct xenvif *vif, int needed)
- {
- 	RING_IDX prod, cons;
-@@ -1718,36 +1713,9 @@ static inline int tx_work_todo(struct xenvif *vif)
- 	return 0;
- }
- 
--static void xenvif_dealloc_delay(unsigned long data)
--{
--	struct xenvif *vif = (struct xenvif *)data;
--
--	vif->dealloc_delay_timed_out = true;
--	wake_up(&vif->dealloc_wq);
--}
--
- static inline bool tx_dealloc_work_todo(struct xenvif *vif)
- {
--	if (vif->dealloc_cons != vif->dealloc_prod) {
--		if ((nr_free_slots(&vif->tx) > 2 * XEN_NETBK_LEGACY_SLOTS_MAX) &&
--		    (vif->dealloc_prod - vif->dealloc_cons < MAX_PENDING_REQS / 4) &&
--		    !vif->dealloc_delay_timed_out) {
--			if (!timer_pending(&vif->dealloc_delay)) {
--				vif->dealloc_delay.function =
--					xenvif_dealloc_delay;
--				vif->dealloc_delay.data = (unsigned long)vif;
--				mod_timer(&vif->dealloc_delay,
--					  jiffies + msecs_to_jiffies(1));
--
--			}
--			return false;
--		}
--		del_timer_sync(&vif->dealloc_delay);
--		vif->dealloc_delay_timed_out = false;
--		return true;
--	}
--
--	return false;
-+	return vif->dealloc_cons != vif->dealloc_prod;
- }
- 
- void xenvif_unmap_frontend_rings(struct xenvif *vif)
+This would mean that Change-Id lines that follow a Signed-off-by line will not
+get caught. I expect that the common case is to use the commit hook shipped
+with Gerrit [1], which inserts the Change-Id above the Signed-off-by, so the
+proposed change is fine by me.
+
+1.
+https://gerrit.googlesource.com/gerrit/+/master/gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg
+
+> And maybe use a separate "TYPE", not "BAD_SIGN_OFF".
+> Maybe "GERRIT_CHANGE_ID"
+> 
+
+Will do.
+
+Thanks,
+Christopher
+
 -- 
-1.7.9.5
-
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+hosted by the Linux Foundation.
