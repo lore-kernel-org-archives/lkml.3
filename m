@@ -1,21 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966211AbaCUAJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37428 "EHLO
+	id S966250AbaCUAJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:09:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37453 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966186AbaCUAJr (ORCPT
+	with ESMTP id S966186AbaCUAJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:47 -0400
+	Thu, 20 Mar 2014 20:09:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Giridhar Malavali <giridhar.malavali@qlogic.com>,
-        Saurav Kashyap <saurav.kashyap@qlogic.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.4 31/35] SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
-Date: Thu, 20 Mar 2014 17:11:22 -0700
-Message-Id: <20140321001055.178880115@linuxfoundation.org>
+        Artem Fetishev <artem_fetishev@epam.com>,
+        Aleksandr Terekhov <aleksandr_terekhov@epam.com>,
+        wiebittewas@gmail.com, Pavel Emelyanov <xemul@parallels.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 23/35] fs/proc/base.c: fix GPF in /proc/$PID/map_files
+Date: Thu, 20 Mar 2014 17:11:14 -0700
+Message-Id: <20140321001054.926431163@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -30,30 +34,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giridhar Malavali <giridhar.malavali@qlogic.com>
+From: Artem Fetishev <artem_fetishev@epam.com>
 
-commit b77ed25c9f8402e8b3e49e220edb4ef09ecfbb53 upstream.
+commit 70335abb2689c8cd5df91bf2d95a65649addf50b upstream.
 
-Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
-Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+The expected logic of proc_map_files_get_link() is either to return 0
+and initialize 'path' or return an error and leave 'path' uninitialized.
+
+By the time dname_to_vma_addr() returns 0 the corresponding vma may have
+already be gone.  In this case the path is not initialized but the
+return value is still 0.  This results in 'general protection fault'
+inside d_path().
+
+Steps to reproduce:
+
+  CONFIG_CHECKPOINT_RESTORE=y
+
+    fd = open(...);
+    while (1) {
+        mmap(fd, ...);
+        munmap(fd, ...);
+    }
+
+  ls -la /proc/$PID/map_files
+
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=68991
+
+Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+Signed-off-by: Aleksandr Terekhov <aleksandr_terekhov@epam.com>
+Reported-by: <wiebittewas@gmail.com>
+Acked-by: Pavel Emelyanov <xemul@parallels.com>
+Acked-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/qla2xxx/qla_def.h |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ fs/proc/base.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -2600,8 +2600,7 @@ struct qla_hw_data {
- 				IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
- 				IS_QLA82XX(ha) || IS_QLA83XX(ha))
- #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
--#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
--			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
-+#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
- #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2092,6 +2092,7 @@ static int proc_map_files_get_link(struc
+ 	if (rc)
+ 		goto out_mmput;
+ 
++	rc = -ENOENT;
+ 	down_read(&mm->mmap_sem);
+ 	vma = find_exact_vma(mm, vm_start, vm_end);
+ 	if (vma && vma->vm_file) {
 
 
