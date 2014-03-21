@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760297AbaCUJAc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:00:32 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:58481 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758082AbaCUJA1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:00:27 -0400
-Message-ID: <532BFF79.6070906@ahsoftware.de>
-Date: Fri, 21 Mar 2014 09:59:37 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1760323AbaCUJBL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:01:11 -0400
+Received: from smtp.multi.fi ([85.134.37.151]:59803 "EHLO smtp.multi.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488AbaCUJBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:01:08 -0400
+X-Greylist: delayed 1099 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 05:01:08 EDT
+Message-ID: <532BFFB9.1010307@mageia.org>
+Date: Fri, 21 Mar 2014 11:00:41 +0200
+From: Thomas Backlund <tmb@mageia.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Sekhar Nori <nsekhar@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Prabhakar Lad <prabhakar.csengg@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
-References: <5316FFCE.1060603@ti.com>	<1394018461-757-1-git-send-email-holler@ahsoftware.de>	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>	<5322D529.4070904@ahsoftware.de>	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>	<5326F8C5.5090406@ti.com>	<CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>	<532805AE.9000806@ti.com>	<532815A8.9090807@ahsoftware.de> <CACRpkdZwhP-wMDeNTEq6ELPsYC48xmppzGYTRLSzUewbqhrMvg@mail.gmail.com>
-In-Reply-To: <CACRpkdZwhP-wMDeNTEq6ELPsYC48xmppzGYTRLSzUewbqhrMvg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org, geert@linux-m68k.org,
+        richard@nod.at, scottwood@freescale.com
+Subject: Re: [PATCH 3.13 000/149] 3.13.7-stable review
+References: <20140321000436.377902063@linuxfoundation.org> <532BD009.7020204@roeck-us.net> <532BFB76.60709@mageia.org>
+In-Reply-To: <532BFB76.60709@mageia.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.03.2014 09:28, schrieb Linus Walleij:
-> On Tue, Mar 18, 2014 at 10:45 AM, Alexander Holler <holler@ahsoftware.de> wrote:
+Thomas Backlund skrev 21.3.2014 10:42:
+> Guenter Roeck skrev 21.3.2014 07:37:
+>> On 03/20/2014 05:02 PM, Greg Kroah-Hartman wrote:
+>>> This is the start of the stable review cycle for the 3.13.7 release.
+>>> There are 149 patches in this series, all will be posted as a response
+>>> to this one.  If anyone has any issues with these being applied, please
+>>> let me know.
+>>>
+>>> Responses should be made by Sun Mar 23 00:03:54 UTC 2014.
+>>> Anything received after that time might be too late.
+>>>
+>>
+>> Build results:
+>>      total: 126 pass: 120 skipped: 4 fail: 2
+>>
+>> qemu tests all passed.
+>>
+>> There are two new build failures.
+>>
+>> Building powerpc:mpc85xx_defconfig ... failed
+>> Building powerpc:mpc85xx_smp_defconfig ... failed
+>>
+>> The failure is the same in both cases.
+>>
+>> drivers/i2c/busses/i2c-cpm.c: In function 'cpm_i2c_setup':
+>> drivers/i2c/busses/i2c-cpm.c:450:2: error: implicit declaration of
+>> function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]
+>> drivers/i2c/busses/i2c-cpm.c:461:2: error: implicit declaration of
+>> function 'of_iomap' [-Werror=implicit-function-declaration]
+>>
+>> It appears you picked this up from the latest mainline, where the
+>> same builds fail with the same error. The problem was introduced
+>> in mainline between rc6 and rc7.
+>>
+>> I have no immediate idea which patch causes the problem.
+>> I can bisect tomorrow if needed.
 >
->> But I don't need any rush here, I'm just unable to understand why the -rc
->> phase isn't used for bug fixing as I believe that's what this phase is for.
+> Probably this one exposing additional code to be built:
 >
-> Right now it is mostly a practical issue to me, as I applied the patch to
-> the devel (for-next) branch, then committed new development on top of
-> it.
 >
-> If I send it for fixes now the same patch will come in two ways as I
-> really do not like to rebase my tree at this point.
+>  From 62c19c9d29e65086e5ae76df371ed2e6b23f00cd Mon Sep 17 00:00:00 2001
+> From: Richard Weinberger <richard@nod.at>
+> Date: Sun, 9 Feb 2014 19:47:40 +0100
+> Subject: i2c: Remove usage of orphaned symbol OF_I2C
 >
-> So I'd prefer to keep this for next and then have it tagged for stable as
-> v3.14 is released, if that is OK?
+> From: Richard Weinberger <richard@nod.at>
+>
+> commit 62c19c9d29e65086e5ae76df371ed2e6b23f00cd upstream.
+>
+> The symbol is an orphan, don't depend on it anymore.
+>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> [wsa: enhanced commit message]
+> Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
+> Fixes: 687b81d083c0 (i2c: move OF helpers into the core)
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>
+> ---
+>   drivers/i2c/busses/Kconfig |    2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> --- a/drivers/i2c/busses/Kconfig
+> +++ b/drivers/i2c/busses/Kconfig
+> @@ -387,7 +387,7 @@ config I2C_CBUS_GPIO
+>
+>   config I2C_CPM
+>          tristate "Freescale CPM1 or CPM2 (MPC8xx/826x)"
+> -       depends on (CPM1 || CPM2) && OF_I2C
+> +       depends on CPM1 || CPM2
+>          help
+>            This supports the use of the I2C interface on Freescale
+>            processors with CPM1 or CPM2.
+>
+>
 
-Sure.
 
-> It's as simple as sending a mail to Greg once it's upstream.
+and the buildfix was posted to upstream and -stable a couple of days ago 
+(not in upstream linus tree yet), with subject:
 
-I already though about how to tag every patch I send as Cc: stable, 
-because almost any fix I send either goes through some -next or even 
--next-next or already is for some stable kernel.
-(I usually don't even look at -rc kernels, just for some special things 
-I'm waiting for, like this of-gpio for davinci.)
+[PATCH] i2c-cpm: Fix build by adding of_address.h and of_irq.h
 
-Regards,
 
-Alexander Holler
+Fixes a build break due to the undeclared use of irq_of_parse_and_map()
+and of_iomap().  This build break was apparently introduced while the
+driver was unbuildable due to the bug fixed by
+62c19c9d29e65086e5ae76df371ed2e6b23f00cd ("i2c: Remove usage of
+orphaned symbol OF_I2C").  When 62c19c was added in v3.14-rc7,
+the driver was enabled again, breaking the powerpc mpc85xx_defconfig
+and mpc85xx_smp_defconfig.
+
+62c19c is marked for stable, so this should go there as well.
+
+Signed-off-by: Scott Wood <scottwood@freescale.com>
+Reported-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: stable@kernel.org
+---
+There are still warnings in this driver that suggest it is broken with
+CONFIG_PHYS_64BIT, but that part does not appear to be a regression.
+
+  drivers/i2c/busses/i2c-cpm.c | 2 ++
+  1 file changed, 2 insertions(+)
+
+diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
+index be7f0a2..f3b89a4 100644
+--- a/drivers/i2c/busses/i2c-cpm.c
++++ b/drivers/i2c/busses/i2c-cpm.c
+@@ -39,7 +39,9 @@
+  #include <linux/i2c.h>
+  #include <linux/io.h>
+  #include <linux/dma-mapping.h>
++#include <linux/of_address.h>
+  #include <linux/of_device.h>
++#include <linux/of_irq.h>
+  #include <linux/of_platform.h>
+  #include <sysdev/fsl_soc.h>
+  #include <asm/cpm.h>
+-- 
+1.8.3.2
+
+
+--
+Thomas
+
