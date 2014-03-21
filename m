@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751411AbaCUTcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:32:24 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:48557 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbaCUTcT (ORCPT
+	id S1751532AbaCUTcn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:32:43 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:35304 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920AbaCUTck (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:32:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140321183443.GA3891@redhat.com>
-References: <20140317142246.GA27453@redhat.com>
-	<201403182103.BJC78148.tFOFHQOJLOMVSF@I-love.SAKURA.ne.jp>
-	<20140318171620.GA10636@redhat.com>
-	<201403192049.BBI39025.OVFMOOJtFSHFQL@I-love.SAKURA.ne.jp>
-	<5329C22A.5070206@canonical.com>
-	<20140319175253.GB11923@redhat.com>
-	<20140319182910.GA14511@redhat.com>
-	<20140319194232.GA6207@redhat.com>
-	<532B1B67.5050104@canonical.com>
-	<20140320192307.GA11883@redhat.com>
-	<20140321183443.GA3891@redhat.com>
-Date: Fri, 21 Mar 2014 12:32:17 -0700
-X-Google-Sender-Auth: OP3DTcpZKbNjHmuSawznnrRvHqw
-Message-ID: <CA+55aFx8=AszAeeJnSXnOsJKUhx3JjGJko1XiOKYWWRWiUE+SQ@mail.gmail.com>
-Subject: Re: please fix FUSION (Was: [v3.13][v3.14][Regression] kthread:makekthread_create()killable)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Joseph Salisbury <joseph.salisbury@canonical.com>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        James Bottomley <JBottomley@parallels.com>,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Tomas Henzl <thenzl@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 21 Mar 2014 15:32:40 -0400
+Date: Fri, 21 Mar 2014 15:32:37 -0400 (EDT)
+Message-Id: <20140321.153237.2236797908349183626.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <84837c9e73f24bcd8f652a24f616ff1e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <20140321.144957.550032279989990583.davem@davemloft.net>
+	<20140321.145501.2003616654661701935.davem@davemloft.net>
+	<84837c9e73f24bcd8f652a24f616ff1e@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 21 Mar 2014 12:32:40 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 11:34 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Yes, it seems that it actually needs > 30 secs. It spends most of the time
-> (30.13286 seconds) in [..]
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Fri, 21 Mar 2014 19:12:43 +0000
 
-So how about taking a completely different approach:
+> Could it be merged into net-next tree?
 
- - just say that waiting for devices in the module init sequence for
-over 30 seconds is really really wrong.
+You submitted a patch against net-next, that means you are implicitly
+stating that all dependencies are in place in _that_ tree and that
+you tested it in _that_ tree.
 
- - make the damn mptsas driver just register the controller from the
-init sequence, and then do device discovery asynchronously.
-
-The ATA layer does this correctly: it synchronously finds each host,
-but then it does
-
-        /* perform each probe asynchronously */
-        for (i = 0; i < host->n_ports; i++) {
-                struct ata_port *ap = host->ports[i];
-                async_schedule(async_port_probe, ap);
-        }
-
-and I really think SCSI drivers should do the same if they have this
-kind of "ports can take forever to probe" behavior.
-
-What would be the equivalent magic to do this for SCSI? Could we just
-make something like scsi_probe_and_add_lun() just always do this, the
-same way ata_host_register() does it?
-
-                   Linus
+If the situation is otherwise you must explicitly state this in your
+patch submission.
