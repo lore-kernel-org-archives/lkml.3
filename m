@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760820AbaCUPW5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:22:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:23518 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760251AbaCUPW4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:22:56 -0400
-Date: Fri, 21 Mar 2014 11:22:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Ramkumar Ramachandra <artagnon@gmail.com>
-Subject: Re: [PATCH 1/2] tools lib traceevent: Print event name when show
- warning if possible
-Message-ID: <20140321112249.77b5ee70@gandalf.local.home>
-In-Reply-To: <1395192174-26273-1-git-send-email-namhyung@kernel.org>
-References: <1395192174-26273-1-git-send-email-namhyung@kernel.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1760859AbaCUPX1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:23:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45558 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753501AbaCUPXY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 11:23:24 -0400
+Date: Fri, 21 Mar 2014 16:23:22 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+In-Reply-To: <alpine.LNX.2.00.1403101540140.3690@pobox.suse.cz>
+Message-ID: <alpine.LNX.2.00.1403211621510.3690@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz> <alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz> <alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz> <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
+ <alpine.LNX.2.00.1403101540140.3690@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 Mar 2014 10:22:53 +0900
-Namhyung Kim <namhyung@kernel.org> wrote:
+On Mon, 10 Mar 2014, Jiri Kosina wrote:
 
-> It's sometimes useful to know where the parse failure was occurred.
-> Add do_warning_event() macro to see the failing event.
+> > >> > *ERROR* render ring initialization failed ctl 0001f001 head 00003004 tail 00000000 start 00003000
+> > >> >
+> > >> > as it doesn't seem to be there in case of resumption that works properly.
+> > >> >
+> > >> > Please see the dmesg from the broken case below.
+> > >>
+> > >> I encountered this again with -rc5.
+> > >>
+> > >> If there is anything I can do to help debug this, please let me know.
+> > >
+> > > I hate to be doing this, but ... ping? :)
+> > 
+> > gm45 and rendering ring init failures. We've seen this occasionally
+> > crop up due to rather unrelated changes. Some even hit stable
+> > backports and had to be backed out again. We essentially have no clue
+> > what's amiss, but it seems to /mostly/ work. Thus far I've only hear
+> > reports of this for gm45 and not yet really for upstream. Until
+> > someone digs up more evidence I think we need to classify this as a
+> > rare heisenbug and not really a regression :(
 > 
-> It now shows the messages like below:
+> Thanks for getting back to me with this, Daniel.
 > 
->   $ perf test 5
->    5: parse events tests                                     :  Warning: [kvmmmu:kvm_mmu_get_page] bad op token {
->     Warning: [kvmmmu:kvm_mmu_sync_page] bad op token {
->     Warning: [kvmmmu:kvm_mmu_unsync_page] bad op token {
->     Warning: [kvmmmu:kvm_mmu_prepare_zap_page] bad op token {
->     Warning: [kvmmmu:fast_page_fault] function is_writable_pte not defined
->     Warning: [xen:xen_mmu_ptep_modify_prot_commit] function sizeof not defined
->     Warning: [xen:xen_mmu_ptep_modify_prot_start] function sizeof not defined
->     Warning: [xen:xen_mmu_set_pgd] function sizeof not defined
->     Warning: [xen:xen_mmu_set_pud] function sizeof not defined
->     Warning: [xen:xen_mmu_set_pmd] function sizeof not defined
-
-Nice feature.
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
->     ...
+> Well, this started to be rather regular sometime during the 3.14 
+> development cycle on my system.
 > 
+> I am able to reproduce it after ~20 suspend-resume cycles. Which is rather 
+> inconvenient for bisect, but enough for making the kernel unusable on that 
+> system.
+> 
+> > One thing we could try is to simply repeat the ring init setup, maybe
+> > after a gpu reset or something like that.
+> 
+> Will be happy to test any patches.
+
+So I am still seeing this with current Linus' tree rather regularly (but 
+it's not deterministic enough for a reliable bisect).
+
+Unfortunately I haven't received any patches to test; what do you propose?
+Would reporting this on bugs.freedesktop.org instead of ranting here 
+change anything?
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
