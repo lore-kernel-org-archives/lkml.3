@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966192AbaCUAJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37378 "EHLO
+	id S966211AbaCUAJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:09:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37428 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966133AbaCUAJh (ORCPT
+	with ESMTP id S966186AbaCUAJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:37 -0400
+	Thu, 20 Mar 2014 20:09:47 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 04/35] virtio-net: alloc big buffers also when guest can receive UFO
-Date: Thu, 20 Mar 2014 17:10:55 -0700
-Message-Id: <20140321001054.284591511@linuxfoundation.org>
+        Giridhar Malavali <giridhar.malavali@qlogic.com>,
+        Saurav Kashyap <saurav.kashyap@qlogic.com>,
+        James Bottomley <JBottomley@Parallels.com>
+Subject: [PATCH 3.4 31/35] SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+Date: Thu, 20 Mar 2014 17:11:22 -0700
+Message-Id: <20140321001055.178880115@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -31,39 +30,30 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Giridhar Malavali <giridhar.malavali@qlogic.com>
 
-[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
+commit b77ed25c9f8402e8b3e49e220edb4ef09ecfbb53 upstream.
 
-We should alloc big buffers also when guest can receive UFO
-packets to let the big packets fit into guest rx buffer.
-
-Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-(virtio-net: Allow UFO feature to be set and advertised.)
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Giridhar Malavali <giridhar.malavali@qlogic.com>
+Signed-off-by: Saurav Kashyap <saurav.kashyap@qlogic.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/virtio_net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1084,7 +1084,8 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
- 
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+---
+ drivers/scsi/qla2xxx/qla_def.h |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+--- a/drivers/scsi/qla2xxx/qla_def.h
++++ b/drivers/scsi/qla2xxx/qla_def.h
+@@ -2600,8 +2600,7 @@ struct qla_hw_data {
+ 				IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+ 				IS_QLA82XX(ha) || IS_QLA83XX(ha))
+ #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
+-#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
+-			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
++#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
+ #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
+ #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
 
 
