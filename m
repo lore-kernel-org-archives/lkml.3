@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760880AbaCUMYc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:24:32 -0400
-Received: from smtp2out.l-3com.com ([166.20.51.112]:58432 "EHLO
-	smtp2out.l-3com.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575AbaCUMYa convert rfc822-to-8bit (ORCPT
+	id S965474AbaCUMYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:24:42 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:42871 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755343AbaCUMYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:24:30 -0400
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 08:24:30 EDT
-X-filenames: 
-X-filesizes: None
-X-filetypes: 
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,703,1389744000"; 
-   d="scan'208";a="226538693"
-X-IronPort-AV: E=Sophos;i="4.97,703,1389765600"; 
-   d="scan'208";a="5237332"
-From: <jimmie.davis@l-3com.com>
-To: <umgwanakikbuti@gmail.com>, <artem_fetishev@epam.com>
-CC: <peterz@infradead.org>, <kosaki.motohiro@jp.fujitsu.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: RE: Bug 71331 - mlock yields processor to lower priority process
-Thread-Topic: Bug 71331 - mlock yields processor to lower priority process
-Thread-Index: AQHPRNwZPC5PRgt+P0GtAN8yDFKRX5rrmJkA///XPHs=
-Date: Fri, 21 Mar 2014 12:18:45 +0000
-Message-ID: <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>
-References: <20140321200248.GB6264@owamsq.epam.com>,<1395393822.6030.59.camel@marge.simpson.net>
-In-Reply-To: <1395393822.6030.59.camel@marge.simpson.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [130.210.49.246]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 21 Mar 2014 08:24:39 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: linux-next: manual merge of the staging tree with the v4l-dvb tree
+To: Greg KH <greg@kroah.com>, Russell King <rmk@arm.linux.org.uk>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Philipp Zabel <p.zabel@pengutronix.de>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+In-Reply-To: <20140319153008.GC31293@kroah.com>
+References: <20140317185542.fe4554210fc1893b44289008@canb.auug.org.au> < 20140317080122.459ff9d4@infradead.org> <20140317182953.GA10565@kroah.com> < 20140317162937.2ccdec83@infradead.org> <20140317222736.GB3708@flint.arm. linux.org.uk> <20140319153008.GC31293@kroah.com>
+Date: Fri, 21 Mar 2014 12:24:33 +0000
+Message-Id: <20140321122434.06755C40567@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Wed, 19 Mar 2014 08:30:08 -0700, Greg KH <greg@kroah.com> wrote:
+> On Mon, Mar 17, 2014 at 10:27:36PM +0000, Russell King wrote:
+> > However, I still find myself coming back to a fundamental question: why
+> > were these bindings fine in April 2013, passed review, and were acked,
+> > but not fine today.  Here's the links to the emails acking their
+> > introduction which Sylwester Nawrocki sent me:
+> > 
+> >   http://www.spinics.net/lists/linux-media/msg61899.html
+> >   http://www.spinics.net/lists/linux-media/msg62458.html
+> > 
+> > So... *shrug*.  Make of this what you will.
+> 
+> Thanks for the details, I'll just leave my tree as-is for now, as that
+> seems the simplest thing to do.
 
->How is that different from any other time a task has to yield the CPU
->for a bit?  While your high priority task is blocked for whatever
->reason, a lower priority task gets to use the CPU.
+Yes, please leave it in your tree. I've caused noise and trouble than I
+should, and could have handled it differently. I apologize.
 
- 
-As the submitter of the bug, let me give you my perspective.  SCHED_FIFO means run my task until it blocks or a higher priority task pre-empts it.  Period.
-
-mlock() doesn't block.  check the man page.
-
-Any other way and you are not able to use priority based scheduling.   
- 
-
---bud davis
-
-
-
-
- 
-
+g.
