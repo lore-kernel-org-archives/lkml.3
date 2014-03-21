@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966959AbaCUAta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:49:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36967 "EHLO
+	id S966943AbaCUAt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:49:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36969 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965758AbaCUAI0 (ORCPT
+	with ESMTP id S965759AbaCUAI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:26 -0400
+	Thu, 20 Mar 2014 20:08:27 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Art -kwaak- van Breemen <ard@telegraafnet.nl>,
-        Hans Schillstrom <hans@schillstrom.com>,
-        Ansis Atteka <aatteka@nicira.com>,
+        Michael Chan <mchan@broadcom.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 10/85] ipv6: ipv6_find_hdr restore prev functionality
-Date: Thu, 20 Mar 2014 17:09:13 -0700
-Message-Id: <20140321000600.010600243@linuxfoundation.org>
+Subject: [PATCH 3.10 11/85] tg3: Dont check undefined error bits in RXBD
+Date: Thu, 20 Mar 2014 17:09:14 -0700
+Message-Id: <20140321000600.144450125@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,41 +29,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans Schillstrom <hans@schillstrom.com>
+From: Michael Chan <mchan@broadcom.com>
 
-[ Upstream commit accfe0e356327da5bd53da8852b93fc22de9b5fc ]
+[ Upstream commit d7b95315cc7f441418845a165ee56df723941487 ]
 
-The commit 9195bb8e381d81d5a315f911904cdf0cfcc919b8 ("ipv6: improve
-ipv6_find_hdr() to skip empty routing headers") broke ipv6_find_hdr().
+Redefine the RXD_ERR_MASK to include only relevant error bits. This fixes
+a customer reported issue of randomly dropping packets on the 5719.
 
-When a target is specified like IPPROTO_ICMPV6 ipv6_find_hdr()
-returns -ENOENT when it's found, not the header as expected.
-
-A part of IPVS is broken and possible also nft_exthdr_eval().
-When target is -1 which it is most cases, it works.
-
-This patch exits the do while loop if the specific header is found
-so the nexthdr could be returned as expected.
-
-Reported-by: Art -kwaak- van Breemen <ard@telegraafnet.nl>
-Signed-off-by: Hans Schillstrom <hans@schillstrom.com>
-CC:Ansis Atteka <aatteka@nicira.com>
+Signed-off-by: Michael Chan <mchan@broadcom.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- net/ipv6/exthdrs_core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/broadcom/tg3.c |    3 +--
+ drivers/net/ethernet/broadcom/tg3.h |    6 +++++-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/net/ipv6/exthdrs_core.c
-+++ b/net/ipv6/exthdrs_core.c
-@@ -212,7 +212,7 @@ int ipv6_find_hdr(const struct sk_buff *
- 		found = (nexthdr == target);
+--- a/drivers/net/ethernet/broadcom/tg3.c
++++ b/drivers/net/ethernet/broadcom/tg3.c
+@@ -6687,8 +6687,7 @@ static int tg3_rx(struct tg3_napi *tnapi
  
- 		if ((!ipv6_ext_hdr(nexthdr)) || nexthdr == NEXTHDR_NONE) {
--			if (target < 0)
-+			if (target < 0 || found)
- 				break;
- 			return -ENOENT;
- 		}
+ 		work_mask |= opaque_key;
+ 
+-		if ((desc->err_vlan & RXD_ERR_MASK) != 0 &&
+-		    (desc->err_vlan != RXD_ERR_ODD_NIBBLE_RCVD_MII)) {
++		if (desc->err_vlan & RXD_ERR_MASK) {
+ 		drop_it:
+ 			tg3_recycle_rx(tnapi, tpr, opaque_key,
+ 				       desc_idx, *post_ptr);
+--- a/drivers/net/ethernet/broadcom/tg3.h
++++ b/drivers/net/ethernet/broadcom/tg3.h
+@@ -2587,7 +2587,11 @@ struct tg3_rx_buffer_desc {
+ #define RXD_ERR_TOO_SMALL		0x00400000
+ #define RXD_ERR_NO_RESOURCES		0x00800000
+ #define RXD_ERR_HUGE_FRAME		0x01000000
+-#define RXD_ERR_MASK			0xffff0000
++
++#define RXD_ERR_MASK	(RXD_ERR_BAD_CRC | RXD_ERR_COLLISION |		\
++			 RXD_ERR_LINK_LOST | RXD_ERR_PHY_DECODE |	\
++			 RXD_ERR_MAC_ABRT | RXD_ERR_TOO_SMALL |		\
++			 RXD_ERR_NO_RESOURCES | RXD_ERR_HUGE_FRAME)
+ 
+ 	u32				reserved;
+ 	u32				opaque;
 
 
