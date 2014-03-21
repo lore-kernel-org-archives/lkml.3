@@ -1,53 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760180AbaCUPWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 11:22:30 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:41831 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753331AbaCUPW2 (ORCPT
+	id S1760820AbaCUPW5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 11:22:57 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:23518 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1760251AbaCUPW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 11:22:28 -0400
-Message-ID: <532C5930.7040107@bjorling.me>
-Date: Fri, 21 Mar 2014 08:22:24 -0700
-From: Matias Bjorling <m@bjorling.me>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 11:22:56 -0400
+Date: Fri, 21 Mar 2014 11:22:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ramkumar Ramachandra <artagnon@gmail.com>
+Subject: Re: [PATCH 1/2] tools lib traceevent: Print event name when show
+ warning if possible
+Message-ID: <20140321112249.77b5ee70@gandalf.local.home>
+In-Reply-To: <1395192174-26273-1-git-send-email-namhyung@kernel.org>
+References: <1395192174-26273-1-git-send-email-namhyung@kernel.org>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>, snitzer@redhat.com,
-        agk@redhat.com, neilb@suse.de, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] [PATCH RFC v1 00/01] dm-lightnvm introduction
-References: <1395383538-18019-1-git-send-email-m@bjorling.me> <20140321090630.GA30044@debian>
-In-Reply-To: <20140321090630.GA30044@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 02:06 AM, Joe Thornber wrote:
-> Hi Matias,
+On Wed, 19 Mar 2014 10:22:53 +0900
+Namhyung Kim <namhyung@kernel.org> wrote:
+
+> It's sometimes useful to know where the parse failure was occurred.
+> Add do_warning_event() macro to see the failing event.
 > 
-> This looks really interesting and I'd love to get involved.  Do you
-> have any recommendations for what hardware I should pick up?
-
-Hi Joe,
-
-The most easily available platform is OpenSSD
-(http://www.openssd-project.org). It's a little old, but still very
-functional. When there's a good firmware implementation, I think it will
-be easier for the custom SSD vendor's to jump on board with their own
-firmware.
-
-- Matias
-
+> It now shows the messages like below:
 > 
-> - Joe
-> 
-> 
-> On Thu, Mar 20, 2014 at 11:32:17PM -0700, Matias Bjørling wrote:
->> Hi,
->>
->> Users that have custom firmware SSDs, may choose to expose their flash directly.
->> This allows the host to control logical to physical address mappings, garbage
->> collection strategy, wear-leveling, and so on.
+>   $ perf test 5
+>    5: parse events tests                                     :  Warning: [kvmmmu:kvm_mmu_get_page] bad op token {
+>     Warning: [kvmmmu:kvm_mmu_sync_page] bad op token {
+>     Warning: [kvmmmu:kvm_mmu_unsync_page] bad op token {
+>     Warning: [kvmmmu:kvm_mmu_prepare_zap_page] bad op token {
+>     Warning: [kvmmmu:fast_page_fault] function is_writable_pte not defined
+>     Warning: [xen:xen_mmu_ptep_modify_prot_commit] function sizeof not defined
+>     Warning: [xen:xen_mmu_ptep_modify_prot_start] function sizeof not defined
+>     Warning: [xen:xen_mmu_set_pgd] function sizeof not defined
+>     Warning: [xen:xen_mmu_set_pud] function sizeof not defined
+>     Warning: [xen:xen_mmu_set_pmd] function sizeof not defined
 
+Nice feature.
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+>     ...
+> 
