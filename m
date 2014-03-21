@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966691AbaCUA3t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:29:49 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37180 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965978AbaCUAJI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965977AbaCUAJI (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 Mar 2014 20:09:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37143 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965867AbaCUAJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:09:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 68/85] SCSI: isci: correct erroneous for_each_isci_host macro
-Date: Thu, 20 Mar 2014 17:10:11 -0700
-Message-Id: <20140321000608.393574246@linuxfoundation.org>
+        Patrick Lai <plai@codeaurora.org>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 56/85] ASoC: pcm: free path list before exiting from error conditions
+Date: Thu, 20 Mar 2014 17:09:59 -0700
+Message-Id: <20140321000606.724570655@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,75 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Patrick Lai <plai@codeaurora.org>
 
-commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
+commit e4ad1accb28d0ed8cea6f12395d58686ad344ca7 upstream.
 
-In the first place, the loop 'for' in the macro 'for_each_isci_host'
-(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-the 3rd element of 2 element array. After the 2nd iteration it executes
-the instruction:
-        ihost = to_pci_info(pdev)->hosts[2]
-(while the size of the 'hosts' array equals 2) and reads an
-out of range element.
+dpcm_path_get() allocates dynamic memory to hold path list.
+Corresponding dpcm_path_put() must be called to free the memory.
+dpcm_path_put() is not called under several error conditions.
+This leads to memory leak.
 
-In the second place, this loop is incorrectly optimized by GCC v4.8
-(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
-As a result, on platforms with two SCU controllers,
-the loop is executed more times than it can be (for i=0,1 and 2).
-It causes kernel panic during entering the S3 state
-and the following oops after 'rmmod isci':
-
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Oops: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Call Trace:
-  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
-  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
-  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
-  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
-  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
-  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
-  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
-  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
-  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
-  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
-  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
-  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
-  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
-  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
-
-The loop has been corrected.
-This patch fixes kernel panic during entering the S3 state
-and the above oops.
-
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Patrick Lai <plai@codeaurora.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/host.h |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ sound/soc/soc-pcm.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost
- }
+--- a/sound/soc/soc-pcm.c
++++ b/sound/soc/soc-pcm.c
+@@ -1864,6 +1864,7 @@ int soc_dpcm_runtime_update(struct snd_s
  
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < SCI_MAX_CONTROLLERS && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
+ 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_PLAYBACK, &list);
+ 		if (paths < 0) {
++			dpcm_path_put(&list);
+ 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
+ 					fe->dai_link->name,  "playback");
+ 			mutex_unlock(&card->mutex);
+@@ -1893,6 +1894,7 @@ capture:
  
- static inline void wait_for_start(struct isci_host *ihost)
- {
+ 		paths = dpcm_path_get(fe, SNDRV_PCM_STREAM_CAPTURE, &list);
+ 		if (paths < 0) {
++			dpcm_path_put(&list);
+ 			dev_warn(fe->dev, "ASoC: %s no valid %s path\n",
+ 					fe->dai_link->name,  "capture");
+ 			mutex_unlock(&card->mutex);
+@@ -1957,6 +1959,7 @@ static int dpcm_fe_dai_open(struct snd_p
+ 	fe->dpcm[stream].runtime = fe_substream->runtime;
+ 
+ 	if (dpcm_path_get(fe, stream, &list) <= 0) {
++		dpcm_path_put(&list);
+ 		dev_dbg(fe->dev, "ASoC: %s no valid %s route\n",
+ 			fe->dai_link->name, stream ? "capture" : "playback");
+ 	}
 
 
