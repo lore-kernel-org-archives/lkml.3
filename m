@@ -1,63 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaCUF7f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:59:35 -0400
-Received: from nm8-vm4.bullet.mail.ir2.yahoo.com ([212.82.96.138]:38132 "EHLO
-	nm8-vm4.bullet.mail.ir2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750892AbaCUF7e convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:59:34 -0400
-X-Greylist: delayed 420 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 Mar 2014 01:59:33 EDT
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 795418.35857.bm@omp1005.mail.ir2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.fr;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-RocketYMMF:X-Mailer:Message-ID:Date:From:Reply-To:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=fHDSZ9dmQSoWQs/BUP90DBdqpmIZpaNbJir9LtE58evFeVkYnYwRPKAjX8UNizEJv1TgTz+T8l5xDjj09FX6xkUROqox+nSKJ4zIoAtUr7DrMCs3vJ6nH4u0g3P0Qj0kmXqCoeSlWcev2Enmsqw9dDcfKYrkK96BHjLioExXXro=;
-X-YMail-OSG: 8qH36csVM1m0tY8Lw0QWYQtM3lzcD.Go1rcZNYQC7kM5bSk
- zVDJg2MLvtIQTdUKDcVPWTnxNFuexwS6iJILq6yU8wQb3VZY7CIaD_qtOH1V
- FpaVOcmJttA6tz1QT8gtuYnMsoEmOFIAvuDAwac88Aq1pUZGXfI1T9Zh1_nP
- ADIAQ_Yr2zGj0o7MjiD4nt7zHtBnqxvq2Jvhg8.GQj0Z76lG87D1l.iMcKQE
- .T6sa__5tuI1On_O93qZjDPJLsVFBBd6dRtFwnntcFIno3bmE.B_95.06b1V
- P29h6hLLF33QYhkKOwKh2KOGjvwnYIzz0LIH0w_G1x.pXR8NFrnJVl_j9zRX
- nSFhzYt7i729fYvj0V7bUO34WkVC.53yAKEa.czzHPKvzt8OZQGlMwsgdI1d
- xL77pf_GraPF2XPRnvykq4wD.6ZE1aUlWVUB60Nx8zN4Uj7FPfNrd.iT_gmD
- jtkOwjYwfyJru47J3wXGPAW3kujSsYwI.FZeXOnHFPsX_jHEGvHkOZp6fuTl
- i0fDbDZ7cvMXf.mvryLO8kbVH0etPvdpz1snu5dJQi.vygWCzwb7C_OwYP.o
- DpsYZ7OA58efn7vzb0461.Wafpir1R5AfjzIIddlFe97EeJNK.f7ODdH5e2s
- .3QjuMY7Hnf1d_2fkMaSawbkcGt3.6lR9kaXKxf32TCclfmWzieYfzvATf63
- QilWQ95dgZ2Cz75FSM3ivy2J6LWL9_8_rbcLT0ePifrEgaDKjA88-
-X-Rocket-MIMEInfo: 002.001,DQpEZWFyIEZyaWVuZCwNCg0KR3JlZXRpbmdzIHRvIHlvdSBhbmQgeW91ciBmYW1pbHkuDQoNCg0KDQpNeSBuYW1lIGlzIE1ycyBNb25hdGUgQWRhbWEsIHRoZSBjdXJyZW50IENoaWVmIEF1ZGl0b3Igb2YgYSBmb3JtaWRhYmxlIGJhbmsgaGVyZSBpbiBPdWFnYWRvdWdvdSwgQnVya2luYSBGYXNvLCBXZXN0IEFmcmljYS4gSSBoYXZlIGEgdHJhbnNhY3Rpb24gd29ydGggb2YgMTIuNSBNaWxsaW9uIFUuUyBkb2xsYXJzIGZvciB0cmFuc2ZlcnJpbmcgaW50byB5b3VyIGNhcmUgZm9yIG91ciBtdXR1YWwgYmVuZWYBMAEBAQE-
-X-RocketYMMF: hamed_alii2000
-X-Mailer: YahooMailClassic/458 YahooMailWebService/0.8.181.645
-Message-ID: <1395381152.67554.YahooMailBasic@web171906.mail.ir2.yahoo.com>
-Date: Fri, 21 Mar 2014 05:52:32 +0000 (GMT)
-From: inforproject100@gmail.com
-Reply-To: inforproject100@gmail.com
-Subject: From Mrs Monat Adama.
-To: undisclosed recipients:;
+	id S1754834AbaCUGIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 02:08:46 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:61841 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaCUGIp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 02:08:45 -0400
+Message-ID: <532BD764.9060409@monstr.eu>
+Date: Fri, 21 Mar 2014 07:08:36 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>
+CC: Paul Bolle <pebolle@tiscali.nl>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Stephen Warren <swarren@nvidia.com>
+Subject: Re: [PATCH] MAINTAINERS: microblaze: Use LKML as mailing list
+References: <4f187754982226c3456c0a9b86050ab4e470aa98.1395328176.git.michal.simek@xilinx.com>  <1395346547.29055.2.camel@x220> <1395346718.7776.43.camel@joe-AO722>
+In-Reply-To: <1395346718.7776.43.camel@joe-AO722>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="akaGDjdkTeUhEVe2jAjphRR2iUKAwJ19k"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--akaGDjdkTeUhEVe2jAjphRR2iUKAwJ19k
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Dear Friend,
+On 03/20/2014 09:18 PM, Joe Perches wrote:
+> On Thu, 2014-03-20 at 21:15 +0100, Paul Bolle wrote:
+>> On Thu, 2014-03-20 at 16:09 +0100, Michal Simek wrote:
+>>> microblaze-uclinux mailing list is almost dead and
+>>> it is just causing troubles for non subscribers which are
+>>> getting email about waiting for moderator.
+>>> Approval never happens. Move it to LKML.
+> []
+>>> diff --git a/MAINTAINERS b/MAINTAINERS
+> []
+>>> @@ -5702,7 +5702,7 @@ F:	fs/imgdafs/
+>>>
+>>>  MICROBLAZE ARCHITECTURE
+>>>  M:	Michal Simek <monstr@monstr.eu>
+>>> -L:	microblaze-uclinux@itee.uq.edu.au (moderated for non-subscribers)=
 
-Greetings to you and your family.
+>>> +L:	linux-kernel@vger.kernel.org
+>>
+>> Isn't lkml already the catch all address that get_maintainer.pl always=
+
+>> spits out?
+>=20
+> 'tis.
+>=20
+> My preference is not adding L: lkml lines to
+> individual sections as it is the default and it is
+> specified as such in the beginning of MAINTAINERS
+> and SubmittingPatches.
+
+Ok. No problem will send v2.
+
+Maybe good to remove others too.
+[linux]$ grep linux-kernel@vger.kernel.org MAINTAINERS  | wc -l
+24
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
 
-My name is Mrs Monate Adama, the current Chief Auditor of a formidable bank here in Ouagadougou, Burkina Faso, West Africa. I have a transaction worth of 12.5 Million U.S dollars for transferring into your care for our mutual benefits, so  i need your assistance with 100% cooperation to realise this task.
+--akaGDjdkTeUhEVe2jAjphRR2iUKAwJ19k
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Further details about the fund, its source and the administrative procedure to transfer this fund into your receiving bank account shall be made known to you immediately as I have your positive response.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
+iEYEARECAAYFAlMr12QACgkQykllyylKDCEyFwCfZhho7dBRLGIfGKU+RF34QiCE
+hZYAn1A4oN+yTOYerlmX8ycfqgVqS5Dy
+=qPtu
+-----END PGP SIGNATURE-----
 
-
-Thanks and Regards,
-
-
-
-Mrs Monate Adama.
+--akaGDjdkTeUhEVe2jAjphRR2iUKAwJ19k--
