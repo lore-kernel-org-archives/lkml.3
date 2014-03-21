@@ -1,83 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760268AbaCUI2H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:28:07 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:36371 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753842AbaCUI2C (ORCPT
+	id S1760287AbaCUI2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:28:22 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50080 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760274AbaCUI2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:28:02 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-e3-532bf811d134
-Message-id: <532BF80F.1080602@samsung.com>
-Date: Fri, 21 Mar 2014 09:27:59 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
-        Bryan Wu <cooloney@gmail.com>
-Subject: Re: [PATCH/RFC 1/8] leds: Add sysfs and kernel internal API for flash
- LEDs
-References: <1395327070-20215-1-git-send-email-j.anaszewski@samsung.com>
- <1395327070-20215-2-git-send-email-j.anaszewski@samsung.com>
- <1395329301.27611.4.camel@ted>
-In-reply-to: <1395329301.27611.4.camel@ted>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrCLMWRmVeSWpSXmKPExsVy+t/xa7qCP7SDDeZcZLK4te4cq8XRnROZ
-	LOYfAbLONr1ht7i8aw6bxdY36xgtejZsZbX48Wwiq8XhN+2sDpweO2fdZffYP3cNu0ffllWM
-	Hp83yQWwRHHZpKTmZJalFunbJXBlTFmzmb3gEW/F9pvlDYxTubsYOTkkBEwk/rz8yARhi0lc
-	uLeerYuRi0NIYCmjxNb3cxghnM+MEjs//2IGqeIV0JL48bqdEcRmEVCVmHOrlQXEZhMwlPj5
-	4jXYJFGBCIk/p/exQtQLSvyYfA+sRkTAXOJn5yqwDcwCjxglzvbcBEsIC4RK9M3fywSxbQWj
-	xKyDJ9hBEpwC2hLrV34Hm8QsYCbxqGUdM4QtL7F5zVvmCYwCs5AsmYWkbBaSsgWMzKsYRVNL
-	kwuKk9JzjfSKE3OLS/PS9ZLzczcxQkL+6w7GpcesDjEKcDAq8fBWcGoHC7EmlhVX5h5ilOBg
-	VhLhnf4ZKMSbklhZlVqUH19UmpNafIiRiYNTqoFR4l3nw/wLTl6RRml9EbeFzHed+9tTls88
-	R2tl868nt3ldog+dMJX5yT1RrymNP+CsuPCU6+8nWZ473rxpY+T+Z81/zP+V6c+KmHX0YDhv
-	lOXNr8U3j6Z99BTo+8X63SGY//GJyT1Pa2JzrJIVFKZ+2n3Y8dWnO/XlnruqK7vO37uzs2f2
-	vZvtSizFGYmGWsxFxYkA6TdeEVcCAAA=
+	Fri, 21 Mar 2014 04:28:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <532815A8.9090807@ahsoftware.de>
+References: <5316FFCE.1060603@ti.com>
+	<1394018461-757-1-git-send-email-holler@ahsoftware.de>
+	<CACRpkdaF=jc9Z1XZCtH8VPuih01t--qyV-sgH1R_ix0VM4RzVA@mail.gmail.com>
+	<5322D529.4070904@ahsoftware.de>
+	<CACRpkdaghneo1MvNCfxjTED+sJepHgeZCgmKsRteG9qrBNWAfQ@mail.gmail.com>
+	<5326F8C5.5090406@ti.com>
+	<CACRpkdYZMzw31NkA4uSq+ZowzOnZgZthXhZri-eJY2Ozb8aNRQ@mail.gmail.com>
+	<532805AE.9000806@ti.com>
+	<532815A8.9090807@ahsoftware.de>
+Date: Fri, 21 Mar 2014 09:28:16 +0100
+Message-ID: <CACRpkdZwhP-wMDeNTEq6ELPsYC48xmppzGYTRLSzUewbqhrMvg@mail.gmail.com>
+Subject: Re: [PATCH v2] gpio: davinci: fix gpio selection for OF
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Sekhar Nori <nsekhar@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/20/2014 04:28 PM, Richard Purdie wrote:
-> On Thu, 2014-03-20 at 15:51 +0100, Jacek Anaszewski wrote:
->> Some LED devices support two operation modes - torch and
->> flash. This patch provides support for flash LED devices
->> in the LED subsystem by introducing new sysfs attributes
->> and kernel internal interface. The attributes being
->> introduced are: flash_mode, flash_timeout, max_flash_timeout,
->> flash_fault and hw_triggered.
->> The modifications aim to be compatible with V4L2 framework
->> requirements related to the flash devices management. The
->> design assumes that V4L2 driver can take of the LED class
->> device control and communicate with it through the kernel
->> internal interface. The LED sysfs interface is made
->> unavailable then.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Bryan Wu <cooloney@gmail.com>
->> Cc: Richard Purdie <rpurdie@rpsys.net>
->> ---
->>   drivers/leds/led-class.c    |  216 +++++++++++++++++++++++++++++++++++++++++--
->>   drivers/leds/led-core.c     |  124 +++++++++++++++++++++++--
->>   drivers/leds/led-triggers.c |   17 +++-
->>   drivers/leds/leds.h         |    9 ++
->>   include/linux/leds.h        |  136 +++++++++++++++++++++++++++
->>   5 files changed, 486 insertions(+), 16 deletions(-)
->
-> It seems rather sad to have to insert that amount of code into the core
-> LED files for something which only a small number of LEDs actually use.
-> This will increase the footprint of the core LED code significantly.
->
-> Is it not possible to add this as a module/extension to the LED core
-> rather than completely entangling them?
+On Tue, Mar 18, 2014 at 10:45 AM, Alexander Holler <holler@ahsoftware.de> wrote:
 
-OK, I'll try to decouple it.
+> But I don't need any rush here, I'm just unable to understand why the -rc
+> phase isn't used for bug fixing as I believe that's what this phase is for.
 
-Thanks,
-Jacek Anaszewski
+Right now it is mostly a practical issue to me, as I applied the patch to
+the devel (for-next) branch, then committed new development on top of
+it.
 
+If I send it for fixes now the same patch will come in two ways as I
+really do not like to rebase my tree at this point.
+
+So I'd prefer to keep this for next and then have it tagged for stable as
+v3.14 is released, if that is OK?
+
+It's as simple as sending a mail to Greg once it's upstream.
+
+Yours,
+Linus Walleij
