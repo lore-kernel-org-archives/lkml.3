@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966435AbaCUA1C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:27:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37229 "EHLO
+	id S966636AbaCUA1c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:27:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37207 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966007AbaCUAJO (ORCPT
+	with ESMTP id S966001AbaCUAJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:14 -0400
+	Thu, 20 Mar 2014 20:09:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Oleg Drokin:" <green@linuxhacker.ru>,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 3.10 76/85] Fix mountpoint reference leakage in linkat
-Date: Thu, 20 Mar 2014 17:10:19 -0700
-Message-Id: <20140321000609.596835128@linuxfoundation.org>
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>,
+        Jens Axboe <axboe@kernel.dk>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Christian Borntraeger <christian@borntraeger.net>
+Subject: [PATCH 3.10 75/85] s390/dasd: hold request queue sysfs lock when calling elevator_init()
+Date: Thu, 20 Mar 2014 17:10:18 -0700
+Message-Id: <20140321000609.441627130@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,38 +31,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Drokin <green@linuxhacker.ru>
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-commit d22e6338db7f613dd4f6095c190682fcc519e4b7 upstream.
+commit ef0899410ff630b2e75306da49996dbbfa318165 upstream.
 
-Recent changes to retry on ESTALE in linkat
-(commit 442e31ca5a49e398351b2954b51f578353fdf210)
-introduced a mountpoint reference leak and a small memory
-leak in case a filesystem link operation returns ESTALE
-which is pretty normal for distributed filesystems like
-lustre, nfs and so on.
-Free old_path in such a case.
+"elevator: Fix a race in elevator switching and md device initialization"
+changed the semantics of elevator_init() in a way that now enforces to hold
+the corresponding request queue's sysfs_lock when calling elevator_init()
+to fix a race.
+The patch did not convert the s390 dasd device driver which is the only
+device driver which also calls elevator_init(). So add the missing locking.
 
-[AV: there was another missing path_put() nearby - on the previous
-goto retry]
-
-Signed-off-by: Oleg Drokin: <green@linuxhacker.ru>
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Signed-off-by: Jens Axboe <axboe@kernel.dk>
+Cc: Christian Borntraeger <christian@borntraeger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/namei.c |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/s390/block/dasd.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -3655,6 +3655,7 @@ retry:
- out_dput:
- 	done_path_create(&new_path, new_dentry);
- 	if (retry_estale(error, how)) {
-+		path_put(&old_path);
- 		how |= LOOKUP_REVAL;
- 		goto retry;
- 	}
+--- a/drivers/s390/block/dasd.c
++++ b/drivers/s390/block/dasd.c
+@@ -2879,12 +2879,12 @@ static int dasd_alloc_queue(struct dasd_
+ 
+ 	elevator_exit(block->request_queue->elevator);
+ 	block->request_queue->elevator = NULL;
++	mutex_lock(&block->request_queue->sysfs_lock);
+ 	rc = elevator_init(block->request_queue, "deadline");
+-	if (rc) {
++	if (rc)
+ 		blk_cleanup_queue(block->request_queue);
+-		return rc;
+-	}
+-	return 0;
++	mutex_unlock(&block->request_queue->sysfs_lock);
++	return rc;
+ }
+ 
+ /*
 
 
