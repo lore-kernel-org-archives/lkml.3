@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965844AbaCUAIn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:08:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37032 "EHLO
+	id S966546AbaCUAlp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:41:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37058 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965825AbaCUAIj (ORCPT
+	with ESMTP id S965825AbaCUAIo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:39 -0400
+	Thu, 20 Mar 2014 20:08:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Edward Cree <ecree@solarflare.com>,
-        Shradha Shah <sshah@solarflare.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/85] sfc: check for NULL efx->ptp_data in efx_ptp_event
-Date: Thu, 20 Mar 2014 17:09:12 -0700
-Message-Id: <20140321000559.873176591@linuxfoundation.org>
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 31/85] ALSA: usb-audio: Add quirk for Logitech Webcam C500
+Date: Thu, 20 Mar 2014 17:09:34 -0700
+Message-Id: <20140321000603.023431889@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -30,37 +28,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Edward Cree <ecree@solarflare.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-[ Upstream commit 8f355e5cee63c2c0c145d8206c4245d0189f47ff ]
+commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
 
-If we receive a PTP event from the NIC when we haven't set up PTP state
-in the driver, we attempt to read through a NULL pointer efx->ptp_data,
-triggering a panic.
+Logitech C500 (046d:0807) needs the same workaround like other
+Logitech Webcams.
 
-Signed-off-by: Edward Cree <ecree@solarflare.com>
-Acked-by: Shradha Shah <sshah@solarflare.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/sfc/ptp.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/drivers/net/ethernet/sfc/ptp.c
-+++ b/drivers/net/ethernet/sfc/ptp.c
-@@ -1319,6 +1319,13 @@ void efx_ptp_event(struct efx_nic *efx,
- 	struct efx_ptp_data *ptp = efx->ptp_data;
- 	int code = EFX_QWORD_FIELD(*ev, MCDI_EVENT_CODE);
+---
+ sound/usb/mixer.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -883,6 +883,7 @@ static void volume_control_quirks(struct
+ 		}
+ 		break;
  
-+	if (!ptp) {
-+		if (net_ratelimit())
-+			netif_warn(efx, drv, efx->net_dev,
-+				   "Received PTP event but PTP not set up\n");
-+		return;
-+	}
-+
- 	if (!ptp->enabled)
- 		return;
- 
++	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
 
 
