@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966174AbaCUAJp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:45 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37382 "EHLO
+	id S966015AbaCUAPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:15:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37415 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966134AbaCUAJi (ORCPT
+	with ESMTP id S966164AbaCUAJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:38 -0400
+	Thu, 20 Mar 2014 20:09:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
+        Arnd Bergmann <arnd@arndb.de>, Neil Horman <nhorman@tuxdriver.com>,
+        Shreyas Bhatewara <sbhatewara@vmware.com>,
+        "VMware, Inc." <pv-drivers@vmware.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 05/35] tg3: Dont check undefined error bits in RXBD
-Date: Thu, 20 Mar 2014 17:10:56 -0700
-Message-Id: <20140321001054.315429499@linuxfoundation.org>
+Subject: [PATCH 3.4 27/35] vmxnet3: fix building without CONFIG_PCI_MSI
+Date: Thu, 20 Mar 2014 17:11:18 -0700
+Message-Id: <20140321001055.045069564@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
 References: <20140321001054.038170009@linuxfoundation.org>
@@ -29,47 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-[ Upstream commit d7b95315cc7f441418845a165ee56df723941487 ]
+commit 0a8d8c446b5429d15ff2d48f46e00d8a08552303 upstream.
 
-Redefine the RXD_ERR_MASK to include only relevant error bits. This fixes
-a customer reported issue of randomly dropping packets on the 5719.
+Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+because it unconditionally references the vmxnet3_msix_rx()
+function.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
+To fix this, use the same #ifdef in the caller that exists around
+the function definition.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |    3 +--
- drivers/net/ethernet/broadcom/tg3.h |    6 +++++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -5844,8 +5844,7 @@ static int tg3_rx(struct tg3_napi *tnapi
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -1728,13 +1728,16 @@ static void
+ vmxnet3_netpoll(struct net_device *netdev)
+ {
+ 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
+-	int i;
  
- 		work_mask |= opaque_key;
- 
--		if ((desc->err_vlan & RXD_ERR_MASK) != 0 &&
--		    (desc->err_vlan != RXD_ERR_ODD_NIBBLE_RCVD_MII)) {
-+		if (desc->err_vlan & RXD_ERR_MASK) {
- 		drop_it:
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -2484,7 +2484,11 @@ struct tg3_rx_buffer_desc {
- #define RXD_ERR_TOO_SMALL		0x00400000
- #define RXD_ERR_NO_RESOURCES		0x00800000
- #define RXD_ERR_HUGE_FRAME		0x01000000
--#define RXD_ERR_MASK			0xffff0000
-+
-+#define RXD_ERR_MASK	(RXD_ERR_BAD_CRC | RXD_ERR_COLLISION |		\
-+			 RXD_ERR_LINK_LOST | RXD_ERR_PHY_DECODE |	\
-+			 RXD_ERR_MAC_ABRT | RXD_ERR_TOO_SMALL |		\
-+			 RXD_ERR_NO_RESOURCES | RXD_ERR_HUGE_FRAME)
- 
- 	u32				reserved;
- 	u32				opaque;
+ 	switch (adapter->intr.type) {
+-	case VMXNET3_IT_MSIX:
++#ifdef CONFIG_PCI_MSI
++	case VMXNET3_IT_MSIX: {
++		int i;
+ 		for (i = 0; i < adapter->num_rx_queues; i++)
+ 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+ 		break;
++	}
++#endif
+ 	case VMXNET3_IT_MSI:
+ 	default:
+ 		vmxnet3_intr(0, adapter->netdev);
 
 
