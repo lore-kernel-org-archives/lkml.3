@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967077AbaCUBW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:22:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36531 "EHLO
+	id S1760380AbaCUADi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:03:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36510 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760335AbaCUADj (ORCPT
+	with ESMTP id S1760335AbaCUADd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:39 -0400
+	Thu, 20 Mar 2014 20:03:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.13 034/149] iwlwifi: fix TX status for aggregated packets
-Date: Thu, 20 Mar 2014 17:03:17 -0700
-Message-Id: <20140321000438.144122637@linuxfoundation.org>
+        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 040/149] mwifiex: do not advertise usb autosuspend support
+Date: Thu, 20 Mar 2014 17:03:23 -0700
+Message-Id: <20140321000438.350596460@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,122 +29,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Bing Zhao <bzhao@marvell.com>
 
-commit 143582c6847cb285b361804c613127c25de60ca4 upstream.
+commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
 
-Only the first packet is currently handled correctly, but then
-all others are assumed to have failed which is problematic. Fix
-this, marking them all successful instead (since if they're not
-then the firmware will have transmitted them as single frames.)
+As many Surface Pro I & II users have found out, the mwifiex_usb
+doesn't support usb autosuspend, and it has caused some system
+stability issues.
 
-This fixes the lost packet reporting.
+Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
+Bug 60815 - Interface hangs in mwifiex_usb
+Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
+ 	    information
 
-Also do a tiny variable scoping cleanup.
+USB autosuspend get triggered when Surface Pro's AC power is
+removed or powertop enables power saving on USB8797 device.
+Driver's suspend handler is called here, but resume handler
+won't be called until the AC power is put back on or powertop
+disables power saving for USB8797.
 
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-[Add the dvm part]
-Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+We need to refactor the suspend/resume handlers to support
+usb autosuspend properly. For now let's just remove it.
+
+Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/tx.c |   14 +++++++++-----
- drivers/net/wireless/iwlwifi/mvm/tx.c |   18 +++++++++---------
- 2 files changed, 18 insertions(+), 14 deletions(-)
+ drivers/net/wireless/mwifiex/usb.c |    8 --------
+ 1 file changed, 8 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/tx.c
-@@ -1291,8 +1291,6 @@ int iwlagn_rx_reply_compressed_ba(struct
- 	struct iwl_compressed_ba_resp *ba_resp = (void *)pkt->data;
- 	struct iwl_ht_agg *agg;
- 	struct sk_buff_head reclaimed_skbs;
--	struct ieee80211_tx_info *info;
--	struct ieee80211_hdr *hdr;
- 	struct sk_buff *skb;
- 	int sta_id;
- 	int tid;
-@@ -1379,22 +1377,28 @@ int iwlagn_rx_reply_compressed_ba(struct
- 	freed = 0;
+--- a/drivers/net/wireless/mwifiex/usb.c
++++ b/drivers/net/wireless/mwifiex/usb.c
+@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb
+ 						   MWIFIEX_BSS_ROLE_ANY),
+ 				  MWIFIEX_ASYNC_CMD);
  
- 	skb_queue_walk(&reclaimed_skbs, skb) {
--		hdr = (struct ieee80211_hdr *)skb->data;
-+		struct ieee80211_hdr *hdr = (void *)skb->data;
-+		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
- 
- 		if (ieee80211_is_data_qos(hdr->frame_control))
- 			freed++;
- 		else
- 			WARN_ON_ONCE(1);
- 
--		info = IEEE80211_SKB_CB(skb);
- 		iwl_trans_free_tx_cmd(priv->trans, info->driver_data[1]);
- 
-+		memset(&info->status, 0, sizeof(info->status));
-+		/* Packet was transmitted successfully, failures come as single
-+		 * frames because before failing a frame the firmware transmits
-+		 * it without aggregation at least once.
-+		 */
-+		info->flags |= IEEE80211_TX_STAT_ACK;
-+
- 		if (freed == 1) {
- 			/* this is the first skb we deliver in this batch */
- 			/* put the rate scaling data there */
- 			info = IEEE80211_SKB_CB(skb);
- 			memset(&info->status, 0, sizeof(info->status));
--			info->flags |= IEEE80211_TX_STAT_ACK;
- 			info->flags |= IEEE80211_TX_STAT_AMPDU;
- 			info->status.ampdu_ack_len = ba_resp->txed_2_done;
- 			info->status.ampdu_len = ba_resp->txed;
---- a/drivers/net/wireless/iwlwifi/mvm/tx.c
-+++ b/drivers/net/wireless/iwlwifi/mvm/tx.c
-@@ -822,16 +822,12 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
- 	struct iwl_mvm_ba_notif *ba_notif = (void *)pkt->data;
- 	struct sk_buff_head reclaimed_skbs;
- 	struct iwl_mvm_tid_data *tid_data;
--	struct ieee80211_tx_info *info;
- 	struct ieee80211_sta *sta;
- 	struct iwl_mvm_sta *mvmsta;
--	struct ieee80211_hdr *hdr;
- 	struct sk_buff *skb;
- 	int sta_id, tid, freed;
+-#ifdef CONFIG_PM
+-	/* Resume handler may be called due to remote wakeup,
+-	 * force to exit suspend anyway
+-	 */
+-	usb_disable_autosuspend(card->udev);
+-#endif /* CONFIG_PM */
 -
- 	/* "flow" corresponds to Tx queue */
- 	u16 scd_flow = le16_to_cpu(ba_notif->scd_flow);
--
- 	/* "ssn" is start of block-ack Tx window, corresponds to index
- 	 * (in Tx queue's circular buffer) of first TFD/frame in window */
- 	u16 ba_resp_scd_ssn = le16_to_cpu(ba_notif->scd_ssn);
-@@ -888,22 +884,26 @@ int iwl_mvm_rx_ba_notif(struct iwl_mvm *
- 	freed = 0;
+ 	return 0;
+ }
  
- 	skb_queue_walk(&reclaimed_skbs, skb) {
--		hdr = (struct ieee80211_hdr *)skb->data;
-+		struct ieee80211_hdr *hdr = (void *)skb->data;
-+		struct ieee80211_tx_info *info = IEEE80211_SKB_CB(skb);
+@@ -557,7 +550,6 @@ static struct usb_driver mwifiex_usb_dri
+ 	.id_table = mwifiex_usb_table,
+ 	.suspend = mwifiex_usb_suspend,
+ 	.resume = mwifiex_usb_resume,
+-	.supports_autosuspend = 1,
+ };
  
- 		if (ieee80211_is_data_qos(hdr->frame_control))
- 			freed++;
- 		else
- 			WARN_ON_ONCE(1);
- 
--		info = IEEE80211_SKB_CB(skb);
- 		iwl_trans_free_tx_cmd(mvm->trans, info->driver_data[1]);
- 
-+		memset(&info->status, 0, sizeof(info->status));
-+		/* Packet was transmitted successfully, failures come as single
-+		 * frames because before failing a frame the firmware transmits
-+		 * it without aggregation at least once.
-+		 */
-+		info->flags |= IEEE80211_TX_STAT_ACK;
-+
- 		if (freed == 1) {
- 			/* this is the first skb we deliver in this batch */
- 			/* put the rate scaling data there */
--			info = IEEE80211_SKB_CB(skb);
--			memset(&info->status, 0, sizeof(info->status));
--			info->flags |= IEEE80211_TX_STAT_ACK;
- 			info->flags |= IEEE80211_TX_STAT_AMPDU;
- 			info->status.ampdu_ack_len = ba_notif->txed_2_done;
- 			info->status.ampdu_len = ba_notif->txed;
+ static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
 
 
