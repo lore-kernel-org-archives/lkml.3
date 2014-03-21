@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966263AbaCUAiQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:38:16 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37105 "EHLO
+	id S966306AbaCUAii (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:38:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37101 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965889AbaCUAIw (ORCPT
+	with ESMTP id S965879AbaCUAIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:52 -0400
+	Thu, 20 Mar 2014 20:08:51 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 3.10 46/85] firewire: net: fix use after free
-Date: Thu, 20 Mar 2014 17:09:49 -0700
-Message-Id: <20140321000605.305317953@linuxfoundation.org>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.10 45/85] tracing: Do not add event files for modules that fail tracepoints
+Date: Thu, 20 Mar 2014 17:09:48 -0700
+Message-Id: <20140321000605.156837381@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,45 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 8987583366ae9e03c306c2b7d73bdb952df1d08d upstream.
+commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
 
-Commit 8408dc1c14c1 "firewire: net: use dev_printk API" introduced a
-use-after-free in a failure path.  fwnet_transmit_packet_failed(ptask)
-may free ptask, then the dev_err() call dereferenced it.  The fix is
-straightforward; simply reorder the two calls.
+If a module fails to add its tracepoints due to module tainting, do not
+create the module event infrastructure in the debugfs directory. As the events
+will not work and worse yet, they will silently fail, making the user wonder
+why the events they enable do not display anything.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Having a warning on module load and the events not visible to the users
+will make the cause of the problem much clearer.
+
+Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
+
+Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/net.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ include/linux/tracepoint.h  |    6 ++++++
+ kernel/trace/trace_events.c |   10 ++++++++++
+ kernel/tracepoint.c         |    7 ++++++-
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -929,8 +929,6 @@ static void fwnet_write_complete(struct
- 	if (rcode == RCODE_COMPLETE) {
- 		fwnet_transmit_packet_done(ptask);
- 	} else {
--		fwnet_transmit_packet_failed(ptask);
--
- 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
- 			dev_err(&ptask->dev->netdev->dev,
- 				"fwnet_write_complete failed: %x (skipped %d)\n",
-@@ -938,8 +936,10 @@ static void fwnet_write_complete(struct
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -60,6 +60,12 @@ struct tp_module {
+ 	unsigned int num_tracepoints;
+ 	struct tracepoint * const *tracepoints_ptrs;
+ };
++bool trace_module_has_bad_taint(struct module *mod);
++#else
++static inline bool trace_module_has_bad_taint(struct module *mod)
++{
++	return false;
++}
+ #endif /* CONFIG_MODULES */
  
- 			errors_skipped = 0;
- 			last_rcode = rcode;
--		} else
-+		} else {
- 			errors_skipped++;
-+		}
-+		fwnet_transmit_packet_failed(ptask);
- 	}
- }
+ struct tracepoint_iter {
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1860,6 +1860,16 @@ static void trace_module_add_events(stru
+ 	struct ftrace_module_file_ops *file_ops = NULL;
+ 	struct ftrace_event_call **call, **start, **end;
  
++	if (!mod->num_trace_events)
++		return;
++
++	/* Don't add infrastructure for mods without tracepoints */
++	if (trace_module_has_bad_taint(mod)) {
++		pr_err("%s: module has bad taint, not creating trace events\n",
++		       mod->name);
++		return;
++	}
++
+ 	start = mod->trace_events;
+ 	end = mod->trace_events + mod->num_trace_events;
+ 
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -631,6 +631,11 @@ void tracepoint_iter_reset(struct tracep
+ EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+ 
+ #ifdef CONFIG_MODULES
++bool trace_module_has_bad_taint(struct module *mod)
++{
++	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
++}
++
+ static int tracepoint_module_coming(struct module *mod)
+ {
+ 	struct tp_module *tp_mod, *iter;
+@@ -641,7 +646,7 @@ static int tracepoint_module_coming(stru
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+ 	 * Staging and out-of-tree GPL modules are fine.
+ 	 */
+-	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
++	if (trace_module_has_bad_taint(mod))
+ 		return 0;
+ 	mutex_lock(&tracepoints_mutex);
+ 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 
 
