@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966090AbaCUAJ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37262 "EHLO
+	id S966480AbaCUAVn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:21:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37312 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965981AbaCUAJU (ORCPT
+	with ESMTP id S966084AbaCUAJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:20 -0400
+	Thu, 20 Mar 2014 20:09:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.10 66/85] can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() fails
-Date: Thu, 20 Mar 2014 17:10:09 -0700
-Message-Id: <20140321000608.096911608@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.10 85/85] iser-target: Fix post_send_buf_count for RDMA READ/WRITE
+Date: Thu, 20 Mar 2014 17:10:28 -0700
+Message-Id: <20140321000610.906780970@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,39 +29,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marc Kleine-Budde <mkl@pengutronix.de>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 7e9e148af01ef388efb6e2490805970be4622792 upstream.
+commit b6b87a1df604678ed1be40158080db012a99ccca upstream.
 
-If flexcan_chip_start() in flexcan_open() fails, the interrupt is not freed,
-this patch adds the missing cleanup.
+This patch fixes the incorrect setting of ->post_send_buf_count
+related to RDMA WRITEs + READs where isert_rdma_rw->send_wr_num
+was not being taken into account.
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+This includes incrementing ->post_send_buf_count within
+isert_put_datain() + isert_get_dataout(), decrementing within
+__isert_send_completion() + isert_response_completion(), and
+clearing wr->send_wr_num within isert_completion_rdma_read()
+
+This is necessary because even though IB_SEND_SIGNALED is
+not set for RDMA WRITEs + READs, during a QP failure event
+the work requests will be returned with exception status
+from the TX completion queue.
+
+Acked-by: Sagi Grimberg <sagig@mellanox.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
----
- drivers/net/can/flexcan.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -862,7 +862,7 @@ static int flexcan_open(struct net_devic
- 	/* start chip and queuing */
- 	err = flexcan_chip_start(dev);
- 	if (err)
--		goto out_close;
-+		goto out_free_irq;
+---
+ drivers/infiniband/ulp/isert/ib_isert.c |   14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
+
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -1308,6 +1308,7 @@ isert_completion_rdma_read(struct iser_t
+ 	}
  
- 	can_led_event(dev, CAN_LED_EVENT_OPEN);
+ 	cmd->write_data_done = se_cmd->data_length;
++	wr->send_wr_num = 0;
  
-@@ -871,6 +871,8 @@ static int flexcan_open(struct net_devic
+ 	pr_debug("isert_do_rdma_read_comp, calling target_execute_cmd\n");
+ 	spin_lock_bh(&cmd->istate_lock);
+@@ -1367,6 +1368,7 @@ isert_response_completion(struct iser_tx
+ 			  struct ib_device *ib_dev)
+ {
+ 	struct iscsi_cmd *cmd = &isert_cmd->iscsi_cmd;
++	struct isert_rdma_wr *wr = &isert_cmd->rdma_wr;
  
+ 	if (cmd->i_state == ISTATE_SEND_TASKMGTRSP ||
+ 	    cmd->i_state == ISTATE_SEND_LOGOUTRSP ||
+@@ -1377,7 +1379,7 @@ isert_response_completion(struct iser_tx
+ 		queue_work(isert_comp_wq, &isert_cmd->comp_work);
+ 		return;
+ 	}
+-	atomic_dec(&isert_conn->post_send_buf_count);
++	atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+ 
+ 	cmd->i_state = ISTATE_SENT_STATUS;
+ 	isert_completion_put(tx_desc, isert_cmd, ib_dev);
+@@ -1415,7 +1417,7 @@ isert_send_completion(struct iser_tx_des
+ 	case ISER_IB_RDMA_READ:
+ 		pr_debug("isert_send_completion: Got ISER_IB_RDMA_READ:\n");
+ 
+-		atomic_dec(&isert_conn->post_send_buf_count);
++		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
+ 		isert_completion_rdma_read(tx_desc, isert_cmd);
+ 		break;
+ 	default:
+@@ -1834,12 +1836,12 @@ isert_put_datain(struct iscsi_conn *conn
+ 	isert_init_tx_hdrs(isert_conn, &isert_cmd->tx_desc);
+ 	isert_init_send_wr(isert_cmd, &isert_cmd->tx_desc.send_wr);
+ 
+-	atomic_inc(&isert_conn->post_send_buf_count);
++	atomic_add(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+ 
+ 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
+ 	if (rc) {
+ 		pr_warn("ib_post_send() failed for IB_WR_RDMA_WRITE\n");
+-		atomic_dec(&isert_conn->post_send_buf_count);
++		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
+ 	}
+ 	pr_debug("Posted RDMA_WRITE + Response for iSER Data READ\n");
+ 	return 1;
+@@ -1942,12 +1944,12 @@ isert_get_dataout(struct iscsi_conn *con
+ 		data_left -= data_len;
+ 	}
+ 
+-	atomic_inc(&isert_conn->post_send_buf_count);
++	atomic_add(wr->send_wr_num, &isert_conn->post_send_buf_count);
+ 
+ 	rc = ib_post_send(isert_conn->conn_qp, wr->send_wr, &wr_failed);
+ 	if (rc) {
+ 		pr_warn("ib_post_send() failed for IB_WR_RDMA_READ\n");
+-		atomic_dec(&isert_conn->post_send_buf_count);
++		atomic_sub(wr->send_wr_num, &isert_conn->post_send_buf_count);
+ 	}
+ 	pr_debug("Posted RDMA_READ memory for ISER Data WRITE\n");
  	return 0;
- 
-+ out_free_irq:
-+	free_irq(dev->irq, dev);
-  out_close:
- 	close_candev(dev);
-  out:
 
 
