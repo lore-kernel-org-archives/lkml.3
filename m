@@ -1,95 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751157AbaCUVQp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:16:45 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:41198
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750710AbaCUVQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:16:44 -0400
-Message-ID: <1395436593.12479.379.camel@snotra.buserror.net>
-Subject: Re: [PATCH 9/9] powerpc/pm: support deep sleep feature on T1040
-From: Scott Wood <scottwood@freescale.com>
-To: David Laight <David.Laight@ACULAB.COM>
-CC: "'Kevin Hao'" <haokexin@gmail.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Chenhui Zhao <chenhui.zhao@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 21 Mar 2014 16:16:33 -0500
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D0F6E40C4@AcuExch.aculab.com>
-References: <1394168285-32275-1-git-send-email-chenhui.zhao@freescale.com>
-	 <1394168285-32275-9-git-send-email-chenhui.zhao@freescale.com>
-	 <1394586624.13761.132.camel@snotra.buserror.net>
-	 <20140312055755.GA17203@pek-khao-d1.corp.ad.wrs.com>
-	 <1394646185.13761.145.camel@snotra.buserror.net>
-	 <20140313074613.GD26692@pek-khao-d1.corp.ad.wrs.com>
-	 <1394835987.12479.119.camel@snotra.buserror.net>
-	 <20140316045801.GA32188@pek-khao-d1.corp.ad.wrs.com>
-	 <1395184734.12479.250.camel@snotra.buserror.net>
-	 <20140320114735.GD10182@pek-khao-d1.corp.ad.wrs.com>
-	 <063D6719AE5E284EB5DD2968C1650D6D0F6E33AE@AcuExch.aculab.com>
-	 <1395353279.12479.335.camel@snotra.buserror.net>
-	 <063D6719AE5E284EB5DD2968C1650D6D0F6E40C4@AcuExch.aculab.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: DM2PR04CA007.namprd04.prod.outlook.com (10.141.96.17) To
- DM2PR03MB398.namprd03.prod.outlook.com (10.141.84.140)
-X-Forefront-PRVS: 0157DEB61B
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(377424004)(189002)(199002)(24454002)(47736001)(49866001)(4396001)(50226001)(74366001)(74876001)(23676002)(47976001)(50466002)(50986001)(51856001)(46102001)(89996001)(33646001)(76482001)(56816005)(93516002)(93136001)(53806001)(42186004)(56776001)(81342001)(97186001)(88136002)(81542001)(81816001)(19580395003)(81686001)(90146001)(97336001)(19580405001)(85852003)(62966002)(31966008)(83322001)(54316002)(80976001)(76786001)(85306002)(95666003)(87266001)(87286001)(94946001)(77156001)(77096001)(74502001)(65816001)(94316002)(77982001)(59766001)(79102001)(80022001)(93916002)(92566001)(87976001)(92726001)(83072002)(74662001)(47446002)(47776003)(20776003)(63696002)(86362001)(95416001)(98676001);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR03MB398;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:B42FF0D5.8BFA43D8.F1F1158F.42E75109.20387;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: freescale.com
+	id S1751578AbaCUVRy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:17:54 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:44613 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750745AbaCUVRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 17:17:51 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH 0/5] Volatile Ranges (v12) & LSF-MM discussion fodder
+Date: Fri, 21 Mar 2014 14:17:30 -0700
+Message-Id: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 09:21 +0000, David Laight wrote:
-> From: Scott Wood [mailto:scottwood@freescale.com]
-> > On Thu, 2014-03-20 at 11:59 +0000, David Laight wrote:
-> > > I tried to work out what the 'twi, isync' instructions were for (in in_le32()).
-> > > The best I could come up with was to ensure a synchronous bus-fault.
-> > > But bus faults are probably only expected during device probing - not
-> > > normal operation, and the instructions will have a significant cost.
-> > >
-> > > Additionally in_le32() and out_le32() both start with a 'sync' instruction.
-> > > In many cases that isn't needed either - an explicit iosync() can be
-> > > used after groups of instructions.
-> > 
-> > The idea is that it's better to be maximally safe by default, and let
-> > performance critical sections be optimized using raw accessors and
-> > explicit synchronization if needed, than to have hard-to-debug bugs due
-> > to missing/wrong sync.  A lot of I/O is slow enough that the performance
-> > impact doesn't really matter, but the brain-time cost of getting the
-> > sync right is still there.
-> 
-> Hmmm....
-> 
-> That might be an excuse for the 'sync', but not the twi and isync.
+Just wanted to send out an updated patch set that includes changes from
+some of the reviews. Hopefully folks will have some time to look them
+over prior to the LSF-MM discussion on volatile ranges on Tuesday (see
+below for LSF-MM discussion points to think about).
 
-That might be true if I/O is always cache inhibited and guarded, in
-which case I think we can rely on that to ensure that the load has
-completed before we do things like wrtee or rfi.  In any case, I'd want
-to hear Ben's explanation.
+New changes are:
+----------------
+o Added flags argument to the syscall, which is unused, but per
+  https://lwn.net/Articles/585415/ seems like a good idea.
+o Minor vma traversing cleanups suggested by Jan
+o Return an error when trying to mark unmapped regions
+o First pass implementation of marking pages referenced when
+  they are marked volatile, so the pages in a range are set to
+  the same "age" and will be approximately purged together.
+  This behavior is still open for discussion.
+o Very naive implementation of anonymous page aging on swapless
+  systems. This has clear performance issues, as we burn time
+  overly scanning anonymous pages, but provides something
+  concrete upon which to discuss what the best way would be to
+  solve this.
+o Other minor code cleanups
 
-> I was setting up a dma request (for the ppc 83xx PCIe bridge) and
-> was doing back to back little-endian writes into memory.
-> I had difficulty finding and including header files containing
-> the definitions for byteswapped accesses I needed.
-> arch/powerpc/include/asm/swab.h contains some - but I couldn't
-> work out how to get it included (apart from giving the full path).
-> 
-> In any case you need to understand when synchronisation is
-> required - otherwise you will get it wrong.
-> Especially since non-byteswapped accesses are done by direct
-> access.
+The first three patches are still the core functionality, which
+I'd really like further review on. The last two patches in this
+series are more discussion starters, and are less serious.
 
-Yes, it's bad that rawness combines the lack of byteswapping with the
-lack of synchronization.  Ideally the raw accessors would also come in
-big and little endian form, plus a native endian form if it's really
-needed.
 
--Scott
+Potential discussion items for LSF-MM to think about:
+----------------------------------------------------
+o How to increase reviewer interest?
+    - Lots of interest from application world
+o Page aging semantics when marking volatile.
+    - Should marking volatile be the same as accessing pages?
+    - Should volatile ranges be put on end of inactive lru?
+    - Should we just punt this and have applications combine madvise()
+      use with vrange() to specify range age?
+o Volatile page & purged page accounting
+    - Volatility is stored in per-process vma, not page
+    - vmstats are page based, how do we deal w/ COWed pages?
+o Aging anonymous memory on swapless systems
+    - Any thoughts on improving over naive method?
+    - Better volatile page accounting might help?
+    - Do we need a separate volatile LRU?
+o Shared volatility on tmpfs/shm/memfd (required for ashmem)
+    - Johannes idea for clearing dirty bits?
+    - vma-like structure on the address space?
 
+thanks
+-john
+
+
+Volatile ranges provides a method for userland to inform the kernel that
+a range of memory is safe to discard (ie: can be regenerated) but
+userspace may want to try access it in the future.  It can be thought of
+as similar to MADV_DONTNEED, but that the actual freeing of the memory
+is delayed and only done under memory pressure, and the user can try to
+cancel the action and be able to quickly access any unpurged pages. The
+idea originated from Android's ashmem, but I've since learned that other
+OSes provide similar functionality.
+
+This functionality allows for a number of interesting uses. One such
+example is: Userland caches that have kernel triggered eviction under
+memory pressure. This allows for the kernel to "rightsize" userspace
+caches for current system-wide workload. Things like image bitmap
+caches, or rendered HTML in a hidden browser tab, where the data is
+not visible and can be regenerated if needed, are good examples.
+
+Both Chrome and Firefox already make use of volatile ranges via the
+ashmem interface:
+https://hg.mozilla.org/releases/mozilla-b2g28_v1_3t/rev/a32c32b24a34
+
+https://chromium.googlesource.com/chromium/src/base/+/47617a69b9a57796935e03d78931bd01b4806e70/memory/discardable_memory_allocator_android.cc
+
+
+There are two basic ways volatile ranges can be used:
+
+Explicit marking method:
+1) Userland marks a range of memory that can be regenerated if necessary
+as volatile
+2) Before accessing the memory again, userland marks the memory as
+nonvolatile, and the kernel will provide notification if any pages in the
+range has been purged.
+
+Optimistic method:
+1) Userland marks a large range of data as volatile
+2) Userland continues to access the data as it needs.
+3) If userland accesses a page that has been purged, the kernel will
+send a SIGBUS
+4) Userspace can trap the SIGBUS, mark the affected pages as
+non-volatile, and refill the data as needed before continuing on
+
+
+You can read more about the history of volatile ranges here (~reverse
+chronological order):
+https://lwn.net/Articles/590991/
+http://permalink.gmane.org/gmane.linux.kernel.mm/98848
+http://permalink.gmane.org/gmane.linux.kernel.mm/98676
+https://lwn.net/Articles/522135/
+https://lwn.net/Kernel/Index/#Volatile_ranges
+
+
+Continuing from the last release, this revision is reduced in scope
+when compared to earlier attempts. I've only focused on handled
+volatility on anonymous memory, and we're storing the volatility in
+the VMA.  This may have performance implications compared with the earlier
+approach, but it does simplify the approach. I'm open to expanding
+functionality via flags arugments, but for now I'm wanting to keep focus
+on what the right default behavior should be and keep the use cases
+restricted to help get reviewer interest.
+
+Further, the page discarding happens via normal vmscanning, which due to
+anonymous pages not being aged on swapless systems, means we'll only purge
+pages when swap is enabled. In this version I've included a naive
+implementation of enabling anonymous scanning on swapless systems, which
+clearly has performance issues, but hopefully will trigger some discussion
+on how to best do this.
+
+Additionally, since we don't handle volatility on tmpfs files with this
+version of the patch, it is not able to be used to implement semantics
+similar to Android's ashmem. But since shared volatiltiy on files is
+more complex, my hope is to start small and hopefully grow from there.
+
+Again, much of the logic in this patchset is based on Minchan's earlier
+efforts, so I do want to make sure the credit goes to him for his major
+contribution!
+
+
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Android Kernel Team <kernel-team@android.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Robert Love <rlove@google.com>
+Cc: Mel Gorman <mel@csn.ul.ie>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: Dave Hansen <dave@sr71.net>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+Cc: Neil Brown <neilb@suse.de>
+Cc: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Mike Hommey <mh@glandium.org>
+Cc: Taras Glek <tglek@mozilla.com>
+Cc: Jan Kara <jack@suse.cz>
+Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Cc: Michel Lespinasse <walken@google.com>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+
+
+John Stultz (5):
+  vrange: Add vrange syscall and handle splitting/merging and marking
+    vmas
+  vrange: Add purged page detection on setting memory non-volatile
+  vrange: Add page purging logic & SIGBUS trap
+  vrange: Set affected pages referenced when marking volatile
+  vmscan: Age anonymous memory even when swap is off.
+
+ arch/x86/syscalls/syscall_64.tbl |   1 +
+ include/linux/mm.h               |   1 +
+ include/linux/swap.h             |  15 +-
+ include/linux/swapops.h          |  10 +
+ include/linux/vrange.h           |  13 ++
+ mm/Makefile                      |   2 +-
+ mm/internal.h                    |   2 -
+ mm/memory.c                      |  21 ++
+ mm/rmap.c                        |   5 +
+ mm/vmscan.c                      |  38 ++--
+ mm/vrange.c                      | 433 +++++++++++++++++++++++++++++++++++++++
+ 11 files changed, 514 insertions(+), 27 deletions(-)
+ create mode 100644 include/linux/vrange.h
+ create mode 100644 mm/vrange.c
+
+-- 
+1.8.3.2
 
