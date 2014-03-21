@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760188AbaCUIVY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 04:21:24 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59143 "EHLO comal.ext.ti.com"
+	id S1760245AbaCUIV7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:21:59 -0400
+Received: from www.meduna.org ([92.240.244.38]:41025 "EHLO meduna.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545AbaCUIVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 04:21:19 -0400
-Message-ID: <532BF663.602@ti.com>
-Date: Fri, 21 Mar 2014 10:20:51 +0200
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1755017AbaCUIVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 04:21:55 -0400
+Message-ID: <532BF695.3030900@meduna.org>
+Date: Fri, 21 Mar 2014 09:21:41 +0100
+From: Stanislav Meduna <stano@meduna.org>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: linux-serial@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core
- to drivers/of
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> <20140320153804.35d5b835@samsung.com> <20140320184316.GB7528@n2100.arm.linux.org.uk> <4700752.xAVjk21KIL@avalon>
-In-Reply-To: <4700752.xAVjk21KIL@avalon>
+        Greg KH <gregkh@linuxfoundation.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>
+Subject: Re: mxs-auart gives data from previous run after close and reopen
+References: <5323625B.4010203@meduna.org> <532B985A.7060505@hurleysoftware.com>
+In-Reply-To: <532B985A.7060505@hurleysoftware.com>
 X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="GQjohDmXS004Jp4GEJC7p5QfgVXm1Awk6"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: stano@meduna.org
+X-Authenticator: dovecot_plain
+X-Spam-Score: -6.9
+X-Spam-Score-Int: -68
+X-Exim-Version: 4.72 (build at 25-Oct-2012 18:35:58)
+X-Date: 2014-03-21 09:21:46
+X-Connected-IP: 95.105.163.217:1922
+X-Message-Linecount: 38
+X-Body-Linecount: 21
+X-Message-Size: 1523
+X-Body-Size: 749
+X-Received-Count: 1
+X-Recipient-Count: 5
+X-Local-Recipient-Count: 5
+X-Local-Recipient-Defer-Count: 0
+X-Local-Recipient-Fail-Count: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---GQjohDmXS004Jp4GEJC7p5QfgVXm1Awk6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 21.03.2014 02:39, Peter Hurley wrote:
 
-On 20/03/14 20:49, Laurent Pinchart wrote:
+> Does disabling the fifo on shutdown clear the fifo?
 
->> The CPU is the _controlling_ component - it's the component that has t=
-o
->> configure the peripherals so they all talk to each other in the right
->> way.  Therefore, the view of it needs to be CPU centric.
->>
->> If we were providing a DT description for consumption by some other
->> device in the system, then the view should be as seen from that device=
+I did not try this, but if my theory is correct, it would
+not help, as all this does is reducing the FIFO length
+to one character. So you'd still get up to two characters:
+one in the "FIFO" - it could get there a microsecond after
+you disable the FIFO before you gate the clock - and one
+being received into the shift register (garbled by shutting
+down the clock in the middle of the reception that was
+resumed when clock was resumed on startup). Note that one
+can get preempted here, so the instructions next to each
+other can be milliseconds apart in reality.
 
->> instead.
->>
->> Think about this.  Would you describe a system starting at, say, the
->> system keyboard, and branching all the way through just becuase that's=
+IMHO we need a soft-reset here.
 
->> how you interact with it, or would you describe it from the CPUs point=
+Regards
+-- 
+                                     Stano
 
->> of view because that's what has to be in control of the system.
->=20
-> DT has been designed to represent a control-based view of the system. I=
-t does=20
-> so pretty well using its tree-based model. However, it doesn't have a n=
-ative=20
-> way to represent a flow-based graph, hence the OF graph solution we're =
-
-> discussing. The whole point of this proposal is to represent the topolo=
-gy of=20
-> the media device, not how each entity is controlled.
-
-I agree with Laurent here. I think this is an important point to keep in
-mind. We already describe the control graph in the DT via the
-parent-child relationships. There's no point in describing the same
-thing again with the graph links being discussed.
-
- Tomi
-
-
-
---GQjohDmXS004Jp4GEJC7p5QfgVXm1Awk6
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQIcBAEBAgAGBQJTK/ZoAAoJEPo9qoy8lh71OQEP/3ts3WNl27wegIsy9M/GghOL
-ch51JW7ebSxMfdSlJwbzrbQ5+m2+zYpuQch+r2z5KwZ1EzNAX5qE/qJbcut4owoF
-RxRaRN+gfmiC87lU8/fXzc6xZ/+aNhHmizlEAhHTQOSRPG/jyoi6j9wOUO50NGWI
-Dtd9KIZDJ6u2oEFMJQkwccL/6Y4Q0GaEWL4kDAN2IUAPO68N6ldkebEnA5g/MzDI
-REGXoRxPBn0P2B4gAitYilrKoy3Q+g/dygSWUX36RM7A1fVLC/HQiXOeeba4cpls
-eKXOYYC2JSOaDikqjvdLnrDxs/dacWh5YoGicz0LSKxA25j8MQCMwThn1iJHmT8H
-IY2+X9egdjLglodXMHlG5Nj9NhcZgQJjuSENZL62/A/Si3ePWPIZrySW722LItc0
-E22b9NS9gkwbmoSOCvTdu16GbfFJYGNSYV/Fl+f93FdH5Cj52DRLlRLdUFzj8DNk
-LBiIU51EHtJoXikwxwIENgPWCesLjXnq36dZNvrT3xFVCs+1G2bLs3eh8AHM6lQB
-FCmtBdSQynxmX4SGnB4lFS2EEakDOjIHF1HgoI6NS8o3JQXaHdQdx0LxzkLulEIo
-POdL78iH6SOMnk8v96LTptYAfEFmUimTwutiRJs/vN3TjYRGA6JLXAARlPae9V5X
-5D21h1E0X8r86x5q6iIS
-=R99w
------END PGP SIGNATURE-----
-
---GQjohDmXS004Jp4GEJC7p5QfgVXm1Awk6--
