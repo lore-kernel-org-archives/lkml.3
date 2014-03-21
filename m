@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964998AbaCUJCu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 05:02:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:48159 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760462AbaCUJCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 05:02:47 -0400
-Date: Fri, 21 Mar 2014 10:02:53 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Vince Weaver <vincent.weaver@maine.edu>
-cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
-In-Reply-To: <alpine.DEB.2.10.1403201724430.23339@vincent-weaver-1.um.maine.edu>
-Message-ID: <alpine.DEB.2.02.1403210956000.18573@ionos.tec.linutronix.de>
-References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403181523360.15687@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403182149540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403181705000.15687@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403182218170.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403190941170.18343@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403191456120.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403191039560.18652@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403191552570.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403201056020.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201045560.21603@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.02.1403201609540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201724430.23339@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1760285AbaCUJGm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 05:06:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751488AbaCUJGj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 05:06:39 -0400
+Date: Fri, 21 Mar 2014 09:06:30 +0000
+From: Joe Thornber <thornber@redhat.com>
+To: device-mapper development <dm-devel@redhat.com>
+Cc: snitzer@redhat.com, agk@redhat.com, neilb@suse.de,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
+Subject: Re: [dm-devel] [PATCH RFC v1 00/01] dm-lightnvm introduction
+Message-ID: <20140321090630.GA30044@debian>
+Mail-Followup-To: device-mapper development <dm-devel@redhat.com>,
+	snitzer@redhat.com, agk@redhat.com, neilb@suse.de,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Matias =?iso-8859-1?Q?Bj=F8rling?= <m@bjorling.me>
+References: <1395383538-18019-1-git-send-email-m@bjorling.me>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395383538-18019-1-git-send-email-m@bjorling.me>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 Mar 2014, Vince Weaver wrote:
+Hi Matias,
 
-> On Thu, 20 Mar 2014, Thomas Gleixner wrote:
-> > 
-> > Yeah, it causes the explosion in the debug object code. This should
-> > have been:
-> > 
-> > +                       trace_printk("Tracking Object free: %s %p %pS\n",
-> > +                                    descr->name, obj->object, obj->hint);
+This looks really interesting and I'd love to get involved.  Do you
+have any recommendations for what hardware I should pick up?
+
+- Joe
+
+
+On Thu, Mar 20, 2014 at 11:32:17PM -0700, Matias Bjørling wrote:
+> Hi,
 > 
-> attached are the results with the corrected patch.
-
-I'm a complete idiot. I was staring at oaddr and did not notice that
-descr->name is the real culprit. Sorry. Delta patch below.
-
-Thanks,
-
-	tglx
-
-Index: linux-2.6/lib/debugobjects.c
-===================================================================
---- linux-2.6.orig/lib/debugobjects.c
-+++ linux-2.6/lib/debugobjects.c
-@@ -769,6 +769,7 @@ repeat:
- 		/* Now free them */
- 		hlist_for_each_entry_safe(obj, tmp, &freelist, node) {
- 			hlist_del(&obj->node);
-+			descr = obj->descr;
- 			trace_printk("Tracking Object free: %s %p %pS\n",
- 				     descr->name, obj->object, obj->hint);
- 			free_object(obj);
-
-
+> Users that have custom firmware SSDs, may choose to expose their flash directly.
+> This allows the host to control logical to physical address mappings, garbage
+> collection strategy, wear-leveling, and so on.
