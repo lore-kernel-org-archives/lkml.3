@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755226AbaCUR1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 13:27:52 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:60212 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752933AbaCUR1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 13:27:50 -0400
-Date: Fri, 21 Mar 2014 18:27:42 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Matthias Graf <matthias.graf@st.ovgu.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
-Message-ID: <20140321172742.GA2846@pd.tnic>
-References: <532C727F.1080803@st.ovgu.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <532C727F.1080803@st.ovgu.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760758AbaCURaN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 13:30:13 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:40017 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaCURaJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 13:30:09 -0400
+From: Christopher Covington <cov@codeaurora.org>
+To: Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>,
+        linux-kernel@vger.kernel.org
+Cc: Christopher Covington <cov@codeaurora.org>
+Subject: [PATCH v2] checkpatch.pl: Add check for Change-Id
+Date: Fri, 21 Mar 2014 13:29:28 -0400
+Message-Id: <1395422969-29056-1-git-send-email-cov@codeaurora.org>
+X-Mailer: git-send-email 1.8.1.1
+In-Reply-To: <532C75B0.9040405@codeaurora.org>
+References: <532C75B0.9040405@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 06:10:23PM +0100, Matthias Graf wrote:
-> Please CC me on replies.
-> 
-> [1.] Kernel panic: Fatal Machine Check after booting >=
-> 3.13.5-101.fc19.x86_64; 3.12.11-201.fc19.x86_64 works fine!
-> [2.] Screen freezes a few seconds after Gnome appears. The error message
-> (see attachement) is seldom still printed to the screen. Booting
-> 3.12.11-201 with otherwise the same setup, I do not see the panic.
-> Booting on different hardware (my laptop) does not produce the panic. I
-> also notice low frames per seconds after gnome started up, right before
-> the panic occures. I therefore suppose this is graphics hardware related.
-> [3.] Fatal Machine Check Exception, RIP Inexact, apic_timer_interrupt,
-> Kernel panic
-> [4.] 3.13.6-100.fc19.x86_64 && 3.13.5-103.fc19.x86 && 3.13.5-101.fc19.x86_64
-> [5.] OCRed: (see Attachement for photo)
-> 
-> Started Accounts Service.
-> [ 34.348483] mce: [Hardware Error]: CPU 3: Machine Check Exception: 5 Bank 8: bZ88884888888888
-> [ 44.468168] mce: [Hardware Error]: HIP ?IHEXﬁCT? 18:<ffffffff816881f8> {apicgtimer_interrupt+8x8/8x88}
-> I 44.468168] mce: [Hardware Error]: TSC 36S??8ad8c
-> f 44.468168] mce: [Hardware Error]: PROCESSOR 8:6fb TIM 138471666? SOCKET 8 HPIC 2 microcode ba
-> I 44.468168] mce: [Hardware Error]: Run the above through 'mcelog ~~ascii’
+A commit hook for the Gerrit code review server [1] inserts change
+identifiers so Gerrit can track patches through multiple revisions.
+These identifiers are noise in the context of the upstream kernel.
+(Many Gerrit servers are private. Even given a public instance,
+given only a Change-Id, one must guess which server a change was
+tracked on. Patches submitted to the Linux kernel mailing lists
+should be able to stand on their own. If it's truly useful to
+reference code review on a Gerrit server, a URL is a much clearer
+way to do so.) Thus, issue an error when a Change-Id line is
+encountered before the Signed-off-by.
 
-This looks like you had some text recognition done on the jpeg. :-)
+1. https://gerrit.googlesource.com/gerrit/+/master/gerrit-server/src/main/resources/com/google/gerrit/server/tools/root/hooks/commit-msg
 
-Please correct the error message to be exactly as in the jpeg and run it
-through mcelog --ascii to see what that bank 8 is trying to tell us.
+Signed-off-by: Christopher Covington <cov@codeaurora.org>
+---
+ scripts/checkpatch.pl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-Thanks.
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 464dcef..8fad0d3 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1891,6 +1891,12 @@ sub process {
+ 			}
+ 		}
+ 
++# Check for unwanted Gerrit info
++		if ($in_commit_log && $line =~ /^\s*change-id:/i) {
++			ERROR("GERRIT_CHANGE_ID",
++			      "Remove Gerrit Change-Id's before submitting upstream.\n" . $herecurr);
++		}
++
+ # Check for wrappage within a valid hunk of the file
+ 		if ($realcnt != 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
+ 			ERROR("CORRUPTED_PATCH",
 -- 
-Regards/Gruss,
-    Boris.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by the Linux Foundation.
 
-Sent from a fat crate under my desk. Formatting is fine.
---
