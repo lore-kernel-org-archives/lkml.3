@@ -1,57 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760716AbaCUMRN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 08:17:13 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:18062 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1760313AbaCUMRK (ORCPT
+	id S965579AbaCUMRq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 08:17:46 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:56128 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759833AbaCUMRp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 08:17:10 -0400
-Date: Fri, 21 Mar 2014 08:17:06 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Pavel Shilovsky <piastry@etersoft.ru>
-Cc: Jeff Layton <jlayton@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>,
-        Steve French <sfrench@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Clark Williams <williams@redhat.com>,
-        "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        uobergfe@redhat.com
-Subject: Re: [RFC PATCH] cifs: Fix possible deadlock with cifs and work
- queues
-Message-ID: <20140321081706.271e390c@gandalf.local.home>
-In-Reply-To: <CAKywueT4xRHZGomoPvnA9rob3FpzkPYuuUPe+vEDiOFvTbUiGA@mail.gmail.com>
-References: <20140319151252.16ed3ac6@gandalf.local.home>
-	<20140320152833.216d81a0@tlielax.poochiereds.net>
-	<20140320165703.522c7c5c@gandalf.local.home>
-	<20140320170239.51d20a0e@tlielax.poochiereds.net>
-	<20140320222343.4faaa137@gandalf.local.home>
-	<CAKywueT4xRHZGomoPvnA9rob3FpzkPYuuUPe+vEDiOFvTbUiGA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 21 Mar 2014 08:17:45 -0400
+Date: Fri, 21 Mar 2014 13:17:42 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+Subject: Re: [PATCH 3/5] ARM: berlin/dt: add cpupll and syspll support to BG2Q
+Message-ID: <20140321121741.GB6443@piout.net>
+References: <1395402220-23503-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1395402220-23503-4-git-send-email-alexandre.belloni@free-electrons.com>
+ <532C2C71.4010703@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532C2C71.4010703@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Mar 2014 12:32:12 +0400
-Pavel Shilovsky <piastry@etersoft.ru> wrote:
+On 21/03/2014 at 13:11:29 +0100, Sebastian Hesselbarth wrote :
+> On 03/21/2014 12:43 PM, Alexandre Belloni wrote:
+> 
+> Alexandre,
+> 
+> Thanks for starting this! I'll start with the most obvious
+> things first and have a closer look on it later.
+> 
+
+I will rework and wait for your other comments before sending a new
+version. BTW, I've set up a branch on github if you want to try on your
+platforms:
+
+https://github.com/alexandrebelloni/linux.git topic/berlin-clk
+
+> Missing commit description here.
+> 
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >---
+> >  arch/arm/boot/dts/berlin2q.dtsi | 20 ++++++++++++++++++--
+> >  1 file changed, 18 insertions(+), 2 deletions(-)
+> >
+> >diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> >index 07452a7483fa..19d2c82b0664 100644
+> >--- a/arch/arm/boot/dts/berlin2q.dtsi
+> >+++ b/arch/arm/boot/dts/berlin2q.dtsi
+> >@@ -59,10 +59,26 @@
+> >  		clock-frequency = <100000000>;
+> >  	};
+> >
+> >+	syspll: syspll {
+> 
+> syspll: pll@ea0030 {
+> 
+> and sort it in between other SoC nodes below. This will
+> most likely break clocks in v3.14 but v3.15 will receive
+> proper clock init ordering.
+> 
+
+I will do across all the dtsi, don't bother repeating yourself :)
+
+> >+		compatible = "marvell,berlin2q-pll";
+> >+		clocks = <&smclk>;
+> >+		#clock-cells = <0>;
+> >+		reg = <0xf7ea0030 8>;
+> >+	};
+> >+
+> >+	cpupll: cpupll {
+> 
+> dito.
+> 
+> >+		compatible = "marvell,berlin2q-pll";
+> >+		clocks = <&smclk>;
+> >+		#clock-cells = <0>;
+> >+		reg = <0xf7dd0170 8>;
+> >+	};
+> >+
+> >  	cpuclk: cpu-clock {
+> >-		compatible = "fixed-clock";
+> >+		compatible = "fixed-factor-clock";
+> >+		clocks = <&cpupll>;
+> >  		#clock-cells = <0>;
+> >-		clock-frequency = <1200000000>;
+> >+		clock-div = <1>;
+> >+		clock-mult = <1>;
+> 
+> Hmm, you probably know better than me, but if cpuclk == cpupll
+> is always true we don't need another clk layer here. If you
+> can scale down cpuclk from cpupll and we just have no driver
+> for it, I am fine with it.
+> 
+
+You can actually switch CPU clk from CPU pll to smclk. I'm not sure this
+is completely useful yet though, probably for suspend ?
+
+Also, while I'm not sure this is a good reason, other clocks are derived
+from CPU pll and have another divider.
 
 
-> Read and write codepaths both obtain lock_sem for read and then wait
-> for cifsiod_wq to complete and release lock_sem. They don't do any
-> lock_sem operations inside their work task queued to cifsiod_wq. But
-> oplock code can obtain/release lock_sem in its work task. So, that's
-> why I agree with Jeff and suggest to move the oplock code to a
-> different work queue (cifsioopd_wq?) but leave read and write
-> codepaths use cifsiod_wq.
-
-OK, how about I submit a second patch that moves the reader and writer
-to its own "safe" workqueue?
-
--- Steve
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
