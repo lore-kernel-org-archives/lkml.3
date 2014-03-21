@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760331AbaCUADb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36485 "EHLO
+	id S967138AbaCUBZn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:25:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36498 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760295AbaCUAD1 (ORCPT
+	with ESMTP id S1760319AbaCUADa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:27 -0400
+	Thu, 20 Mar 2014 20:03:30 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Michael Chan <mchan@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 019/149] tg3: Dont check undefined error bits in RXBD
-Date: Thu, 20 Mar 2014 17:03:02 -0700
-Message-Id: <20140321000437.612161655@linuxfoundation.org>
+        Jeang Daniel <dyjeong@qca.qualcomm.com>,
+        Sujith Manoharan <c_manoha@qca.qualcomm.com>,
+        "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH 3.13 028/149] ath9k: Fix ETSI compliance for AR9462 2.0
+Date: Thu, 20 Mar 2014 17:03:11 -0700
+Message-Id: <20140321000437.938933338@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,47 +30,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Chan <mchan@broadcom.com>
+From: Sujith Manoharan <c_manoha@qca.qualcomm.com>
 
-[ Upstream commit d7b95315cc7f441418845a165ee56df723941487 ]
+commit b3050248c167871ca52cfdb2ce78aa2460249346 upstream.
 
-Redefine the RXD_ERR_MASK to include only relevant error bits. This fixes
-a customer reported issue of randomly dropping packets on the 5719.
+The minimum CCA power threshold values have to be adjusted
+for existing cards to be in compliance with new regulations.
+Newer cards will make use of the values obtained from EEPROM,
+support for this was added earlier. To make sure that cards
+that are already in use and don't have proper values in EEPROM,
+do not violate regulations, use the initvals instead.
 
-Signed-off-by: Michael Chan <mchan@broadcom.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reported-by: Jeang Daniel <dyjeong@qca.qualcomm.com>
+Signed-off-by: Sujith Manoharan <c_manoha@qca.qualcomm.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/ethernet/broadcom/tg3.c |    3 +--
- drivers/net/ethernet/broadcom/tg3.h |    6 +++++-
- 2 files changed, 6 insertions(+), 3 deletions(-)
 
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -6827,8 +6827,7 @@ static int tg3_rx(struct tg3_napi *tnapi
+---
+ drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
++++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
+@@ -56,7 +56,7 @@ static const u32 ar9462_2p0_baseband_pos
+ 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3236605e, 0x32365a5e},
+ 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
+-	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
++	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
+ 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
+ 	{0x00009e3c, 0xcf946220, 0xcf946220, 0xcfd5c782, 0xcfd5c282},
+ 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
+@@ -95,7 +95,7 @@ static const u32 ar9462_2p0_baseband_pos
+ 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
+ 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
+ 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
+-	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
++	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
+ 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
+ };
  
- 		work_mask |= opaque_key;
- 
--		if ((desc->err_vlan & RXD_ERR_MASK) != 0 &&
--		    (desc->err_vlan != RXD_ERR_ODD_NIBBLE_RCVD_MII)) {
-+		if (desc->err_vlan & RXD_ERR_MASK) {
- 		drop_it:
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -2601,7 +2601,11 @@ struct tg3_rx_buffer_desc {
- #define RXD_ERR_TOO_SMALL		0x00400000
- #define RXD_ERR_NO_RESOURCES		0x00800000
- #define RXD_ERR_HUGE_FRAME		0x01000000
--#define RXD_ERR_MASK			0xffff0000
-+
-+#define RXD_ERR_MASK	(RXD_ERR_BAD_CRC | RXD_ERR_COLLISION |		\
-+			 RXD_ERR_LINK_LOST | RXD_ERR_PHY_DECODE |	\
-+			 RXD_ERR_MAC_ABRT | RXD_ERR_TOO_SMALL |		\
-+			 RXD_ERR_NO_RESOURCES | RXD_ERR_HUGE_FRAME)
- 
- 	u32				reserved;
- 	u32				opaque;
 
 
