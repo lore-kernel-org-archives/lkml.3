@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760606AbaCULG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:06:26 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:22608 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759943AbaCULGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:06:24 -0400
-Date: Fri, 21 Mar 2014 11:05:59 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
-Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are
- serialized
-Message-ID: <20140321110559.GB13596@arm.com>
-References: <cover.1395379422.git.viresh.kumar@linaro.org>
- <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
- <532BEE64.3090501@linux.vnet.ibm.com>
- <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
- <532BFB77.5060107@linux.vnet.ibm.com>
- <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+	id S965279AbaCULI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:08:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62364 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760234AbaCULI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 07:08:27 -0400
+Message-ID: <532C1D74.50008@redhat.com>
+Date: Fri, 21 Mar 2014 12:07:32 +0100
+From: Thomas Graf <tgraf@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Zoltan Kiss <zoltan.kiss@citrix.com>, Jesse Gross <jesse@nicira.com>,
+        pshelar@nicira.com, dev@openvswitch.org
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, xen-devel@lists.xenproject.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
+In-Reply-To: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
-> @Catalin: We have a problem here and need your expert advice. After changing
-> CPU frequency we need to call this code:
-> 
-> cpufreq_notify_post_transition();
-> policy->transition_ongoing = false;
-> 
-> And the sequence must be like this only. Is this guaranteed without any
-> memory barriers? cpufreq_notify_post_transition() isn't touching
-> transition_ongoing at all..
+On 03/21/2014 11:31 AM, Zoltan Kiss wrote:
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well, and modify the callers accordingly. skb_tx_error() is also added to
+> the callers so they will signal the failed delivery towards the creator of the
+> skb.
+>
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+> v2: orphan the frags right before touching the frags
+>
+> v3:
+> - orphan 'from' instead of 'to'
+> - call skb_tx_error() in the callers if something went wrong
+>
+> v4: correctly use error path in queue_userspace_packet
 
-The above sequence doesn't say much. As rmk said, the compiler wouldn't
-reorder the transition_ongoing write before the function call. I think
-most architectures (not sure about Alpha) don't do speculative stores,
-so hardware wouldn't reorder them either. However, other stores inside
-the cpufreq_notify_post_transition() could be reordered after
-transition_ongoing store. The same for memory accesses after the
-transition_ongoing update, they could be reordered before.
+LGTM now
 
-So what we actually need to know is what are the other relevant memory
-accesses that require strict ordering with transition_ongoing.
+Acked-by: Thomas Graf <tgraf@redhat.com>
 
-What I find strange in your patch is that
-cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
-update but cpufreq_freq_transition_end() doesn't.
-
--- 
-Catalin
