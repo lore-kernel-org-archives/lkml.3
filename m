@@ -1,84 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752724AbaCUXqp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 19:46:45 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:61294 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaCUXql (ORCPT
+	id S1751798AbaCUXwk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 19:52:40 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60563 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803AbaCUXwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 19:46:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDwgkNuiMmVXSznGAT2-cZ1rApHbSPyBewxGzLvSWt1mUdnAA@mail.gmail.com>
-References: <1395430798-25606-1-git-send-email-miletus@chromium.org>
-	<CAN+gG=EKFCjT+Px+HuyrsPxQ5sivWMNL=SXeGGXEdN8qg2e6iw@mail.gmail.com>
-	<CAPDwgkNuiMmVXSznGAT2-cZ1rApHbSPyBewxGzLvSWt1mUdnAA@mail.gmail.com>
-Date: Fri, 21 Mar 2014 19:46:39 -0400
-Message-ID: <CAN+gG=EqJF8wBQd3jJLPcObffZUEkgv=7=hh-sDCnn0t+JL4jg@mail.gmail.com>
-Subject: Re: [PATCH] Add quirk HID_QUIRK_NO_INIT_REPORTS for RNDPLUS touchscreen
-From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-To: Yufeng Shen <miletus@google.com>
-Cc: linux-input <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+	Fri, 21 Mar 2014 19:52:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Christopher Covington <cov@codeaurora.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-usb@vger.kernel.org, Andrew de los Reyes <adlr@chromium.org>
-Content-Type: text/plain; charset=UTF-8
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <Jonathan.Austin@arm.com>,
+        Nicolas Pitre <nico@linaro.org>
+Subject: Re: [PATCH] ARM: Use 64-bit DMA addresses for LPAE+VirtIO-MMIO
+Date: Sat, 22 Mar 2014 00:52:33 +0100
+Message-ID: <4272242.L9VmujUH59@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <90DB5198-051A-48EC-B577-5342BD706713@arm.com>
+References: <1395250522-30031-1-git-send-email-cov@codeaurora.org> <532C96B9.4090805@codeaurora.org> <90DB5198-051A-48EC-B577-5342BD706713@arm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:9HpJHZH2fNE19C+Z4IEl9T+vhXh/D6Pe+4lIGa04clD
+ XbtByE1Ziki4YgVCmdBiLy9ch5O6zbLYluaXwI6S4lZOEkjRcw
+ M7SSQx6mOXpUWLaQkuL/Gwc0NAzx+Mwy3gnlTKUY5ycAgR2P5f
+ ysqmCiKD7EApZktKn2RyjqobV2ct6Ea0J59xEOcMGHf7d90Z6q
+ vToqmBWqc5EgSVRkGogrLVxlurn9Vak8mXnfh9f2+2GmiVCmIO
+ cM7WWEAnzc/L+lc2JqjlE+guS+qifquTRkk1kyNo8iZUE7Q7TL
+ kSCNlADRRsv1vd/Whe9jgcmDl9rXvXoeTaYQv3fwDQqgS+wu+j
+ LM0w3kUcs5wPL3c7HQBo=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 6:08 PM, Yufeng Shen <miletus@google.com> wrote:
->
->
-> On Fri, Mar 21, 2014 at 4:58 PM, Benjamin Tissoires
-> <benjamin.tissoires@gmail.com> wrote:
->>
->> On Fri, Mar 21, 2014 at 3:39 PM, Yufeng Shen <miletus@chromium.org> wrote:
->> > There is timeout error during initialization:
->> > kernel: [   14.167086] hid-multitouch 0003:2512:5003.0001:
->> > usb_submit_urb(ctrl) failed: -1
->> > kernel: [   14.167135] hid-multitouch 0003:2512:5003.0001: timeout
->> > initializing reports
->> > kernel: [   14.167407] input: RNDPLUS Co., LTD   PULSEIR TSR4601 as
->> > /devices/pci0000:00/0000:00:1d.0/usb2/2-1/2-1.3/2-1.3:1.0/input/input14
->> > kernel: [   14.167975] cpufreq_interactive: monitoring input on RNDPLUS
->> > Co., LTD   PULSEIR TSR4601
->> > kernel: [   14.168266] hid-multitouch 0003:2512:5003.0001:
->> > input,hiddev0,hidraw1: USB HID v1.10 Mouse [RNDPLUS Co., LTD   PULSEIR
->> > TSR4601] on usb-0000:00:1d.0-1.3/input0
->> >
->> > Adding quirk HID_QUIRK_NO_INIT_REPORTS can solve the problem.
->>
->> I already asked you to test if HID_QUIRK_NO_INIT_INPUT_REPORTS was
->> working for the same same kind of timeout
->> (https://patchwork.kernel.org/patch/3544281/).
->
->
-> The reason I didn't test HID_QUIRK_NO_INIT_INPUT_REPORTS was that I am
-> mainly
-> working with kernel 3.8/3.10. And HID_QUIRK_NO_INIT_INPUT_REPORTS was not
-> present
+On Friday 21 March 2014 23:27:24 Catalin Marinas wrote:
+> On 21 Mar 2014, at 19:44, Christopher Covington <cov@codeaurora.org> wrote:
+> > On 03/21/2014 12:27 PM, Catalin Marinas wrote:
+> >>> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+> >>> index 1f8fed9..a62bcc9 100644
+> >>> --- a/arch/arm/mm/Kconfig
+> >>> +++ b/arch/arm/mm/Kconfig
+> >>> @@ -617,6 +617,7 @@ config ARM_LPAE
+> >>>     bool "Support for the Large Physical Address Extension"
+> >>>     depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && \
+> >>>             !CPU_32v4 && !CPU_32v3
+> >>> +   select ARCH_DMA_ADDR_T_64BIT if VIRTIO_MMIO
+> >> 
+> >> That's the wrong place to enable ARCH_DMA_ADDR_T_64BIT. Do you have a
+> >> platform with >32-bit physical address space? If yes, it should be
+> >> selected there.
+> > 
+> > The platforms I'm currently using are models like the Versatile Express
+> > RTSM/FVP. I can respin with changes to ARCH_VEXPRESS and ARCH_VIRT instead.
+> 
+> But do you use RAM beyond 32-bit on such models?
 
-You should consider working with an upstream kernel when sending patches.
+I think the more important question here is what the normal behavior is
+for these platforms. I believe in most cases you don't have RAM above
+the boundary, so we should not enable the option by default as it can
+have noticeable overhead (we'd turn it on all the time if it didn't).
 
-> in the kernel source. Do you have the patch set that I can port to 3.8/3.10
-> kernel for testing ?
+How about one of these two 
 
-git blames gives 595e9276ce68791317484ec7f0f9f2e0457c3b34, which is
-Linus' tree since 3.12.
+a)
 
-Cheers,
-Benjamin
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 9ea4b7b..6e3b6db 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -628,7 +628,9 @@ config ARCH_PHYS_ADDR_T_64BIT
+ 	def_bool ARM_LPAE
+ 
+ config ARCH_DMA_ADDR_T_64BIT
+-	bool
++	def_bool "Allow DMA to high (>4GB) addresses"
++	depends on ARCH_PHYS_ADDR_T_64BIT
++	default y
+ 	help
 
->
->
->>
->>
->> So I am asking again: please test HID_QUIRK_NO_INIT_INPUT_REPORTS and
->> if it works, use this quirk instead the one in this patch.
->> This *really* matters because the quirk HID_QUIRK_NO_INIT_REPORTS does
->> not initialize feature reports which contains important information
->> regarding hid-multitouch.
->>
->> Cheers,
->> Benjamin
->>
->> >
+ config ARM_THUMB
+ 	bool "Support Thumb user binaries" if !CPU_THUMBONLY
+
+
+b)
+
+diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+index 9ea4b7b..4a21b1e 100644
+--- a/arch/arm/mm/Kconfig
++++ b/arch/arm/mm/Kconfig
+@@ -619,16 +619,28 @@ config ARM_LPAE
+ 	help
+ 	  Say Y if you have an ARMv7 processor supporting the LPAE page
+ 	  table format and you would like to access memory beyond the
+-	  4GB limit. The resulting kernel image will not run on
+-	  processors without the LPA extension.
++	  4GB limit, or run virtual machines usign KVM.
++	  The resulting kernel image will not run on processors without
++	  the LPA extension.
+ 
+ 	  If unsure, say N.
+ 
+ config ARCH_PHYS_ADDR_T_64BIT
+-	def_bool ARM_LPAE
++	bool "Support more than 4GB of physical address space" if EXPERT
++	depends on ARM_LPAE
++	default y
++	help
++	  Say Y if you use LPAE to access RAM or MMIO registers at
++	  addresses beyond the low 4GB of address space. If this
++	  option is disabled, the kernel will use the LPAE page table
++	  format and it can offer KVM support, but will use a slightly
++	  more efficient representation of physical memory addresses
++	  that restricts access to 32-bit addressable locations.
++
++	  If unsure, say Y.
+ 
+ config ARCH_DMA_ADDR_T_64BIT
+-	bool
++	def_bool ARCH_PHYS_ADDR_T_64BIT
+ 
+ config ARM_THUMB
+ 	bool "Support Thumb user binaries" if !CPU_THUMBONLY
+
+
+
+In either case, platforms that need this support can always
+'select' it, while a kernel built only for platforms that don't
+need it can offer this as a user-selectable option.
+
+	Arnd
