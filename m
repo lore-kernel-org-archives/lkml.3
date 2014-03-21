@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760072AbaCUBF6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:05:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36763 "EHLO
+	id S965291AbaCUAEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36741 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965028AbaCUAEW (ORCPT
+	with ESMTP id S965028AbaCUAES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:22 -0400
+	Thu, 20 Mar 2014 20:04:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 3.13 093/149] iser-target: Ignore completions for FRWRs in isert_cq_tx_work
-Date: Thu, 20 Mar 2014 17:04:16 -0700
-Message-Id: <20140321000440.179667186@linuxfoundation.org>
+        Aaron Plattner <aplattner@nvidia.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.13 088/149] cpufreq: use cpufreq_cpu_get() to avoid cpufreq_get() race conditions
+Date: Thu, 20 Mar 2014 17:04:11 -0700
+Message-Id: <20140321000440.007851096@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,72 +29,67 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Aaron Plattner <aplattner@nvidia.com>
 
-commit 9bb4ca68fc48eea618b1af1c1cde2a251ae32d1b upstream.
+commit 999976e0f6233322a878b0b7148c810544d6c8a8 upstream.
 
-This patch changes IB_WR_FAST_REG_MR + IB_WR_LOCAL_INV related
-work requests to include a ISER_FRWR_LI_WRID value in order to
-signal isert_cq_tx_work() that these requests should be ignored.
+If a module calls cpufreq_get while cpufreq is initializing, it's
+possible for it to be called after cpufreq_driver is set but before
+cpufreq_cpu_data is written during subsys_interface_register.  This
+happens because cpufreq_get doesn't take the cpufreq_driver_lock
+around its use of cpufreq_cpu_data.
 
-This is necessary because even though IB_SEND_SIGNALED is not
-set for either work request, during a QP failure event the work
-requests will be returned with exception status from the TX
-completion queue.
+Fix this by using cpufreq_cpu_get(cpu) to look up the policy rather
+than reading it out of cpufreq_cpu_data directly.  cpufreq_cpu_get()
+takes the appropriate locks to prevent this race from happening.
 
-v2 changes:
- - Rename ISER_FRWR_LI_WRID -> ISER_FASTREG_LI_WRID (Sagi)
+Since it's possible for policy to be NULL if the caller passes in an
+invalid CPU number or calls the function before cpufreq is initialized,
+delete the BUG_ON(!policy) and simply return 0.  Don't try to return
+-ENOENT because that's negative and the function returns an unsigned
+integer.
 
-Acked-by: Sagi Grimberg <sagig@mellanox.com>
-Cc: Or Gerlitz <ogerlitz@mellanox.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+References: https://bbs.archlinux.org/viewtopic.php?id=177934
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/infiniband/ulp/isert/ib_isert.c |    8 ++++++--
- drivers/infiniband/ulp/isert/ib_isert.h |    1 +
- 2 files changed, 7 insertions(+), 2 deletions(-)
+ drivers/cpufreq/cpufreq.c |   21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
---- a/drivers/infiniband/ulp/isert/ib_isert.c
-+++ b/drivers/infiniband/ulp/isert/ib_isert.c
-@@ -1732,8 +1732,10 @@ isert_cq_tx_work(struct work_struct *wor
- 			pr_debug("TX wc.status: 0x%08x\n", wc.status);
- 			pr_debug("TX wc.vendor_err: 0x%08x\n", wc.vendor_err);
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1447,23 +1447,16 @@ static unsigned int __cpufreq_get(unsign
+  */
+ unsigned int cpufreq_get(unsigned int cpu)
+ {
+-	struct cpufreq_policy *policy = per_cpu(cpufreq_cpu_data, cpu);
++	struct cpufreq_policy *policy = cpufreq_cpu_get(cpu);
+ 	unsigned int ret_freq = 0;
  
--			atomic_dec(&isert_conn->post_send_buf_count);
--			isert_cq_tx_comp_err(tx_desc, isert_conn);
-+			if (wc.wr_id != ISER_FASTREG_LI_WRID) {
-+				atomic_dec(&isert_conn->post_send_buf_count);
-+				isert_cq_tx_comp_err(tx_desc, isert_conn);
-+			}
- 		}
- 	}
+-	if (cpufreq_disabled() || !cpufreq_driver)
+-		return -ENOENT;
++	if (policy) {
++		down_read(&policy->rwsem);
++		ret_freq = __cpufreq_get(cpu);
++		up_read(&policy->rwsem);
  
-@@ -2198,6 +2200,7 @@ isert_fast_reg_mr(struct fast_reg_descri
+-	BUG_ON(!policy);
+-
+-	if (!down_read_trylock(&cpufreq_rwsem))
+-		return 0;
+-
+-	down_read(&policy->rwsem);
+-
+-	ret_freq = __cpufreq_get(cpu);
+-
+-	up_read(&policy->rwsem);
+-	up_read(&cpufreq_rwsem);
++		cpufreq_cpu_put(policy);
++	}
  
- 	if (!fr_desc->valid) {
- 		memset(&inv_wr, 0, sizeof(inv_wr));
-+		inv_wr.wr_id = ISER_FASTREG_LI_WRID;
- 		inv_wr.opcode = IB_WR_LOCAL_INV;
- 		inv_wr.ex.invalidate_rkey = fr_desc->data_mr->rkey;
- 		wr = &inv_wr;
-@@ -2208,6 +2211,7 @@ isert_fast_reg_mr(struct fast_reg_descri
- 
- 	/* Prepare FASTREG WR */
- 	memset(&fr_wr, 0, sizeof(fr_wr));
-+	fr_wr.wr_id = ISER_FASTREG_LI_WRID;
- 	fr_wr.opcode = IB_WR_FAST_REG_MR;
- 	fr_wr.wr.fast_reg.iova_start =
- 		fr_desc->data_frpl->page_list[0] + page_off;
---- a/drivers/infiniband/ulp/isert/ib_isert.h
-+++ b/drivers/infiniband/ulp/isert/ib_isert.h
-@@ -6,6 +6,7 @@
- 
- #define ISERT_RDMA_LISTEN_BACKLOG	10
- #define ISCSI_ISER_SG_TABLESIZE		256
-+#define ISER_FASTREG_LI_WRID		0xffffffffffffffffULL
- 
- enum isert_desc_type {
- 	ISCSI_TX_CONTROL,
+ 	return ret_freq;
+ }
 
 
