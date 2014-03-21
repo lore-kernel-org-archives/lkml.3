@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966281AbaCUALL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:11:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37478 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966236AbaCUAJz (ORCPT
+	id S966297AbaCUAL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:11:29 -0400
+Received: from linuxhacker.ru ([217.76.32.60]:54469 "EHLO fiona.linuxhacker.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966236AbaCUAL1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:55 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Roman Volkov <v1ron@mail.ru>, Clemens Ladisch <clemens@ladisch.de>
-Subject: [PATCH 3.4 34/35] ALSA: oxygen: modify adjust_dg_dac_routing function
-Date: Thu, 20 Mar 2014 17:11:25 -0700
-Message-Id: <20140321001055.267587763@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
-References: <20140321001054.038170009@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Thu, 20 Mar 2014 20:11:27 -0400
+Subject: Re: [PATCH 3.10 76/85] Fix mountpoint reference leakage in linkat
+Mime-Version: 1.0 (Apple Message framework v1283)
+Content-Type: text/plain; charset=us-ascii
+From: Oleg Drokin <green@linuxhacker.ru>
+In-Reply-To: <20140321000609.596835128@linuxfoundation.org>
+Date: Thu, 20 Mar 2014 20:11:22 -0400
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <3E72E44E-23C8-4040-8495-0A61C9C4316A@linuxhacker.ru>
+References: <20140321000558.606667505@linuxfoundation.org> <20140321000609.596835128@linuxfoundation.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+X-Mailer: Apple Mail (2.1283)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hello!
 
-------------------
+On Mar 20, 2014, at 8:10 PM, Greg Kroah-Hartman wrote:
 
-From: Roman Volkov <v1ron@mail.ru>
+> 3.10-stable review patch.  If anyone has any objections, please let me know.
+> 
+> ------------------
+> 
+> From: Oleg Drokin <green@linuxhacker.ru>
+> 
+> commit d22e6338db7f613dd4f6095c190682fcc519e4b7 upstream.
+> 
+> Recent changes to retry on ESTALE in linkat
+> (commit 442e31ca5a49e398351b2954b51f578353fdf210)
+> introduced a mountpoint reference leak and a small memory
+> leak in case a filesystem link operation returns ESTALE
+> which is pretty normal for distributed filesystems like
+> lustre, nfs and so on.
+> Free old_path in such a case.
+> 
+> [AV: there was another missing path_put() nearby - on the previous
+> goto retry]
 
-commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
+This comment loses sense in this version because there's no previous goto retry,
+though it might not be important due to it just being a port of an upstream commit, I guess.
 
-When selecting the audio output destinations (headphones,
-FP headphones, multichannel output), the channel routing
-should be changed depending on what destination selected.
-Also unnecessary I2S channels are digitally muted. This
-function called when the user selects the destination
-in the ALSA mixer.
-
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-
----
- sound/pci/oxygen/xonar_dg.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
-
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
-
+> 
+> Signed-off-by: Oleg Drokin: <green@linuxhacker.ru>
+> Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> ---
+> fs/namei.c |    1 +
+> 1 file changed, 1 insertion(+)
+> 
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -3655,6 +3655,7 @@ retry:
+> out_dput:
+> 	done_path_create(&new_path, new_dentry);
+> 	if (retry_estale(error, how)) {
+> +		path_put(&old_path);
+> 		how |= LOOKUP_REVAL;
+> 		goto retry;
+> 	}
+> 
 
