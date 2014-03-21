@@ -1,192 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965411AbaCUBmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:42:22 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:38667 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964953AbaCUBmU (ORCPT
+	id S965361AbaCUBqB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:46:01 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:35111 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759732AbaCUBp6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 21:42:20 -0400
-Message-ID: <532B98F8.1080001@gmail.com>
-Date: Thu, 20 Mar 2014 18:42:16 -0700
-From: Andrey Zonov <andrey.zonov@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 20 Mar 2014 21:45:58 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: SCSI: race condition between scsi_remove_target and scsi_probe_and_add_lun
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "Maxime Coquelin" <maxime.coquelin@st.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <532AE239.9000800@samsung.com>
+Cc: mark.rutland@arm.com, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, linux@arm.linux.org.uk,
+        m.szyprowski@samsung.com, t-kristo@ti.com
+References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
+ <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
+Message-ID: <20140321014551.21989.57253@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents and rates
+Date: Thu, 20 Mar 2014 18:45:51 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Quoting Sylwester Nawrocki (2014-03-20 05:42:33)
+> Hi Maxime,
+> 
+> On 06/03/14 14:45, Maxime Coquelin wrote:
+> > Hi Sylwester,
+> > 
+> >       I like the principle of your implementation, but I have two questions:
+> >       1 - How can we manage PM with this solution, as the parent/rate will be 
+> > set only once at probe time?
+> >       2 - How to set the parent of a parent clock (which can be shared with 
+> > other devices)? Same question about the parent rates.
+> 
+> Thanks for your feedback and apologies for late reply.
+> 
+> IIUC your first concern is about a situation when clocks need to be
+> reconfigured upon each resume from system sleep or runtime PM resume ?
+> As I mentioned in v1 of the RFC I was considering having individual
+> drivers calling explicitly the clocks set up routine. Presumably this
+> would allow to resolve the power management related issue.
+> One example I'm aware the approach as in this RFC wouldn't work is
+> when a device in a SoC belongs to a power domain, which needs to be
+> first switched on before we can start setting up and the clocks'
+> configuration get lost after the power domain switch off.
 
-I've got kernel panic on my box which works as FibreChannel initiator.
-I was able to reproduce this panic by setting dev_loss_tmo=2 and
-enabling/disabling ports every 5 seconds on the switch in 5 minutes.  I
-added some debug points in the kernel code and that's what I've got so far:
+I like Sylwester's approach of handling this one-time setup in the
+driver core.
 
-1. system is inserting new device into __devices list
+Any kind of fine grained power management should not be hidden by DT,
+and by definition that logic belongs in the device driver. It can still
+be nicely abstracted away by runtime pm[1].
 
-DEBUG: scsi_sysfs_device_initialize(): sdev=ffff88046a931000 7:0:5:0
-Pid: 910, comm: kworker/u:2 Tainted: P           O 3.2.48-swt9004 #33
-Call Trace:
-[<ffffffff81245c42>] ? scsi_alloc_sdev+0x1d2/0x240
-[<ffffffff8123d4bd>] ? scsi_device_lookup_by_target+0x8d/0xc0
-[<ffffffff8124623a>] ? scsi_probe_and_add_lun+0x42a/0xb20
-[<ffffffff811acb7d>] ? kobject_set_name_vargs+0x6d/0x80
-[<ffffffff81230b4f>] ? dev_set_name+0x3f/0x50
-[<ffffffff811ac782>] ? kobject_get+0x12/0x20
-[<ffffffffa000b3e4>] ? fc_host_match+0x14/0x70 [scsi_transport_fc]
-[<ffffffff8123726f>] ? attribute_container_add_device+0x4f/0x160
-[<ffffffff811ac782>] ? kobject_get+0x12/0x20
-[<ffffffff812304e4>] ? get_device+0x14/0x20
-[<ffffffff812459c5>] ? scsi_alloc_target+0x295/0x2d0
-[<ffffffff81230bca>] ? device_release+0x1a/0x80
-[<ffffffff81246bce>] ? __scsi_scan_target+0xce/0x5f0
-[<ffffffff8102ec22>] ? dequeue_task_fair+0x52/0x150
-[<ffffffff8139a91d>] ? __schedule+0x25d/0x7d0
-[<ffffffff812477b6>] ? scsi_scan_target+0xc6/0xe0
-[<ffffffffa000e75f>] ? fc_scsi_scan_rport+0xaf/0xc0 [scsi_transport_fc]
-[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
-[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff81052f06>] ? kthread+0x96/0xa0
-[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
-[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
-[<ffffffff8139f130>] ? gs_change+0xb/0xb
+Regards,
+Mike
 
-2. later in scsi_probe_and_add_lun() this device is removing
+[1] Message-ID: <20140320114238.GQ7528@n2100.arm.linux.org.uk>
 
-DEBUG: __scsi_remove_device(): sdev=ffff88046a931000 7:0:5:0
-Pid: 910, comm: kworker/u:2 Tainted: P           O 3.2.48-swt9004 #33
-Call Trace:
-[<ffffffff81248c66>] ? __scsi_remove_device+0x46/0x110
-[<ffffffff81246268>] ? scsi_probe_and_add_lun+0x458/0xb20
-[<ffffffff81230b4f>] ? dev_set_name+0x3f/0x50
-[<ffffffff811ac782>] ? kobject_get+0x12/0x20
-[<ffffffff812459c5>] ? scsi_alloc_target+0x295/0x2d0
-[<ffffffff81230bca>] ? device_release+0x1a/0x80
-[<ffffffff81246bce>] ? __scsi_scan_target+0xce/0x5f0
-[<ffffffff8102ec22>] ? dequeue_task_fair+0x52/0x150
-[<ffffffff8139a91d>] ? __schedule+0x25d/0x7d0
-[<ffffffff812477b6>] ? scsi_scan_target+0xc6/0xe0
-[<ffffffffa000e75f>] ? fc_scsi_scan_rport+0xaf/0xc0 [scsi_transport_fc]
-[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
-[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff81052f06>] ? kthread+0x96/0xa0
-[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
-[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
-[<ffffffff8139f130>] ? gs_change+0xb/0xb
-
-3. another thread is trying to remove this device because of timeout
-
-DEBUG: __scsi_remove_device(): sdev=ffff88046a931000 7:0:5:0
-Pid: 4, comm: kworker/0:0 Tainted: P           O 3.2.48-swt9004 #33
-Call Trace:
-[<ffffffff81248c66>] ? __scsi_remove_device+0x46/0x110
-[<ffffffff8139b63a>] ? mutex_lock+0x1a/0x40
-[<ffffffff81248d58>] ? scsi_remove_device+0x28/0x40
-[<ffffffff81242a00>] ? scsi_kmap_atomic_sg+0x180/0x180
-[<ffffffff81248ed1>] ? scsi_remove_target+0x141/0x1e0
-[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
-[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff81052f06>] ? kthread+0x96/0xa0
-[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
-[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
-[<ffffffff8139f130>] ? gs_change+0xb/0xb
-
-and it's got dead sdev object.  I don't understand how this can happen
-because __scsi_remove_target() iterating over __devices and getting sdev
-reference under host_lock and that should be enough.
-
-DEBUG: kref_put(): kref=ffff88046a9312e0 val=-1
-------------[ cut here ]------------
-WARNING: at lib/kref.c:61 kref_put+0x88/0xc0()
-Hardware name: X9DRi-LN4+/X9DR3-LN4+
-Modules linked in: qla2xxx(O) igb ehci_hcd scsi_transport_fc
-Pid: 4, comm: kworker/0:0 Tainted: P           O 3.2.48-swt9004 #33
-Call Trace:
-[<ffffffff81037bfb>] ? warn_slowpath_common+0x7b/0xc0
-[<ffffffff811ac6c0>] ? kobject_del+0x30/0x30
-[<ffffffff811adb08>] ? kref_put+0x88/0xc0
-[<ffffffff81248cac>] ? __scsi_remove_device+0x8c/0x110
-[<ffffffff8139b63a>] ? mutex_lock+0x1a/0x40
-[<ffffffff81248d58>] ? scsi_remove_device+0x28/0x40
-[<ffffffff81242a00>] ? scsi_kmap_atomic_sg+0x180/0x180
-[<ffffffff81248ed1>] ? scsi_remove_target+0x141/0x1e0
-[<ffffffff8104eb06>] ? process_one_work+0x116/0x3a0
-[<ffffffff8104f1ec>] ? worker_thread+0x14c/0x400
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff8104f0a0>] ? rescuer_thread+0x310/0x310
-[<ffffffff81052f06>] ? kthread+0x96/0xa0
-[<ffffffff8139f134>] ? kernel_thread_helper+0x4/0x10
-[<ffffffff81052e70>] ? kthread_worker_fn+0x120/0x120
-[<ffffffff8139f130>] ? gs_change+0xb/0xb
-
-Here is the patch which helped me:
-
-diff --git a/drivers/scsi/scsi_sysfs.c b/drivers/scsi/scsi_sysfs.c
-index 9117d0b..676e5ff 100644
---- a/drivers/scsi/scsi_sysfs.c
-+++ b/drivers/scsi/scsi_sysfs.c
-@@ -1094,6 +1094,7 @@ static void __scsi_remove_target(struct
-scsi_target *starget)
-        unsigned long flags;
-        struct scsi_device *sdev;
-
-+       mutex_lock(&shost->scan_mutex);
-        spin_lock_irqsave(shost->host_lock, flags);
-  restart:
-        list_for_each_entry(sdev, &shost->__devices, siblings) {
-@@ -1102,12 +1103,13 @@ static void __scsi_remove_target(struct
-scsi_target *starget)
-                    scsi_device_get(sdev))
-                        continue;
-                spin_unlock_irqrestore(shost->host_lock, flags);
--               scsi_remove_device(sdev);
-+               __scsi_remove_device(sdev);
-                scsi_device_put(sdev);
-                spin_lock_irqsave(shost->host_lock, flags);
-                goto restart;
-        }
-        spin_unlock_irqrestore(shost->host_lock, flags);
-+       mutex_unlock(&shost->scan_mutex);
- }
-
- /**
-
-I'm not sure about the fix is correct, but I was not able to reproduce
-the panic.
-
-
-P.S. Here is another patch which help to detect reference count underflow
-
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index 484604d..05dd2b3 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -68,9 +68,13 @@ static inline void kref_get(struct kref *kref)
- static inline int kref_sub(struct kref *kref, unsigned int count,
-             void (*release)(struct kref *kref))
- {
-+       long refs;
-+
-        WARN_ON(release == NULL);
-
--       if (atomic_sub_and_test((int) count, &kref->refcount)) {
-+       refs = atomic_sub_return((int) count, &kref->refcount);
-+       WARN_ON(refs < 0);
-+       if (refs == 0) {
-                release(kref);
-                return 1;
-        }
-
--- 
-Andrey Zonov
+> 
+> OTOH I suspect devices for which one-time clocks setup is sufficient
+> will be quite common. And for these there would need to be a single
+> call to the setup routine in probe() I guess, since it wouldn't be
+> possible to figure out just from the DT data when the actual call
+> should be made.
+> 
+> For a global clocks configuration, I thought about specifying that
+> in the clocks controller node, and then to have the setup routine
+> called e.g. from of_clk_init(). I think that could work well enough,
+> together with the patch [1], adding clock dependencies handling.
+> But then the clock frequency set up function would need to be
+> modified to respect the clock parent relationships, similarly as
+> in patch series [2]. A just noticed [2] recently, after posting
+> this RFC (adding Tero at Cc).
+> 
+> --
+> Regards,
+> Sylwester
+> 
+> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
+> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
