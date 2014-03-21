@@ -1,86 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965261AbaCUOvV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:51:21 -0400
-Received: from smtp2out.l-3com.com ([166.20.51.112]:6755 "EHLO
-	smtp2out.l-3com.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786AbaCUOvQ convert rfc822-to-8bit (ORCPT
+	id S965411AbaCUOvg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:51:36 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:56084 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S965290AbaCUOve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:51:16 -0400
-X-filenames: 
-X-filesizes: None
-X-filetypes: 
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,704,1389744000"; 
-   d="scan'208";a="226562700"
-X-IronPort-AV: E=Sophos;i="4.97,704,1389765600"; 
-   d="scan'208";a="5331384"
-From: <jimmie.davis@l-3com.com>
-To: <umgwanakikbuti@gmail.com>
-CC: <oneukum@suse.de>, <artem_fetishev@epam.com>, <peterz@infradead.org>,
-        <kosaki.motohiro@jp.fujitsu.com>, <linux-kernel@vger.kernel.org>
-Subject: RE: Bug 71331 - mlock yields processor to lower priority process
-Thread-Topic: Bug 71331 - mlock yields processor to lower priority process
-Thread-Index: AQHPRNwZPC5PRgt+P0GtAN8yDFKRX5rrmJkA///XPHuAAG8YgP//rVNFgABlNQD//6xjLQ==
-Date: Fri, 21 Mar 2014 14:50:34 +0000
-Message-ID: <FFF95760268D324AB6DD9426E83C8DF70B2E595F@ARLEXCHMBX01.lst.link.l-3com.com>
-References: <20140321200248.GB6264@owamsq.epam.com>
-	 ,<1395393822.6030.59.camel@marge.simpson.net>
-	 <FFF95760268D324AB6DD9426E83C8DF70B2E5870@ARLEXCHMBX01.lst.link.l-3com.com>
-	 ,<1395408925.9455.3.camel@linux-fkkt.site>
-	 <FFF95760268D324AB6DD9426E83C8DF70B2E58FB@ARLEXCHMBX01.lst.link.l-3com.com>,<1395412904.6030.126.camel@marge.simpson.net>
-In-Reply-To: <1395412904.6030.126.camel@marge.simpson.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [130.210.49.246]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 Mar 2014 10:51:34 -0400
+Message-ID: <532C51F3.8030205@hurleysoftware.com>
+Date: Fri, 21 Mar 2014 10:51:31 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
+To: mtk.manpages@gmail.com
+CC: linux kernel <linux-kernel@vger.kernel.org>,
+        linux-serial <linux-serial@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Ivan <athlon_@mail.ru>
+Subject: Re: man termios
+References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com> <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com> <532C46BD.1000208@hurleysoftware.com> <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
+In-Reply-To: <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/21/2014 10:17 AM, Michael Kerrisk (man-pages) wrote:
+> On Fri, Mar 21, 2014 at 3:03 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> On 03/21/2014 09:15 AM, Michael Kerrisk (man-pages) wrote:
+>>>
+>>> On 03/21/2014 12:21 PM, Peter Hurley wrote:
+>>>>
+>>>> On 03/21/2014 06:45 AM, Michael Kerrisk (man-pages) wrote:
+>>
+>>
+>>>>>> Finally, if the 'count' parameter is less than MIN, read() may return
+>>>>>> before
+>>>>>> MIN bytes have been received, if 'count' bytes have been received.
+>>>>>
+>>>>>
+>>>>> Yes. But it's not clear to me here: do you mean that something in the
+>>>>> man page (or in TLPI) needs fixing?
+>>>>
+>>>>
+>>>> Well, what I mean here is that read() may also _not_ return until MIN
+>>>> bytes have
+>>>> been received, even if 'count' bytes have been received.
+>>>
+>>>
+>>> Ahh -- I see what you mean. And, it looks like there is a point here where
+>>> Linux
+>>> differs from POSIX and (at least) Solaris. See the current man-page text
+>>> below,
+>>> in particular the MIN>0, TIME>0 case. I've also attached a simple test
+>>> program
+>>> that I used, below.
+>>>
+>>>          In noncanonical mode input is available immediately (without  the
+>>>          user  having  to  type a line-delimiter character), no input pro‐
+>>>          cessing is performed, and line editing is disabled.  The settings
+>>>          of  MIN (c_cc[VMIN]) and TIME (c_cc[VTIME]) determine the circum‐
+>>>          stances in which a read(2) completes;  there  are  four  distinct
+>>>          cases:
+>>>
+>>>          MIN == 0; TIME == 0:
+>>>                 If  data  is  available, read(2) returns immediately, with
+>>>                 the lesser of the number of bytes available, or the number
+>>>                 of  bytes  requested.   If  no  data is available, read(2)
+>>>                 returns 0.
+>>>
+>>>          MIN > 0; TIME == 0:
+>>>                 read(2) blocks until MIN bytes are available, and  returns
+>>>                 up to the number of bytes requested.
+>>>
+>>>          MIN == 0; TIME > 0:
+>>>                 TIME  specifies  the limit for a timer in tenths of a sec‐
+>>>                 ond.   The  timer  is  started  when  read(2)  is  called.
+>>>                 read(2)  returns  either when at least one byte of data is
+>>>                 available, or  when  the  timer  expires.   If  the  timer
+>>>                 expires  without  any  input  becoming  available, read(2)
+>>>                 returns 0.  If data is already available at  the  time  of
+>>>                 the call to read() the call behaves as though the data was
+>>>                 received immediately after the call.
+>>>
+>>>          MIN > 0; TIME > 0:
+>>>                 TIME specifies the limit for a timer in tenths of  a  sec‐
+>>>                 ond.  Once an initial byte of input becomes available, the
+>>>                 timer is restarted after each further  byte  is  received.
+>>>                 read(2)  returns  when  any of the following conditions is
+>>>                 met:
+>>>
+>>>                 *  MIN bytes have been received.
+>>>
+>>>                 *  The interbyte timer expires.
+>>>
+>>>                 *  The number of  bytes  requested  by  read(2)  has  been
+>>>                    received.   (POSIX  does  not  specify this termination
+>>>                    condition, and on  some  other  implementations  read()
+>>>                    does not return in this case.)
+>>>
+>>>                 Because  the  timer is started only after the initial byte
+>>>                 becomes available, at least one byte  will  be  read.   If
+>>>                 data  is  already  available  at  the  time of the call to
+>>>                 read() the call behaves as though the  data  was  received
+>>>                 immediately after the call.
+>>>
+>>>          POSIX does not specify whether the setting of the O_NONBLOCK file
+>>>          status flag takes precedence over the MIN and TIME settings.   If
+>>>          O_NONBLOCK is set, a read() in noncanonical mode may return imme‐
+>>>          diately, regardless of the setting of MIN or TIME.   Furthermore,
+>>>          if  no  data is available, POSIX permits a read() in noncanonical
+>>>          mode to return either 0, or -1 with errno set to EAGAIN.
+>>
+>>
+>> All looks good.
+>
+> Peter, do you agree that Linux appears to differ from POSIX here? (Not
+> sure if you tried my test program to verify...)
 
-________________________________________
-From: Mike Galbraith [umgwanakikbuti@gmail.com]
-Sent: Friday, March 21, 2014 9:41 AM
-To: Davis, Bud @ SSG - Link
-Cc: oneukum@suse.de; artem_fetishev@epam.com; peterz@infradead.org; kosaki.motohiro@jp.fujitsu.com; linux-kernel@vger.kernel.org
-Subject: RE: Bug 71331 - mlock yields processor to lower priority process
+I did run the test program to validate that it's observed behavior is that
+implemented by Linux, with which I'm very familiar.
+I don't have a test setup for other *nixes.
 
-On Fri, 2014-03-21 at 14:01 +0000, jimmie.davis@l-3com.com wrote:
+I would be interested to know the results of
 
-> If you call mlock () from a SCHED_FIFO task, you expect it to return
-> when done.  You don't expect it to block, and your task to be
-> pre-empted.
+   ./noncanonical 0 5 3 0
+   hello
 
-Say some of your pages are sitting in an nfs swapfile orbiting Neptune,
-how do they get home, and what should we do meanwhile?
+and
 
--Mike
+   ./noncanonical 0 5 3 2
+    hel
 
-Two options.
+on other platforms.
 
-#1. Return with a status value of EAGAIN.
+With respect to POSIX compliance, it's hard to say. I'm not sure the
+spec contemplates the degenerate case where max bytes < MIN. And specifically
+with regard to terminal i/o behavior, POSIX is essentially ex post facto,
+and is really documenting existing behavior.
 
-or 
+Other than the degenerate case of max bytes < MIN, is there any other
+variation between Solaris and Linux in non-canonical mode?
 
-#2.  Don't return until you can do it.
+Regards,
+Peter Hurley
 
-If SCHED_FIFO is used, and mlock() is called, the intention of the user is very clear.  Run this task until
-it is completed or it blocks (and until a bit ago, mlock() did not block).
-
-SCHED_FIFO users don't care about fairness.  They want the system to do what it is told.
-
-regards,
-Bud Davis
-
-
-
-
- 
- 
-
- 
