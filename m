@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966608AbaCUAsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36976 "EHLO
+	id S966974AbaCUAtc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:49:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36959 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965764AbaCUAI2 (ORCPT
+	with ESMTP id S965757AbaCUAI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:28 -0400
+	Thu, 20 Mar 2014 20:08:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Vlad Yasevich <yasevich@gmail.com>,
-        Neil Horman <nhorman@tuxdriver.com>,
-        Vlad Yasevich <vyasevich@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 12/85] net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH capable
-Date: Thu, 20 Mar 2014 17:09:15 -0700
-Message-Id: <20140321000600.306850614@linuxfoundation.org>
+        Jan Kara <jack@suse.cz>, Goldwyn Rodrigues <rgoldwyn@suse.de>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 01/85] ocfs2: fix quota file corruption
+Date: Thu, 20 Mar 2014 17:09:04 -0700
+Message-Id: <20140321000558.826896317@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -32,137 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Borkmann <dborkman@redhat.com>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit ec0223ec48a90cb605244b45f7c62de856403729 ]
+commit 15c34a760630ca2c803848fba90ca0646a9907dd upstream.
 
-RFC4895 introduced AUTH chunks for SCTP; during the SCTP
-handshake RANDOM; CHUNKS; HMAC-ALGO are negotiated (CHUNKS
-being optional though):
+Global quota files are accessed from different nodes.  Thus we cannot
+cache offset of quota structure in the quota file after we drop our node
+reference count to it because after that moment quota structure may be
+freed and reallocated elsewhere by a different node resulting in
+corruption of quota file.
 
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  -------------------- COOKIE-ECHO -------------------->
-  <-------------------- COOKIE-ACK ---------------------
+Fix the problem by clearing dq_off when we are releasing dquot structure.
+We also remove the DB_READ_B handling because it is useless -
+DQ_ACTIVE_B is set iff DQ_READ_B is set.
 
-A special case is when an endpoint requires COOKIE-ECHO
-chunks to be authenticated:
-
-  ---------- INIT[RANDOM; CHUNKS; HMAC-ALGO] ---------->
-  <------- INIT-ACK[RANDOM; CHUNKS; HMAC-ALGO] ---------
-  ------------------ AUTH; COOKIE-ECHO ---------------->
-  <-------------------- COOKIE-ACK ---------------------
-
-RFC4895, section 6.3. Receiving Authenticated Chunks says:
-
-  The receiver MUST use the HMAC algorithm indicated in
-  the HMAC Identifier field. If this algorithm was not
-  specified by the receiver in the HMAC-ALGO parameter in
-  the INIT or INIT-ACK chunk during association setup, the
-  AUTH chunk and all the chunks after it MUST be discarded
-  and an ERROR chunk SHOULD be sent with the error cause
-  defined in Section 4.1. [...] If no endpoint pair shared
-  key has been configured for that Shared Key Identifier,
-  all authenticated chunks MUST be silently discarded. [...]
-
-  When an endpoint requires COOKIE-ECHO chunks to be
-  authenticated, some special procedures have to be followed
-  because the reception of a COOKIE-ECHO chunk might result
-  in the creation of an SCTP association. If a packet arrives
-  containing an AUTH chunk as a first chunk, a COOKIE-ECHO
-  chunk as the second chunk, and possibly more chunks after
-  them, and the receiver does not have an STCB for that
-  packet, then authentication is based on the contents of
-  the COOKIE-ECHO chunk. In this situation, the receiver MUST
-  authenticate the chunks in the packet by using the RANDOM
-  parameters, CHUNKS parameters and HMAC_ALGO parameters
-  obtained from the COOKIE-ECHO chunk, and possibly a local
-  shared secret as inputs to the authentication procedure
-  specified in Section 6.3. If authentication fails, then
-  the packet is discarded. If the authentication is successful,
-  the COOKIE-ECHO and all the chunks after the COOKIE-ECHO
-  MUST be processed. If the receiver has an STCB, it MUST
-  process the AUTH chunk as described above using the STCB
-  from the existing association to authenticate the
-  COOKIE-ECHO chunk and all the chunks after it. [...]
-
-Commit bbd0d59809f9 introduced the possibility to receive
-and verification of AUTH chunk, including the edge case for
-authenticated COOKIE-ECHO. On reception of COOKIE-ECHO,
-the function sctp_sf_do_5_1D_ce() handles processing,
-unpacks and creates a new association if it passed sanity
-checks and also tests for authentication chunks being
-present. After a new association has been processed, it
-invokes sctp_process_init() on the new association and
-walks through the parameter list it received from the INIT
-chunk. It checks SCTP_PARAM_RANDOM, SCTP_PARAM_HMAC_ALGO
-and SCTP_PARAM_CHUNKS, and copies them into asoc->peer
-meta data (peer_random, peer_hmacs, peer_chunks) in case
-sysctl -w net.sctp.auth_enable=1 is set. If in INIT's
-SCTP_PARAM_SUPPORTED_EXT parameter SCTP_CID_AUTH is set,
-peer_random != NULL and peer_hmacs != NULL the peer is to be
-assumed asoc->peer.auth_capable=1, in any other case
-asoc->peer.auth_capable=0.
-
-Now, if in sctp_sf_do_5_1D_ce() chunk->auth_chunk is
-available, we set up a fake auth chunk and pass that on to
-sctp_sf_authenticate(), which at latest in
-sctp_auth_calculate_hmac() reliably dereferences a NULL pointer
-at position 0..0008 when setting up the crypto key in
-crypto_hash_setkey() by using asoc->asoc_shared_key that is
-NULL as condition key_id == asoc->active_key_id is true if
-the AUTH chunk was injected correctly from remote. This
-happens no matter what net.sctp.auth_enable sysctl says.
-
-The fix is to check for net->sctp.auth_enable and for
-asoc->peer.auth_capable before doing any operations like
-sctp_sf_authenticate() as no key is activated in
-sctp_auth_asoc_init_active_key() for each case.
-
-Now as RFC4895 section 6.3 states that if the used HMAC-ALGO
-passed from the INIT chunk was not used in the AUTH chunk, we
-SHOULD send an error; however in this case it would be better
-to just silently discard such a maliciously prepared handshake
-as we didn't even receive a parameter at all. Also, as our
-endpoint has no shared key configured, section 6.3 says that
-MUST silently discard, which we are doing from now onwards.
-
-Before calling sctp_sf_pdiscard(), we need not only to free
-the association, but also the chunk->auth_chunk skb, as
-commit bbd0d59809f9 created a skb clone in that case.
-
-I have tested this locally by using netfilter's nfqueue and
-re-injecting packets into the local stack after maliciously
-modifying the INIT chunk (removing RANDOM; HMAC-ALGO param)
-and the SCTP packet containing the COOKIE_ECHO (injecting
-AUTH chunk before COOKIE_ECHO). Fixed with this patch applied.
-
-Fixes: bbd0d59809f9 ("[SCTP]: Implement the receive and verification of AUTH chunk")
-Signed-off-by: Daniel Borkmann <dborkman@redhat.com>
-Cc: Vlad Yasevich <yasevich@gmail.com>
-Cc: Neil Horman <nhorman@tuxdriver.com>
-Acked-by: Vlad Yasevich <vyasevich@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Goldwyn Rodrigues <rgoldwyn@suse.de>
+Cc: Joel Becker <jlbec@evilplan.org>
+Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/sctp/sm_statefuns.c |    7 +++++++
- 1 file changed, 7 insertions(+)
 
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -765,6 +765,13 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(st
- 		struct sctp_chunk auth;
- 		sctp_ierror_t ret;
+---
+ fs/ocfs2/quota_global.c |   27 +++++++++++++++++----------
+ fs/ocfs2/quota_local.c  |    4 ----
+ 2 files changed, 17 insertions(+), 14 deletions(-)
+
+--- a/fs/ocfs2/quota_global.c
++++ b/fs/ocfs2/quota_global.c
+@@ -717,6 +717,12 @@ static int ocfs2_release_dquot(struct dq
+ 	 */
+ 	if (status < 0)
+ 		mlog_errno(status);
++	/*
++	 * Clear dq_off so that we search for the structure in quota file next
++	 * time we acquire it. The structure might be deleted and reallocated
++	 * elsewhere by another node while our dquot structure is on freelist.
++	 */
++	dquot->dq_off = 0;
+ 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
+ out_trans:
+ 	ocfs2_commit_trans(osb, handle);
+@@ -756,16 +762,17 @@ static int ocfs2_acquire_dquot(struct dq
+ 	status = ocfs2_lock_global_qf(info, 1);
+ 	if (status < 0)
+ 		goto out;
+-	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
+-		status = ocfs2_qinfo_lock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-		status = qtree_read_dquot(&info->dqi_gi, dquot);
+-		ocfs2_qinfo_unlock(info, 0);
+-		if (status < 0)
+-			goto out_dq;
+-	}
+-	set_bit(DQ_READ_B, &dquot->dq_flags);
++	status = ocfs2_qinfo_lock(info, 0);
++	if (status < 0)
++		goto out_dq;
++	/*
++	 * We always want to read dquot structure from disk because we don't
++	 * know what happened with it while it was on freelist.
++	 */
++	status = qtree_read_dquot(&info->dqi_gi, dquot);
++	ocfs2_qinfo_unlock(info, 0);
++	if (status < 0)
++		goto out_dq;
  
-+		/* Make sure that we and the peer are AUTH capable */
-+		if (!net->sctp.auth_enable || !new_asoc->peer.auth_capable) {
-+			kfree_skb(chunk->auth_chunk);
-+			sctp_association_free(new_asoc);
-+			return sctp_sf_pdiscard(net, ep, asoc, type, arg, commands);
-+		}
-+
- 		/* set-up our fake chunk so that we can process it */
- 		auth.skb = chunk->auth_chunk;
- 		auth.asoc = chunk->asoc;
+ 	OCFS2_DQUOT(dquot)->dq_use_count++;
+ 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
+--- a/fs/ocfs2/quota_local.c
++++ b/fs/ocfs2/quota_local.c
+@@ -1303,10 +1303,6 @@ int ocfs2_local_release_dquot(handle_t *
+ 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
+ 
+ out:
+-	/* Clear the read bit so that next time someone uses this
+-	 * dquot he reads fresh info from disk and allocates local
+-	 * dquot structure */
+-	clear_bit(DQ_READ_B, &dquot->dq_flags);
+ 	return status;
+ }
+ 
 
 
