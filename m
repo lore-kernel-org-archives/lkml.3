@@ -1,69 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754217AbaCUEzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 00:55:14 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:55479 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaCUEzL (ORCPT
+	id S1753917AbaCUFCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:02:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:56581 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751420AbaCUFCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 00:55:11 -0400
-Date: Fri, 21 Mar 2014 10:25:01 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-Message-ID: <20140321045501.GD30295@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140319154705.GB8557@laptop.programming.kicks-ass.net>
- <20140319170829.GD8557@laptop.programming.kicks-ass.net>
- <20140320053350.GB30295@linux.vnet.ibm.com>
- <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
- <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
- <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
- <1395346808.14694.62.camel@buesod1.americas.hpqcorp.net>
+	Fri, 21 Mar 2014 01:02:33 -0400
+Date: Fri, 21 Mar 2014 00:02:28 -0500
+From: Serge Hallyn <serge.hallyn@ubuntu.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Allan McRae <allan@archlinux.org>, libc-alpha@sourceware.org
+Subject: [PATCH] xattr: guard against simultaneous glibc header inclusion (v2)
+Message-ID: <20140321050228.GA29066@sergelap>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395346808.14694.62.camel@buesod1.americas.hpqcorp.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032104-1396-0000-0000-0000048027AB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> Ok, so a big reason why this patch doesn't apply cleanly after reverting
-> is because *most* of the changes were done at the top of the file with
-> regards to documenting the ordering guarantees, the actual code changes
-> are quite minimal.
-> 
-> I reverted commits 99b60ce6 (documentation) and b0c29f79 (the offending
-> commit), and then I cleanly applied the equivalent ones from v3 of the
-> series (which was already *tested* and ready for upstream until you
-> suggested looking into the alternative spinlock approach):
-> 
-> https://lkml.org/lkml/2013/12/19/624
-> https://lkml.org/lkml/2013/12/19/630
+If the glibc xattr.h header is included after the uapi header,
+compilation fails due to an enum re-using a #define from the
+uapi header.  Protect against this by guarding the define and
+enum inclusions against each other.
 
-I reverted commits 99b60ce6 and b0c29f79. Then applied the patches in
-the above url. The last one had a reject but it was pretty
-straightforward to resolve it. After this, specjbb completes. 
+(See https://lists.debian.org/debian-glibc/2014/03/msg00029.html
+and https://sourceware.org/glibc/wiki/Synchronizing_Headers
+for more information.)
 
-So reverting and applying v3 3/4 and 4/4 patches works for me.
+v2: As Allan McRae points out, __UAPI_DFE_XATTR should only be
+    set to zero when _SYS_XATTR_H is defined.
 
+Signed-off-by: Serge Hallyn <serge.hallyn@ubuntu.com>
+Cc: linux-fsdevel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Allan McRae <allan@archlinux.org>
+Cc: libc-alpha@sourceware.org
+---
+ include/uapi/linux/libc-compat.h | 9 +++++++++
+ include/uapi/linux/xattr.h       | 7 +++++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/include/uapi/linux/libc-compat.h b/include/uapi/linux/libc-compat.h
+index 335e8a7..0b73ee9 100644
+--- a/include/uapi/linux/libc-compat.h
++++ b/include/uapi/linux/libc-compat.h
+@@ -85,6 +85,12 @@
+ 
+ #endif /* _NETINET_IN_H */
+ 
++/* Definitions for xattr.h */ 
++#if defined(_SYS_XATTR_H)
++#define __UAPI_DEF_XATTR		0
++#else
++#define __UAPI_DEF_XATTR		1
++#endif
+ 
+ /* If we did not see any headers from any supported C libraries,
+  * or we are being included in the kernel, then define everything
+@@ -98,6 +104,9 @@
+ #define __UAPI_DEF_IPV6_MREQ		1
+ #define __UAPI_DEF_IPPROTO_V6		1
+ 
++/* Definitions for xattr.h */
++#define __UAPI_DEF_XATTR		1
++
+ #endif /* __GLIBC__ */
+ 
+ #endif /* _UAPI_LIBC_COMPAT_H */
+diff --git a/include/uapi/linux/xattr.h b/include/uapi/linux/xattr.h
+index e4629b9..a63c146 100644
+--- a/include/uapi/linux/xattr.h
++++ b/include/uapi/linux/xattr.h
+@@ -7,11 +7,18 @@
+   Copyright (c) 2001-2002 Silicon Graphics, Inc.  All Rights Reserved.
+   Copyright (c) 2004 Red Hat, Inc., James Morris <jmorris@redhat.com>
+ */
++
++#include <linux/libc-compat.h>
++
+ #ifndef _UAPI_LINUX_XATTR_H
+ #define _UAPI_LINUX_XATTR_H
+ 
++#ifdef __UAPI_DEF_XATTR
++#define __USE_KERNEL_XATTR_DEFS
++
+ #define XATTR_CREATE	0x1	/* set value, fail if attr already exists */
+ #define XATTR_REPLACE	0x2	/* set value, fail if attr does not exist */
++#endif
+ 
+ /* Namespaces */
+ #define XATTR_OS2_PREFIX "os2."
 -- 
-Thanks and Regards
-Srikar Dronamraju
+1.9.1
 
