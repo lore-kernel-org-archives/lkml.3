@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760380AbaCUADi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36510 "EHLO
+	id S966955AbaCUBXT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:23:19 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36525 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760335AbaCUADd (ORCPT
+	with ESMTP id S1760366AbaCUADi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:33 -0400
+	Thu, 20 Mar 2014 20:03:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Bing Zhao <bzhao@marvell.com>, Amitkumar Karwar <akarwar@marvell.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 040/149] mwifiex: do not advertise usb autosuspend support
-Date: Thu, 20 Mar 2014 17:03:23 -0700
-Message-Id: <20140321000438.350596460@linuxfoundation.org>
+        Max Stepanov <Max.Stepanov@intel.com>,
+        Alexander Bondar <alexander.bondar@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
+Subject: [PATCH 3.13 032/149] iwlwifi: mvm: change of listen interval from 70 to 10
+Date: Thu, 20 Mar 2014 17:03:15 -0700
+Message-Id: <20140321000438.080244820@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,60 +30,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Bing Zhao <bzhao@marvell.com>
+From: Max Stepanov <Max.Stepanov@intel.com>
 
-commit adb07df1e039e9fe43e66aeea8b4771f83659dbb upstream.
+commit e7eb65cac0720df8b3946af7f7a9dc363cf0a814 upstream.
 
-As many Surface Pro I & II users have found out, the mwifiex_usb
-doesn't support usb autosuspend, and it has caused some system
-stability issues.
+Some APs reject STA association request if a listen interval value exceeds
+a threshold of 10. Thus, for example, Cisco APs may deny STA associations
+returning status code 12 (Association denied due to reason outside the scope
+of 802.11 standard) in the association response frame.
 
-Bug 69661 - mwifiex_usb on MS Surface Pro 1 is unstable
-Bug 60815 - Interface hangs in mwifiex_usb
-Bug 64111 - mwifiex_usb USB8797 crash failed to get signal
- 	    information
+Fixing the issue by setting the default IWL_CONN_MAX_LISTEN_INTERVAL value
+from 70 to 10.
 
-USB autosuspend get triggered when Surface Pro's AC power is
-removed or powertop enables power saving on USB8797 device.
-Driver's suspend handler is called here, but resume handler
-won't be called until the AC power is put back on or powertop
-disables power saving for USB8797.
-
-We need to refactor the suspend/resume handlers to support
-usb autosuspend properly. For now let's just remove it.
-
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Max Stepanov <Max.Stepanov@intel.com>
+Reviewed-by: Alexander Bondar <alexander.bondar@intel.com>
+Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/usb.c |    8 --------
- 1 file changed, 8 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/mvm.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/mwifiex/usb.c
-+++ b/drivers/net/wireless/mwifiex/usb.c
-@@ -511,13 +511,6 @@ static int mwifiex_usb_resume(struct usb
- 						   MWIFIEX_BSS_ROLE_ANY),
- 				  MWIFIEX_ASYNC_CMD);
- 
--#ifdef CONFIG_PM
--	/* Resume handler may be called due to remote wakeup,
--	 * force to exit suspend anyway
--	 */
--	usb_disable_autosuspend(card->udev);
--#endif /* CONFIG_PM */
--
- 	return 0;
- }
- 
-@@ -557,7 +550,6 @@ static struct usb_driver mwifiex_usb_dri
- 	.id_table = mwifiex_usb_table,
- 	.suspend = mwifiex_usb_suspend,
- 	.resume = mwifiex_usb_resume,
--	.supports_autosuspend = 1,
+--- a/drivers/net/wireless/iwlwifi/mvm/mvm.h
++++ b/drivers/net/wireless/iwlwifi/mvm/mvm.h
+@@ -151,7 +151,7 @@ enum iwl_power_scheme {
+ 	IWL_POWER_SCHEME_LP
  };
  
- static int mwifiex_usb_tx_init(struct mwifiex_adapter *adapter)
+-#define IWL_CONN_MAX_LISTEN_INTERVAL	70
++#define IWL_CONN_MAX_LISTEN_INTERVAL	10
+ #define IWL_UAPSD_AC_INFO		(IEEE80211_WMM_IE_STA_QOSINFO_AC_VO |\
+ 					 IEEE80211_WMM_IE_STA_QOSINFO_AC_VI |\
+ 					 IEEE80211_WMM_IE_STA_QOSINFO_AC_BK |\
 
 
