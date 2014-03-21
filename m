@@ -1,130 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760015AbaCUOSB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:18:01 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:34826 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687AbaCUOR7 convert rfc822-to-8bit (ORCPT
+	id S1760180AbaCUOSU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:18:20 -0400
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:36611 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752312AbaCUOSP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:17:59 -0400
+	Fri, 21 Mar 2014 10:18:15 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-3.tower-39.messagelabs.com!1395411488!12344005!2
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>, Alessandro Zummo <a.zummo@towertech.it>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
+Subject: RE: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Topic: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Index: AQHPPSVKUI+aJH4Lh0O1h4CC/fc/HJrro5vQ
+Date: Fri, 21 Mar 2014 14:17:45 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A2AF6729@SW-EX-MBX01.diasemi.com>
+References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
+ <93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
+ <20140311122725.GK21216@lee--X1>
+In-Reply-To: <20140311122725.GK21216@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <532C46BD.1000208@hurleysoftware.com>
-References: <532B3691.1070602@hurleysoftware.com> <CAKgNAkisMs4A15B7ts+bAkUY5bcoTTGdE81ur10K3hZoFLxbxw@mail.gmail.com>
- <532C20B7.2070806@hurleysoftware.com> <532C3B6F.2000300@gmail.com> <532C46BD.1000208@hurleysoftware.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 21 Mar 2014 15:17:28 +0100
-Message-ID: <CAKgNAkhg4-QLwQaVxve6KXR=yy0XQik_4+iz5XytE1d_6NjQaw@mail.gmail.com>
-Subject: Re: man termios
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-        linux-serial <linux-serial@vger.kernel.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Ivan <athlon_@mail.ru>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2LEIOMZ000471
 
-On Fri, Mar 21, 2014 at 3:03 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 03/21/2014 09:15 AM, Michael Kerrisk (man-pages) wrote:
+Hi Alessandro,
+
+Just over a week ago I sent a patch for the rtc: da9063: RTC driver file that
+added RTC support for the DA9063 currently in the kernel.
+
+I'm not sure if it may have been missed in your inbox
+https://lkml.org/lkml/2014/3/11/230
+
+The RTC patch was previously Acked by you here:
+https://lkml.org/lkml/2014/3/7/112
+
+
+On 11 March 2014 12:27, Lee Jones wrote:
+
+>Subject: Re: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 >>
->> On 03/21/2014 12:21 PM, Peter Hurley wrote:
->>>
->>> On 03/21/2014 06:45 AM, Michael Kerrisk (man-pages) wrote:
+>> Add the RTC driver for DA9063.
+>>
+>> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> Acked-by: Alessandro Zummo <a.zummo@towertech.it>
+>> Acked-by: Lee Jones <lee.jones@linaro.org>
 >
+>How could I have Acked a patch that I've never seen?
 >
->>>>> Finally, if the 'count' parameter is less than MIN, read() may return
->>>>> before
->>>>> MIN bytes have been received, if 'count' bytes have been received.
->>>>
->>>>
->>>> Yes. But it's not clear to me here: do you mean that something in the
->>>> man page (or in TLPI) needs fixing?
->>>
->>>
->>> Well, what I mean here is that read() may also _not_ return until MIN
->>> bytes have
->>> been received, even if 'count' bytes have been received.
->>
->>
->> Ahh -- I see what you mean. And, it looks like there is a point here where
->> Linux
->> differs from POSIX and (at least) Solaris. See the current man-page text
->> below,
->> in particular the MIN>0, TIME>0 case. I've also attached a simple test
->> program
->> that I used, below.
->>
->>         In noncanonical mode input is available immediately (without  the
->>         user  having  to  type a line-delimiter character), no input proâ€
->>         cessing is performed, and line editing is disabled.  The settings
->>         of  MIN (c_cc[VMIN]) and TIME (c_cc[VTIME]) determine the circumâ€
->>         stances in which a read(2) completes;  there  are  four  distinct
->>         cases:
->>
->>         MIN == 0; TIME == 0:
->>                If  data  is  available, read(2) returns immediately, with
->>                the lesser of the number of bytes available, or the number
->>                of  bytes  requested.   If  no  data is available, read(2)
->>                returns 0.
->>
->>         MIN > 0; TIME == 0:
->>                read(2) blocks until MIN bytes are available, and  returns
->>                up to the number of bytes requested.
->>
->>         MIN == 0; TIME > 0:
->>                TIME  specifies  the limit for a timer in tenths of a secâ€
->>                ond.   The  timer  is  started  when  read(2)  is  called.
->>                read(2)  returns  either when at least one byte of data is
->>                available, or  when  the  timer  expires.   If  the  timer
->>                expires  without  any  input  becoming  available, read(2)
->>                returns 0.  If data is already available at  the  time  of
->>                the call to read() the call behaves as though the data was
->>                received immediately after the call.
->>
->>         MIN > 0; TIME > 0:
->>                TIME specifies the limit for a timer in tenths of  a  secâ€
->>                ond.  Once an initial byte of input becomes available, the
->>                timer is restarted after each further  byte  is  received.
->>                read(2)  returns  when  any of the following conditions is
->>                met:
->>
->>                *  MIN bytes have been received.
->>
->>                *  The interbyte timer expires.
->>
->>                *  The number of  bytes  requested  by  read(2)  has  been
->>                   received.   (POSIX  does  not  specify this termination
->>                   condition, and on  some  other  implementations  read()
->>                   does not return in this case.)
->>
->>                Because  the  timer is started only after the initial byte
->>                becomes available, at least one byte  will  be  read.   If
->>                data  is  already  available  at  the  time of the call to
->>                read() the call behaves as though the  data  was  received
->>                immediately after the call.
->>
->>         POSIX does not specify whether the setting of the O_NONBLOCK file
->>         status flag takes precedence over the MIN and TIME settings.   If
->>         O_NONBLOCK is set, a read() in noncanonical mode may return immeâ€
->>         diately, regardless of the setting of MIN or TIME.   Furthermore,
->>         if  no  data is available, POSIX permits a read() in noncanonical
->>         mode to return either 0, or -1 with errno set to EAGAIN.
+><snip>
 >
+>> The original patch is here:
+>>  - https://lkml.org/lkml/2014/3/6/346
+>>
+>> This patch resend is identical to the original patch, except it adds
+>> the Acked-by: line from Alessandro Zummo, previously provided here:
+>>  - https://lkml.org/lkml/2014/3/7/112
+>>
+>> Also, it adds an Acked-by line on behalf of Lee Jones, as requested:
+>>  - https://lkml.org/lkml/2014/3/10/369
 >
-> All looks good.
+>Ah, no. I meant send the set with my Ack applied to the patch I
+>actually reviewed.
+>
+>Alessandro,
+>  Are you happy for me to take this set through the MFD tree and send
+>  you a pull-request for an immutable branch?
+>
 
-Peter, do you agree that Linux appears to differ from POSIX here? (Not
-sure if you tried my test program to verify...)
+I believe that I made a mess of the resend and Ack'ed when I shouldn't
+have on Lee Jones's behalf -- but then there was a reply from Lee who
+suggested that he could take the patch through despite this.
+I think that was his intention.
+(Lee: I hope I am not stepping outside the line again!)
 
-Cheers,
+If you have time to quickly take another look at this, then I would
+appreciate that.
 
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thank you,
+Steve
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
