@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760722AbaCUBKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:10:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36707 "EHLO
+	id S1760737AbaCUBL3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:11:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965125AbaCUAEM (ORCPT
+	with ESMTP id S965024AbaCUAEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:12 -0400
+	Thu, 20 Mar 2014 20:04:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        linux1394-devel@lists.sourceforge.net
-Subject: [PATCH 3.13 077/149] firewire: dont use PREPARE_DELAYED_WORK
-Date: Thu, 20 Mar 2014 17:04:00 -0700
-Message-Id: <20140321000439.632091848@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 3.13 075/149] firewire: net: fix use after free
+Date: Thu, 20 Mar 2014 17:03:58 -0700
+Message-Id: <20140321000439.566829466@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,187 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
 
-commit 70044d71d31d6973665ced5be04ef39ac1c09a48 upstream.
+commit 8987583366ae9e03c306c2b7d73bdb952df1d08d upstream.
 
-PREPARE_[DELAYED_]WORK() are being phased out.  They have few users
-and a nasty surprise in terms of reentrancy guarantee as workqueue
-considers work items to be different if they don't have the same work
-function.
+Commit 8408dc1c14c1 "firewire: net: use dev_printk API" introduced a
+use-after-free in a failure path.  fwnet_transmit_packet_failed(ptask)
+may free ptask, then the dev_err() call dereferenced it.  The fix is
+straightforward; simply reorder the two calls.
 
-firewire core-device and sbp2 have been been multiplexing work items
-with multiple work functions.  Introduce fw_device_workfn() and
-sbp2_lu_workfn() which invoke fw_device->workfn and
-sbp2_logical_unit->workfn respectively and always use the two
-functions as the work functions and update the users to set the
-->workfn fields instead of overriding work functions using
-PREPARE_DELAYED_WORK().
-
-This fixes a variety of possible regressions since a2c1c57be8d9
-"workqueue: consider work function when searching for busy work items"
-due to which fw_workqueue lost its required non-reentrancy property.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Acked-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: linux1394-devel@lists.sourceforge.net
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/firewire/core-device.c |   22 +++++++++++++++-------
- drivers/firewire/sbp2.c        |   17 +++++++++++++----
- include/linux/firewire.h       |    1 +
- 3 files changed, 29 insertions(+), 11 deletions(-)
+ drivers/firewire/net.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -916,7 +916,7 @@ static int lookup_existing_device(struct
- 		old->config_rom_retries = 0;
- 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
- 
--		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
-+		old->workfn = fw_device_update;
- 		fw_schedule_device_work(old, 0);
- 
- 		if (current_node == card->root_node)
-@@ -1075,7 +1075,7 @@ static void fw_device_init(struct work_s
- 	if (atomic_cmpxchg(&device->state,
- 			   FW_DEVICE_INITIALIZING,
- 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
--		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+		device->workfn = fw_device_shutdown;
- 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
+--- a/drivers/firewire/net.c
++++ b/drivers/firewire/net.c
+@@ -929,8 +929,6 @@ static void fwnet_write_complete(struct
+ 	if (rcode == RCODE_COMPLETE) {
+ 		fwnet_transmit_packet_done(ptask);
  	} else {
- 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
-@@ -1196,13 +1196,20 @@ static void fw_device_refresh(struct wor
- 		  dev_name(&device->device), fw_rcode_string(ret));
-  gone:
- 	atomic_set(&device->state, FW_DEVICE_GONE);
--	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+	device->workfn = fw_device_shutdown;
- 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
-  out:
- 	if (node_id == card->root_node->node_id)
- 		fw_schedule_bm_work(card, 0);
+-		fwnet_transmit_packet_failed(ptask);
+-
+ 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
+ 			dev_err(&ptask->dev->netdev->dev,
+ 				"fwnet_write_complete failed: %x (skipped %d)\n",
+@@ -938,8 +936,10 @@ static void fwnet_write_complete(struct
+ 
+ 			errors_skipped = 0;
+ 			last_rcode = rcode;
+-		} else
++		} else {
+ 			errors_skipped++;
++		}
++		fwnet_transmit_packet_failed(ptask);
+ 	}
  }
  
-+static void fw_device_workfn(struct work_struct *work)
-+{
-+	struct fw_device *device = container_of(to_delayed_work(work),
-+						struct fw_device, work);
-+	device->workfn(work);
-+}
-+
- void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- {
- 	struct fw_device *device;
-@@ -1252,7 +1259,8 @@ void fw_node_event(struct fw_card *card,
- 		 * power-up after getting plugged in.  We schedule the
- 		 * first config rom scan half a second after bus reset.
- 		 */
--		INIT_DELAYED_WORK(&device->work, fw_device_init);
-+		device->workfn = fw_device_init;
-+		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
- 		fw_schedule_device_work(device, INITIAL_DELAY);
- 		break;
- 
-@@ -1268,7 +1276,7 @@ void fw_node_event(struct fw_card *card,
- 		if (atomic_cmpxchg(&device->state,
- 			    FW_DEVICE_RUNNING,
- 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
-+			device->workfn = fw_device_refresh;
- 			fw_schedule_device_work(device,
- 				device->is_local ? 0 : INITIAL_DELAY);
- 		}
-@@ -1283,7 +1291,7 @@ void fw_node_event(struct fw_card *card,
- 		smp_wmb();  /* update node_id before generation */
- 		device->generation = card->generation;
- 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
-+			device->workfn = fw_device_update;
- 			fw_schedule_device_work(device, 0);
- 		}
- 		break;
-@@ -1308,7 +1316,7 @@ void fw_node_event(struct fw_card *card,
- 		device = node->data;
- 		if (atomic_xchg(&device->state,
- 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+			device->workfn = fw_device_shutdown;
- 			fw_schedule_device_work(device,
- 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
- 		}
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
- 	 */
- 	int generation;
- 	int retries;
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	bool has_sdev;
- 	bool blocked;
-@@ -864,7 +865,7 @@ static void sbp2_login(struct work_struc
- 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
- 	sbp2_set_busy_timeout(lu);
- 
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
-+	lu->workfn = sbp2_reconnect;
- 	sbp2_agent_reset(lu);
- 
- 	/* This was a re-login. */
-@@ -918,7 +919,7 @@ static void sbp2_login(struct work_struc
- 	 * If a bus reset happened, sbp2_update will have requeued
- 	 * lu->work already.  Reset the work from reconnect to login.
- 	 */
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
- }
- 
- static void sbp2_reconnect(struct work_struct *work)
-@@ -952,7 +953,7 @@ static void sbp2_reconnect(struct work_s
- 		    lu->retries++ >= 5) {
- 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
- 			lu->retries = 0;
--			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+			lu->workfn = sbp2_login;
- 		}
- 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
- 
-@@ -972,6 +973,13 @@ static void sbp2_reconnect(struct work_s
- 	sbp2_conditionally_unblock(lu);
- }
- 
-+static void sbp2_lu_workfn(struct work_struct *work)
-+{
-+	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
-+						struct sbp2_logical_unit, work);
-+	lu->workfn(work);
-+}
-+
- static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
- {
- 	struct sbp2_logical_unit *lu;
-@@ -998,7 +1006,8 @@ static int sbp2_add_logical_unit(struct
- 	lu->blocked  = false;
- 	++tgt->dont_block;
- 	INIT_LIST_HEAD(&lu->orb_list);
--	INIT_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
-+	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
- 
- 	list_add_tail(&lu->link, &tgt->lu_list);
- 	return 0;
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -200,6 +200,7 @@ struct fw_device {
- 	unsigned irmc:1;
- 	unsigned bc_implemented:2;
- 
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	struct fw_attribute_group attribute_group;
- };
 
 
