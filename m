@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966629AbaCUA01 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:26:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37233 "EHLO
+	id S966614AbaCUA0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:26:25 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965874AbaCUAJP (ORCPT
+	with ESMTP id S965674AbaCUAJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:15 -0400
+	Thu, 20 Mar 2014 20:09:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>, Neil Horman <nhorman@tuxdriver.com>,
         Shreyas Bhatewara <sbhatewara@vmware.com>,
         "VMware, Inc." <pv-drivers@vmware.com>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 60/85] vmxnet3: fix netpoll race condition
-Date: Thu, 20 Mar 2014 17:10:03 -0700
-Message-Id: <20140321000607.283357034@linuxfoundation.org>
+Subject: [PATCH 3.10 61/85] vmxnet3: fix building without CONFIG_PCI_MSI
+Date: Thu, 20 Mar 2014 17:10:04 -0700
+Message-Id: <20140321000607.396849787@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -31,78 +31,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-commit d25f06ea466ea521b563b76661180b4e44714ae6 upstream.
+commit 0a8d8c446b5429d15ff2d48f46e00d8a08552303 upstream.
 
-vmxnet3's netpoll driver is incorrectly coded.  It directly calls
-vmxnet3_do_poll, which is the driver internal napi poll routine.  As the netpoll
-controller method doesn't block real napi polls in any way, there is a potential
-for race conditions in which the netpoll controller method and the napi poll
-method run concurrently.  The result is data corruption causing panics such as this
-one recently observed:
-PID: 1371   TASK: ffff88023762caa0  CPU: 1   COMMAND: "rs:main Q:Reg"
- #0 [ffff88023abd5780] machine_kexec at ffffffff81038f3b
- #1 [ffff88023abd57e0] crash_kexec at ffffffff810c5d92
- #2 [ffff88023abd58b0] oops_end at ffffffff8152b570
- #3 [ffff88023abd58e0] die at ffffffff81010e0b
- #4 [ffff88023abd5910] do_trap at ffffffff8152add4
- #5 [ffff88023abd5970] do_invalid_op at ffffffff8100cf95
- #6 [ffff88023abd5a10] invalid_op at ffffffff8100bf9b
-    [exception RIP: vmxnet3_rq_rx_complete+1968]
-    RIP: ffffffffa00f1e80  RSP: ffff88023abd5ac8  RFLAGS: 00010086
-    RAX: 0000000000000000  RBX: ffff88023b5dcee0  RCX: 00000000000000c0
-    RDX: 0000000000000000  RSI: 00000000000005f2  RDI: ffff88023b5dcee0
-    RBP: ffff88023abd5b48   R8: 0000000000000000   R9: ffff88023a3b6048
-    R10: 0000000000000000  R11: 0000000000000002  R12: ffff8802398d4cd8
-    R13: ffff88023af35140  R14: ffff88023b60c890  R15: 0000000000000000
-    ORIG_RAX: ffffffffffffffff  CS: 0010  SS: 0018
- #7 [ffff88023abd5b50] vmxnet3_do_poll at ffffffffa00f204a [vmxnet3]
- #8 [ffff88023abd5b80] vmxnet3_netpoll at ffffffffa00f209c [vmxnet3]
- #9 [ffff88023abd5ba0] netpoll_poll_dev at ffffffff81472bb7
+Since commit d25f06ea466e "vmxnet3: fix netpoll race condition",
+the vmxnet3 driver fails to build when CONFIG_PCI_MSI is disabled,
+because it unconditionally references the vmxnet3_msix_rx()
+function.
 
-The fix is to do as other drivers do, and have the poll controller call the top
-half interrupt handler, which schedules a napi poll properly to recieve frames
+To fix this, use the same #ifdef in the caller that exists around
+the function definition.
 
-Tested by myself, successfully.
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-CC: Shreyas Bhatewara <sbhatewara@vmware.com>
-CC: "VMware, Inc." <pv-drivers@vmware.com>
-CC: "David S. Miller" <davem@davemloft.net>
-Reviewed-by: Shreyas N Bhatewara <sbhatewara@vmware.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Neil Horman <nhorman@tuxdriver.com>
+Cc: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: "VMware, Inc." <pv-drivers@vmware.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |   16 +++++++++++-----
- 1 file changed, 11 insertions(+), 5 deletions(-)
+ drivers/net/vmxnet3/vmxnet3_drv.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 --- a/drivers/net/vmxnet3/vmxnet3_drv.c
 +++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -1740,12 +1740,18 @@ static void
+@@ -1740,13 +1740,16 @@ static void
  vmxnet3_netpoll(struct net_device *netdev)
  {
  	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
-+	int i;
+-	int i;
  
--	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
--		vmxnet3_disable_all_intrs(adapter);
--
--	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
--	vmxnet3_enable_all_intrs(adapter);
-+	switch (adapter->intr.type) {
-+	case VMXNET3_IT_MSIX:
-+		for (i = 0; i < adapter->num_rx_queues; i++)
-+			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
-+		break;
-+	case VMXNET3_IT_MSI:
-+	default:
-+		vmxnet3_intr(0, adapter->netdev);
-+		break;
+ 	switch (adapter->intr.type) {
+-	case VMXNET3_IT_MSIX:
++#ifdef CONFIG_PCI_MSI
++	case VMXNET3_IT_MSIX: {
++		int i;
+ 		for (i = 0; i < adapter->num_rx_queues; i++)
+ 			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
+ 		break;
 +	}
- 
- }
- #endif	/* CONFIG_NET_POLL_CONTROLLER */
++#endif
+ 	case VMXNET3_IT_MSI:
+ 	default:
+ 		vmxnet3_intr(0, adapter->netdev);
 
 
