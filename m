@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965724AbaCUNel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 09:34:41 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:3371 "EHLO relay.sw.ru"
+	id S965675AbaCUNej (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 09:34:39 -0400
+Received: from mailhub.sw.ru ([195.214.232.25]:41154 "EHLO relay.sw.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761024AbaCUNeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1761019AbaCUNeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 21 Mar 2014 09:34:37 -0400
 From: Andrey Vagin <avagin@openvz.org>
 To: linux-kernel@vger.kernel.org
@@ -16,28 +16,46 @@ Cc: criu@openvz.org, netdev@vger.kernel.org, Andrey Vagin <avagin@openvz.org>,
         Patrick McHardy <kaber@trash.net>, Eric Dumazet <edumazet@google.com>,
         Pavel Emelyanov <xemul@parallels.com>,
         Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH 3/3] tcp: add ability to restore a fin packet
-Date: Fri, 21 Mar 2014 17:33:01 +0400
-Message-Id: <1395408781-8145-4-git-send-email-avagin@openvz.org>
+Subject: [PATCH RFC 0/3] tcp: allow to repair a tcp connections in closing states
+Date: Fri, 21 Mar 2014 17:32:58 +0400
+Message-Id: <1395408781-8145-1-git-send-email-avagin@openvz.org>
 X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395408781-8145-1-git-send-email-avagin@openvz.org>
-References: <1395408781-8145-1-git-send-email-avagin@openvz.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's required for restoring sockets in closing states:
-TCP_FIN_WAIT{1,2}, TCP_WAIT_STOP, TCP_CLOSING, TCP_LAST_ACK.
+Currently connections only in the TCP_ESTABLISHED state can be dumped and
+restored. This series allows to restore connections in the FIN_WAIT_1,
+FIN_WAIT_2, LAST_ACK, CLOSE_WAIT or CLOSING states.
 
-A fin packet is restored by sending a control message (ancillary data).
-In which queue a packet is restored depends on a value of
-tp->repair_queue.
+For restoring closing states we need an ability to restore a fin packet
+in a queue. In this series I suggest to use the interface of control
+messages for that.
 
-This interface is choosen, because we are goint to use sendmsg for
-restoring sockets in TCP_SYN_RECV states.  Requests in the TCP_SYN_RECV
-state will be restored by sending messages in a proper listen socket. A
-message will contain address and a control messages with sequence
-numbers.
+Here is an example of user-space code:
+
+msg.msg_control = buf;
+msg.msg_controllen = sizeof buf;
+cmsg = CMSG_FIRSTHDR(&msg);
+cmsg->cmsg_level = SOL_TCP;
+cmsg->cmsg_type = TCP_CMSG_SEND_FIN;
+cmsg->cmsg_len = CMSG_LEN(0);
+msg.msg_controllen = cmsg->cmsg_len;
+if (sendmsg(sk, &msg, 0) < 0) {
+	pr_perror("sendmsg");
+	return -1;
+}
+
+Andrey Vagin (3):
+  tcp: allow to enable repair mode for sockets in any state
+  tcp: check repair before fastopen in tcp_sendmsg
+  tcp: add ability to restore a fin packet
+
+ include/net/tcp.h        |  1 +
+ include/uapi/linux/tcp.h |  3 +++
+ net/ipv4/tcp.c           | 69 +++++++++++++++++++++++++++++++++++++-----------
+ net/ipv4/tcp_input.c     |  2 +-
+ 4 files changed, 59 insertions(+), 16 deletions(-)
 
 Cc: "David S. Miller" <davem@davemloft.net>
 Cc: Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
@@ -48,108 +66,7 @@ Cc: Eric Dumazet <edumazet@google.com>
 Cc: Pavel Emelyanov <xemul@parallels.com>
 Cc: Cyrill Gorcunov <gorcunov@openvz.org>
 Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/net/tcp.h        |  1 +
- include/uapi/linux/tcp.h |  3 +++
- net/ipv4/tcp.c           | 40 ++++++++++++++++++++++++++++++++++++++++
- net/ipv4/tcp_input.c     |  2 +-
- 4 files changed, 45 insertions(+), 1 deletion(-)
 
-diff --git a/include/net/tcp.h b/include/net/tcp.h
-index 8c4dd63..4b4d9e8 100644
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -561,6 +561,7 @@ void tcp_cwnd_application_limited(struct sock *sk);
- void tcp_resume_early_retransmit(struct sock *sk);
- void tcp_rearm_rto(struct sock *sk);
- void tcp_reset(struct sock *sk);
-+void tcp_fin(struct sock *sk);
- 
- /* tcp_timer.c */
- void tcp_init_xmit_timers(struct sock *);
-diff --git a/include/uapi/linux/tcp.h b/include/uapi/linux/tcp.h
-index 377f1e5..2cc6876 100644
---- a/include/uapi/linux/tcp.h
-+++ b/include/uapi/linux/tcp.h
-@@ -199,4 +199,7 @@ struct tcp_md5sig {
- 	__u8	tcpm_key[TCP_MD5SIG_MAXKEYLEN];		/* key (binary) */
- };
- 
-+/* Conntroll message types to repair tcp connections */
-+#define TCP_REPAIR_SEND_FIN	1
-+
- #endif /* _UAPI_LINUX_TCP_H */
-diff --git a/net/ipv4/tcp.c b/net/ipv4/tcp.c
-index 4cd0e87..7f5a15c 100644
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1070,6 +1070,34 @@ static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
- 	return err;
- }
- 
-+static int tcp_repair_cmsg(struct sock *sk, struct msghdr *msg)
-+{
-+	struct tcp_sock *tp = tcp_sk(sk);
-+	struct cmsghdr *cmsg;
-+
-+	for (cmsg = CMSG_FIRSTHDR(msg); cmsg; cmsg = CMSG_NXTHDR(msg, cmsg)) {
-+		if (!CMSG_OK(msg, cmsg))
-+			return -EINVAL;
-+		if (cmsg->cmsg_level != SOL_TCP)
-+			continue;
-+
-+		switch (cmsg->cmsg_type) {
-+		case TCP_REPAIR_SEND_FIN:
-+			if (tp->repair_queue == TCP_RECV_QUEUE)
-+				tcp_fin(sk);
-+			else if (tp->repair_queue == TCP_SEND_QUEUE)
-+				tcp_shutdown(sk, SEND_SHUTDOWN);
-+			else
-+				return -EINVAL;
-+			break;
-+		default:
-+			return -EINVAL;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
- int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		size_t size)
- {
-@@ -1090,6 +1118,18 @@ int tcp_sendmsg(struct kiocb *iocb, struct sock *sk, struct msghdr *msg,
- 		if (tp->repair_queue == TCP_NO_QUEUE)
- 			goto out_err;
- 
-+		if (msg->msg_controllen) {
-+			if (size != 0)
-+				return -EINVAL;
-+
-+			err = tcp_repair_cmsg(sk, msg);
-+			if (err < 0)
-+				goto out_err;
-+
-+			goto out;
-+		}
-+
-+		err = -EINVAL;
- 		if (sk->sk_state != TCP_ESTABLISHED)
- 			goto out_err;
- 
-diff --git a/net/ipv4/tcp_input.c b/net/ipv4/tcp_input.c
-index eeaac39..352480c 100644
---- a/net/ipv4/tcp_input.c
-+++ b/net/ipv4/tcp_input.c
-@@ -3820,7 +3820,7 @@ void tcp_reset(struct sock *sk)
-  *
-  *	If we are in FINWAIT-2, a received FIN moves us to TIME-WAIT.
-  */
--static void tcp_fin(struct sock *sk)
-+void tcp_fin(struct sock *sk)
- {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	const struct dst_entry *dst;
 -- 
 1.8.5.3
 
