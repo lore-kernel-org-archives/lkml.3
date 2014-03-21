@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760708AbaCUKfW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:35:22 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:34385 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760391AbaCUKfT (ORCPT
+	id S1760555AbaCUKkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:40:33 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:45023 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760120AbaCUKkc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:35:19 -0400
-X-IronPort-AV: E=Sophos;i="4.97,703,1389744000"; 
-   d="scan'208";a="112218793"
-Message-ID: <532C15E1.4070501@citrix.com>
-Date: Fri, 21 Mar 2014 10:35:13 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Fri, 21 Mar 2014 06:40:32 -0400
+Date: Fri, 21 Mar 2014 10:40:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net, sameo@linux.intel.com,
+        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/5] regulator: arizona-ldo1: Move setup processing from
+ arizona-core
+Message-ID: <20140321104027.GG15213@lee--X1>
+References: <1395224338-3709-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1395224338-3709-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-To: Thomas Graf <tgraf@redhat.com>, Jesse Gross <jesse@nicira.com>,
-        <pshelar@nicira.com>, <dev@openvswitch.org>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        Eric Dumazet <edumazet@google.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
-        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
-        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Paul Durrant <Paul.Durrant@citrix.com>,
-        Jan Beulich <JBeulich@suse.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
-        <netfilter@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
- and handle errors
-References: <1395331354-23659-1-git-send-email-zoltan.kiss@citrix.com> <532B6A3D.1060600@redhat.com>
-In-Reply-To: <532B6A3D.1060600@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395224338-3709-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/03/14 22:22, Thomas Graf wrote:
-> On 03/20/2014 05:02 PM, Zoltan Kiss wrote:
->> --- a/net/openvswitch/datapath.c
->> +++ b/net/openvswitch/datapath.c
->> @@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath
->> *dp, struct sk_buff *skb,
->>       }
->>       nla->nla_len = nla_attr_size(skb->len);
->>
->> -    skb_zerocopy(user_skb, skb, skb->len, hlen);
->> +    err = skb_zerocopy(user_skb, skb, skb->len, hlen);
->> +    if (err)
->> +        goto out;
->>
->>       /* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
->>       if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
->> @@ -478,6 +480,7 @@ static int queue_userspace_packet(struct datapath
->> *dp, struct sk_buff *skb,
->>
->>       err = genlmsg_unicast(ovs_dp_get_net(dp), user_skb,
->> upcall_info->portid);
->>   out:
->> +    skb_tx_error(skb);
->
-> Really sorry to bug you again. We'll get this right ;-)
->
-> Patch looks great except for this call to skb_tx_error() which is now
-> done in the error *and* success path. Make the call conditional on
-> if (err) and we're good.
-Ah, sorry, I'm really sloppy with this patch. I've sent a fixed one.
+> It is more idiomatic to process things relating to the regulator in its
+> driver. This patch moves both processing of device tree relating to the
+> regulator and checking if the regulator is external from arizona-core
+> into the regulator driver.
+> 
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+> ---
+>  drivers/mfd/arizona-core.c       |   12 +++---------
+>  drivers/regulator/arizona-ldo1.c |   30 ++++++++++++++++++++++++++++++
+>  2 files changed, 33 insertions(+), 9 deletions(-)
+> 
+> diff --git a/drivers/mfd/arizona-core.c b/drivers/mfd/arizona-core.c
+> index 333621e..c5fe3bb 100644
+> --- a/drivers/mfd/arizona-core.c
+> +++ b/drivers/mfd/arizona-core.c
+> @@ -539,7 +539,6 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
+>  	int ret, i;
+>  
+>  	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
+> -	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+>  
+>  	ret = of_property_read_u32_array(arizona->dev->of_node,
+>  					 "wlf,gpio-defaults",
+> @@ -671,6 +670,9 @@ int arizona_dev_init(struct arizona *arizona)
+>  		return -EINVAL;
+>  	}
+>  
+> +	/* Mark DCVDD as external, LDO1 driver will clear if internal */
+> +	arizona->external_dcvdd = true;
+> +
 
-Zoli
+You don't need to do this, as it's already the default:
+
+include/linux/mfd/arizona/core.h:
+
+struct arizona {
+ <snip>
+        unsigned int external_dcvdd:1;
+ <snip>
+};
+
+Also you're adding a bool value to a unsigned int.
+
+Any reason for that?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
