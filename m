@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760292AbaCUAD0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36405 "EHLO
+	id S1760480AbaCUADu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:03:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36559 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760208AbaCUADR (ORCPT
+	with ESMTP id S1760422AbaCUADo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:17 -0400
+	Thu, 20 Mar 2014 20:03:44 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, Jason Wang <jasowang@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 013/149] virtio-net: alloc big buffers also when guest can receive UFO
-Date: Thu, 20 Mar 2014 17:02:56 -0700
-Message-Id: <20140321000437.401748291@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 056/149] powerpc: Align p_dyn, p_rela and p_st symbols
+Date: Thu, 20 Mar 2014 17:03:39 -0700
+Message-Id: <20140321000438.903322962@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -31,39 +30,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Anton Blanchard <anton@samba.org>
 
-[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
+commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
 
-We should alloc big buffers also when guest can receive UFO
-packets to let the big packets fit into guest rx buffer.
+The 64bit relocation code places a few symbols in the text segment.
+These symbols are only 4 byte aligned where they need to be 8 byte
+aligned. Add an explicit alignment.
 
-Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
-(virtio-net: Allow UFO feature to be set and advertised.)
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Acked-by: Michael S. Tsirkin <mst@redhat.com>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/virtio_net.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1645,7 +1645,8 @@ static int virtnet_probe(struct virtio_d
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
+---
+ arch/powerpc/kernel/reloc_64.S |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/arch/powerpc/kernel/reloc_64.S
++++ b/arch/powerpc/kernel/reloc_64.S
+@@ -81,6 +81,7 @@ _GLOBAL(relocate)
  
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
+ 6:	blr
+ 
++.balign 8
+ p_dyn:	.llong	__dynamic_start - 0b
+ p_rela:	.llong	__rela_dyn_start - 0b
+ p_st:	.llong	_stext - 0b
 
 
