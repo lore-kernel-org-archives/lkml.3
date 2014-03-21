@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966979AbaCUAxN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:53:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36872 "EHLO
+	id S965562AbaCUAEr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:04:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36827 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965572AbaCUAEt (ORCPT
+	with ESMTP id S965474AbaCUAEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:49 -0400
+	Thu, 20 Mar 2014 20:04:37 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        Maciej Patelczyk <maciej.patelczyk@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.13 132/149] SCSI: isci: correct erroneous for_each_isci_host macro
-Date: Thu, 20 Mar 2014 17:04:55 -0700
-Message-Id: <20140321000441.529476779@linuxfoundation.org>
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.13 126/149] can: flexcan: fix shutdown: first disable chip, then all interrupts
+Date: Thu, 20 Mar 2014 17:04:49 -0700
+Message-Id: <20140321000441.320323419@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -31,75 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lukasz Dorau <lukasz.dorau@intel.com>
+From: Marc Kleine-Budde <mkl@pengutronix.de>
 
-commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
+commit 5be93bdda64e85450598c6e97f79fb8f6acf30e0 upstream.
 
-In the first place, the loop 'for' in the macro 'for_each_isci_host'
-(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
-the 3rd element of 2 element array. After the 2nd iteration it executes
-the instruction:
-        ihost = to_pci_info(pdev)->hosts[2]
-(while the size of the 'hosts' array equals 2) and reads an
-out of range element.
+When shutting down the CAN interface (ifconfig canX down) during high CAN bus
+loads, the CAN core might hang and freeze the whole CPU.
 
-In the second place, this loop is incorrectly optimized by GCC v4.8
-(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
-As a result, on platforms with two SCU controllers,
-the loop is executed more times than it can be (for i=0,1 and 2).
-It causes kernel panic during entering the S3 state
-and the following oops after 'rmmod isci':
+This patch fixes the shutdown sequence by first disabling the CAN core then
+disabling all interrupts.
 
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Oops: 0000 [#1] SMP
-RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
-Call Trace:
-  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
-  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
-  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
-  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
-  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
-  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
-  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
-  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
-  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
-  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
-  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
-  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
-  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
-  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
-  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
-  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
-
-The loop has been corrected.
-This patch fixes kernel panic during entering the S3 state
-and the above oops.
-
-Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
-Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/host.h |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/net/can/flexcan.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -311,9 +311,8 @@ static inline struct Scsi_Host *to_shost
- }
+--- a/drivers/net/can/flexcan.c
++++ b/drivers/net/can/flexcan.c
+@@ -824,14 +824,16 @@ static void flexcan_chip_stop(struct net
+ 	struct flexcan_regs __iomem *regs = priv->base;
+ 	u32 reg;
  
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < SCI_MAX_CONTROLLERS && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
+-	/* Disable all interrupts */
+-	flexcan_write(0, &regs->imask1);
+-
+ 	/* Disable + halt module */
+ 	reg = flexcan_read(&regs->mcr);
+ 	reg |= FLEXCAN_MCR_MDIS | FLEXCAN_MCR_HALT;
+ 	flexcan_write(reg, &regs->mcr);
  
- static inline void wait_for_start(struct isci_host *ihost)
- {
++	/* Disable all interrupts */
++	flexcan_write(0, &regs->imask1);
++	flexcan_write(priv->reg_ctrl_default & ~FLEXCAN_CTRL_ERR_ALL,
++		      &regs->ctrl);
++
+ 	if (priv->reg_xceiver)
+ 		regulator_disable(priv->reg_xceiver);
+ 	priv->can.state = CAN_STATE_STOPPED;
 
 
