@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965205AbaCUAEP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:04:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36667 "EHLO
+	id S1760655AbaCUBJY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:09:24 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36722 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965019AbaCUAEE (ORCPT
+	with ESMTP id S965188AbaCUAEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:04:04 -0400
+	Thu, 20 Mar 2014 20:04:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Axel Lin <axel.lin@ingics.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 082/149] spi: fsl-dspi: Fix getting correct address for master
-Date: Thu, 20 Mar 2014 17:04:05 -0700
-Message-Id: <20140321000439.802021395@linuxfoundation.org>
+        Sagi Grimberg <sagig@mellanox.com>, Or Gerlitz <ogerlitz@mellanox.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 3.13 095/149] iser-target: Fix command leak for tx_desc->comp_llnode_batch
+Date: Thu, 20 Mar 2014 17:04:18 -0700
+Message-Id: <20140321000440.246819783@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -28,50 +29,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Axel Lin <axel.lin@ingics.com>
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-commit 017145fef567430789e40f6a22a90ce2a766370b upstream.
+commit ebbe442183b7b8192c963266f1c89048fefc63a5 upstream.
 
-Current code set platform drvdata to dspi. However, the code in dspi_suspend()
-and dspi_resume() assumes the drvdata is the address of master.
-Fix it by setting platform drvdata to master.
+This patch addresses a number of active I/O shutdown issues
+related to isert_cmd descriptors being leaked that are part
+of a completion interrupt coalescing batch.
 
-Signed-off-by: Axel Lin <axel.lin@ingics.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+This includes adding logic in isert_cq_tx_comp_err() to
+drain any associated tx_desc->comp_llnode_batch, as well
+as isert_cq_drain_comp_llist() to drain any associated
+isert_conn->conn_comp_llist.
+
+Also, set tx_desc->llnode_active in isert_init_send_wr()
+in order to determine when work requests need to be skipped
+in isert_cq_tx_work() exception path code.
+
+Finally, update isert_init_send_wr() to only allow interrupt
+coalescing when ISER_CONN_UP.
+
+Acked-by: Sagi Grimberg <sagig@mellanox.com>
+Cc: Or Gerlitz <ogerlitz@mellanox.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/spi/spi-fsl-dspi.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/infiniband/ulp/isert/ib_isert.c |   50 ++++++++++++++++++++++++++++----
+ drivers/infiniband/ulp/isert/ib_isert.h |    2 -
+ 2 files changed, 46 insertions(+), 6 deletions(-)
 
---- a/drivers/spi/spi-fsl-dspi.c
-+++ b/drivers/spi/spi-fsl-dspi.c
-@@ -421,7 +421,6 @@ static int dspi_suspend(struct device *d
+--- a/drivers/infiniband/ulp/isert/ib_isert.c
++++ b/drivers/infiniband/ulp/isert/ib_isert.c
+@@ -502,7 +502,6 @@ isert_connect_request(struct rdma_cm_id
+ 	kref_init(&isert_conn->conn_kref);
+ 	kref_get(&isert_conn->conn_kref);
+ 	mutex_init(&isert_conn->conn_mutex);
+-	mutex_init(&isert_conn->conn_comp_mutex);
+ 	spin_lock_init(&isert_conn->conn_lock);
  
- static int dspi_resume(struct device *dev)
+ 	cma_id->context = isert_conn;
+@@ -871,16 +870,17 @@ isert_init_send_wr(struct isert_conn *is
+ 	 * Coalesce send completion interrupts by only setting IB_SEND_SIGNALED
+ 	 * bit for every ISERT_COMP_BATCH_COUNT number of ib_post_send() calls.
+ 	 */
+-	mutex_lock(&isert_conn->conn_comp_mutex);
+-	if (coalesce &&
++	mutex_lock(&isert_conn->conn_mutex);
++	if (coalesce && isert_conn->state == ISER_CONN_UP &&
+ 	    ++isert_conn->conn_comp_batch < ISERT_COMP_BATCH_COUNT) {
++		tx_desc->llnode_active = true;
+ 		llist_add(&tx_desc->comp_llnode, &isert_conn->conn_comp_llist);
+-		mutex_unlock(&isert_conn->conn_comp_mutex);
++		mutex_unlock(&isert_conn->conn_mutex);
+ 		return;
+ 	}
+ 	isert_conn->conn_comp_batch = 0;
+ 	tx_desc->comp_llnode_batch = llist_del_all(&isert_conn->conn_comp_llist);
+-	mutex_unlock(&isert_conn->conn_comp_mutex);
++	mutex_unlock(&isert_conn->conn_mutex);
+ 
+ 	send_wr->send_flags = IB_SEND_SIGNALED;
+ }
+@@ -1676,10 +1676,45 @@ isert_send_completion(struct iser_tx_des
+ }
+ 
+ static void
++isert_cq_drain_comp_llist(struct isert_conn *isert_conn, struct ib_device *ib_dev)
++{
++	struct llist_node *llnode;
++	struct isert_rdma_wr *wr;
++	struct iser_tx_desc *t;
++
++	mutex_lock(&isert_conn->conn_mutex);
++	llnode = llist_del_all(&isert_conn->conn_comp_llist);
++	isert_conn->conn_comp_batch = 0;
++	mutex_unlock(&isert_conn->conn_mutex);
++
++	while (llnode) {
++		t = llist_entry(llnode, struct iser_tx_desc, comp_llnode);
++		llnode = llist_next(llnode);
++		wr = &t->isert_cmd->rdma_wr;
++
++		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
++		isert_completion_put(t, t->isert_cmd, ib_dev);
++	}
++}
++
++static void
+ isert_cq_tx_comp_err(struct iser_tx_desc *tx_desc, struct isert_conn *isert_conn)
  {
--
- 	struct spi_master *master = dev_get_drvdata(dev);
- 	struct fsl_dspi *dspi = spi_master_get_devdata(master);
+ 	struct ib_device *ib_dev = isert_conn->conn_cm_id->device;
+ 	struct isert_cmd *isert_cmd = tx_desc->isert_cmd;
++	struct llist_node *llnode = tx_desc->comp_llnode_batch;
++	struct isert_rdma_wr *wr;
++	struct iser_tx_desc *t;
++
++	while (llnode) {
++		t = llist_entry(llnode, struct iser_tx_desc, comp_llnode);
++		llnode = llist_next(llnode);
++		wr = &t->isert_cmd->rdma_wr;
++
++		atomic_sub(wr->send_wr_num + 1, &isert_conn->post_send_buf_count);
++		isert_completion_put(t, t->isert_cmd, ib_dev);
++	}
++	tx_desc->comp_llnode_batch = NULL;
  
-@@ -505,7 +504,7 @@ static int dspi_probe(struct platform_de
- 	clk_prepare_enable(dspi->clk);
+ 	if (!isert_cmd)
+ 		isert_unmap_tx_desc(tx_desc, ib_dev);
+@@ -1696,6 +1731,8 @@ isert_cq_rx_comp_err(struct isert_conn *
+ 	if (isert_conn->post_recv_buf_count)
+ 		return;
  
- 	init_waitqueue_head(&dspi->waitq);
--	platform_set_drvdata(pdev, dspi);
-+	platform_set_drvdata(pdev, master);
++	isert_cq_drain_comp_llist(isert_conn, ib_dev);
++
+ 	if (conn->sess) {
+ 		target_sess_cmd_list_set_waiting(conn->sess->se_sess);
+ 		target_wait_for_sess_cmds(conn->sess->se_sess);
+@@ -1735,6 +1772,9 @@ isert_cq_tx_work(struct work_struct *wor
+ 			pr_debug("TX wc.vendor_err: 0x%08x\n", wc.vendor_err);
  
- 	ret = spi_bitbang_start(&dspi->bitbang);
- 	if (ret != 0) {
-@@ -526,7 +525,8 @@ out_master_put:
+ 			if (wc.wr_id != ISER_FASTREG_LI_WRID) {
++				if (tx_desc->llnode_active)
++					continue;
++
+ 				atomic_dec(&isert_conn->post_send_buf_count);
+ 				isert_cq_tx_comp_err(tx_desc, isert_conn);
+ 			}
+--- a/drivers/infiniband/ulp/isert/ib_isert.h
++++ b/drivers/infiniband/ulp/isert/ib_isert.h
+@@ -46,6 +46,7 @@ struct iser_tx_desc {
+ 	struct isert_cmd *isert_cmd;
+ 	struct llist_node *comp_llnode_batch;
+ 	struct llist_node comp_llnode;
++	bool		llnode_active;
+ 	struct ib_send_wr send_wr;
+ } __packed;
  
- static int dspi_remove(struct platform_device *pdev)
- {
--	struct fsl_dspi *dspi = platform_get_drvdata(pdev);
-+	struct spi_master *master = platform_get_drvdata(pdev);
-+	struct fsl_dspi *dspi = spi_master_get_devdata(master);
+@@ -127,7 +128,6 @@ struct isert_conn {
+ #define ISERT_COMP_BATCH_COUNT	8
+ 	int			conn_comp_batch;
+ 	struct llist_head	conn_comp_llist;
+-	struct mutex		conn_comp_mutex;
+ };
  
- 	/* Disconnect from the SPI framework */
- 	spi_bitbang_stop(&dspi->bitbang);
+ #define ISERT_MAX_CQ 64
 
 
