@@ -1,116 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760878AbaCULrp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 07:47:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39369 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760155AbaCULrm (ORCPT
+	id S965233AbaCULur (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 07:50:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58873 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbaCULup (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 07:47:42 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC PATCH] [media]: of: move graph helpers from drivers/media/v4l2-core to drivers/of
-To: Andrzej Hajda <a.hajda@samsung.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Rob Herring <robherring2@gmail.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-In-Reply-To: <532C1808.6090409@samsung.com>
-References: <1392119105-25298-1-git-send-email-p.zabel@pengutronix.de> < 139468148.3QhLg3QYq1@avalon> <531F08A8.300@ti.com> <1883687.VdfitvQEN3@ samsung.com> <avalon@samsung.com> <20140320172302.CD320C4067A@trevor. secretlab.ca> <532C1808.6090409@samsung.com>
-Date: Fri, 21 Mar 2014 11:47:35 +0000
-Message-Id: <20140321114735.3E132C4052A@trevor.secretlab.ca>
+	Fri, 21 Mar 2014 07:50:45 -0400
+Date: Fri, 21 Mar 2014 11:50:40 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jonghwan Choi <jhbird.choi@samsung.com>
+Cc: "'open list'" <linux-kernel@vger.kernel.org>,
+        "'Liam Girdwood'" <lgirdwood@gmail.com>
+Message-ID: <20140321115040.GL11706@sirena.org.uk>
+References: <000001cf44ad$a8e2f1b0$faa8d510$%choi@samsung.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Sre54N+byDQwqJQI"
+Content-Disposition: inline
+In-Reply-To: <000001cf44ad$a8e2f1b0$faa8d510$%choi@samsung.com>
+X-Cookie: Turn the other cheek.
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: core: Reduce busy-wait looping
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 Mar 2014 11:44:24 +0100, Andrzej Hajda <a.hajda@samsung.com> wrote:
-> On 03/20/2014 06:23 PM, Grant Likely wrote:
-> > On Tue, 11 Mar 2014 14:16:37 +0100, Laurent Pinchart <laurent.pinchart@ideasonboard.com> wrote:
-> >> On Tuesday 11 March 2014 14:59:20 Tomi Valkeinen wrote:
-> >>> So depending on the use case, the endpoints would point to opposite
-> >>> direction from the encoder's point of view.
-> >>>
-> >>> And if I gathered Grant's opinion correctly (correct me if I'm wrong),
-> >>> he thinks things should be explicit, i.e. the bindings for, say, an
-> >>> encoder should state that the encoder's output endpoint _must_ contain a
-> >>> remote-endpoint property, whereas the encoder's input endpoint _must
-> >>> not_ contain a remote-endpoint property.
-> >>
-> >> Actually my understand was that DT links would have the same direction as the 
-> >> data flow. There would be no ambiguity in that case as the direction of the 
-> >> data flow is known. What happens for bidirectional data flows still need to be 
-> >> discussed though. And if we want to use the of-graph bindings to describe 
-> >> graphs without a data flow, a decision will need to be taken there too.
-> > 
-> > On further thinking, I would say linkage direction should be in the
-> > direction that would be considered the dependency order... I'm going to
-> > soften my position though. I think the generic pattern should still
-> > recommend unidirection links in direction of device dependency, but
-> 
-> I am not sure what you mean by 'device dependency' but I am sure it will
-> not be difficult to present problematic cases, maybe circular
-> dependencies, two-way dependencies, etc.
 
-My understanding has been that the link data would be used determine
-when the controller driver can be brought up and active. Certainly both
-sides of a link need to be 'live' before the link can be used. The
-kernel must have a way to resolve the question of "who starts first?",
-whether it be the situation of the consumer starts before the producer,
-or the situation of two components need to start before the controller
-driver can start. That is the dependency chain I'm talking about.
+--Sre54N+byDQwqJQI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> The only problem of unidirectional links from programming point of view
-> is that destination port/interface should be exposed using some
-> framework and driver of source link should grab it using the same
-> framework, using port/endpoint node for identification. In case of
-> bi-directional links the same process should happen but DT do not
-> dictates who should expose and who grabs.
-> 
-> So from programming point of view it should be easy to handle
-> unidirectional links regardless of the direction. So I guess the best
-> is to use data flow direction as it seems to be the most natural.
+On Fri, Mar 21, 2014 at 11:31:25AM +0900, Jonghwan Choi wrote:
 
-right.
+> Commit 5df529d440("regulator: core: Reduce busy-wait looping")
+> can also be used in regulator_do_set_voltage.
 
-> 
-> 
-> > I'm okay with allowing the bidirection option if the helper functions
-> > are modified to validate the target endpoint. I think it needs to test
-> > for the following:
-> > - Make sure the endpoint either:
-> >   - does not have a backlink, or
-> >   - the backlink points back to the origin node
-> > - If the target is an endpoint node, then make sure the parent doesn't
-> >   have a link of any kind
-> > - If the target is a port node, make sure it doesn't have any endpoint
-> >   children nodes at all.
-> 
-> I think link validation can be done at dts compile time.
+This is good as a change but please factor it out into a function so we
+don't have the same problem again with future changes (I'm surprised
+there isn't one in the generic code somewhere but if not we can do that
+as a second stage, regulator only is fine for now) and make sure that
+the lines are less than 80 columns.
 
-I'm firm on the opinion that the checking must also happen at runtime.
-The biggest part of my objection has been how easy it would be to get a
-linkage out of sync, and dtc is not necessarily the last tool to touch
-the dtb before the kernel gets booted. I want the kernel to flat out
-reject any linkage that is improperly formed.
+--Sre54N+byDQwqJQI
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-g.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-> 
-> Regards
-> Andrzej
-> 
-> > 
-> > g.
-> > 
-> > 
-> 
+iQIcBAEBAgAGBQJTLCeNAAoJELSic+t+oim9OeIP/0w6b71DcYy2WHzDyXg6QRLG
+xnEbgLmORAC2i2l0k+eLNe7Z/It/VGG/1IIK9PJRLTp2Ba9kR+nC7hKwVzuJjGeA
+b4oUP8oWvng6Izssk/Z/NNPuy+2vdM1KDm5pJX8o31psBAi2JFa5fuMusNGUUQ9Q
+Lrx8TCmBw/rkQvQRwhaAeZdbJYubLhFEam84YwlzJbFJIv05ZUiP5QeIHigX2mbg
+Mtl5glmUGnd5FaoDHCmQizqROswUNPciPGZLwW2aKdcstsH6bUD/r+cxxXZm+SHY
+2pss4LJiBhzhnw6VYGZpthjS8QzDuvwUL9ftIkUrxHx1O5sBQOsw3s6kkoZCCpBy
+PdHEm5e+o5uiVdAOFULe2YdqgaB1bD4GBCuF8ta9gAbWB5hM0nhrjoJGbzM7+cCh
+cth00e8QnTZ7VH/iDcAQkyP4ifsI5STvgJMrVDLJgEYIsCN03nyO2O5IU9uRDPtK
+clv5k6yK65VUNkemnWkhxJULIVXPPefsil7E6BMeBhkybR+WMkOXxslvoQVtUuEm
+Lw5HPnceHGR0vmcL6mdYvnzhXWRaC/6RKZMWZNOhzbTqmD0/sDHS2VEGRMG17ktS
+HJT1WFoxbkjSOzC3PEpJJQyS5cT2tjc/pYeLrWE5zSPZAfQJgAU6h4YvoJ3+MGlP
+GM3RmjeLVlvzHcvyHHQ2
+=pAJP
+-----END PGP SIGNATURE-----
 
+--Sre54N+byDQwqJQI--
