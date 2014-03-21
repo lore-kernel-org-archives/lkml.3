@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966569AbaCUApb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:45:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37017 "EHLO
+	id S966627AbaCUAp7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:45:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37013 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965737AbaCUAIg (ORCPT
+	with ESMTP id S965805AbaCUAIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:08:36 -0400
+	Thu, 20 Mar 2014 20:08:35 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>, Yuchung Cheng <ycheng@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 05/85] net-tcp: fastopen: fix high order allocations
-Date: Thu, 20 Mar 2014 17:09:08 -0700
-Message-Id: <20140321000559.340180451@linuxfoundation.org>
+        Alexandre Bounine <alexandre.bounine@idt.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Xiaotian Feng <xtfeng@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <bitbucket@online.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 04/85] rapidio/tsi721: fix tasklet termination in dma channel release
+Date: Thu, 20 Mar 2014 17:09:07 -0700
+Message-Id: <20140321000559.216778208@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -29,94 +33,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Alexandre Bounine <alexandre.bounine@idt.com>
 
-[ Upstream commit f5ddcbbb40aa0ba7fbfe22355d287603dbeeaaac ]
+commit 04379dffdd4da820d51a1566ad2e86f3b1ad97ed upstream.
 
-This patch fixes two bugs in fastopen :
+This patch is a modification of the patch originally proposed by
+Xiaotian Feng <xtfeng@gmail.com>: https://lkml.org/lkml/2012/11/5/413
+This new version disables DMA channel interrupts and ensures that the
+tasklet wil not be scheduled again before calling tasklet_kill().
 
-1) The tcp_sendmsg(...,  @size) argument was ignored.
+Unfortunately the updated patch was not released at that time due to
+planned rework of Tsi721 mport driver to use threaded interrupts (which
+has yet to happen).  Recently the issue was reported again:
+https://lkml.org/lkml/2014/2/19/762.
 
-   Code was relying on user not fooling the kernel with iovec mismatches
+Description from the original Xiaotian's patch:
 
-2) When MTU is about 64KB, tcp_send_syn_data() attempts order-5
-allocations, which are likely to fail when memory gets fragmented.
+ "Some drivers use tasklet_disable in device remove/release process,
+  tasklet_disable will inc tasklet->count and return.  If the tasklet is
+  not handled yet under some softirq pressure, the tasklet will be
+  placed on the tasklet_vec, never have a chance to be excuted.  This
+  might lead to a heavy loaded ksoftirqd, wakeup with pending_softirq,
+  but tasklet is disabled.  tasklet_kill should be used in this case."
 
-Fixes: 783237e8daf13 ("net-tcp: Fast Open client - sending SYN-data")
-Signed-off-by: Eric Dumazet <edumazet@google.com>
-Cc: Yuchung Cheng <ycheng@google.com>
-Acked-by: Yuchung Cheng <ycheng@google.com>
-Tested-by: Yuchung Cheng <ycheng@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+This patch is applicable to kernel versions starting from v3.5.
+
+Signed-off-by: Alexandre Bounine <alexandre.bounine@idt.com>
+Cc: Matt Porter <mporter@kernel.crashing.org>
+Cc: Xiaotian Feng <xtfeng@gmail.com>
+Reviewed-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mike Galbraith <bitbucket@online.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- include/net/tcp.h     |    3 ++-
- net/ipv4/tcp.c        |    8 +++++---
- net/ipv4/tcp_output.c |    7 ++++++-
- 3 files changed, 13 insertions(+), 5 deletions(-)
 
---- a/include/net/tcp.h
-+++ b/include/net/tcp.h
-@@ -1308,7 +1308,8 @@ struct tcp_fastopen_request {
- 	/* Fast Open cookie. Size 0 means a cookie request */
- 	struct tcp_fastopen_cookie	cookie;
- 	struct msghdr			*data;  /* data in MSG_FASTOPEN */
--	u16				copied;	/* queued in tcp_connect() */
-+	size_t				size;
-+	int				copied;	/* queued in tcp_connect() */
+---
+ drivers/rapidio/devices/tsi721.h     |    1 +
+ drivers/rapidio/devices/tsi721_dma.c |   27 ++++++++++++++++++---------
+ 2 files changed, 19 insertions(+), 9 deletions(-)
+
+--- a/drivers/rapidio/devices/tsi721.h
++++ b/drivers/rapidio/devices/tsi721.h
+@@ -678,6 +678,7 @@ struct tsi721_bdma_chan {
+ 	struct list_head	free_list;
+ 	dma_cookie_t		completed_cookie;
+ 	struct tasklet_struct	tasklet;
++	bool			active;
  };
- void tcp_free_fastopen_req(struct tcp_sock *tp);
  
---- a/net/ipv4/tcp.c
-+++ b/net/ipv4/tcp.c
-@@ -1001,7 +1001,8 @@ void tcp_free_fastopen_req(struct tcp_so
- 	}
- }
- 
--static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg, int *size)
-+static int tcp_sendmsg_fastopen(struct sock *sk, struct msghdr *msg,
-+				int *copied, size_t size)
+ #endif /* CONFIG_RAPIDIO_DMA_ENGINE */
+--- a/drivers/rapidio/devices/tsi721_dma.c
++++ b/drivers/rapidio/devices/tsi721_dma.c
+@@ -206,8 +206,8 @@ void tsi721_bdma_handler(struct tsi721_b
  {
- 	struct tcp_sock *tp = tcp_sk(sk);
- 	int err, flags;
-@@ -1016,11 +1017,12 @@ static int tcp_sendmsg_fastopen(struct s
- 	if (unlikely(tp->fastopen_req == NULL))
- 		return -ENOBUFS;
- 	tp->fastopen_req->data = msg;
-+	tp->fastopen_req->size = size;
- 
- 	flags = (msg->msg_flags & MSG_DONTWAIT) ? O_NONBLOCK : 0;
- 	err = __inet_stream_connect(sk->sk_socket, msg->msg_name,
- 				    msg->msg_namelen, flags);
--	*size = tp->fastopen_req->copied;
-+	*copied = tp->fastopen_req->copied;
- 	tcp_free_fastopen_req(tp);
- 	return err;
+ 	/* Disable BDMA channel interrupts */
+ 	iowrite32(0, bdma_chan->regs + TSI721_DMAC_INTE);
+-
+-	tasklet_schedule(&bdma_chan->tasklet);
++	if (bdma_chan->active)
++		tasklet_schedule(&bdma_chan->tasklet);
  }
-@@ -1040,7 +1042,7 @@ int tcp_sendmsg(struct kiocb *iocb, stru
  
- 	flags = msg->msg_flags;
- 	if (flags & MSG_FASTOPEN) {
--		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn);
-+		err = tcp_sendmsg_fastopen(sk, msg, &copied_syn, size);
- 		if (err == -EINPROGRESS && copied_syn > 0)
- 			goto out;
- 		else if (err)
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -2892,7 +2892,12 @@ static int tcp_send_syn_data(struct sock
- 	space = __tcp_mtu_to_mss(sk, inet_csk(sk)->icsk_pmtu_cookie) -
- 		MAX_TCP_OPTION_SPACE;
+ #ifdef CONFIG_PCI_MSI
+@@ -562,7 +562,7 @@ static int tsi721_alloc_chan_resources(s
+ 	}
+ #endif /* CONFIG_PCI_MSI */
  
--	syn_data = skb_copy_expand(syn, skb_headroom(syn), space,
-+	space = min_t(size_t, space, fo->size);
+-	tasklet_enable(&bdma_chan->tasklet);
++	bdma_chan->active = true;
+ 	tsi721_bdma_interrupt_enable(bdma_chan, 1);
+ 
+ 	return bdma_chan->bd_num - 1;
+@@ -576,9 +576,7 @@ err_out:
+ static void tsi721_free_chan_resources(struct dma_chan *dchan)
+ {
+ 	struct tsi721_bdma_chan *bdma_chan = to_tsi721_chan(dchan);
+-#ifdef CONFIG_PCI_MSI
+ 	struct tsi721_device *priv = to_tsi721(dchan->device);
+-#endif
+ 	LIST_HEAD(list);
+ 
+ 	dev_dbg(dchan->device->dev, "%s: Entry\n", __func__);
+@@ -589,14 +587,25 @@ static void tsi721_free_chan_resources(s
+ 	BUG_ON(!list_empty(&bdma_chan->active_list));
+ 	BUG_ON(!list_empty(&bdma_chan->queue));
+ 
+-	tasklet_disable(&bdma_chan->tasklet);
++	tsi721_bdma_interrupt_enable(bdma_chan, 0);
++	bdma_chan->active = false;
 +
-+	/* limit to order-0 allocations */
-+	space = min_t(size_t, space, SKB_MAX_HEAD(MAX_TCP_HEADER));
++#ifdef CONFIG_PCI_MSI
++	if (priv->flags & TSI721_USING_MSIX) {
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_DONE +
++					   bdma_chan->id].vector);
++		synchronize_irq(priv->msix[TSI721_VECT_DMA0_INT +
++					   bdma_chan->id].vector);
++	} else
++#endif
++	synchronize_irq(priv->pdev->irq);
 +
-+	syn_data = skb_copy_expand(syn, MAX_TCP_HEADER, space,
- 				   sk->sk_allocation);
- 	if (syn_data == NULL)
- 		goto fallback;
++	tasklet_kill(&bdma_chan->tasklet);
+ 
+ 	spin_lock_bh(&bdma_chan->lock);
+ 	list_splice_init(&bdma_chan->free_list, &list);
+ 	spin_unlock_bh(&bdma_chan->lock);
+ 
+-	tsi721_bdma_interrupt_enable(bdma_chan, 0);
+-
+ #ifdef CONFIG_PCI_MSI
+ 	if (priv->flags & TSI721_USING_MSIX) {
+ 		free_irq(priv->msix[TSI721_VECT_DMA0_DONE +
+@@ -790,6 +799,7 @@ int tsi721_register_dma(struct tsi721_de
+ 		bdma_chan->dchan.cookie = 1;
+ 		bdma_chan->dchan.chan_id = i;
+ 		bdma_chan->id = i;
++		bdma_chan->active = false;
+ 
+ 		spin_lock_init(&bdma_chan->lock);
+ 
+@@ -799,7 +809,6 @@ int tsi721_register_dma(struct tsi721_de
+ 
+ 		tasklet_init(&bdma_chan->tasklet, tsi721_dma_tasklet,
+ 			     (unsigned long)bdma_chan);
+-		tasklet_disable(&bdma_chan->tasklet);
+ 		list_add_tail(&bdma_chan->dchan.device_node,
+ 			      &mport->dma.channels);
+ 	}
 
 
