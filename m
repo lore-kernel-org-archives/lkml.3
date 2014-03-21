@@ -1,91 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751198AbaCUSH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 14:07:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:46124 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751142AbaCUSHz (ORCPT
+	id S1751232AbaCUSJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 14:09:57 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:47631 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCUSJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 14:07:55 -0400
-Date: Fri, 21 Mar 2014 18:07:23 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
-Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are
- serialized
-Message-ID: <20140321180723.GM13596@arm.com>
-References: <cover.1395379422.git.viresh.kumar@linaro.org>
- <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
- <532BEE64.3090501@linux.vnet.ibm.com>
- <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
- <532BFB77.5060107@linux.vnet.ibm.com>
- <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
- <20140321110559.GB13596@arm.com>
- <532C2160.4030909@linux.vnet.ibm.com>
+	Fri, 21 Mar 2014 14:09:55 -0400
+Date: Fri, 21 Mar 2014 18:09:48 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Matt Porter <mporter@linaro.org>, Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org
+Message-ID: <20140321180948.GK552@sirena.org.uk>
+References: <1394762274.8460.1.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="tBhgiDt8dP1efIIJ"
 Content-Disposition: inline
-In-Reply-To: <532C2160.4030909@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1394762274.8460.1.camel@phoenix>
+X-Cookie: Contents may settle during shipment.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/3] regulator: bcm590xx: Make the modalias matches the
+ driver name
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 11:24:16AM +0000, Srivatsa S. Bhat wrote:
-> On 03/21/2014 04:35 PM, Catalin Marinas wrote:
-> > On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
-> >> @Catalin: We have a problem here and need your expert advice. After changing
-> >> CPU frequency we need to call this code:
-> >>
-> >> cpufreq_notify_post_transition();
-> >> policy->transition_ongoing = false;
-> >>
-> >> And the sequence must be like this only. Is this guaranteed without any
-> >> memory barriers? cpufreq_notify_post_transition() isn't touching
-> >> transition_ongoing at all..
-> > 
-> > The above sequence doesn't say much. As rmk said, the compiler wouldn't
-> > reorder the transition_ongoing write before the function call. I think
-> > most architectures (not sure about Alpha) don't do speculative stores,
-> > so hardware wouldn't reorder them either. However, other stores inside
-> > the cpufreq_notify_post_transition() could be reordered after
-> > transition_ongoing store. The same for memory accesses after the
-> > transition_ongoing update, they could be reordered before.
-> > 
-> > So what we actually need to know is what are the other relevant memory
-> > accesses that require strict ordering with transition_ongoing.
-> 
-> Hmm.. The thing is, _everything_ inside the post_transition() function
-> should complete before writing to transition_ongoing. Because, setting the
-> flag to 'false' indicates the end of the critical section, and the next
-> contending task can enter the critical section.
 
-smp_mb() is all about relative ordering. So if you want memory accesses
-in post_transition() to be visible to other observers before
-transition_ongoing = false, you also need to make sure that the readers
-of transition_ongoing have a barrier before subsequent memory accesses.
+--tBhgiDt8dP1efIIJ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > What I find strange in your patch is that
-> > cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
-> > update but cpufreq_freq_transition_end() doesn't.
-> 
-> The reason is that, by the time we drop the spinlock, we would have set
-> the transition_ongoing flag to true, which prevents any other task from
-> entering the critical section. Hence, when we call the _end() function,
-> we are 100% sure that only one task is executing it. Hence locks are not
-> necessary around that second update. In fact, that very update marks the
-> end of the critical section (which acts much like a spin_unlock(&lock)
-> in a "regular" critical section).
+On Fri, Mar 14, 2014 at 09:57:54AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
 
-OK, I start to get it. Is there a risk of missing a wake_up event? E.g.
-one thread waking up earlier, noticing that transition is in progress
-and waiting indefinitely?
+Applied, thanks.
 
--- 
-Catalin
+--tBhgiDt8dP1efIIJ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTLIBpAAoJELSic+t+oim9MecP/RgkqfMXPKEFJVa01PCfWWcX
+kClRZ5BBL2D0vii1jLlIF1Gm7agnqgfWHHaLLqH4q3Ay2GXQ3qwaBA2av1H0pYNb
+/0TlS9poRwtKxxCzUMmRTfTCEckwcirMgxv5Wt3QKZsMZGDhC0vOd455Q4eyCdv9
+gSDn7/rwdLTyf2+GoW1Jyf9E7j6MDC/Wq+Y1S/LsnsV//nCh39xLapZhERiQ7Djw
+sCqz5ywQYUZpnRhITNY2/u+bmhuLoeTQVdXXCzxUP3w8srlUNHhOmG/BbTRd6Idn
+ISBJmNLYdTL5h4D/Ym4O1s2cazAxt4iYSVYe6UrQsun59207ez9Y7aqtUdz0l2nZ
+e4FUhMBITLmWat2rfKfk0cHlFdL7la9E99PczTAmmgy8QDXRebzq3AZxnpNAKkNw
+d2sH/Fgrg6SE1K42sowj83oZJJRmr+GXogczqZGdsdP4kNi8b4B4Iy6U15EsW2n1
+Kx09WGG3xdTBYJgkF1HTA6GxtkDH820An+6rRth1WY4JZahcaD/OylEi6AGHLoCW
+f65NO108wNAY5ZyffPeliTdLyVyXCHW/j3SneaQVqyo3c5PVLvf+IEQNcPQRKXys
+Z9nIFadJZyXJ5FxbYqUQK144JT28A5oUGxpNv/ln1UvNscXAu+U7yTc6uh8W+GHY
+y/qk2a5359bkubatC9Aw
+=W75J
+-----END PGP SIGNATURE-----
+
+--tBhgiDt8dP1efIIJ--
