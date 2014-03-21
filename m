@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752282AbaCUVnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 17:43:07 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:51254 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbaCUVnG (ORCPT
+	id S1752414AbaCUVoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 17:44:12 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:40802 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751171AbaCUVoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 17:43:06 -0400
-Message-ID: <532CB266.6050800@gmail.com>
-Date: Fri, 21 Mar 2014 22:43:02 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>
-Subject: Re: [PATCH 2/2] ARM: multi_v7_defconfig: Select CONFIG_MACH_BERLIN_BG2Q
-References: <1395430757-8677-1-git-send-email-alexandre.belloni@free-electrons.com> <1395430757-8677-2-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1395430757-8677-2-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 21 Mar 2014 17:44:07 -0400
+Date: Fri, 21 Mar 2014 17:44:00 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v8 02/26] kprobes/x86: Allow to handle reentered
+ kprobe on singlestepping
+Message-ID: <20140321174400.581551a2@gandalf.local.home>
+In-Reply-To: <20140305115857.22766.61414.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305115857.22766.61414.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 08:39 PM, Alexandre Belloni wrote:
-> Now that we support Berlin BG2Q, select CONFIG_MACH_BERLIN_BG2Q so that we can
-> boot BG2Q based boards like the BG2Q DMP.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Wed, 05 Mar 2014 20:58:57 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Applied to berlin/soc, Thanks!
+> Since the NMI handlers(e.g. perf) can interrupt in the
+> single stepping (or preparing the single stepping, do_debug
+> etc.), we should consider a kprobe is hit in the NMI
+> handler. Even in that case, the kprobe is allowed to be
+> reentered as same as the kprobes hit in kprobe handlers
+> (KPROBE_HIT_ACTIVE or KPROBE_HIT_SSDONE).
+> The real issue will happen when a kprobe hit while another
+> reentered kprobe is processing (KPROBE_REENTER), because
+> we already consumed a saved-area for the previous kprobe.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
 
-> ---
->   arch/arm/configs/multi_v7_defconfig | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
-> index ee6982976d66..8b09b72fb688 100644
-> --- a/arch/arm/configs/multi_v7_defconfig
-> +++ b/arch/arm/configs/multi_v7_defconfig
-> @@ -15,6 +15,7 @@ CONFIG_ARCH_BCM_MOBILE=y
->   CONFIG_ARCH_BERLIN=y
->   CONFIG_MACH_BERLIN_BG2=y
->   CONFIG_MACH_BERLIN_BG2CD=y
-> +CONFIG_MACH_BERLIN_BG2Q=y
->   CONFIG_GPIO_PCA953X=y
->   CONFIG_ARCH_HIGHBANK=y
->   CONFIG_ARCH_HI3xxx=y
->
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
+-- Steve
