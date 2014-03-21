@@ -1,179 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965305AbaCUKEl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 06:04:41 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:47858 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965129AbaCUKEj (ORCPT
+	id S1760397AbaCUKGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 06:06:13 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54359 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760236AbaCUKGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 06:04:39 -0400
+	Fri, 21 Mar 2014 06:06:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <532B22CF.1030504@arm.com>
-References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
- <1395246165-31150-2-git-send-email-vincent.guittot@linaro.org>
- <532AE216.3080106@arm.com> <CAKfTPtB7Gh7Mw8XXGVOiWk8XAJYKB8V18+My86_2c=LAsMLp7Q@mail.gmail.com>
- <532B22CF.1030504@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 21 Mar 2014 11:04:18 +0100
-Message-ID: <CAKfTPtALFxdiWYa1ka3W+zhKBDshjngbz0Jys8trOgCjnmtDoA@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] sched: rework of sched_domain topology definition
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+In-Reply-To: <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+References: <cover.1395379422.git.viresh.kumar@linaro.org>
+	<f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+	<532BEE64.3090501@linux.vnet.ibm.com>
+	<CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
+	<532BFB77.5060107@linux.vnet.ibm.com>
+	<CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+Date: Fri, 21 Mar 2014 15:36:09 +0530
+Message-ID: <CAKohpo=ugBphZ2cz6FwOgsMPkPGRo-H2OSRPBbDbTqj=fn_kHw@mail.gmail.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 March 2014 18:18, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> On 20/03/14 17:02, Vincent Guittot wrote:
->> On 20 March 2014 13:41, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->>> On 19/03/14 16:22, Vincent Guittot wrote:
->>>> We replace the old way to configure the scheduler topology with a new method
->>>> which enables a platform to declare additionnal level (if needed).
->>>>
->>>> We still have a default topology table definition that can be used by platform
->>>> that don't want more level than the SMT, MC, CPU and NUMA ones. This table can
->>>> be overwritten by an arch which either wants to add new level where a load balance
->>>> make sense like BOOK or powergating level or wants to change the flags
->>>> configuration of some levels.
->>>>
->>>> For each level, we need a function pointer that returns cpumask for each cpu,
->>>> a function pointer that returns the flags for the level and a name. Only flags
->>>> that describe topology, can be set by an architecture. The current topology
->>>> flags are:
->>>>  SD_SHARE_CPUPOWER
->>>>  SD_SHARE_PKG_RESOURCES
->>>>  SD_NUMA
->>>>  SD_ASYM_PACKING
->>>>
->>>> Then, each level must be a subset on the next one. The build sequence of the
->>>> sched_domain will take care of removing useless levels like those with 1 CPU
->>>> and those with the same CPU span and relevant information for load balancing
->>>> than its child.
->>>
->>> The paragraph above contains important information to set this up
->>> correctly, that's why it might be worth clarifying:
->>>
->>> - "next one" of sd means "child of sd" ?
->>
->> It's the next one in the table so the parent in the sched_domain
+On 21 March 2014 14:51, Viresh Kumar <viresh.kumar@linaro.org> wrote:
+> @Catalin: We have a problem here and need your expert advice. After changing
+> CPU frequency we need to call this code:
 >
-> Right, it's this way around. DIE is parent of MC is parent of GMC. Maybe
-> you could be more explicit about the parent of relation here?
+> cpufreq_notify_post_transition();
+> policy->transition_ongoing = false;
 >
->>
->>> - "subset" means really "subset" and not "proper subset" ?
->>
->> yes, it's really "subset" and not "proper subset"
->>
->> Vincent
->>
->>>
->>> On TC2 w/ the following change in cpu_corepower_mask()
->>>
->>>  const struct cpumask *cpu_corepower_mask(int cpu)
->>>  {
->>> -       return &cpu_topology[cpu].thread_sibling;
->>> +       return cpu_topology[cpu].socket_id ?
->>> &cpu_topology[cpu].thread_sibling :
->>> +                       &cpu_topology[cpu].core_sibling;
->>>  }
->>>
->>> I get this e.g. for CPU0,2:
->>>
->>> CPU0: cpu_corepower_mask=0-1  -> GMC is subset of MC
->>> CPU0: cpu_coregroup_mask=0-1
->>> CPU0: cpu_cpu_mask=0-4
->>>
->>> CPU2: cpu_corepower_mask=2    -> GMC is proper sunset of MC
->>> CPU2: cpu_coregroup_mask=2-4
->>> CPU2: cpu_cpu_mask=0-4
->>>
->>> I assume here that this is a correct set-up.
->
-> So this is a correct setup?
+> And the sequence must be like this only. Is this guaranteed without any
+> memory barriers? cpufreq_notify_post_transition() isn't touching
+> transition_ongoing at all..
 
-yes it's a correct setup before the degenerate sequence
+For others this is what we discussed on IRC (rmk: Russell King)
 
->
->>>
->>> The domain degenerate part:
->>>
->>> "useless levels like those with 1 CPU" ... that's the case for GMC level
->>> for CPU2,3,4
->>>
->>> The GMC level is destroyed because of the following code snippet in
->>> sd_degenerate(): if (cpumask_weight(sched_domain_span(sd)) == 1)
->>>
->>> so that's fine.
->>>
->>> In case of CPU0,1 since GMC and MC have the same span, the code in
->>> build_sched_groups() creates only one group for MC  and that's why
->>> pflags is altered in sd_parent_degenerate() to SD_WAKE_AFFINE (0x20) and
->>> the if condition 'if (~cflags & pflags)' is not hit and
->>> sd_parent_degenerate() finally returns 1 for MC.
->>>
->>> So the "those with the same CPU span and relevant information for load
->>> balancing than its child." is not so easy to understand for me. Because
->>> both levels have the same span we actually don't take the flags of the
->>> parent into consideration which require at least 2 groups.
+<rmk> I'm no barrier expert, but the compiler can't reorder that assignment
+across a function call which it knows nothing about (which it can't
+know anything
+about because it calls other functions through function pointers)
 
-It's only the case if the parent has got 1 group otherwise we take
-care of all flags
+<rmk> however, the CPU could re-order the effects with respect to other agents
+(cpus/devices) when they look at the memory
 
->>>
->>> So the TC2 example covers for me two corner cases: (1) The level I want
->>> to get rid of only contains 1 CPU (GMC for CPU2,3,4) and (2) The span of
->>> the parent level I want to get rid of (MC for CPU0,1) of is the same as
->>> the span of the level which should stay.
-
-Having the same span is not enough. There must also no have relevant
-differences in the flags (after removing flags that need more than 1
-group is the parent has only 1 groups)
-
->>>
->>> Are these two corner cases the only one supported here? If yes this has
->>> to be stated somewhere, otherwise if somebody will try this approach on
->>> a different topology, (s)he might be surprised.
-
-The degenerate sequence is there to remove useless level but it will
-not remove useful level. This rework has not modify the behavior of
-the degenerate sequence so (s)he should take the same care than
-previously.
-
-Vincent
-
->
-> Could you please comment on the paragraph above too?
->
-> Thanks,
->
-> -- Dietmar
->
->>>
->>> If we only consider SD_SHARE_POWERDOMAIN for the socket related level,
->>> this works fine.
->>>
->>> I would like to test this on more platforms but I only have my TC2
->>> available :-)
->>>
->>> -- Dietmar
->>>
->>> [...]
->>>
->>
->
->
+<rmk> for the local CPU, the question is really: what does the C
+language virtual
+machine say about this - that's what really matters.  If the CPU does
+speculative
+stuff, it still has to make the machine behaviour fit that model.
