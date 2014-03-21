@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966110AbaCUAJc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37267 "EHLO
+	id S966462AbaCUATt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:19:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37352 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966029AbaCUAJU (ORCPT
+	with ESMTP id S966113AbaCUAJd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:20 -0400
+	Thu, 20 Mar 2014 20:09:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lukasz Dorau <lukasz.dorau@intel.com>,
-        David Milburn <dmilburn@redhat.com>, Xun Ni <xun.ni@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.10 67/85] SCSI: isci: fix reset timeout handling
-Date: Thu, 20 Mar 2014 17:10:10 -0700
-Message-Id: <20140321000608.254008871@linuxfoundation.org>
+        Anton Blanchard <anton@samba.org>,
+        Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.4 13/35] powerpc: Align p_dyn, p_rela and p_st symbols
+Date: Thu, 20 Mar 2014 17:11:04 -0700
+Message-Id: <20140321001054.588675077@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
-References: <20140321000558.606667505@linuxfoundation.org>
+In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
+References: <20140321001054.038170009@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,66 +26,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Williams <dan.j.williams@intel.com>
+From: Anton Blanchard <anton@samba.org>
 
-commit ddfadd7736b677de2d4ca2cd5b4b655368c85a7a upstream.
+commit a5b2cf5b1af424ee3dd9e3ce6d5cea18cb927e67 upstream.
 
-Remove an erroneous BUG_ON() in the case of a hard reset timeout.  The
-reset timeout handler puts the port into the "awaiting link-up" state.
-The timeout causes the device to be disconnected and we need to be in
-the awaiting link-up state to re-connect the port.  The BUG_ON() made
-the incorrect assumption that resets never timeout and we always
-complete the reset in the "resetting" state.
+The 64bit relocation code places a few symbols in the text segment.
+These symbols are only 4 byte aligned where they need to be 8 byte
+aligned. Add an explicit alignment.
 
-Testing this patch also uncovered that libata continues to attempt to
-reset the port long after the driver has torn down the context.  Once
-the driver has committed to abandoning the link it must indicate to
-libata that recovery ends by returning -ENODEV from
-->lldd_I_T_nexus_reset().
-
-Acked-by: Lukasz Dorau <lukasz.dorau@intel.com>
-Reported-by: David Milburn <dmilburn@redhat.com>
-Reported-by: Xun Ni <xun.ni@intel.com>
-Tested-by: Xun Ni <xun.ni@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Tested-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/scsi/isci/port_config.c |    7 -------
- drivers/scsi/isci/task.c        |    2 +-
- 2 files changed, 1 insertion(+), 8 deletions(-)
+ arch/powerpc/kernel/reloc_64.S |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/isci/port_config.c
-+++ b/drivers/scsi/isci/port_config.c
-@@ -615,13 +615,6 @@ static void sci_apc_agent_link_up(struct
- 					  SCIC_SDS_APC_WAIT_LINK_UP_NOTIFICATION);
- 	} else {
- 		/* the phy is already the part of the port */
--		u32 port_state = iport->sm.current_state_id;
--
--		/* if the PORT'S state is resetting then the link up is from
--		 * port hard reset in this case, we need to tell the port
--		 * that link up is recieved
--		 */
--		BUG_ON(port_state != SCI_PORT_RESETTING);
- 		port_agent->phy_ready_mask |= 1 << phy_index;
- 		sci_port_link_up(iport, iphy);
- 	}
---- a/drivers/scsi/isci/task.c
-+++ b/drivers/scsi/isci/task.c
-@@ -801,7 +801,7 @@ int isci_task_I_T_nexus_reset(struct dom
- 		/* XXX: need to cleanup any ireqs targeting this
- 		 * domain_device
- 		 */
--		ret = TMF_RESP_FUNC_COMPLETE;
-+		ret = -ENODEV;
- 		goto out;
- 	}
+--- a/arch/powerpc/kernel/reloc_64.S
++++ b/arch/powerpc/kernel/reloc_64.S
+@@ -81,6 +81,7 @@ _GLOBAL(relocate)
  
+ 6:	blr
+ 
++.balign 8
+ p_dyn:	.llong	__dynamic_start - 0b
+ p_rela:	.llong	__rela_dyn_start - 0b
+ p_st:	.llong	_stext - 0b
 
 
