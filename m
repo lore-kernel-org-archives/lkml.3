@@ -1,62 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaCUFhO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 01:37:14 -0400
-Received: from [216.32.180.11] ([216.32.180.11]:43627 "EHLO
-	va3outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1752119AbaCUFhL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 01:37:11 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 5
-X-BigFish: VS5(zzc89bhzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kz4ejz1de098h1de097hz2dh2a8h4a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh1354h137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h1155h)
-Message-ID: <532BCFCC.4080205@freescale.com>
-Date: Fri, 21 Mar 2014 13:36:12 +0800
-From: Huang Shijie <b32955@freescale.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Thunderbird/3.1.16
-MIME-Version: 1.0
-To: <y@karo-electronics.de>
-CC: Arnd Bergmann <arnd@arndb.de>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        =?UTF-8?B?TG90aGFyIFdhw59tYW5u?= <LW@karo-electronics.de>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH] mtd: gpmi: make blockmark swapping optional
-References: <1395235406-13449-1-git-send-email-y>
-In-Reply-To: <1395235406-13449-1-git-send-email-y>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+	id S1757341AbaCUFhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 01:37:47 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:36431 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831AbaCUFho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 01:37:44 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V4 0/3] cpufreq: Introduce cpufreq_freq_transition_{begin|end}()
+Date: Fri, 21 Mar 2014 11:04:29 +0530
+Message-Id: <cover.1395379422.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年03月19日 21:23, y@karo-electronics.de 写道:
-> +	/* Set up swap_block_mark, must be set before the gpmi_set_geometry() */
-> +	if (!of_property_read_bool(this->dev->of_node, "fsl,no-blockmark-swap"))
-> +		this->swap_block_mark = !GPMI_IS_MX23(this);
+Whenever we change the frequency of a CPU, we call the PRECHANGE and POSTCHANGE
+notifiers. They must be serialized, i.e. PRECHANGE and POSTCHANGE notifiers
+should strictly alternate, thereby preventing two different sets of PRECHANGE or
+POSTCHANGE notifiers from interleaving arbitrarily.
+
+The following examples illustrate why this is important:
+
+Scenario 1:
+-----------
+A thread reading the value of cpuinfo_cur_freq, will call
+__cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()
+
+The ondemand governor can decide to change the frequency of the CPU at the same
+time and hence it can end up sending the notifications via ->target().
+
+If the notifiers are not serialized, the following sequence can occur:
+- PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
+- PRECHANGE Notification for freq B (from target())
+- Freq changed by target() to B
+- POSTCHANGE Notification for freq B
+- POSTCHANGE Notification for freq A
+
+We can see from the above that the last POSTCHANGE Notification happens for freq
+A but the hardware is set to run at freq B.
+
+Where would we break then?: adjust_jiffies() in cpufreq.c & cpufreq_callback()
+in arch/arm/kernel/smp.c (which also adjusts the jiffies). All the
+loops_per_jiffy calculations will get messed up.
+
+Scenario 2:
+-----------
+The governor calls __cpufreq_driver_target() to change the frequency. At the
+same time, if we change scaling_{min|max}_freq from sysfs, it will end up
+calling the governor's CPUFREQ_GOV_LIMITS notification, which will also call
+__cpufreq_driver_target(). And hence we end up issuing concurrent calls to
+->target().
+
+Typically, platforms have the following logic in their ->target() routines:
+(Eg: cpufreq-cpu0, omap, exynos, etc)
+
+A. If new freq is more than old: Increase voltage
+B. Change freq
+C. If new freq is less than old: decrease voltage
+
+Now, if the two concurrent calls to ->target() are X and Y, where X is trying to
+increase the freq and Y is trying to decrease it, we get the following race
+condition:
+
+X.A: voltage gets increased for larger freq
+Y.A: nothing happens
+Y.B: freq gets decreased
+Y.C: voltage gets decreased
+X.B: freq gets increased
+X.C: nothing happens
+
+Thus we can end up setting a freq which is not supported by the voltage we have
+set. That will probably make the clock to the CPU unstable and the system might
+not work properly anymore.
 
 
-Our ROM guy had confirmed that the Rom will disable the swapping if we 
-set the DISBBM bit.
-But please do not change any logic for imx23/imx28.
+This patchset introduces a new set of routines cpufreq_freq_transition_begin()
+and cpufreq_freq_transition_end(), which will guarantee that calls to frequency
+transition routines are serialized. Later patches force other drivers to use
+these new routines.
 
-I really do not know what's the benefit we can get from this patch.
-Please send the new version about this patch if you want this feature.
+Srivatsa S. Bhat (1):
+  cpufreq: Make sure frequency transitions are serialized
 
+Viresh Kumar (2):
+  cpufreq: Convert existing drivers to use
+    cpufreq_freq_transition_{begin|end}
+  cpufreq: Make cpufreq_notify_transition &
+    cpufreq_notify_post_transition static
 
-thanks
-Huang Shijie
+ drivers/cpufreq/cpufreq-nforce2.c    |  4 +--
+ drivers/cpufreq/cpufreq.c            | 52 +++++++++++++++++++++++++++++-------
+ drivers/cpufreq/exynos5440-cpufreq.c |  4 +--
+ drivers/cpufreq/gx-suspmod.c         |  4 +--
+ drivers/cpufreq/integrator-cpufreq.c |  4 +--
+ drivers/cpufreq/longhaul.c           |  4 +--
+ drivers/cpufreq/pcc-cpufreq.c        |  4 +--
+ drivers/cpufreq/powernow-k6.c        |  4 +--
+ drivers/cpufreq/powernow-k7.c        |  4 +--
+ drivers/cpufreq/powernow-k8.c        |  4 +--
+ drivers/cpufreq/s3c24xx-cpufreq.c    |  4 +--
+ drivers/cpufreq/sh-cpufreq.c         |  4 +--
+ drivers/cpufreq/unicore2-cpufreq.c   |  4 +--
+ include/linux/cpufreq.h              | 12 ++++++---
+ 14 files changed, 76 insertions(+), 36 deletions(-)
+
+-- 
+1.7.12.rc2.18.g61b472e
 
