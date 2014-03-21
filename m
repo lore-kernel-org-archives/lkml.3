@@ -1,131 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbaCUTgt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 15:36:49 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:64466 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbaCUTgs (ORCPT
+	id S1751826AbaCUTj2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 15:39:28 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58582 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751272AbaCUTj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 15:36:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAMbOQaVGZZjAvvx+PGkTdiBQfYc9xGxkiP1_3P7i304Kg+d_hw@mail.gmail.com>
-References: <CAMbOQaVjS3Gzg0iJrxjyb3SD5sA1mm-gZeGEqaTG_B5z4-_pGg@mail.gmail.com>
-	<20140319190119.GC16906@thunk.org>
-	<CAMbOQaVt+KSHwejbLFGy9qzgFG2DG3K84KZE0KOAh3Vyy8YHog@mail.gmail.com>
-	<CAMbOQaVGZZjAvvx+PGkTdiBQfYc9xGxkiP1_3P7i304Kg+d_hw@mail.gmail.com>
-Date: Sat, 22 Mar 2014 01:06:47 +0530
-Message-ID: <CAMbOQaX97CXBWtKAs7YA2vtTL8jFP_saDoB_PRb6eLJCNiSOdg@mail.gmail.com>
-Subject: Re: Page cache corruption with mount/unmount of USB with Fat file system
-From: Nilesh More <nilesh99999@gmail.com>
-To: "Theodore Ts'o" <tytso@mit.edu>, linux-kernel@vger.kernel.org,
-        Prafull Suryawanshi <prafull.net@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Mar 2014 15:39:27 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 1/2] ARM: berlin: add MACH_BERLIN_BG2Q symbol
+Date: Fri, 21 Mar 2014 20:39:16 +0100
+Message-Id: <1395430757-8677-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just to keep the thread updated with latest findngs : (Let me know if
-anybody has any inputs)
+Now that we start supporting the Marvell Berlin BG2Q, add a symbol allowing to
+differentiate that SoC from the other SoCs of the Berlin family.
 
-Skipping the measureExactStorage and measureApproximateStorage calls
-seems to help. These are called as a part of auto-mount sequence when
-USB is hotplugged. I will dig-in further to understand if it could be
-issue with these calls, may be these calls aren't supposed to be made
-before USB mount. Or, is it just exposing file system bug?
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-berlin/Kconfig | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-/android/settings/deviceinfo/StorageMeasurement.java
+diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+index 7a02d222c378..0ff6f5877076 100644
+--- a/arch/arm/mach-berlin/Kconfig
++++ b/arch/arm/mach-berlin/Kconfig
+@@ -24,6 +24,13 @@ config MACH_BERLIN_BG2CD
+ 	select CPU_V7
+ 	select HAVE_ARM_TWD if SMP
+ 
++config MACH_BERLIN_BG2Q
++	bool "Marvell Armada 1500 Pro (BG2-Q)"
++	select CACHE_L2X0
++	select CPU_V7
++	select HAVE_ARM_TWD if SMP
++	select HAVE_SMP
++
+ endmenu
+ 
+ endif
+-- 
+1.8.3.2
 
-public void handleMessage(Message msg) {
-
-case MSG_CONNECTED: {
-
-measureApproximateStorage(imcs);  // Skipping these calls seems to
-help
-                                                 measureExactStorage(imcs);
-                                                 break;
-                                                }
-
-On Fri, Mar 21, 2014 at 12:09 AM, Nilesh More <nilesh99999@gmail.com> wrote:
-> I now know the source of page allocations between add_disk call and
-> mount call. The auto mount service triggers disk check operation which
-> eventually calls checkfilesys(). This function does open and close
-> calls which results into page allocations and de-allocations. If I do
-> an early return from this function, I don't this issue of ext4 file
-> system corruption.
->
->  Though the file check operation might be expected before mount, it
-> may be exposing a linux-kernel bug.
->
-> Can anybody please comment if the checkfilesys() operation is expected
-> before actually mounting the file system ? If 'yes', how does it know
-> about the superblock location, directory structure etc. ?
->
-> What should be the next step here ? I am thinking to try and track
-> down all page/buffer allocations because of open/close calls from auto
-> mount service - checkfilesys() and see why it is resulting into ext4
-> corruption.
->
-> Thank you,
-> Nilesh
->
-> On Thu, Mar 20, 2014 at 12:38 AM, Nilesh More <nilesh99999@gmail.com> wrote:
->> Hi Ted,
->>
->>>And I'll repeat the comments I made a few weeks ago.  Last time you
->>>reported this, you included a dmesg output which included this:
->>
->>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
->>> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
->>> #81827: block 328308: comm installd...
->>
->>  > Are you seeing the same thing?  If so, the fundamental high level
->> issue is that the USB driver is reporting a device disconnect,
->> presumably of a USB device different from the one that you just
->> plugged in.   Are you still seeing this?
->>
->> The dmesg output that I attached earlier was when I saw the prints
->> after actually disconnecting the USB. I am pretty certain that USB
->> driver does not report any false disconnect. This issue occurs when I
->> connect the USBdrive on android tablet with USB mount support. This
->> issue may or may not occur the first time I hotplug the USB drive. It
->> might require couple of hotplug/hotunplug to see this issue.
->>
->> Thank you,
->> Nilesh
->>
->> On Thu, Mar 20, 2014 at 12:31 AM,  <tytso@mit.edu> wrote:
->>> On Thu, Mar 20, 2014 at 12:05:44AM +0530, Nilesh More wrote:
->>>> Hi all,
->>>>
->>>> First of all sorry for the lengthy mail but I did not want to miss out
->>>> on any details.
->>>>
->>>> The following issue that I am reporting occurs when I plugin the USB
->>>> drive on android tablet with USB mount support. Please note that this
->>>> issue may or may not occur the first time I hotplug the USB drive. It
->>>> might require couple of hotplug/hotunplug to see this issue. If
->>>> anybody has/gets any clue about the possible root cause, please let me
->>>> know.
->>>
->>> And I'll repeat the comments I made a few weeks ago.  Last time you
->>> reported this, you included a dmesg output which included this:
->>>
->>>> [ 413.607849] usb 2-1.1: USB disconnect, device number 12
->>>> [ 414.022630] EXT4-fs error (device mmcblk0p20): ext4_readdir:227: inode
->>>> #81827: block 328308: comm installd...
->>>
->>> Are you seeing the same thing?  If so, the fundamental high level
->>> issue is that the USB driver is reporting a device disconnect,
->>> presumably of a USB device different from the one that you just
->>> plugged in.   Are you still seeing this?
->>>
->>> If so, it's important if you want to root cause this issue to
->>> determine why the USB disconnect is happening, and not try to comment
->>> out the page invalidations which happens *after* the USB device is
->>> reported as disconnected.
->>>
->>> If I had to guess, it's probably some hardware issue where when you
->>> plug in a USB device that draws too much power, it's destablizing the
->>> USB bus and causing some other USB device to report a disconnect.
->>>
->>>                                           - Ted
