@@ -1,39 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144AbaCUH72 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 03:59:28 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:33680 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252AbaCUH70 (ORCPT
+	id S1760174AbaCUIAV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 04:00:21 -0400
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:38300 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755282AbaCUIAR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 03:59:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <532BEEDC.9000106@linux.vnet.ibm.com>
-References: <cover.1395379422.git.viresh.kumar@linaro.org>
-	<6c531c2fb48c3092bba1098459ef0862a6179375.1395379422.git.viresh.kumar@linaro.org>
-	<532BEEDC.9000106@linux.vnet.ibm.com>
-Date: Fri, 21 Mar 2014 13:29:25 +0530
-Message-ID: <CAKohpo=R60e8S8qFNbDcWvBgOWJj=1Sa2AFj5SnidAyuMbE8uw@mail.gmail.com>
-Subject: Re: [PATCH V4 2/3] cpufreq: Convert existing drivers to use cpufreq_freq_transition_{begin|end}
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 21 Mar 2014 04:00:17 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, maxime.coquelin@st.com,
+        patrice.chotard@st.com, srinivas.kandagatla@st.com
+Subject: [PATCH 1/2] ARM: STi: stih416: Add support for the FSM Serial Flash Controller
+Date: Fri, 21 Mar 2014 08:00:04 +0000
+Message-Id: <1395388805-15840-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 March 2014 13:18, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> Nitpick: Instead of using 'false' as an argument to _post_transition(),
-> you could use '0', since the argument is supposed to be an int. But that's
-> minor, I won't insist.
+Here we add the necessary device nodes required for successful device
+probing and Pinctrl setup for the FSM when booting on an STiH416 (Orly2).
 
-You should :)
+Acked-by: Srinivas Kandagatla <srinivas.kandagatla@st.com>
+Acked-by Angus Clark <angus.clark@st.com>
+Acked-by: Brian Norris <computersforpeace@gmail.com>
+Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ arch/arm/boot/dts/stih416-pinctrl.dtsi | 13 +++++++++++++
+ arch/arm/boot/dts/stih416.dtsi         | 13 +++++++++++++
+ 2 files changed, 26 insertions(+)
 
-I will update that with a Macro actually, to make it more readable.
+diff --git a/arch/arm/boot/dts/stih416-pinctrl.dtsi b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+index b29ff4b..81df8e7 100644
+--- a/arch/arm/boot/dts/stih416-pinctrl.dtsi
++++ b/arch/arm/boot/dts/stih416-pinctrl.dtsi
+@@ -210,6 +210,19 @@
+ 					};
+ 				};
+ 			};
++
++			fsm {
++				pinctrl_fsm: fsm {
++					st,pins {
++						spi-fsm-clk  = <&PIO12 2 ALT1 OUT>;
++						spi-fsm-cs   = <&PIO12 3 ALT1 OUT>;
++						spi-fsm-mosi = <&PIO12 4 ALT1 OUT>;
++						spi-fsm-miso = <&PIO12 5 ALT1 IN>;
++						spi-fsm-hol  = <&PIO12 6 ALT1 OUT>;
++						spi-fsm-wp   = <&PIO12 7 ALT1 OUT>;
++					};
++				};
++			};
+ 		};
+ 
+ 		pin-controller-rear {
+diff --git a/arch/arm/boot/dts/stih416.dtsi b/arch/arm/boot/dts/stih416.dtsi
+index b7ab47b..1e24b9e 100644
+--- a/arch/arm/boot/dts/stih416.dtsi
++++ b/arch/arm/boot/dts/stih416.dtsi
+@@ -145,5 +145,18 @@
+ 
+ 			status		= "disabled";
+ 		};
++
++		/* FSM */
++		spifsm: spifsm@fe902000 {
++			compatible	   = "st,spi-fsm";
++			reg		   = <0xfe902000 0x1000>;
++			pinctrl-0	   = <&pinctrl_fsm>;
++
++			st,syscfg	   = <&syscfg_rear>;
++			st,boot-device-reg = <0x958>;
++			st,boot-device-spi = <0x1a>;
++
++			status = "disabled";
++		};
+ 	};
+ };
+-- 
+1.8.3.2
+
