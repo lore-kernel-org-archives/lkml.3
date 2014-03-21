@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966130AbaCUAJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:09:35 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37347 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966029AbaCUAJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:32 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 12/35] ALSA: usb-audio: Add quirk for Logitech Webcam C500
-Date: Thu, 20 Mar 2014 17:11:03 -0700
-Message-Id: <20140321001054.544696314@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140321001054.038170009@linuxfoundation.org>
-References: <20140321001054.038170009@linuxfoundation.org>
-User-Agent: quilt/0.61-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	id S966433AbaCUASh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:18:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56613 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966411AbaCUAS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 Mar 2014 20:18:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,699,1389772800"; 
+   d="scan'208";a="476805946"
+Subject: Re: [PATCH] Fix late crypto work queue initialization
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Herbert Xu <herbert@gondor.apana.org.au>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S.Miller" <davem@davemloft.net>,
+        linux-crypto@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "Huang, Ying" <ying.huang@intel.com>
+In-Reply-To: <1395100347.2970.14.camel@schen9-DESK>
+References: <1395100347.2970.14.camel@schen9-DESK>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 Mar 2014 17:18:00 -0700
+Message-ID: <1395361080.2970.29.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Mon, 2014-03-17 at 16:52 -0700, Tim Chen wrote:
+> The crypto algorithm modules utilizing the crypto daemon could
+> be used early when the system start up.  Using module_init
+> does not guarantee that the daemon's work queue is initialized
+> when the cypto alorithm depending on crypto_wq starts.  It is necessary
+> to initialize the crypto work queue earlier at the subsystem
+> init time to make sure that it is initialized
+> when used.
+> 
+> Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+> ---
+>  crypto/crypto_wq.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/crypto/crypto_wq.c b/crypto/crypto_wq.c
+> index adad92a..2f1b8d1 100644
+> --- a/crypto/crypto_wq.c
+> +++ b/crypto/crypto_wq.c
+> @@ -33,7 +33,7 @@ static void __exit crypto_wq_exit(void)
+>  	destroy_workqueue(kcrypto_wq);
+>  }
+>  
+> -module_init(crypto_wq_init);
+> +subsys_initcall(crypto_wq_init);
+>  module_exit(crypto_wq_exit);
+>  
+>  MODULE_LICENSE("GPL");
 
-------------------
+Herbert,
 
-From: Takashi Iwai <tiwai@suse.de>
+Any feedback on this patch?
 
-commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
+Thanks.
 
-Logitech C500 (046d:0807) needs the same workaround like other
-Logitech Webcams.
-
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- sound/usb/mixer.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -819,6 +819,7 @@ static void volume_control_quirks(struct
- 		}
- 		break;
- 
-+	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
-
+Tim
 
