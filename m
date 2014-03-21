@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760360AbaCUADg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:03:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36507 "EHLO
+	id S967099AbaCUBXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:23:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760334AbaCUADc (ORCPT
+	with ESMTP id S1760362AbaCUADg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:03:32 -0400
+	Thu, 20 Mar 2014 20:03:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Amitkumar Karwar <akarwar@marvell.com>, Bing Zhao <bzhao@marvell.com>,
+        Felix Fietkau <nbd@openwrt.org>,
         "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 039/149] mwifiex: fix cmd and Tx data timeout issue for PCIe cards
-Date: Thu, 20 Mar 2014 17:03:22 -0700
-Message-Id: <20140321000438.319850088@linuxfoundation.org>
+Subject: [PATCH 3.13 030/149] ath9k: fix ps-poll responses under a-mpdu sessions
+Date: Thu, 20 Mar 2014 17:03:13 -0700
+Message-Id: <20140321000438.012458905@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -29,71 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Amitkumar Karwar <akarwar@marvell.com>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1c97560f6d751a620978504a4a888c631192b71a upstream.
+commit 558ff225de80ac95b132d3a115ddadcd64498b4f upstream.
 
-We are sending sleep confirm done interrupt in the middle of
-sleep handshake. There is a corner case when Tx done interrupt
-is received from firmware during sleep handshake due to which
-host and firmware power states go out of sync causing cmd and
-Tx data timeout problem.
+When passing tx frames to the U-APSD queue for powersave poll responses,
+the ath_atx_tid pointer needs to be passed to ath_tx_setup_buffer for
+proper sequence number accounting.
 
-Hence sleep confirm done interrupt is sent at the end of sleep
-handshake to fix the problem.
+This fixes high latency and connection stability issues with ath9k
+running as AP and a few kinds of mobile phones as client, when PS-Poll
+is heavily used
 
-Signed-off-by: Amitkumar Karwar <akarwar@marvell.com>
-Signed-off-by: Bing Zhao <bzhao@marvell.com>
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/mwifiex/pcie.c |   28 +++++++++++-----------------
- 1 file changed, 11 insertions(+), 17 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/mwifiex/pcie.c
-+++ b/drivers/net/wireless/mwifiex/pcie.c
-@@ -1531,6 +1531,14 @@ static int mwifiex_pcie_process_cmd_comp
- 		if (adapter->ps_state == PS_STATE_SLEEP_CFM) {
- 			mwifiex_process_sleep_confirm_resp(adapter, skb->data,
- 							   skb->len);
-+			mwifiex_pcie_enable_host_int(adapter);
-+			if (mwifiex_write_reg(adapter,
-+					      PCIE_CPU_INT_EVENT,
-+					      CPU_INTR_SLEEP_CFM_DONE)) {
-+				dev_warn(adapter->dev,
-+					 "Write register failed\n");
-+				return -1;
-+			}
- 			while (reg->sleep_cookie && (count++ < 10) &&
- 			       mwifiex_pcie_ok_to_access_hw(adapter))
- 				usleep_range(50, 60);
-@@ -1999,23 +2007,9 @@ static void mwifiex_interrupt_status(str
- 		adapter->int_status |= pcie_ireg;
- 		spin_unlock_irqrestore(&adapter->int_lock, flags);
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2197,14 +2197,15 @@ int ath_tx_start(struct ieee80211_hw *hw
+ 		txq->stopped = true;
+ 	}
  
--		if (pcie_ireg & HOST_INTR_CMD_DONE) {
--			if ((adapter->ps_state == PS_STATE_SLEEP_CFM) ||
--			    (adapter->ps_state == PS_STATE_SLEEP)) {
--				mwifiex_pcie_enable_host_int(adapter);
--				if (mwifiex_write_reg(adapter,
--						      PCIE_CPU_INT_EVENT,
--						      CPU_INTR_SLEEP_CFM_DONE)
--						      ) {
--					dev_warn(adapter->dev,
--						 "Write register failed\n");
--					return;
++	if (txctl->an)
++		tid = ath_get_skb_tid(sc, txctl->an, skb);
++
+ 	if (info->flags & IEEE80211_TX_CTL_PS_RESPONSE) {
+ 		ath_txq_unlock(sc, txq);
+ 		txq = sc->tx.uapsdq;
+ 		ath_txq_lock(sc, txq);
+ 	} else if (txctl->an &&
+ 		   ieee80211_is_data_present(hdr->frame_control)) {
+-		tid = ath_get_skb_tid(sc, txctl->an, skb);
 -
--				}
--			}
--		} else if (!adapter->pps_uapsd_mode &&
--			   adapter->ps_state == PS_STATE_SLEEP &&
--			   mwifiex_pcie_ok_to_access_hw(adapter)) {
-+		if (!adapter->pps_uapsd_mode &&
-+		    adapter->ps_state == PS_STATE_SLEEP &&
-+		    mwifiex_pcie_ok_to_access_hw(adapter)) {
- 				/* Potentially for PCIe we could get other
- 				 * interrupts like shared. Don't change power
- 				 * state until cookie is set */
+ 		WARN_ON(tid->ac->txq != txctl->txq);
+ 
+ 		if (info->flags & IEEE80211_TX_CTL_CLEAR_PS_FILT)
 
 
