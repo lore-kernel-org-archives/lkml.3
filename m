@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760774AbaCUBLs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:11:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36687 "EHLO
+	id S1760758AbaCUBLq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:11:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36693 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965082AbaCUAEJ (ORCPT
+	with ESMTP id S965101AbaCUAEJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:04:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Kieran Clancy <clancy.kieran@gmail.com>,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        Dennis Jansen <dennis.jansen@web.de>,
-        Maurizio DAddona <mauritiusdadd@gmail.com>,
-        San Zamoyski <san@plusnet.pl>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 073/149] ACPI / EC: Clear stale EC events on Samsung systems
-Date: Thu, 20 Mar 2014 17:03:56 -0700
-Message-Id: <20140321000439.493123940@linuxfoundation.org>
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.13 074/149] tracing: Do not add event files for modules that fail tracepoints
+Date: Thu, 20 Mar 2014 17:03:57 -0700
+Message-Id: <20140321000439.527708017@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -34,177 +30,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kieran Clancy <clancy.kieran@gmail.com>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit ad332c8a45330d170bb38b95209de449b31cd1b4 upstream.
+commit 45ab2813d40d88fc575e753c38478de242d03f88 upstream.
 
-A number of Samsung notebooks (530Uxx/535Uxx/540Uxx/550Pxx/900Xxx/etc)
-continue to log events during sleep (lid open/close, AC plug/unplug,
-battery level change), which accumulate in the EC until a buffer fills.
-After the buffer is full (tests suggest it holds 8 events), GPEs stop
-being triggered for new events. This state persists on wake or even on
-power cycle, and prevents new events from being registered until the EC
-is manually polled.
+If a module fails to add its tracepoints due to module tainting, do not
+create the module event infrastructure in the debugfs directory. As the events
+will not work and worse yet, they will silently fail, making the user wonder
+why the events they enable do not display anything.
 
-This is the root cause of a number of bugs, including AC not being
-detected properly, lid close not triggering suspend, and low ambient
-light not triggering the keyboard backlight. The bug also seemed to be
-responsible for performance issues on at least one user's machine.
+Having a warning on module load and the events not visible to the users
+will make the cause of the problem much clearer.
 
-Juan Manuel Cabo found the cause of bug and the workaround of polling
-the EC manually on wake.
+Link: http://lkml.kernel.org/r/20140227154923.265882695@goodmis.org
 
-The loop which clears the stale events is based on an earlier patch by
-Lan Tianyu (see referenced attachment).
-
-This patch:
- - Adds a function acpi_ec_clear() which polls the EC for stale _Q
-   events at most ACPI_EC_CLEAR_MAX (currently 100) times. A warning is
-   logged if this limit is reached.
- - Adds a flag EC_FLAGS_CLEAR_ON_RESUME which is set to 1 if the DMI
-   system vendor is Samsung. This check could be replaced by several
-   more specific DMI vendor/product pairs, but it's likely that the bug
-   affects more Samsung products than just the five series mentioned
-   above. Further, it should not be harmful to run acpi_ec_clear() on
-   systems without the bug; it will return immediately after finding no
-   data waiting.
- - Runs acpi_ec_clear() on initialisation (boot), from acpi_ec_add()
- - Runs acpi_ec_clear() on wake, from acpi_ec_unblock_transactions()
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=44161
-References: https://bugzilla.kernel.org/show_bug.cgi?id=45461
-References: https://bugzilla.kernel.org/show_bug.cgi?id=57271
-References: https://bugzilla.kernel.org/attachment.cgi?id=126801
-Suggested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Signed-off-by: Kieran Clancy <clancy.kieran@gmail.com>
-Reviewed-by: Lan Tianyu <tianyu.lan@intel.com>
-Reviewed-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Kieran Clancy <clancy.kieran@gmail.com>
-Tested-by: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-Tested-by: Dennis Jansen <dennis.jansen@web.de>
-Tested-by: Maurizio D'Addona <mauritiusdadd@gmail.com>
-Tested-by: San Zamoyski <san@plusnet.pl>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: 6d723736e472 "tracing/events: add support for modules to TRACE_EVENT"
+Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/ec.c |   64 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 64 insertions(+)
+ include/linux/tracepoint.h  |    6 ++++++
+ kernel/trace/trace_events.c |   10 ++++++++++
+ kernel/tracepoint.c         |    7 ++++++-
+ 3 files changed, 22 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -68,6 +68,8 @@ enum ec_command {
- #define ACPI_EC_DELAY		500	/* Wait 500ms max. during EC ops */
- #define ACPI_EC_UDELAY_GLK	1000	/* Wait 1ms max. to get global lock */
- #define ACPI_EC_MSI_UDELAY	550	/* Wait 550us for MSI EC */
-+#define ACPI_EC_CLEAR_MAX	100	/* Maximum number of events to query
-+					 * when trying to clear the EC */
- 
- enum {
- 	EC_FLAGS_QUERY_PENDING,		/* Query is pending */
-@@ -121,6 +123,7 @@ EXPORT_SYMBOL(first_ec);
- static int EC_FLAGS_MSI; /* Out-of-spec MSI controller */
- static int EC_FLAGS_VALIDATE_ECDT; /* ASUStec ECDTs need to be validated */
- static int EC_FLAGS_SKIP_DSDT_SCAN; /* Not all BIOS survive early DSDT scan */
-+static int EC_FLAGS_CLEAR_ON_RESUME; /* Needs acpi_ec_clear() on boot/resume */
- 
- /* --------------------------------------------------------------------------
-                              Transaction Management
-@@ -466,6 +469,29 @@ acpi_handle ec_get_handle(void)
- 
- EXPORT_SYMBOL(ec_get_handle);
- 
-+static int acpi_ec_query_unlocked(struct acpi_ec *ec, u8 *data);
-+
-+/*
-+ * Clears stale _Q events that might have accumulated in the EC.
-+ * Run with locked ec mutex.
-+ */
-+static void acpi_ec_clear(struct acpi_ec *ec)
-+{
-+	int i, status;
-+	u8 value = 0;
-+
-+	for (i = 0; i < ACPI_EC_CLEAR_MAX; i++) {
-+		status = acpi_ec_query_unlocked(ec, &value);
-+		if (status || !value)
-+			break;
-+	}
-+
-+	if (unlikely(i == ACPI_EC_CLEAR_MAX))
-+		pr_warn("Warning: Maximum of %d stale EC events cleared\n", i);
-+	else
-+		pr_info("%d stale EC events cleared\n", i);
-+}
-+
- void acpi_ec_block_transactions(void)
- {
- 	struct acpi_ec *ec = first_ec;
-@@ -489,6 +515,10 @@ void acpi_ec_unblock_transactions(void)
- 	mutex_lock(&ec->mutex);
- 	/* Allow transactions to be carried out again */
- 	clear_bit(EC_FLAGS_BLOCKED, &ec->flags);
-+
-+	if (EC_FLAGS_CLEAR_ON_RESUME)
-+		acpi_ec_clear(ec);
-+
- 	mutex_unlock(&ec->mutex);
- }
- 
-@@ -847,6 +877,13 @@ static int acpi_ec_add(struct acpi_devic
- 
- 	/* EC is fully operational, allow queries */
- 	clear_bit(EC_FLAGS_QUERY_PENDING, &ec->flags);
-+
-+	/* Clear stale _Q events if hardware might require that */
-+	if (EC_FLAGS_CLEAR_ON_RESUME) {
-+		mutex_lock(&ec->mutex);
-+		acpi_ec_clear(ec);
-+		mutex_unlock(&ec->mutex);
-+	}
- 	return ret;
- }
- 
-@@ -948,6 +985,30 @@ static int ec_enlarge_storm_threshold(co
- 	return 0;
- }
- 
-+/*
-+ * On some hardware it is necessary to clear events accumulated by the EC during
-+ * sleep. These ECs stop reporting GPEs until they are manually polled, if too
-+ * many events are accumulated. (e.g. Samsung Series 5/9 notebooks)
-+ *
-+ * https://bugzilla.kernel.org/show_bug.cgi?id=44161
-+ *
-+ * Ideally, the EC should also be instructed NOT to accumulate events during
-+ * sleep (which Windows seems to do somehow), but the interface to control this
-+ * behaviour is not known at this time.
-+ *
-+ * Models known to be affected are Samsung 530Uxx/535Uxx/540Uxx/550Pxx/900Xxx,
-+ * however it is very likely that other Samsung models are affected.
-+ *
-+ * On systems which don't accumulate _Q events during sleep, this extra check
-+ * should be harmless.
-+ */
-+static int ec_clear_on_resume(const struct dmi_system_id *id)
-+{
-+	pr_debug("Detected system needing EC poll on resume.\n");
-+	EC_FLAGS_CLEAR_ON_RESUME = 1;
-+	return 0;
-+}
-+
- static struct dmi_system_id ec_dmi_table[] __initdata = {
- 	{
- 	ec_skip_dsdt_scan, "Compal JFL92", {
-@@ -991,6 +1052,9 @@ static struct dmi_system_id ec_dmi_table
- 	ec_validate_ecdt, "ASUS hardware", {
- 	DMI_MATCH(DMI_SYS_VENDOR, "ASUSTek Computer Inc."),
- 	DMI_MATCH(DMI_PRODUCT_NAME, "L4R"),}, NULL},
-+	{
-+	ec_clear_on_resume, "Samsung hardware", {
-+	DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD.")}, NULL},
- 	{},
+--- a/include/linux/tracepoint.h
++++ b/include/linux/tracepoint.h
+@@ -60,6 +60,12 @@ struct tp_module {
+ 	unsigned int num_tracepoints;
+ 	struct tracepoint * const *tracepoints_ptrs;
  };
++bool trace_module_has_bad_taint(struct module *mod);
++#else
++static inline bool trace_module_has_bad_taint(struct module *mod)
++{
++	return false;
++}
+ #endif /* CONFIG_MODULES */
  
+ struct tracepoint_iter {
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -1771,6 +1771,16 @@ static void trace_module_add_events(stru
+ {
+ 	struct ftrace_event_call **call, **start, **end;
+ 
++	if (!mod->num_trace_events)
++		return;
++
++	/* Don't add infrastructure for mods without tracepoints */
++	if (trace_module_has_bad_taint(mod)) {
++		pr_err("%s: module has bad taint, not creating trace events\n",
++		       mod->name);
++		return;
++	}
++
+ 	start = mod->trace_events;
+ 	end = mod->trace_events + mod->num_trace_events;
+ 
+--- a/kernel/tracepoint.c
++++ b/kernel/tracepoint.c
+@@ -631,6 +631,11 @@ void tracepoint_iter_reset(struct tracep
+ EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
+ 
+ #ifdef CONFIG_MODULES
++bool trace_module_has_bad_taint(struct module *mod)
++{
++	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
++}
++
+ static int tracepoint_module_coming(struct module *mod)
+ {
+ 	struct tp_module *tp_mod, *iter;
+@@ -641,7 +646,7 @@ static int tracepoint_module_coming(stru
+ 	 * module headers (for forced load), to make sure we don't cause a crash.
+ 	 * Staging and out-of-tree GPL modules are fine.
+ 	 */
+-	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
++	if (trace_module_has_bad_taint(mod))
+ 		return 0;
+ 	mutex_lock(&tracepoints_mutex);
+ 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
 
 
