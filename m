@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966732AbaCUAcd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 20:32:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37162 "EHLO
+	id S966389AbaCUAdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 20:33:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37119 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965938AbaCUAJD (ORCPT
+	with ESMTP id S965924AbaCUAI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 Mar 2014 20:09:03 -0400
+	Thu, 20 Mar 2014 20:08:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH 3.10 40/85] usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
-Date: Thu, 20 Mar 2014 17:09:43 -0700
-Message-Id: <20140321000604.469473341@linuxfoundation.org>
+        "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [PATCH 3.10 37/85] x86: Ignore NMIs that come in during early boot
+Date: Thu, 20 Mar 2014 17:09:40 -0700
+Message-Id: <20140321000604.039236407@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000558.606667505@linuxfoundation.org>
 References: <20140321000558.606667505@linuxfoundation.org>
@@ -28,39 +28,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit e0429362ab15c46ea4d64c3f8c9e0933e48a143a upstream.
+commit 5fa10196bdb5f190f595ebd048490ee52dddea0f upstream.
 
-We've encountered a rare issue when enumerating two Logitech webcams
-after a reboot that doesn't power cycle the USB ports. They are spewing
-random data (possibly some leftover UVC buffers) on the second
-(full-sized) Get Configuration request of the enumeration phase. Since
-the data is random this can potentially cause all kinds of odd behavior,
-and since it occasionally happens multiple times (after the kernel
-issues another reset due to the garbled configuration descriptor), it is
-not always recoverable. Set the USB_DELAY_INIT quirk that seems to work
-around the issue.
+Don Zickus reports:
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
+A customer generated an external NMI using their iLO to test kdump
+worked.  Unfortunately, the machine hung.  Disabling the nmi_watchdog
+made things work.
+
+I speculated the external NMI fired, caused the machine to panic (as
+expected) and the perf NMI from the watchdog came in and was latched.
+My guess was this somehow caused the hang.
+
+   ----
+
+It appears that the latched NMI stays latched until the early page
+table generation on 64 bits, which causes exceptions to happen which
+end in IRET, which re-enable NMI.  Therefore, ignore NMIs that come in
+during early execution, until we have proper exception handling.
+
+Reported-and-tested-by: Don Zickus <dzickus@redhat.com>
+Link: http://lkml.kernel.org/r/1394221143-29713-1-git-send-email-dzickus@redhat.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/core/quirks.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/head_32.S |    7 ++++++-
+ arch/x86/kernel/head_64.S |    6 +++++-
+ 2 files changed, 11 insertions(+), 2 deletions(-)
 
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -46,6 +46,10 @@ static const struct usb_device_id usb_qu
- 	/* Microsoft LifeCam-VX700 v2.0 */
- 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
- 
-+	/* Logitech HD Pro Webcams C920 and C930e */
-+	{ USB_DEVICE(0x046d, 0x082d), .driver_info = USB_QUIRK_DELAY_INIT },
-+	{ USB_DEVICE(0x046d, 0x0843), .driver_info = USB_QUIRK_DELAY_INIT },
+--- a/arch/x86/kernel/head_32.S
++++ b/arch/x86/kernel/head_32.S
+@@ -566,6 +566,10 @@ ENDPROC(early_idt_handlers)
+ 	/* This is global to keep gas from relaxing the jumps */
+ ENTRY(early_idt_handler)
+ 	cld
 +
- 	/* Logitech Quickcam Fusion */
- 	{ USB_DEVICE(0x046d, 0x08c1), .driver_info = USB_QUIRK_RESET_RESUME },
++	cmpl $X86_TRAP_NMI,(%esp)
++	je is_nmi		# Ignore NMI
++
+ 	cmpl $2,%ss:early_recursion_flag
+ 	je hlt_loop
+ 	incl %ss:early_recursion_flag
+@@ -616,8 +620,9 @@ ex_entry:
+ 	pop %edx
+ 	pop %ecx
+ 	pop %eax
+-	addl $8,%esp		/* drop vector number and error code */
+ 	decl %ss:early_recursion_flag
++is_nmi:
++	addl $8,%esp		/* drop vector number and error code */
+ 	iret
+ ENDPROC(early_idt_handler)
+ 
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -343,6 +343,9 @@ early_idt_handlers:
+ ENTRY(early_idt_handler)
+ 	cld
+ 
++	cmpl $X86_TRAP_NMI,(%rsp)
++	je is_nmi		# Ignore NMI
++
+ 	cmpl $2,early_recursion_flag(%rip)
+ 	jz  1f
+ 	incl early_recursion_flag(%rip)
+@@ -405,8 +408,9 @@ ENTRY(early_idt_handler)
+ 	popq %rdx
+ 	popq %rcx
+ 	popq %rax
+-	addq $16,%rsp		# drop vector number and error code
+ 	decl early_recursion_flag(%rip)
++is_nmi:
++	addq $16,%rsp		# drop vector number and error code
+ 	INTERRUPT_RETURN
+ ENDPROC(early_idt_handler)
  
 
 
