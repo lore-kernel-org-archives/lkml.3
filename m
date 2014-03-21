@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966193AbaCUBA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 Mar 2014 21:00:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:36812 "EHLO
+	id S966214AbaCUBBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 Mar 2014 21:01:21 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965440AbaCUAEd (ORCPT
+	with ESMTP id S965429AbaCUAEd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 Mar 2014 20:04:33 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Alex Deucher <alexander.deucher@amd.com>
-Subject: [PATCH 3.13 107/149] drm/radeon/cik: properly set compute ring status on disable
-Date: Thu, 20 Mar 2014 17:04:30 -0700
-Message-Id: <20140321000440.669385974@linuxfoundation.org>
+Subject: [PATCH 3.13 106/149] drm/radeon/cik: stop the sdma engines in the enable() function
+Date: Thu, 20 Mar 2014 17:04:29 -0700
+Message-Id: <20140321000440.636072157@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140321000436.377902063@linuxfoundation.org>
 References: <20140321000436.377902063@linuxfoundation.org>
@@ -30,33 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alex Deucher <alexander.deucher@amd.com>
 
-commit b2b3d8d952e4f8d6ac2ce80be96b937f29f6e42e upstream.
+commit 07ae78c9798b79bad3d3adf983c94ba23fde54d4 upstream.
 
-When we disable the rings, set the status properly.  If
-not other code pathes may try and use the rings which are
-not functional at this point.
+We always stop the rings when disabling the engines so just
+call the stop functions directly from the sdma enable function.
+This way the rings' status is set correctly on suspend so
+there are no problems on resume.  Fixes resume failures that
+result in acceleration getting disabled.
 
 Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/radeon/cik.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/radeon/cik_sdma.c |   12 +++++-------
+ 1 file changed, 5 insertions(+), 7 deletions(-)
 
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -4069,8 +4069,11 @@ static void cik_cp_compute_enable(struct
- {
- 	if (enable)
- 		WREG32(CP_MEC_CNTL, 0);
--	else
-+	else {
- 		WREG32(CP_MEC_CNTL, (MEC_ME1_HALT | MEC_ME2_HALT));
-+		rdev->ring[CAYMAN_RING_TYPE_CP1_INDEX].ready = false;
-+		rdev->ring[CAYMAN_RING_TYPE_CP2_INDEX].ready = false;
-+	}
- 	udelay(50);
- }
+--- a/drivers/gpu/drm/radeon/cik_sdma.c
++++ b/drivers/gpu/drm/radeon/cik_sdma.c
+@@ -222,6 +222,11 @@ void cik_sdma_enable(struct radeon_devic
+ 	u32 me_cntl, reg_offset;
+ 	int i;
  
++	if (enable == false) {
++		cik_sdma_gfx_stop(rdev);
++		cik_sdma_rlc_stop(rdev);
++	}
++
+ 	for (i = 0; i < 2; i++) {
+ 		if (i == 0)
+ 			reg_offset = SDMA0_REGISTER_OFFSET;
+@@ -349,10 +354,6 @@ static int cik_sdma_load_microcode(struc
+ 	if (!rdev->sdma_fw)
+ 		return -EINVAL;
+ 
+-	/* stop the gfx rings and rlc compute queues */
+-	cik_sdma_gfx_stop(rdev);
+-	cik_sdma_rlc_stop(rdev);
+-
+ 	/* halt the MEs */
+ 	cik_sdma_enable(rdev, false);
+ 
+@@ -421,9 +422,6 @@ int cik_sdma_resume(struct radeon_device
+  */
+ void cik_sdma_fini(struct radeon_device *rdev)
+ {
+-	/* stop the gfx rings and rlc compute queues */
+-	cik_sdma_gfx_stop(rdev);
+-	cik_sdma_rlc_stop(rdev);
+ 	/* halt the MEs */
+ 	cik_sdma_enable(rdev, false);
+ 	radeon_ring_fini(rdev, &rdev->ring[R600_RING_TYPE_DMA_INDEX]);
 
 
