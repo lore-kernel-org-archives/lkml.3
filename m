@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917AbaCUOL5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 10:11:57 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:41544 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaCUOLz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 10:11:55 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        Philipp Zabel <philipp.zabel@gmail.com>
-Subject: Re: [PATCH v4 1/3] [media] of: move graph helpers from drivers/media/v4l2-core to drivers/of
-Date: Fri, 21 Mar 2014 15:13:38 +0100
-Message-ID: <1755937.SSGT2MZJMC@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.10.25-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <532C408D.4070002@ti.com>
-References: <1393340304-19005-1-git-send-email-p.zabel@pengutronix.de> <2848953.vVjghJyYNE@avalon> <532C408D.4070002@ti.com>
+	id S1755021AbaCUOPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 10:15:54 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:60119 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751786AbaCUOPv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 10:15:51 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Patrick McHardy <kaber@trash.net>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "H.K. Jerry Chu" <hkchu@google.com>,
+        "Michael Dalton" <mwdalton@google.com>,
+        netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [RFC] csum experts, csum_replace2() is too expensive
+Thread-Topic: [RFC] csum experts, csum_replace2() is too expensive
+Thread-Index: AQHPRQQeGDrZTVBHAkePrJRr0yADAZrrifJQ
+Date: Fri, 21 Mar 2014 14:14:23 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E557E@AcuExch.aculab.com>
+References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
+ <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="nextPart1481097.JvJTheO4j4"; micalg="pgp-sha1"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2LEG3mq000440
 
+From: Eric Dumazet
+> On Thu, 2014-03-20 at 18:56 -0700, Andi Kleen wrote:
+> > Eric Dumazet <eric.dumazet@gmail.com> writes:
+> > >
+> > > I saw csum_partial() consuming 1% of cpu cycles in a GRO workload, that
+> > > is insane...
+> >
+> >
+> > Couldn't it just be the cache miss?
+> 
+> Or the fact that we mix 16 bit stores and 32bit loads ?
+> 
+> BTW, any idea why ip_fast_csum() on x86 contains a "memory" constraint ?
 
---nextPart1481097.JvJTheO4j4
-Content-Transfer-Encoding: quoted-printable
-Content-Type: text/plain; charset="us-ascii"
+The correct constraint would be one that told gcc that it
+accesses the 20 bytes from the source pointer.
 
-Hi Tomi,
+Without it gcc won't necessarily write out the values before
+the asm instructions execute.
 
-On Friday 21 March 2014 15:37:17 Tomi Valkeinen wrote:
-> On 21/03/14 00:32, Laurent Pinchart wrote:
-> > The OF graph bindings documentation could just specify the ports no=
-de as
-> > optional and mandate individual device bindings to specify it as ma=
-ndatory
-> > or forbidden (possibly with a default behaviour to avoid making all=
+	David
 
-> > device bindings too verbose).
->=20
-> Isn't it so that if the device has one port, it can always do without=
-
-> 'ports', but if it has multiple ports, it always has to use 'ports' s=
-o
-> that #address-cells and #size-cells can be defined?
-
-You can put the #address-cells and #size-cells property in the device n=
-ode=20
-directly without requiring a ports subnode.
-
-> If so, there's nothing left for the individual device bindings to dec=
-ide.
-
-
-=2D-=20
-Regards,
-
-Laurent Pinchart
-
---nextPart1481097.JvJTheO4j4
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part.
-Content-Transfer-Encoding: 7Bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAABAgAGBQJTLEkYAAoJEIkPb2GL7hl1O/EIAI7GZa+/PoYcUZH7msuy322R
-9u/uWub9R4lPngV/kPiPygxV7UbWRlvv3XvhrZxrQ8m8j0U080ukVZB2JJ6ewksD
-pdYr2BwKcO6JsOeCe9WiAfxxj8urJjv2dRM6lTFleR0tamgJqzIS9RcApIR+FWuz
-DEr29k92DVQ2+EIQj/tdlFQHazaH5r9Nh1IyIYDo4KwUWXVUManVIRl3ioE+D9MZ
-4+D6VNwsuaWGrw34L3Cfy7mfe2MOH1LQIvgpXP0/IXyUfK4LHgAh02I0QlsXbEnQ
-3/P11+fNSs9PiLfzaGKtP+Bklkr6ZnO0BqUZ0UWVHp01bKtAtDOb2Z9KIW15CtE=
-=NnJ/
------END PGP SIGNATURE-----
-
---nextPart1481097.JvJTheO4j4--
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
