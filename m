@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752057AbaCVQZN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 12:25:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:53547 "EHLO
+	id S1751452AbaCVQ0k (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 12:26:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751918AbaCVQZJ (ORCPT
+	with ESMTP id S1751107AbaCVQ0j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 12:25:09 -0400
-Date: Sat, 22 Mar 2014 09:26:38 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Stefan Lippers-Hollmann <s.L-H@gmx.de>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH 3.13 072/149] ACPI / resources: ignore invalid ACPI
- device resources
-Message-ID: <20140322162638.GE13385@kroah.com>
-References: <20140321000436.377902063@linuxfoundation.org>
- <20140321000439.452672105@linuxfoundation.org>
- <201403220230.49584.s.L-H@gmx.de>
+	Sat, 22 Mar 2014 12:26:39 -0400
+Date: Sat, 22 Mar 2014 09:28:08 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: behanw@converseincode.com
+Cc: dh.herrmann@gmail.com, sameo@linux.intel.com, jani.nikula@intel.com,
+        alexandre.bounine@idt.com, akpm@linux-foundation.org,
+        dmitry.torokhov@gmail.com, tomas.winkler@intel.com, arnd@arndb.de,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu,
+        Jan-Simon =?iso-8859-1?Q?M=F6ller?= <dl9pf@gmx.de>
+Subject: Re: [PATCH] x86: LLVMLinux: Fix "incomplete type const struct
+ x86cpu_device_id"
+Message-ID: <20140322162808.GF13385@kroah.com>
+References: <1395470418-16015-1-git-send-email-behanw@converseincode.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <201403220230.49584.s.L-H@gmx.de>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395470418-16015-1-git-send-email-behanw@converseincode.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 02:30:43AM +0000, Stefan Lippers-Hollmann wrote:
-> Hi
+On Fri, Mar 21, 2014 at 11:40:18PM -0700, behanw@converseincode.com wrote:
+> From: Behan Webster <behanw@converseincode.com>
 > 
-> On Friday 21 March 2014, Greg Kroah-Hartman wrote:
-> > 3.13-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Zhang Rui <rui.zhang@intel.com>
-> > 
-> > commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
-> > 
-> > ACPI table may export resource entry with 0 length.
-> > But the current code interprets this kind of resource in a wrong way.
-> > It will create a resource structure with
-> > res->end = acpi_resource->start + acpi_resource->len - 1;
-> > 
-> > This patch fixes a problem on my machine that a platform device fails
-> > to be created because one of its ACPI IO resource entry (start = 0,
-> > end = 0, length = 0) is translated into a generic resource with
-> > start = 0, end = 0xffffffff.
-> > 
-> > Signed-off-by: Zhang Rui <rui.zhang@intel.com>
-> > Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> [...]
+> Similar to the fix in 40413dcb7b273bda681dca38e6ff0bbb3728ef11
 > 
-> This patch should probably be dropped from -stable (3.13 and 3.10) for 
-> the time being, it causes this warning:
+> MODULE_DEVICE_TABLE(x86cpu, ...) expects the struct to be called struct
+> x86cpu_device_id, and not struct x86_cpu_id which is what is used in the rest
+> of the kernel code.  Although gcc seems to ignore this error, clang fails
+> without this define to fix the name.
 > 
-> pnp 00:01: unknown resource type 4 in _CRS
-> pnp 00:01: can't evaluate _CRS: 1
+> Code from drivers/thermal/x86_pkg_temp_thermal.c
+> static const struct x86_cpu_id __initconst pkg_temp_thermal_ids[] = { ... };
+> MODULE_DEVICE_TABLE(x86cpu, pkg_temp_thermal_ids);
 > 
-> on all systems I've tested it on so far (~12 systems of vastly varying 
-> components and age, covering amd64 and i386).
+> Error from clang:
+> drivers/thermal/x86_pkg_temp_thermal.c:577:1: error: variable has
+>       incomplete type 'const struct x86cpu_device_id'
+> MODULE_DEVICE_TABLE(x86cpu, pkg_temp_thermal_ids);
+> ^
+> include/linux/module.h:145:3: note: expanded from macro
+>       'MODULE_DEVICE_TABLE'
+>   MODULE_GENERIC_TABLE(type##_device, name)
+>   ^
+> include/linux/module.h:87:32: note: expanded from macro
+>       'MODULE_GENERIC_TABLE'
+> extern const struct gtype##_id __mod_##gtype##_table            \
+>                                ^
+> <scratch space>:143:1: note: expanded from here
+> __mod_x86cpu_device_table
+> ^
+> drivers/thermal/x86_pkg_temp_thermal.c:577:1: note: forward declaration of
+>       'struct x86cpu_device_id'
+> include/linux/module.h:145:3: note: expanded from macro
+>       'MODULE_DEVICE_TABLE'
+>   MODULE_GENERIC_TABLE(type##_device, name)
+>   ^
+> include/linux/module.h:87:21: note: expanded from macro
+>       'MODULE_GENERIC_TABLE'
+> extern const struct gtype##_id __mod_##gtype##_table            \
+>                     ^
+> <scratch space>:141:1: note: expanded from here
+> x86cpu_device_id
+> ^
+> 1 error generated.
 > 
-> This also seems to affect others as well:
-> 	http://www.spinics.net/lists/linux-acpi/msg49431.html
-> 	http://www.spinics.net/lists/linux-acpi/msg49438.html
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Signed-off-by: Jan-Simon Möller <dl9pf@gmx.de>
 
-Is this also a problem in Linus's tree?  If so, shouldn't a fix go there
-first?
-
-greg k-h
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
