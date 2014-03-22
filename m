@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaCVVZk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 17:25:40 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56082 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaCVVZE (ORCPT
+	id S1751727AbaCVVb1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 17:31:27 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48943 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750915AbaCVVbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 17:25:04 -0400
-Date: Sat, 22 Mar 2014 22:25:03 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        joseph.salisbury@canonical.com, JBottomley@parallels.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        rientjes@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-scsi@vger.kernel.org, thenzl@redhat.com
-Subject: Re: please fix FUSION (Was:
- [v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-In-Reply-To: <20140322192511.GA14811@redhat.com>
-Message-ID: <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
-References: <20140319182910.GA14511@redhat.com> <20140319194232.GA6207@redhat.com> <532B1B67.5050104@canonical.com> <20140320192307.GA11883@redhat.com> <20140321183443.GA3891@redhat.com> <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
- <20140322192511.GA14811@redhat.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sat, 22 Mar 2014 17:31:24 -0400
+Message-ID: <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+ actual Kconfig
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Laura Abbott <lauraa@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux390@de.ibm.com, linux-arm-kernel@lists.infradead.org
+Date: Sat, 22 Mar 2014 14:31:21 -0700
+In-Reply-To: <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>
+	 <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Mar 2014, Oleg Nesterov wrote:
-> On 03/22, Tetsuo Handa wrote:
-> > Many kernel operations (e.g. mutex_lock() wait_event() wait_for_completion())
-> > ignore SIGKILL and the current users depend on SIGKILL being ignored. Thus,
-> > commit 786235ee sounds like a kernel API breakage.
-> 
-> Personally I do not really think so, but OK. In this case lets revert
-> 786235ee.
+On Sat, 2014-03-22 at 11:13 -0700, Laura Abbott wrote:
+> Rather than have architectures #define ARCH_HAS_SG_CHAIN in an architecture
+> specific scatterlist.h, make it a proper Kconfig option and use that
+> instead. At same time, remove the header files are are now mostly
+> useless and just include asm-generic/scatterlist.h.
 
-We have explicitely:
+Well, the transformation looks fine.  Perhaps part of the reason for the
+lack of response is that there's no compelling reason in the change log
+above for doing this.  The usual reason for eliminating ARCH_HAS is that
+it's hiding something that would be better expressed a different way
+(that's actually intuitive to grep) or that it's expressing something
+that should be configurable.  Neither of these reasons apply in this
+case, because SG_CHAIN definitely is a property of the architecture not
+the config space and it's not really hiding anything.
 
-    mutex_lock, mutex_lock_killable and mutex_lock_interruptible.
+Perhaps now might be the time to ask which are the remaining
+architectures that cannot do SG chaining and then we can fix them and
+pull the whole thing out.
 
-Ditto for wait_event and wait_for_completion.
+James
 
-So the existance of the uninterruptible versions does not make an
-argument for the kthread_create() case.
- 
-> > Commit 786235ee "kthread: make kthread_create() killable" changed to
-> > leave kthread_create() as soon as receiving SIGKILL. But this change
-> > caused boot failures because systemd-udevd receives SIGKILL due to timeout
-> > while loading SCSI controller drivers using finit_module() [1].
-> 
-> And I still think that 786235ee simply uncovered the problems in this
-> driver. Perhaps we should change kthread_create() for some reason, but
-> (imho) not because we need to help the buggy code.
 
-Right.
- 
-> > Therefore, this patch changes kthread_create() from "wait forever in
-> > killable state" to "wait for 10 seconds in unkillable state, check for
-> > the OOM killer every second".
-> 
-> Personally I dislike this change. In fact I think it is ugly. But this
-> is only my opinion.
-
-It's not only ugly, it's activly wrong. It's as wrong as 786235ee
-itself. And 786235ee needs to be reverted and the revert must go into
-3.13.stable as well. I'll send a revert request in separate mail.
-
-Thanks,
-
-	tglx
