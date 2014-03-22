@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226AbaCVOmp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 10:42:45 -0400
-Received: from mail-pd0-f194.google.com ([209.85.192.194]:42519 "EHLO
-	mail-pd0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921AbaCVOmo (ORCPT
+	id S1751335AbaCVOwn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 10:52:43 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:56951 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaCVOwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 10:42:44 -0400
+	Sat, 22 Mar 2014 10:52:39 -0400
+Message-ID: <532DA3BB.5090000@gmail.com>
+Date: Sat, 22 Mar 2014 15:52:43 +0100
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Reply-To: diana.kuoadio55@yahoo.com
-Date: Sat, 22 Mar 2014 14:42:35 +0000
-X-Google-Sender-Auth: 24Sy2XCUWYKUtTC92OmTo5sneDY
-Message-ID: <CAE-GvQ=5=sv014gR1aO5F-3mt_ci1YawJy4jBB5XFsTGsHReKw@mail.gmail.com>
-Subject: Attention Please!
-From: Diana Kouadio <diana.kuoadio55@yahoo.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-1
+To: Chanwoo Choi <cw00.choi@samsung.com>, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com
+CC: rafael.j.wysocki@intel.com, Tomasz Figa <t.figa@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org
+Subject: Re: [PATCHv4 0/5] devfreq: exynos: Fix minor issue and code clean
+ to remove legacy method
+References: <1395284353-22458-1-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1395284353-22458-1-git-send-email-cw00.choi@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Greetings,
+Hi,
 
-I'm Ms. Diana from Ivory Coast, My Father was a gold geologist with
-(Merrex Gold Inc) in Burkina Faso. but he was killed in Ivory Coast
-civil war on 24th March 2011 including my mother, after the burial of
-my parents, my uncles sold my father's properties and left nothing for
-me. So, on a faithful day I discovered a document which my father has
-deposited ($7.2M) in a bank in Burkina Faso with my name as the next
-of kin.
+[fixing mistyped addresses of me and Bartlomiej]
 
-I traveled to Burkina Faso to withdraw the money, on my arrival the
-bank manager told me that my father instructed the bank not to release
-the funds to me until I get married or present a trustee who will help
-me and invest the money overseas, so, my proposal is to chose you to
-be my trustee to enable the Bank re-transfer the fund into your bank
-account so that i can come over to you, live a better life and
-continue my study as well.
+On 20.03.2014 03:59, Chanwoo Choi wrote:
+> This patchset use SIMPLE_DEV_PM_OPS macro intead of legacy method and fix
+> probe fail if CONFIG_PM_OPP is disabled. Also, this patchset fix minor issue.
+>
+> Changes from v3:
+> - Discard patches related to DT support because DT support patch of patchset
+>    don't satisfy the basic of dt concept. So, I'm going to implement DT support
+>    patch regardless this patchset separately.
+> - Use SIMPLE_DEV_PM_OPS macro instead of SET_SYSTEM_SLEEP_PM_OPS macro
+> - Delete devfreq->profile->exit callback to improve readability when failure
+>    happen in probe().
+> - Add exynos5 patch to clean code
+>
+> Changes from v2:
+> - Add detailed description to Documentation/devicetree/bindings/exynos4_bus.txt
+>    and change patch description of patch#8
+> - Change the sequence of patchset in patch #1 ~ #4
+> - Fix minor issue
+>
+> Changes from v1:
+> - Add exynos4_bus.txt documentation for devicetree guide
+> - Fix probe failure if CONFIG_PM_OPP is disabled
+> - Fix typo and resource leak(regulator/clock/memory) when happening probe failure
+> - Add additionally comment for PPMU usage instead of previous PPC
+> - Split separate patch to remove ambiguous of patch
+>
+> Chanwoo Choi (5):
+>    devfreq: exynos4: Fix bug of resource leak and code clean on probe()
+>    devfreq: exynos4: Use SIMPLE_DEV_PM_OPS macro
+>    devfreq: exynos4: Add CONFIG_PM_OPP dependency to fix probe fail
+>    devfreq: exynos5: Use SIMPLE_DEV_PM_OPS macro
+>    devfreq: exynos5: Add CONFIG_PM_OPP dependency to fix probe fail
+>
+>   drivers/devfreq/Kconfig              |  2 ++
+>   drivers/devfreq/exynos/exynos4_bus.c | 43 ++++++++++++++++++++++--------------
+>   drivers/devfreq/exynos/exynos5_bus.c |  7 ++++--
+>   3 files changed, 34 insertions(+), 18 deletions(-)
+>
 
-I agreed to give you 30% of the $7.2 Million in respect of your
-assistance. This is my true life story and I will be glad if you will
-be of help, I expect to hear from you soon for more briefing.
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-Thanks.
+Best regards,
+Tomasz
