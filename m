@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbaCVUcW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 16:32:22 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54691 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaCVUcV (ORCPT
+	id S1751961AbaCVUda (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 16:33:30 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:64372 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750985AbaCVUd1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 16:32:21 -0400
+	Sat, 22 Mar 2014 16:33:27 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: [PATCH] block: Use RCU_INIT_POINTER(x, NULL) in partition-generic.c
-Date: Sun, 23 Mar 2014 02:01:23 +0530
-Message-Id: <1395520283-2991-1-git-send-email-monamagarwal123@gmail.com>
+To: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/block: Use RCU_INIT_POINTER(x, NULL) in drbd/drbd_state.c
+Date: Sun, 23 Mar 2014 02:02:29 +0530
+Message-Id: <1395520349-3033-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,24 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- block/partition-generic.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/block/drbd/drbd_state.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/block/partition-generic.c b/block/partition-generic.c
-index 789cdea..f1ef057 100644
---- a/block/partition-generic.c
-+++ b/block/partition-generic.c
-@@ -249,8 +249,8 @@ void delete_partition(struct gendisk *disk, int partno)
- 	if (!part)
- 		return;
+diff --git a/drivers/block/drbd/drbd_state.c b/drivers/block/drbd/drbd_state.c
+index 216d47b..a45a0d3 100644
+--- a/drivers/block/drbd/drbd_state.c
++++ b/drivers/block/drbd/drbd_state.c
+@@ -1547,7 +1547,7 @@ static int w_after_conn_state_ch(struct drbd_work *w, int unused)
+ 		old_conf = tconn->net_conf;
+ 		tconn->my_addr_len = 0;
+ 		tconn->peer_addr_len = 0;
+-		rcu_assign_pointer(tconn->net_conf, NULL);
++		RCU_INIT_POINTER(tconn->net_conf, NULL);
+ 		conn_free_crypto(tconn);
+ 		mutex_unlock(&tconn->conf_update);
  
--	rcu_assign_pointer(ptbl->part[partno], NULL);
--	rcu_assign_pointer(ptbl->last_lookup, NULL);
-+	RCU_INIT_POINTER(ptbl->part[partno], NULL);
-+	RCU_INIT_POINTER(ptbl->last_lookup, NULL);
- 	kobject_put(part->holder_dir);
- 	device_del(part_to_dev(part));
- 	blk_free_devt(part_devt(part));
 -- 
 1.7.9.5
 
