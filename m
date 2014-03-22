@@ -1,86 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751203AbaCVSMr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 14:12:47 -0400
-Received: from imap.thunk.org ([74.207.234.97]:44773 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750915AbaCVSMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 14:12:44 -0400
-Date: Sat, 22 Mar 2014 14:12:36 -0400
-From: tytso@mit.edu
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        reiserfs-devel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
-Message-ID: <20140322181236.GD23583@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>,
-	Fabian Frederick <fabf@skynet.be>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	reiserfs-devel@vger.kernel.org,
-	David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>
-References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
- <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
- <20140322170322.GA23583@thunk.org>
- <20140322101512.eaeb542b.akpm@linux-foundation.org>
- <20140322172606.GB23583@thunk.org>
- <20140322173207.GC23583@thunk.org>
- <20140322105524.7baec73a.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140322105524.7baec73a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+	id S1751580AbaCVSOF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 14:14:05 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:56953 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751407AbaCVSN7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 14:13:59 -0400
+From: Laura Abbott <lauraa@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>,
+        Hirokazu Takata <takata@linux-m32r.org>,
+        Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+        David Howells <dhowells@redhat.com>, Michal Simek <monstr@monstr.eu>,
+        Chen Liqin <liqin.linux@gmail.com>, Lennox Wu <lennox.wu@gmail.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, linux-s390@vger.kernel.org,
+        sparclinux@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux390@de.ibm.com,
+        linux-arm-kernel@lists.infradead.org, linux-alpha@vger.kernel.org,
+        linux-cris-kernel@axis.com, linux-m32r@ml.linux-m32r.org,
+        microblaze-uclinux@itee.uq.edu.au, linux-am33-list@redhat.com
+Subject: [RESEND][PATCH 0/2] Cleanup asm/scatterlist.h
+Date: Sat, 22 Mar 2014 11:13:50 -0700
+Message-Id: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 10:55:24AM -0700, Andrew Morton wrote:
-> 
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: scripts/checkpatch.pl: __GFP_NOFAIL isn't going away
-> 
-> Revert 7e4915e78992eb ("checkpatch: add warning of future __GFP_NOFAIL use").
-> 
-> There are no plans to remove __GFP_NOFAIL.
-> 
-> __GFP_NOFAIL exists to
-> 
-> a) centralise the retry-allocation-for-ever operation into the core
->    allocator, which is the appropriate implementation site and
-> 
-> b) permit us to identify code sites which aren't handling memory
->    exhaustion appropriately.
-> 
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Theodore Ts'o <tytso@mit.edu>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-How about also making the following change which inspired the
-checkpatch warning?
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 0437439..d189872 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -58,9 +58,11 @@ struct vm_area_struct;
-  * __GFP_REPEAT: Try hard to allocate the memory, but the allocation attempt
-  * _might_ fail.  This depends upon the particular VM implementation.
-  *
-- * __GFP_NOFAIL: The VM implementation _must_ retry infinitely: the caller
-- * cannot handle allocation failures.  This modifier is deprecated and no new
-- * users should be added.
-+ * __GFP_NOFAIL: The VM implementation _must_ retry infinitely: the
-+ * caller cannot handle allocation failures.  Callers are strongly
-+ * encouraged not to use __GFP_NOFAIL unless the alternative is worse
-+ * than OOM killing some random process (i.e., corruption or loss of
-+ * some innocent user's data, etc).
-  *
-  * __GFP_NORETRY: The VM implementation must not retry indefinitely.
-  *
+I haven't gotten many responses so I'm going to try sending again
+(this time with a cover letter which I probably should have done in
+the first place...)
+
+ARCH_HAS_SG_CHAIN is currently defined as needed in asm/scatterlist.h.
+It was suggested[1] that this should probably be a proper Kconfig.
+At the same time, we can clean up most of the asm/scatterlist.h files
+to reduce redundancy. This makes parisc the only architecture that still
+has an asm/scatterlist.h file due to the #define sg_virt_addr (which
+could probably be cleaned up further still)
+
+Andrew, once we get a few more Acked-bys can we take this through your tree
+as suggested by Will?
+
+Thanks,
+Laura
+
+[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/240435.html
+
+Laura Abbott (2):
+  lib/scatterlist: Make ARCH_HAS_SG_CHAIN an actual Kconfig
+  Cleanup useless architecture versions of scatterlist.h
+
+ arch/alpha/include/asm/Kbuild             |  1 +
+ arch/alpha/include/asm/scatterlist.h      |  6 ------
+ arch/arm/Kconfig                          |  1 +
+ arch/arm/include/asm/Kbuild               |  1 +
+ arch/arm/include/asm/scatterlist.h        | 12 ------------
+ arch/arm64/Kconfig                        |  1 +
+ arch/cris/include/asm/Kbuild              |  1 +
+ arch/cris/include/asm/scatterlist.h       |  6 ------
+ arch/frv/include/asm/Kbuild               |  1 +
+ arch/frv/include/asm/scatterlist.h        |  6 ------
+ arch/ia64/Kconfig                         |  1 +
+ arch/ia64/include/asm/Kbuild              |  1 +
+ arch/ia64/include/asm/scatterlist.h       |  7 -------
+ arch/m32r/include/asm/Kbuild              |  1 +
+ arch/m32r/include/asm/scatterlist.h       |  6 ------
+ arch/microblaze/include/asm/Kbuild        |  1 +
+ arch/microblaze/include/asm/scatterlist.h |  1 -
+ arch/mn10300/include/asm/Kbuild           |  1 +
+ arch/mn10300/include/asm/scatterlist.h    | 16 ----------------
+ arch/powerpc/Kconfig                      |  1 +
+ arch/powerpc/include/asm/Kbuild           |  1 +
+ arch/powerpc/include/asm/scatterlist.h    | 17 -----------------
+ arch/s390/Kconfig                         |  1 +
+ arch/s390/include/asm/Kbuild              |  1 +
+ arch/s390/include/asm/scatterlist.h       |  3 ---
+ arch/score/include/asm/Kbuild             |  2 +-
+ arch/score/include/asm/scatterlist.h      |  6 ------
+ arch/sparc/Kconfig                        |  1 +
+ arch/sparc/include/asm/Kbuild             |  1 +
+ arch/sparc/include/asm/scatterlist.h      |  8 --------
+ arch/x86/Kconfig                          |  1 +
+ arch/x86/include/asm/Kbuild               |  1 +
+ arch/x86/include/asm/scatterlist.h        |  8 --------
+ include/linux/scatterlist.h               |  2 +-
+ include/scsi/scsi.h                       |  2 +-
+ lib/Kconfig                               |  7 +++++++
+ lib/scatterlist.c                         |  4 ++--
+ 37 files changed, 31 insertions(+), 107 deletions(-)
+ delete mode 100644 arch/alpha/include/asm/scatterlist.h
+ delete mode 100644 arch/arm/include/asm/scatterlist.h
+ delete mode 100644 arch/cris/include/asm/scatterlist.h
+ delete mode 100644 arch/frv/include/asm/scatterlist.h
+ delete mode 100644 arch/ia64/include/asm/scatterlist.h
+ delete mode 100644 arch/m32r/include/asm/scatterlist.h
+ delete mode 100644 arch/microblaze/include/asm/scatterlist.h
+ delete mode 100644 arch/mn10300/include/asm/scatterlist.h
+ delete mode 100644 arch/powerpc/include/asm/scatterlist.h
+ delete mode 100644 arch/s390/include/asm/scatterlist.h
+ delete mode 100644 arch/score/include/asm/scatterlist.h
+ delete mode 100644 arch/sparc/include/asm/scatterlist.h
+ delete mode 100644 arch/x86/include/asm/scatterlist.h
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
 
