@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaCVWBu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 18:01:50 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56154 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503AbaCVWBt (ORCPT
+	id S1752163AbaCVWCI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 18:02:08 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:60194 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbaCVWCG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 18:01:49 -0400
-Date: Sat, 22 Mar 2014 23:01:50 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        joseph.salisbury@canonical.com, JBottomley@parallels.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        rientjes@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-scsi@vger.kernel.org, thenzl@redhat.com
-Subject: Re: please fix FUSION (Was:
- [v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-In-Reply-To: <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
-Message-ID: <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
-References: <20140319182910.GA14511@redhat.com> <20140319194232.GA6207@redhat.com> <532B1B67.5050104@canonical.com> <20140320192307.GA11883@redhat.com> <20140321183443.GA3891@redhat.com> <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
- <20140322192511.GA14811@redhat.com> <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 22 Mar 2014 18:02:06 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 0/8] Generic serial earlycon
+Date: Sat, 22 Mar 2014 23:01:30 +0100
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <201403221054.39799.arnd@arndb.de> <CAL_JsqKjGjyYypwneCmNc1qeKe0ZOG9gz3QSJ37-HwHXKu3iRA@mail.gmail.com>
+In-Reply-To: <CAL_JsqKjGjyYypwneCmNc1qeKe0ZOG9gz3QSJ37-HwHXKu3iRA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403222301.30222.arnd@arndb.de>
+X-Provags-ID: V02:K0:M+YqSiKyVzW6Aabjj7WJ4Jqt/UaQKiuF7rVX+4INlsX
+ 008+DImozsZTz32zRaxOCSGy05xJnACuFex1fA4pOikwu+NaRs
+ TmIsGuAfmZjdsJX2Npnii5/XSPu7DCjZRiLiHoIKHvpsJXnW7U
+ 2rk1CDLYU7gzJsh509DU6wfcLu9zJrMt4IrdC1azORKM/+3RKY
+ pd2jwM994d5P/m21AFTLhUmjpMmAGgO3zHkjTToKQAxiPZ0Pxf
+ /3iQyed5sYg7G2cKLyJLHbJeQJBVw4Jn2fdMyu6uhrjaKD/lN6
+ /9jv8UKtA+j5jmlv816FgR+la+Q5fpK05P9+yNVBar2x2mJOg4
+ KDtEofYI2DUsebDb6BK7NVG4K3Uapbk3KXvE8wV/F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 Mar 2014, Thomas Gleixner wrote:
-> On Sat, 22 Mar 2014, Oleg Nesterov wrote:
-> > Personally I dislike this change. In fact I think it is ugly. But this
-> > is only my opinion.
+On Saturday 22 March 2014, Rob Herring wrote:
+> I think this series stands on its own. It is largely refactoring
+> existing code and supporting existing command line options (arm64 just
+> changes from earlyprintk= to earlycon=). There will be cases where
+> changing the kernel command line is the only way to setup the
+> earlycon. Also, I think we would still want the kernel command line to
+> control whether or not we enable the earlycon (i.e. earlycon=dt).
+> There's not a standard way for how bootloaders would decide to set
+> "linux,stdout-path" or not.
 > 
-> It's not only ugly, it's activly wrong. It's as wrong as 786235ee
-> itself. And 786235ee needs to be reverted and the revert must go into
-> 3.13.stable as well. I'll send a revert request in separate mail.
+> The DT support won't be all that quick to implement. The challenge
+> with the DT parsing is we have to do it on the flattened DT. I have
+> something functioning, but it doesn't do any address translation which
+> is the hard part.
 
-Sorry. I misread the combo of both patches. 786235ee is correct. We
-definitely don't want to revert it. 
+Ah, I hadn't realized that we call parse_early_param() twice, both
+in start_kernel() and before that in setup_arch(). You are right
+that the first one of these can only look at the flat device tree
+at the moment. I wonder if that's out of necessity or just coincidence
+though.
 
-But I still think, that changing this to butt ugly heuristics with an
-arbitrary chosen timeout is not the proper solution to "fix" a driver
-problem and to work around a systemd policy which mandates that
-modprobe must return in 30 seconds.
+There is relatively little going on between the first parse_early_param()
+and the call to unflatten_device_tree(), so it may be possible to move
+the former down, or the latter up.
 
-But then systemd/udev mutters:
+        parse_early_param();
 
-   "You migh be able to work around the timeout with udev rules and
-    OPTIONS+="event_timeout=120", but that code was maybe never used
-    or tested, so it might not work correctly." [1]
+        sort(&meminfo.bank, meminfo.nr_banks, sizeof(meminfo.bank[0]), meminfo_cmp, NULL);
 
-AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
+        early_paging_init(mdesc, lookup_processor_type(read_cpuid_id()));
+        setup_dma_zone(mdesc);  
+        sanity_check_meminfo();
+        arm_memblock_init(&meminfo, mdesc);
+                                
+        paging_init(mdesc);
+        request_standard_resources(mdesc);
+                
+        if (mdesc->restart)
+                arm_pm_restart = mdesc->restart;
+        
+        unflatten_device_tree();
 
-And if the udev/systemd event_timeout option is broken it's way better
-to fix that one instead of hacking random heuristics into the kernel.
+On powerpc, unflatten_device_tree is called way before paging_init, so I assume
+it has to be possible, but it might end up being harder to do than what you
+have in mind with parsing the flat device tree.
 
-Thanks,
-
-	tglx
-
-[1] http://lists.freedesktop.org/archives/systemd-devel/2014-March/018007.html
-[2] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
+	Arnd
