@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751279AbaCVFPB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 01:15:01 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:22295 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750796AbaCVFO5 (ORCPT
+	id S1750934AbaCVF7T (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 01:59:19 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:35073 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbaCVF7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 01:14:57 -0400
-Message-ID: <532D1C43.4070206@huawei.com>
-Date: Sat, 22 Mar 2014 13:14:43 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Sat, 22 Mar 2014 01:59:17 -0400
+Date: Sat, 22 Mar 2014 13:58:58 +0800
+From: Jimmy Li <coder.liss@gmail.com>
+To: Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] fix a missing break in devivers/staging/iio
+Message-ID: <20140322055858.GA11734@gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: <wangnan0@huawei.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <peifeiyue@huawei.com>
-Subject: Re: [PATCH] ARM: kdump: Avoid overflow when converting pfn to physaddr
-References: <1395138042-62364-1-git-send-email-sdu.liu@huawei.com> <20140318104855.GU21483@n2100.arm.linux.org.uk>
-In-Reply-To: <20140318104855.GU21483@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/18 18:48, Russell King - ARM Linux wrote:
-> On Tue, Mar 18, 2014 at 06:20:42PM +0800, Liu Hua wrote:
->> When we configure CONFIG_LPAE=y, pfn << PAGE_SHIFT will
->> overflow if pfn >= 0x100000 in copy_oldmem_page.
->>
->> So use __pfn_to_phys for converting.
-> 
-> Yes.  The sad thing is that if you grep the kernel for similar things,
-> it's littered with this problem.  I'm not sure whether anyone
-> particularly "owns" the crash_dump.c file - Mika Westerberg and
-> Olaf Hering were the last two to touch it... I guess put this in my
-> patch system please.
-> 
-> Thanks.
-> 
+fix a missing break.
 
-Yes, I found this problem in serval places after a quick review. I will
-do a check on this.
+Signed-off-by: Jimmy Li <coder.liss@gmail.com>
+---
+ drivers/staging/iio/resolver/ad2s1200.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/iio/resolver/ad2s1200.c b/drivers/staging/iio/resolver/ad2s1200.c
+index 36eedd8..e2b4820 100644
+--- a/drivers/staging/iio/resolver/ad2s1200.c
++++ b/drivers/staging/iio/resolver/ad2s1200.c
+@@ -70,6 +70,7 @@ static int ad2s1200_read_raw(struct iio_dev *indio_dev,
+ 		vel = (((s16)(st->rx[0])) << 4) | ((st->rx[1] & 0xF0) >> 4);
+ 		vel = (vel << 4) >> 4;
+ 		*val = vel;
++		break;
+ 	default:
+ 		mutex_unlock(&st->lock);
+ 		return -EINVAL;
+-- 
+1.7.9.5
 
