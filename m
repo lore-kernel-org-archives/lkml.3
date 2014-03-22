@@ -1,89 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751758AbaCVVsU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 17:48:20 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:51523 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbaCVVsT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 17:48:19 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <20140322122758.GA4292@minantech.com>
-References: <4055058.qLAukpngnj@al> <CAHdzE-88ZPTs_QvVLZsHs=O6TNKG61+iLH+ctGKLMdG5h6G0sg@mail.gmail.com> <20140322085045.GA5535@minantech.com> <1558917.OgpeoK0IhF@al> <20140322122758.GA4292@minantech.com>
+	id S1751510AbaCVVxO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 17:53:14 -0400
+Received: from snt0-omc3-s42.snt0.hotmail.com ([65.54.51.79]:20951 "EHLO
+	snt0-omc3-s42.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751066AbaCVVxM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 17:53:12 -0400
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Mar 2014 17:53:12 EDT
+X-TMN: [XXg/WSBJU+CNLw4mULoiK/xH9VLgw5fY]
+X-Originating-Email: [nickkrause@sympatico.ca]
+Message-ID: <SNT145-W982FA6E38A0213DE61456DA5780@phx.gbl>
+From: Nick Krause <nickkrause@sympatico.ca>
+To: "ralf@linux-mips.org" <ralf@linux-mips.org>
+CC: "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: PATCH[60485 Bug adding breakpoint]
+Date: Sat, 22 Mar 2014 21:47:06 +0000
+Importance: Normal
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sat, 22 Mar 2014 14:46:49 -0700
-To: Gleb Natapov <gleb@kernel.org>, Peter Wu <peter@lekensteyn.nl>
-CC: Venkatesh Srinivas <venkateshs@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Paolo Bonzini <pbonzini@redhat.com>
-Message-ID: <19dca85e-1557-4696-aaf1-89222ef70cfc@email.android.com>
+X-OriginalArrivalTime: 22 Mar 2014 21:47:06.0269 (UTC) FILETIME=[44B1B4D0:01CF4618]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using _safe has it's own issues if noone checks the errors.
+Here is my new patch as corrected for the the bug 60845.
+https://bugzilla.kernel.org/show_bug.cgi?id=60845
+This is the link to the bug and my comments / conversation on to get the corrections needed.
+Below is my patch for the bug, please let me know if it gets added finally .
 
-On March 22, 2014 5:27:59 AM PDT, Gleb Natapov <gleb@kernel.org> wrote:
->On Sat, Mar 22, 2014 at 11:05:03AM +0100, Peter Wu wrote:
->> On Saturday 22 March 2014 10:50:45 Gleb Natapov wrote:
->> > On Fri, Mar 21, 2014 at 12:04:32PM -0700, Venkatesh Srinivas wrote:
->> > > On Fri, Mar 21, 2014 at 10:46 AM, Peter Wu <peter@lekensteyn.nl>
->wrote:
->> > [skip]
->> > 
->> > > When -cpu host is used, qemu/kvm passed the host CPUID F/M/S to
->the
->> > > guest. intel_pmu_cpu_*() -> intel_pmu_lbr_reset() uses rdmsr() /
->> > > wrmsr(), rather than the safe variants; if KVM does not support
->the
->> > > particular MSRs in question, you will see a #GP(0) there. See
->> > > https://lkml.org/lkml/2014/3/13/453 for a similar bug other PMU
->code.
->> > > 
->> > When kernel is compiled with guest support all rdmsr()/wrmsr()
->become _safe(),
->> > so the question for Peter is if his guest kernel has guest support
->enabled?
->> 
->> Linux guest support (CONFIG_HYPERVISOR_GUEST) was not enabled, see
->> .config in the first mail[1]. Enabling that option does not change
->the
->> situation.
->> 
->> With CONFIG_PARAVIRT and CONFIG_KVM_GUEST enabled, the PMU GPF is
->gone,
->Yeah, it should be PARAVIRT indeed since rdmsr()/wrmsr() is substituted
->by _safe()
->using paravirt calls.
->
->> but now I have a NULL dereference (in rapl_pmu_init). Previously,
->when
->> `-cpu SandyBridge` was passed to qemu, it would show this:
->> 
->>     [    0.016995] Performance Events: unsupported p6 CPU model 42 no
->PMU driver, software events only.
->> 
->> The same NULL pointer deref would be visible (slightly different
->> addresses, but the Code lines are equal). With `-host`, the NULL
->deref
->> with `-cpu host` contains:
->> 
->>     [    0.016445] Performance Events: 16-deep LBR, IvyBridge events,
->Intel PMU driver.
->> 
->> Full dmesg below.
->> 
->I am confused. Do you see crash now with -cpu SandyBridge and -cpu
->host, or -cpu host only?
->
->--
->			Gleb.
-
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+--- linux-3.13.6/arch/mips/pci/msi-octeon.c.orig    2014-03-22 17:32:44.762754254 -0400
++++ linux-3.13.6/arch/mips/pci/msi-octeon.c    2014-03-22 17:34:19.974753699 -0400
+@@ -150,6 +150,7 @@ msi_irq_allocated:
+         msg.address_lo =
+             ((128ul << 20) + CVMX_PCI_MSI_RCV) & 0xffffffff;
+         msg.address_hi = ((128ul << 20) + CVMX_PCI_MSI_RCV)>> 32;
++        break;
+     case OCTEON_DMA_BAR_TYPE_BIG:
+         /* When using big bar, Bar 0 is based at 0 */
+         msg.address_lo = (0 + CVMX_PCI_MSI_RCV) & 0xffffffff;
+Signed-off-by: nickkrause@sympatico.ca
+Nick
+ 		 	   		  
