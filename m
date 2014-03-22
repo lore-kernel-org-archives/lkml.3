@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaCVSz6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 14:55:58 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54687 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaCVSzw (ORCPT
+	id S1751685AbaCVS4J (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 14:56:09 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:52526 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599AbaCVS4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 14:55:52 -0400
-Date: Sat, 22 Mar 2014 18:55:47 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Patrick Lai <plai@codeaurora.org>
-Message-ID: <20140322185547.GB30031@sirena.org.uk>
-References: <20140321000558.606667505@linuxfoundation.org>
- <20140321000606.724570655@linuxfoundation.org>
+	Sat, 22 Mar 2014 14:56:03 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="s/l3CgOIzMHHjg/5"
-Content-Disposition: inline
-In-Reply-To: <20140321000606.724570655@linuxfoundation.org>
-X-Cookie: I've Been Moved!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 3.10 56/85] ASoC: pcm: free path list before exiting from
- error conditions
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAL_JsqKjt3oBxeHPdDjUGoH+JMma21rbgFjUab62yCXtck_SZA@mail.gmail.com>
+References: <20140322151657.GA23606@www.outflux.net>
+	<CAL_JsqKjt3oBxeHPdDjUGoH+JMma21rbgFjUab62yCXtck_SZA@mail.gmail.com>
+Date: Sat, 22 Mar 2014 12:56:03 -0600
+X-Google-Sender-Auth: qIsqjV5fMejIH-mHvRkSLyWj5NE
+Message-ID: <CAGXu5j+PZ8yX1=btQTwt58maQKTRWWuqnmMNhwzG7Y1fuRJ9qA@mail.gmail.com>
+Subject: Re: [PATCH v3] ARM: mm: fix reporting of read-only PMD bits
+From: Kees Cook <keescook@chromium.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Steve Capper <steve.capper@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, Mar 22, 2014 at 10:45 AM, Rob Herring <robherring2@gmail.com> wrote:
+> On Sat, Mar 22, 2014 at 10:16 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On non-LPAE ARMv6+, read-only PMD bits are defined with the combination
+>> "PMD_SECT_APX | PMD_SECT_AP_WRITE". Adjusted the bit masks to correctly
+>> report this.
+>>
+>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>> ---
+>> v3:
+>>  - check for pre-v6 CPUs on the page table report.
+>> v2:
+>>  - reorder bits, suggested by Olof.
+>> ---
+>>  arch/arm/mm/dump.c |   31 +++++++++++++++++++++++++------
+>>  1 file changed, 25 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+>> index ef69152f9b52..c1122d266c45 100644
+>> --- a/arch/arm/mm/dump.c
+>> +++ b/arch/arm/mm/dump.c
+>> @@ -121,23 +121,42 @@ static const struct prot_bits pte_bits[] = {
+>>
+>>  static const struct prot_bits section_bits[] = {
+>>  #ifndef CONFIG_ARM_LPAE
+>> -       /* These are approximate */
+>> +# if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
+>
+> You can simplify the ifdef logic like this:
+>
+> #ifdef CONFIG_ARM_LPAE /* Implies v7 */
+>
+> #elif __LINUX_ARM_ARCH__ >= 6
+>
+> #else
+> /* v4/v5 */
+> #endif
 
---s/l3CgOIzMHHjg/5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Ah! Perfect, thanks! I'll resend it this way.
 
-On Thu, Mar 20, 2014 at 05:09:59PM -0700, Greg Kroah-Hartman wrote:
-> 3.10-stable review patch.  If anyone has any objections, please let me kn=
-ow.
+-Kees
 
-Ben noticed an issue with this when checking for v3.13, I've dropped
-=66rom upstream.
-
---s/l3CgOIzMHHjg/5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTLdywAAoJELSic+t+oim98fwP/2Uzr5vpP4ndJaL06rw22VqI
-XEHkj4ZwiCcevLaYh9O/qyeHqVJLlYwFVHM7dl8GRwaOlOc2gA3xO03Lwm63L7QV
-9YvGilprY5MzQVvPlid4Su/U65QpFQOU/PNSCBuTY2K67iYGUvIfgd6mjYjeGKT5
-qxFEKd5vCXV7B41BLvifKXmFgwOHiGC8R+efE9qv+M6IcMNCs/R08c7d/FLA11oA
-ImOlC2HWUTW5Pou902ffqwrwEFm2iOt0MPDrwVXEten1mwHgovkqyMP0u6lcZkRW
-Dr7pSgnQZgFtCFI4SPAuvjQbFgsYpp9VaTkr88matsCSDKjDM0WUHIy2VM3Sse+9
-VXKrlIfGIxlHi6mqJYlcDzytuRm5jOXo4zAcK4ZDHJVcJXZYbLi42OEzm/Bu+sLr
-FVr5n72cMnG0m4WdW6/zzWQvNpDI0Hga2iocMJXWpQJ2nreZFeI7PHw2qfkoqZX6
-/ktSmTHRKGsvGNbu/PuMkO/d46ytIXPbasLpT3j6YFf/NLBxfiiO9B/jqOy1qAl3
-/GXofT8WLdcCZrv170ID3WYV8VblkKrngf3ewNPQpkRi7iZm7suJZoz507yb75E5
-QOFYwoNS8oI7jxXO4kq1s3Ed3dy81mnpCsPaMvwj/FuMX2KOfxxCzoGVIn2nH/My
-3/vzPGKUfM15u2P5/ZKB
-=FW1K
------END PGP SIGNATURE-----
-
---s/l3CgOIzMHHjg/5--
+-- 
+Kees Cook
+Chrome OS Security
