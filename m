@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750978AbaCVIUB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 04:20:01 -0400
-Received: from 81.95.159.215-static.reverse.softlayer.com ([81.95.159.215]:59270
-	"EHLO demimalaysia.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaCVITz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 04:19:55 -0400
-Date: Tue, 18 Mar 2014 06:34:07 -0500
-From: Demi Malaysia <demimalaysiaku@demimalaysia.info>
-To: demimalaysia@demimalaysia.info
-Subject: YB, Laporan & Lembaga Bukan Legasi
-Message-ID: <20140318113407.GA20857@demimalaysia.info>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - demimalaysia.info
-X-AntiAbuse: Original Domain - demimalaysia.info
-X-AntiAbuse: Originator/Caller UID/GID - [500 500] / [47 12]
-X-AntiAbuse: Sender Address Domain - demimalaysia.info
-X-Get-Message-Sender-Via: demimalaysia.info: authenticated_id: demimala/primary_hostname/system user
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1751267AbaCVIUr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 04:20:47 -0400
+Received: from smtp31.i.mail.ru ([94.100.177.91]:45514 "EHLO smtp31.i.mail.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbaCVIUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 04:20:44 -0400
+X-Greylist: delayed 135902 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 Mar 2014 04:20:44 EDT
+From: Alexander Shiyan <shc_work@mail.ru>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alexander Shiyan <shc_work@mail.ru>
+Subject: [PATCH RESEND] irq: Export symbol no_action()
+Date: Sat, 22 Mar 2014 12:20:31 +0400
+Message-Id: <1395476431-16070-1-git-send-email-shc_work@mail.ru>
+X-Mailer: git-send-email 1.8.3.2
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assalamualaikum Saudara-Saudari,
- 
+This will allow to use dummy IRQ handler no_action() from
+drivers compiled as module. For example, dummy handler is could
+be used for drivers that use ARM FIQ interrupts.
 
-http://www.utusan.com.my/utusan/Dalam_Negeri/20140224/dn_16/Legasi-Hishammuddin-di-Kementerian-Pengangkutan
+Signed-off-by: Alexander Shiyan <shc_work@mail.ru>
+---
+ kernel/irq/handle.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Oleh itu Pemangku Menteri Pengangkutan Datuk Seri Hishammuddin Tun
-Hussein membuat keputusan berani apabila menubuhkan panel penasihat
-bebas bagi menyiasat kejadian tersebut dengan diketuai oleh Tan Sri
-Lee Lam Thye.
+diff --git a/kernel/irq/handle.c b/kernel/irq/handle.c
+index bfec453..6354802 100644
+--- a/kernel/irq/handle.c
++++ b/kernel/irq/handle.c
+@@ -41,6 +41,7 @@ irqreturn_t no_action(int cpl, void *dev_id)
+ {
+ 	return IRQ_NONE;
+ }
++EXPORT_SYMBOL_GPL(no_action);
+ 
+ static void warn_no_thread(unsigned int irq, struct irqaction *action)
+ {
+-- 
+1.8.3.2
 
-Selanjutnya, sila layari http://gelagatanwar.wordpress.com.
- 
-Wassalam.
- 
