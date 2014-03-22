@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbaCVWEt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 18:04:49 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:50266 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbaCVWEr (ORCPT
+	id S1751881AbaCVWYJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 18:24:09 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35451 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750831AbaCVWXp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 18:04:47 -0400
-Date: Sat, 22 Mar 2014 23:04:44 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux.com>, Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
-Message-ID: <20140322220442.GB20038@localhost.localdomain>
-References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
- <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
- <7ha9csionc.fsf@paris.lan>
- <20140322170114.GA20038@localhost.localdomain>
- <20140322185551.GA24945@htj.dyndns.org>
+	Sat, 22 Mar 2014 18:23:45 -0400
+Date: Sat, 22 Mar 2014 22:23:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, x86@kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux390@de.ibm.com,
+        sparclinux@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+	actual Kconfig
+Message-ID: <20140322222306.GM7528@n2100.arm.linux.org.uk>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org> <1395512032-20575-2-git-send-email-lauraa@codeaurora.org> <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140322185551.GA24945@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 02:55:51PM -0400, Tejun Heo wrote:
-> On Sat, Mar 22, 2014 at 06:01:18PM +0100, Frederic Weisbecker wrote:
-> > 1) Call a per workqueue mutex when a work execute on an ordered workqueue. Although
-> >   contention should be very rare (only while we replace the workqueue attrs and
-> >   switch to a new worker), frequent locking may have a visible impact.
-> > 
-> > 2) Have a seperate worker for all ordered workqueues. But we may lose a bit of
-> >   serialization with other workqueues along the way.
-> 
-> Ordered workqueues are always bound to the fallback default worker
-> pool.  Why not just adjust cpus_allowed of the worker pool?
+On Sat, Mar 22, 2014 at 02:31:21PM -0700, James Bottomley wrote:
+> Perhaps now might be the time to ask which are the remaining
+> architectures that cannot do SG chaining and then we can fix them and
+> pull the whole thing out.
 
-Now that you tell me, that sounds obvious enough. I'll try something.
+Not quite.  You're making the assumption that we can be sure that all
+the scatterlist users on an architecture have been converted - that's
+simply not true on ARM.  We have some which have, and some which still
+have not been audited.
 
-Thanks.
+The cases that get us here would be old platform DMA code which walks
+scatterlists handed to it from drivers - stuff like
+arch/arm/mach-rpc/dma.c (which probably can cope), and drivers/scsi/arm/*
+(which definitely can't because of their SCSI pointers save/restore
+handling message.)  I know that's one case where SG_CHAIN definitely
+isn't supported on ARM.
 
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+So, we had decided not to enable it, but this means that new stuff
+isn't benefitting from this.  I've recently asked arm-soc to enable
+it for the modern multi-platform builds, because modern stuff really
+be written with correct SG chaining in mind.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
