@@ -1,139 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751883AbaCVGZV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 02:25:21 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63555 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751738AbaCVGZR (ORCPT
+	id S1751185AbaCVGjB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 02:39:01 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:35898 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842AbaCVGi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 02:25:17 -0400
-X-Nat-Received: from [202.181.97.72]:53353 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1395469515.7789
-To: oleg@redhat.com, joseph.salisbury@canonical.com
-Cc: JBottomley@parallels.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org,
-        thenzl@redhat.com
-Subject: Re: please fix FUSION (Was: [v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140319182910.GA14511@redhat.com>
-	<20140319194232.GA6207@redhat.com>
-	<532B1B67.5050104@canonical.com>
-	<20140320192307.GA11883@redhat.com>
-	<20140321183443.GA3891@redhat.com>
-In-Reply-To: <20140321183443.GA3891@redhat.com>
-Message-Id: <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sat, 22 Mar 2014 15:25:13 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 22032014 #7590715, status: clean
+	Sat, 22 Mar 2014 02:38:57 -0400
+From: behanw@converseincode.com
+To: arnd@arndb.de
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        Behan Webster <behanw@converseincode.com>,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: [PATCH] LLVMLinux: Remove warning about returning an uninitialized variable
+Date: Fri, 21 Mar 2014 23:38:49 -0700
+Message-Id: <1395470329-15065-1-git-send-email-behanw@converseincode.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Oleg Nesterov wrote:
-> Tetsuo, what do you think?
+From: Behan Webster <behanw@converseincode.com>
 
-I don't like blocking SIGKILL while doing operations that depend on memory
-allocation by other processes. If the OOM killer is triggered and it chose
-the process blocking SIGKILL in mptsas_init() (I know it unlikely happens),
-it generates the OOM killer deadlock.
+Fix uninitialized return code in default case in cmpxchg-local.h
 
-My preference is to fix kthread_create() to handle SIGKILL gracefully.
-kthread_create() did not return upon SIGKILL before commit 786235ee.
-Since commit 786235ee, there is imbalance that "kmalloc(GFP_KERNEL) in
-kthread_create_on_node() ignores SIGKILL unless TIF_MEMDIE is set" but
-"wait_for_completion_killable() in kthread_create_on_node() does not ignore
-SIGKILL even if TIF_MEMDIE is not set".
+This patch fixes the code to prevent an uninitialized return value that is detected
+when compiling with clang. The bug produces numerous warnings when compiling the
+Linux kernel with clang.
 
-Many kernel operations (e.g. mutex_lock() wait_event() wait_for_completion())
-ignore SIGKILL and the current users depend on SIGKILL being ignored. Thus,
-commit 786235ee sounds like a kernel API breakage.
-----------
->From 731f1f6dec7efaa132f751c432079b9b1fdb78d2 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Sat, 22 Mar 2014 15:16:50 +0900
-Subject: [PATCH] kthread: Handle SIGKILL gracefully in kthread_create().
-
-Commit 786235ee "kthread: make kthread_create() killable" changed to
-leave kthread_create() as soon as receiving SIGKILL. But this change
-caused boot failures because systemd-udevd receives SIGKILL due to timeout
-while loading SCSI controller drivers using finit_module() [1].
-
-Therefore, this patch changes kthread_create() from "wait forever in
-killable state" to "wait for 10 seconds in unkillable state, check for
-the OOM killer every second".
-
-This patch also changes the return value of timeout case from -ENOMEM
-to -EINTR because -ENOMEM could make sense for only TIF_MEMDIE case.
-
-  [1] https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1276705
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Behan Webster <behanw@converseincode.com>
+Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 ---
- kernel/kthread.c |   37 +++++++++++++++++++++----------------
- 1 files changed, 21 insertions(+), 16 deletions(-)
+ include/asm-generic/cmpxchg-local.h | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index b5ae3ee..6a25a9f 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -269,6 +269,7 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 					   const char namefmt[],
- 					   ...)
- {
-+	int i = 0;
- 	DECLARE_COMPLETION_ONSTACK(done);
- 	struct task_struct *task;
- 	struct kthread_create_info *create = kmalloc(sizeof(*create),
-@@ -287,24 +288,28 @@ struct task_struct *kthread_create_on_node(int (*threadfn)(void *data),
- 
- 	wake_up_process(kthreadd_task);
- 	/*
--	 * Wait for completion in killable state, for I might be chosen by
--	 * the OOM killer while kthreadd is trying to allocate memory for
--	 * new kernel thread.
-+	 * Wait for completion with 10 seconds timeout. Unless the kthreadd is
-+	 * blocked for direct memory reclaim path, the kthreadd will be able to
-+	 * complete the request within 10 seconds. Also, check every second if
-+	 * I was chosen by the OOM killer in order to avoid the OOM killer
-+	 * deadlock.
- 	 */
--	if (unlikely(wait_for_completion_killable(&done))) {
--		/*
--		 * If I was SIGKILLed before kthreadd (or new kernel thread)
--		 * calls complete(), leave the cleanup of this structure to
--		 * that thread.
--		 */
--		if (xchg(&create->done, NULL))
--			return ERR_PTR(-ENOMEM);
--		/*
--		 * kthreadd (or new kernel thread) will call complete()
--		 * shortly.
--		 */
--		wait_for_completion(&done);
-+	do {
-+		if (likely(wait_for_completion_timeout(&done, HZ)))
-+			goto ready;
-+	} while (i++ < 10 && !test_thread_flag(TIF_MEMDIE));
-+	/*
-+	 * The kthreadd was unable to complete the request within 10 seconds
-+	 * (or I was chosen by the OOM killer). Thus, give up and leave the
-+	 * cleanup of this structure to the kthreadd (or new kernel thread).
-+	 */
-+	if (xchg(&create->done, NULL)) {
-+		WARN(1, "Gave up waiting for kthreadd.\n");
-+		return ERR_PTR(-EINTR);
+diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
+index d8d4c89..4c41bb8 100644
+--- a/include/asm-generic/cmpxchg-local.h
++++ b/include/asm-generic/cmpxchg-local.h
+@@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
+ 		break;
+ 	default:
+ 		wrong_size_cmpxchg(ptr);
++		prev = 0;
  	}
-+	/* kthreadd (or new kernel thread) will call complete() shortly. */
-+	wait_for_completion(&done);
-+ready:
- 	task = create->result;
- 	if (!IS_ERR(task)) {
- 		static const struct sched_param param = { .sched_priority = 0 };
+ 	raw_local_irq_restore(flags);
+ 	return prev;
 -- 
-1.7.1
+1.8.3.2
+
