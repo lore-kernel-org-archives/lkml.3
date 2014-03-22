@@ -1,120 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750900AbaCVHQH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 03:16:07 -0400
-Received: from mail.cs.hku.hk ([147.8.176.10]:64554 "EHLO mail.cs.hku.hk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750758AbaCVHQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 03:16:03 -0400
-Message-ID: <20140322151540.9740576amzy5tdwk@intranet.cs.hku.hk>
-Date: Sat, 22 Mar 2014 15:15:40 +0800
-From: lwcheng@cs.hku.hk
-To: Rik van Riel <riel@redhat.com>
-Cc: Glauber Costa <glommer@gmail.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [BUG] Paravirtual time accounting / IRQ time accounting
-References: <20140319174222.213976eu8b54ujk0@intranet.cs.hku.hk>
- <CAA6-i6p-=4Dk9-ujvL36EVpm80MS-BiYjw+V9JQ8g4AypBJeZw@mail.gmail.com>
- <532C232E.5000607@redhat.com>
-In-Reply-To: <532C232E.5000607@redhat.com>
+	id S1751072AbaCVHSf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 03:18:35 -0400
+Received: from mx11.pku.edu.cn ([162.105.129.174]:47283 "EHLO mail.pku.edu.cn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750978AbaCVHSc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 03:18:32 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -307.131
+Date: Sat, 22 Mar 2014 15:18:23 +0800 (CST)
+From: =?utf-8?B?566h6Zuq5rab?= <gxt@pku.edu.cn>
+To: Chen Gang <gang.chen.5i5j@gmail.com>
+Cc: gxt@mprc.pku.edu.cn, linux-kernel@vger.kernel.org,
+        sunzhichuang@mprc.pku.edu.cn
+Message-ID: <2016503893.2147.1395472703720.JavaMail.root@bj-mail03.pku.edu.cn>
+In-Reply-To: <5321B230.6030109@gmail.com>
+Subject: =?gbk?B?UmU6IFtQQVRDSF0gYXJjaC91bmljb3JlMzIva2VybmVsL2tzeW1zLmM6IHJlbW92ZSBzZXZlcmFsIHVuZGVmaW5lZA0KIGV4cG9ydGVkIHN5bWJvbHM=?=
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Dynamic Internet Messaging Program (DIMP) H3 (1.1.4)
-X-cs-MailScanner-Information: Please contact the ISP for more information
-X-cs-MailScanner-ID: s2M7FhnI018130
-X-cs-MailScanner: Found to be clean
-X-cs-MailScanner-SpamCheck: not spam, SpamAssassin (not cached, score=-1.01,
-	required 6, autolearn=disabled, ALL_TRUSTED -1.00,
-	T_RP_MATCHES_RCVD -0.01)
-X-cs-MailScanner-From: lwcheng@cs.hku.hk
-X-cs-MailScanner-Watermark: 1396077347.23149@qtq8H++zp7kdCjYhcHsV5g
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [162.105.129.91]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Thanks Chen.
+Need I add these patches to unicore32 repo?
 
-Quoting Rik van Riel <riel@redhat.com>:
+Cc: Zhichuang Sun <sunzhichuang@mprc.pku.edu.cn>
+Tested-by: Zhichuang Sun <sunzhichuang@mprc.pku.edu.cn>
+Acked-by: Xuetao Guan <gxt@pku.edu.cn>
 
-> On 03/20/2014 11:01 AM, Glauber Costa wrote:
->> On Wed, Mar 19, 2014 at 6:42 AM,  <lwcheng@cs.hku.hk> wrote:
->
->>> ------------
->>> [src/kernel/sched/core.c]
->>> static void update_rq_clock_task(struct rq *rq, s64 delta)
->>> {
->>>     ... ...
->>> #ifdef CONFIG_IRQ_TIME_ACCOUNTING
->>>     irq_delta = irq_time_read(cpu_of(rq)) - rq->prev_irq_time;
->>>     ... ...
->>>     rq->prev_irq_time += irq_delta;
->>>     delta -= irq_delta;
->>> #endif
->>>
->>> #ifdef CONFIG_PARAVIRT_TIME_ACCOUNTING
->>>     if (static_key_false((&paravirt_steal_rq_enabled))) {
->>>         steal = paravirt_steal_clock(cpu_of(rq));
->>>         steal -= rq->prev_steal_time_rq;
->>>         ... ...
->>>         rq->prev_steal_time_rq += steal;
->>>         delta -= steal;
->>>     }
->>> #endif
->>>
->>>     rq->clock_task += delta;
->>>     ... ...
->>> }
->>> --
->>> "delta" -> the intended increment to rq->clock_task
->>> "irq_delta" -> the time spent on serving IRQ (hard + soft)
->>> "steal" -> the time stolen by the underlying hypervisor
->>> --
->>> "irq_delta" is calculated based on sched_clock_cpu(), which is vulnerable
->>> to VM scheduling delays.
->>
->> This looks like a real problem indeed. The main problem in searching
->> for a solution, is that of course not all of the irq time is steal
->> time and vice versa. In this case, we could subtract irq_time from
->> steal, and add only the steal part time that is in excess. I don't
->> think this is 100 % guaranteed, but maybe it is a good approximation.
->>
->> Rik, do you have an opinion on this ?
->
-> The other way around may be better, since steal time (when it
-> happens) is likely to be of "time slice" magnitude, while irq
-> time will happen more frequently, and in dozens-of-microseconds
-> intervals.
->
-> Furthermore, we have no way to measure what the irq time is,
-> except by looking at how much real time elapsed. For steal time,
-> however, the hypervisor tells us exactly how much time was stolen.
->
-> That means when steal time and irq time happen simultaneously,
-> the amount of steal time should always be smaller than the
-> calculated irq time for that period.
->
-> actual irq_time = calculated irq time - reported steal time;
->
-> --
-> All rights reversed
->
-
-I observe that sometimes irq_time only includes "part" of steal_time.
-
-Like you said, irq_time is in dozens-of-microseconds. In VMs, as all
-devices seen are virtual ones, irq_time seems to be not as desired
-as it is in physical hosts.
-
-A quick (but not radical) solution may be:
-disable CONFIG_IRQ_TIME_ACCOUNTING if CONFIG_PARAVIRT is selected.
-Just adopt tick-based accounting: CONFIG_TICK_CPU_ACCOUNTING
-
-I am thinking what irq_time really *means* in VMs.
-
--Luwei
-
+----- Chen Gang <gang.chen.5i5j@gmail.com> 写道：
+> For 'csum_partial_copy_nocheck()', it has default definition in
+> 'asm-generic'.
+> 
+> For '__raw_reads?()' and '__raw_writes?()' are used by the drivers
+> which no relationship with allmodconfig for unicode32, the related
+> modules are:
+> 
+>   drivers/mmc/host/omap.c
+>   drivers/mtd/nand/atmel_nand.c
+>   drivers/mtd/nand/pxa3xx_nand.c
+>   drivers/usb/gadget/at91_udc.c
+> 
+> Others are only within some architectures (not kernel wide).
+> 
+> 
+> The related error with allmodconfig for unicode32:
+> 
+>     CC      arch/unicore32/kernel/ksyms.o
+>   arch/unicore32/kernel/ksyms.c:29: error: ‘__backtrace’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:29: error: type defaults to ‘int’ in declaration of ‘__backtrace’
+>   arch/unicore32/kernel/ksyms.c:38: error: ‘csum_partial_copy_nocheck’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:38: error: type defaults to ‘int’ in declaration of ‘csum_partial_copy_nocheck’
+>   arch/unicore32/kernel/ksyms.c:39: error: ‘__csum_ipv6_magic’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:39: error: type defaults to ‘int’ in declaration of ‘__csum_ipv6_magic’
+>   arch/unicore32/kernel/ksyms.c:43: error: ‘__raw_readsb’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:43: error: type defaults to ‘int’ in declaration of ‘__raw_readsb’
+>   arch/unicore32/kernel/ksyms.c:46: error: ‘__raw_readsw’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:46: error: type defaults to ‘int’ in declaration of ‘__raw_readsw’
+>   arch/unicore32/kernel/ksyms.c:49: error: ‘__raw_readsl’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:49: error: type defaults to ‘int’ in declaration of ‘__raw_readsl’
+>   arch/unicore32/kernel/ksyms.c:52: error: ‘__raw_writesb’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:52: error: type defaults to ‘int’ in declaration of ‘__raw_writesb’
+>   arch/unicore32/kernel/ksyms.c:55: error: ‘__raw_writesw’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:55: error: type defaults to ‘int’ in declaration of ‘__raw_writesw’
+>   arch/unicore32/kernel/ksyms.c:58: error: ‘__raw_writesl’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:58: error: type defaults to ‘int’ in declaration of ‘__raw_writesl’
+>   arch/unicore32/kernel/ksyms.c:79: error: ‘__get_user_1’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:79: error: type defaults to ‘int’ in declaration of ‘__get_user_1’
+>   arch/unicore32/kernel/ksyms.c:80: error: ‘__get_user_2’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:80: error: type defaults to ‘int’ in declaration of ‘__get_user_2’
+>   arch/unicore32/kernel/ksyms.c:81: error: ‘__get_user_4’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:81: error: type defaults to ‘int’ in declaration of ‘__get_user_4’
+>   arch/unicore32/kernel/ksyms.c:83: error: ‘__put_user_1’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:83: error: type defaults to ‘int’ in declaration of ‘__put_user_1’
+>   arch/unicore32/kernel/ksyms.c:84: error: ‘__put_user_2’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:84: error: type defaults to ‘int’ in declaration of ‘__put_user_2’
+>   arch/unicore32/kernel/ksyms.c:85: error: ‘__put_user_4’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:85: error: type defaults to ‘int’ in declaration of ‘__put_user_4’
+>   arch/unicore32/kernel/ksyms.c:86: error: ‘__put_user_8’ undeclared here (not in a function)
+>   arch/unicore32/kernel/ksyms.c:86: error: type defaults to ‘int’ in declaration of ‘__put_user_8’
+> 
+> 
+> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> ---
+>  arch/unicore32/kernel/ksyms.c |   33 ---------------------------------
+>  1 file changed, 33 deletions(-)
+> 
+> diff --git a/arch/unicore32/kernel/ksyms.c b/arch/unicore32/kernel/ksyms.c
+> index d285d71..63afc7f 100644
+> --- a/arch/unicore32/kernel/ksyms.c
+> +++ b/arch/unicore32/kernel/ksyms.c
+> @@ -26,8 +26,6 @@
+>  EXPORT_SYMBOL(find_next_zero_bit);
+>  EXPORT_SYMBOL(find_next_bit);
+>  
+> -EXPORT_SYMBOL(__backtrace);
+> -
+>  	/* platform dependent support */
+>  EXPORT_SYMBOL(__udelay);
+>  EXPORT_SYMBOL(__const_udelay);
+> @@ -35,28 +33,6 @@ EXPORT_SYMBOL(__const_udelay);
+>  	/* networking */
+>  EXPORT_SYMBOL(csum_partial);
+>  EXPORT_SYMBOL(csum_partial_copy_from_user);
+> -EXPORT_SYMBOL(csum_partial_copy_nocheck);
+> -EXPORT_SYMBOL(__csum_ipv6_magic);
+> -
+> -	/* io */
+> -#ifndef __raw_readsb
+> -EXPORT_SYMBOL(__raw_readsb);
+> -#endif
+> -#ifndef __raw_readsw
+> -EXPORT_SYMBOL(__raw_readsw);
+> -#endif
+> -#ifndef __raw_readsl
+> -EXPORT_SYMBOL(__raw_readsl);
+> -#endif
+> -#ifndef __raw_writesb
+> -EXPORT_SYMBOL(__raw_writesb);
+> -#endif
+> -#ifndef __raw_writesw
+> -EXPORT_SYMBOL(__raw_writesw);
+> -#endif
+> -#ifndef __raw_writesl
+> -EXPORT_SYMBOL(__raw_writesl);
+> -#endif
+>  
+>  	/* string / mem functions */
+>  EXPORT_SYMBOL(strchr);
+> @@ -76,15 +52,6 @@ EXPORT_SYMBOL(__copy_from_user);
+>  EXPORT_SYMBOL(__copy_to_user);
+>  EXPORT_SYMBOL(__clear_user);
+>  
+> -EXPORT_SYMBOL(__get_user_1);
+> -EXPORT_SYMBOL(__get_user_2);
+> -EXPORT_SYMBOL(__get_user_4);
+> -
+> -EXPORT_SYMBOL(__put_user_1);
+> -EXPORT_SYMBOL(__put_user_2);
+> -EXPORT_SYMBOL(__put_user_4);
+> -EXPORT_SYMBOL(__put_user_8);
+> -
+>  EXPORT_SYMBOL(__ashldi3);
+>  EXPORT_SYMBOL(__ashrdi3);
+>  EXPORT_SYMBOL(__divsi3);
+> -- 
+> 1.7.9.5
 
