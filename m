@@ -1,38 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaCVVD2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 17:03:28 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:35855 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaCVVDY (ORCPT
+	id S1751951AbaCVVFb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 17:05:31 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:50987 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751230AbaCVVF2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 17:03:24 -0400
-From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Jianguo Wu <wujianguo@huawei.com>,
-        Andres Bertens <abertensu@yahoo.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: Re: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
-Date: Sat, 22 Mar 2014 22:01:06 +0100
-Message-ID: <1553572.xqrhDm938v@tux200s>
-Organization: Andreas Sturmlechner
-User-Agent: KMail/4.12.3 (Linux/3.2.55-gentoo; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <1395509887.2770.72.camel@deadeye.wl.decadent.org.uk>
-References: <20140308010611.468206150@linuxfoundation.org> <20140322165145.GA12870@kroah.com> <1395509887.2770.72.camel@deadeye.wl.decadent.org.uk>
+	Sat, 22 Mar 2014 17:05:28 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+In-Reply-To: <532E0699.2080303@cogentembedded.com>
+References: <20140322154720.GA23863@www.outflux.net>
+	<532E0486.3010702@cogentembedded.com>
+	<532E053C.90007@cogentembedded.com>
+	<532E0699.2080303@cogentembedded.com>
+Date: Sat, 22 Mar 2014 15:05:27 -0600
+X-Google-Sender-Auth: VsJmgytbawE24L6TWbLsoxO26v4
+Message-ID: <CAGXu5jLUueSb2u_Ki+nEL1CaBzyZyT1+7rhCB-0ZGB0nD5cT4g@mail.gmail.com>
+Subject: Re: [PATCH] mips: export icache_flush_range
+From: Kees Cook <keescook@chromium.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
+        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original Message from: Ben Hutchings <ben@decadent.org.uk>
-> 
-> Andreas, could you test whether this regression is also present in
-> 3.2.55?  This patch is based on my backport for 3.2.y.
-> 
+On Sat, Mar 22, 2014 at 3:54 PM, Sergei Shtylyov
+<sergei.shtylyov@cogentembedded.com> wrote:
+> On 03/23/2014 12:48 AM, Sergei Shtylyov wrote:
+>
+>>>> The lkdtm module performs tests against executable memory ranges, so
+>>>> it needs to flush the icache for proper behaviors. Other architectures
+>>>> already export this, so do the same for MIPS.
+>
+>
+>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
+>>>> ---
+>>>> This is currently untested! I'm building a MIPS cross-compiler now...
+>>>> If someone can validate this fixes the build when lkdtm is a module,
+>>>> that would be appreciated. :)
+>>>> ---
+>>>>   arch/mips/mm/cache.c |    1 +
+>>>>   1 file changed, 1 insertion(+)
+>
+>
+>>>> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+>>>> index fde7e56d13fe..b3f1df13d9f6 100644
+>>>> --- a/arch/mips/mm/cache.c
+>>>> +++ b/arch/mips/mm/cache.c
+>>>> @@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr,
+>>>> int
+>>>> size);
+>>>>   void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
+>>>>
+>>>>   EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
+>>>> +EXPORT_SYMBOL_GPL(flush_icache_range);
+>
+>
+>>>     Have you run this thru scripts/checkpatch.pl? It would have told you
+>>> that
+>>> an export should immediately follow the corresponding function body,
+>>> AFAIK.
+>
+>
+>>     Hm, it doesn't now but definitely used to...
+>
+>
+>    Decided to check Documentation/CodingStyle, and it still codifies this:
+>
+> In source files, separate functions with one blank line.  If the function is
+> exported, the EXPORT* macro for it should follow immediately after the
+> closing
+> function brace line.  E.g.:
+>
+> int system_is_up(void)
+> {
+>         return system_state == SYSTEM_RUNNING;
+> }
+> EXPORT_SYMBOL(system_is_up);
+>
+> WBR, Sergei
 
-3.2.55 is OK here.
+Yup, thanks. I know the style, but it seemed from the source file that
+the style was to declare the function pointers in bulk, and then
+explicitly export them in the next section, so I continued that style.
+For example:
+
+void (*flush_cache_sigtramp)(unsigned long addr);
+void (*local_flush_data_cache_page)(void * addr);
+void (*flush_data_cache_page)(unsigned long addr);
+void (*flush_icache_all)(void);
+
+EXPORT_SYMBOL_GPL(local_flush_data_cache_page);
+EXPORT_SYMBOL(flush_data_cache_page);
+EXPORT_SYMBOL(flush_icache_all);
+
+Regardless, I'm happy to stick it in the middle of the function
+pointers if that's preferred.
+
+-Kees
+
+-- 
+Kees Cook
+Chrome OS Security
