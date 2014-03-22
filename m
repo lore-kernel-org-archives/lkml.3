@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaCVBSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 21:18:04 -0400
-Received: from mail-bl2hn0249.outbound.protection.outlook.com ([65.55.169.249]:30364
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750785AbaCVBSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 21:18:00 -0400
-Reply-To: <adrian_bayford101@yahoo.com>
-From: Adrian Gillian Bayford <clany391@MORRISVILLE.EDU>
-Subject: You have received 1.5m pounds as donation see link www.bbc.co.uk/news/uk-england-19254228 send name address and phone number for info
-Date: Sat, 22 Mar 2014 06:47:01 +0530
+	id S1752067AbaCVBiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 21:38:19 -0400
+Received: from mail-ve0-f175.google.com ([209.85.128.175]:43958 "EHLO
+	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751171AbaCVBiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 21:38:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <8e8ce772-1689-4e69-8845-ce2f570490b0@system38.csntprod.morrisville.edu>
-To: Undisclosed recipients:;
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: =?windows-1251?Q?CIP:136.204.34.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(1?=
- =?windows-1251?Q?0019001)(979002)(6009001)(448001)(199002)(189002)(949460?=
- =?windows-1251?Q?01)(93916002)(85326001)(23686002)(83322001)(31686003)(90?=
- =?windows-1251?Q?146001)(93136001)(87266001)(85852003)(44976005)(74706001?=
- =?windows-1251?Q?)(87286001)(85306002)(77982001)(93516002)(50226001)(9431?=
- =?windows-1251?Q?6002)(49866001)(87936001)(95416001)(56816005)(83072002)(?=
- =?windows-1251?Q?80976001)(88136002)(61296002)(1671002)(86362001)(3169600?=
- =?windows-1251?Q?2)(73894003)(89996001)(56776001)(47976001)(59766001)(927?=
- =?windows-1251?Q?26001)(20776003)(50986001)(77156001)(46102001)(50466002)?=
- =?windows-1251?Q?(75432001)(79102001)(65816001)(63696002)(80022001)(43066?=
- =?windows-1251?Q?001)(69226001)(44716002)(74876001)(6806004)(97186001)(43?=
- =?windows-1251?Q?96001)(97336001)(77096001)(33646001)(62966002)(881003)(8?=
- =?windows-1251?Q?1542001)(621065002)(54316002)(74366001)(47776003)(746620?=
- =?windows-1251?Q?01)(47736001)(40036003)(81342001)(95666003)(62236002)(76?=
- =?windows-1251?Q?786001)(47446002)(76482001)(74502001)(76796001)(98676001?=
- =?windows-1251?Q?)(51856001)(218223001)(76176001)(82782002)(1676001)(2387?=
- =?windows-1251?Q?6007)(14926002)(969003)(989001)(999001)(1009001);DIR:OUT?=
- =?windows-1251?Q?;SFP:1501;SCL:5;SRVR:BN1AFFO11HUB027;H:morrisville.edu;F?=
- =?windows-1251?Q?PR:;MLV:ovrspm;PTR:mail.morrisville.edu;A:1;MX:1;LANG:en?=
- =?windows-1251?Q?;?=
-X-OriginatorOrg: morrisville.edu
-X-Forefront-PRVS: 01583E185C
+In-Reply-To: <532BE027.9010909@intel.com>
+References: <1395341232-14490-1-git-send-email-abrestic@chromium.org>
+	<532BE027.9010909@intel.com>
+Date: Fri, 21 Mar 2014 18:38:14 -0700
+X-Google-Sender-Auth: -73LCWHf7FEJrB4OMfG-a8JdNcU
+Message-ID: <CAL1qeaHUPu693yGcf+5vRS5JT3O70GDpnVSoGVQgB+bgxExGAA@mail.gmail.com>
+Subject: Re: [PATCH] mmc: sdhci: don't read cd-gpio while holding spinlock
+From: Andrew Bresticker <abrestic@chromium.org>
+To: Adrian Hunter <adrian.hunter@intel.com>
+Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 20, 2014 at 11:45 PM, Adrian Hunter <adrian.hunter@intel.com> wrote:
+> On 20.03.2014 20:47, Andrew Bresticker wrote:
+>> mmc_request() reads the cd-gpio via mmc_gpio_get_cd(), which can sleep,
+>> while holding host->lock.  This may result in the following BUG:
+>>
+>>   BUG: spinlock wrong CPU on CPU#2, kworker/u8:16/4296
+>>   lock: 0xea6b9c80, .magic: dead4ead, .owner: kworker/u8:16/4296, .owner_cpu: 0
+>>   CPU: 2 PID: 4296 Comm: kworker/u8:16 Tainted: G         C   3.10.18 #137
+>>   Workqueue: kmmcd mmc_rescan
+>>   [<8020cf8c>] (unwind_backtrace+0x0/0x118) from [<8020a0c8>] (show_stack+0x20/0x24)
+>>   [<8020a0c8>] (show_stack+0x20/0x24) from [<8075e5b8>] (dump_stack+0x20/0x28)
+>>   [<8075e5b8>] (dump_stack+0x20/0x28) from [<804184a8>] (spin_dump+0x80/0x94)
+>>   [<804184a8>] (spin_dump+0x80/0x94) from [<804184e8>] (spin_bug+0x2c/0x30)
+>>   [<804184e8>] (spin_bug+0x2c/0x30) from [<80418790>] (do_raw_spin_unlock+0x94/0xd4)
+>>   [<80418790>] (do_raw_spin_unlock+0x94/0xd4) from [<80761a44>] (_raw_spin_unlock_irqrestore+0x1c/0x24)
+>>   [<80761a44>] (_raw_spin_unlock_irqrestore+0x1c/0x24) from [<805ff66c>] (sdhci_request+0x1c8/0x1d0)
+>>   [<805ff66c>] (sdhci_request+0x1c8/0x1d0) from [<805ebb5c>] (mmc_start_request+0xec/0xf4)
+>>   [<805ebb5c>] (mmc_start_request+0xec/0xf4) from [<805ebcbc>] (mmc_wait_for_req+0x80/0xf4)
+>>   ...
+>>
+>> Read the cd-gpio before acquiring the spinlock instead.
+>
+> The same problem appears to be in sdhci_card_event() which calls
+> sdhci_do_get_cd() under spinlock which then calls mmc_gpio_get_cd()
+>
+> Will you fix that too?
+
+Yes, will do.
+
+Thanks,
+Andrew
+
+>
+>
+>>
+>> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
+>> ---
+>>  drivers/mmc/host/sdhci.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index 04a5e25..f2ef978 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -1340,6 +1340,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+>>       u32 tuning_opcode;
+>>
+>>       host = mmc_priv(mmc);
+>> +     present = mmc_gpio_get_cd(host->mmc);
+>>
+>>       sdhci_runtime_pm_get(host);
+>>
+>> @@ -1371,7 +1372,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
+>>        *     zero: cd-gpio is used, and card is removed
+>>        *     one: cd-gpio is used, and card is present
+>>        */
+>> -     present = mmc_gpio_get_cd(host->mmc);
+>>       if (present < 0) {
+>>               /* If polling, assume that the card is always present. */
+>>               if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
+>>
+>
