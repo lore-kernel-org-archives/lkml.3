@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbaCVHbx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 03:31:53 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:36138 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751058AbaCVHbC (ORCPT
+	id S1751142AbaCVHbr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 03:31:47 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:35175 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750978AbaCVHaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 03:31:02 -0400
+	Sat, 22 Mar 2014 03:30:55 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Lad Prabhakar <prabhakar.csengg@gmail.com>,
         Hans Verkuil <hans.verkuil@cisco.com>
-Subject: [PATCH for v3.15 3/3] media: davinci: vpbe_display: fix releasing of active buffers
-Date: Sat, 22 Mar 2014 13:00:39 +0530
-Message-Id: <1395473439-18643-4-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH for v3.15 1/3] media: davinci: vpif_capture: fix releasing of active buffers
+Date: Sat, 22 Mar 2014 13:00:37 +0530
+Message-Id: <1395473439-18643-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1395473439-18643-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1395473439-18643-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -31,18 +31,21 @@ the vb2 framework warns on (WARN_ON()) if all the active buffers
 are not released when streaming is stopped, initially the vb2 silently
 released the buffer internally if the buffer was not released by
 the driver.
+Also this patch moves the disabling of interrupts from relase() callback
+to stop_streaming() callback as which needs to be done ideally.
+
 This patch fixes following issue:
 
 WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:2011 __vb2_queue_cancel+0x1a0/0x218()
 Modules linked in:
-CPU: 0 PID: 2049 Comm: vpbe_display Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
+CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
 [<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
 [<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
 [<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
 [<c001adec>] (warn_slowpath_null) from [<c0252e0c>] (__vb2_queue_cancel+0x1a0/0x218)
 [<c0252e0c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
-[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpbe_display_release+0x60/0x230)
-[<c025a65c>] (vpbe_display_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
+[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
+[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
 [<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
 [<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
 [<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
@@ -55,15 +58,15 @@ CPU: 0 PID: 2049 Comm: vpbe_display Tainted: G        W    3.14.0-rc5-00414-ged9
 ------------[ cut here ]------------
 WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:1095 vb2_buffer_done+0x1e0/0x224()
 Modules linked in:
-CPU: 0 PID: 2049 Comm: vpbe_display Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
+CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
 [<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
 [<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
 [<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
 [<c001adec>] (warn_slowpath_null) from [<c0252c28>] (vb2_buffer_done+0x1e0/0x224)
 [<c0252c28>] (vb2_buffer_done) from [<c0252e3c>] (__vb2_queue_cancel+0x1d0/0x218)
 [<c0252e3c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
-[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpbe_display_release+0x60/0x230)
-[<c025a65c>] (vpbe_display_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
+[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
+[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
 [<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
 [<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
 [<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
@@ -76,47 +79,63 @@ CPU: 0 PID: 2049 Comm: vpbe_display Tainted: G        W    3.14.0-rc5-00414-ged9
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpbe_display.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+ drivers/media/platform/davinci/vpif_capture.c |   34 +++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index b4f12d0..6567082 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -372,18 +372,32 @@ static int vpbe_stop_streaming(struct vb2_queue *vq)
- {
- 	struct vpbe_fh *fh = vb2_get_drv_priv(vq);
- 	struct vpbe_layer *layer = fh->layer;
-+	struct vpbe_display *disp = fh->disp_dev;
-+	unsigned long flags;
+diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+index 756da78..8dea0b8 100644
+--- a/drivers/media/platform/davinci/vpif_capture.c
++++ b/drivers/media/platform/davinci/vpif_capture.c
+@@ -358,8 +358,31 @@ static int vpif_stop_streaming(struct vb2_queue *vq)
  
- 	if (!vb2_is_streaming(vq))
- 		return 0;
+ 	common = &ch->common[VPIF_VIDEO_INDEX];
  
++	/* Disable channel as per its device type and channel id */
++	if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
++		enable_channel0(0);
++		channel0_intr_enable(0);
++	}
++	if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
++		(2 == common->started)) {
++		enable_channel1(0);
++		channel1_intr_enable(0);
++	}
++	common->started = 0;
++
  	/* release all active buffers */
-+	spin_lock_irqsave(&disp->dma_queue_lock, flags);
-+	if (layer->cur_frm == layer->next_frm) {
-+		vb2_buffer_done(&layer->cur_frm->vb, VB2_BUF_STATE_ERROR);
+ 	spin_lock_irqsave(&common->irqlock, flags);
++	if (common->cur_frm == common->next_frm) {
++		vb2_buffer_done(&common->cur_frm->vb, VB2_BUF_STATE_ERROR);
 +	} else {
-+		if (layer->cur_frm != NULL)
-+			vb2_buffer_done(&layer->cur_frm->vb,
++		if (common->cur_frm != NULL)
++			vb2_buffer_done(&common->cur_frm->vb,
 +					VB2_BUF_STATE_ERROR);
-+		if (layer->next_frm != NULL)
-+			vb2_buffer_done(&layer->next_frm->vb,
++		if (common->next_frm != NULL)
++			vb2_buffer_done(&common->next_frm->vb,
 +					VB2_BUF_STATE_ERROR);
 +	}
 +
- 	while (!list_empty(&layer->dma_queue)) {
- 		layer->next_frm = list_entry(layer->dma_queue.next,
- 						struct vpbe_disp_buffer, list);
- 		list_del(&layer->next_frm->list);
- 		vb2_buffer_done(&layer->next_frm->vb, VB2_BUF_STATE_ERROR);
- 	}
--
-+	spin_unlock_irqrestore(&disp->dma_queue_lock, flags);
- 	return 0;
- }
- 
+ 	while (!list_empty(&common->dma_queue)) {
+ 		common->next_frm = list_entry(common->dma_queue.next,
+ 						struct vpif_cap_buffer, list);
+@@ -933,17 +956,6 @@ static int vpif_release(struct file *filep)
+ 	if (fh->io_allowed[VPIF_VIDEO_INDEX]) {
+ 		/* Reset io_usrs member of channel object */
+ 		common->io_usrs = 0;
+-		/* Disable channel as per its device type and channel id */
+-		if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
+-			enable_channel0(0);
+-			channel0_intr_enable(0);
+-		}
+-		if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
+-		    (2 == common->started)) {
+-			enable_channel1(0);
+-			channel1_intr_enable(0);
+-		}
+-		common->started = 0;
+ 		/* Free buffers allocated */
+ 		vb2_queue_release(&common->buffer_queue);
+ 		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
 -- 
 1.7.9.5
 
