@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaCVK6P (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 06:58:15 -0400
-Received: from mail-pb0-f50.google.com ([209.85.160.50]:46139 "EHLO
-	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750869AbaCVK6L (ORCPT
+	id S1751356AbaCVLDn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 07:03:43 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:38677 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaCVLDh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 06:58:11 -0400
+	Sat, 22 Mar 2014 07:03:37 -0400
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -14,161 +14,129 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Lad Prabhakar <prabhakar.csengg@gmail.com>,
         Hans Verkuil <hans.verkuil@cisco.com>,
         DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Subject: [PATCH] media: davinci: vpbe: use v4l2_fh for priority handling
-Date: Sat, 22 Mar 2014 16:27:59 +0530
-Message-Id: <1395485879-14991-1-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH RESEND for v3.15 1/3] media: davinci: vpif_capture: fix releasing of active buffers
+Date: Sat, 22 Mar 2014 16:33:07 +0530
+Message-Id: <1395486189-16713-2-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395486189-16713-1-git-send-email-prabhakar.csengg@gmail.com>
+References: <1395486189-16713-1-git-send-email-prabhakar.csengg@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 
-This patch migrates the vpbe driver to use v4l2_fh for
-priority handling. This also fixes v4l2-compliance test.
+from commit-id: b3379c6201bb3555298cdbf0aa004af260f2a6a4
+"vb2: only call start_streaming if sufficient buffers are queued"
+the vb2 framework warns on (WARN_ON()) if all the active buffers
+are not released when streaming is stopped, initially the vb2 silently
+released the buffer internally if the buffer was not released by
+the driver.
+Also this patch moves the disabling of interrupts from relase() callback
+to stop_streaming() callback as which needs to be done ideally.
+
+This patch fixes following issue:
+
+WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:2011 __vb2_queue_cancel+0x1a0/0x218()
+Modules linked in:
+CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
+[<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
+[<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
+[<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
+[<c001adec>] (warn_slowpath_null) from [<c0252e0c>] (__vb2_queue_cancel+0x1a0/0x218)
+[<c0252e0c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
+[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
+[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
+[<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
+[<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
+[<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
+[<c001cc28>] (do_exit) from [<c001d344>] (do_group_exit+0x48/0xdc)
+[<c001d344>] (do_group_exit) from [<c0029894>] (get_signal_to_deliver+0x2a0/0x5bc)
+[<c0029894>] (get_signal_to_deliver) from [<c000b888>] (do_signal+0x78/0x3a0)
+[<c000b888>] (do_signal) from [<c000bc54>] (do_work_pending+0xa4/0xb4)
+[<c000bc54>] (do_work_pending) from [<c00096dc>] (work_pending+0xc/0x20)
+---[ end trace 5faa75e8c2f8a6a1 ]---
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 2049 at drivers/media/v4l2-core/videobuf2-core.c:1095 vb2_buffer_done+0x1e0/0x224()
+Modules linked in:
+CPU: 0 PID: 2049 Comm: vpif_capture Tainted: G        W    3.14.0-rc5-00414-ged97a6f #89
+[<c000e3f0>] (unwind_backtrace) from [<c000c618>] (show_stack+0x10/0x14)
+[<c000c618>] (show_stack) from [<c001adb0>] (warn_slowpath_common+0x68/0x88)
+[<c001adb0>] (warn_slowpath_common) from [<c001adec>] (warn_slowpath_null+0x1c/0x24)
+[<c001adec>] (warn_slowpath_null) from [<c0252c28>] (vb2_buffer_done+0x1e0/0x224)
+[<c0252c28>] (vb2_buffer_done) from [<c0252e3c>] (__vb2_queue_cancel+0x1d0/0x218)
+[<c0252e3c>] (__vb2_queue_cancel) from [<c02533a4>] (vb2_queue_release+0x14/0x24)
+[<c02533a4>] (vb2_queue_release) from [<c025a65c>] (vpif_release+0x60/0x230)
+[<c025a65c>] (vpif_release) from [<c023fe5c>] (v4l2_release+0x34/0x74)
+[<c023fe5c>] (v4l2_release) from [<c00b4a00>] (__fput+0x80/0x224)
+[<c00b4a00>] (__fput) from [<c00341e8>] (task_work_run+0xa0/0xd0)
+[<c00341e8>] (task_work_run) from [<c001cc28>] (do_exit+0x244/0x918)
+[<c001cc28>] (do_exit) from [<c001d344>] (do_group_exit+0x48/0xdc)
+[<c001d344>] (do_group_exit) from [<c0029894>] (get_signal_to_deliver+0x2a0/0x5bc)
+[<c0029894>] (get_signal_to_deliver) from [<c000b888>] (do_signal+0x78/0x3a0)
+[<c000b888>] (do_signal) from [<c000bc54>] (do_work_pending+0xa4/0xb4)
+[<c000bc54>] (do_work_pending) from [<c00096dc>] (work_pending+0xc/0x20)
+---[ end trace 5faa75e8c2f8a6a2 ]---
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/davinci/vpbe_display.c |   39 +++++--------------------
- include/media/davinci/vpbe_display.h          |    6 ++--
- 2 files changed, 9 insertions(+), 36 deletions(-)
+ drivers/media/platform/davinci/vpif_capture.c |   34 +++++++++++++++++--------
+ 1 file changed, 23 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/media/platform/davinci/vpbe_display.c b/drivers/media/platform/davinci/vpbe_display.c
-index 6567082..a9ad949 100644
---- a/drivers/media/platform/davinci/vpbe_display.c
-+++ b/drivers/media/platform/davinci/vpbe_display.c
-@@ -680,29 +680,6 @@ static int vpbe_try_format(struct vpbe_display *disp_dev,
- 	return 0;
- }
+diff --git a/drivers/media/platform/davinci/vpif_capture.c b/drivers/media/platform/davinci/vpif_capture.c
+index 756da78..8dea0b8 100644
+--- a/drivers/media/platform/davinci/vpif_capture.c
++++ b/drivers/media/platform/davinci/vpif_capture.c
+@@ -358,8 +358,31 @@ static int vpif_stop_streaming(struct vb2_queue *vq)
  
--static int vpbe_display_g_priority(struct file *file, void *priv,
--				enum v4l2_priority *p)
--{
--	struct vpbe_fh *fh = file->private_data;
--	struct vpbe_layer *layer = fh->layer;
--
--	*p = v4l2_prio_max(&layer->prio);
--
--	return 0;
--}
--
--static int vpbe_display_s_priority(struct file *file, void *priv,
--				enum v4l2_priority p)
--{
--	struct vpbe_fh *fh = file->private_data;
--	struct vpbe_layer *layer = fh->layer;
--	int ret;
--
--	ret = v4l2_prio_change(&layer->prio, &fh->prio, p);
--
--	return ret;
--}
--
- static int vpbe_display_querycap(struct file *file, void  *priv,
- 			       struct v4l2_capability *cap)
- {
-@@ -1492,6 +1469,7 @@ static int vpbe_display_open(struct file *file)
- {
- 	struct vpbe_fh *fh = NULL;
- 	struct vpbe_layer *layer = video_drvdata(file);
-+	struct video_device *vdev = video_devdata(file);
- 	struct vpbe_display *disp_dev = layer->disp_dev;
- 	struct vpbe_device *vpbe_dev = disp_dev->vpbe_dev;
- 	struct osd_state *osd_device = disp_dev->osd_device;
-@@ -1504,6 +1482,7 @@ static int vpbe_display_open(struct file *file)
- 			"unable to allocate memory for file handle object\n");
- 		return -ENOMEM;
- 	}
-+	v4l2_fh_init(&fh->fh, vdev);
- 	v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev,
- 			"vpbe display open plane = %d\n",
- 			layer->device_id);
-@@ -1532,9 +1511,7 @@ static int vpbe_display_open(struct file *file)
- 	layer->usrs++;
- 	/* Set io_allowed member to false */
- 	fh->io_allowed = 0;
--	/* Initialize priority of this instance to default priority */
--	fh->prio = V4L2_PRIORITY_UNSET;
--	v4l2_prio_open(&layer->prio, &fh->prio);
-+	v4l2_fh_add(&fh->fh);
- 	v4l2_dbg(1, debug, &vpbe_dev->v4l2_dev,
- 			"vpbe display device opened successfully\n");
- 	return 0;
-@@ -1589,8 +1566,9 @@ static int vpbe_display_release(struct file *file)
- 		osd_device->ops.release_layer(osd_device,
- 				layer->layer_info.id);
- 	}
--	/* Close the priority */
--	v4l2_prio_close(&layer->prio, fh->prio);
+ 	common = &ch->common[VPIF_VIDEO_INDEX];
+ 
++	/* Disable channel as per its device type and channel id */
++	if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
++		enable_channel0(0);
++		channel0_intr_enable(0);
++	}
++	if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
++		(2 == common->started)) {
++		enable_channel1(0);
++		channel1_intr_enable(0);
++	}
++	common->started = 0;
 +
-+	v4l2_fh_del(&fh->fh);
-+	v4l2_fh_exit(&fh->fh);
- 	file->private_data = NULL;
- 	mutex_unlock(&layer->opslock);
- 
-@@ -1618,8 +1596,6 @@ static const struct v4l2_ioctl_ops vpbe_ioctl_ops = {
- 	.vidioc_cropcap		 = vpbe_display_cropcap,
- 	.vidioc_g_crop		 = vpbe_display_g_crop,
- 	.vidioc_s_crop		 = vpbe_display_s_crop,
--	.vidioc_g_priority	 = vpbe_display_g_priority,
--	.vidioc_s_priority	 = vpbe_display_s_priority,
- 	.vidioc_s_std		 = vpbe_display_s_std,
- 	.vidioc_g_std		 = vpbe_display_g_std,
- 	.vidioc_enum_output	 = vpbe_display_enum_output,
-@@ -1699,8 +1675,6 @@ static int init_vpbe_layer(int i, struct vpbe_display *disp_dev,
- 	vpbe_display_layer->layer_info.id =
- 		((i == VPBE_DISPLAY_DEVICE_0) ? WIN_VID0 : WIN_VID1);
- 
--	/* Initialize prio member of layer object */
--	v4l2_prio_init(&vpbe_display_layer->prio);
- 
- 	return 0;
- }
-@@ -1727,6 +1701,7 @@ static int register_device(struct vpbe_layer *vpbe_display_layer,
- 	vpbe_display_layer->disp_dev = disp_dev;
- 	/* set the driver data in platform device */
- 	platform_set_drvdata(pdev, disp_dev);
-+	set_bit(V4L2_FL_USE_FH_PRIO, &vpbe_display_layer->video_dev.flags);
- 	video_set_drvdata(&vpbe_display_layer->video_dev,
- 			  vpbe_display_layer);
- 
-diff --git a/include/media/davinci/vpbe_display.h b/include/media/davinci/vpbe_display.h
-index 8dffffe..637749a 100644
---- a/include/media/davinci/vpbe_display.h
-+++ b/include/media/davinci/vpbe_display.h
-@@ -16,6 +16,7 @@
- /* Header files */
- #include <linux/videodev2.h>
- #include <media/v4l2-common.h>
-+#include <media/v4l2-fh.h>
- #include <media/videobuf2-dma-contig.h>
- #include <media/davinci/vpbe_types.h>
- #include <media/davinci/vpbe_osd.h>
-@@ -94,8 +95,6 @@ struct vpbe_layer {
- 	 * has selected
- 	 */
- 	enum v4l2_memory memory;
--	/* Used to keep track of state of the priority */
--	struct v4l2_prio_state prio;
- 	/* Used to store pixel format */
- 	struct v4l2_pix_format pix_fmt;
- 	enum v4l2_field buf_field;
-@@ -134,14 +133,13 @@ struct vpbe_display {
- 
- /* File handle structure */
- struct vpbe_fh {
-+	struct v4l2_fh fh;
- 	/* vpbe device structure */
- 	struct vpbe_display *disp_dev;
- 	/* pointer to layer object for opened device */
- 	struct vpbe_layer *layer;
- 	/* Indicates whether this file handle is doing IO */
- 	unsigned char io_allowed;
--	/* Used to keep track priority of this instance */
--	enum v4l2_priority prio;
- };
- 
- struct buf_config_params {
+ 	/* release all active buffers */
+ 	spin_lock_irqsave(&common->irqlock, flags);
++	if (common->cur_frm == common->next_frm) {
++		vb2_buffer_done(&common->cur_frm->vb, VB2_BUF_STATE_ERROR);
++	} else {
++		if (common->cur_frm != NULL)
++			vb2_buffer_done(&common->cur_frm->vb,
++					VB2_BUF_STATE_ERROR);
++		if (common->next_frm != NULL)
++			vb2_buffer_done(&common->next_frm->vb,
++					VB2_BUF_STATE_ERROR);
++	}
++
+ 	while (!list_empty(&common->dma_queue)) {
+ 		common->next_frm = list_entry(common->dma_queue.next,
+ 						struct vpif_cap_buffer, list);
+@@ -933,17 +956,6 @@ static int vpif_release(struct file *filep)
+ 	if (fh->io_allowed[VPIF_VIDEO_INDEX]) {
+ 		/* Reset io_usrs member of channel object */
+ 		common->io_usrs = 0;
+-		/* Disable channel as per its device type and channel id */
+-		if (VPIF_CHANNEL0_VIDEO == ch->channel_id) {
+-			enable_channel0(0);
+-			channel0_intr_enable(0);
+-		}
+-		if ((VPIF_CHANNEL1_VIDEO == ch->channel_id) ||
+-		    (2 == common->started)) {
+-			enable_channel1(0);
+-			channel1_intr_enable(0);
+-		}
+-		common->started = 0;
+ 		/* Free buffers allocated */
+ 		vb2_queue_release(&common->buffer_queue);
+ 		vb2_dma_contig_cleanup_ctx(common->alloc_ctx);
 -- 
 1.7.9.5
 
