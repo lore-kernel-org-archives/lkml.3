@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378AbaCVDgh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 23:36:37 -0400
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:45754 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbaCVDge (ORCPT
+	id S1751030AbaCVDsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 23:48:40 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:62082 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750825AbaCVDsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 23:36:34 -0400
-Message-ID: <1395459391.2546.8.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Date: Fri, 21 Mar 2014 20:36:31 -0700
-In-Reply-To: <20140322022754.GA21677@linux.vnet.ibm.com>
-References: <20140320053350.GB30295@linux.vnet.ibm.com>
-	 <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
-	 <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
-	 <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
-	 <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
-	 <1395346808.14694.62.camel@buesod1.americas.hpqcorp.net>
-	 <20140321045501.GD30295@linux.vnet.ibm.com>
-	 <CA+55aFyX0sj_MjTas3RYWWOa1W-xc3t0Af_0vdmsmgui8Apqpw@mail.gmail.com>
-	 <20140322022754.GA21677@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 21 Mar 2014 23:48:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140321180723.GM13596@arm.com>
+References: <cover.1395379422.git.viresh.kumar@linaro.org>
+	<f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org>
+	<532BEE64.3090501@linux.vnet.ibm.com>
+	<CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com>
+	<532BFB77.5060107@linux.vnet.ibm.com>
+	<CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com>
+	<20140321110559.GB13596@arm.com>
+	<532C2160.4030909@linux.vnet.ibm.com>
+	<20140321180723.GM13596@arm.com>
+Date: Sat, 22 Mar 2014 09:18:37 +0530
+Message-ID: <CAKohpokYbnt0Yv2txN6qfHcdeaLeE5owsMWsTsKbz7cv63S2bQ@mail.gmail.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 07:57 +0530, Srikar Dronamraju wrote:
-> > > So reverting and applying v3 3/4 and 4/4 patches works for me.
-> > 
-> > Ok, I verified that the above endds up resulting in the same tree as
-> > the minimal patch I sent out, modulo (a) some comments and (b) an
-> > #ifdef CONFIG_SMP in futex_get_mm() that doesn't really matter.
-> > 
-> > So I committed the minimal patch with your tested-by.
-> > 
-> 
-> Just to be sure, I have verified with latest mainline with HEAD having
-> commit 08edb33c4 (Merge branch 'drm-fixes' of
-> git://people.freedesktop.org/~airlied/linux) which also has the commit
-> 11d4616bd0 futex:( revert back to the explicit waiter counting code).
+On 21 March 2014 23:37, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> smp_mb() is all about relative ordering. So if you want memory accesses
+> in post_transition() to be visible to other observers before
+> transition_ongoing = false, you also need to make sure that the readers
+> of transition_ongoing have a barrier before subsequent memory accesses.
 
-Thanks for double checking.
+I don't think this is a requirement in our case. We are just trying to serialize
+frequency transitions here and just want to make sure that second one
+start after first one is over. And so this query.
 
+> OK, I start to get it. Is there a risk of missing a wake_up event? E.g.
+> one thread waking up earlier, noticing that transition is in progress
+> and waiting indefinitely?
+
+I don't think so. The only requirement is that second thread wakes up
+after this variable is set to false.
