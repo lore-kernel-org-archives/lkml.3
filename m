@@ -1,64 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751360AbaCVSHS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 14:07:18 -0400
-Received: from mail-qa0-f45.google.com ([209.85.216.45]:53279 "EHLO
-	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750915AbaCVSHQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 14:07:16 -0400
+	id S1751203AbaCVSMr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 14:12:47 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44773 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaCVSMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 14:12:44 -0400
+Date: Sat, 22 Mar 2014 14:12:36 -0400
+From: tytso@mit.edu
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-ID: <20140322181236.GD23583@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>,
+	Fabian Frederick <fabf@skynet.be>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	reiserfs-devel@vger.kernel.org,
+	David Rientjes <rientjes@google.com>, Joe Perches <joe@perches.com>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+ <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+ <20140322170322.GA23583@thunk.org>
+ <20140322101512.eaeb542b.akpm@linux-foundation.org>
+ <20140322172606.GB23583@thunk.org>
+ <20140322173207.GC23583@thunk.org>
+ <20140322105524.7baec73a.akpm@linux-foundation.org>
 MIME-Version: 1.0
-X-Originating-IP: [173.13.129.225]
-In-Reply-To: <7hmwgtk9ma.fsf@paris.lan>
-References: <7hmwgtk9ma.fsf@paris.lan>
-Date: Sat, 22 Mar 2014 11:07:15 -0700
-Message-ID: <CAOesGMhm_fi9H3Nr_+5x-W8-6ALKWkh6o-F4NLF2sm0dQrYP6w@mail.gmail.com>
-Subject: Re: [ANNOUNCE] ARM kernel mini-summit @ ELC: Call for Topics,
- Invitation Request
-From: Olof Johansson <olof@lixom.net>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        arm-summit-discuss@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
-        arm-platform-maintainers@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140322105524.7baec73a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 3:38 PM, Kevin Hilman <khilman@linaro.org> wrote:
-> Hello,
->
-> We will be holding a one-day, ARM kernel mini-summit at ELC this year in
-> San Jose[1].  The mini-summit will be Monday, April 28th, and ELC starts
-> on Tuesday.
->
-> The ARM summit brings together maintainers and developers in the ARM
-> community face to face to discuss current work and to plan for what is
-> coming next. To keep the group small and encourage open discussion the
-> event is invite-only.
->
-> To propose a discussion topic and/or request an invitation:
->
-> 1) subscribe yourself to arm-summit-discuss@lists.infradead.org:
->    http://lists.infradead.org/mailman/listinfo/arm-summit-discuss
->
-> 2) send your invite request and/or topic proposal to
->    arm-summit-discuss@lists.infradead.org with a subject prefix of
->    "[ARM ATTEND]".  Also, please Cc the main linux-arm-kernel list.
->
-> All topics and invitation requests will be reviewed by the program
-> committee and decisions will be made by the end of March, so please get
-> your requests/topics in soon.
+On Sat, Mar 22, 2014 at 10:55:24AM -0700, Andrew Morton wrote:
+> 
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: scripts/checkpatch.pl: __GFP_NOFAIL isn't going away
+> 
+> Revert 7e4915e78992eb ("checkpatch: add warning of future __GFP_NOFAIL use").
+> 
+> There are no plans to remove __GFP_NOFAIL.
+> 
+> __GFP_NOFAIL exists to
+> 
+> a) centralise the retry-allocation-for-ever operation into the core
+>    allocator, which is the appropriate implementation site and
+> 
+> b) permit us to identify code sites which aren't handling memory
+>    exhaustion appropriately.
+> 
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Theodore Ts'o <tytso@mit.edu>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-With about a week to go, there's been very little proposed topics or
-other traffic on this.
+How about also making the following change which inspired the
+checkpatch warning?
 
-At the current outlook, the logical choice would be to just arrange an
-ad-hoc BoF at ELC instead. So, if you've been sitting on something you
-want to discuss, please propose it so we can get discussion going.
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 0437439..d189872 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -58,9 +58,11 @@ struct vm_area_struct;
+  * __GFP_REPEAT: Try hard to allocate the memory, but the allocation attempt
+  * _might_ fail.  This depends upon the particular VM implementation.
+  *
+- * __GFP_NOFAIL: The VM implementation _must_ retry infinitely: the caller
+- * cannot handle allocation failures.  This modifier is deprecated and no new
+- * users should be added.
++ * __GFP_NOFAIL: The VM implementation _must_ retry infinitely: the
++ * caller cannot handle allocation failures.  Callers are strongly
++ * encouraged not to use __GFP_NOFAIL unless the alternative is worse
++ * than OOM killing some random process (i.e., corruption or loss of
++ * some innocent user's data, etc).
+  *
+  * __GFP_NORETRY: The VM implementation must not retry indefinitely.
+  *
 
-
--Olof
