@@ -1,108 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951AbaCVVFb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 17:05:31 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:50987 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230AbaCVVF2 (ORCPT
+	id S1751736AbaCVVMi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 17:12:38 -0400
+Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:58162 "EHLO
+	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750971AbaCVVME (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 17:05:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <532E0699.2080303@cogentembedded.com>
-References: <20140322154720.GA23863@www.outflux.net>
-	<532E0486.3010702@cogentembedded.com>
-	<532E053C.90007@cogentembedded.com>
-	<532E0699.2080303@cogentembedded.com>
-Date: Sat, 22 Mar 2014 15:05:27 -0600
-X-Google-Sender-Auth: VsJmgytbawE24L6TWbLsoxO26v4
-Message-ID: <CAGXu5jLUueSb2u_Ki+nEL1CaBzyZyT1+7rhCB-0ZGB0nD5cT4g@mail.gmail.com>
-Subject: Re: [PATCH] mips: export icache_flush_range
-From: Kees Cook <keescook@chromium.org>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
-        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 22 Mar 2014 17:12:04 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsXADj8LVNbslpV/2dsb2JhbABZgwY7gg5+E6cOmRMCAoEUF3SCJQEBAQMBOhwjBQsIAw4KLjkeBhOHcQwBzgQXjnoHhDgBA45SiXcBgTKJJ4dYgy48
+Date: Sat, 22 Mar 2014 22:13:44 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: tytso@mit.edu, linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-Id: <20140322221344.62e8addc4facbe799b186496@skynet.be>
+In-Reply-To: <20140322105524.7baec73a.akpm@linux-foundation.org>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+	<20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+	<20140322170322.GA23583@thunk.org>
+	<20140322101512.eaeb542b.akpm@linux-foundation.org>
+	<20140322172606.GB23583@thunk.org>
+	<20140322173207.GC23583@thunk.org>
+	<20140322105524.7baec73a.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 3:54 PM, Sergei Shtylyov
-<sergei.shtylyov@cogentembedded.com> wrote:
-> On 03/23/2014 12:48 AM, Sergei Shtylyov wrote:
->
->>>> The lkdtm module performs tests against executable memory ranges, so
->>>> it needs to flush the icache for proper behaviors. Other architectures
->>>> already export this, so do the same for MIPS.
->
->
->>>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>>> ---
->>>> This is currently untested! I'm building a MIPS cross-compiler now...
->>>> If someone can validate this fixes the build when lkdtm is a module,
->>>> that would be appreciated. :)
->>>> ---
->>>>   arch/mips/mm/cache.c |    1 +
->>>>   1 file changed, 1 insertion(+)
->
->
->>>> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
->>>> index fde7e56d13fe..b3f1df13d9f6 100644
->>>> --- a/arch/mips/mm/cache.c
->>>> +++ b/arch/mips/mm/cache.c
->>>> @@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr,
->>>> int
->>>> size);
->>>>   void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
->>>>
->>>>   EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
->>>> +EXPORT_SYMBOL_GPL(flush_icache_range);
->
->
->>>     Have you run this thru scripts/checkpatch.pl? It would have told you
->>> that
->>> an export should immediately follow the corresponding function body,
->>> AFAIK.
->
->
->>     Hm, it doesn't now but definitely used to...
->
->
->    Decided to check Documentation/CodingStyle, and it still codifies this:
->
-> In source files, separate functions with one blank line.  If the function is
-> exported, the EXPORT* macro for it should follow immediately after the
-> closing
-> function brace line.  E.g.:
->
-> int system_is_up(void)
-> {
->         return system_state == SYSTEM_RUNNING;
-> }
-> EXPORT_SYMBOL(system_is_up);
->
-> WBR, Sergei
+On Sat, 22 Mar 2014 10:55:24 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Yup, thanks. I know the style, but it seemed from the source file that
-the style was to declare the function pointers in bulk, and then
-explicitly export them in the next section, so I continued that style.
-For example:
+> On Sat, 22 Mar 2014 13:32:07 -0400 tytso@mit.edu wrote:
+> 
+> > On Sat, Mar 22, 2014 at 01:26:06PM -0400, tytso@MIT.EDU wrote:
+> > > > Well.  Converting an existing retry-for-ever caller to GFP_NOFAIL is
+> > > > good.  Adding new retry-for-ever code is not good.
+> > 
+> > Oh, and BTW --- now that checkpatch.pl now flags an warning whenever
+> > GFP_NOFAIL is used
+> 
+> I don't know what the basis for this NOFAIL-is-going-away theory could
+> have been.  What's the point in taking a centrally implemented piece of
+> logic and splattering its implementation out to tens of different
+> callsites?
+> 
+> Obviously I was asleep when I merged that checkpatch change.
 
-void (*flush_cache_sigtramp)(unsigned long addr);
-void (*local_flush_data_cache_page)(void * addr);
-void (*flush_data_cache_page)(unsigned long addr);
-void (*flush_icache_all)(void);
+Exactly where confusion came from, thanks !
 
-EXPORT_SYMBOL_GPL(local_flush_data_cache_page);
-EXPORT_SYMBOL(flush_data_cache_page);
-EXPORT_SYMBOL(flush_icache_all);
-
-Regardless, I'm happy to stick it in the middle of the function
-pointers if that's preferred.
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+Fabian
