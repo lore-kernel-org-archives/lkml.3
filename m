@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751240AbaCVIuy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 04:50:54 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:51587 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750738AbaCVIuv (ORCPT
+	id S1751058AbaCVJHK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 05:07:10 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:55622 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750706AbaCVJHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 04:50:51 -0400
-Date: Sat, 22 Mar 2014 10:50:45 +0200
-From: Gleb Natapov <gleb@kernel.org>
-To: Venkatesh Srinivas <venkateshs@google.com>
-Cc: Peter Wu <peter@lekensteyn.nl>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-Message-ID: <20140322085045.GA5535@minantech.com>
-References: <4055058.qLAukpngnj@al>
- <1834280.dSicCcN9uU@al>
- <CAHdzE-88ZPTs_QvVLZsHs=O6TNKG61+iLH+ctGKLMdG5h6G0sg@mail.gmail.com>
+	Sat, 22 Mar 2014 05:07:04 -0400
+Date: Sat, 22 Mar 2014 10:06:58 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140322090658.GA15570@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHdzE-88ZPTs_QvVLZsHs=O6TNKG61+iLH+ctGKLMdG5h6G0sg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 12:04:32PM -0700, Venkatesh Srinivas wrote:
-> On Fri, Mar 21, 2014 at 10:46 AM, Peter Wu <peter@lekensteyn.nl> wrote:
-[skip]
+Linus,
 
-> When -cpu host is used, qemu/kvm passed the host CPUID F/M/S to the
-> guest. intel_pmu_cpu_*() -> intel_pmu_lbr_reset() uses rdmsr() /
-> wrmsr(), rather than the safe variants; if KVM does not support the
-> particular MSRs in question, you will see a #GP(0) there. See
-> https://lkml.org/lkml/2014/3/13/453 for a similar bug other PMU code.
-> 
-When kernel is compiled with guest support all rdmsr()/wrmsr() become _safe(),
-so the question for Peter is if his guest kernel has guest support enabled?
+Please pull the latest perf-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+   # HEAD: 7c144bfbf89d612f0c62b7e71056fb687b068455 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux into perf/urgent
+
+Two oneliner 'perf bench' tooling fixes.
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Arnaldo Carvalho de Melo (1):
+      perf bench numa: Make no args mean 'run all tests'
+
+Patrick Palka (1):
+      perf bench: Fix NULL pointer dereference in "perf bench all"
+
+
+ tools/perf/bench/numa.c    | 1 +
+ tools/perf/builtin-bench.c | 2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index d4c83c6..97d86d8 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1593,6 +1593,7 @@ static void init_params(struct params *p, const char *name, int argc, const char
+ 	p->data_rand_walk		= true;
+ 	p->nr_loops			= -1;
+ 	p->init_random			= true;
++	p->run_all			= argc == 1;
+ }
  
---
-			Gleb.
+ static int run_bench_numa(const char *name, const char **argv)
+diff --git a/tools/perf/builtin-bench.c b/tools/perf/builtin-bench.c
+index e47f90c..8a987d2 100644
+--- a/tools/perf/builtin-bench.c
++++ b/tools/perf/builtin-bench.c
+@@ -76,7 +76,7 @@ static struct collection collections[] = {
+ 
+ /* Iterate over all benchmarks within a collection: */
+ #define for_each_bench(coll, bench) \
+-	for (bench = coll->benchmarks; bench->name; bench++)
++	for (bench = coll->benchmarks; bench && bench->name; bench++)
+ 
+ static void dump_benchmarks(struct collection *coll)
+ {
