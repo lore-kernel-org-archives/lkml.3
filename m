@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751550AbaCVQ3u (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 12:29:50 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48309 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750948AbaCVQ3s (ORCPT
+	id S1751690AbaCVQaO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 12:30:14 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:56458 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaCVQaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 12:29:48 -0400
-Message-ID: <1395505786.2143.14.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2] LLVMLinux: Remove warning about returning an
- uninitialized variable
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: behanw@converseincode.com
-Cc: arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>
-Date: Sat, 22 Mar 2014 09:29:46 -0700
-In-Reply-To: <1395503299-15203-1-git-send-email-behanw@converseincode.com>
-References: <201403221101.16961.arnd@arndb.de>
-	 <1395503299-15203-1-git-send-email-behanw@converseincode.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Mar 2014 12:30:11 -0400
+From: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Ben Hutchings <ben@decadent.org.uk>, Jianguo Wu <wujianguo@huawei.com>,
+        Andres Bertens <abertensu@yahoo.com>
+Subject: Re: Re: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
+Date: Sat, 22 Mar 2014 17:28:02 +0100
+Message-ID: <174441141.AshFyuFNQG@tux200s>
+Organization: Andreas Sturmlechner
+User-Agent: KMail/4.12.3 (Linux/3.14.0-rc7+; KDE/4.12.3; x86_64; ; )
+In-Reply-To: <20140322162501.GA13385@kroah.com>
+References: <20140308010611.468206150@linuxfoundation.org> <8891481.xyaW2OauMW@tux200s> <20140322162501.GA13385@kroah.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 08:48 -0700, behanw@converseincode.com wrote:
-> From: Behan Webster <behanw@converseincode.com>
+Original Message from: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 > 
-> Fix uninitialized return code in default case in cmpxchg-local.h
+> Does Linus's tree also have this problem for you?  Or does it work
+> there?  If it works there, perhaps we just missed backporting something
+> to 3.4?
 > 
-> This patch fixes the code to prevent an uninitialized return value that is detected
-> when compiling with clang. The bug produces numerous warnings when compiling the
-> Linux kernel with clang.
-> 
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> ---
->  include/asm-generic/cmpxchg-local.h | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
-> index d8d4c89..9112111 100644
-> --- a/include/asm-generic/cmpxchg-local.h
-> +++ b/include/asm-generic/cmpxchg-local.h
-> @@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
->  		break;
->  	default:
->  		wrong_size_cmpxchg(ptr);
-> +		__builtin_unreachable();
 
-No, that's got to be unreachable() so that it works in all compilers,
-(__builtin_unreachable is a gcc-4 ism).
-
-Got to say this still looks wrong.  If wrong_size_cmpxchg() cannot
-return, the function should be annotated as such with __noreturn (like
-panic()) so the unreachable() should be superfluous.
-
-James
-
-
+Other trouble aside, iwlwifi works fine - writing this from today's build of 
+3.14.0-rc7+.
