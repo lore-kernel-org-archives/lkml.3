@@ -1,77 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaCVXWG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 19:22:06 -0400
-Received: from smtprelay0166.hostedemail.com ([216.40.44.166]:55287 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750866AbaCVXWE (ORCPT
+	id S1751993AbaCVXdS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 19:33:18 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:47590 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751167AbaCVXcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 19:22:04 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3870:3871:3872:4321:4605:5007:7652:10004:10026:10400:10848:11658:11914:12043:12517:12519:12555:13019:13069:13141:13230:13311:13357:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: grade17_4bf270962c556
-X-Filterd-Recvd-Size: 2657
-Message-ID: <1395530518.3667.29.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Update "Missing a blank line after
- declarations" test
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 22 Mar 2014 16:21:58 -0700
-In-Reply-To: <20140322154020.f7b6a72c.akpm@linux-foundation.org>
-References: <20140321142111.f0286ecdb8a03dd526f290ea@linux-foundation.org>
-	 <1395526999.3667.17.camel@joe-AO722>
-	 <20140322154020.f7b6a72c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Mar 2014 19:32:55 -0400
+MIME-Version: 1.0
+Date: Sat, 22 Mar 2014 16:32:54 -0700
+Message-ID: <CAGRSmLtifL=hFBP1AUHB_va6ZvNfqXo8Bu=6XciH--jOEYVJjQ@mail.gmail.com>
+Subject: patch fix for intel sdd s3500 series on Sil3512 controller
+From: "David F." <df7729@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=e89a8ffbad27f02f1e04f53a6bdc
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"struct foo *bar" does not match the regex "$Declare\s+$Ident"
-$Declare matches "struct foo *" but there is no required space
-between the pointer "*" and the $Ident.
+--e89a8ffbad27f02f1e04f53a6bdc
+Content-Type: text/plain; charset=ISO-8859-1
 
-Also it ends in a pointer, the $Declare variable also contains all
-trailing spaces after the declaration so there is no space between
-$Declare and $Ident.
+Hi,
 
-ie:	"struct foo * bar" does not match "$Declare\s+$Ident"
+It appears if nIEN is set all polling type IO fails.   After an
+attempt, future non-polled communications also fails.  This patch
+allows it to work.  Not sure if any spin lock protection would be
+needed or the system already handles the device existence for the
+generated irq with polling enabled.  handler already ignored irq if
+queued command was polling type.
 
-So, change the \s+ to \s* to have this regex match any of
-	"struct foo bar", "struct foo *bar", and "struct foo * bar"
+--e89a8ffbad27f02f1e04f53a6bdc
+Content-Type: application/octet-stream; name="fix-sil3512-intelssd.patch"
+Content-Disposition: attachment; filename="fix-sil3512-intelssd.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ht3j5r8k0
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- scripts/checkpatch.pl | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 93beee8..bca2be0 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2259,7 +2259,7 @@ sub process {
- # check for missing blank lines after declarations
- 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
- 			# actual declarations
--		    ($prevline =~ /^\+\s+$Declare\s+$Ident\s*[=,;\[]/ ||
-+		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
-@@ -2271,7 +2271,7 @@ sub process {
- 			# not starting a section or a macro "\" extended line
- 		      $prevline =~ /(?:\{\s*|\\)$/) &&
- 			# looks like a declaration
--		    !($sline =~ /^\+\s+$Declare/ ||
-+		    !($sline  =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
- 			# foo bar; where foo is some local typedef or #define
- 		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
- 			# known declaration macros
--- 
-1.8.1.2.459.gbcd45b4.dirty
-
-
-
+IGRyaXZlcnMvYXRhL2xpYmF0YS1zZmYuYyB8IDkgKysrKysrLS0tCiBkcml2ZXJzL2F0YS9zYXRh
+X3NpbC5jICAgfCA2ICsrKysrLQogaW5jbHVkZS9saW51eC9saWJhdGEuaCAgIHwgMSArCiAzIGZp
+bGVzIGNoYW5nZWQsIDEyIGluc2VydGlvbnMoKyksIDQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9hdGEvbGliYXRhLXNmZi5jIGIvZHJpdmVycy9hdGEvbGliYXRhLXNmZi5jCmlu
+ZGV4IGI2MDM3MjAuLmQyYmY1YjMgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvYXRhL2xpYmF0YS1zZmYu
+YworKysgYi9kcml2ZXJzL2F0YS9saWJhdGEtc2ZmLmMKQEAgLTE0MjMsNyArMTQyMyw4IEBAIHVu
+c2lnbmVkIGludCBhdGFfc2ZmX3FjX2lzc3VlKHN0cnVjdCBhdGFfcXVldWVkX2NtZCAqcWMpCiAJ
+c3dpdGNoIChxYy0+dGYucHJvdG9jb2wpIHsKIAljYXNlIEFUQV9QUk9UX05PREFUQToKIAkJaWYg
+KHFjLT50Zi5mbGFncyAmIEFUQV9URkxBR19QT0xMSU5HKQotCQkJYXRhX3FjX3NldF9wb2xsaW5n
+KHFjKTsKKyAgICAgIGlmICghKHFjLT50Zi5mbGFncyAmIEFUQV9URkxBR19QT0xMSU5HX1dJVEhP
+VVRfTklFTikpCisJCQkgIGF0YV9xY19zZXRfcG9sbGluZyhxYyk7CiAKIAkJYXRhX3RmX3RvX2hv
+c3QoYXAsICZxYy0+dGYpOwogCQlhcC0+aHNtX3Rhc2tfc3RhdGUgPSBIU01fU1RfTEFTVDsKQEAg
+LTE0MzUsNyArMTQzNiw4IEBAIHVuc2lnbmVkIGludCBhdGFfc2ZmX3FjX2lzc3VlKHN0cnVjdCBh
+dGFfcXVldWVkX2NtZCAqcWMpCiAKIAljYXNlIEFUQV9QUk9UX1BJTzoKIAkJaWYgKHFjLT50Zi5m
+bGFncyAmIEFUQV9URkxBR19QT0xMSU5HKQotCQkJYXRhX3FjX3NldF9wb2xsaW5nKHFjKTsKKyAg
+ICAgIGlmICghKHFjLT50Zi5mbGFncyAmIEFUQV9URkxBR19QT0xMSU5HX1dJVEhPVVRfTklFTikp
+CisJCQkgIGF0YV9xY19zZXRfcG9sbGluZyhxYyk7CiAKIAkJYXRhX3RmX3RvX2hvc3QoYXAsICZx
+Yy0+dGYpOwogCkBAIC0xNDY1LDcgKzE0NjcsOCBAQCB1bnNpZ25lZCBpbnQgYXRhX3NmZl9xY19p
+c3N1ZShzdHJ1Y3QgYXRhX3F1ZXVlZF9jbWQgKnFjKQogCWNhc2UgQVRBUElfUFJPVF9QSU86CiAJ
+Y2FzZSBBVEFQSV9QUk9UX05PREFUQToKIAkJaWYgKHFjLT50Zi5mbGFncyAmIEFUQV9URkxBR19Q
+T0xMSU5HKQotCQkJYXRhX3FjX3NldF9wb2xsaW5nKHFjKTsKKyAgICAgIGlmICghKHFjLT50Zi5m
+bGFncyAmIEFUQV9URkxBR19QT0xMSU5HX1dJVEhPVVRfTklFTikpCisJCQkgIGF0YV9xY19zZXRf
+cG9sbGluZyhxYyk7CiAKIAkJYXRhX3RmX3RvX2hvc3QoYXAsICZxYy0+dGYpOwogCmRpZmYgLS1n
+aXQgYS9kcml2ZXJzL2F0YS9zYXRhX3NpbC5jIGIvZHJpdmVycy9hdGEvc2F0YV9zaWwuYwppbmRl
+eCBiNzY5NWU4Li5mZjdjZjUxIDEwMDY0NAotLS0gYS9kcml2ZXJzL2F0YS9zYXRhX3NpbC5jCisr
+KyBiL2RyaXZlcnMvYXRhL3NhdGFfc2lsLmMKQEAgLTMzNiw4ICszMzYsMTIgQEAgc3RhdGljIHZv
+aWQgc2lsX2ZpbGxfc2coc3RydWN0IGF0YV9xdWV1ZWRfY21kICpxYykKIAogc3RhdGljIHZvaWQg
+c2lsX3FjX3ByZXAoc3RydWN0IGF0YV9xdWV1ZWRfY21kICpxYykKIHsKLQlpZiAoIShxYy0+Zmxh
+Z3MgJiBBVEFfUUNGTEFHX0RNQU1BUCkpCisgIGlmICghKHFjLT5mbGFncyAmIEFUQV9RQ0ZMQUdf
+RE1BTUFQKSkgeworICAgIC8vIHNvbWUgZGV2aWNlcyAoSW50ZWwgczM1MDAgc2VyaWVzIFNTRCBk
+cml2ZXMpIHdvbid0IHdvcmsgaW4gCisgICAgLy8gcG9sbGluZyBtb2RlIG9uIFNpbDM1MTIgaWYg
+dGhlIG5JRU4gYml0IGlzIGVuYWJsZWQuCisgICAgcWMtPnRmLmZsYWdzIHw9IEFUQV9URkxBR19Q
+T0xMSU5HX1dJVEhPVVRfTklFTjsKIAkJcmV0dXJuOworICB9CiAKIAlzaWxfZmlsbF9zZyhxYyk7
+CiB9CmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L2xpYmF0YS5oIGIvaW5jbHVkZS9saW51eC9s
+aWJhdGEuaAppbmRleCBiZWM2ZGJlLi5lY2RhMjdiIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4
+L2xpYmF0YS5oCisrKyBiL2luY2x1ZGUvbGludXgvbGliYXRhLmgKQEAgLTE0Niw2ICsxNDYsNyBA
+QCBlbnVtIHsKIAlBVEFfVEZMQUdfTEJBCQk9ICgxIDw8IDQpLCAvKiBlbmFibGUgTEJBICovCiAJ
+QVRBX1RGTEFHX0ZVQQkJPSAoMSA8PCA1KSwgLyogZW5hYmxlIEZVQSAqLwogCUFUQV9URkxBR19Q
+T0xMSU5HCT0gKDEgPDwgNiksIC8qIHNldCBuSUVOIHRvIDEgYW5kIHVzZSBwb2xsaW5nICovCisg
+IEFUQV9URkxBR19QT0xMSU5HX1dJVEhPVVRfTklFTiA9ICgxIDw8IDcpLCAvKiBsZWF2ZSBuSUVO
+IDAgd2hpbGUgdXNpbmcgcG9sbGluZyAqLwogCiAJLyogcHJvdG9jb2wgZmxhZ3MgKi8KIAlBVEFf
+UFJPVF9GTEFHX1BJTwk9ICgxIDw8IDApLCAvKiBpcyBQSU8gKi8K
+--e89a8ffbad27f02f1e04f53a6bdc--
