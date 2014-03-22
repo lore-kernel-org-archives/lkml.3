@@ -1,127 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751476AbaCVRjf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 13:39:35 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:56143 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751325AbaCVRjc (ORCPT
+	id S1751380AbaCVRtK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 13:49:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:53882 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbaCVRtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 13:39:32 -0400
-Message-ID: <532DCB06.9040601@googlemail.com>
-Date: Sat, 22 Mar 2014 18:40:22 +0100
-From: =?ISO-8859-15?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: shuah.kh@samsung.com, m.chehab@samsung.com
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH] media: em28xx-video - change em28xx_scaler_set() to use
- em28xx_reg_len()
-References: <1395435890-15100-1-git-send-email-shuah.kh@samsung.com> <532D82C9.6010401@googlemail.com> <532DAAD0.6060209@samsung.com>
-In-Reply-To: <532DAAD0.6060209@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	Sat, 22 Mar 2014 13:49:07 -0400
+Date: Sat, 22 Mar 2014 10:55:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: tytso@mit.edu
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Joe Perches <joe@perches.com>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-Id: <20140322105524.7baec73a.akpm@linux-foundation.org>
+In-Reply-To: <20140322173207.GC23583@thunk.org>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+	<20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+	<20140322170322.GA23583@thunk.org>
+	<20140322101512.eaeb542b.akpm@linux-foundation.org>
+	<20140322172606.GB23583@thunk.org>
+	<20140322173207.GC23583@thunk.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 22 Mar 2014 13:32:07 -0400 tytso@mit.edu wrote:
 
-Am 22.03.2014 16:22, schrieb Shuah Khan:
-> On 03/22/2014 06:32 AM, Frank Schäfer wrote:
->>
->> Am 21.03.2014 22:04, schrieb Shuah Khan:
->>> Change em28xx_scaler_set() to use em28xx_reg_len() to get register
->>> lengths for EM28XX_R30_HSCALELOW and EM28XX_R32_VSCALELOW registers,
->>> instead of hard-coding the length. Moved em28xx_reg_len() definition
->>> for it to be visible to em28xx_scaler_set().
->>>
->>> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
->>> ---
->>>   drivers/media/usb/em28xx/em28xx-video.c |   29
->>> ++++++++++++++++-------------
->>>   1 file changed, 16 insertions(+), 13 deletions(-)
->>>
->>> diff --git a/drivers/media/usb/em28xx/em28xx-video.c
->>> b/drivers/media/usb/em28xx/em28xx-video.c
->>> index 19af6b3..f8a91de 100644
->>> --- a/drivers/media/usb/em28xx/em28xx-video.c
->>> +++ b/drivers/media/usb/em28xx/em28xx-video.c
->>> @@ -272,6 +272,18 @@ static void em28xx_capture_area_set(struct
->>> em28xx *dev, u8 hstart, u8 vstart,
->>>       }
->>>   }
->>>
->>> +static int em28xx_reg_len(int reg)
->>> +{
->>> +    switch (reg) {
->>> +    case EM28XX_R40_AC97LSB:
->>> +    case EM28XX_R30_HSCALELOW:
->>> +    case EM28XX_R32_VSCALELOW:
->>> +        return 2;
->>> +    default:
->>> +        return 1;
->>> +    }
->>> +}
->>> +
->>>   static int em28xx_scaler_set(struct em28xx *dev, u16 h, u16 v)
->>>   {
->>>       u8 mode;
->>> @@ -284,11 +296,13 @@ static int em28xx_scaler_set(struct em28xx
->>> *dev, u16 h, u16 v)
->>>
->>>           buf[0] = h;
->>>           buf[1] = h >> 8;
->>> -        em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf, 2);
->>> +        em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf,
->>> +                  em28xx_reg_len(EM28XX_R30_HSCALELOW));
->>>
->>>           buf[0] = v;
->>>           buf[1] = v >> 8;
->>> -        em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf, 2);
->>> +        em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf,
->>> +                  em28xx_reg_len(EM28XX_R32_VSCALELOW));
->> Hmm... registers 0x30 and 0x32 are always 2 bytes long.
->> So this change would needlessly complicate the code.
->>
->
-> The reason I made the change is that em28xx_reg_len() is handling
-> these two registers and I thought it would be good to make it
-> consistent with other writes to these registers and not hard-code the
-> length.
+> On Sat, Mar 22, 2014 at 01:26:06PM -0400, tytso@MIT.EDU wrote:
+> > > Well.  Converting an existing retry-for-ever caller to GFP_NOFAIL is
+> > > good.  Adding new retry-for-ever code is not good.
+> 
+> Oh, and BTW --- now that checkpatch.pl now flags an warning whenever
+> GFP_NOFAIL is used
 
-Well, almost all register writes use a hardcoded length (most of the
-time it's 1). ;-)
+I don't know what the basis for this NOFAIL-is-going-away theory could
+have been.  What's the point in taking a centrally implemented piece of
+logic and splattering its implementation out to tens of different
+callsites?
 
->
-> I think it would help with maintenance later by avoiding hard-coding
-> the length and use the existing routine that returns the length for
-> these registers.
+Obviously I was asleep when I merged that checkpatch change.
 
-Yes, if the length would be variable, then this would be a good idea.
-But AFAIK the length is always 2.
 
->
-> You are correct that it does add a function call in the code path. So
-> if you think the trade-off isn't worth it, I am not going to argue
-> with it :)
 
-I'm more concerned about the fact that readers of the code could think
-that this is a write with a variable length, while the length is
-actually always the same.
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: scripts/checkpatch.pl: __GFP_NOFAIL isn't going away
 
-em28xx_reg_len() is a somewhat dirty hack for vidioc_[g,s]_register
-debugging ioctls only.
-Btw, what happens when you try to compile the code with this patch
-applied and CONFIG_VIDEO_ADV_DEBUG disabled ? ;-)
+Revert 7e4915e78992eb ("checkpatch: add warning of future __GFP_NOFAIL use").
 
-Anyway, I very much appreciate your efforts to improve the em28xx
-driver. :-)
-There's much to do !
+There are no plans to remove __GFP_NOFAIL.
 
-Regards,
-Frank
+__GFP_NOFAIL exists to
 
->
-> -- Shuah
->
+a) centralise the retry-allocation-for-ever operation into the core
+   allocator, which is the appropriate implementation site and
+
+b) permit us to identify code sites which aren't handling memory
+   exhaustion appropriately.
+
+Cc: David Rientjes <rientjes@google.com>
+Cc: Joe Perches <joe@perches.com>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ scripts/checkpatch.pl |    6 ------
+ 1 file changed, 6 deletions(-)
+
+diff -puN scripts/checkpatch.pl~scripts-checkpatchpl-__gfp_nofail-isnt-going-away scripts/checkpatch.pl
+--- a/scripts/checkpatch.pl~scripts-checkpatchpl-__gfp_nofail-isnt-going-away
++++ a/scripts/checkpatch.pl
+@@ -4240,12 +4240,6 @@ sub process {
+ 			     "$1 uses number as first arg, sizeof is generally wrong\n" . $herecurr);
+ 		}
+ 
+-# check for GFP_NOWAIT use
+-		if ($line =~ /\b__GFP_NOFAIL\b/) {
+-			WARN("__GFP_NOFAIL",
+-			     "Use of __GFP_NOFAIL is deprecated, no new users should be added\n" . $herecurr);
+-		}
+-
+ # check for multiple semicolons
+ 		if ($line =~ /;\s*;\s*$/) {
+ 			if (WARN("ONE_SEMICOLON",
+_
 
