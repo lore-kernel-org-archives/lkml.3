@@ -1,103 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751447AbaCVAq3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 20:46:29 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:65506 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750785AbaCVAq0 (ORCPT
+	id S1752129AbaCVAt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 20:49:26 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:35714 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750881AbaCVAtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 20:46:26 -0400
+	Fri, 21 Mar 2014 20:49:22 -0400
+Date: Fri, 21 Mar 2014 20:49:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, x86@kernel.org,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        Chris Wright <chrisw@sous-sol.org>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
+        mingo@redhat.com, Rob Landley <rob@landley.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Alok Kataria <akataria@vmware.com>, systemtap@sourceware.org
+Subject: Re: [PATCH -tip v8 04/26] kprobes: Introduce NOKPROBE_SYMBOL()
+ macro for blacklist
+Message-ID: <20140321204917.636820fa@gandalf.local.home>
+In-Reply-To: <20140305115911.22766.61140.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305115911.22766.61140.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <1391714737-6835-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-References: <20140205230634.GA25598@kroah.com> <1391714737-6835-1-git-send-email-ivo.g.dimitrov.75@gmail.com>
-From: Rabin Vincent <rabin@rab.in>
-Date: Sat, 22 Mar 2014 01:45:44 +0100
-X-Google-Sender-Auth: a4biH9ibuRCeO__GO95w--a7seA
-Message-ID: <CAH+eYFAnc+k+3kSH4_YDRG-zX_ioBwZ_jGdpyvUWFqf_=6kYGA@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: Fix obex in g_nokia.ko causing kernel panic
-To: balbi@ti.com, Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, pali.rohar@gmail.com,
-        pavel@ucw.cz, linux-usb@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=14dae94edbd3f9f8df04f5275443
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---14dae94edbd3f9f8df04f5275443
-Content-Type: text/plain; charset=ISO-8859-1
+On Wed, 05 Mar 2014 20:59:11 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-2014-02-06 20:25 GMT+01:00 Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>:
-> From: Felipe Balbi <balbi@ti.com>
 
-This patch, which is present in 3.14-rc4 as 30a70b026 ("usb: musb: fix
-obex in g_nokia.ko causing kernel panic"), breaks USB gadget support
-on my Pandaboard.  Bisecting points to this commit, reverting it makes
-USB gadget support work again.  The problem is that this patch deletes
-the call which turns on the PHY.
+> 
+> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
+> index 0cfb00f..7062631 100644
+> --- a/Documentation/kprobes.txt
+> +++ b/Documentation/kprobes.txt
+> @@ -22,8 +22,9 @@ Appendix B: The kprobes sysctl interface
+>  
+>  Kprobes enables you to dynamically break into any kernel routine and
+>  collect debugging and performance information non-disruptively. You
+> -can trap at almost any kernel code address, specifying a handler
+> +can trap at almost any kernel code address(*), specifying a handler
+>  routine to be invoked when the breakpoint is hit.
+> +(*: at some part of kernel code can not be trapped, see 1.5 Blacklist)
 
-Config is attached.
+"*: some parts of the kernel code can not be trapped,"
 
-> diff --git a/drivers/usb/musb/omap2430.c b/drivers/usb/musb/omap2430.c
-> index 2a408cd..8aa59a2 100644
-> --- a/drivers/usb/musb/omap2430.c
-> +++ b/drivers/usb/musb/omap2430.c
-> @@ -659,7 +659,6 @@ static int omap2430_runtime_suspend(struct device *dev)
->                                 OTG_INTERFSEL);
->
->                 omap2430_low_level_exit(musb);
-> -               phy_power_off(musb->phy);
->         }
->
->         return 0;
-> @@ -674,7 +673,6 @@ static int omap2430_runtime_resume(struct device *dev)
->                 omap2430_low_level_init(musb);
->                 musb_writel(musb->mregs, OTG_INTERFSEL,
->                                 musb->context.otg_interfsel);
-> -               phy_power_on(musb->phy);
->         }
->
->         return 0;
+>  
+>  There are currently three types of probes: kprobes, jprobes, and
+>  kretprobes (also called return probes).  A kprobe can be inserted
+> @@ -273,6 +274,19 @@ using one of the following techniques:
+>   or
+>  - Execute 'sysctl -w debug.kprobes_optimization=n'
+>  
+> +1.5 Blacklist
+> +
+> +Kprobes can probe almost of the kernel except itself. This means
 
---14dae94edbd3f9f8df04f5275443
-Content-Type: application/x-gzip; name="panda-usb-config.gz"
-Content-Disposition: attachment; filename="panda-usb-config.gz"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ht269jjp0
+s/almost/most/
 
-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
---14dae94edbd3f9f8df04f5275443--
+> +that there are some functions where kprobes cannot probe. Probing
+> +(trapping) such functions can cause recursive trap (e.g. double
+
+   cause a recursive trap
+
+> +fault) or at least the nested probe handler never be called.
+
+  "or the nested probe handler may never be called."
+
+> +Kprobes manages such functions as a blacklist.
+> +If you want to add a function into the blacklist, you just need
+> +to (1) include linux/kprobes.h and (2) use NOKPROBE_SYMBOL() macro
+> +to specify a blacklisted function.
+> +Kprobes checks given probe address with the blacklist and reject
+
+  "checks the given probe address against the black list and rejects"
+
+> +registering if the given address is in the blacklist.
+
+   registering it, if
+
+> +
+>  2. Architectures Supported
+>  
+>  Kprobes, jprobes, and return probes are implemented on the following
+> diff --git a/arch/x86/include/asm/asm.h b/arch/x86/include/asm/asm.h
+> index 4582e8e..7730c1c 100644
+> --- a/arch/x86/include/asm/asm.h
+> +++ b/arch/x86/include/asm/asm.h
+> @@ -57,6 +57,12 @@
+>  	.long (from) - . ;					\
+>  	.long (to) - . + 0x7ffffff0 ;				\
+>  	.popsection
+> +
+> +# define _ASM_NOKPROBE(entry)					\
+> +	.pushsection "_kprobe_blacklist","aw" ;			\
+> +	_ASM_ALIGN ;						\
+> +	_ASM_PTR (entry);					\
+> +	.popsection
+>  #else
+>  # define _ASM_EXTABLE(from,to)					\
+>  	" .pushsection \"__ex_table\",\"a\"\n"			\
+> @@ -71,6 +77,7 @@
+>  	" .long (" #from ") - .\n"				\
+>  	" .long (" #to ") - . + 0x7ffffff0\n"			\
+>  	" .popsection\n"
+> +/* For C file, we already have NOKPROBE_SYMBOL macro */
+>  #endif
+>  
+>  #endif /* _ASM_X86_ASM_H */
+> diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+> index 1b10af8..4c785fd 100644
+> --- a/arch/x86/kernel/paravirt.c
+> +++ b/arch/x86/kernel/paravirt.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/efi.h>
+>  #include <linux/bcd.h>
+>  #include <linux/highmem.h>
+> +#include <linux/kprobes.h>
+>  
+>  #include <asm/bug.h>
+>  #include <asm/paravirt.h>
+> @@ -389,6 +390,9 @@ __visible struct pv_cpu_ops pv_cpu_ops = {
+>  	.end_context_switch = paravirt_nop,
+>  };
+>  
+> +/* At this point, native_get_debugreg has real function entry */
+
+  "has a real"
+
+-- Steve
+
+> +NOKPROBE_SYMBOL(native_get_debugreg);
+> +
+>  struct pv_apic_ops pv_apic_ops = {
+>  #ifdef CONFIG_X86_LOCAL_APIC
+>  	.startup_ipi_hook = paravirt_nop,
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index bc2121f..81d07d5 100644
+> --- a/include/asm-generic/vmlinux.lds.h
