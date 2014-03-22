@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751112AbaCVKB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 06:01:28 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:55503 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759AbaCVKBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 06:01:21 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: behanw@converseincode.com
-Subject: Re: [PATCH] LLVMLinux: Remove warning about returning an uninitialized variable
-Date: Sat, 22 Mar 2014 11:01:16 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>
-References: <1395470329-15065-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1395470329-15065-1-git-send-email-behanw@converseincode.com>
+	id S1751291AbaCVKCG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 06:02:06 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58512 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751191AbaCVKBw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 06:01:52 -0400
+Date: Sat, 22 Mar 2014 11:01:44 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Peter Wu <peter@lekensteyn.nl>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
+Message-ID: <20140322100144.GA5617@pd.tnic>
+References: <20140321192938.GJ3132@tassilo.jf.intel.com>
+ <970fd799-8d4c-4759-8a96-1291b411f307@email.android.com>
+ <20140321213753.GK3132@tassilo.jf.intel.com>
+ <532CB21B.4040502@zytor.com>
+ <8761n7nryi.fsf@tassilo.jf.intel.com>
+ <532CB54C.8020003@zytor.com>
+ <20140322002244.GP22728@two.firstfloor.org>
+ <532CD8A9.5080603@zytor.com>
+ <20140322003056.GQ22728@two.firstfloor.org>
+ <532CDA92.2080409@zytor.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403221101.16961.arnd@arndb.de>
-X-Provags-ID: V02:K0:Z7ILGFrykGdXJ92pOXMUEgjUcDzxAuIrwNpVqFJLJRt
- nUdrSjYXeS4eO4/R+Rf/lxaEt4BkvchQXA4CHfP0Al8rMu8fEO
- m6i0byWq15VfC+24XmiFNJdqzxdwtybuGRhOa2KzBh1KrqncXV
- nCQd/2LuHQSz8+gzHdk7ZItyhys3kU61Zav4t2hP93NnMnaGks
- h3cBQllKwr9y36xnZjOlZjSwTh8fiyY7Xgr9xnWAzOSuxFZmmN
- q6Gfj9N/YNKA1pmwXN6YziFJ4Upuu6lov3VVjhOGmsGuGICNpr
- HxkkAX/P6xWRWAzlbVCarYijsFYfQ6nj0NuUf5EFahimRyj/f9
- +jMROy4SP/iVHHGxpvHVTQYIFVjBV2nTBhvpteo7u
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <532CDA92.2080409@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 March 2014, behanw@converseincode.com wrote:
-> diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
-> index d8d4c89..4c41bb8 100644
-> --- a/include/asm-generic/cmpxchg-local.h
-> +++ b/include/asm-generic/cmpxchg-local.h
-> @@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
->                 break;
->         default:
->                 wrong_size_cmpxchg(ptr);
-> +               prev = 0;
->         }
->         raw_local_irq_restore(flags);
->         return prev;
+On Fri, Mar 21, 2014 at 05:34:26PM -0700, H. Peter Anvin wrote:
+> It's not just KVM, though.
 
+Right, there's also hw models which don't have a certain MSR all of a
+sudden. And yeah yeah, it is architectural so it must be there, yadda,
+yadda, we've heard all that already. But we want to be defensive with
+our MSR accesses and not explode each time a MSR is missing.
 
-How about using __unreachable() instead to annotate the fact that you won't
-get here?
+Btw, hpa, I'm looking at the msr_read/msr_write() things now in
+arch/x86/lib/msr.c and that second argument "struct msr *m" is kinda
+clumsy since all the call sites will need to define a struct msr for
+passing which is not intuitive. So I'd rather turn it into u64 so using
+those functions would be as simple as possible:
 
-	Arnd
+	u64 msrval;
+	int ret;
+
+	...
+
+	ret = msr_read(MSR_BLA, &msrval);
+	if (ret < 0)
+		goto err;
+
+	...
+
+	... msrval ...
+
+and
+
+	ret = msr_write(MSR_DONG, msrval);
+	if (ret < 0) {
+		pr_err("Error configuring my fancy hw feature.\n");
+		goto unwind;
+	}
+
+This should be the most intuitive usage, IMO. Agreed?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
