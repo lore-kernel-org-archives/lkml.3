@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751888AbaCVS4q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 14:56:46 -0400
-Received: from smtprelay0141.hostedemail.com ([216.40.44.141]:45824 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751465AbaCVS4k (ORCPT
+	id S1751431AbaCVTD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 15:03:56 -0400
+Received: from mail-ee0-f45.google.com ([74.125.83.45]:60154 "EHLO
+	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750871AbaCVTDx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 14:56:40 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2199:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3874:4250:4321:5007:6119:6120:7652:10004:10400:10848:10967:11232:11658:11914:12043:12296:12517:12519:12740:13069:13095:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: plot00_56f1b383ba72c
-X-Filterd-Recvd-Size: 2500
-Message-ID: <1395514595.3667.10.camel@joe-AO722>
-Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: tytso@mit.edu, Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        reiserfs-devel@vger.kernel.org, David Rientjes <rientjes@google.com>
-Date: Sat, 22 Mar 2014 11:56:35 -0700
-In-Reply-To: <20140322105524.7baec73a.akpm@linux-foundation.org>
-References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
-	 <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
-	 <20140322170322.GA23583@thunk.org>
-	 <20140322101512.eaeb542b.akpm@linux-foundation.org>
-	 <20140322172606.GB23583@thunk.org> <20140322173207.GC23583@thunk.org>
-	 <20140322105524.7baec73a.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Mar 2014 15:03:53 -0400
+Date: Sat, 22 Mar 2014 14:27:59 +0200
+From: Gleb Natapov <gleb@kernel.org>
+To: Peter Wu <peter@lekensteyn.nl>
+Cc: Venkatesh Srinivas <venkateshs@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
+Message-ID: <20140322122758.GA4292@minantech.com>
+References: <4055058.qLAukpngnj@al>
+ <CAHdzE-88ZPTs_QvVLZsHs=O6TNKG61+iLH+ctGKLMdG5h6G0sg@mail.gmail.com>
+ <20140322085045.GA5535@minantech.com>
+ <1558917.OgpeoK0IhF@al>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1558917.OgpeoK0IhF@al>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 10:55 -0700, Andrew Morton wrote:
-> On Sat, 22 Mar 2014 13:32:07 -0400 tytso@mit.edu wrote:
-> 
-> > On Sat, Mar 22, 2014 at 01:26:06PM -0400, tytso@MIT.EDU wrote:
-> > > > Well.  Converting an existing retry-for-ever caller to GFP_NOFAIL is
-> > > > good.  Adding new retry-for-ever code is not good.
+On Sat, Mar 22, 2014 at 11:05:03AM +0100, Peter Wu wrote:
+> On Saturday 22 March 2014 10:50:45 Gleb Natapov wrote:
+> > On Fri, Mar 21, 2014 at 12:04:32PM -0700, Venkatesh Srinivas wrote:
+> > > On Fri, Mar 21, 2014 at 10:46 AM, Peter Wu <peter@lekensteyn.nl> wrote:
+> > [skip]
 > > 
-> > Oh, and BTW --- now that checkpatch.pl now flags an warning whenever
-> > GFP_NOFAIL is used
+> > > When -cpu host is used, qemu/kvm passed the host CPUID F/M/S to the
+> > > guest. intel_pmu_cpu_*() -> intel_pmu_lbr_reset() uses rdmsr() /
+> > > wrmsr(), rather than the safe variants; if KVM does not support the
+> > > particular MSRs in question, you will see a #GP(0) there. See
+> > > https://lkml.org/lkml/2014/3/13/453 for a similar bug other PMU code.
+> > > 
+> > When kernel is compiled with guest support all rdmsr()/wrmsr() become _safe(),
+> > so the question for Peter is if his guest kernel has guest support enabled?
 > 
-> I don't know what the basis for this NOFAIL-is-going-away theory could
-> have been.  What's the point in taking a centrally implemented piece of
-> logic and splattering its implementation out to tens of different
-> callsites?
-[]
-> diff -puN scripts/checkpatch.pl~scripts-checkpatchpl-__gfp_nofail-isnt-going-away scripts/checkpatch.pl
-[]
-> @@ -4240,12 +4240,6 @@ sub process {
->  			     "$1 uses number as first arg, sizeof is generally wrong\n" . $herecurr);
->  		}
->  
-> -# check for GFP_NOWAIT use
-> -		if ($line =~ /\b__GFP_NOFAIL\b/) {
-> -			WARN("__GFP_NOFAIL",
-> -			     "Use of __GFP_NOFAIL is deprecated, no new users should be added\n" . $herecurr);
-> -		}
+> Linux guest support (CONFIG_HYPERVISOR_GUEST) was not enabled, see
+> .config in the first mail[1]. Enabling that option does not change the
+> situation.
+> 
+> With CONFIG_PARAVIRT and CONFIG_KVM_GUEST enabled, the PMU GPF is gone,
+Yeah, it should be PARAVIRT indeed since rdmsr()/wrmsr() is substituted by _safe()
+using paravirt calls.
 
-How about just changing this message to something like:
+> but now I have a NULL dereference (in rapl_pmu_init). Previously, when
+> `-cpu SandyBridge` was passed to qemu, it would show this:
+> 
+>     [    0.016995] Performance Events: unsupported p6 CPU model 42 no PMU driver, software events only.
+> 
+> The same NULL pointer deref would be visible (slightly different
+> addresses, but the Code lines are equal). With `-host`, the NULL deref
+> with `-cpu host` contains:
+> 
+>     [    0.016445] Performance Events: 16-deep LBR, IvyBridge events, Intel PMU driver.
+> 
+> Full dmesg below.
+> 
+I am confused. Do you see crash now with -cpu SandyBridge and -cpu host, or -cpu host only?
 
-			WARN("__GFP_NOFAIL",
-			     "Use of __GFP_NOFAIL may cause the OOM handler to kill a random process\n" . $herecurr);
-
-
+--
+			Gleb.
