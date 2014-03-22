@@ -1,50 +1,657 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751315AbaCVLDh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 07:03:37 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:50917 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaCVLDd (ORCPT
+	id S1751852AbaCVLF3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 07:05:29 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:50886 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750799AbaCVLFY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 07:03:33 -0400
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LMML <linux-media@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Lad Prabhakar <prabhakar.csengg@gmail.com>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        DLOS <davinci-linux-open-source@linux.davincidsp.com>
-Subject: [PATCH RESEND for v3.15 0/3] Davinci: media: fix releasing of active buffers
-Date: Sat, 22 Mar 2014 16:33:06 +0530
-Message-Id: <1395486189-16713-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 22 Mar 2014 07:05:24 -0400
+Date: Sat, 22 Mar 2014 11:05:15 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Roy Franz <roy.franz@linaro.org>
+Cc: "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>
+Subject: Re: [PATCH v2 06/13] x86/efi: Build our own EFI services pointer
+ table
+Message-ID: <20140322110515.GF2815@console-pimps.org>
+References: <1393938861-16797-1-git-send-email-matt@console-pimps.org>
+ <1393938861-16797-7-git-send-email-matt@console-pimps.org>
+ <CAFECyb8QKy-r_2a7Dy8j9Nv=8pGUKJbnOzLoJhd6shvf0PmBCg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAFECyb8QKy-r_2a7Dy8j9Nv=8pGUKJbnOzLoJhd6shvf0PmBCg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+On Fri, 21 Mar, at 05:52:29PM, Roy Franz wrote:
+> 
+> For both arm32 and arm64 the Linux and EFI calling conventions are the
+> same, so we are directly invoking the function pointers in the
+> boot_services table.  This gives us type checking of those calls,
+> which is nice.The efi_call_physN macros for ARM are currently simply:
+> #define efi_call_phys2(f, a1, a2)        f(a1, a2)
+> 
+> With the changes in this patch, we can't do this anymore, as we were
+> relying on some macro processing to handle this differently on ARM.
 
-Resending the patch series as it missed DLOS ML.
-No-changes from previous version.
+But on the plus side, you no longer have to implement all those
+efi_call_physX() macros ;-)
 
-This patch series fixes the releasing of active buffers in davinci
-drivers which are migrated to vb2.
+> I'd like to propose something like for following (my variadic macros
+> may not be quite right....)
+> 
+> for x86:
+> #define efi_call_early(...)     efi_early->call(__VA_ARGS__)
+> 
+> for arm it would be:
+> #define efi_call_early(function, ...)     efi_early->function(__VA_ARGS__)
 
-Hi Hans,
-This patches are just fixes to v3.15, more patches coming soon
-for vpif using v4l helpers for v3.16.
+Close enough.
 
+> This would allow us to define the efi_config struct with typed
+> function pointers for ARM, and retain the direct invocation along with
+> type checking.  This returns to using a macro, but I think we should
+> be able to use a variadic macro instead of the 6 separate macros we
+> had before.
+> 
+> I plan to use the above technique to incorporate these changes into
+> arm64/arm32, barring any better ideas or objections.
 
-Lad, Prabhakar (3):
-  media: davinci: vpif_capture: fix releasing of active buffers
-  media: davinci: vpif_display: fix releasing of active buffers
-  media: davinci: vpbe_display: fix releasing of active buffers
+Actually, this should be enough to fix this up on ARM,
 
- drivers/media/platform/davinci/vpbe_display.c |   16 ++++++++++-
- drivers/media/platform/davinci/vpif_capture.c |   34 ++++++++++++++++--------
- drivers/media/platform/davinci/vpif_display.c |   35 ++++++++++++++++---------
- 3 files changed, 61 insertions(+), 24 deletions(-)
+#define efi_call_early(f, ...)					\
+	sys_table_arg->boottime->f(__VA_ARGS__);
+
+Then you don't need any of the efi_config stuff.
+
+Yes, the fact that we're making use of the sys_table_arg is invisible at
+the call-site, but meh. Not sure that's a big deal. It allows us to use
+efi_call_early() in the x86 code without needlessly passing 'sys_table'
+around, since we've got a global pointer to it anyhow.
+
+------ >8 ------
+
+>From 5fcc1036d143802e321a745b2c3d793ddb8369ac Mon Sep 17 00:00:00 2001
+From: Matt Fleming <matt.fleming@intel.com>
+Date: Sat, 22 Mar 2014 10:09:01 +0000
+Subject: [PATCH] efi: Abstract x86 efi_early calls
+
+The ARM EFI boot stub doesn't need to care about the efi_early
+infrastructure that x86 requires in order to do mixed mode thunking. So
+wrap everything up in an efi_call_early() macro, which saves ARM having
+to implement efi_config.
+
+This allows x86 to do the necessary indirect jumps to call whatever
+firmware interface is available (native or mixed mode), and at the same
+time allows ARM to use the C type system for parameter checking by
+implementing efi_early_call() like so,
+
+    #define efi_call_early(f, ...)					\
+	    system_table_arg->boottime->f(__VA_ARGS__);
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+---
+ arch/x86/boot/compressed/eboot.c       | 155 ++++++++++++++++-----------------
+ drivers/firmware/efi/efi-stub-helper.c |  44 +++++-----
+ 2 files changed, 98 insertions(+), 101 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
+index 5e1ba4fa3f79..1e6146137f8e 100644
+--- a/arch/x86/boot/compressed/eboot.c
++++ b/arch/x86/boot/compressed/eboot.c
+@@ -21,6 +21,9 @@ static efi_system_table_t *sys_table;
+ 
+ static struct efi_config *efi_early;
+ 
++#define efi_call_early(f, ...)						\
++	efi_early->call(efi_early->f, __VA_ARGS__);
++
+ #define BOOT_SERVICES(bits)						\
+ static void setup_boot_services##bits(struct efi_config *c)		\
+ {									\
+@@ -78,8 +81,8 @@ __file_size32(void *__fh, efi_char16_t *filename_16,
+ 	}
+ 
+ grow:
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 info_sz, (void **)&info);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				info_sz, (void **)&info);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to alloc mem for file info\n");
+ 		return status;
+@@ -88,12 +91,12 @@ grow:
+ 	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
+ 				 &info_sz, info);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		efi_early->call(efi_early->free_pool, info);
++		efi_call_early(free_pool, info);
+ 		goto grow;
+ 	}
+ 
+ 	*file_sz = info->file_size;
+-	efi_early->call(efi_early->free_pool, info);
++	efi_call_early(free_pool, info);
+ 
+ 	if (status != EFI_SUCCESS)
+ 		efi_printk(sys_table, "Failed to get initrd info\n");
+@@ -131,8 +134,8 @@ __file_size64(void *__fh, efi_char16_t *filename_16,
+ 	}
+ 
+ grow:
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 info_sz, (void **)&info);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				info_sz, (void **)&info);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to alloc mem for file info\n");
+ 		return status;
+@@ -141,12 +144,12 @@ grow:
+ 	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
+ 				 &info_sz, info);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		efi_early->call(efi_early->free_pool, info);
++		efi_call_early(free_pool, info);
+ 		goto grow;
+ 	}
+ 
+ 	*file_sz = info->file_size;
+-	efi_early->call(efi_early->free_pool, info);
++	efi_call_early(free_pool, info);
+ 
+ 	if (status != EFI_SUCCESS)
+ 		efi_printk(sys_table, "Failed to get initrd info\n");
+@@ -204,8 +207,8 @@ static inline efi_status_t __open_volume32(void *__image, void **__fh)
+ 	void *handle = (void *)(unsigned long)image->device_handle;
+ 	unsigned long func;
+ 
+-	status = efi_early->call(efi_early->handle_protocol, handle,
+-				 &fs_proto, (void **)&io);
++	status = efi_call_early(handle_protocol, handle,
++				&fs_proto, (void **)&io);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to handle fs_proto\n");
+ 		return status;
+@@ -230,8 +233,8 @@ static inline efi_status_t __open_volume64(void *__image, void **__fh)
+ 	void *handle = (void *)(unsigned long)image->device_handle;
+ 	unsigned long func;
+ 
+-	status = efi_early->call(efi_early->handle_protocol, handle,
+-				 &fs_proto, (void **)&io);
++	status = efi_call_early(handle_protocol, handle,
++				&fs_proto, (void **)&io);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to handle fs_proto\n");
+ 		return status;
+@@ -325,9 +328,7 @@ __setup_efi_pci32(efi_pci_io_protocol_32 *pci, struct pci_setup_rom **__rom)
+ 
+ 	size = pci->romsize + sizeof(*rom);
+ 
+-	status = efi_early->call(efi_early->allocate_pool,
+-				 EFI_LOADER_DATA, size, &rom);
+-
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA, size, &rom);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+@@ -361,7 +362,7 @@ __setup_efi_pci32(efi_pci_io_protocol_32 *pci, struct pci_setup_rom **__rom)
+ 	return status;
+ 
+ free_struct:
+-	efi_early->call(efi_early->free_pool, rom);
++	efi_call_early(free_pool, rom);
+ 	return status;
+ }
+ 
+@@ -387,8 +388,8 @@ setup_efi_pci32(struct boot_params *params, void **pci_handle,
+ 		struct pci_setup_rom *rom = NULL;
+ 		u32 h = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 &pci_proto, (void **)&pci);
++		status = efi_call_early(handle_protocol, h,
++					&pci_proto, (void **)&pci);
+ 
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+@@ -431,9 +432,7 @@ __setup_efi_pci64(efi_pci_io_protocol_64 *pci, struct pci_setup_rom **__rom)
+ 
+ 	size = pci->romsize + sizeof(*rom);
+ 
+-	status = efi_early->call(efi_early->allocate_pool,
+-				 EFI_LOADER_DATA, size, &rom);
+-
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA, size, &rom);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+@@ -465,7 +464,7 @@ __setup_efi_pci64(efi_pci_io_protocol_64 *pci, struct pci_setup_rom **__rom)
+ 	return status;
+ 
+ free_struct:
+-	efi_early->call(efi_early->free_pool, rom);
++	efi_call_early(free_pool, rom);
+ 	return status;
+ 
+ }
+@@ -492,8 +491,8 @@ setup_efi_pci64(struct boot_params *params, void **pci_handle,
+ 		struct pci_setup_rom *rom = NULL;
+ 		u64 h = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 &pci_proto, (void **)&pci);
++		status = efi_call_early(handle_protocol, h,
++					&pci_proto, (void **)&pci);
+ 
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+@@ -524,21 +523,21 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
+ 	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
+ 	unsigned long size = 0;
+ 
+-	status = efi_early->call(efi_early->locate_handle,
+-				 EFI_LOCATE_BY_PROTOCOL,
+-				 &pci_proto, NULL, &size, pci_handle);
++	status = efi_call_early(locate_handle,
++				EFI_LOCATE_BY_PROTOCOL,
++				&pci_proto, NULL, &size, pci_handle);
+ 
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		status = efi_early->call(efi_early->allocate_pool,
+-					 EFI_LOADER_DATA,
+-					 size, (void **)&pci_handle);
++		status = efi_call_early(allocate_pool,
++					EFI_LOADER_DATA,
++					size, (void **)&pci_handle);
+ 
+ 		if (status != EFI_SUCCESS)
+ 			return status;
+ 
+-		status = efi_early->call(efi_early->locate_handle,
+-					 EFI_LOCATE_BY_PROTOCOL, &pci_proto,
+-					 NULL, &size, pci_handle);
++		status = efi_call_early(locate_handle,
++					EFI_LOCATE_BY_PROTOCOL, &pci_proto,
++					NULL, &size, pci_handle);
+ 	}
+ 
+ 	if (status != EFI_SUCCESS)
+@@ -550,7 +549,7 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
+ 		status = setup_efi_pci32(params, pci_handle, size);
+ 
+ free_handle:
+-	efi_early->call(efi_early->free_pool, pci_handle);
++	efi_call_early(free_pool, pci_handle);
+ 	return status;
+ }
+ 
+@@ -651,13 +650,13 @@ setup_gop32(struct screen_info *si, efi_guid_t *proto,
+ 		void *dummy = NULL;
+ 		u32 h = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 proto, (void **)&gop32);
++		status = efi_call_early(handle_protocol, h,
++					proto, (void **)&gop32);
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 &conout_proto, &dummy);
++		status = efi_call_early(handle_protocol, h,
++					&conout_proto, &dummy);
+ 		if (status == EFI_SUCCESS)
+ 			conout_found = true;
+ 
+@@ -754,13 +753,13 @@ setup_gop64(struct screen_info *si, efi_guid_t *proto,
+ 		void *dummy = NULL;
+ 		u64 h = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 proto, (void **)&gop64);
++		status = efi_call_early(handle_protocol, h,
++					proto, (void **)&gop64);
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		status = efi_early->call(efi_early->handle_protocol, h,
+-					 &conout_proto, &dummy);
++		status = efi_call_early(handle_protocol, h,
++					&conout_proto, &dummy);
+ 		if (status == EFI_SUCCESS)
+ 			conout_found = true;
+ 
+@@ -819,14 +818,14 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 	efi_status_t status;
+ 	void **gop_handle = NULL;
+ 
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 size, (void **)&gop_handle);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				size, (void **)&gop_handle);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+-	status = efi_early->call(efi_early->locate_handle,
+-				 EFI_LOCATE_BY_PROTOCOL,
+-				 proto, NULL, &size, gop_handle);
++	status = efi_call_early(locate_handle,
++				EFI_LOCATE_BY_PROTOCOL,
++				proto, NULL, &size, gop_handle);
+ 	if (status != EFI_SUCCESS)
+ 		goto free_handle;
+ 
+@@ -836,7 +835,7 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
+ 		status = setup_gop32(si, proto, size, gop_handle);
+ 
+ free_handle:
+-	efi_early->call(efi_early->free_pool, gop_handle);
++	efi_call_early(free_pool, gop_handle);
+ 	return status;
+ }
+ 
+@@ -858,13 +857,12 @@ setup_uga32(void **uga_handle, unsigned long size, u32 *width, u32 *height)
+ 		void *pciio;
+ 		u32 handle = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, handle,
+-					 &uga_proto, (void **)&uga);
++		status = efi_call_early(handle_protocol, handle,
++					&uga_proto, (void **)&uga);
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		efi_early->call(efi_early->handle_protocol, handle,
+-				&pciio_proto, &pciio);
++		efi_call_early(handle_protocol, handle, &pciio_proto, &pciio);
+ 
+ 		status = efi_early->call((unsigned long)uga->get_mode, uga,
+ 					 &w, &h, &depth, &refresh);
+@@ -904,13 +902,12 @@ setup_uga64(void **uga_handle, unsigned long size, u32 *width, u32 *height)
+ 		void *pciio;
+ 		u64 handle = handles[i];
+ 
+-		status = efi_early->call(efi_early->handle_protocol, handle,
+-					 &uga_proto, (void **)&uga);
++		status = efi_call_early(handle_protocol, handle,
++					&uga_proto, (void **)&uga);
+ 		if (status != EFI_SUCCESS)
+ 			continue;
+ 
+-		efi_early->call(efi_early->handle_protocol, handle,
+-				&pciio_proto, &pciio);
++		efi_call_early(handle_protocol, handle, &pciio_proto, &pciio);
+ 
+ 		status = efi_early->call((unsigned long)uga->get_mode, uga,
+ 					 &w, &h, &depth, &refresh);
+@@ -942,14 +939,14 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
+ 	u32 width, height;
+ 	void **uga_handle = NULL;
+ 
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 size, (void **)&uga_handle);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				size, (void **)&uga_handle);
+ 	if (status != EFI_SUCCESS)
+ 		return status;
+ 
+-	status = efi_early->call(efi_early->locate_handle,
+-				 EFI_LOCATE_BY_PROTOCOL,
+-				 uga_proto, NULL, &size, uga_handle);
++	status = efi_call_early(locate_handle,
++				EFI_LOCATE_BY_PROTOCOL,
++				uga_proto, NULL, &size, uga_handle);
+ 	if (status != EFI_SUCCESS)
+ 		goto free_handle;
+ 
+@@ -981,7 +978,7 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
+ 	si->rsvd_pos = 24;
+ 
+ free_handle:
+-	efi_early->call(efi_early->free_pool, uga_handle);
++	efi_call_early(free_pool, uga_handle);
+ 	return status;
+ }
+ 
+@@ -999,17 +996,17 @@ void setup_graphics(struct boot_params *boot_params)
+ 	memset(si, 0, sizeof(*si));
+ 
+ 	size = 0;
+-	status = efi_early->call(efi_early->locate_handle,
+-				 EFI_LOCATE_BY_PROTOCOL,
+-				 &graphics_proto, NULL, &size, gop_handle);
++	status = efi_call_early(locate_handle,
++				EFI_LOCATE_BY_PROTOCOL,
++				&graphics_proto, NULL, &size, gop_handle);
+ 	if (status == EFI_BUFFER_TOO_SMALL)
+ 		status = setup_gop(si, &graphics_proto, size);
+ 
+ 	if (status != EFI_SUCCESS) {
+ 		size = 0;
+-		status = efi_early->call(efi_early->locate_handle,
+-					 EFI_LOCATE_BY_PROTOCOL,
+-					 &uga_proto, NULL, &size, uga_handle);
++		status = efi_call_early(locate_handle,
++					EFI_LOCATE_BY_PROTOCOL,
++					&uga_proto, NULL, &size, uga_handle);
+ 		if (status == EFI_BUFFER_TOO_SMALL)
+ 			setup_uga(si, &uga_proto, size);
+ 	}
+@@ -1052,8 +1049,8 @@ struct boot_params *make_boot_params(struct efi_config *c)
+ 	else
+ 		setup_boot_services32(efi_early);
+ 
+-	status = efi_early->call(efi_early->handle_protocol, handle,
+-				 &proto, (void *)&image);
++	status = efi_call_early(handle_protocol, handle,
++				&proto, (void *)&image);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
+ 		return NULL;
+@@ -1242,13 +1239,13 @@ static efi_status_t alloc_e820ext(u32 nr_desc, struct setup_data **e820ext,
+ 		sizeof(struct e820entry) * nr_desc;
+ 
+ 	if (*e820ext) {
+-		efi_early->call(efi_early->free_pool, *e820ext);
++		efi_call_early(free_pool, *e820ext);
+ 		*e820ext = NULL;
+ 		*e820ext_size = 0;
+ 	}
+ 
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 size, (void **)e820ext);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				size, (void **)e820ext);
+ 	if (status == EFI_SUCCESS)
+ 		*e820ext_size = size;
+ 
+@@ -1292,7 +1289,7 @@ get_map:
+ 		if (status != EFI_SUCCESS)
+ 			goto free_mem_map;
+ 
+-		efi_early->call(efi_early->free_pool, mem_map);
++		efi_call_early(free_pool, mem_map);
+ 		goto get_map; /* Allocated memory, get map again */
+ 	}
+ 
+@@ -1311,7 +1308,7 @@ get_map:
+ #endif
+ 
+ 	/* Might as well exit boot services now */
+-	status = efi_early->call(efi_early->exit_boot_services, handle, key);
++	status = efi_call_early(exit_boot_services, handle, key);
+ 	if (status != EFI_SUCCESS) {
+ 		/*
+ 		 * ExitBootServices() will fail if any of the event
+@@ -1324,7 +1321,7 @@ get_map:
+ 			goto free_mem_map;
+ 
+ 		called_exit = true;
+-		efi_early->call(efi_early->free_pool, mem_map);
++		efi_call_early(free_pool, mem_map);
+ 		goto get_map;
+ 	}
+ 
+@@ -1338,7 +1335,7 @@ get_map:
+ 	return EFI_SUCCESS;
+ 
+ free_mem_map:
+-	efi_early->call(efi_early->free_pool, mem_map);
++	efi_call_early(free_pool, mem_map);
+ 	return status;
+ }
+ 
+@@ -1379,8 +1376,8 @@ struct boot_params *efi_main(struct efi_config *c,
+ 
+ 	setup_efi_pci(boot_params);
+ 
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 sizeof(*gdt), (void **)&gdt);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				sizeof(*gdt), (void **)&gdt);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table, "Failed to alloc mem for gdt structure\n");
+ 		goto fail;
+diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
+index a0282872d97d..ff50aeebf0d9 100644
+--- a/drivers/firmware/efi/efi-stub-helper.c
++++ b/drivers/firmware/efi/efi-stub-helper.c
+@@ -53,22 +53,22 @@ again:
+ 	 * allocation which may be in a new descriptor region.
+ 	 */
+ 	*map_size += sizeof(*m);
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 *map_size, (void **)&m);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				*map_size, (void **)&m);
+ 	if (status != EFI_SUCCESS)
+ 		goto fail;
+ 
+ 	*desc_size = 0;
+ 	key = 0;
+-	status = efi_early->call(efi_early->get_memory_map, map_size, m,
+-				 &key, desc_size, &desc_version);
++	status = efi_call_early(get_memory_map, map_size, m,
++				&key, desc_size, &desc_version);
+ 	if (status == EFI_BUFFER_TOO_SMALL) {
+-		efi_early->call(efi_early->free_pool, m);
++		efi_call_early(free_pool, m);
+ 		goto again;
+ 	}
+ 
+ 	if (status != EFI_SUCCESS)
+-		efi_early->call(efi_early->free_pool, m);
++		efi_call_early(free_pool, m);
+ 
+ 	if (key_ptr && status == EFI_SUCCESS)
+ 		*key_ptr = key;
+@@ -149,9 +149,9 @@ again:
+ 	if (!max_addr)
+ 		status = EFI_NOT_FOUND;
+ 	else {
+-		status = efi_early->call(efi_early->allocate_pages,
+-					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+-					 nr_pages, &max_addr);
++		status = efi_call_early(allocate_pages,
++					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
++					nr_pages, &max_addr);
+ 		if (status != EFI_SUCCESS) {
+ 			max = max_addr;
+ 			max_addr = 0;
+@@ -161,7 +161,7 @@ again:
+ 		*addr = max_addr;
+ 	}
+ 
+-	efi_early->call(efi_early->free_pool, map);
++	efi_call_early(free_pool, map);
+ fail:
+ 	return status;
+ }
+@@ -221,9 +221,9 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
+ 		if ((start + size) > end)
+ 			continue;
+ 
+-		status = efi_early->call(efi_early->allocate_pages,
+-					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+-					 nr_pages, &start);
++		status = efi_call_early(allocate_pages,
++					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
++					nr_pages, &start);
+ 		if (status == EFI_SUCCESS) {
+ 			*addr = start;
+ 			break;
+@@ -233,7 +233,7 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
+ 	if (i == map_size / desc_size)
+ 		status = EFI_NOT_FOUND;
+ 
+-	efi_early->call(efi_early->free_pool, map);
++	efi_call_early(free_pool, map);
+ fail:
+ 	return status;
+ }
+@@ -247,7 +247,7 @@ static void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
+ 		return;
+ 
+ 	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-	efi_early->call(efi_early->free_pages, addr, nr_pages);
++	efi_call_early(free_pages, addr, nr_pages);
+ }
+ 
+ 
+@@ -307,8 +307,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 	if (!nr_files)
+ 		return EFI_SUCCESS;
+ 
+-	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
+-				 nr_files * sizeof(*files), (void **)&files);
++	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
++				nr_files * sizeof(*files), (void **)&files);
+ 	if (status != EFI_SUCCESS) {
+ 		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
+ 		goto fail;
+@@ -413,7 +413,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
+ 
+ 	}
+ 
+-	efi_early->call(efi_early->free_pool, files);
++	efi_call_early(free_pool, files);
+ 
+ 	*load_addr = file_addr;
+ 	*load_size = file_size_total;
+@@ -427,7 +427,7 @@ close_handles:
+ 	for (k = j; k < i; k++)
+ 		efi_file_close(fh, files[k].handle);
+ free_files:
+-	efi_early->call(efi_early->free_pool, files);
++	efi_call_early(free_pool, files);
+ fail:
+ 	*load_addr = 0;
+ 	*load_size = 0;
+@@ -473,9 +473,9 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
+ 	 * as possible while respecting the required alignment.
+ 	 */
+ 	nr_pages = round_up(alloc_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
+-	status = efi_early->call(efi_early->allocate_pages,
+-				 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
+-				 nr_pages, &efi_addr);
++	status = efi_call_early(allocate_pages,
++				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
++				nr_pages, &efi_addr);
+ 	new_addr = efi_addr;
+ 	/*
+ 	 * If preferred address allocation failed allocate as low as
+-- 
+1.8.5.3
+
 
 -- 
-1.7.9.5
-
+Matt Fleming, Intel Open Source Technology Center
