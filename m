@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751432AbaCVPp6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 11:45:58 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65417 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883AbaCVPp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 11:45:56 -0400
-Message-ID: <532DB02D.4030602@converseincode.com>
-Date: Sat, 22 Mar 2014 08:45:49 -0700
-From: Behan Webster <behanw@converseincode.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751482AbaCVPru (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 11:47:50 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:34922 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750921AbaCVPrr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 11:47:47 -0400
+Date: Sat, 22 Mar 2014 08:47:20 -0700
+From: Kees Cook <keescook@chromium.org>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
+        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mips: export icache_flush_range
+Message-ID: <20140322154720.GA23863@www.outflux.net>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>
-Subject: Re: [PATCH] LLVMLinux: Remove warning about returning an uninitialized
- variable
-References: <1395470329-15065-1-git-send-email-behanw@converseincode.com> <201403221101.16961.arnd@arndb.de>
-In-Reply-To: <201403221101.16961.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/14 03:01, Arnd Bergmann wrote:
-> On Saturday 22 March 2014, behanw@converseincode.com wrote:
->> diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
->> index d8d4c89..4c41bb8 100644
->> --- a/include/asm-generic/cmpxchg-local.h
->> +++ b/include/asm-generic/cmpxchg-local.h
->> @@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
->>                  break;
->>          default:
->>                  wrong_size_cmpxchg(ptr);
->> +               prev = 0;
->>          }
->>          raw_local_irq_restore(flags);
->>          return prev;
->
-> How about using __unreachable() instead to annotate the fact that you won't
-> get here?
-Yours is a _much_ better idea. Will fix.
+The lkdtm module performs tests against executable memory ranges, so
+it needs to flush the icache for proper behaviors. Other architectures
+already export this, so do the same for MIPS.
 
-Thanks,
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+This is currently untested! I'm building a MIPS cross-compiler now...
+If someone can validate this fixes the build when lkdtm is a module,
+that would be appreciated. :)
+---
+ arch/mips/mm/cache.c |    1 +
+ 1 file changed, 1 insertion(+)
 
-Behan
+diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
+index fde7e56d13fe..b3f1df13d9f6 100644
+--- a/arch/mips/mm/cache.c
++++ b/arch/mips/mm/cache.c
+@@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr, int size);
+ void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
+ 
+ EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
++EXPORT_SYMBOL_GPL(flush_icache_range);
+ 
+ /* MIPS specific cache operations */
+ void (*flush_cache_sigtramp)(unsigned long addr);
+-- 
+1.7.9.5
+
 
 -- 
-Behan Webster
-behanw@converseincode.com
-
+Kees Cook
+Chrome OS Security
