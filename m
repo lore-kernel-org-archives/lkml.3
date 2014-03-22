@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750872AbaCVHES (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 03:04:18 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:37550 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750706AbaCVHEM (ORCPT
+	id S1750983AbaCVHE7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 03:04:59 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42013 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900AbaCVHE4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 03:04:12 -0400
-Message-ID: <532D35DF.5020203@synopsys.com>
-Date: Sat, 22 Mar 2014 12:33:59 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>
-CC: lkml <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: [PATCH 01/44] arc: Use get_signal() signal_setup_done()
-References: <1393804559-7701-1-git-send-email-richard@nod.at> <1393804559-7701-2-git-send-email-richard@nod.at> <C2D7FE5348E1B147BCA15975FBA2307517FC80@IN01WEMBXA.internal.synopsys.com> <531445A7.1090001@nod.at>
-In-Reply-To: <531445A7.1090001@nod.at>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.197.212]
+	Sat, 22 Mar 2014 03:04:56 -0400
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: [PATCH] block: Use RCU_INIT_POINTER(x, NULL) in blk-cgroup.c
+Date: Sat, 22 Mar 2014 12:33:58 +0530
+Message-Id: <1395471838-3099-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Richard,
+This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 
-On Monday 03 March 2014 02:34 PM, Richard Weinberger wrote:
->> Minor comment below, otherwise 
->> > 
->> > Acked-by: Vineet Gupta <vgupta@synopsys.com>
->> > 
->> > P.S. Since this depends on translate_sig change, I can't possibly take it via ARC
->> > tree.
-> I hope we can merge this via Al's signal.git tree.
+Since rcu_assign_pointer() is to ensure that the initialization of a structure 
+is carried out before storing a pointer to that structure. So, rcu_assign_pointer(p, NULL) 
+can be safely converted to RCU_INIT_POINTER(p, NULL).
 
-I don't see the series in linux-next yet so they will they not likely make it into
-3.15. correct ?
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+ block/blk-cgroup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
--Vineet
-
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index 4e491d9..fc62c47 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -337,7 +337,7 @@ static void blkg_destroy(struct blkcg_gq *blkg)
+ 	 * will.  Hint assignment itself can race safely.
+ 	 */
+ 	if (rcu_dereference_raw(blkcg->blkg_hint) == blkg)
+-		rcu_assign_pointer(blkcg->blkg_hint, NULL);
++		RCU_INIT_POINTER(blkcg->blkg_hint, NULL);
+ 
+ 	/*
+ 	 * If root blkg is destroyed.  Just clear the pointer since root_rl
+-- 
+1.7.9.5
 
