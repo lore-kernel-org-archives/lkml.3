@@ -1,75 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751685AbaCVS4J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 14:56:09 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:52526 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbaCVS4D (ORCPT
+	id S1751830AbaCVS4f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 14:56:35 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:39281 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbaCVSzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 14:56:03 -0400
+	Sat, 22 Mar 2014 14:55:55 -0400
+Date: Sat, 22 Mar 2014 14:55:51 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Kevin Hilman <khilman@linaro.org>, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux.com>, Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
+Message-ID: <20140322185551.GA24945@htj.dyndns.org>
+References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
+ <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
+ <7ha9csionc.fsf@paris.lan>
+ <20140322170114.GA20038@localhost.localdomain>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKjt3oBxeHPdDjUGoH+JMma21rbgFjUab62yCXtck_SZA@mail.gmail.com>
-References: <20140322151657.GA23606@www.outflux.net>
-	<CAL_JsqKjt3oBxeHPdDjUGoH+JMma21rbgFjUab62yCXtck_SZA@mail.gmail.com>
-Date: Sat, 22 Mar 2014 12:56:03 -0600
-X-Google-Sender-Auth: qIsqjV5fMejIH-mHvRkSLyWj5NE
-Message-ID: <CAGXu5j+PZ8yX1=btQTwt58maQKTRWWuqnmMNhwzG7Y1fuRJ9qA@mail.gmail.com>
-Subject: Re: [PATCH v3] ARM: mm: fix reporting of read-only PMD bits
-From: Kees Cook <keescook@chromium.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Steve Capper <steve.capper@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140322170114.GA20038@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 10:45 AM, Rob Herring <robherring2@gmail.com> wrote:
-> On Sat, Mar 22, 2014 at 10:16 AM, Kees Cook <keescook@chromium.org> wrote:
->> On non-LPAE ARMv6+, read-only PMD bits are defined with the combination
->> "PMD_SECT_APX | PMD_SECT_AP_WRITE". Adjusted the bit masks to correctly
->> report this.
->>
->> Signed-off-by: Kees Cook <keescook@chromium.org>
->> ---
->> v3:
->>  - check for pre-v6 CPUs on the page table report.
->> v2:
->>  - reorder bits, suggested by Olof.
->> ---
->>  arch/arm/mm/dump.c |   31 +++++++++++++++++++++++++------
->>  1 file changed, 25 insertions(+), 6 deletions(-)
->>
->> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
->> index ef69152f9b52..c1122d266c45 100644
->> --- a/arch/arm/mm/dump.c
->> +++ b/arch/arm/mm/dump.c
->> @@ -121,23 +121,42 @@ static const struct prot_bits pte_bits[] = {
->>
->>  static const struct prot_bits section_bits[] = {
->>  #ifndef CONFIG_ARM_LPAE
->> -       /* These are approximate */
->> +# if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
->
-> You can simplify the ifdef logic like this:
->
-> #ifdef CONFIG_ARM_LPAE /* Implies v7 */
->
-> #elif __LINUX_ARM_ARCH__ >= 6
->
-> #else
-> /* v4/v5 */
-> #endif
+On Sat, Mar 22, 2014 at 06:01:18PM +0100, Frederic Weisbecker wrote:
+> 1) Call a per workqueue mutex when a work execute on an ordered workqueue. Although
+>   contention should be very rare (only while we replace the workqueue attrs and
+>   switch to a new worker), frequent locking may have a visible impact.
+> 
+> 2) Have a seperate worker for all ordered workqueues. But we may lose a bit of
+>   serialization with other workqueues along the way.
 
-Ah! Perfect, thanks! I'll resend it this way.
+Ordered workqueues are always bound to the fallback default worker
+pool.  Why not just adjust cpus_allowed of the worker pool?
 
--Kees
+Thanks.
 
 -- 
-Kees Cook
-Chrome OS Security
+tejun
