@@ -1,173 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaCVBFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 21:05:14 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:30925 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750994AbaCVBFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 21:05:11 -0400
-Date: Fri, 21 Mar 2014 21:05:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Sasha Levin <sasha.levin@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -tip v8 08/26] kprobes/x86: Call exception handlers
- directly from do_int3/do_debug
-Message-ID: <20140321210508.358c30ee@gandalf.local.home>
-In-Reply-To: <20140305115939.22766.21199.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140305115939.22766.21199.stgit@ltc230.yrl.intra.hitachi.co.jp>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1751447AbaCVBSE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 21:18:04 -0400
+Received: from mail-bl2hn0249.outbound.protection.outlook.com ([65.55.169.249]:30364
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750785AbaCVBSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 Mar 2014 21:18:00 -0400
+Reply-To: <adrian_bayford101@yahoo.com>
+From: Adrian Gillian Bayford <clany391@MORRISVILLE.EDU>
+Subject: You have received 1.5m pounds as donation see link www.bbc.co.uk/news/uk-england-19254228 send name address and phone number for info
+Date: Sat, 22 Mar 2014 06:47:01 +0530
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <8e8ce772-1689-4e69-8845-ce2f570490b0@system38.csntprod.morrisville.edu>
+To: Undisclosed recipients:;
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?windows-1251?Q?CIP:136.204.34.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:SPM;SFS:(1?=
+ =?windows-1251?Q?0019001)(979002)(6009001)(448001)(199002)(189002)(949460?=
+ =?windows-1251?Q?01)(93916002)(85326001)(23686002)(83322001)(31686003)(90?=
+ =?windows-1251?Q?146001)(93136001)(87266001)(85852003)(44976005)(74706001?=
+ =?windows-1251?Q?)(87286001)(85306002)(77982001)(93516002)(50226001)(9431?=
+ =?windows-1251?Q?6002)(49866001)(87936001)(95416001)(56816005)(83072002)(?=
+ =?windows-1251?Q?80976001)(88136002)(61296002)(1671002)(86362001)(3169600?=
+ =?windows-1251?Q?2)(73894003)(89996001)(56776001)(47976001)(59766001)(927?=
+ =?windows-1251?Q?26001)(20776003)(50986001)(77156001)(46102001)(50466002)?=
+ =?windows-1251?Q?(75432001)(79102001)(65816001)(63696002)(80022001)(43066?=
+ =?windows-1251?Q?001)(69226001)(44716002)(74876001)(6806004)(97186001)(43?=
+ =?windows-1251?Q?96001)(97336001)(77096001)(33646001)(62966002)(881003)(8?=
+ =?windows-1251?Q?1542001)(621065002)(54316002)(74366001)(47776003)(746620?=
+ =?windows-1251?Q?01)(47736001)(40036003)(81342001)(95666003)(62236002)(76?=
+ =?windows-1251?Q?786001)(47446002)(76482001)(74502001)(76796001)(98676001?=
+ =?windows-1251?Q?)(51856001)(218223001)(76176001)(82782002)(1676001)(2387?=
+ =?windows-1251?Q?6007)(14926002)(969003)(989001)(999001)(1009001);DIR:OUT?=
+ =?windows-1251?Q?;SFP:1501;SCL:5;SRVR:BN1AFFO11HUB027;H:morrisville.edu;F?=
+ =?windows-1251?Q?PR:;MLV:ovrspm;PTR:mail.morrisville.edu;A:1;MX:1;LANG:en?=
+ =?windows-1251?Q?;?=
+X-OriginatorOrg: morrisville.edu
+X-Forefront-PRVS: 01583E185C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On Wed, 05 Mar 2014 20:59:39 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-
-> To avoid a kernel crash by probing on lockdep code, call
-> kprobe_int3_handler and kprobe_debug_handler directly
-> from do_int3 and do_debug. Since there is a locking code
-> in notify_die, lockdep code can be invoked. And because
-> the lockdep involves printk() related things, theoretically,
-> we need to prohibit probing on much more code...
-> 
-> Anyway, most of the int3 handlers in the kernel are already
-> called from do_int3 directly, e.g. ftrace_int3_handler,
-> poke_int3_handler, kgdb_ll_trap. Actually only
-> kprobe_exceptions_notify is on the notifier_call_chain.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-> Cc: Andi Kleen <ak@linux.intel.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  arch/x86/include/asm/kprobes.h |    2 ++
->  arch/x86/kernel/kprobes/core.c |   24 +++---------------------
->  arch/x86/kernel/traps.c        |   10 ++++++++++
->  3 files changed, 15 insertions(+), 21 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/kprobes.h b/arch/x86/include/asm/kprobes.h
-> index 9454c16..53cdfb2 100644
-> --- a/arch/x86/include/asm/kprobes.h
-> +++ b/arch/x86/include/asm/kprobes.h
-> @@ -116,4 +116,6 @@ struct kprobe_ctlblk {
->  extern int kprobe_fault_handler(struct pt_regs *regs, int trapnr);
->  extern int kprobe_exceptions_notify(struct notifier_block *self,
->  				    unsigned long val, void *data);
-> +extern int kprobe_int3_handler(struct pt_regs *regs);
-> +extern int kprobe_debug_handler(struct pt_regs *regs);
->  #endif /* _ASM_X86_KPROBES_H */
-> diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-> index 4708d6e..566958e 100644
-> --- a/arch/x86/kernel/kprobes/core.c
-> +++ b/arch/x86/kernel/kprobes/core.c
-> @@ -559,7 +559,7 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
->   * Interrupts are disabled on entry as trap3 is an interrupt gate and they
->   * remain disabled throughout this function.
->   */
-> -static int __kprobes kprobe_handler(struct pt_regs *regs)
-> +int __kprobes kprobe_int3_handler(struct pt_regs *regs)
->  {
->  	kprobe_opcode_t *addr;
->  	struct kprobe *p;
-> @@ -857,7 +857,7 @@ no_change:
->   * Interrupts are disabled on entry as trap1 is an interrupt gate and they
->   * remain disabled throughout this function.
->   */
-> -static int __kprobes post_kprobe_handler(struct pt_regs *regs)
-> +int __kprobes kprobe_debug_handler(struct pt_regs *regs)
->  {
->  	struct kprobe *cur = kprobe_running();
->  	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
-> @@ -960,22 +960,7 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
->  	if (args->regs && user_mode_vm(args->regs))
->  		return ret;
->  
-> -	switch (val) {
-> -	case DIE_INT3:
-> -		if (kprobe_handler(args->regs))
-> -			ret = NOTIFY_STOP;
-> -		break;
-> -	case DIE_DEBUG:
-> -		if (post_kprobe_handler(args->regs)) {
-> -			/*
-> -			 * Reset the BS bit in dr6 (pointed by args->err) to
-> -			 * denote completion of processing
-> -			 */
-> -			(*(unsigned long *)ERR_PTR(args->err)) &= ~DR_STEP;
-> -			ret = NOTIFY_STOP;
-> -		}
-
-The DIE_DEBUG case is removed but not added anyplace else. The change
-log doesn't say why this was removed.
-
--- Steve
-
-> -		break;
-> -	case DIE_GPF:
-> +	if (val == DIE_GPF) {
->  		/*
->  		 * To be potentially processing a kprobe fault and to
->  		 * trust the result from kprobe_running(), we have
-> @@ -984,9 +969,6 @@ kprobe_exceptions_notify(struct notifier_block *self, unsigned long val, void *d
->  		if (!preemptible() && kprobe_running() &&
->  		    kprobe_fault_handler(args->regs, args->trapnr))
->  			ret = NOTIFY_STOP;
-> -		break;
-> -	default:
-> -		break;
->  	}
->  	return ret;
->  }
-> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-> index 57409f6..e5d4a70 100644
-> --- a/arch/x86/kernel/traps.c
-> +++ b/arch/x86/kernel/traps.c
-> @@ -334,6 +334,11 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
->  		goto exit;
->  #endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
->  
-> +#ifdef CONFIG_KPROBES
-> +	if (kprobe_int3_handler(regs))
-> +		return;
-> +#endif
-> +
->  	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
->  			SIGTRAP) == NOTIFY_STOP)
->  		goto exit;
-> @@ -440,6 +445,11 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
->  	/* Store the virtualized DR6 value */
->  	tsk->thread.debugreg6 = dr6;
->  
-> +#ifdef CONFIG_KPROBES
-> +	if (kprobe_debug_handler(regs))
-> +		goto exit;
-> +#endif
-> +
->  	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
->  							SIGTRAP) == NOTIFY_STOP)
->  		goto exit;
-> 
 
