@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752072AbaCVXMT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 19:12:19 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:47297 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750975AbaCVXMR (ORCPT
+	id S1751903AbaCVXWG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 19:22:06 -0400
+Received: from smtprelay0166.hostedemail.com ([216.40.44.166]:55287 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750866AbaCVXWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 19:12:17 -0400
-Message-ID: <532E18EE.3090008@gmail.com>
-Date: Sun, 23 Mar 2014 07:12:46 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol flush_icache_range()
- for module using
-References: <531B8D32.6000000@gmail.com> <531B8FD8.6040704@gmail.com> <20140308221721.GA30934@samfundet.no> <531C8683.2010908@gmail.com> <5324C3B2.1000802@gmail.com>
-In-Reply-To: <5324C3B2.1000802@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 22 Mar 2014 19:22:04 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3870:3871:3872:4321:4605:5007:7652:10004:10026:10400:10848:11658:11914:12043:12517:12519:12555:13019:13069:13141:13230:13311:13357:14093:14097,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: grade17_4bf270962c556
+X-Filterd-Recvd-Size: 2657
+Message-ID: <1395530518.3667.29.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Update "Missing a blank line after
+ declarations" test
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 22 Mar 2014 16:21:58 -0700
+In-Reply-To: <20140322154020.f7b6a72c.akpm@linux-foundation.org>
+References: <20140321142111.f0286ecdb8a03dd526f290ea@linux-foundation.org>
+	 <1395526999.3667.17.camel@joe-AO722>
+	 <20140322154020.f7b6a72c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+"struct foo *bar" does not match the regex "$Declare\s+$Ident"
+$Declare matches "struct foo *" but there is no required space
+between the pointer "*" and the $Ident.
 
-Is this patch OK?
+Also it ends in a pointer, the $Declare variable also contains all
+trailing spaces after the declaration so there is no space between
+$Declare and $Ident.
 
-If it is necessary to continue analysing more details, please let me
-know, and I will/should continue.
+ie:	"struct foo * bar" does not match "$Declare\s+$Ident"
 
-Thanks.
+So, change the \s+ to \s* to have this regex match any of
+	"struct foo bar", "struct foo *bar", and "struct foo * bar"
 
-On 03/16/2014 05:18 AM, Chen Gang wrote:
-> On 03/09/2014 11:19 PM, Chen Gang wrote:
->> On 03/09/2014 06:17 AM, Hans-Christian Egtvedt wrote:
->>> Around Sun 09 Mar 2014 05:47:04 +0800 or thereabout, Chen Gang wrote:
->>>>
->>>> After this patch, our linux kernel can pass "avr32-linux-" allmodconfig
->>>> (it contents quite a few of warnings, but after check, I guess they are
->>>> not kernel's issue).
->>>
->>> That sounds great, I am a bit surprised however that the lkdtm module need
->>> flush_icache_range. Would have been interesting to look into what causes this
->>> dependency.
->>>
-> 
-> After read a little more details for lkdtm, I guess "after overwrite an
-> executable area by do_nothing(), it needs flush_icache_range() to be
-> sure the new instructions/data must have effect with all cpu".
-> 
-> Welcome any additional information for it.
-> 
-> Thanks.
-> 
->>
->> "driver/misc/lkdtm.c" will use this flush_icache_range().
->>
->> And some architectures export it to modules.
->>
->>   [root@gchen arch]# grep -rn flush_icache_range * | grep EXPORT
->>   arm64/mm/flush.c:105:EXPORT_SYMBOL(flush_icache_range);
->>   avr32/mm/cache.c:114:EXPORT_SYMBOL(flush_icache_range);
->>   m68k/mm/cache.c:106:EXPORT_SYMBOL(flush_icache_range);
->>   mn10300/mm/cache-inv-icache.c:129:EXPORT_SYMBOL(flush_icache_range);
->>   mn10300/mm/cache-flush-icache.c:155:EXPORT_SYMBOL(flush_icache_range);
->>   sparc/mm/init_64.c:435:EXPORT_SYMBOL(flush_icache_range);
->>
->>
->> Welcome any more details information by any other members, thanks.
->>
->>
-> 
-> Thanks.
-> 
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 93beee8..bca2be0 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -2259,7 +2259,7 @@ sub process {
+ # check for missing blank lines after declarations
+ 		if ($sline =~ /^\+\s+\S/ &&			#Not at char 1
+ 			# actual declarations
+-		    ($prevline =~ /^\+\s+$Declare\s+$Ident\s*[=,;\[]/ ||
++		    ($prevline =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
+ 			# foo bar; where foo is some local typedef or #define
+ 		     $prevline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+ 			# known declaration macros
+@@ -2271,7 +2271,7 @@ sub process {
+ 			# not starting a section or a macro "\" extended line
+ 		      $prevline =~ /(?:\{\s*|\\)$/) &&
+ 			# looks like a declaration
+-		    !($sline =~ /^\+\s+$Declare/ ||
++		    !($sline  =~ /^\+\s+$Declare\s*$Ident\s*[=,;\[]/ ||
+ 			# foo bar; where foo is some local typedef or #define
+ 		      $sline =~ /^\+\s+$Ident(?:\s+|\s*\*\s*)$Ident\s*[=,;\[]/ ||
+ 			# known declaration macros
 -- 
-Chen Gang
+1.8.1.2.459.gbcd45b4.dirty
 
-Open, share and attitude like air, water and life which God blessed
+
+
