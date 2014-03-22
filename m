@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaCVUjC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 16:39:02 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:53495 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751230AbaCVUjA (ORCPT
+	id S1751765AbaCVUl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 16:41:59 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:33357 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750898AbaCVUl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 16:39:00 -0400
+	Sat, 22 Mar 2014 16:41:57 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: infinipath@intel.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com, linux-rdma@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/infiniband: Use RCU_INIT_POINTER(x, NULL) in hw/qib/qib_qp.c
-Date: Sun, 23 Mar 2014 02:08:00 +0530
-Message-Id: <1395520680-3459-1-git-send-email-monamagarwal123@gmail.com>
+To: rcj@linux.vnet.ibm.com, mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com,
+        herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/crypto: Use RCU_INIT_POINTER(x, NULL) in nx/nx-842.c
+Date: Sun, 23 Mar 2014 02:10:54 +0530
+Message-Id: <1395520854-3553-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,35 +28,31 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/infiniband/hw/qib/qib_qp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/crypto/nx/nx-842.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/qib/qib_qp.c b/drivers/infiniband/hw/qib/qib_qp.c
-index 0cad0c4..04c8b74 100644
---- a/drivers/infiniband/hw/qib/qib_qp.c
-+++ b/drivers/infiniband/hw/qib/qib_qp.c
-@@ -255,10 +255,10 @@ static void remove_qp(struct qib_ibdev *dev, struct qib_qp *qp)
- 
- 	if (rcu_dereference_protected(ibp->qp0,
- 			lockdep_is_held(&dev->qpt_lock)) == qp) {
--		rcu_assign_pointer(ibp->qp0, NULL);
-+		RCU_INIT_POINTER(ibp->qp0, NULL);
- 	} else if (rcu_dereference_protected(ibp->qp1,
- 			lockdep_is_held(&dev->qpt_lock)) == qp) {
--		rcu_assign_pointer(ibp->qp1, NULL);
-+		RCU_INIT_POINTER(ibp->qp1, NULL);
- 	} else {
- 		struct qib_qp *q;
- 		struct qib_qp __rcu **qpp;
-@@ -315,7 +315,7 @@ unsigned qib_free_all_qps(struct qib_devdata *dd)
- 	for (n = 0; n < dev->qp_table_size; n++) {
- 		qp = rcu_dereference_protected(dev->qp_table[n],
- 			lockdep_is_held(&dev->qpt_lock));
--		rcu_assign_pointer(dev->qp_table[n], NULL);
-+		RCU_INIT_POINTER(dev->qp_table[n], NULL);
- 
- 		for (; qp; qp = rcu_dereference_protected(qp->next,
- 					lockdep_is_held(&dev->qpt_lock)))
+diff --git a/drivers/crypto/nx/nx-842.c b/drivers/crypto/nx/nx-842.c
+index 1e5481d..c4fcbf4 100644
+--- a/drivers/crypto/nx/nx-842.c
++++ b/drivers/crypto/nx/nx-842.c
+@@ -1234,7 +1234,7 @@ static int __exit nx842_remove(struct vio_dev *viodev)
+ 	old_devdata = rcu_dereference_check(devdata,
+ 			lockdep_is_held(&devdata_mutex));
+ 	of_reconfig_notifier_unregister(&nx842_of_nb);
+-	rcu_assign_pointer(devdata, NULL);
++	RCU_INIT_POINTER(devdata, NULL);
+ 	spin_unlock_irqrestore(&devdata_mutex, flags);
+ 	synchronize_rcu();
+ 	dev_set_drvdata(&viodev->dev, NULL);
+@@ -1285,7 +1285,7 @@ static void __exit nx842_exit(void)
+ 	spin_lock_irqsave(&devdata_mutex, flags);
+ 	old_devdata = rcu_dereference_check(devdata,
+ 			lockdep_is_held(&devdata_mutex));
+-	rcu_assign_pointer(devdata, NULL);
++	RCU_INIT_POINTER(devdata, NULL);
+ 	spin_unlock_irqrestore(&devdata_mutex, flags);
+ 	synchronize_rcu();
+ 	if (old_devdata)
 -- 
 1.7.9.5
 
