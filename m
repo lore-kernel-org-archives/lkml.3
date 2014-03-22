@@ -1,75 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752038AbaCVWDd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 18:03:33 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:22154 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaCVWDb (ORCPT
+	id S1752202AbaCVWED (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 18:04:03 -0400
+Received: from www.linutronix.de ([62.245.132.108]:56183 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751501AbaCVWEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 18:03:31 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-15; format=flowed
-X-AuditID: cbfec37a-b7fc06d00000555a-e0-532e08b2bfa0
-Message-id: <532E08AF.5030008@samsung.com>
-Date: Sat, 22 Mar 2014 16:03:27 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.2.0
-To: =?ISO-8859-15?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>,
-        m.chehab@samsung.com
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH] media: em28xx-video - change em28xx_scaler_set() to use
- em28xx_reg_len()
-References: <1395435890-15100-1-git-send-email-shuah.kh@samsung.com>
- <532D82C9.6010401@googlemail.com> <532DAAD0.6060209@samsung.com>
- <532DCB06.9040601@googlemail.com>
-In-reply-to: <532DCB06.9040601@googlemail.com>
-Content-transfer-encoding: 8bit
-X-Originating-IP: [105.144.134.241]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t9hX91NHHrBBtPeSFlsnf2Z2eLyrjls
-	Fj0btrJafP3p4MDisXPWXXaPpxMms3t83iQXwBzFZZOSmpNZllqkb5fAlfH76ibmgl72ig1v
-	7jI3MF5j7WLk5JAQMJG4va6FEcIWk7hwbz1bFyMXh5DAMkaJzYsamEASvAKCEj8m32PpYuTg
-	YBawkTg4Pw2ippdJ4u36yUwQzjZGiY9H50I1aElMenmABcRmEVCVaOqZBLaBTUBd4vPrHewg
-	tpCAnETTktXMILaoQITEq7MTwepFBGIk2qa3gdUwC4RIrF5zDKxXWCBe4v7xZmaIZasZJb62
-	rAAr4hTQkzj5sJkNokFe4uCV5ywQC5Ql/lw+xQTxmrLE8ekH2CcwisxC8tAshIdmIelewMi8
-	ilGstDi5oDgpPbXCUK84Mbe4NC9dLzk/dxMjJCqqdjDe+WpziFGAg1GJh/fEJ91gIdbEsuLK
-	3EOMEhzMSiK8LUx6wUK8KYmVValF+fFFpTmpxYcYmTg4pRoYK8zFfh8wttHrasoqcJqdHhHp
-	3xoUU73Tmn+dd29C3uSX/qetJbl+ibk3Bpyr94o4sMRhw8n77PanOV+afcjzeyLouOT34e4J
-	IbeebfnuJr11nZV7y+ps63XR1RmyguIdS0IOGUe/nbvtdc2XA4Vqstt+nsg9cHT2pFYRm07/
-	Mj3FTWf5YpiUWIozEg21mIuKEwGF3rMhaAIAAA==
+	Sat, 22 Mar 2014 18:04:00 -0400
+Date: Sat, 22 Mar 2014 23:03:49 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Laura Abbott <lauraa@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Fenghua Yu <fenghua.yu@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux390@de.ibm.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+ actual Kconfig
+In-Reply-To: <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.DEB.2.02.1403222302510.18573@ionos.tec.linutronix.de>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>  <1395512032-20575-2-git-send-email-lauraa@codeaurora.org> <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22/2014 11:40 AM, Frank Schäfer wrote:
->
-> I'm more concerned about the fact that readers of the code could think
-> that this is a write with a variable length, while the length is
-> actually always the same.
+On Sat, 22 Mar 2014, James Bottomley wrote:
 
-Fair enough.
+> On Sat, 2014-03-22 at 11:13 -0700, Laura Abbott wrote:
+> > Rather than have architectures #define ARCH_HAS_SG_CHAIN in an architecture
+> > specific scatterlist.h, make it a proper Kconfig option and use that
+> > instead. At same time, remove the header files are are now mostly
+> > useless and just include asm-generic/scatterlist.h.
+> 
+> Well, the transformation looks fine.  Perhaps part of the reason for the
+> lack of response is that there's no compelling reason in the change log
+> above for doing this.  The usual reason for eliminating ARCH_HAS is that
+> it's hiding something that would be better expressed a different way
+> (that's actually intuitive to grep) or that it's expressing something
+> that should be configurable.  Neither of these reasons apply in this
+> case, because SG_CHAIN definitely is a property of the architecture not
+> the config space and it's not really hiding anything.
 
->
-> em28xx_reg_len() is a somewhat dirty hack for vidioc_[g,s]_register
-> debugging ioctls only.
+Getting rid of pointless copied code is definitely a good enough
+reason and the patch removes quite some of that.
+ 
+Thanks,
 
-I didn't realize that. In that case, it doesn't make sense to propagate 
-the change to non-debug code. This patch can be dropped. I thought 
-em28xx_reg_len() is good example of finding register length for these 
-registers.
-
-> Btw, what happens when you try to compile the code with this patch
-> applied and CONFIG_VIDEO_ADV_DEBUG disabled ? ;-)
-
-CONFIG_VIDEO_ADV_DEBUG is disabled in my config.
-
--- Shuah
-
-
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+	tglx
