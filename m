@@ -1,63 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752233AbaCVC2K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 Mar 2014 22:28:10 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:48483 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987AbaCVC2D (ORCPT
+	id S1752837AbaCVCbC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 Mar 2014 22:31:02 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.182]:16715 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752763AbaCVCa5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 Mar 2014 22:28:03 -0400
-Date: Sat, 22 Mar 2014 07:57:54 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Paul McKenney <paulmck@linux.vnet.ibm.com>
-Subject: Re: Tasks stuck in futex code (in 3.14-rc6)
-Message-ID: <20140322022754.GA21677@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20140320053350.GB30295@linux.vnet.ibm.com>
- <1395295019.2612.11.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFzP60Ucn0snFchHNw2tOnS6HYp-6n+f+9nxrbTPw8fTfQ@mail.gmail.com>
- <1395335909.14694.15.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFwH2sJKCH6hUf8H-7nMPo8YwFCR6oP8McZ5VpMcGDrYSw@mail.gmail.com>
- <1395342510.14694.43.camel@buesod1.americas.hpqcorp.net>
- <CA+55aFw8wSe-DUtZ8=rjFJzXYmOSsZ0JzS-_jsZKrDai8LZMXw@mail.gmail.com>
- <1395346808.14694.62.camel@buesod1.americas.hpqcorp.net>
- <20140321045501.GD30295@linux.vnet.ibm.com>
- <CA+55aFyX0sj_MjTas3RYWWOa1W-xc3t0Af_0vdmsmgui8Apqpw@mail.gmail.com>
+	Fri, 21 Mar 2014 22:30:57 -0400
+X-RZG-AUTH: :OmsBZ2C7d7IBoB6EHwegNiNxh/xpjMmBYR0YjlTttojRtSoTyOXSKL2e
+X-RZG-CLASS-ID: mo05
+From: "Stefan Lippers-Hollmann" <s.L-H@gmx.de>
+To: "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.13 072/149] ACPI / resources: ignore invalid ACPI device resources
+Date: Sat, 22 Mar 2014 02:30:43 +0000
+User-Agent: KMail/1.13.7 (Linux/3.13-6.slh.2-aptosid-686; KDE/4.8.4; i686; ; )
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+References: <20140321000436.377902063@linuxfoundation.org> <20140321000439.452672105@linuxfoundation.org>
+In-Reply-To: <20140321000439.452672105@linuxfoundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyX0sj_MjTas3RYWWOa1W-xc3t0Af_0vdmsmgui8Apqpw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032202-5816-0000-0000-00000CFBA179
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403220230.49584.s.L-H@gmx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi
 
-> > So reverting and applying v3 3/4 and 4/4 patches works for me.
+On Friday 21 March 2014, Greg Kroah-Hartman wrote:
+> 3.13-stable review patch.  If anyone has any objections, please let me know.
 > 
-> Ok, I verified that the above endds up resulting in the same tree as
-> the minimal patch I sent out, modulo (a) some comments and (b) an
-> #ifdef CONFIG_SMP in futex_get_mm() that doesn't really matter.
+> ------------------
 > 
-> So I committed the minimal patch with your tested-by.
+> From: Zhang Rui <rui.zhang@intel.com>
 > 
+> commit b355cee88e3b1a193f0e9a81db810f6f83ad728b upstream.
+> 
+> ACPI table may export resource entry with 0 length.
+> But the current code interprets this kind of resource in a wrong way.
+> It will create a resource structure with
+> res->end = acpi_resource->start + acpi_resource->len - 1;
+> 
+> This patch fixes a problem on my machine that a platform device fails
+> to be created because one of its ACPI IO resource entry (start = 0,
+> end = 0, length = 0) is translated into a generic resource with
+> start = 0, end = 0xffffffff.
+> 
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[...]
 
-Just to be sure, I have verified with latest mainline with HEAD having
-commit 08edb33c4 (Merge branch 'drm-fixes' of
-git://people.freedesktop.org/~airlied/linux) which also has the commit
-11d4616bd0 futex:( revert back to the explicit waiter counting code).
+This patch should probably be dropped from -stable (3.13 and 3.10) for 
+the time being, it causes this warning:
 
--- 
-Thanks and Regards
-Srikar Dronamraju
+pnp 00:01: unknown resource type 4 in _CRS
+pnp 00:01: can't evaluate _CRS: 1
 
+on all systems I've tested it on so far (~12 systems of vastly varying 
+components and age, covering amd64 and i386).
+
+This also seems to affect others as well:
+	http://www.spinics.net/lists/linux-acpi/msg49431.html
+	http://www.spinics.net/lists/linux-acpi/msg49438.html
+
+Regards
+	Stefan Lippers-Hollmann
