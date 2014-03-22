@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751584AbaCVQmm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 12:42:42 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48348 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751199AbaCVQmj (ORCPT
+	id S1751848AbaCVQpr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 12:45:47 -0400
+Received: from mail-vc0-f178.google.com ([209.85.220.178]:37611 "EHLO
+	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279AbaCVQpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 12:42:39 -0400
-Message-ID: <1395506558.2143.18.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: [PATCH v2] LLVMLinux: Remove warning about returning an
- uninitialized variable
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Behan Webster <behanw@converseincode.com>
-Cc: arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>
-Date: Sat, 22 Mar 2014 09:42:38 -0700
-In-Reply-To: <532DBC50.9040505@converseincode.com>
-References: <201403221101.16961.arnd@arndb.de>
-		 <1395503299-15203-1-git-send-email-behanw@converseincode.com>
-	 <1395505786.2143.14.camel@dabdike.int.hansenpartnership.com>
-	 <532DBC50.9040505@converseincode.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 22 Mar 2014 12:45:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140322151657.GA23606@www.outflux.net>
+References: <20140322151657.GA23606@www.outflux.net>
+Date: Sat, 22 Mar 2014 11:45:43 -0500
+Message-ID: <CAL_JsqKjt3oBxeHPdDjUGoH+JMma21rbgFjUab62yCXtck_SZA@mail.gmail.com>
+Subject: Re: [PATCH v3] ARM: mm: fix reporting of read-only PMD bits
+From: Rob Herring <robherring2@gmail.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        Steve Capper <steve.capper@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 09:37 -0700, Behan Webster wrote:
-> On 03/22/14 09:29, James Bottomley wrote:
-> > On Sat, 2014-03-22 at 08:48 -0700, behanw@converseincode.com wrote:
-> >> From: Behan Webster <behanw@converseincode.com>
-> >>
-> >> Fix uninitialized return code in default case in cmpxchg-local.h
-> >>
-> >> This patch fixes the code to prevent an uninitialized return value that is detected
-> >> when compiling with clang. The bug produces numerous warnings when compiling the
-> >> Linux kernel with clang.
-> >>
-> >> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> >> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
-> >> ---
-> >>   include/asm-generic/cmpxchg-local.h | 1 +
-> >>   1 file changed, 1 insertion(+)
-> >>
-> >> diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
-> >> index d8d4c89..9112111 100644
-> >> --- a/include/asm-generic/cmpxchg-local.h
-> >> +++ b/include/asm-generic/cmpxchg-local.h
-> >> @@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
-> >>   		break;
-> >>   	default:
-> >>   		wrong_size_cmpxchg(ptr);
-> >> +		__builtin_unreachable();
-> > No, that's got to be unreachable() so that it works in all compilers,
-> > (__builtin_unreachable is a gcc-4 ism).
-> It is also supported by clang.
+On Sat, Mar 22, 2014 at 10:16 AM, Kees Cook <keescook@chromium.org> wrote:
+> On non-LPAE ARMv6+, read-only PMD bits are defined with the combination
+> "PMD_SECT_APX | PMD_SECT_AP_WRITE". Adjusted the bit masks to correctly
+> report this.
+>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> ---
+> v3:
+>  - check for pre-v6 CPUs on the page table report.
+> v2:
+>  - reorder bits, suggested by Olof.
+> ---
+>  arch/arm/mm/dump.c |   31 +++++++++++++++++++++++++------
+>  1 file changed, 25 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/arm/mm/dump.c b/arch/arm/mm/dump.c
+> index ef69152f9b52..c1122d266c45 100644
+> --- a/arch/arm/mm/dump.c
+> +++ b/arch/arm/mm/dump.c
+> @@ -121,23 +121,42 @@ static const struct prot_bits pte_bits[] = {
+>
+>  static const struct prot_bits section_bits[] = {
+>  #ifndef CONFIG_ARM_LPAE
+> -       /* These are approximate */
+> +# if defined(CONFIG_CPU_V6) || defined(CONFIG_CPU_V6K) || defined(CONFIG_CPU_V7)
 
-OK, but it's not supported by gcc-3.  So gcc-3 would crap out seeing the
-statement, which is why we have to wrapper it.
+You can simplify the ifdef logic like this:
 
-> > Got to say this still looks wrong.  If wrong_size_cmpxchg() cannot
-> > return, the function should be annotated as such with __noreturn (like
-> > panic()) so the unreachable() should be superfluous.
-> Okay. I can try that instead.
+#ifdef CONFIG_ARM_LPAE /* Implies v7 */
 
-Great; This seems to work for me (but then my compiler doesn't see the
-unreachable problem).
+#elif __LINUX_ARM_ARCH__ >= 6
 
-James
-
----
-diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
-index d8d4c89..70bef78 100644
---- a/include/asm-generic/cmpxchg-local.h
-+++ b/include/asm-generic/cmpxchg-local.h
-@@ -4,7 +4,8 @@
- #include <linux/types.h>
- #include <linux/irqflags.h>
- 
--extern unsigned long wrong_size_cmpxchg(volatile void *ptr);
-+extern unsigned long wrong_size_cmpxchg(volatile void *ptr)
-+	__noreturn;
- 
- /*
-  * Generic version of __cmpxchg_local (disables interrupts). Takes an unsigned
-
-
+#else
+/* v4/v5 */
+#endif
