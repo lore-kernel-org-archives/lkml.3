@@ -1,111 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751935AbaCVRJt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 13:09:49 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:61920 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751167AbaCVRJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 13:09:47 -0400
-Message-ID: <532DC3D3.9060008@linux.com>
-Date: Sat, 22 Mar 2014 18:09:39 +0100
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751291AbaCVR0R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 13:26:17 -0400
+Received: from imap.thunk.org ([74.207.234.97]:44757 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750915AbaCVR0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 13:26:14 -0400
+Date: Sat, 22 Mar 2014 13:26:06 -0400
+From: tytso@mit.edu
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-ID: <20140322172606.GB23583@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>,
+	Fabian Frederick <fabf@skynet.be>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	reiserfs-devel@vger.kernel.org
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be>
+ <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+ <20140322170322.GA23583@thunk.org>
+ <20140322101512.eaeb542b.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>,
-        =?UTF-8?B?VGVvZG9yYSBCxINsdcWjxIM=?= <teobaluta@gmail.com>
-CC: Dave Jones <davej@redhat.com>, linux-kernel@vger.kernel.org,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com> <20140319201838.GA11403@redhat.com> <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com> <20140321132816.GW15608@titan.lakedaemon.net>
-In-Reply-To: <20140321132816.GW15608@titan.lakedaemon.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140322101512.eaeb542b.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 03/21/2014 02:28 PM, Jason Cooper wrote:
-> On Wed, Mar 19, 2014 at 10:38:30PM +0200, Teodora Băluţă wrote:
->> On Wed, Mar 19, 2014 at 10:18 PM, Dave Jones <davej@redhat.com> wrote:
->>> On Mon, Mar 17, 2014 at 02:59:47PM -0700, Teodora Baluta wrote:
->>>  > This feature encodes Oops messages into a QR barcode that is scannable by
->>>  > any device with a camera.
->>>
->>> [...]
->>>
->>> That's a ton of code we're adding into one of the most fragile parts of the kernel.
->>>
->>> A lot of what libqrencode does would seem to be superfluous to the requirements
->>> here, as we don't output kernel oopses in kanji for eg, and won't care about
->>> multiple versions of the qr spec.
->>
->> That's true. I didn't do that much cleanup in the library afraid of
->> breaking something and focused that I get this done one way or
->> another. Indeed, the library is userspace and is made to be versatile
->> rather than small.
+On Sat, Mar 22, 2014 at 10:15:12AM -0700, Andrew Morton wrote:
+> > I'll note that since 2011, there has been precious little movement on
+> > removing the final few callers of GFP_NOFAIL, and we still have a bit
+> > under two dozen of them, including a new one in fs/buffer.c that was
+> > added in 2013.
 > 
-> Perhaps you could add libqr to the staging tree?  As long as it
-> compiles, it can go there.  Then you can focus on cleanups and bloat
-> removal.  In the process, you'll get a larger testing base because it
-> will be in mainline.
+> Well.  Converting an existing retry-for-ever caller to GFP_NOFAIL is
+> good.  Adding new retry-for-ever code is not good.
 
-Yea that is a better way. However, the current state of the code has
-several problems:
+Actually, it wasn't converting an existing loop; it was adding a new
+GFP_NOFAIL to fix a reclaim livelock (commit 84235de394d9775bf).
 
-* No good error handling (simply returns -1 on failure no matter what)
-   I have began converting this to the ERR_PTR et al interface
-   However, I have not yet done this fully due to the vast amount
-   of work required to do so.
-   This shouldn't be yet merged, but I shall send it as patches once
-   it gets into the staging tree.
+I agree that in ideal world, we'd get rid of all of these.  But
+sometimes, the cure can be worse than the disesae, and so the whole
+"all callers of GFP_NOFAIL are MUST FIX BUGGGY and the maintainers
+should be shamed into fixing it" attitude is one that I find a bit odd
+myself.
 
-* All memory allocations are GFP_ATOMIC for no reason.
-   I have converted them to GFP_KERNEL since we can block safely.
-   This could be merged to Teodora's branch. I can send her a pull
-   request on GitHub if she wants so.
-
-* Selecting QR_OOPS and QRLIB currently does not build due to
-   undefined references to zlib_deflate* functions.
-   This is due to QRLIB not selecting ZLIB_DEFLATE.
-   Fixed this as well. Can be merged to Teodora if she wants.
-
-* I had trouble getting QR output.
-   Doing 'echo c > /proc/sysrq-trigger' triggered a crash,
-   but it resulted in a recursive OOPS. This is a nullptr-deref
-   and hence I think it may be related to the fact I was running
-   it in textmode. :-)
-   Or, it is due to the bugged error handling.
-
-> 
-> You may be interested in objdiff [1] which I'm using for merging code
-> into the staging tree [2].  It provides an automated way to determine
-> that code cleanups didn't change the resultant object code.  You can see
-> an example run here [3].
-> 
-> I would definitely like to see the QR output incorporated into a
-> kernel.org url.  That would remove the need for installing another app,
-> and would ease bug reporting.
-
-I still struggle to understand how could that be done. We can encode the
-QR code as ASCII. Okay, that's fine, however it is very long. Encoding
-'Unable to handle kernel paging request at 0000000f' gave a 449 character
-long sequence with very strange characters [0]. We should try to shorten
-it, imho. Not sure how to do that though.
-
-oops.kernel.org/?qr=CODE  would look cool though. :-)
-
-> 
-> Anyway, if you're interested, I'll be re-posting a patch for objdiff
-> separately maybe today or this weekend.
-
-
-[0]: http://paste.fedoraproject.org/87665/39550664/
-
-
--- 
-Regards,
-Levente Kurusa
+	      	    	    	     	     - Ted
