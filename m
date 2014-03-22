@@ -1,100 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbaCVWlt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 18:41:49 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:42591 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831AbaCVWlr (ORCPT
+	id S1751908AbaCVWw2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 18:52:28 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:35485 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751154AbaCVWw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 18:41:47 -0400
-Message-ID: <532E1FB1.9000606@cogentembedded.com>
-Date: Sun, 23 Mar 2014 02:41:37 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 22 Mar 2014 18:52:26 -0400
+Date: Sat, 22 Mar 2014 22:52:01 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, x86@kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux390@de.ibm.com,
+        sparclinux@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+	actual Kconfig
+Message-ID: <20140322225201.GN7528@n2100.arm.linux.org.uk>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org> <1395512032-20575-2-git-send-email-lauraa@codeaurora.org> <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com> <20140322222306.GM7528@n2100.arm.linux.org.uk> <1395527860.2143.61.camel@dabdike.int.hansenpartnership.com>
 MIME-Version: 1.0
-To: Kees Cook <keescook@chromium.org>
-CC: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Ralf Baechle <ralf@linux-mips.org>, Sanjay Lal <sanjayl@kymasys.com>,
-        John Crispin <blogic@openwrt.org>, linux-mips@linux-mips.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mips: export icache_flush_range
-References: <20140322154720.GA23863@www.outflux.net>	<532E0486.3010702@cogentembedded.com>	<532E053C.90007@cogentembedded.com>	<532E0699.2080303@cogentembedded.com> <CAGXu5jLUueSb2u_Ki+nEL1CaBzyZyT1+7rhCB-0ZGB0nD5cT4g@mail.gmail.com>
-In-Reply-To: <CAGXu5jLUueSb2u_Ki+nEL1CaBzyZyT1+7rhCB-0ZGB0nD5cT4g@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395527860.2143.61.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2014 12:05 AM, Kees Cook wrote:
+On Sat, Mar 22, 2014 at 03:37:40PM -0700, James Bottomley wrote:
+> On Sat, 2014-03-22 at 22:23 +0000, Russell King - ARM Linux wrote:
+> > On Sat, Mar 22, 2014 at 02:31:21PM -0700, James Bottomley wrote:
+> > > Perhaps now might be the time to ask which are the remaining
+> > > architectures that cannot do SG chaining and then we can fix them and
+> > > pull the whole thing out.
+> > 
+> > Not quite.  You're making the assumption that we can be sure that all
+> > the scatterlist users on an architecture have been converted - that's
+> > simply not true on ARM.
+> 
+> No I'm not, I said "now might be the time to ask which are the remaining
+> architectures that cannot do SG chaining"
 
->>>>> The lkdtm module performs tests against executable memory ranges, so
->>>>> it needs to flush the icache for proper behaviors. Other architectures
->>>>> already export this, so do the same for MIPS.
+And I'm disagreeing with that statement which implies that it's something
+that is an architecture wide property for any particular architecture.
 
->>>>> Signed-off-by: Kees Cook <keescook@chromium.org>
->>>>> ---
->>>>> This is currently untested! I'm building a MIPS cross-compiler now...
->>>>> If someone can validate this fixes the build when lkdtm is a module,
->>>>> that would be appreciated. :)
->>>>> ---
->>>>>    arch/mips/mm/cache.c |    1 +
->>>>>    1 file changed, 1 insertion(+)
+Right now in mainline, if ARM has IOMMU support enabled, then SG_CHAIN
+support will also be enabled.  I've a patch out of tree which I've been
+using for years which enables SG_CHAIN for a particular SoC (Dove).
+Otherwise, it doesn't have support for SG_CHAIN.
 
->>>>> diff --git a/arch/mips/mm/cache.c b/arch/mips/mm/cache.c
->>>>> index fde7e56d13fe..b3f1df13d9f6 100644
->>>>> --- a/arch/mips/mm/cache.c
->>>>> +++ b/arch/mips/mm/cache.c
->>>>> @@ -38,6 +38,7 @@ void (*__flush_kernel_vmap_range)(unsigned long vaddr,
->>>>> int
->>>>> size);
->>>>>    void (*__invalidate_kernel_vmap_range)(unsigned long vaddr, int size);
->>>>>
->>>>>    EXPORT_SYMBOL_GPL(__flush_kernel_vmap_range);
->>>>> +EXPORT_SYMBOL_GPL(flush_icache_range);
+PARISC on the other hand (as you list) has no support to enable SG_CHAIN
+under any circumstances.
 
->>>>      Have you run this thru scripts/checkpatch.pl? It would have told you
->>>> that
->>>> an export should immediately follow the corresponding function body,
->>>> AFAIK.
+Where we're disagreeing is whether this is something that is always-on or
+always-off for any particular architecture.
 
->>>      Hm, it doesn't now but definitely used to...
-
->>     Decided to check Documentation/CodingStyle, and it still codifies this:
-
->> In source files, separate functions with one blank line.  If the function is
->> exported, the EXPORT* macro for it should follow immediately after the
->> closing
->> function brace line.  E.g.:
-
->> int system_is_up(void)
->> {
->>          return system_state == SYSTEM_RUNNING;
->> }
->> EXPORT_SYMBOL(system_is_up);
-
-> Yup, thanks. I know the style, but it seemed from the source file that
-> the style was to declare the function pointers in bulk, and then
-> explicitly export them in the next section, so I continued that style.
-> For example:
-
-> void (*flush_cache_sigtramp)(unsigned long addr);
-> void (*local_flush_data_cache_page)(void * addr);
-> void (*flush_data_cache_page)(unsigned long addr);
-> void (*flush_icache_all)(void);
-
-> EXPORT_SYMBOL_GPL(local_flush_data_cache_page);
-> EXPORT_SYMBOL(flush_data_cache_page);
-> EXPORT_SYMBOL(flush_icache_all);
-
-> Regardless, I'm happy to stick it in the middle of the function
-> pointers if that's preferred.
-
-    Ah, that's a variable! I didn't realize that. Looking into checkpatch.pl, 
-it should warn about variables as well though... but it doesn't.
-
-> -Kees
-
-WBR, Sergei
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
