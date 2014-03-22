@@ -1,86 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351AbaCVMax (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 08:30:53 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:34425 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146AbaCVMaE (ORCPT
+	id S1751413AbaCVMbX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 08:31:23 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:60092 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750932AbaCVMbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 08:30:04 -0400
-From: Alexander Holler <holler@ahsoftware.de>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Levente Kurusa <levex@linux.com>,
-        Alexander Holler <holler@ahsoftware.de>, <stable@vger.kernel.org>
-Subject: [PATCH 2/2 v3] initramfs: print error and shell out for unsupported content
-Date: Sat, 22 Mar 2014 13:29:21 +0100
-Message-Id: <1395491361-28069-2-git-send-email-holler@ahsoftware.de>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395491361-28069-1-git-send-email-holler@ahsoftware.de>
-References: <532CC625.7020509@ahsoftware.de>
- <1395491361-28069-1-git-send-email-holler@ahsoftware.de>
+	Sat, 22 Mar 2014 08:31:18 -0400
+Message-ID: <532D82C9.6010401@googlemail.com>
+Date: Sat, 22 Mar 2014 13:32:09 +0100
+From: =?ISO-8859-15?Q?Frank_Sch=E4fer?= <fschaefer.oss@googlemail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Shuah Khan <shuah.kh@samsung.com>, m.chehab@samsung.com
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: Re: [PATCH] media: em28xx-video - change em28xx_scaler_set() to use
+ em28xx_reg_len()
+References: <1395435890-15100-1-git-send-email-shuah.kh@samsung.com>
+In-Reply-To: <1395435890-15100-1-git-send-email-shuah.kh@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The initramfs generation is broken for file and directory names which contain
-colons, spaces and other unusual characters. Print an error and don't try to
-continue.
 
-Some tests:
+Am 21.03.2014 22:04, schrieb Shuah Khan:
+> Change em28xx_scaler_set() to use em28xx_reg_len() to get register
+> lengths for EM28XX_R30_HSCALELOW and EM28XX_R32_VSCALELOW registers,
+> instead of hard-coding the length. Moved em28xx_reg_len() definition
+> for it to be visible to em28xx_scaler_set().
+>
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+> ---
+>  drivers/media/usb/em28xx/em28xx-video.c |   29 ++++++++++++++++-------------
+>  1 file changed, 16 insertions(+), 13 deletions(-)
+>
+> diff --git a/drivers/media/usb/em28xx/em28xx-video.c b/drivers/media/usb/em28xx/em28xx-video.c
+> index 19af6b3..f8a91de 100644
+> --- a/drivers/media/usb/em28xx/em28xx-video.c
+> +++ b/drivers/media/usb/em28xx/em28xx-video.c
+> @@ -272,6 +272,18 @@ static void em28xx_capture_area_set(struct em28xx *dev, u8 hstart, u8 vstart,
+>  	}
+>  }
+>  
+> +static int em28xx_reg_len(int reg)
+> +{
+> +	switch (reg) {
+> +	case EM28XX_R40_AC97LSB:
+> +	case EM28XX_R30_HSCALELOW:
+> +	case EM28XX_R32_VSCALELOW:
+> +		return 2;
+> +	default:
+> +		return 1;
+> +	}
+> +}
+> +
+>  static int em28xx_scaler_set(struct em28xx *dev, u16 h, u16 v)
+>  {
+>  	u8 mode;
+> @@ -284,11 +296,13 @@ static int em28xx_scaler_set(struct em28xx *dev, u16 h, u16 v)
+>  
+>  		buf[0] = h;
+>  		buf[1] = h >> 8;
+> -		em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf, 2);
+> +		em28xx_write_regs(dev, EM28XX_R30_HSCALELOW, (char *)buf,
+> +				  em28xx_reg_len(EM28XX_R30_HSCALELOW));
+>  
+>  		buf[0] = v;
+>  		buf[1] = v >> 8;
+> -		em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf, 2);
+> +		em28xx_write_regs(dev, EM28XX_R32_VSCALELOW, (char *)buf,
+> +				  em28xx_reg_len(EM28XX_R32_VSCALELOW));
+Hmm... registers 0x30 and 0x32 are always 2 bytes long.
+So this change would needlessly complicate the code.
 
-cd linux
-make defconfig
-echo 'CONFIG_BLK_DEV_INITRD=y' >> .config
-echo 'CONFIG_INITRAMFS_ROOT_UID=0' >>.config
-echo 'CONFIG_INITRAMFS_ROOT_GID=0' >>.config
-echo 'CONFIG_INITRAMFS_COMPRESSION_NONE=y' >>.config
-echo 'CONFIG_INITRAMFS_SOURCE="/tmp/bugroot"' >>.config
+Or do you know more than us, e.g. from looking into the datasheets ? ;-)
 
-Problem with colons:
-
-mkdir -p /tmp/bugroot/a:b
-make -j4 bzImage # no error
-make bzImage # try again, oops
-
-Problem with spaces:
-
-mkdir -p /tmp/bugroot/a\ b
-make -j4 bzImage # no error
-zcat usr/initramfs_data.cpio.gz | cpio --extract --list # oops, no content
-
-Signed-off-by: Alexander Holler <holler@ahsoftware.de>
-Cc: <stable@vger.kernel.org>
----
- Changes in v2, v3: check for \n, \r and \t too, updated error msg.
-
- scripts/gen_initramfs_list.sh | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
-
-diff --git a/scripts/gen_initramfs_list.sh b/scripts/gen_initramfs_list.sh
-index 17fa901..2c613e7 100644
---- a/scripts/gen_initramfs_list.sh
-+++ b/scripts/gen_initramfs_list.sh
-@@ -171,6 +171,19 @@ dir_filelist() {
- 	${dep_list}header "$1"
- 
- 	srcdir=$(echo "$1" | sed -e 's://*:/:g')
-+
-+	# Files and directories with spaces and colons are unsupported.
-+	local unsupported=$(find "${srcdir}" -regex '.*\(:\| \|\n\|\r\|\t\).*')
-+	if [ ! -z "${unsupported}" ]; then
-+		printf "ERROR: Unable to handle files/directories with " >&2
-+		printf "unsupported characters (spaces, :, \\\n, \\\r, " >&2
-+		printf "\\\t).\n Please use other ways to generate a " >&2
-+		printf "cpio-archive with such names.\n" >&2
-+		printf "Unsupported files and directories are:\n" >&2
-+		printf "$unsupported\n" >&2
-+		exit 1
-+	fi
-+
- 	dirlist=$(find "${srcdir}" -printf "%p %m %U %G\n")
- 
- 	# If $dirlist is only one line, then the directory is empty
--- 
-1.8.3.1
+>  		/* it seems that both H and V scalers must be active
+>  		   to work correctly */
+>  		mode = (h || v) ? 0x30 : 0x00;
+> @@ -1583,17 +1597,6 @@ static int vidioc_g_chip_info(struct file *file, void *priv,
+>  	return 0;
+>  }
+>  
+> -static int em28xx_reg_len(int reg)
+> -{
+> -	switch (reg) {
+> -	case EM28XX_R40_AC97LSB:
+> -	case EM28XX_R30_HSCALELOW:
+> -	case EM28XX_R32_VSCALELOW:
+> -		return 2;
+> -	default:
+> -		return 1;
+> -	}
+> -}
+>  
+>  static int vidioc_g_register(struct file *file, void *priv,
+>  			     struct v4l2_dbg_register *reg)
 
