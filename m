@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751682AbaCVQgG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 12:36:06 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:53250 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751167AbaCVQgC (ORCPT
+	id S1751904AbaCVQhp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 12:37:45 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:37347 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751512AbaCVQhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 12:36:02 -0400
-Message-ID: <1395506158.2159.2.camel@x220>
-Subject: Re: [PATCH 3.13 072/149] ACPI / resources: ignore invalid ACPI
- device resources
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Stefan Lippers-Hollmann <s.L-H@gmx.de>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, Zhang Rui <rui.zhang@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Date: Sat, 22 Mar 2014 17:35:58 +0100
-In-Reply-To: <20140322162638.GE13385@kroah.com>
-References: <20140321000436.377902063@linuxfoundation.org>
-	 <20140321000439.452672105@linuxfoundation.org>
-	 <201403220230.49584.s.L-H@gmx.de> <20140322162638.GE13385@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
-Mime-Version: 1.0
+	Sat, 22 Mar 2014 12:37:40 -0400
+Message-ID: <532DBC50.9040505@converseincode.com>
+Date: Sat, 22 Mar 2014 09:37:36 -0700
+From: Behan Webster <behanw@converseincode.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+CC: arnd@arndb.de, linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dwmw2@infradead.org, pageexec@freemail.hu,
+        Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v2] LLVMLinux: Remove warning about returning an uninitialized
+ variable
+References: <201403221101.16961.arnd@arndb.de>	 <1395503299-15203-1-git-send-email-behanw@converseincode.com> <1395505786.2143.14.camel@dabdike.int.hansenpartnership.com>
+In-Reply-To: <1395505786.2143.14.camel@dabdike.int.hansenpartnership.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Mar 2014 16:35:59.0717 (UTC) FILETIME=[CE8FE950:01CF45EC]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 09:26 -0700, Greg Kroah-Hartman wrote:
-> Is this also a problem in Linus's tree?  If so, shouldn't a fix go there
-> first?
+On 03/22/14 09:29, James Bottomley wrote:
+> On Sat, 2014-03-22 at 08:48 -0700, behanw@converseincode.com wrote:
+>> From: Behan Webster <behanw@converseincode.com>
+>>
+>> Fix uninitialized return code in default case in cmpxchg-local.h
+>>
+>> This patch fixes the code to prevent an uninitialized return value that is detected
+>> when compiling with clang. The bug produces numerous warnings when compiling the
+>> Linux kernel with clang.
+>>
+>> Signed-off-by: Behan Webster <behanw@converseincode.com>
+>> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+>> ---
+>>   include/asm-generic/cmpxchg-local.h | 1 +
+>>   1 file changed, 1 insertion(+)
+>>
+>> diff --git a/include/asm-generic/cmpxchg-local.h b/include/asm-generic/cmpxchg-local.h
+>> index d8d4c89..9112111 100644
+>> --- a/include/asm-generic/cmpxchg-local.h
+>> +++ b/include/asm-generic/cmpxchg-local.h
+>> @@ -41,6 +41,7 @@ static inline unsigned long __cmpxchg_local_generic(volatile void *ptr,
+>>   		break;
+>>   	default:
+>>   		wrong_size_cmpxchg(ptr);
+>> +		__builtin_unreachable();
+> No, that's got to be unreachable() so that it works in all compilers,
+> (__builtin_unreachable is a gcc-4 ism).
+It is also supported by clang.
 
-That fix is commit 89935315f192 ("PNP / ACPI: proper handling of ACPI
-IO/Memory resource parsing failures"), included in v3.14-rc7.
+> Got to say this still looks wrong.  If wrong_size_cmpxchg() cannot
+> return, the function should be annotated as such with __noreturn (like
+> panic()) so the unreachable() should be superfluous.
+Okay. I can try that instead.
 
+Thanks,
 
-Paul Bolle
+Behan
+
+-- 
+Behan Webster
+behanw@converseincode.com
 
