@@ -1,95 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751783AbaCVRBX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 13:01:23 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:58824 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaCVRBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 13:01:21 -0400
-Date: Sat, 22 Mar 2014 18:01:18 +0100
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Kevin Hilman <khilman@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 3/3] workqueue: Add anon workqueue sysfs hierarchy
-Message-ID: <20140322170114.GA20038@localhost.localdomain>
-References: <1394815131-17271-1-git-send-email-fweisbec@gmail.com>
- <1394815131-17271-4-git-send-email-fweisbec@gmail.com>
- <7ha9csionc.fsf@paris.lan>
+	id S1751942AbaCVRCL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 13:02:11 -0400
+Received: from co9ehsobe004.messaging.microsoft.com ([207.46.163.27]:11433
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751883AbaCVRCI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 13:02:08 -0400
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(zzc89bh1443I1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh8275dh1de097h186068hz2dh839h947hd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+X-WSS-ID: 0N2UKN7-07-3HF-02
+X-M-MSG: 
+Message-ID: <532DC200.7070409@amd.com>
+Date: Sat, 22 Mar 2014 18:01:52 +0100
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <christian.koenig@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <7ha9csionc.fsf@paris.lan>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [bisected] drm/radeon: fences regression
+References: <532DA935.4010907@odi.ch>
+In-Reply-To: <532DA935.4010907@odi.ch>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+X-Originating-IP: [10.224.155.56]
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 14, 2014 at 12:08:39PM -0700, Kevin Hilman wrote:
-> Frederic Weisbecker <fweisbec@gmail.com> writes:
-> 
-> > We call "anon workqueues" the set of unbound workqueues that don't
-> > carry the WQ_SYSFS flag.
-> >
-> > They are a problem nowaday because people who work on CPU isolation
-> > (HPC, Real time, etc...) want to be able to migrate all the unbound
-> > workqueues away to a single CPU. This control is possible through sysfs
-> > but only with WQ_SYSFS workqueues.
-> >
-> > Now we need to deal with the other unbound workqueues. There is two
-> > possible solutions:
-> >
-> > 1) Implement a sysfs directory for each unbound !WQ_SYSFS. This could
-> > be done with a specific Kconfig to make sure that these workqueue
-> > won't be considered as a stable ABI. But we all know that all distros
-> > will enable this Kconfig symbol and that a warning in the Kconfig help
-> > text won't protect against anything.
-> >
-> > 2) Implement a single sysfs directory containing only the cpumask file
-> > to the control the affinity of all the !WQ_SYSFS workqueues.
-> >
-> > This patch implements the second solution.
-> >
-> > Two issues I have seen though:
-> >
-> > * This triggers the following warning in apply_workqueue_attrs():
-> >
-> > 	/* creating multiple pwqs breaks ordering guarantee */
-> > 	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
-> > 		return -EINVAL;
-> >
-> >   I haven't yet checked into the details.
-> 
-> I tried to test this series and ran into this too for the kmmcd
-> workqueue.  Looking at the commit that introduced this check, it looks
-> changing attributes will break the ordering constraints[1], so it's
-> prevented all together.  hmmm...
+Hi Ortwin,
 
-So I stared at this and it's indeed hard to get it correct. On workqueue creation
-creation, apply_workqueue_attr() is called a first time to attach the worker pool
-to it.
+unfortunately the iMacs are notorious problematic and it's likely that 
+something didn't worked before and you never noticed it because the 
+kernel didn't complained. Have you ever tried to use UVD on that system?
 
-Non ordered workqueues seem to have a worker per NUMA while ordered workqueues
-have the same worker for all CPUs (due to the no_numa forced to true). That's what
-enforce the ordering.
+On the other hand the failed UVD init shouldn't affect the rest of the 
+system (3D should work fine), so there is really something odd here.
 
-So if we apply new attrs, the worker is replaced. But in the replacement process,
-a work can be queued on the new worker while other work may execute on the old worker.
+Please open up a bug report on 
+https://bugs.freedesktop.org/enter_bug.cgi?product=DRI component 
+DRM/Radeon and attach at least the full dmesg output of 3.13 as well as 
+3.12.
 
-I have some random ideas to solve that but all of them imply performance issues:
+Thanks in advance,
+Christian.
 
-1) Call a per workqueue mutex when a work execute on an ordered workqueue. Although
-  contention should be very rare (only while we replace the workqueue attrs and
-  switch to a new worker), frequent locking may have a visible impact.
+Am 22.03.2014 16:16, schrieb Ortwin Glück:
+> Hi,
+>
+> I am seeing a GPU lockup from any v3.13 up to 3.14-rc7, which 
+> basically renders my computer unusable under recent kernels :-(
+>
+> [   55.762710] radeon 0000:01:00.0: GPU lockup CP stall for more than 
+> 10000msec
+> [   55.762715] radeon 0000:01:00.0: GPU lockup (waiting for 
+> 0x0000000000000004 last fence id 0x000000000000000 on ring 5)
+> [   55.762717] [drm:uvd_v1_0_ib_test] *ERROR* radeon: fence wait 
+> failed (-35).
+> [   55.762720] [drm:radeon_ib_ring_tests] *ERROR* radeon: failed 
+> testing IB on ring 5 (-35).
+>
+> Hardware is an iMac 11,2 with a Radeon 4670 M96XT (RV730), 256MB GDDR3.
+>
+>
+> Bisected to this commit:
+>
+> commit f9eaf9ae782d6480f179850e27e6f4911ac10227
+> Author: Christian König <christian.koenig@amd.com>
+> Date:   Tue Oct 29 20:14:47 2013 +0100
+>
+>     drm/radeon: rework and fix reset detection v2
+>
+>     Stop fiddling with jiffies, always wait for 
+> RADEON_FENCE_JIFFIES_TIMEOUT.
+>     Consolidate the two wait sequence implementations into just one 
+> function.
+>     Activate all waiters and remember if the reset was already done 
+> instead of
+>     trying to reset from only one thread.
+>
+>     v2: clear reset flag earlier to avoid timeout in IB test
+>
+> Unfortunately this patch no longer cleanly unapplies on v3.13.
 
-2) Have a seperate worker for all ordered workqueues. But we may lose a bit of
-  serialization with other workqueues along the way.
 
-Actually the second solution could work since only ordered workqueue should use
-the default global worker most of the time. Ah no wait, non-ordered workqueues
-only allocate per node workers on NUMA...
-
-Grrr.
