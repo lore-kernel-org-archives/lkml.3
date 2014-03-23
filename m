@@ -1,85 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752333AbaCWTlo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:41:44 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:16375 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751578AbaCWTio convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:38:44 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18Y0M7/i2TGoGsKySFbA3m+hOvLbiPghLU=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 2C0DF549AC1
-Date: Sun, 23 Mar 2014 15:38:39 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Teodora =?utf-8?B?QsSDbHXFo8SD?= <teobaluta@gmail.com>
-Cc: Levente Kurusa <levex@linux.com>, Dave Jones <davej@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>
-Subject: Re: [RFC] QR encoding for Oops messages
-Message-ID: <20140323193839.GY15608@titan.lakedaemon.net>
-References: <1395093587-2583-1-git-send-email-teobaluta@gmail.com>
- <20140319201838.GA11403@redhat.com>
- <CACV2jQBrKBUmiYRj8L4tvWucGX5U0EqufC8BkSXoKOL1BO-Tuw@mail.gmail.com>
- <20140321132816.GW15608@titan.lakedaemon.net>
- <532DC3D3.9060008@linux.com>
- <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
+	id S1752262AbaCWTlV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:41:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346AbaCWTlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:41:17 -0400
+Date: Sun, 23 Mar 2014 21:41:13 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Monam Agarwal <monamagarwal123@gmail.com>
+Cc: davem@davemloft.net, jasowang@redhat.com, xemul@parallels.com,
+        wuzhy@linux.vnet.ibm.com, therbert@google.com, yamato@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
+Message-ID: <20140323194113.GA13633@redhat.com>
+References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACV2jQBfRdQOyXF80WLoqm08-3VpWZno6UphKKPWmQD2f_yitA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All,
+On Mon, Mar 24, 2014 at 12:02:32AM +0530, Monam Agarwal wrote:
+> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+> 
+> The rcu_assign_pointer() ensures that the initialization of a structure       
+> is carried out before storing a pointer to that structure. 
+> And in the case of the NULL pointer, there is no structure to initialize. 
+> So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> 
+> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 
-On Sat, Mar 22, 2014 at 08:20:01PM +0200, Teodora Băluţă wrote:
-> On Sat, Mar 22, 2014 at 7:09 PM, Levente Kurusa <levex@linux.com> wrote:
-> > On 03/21/2014 02:28 PM, Jason Cooper wrote:
-...
-> >> I would definitely like to see the QR output incorporated into a
-> >> kernel.org url.  That would remove the need for installing another app,
-> >> and would ease bug reporting.
-> >
-> > I still struggle to understand how could that be done. We can encode the
-> > QR code as ASCII. Okay, that's fine, however it is very long. Encoding
-> > 'Unable to handle kernel paging request at 0000000f' gave a 449 character
-> > long sequence with very strange characters [0]. We should try to shorten
-> > it, imho. Not sure how to do that though.
+Sounds right ... but doing this all over the place seems
+fragile, and error prone. Can't we make this kind of
+optimization automatic? See below:
 
-The man page for qrencode says you can have up to 4000 characters in a
-qrcode.  However, I've seen readers have trouble with a 2048bit ascii
-armored PGP public key (3929 characters).
 
-I grabbed a random oops from oops.kernel.org, it weighed in at 1544
-bytes, not too bad.  I then did:
+> ---
+>  drivers/net/tun.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/tun.c b/drivers/net/tun.c
+> index 26f8635..ee328ba 100644
+> --- a/drivers/net/tun.c
+> +++ b/drivers/net/tun.c
+> @@ -452,7 +452,7 @@ static void __tun_detach(struct tun_file *tfile, bool clean)
+>  
+>  		--tun->numqueues;
+>  		if (clean) {
+> -			rcu_assign_pointer(tfile->tun, NULL);
+> +			RCU_INIT_POINTER(tfile->tun, NULL);
+>  			sock_put(&tfile->sk);
+>  		} else
+>  			tun_disable_queue(tun, tfile);
+> @@ -499,12 +499,12 @@ static void tun_detach_all(struct net_device *dev)
+>  		tfile = rtnl_dereference(tun->tfiles[i]);
+>  		BUG_ON(!tfile);
+>  		wake_up_all(&tfile->wq.wait);
+> -		rcu_assign_pointer(tfile->tun, NULL);
+> +		RCU_INIT_POINTER(tfile->tun, NULL);
+>  		--tun->numqueues;
+>  	}
+>  	list_for_each_entry(tfile, &tun->disabled, next) {
+>  		wake_up_all(&tfile->wq.wait);
+> -		rcu_assign_pointer(tfile->tun, NULL);
+> +		RCU_INIT_POINTER(tfile->tun, NULL);
+>  	}
+>  	BUG_ON(tun->numqueues != 0);
+>  
+> @@ -2194,7 +2194,7 @@ static int tun_chr_open(struct inode *inode, struct file * file)
+>  					    &tun_proto);
+>  	if (!tfile)
+>  		return -ENOMEM;
+> -	rcu_assign_pointer(tfile->tun, NULL);
+> +	RCU_INIT_POINTER(tfile->tun, NULL);
+>  	tfile->net = get_net(current->nsproxy->net_ns);
+>  	tfile->flags = 0;
+>  	tfile->ifindex = 0;
+> -- 
+> 1.7.9.5
 
-$ echo "https://oops.kernel.org/?qr=`cat oops.txt | gzip -9 | base64 -wrap=0`" | wc -c
-993
+--->
 
-The benefit of a url is that any QR reader can automagically report an
-oops.  While a specific app could parse the URL/oops locally if the
-user desires.
+The rcu_assign_pointer() ensures that the initialization of a structure       
+is carried out before storing a pointer to that structure. 
+In the case of the NULL pointer, there is no structure to initialize,
+so we can safely drop smp_wmb in this case.
 
-> it misses the point of having a QR code in the first place. The way I
-> see it, having a QR decoder app installed that can do an offline
-> decoding is a less greater effort than popping out a browser on the
-> machine you're working on.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-I think you're selling the advantage of the QR code short.  Automated
-reporting (via the url) is a _huge_ plus.  The app you conceive of could
-still parse it in place if the user desires.
+--
 
-My point for the URL isn't to use the internet/server to automate oops
-parsing for the user.  Rather it's to make it easy to report oopses to
-developers.  While still preserving the ability of your app to parse it
-for the user.
+Lightly tested.
+v is evaluated twice here but that should be ok since this
+only happens when v is a constant, so evaluating it should
+have no side effects.
+Paul, what do you think?
 
-thx,
-
-Jason.
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 72bf3a0..d33c9ec 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -587,7 +587,8 @@ static inline void rcu_preempt_sleep_check(void)
+  */
+ #define rcu_assign_pointer(p, v) \
+ 	do { \
+-		smp_wmb(); \
++		if (!__builtin_constant_p(v) || (v)) \
++			smp_wmb(); \
+ 		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
+ 	} while (0)
+ 
