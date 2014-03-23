@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753057AbaCWTYo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:24:44 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:61760 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030AbaCWTYl (ORCPT
+	id S1753078AbaCWTZf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:25:35 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:59310 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaCWTZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:24:41 -0400
+	Sun, 23 Mar 2014 15:25:33 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: johannes@sipsolutions.net, linville@tuxdriver.com, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: gleb@kernel.org, pbonzini@redhat.com, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] net/wireless: Use RCU_INIT_POINTER(x, NULL) in reg.c
-Date: Mon, 24 Mar 2014 00:53:40 +0530
-Message-Id: <1395602620-15480-1-git-send-email-monamagarwal123@gmail.com>
+Subject: [PATCH] virt/kvm: Use RCU_INIT_POINTER(x, NULL) in eventfd.c
+Date: Mon, 24 Mar 2014 00:54:33 +0530
+Message-Id: <1395602673-15753-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,22 +27,40 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- net/wireless/reg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ virt/kvm/eventfd.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/net/wireless/reg.c b/net/wireless/reg.c
-index 90b82e0..4dc08cc 100644
---- a/net/wireless/reg.c
-+++ b/net/wireless/reg.c
-@@ -2594,7 +2594,7 @@ void wiphy_regulatory_deregister(struct wiphy *wiphy)
- 		reg_num_devs_support_basehint--;
+diff --git a/virt/kvm/eventfd.c b/virt/kvm/eventfd.c
+index abe4d60..354a2af 100644
+--- a/virt/kvm/eventfd.c
++++ b/virt/kvm/eventfd.c
+@@ -273,7 +273,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+ 	struct kvm_kernel_irq_routing_entry *e;
  
- 	rcu_free_regdom(get_wiphy_regdom(wiphy));
--	rcu_assign_pointer(wiphy->regd, NULL);
-+	RCU_INIT_POINTER(wiphy->regd, NULL);
+ 	if (irqfd->gsi >= irq_rt->nr_rt_entries) {
+-		rcu_assign_pointer(irqfd->irq_entry, NULL);
++		RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 		return;
+ 	}
  
- 	if (lr)
- 		request_wiphy = wiphy_idx_to_wiphy(lr->wiphy_idx);
+@@ -282,7 +282,7 @@ static void irqfd_update(struct kvm *kvm, struct _irqfd *irqfd,
+ 		if (e->type == KVM_IRQ_ROUTING_MSI)
+ 			rcu_assign_pointer(irqfd->irq_entry, e);
+ 		else
+-			rcu_assign_pointer(irqfd->irq_entry, NULL);
++			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 	}
+ }
+ 
+@@ -468,7 +468,7 @@ kvm_irqfd_deassign(struct kvm *kvm, struct kvm_irqfd *args)
+ 			 * It is paired with synchronize_rcu done by caller
+ 			 * of that function.
+ 			 */
+-			rcu_assign_pointer(irqfd->irq_entry, NULL);
++			RCU_INIT_POINTER(irqfd->irq_entry, NULL);
+ 			irqfd_deactivate(irqfd);
+ 		}
+ 	}
 -- 
 1.7.9.5
 
