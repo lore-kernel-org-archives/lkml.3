@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaCWIXY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 04:23:24 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:45812 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaCWIXV (ORCPT
+	id S1752165AbaCWIom (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 04:44:42 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:44701 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288AbaCWIog (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 04:23:21 -0400
-Message-ID: <1395562999.5459.25.camel@marge.simpson.net>
-Subject: Re: 3.14-rc7 compile failure
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Drunkard Zhang <gongfan193@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Date: Sun, 23 Mar 2014 09:23:19 +0100
-In-Reply-To: <CAJiejCTv0Vsq0zecEhKD9B7sNqEKsa+Do_LLiykvvfH1+=9jqQ@mail.gmail.com>
-References: <CAJiejCSDC2EEsxN4d6C=LfB+TbYQ+7pyrzWU2SeeRHrvwxVhQw@mail.gmail.com>
-	 <1395553958.5459.3.camel@marge.simpson.net>
-	 <CAJiejCTv0Vsq0zecEhKD9B7sNqEKsa+Do_LLiykvvfH1+=9jqQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 23 Mar 2014 04:44:36 -0400
+Message-ID: <532E9EEF.2080906@redhat.com>
+Date: Sun, 23 Mar 2014 09:44:31 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
+        mtosatti@redhat.com, alex.williamson@redhat.com,
+        jan.kiszka@siemens.com
+Subject: Re: [PATCH v2 3/4] KVM: ioapic: extract body of kvm_ioapic_set_irq
+References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com> <1395394081-16252-4-git-send-email-pbonzini@redhat.com> <20140321185858.GA22118@potion.brq.redhat.com>
+In-Reply-To: <20140321185858.GA22118@potion.brq.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-23 at 14:58 +0800, Drunkard Zhang wrote: 
-> 2014-03-23 13:52 GMT+08:00 Mike Galbraith <umgwanakikbuti@gmail.com>:
-> > On Sun, 2014-03-23 at 13:29 +0800, Drunkard Zhang wrote:
-> >
-> >> scripts/genksyms/genksyms.o: In function `main':
-> >> genksyms.c:(.text.startup+0x183): undefined reference to `yydebug'
-> >> genksyms.c:(.text.startup+0x18c): undefined reference to `yy_flex_debug'
-> >> genksyms.c:(.text.startup+0x1a5): undefined reference to `yyparse'
-> >> collect2: error: ld returned 1 exit status
-> >> make[2]: *** [scripts/genksyms/genksyms] Error 1
-> >> make[1]: *** [scripts/genksyms] Error 2
-> >> make[1]: *** Waiting for unfinished jobs....
-> >
-> > flex and bison installed?  rpm -q flex bison
-> >
-> I'm using Gentoo.
-> squid85 ~ # qlist -Iv flex bison
-> sys-devel/bison-2.4.3
-> sys-devel/flex-2.5.37
-> squid85 ~ # cat /etc/gentoo-release
-> Gentoo Base System release 2.2
+Il 21/03/2014 19:58, Radim Krčmář ha scritto:
+>> > +	/*
+>> > +	 * Return 0 for coalesced interrupts; for edge-triggered interrupts,
+>> > +	 * this only happens if a previous edge has not been delivered due
+>> > +	 * do masking.  For level interrupts, the remote_irr field tells
+>           (^ to)
+>> > +	 * us if the interrupt is waiting for an EOI.
+>
+> How do we know we haven't delivered an edge-triggered interrupt when
+> ioapic_service() always clears this IRR bit?
 
-No idea.  I'd make mrproper, re-config and try again.  Given it builds
-fine for the rest of the planet (afaik), it's gotta be local breakage.
+We know we have at least delivered it to the local APIC(s).  If it is 
+masked in the ioredirtbl, ioapic_service doesn't clear the IRR.
 
--Mike
-
+Paolo
