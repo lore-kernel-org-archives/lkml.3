@@ -1,89 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752268AbaCWOTd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 10:19:33 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50249 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751681AbaCWOTb (ORCPT
+	id S1752491AbaCWOUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 10:20:38 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57832 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752325AbaCWOUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 10:19:31 -0400
-Message-ID: <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
-Subject: Re: please fix FUSION
- (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, oleg@redhat.com,
-        joseph.salisbury@canonical.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org,
-        thenzl@redhat.com
-Date: Sun, 23 Mar 2014 07:19:28 -0700
-In-Reply-To: <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de>
-References: <20140321183443.GA3891@redhat.com>
-	 <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
-	 <20140322192511.GA14811@redhat.com>
-	 <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
-	 <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
-	 <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>
-	 <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Mar 2014 10:20:35 -0400
+Message-Id: <20140323141940.034005322@linutronix.de>
+User-Agent: quilt/0.60-1
+Date: Sun, 23 Mar 2014 14:20:45 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Vince Weaver <vincent.weaver@maine.edu>
+Subject: [patch 2/2] x86: hpet: Use proper destructor for delayed work
+References: <20140323141648.703530841@linutronix.de>
+Content-Disposition: inline; filename=x86-hpet-use-destroy-delayed.patch
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2014-03-23 at 09:04 +0100, Thomas Gleixner wrote:
-> On Sun, 23 Mar 2014, Tetsuo Handa wrote:
-> 
-> > Thomas Gleixner wrote:
-> > > But then systemd/udev mutters:
-> > > 
-> > >    "You migh be able to work around the timeout with udev rules and
-> > >     OPTIONS+="event_timeout=120", but that code was maybe never used
-> > >     or tested, so it might not work correctly." [1]
-> > > 
-> > > AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
-> > > 
-> > > And if the udev/systemd event_timeout option is broken it's way better
-> > > to fix that one instead of hacking random heuristics into the kernel.
-> > 
-> > I haven't tried the event_timeout= option but I think it will not work.
-> > The timeout is hard coded as shown below and there will be no chance for taking
-> > the event_timeout= option into account.
-> > 
-> > ---------- systemd-204/src/udev/udevd.c start ----------
-> > (...snipped...)
-> >                         /* check for hanging events */
-> >                         udev_list_node_foreach(loop, &worker_list) {
-> >                                 struct worker *worker = node_to_worker(loop);
-> > 
-> >                                 if (worker->state != WORKER_RUNNING)
-> >                                         continue;
-> > 
-> >                                 if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
-> 
-> And because systemd has an immutable hardcoded random timeout we add
-> another hardcoded random timeout into kthread_create() to work around
-> that.
-> 
-> How broken is that?
-> 
-> And it seems other people have solved it:
-> 
->     http://www.redhat.com/archives/lvm-devel/2013-September/msg00036.html
+destroy_timer_on_stack() is hardly the right thing for a delayed
+work. We leak a tracking object for the work itself when DEBUG_OBJECTS
+is enabled.
 
-I agree with Thomas.  A hardcoded timeout is a systemd bug.  However,
-could I get confirmation, while you can use this bug to do it, that the
-patch back in this thread actually fixes the crash when scsi_alloc_host
-fails, that's the serious SCSI bug, in my view?
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
+---
+ arch/x86/kernel/hpet.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks,
-
-James
-
+Index: tip/arch/x86/kernel/hpet.c
+===================================================================
+--- tip.orig/arch/x86/kernel/hpet.c
++++ tip/arch/x86/kernel/hpet.c
+@@ -699,7 +699,7 @@ static int hpet_cpuhp_notify(struct noti
+ 		/* FIXME: add schedule_work_on() */
+ 		schedule_delayed_work_on(cpu, &work.work, 0);
+ 		wait_for_completion(&work.complete);
+-		destroy_timer_on_stack(&work.work.timer);
++		destroy_delayed_work_on_stack(&work.work);
+ 		break;
+ 	case CPU_DEAD:
+ 		if (hdev) {
 
 
