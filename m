@@ -1,66 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303AbaCWQB2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 12:01:28 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:38065 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaCWQB0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 12:01:26 -0400
-Date: Sun, 23 Mar 2014 09:01:20 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Josh Triplett <josh@freedesktop.org>
-Subject: Re: [patch 06/16] rcu: torture: Add missing destroy_timer_on_stack()
-Message-ID: <20140323160119.GD4405@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140323150557.288925975@linutronix.de>
- <20140323150753.205530990@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140323150753.205530990@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032316-0928-0000-0000-000000AE7D29
+	id S1752422AbaCWQHi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 12:07:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:50896 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750913AbaCWQHh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 12:07:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,714,1389772800"; 
+   d="scan'208";a="505898752"
+Message-ID: <1395590853.4387.16.camel@ideak-mobl>
+Subject: Re: [PATCH] dcache: fix dpath buffer corruption for too small
+ buffers
+From: Imre Deak <imre.deak@intel.com>
+Reply-To: imre.deak@intel.com
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Sun, 23 Mar 2014 18:07:33 +0200
+In-Reply-To: <20140323043643.GA25566@ZenIV.linux.org.uk>
+References: <1394666986-24727-1-git-send-email-imre.deak@intel.com>
+	 <20140323043643.GA25566@ZenIV.linux.org.uk>
+Organization: Intel
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 03:09:27PM -0000, Thomas Gleixner wrote:
-> Otherwise we leak a tracking object if DEBUG_OBJECTS is enabled.
+On Sun, 2014-03-23 at 04:36 +0000, Al Viro wrote:
+> On Thu, Mar 13, 2014 at 01:29:46AM +0200, Imre Deak wrote:
+> > During dentry path lookups we can end up corrupting memory if the
+> > destination path buffer is too small. This is because prepend_path()
+> > and prepend() adjust the passed buffer length unconditionally, allowing
+> > for the buffer length to go negative. Then a later prepend_name() call
+> > will receive a negative length and convert this to unsigned before
+> > comparing it against the source string length leading to a possible
+> > memory corruption preceeding the destination buffer.
+> > 
+> > diff --git a/fs/dcache.c b/fs/dcache.c
+> > index 265e0ce..4015fd9 100644
+> > --- a/fs/dcache.c
+> > +++ b/fs/dcache.c
+> > @@ -2833,7 +2833,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+> >  	u32 dlen = ACCESS_ONCE(name->len);
+> >  	char *p;
+> >  
+> > -	if (*buflen < dlen + 1)
+> > +	/* make sure we don't convert a negative value to unsigned int */
+> > +	if (*buflen < 0 || *buflen < dlen + 1)
+> >  		return -ENAMETOOLONG;
+> >  	*buflen -= dlen + 1;
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> It's much easier to fix, actually.  Look at the callers of prepend_name();
+> when it returns a negative value, they either discard the value left in
+> *buflen (__dentry_path()) or pass it back to their caller and return a
+> negative value themselves (prepend_path()).  The same is true for
+> prepend_path() (discared in __d_path(), d_absolute_path(), sys_getcwd();
+> passed to caller with negative return value in path_with_deleted()) and
+> path_with_deleted() (the only caller is d_path() and it always discards).
+> 
+> In other words, when prepend_name() returns -ENAMETOOLONG, it is free to
+> leave whatever it wants in *buflen.  So let's do what prepend() does -
+> subtract from *buflen, then check if the result has become negative.
+> Generates a better code than the original, actually...
 
-Good catch!  Queued for 3.16.
+Thanks for the review.
 
-							Thanx, Paul
+I was hesitating between the two solutions and picked the above one out
+of paranoia, in case dlen > INT_MAX. prepend() accepts an int namelen,
+so it doesn't have this issue. But I realize such big qstrs should be
+guarded against at some higher level already and your solution makes
+things more unified with the rest of the helpers.
 
-> Cc: Josh Triplett <josh@freedesktop.org>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> ---
->  kernel/rcu/torture.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> Index: tip/kernel/rcu/torture.c
-> ===================================================================
-> --- tip.orig/kernel/rcu/torture.c
-> +++ tip/kernel/rcu/torture.c
-> @@ -1038,8 +1038,10 @@ rcu_torture_reader(void *arg)
->  	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
->  	VERBOSE_PRINTK_STRING("rcu_torture_reader task stopping");
->  	rcutorture_shutdown_absorb("rcu_torture_reader");
-> -	if (irqreader && cur_ops->irq_capable)
-> +	if (irqreader && cur_ops->irq_capable) {
->  		del_timer_sync(&t);
-> +		destroy_timer_on_stack(&t);
-> +	}
->  	while (!kthread_should_stop())
->  		schedule_timeout_uninterruptible(1);
->  	return 0;
-> 
-> 
+I'll follow up with a v2 per your suggestion.
+
+--Imre
 
