@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752833AbaCWPNw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 11:13:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57984 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752335AbaCWPJR (ORCPT
+	id S1752306AbaCWPau (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 11:30:50 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:55957 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaCWPas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 11:09:17 -0400
-Message-Id: <20140323150752.843705144@linutronix.de>
-User-Agent: quilt/0.60-1
-Date: Sun, 23 Mar 2014 15:09:25 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ursula Braun <ursula.braun@de.ibm.com>,
-        s390 <linux-s390@vger.kernel.org>
-Subject: [patch 03/16] s390: net: lcs: Add missing destroy_timer_on_stack()
-References: <20140323150557.288925975@linutronix.de>
-Content-Disposition: inline;
- filename=s390-net-lcs-add-missing-destroy-timer-on-stack.patch
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 23 Mar 2014 11:30:48 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-media@vger.kernel.org
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Roland Scheidegger <rscheidegger_lists@hispeed.ch>
+Subject: [PATCH 0/2] Clock fixes for UVC gadget driver
+Date: Sun, 23 Mar 2014 16:32:32 +0100
+Message-Id: <1395588754-20587-1-git-send-email-laurent.pinchart@ideasonboard.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <20140323001018.GA11963@localhost>
+References: <20140323001018.GA11963@localhost>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we leak a tracking object when DEBUG_OBJECTS is enabled.
+Hello,
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ursula Braun <ursula.braun@de.ibm.com>
-Cc: s390 <linux-s390@vger.kernel.org>
----
- drivers/s390/net/lcs.c |    1 +
- 1 file changed, 1 insertion(+)
+These two patches fix clock issues in the UVC gadget driver. Please see
+individual patches for details.
 
-Index: tip/drivers/s390/net/lcs.c
-===================================================================
---- tip.orig/drivers/s390/net/lcs.c
-+++ tip/drivers/s390/net/lcs.c
-@@ -899,6 +899,7 @@ lcs_send_lancmd(struct lcs_card *card, s
- 	add_timer(&timer);
- 	wait_event(reply->wait_q, reply->received);
- 	del_timer_sync(&timer);
-+	destroy_timer_on_stack(&timer);
- 	LCS_DBF_TEXT_(4, trace, "rc:%d",reply->rc);
- 	rc = reply->rc;
- 	lcs_put_reply(reply);
+The series is based on the latest media tree master branch as it depends on
+commit 872484ce40881e295b046adf21f7211306477751 ("v4l: Add timestamp source
+flags, mask and document them") queued for v3.15. It would thus be easier to
+merge it through the media tree. Greg and Mauro, would that be fine ?
+Alternatively I can rebase it on top of v3.15-rc1 when that version will be
+tagged.
 
+Laurent Pinchart (2):
+  usb: gadget: uvc: Switch to monotonic clock for buffer timestamps
+  usb: gadget: uvc: Set the vb2 queue timestamp flags
+
+ drivers/usb/gadget/uvc_queue.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+-- 
+Regards,
+
+Laurent Pinchart
 
