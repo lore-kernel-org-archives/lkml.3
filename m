@@ -1,261 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbaCWWeR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 18:34:17 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:64579
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750995AbaCWWeP (ORCPT
+	id S1751450AbaCWWhs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 18:37:48 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:45769 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995AbaCWWhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 18:34:15 -0400
-X-IronPort-AV: E=Sophos;i="4.97,716,1389740400"; 
-   d="scan'208";a="53789932"
-Date: Sun, 23 Mar 2014 23:34:12 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: LKML <linux-kernel@vger.kernel.org>,
+	Sun, 23 Mar 2014 18:37:47 -0400
+Date: Sun, 23 Mar 2014 18:37:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+cc: Laura Abbott <lauraa@codeaurora.org>, Dave Martin <Dave.Martin@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Larry Bassel <lbassel@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>, Jiang Liu <liuj97@gmail.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [patch 00/16] timers: Plug debugobject leaks and use del_timer_sync()
- in exit/teardown
-In-Reply-To: <20140323150557.288925975@linutronix.de>
-Message-ID: <alpine.DEB.2.02.1403232328480.2019@localhost6.localdomain6>
-References: <20140323150557.288925975@linutronix.de>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
+In-Reply-To: <CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1403231831130.1291@knanqh.ubzr>
+References: <1392339850-18686-1-git-send-email-keescook@chromium.org> <1392339850-18686-3-git-send-email-keescook@chromium.org> <20140214162257.GB2331@e103592.cambridge.arm.com> <CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
+ <20140217123415.GA2182@e103592.cambridge.arm.com> <532F2C48.6050509@codeaurora.org> <CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I could tell, (part of) the issue is that any kind of exit or 
-close function should use del_timer_sync, because they could be called 
-from a different CPU than the one that started up the timer?
+On Sun, 23 Mar 2014, Kees Cook wrote:
 
-Here is a semantic patch that takes care of the case of simple module_exit 
-functions:
+> On Sun, Mar 23, 2014 at 12:47 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> > On 2/17/2014 4:34 AM, Dave Martin wrote:
+> >> On Fri, Feb 14, 2014 at 11:11:07AM -0800, Kees Cook wrote:
+> >>> On Fri, Feb 14, 2014 at 8:22 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> >>>> On Thu, Feb 13, 2014 at 05:04:10PM -0800, Kees Cook wrote:
+> >>>>> Introduce "CONFIG_DEBUG_RODATA" to mostly match the x86 config, though
+> >>>>> the behavior is different: it depends on STRICT_KERNMEM_PERMS, which
+> >>>>> sets rodata read-only (but executable), where as this option additionally
+> >>>>> splits rodata from the kernel text (resulting in potentially more memory
+> >>>>> lost to padding) and sets it non-executable as well. The end result is
+> >>>>> that on builds with CONFIG_DEBUG_RODATA=y (like x86) the rodata with be
+> >>>>> marked purely read-only.
+> >>>>
+> >>>> This triggers an Oops in kexec, because we have a block of code in .text
+> >>>> which is a template for generating baremetal code to relocate the new
+> >>>> kernel, and some literal words are written into it before copying.
+> >>>
+> >>> You're writing into the text area? I would imagine that
+> >>> CONFIG_ARM_KERNMEM_PERMS would break that. However, that's not the
+> >>> right place to be building code -- shouldn't the module area be used
+> >>> for that?
+> >>>
+> >>>> Possibly this should be in .rodata, not .text.
+> >>>
+> >>> Well, rodata should be neither writable nor executable.
+> >>
+> >> We're not writing into code exactly.
+> >>
+> >> This code is never executed in-place in vmlinux.  It gets copied, and
+> >> only copies are ever executed.
+> >>
+> >> Some pointers and offsets get poked into the code to configure it.
+> >>
+> >> I think it would be better simply to put the code in .rodata, and
+> >> poke paramaters into the copy, not the original -- but that's a bit
+> >> more awkward to code up, since the values can't be poked simply by
+> >> writing global variables.
+> >>
+> >>>
+> >>>> There may be a few other instances of this kind of thing.
+> >>>
+> >>> This config will certainly find them! :) But, that's why it's behind a config.
+> >>
+> >> I haven't tested exhaustively, but it think this is sufficient for a
+> >> Tested-by.  The patch does seem to be doing what it is intended to
+> >> do, and doesn't seem to be triggering false positives all over the
+> >> place.
+> >>
+> >>>
+> >>>> Are you aware of similar situations on other arches?
+> >>>
+> >>> I think there were some problems a long time ago on x86 for rodata too.
+> >>
+> >> It would be good to get this kexec case fixed -- I'll try to hack up
+> >> a separate patch.
+> >>
+> >
+> > FWIW, we've hit issues not just with kexec but kprobes as well. The same
+> > problems exist with this series:
+> 
+> For this stage, how about I make this "depends on KEXEC=n &&
+> KPROBES=n"? Then as these areas get fixed, we can drop those
+> requirements.
 
-@r@
-declarer name module_exit;
-identifier ex;
-@@
+Do they really need "fixing"?
 
-module_exit(ex);
+The goal here is to increase security by preventing kernel code to be 
+modified.  And now it would require hole punching in order to support 
+kprobes.
 
-@@
-identifier r.ex;
-@@
+If security is important enough for this option to be attractive to you, 
+then wouldn't you want to keep kprobes firmly turned off as well?
 
-ex(...) {
-  <...
-- del_timer
-+ del_timer_sync
-    (...)
-  ...>
-}
 
-The transformations it makes are below.  I haven't had a chance to check 
-which results overlap with what Thomas has already sent, but I could look 
-into it if this is the right idea.  I guess other kinds of close/exit 
-functions would have to be identified manually, to make more rules.
-
-In what circumstance can one be sure that two instructions are executed on 
-the same CPU?
-
-julia
-
-diff -u -p a/arch/mips/lasat/picvue_proc.c b/arch/mips/lasat/picvue_proc.c
---- a/arch/mips/lasat/picvue_proc.c
-+++ b/arch/mips/lasat/picvue_proc.c
-@@ -175,7 +175,7 @@ static void pvc_proc_cleanup(void)
- 	remove_proc_entry("scroll", pvc_display_dir);
- 	remove_proc_entry(DISPLAY_DIR_NAME, NULL);
- 
--	del_timer(&timer);
-+	del_timer_sync(&timer);
- }
- 
- static int __init pvc_proc_init(void)
-diff -u -p a/drivers/tty/serial/mux.c b/drivers/tty/serial/mux.c
---- a/drivers/tty/serial/mux.c
-+++ b/drivers/tty/serial/mux.c
-@@ -613,7 +613,7 @@ static void __exit mux_exit(void)
- {
- 	/* Delete the Mux timer. */
- 	if(port_cnt > 0) {
--		del_timer(&mux_timer);
-+		del_timer_sync(&mux_timer);
- #ifdef CONFIG_SERIAL_MUX_CONSOLE
- 		unregister_console(&mux_console);
- #endif
-diff -u -p a/drivers/input/serio/hp_sdc.c b/drivers/input/serio/hp_sdc.c
---- a/drivers/input/serio/hp_sdc.c
-+++ b/drivers/input/serio/hp_sdc.c
-@@ -984,7 +984,7 @@ static void hp_sdc_exit(void)
- 	free_irq(hp_sdc.irq, &hp_sdc);
- 	write_unlock_irq(&hp_sdc.lock);
- 
--	del_timer(&hp_sdc.kicker);
-+	del_timer_sync(&hp_sdc.kicker);
- 
- 	tasklet_kill(&hp_sdc.task);
- 
-diff -u -p a/drivers/isdn/sc/init.c b/drivers/isdn/sc/init.c
---- a/drivers/isdn/sc/init.c
-+++ b/drivers/isdn/sc/init.c
-@@ -390,8 +390,8 @@ static void __exit sc_exit(void)
- 		/*
- 		 * kill the timers
- 		 */
--		del_timer(&(sc_adapter[i]->reset_timer));
--		del_timer(&(sc_adapter[i]->stat_timer));
-+		del_timer_sync(&(sc_adapter[i]->reset_timer));
-+		del_timer_sync(&(sc_adapter[i]->stat_timer));
- 
- 		/*
- 		 * Tell I4L we're toast
-diff -u -p a/drivers/isdn/i4l/isdn_common.c b/drivers/isdn/i4l/isdn_common.c
---- a/drivers/isdn/i4l/isdn_common.c
-+++ b/drivers/isdn/i4l/isdn_common.c
-@@ -2381,7 +2381,7 @@ static void __exit isdn_exit(void)
- 	}
- 	isdn_tty_exit();
- 	unregister_chrdev(ISDN_MAJOR, "isdn");
--	del_timer(&dev->timer);
-+	del_timer_sync(&dev->timer);
- 	/* call vfree with interrupts enabled, else it will hang */
- 	vfree(dev);
- 	printk(KERN_NOTICE "ISDN-subsystem unloaded\n");
-diff -u -p a/drivers/isdn/hardware/mISDN/hfcpci.c b/drivers/isdn/hardware/mISDN/hfcpci.c
---- a/drivers/isdn/hardware/mISDN/hfcpci.c
-+++ b/drivers/isdn/hardware/mISDN/hfcpci.c
-@@ -2352,7 +2352,7 @@ static void __exit
- HFC_cleanup(void)
- {
- 	if (timer_pending(&hfc_tl))
--		del_timer(&hfc_tl);
-+		del_timer_sync(&hfc_tl);
- 
- 	pci_unregister_driver(&hfc_driver);
- }
-diff -u -p a/drivers/isdn/act2000/module.c b/drivers/isdn/act2000/module.c
---- a/drivers/isdn/act2000/module.c
-+++ b/drivers/isdn/act2000/module.c
-@@ -796,7 +796,7 @@ static void __exit act2000_exit(void)
- 	act2000_card *last;
- 	while (card) {
- 		unregister_card(card);
--		del_timer(&card->ptimer);
-+		del_timer_sync(&card->ptimer);
- 		card = card->next;
- 	}
- 	card = cards;
-diff -u -p a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
---- a/drivers/net/hamradio/yam.c
-+++ b/drivers/net/hamradio/yam.c
-@@ -1184,7 +1184,7 @@ static void __exit yam_cleanup_driver(vo
- 	struct yam_mcs *p;
- 	int i;
- 
--	del_timer(&yam_timer);
-+	del_timer_sync(&yam_timer);
- 	for (i = 0; i < NR_PORTS; i++) {
- 		struct net_device *dev = yam_devs[i];
- 		if (dev) {
-diff -u -p a/drivers/staging/speakup/main.c b/drivers/staging/speakup/main.c
---- a/drivers/staging/speakup/main.c
-+++ b/drivers/staging/speakup/main.c
-@@ -2218,7 +2218,7 @@ static void __exit speakup_exit(void)
- 	unregister_keyboard_notifier(&keyboard_notifier_block);
- 	unregister_vt_notifier(&vt_notifier_block);
- 	speakup_unregister_devsynth();
--	del_timer(&cursor_timer);
-+	del_timer_sync(&cursor_timer);
- 	kthread_stop(speakup_task);
- 	speakup_task = NULL;
- 	mutex_lock(&spk_mutex);
-diff -u -p a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -2298,7 +2298,7 @@ static void __exit panel_cleanup_module(
- 	unregister_reboot_notifier(&panel_notifier);
- 
- 	if (scan_timer.function != NULL)
--		del_timer(&scan_timer);
-+		del_timer_sync(&scan_timer);
- 
- 	if (pprt != NULL) {
- 		if (keypad_enabled) {
-diff -u -p a/drivers/staging/lustre/lustre/llite/super25.c b/drivers/staging/lustre/lustre/llite/super25.c
---- a/drivers/staging/lustre/lustre/llite/super25.c
-+++ b/drivers/staging/lustre/lustre/llite/super25.c
-@@ -197,7 +197,7 @@ static void __exit exit_lustre_lite(void
- {
- 	ll_xattr_fini();
- 	vvp_global_fini();
--	del_timer(&ll_capa_timer);
-+	del_timer_sync(&ll_capa_timer);
- 	ll_capa_thread_stop();
- 	LASSERTF(capa_count[CAPA_SITE_CLIENT] == 0,
- 		 "client remaining capa count %d\n",
-diff -u -p a/drivers/atm/idt77105.c b/drivers/atm/idt77105.c
---- a/drivers/atm/idt77105.c
-+++ b/drivers/atm/idt77105.c
-@@ -369,8 +369,8 @@ EXPORT_SYMBOL(idt77105_init);
- static void __exit idt77105_exit(void)
- {
-         /* turn off timers */
--        del_timer(&stats_timer);
--        del_timer(&restart_timer);
-+        del_timer_sync(&stats_timer);
-+        del_timer_sync(&restart_timer);
- }
- 
- module_exit(idt77105_exit);
-diff -u -p a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
---- a/drivers/atm/nicstar.c
-+++ b/drivers/atm/nicstar.c
-@@ -306,7 +306,7 @@ static void __exit nicstar_cleanup(void)
- {
- 	XPRINTK("nicstar: nicstar_cleanup() called.\n");
- 
--	del_timer(&ns_timer);
-+	del_timer_sync(&ns_timer);
- 
- 	pci_unregister_driver(&nicstar_driver);
- 
-diff -u -p a/drivers/atm/iphase.c b/drivers/atm/iphase.c
---- a/drivers/atm/iphase.c
-+++ b/drivers/atm/iphase.c
-@@ -3289,7 +3289,7 @@ static void __exit ia_module_exit(void)
- {
- 	pci_unregister_driver(&ia_driver);
- 
--        del_timer(&ia_timer);
-+        del_timer_sync(&ia_timer);
- }
- 
- module_init(ia_module_init);
-diff -u -p a/net/hsr/hsr_main.c b/net/hsr/hsr_main.c
---- a/net/hsr/hsr_main.c
-+++ b/net/hsr/hsr_main.c
-@@ -459,7 +459,7 @@ static int __init hsr_init(void)
- static void __exit hsr_exit(void)
- {
- 	unregister_netdevice_notifier(&hsr_nb);
--	del_timer(&prune_timer);
-+	del_timer_sync(&prune_timer);
- 	hsr_netlink_exit();
- 	dev_remove_pack(&hsr_pt);
- }
-diff -u -p a/net/atm/mpc.c b/net/atm/mpc.c
---- a/net/atm/mpc.c
-+++ b/net/atm/mpc.c
-@@ -1492,7 +1492,7 @@ static void __exit atm_mpoa_cleanup(void
- 
- 	mpc_proc_clean();
- 
--	del_timer(&mpc_timer);
-+	del_timer_sync(&mpc_timer);
- 	unregister_netdevice_notifier(&mpoa_notifier);
- 	deregister_atm_ioctl(&atm_ioctl_ops);
- 
+Nicolas
