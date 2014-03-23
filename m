@@ -1,52 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752310AbaCWPsx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 11:48:53 -0400
-Received: from mx0a-0008d101.pphosted.com ([67.231.144.32]:3344 "EHLO
-	mx0a-0008d101.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750913AbaCWPsu convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 11:48:50 -0400
-X-Greylist: delayed 7151 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 Mar 2014 11:48:50 EDT
-From: "Fiser, Sarah A." <Sarah.Fiser@ocps.net>
-Date: Sun, 23 Mar 2014 09:48:11 -0400
-Subject: 
-Thread-Index: AQHPRp6H2HSCDbHyl0+F2evSsr4+8Q==
-Message-ID: <F8AE4495191DB04F89F04041411774DD1984A2C366@AELMAIL03.ocps.k12.fl.us>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1752303AbaCWQB2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 12:01:28 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:38065 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaCWQB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 12:01:26 -0400
+Date: Sun, 23 Mar 2014 09:01:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <Julia.Lawall@lip6.fr>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Josh Triplett <josh@freedesktop.org>
+Subject: Re: [patch 06/16] rcu: torture: Add missing destroy_timer_on_stack()
+Message-ID: <20140323160119.GD4405@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140323150557.288925975@linutronix.de>
+ <20140323150753.205530990@linutronix.de>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-23_01:2014-03-21,2014-03-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 suspectscore=0 phishscore=0
- adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx scancount=1
- engine=7.0.1-1402240000 definitions=main-1403230065
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140323150753.205530990@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032316-0928-0000-0000-000000AE7D29
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Mar 23, 2014 at 03:09:27PM -0000, Thomas Gleixner wrote:
+> Otherwise we leak a tracking object if DEBUG_OBJECTS is enabled.
+> 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 
-Fast and urgent funding for you, if interested, contact us via: bevloanservicess@webadicta.org<mailto:bevloanservicess@webadicta.org>
-============================================================================================
-schnelle und dringende Finanzierung für Sie, bei Interesse, kontaktieren Sie uns per E-Mail: bevloanservicess@webadicta.org<mailto:bevloanservicess@webadicta.org>
+Good catch!  Queued for 3.16.
 
-________________________________
-The information contained in this e-mail message is intended solely for
-the recipient(s) and may contain privileged information. Tampering with
-or altering the contents of this message is prohibited. This information
-is the same as any written document and may be subject to all rules
-governing public information according to Florida Statutes. Any message
-that falls under Chapter 119 shall not be altered in a manner that
-misrepresents the activities of Orange County Public Schools.
+							Thanx, Paul
 
-[References: Florida State Constitution I.24, Florida State Statutes
-Chapter 119, and OCPS Management Directive A-9.] If you have received
-this message in error, or are not the named recipient notify the sender
-and delete this message from your computer.
+> Cc: Josh Triplett <josh@freedesktop.org>
+> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcu/torture.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> Index: tip/kernel/rcu/torture.c
+> ===================================================================
+> --- tip.orig/kernel/rcu/torture.c
+> +++ tip/kernel/rcu/torture.c
+> @@ -1038,8 +1038,10 @@ rcu_torture_reader(void *arg)
+>  	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
+>  	VERBOSE_PRINTK_STRING("rcu_torture_reader task stopping");
+>  	rcutorture_shutdown_absorb("rcu_torture_reader");
+> -	if (irqreader && cur_ops->irq_capable)
+> +	if (irqreader && cur_ops->irq_capable) {
+>  		del_timer_sync(&t);
+> +		destroy_timer_on_stack(&t);
+> +	}
+>  	while (!kthread_should_stop())
+>  		schedule_timeout_uninterruptible(1);
+>  	return 0;
+> 
+> 
 
