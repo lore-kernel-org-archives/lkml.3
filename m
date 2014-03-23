@@ -1,186 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751732AbaCWTJL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:09:11 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9372 "EHLO mga01.intel.com"
+	id S1751687AbaCWTJJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:09:09 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3667 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411AbaCWTI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:08:59 -0400
+	id S1751304AbaCWTIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:08:42 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
-   d="scan'208";a="505021411"
+   d="scan'208";a="505943970"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v7 02/22] Allow page fault handlers to perform the COW
-Date: Sun, 23 Mar 2014 15:08:28 -0400
-Message-Id: <feee29988e167b019f5726cd497b1470b050a3ce.1395591795.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v2 3/6] Add bdev_read_page() and bdev_write_page()
+Date: Sun, 23 Mar 2014 15:08:25 -0400
+Message-Id: <709063ed6b368a1f59009d6bf47324a5dff5ac4e.1395593198.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+References: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+References: <cover.1395593198.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently COW of an XIP file is done by first bringing in a read-only
-mapping, then retrying the fault and copying the page.  It is much more
-efficient to tell the fault handler that a COW is being attempted (by
-passing in the pre-allocated page in the vm_fault structure), and allow
-the handler to perform the COW operation itself.
-
-Where the filemap code protects against truncation of the file until
-the PTE has been installed with the page lock, the XIP code use the
-i_mmap_mutex instead.  We must therefore unlock the i_mmap_mutex after
-inserting the PTE.
+A block device driver may choose to provide a rw_page operation.
+These will be called when the filesystem is attempting to do page sized
+I/O to page cache pages (ie not for direct I/O).  This does preclude
+I/Os that are larger than page size, so this may only be a performance
+gain for some devices.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Tested-by: Dheeraj Reddy <dheeraj.reddy@intel.com>
 ---
- include/linux/mm.h |  2 ++
- mm/memory.c        | 45 +++++++++++++++++++++++++++++++++------------
- 2 files changed, 35 insertions(+), 12 deletions(-)
+ fs/block_dev.c         | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/mpage.c             | 12 ++++++++++
+ include/linux/blkdev.h |  4 ++++
+ 3 files changed, 79 insertions(+)
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index c1b7414..513b78a 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -205,6 +205,7 @@ struct vm_fault {
- 	pgoff_t pgoff;			/* Logical page offset based on vma */
- 	void __user *virtual_address;	/* Faulting virtual address */
- 
-+	struct page *cow_page;		/* Handler may choose to COW */
- 	struct page *page;		/* ->fault handlers should return a
- 					 * page here, unless VM_FAULT_NOPAGE
- 					 * is set (which is also implied by
-@@ -1010,6 +1011,7 @@ static inline int page_mapped(struct page *page)
- #define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
- #define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
- 
-+#define VM_FAULT_COWED	0x0080	/* ->fault COWed the page instead */
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
- #define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
-diff --git a/mm/memory.c b/mm/memory.c
-index 07b4287..2a2ecac 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2602,6 +2602,7 @@ static int do_page_mkwrite(struct vm_area_struct *vma, struct page *page,
- 	vmf.pgoff = page->index;
- 	vmf.flags = FAULT_FLAG_WRITE|FAULT_FLAG_MKWRITE;
- 	vmf.page = page;
-+	vmf.cow_page = NULL;
- 
- 	ret = vma->vm_ops->page_mkwrite(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-@@ -3288,7 +3289,8 @@ oom:
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1e86823..62eabf5 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -363,6 +363,69 @@ int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
  }
+ EXPORT_SYMBOL(blkdev_fsync);
  
- static int __do_fault(struct vm_area_struct *vma, unsigned long address,
--		pgoff_t pgoff, unsigned int flags, struct page **page)
-+			pgoff_t pgoff, unsigned int flags,
-+			struct page *cow_page, struct page **page)
- {
- 	struct vm_fault vmf;
- 	int ret;
-@@ -3297,10 +3299,13 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	vmf.pgoff = pgoff;
- 	vmf.flags = flags;
- 	vmf.page = NULL;
-+	vmf.cow_page = cow_page;
- 
- 	ret = vma->vm_ops->fault(vma, &vmf);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
-+	if (unlikely(ret & VM_FAULT_COWED))
-+		goto out;
- 
- 	if (unlikely(PageHWPoison(vmf.page))) {
- 		if (ret & VM_FAULT_LOCKED)
-@@ -3314,6 +3319,7 @@ static int __do_fault(struct vm_area_struct *vma, unsigned long address,
- 	else
- 		VM_BUG_ON_PAGE(!PageLocked(vmf.page), vmf.page);
- 
-+ out:
- 	*page = vmf.page;
- 	return ret;
- }
-@@ -3351,7 +3357,7 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	pte_t *pte;
- 	int ret;
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
-@@ -3368,6 +3374,12 @@ static int do_read_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	return ret;
- }
- 
-+/*
-+ * If the fault handler performs the COW, it does not return a page,
-+ * so cannot use the page's lock to protect against a concurrent truncate
-+ * operation.  Instead it returns with the i_mmap_mutex held, which must
-+ * be released after the PTE has been inserted.
++/**
++ * bdev_read_page() - Start reading a page from a block device
++ * @bdev: The device to read the page from
++ * @sector: The offset on the device to read the page to (need not be aligned)
++ * @page: The page to read
++ *
++ * On entry, the page should be locked.  It will be unlocked when the page
++ * has been read.  If the block driver implements rw_page synchronously,
++ * that will be true on exit from this function, but it need not be.
++ *
++ * Errors returned by this function are usually "soft", eg out of memory, or
++ * queue full; callers should try a different route to read this page rather
++ * than propagate an error back up the stack.
++ *
++ * Return: negative errno if an error occurs, 0 if submission was successful.
 + */
- static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		unsigned long address, pmd_t *pmd,
- 		pgoff_t pgoff, unsigned int flags, pte_t orig_pte)
-@@ -3389,25 +3401,34 @@ static int do_cow_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		return VM_FAULT_OOM;
- 	}
++int bdev_read_page(struct block_device *bdev, sector_t sector,
++			struct page *page)
++{
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++	if (!ops->rw_page)
++		return -EOPNOTSUPP;
++	return ops->rw_page(bdev, sector + get_start_sect(bdev), page, READ);
++}
++EXPORT_SYMBOL_GPL(bdev_read_page);
++
++/**
++ * bdev_write_page() - Start writing a page to a block device
++ * @bdev: The device to write the page to
++ * @sector: The offset on the device to write the page to (need not be aligned)
++ * @page: The page to write
++ * @wbc: The writeback_control for the write
++ *
++ * On entry, the page should be locked and not currently under writeback.
++ * On exit, if the write started successfully, the page will be unlocked and
++ * under writeback.  If the write failed already (eg the driver failed to
++ * queue the page to the device), the page will still be locked.  If the
++ * caller is a ->writepage implementation, it will need to unlock the page.
++ *
++ * Errors returned by this function are usually "soft", eg out of memory, or
++ * queue full; callers should try a different route to write this page rather
++ * than propagate an error back up the stack.
++ *
++ * Return: negative errno if an error occurs, 0 if submission was successful.
++ */
++int bdev_write_page(struct block_device *bdev, sector_t sector,
++			struct page *page, struct writeback_control *wbc)
++{
++	int result;
++	int rw = (wbc->sync_mode == WB_SYNC_ALL) ? WRITE_SYNC : WRITE;
++	const struct block_device_operations *ops = bdev->bd_disk->fops;
++	if (!ops->rw_page)
++		return -EOPNOTSUPP;
++	set_page_writeback(page);
++	result = ops->rw_page(bdev, sector + get_start_sect(bdev), page, rw);
++	if (result)
++		end_page_writeback(page);
++	else
++		unlock_page(page);
++	return result;
++}
++EXPORT_SYMBOL_GPL(bdev_write_page);
++
+ /*
+  * pseudo-fs
+  */
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 10da0da..5f9ed62 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -269,6 +269,11 @@ do_mpage_readpage(struct bio *bio, struct page *page, unsigned nr_pages,
  
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, new_page, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		goto uncharge_out;
+ alloc_new:
+ 	if (bio == NULL) {
++		if (first_hole == blocks_per_page) {
++			if (!bdev_read_page(bdev, blocks[0] << (blkbits - 9),
++								page))
++				goto out;
++		}
+ 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
+ 			  	min_t(int, nr_pages, bio_get_nr_vecs(bdev)),
+ 				GFP_KERNEL);
+@@ -587,6 +592,13 @@ page_is_mapped:
  
--	copy_user_highpage(new_page, fault_page, address, vma);
-+	if (!(ret & VM_FAULT_COWED))
-+		copy_user_highpage(new_page, fault_page, address, vma);
- 	__SetPageUptodate(new_page);
+ alloc_new:
+ 	if (bio == NULL) {
++		if (first_unmapped == blocks_per_page) {
++			if (!bdev_write_page(bdev, blocks[0] << (blkbits - 9),
++								page, wbc)) {
++				clean_buffers(page, first_unmapped);
++				goto out;
++			}
++		}
+ 		bio = mpage_alloc(bdev, blocks[0] << (blkbits - 9),
+ 				bio_get_nr_vecs(bdev), GFP_NOFS|__GFP_HIGH);
+ 		if (bio == NULL)
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 4afa4f8..f6f6965 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1558,6 +1558,7 @@ static inline bool blk_integrity_is_initialized(struct gendisk *g)
+ struct block_device_operations {
+ 	int (*open) (struct block_device *, fmode_t);
+ 	void (*release) (struct gendisk *, fmode_t);
++	int (*rw_page)(struct block_device *, sector_t, struct page *, int rw);
+ 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+ 	int (*direct_access) (struct block_device *, sector_t,
+@@ -1576,6 +1577,9 @@ struct block_device_operations {
  
- 	pte = pte_offset_map_lock(mm, pmd, address, &ptl);
--	if (unlikely(!pte_same(*pte, orig_pte))) {
--		pte_unmap_unlock(pte, ptl);
-+	if (unlikely(!pte_same(*pte, orig_pte)))
-+		goto unlock_out;
-+	do_set_pte(vma, address, new_page, pte, true, true);
-+	pte_unmap_unlock(pte, ptl);
-+	if (ret & VM_FAULT_COWED) {
-+		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	} else {
- 		unlock_page(fault_page);
- 		page_cache_release(fault_page);
--		goto uncharge_out;
- 	}
--	do_set_pte(vma, address, new_page, pte, true, true);
--	pte_unmap_unlock(pte, ptl);
--	unlock_page(fault_page);
--	page_cache_release(fault_page);
- 	return ret;
-+unlock_out:
-+	pte_unmap_unlock(pte, ptl);
-+	if (ret & VM_FAULT_COWED) {
-+		mutex_unlock(&vma->vm_file->f_mapping->i_mmap_mutex);
-+	} else {
-+		unlock_page(fault_page);
-+		page_cache_release(fault_page);
-+	}
- uncharge_out:
- 	mem_cgroup_uncharge_page(new_page);
- 	page_cache_release(new_page);
-@@ -3424,7 +3445,7 @@ static int do_shared_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	int dirtied = 0;
- 	int ret, tmp;
- 
--	ret = __do_fault(vma, address, pgoff, flags, &fault_page);
-+	ret = __do_fault(vma, address, pgoff, flags, NULL, &fault_page);
- 	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE | VM_FAULT_RETRY)))
- 		return ret;
- 
+ extern int __blkdev_driver_ioctl(struct block_device *, fmode_t, unsigned int,
+ 				 unsigned long);
++extern int bdev_read_page(struct block_device *, sector_t, struct page *);
++extern int bdev_write_page(struct block_device *, sector_t, struct page *,
++						struct writeback_control *);
+ #else /* CONFIG_BLOCK */
+ /*
+  * stubs for when the block layer is configured out
 -- 
 1.9.0
 
