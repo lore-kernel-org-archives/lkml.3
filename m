@@ -1,44 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752153AbaCWG6h (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 02:58:37 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:43635 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750751AbaCWG6g (ORCPT
+	id S1752101AbaCWHE5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 03:04:57 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:46313 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaCWHEy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 02:58:36 -0400
+	Sun, 23 Mar 2014 03:04:54 -0400
+Date: Sun, 23 Mar 2014 00:03:43 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux390@de.ibm.com, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+ actual Kconfig
+Message-ID: <20140323070343.GA17945@infradead.org>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>
+ <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
+ <1395543886.3460.95.camel@pasglop>
 MIME-Version: 1.0
-In-Reply-To: <1395553958.5459.3.camel@marge.simpson.net>
-References: <CAJiejCSDC2EEsxN4d6C=LfB+TbYQ+7pyrzWU2SeeRHrvwxVhQw@mail.gmail.com>
- <1395553958.5459.3.camel@marge.simpson.net>
-From: Drunkard Zhang <gongfan193@gmail.com>
-Date: Sun, 23 Mar 2014 14:58:16 +0800
-Message-ID: <CAJiejCTv0Vsq0zecEhKD9B7sNqEKsa+Do_LLiykvvfH1+=9jqQ@mail.gmail.com>
-Subject: Re: 3.14-rc7 compile failure
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395543886.3460.95.camel@pasglop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-23 13:52 GMT+08:00 Mike Galbraith <umgwanakikbuti@gmail.com>:
-> On Sun, 2014-03-23 at 13:29 +0800, Drunkard Zhang wrote:
->
->> scripts/genksyms/genksyms.o: In function `main':
->> genksyms.c:(.text.startup+0x183): undefined reference to `yydebug'
->> genksyms.c:(.text.startup+0x18c): undefined reference to `yy_flex_debug'
->> genksyms.c:(.text.startup+0x1a5): undefined reference to `yyparse'
->> collect2: error: ld returned 1 exit status
->> make[2]: *** [scripts/genksyms/genksyms] Error 1
->> make[1]: *** [scripts/genksyms] Error 2
->> make[1]: *** Waiting for unfinished jobs....
->
-> flex and bison installed?  rpm -q flex bison
->
-I'm using Gentoo.
-squid85 ~ # qlist -Iv flex bison
-sys-devel/bison-2.4.3
-sys-devel/flex-2.5.37
-squid85 ~ # cat /etc/gentoo-release
-Gentoo Base System release 2.2
+On Sun, Mar 23, 2014 at 02:04:46PM +1100, Benjamin Herrenschmidt wrote:
+> 
+> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > index 1594945..8122294 100644
+> > --- a/arch/arm/Kconfig
+> > +++ b/arch/arm/Kconfig
+> > @@ -82,6 +82,7 @@ config ARM
+> >  	  <http://www.arm.linux.org.uk/>.
+> >  
+> >  config ARM_HAS_SG_CHAIN
+> > +	select ARCH_HAS_SG_CHAIN
+> >  	bool
+> >  
+> 
+> Heh, a self-selecting config option... I didn't know that trick !
+
+ARM vs ARCH.  However the arm variant of the variable should probably be
+consolidated into the ARCH one as a follow up.
+
