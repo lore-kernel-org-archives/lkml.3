@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751145AbaCWUAc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 16:00:32 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:51470 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750914AbaCWUAb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 16:00:31 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Maling list - DRI developers 
-	<dri-devel@lists.freedesktop.org>,
-        Dave Airlie <airlied@linux.ie>
-Subject: Re: [BUG] 3.14-rc6 problems with an R7 260X
-Date: Sun, 23 Mar 2014 16:00:23 -0400
-Message-ID: <2497696.SigshgMW0H@grover>
-Organization: me
-User-Agent: KMail/4.12.3 (Linux/3.14.0-1-mainline; KDE/4.12.3; x86_64; ; )
-In-Reply-To: <33204379.FfpmvHoDUX@grover>
-References: <1825482.79WA6myBva@grover> <CADnq5_Ps61MBXQBSXxetTuyONaU=h0_qtiUaes8XWJwDLCkCVg@mail.gmail.com> <33204379.FfpmvHoDUX@grover>
+	id S1751274AbaCWUD4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 16:03:56 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36026 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750942AbaCWUDz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 16:03:55 -0400
+Date: Sun, 23 Mar 2014 20:03:34 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Jean-Francois Moine <moinejf@free.fr>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i2c: tda998x: Change the compatible strings
+Message-ID: <20140323200334.GP7528@n2100.arm.linux.org.uk>
+References: <20140321115541.01cbbb06@armhf> <532C40B0.3000805@gmail.com> <20140323111903.51c73c82@armhf> <532F23F5.6020001@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <532F23F5.6020001@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 10 March 2014 13:29:41 Ed Tomlinson wrote:
-> On Monday 10 March 2014 12:38:42 Alex Deucher wrote:
-> > On Mon, Mar 10, 2014 at 11:47 AM, Ed Tomlinson <edt@aei.ca> wrote:
-> > > Hi,
-> > >
-> > > I recently added a R7 260X to my system.  While the card works with 3.13 its supposed work much better with 14-rc.
-> > > This is not the case.  My system is unstable without radeon.dpm=0 which was the default in .13.  Here are some extracts
-> > > from the logs of the latest fun with dpm enabled:
-> 
-> omitted
-> 
-> > > The above type of errors repeat hundreds of times and eventually the display freezes (this box does not have a serial console and it did not check with ssh)
-> > >
-> > > When X started I did notice some corruption.  There are sets of two rectangles about of a height of 2 or 3 mm, width of 25m or so with a second
-> > > about a cm below.  The often occurs in chomium especially when scrolling.  Runing the  unigine-sanctuary or unigine-tropics demo/benchmark
-> > > programs also produce the above problems and eventually stall.
-> > >
-> > > The problem is reproducible - I am not that familiar with gpu problems though, what else will help debug this?
-> > >
-> > 
-> > Please file a bug at https://bugs.freedesktop.org (Product: DRI,
-> > Component: DRM/Radeon) and attach your dmesg output and xorg log.
-> 
-> Filed as bug 75992
-> 
-> Let me know if you want me to test anything or if more info is needed.
+On Sun, Mar 23, 2014 at 07:12:05PM +0100, Sebastian Hesselbarth wrote:
+> On 03/23/2014 11:19 AM, Jean-Francois Moine wrote:
+>> On Fri, 21 Mar 2014 14:37:52 +0100
+>> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>>>>    Required properties;
+>>>> -  - compatible: must be "nxp,tda998x"
+>>>> +  - compatible: may be "nxp,tda9989", "nxp,tda19988" or "nxp,tda19989"
+>>>
+>>> There is a "DT is ABI" policy and although there is no mainline Linux
+>>> user of current compatible, the correct way would be to deprecate
+>>> "nxp,tda998x" and introduce new compatibles.
+>>
+>> Pratically, what is this way?
+>
+> Currently, there is no effective way to deprecate a binding or
+> compatible. You just add the one(s) that are more sensible and
+> you mark the old one as DEPRECATED by simply writing it in the
+> binding doc.
+>
+> The driver should support the old binding at least for a while.
 
-This bug also occurs with rc7.  My system is not useable when booted without radeon.dpm=0 - X stalls after a minute or two of use.
+It doesn't need to - it's only been in development trees so far, and
+never been in a mainline full release.  Until it does, the binding
+does not become stable.
 
-Thanks
-Ed Tomlinson
-
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
