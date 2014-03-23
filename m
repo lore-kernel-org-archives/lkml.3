@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751604AbaCWEgw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 00:36:52 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55045 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750817AbaCWEgt (ORCPT
+	id S1751630AbaCWEuO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 00:50:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50351 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747AbaCWEuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 00:36:49 -0400
-Date: Sun, 23 Mar 2014 04:36:43 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Imre Deak <imre.deak@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dcache: fix dpath buffer corruption for too small buffers
-Message-ID: <20140323043643.GA25566@ZenIV.linux.org.uk>
-References: <1394666986-24727-1-git-send-email-imre.deak@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394666986-24727-1-git-send-email-imre.deak@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 23 Mar 2014 00:50:12 -0400
+Date: Sun, 23 Mar 2014 00:50:10 -0400 (EDT)
+Message-Id: <20140323.005010.1898428719601246326.davem@davemloft.net>
+To: rgb@redhat.com
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com
+Subject: Re: [PATCH] netlink: have netlink per-protocol bind function
+ return an error code.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1239812af16a5c746772913ef68d3570383f2e50.1395419169.git.rgb@redhat.com>
+References: <1239812af16a5c746772913ef68d3570383f2e50.1395419169.git.rgb@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 22 Mar 2014 21:50:11 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 13, 2014 at 01:29:46AM +0200, Imre Deak wrote:
-> During dentry path lookups we can end up corrupting memory if the
-> destination path buffer is too small. This is because prepend_path()
-> and prepend() adjust the passed buffer length unconditionally, allowing
-> for the buffer length to go negative. Then a later prepend_name() call
-> will receive a negative length and convert this to unsigned before
-> comparing it against the source string length leading to a possible
-> memory corruption preceeding the destination buffer.
-> 
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 265e0ce..4015fd9 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -2833,7 +2833,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
->  	u32 dlen = ACCESS_ONCE(name->len);
->  	char *p;
+From: Richard Guy Briggs <rgb@redhat.com>
+Date: Fri, 21 Mar 2014 12:39:11 -0400
+
+> @@ -1441,6 +1441,17 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+>  	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
+>  		return 0;
 >  
-> -	if (*buflen < dlen + 1)
-> +	/* make sure we don't convert a negative value to unsigned int */
-> +	if (*buflen < 0 || *buflen < dlen + 1)
->  		return -ENAMETOOLONG;
->  	*buflen -= dlen + 1;
+> +	if (nlk->netlink_bind && nladdr->nl_groups) {
+> +		int i;
+> +
+> +		for (i = 0; i < nlk->ngroups; i++)
+> +			if (test_bit(i, (long unsigned int *)&nladdr->nl_groups)) {
+> +				err = nlk->netlink_bind(i);
+> +				if (err)
+> +					return err;
+> +			}
+> +	}
+> +
 
-It's much easier to fix, actually.  Look at the callers of prepend_name();
-when it returns a negative value, they either discard the value left in
-*buflen (__dentry_path()) or pass it back to their caller and return a
-negative value themselves (prepend_path()).  The same is true for
-prepend_path() (discared in __d_path(), d_absolute_path(), sys_getcwd();
-passed to caller with negative return value in path_with_deleted()) and
-path_with_deleted() (the only caller is d_path() and it always discards).
+You can't just leave a partially set of completed bindings in place.
 
-In other words, when prepend_name() returns -ENAMETOOLONG, it is free to
-leave whatever it wants in *buflen.  So let's do what prepend() does -
-subtract from *buflen, then check if the result has become negative.
-Generates a better code than the original, actually...
+It's not valid to leave half-baked state like this.
+
+If you return an error, all of the binding state changes must be
+completely undone.
+
+If you can't find a way to do this cleanly, you'll need to find
+a way for the audit code to not return an error.
