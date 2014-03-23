@@ -1,97 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaCWRpQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 13:45:16 -0400
-Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:39884 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752357AbaCWRpO (ORCPT
+	id S1752629AbaCWRu2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 13:50:28 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:64339 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752429AbaCWRu1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 13:45:14 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:355:379:541:599:960:966:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2196:2199:2200:2393:2559:2562:2828:2914:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3873:3874:4321:4385:4559:4605:5007:7652:8957:10004:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12679:12740:13161:13229,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: quilt92_6793b932b9d17
-X-Filterd-Recvd-Size: 3636
-Message-ID: <1395596709.13968.30.camel@joe-AO722>
-Subject: Re: [PATCH 1/1] staging: fix bcm/hostmibs.c checkpatch problems
-From: Joe Perches <joe@perches.com>
-To: Jake Edge <jake@edge2.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jade Bilkey <herself@thefumon.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 23 Mar 2014 10:45:09 -0700
-In-Reply-To: <20140322095044.5d4d5ed6@quetzal.lan>
-References: <20140322095044.5d4d5ed6@quetzal.lan>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sun, 23 Mar 2014 13:50:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sun, 23 Mar 2014 10:50:06 -0700
+Message-ID: <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
+Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 09:50 -0600, Jake Edge wrote:
-> Fix 4 checkpatch errors, many warnings in bcm/hostmibs.c
+> +/**
+> + * vrange_check_purged_pte - Checks ptes for purged pages
+> + *
+> + * Iterates over the ptes in the pmd checking if they have
+> + * purged swap entries.
+> + *
+> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
+> + */
+> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
+> +                                       unsigned long end, struct mm_walk *walk)
+> +{
+> +       struct vrange_walker *vw = walk->private;
+> +       pte_t *pte;
+> +       spinlock_t *ptl;
+> +
+> +       if (pmd_trans_huge(*pmd))
+> +               return 0;
+> +       if (pmd_trans_unstable(pmd))
+> +               return 0;
+> +
+> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
+> +               if (!pte_present(*pte)) {
+> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+> +
+> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
+> +                               vw->page_was_purged = 1;
+> +                               break;
 
-Making code checkpatch clean shouldn't be the primary goal here.
+This function only detect there is vpurge entry or not. But
+VRANGE_NONVOLATILE should remove all vpurge entries.
+Otherwise, non-volatiled range still makes SIGBUS.
 
-Removing uses of Hungarian-style notation, CamelCase naming, and
-long variable names would be more helpful overall.
-
-> diff --git a/drivers/staging/bcm/hostmibs.c b/drivers/staging/bcm/hostmibs.c
-[]
-> @@ -9,27 +9,32 @@
-[]
-> -INT ProcessGetHostMibs(struct bcm_mini_adapter *Adapter, struct bcm_host_stats_mibs *pstHostMibs)
-> +INT ProcessGetHostMibs(struct bcm_mini_adapter *Adapter,
-> +		       struct bcm_host_stats_mibs *pstHostMibs)
-[]
-> -	struct bcm_phs_extension *pDeviceExtension = (struct bcm_phs_extension *) &Adapter->stBCMPhsContext;
-> +	struct bcm_phs_extension *pDeviceExtension =
-> +			(struct bcm_phs_extension *) &Adapter->stBCMPhsContext;
-
-btw: this cast is  unnecessary.
-&Adapter->stBCMPhsContext is a (struct bcm_phs_extension *)
- 
-> -	UINT nClassifierIndex = 0, nPhsTableIndex = 0, nSfIndex = 0, uiIndex = 0;
-> +	UINT nClassifierIndex = 0, nPhsTableIndex = 0,
-> +						nSfIndex = 0, uiIndex = 0;
-
-Using one initializer per line is generally better.
- 
-[]
-
-> 	/* Copy the classifier Table */
-> -	for (nClassifierIndex = 0; nClassifierIndex < MAX_CLASSIFIERS; nClassifierIndex++) {
-> +	for (nClassifierIndex = 0; nClassifierIndex < MAX_CLASSIFIERS;
-> +							nClassifierIndex++) {
->  		if (Adapter->astClassifierTable[nClassifierIndex].bUsed == TRUE)
-> -			memcpy((PVOID) &pstHostMibs->
-> +			memcpy((PVOID)&pstHostMibs->
->  			       astClassifierTable[nClassifierIndex],
-> -			       (PVOID) &Adapter->
-> +			       (PVOID)&Adapter->
->  			       astClassifierTable[nClassifierIndex],
->  			       sizeof(struct bcm_mibs_classifier_rule));
-
-You could remove the (PVOID) casts here.
-mem<foo> pointers don't need to be cast to void,
-the compiler already does that.
-
-> @@ -82,53 +88,70 @@ INT ProcessGetHostMibs(struct bcm_mini_adapter *Adapter, struct bcm_host_stats_m
->  	/* Copy other Host Statistics parameters */
->  	pstHostMibs->stHostInfo.GoodTransmits = Adapter->dev->stats.tx_packets;
->  	pstHostMibs->stHostInfo.GoodReceives = Adapter->dev->stats.rx_packets;
-> -	pstHostMibs->stHostInfo.CurrNumFreeDesc = atomic_read(&Adapter->CurrNumFreeTxDesc);
-> +	pstHostMibs->stHostInfo.CurrNumFreeDesc =
-> +				atomic_read(&Adapter->CurrNumFreeTxDesc);
->  	pstHostMibs->stHostInfo.BEBucketSize = Adapter->BEBucketSize;
->  	pstHostMibs->stHostInfo.rtPSBucketSize = Adapter->rtPSBucketSize;
->  	pstHostMibs->stHostInfo.TimerActive = Adapter->TimerActive;
->  	pstHostMibs->stHostInfo.u32TotalDSD = Adapter->u32TotalDSD;
-
-maybe use a temporary for &pst->stHostInfo and change all
-of these to
-
-	host_info-><foo> = Adapter-><bar>;
-
-
+> +                       }
+> +               }
+> +       }
+> +       pte_unmap_unlock(pte - 1, ptl);
+> +       cond_resched();
+> +
+> +       return 0;
+> +}
