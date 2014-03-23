@@ -1,89 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752550AbaCWO2L (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 10:28:11 -0400
-Received: from www.linutronix.de ([62.245.132.108]:57857 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbaCWO2J (ORCPT
+	id S1752559AbaCWO3N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 10:29:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50292 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752143AbaCWO3M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 10:28:09 -0400
-Date: Sun, 23 Mar 2014 15:28:11 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, oleg@redhat.com,
+	Sun, 23 Mar 2014 10:29:12 -0400
+Message-ID: <1395584950.2200.9.camel@dabdike.int.hansenpartnership.com>
+Subject: Re: please fix FUSION
+ (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, oleg@redhat.com,
         joseph.salisbury@canonical.com, Nagalakshmi.Nandigama@lsi.com,
         Sreekanth.Reddy@lsi.com, rientjes@google.com,
         akpm@linux-foundation.org, torvalds@linux-foundation.org,
         tj@kernel.org, linux-kernel@vger.kernel.org,
         kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org,
         thenzl@redhat.com
-Subject: Re: please fix FUSION
- (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-In-Reply-To: <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
-Message-ID: <alpine.DEB.2.02.1403231524100.18573@ionos.tec.linutronix.de>
-References: <20140321183443.GA3891@redhat.com>  <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>  <20140322192511.GA14811@redhat.com>  <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>  <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
-  <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>  <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de> <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Date: Sun, 23 Mar 2014 07:29:10 -0700
+In-Reply-To: <alpine.DEB.2.02.1403231524100.18573@ionos.tec.linutronix.de>
+References: <20140321183443.GA3891@redhat.com>
+	  <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
+	  <20140322192511.GA14811@redhat.com>
+	  <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
+	  <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
+	 <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>
+	  <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de>
+	 <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
+	 <alpine.DEB.2.02.1403231524100.18573@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Mar 2014, James Bottomley wrote:
-> On Sun, 2014-03-23 at 09:04 +0100, Thomas Gleixner wrote:
-> > On Sun, 23 Mar 2014, Tetsuo Handa wrote:
-> > 
-> > > Thomas Gleixner wrote:
-> > > > But then systemd/udev mutters:
+On Sun, 2014-03-23 at 15:28 +0100, Thomas Gleixner wrote:
+> On Sun, 23 Mar 2014, James Bottomley wrote:
+> > On Sun, 2014-03-23 at 09:04 +0100, Thomas Gleixner wrote:
+> > > On Sun, 23 Mar 2014, Tetsuo Handa wrote:
+> > > 
+> > > > Thomas Gleixner wrote:
+> > > > > But then systemd/udev mutters:
+> > > > > 
+> > > > >    "You migh be able to work around the timeout with udev rules and
+> > > > >     OPTIONS+="event_timeout=120", but that code was maybe never used
+> > > > >     or tested, so it might not work correctly." [1]
+> > > > > 
+> > > > > AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
+> > > > > 
+> > > > > And if the udev/systemd event_timeout option is broken it's way better
+> > > > > to fix that one instead of hacking random heuristics into the kernel.
 > > > > 
-> > > >    "You migh be able to work around the timeout with udev rules and
-> > > >     OPTIONS+="event_timeout=120", but that code was maybe never used
-> > > >     or tested, so it might not work correctly." [1]
+> > > > I haven't tried the event_timeout= option but I think it will not work.
+> > > > The timeout is hard coded as shown below and there will be no chance for taking
+> > > > the event_timeout= option into account.
 > > > > 
-> > > > AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
+> > > > ---------- systemd-204/src/udev/udevd.c start ----------
+> > > > (...snipped...)
+> > > >                         /* check for hanging events */
+> > > >                         udev_list_node_foreach(loop, &worker_list) {
+> > > >                                 struct worker *worker = node_to_worker(loop);
 > > > > 
-> > > > And if the udev/systemd event_timeout option is broken it's way better
-> > > > to fix that one instead of hacking random heuristics into the kernel.
+> > > >                                 if (worker->state != WORKER_RUNNING)
+> > > >                                         continue;
+> > > > 
+> > > >                                 if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
 > > > 
-> > > I haven't tried the event_timeout= option but I think it will not work.
-> > > The timeout is hard coded as shown below and there will be no chance for taking
-> > > the event_timeout= option into account.
+> > > And because systemd has an immutable hardcoded random timeout we add
+> > > another hardcoded random timeout into kthread_create() to work around
+> > > that.
 > > > 
-> > > ---------- systemd-204/src/udev/udevd.c start ----------
-> > > (...snipped...)
-> > >                         /* check for hanging events */
-> > >                         udev_list_node_foreach(loop, &worker_list) {
-> > >                                 struct worker *worker = node_to_worker(loop);
+> > > How broken is that?
 > > > 
-> > >                                 if (worker->state != WORKER_RUNNING)
-> > >                                         continue;
+> > > And it seems other people have solved it:
 > > > 
-> > >                                 if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
+> > >     http://www.redhat.com/archives/lvm-devel/2013-September/msg00036.html
 > > 
-> > And because systemd has an immutable hardcoded random timeout we add
-> > another hardcoded random timeout into kthread_create() to work around
-> > that.
-> > 
-> > How broken is that?
-> > 
-> > And it seems other people have solved it:
-> > 
-> >     http://www.redhat.com/archives/lvm-devel/2013-September/msg00036.html
+> > I agree with Thomas.  A hardcoded timeout is a systemd bug.  However,
+> > could I get confirmation, while you can use this bug to do it, that the
+> > patch back in this thread actually fixes the crash when scsi_alloc_host
+> > fails, that's the serious SCSI bug, in my view?
 > 
-> I agree with Thomas.  A hardcoded timeout is a systemd bug.  However,
-> could I get confirmation, while you can use this bug to do it, that the
-> patch back in this thread actually fixes the crash when scsi_alloc_host
-> fails, that's the serious SCSI bug, in my view?
+> Which patch, the one to kthread_create() or the one to SCSI?
 
-Which patch, the one to kthread_create() or the one to SCSI?
+The one to SCSI ... I'm only really interested in the oops when
+scsi_host_alloc fails.
 
-Thanks,
-
-	tglx
+James
 
 
 
