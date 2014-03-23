@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751332AbaCWUVn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 16:21:43 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:56559 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaCWUVm (ORCPT
+	id S1751260AbaCWU0Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 16:26:16 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:37362 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaCWU0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 16:21:42 -0400
+	Sun, 23 Mar 2014 16:26:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140323122913.GC2813@quack.suse.cz>
+In-Reply-To: <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
 References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
 	<1395436655-21670-3-git-send-email-john.stultz@linaro.org>
-	<20140323122913.GC2813@quack.suse.cz>
-Date: Sun, 23 Mar 2014 13:21:41 -0700
-Message-ID: <CALAqxLVHrtDOtfkPUDgzwdt6eOG4rdykJq6zBFZmRWq+H7i3uA@mail.gmail.com>
+	<CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
+Date: Sun, 23 Mar 2014 13:26:13 -0700
+Message-ID: <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
 Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
 From: John Stultz <john.stultz@linaro.org>
-To: Jan Kara <jack@suse.cz>
+To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Android Kernel Team <kernel-team@android.com>,
@@ -26,8 +26,7 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Dmitry Adamushko <dmitry.adamushko@gmail.com>,
         Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
         Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Michel Lespinasse <walken@google.com>,
+        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
         Minchan Kim <minchan@kernel.org>,
         "linux-mm@kvack.org" <linux-mm@kvack.org>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -35,13 +34,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 5:29 AM, Jan Kara <jack@suse.cz> wrote:
-> On Fri 21-03-14 14:17:32, John Stultz wrote:
+On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
+<kosaki.motohiro@gmail.com> wrote:
+>> +/**
+>> + * vrange_check_purged_pte - Checks ptes for purged pages
+>> + *
+>> + * Iterates over the ptes in the pmd checking if they have
+>> + * purged swap entries.
 >> + *
 >> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
->                               ^^^ page_was_purged
+>> + */
+>> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
+>> +                                       unsigned long end, struct mm_walk *walk)
+>> +{
+>> +       struct vrange_walker *vw = walk->private;
+>> +       pte_t *pte;
+>> +       spinlock_t *ptl;
+>> +
+>> +       if (pmd_trans_huge(*pmd))
+>> +               return 0;
+>> +       if (pmd_trans_unstable(pmd))
+>> +               return 0;
+>> +
+>> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+>> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
+>> +               if (!pte_present(*pte)) {
+>> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+>> +
+>> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
+>> +                               vw->page_was_purged = 1;
+>> +                               break;
+>
+> This function only detect there is vpurge entry or not. But
+> VRANGE_NONVOLATILE should remove all vpurge entries.
+> Otherwise, non-volatiled range still makes SIGBUS.
 
-Doh. Thanks for catching this! Fixed in my tree.
+So in the following patch (3/5), we only SIGBUS if the swap entry
+is_vpurged_entry()  && the vma is still marked volatile, so this
+shouldn't be an issue.
 
-Thanks so much for the review!
+thanks
 -john
