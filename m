@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaCWVsy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:48:54 -0400
-Received: from mail-qa0-f47.google.com ([209.85.216.47]:43127 "EHLO
-	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaCWVsv (ORCPT
+	id S1751440AbaCWVut (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:50:49 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:51166 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWVus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:48:51 -0400
-Date: Sun, 23 Mar 2014 17:48:48 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robherring2@gmail.com>,
-        Rob Herring <robh@kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>, x86@kernel.org,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 7/8] tty/serial: add arm64 semihosting earlycon
-In-Reply-To: <14193198.1gAJ7xnz7b@wuerfel>
-Message-ID: <alpine.LFD.2.11.1403231742430.1291@knanqh.ubzr>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <1395436128-11244-8-git-send-email-robherring2@gmail.com> <alpine.LFD.2.11.1403231559160.1291@knanqh.ubzr> <14193198.1gAJ7xnz7b@wuerfel>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Sun, 23 Mar 2014 17:50:48 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
+ <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
+ <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com> <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
+From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+Date: Sun, 23 Mar 2014 14:50:28 -0700
+Message-ID: <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
+Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
+To: John Stultz <john.stultz@linaro.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Mar 2014, Arnd Bergmann wrote:
+On Sun, Mar 23, 2014 at 1:26 PM, John Stultz <john.stultz@linaro.org> wrote:
+> On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
+> <kosaki.motohiro@gmail.com> wrote:
+>>> +/**
+>>> + * vrange_check_purged_pte - Checks ptes for purged pages
+>>> + *
+>>> + * Iterates over the ptes in the pmd checking if they have
+>>> + * purged swap entries.
+>>> + *
+>>> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
+>>> + */
+>>> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
+>>> +                                       unsigned long end, struct mm_walk *walk)
+>>> +{
+>>> +       struct vrange_walker *vw = walk->private;
+>>> +       pte_t *pte;
+>>> +       spinlock_t *ptl;
+>>> +
+>>> +       if (pmd_trans_huge(*pmd))
+>>> +               return 0;
+>>> +       if (pmd_trans_unstable(pmd))
+>>> +               return 0;
+>>> +
+>>> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
+>>> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
+>>> +               if (!pte_present(*pte)) {
+>>> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
+>>> +
+>>> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
+>>> +                               vw->page_was_purged = 1;
+>>> +                               break;
+>>
+>> This function only detect there is vpurge entry or not. But
+>> VRANGE_NONVOLATILE should remove all vpurge entries.
+>> Otherwise, non-volatiled range still makes SIGBUS.
+>
+> So in the following patch (3/5), we only SIGBUS if the swap entry
+> is_vpurged_entry()  && the vma is still marked volatile, so this
+> shouldn't be an issue.
 
-> On Sunday 23 March 2014 16:04:41 Nicolas Pitre wrote:
-> > On Fri, 21 Mar 2014, Rob Herring wrote:
-> > 
-> > > From: Rob Herring <robh@kernel.org>
-> > > 
-> > > Add earlycon support for the arm64 semihosting debug serial interface.
-> > > This allows enabling a debug console when early_params are processed.
-> > > This is based on the arm64 earlyprintk smh support and is intended to
-> > > replace it.
-> > > 
-> > > This is named arm rather than arm64 in hopes it will be used for both,
-> > > but only arm64 is supported ATM.
-> > 
-> > It can't be used for both as the semihosting calls themselves need 
-> > assembly code and this is not compatible with the equivalent ARM32 
-> > calls.  So I'd suggest naming this "arm64" to avoid potential confusion.
-> 
-> How about using an compile-time conditional to put both inline assemblies
-> in there? While the driver is rather trivial to start with, I don't see
-> a point in duplicating it either.
+When VOLATILE -> NON-VOLATILE -> VOLATILE transition happen,
+the page immediately marked "was purged"?
 
-Sure.  But it can be trivially renamed at that point.
-
-Or, even better would be to add the ARM calls right away.  And of course 
-ARM in Thumb mode has yet another call convention.
-
-The printascii and printch code in arch/arm/kernel/debug.S for
-CONFIG_DEBUG_SEMIHOSTING can be copied almost as is.
-
-
-Nicolas
+I don't understand why vma check help.
