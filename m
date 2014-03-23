@@ -1,34 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaCWAvI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 20:51:08 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:51816 "EHLO kanga.kvack.org"
+	id S1752126AbaCWA5h (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 20:57:37 -0400
+Received: from mga01.intel.com ([192.55.52.88]:16576 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975AbaCWAvG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 20:51:06 -0400
-Date: Sat, 22 Mar 2014 20:51:05 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+	id S1751092AbaCWA5f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 Mar 2014 20:57:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,711,1389772800"; 
+   d="scan'208";a="497634468"
+Date: Sun, 23 Mar 2014 08:57:30 +0800
+From: Fengguang Wu <fengguang.wu@intel.com>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        linux-fsdevel@vger.kernel.org
 Subject: Re: [aio] e52ddd946a: xfstests generic/211 fail
-Message-ID: <20140323005105.GB4173@kvack.org>
+Message-ID: <20140323005730.GA14629@localhost>
 References: <20140323004009.GA13869@localhost>
-Mime-Version: 1.0
+ <20140323005105.GB4173@kvack.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140323004009.GA13869@localhost>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20140323005105.GB4173@kvack.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 08:40:09AM +0800, Fengguang Wu wrote:
-> Hi Benjamin,
+On Sat, Mar 22, 2014 at 08:51:05PM -0400, Benjamin LaHaise wrote:
+> On Sun, Mar 23, 2014 at 08:40:09AM +0800, Fengguang Wu wrote:
+> > Hi Benjamin,
+> > 
+> > We noticed xfstests fail and the first bad commit is
 > 
-> We noticed xfstests fail and the first bad commit is
+> What is the failure?  This is awfully vague for a bug report.
 
-What is the failure?  This is awfully vague for a bug report.
+In the email title: the generic/211 case of xfstests.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+Here are the rough steps to reproduce the problem in KVM:
+
+mkfs -t ext4 -q /dev/vda
+mkfs -t ext4 -q /dev/vdd
+mount -t ext4 /dev/vda /fs/vda
+mount -t ext4 /dev/vdd /fs/vdd
+export TEST_DIR=/fs/vda
+export TEST_DEV=/dev/vda
+export SCRATCH_DEV=/dev/vdd
+export SCRATCH_MNT=/fs/scratch
+mkdir /fs/scratch -p
+./check generic/211
+
+Thanks,
+Fengguang
