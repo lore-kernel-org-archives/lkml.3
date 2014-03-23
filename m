@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbaCWTj3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:39:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49283 "EHLO mx1.redhat.com"
+	id S1752175AbaCWTj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:39:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36713 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740AbaCWTjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:39:11 -0400
-Date: Sun, 23 Mar 2014 20:38:09 +0100
+	id S1751968AbaCWTjC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:39:02 -0400
+Date: Sun, 23 Mar 2014 20:38:04 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
         Richard Weinberger <richard@nod.at>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 10/11] signals: introduce kernel_sigaction()
-Message-ID: <20140323193809.GA10523@redhat.com>
+Subject: [PATCH 08/11] signals: kill the obsolete sigdelset() and
+	recalc_sigpending() in allow_signal()
+Message-ID: <20140323193804.GA10517@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -23,102 +24,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that allow_signal() is really trivial we can unify it with
-disallow_signal(). Add the new helper, kernel_sigaction(), and
-reimplement allow_signal/disallow_signal as a trivial wrappers.
+allow_signal() does sigdelset(current->blocked) due to historic
+reason, previously it could be called by a daemonize()'ed kthread,
+and daemonize() played with current->blocked.
 
-This saves one EXPORT_SYMBOL() and the new helper can have more
-users.
+Now that daemonize() has gone away we can remove sigdelset() and
+recalc_sigpending(). If a user really wants to unblock a signal,
+it must use sigprocmask() or set_current_block() explicitely.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- include/linux/signal.h |   18 ++++++++++++++++--
- kernel/signal.c        |   36 ++++++++++++------------------------
- 2 files changed, 28 insertions(+), 26 deletions(-)
+ kernel/signal.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/signal.h b/include/linux/signal.h
-index ac83c59..c9e6536 100644
---- a/include/linux/signal.h
-+++ b/include/linux/signal.h
-@@ -284,8 +284,22 @@ extern int get_signal_to_deliver(siginfo_t *info, struct k_sigaction *return_ka,
- extern void signal_setup_done(int failed, struct ksignal *ksig, int stepping);
- extern void signal_delivered(int sig, siginfo_t *info, struct k_sigaction *ka, struct pt_regs *regs, int stepping);
- extern void exit_signals(struct task_struct *tsk);
--extern void allow_signal(int);
--extern void disallow_signal(int);
-+extern void kernel_sigaction(int, __sighandler_t);
-+
-+static inline void allow_signal(int sig)
-+{
-+	/*
-+	 * Kernel threads handle their own signals. Let the signal code
-+	 * know it'll be handled, so that they don't get converted to
-+	 * SIGKILL or just silently dropped.
-+	 */
-+	kernel_sigaction(sig, (__force __sighandler_t)2);
-+}
-+
-+static inline void disallow_signal(int sig)
-+{
-+	kernel_sigaction(sig, SIG_IGN);
-+}
- 
- /*
-  * Eventually that'll replace get_signal_to_deliver(); macro for now,
 diff --git a/kernel/signal.c b/kernel/signal.c
-index a615110..543bdea 100644
+index a2b8c1b..30bfe53 100644
 --- a/kernel/signal.c
 +++ b/kernel/signal.c
-@@ -3064,37 +3064,25 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
- #endif
- 
- /*
-- * Let kernel threads use this to say that they allow a certain signal.
-- * Must not be used if kthread was cloned with CLONE_SIGHAND.
-+ * For kthreads only, must not be used if cloned with CLONE_SIGHAND
+@@ -3069,16 +3069,13 @@ COMPAT_SYSCALL_DEFINE4(rt_tgsigqueueinfo,
   */
--void allow_signal(int sig)
-+void kernel_sigaction(int sig, __sighandler_t action)
+ void allow_signal(int sig)
  {
--	/*
--	 * Kernel threads handle their own signals. Let the signal code
--	 * know it'll be handled, so that they don't get converted to
--	 * SIGKILL or just silently dropped.
--	 */
- 	spin_lock_irq(&current->sighand->siglock);
--	current->sighand->action[(sig)-1].sa.sa_handler = (void __user *)2;
--	spin_unlock_irq(&current->sighand->siglock);
--}
--EXPORT_SYMBOL(allow_signal);
-+	current->sighand->action[sig - 1].sa.sa_handler = action;
-+	if (action == SIG_IGN) {
-+		sigset_t mask;
- 
--void disallow_signal(int sig)
--{
--	sigset_t mask;
-+		sigemptyset(&mask);
-+		sigaddset(&mask, sig);
- 
--	sigemptyset(&mask);
--	sigaddset(&mask, sig);
--
 -	spin_lock_irq(&current->sighand->siglock);
--	current->sighand->action[(sig)-1].sa.sa_handler = SIG_IGN;
--	flush_sigqueue_mask(&mask, &current->signal->shared_pending);
--	flush_sigqueue_mask(&mask, &current->pending);
+-	/* This is only needed for daemonize()'ed kthreads */
+-	sigdelset(&current->blocked, sig);
+ 	/*
+ 	 * Kernel threads handle their own signals. Let the signal code
+ 	 * know it'll be handled, so that they don't get converted to
+ 	 * SIGKILL or just silently dropped.
+ 	 */
++	spin_lock_irq(&current->sighand->siglock);
+ 	current->sighand->action[(sig)-1].sa.sa_handler = (void __user *)2;
 -	recalc_sigpending();
-+		flush_sigqueue_mask(&mask, &current->signal->shared_pending);
-+		flush_sigqueue_mask(&mask, &current->pending);
-+		recalc_sigpending();
-+	}
  	spin_unlock_irq(&current->sighand->siglock);
  }
--EXPORT_SYMBOL(disallow_signal);
-+EXPORT_SYMBOL(kernel_sigaction);
- 
- int do_sigaction(int sig, struct k_sigaction *act, struct k_sigaction *oact)
- {
+ EXPORT_SYMBOL(allow_signal);
 -- 
 1.5.5.1
 
