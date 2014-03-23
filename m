@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751209AbaCWS33 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:29:29 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:45156 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaCWS32 (ORCPT
+	id S1751068AbaCWSbT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:31:19 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:38695 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878AbaCWSbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:29:28 -0400
+	Sun, 23 Mar 2014 14:31:17 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com, neilb@suse.de,
-        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/md: Use RCU_INIT_POINTER(x, NULL) in dm.c
-Date: Sun, 23 Mar 2014 23:58:27 +0530
-Message-Id: <1395599307-6862-1-git-send-email-monamagarwal123@gmail.com>
+To: fubar@us.ibm.com, vfalico@redhat.com, andy@greyhouse.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in bonding/bond_options.c
+Date: Mon, 24 Mar 2014 00:00:17 +0530
+Message-Id: <1395599417-7041-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,22 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/md/dm.c |    2 +-
+ drivers/net/bonding/bond_options.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 8c53b09..804412a 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2172,7 +2172,7 @@ static struct dm_table *__unbind(struct mapped_device *md)
- 		return NULL;
- 
- 	dm_table_event_callback(map, NULL, NULL);
--	rcu_assign_pointer(md->map, NULL);
-+	RCU_INIT_POINTER(md->map, NULL);
- 	dm_sync_table(md);
- 
- 	return map;
+diff --git a/drivers/net/bonding/bond_options.c b/drivers/net/bonding/bond_options.c
+index 6e6b093..724e30f 100644
+--- a/drivers/net/bonding/bond_options.c
++++ b/drivers/net/bonding/bond_options.c
+@@ -712,7 +712,7 @@ static int bond_option_active_slave_set(struct bonding *bond,
+ 	/* check to see if we are clearing active */
+ 	if (!slave_dev) {
+ 		pr_info("%s: Clearing current active slave\n", bond->dev->name);
+-		rcu_assign_pointer(bond->curr_active_slave, NULL);
++		RCU_INIT_POINTER(bond->curr_active_slave, NULL);
+ 		bond_select_active_slave(bond);
+ 	} else {
+ 		struct slave *old_active = bond->curr_active_slave;
 -- 
 1.7.9.5
 
