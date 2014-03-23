@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaCWSqm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:46:42 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:39575 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaCWSqk (ORCPT
+	id S1751522AbaCWSrU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:47:20 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:62276 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbaCWSrT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:46:40 -0400
+	Sun, 23 Mar 2014 14:47:19 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        d.hatayama@jp.fujitsu.com, dhowells@redhat.com, JBeulich@suse.com,
-        adobriyan@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in proc/inode.c
-Date: Mon, 24 Mar 2014 00:15:39 +0530
-Message-Id: <1395600339-9375-1-git-send-email-monamagarwal123@gmail.com>
+To: eparis@redhat.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] kernel: Use RCU_INIT_POINTER(x, NULL) in audit.c
+Date: Mon, 24 Mar 2014 00:16:19 +0530
+Message-Id: <1395600379-9668-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,22 +26,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/proc/inode.c |    2 +-
+ kernel/audit.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 124fc43..28c21d9 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -47,7 +47,7 @@ static void proc_evict_inode(struct inode *inode)
- 		pde_put(de);
- 	head = PROC_I(inode)->sysctl;
- 	if (head) {
--		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
-+		RCU_INIT_POINTER(PROC_I(inode)->sysctl, NULL);
- 		sysctl_head_put(head);
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 3392d3e..bc240ba 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1087,7 +1087,7 @@ static void __net_exit audit_net_exit(struct net *net)
+ 		audit_sock = NULL;
  	}
- 	/* Release any associated namespace */
+ 
+-	rcu_assign_pointer(aunet->nlsk, NULL);
++	RCU_INIT_POINTER(aunet->nlsk, NULL);
+ 	synchronize_net();
+ 	netlink_kernel_release(sock);
+ }
 -- 
 1.7.9.5
 
