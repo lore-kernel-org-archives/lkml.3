@@ -1,62 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752552AbaCWQjK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 12:39:10 -0400
-Received: from www84.your-server.de ([213.133.104.84]:48610 "EHLO
-	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913AbaCWQjI (ORCPT
+	id S1752585AbaCWQjW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 12:39:22 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:39207 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752291AbaCWQjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 12:39:08 -0400
-From: Stefani Seibold <stefani@seibold.net>
-To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
-        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
-        andriy.shevchenko@linux.intel.com
-Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
-        Stefani Seibold <stefani@seibold.net>
-Subject: [PATCH] x86, vdso: fix size of get_unmapped_area()
-Date: Sun, 23 Mar 2014 17:38:14 +0100
-Message-Id: <1395592694-20571-1-git-send-email-stefani@seibold.net>
-X-Mailer: git-send-email 1.9.1
-X-Authenticated-Sender: stefani@seibold.net
+	Sun, 23 Mar 2014 12:39:17 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140323121541.GA20971@rhlx01.hs-esslingen.de>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
+	<20140322234317.GA10483@rhlx01.hs-esslingen.de>
+	<20140323121541.GA20971@rhlx01.hs-esslingen.de>
+Date: Sun, 23 Mar 2014 09:39:16 -0700
+X-Google-Sender-Auth: MX0Ag6yiAiViq2HDXlu5uaDdGGI
+Message-ID: <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in mga_driver_irq_uninstall)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, David Airlie <airlied@linux.ie>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the reserved memory for a 32 bit vdso must be the size of the
-32 bit vDSO in pages + HPET page + VVAR page.
+On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
+>
+> which did end up flawless on 3.12.0-rc2+, too
+> (but failed to improve the issue on 3.14.0-rc7+).
+>
+> So, for all intents and purposes, drm infrastructure seems unavoidably
+> (neither dri disable nor libdrm upgrade helps) affected.
+> Does anyone know which change caused that issue?
+> (I'm asking because bisect here would be relatively painful).
 
-One page is not enough for this. Grrrr.... silly copy and paste bug,
-was right in previous patch.
+So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
+3.14 rc only, or did it happen already in the previous release?
 
-The patch is against 3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c
-
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
----
- arch/x86/vdso/vdso32-setup.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 791c1cb..0034898 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -165,12 +165,14 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 
- 	down_write(&mm->mmap_sem);
- 
--	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
-+	addr = get_unmapped_area(NULL, 0, vdso32_size + VDSO_OFFSET(VDSO_PREV_PAGES), 0, 0);
- 	if (IS_ERR_VALUE(addr)) {
- 		ret = addr;
- 		goto up_fail;
- 	}
- 
-+	addr += VDSO_OFFSET(VDSO_PREV_PAGES);
-+
- 	current->mm->context.vdso = (void *)addr;
- 
- 	/*
--- 
-1.9.1
-
+               Linus
