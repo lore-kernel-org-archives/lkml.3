@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbaCWTND (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:13:03 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29846 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751268AbaCWTJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:09:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
-   d="scan'208";a="505944106"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v7 13/22] ext2: Remove ext2_use_xip
-Date: Sun, 23 Mar 2014 15:08:39 -0400
-Message-Id: <0c65dcd599646e3054d0c524a0c5b25b07885763.1395591795.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+	id S1752574AbaCWTNu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:13:50 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:61678 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751750AbaCWTNr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:13:47 -0400
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: davem@davemloft.net, ebiederm@xmission.com, nhorman@tuxdriver.com,
+        cwang@twopensource.com, kaber@trash.net, antonio@meshcoding.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] net/core: Use RCU_INIT_POINTER(x, NULL) in netpoll.c
+Date: Mon, 24 Mar 2014 00:42:46 +0530
+Message-Id: <1395601966-12490-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace ext2_use_xip() with test_opt(XIP) which expands to the same code
+This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+The rcu_assign_pointer() ensures that the initialization of a structure       
+is carried out before storing a pointer to that structure. 
+And in the case of the NULL pointer, there is no structure to initialize. 
+So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/ext2/ext2.h  | 4 ++++
- fs/ext2/inode.c | 2 +-
- fs/ext2/namei.c | 4 ++--
- 3 files changed, 7 insertions(+), 3 deletions(-)
+ net/core/netpoll.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index d9a17d0..5ecf570 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -380,7 +380,11 @@ struct ext2_inode {
- #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
- #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
- #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
-+#ifdef CONFIG_FS_XIP
- #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
-+#else
-+#define EXT2_MOUNT_XIP			0
-+#endif
- #define EXT2_MOUNT_USRQUOTA		0x020000  /* user quota */
- #define EXT2_MOUNT_GRPQUOTA		0x040000  /* group quota */
- #define EXT2_MOUNT_RESERVATION		0x080000  /* Preallocation */
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index a9346a9..2e587e2 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -1393,7 +1393,7 @@ struct inode *ext2_iget (struct super_block *sb, unsigned long ino)
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 7291dde..41c4e9c 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -809,7 +809,7 @@ void __netpoll_cleanup(struct netpoll *np)
+ 		if (ops->ndo_netpoll_cleanup)
+ 			ops->ndo_netpoll_cleanup(np->dev);
  
- 	if (S_ISREG(inode->i_mode)) {
- 		inode->i_op = &ext2_file_inode_operations;
--		if (ext2_use_xip(inode->i_sb)) {
-+		if (test_opt(inode->i_sb, XIP)) {
- 			inode->i_mapping->a_ops = &ext2_aops_xip;
- 			inode->i_fop = &ext2_xip_file_operations;
- 		} else if (test_opt(inode->i_sb, NOBH)) {
-diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-index c268d0a..846c356 100644
---- a/fs/ext2/namei.c
-+++ b/fs/ext2/namei.c
-@@ -105,7 +105,7 @@ static int ext2_create (struct inode * dir, struct dentry * dentry, umode_t mode
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (test_opt(inode->i_sb, XIP)) {
- 		inode->i_mapping->a_ops = &ext2_aops_xip;
- 		inode->i_fop = &ext2_xip_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
-@@ -126,7 +126,7 @@ static int ext2_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
- 		return PTR_ERR(inode);
- 
- 	inode->i_op = &ext2_file_inode_operations;
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (test_opt(inode->i_sb, XIP)) {
- 		inode->i_mapping->a_ops = &ext2_aops_xip;
- 		inode->i_fop = &ext2_xip_file_operations;
- 	} else if (test_opt(inode->i_sb, NOBH)) {
+-		rcu_assign_pointer(np->dev->npinfo, NULL);
++		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+ 		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
+ 	}
+ }
 -- 
-1.9.0
+1.7.9.5
 
