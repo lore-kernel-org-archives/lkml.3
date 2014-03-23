@@ -1,105 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223AbaCWVeF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:34:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21215 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798AbaCWVeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:34:03 -0400
-Date: Sun, 23 Mar 2014 23:33:49 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
-        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
-        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
-Message-ID: <20140323213349.GA8832@redhat.com>
-References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
- <20140323194113.GA13633@redhat.com>
- <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+	id S1751208AbaCWVpu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:45:50 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:45723 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWVpt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 17:45:49 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <20140323212715.GA22767@rhlx01.hs-esslingen.de>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
+	<20140322234317.GA10483@rhlx01.hs-esslingen.de>
+	<20140323121541.GA20971@rhlx01.hs-esslingen.de>
+	<CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+	<20140323212715.GA22767@rhlx01.hs-esslingen.de>
+Date: Mon, 24 Mar 2014 07:45:47 +1000
+Message-ID: <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in mga_driver_irq_uninstall)
+From: Dave Airlie <airlied@gmail.com>
+To: Andreas Mohr <andi@lisas.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mikulas Patocka <mpatocka@redhat.com>, David Airlie <airlied@linux.ie>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 12:54:17PM -0700, Eric Dumazet wrote:
-> On Sun, 2014-03-23 at 21:41 +0200, Michael S. Tsirkin wrote:
-> 
-> > The rcu_assign_pointer() ensures that the initialization of a structure       
-> > is carried out before storing a pointer to that structure. 
-> > In the case of the NULL pointer, there is no structure to initialize,
-> > so we can safely drop smp_wmb in this case.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > --
-> > 
-> > Lightly tested.
-> > v is evaluated twice here but that should be ok since this
-> > only happens when v is a constant, so evaluating it should
-> > have no side effects.
-> > Paul, what do you think?
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 72bf3a0..d33c9ec 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -587,7 +587,8 @@ static inline void rcu_preempt_sleep_check(void)
-> >   */
-> >  #define rcu_assign_pointer(p, v) \
-> >  	do { \
-> > -		smp_wmb(); \
-> > +		if (!__builtin_constant_p(v) || (v)) \
-> > +			smp_wmb(); \
-> >  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
-> >  	} while (0)
-> >  
-> 
-> Yeah, I suggest you read d322f45ceed525daa changelog ;)
-> 
+On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
+> On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
+>> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
+>> >
+>> > which did end up flawless on 3.12.0-rc2+, too
+>> > (but failed to improve the issue on 3.14.0-rc7+).
+>> >
+>> > So, for all intents and purposes, drm infrastructure seems unavoidably
+>> > (neither dri disable nor libdrm upgrade helps) affected.
+>> > Does anyone know which change caused that issue?
+>> > (I'm asking because bisect here would be relatively painful).
+>>
+>> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
+>> 3.14 rc only, or did it happen already in the previous release?
+>
+> Hmm, given that Mikulas in
+> https://lkml.org/lkml/2014/2/26/537
+> offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
+> that that indeed may have been a regression at <= 3.13 proper even
+> (which may pose interesting questions about the level of testing coverage
+> we still enjoy [not!?] in this hardware area).
+>
+> Oh well, seems I'll have to prepare/build 3.13 now...
 
-Oh I see. It does not seem hard to silence that warning though.
-See below.
-Alternatively apply these patches everywhere though it does
-look like too much work for too little gain to me.
+It's > 15 year old hardware, so yes I believe we have close to 0
+testing coverage on it outside of distros,
 
--->
+I'm not even sure I have one anymore, I might be able to test an MGA in one box.
 
-rcu: optimize rcu_assign_pointer with NULL
-
-The rcu_assign_pointer() dropped __builtin_constant_p check to
-avoid a compiler warning, but we can actually work around it without
-adding code.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
-
-Untested, too late here, sorry.
-
- 
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 72bf3a0..9111d40 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -585,9 +585,14 @@ static inline void rcu_preempt_sleep_check(void)
-  * please be careful when making changes to rcu_assign_pointer() and the
-  * other macros that it invokes.
-  */
-+/* The convoluted __builtin_constant_p logic is here to prevent
-+ * gcc from emitting a warning when passed a pointer to a variable.
-+ */
- #define rcu_assign_pointer(p, v) \
- 	do { \
--		smp_wmb(); \
-+		if (!__builtin_constant_p(v) || \
-+		    (__builtin_constant_p(v) ? (v) : NULL)) \
-+			smp_wmb(); \
- 		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
- 	} while (0)
- 
-
+Dave.
