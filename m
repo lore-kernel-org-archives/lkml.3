@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaCWQjW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 12:39:22 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:39207 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291AbaCWQjR (ORCPT
+	id S1752528AbaCWQp2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 12:45:28 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57158 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358AbaCWQp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 12:39:17 -0400
+	Sun, 23 Mar 2014 12:45:27 -0400
+Date: Sun, 23 Mar 2014 16:45:26 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [git pull] vfs fixes
+Message-ID: <20140323164526.GJ18016@ZenIV.linux.org.uk>
+References: <20140323071601.GH18016@ZenIV.linux.org.uk>
+ <CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140323121541.GA20971@rhlx01.hs-esslingen.de>
-References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140322234317.GA10483@rhlx01.hs-esslingen.de>
-	<20140323121541.GA20971@rhlx01.hs-esslingen.de>
-Date: Sun, 23 Mar 2014 09:39:16 -0700
-X-Google-Sender-Auth: MX0Ag6yiAiViq2HDXlu5uaDdGGI
-Message-ID: <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
-Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in mga_driver_irq_uninstall)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Mikulas Patocka <mpatocka@redhat.com>, David Airlie <airlied@linux.ie>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
->
-> which did end up flawless on 3.12.0-rc2+, too
-> (but failed to improve the issue on 3.14.0-rc7+).
->
-> So, for all intents and purposes, drm infrastructure seems unavoidably
-> (neither dri disable nor libdrm upgrade helps) affected.
-> Does anyone know which change caused that issue?
-> (I'm asking because bisect here would be relatively painful).
+On Sun, Mar 23, 2014 at 09:36:28AM -0700, Linus Torvalds wrote:
+> On Sun, Mar 23, 2014 at 12:16 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> >         Several fixes; first 4 commits are obvious fixes (a couple
+> > of fdget_pos()-related ones from Eric Biggers, prepend_name() fix, missing
+> > checks for false negatives from __lookup_mnt() in fs/namei.c)
+> 
+> I'm not seeing the obvious fix in the prepend_name() thing, and I
+> think it's horrible to *update* the name-len to negative like it now
+> does.
+> 
+> Why is anybody calling it with a negative buffer length in the first
+> place? *That* is the bug. Making the buflen become negative just makes
+> the bug worse, imnsho.
 
-So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
-3.14 rc only, or did it happen already in the previous release?
-
-               Linus
+It's easier to skip checking the overflow on prepend() of "\0" in the
+beginning of the whole thing and just let the next operation to fail.
+That's where the corner case comes from.
