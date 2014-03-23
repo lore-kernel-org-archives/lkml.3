@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165AbaCWIom (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 04:44:42 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:44701 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751288AbaCWIog (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 04:44:36 -0400
-Message-ID: <532E9EEF.2080906@redhat.com>
-Date: Sun, 23 Mar 2014 09:44:31 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: =?UTF-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
-        mtosatti@redhat.com, alex.williamson@redhat.com,
-        jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 3/4] KVM: ioapic: extract body of kvm_ioapic_set_irq
-References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com> <1395394081-16252-4-git-send-email-pbonzini@redhat.com> <20140321185858.GA22118@potion.brq.redhat.com>
-In-Reply-To: <20140321185858.GA22118@potion.brq.redhat.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752182AbaCWJAs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 05:00:48 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48156 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750974AbaCWJAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 05:00:44 -0400
+Message-ID: <1395565113.3460.106.camel@pasglop>
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+ actual Kconfig
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-scsi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux390@de.ibm.com, linux-arm-kernel@lists.infradead.org
+Date: Sun, 23 Mar 2014 19:58:33 +1100
+In-Reply-To: <20140323070343.GA17945@infradead.org>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>
+	 <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
+	 <1395543886.3460.95.camel@pasglop> <20140323070343.GA17945@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 21/03/2014 19:58, Radim Krčmář ha scritto:
->> > +	/*
->> > +	 * Return 0 for coalesced interrupts; for edge-triggered interrupts,
->> > +	 * this only happens if a previous edge has not been delivered due
->> > +	 * do masking.  For level interrupts, the remote_irr field tells
->           (^ to)
->> > +	 * us if the interrupt is waiting for an EOI.
->
-> How do we know we haven't delivered an edge-triggered interrupt when
-> ioapic_service() always clears this IRR bit?
+On Sun, 2014-03-23 at 00:03 -0700, Christoph Hellwig wrote:
+> On Sun, Mar 23, 2014 at 02:04:46PM +1100, Benjamin Herrenschmidt wrote:
+> > 
+> > > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> > > index 1594945..8122294 100644
+> > > --- a/arch/arm/Kconfig
+> > > +++ b/arch/arm/Kconfig
+> > > @@ -82,6 +82,7 @@ config ARM
+> > >  	  <http://www.arm.linux.org.uk/>.
+> > >  
+> > >  config ARM_HAS_SG_CHAIN
+> > > +	select ARCH_HAS_SG_CHAIN
+> > >  	bool
+> > >  
+> > 
+> > Heh, a self-selecting config option... I didn't know that trick !
+> 
+> ARM vs ARCH.  However the arm variant of the variable should probably be
+> consolidated into the ARCH one as a follow up.
 
-We know we have at least delivered it to the local APIC(s).  If it is 
-masked in the ioredirtbl, ioapic_service doesn't clear the IRR.
+Oh right... sorry for the noise.
 
-Paolo
+Ben.
+
+
