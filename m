@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaCWTWB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:22:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:29846 "EHLO mga09.intel.com"
+	id S1751344AbaCWTIm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:08:42 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3667 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751416AbaCWTI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:08:59 -0400
+	id S1751264AbaCWTIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:08:40 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
-   d="scan'208";a="505944089"
+   d="scan'208";a="478413216"
 From: Matthew Wilcox <matthew.r.wilcox@intel.com>
 To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
 Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v7 01/22] Fix XIP fault vs truncate race
-Date: Sun, 23 Mar 2014 15:08:27 -0400
-Message-Id: <59d73a58d4cfbe190a16ce912bb2776d9cc95447.1395591795.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH v2 1/6] Factor clean_buffers() out of __mpage_writepage()
+Date: Sun, 23 Mar 2014 15:08:23 -0400
+Message-Id: <9d7d6d37b52a6e13bd8162ecd5e5e4325a722e2e.1395593198.git.matthew.r.wilcox@intel.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+References: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+References: <cover.1395593198.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pagecache faults recheck i_size after taking the page lock to ensure that
-the fault didn't race against a truncate.  We don't have a page to lock
-in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
-truncate path in unmap_mapping_range() after updating i_size.  So while
-we hold it in the fault path, we are guaranteed that either i_size has
-already been updated in the truncate path, or that the truncate will
-subsequently call zap_page_range_single() and so remove the mapping we
-have just inserted.
-
-There is a window of time in which i_size has been reduced and the
-thread has a mapping to a page which will be removed from the file,
-but this is harmless as the page will not be allocated to a different
-purpose before the thread's access to it is revoked.
+__mpage_writepage() is over 200 lines long, has 20 local variables,
+four goto labels and could desperately use simplification.  Splitting
+clean_buffers() into a helper function improves matters a little,
+removing 20+ lines from it.
 
 Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- mm/filemap_xip.c | 24 ++++++++++++++++++++++--
- 1 file changed, 22 insertions(+), 2 deletions(-)
+ fs/mpage.c | 54 ++++++++++++++++++++++++++++++------------------------
+ 1 file changed, 30 insertions(+), 24 deletions(-)
 
-diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-index d8d9fe3..c8d23e9 100644
---- a/mm/filemap_xip.c
-+++ b/mm/filemap_xip.c
-@@ -260,8 +260,17 @@ again:
- 		__xip_unmap(mapping, vmf->pgoff);
+diff --git a/fs/mpage.c b/fs/mpage.c
+index 4979ffa..4cc9c5d 100644
+--- a/fs/mpage.c
++++ b/fs/mpage.c
+@@ -439,6 +439,35 @@ struct mpage_data {
+ 	unsigned use_writepage;
+ };
  
- found:
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			mutex_unlock(&mapping->i_mmap_mutex);
-+			return VM_FAULT_SIGBUS;
-+		}
- 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
- 							xip_pfn);
-+		mutex_unlock(&mapping->i_mmap_mutex);
- 		if (err == -ENOMEM)
- 			return VM_FAULT_OOM;
- 		/*
-@@ -285,16 +294,27 @@ found:
- 		}
- 		if (error != -ENODATA)
- 			goto out;
++/*
++ * We have our BIO, so we can now mark the buffers clean.  Make
++ * sure to only clean buffers which we know we'll be writing.
++ */
++static void clean_buffers(struct page *page, unsigned first_unmapped)
++{
++	unsigned buffer_counter = 0;
++	struct buffer_head *bh, *head;
++	if (!page_has_buffers(page))
++		return;
++	head = page_buffers(page);
++	bh = head;
 +
-+		/* We must recheck i_size under i_mmap_mutex */
-+		mutex_lock(&mapping->i_mmap_mutex);
-+		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-+							PAGE_CACHE_SHIFT;
-+		if (unlikely(vmf->pgoff >= size)) {
-+			ret = VM_FAULT_SIGBUS;
-+			goto unlock;
-+		}
- 		/* not shared and writable, use xip_sparse_page() */
- 		page = xip_sparse_page();
- 		if (!page)
--			goto out;
-+			goto unlock;
- 		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
- 							page);
- 		if (err == -ENOMEM)
--			goto out;
-+			goto unlock;
++	do {
++		if (buffer_counter++ == first_unmapped)
++			break;
++		clear_buffer_dirty(bh);
++		bh = bh->b_this_page;
++	} while (bh != head);
++
++	/*
++	 * we cannot drop the bh if the page is not uptodate or a concurrent
++	 * readpage would fail to serialize with the bh and it would read from
++	 * disk before we reach the platter.
++	 */
++	if (buffer_heads_over_limit && PageUptodate(page))
++		try_to_free_buffers(page);
++}
++
+ static int __mpage_writepage(struct page *page, struct writeback_control *wbc,
+ 		      void *data)
+ {
+@@ -591,30 +620,7 @@ alloc_new:
+ 		goto alloc_new;
+ 	}
  
- 		ret = VM_FAULT_NOPAGE;
-+unlock:
-+		mutex_unlock(&mapping->i_mmap_mutex);
- out:
- 		write_seqcount_end(&xip_sparse_seq);
- 		mutex_unlock(&xip_sparse_mutex);
+-	/*
+-	 * OK, we have our BIO, so we can now mark the buffers clean.  Make
+-	 * sure to only clean buffers which we know we'll be writing.
+-	 */
+-	if (page_has_buffers(page)) {
+-		struct buffer_head *head = page_buffers(page);
+-		struct buffer_head *bh = head;
+-		unsigned buffer_counter = 0;
+-
+-		do {
+-			if (buffer_counter++ == first_unmapped)
+-				break;
+-			clear_buffer_dirty(bh);
+-			bh = bh->b_this_page;
+-		} while (bh != head);
+-
+-		/*
+-		 * we cannot drop the bh if the page is not uptodate
+-		 * or a concurrent readpage would fail to serialize with the bh
+-		 * and it would read from disk before we reach the platter.
+-		 */
+-		if (buffer_heads_over_limit && PageUptodate(page))
+-			try_to_free_buffers(page);
+-	}
++	clean_buffers(page, first_unmapped);
+ 
+ 	BUG_ON(PageWriteback(page));
+ 	set_page_writeback(page);
 -- 
 1.9.0
 
