@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaCWS2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:28:24 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:54908 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942AbaCWS2X (ORCPT
+	id S1751209AbaCWS33 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:29:29 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:45156 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750807AbaCWS32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:28:23 -0400
+	Sun, 23 Mar 2014 14:29:28 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/input: Use RCU_INIT_POINTER(x, NULL) in input.c
-Date: Sun, 23 Mar 2014 23:57:23 +0530
-Message-Id: <1395599243-6818-1-git-send-email-monamagarwal123@gmail.com>
+To: agk@redhat.com, snitzer@redhat.com, dm-devel@redhat.com, neilb@suse.de,
+        linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/md: Use RCU_INIT_POINTER(x, NULL) in dm.c
+Date: Sun, 23 Mar 2014 23:58:27 +0530
+Message-Id: <1395599307-6862-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,22 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/input/input.c |    2 +-
+ drivers/md/dm.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 1c4c0db..f9db5ea 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -539,7 +539,7 @@ static void __input_release_device(struct input_handle *handle)
- 	grabber = rcu_dereference_protected(dev->grab,
- 					    lockdep_is_held(&dev->mutex));
- 	if (grabber == handle) {
--		rcu_assign_pointer(dev->grab, NULL);
-+		RCU_INIT_POINTER(dev->grab, NULL);
- 		/* Make sure input_pass_event() notices that grab is gone */
- 		synchronize_rcu();
+diff --git a/drivers/md/dm.c b/drivers/md/dm.c
+index 8c53b09..804412a 100644
+--- a/drivers/md/dm.c
++++ b/drivers/md/dm.c
+@@ -2172,7 +2172,7 @@ static struct dm_table *__unbind(struct mapped_device *md)
+ 		return NULL;
  
+ 	dm_table_event_callback(map, NULL, NULL);
+-	rcu_assign_pointer(md->map, NULL);
++	RCU_INIT_POINTER(md->map, NULL);
+ 	dm_sync_table(md);
+ 
+ 	return map;
 -- 
 1.7.9.5
 
