@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454AbaCWSpb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:45:31 -0400
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:52661 "EHLO
+	id S1751511AbaCWSqm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:46:42 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:39575 "EHLO
 	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCWSp3 (ORCPT
+	with ESMTP id S1751180AbaCWSqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:45:29 -0400
+	Sun, 23 Mar 2014 14:46:40 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in nfs/delegation.c
-Date: Mon, 24 Mar 2014 00:14:27 +0530
-Message-Id: <1395600267-9169-1-git-send-email-monamagarwal123@gmail.com>
+To: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        d.hatayama@jp.fujitsu.com, dhowells@redhat.com, JBeulich@suse.com,
+        adobriyan@gmail.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in proc/inode.c
+Date: Mon, 24 Mar 2014 00:15:39 +0530
+Message-Id: <1395600339-9375-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,22 +28,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/nfs/delegation.c |    2 +-
+ fs/proc/inode.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 5d8ccec..349e63b 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -249,7 +249,7 @@ nfs_detach_delegation_locked(struct nfs_inode *nfsi,
- 	list_del_rcu(&delegation->super_list);
- 	delegation->inode = NULL;
- 	nfsi->delegation_state = 0;
--	rcu_assign_pointer(nfsi->delegation, NULL);
-+	RCU_INIT_POINTER(nfsi->delegation, NULL);
- 	spin_unlock(&delegation->lock);
- 	return delegation;
- }
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 124fc43..28c21d9 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -47,7 +47,7 @@ static void proc_evict_inode(struct inode *inode)
+ 		pde_put(de);
+ 	head = PROC_I(inode)->sysctl;
+ 	if (head) {
+-		rcu_assign_pointer(PROC_I(inode)->sysctl, NULL);
++		RCU_INIT_POINTER(PROC_I(inode)->sysctl, NULL);
+ 		sysctl_head_put(head);
+ 	}
+ 	/* Release any associated namespace */
 -- 
 1.7.9.5
 
