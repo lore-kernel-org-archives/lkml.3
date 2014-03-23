@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaCWSkv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:40:51 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:58235 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750932AbaCWSkt (ORCPT
+	id S1751384AbaCWSlq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:41:46 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:42353 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWSlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:40:49 -0400
+	Sun, 23 Mar 2014 14:41:44 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: nab@linux-iscsi.org, nab@daterainc.com, yongjun_wei@trendmicro.com.cn,
-        linux-scsi@vger.kernel.org, target-devel@vger.kernel.org,
+To: dhowells@redhat.com, linux-afs@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/target: Use RCU_INIT_POINTER(x, NULL) in tcm_fc/tfc_sess.c
-Date: Mon, 24 Mar 2014 00:09:49 +0530
-Message-Id: <1395599989-8183-1-git-send-email-monamagarwal123@gmail.com>
+Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in afs/inode.c
+Date: Mon, 24 Mar 2014 00:10:44 +0530
+Message-Id: <1395600044-8576-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,22 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/target/tcm_fc/tfc_sess.c |    2 +-
+ fs/afs/inode.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index ae52c08..ca7b1ed 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -97,7 +97,7 @@ static void ft_tport_delete(struct ft_tport *tport)
- 	ft_sess_delete_all(tport);
- 	lport = tport->lport;
- 	BUG_ON(tport != lport->prov[FC_TYPE_FCP]);
--	rcu_assign_pointer(lport->prov[FC_TYPE_FCP], NULL);
-+	RCU_INIT_POINTER(lport->prov[FC_TYPE_FCP], NULL);
+diff --git a/fs/afs/inode.c b/fs/afs/inode.c
+index ce25d75..7c09dfe 100644
+--- a/fs/afs/inode.c
++++ b/fs/afs/inode.c
+@@ -445,7 +445,7 @@ void afs_evict_inode(struct inode *inode)
  
- 	tpg = tport->tpg;
- 	if (tpg) {
+ 	mutex_lock(&vnode->permits_lock);
+ 	permits = vnode->permits;
+-	rcu_assign_pointer(vnode->permits, NULL);
++	RCU_INIT_POINTER(vnode->permits, NULL);
+ 	mutex_unlock(&vnode->permits_lock);
+ 	if (permits)
+ 		call_rcu(&permits->rcu, afs_zap_permits);
 -- 
 1.7.9.5
 
