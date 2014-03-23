@@ -1,42 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752502AbaCWQga (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 12:36:30 -0400
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:51603 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751699AbaCWQg3 (ORCPT
+	id S1752552AbaCWQjK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 12:39:10 -0400
+Received: from www84.your-server.de ([213.133.104.84]:48610 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750913AbaCWQjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 12:36:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140323071601.GH18016@ZenIV.linux.org.uk>
-References: <20140323071601.GH18016@ZenIV.linux.org.uk>
-Date: Sun, 23 Mar 2014 09:36:28 -0700
-X-Google-Sender-Auth: GhgvjY6HiCaPzoYE-7xbmtO82gI
-Message-ID: <CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 23 Mar 2014 12:39:08 -0400
+From: Stefani Seibold <stefani@seibold.net>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org, x86@kernel.org,
+        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        ak@linux.intel.com, aarcange@redhat.com, john.stultz@linaro.org,
+        luto@amacapital.net, xemul@parallels.com, gorcunov@openvz.org,
+        andriy.shevchenko@linux.intel.com
+Cc: Martin.Runge@rohde-schwarz.com, Andreas.Brief@rohde-schwarz.com,
+        Stefani Seibold <stefani@seibold.net>
+Subject: [PATCH] x86, vdso: fix size of get_unmapped_area()
+Date: Sun, 23 Mar 2014 17:38:14 +0100
+Message-Id: <1395592694-20571-1-git-send-email-stefani@seibold.net>
+X-Mailer: git-send-email 1.9.1
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 12:16 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->         Several fixes; first 4 commits are obvious fixes (a couple
-> of fdget_pos()-related ones from Eric Biggers, prepend_name() fix, missing
-> checks for false negatives from __lookup_mnt() in fs/namei.c)
+The size of the reserved memory for a 32 bit vdso must be the size of the
+32 bit vDSO in pages + HPET page + VVAR page.
 
-I'm not seeing the obvious fix in the prepend_name() thing, and I
-think it's horrible to *update* the name-len to negative like it now
-does.
+One page is not enough for this. Grrrr.... silly copy and paste bug,
+was right in previous patch.
 
-Why is anybody calling it with a negative buffer length in the first
-place? *That* is the bug. Making the buflen become negative just makes
-the bug worse, imnsho.
+The patch is against 3c1b63b9e4862fb16352a0646439c2dd6d9e0e5c
 
-So I'm not pulling this, since the obvious fixes don't all look
-obvious to me, and Sedat reports there are problems with it.
+Signed-off-by: Stefani Seibold <stefani@seibold.net>
+---
+ arch/x86/vdso/vdso32-setup.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-                Linus
+diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
+index 791c1cb..0034898 100644
+--- a/arch/x86/vdso/vdso32-setup.c
++++ b/arch/x86/vdso/vdso32-setup.c
+@@ -165,12 +165,14 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
+ 
+ 	down_write(&mm->mmap_sem);
+ 
+-	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
++	addr = get_unmapped_area(NULL, 0, vdso32_size + VDSO_OFFSET(VDSO_PREV_PAGES), 0, 0);
+ 	if (IS_ERR_VALUE(addr)) {
+ 		ret = addr;
+ 		goto up_fail;
+ 	}
+ 
++	addr += VDSO_OFFSET(VDSO_PREV_PAGES);
++
+ 	current->mm->context.vdso = (void *)addr;
+ 
+ 	/*
+-- 
+1.9.1
+
