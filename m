@@ -1,85 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545AbaCWTV1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:21:27 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:33445 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751745AbaCWTVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:21:22 -0400
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+	id S1752889AbaCWTWB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:22:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29846 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416AbaCWTI7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:08:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
+   d="scan'208";a="505944089"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] net/mac80211: Use RCU_INIT_POINTER(x, NULL) in scan.c
-Date: Mon, 24 Mar 2014 00:50:22 +0530
-Message-Id: <1395602422-14534-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
+Subject: [PATCH v7 01/22] Fix XIP fault vs truncate race
+Date: Sun, 23 Mar 2014 15:08:27 -0400
+Message-Id: <59d73a58d4cfbe190a16ce912bb2776d9cc95447.1395591795.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+Pagecache faults recheck i_size after taking the page lock to ensure that
+the fault didn't race against a truncate.  We don't have a page to lock
+in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
+truncate path in unmap_mapping_range() after updating i_size.  So while
+we hold it in the fault path, we are guaranteed that either i_size has
+already been updated in the truncate path, or that the truncate will
+subsequently call zap_page_range_single() and so remove the mapping we
+have just inserted.
 
-The rcu_assign_pointer() ensures that the initialization of a structure       
-is carried out before storing a pointer to that structure. 
-And in the case of the NULL pointer, there is no structure to initialize. 
-So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+There is a window of time in which i_size has been reduced and the
+thread has a mapping to a page which will be removed from the file,
+but this is harmless as the page will not be allocated to a different
+purpose before the thread's access to it is revoked.
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 ---
- net/mac80211/scan.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ mm/filemap_xip.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index 836f500..f9f078b 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -309,7 +309,7 @@ static void __ieee80211_scan_completed(struct ieee80211_hw *hw, bool aborted)
- 	if (local->scan_req != local->int_scan_req)
- 		cfg80211_scan_done(local->scan_req, aborted);
- 	local->scan_req = NULL;
--	rcu_assign_pointer(local->scan_sdata, NULL);
-+	RCU_INIT_POINTER(local->scan_sdata, NULL);
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index d8d9fe3..c8d23e9 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -260,8 +260,17 @@ again:
+ 		__xip_unmap(mapping, vmf->pgoff);
  
- 	local->scanning = 0;
- 	local->scan_chandef.chan = NULL;
-@@ -559,7 +559,7 @@ static int __ieee80211_start_scan(struct ieee80211_sub_if_data *sdata,
- 		ieee80211_recalc_idle(local);
+ found:
++		/* We must recheck i_size under i_mmap_mutex */
++		mutex_lock(&mapping->i_mmap_mutex);
++		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
++							PAGE_CACHE_SHIFT;
++		if (unlikely(vmf->pgoff >= size)) {
++			mutex_unlock(&mapping->i_mmap_mutex);
++			return VM_FAULT_SIGBUS;
++		}
+ 		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
+ 							xip_pfn);
++		mutex_unlock(&mapping->i_mmap_mutex);
+ 		if (err == -ENOMEM)
+ 			return VM_FAULT_OOM;
+ 		/*
+@@ -285,16 +294,27 @@ found:
+ 		}
+ 		if (error != -ENODATA)
+ 			goto out;
++
++		/* We must recheck i_size under i_mmap_mutex */
++		mutex_lock(&mapping->i_mmap_mutex);
++		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
++							PAGE_CACHE_SHIFT;
++		if (unlikely(vmf->pgoff >= size)) {
++			ret = VM_FAULT_SIGBUS;
++			goto unlock;
++		}
+ 		/* not shared and writable, use xip_sparse_page() */
+ 		page = xip_sparse_page();
+ 		if (!page)
+-			goto out;
++			goto unlock;
+ 		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
+ 							page);
+ 		if (err == -ENOMEM)
+-			goto out;
++			goto unlock;
  
- 		local->scan_req = NULL;
--		rcu_assign_pointer(local->scan_sdata, NULL);
-+		RCU_INIT_POINTER(local->scan_sdata, NULL);
- 	}
- 
- 	return rc;
-@@ -773,7 +773,7 @@ void ieee80211_scan_work(struct work_struct *work)
- 		int rc;
- 
- 		local->scan_req = NULL;
--		rcu_assign_pointer(local->scan_sdata, NULL);
-+		RCU_INIT_POINTER(local->scan_sdata, NULL);
- 
- 		rc = __ieee80211_start_scan(sdata, req);
- 		if (rc) {
-@@ -1014,7 +1014,7 @@ out_free:
- 
- 	if (ret) {
- 		/* Clean in case of failure after HW restart or upon resume. */
--		rcu_assign_pointer(local->sched_scan_sdata, NULL);
-+		RCU_INIT_POINTER(local->sched_scan_sdata, NULL);
- 		local->sched_scan_req = NULL;
- 	}
- 
-@@ -1087,7 +1087,7 @@ void ieee80211_sched_scan_stopped_work(struct work_struct *work)
- 		return;
- 	}
- 
--	rcu_assign_pointer(local->sched_scan_sdata, NULL);
-+	RCU_INIT_POINTER(local->sched_scan_sdata, NULL);
- 
- 	/* If sched scan was aborted by the driver. */
- 	local->sched_scan_req = NULL;
+ 		ret = VM_FAULT_NOPAGE;
++unlock:
++		mutex_unlock(&mapping->i_mmap_mutex);
+ out:
+ 		write_seqcount_end(&xip_sparse_seq);
+ 		mutex_unlock(&xip_sparse_mutex);
 -- 
-1.7.9.5
+1.9.0
 
