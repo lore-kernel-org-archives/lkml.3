@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050AbaCWTtx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:49:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:55055 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750807AbaCWTtv (ORCPT
+	id S1751077AbaCWTyV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:54:21 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:36610 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWTyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:49:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Subject: Re: [PATCH 0/8] Generic serial earlycon
-Date: Sun, 23 Mar 2014 20:49:41 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <201403222301.30222.arnd@arndb.de> <CAL_Jsq+j4ixVbfue62q_tOHb-HPA2jAxwZtTjtLy6jE9crGvsg@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+j4ixVbfue62q_tOHb-HPA2jAxwZtTjtLy6jE9crGvsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sun, 23 Mar 2014 15:54:19 -0400
+Message-ID: <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
+        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com
+Date: Sun, 23 Mar 2014 12:54:17 -0700
+In-Reply-To: <20140323194113.GA13633@redhat.com>
+References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
+	 <20140323194113.GA13633@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201403232049.41866.arnd@arndb.de>
-X-Provags-ID: V02:K0:MxmsM7n5dco9x6stX8T4xZVDt4REJEAq0VNdsMFdm41
- odY67dd6W++GTfApqkj9NOw27bVhT6tQ1cpFOTvTphNWwzux5l
- mFdCMUPTp234bPdZeZodY8cTpvXmcKh3gcpIBvjsBxgXP1guqx
- jo0h+Dr2EJcUoFuNgRHZ1kAXG5P9oHogvo21+YPeOeT3FY2sJf
- x3Qnico+GT+cXh654iqZDoE/CCzbIQTuoJ5Cqvz8msYTTYVn7V
- re6klh0drtdbCkx0zWxyKKFA02y1ZyfYrFtWES+WlTs7zllhXm
- fwlovsmYIq5B9X1zyK177DOtagqzqbXv2Q52lhyYXwJUDcEhaj
- OMYxhC95/nt/HpgzIrJz3R5MLmfwkWL7vT53nhziA
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 March 2014, Rob Herring wrote:
-> IIRC, the unflattening cannot be done before memblock is up which is
-> in arm_memblock_init. I believe that will get done earlier similar to
-> PPC with Laura's meminfo removal series. However, in interest of
-> getting output enabled as early as possible, the earliest point is
-> always going to be with a flat tree. So I think we do want to be able
-> to parse the flat tree for this. There's code in u-boot to do the
-> address translation on FDT we can steal. Really, i'd like to put that
-> code in libfdt, but there's a licensing problem with the u-boot code
-> being GPL and libfdt being BSD.
+On Sun, 2014-03-23 at 21:41 +0200, Michael S. Tsirkin wrote:
 
-I suppose it depends on what the goal is. If you are trying to get as
-close as possible to the debug_ll functionality without losing the
-ability to turn it on unconditionally, I agree that it needs to be done
-on the flat tree.
+> The rcu_assign_pointer() ensures that the initialization of a structure       
+> is carried out before storing a pointer to that structure. 
+> In the case of the NULL pointer, there is no structure to initialize,
+> so we can safely drop smp_wmb in this case.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> --
+> 
+> Lightly tested.
+> v is evaluated twice here but that should be ok since this
+> only happens when v is a constant, so evaluating it should
+> have no side effects.
+> Paul, what do you think?
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 72bf3a0..d33c9ec 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -587,7 +587,8 @@ static inline void rcu_preempt_sleep_check(void)
+>   */
+>  #define rcu_assign_pointer(p, v) \
+>  	do { \
+> -		smp_wmb(); \
+> +		if (!__builtin_constant_p(v) || (v)) \
+> +			smp_wmb(); \
+>  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
+>  	} while (0)
+>  
 
-However, the goal that interests me more at the moment is to have
-reliable debug output done in a simple way earlier than what we have
-today with the normal console support. For this, it seems a better
-tradeoff to initialize the early console slightly later. This
-can actually be done independent of the the command line option,
-I don't see any downsides from having a compile-time option that
-would initialize the early console from setup_arch (after
-unflatten_device_tree) whenever there is a linux,stdout-path
-property that points to a usable device.
+Yeah, I suggest you read d322f45ceed525daa changelog ;)
 
-	Arnd
+
