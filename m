@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbaCWIE2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 04:04:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:56846 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaCWIEX (ORCPT
+	id S1752007AbaCWIXY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 04:23:24 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:45812 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974AbaCWIXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 04:04:23 -0400
-Date: Sun, 23 Mar 2014 09:04:22 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: oleg@redhat.com, joseph.salisbury@canonical.com, JBottomley@parallels.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        rientjes@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-scsi@vger.kernel.org, thenzl@redhat.com
-Subject: Re: please fix FUSION
- (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-In-Reply-To: <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de>
-References: <20140321183443.GA3891@redhat.com> <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp> <20140322192511.GA14811@redhat.com> <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
- <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Sun, 23 Mar 2014 04:23:21 -0400
+Message-ID: <1395562999.5459.25.camel@marge.simpson.net>
+Subject: Re: 3.14-rc7 compile failure
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Drunkard Zhang <gongfan193@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Date: Sun, 23 Mar 2014 09:23:19 +0100
+In-Reply-To: <CAJiejCTv0Vsq0zecEhKD9B7sNqEKsa+Do_LLiykvvfH1+=9jqQ@mail.gmail.com>
+References: <CAJiejCSDC2EEsxN4d6C=LfB+TbYQ+7pyrzWU2SeeRHrvwxVhQw@mail.gmail.com>
+	 <1395553958.5459.3.camel@marge.simpson.net>
+	 <CAJiejCTv0Vsq0zecEhKD9B7sNqEKsa+Do_LLiykvvfH1+=9jqQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Mar 2014, Tetsuo Handa wrote:
+On Sun, 2014-03-23 at 14:58 +0800, Drunkard Zhang wrote: 
+> 2014-03-23 13:52 GMT+08:00 Mike Galbraith <umgwanakikbuti@gmail.com>:
+> > On Sun, 2014-03-23 at 13:29 +0800, Drunkard Zhang wrote:
+> >
+> >> scripts/genksyms/genksyms.o: In function `main':
+> >> genksyms.c:(.text.startup+0x183): undefined reference to `yydebug'
+> >> genksyms.c:(.text.startup+0x18c): undefined reference to `yy_flex_debug'
+> >> genksyms.c:(.text.startup+0x1a5): undefined reference to `yyparse'
+> >> collect2: error: ld returned 1 exit status
+> >> make[2]: *** [scripts/genksyms/genksyms] Error 1
+> >> make[1]: *** [scripts/genksyms] Error 2
+> >> make[1]: *** Waiting for unfinished jobs....
+> >
+> > flex and bison installed?  rpm -q flex bison
+> >
+> I'm using Gentoo.
+> squid85 ~ # qlist -Iv flex bison
+> sys-devel/bison-2.4.3
+> sys-devel/flex-2.5.37
+> squid85 ~ # cat /etc/gentoo-release
+> Gentoo Base System release 2.2
 
-> Thomas Gleixner wrote:
-> > But then systemd/udev mutters:
-> > 
-> >    "You migh be able to work around the timeout with udev rules and
-> >     OPTIONS+="event_timeout=120", but that code was maybe never used
-> >     or tested, so it might not work correctly." [1]
-> > 
-> > AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
-> > 
-> > And if the udev/systemd event_timeout option is broken it's way better
-> > to fix that one instead of hacking random heuristics into the kernel.
-> 
-> I haven't tried the event_timeout= option but I think it will not work.
-> The timeout is hard coded as shown below and there will be no chance for taking
-> the event_timeout= option into account.
-> 
-> ---------- systemd-204/src/udev/udevd.c start ----------
-> (...snipped...)
->                         /* check for hanging events */
->                         udev_list_node_foreach(loop, &worker_list) {
->                                 struct worker *worker = node_to_worker(loop);
-> 
->                                 if (worker->state != WORKER_RUNNING)
->                                         continue;
-> 
->                                 if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
+No idea.  I'd make mrproper, re-config and try again.  Given it builds
+fine for the rest of the planet (afaik), it's gotta be local breakage.
 
-And because systemd has an immutable hardcoded random timeout we add
-another hardcoded random timeout into kthread_create() to work around
-that.
+-Mike
 
-How broken is that?
-
-And it seems other people have solved it:
-
-    http://www.redhat.com/archives/lvm-devel/2013-September/msg00036.html
-
-Thanks,
-
-	tglx
