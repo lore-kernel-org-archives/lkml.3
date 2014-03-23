@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaCWVpu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:45:50 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:45723 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCWVpt (ORCPT
+	id S1751417AbaCWVsy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:48:54 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:43127 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798AbaCWVsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:45:49 -0400
+	Sun, 23 Mar 2014 17:48:51 -0400
+Date: Sun, 23 Mar 2014 17:48:48 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: linux-arm-kernel@lists.infradead.org, Rob Herring <robherring2@gmail.com>,
+        Rob Herring <robh@kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>, x86@kernel.org,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH 7/8] tty/serial: add arm64 semihosting earlycon
+In-Reply-To: <14193198.1gAJ7xnz7b@wuerfel>
+Message-ID: <alpine.LFD.2.11.1403231742430.1291@knanqh.ubzr>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <1395436128-11244-8-git-send-email-robherring2@gmail.com> <alpine.LFD.2.11.1403231559160.1291@knanqh.ubzr> <14193198.1gAJ7xnz7b@wuerfel>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20140323212715.GA22767@rhlx01.hs-esslingen.de>
-References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
-	<20140322234317.GA10483@rhlx01.hs-esslingen.de>
-	<20140323121541.GA20971@rhlx01.hs-esslingen.de>
-	<CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
-	<20140323212715.GA22767@rhlx01.hs-esslingen.de>
-Date: Mon, 24 Mar 2014 07:45:47 +1000
-Message-ID: <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
-Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in mga_driver_irq_uninstall)
-From: Dave Airlie <airlied@gmail.com>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mikulas Patocka <mpatocka@redhat.com>, David Airlie <airlied@linux.ie>,
-        DRI <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
-> On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
->> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
->> >
->> > which did end up flawless on 3.12.0-rc2+, too
->> > (but failed to improve the issue on 3.14.0-rc7+).
->> >
->> > So, for all intents and purposes, drm infrastructure seems unavoidably
->> > (neither dri disable nor libdrm upgrade helps) affected.
->> > Does anyone know which change caused that issue?
->> > (I'm asking because bisect here would be relatively painful).
->>
->> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
->> 3.14 rc only, or did it happen already in the previous release?
->
-> Hmm, given that Mikulas in
-> https://lkml.org/lkml/2014/2/26/537
-> offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
-> that that indeed may have been a regression at <= 3.13 proper even
-> (which may pose interesting questions about the level of testing coverage
-> we still enjoy [not!?] in this hardware area).
->
-> Oh well, seems I'll have to prepare/build 3.13 now...
+On Sun, 23 Mar 2014, Arnd Bergmann wrote:
 
-It's > 15 year old hardware, so yes I believe we have close to 0
-testing coverage on it outside of distros,
+> On Sunday 23 March 2014 16:04:41 Nicolas Pitre wrote:
+> > On Fri, 21 Mar 2014, Rob Herring wrote:
+> > 
+> > > From: Rob Herring <robh@kernel.org>
+> > > 
+> > > Add earlycon support for the arm64 semihosting debug serial interface.
+> > > This allows enabling a debug console when early_params are processed.
+> > > This is based on the arm64 earlyprintk smh support and is intended to
+> > > replace it.
+> > > 
+> > > This is named arm rather than arm64 in hopes it will be used for both,
+> > > but only arm64 is supported ATM.
+> > 
+> > It can't be used for both as the semihosting calls themselves need 
+> > assembly code and this is not compatible with the equivalent ARM32 
+> > calls.  So I'd suggest naming this "arm64" to avoid potential confusion.
+> 
+> How about using an compile-time conditional to put both inline assemblies
+> in there? While the driver is rather trivial to start with, I don't see
+> a point in duplicating it either.
 
-I'm not even sure I have one anymore, I might be able to test an MGA in one box.
+Sure.  But it can be trivially renamed at that point.
 
-Dave.
+Or, even better would be to add the ARM calls right away.  And of course 
+ARM in Thumb mode has yet another call convention.
+
+The printascii and printch code in arch/arm/kernel/debug.S for
+CONFIG_DEBUG_SEMIHOSTING can be copied almost as is.
+
+
+Nicolas
