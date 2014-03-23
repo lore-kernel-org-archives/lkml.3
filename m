@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaCWVut (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:50:49 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:51166 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCWVus (ORCPT
+	id S1751543AbaCWVu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:50:56 -0400
+Received: from SpacedOut.fries.net ([67.64.210.234]:54056 "EHLO
+	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751450AbaCWVuy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:50:48 -0400
+	Sun, 23 Mar 2014 17:50:54 -0400
+Date: Sun, 23 Mar 2014 16:50:41 -0500
+From: David Fries <David@Fries.net>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, zbr@ioremap.net,
+        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
+Subject: Re: w1: 3.14-rc7 - possible recursive locking detected
+Message-ID: <20140323215041.GB5096@spacedout.fries.net>
+References: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
- <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
- <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com> <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sun, 23 Mar 2014 14:50:28 -0700
-Message-ID: <CAHGf_=qC1aUdoUg1QJc8DukXzkHVoJA+5rH6SLmj0x+cibxtig@mail.gmail.com>
-Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 23 Mar 2014 16:50:43 -0500 (CDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 1:26 PM, John Stultz <john.stultz@linaro.org> wrote:
-> On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
-> <kosaki.motohiro@gmail.com> wrote:
->>> +/**
->>> + * vrange_check_purged_pte - Checks ptes for purged pages
->>> + *
->>> + * Iterates over the ptes in the pmd checking if they have
->>> + * purged swap entries.
->>> + *
->>> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
->>> + */
->>> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
->>> +                                       unsigned long end, struct mm_walk *walk)
->>> +{
->>> +       struct vrange_walker *vw = walk->private;
->>> +       pte_t *pte;
->>> +       spinlock_t *ptl;
->>> +
->>> +       if (pmd_trans_huge(*pmd))
->>> +               return 0;
->>> +       if (pmd_trans_unstable(pmd))
->>> +               return 0;
->>> +
->>> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
->>> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
->>> +               if (!pte_present(*pte)) {
->>> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
->>> +
->>> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
->>> +                               vw->page_was_purged = 1;
->>> +                               break;
->>
->> This function only detect there is vpurge entry or not. But
->> VRANGE_NONVOLATILE should remove all vpurge entries.
->> Otherwise, non-volatiled range still makes SIGBUS.
->
-> So in the following patch (3/5), we only SIGBUS if the swap entry
-> is_vpurged_entry()  && the vma is still marked volatile, so this
-> shouldn't be an issue.
+On Mon, Mar 17, 2014 at 10:38:13PM +0100, Belisko Marek wrote:
+> Hi,
+> 
+> booting latest 3.14-rc7 on gta04 board gives following warning:
+> 
+> [    3.101409] Driver for 1-wire Dallas network protocol.
+> [    3.109649] omap_hdq omap_hdq: OMAP HDQ Hardware Rev 0.5. Driver in
+> [    3.400146]        CPU0
+> [    3.402709]        ----
+> [    3.405273]   lock(&(&priv->bus_notifier)->rwsem);
+> [    3.410308]   lock(&(&priv->bus_notifier)->rwsem);
+> [    3.415374]
+> [    3.415374]  *** DEADLOCK ***
+> 
+> AFAIK we didn't see that on (at least 3/14-rc2).
 
-When VOLATILE -> NON-VOLATILE -> VOLATILE transition happen,
-the page immediately marked "was purged"?
+The last drivers/w1 change went in before v3.14-rc1, so if it is
+something in the w1 code, it has either been there or something else
+in the rest of the kernel changed to expose it.  I'm using the ds2490
+USB w1 dongle, I didn't see that problem when enabling lock debugging
+on 3.14.0-rc5+ which includes some changes I'm working on.
 
-I don't understand why vma check help.
+https://github.com/dfries/linux.git w1_rework
+
+-- 
+David Fries <david@fries.net>    PGP pub CB1EE8F0
+http://fries.net/~david/
