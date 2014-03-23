@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaCWVDn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:03:43 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.144]:56721 "EHLO
+	id S1751463AbaCWVDo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:03:44 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.139]:53588 "EHLO
 	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750798AbaCWVDl (ORCPT
+	by vger.kernel.org with ESMTP id S1750920AbaCWVDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 23 Mar 2014 17:03:41 -0400
 X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-9.tower-179.messagelabs.com!1395608616!26673463!1
+X-Msg-Ref: server-9.tower-179.messagelabs.com!1395608616!26673463!2
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.11.1; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <79211de889340ba3786f46021fac3a6f7be2132d.1395607051.git.stwiss.opensource@diasemi.com>
+Message-ID: <31eb9829645b11a109e7699d5da888ab7d2a68c1.1395607051.git.stwiss.opensource@diasemi.com>
 In-Reply-To: <cover.1395607051.git.stwiss.opensource@diasemi.com>
 References: <cover.1395607051.git.stwiss.opensource@diasemi.com>
 From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Date: Sun, 23 Mar 2014 20:37:31 +0000
-Subject: [RFC V1 3/3] Documentation: hwmon: New information for DA9063
-To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        Rob Landley <rob@landley.net>
+Date: Sun, 23 Mar 2014 20:37:30 +0000
+Subject: [RFC V1 2/3] mfd: da9063: Add HWMON dependencies
+To: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>
 CC: David Dajun Chen <david.chen@diasemi.com>,
+        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
         LINUX-DOC <linux-doc@vger.kernel.org>,
         LINUX-KERNEL <linux-kernel@vger.kernel.org>,
         LM-SENSORS <lm-sensors@lm-sensors.org>,
-        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>, Rob Landley <rob@landley.net>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,20 +35,25 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 
-Addition of HWMON documentation for the DA9063 driver.
+Dependencies required for DA9063 HWMON support.
 
 Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 ---
 Checks performed with linux-next/next-20140321/scripts/checkpatch.pl
- da9063                    total: 0 errors, 0 warnings, 67 lines checked
+ core.h                    total: 0 errors, 0 warnings, 100 lines checked
+ pdata.h                   total: 0 errors, 0 warnings, 129 lines checked
+ da9063-core.c             total: 0 errors, 0 warnings, 199 lines checked
 
-This is the documentation that goes along with the DA9063 HWMON driver
-and the associated changes to the DA9063 mfd core and platform data.
+This patch includes the following changes:
 
-Dependencies:
+There are small changes to da9063-core.c to allow reading the temperature
+trimming offset value from the PMIC register list. This value is passed
+to HWMON and is used during its calculations of the PMIC's internal junction
+temperature.
 
-- The two other patches in this patch set:
-  These are the HWMON driver and the MFD core changes
+There are also changes to the platform data definitions so that values may
+be set for the current sources ADCIN[123]_CUR. These are provided so that
+they may be configured outside the driver.
 
 This patch applies against linux-next and next-20140321
 
@@ -58,83 +62,93 @@ Steve Twiss, Dialog Semiconductor Ltd.
 
 
 
- Documentation/hwmon/da9063 |   67 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 67 insertions(+)
- create mode 100644 Documentation/hwmon/da9063
+ drivers/mfd/da9063-core.c        |   13 ++++++++++++-
+ include/linux/mfd/da9063/core.h  |    3 +++
+ include/linux/mfd/da9063/pdata.h |   18 ++++++++++++++++++
+ 3 files changed, 33 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/hwmon/da9063 b/Documentation/hwmon/da9063
-new file mode 100644
-index 0000000..fa616bb
---- /dev/null
-+++ b/Documentation/hwmon/da9063
-@@ -0,0 +1,67 @@
+diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
+index e70ae31..24c1838 100644
+--- a/drivers/mfd/da9063-core.c
++++ b/drivers/mfd/da9063-core.c
+@@ -111,6 +111,7 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
+ {
+ 	struct da9063_pdata *pdata = da9063->dev->platform_data;
+ 	int model, variant_id, variant_code;
++	int t_offset = 0;
+ 	int ret;
+ 
+ 	if (pdata) {
+@@ -171,8 +172,18 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
+ 	ret = mfd_add_devices(da9063->dev, -1, da9063_devs,
+ 			      ARRAY_SIZE(da9063_devs), NULL, da9063->irq_base,
+ 			      NULL);
+-	if (ret)
++	if (ret) {
+ 		dev_err(da9063->dev, "Cannot add MFD cells\n");
++		return ret;
++	}
 +
-+Kernel driver da9063-hwmon
-+==========================
++	ret = regmap_read(da9063->regmap, DA9063_REG_T_OFFSET, &t_offset);
++	if (ret < 0)
++		dev_warn(da9063->dev,
++			 "Temperature trimming value cannot be read (defaulting to 0)\n");
 +
-+Supported chips:
-+ * Dialog Semiconductor DA9063 PMIC
-+    Prefix: 'da9063'
-+    Datasheet:
-+	http://www.dialog-semiconductor.com/products/power-management/DA9063
++	/* pass this on to the hwmon driver */
++	da9063->t_offset = t_offset;
+ 
+ 	return ret;
+ }
+diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
+index 00a9aac..7327d37 100644
+--- a/include/linux/mfd/da9063/core.h
++++ b/include/linux/mfd/da9063/core.h
+@@ -86,6 +86,9 @@ struct da9063 {
+ 	int		chip_irq;
+ 	unsigned int	irq_base;
+ 	struct regmap_irq_chip_data *regmap_irq;
 +
-+Authors: S Twiss <stwiss.opensource@diasemi.com>
++	/* Trimming */
++	int		t_offset;
+ };
+ 
+ int da9063_device_init(struct da9063 *da9063, unsigned int irq);
+diff --git a/include/linux/mfd/da9063/pdata.h b/include/linux/mfd/da9063/pdata.h
+index 95c8742..576033e 100644
+--- a/include/linux/mfd/da9063/pdata.h
++++ b/include/linux/mfd/da9063/pdata.h
+@@ -62,6 +62,23 @@ struct da9063_regulators_pdata {
+ 	struct da9063_regulator_data	*regulator_data;
+ };
+ 
++/* HWMON platform data */
++#define DA9063_SET_ADCIN1_CUR_1UA	0x00
++#define DA9063_SET_ADCIN1_CUR_2UA	0x01
++#define DA9063_SET_ADCIN1_CUR_10UA	0x02
++#define DA9063_SET_ADCIN1_CUR_40UA	0x03
++#define DA9063_SET_ADCIN2_CUR_1UA	0x00
++#define DA9063_SET_ADCIN2_CUR_2UA	0x01
++#define DA9063_SET_ADCIN2_CUR_10UA	0x02
++#define DA9063_SET_ADCIN2_CUR_40UA	0x03
++#define DA9063_SET_ADCIN3_CUR_10UA	0x00
 +
-+Description
-+-----------
++struct da9063_hwmon_pdata {
++	unsigned char adcin1_cur;
++	unsigned char adcin2_cur;
++	unsigned char adcin3_cur;
++};
 +
-+The DA9063 PMIC provides a general purpose ADC with 10 bits of resolution.
-+It uses track and hold circuitry with an analogue input multiplexer which
-+allows the conversion of up to 9 different inputs.
-+
-+ Channel  0: VSYS_RES	measurement of the system VDD (2.5 - 5.5V)
-+ Channel  1: ADCIN1_RES	high impedance input (0 - 2.5V)
-+ Channel  2: ADCIN2_RES	high impedance input (0 - 2.5V)
-+ Channel  3: ADCIN3_RES	high impedance input (0 - 2.5V)
-+ Channel  4: Tjunc	measurement of internal temperature sensor
-+ Channel  5: VBBAT	measurement of the backup battery voltage (0 - 5.0V)
-+ Channel  6: N/A	Reserved
-+ Channel  7: N/A	Reserved
-+ Channel  8: MON1_RES	group 1 internal regulators voltage (0 - 5.0V)
-+ Channel  9: MON2_RES	group 2 internal regulators voltage (0 - 5.0V)
-+ Channel 10: MON3_RES	group 3 internal regulators voltage (0 - 5.0V)
-+
-+The MUX selects from and isolates the 9 inputs and presents the channel to
-+be measured to the ADC input. When selected, an input amplifier on the VSYS
-+channel subtracts the VDDCORE reference voltage and scales the signal to the
-+correct value for the ADC.
-+
-+The analog ADC includes current sources at ADC_IN1, ADC_IN2 and ADC_IN3 to
-+support resistive measurements.
-+
-+Channels 1, 2 and 3 current source capability can be set through the ADC
-+thresholds ADC_CFG register and values for ADCIN1_CUR, ADCIN2_CUR and
-+ADCIN3_CUR. Settings for ADCIN1_CUR and ADCIN2_CUR are 1.0, 2.0, 10 and
-+40 micro Amps. The setting for ADCIN3_CUR is 10 micro Amps.
-+
-+Voltage Monitoring
-+------------------
-+
-+The manual measurement allows monitoring of the system voltage VSYS, the
-+auxiliary channels ADCIN1, ADCIN2 and ADCIN3, and a VBBAT measurement of
-+the backup battery voltage (0 - 5.0V). The manual measurements store 10
-+bits of ADC resolution.
-+
-+The manual ADC measurements attributes described above are supported by
-+the driver.
-+
-+The automatic ADC measurement is not supported by the driver.
-+
-+Temperature Monitoring
-+----------------------
-+
-+Channel 4 (Tjunc) will be used to measure the output of the internal
-+temperature sensor. The ADC measurement result and the T_OFFSET value can
-+be used by the host to calculate the internal junction temperature
-+
-+	Tjunc = -0.41 * (ADC - T_OFFSET - 812.5);
-+
-+The junction temperature attribute is supported by the driver.
+ 
+ /*
+  * RGB LED configuration
+@@ -106,6 +123,7 @@ struct da9063_pdata {
+ 	unsigned			flags;
+ 	struct da9063_regulators_pdata	*regulators_pdata;
+ 	struct led_platform_data	*leds_pdata;
++	struct da9063_hwmon_pdata	*hwmon_pdata;
+ };
+ 
+ #endif	/* __MFD_DA9063_PDATA_H__ */
 -- 
 end-of-patch for RFC V1
 
