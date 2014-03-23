@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbaCWTds (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:33:48 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:48784 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaCWTdr (ORCPT
+	id S1751066AbaCWTfX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:35:23 -0400
+Received: from michel.telenet-ops.be ([195.130.137.88]:39109 "EHLO
+	michel.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaCWTfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:33:47 -0400
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: rcj@linux.vnet.ibm.com, mhcerri@linux.vnet.ibm.com, fin@linux.vnet.ibm.com,
-        herbert@gondor.apana.org.au, davem@davemloft.net,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/crypto: Use RCU_INIT_POINTER(x, NULL) in nx/nx-842.c
-Date: Mon, 24 Mar 2014 01:02:42 +0530
-Message-Id: <1395603162-16746-1-git-send-email-monamagarwal123@gmail.com>
+	Sun, 23 Mar 2014 15:35:20 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Subject: [PATCH 1/2] ARM: shmobile: armadillo-reference dts: Use KEY_* macros for gpio-keys
+Date: Sun, 23 Mar 2014 20:35:01 +0100
+Message-Id: <1395603302-32056-1-git-send-email-geert@linux-m68k.org>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 
-The rcu_assign_pointer() ensures that the initialization of a structure       
-is carried out before storing a pointer to that structure. 
-And in the case of the NULL pointer, there is no structure to initialize. 
-So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
-
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
 ---
- drivers/crypto/nx/nx-842.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ .../boot/dts/r8a7740-armadillo800eva-reference.dts |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/crypto/nx/nx-842.c b/drivers/crypto/nx/nx-842.c
-index 1e5481d..c4fcbf4 100644
---- a/drivers/crypto/nx/nx-842.c
-+++ b/drivers/crypto/nx/nx-842.c
-@@ -1234,7 +1234,7 @@ static int __exit nx842_remove(struct vio_dev *viodev)
- 	old_devdata = rcu_dereference_check(devdata,
- 			lockdep_is_held(&devdata_mutex));
- 	of_reconfig_notifier_unregister(&nx842_of_nb);
--	rcu_assign_pointer(devdata, NULL);
-+	RCU_INIT_POINTER(devdata, NULL);
- 	spin_unlock_irqrestore(&devdata_mutex, flags);
- 	synchronize_rcu();
- 	dev_set_drvdata(&viodev->dev, NULL);
-@@ -1285,7 +1285,7 @@ static void __exit nx842_exit(void)
- 	spin_lock_irqsave(&devdata_mutex, flags);
- 	old_devdata = rcu_dereference_check(devdata,
- 			lockdep_is_held(&devdata_mutex));
--	rcu_assign_pointer(devdata, NULL);
-+	RCU_INIT_POINTER(devdata, NULL);
- 	spin_unlock_irqrestore(&devdata_mutex, flags);
- 	synchronize_rcu();
- 	if (old_devdata)
+diff --git a/arch/arm/boot/dts/r8a7740-armadillo800eva-reference.dts b/arch/arm/boot/dts/r8a7740-armadillo800eva-reference.dts
+index 95a849bf921f..97342a4820cf 100644
+--- a/arch/arm/boot/dts/r8a7740-armadillo800eva-reference.dts
++++ b/arch/arm/boot/dts/r8a7740-armadillo800eva-reference.dts
+@@ -11,6 +11,7 @@
+ /dts-v1/;
+ #include "r8a7740.dtsi"
+ #include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/pwm/pwm.h>
+ 
+@@ -77,26 +78,26 @@
+ 
+ 		power-key {
+ 			gpios = <&pfc 99 GPIO_ACTIVE_LOW>;
+-			linux,code = <116>;
++			linux,code = <KEY_POWER>;
+ 			label = "SW3";
+ 			gpio-key,wakeup;
+ 		};
+ 
+ 		back-key {
+ 			gpios = <&pfc 100 GPIO_ACTIVE_LOW>;
+-			linux,code = <158>;
++			linux,code = <KEY_BACK>;
+ 			label = "SW4";
+ 		};
+ 
+ 		menu-key {
+ 			gpios = <&pfc 97 GPIO_ACTIVE_LOW>;
+-			linux,code = <139>;
++			linux,code = <KEY_MENU>;
+ 			label = "SW5";
+ 		};
+ 
+ 		home-key {
+ 			gpios = <&pfc 98 GPIO_ACTIVE_LOW>;
+-			linux,code = <102>;
++			linux,code = <KEY_HOME>;
+ 			label = "SW6";
+ 		};
+ 	};
 -- 
 1.7.9.5
 
