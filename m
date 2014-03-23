@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751449AbaCWSoc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:44:32 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:60530 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751020AbaCWSob (ORCPT
+	id S1751454AbaCWSpb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:45:31 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:52661 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWSp3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:44:31 -0400
+	Sun, 23 Mar 2014 14:45:29 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+To: trond.myklebust@primarydata.com, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in file.c
-Date: Mon, 24 Mar 2014 00:13:31 +0530
-Message-Id: <1395600211-9034-1-git-send-email-monamagarwal123@gmail.com>
+Subject: [PATCH] fs: Use RCU_INIT_POINTER(x, NULL) in nfs/delegation.c
+Date: Mon, 24 Mar 2014 00:14:27 +0530
+Message-Id: <1395600267-9169-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,40 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/file.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/nfs/delegation.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/file.c b/fs/file.c
-index 60a45e9..f87f265 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -499,7 +499,7 @@ repeat:
- 	/* Sanity check */
- 	if (rcu_dereference_raw(fdt->fd[fd]) != NULL) {
- 		printk(KERN_WARNING "alloc_fd: slot %d not NULL!\n", fd);
--		rcu_assign_pointer(fdt->fd[fd], NULL);
-+		RCU_INIT_POINTER(fdt->fd[fd], NULL);
- 	}
- #endif
- 
-@@ -590,7 +590,7 @@ int __close_fd(struct files_struct *files, unsigned fd)
- 	file = fdt->fd[fd];
- 	if (!file)
- 		goto out_unlock;
--	rcu_assign_pointer(fdt->fd[fd], NULL);
-+	RCU_INIT_POINTER(fdt->fd[fd], NULL);
- 	__clear_close_on_exec(fd, fdt);
- 	__put_unused_fd(files, fd);
- 	spin_unlock(&files->file_lock);
-@@ -625,7 +625,7 @@ void do_close_on_exec(struct files_struct *files)
- 			file = fdt->fd[fd];
- 			if (!file)
- 				continue;
--			rcu_assign_pointer(fdt->fd[fd], NULL);
-+			RCU_INIT_POINTER(fdt->fd[fd], NULL);
- 			__put_unused_fd(files, fd);
- 			spin_unlock(&files->file_lock);
- 			filp_close(file, files);
+diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
+index 5d8ccec..349e63b 100644
+--- a/fs/nfs/delegation.c
++++ b/fs/nfs/delegation.c
+@@ -249,7 +249,7 @@ nfs_detach_delegation_locked(struct nfs_inode *nfsi,
+ 	list_del_rcu(&delegation->super_list);
+ 	delegation->inode = NULL;
+ 	nfsi->delegation_state = 0;
+-	rcu_assign_pointer(nfsi->delegation, NULL);
++	RCU_INIT_POINTER(nfsi->delegation, NULL);
+ 	spin_unlock(&delegation->lock);
+ 	return delegation;
+ }
 -- 
 1.7.9.5
 
