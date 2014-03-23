@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751260AbaCWU0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 16:26:16 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:37362 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaCWU0O (ORCPT
+	id S1751393AbaCWU03 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 16:26:29 -0400
+Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:50109 "EHLO
+	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751020AbaCWU0P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 16:26:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org>
-	<1395436655-21670-3-git-send-email-john.stultz@linaro.org>
-	<CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
-Date: Sun, 23 Mar 2014 13:26:13 -0700
-Message-ID: <CALAqxLVR4PQCZ-UsGhh+486D5PgVVtu3Tk7878zA9oG0yNU_Eg@mail.gmail.com>
-Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
-From: John Stultz <john.stultz@linaro.org>
-To: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 23 Mar 2014 16:26:15 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Ai4OALJCL1NbsnCH/2dsb2JhbABZgwaCSX4TwCYCAoEPF3SCZhwjGIECJBOHfQHNTI56hD8EmEkBilmHWIMuPA
+Date: Sun, 23 Mar 2014 21:27:56 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] mm/memblock.c: use PFN_PHYS()
+Message-Id: <20140323212756.6c3777f1b8e4c7fe0e1168a9@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 10:50 AM, KOSAKI Motohiro
-<kosaki.motohiro@gmail.com> wrote:
->> +/**
->> + * vrange_check_purged_pte - Checks ptes for purged pages
->> + *
->> + * Iterates over the ptes in the pmd checking if they have
->> + * purged swap entries.
->> + *
->> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
->> + */
->> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
->> +                                       unsigned long end, struct mm_walk *walk)
->> +{
->> +       struct vrange_walker *vw = walk->private;
->> +       pte_t *pte;
->> +       spinlock_t *ptl;
->> +
->> +       if (pmd_trans_huge(*pmd))
->> +               return 0;
->> +       if (pmd_trans_unstable(pmd))
->> +               return 0;
->> +
->> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
->> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
->> +               if (!pte_present(*pte)) {
->> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
->> +
->> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
->> +                               vw->page_was_purged = 1;
->> +                               break;
->
-> This function only detect there is vpurge entry or not. But
-> VRANGE_NONVOLATILE should remove all vpurge entries.
-> Otherwise, non-volatiled range still makes SIGBUS.
+Replace ((phys_addr_t)(x) << PAGE_SHIFT) by pfn macro.
 
-So in the following patch (3/5), we only SIGBUS if the swap entry
-is_vpurged_entry()  && the vma is still marked volatile, so this
-shouldn't be an issue.
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ mm/memblock.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-thanks
--john
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 39a31e7..955ec04 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -1253,7 +1253,7 @@ phys_addr_t __init memblock_mem_size(unsigned long limit_pfn)
+ 		pages += end_pfn - start_pfn;
+ 	}
+ 
+-	return (phys_addr_t)pages << PAGE_SHIFT;
++	return PFN_PHYS(pages);
+ }
+ 
+ /* lowest address */
+@@ -1326,7 +1326,7 @@ int __init_memblock memblock_search_pfn_nid(unsigned long pfn,
+ 			 unsigned long *start_pfn, unsigned long *end_pfn)
+ {
+ 	struct memblock_type *type = &memblock.memory;
+-	int mid = memblock_search(type, (phys_addr_t)pfn << PAGE_SHIFT);
++	int mid = memblock_search(type, PFN_PHYS(pfn));
+ 
+ 	if (mid == -1)
+ 		return -1;
+-- 
+1.8.4.5
+
