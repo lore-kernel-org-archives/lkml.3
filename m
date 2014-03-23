@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752046AbaCVX5E (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 Mar 2014 19:57:04 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63142 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866AbaCVX5C (ORCPT
+	id S1752149AbaCWAAe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 Mar 2014 20:00:34 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:32812 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750866AbaCWAAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 Mar 2014 19:57:02 -0400
-X-Nat-Received: from [202.181.97.72]:51675 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1395532620.3447
-To: tglx@linutronix.de, oleg@redhat.com
-Cc: joseph.salisbury@canonical.com, JBottomley@parallels.com,
-        Nagalakshmi.Nandigama@lsi.com, Sreekanth.Reddy@lsi.com,
-        rientjes@google.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, tj@kernel.org,
-        linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com,
-        linux-scsi@vger.kernel.org, thenzl@redhat.com
-Subject: Re: please fix FUSION (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140321183443.GA3891@redhat.com>
-	<201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>
-	<20140322192511.GA14811@redhat.com>
-	<alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>
-	<alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
-In-Reply-To: <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
-Message-Id: <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Sun, 23 Mar 2014 08:57:00 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 22032014 #7600319, status: clean
+	Sat, 22 Mar 2014 20:00:33 -0400
+Date: Sun, 23 Mar 2014 00:00:31 +0000 (GMT)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Ingo Molnar <mingo@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/apic changes for v3.14
+In-Reply-To: <20140120134220.GA12050@gmail.com>
+Message-ID: <alpine.LFD.2.10.1403222327130.21669@eddie.linux-mips.org>
+References: <20140120134220.GA12050@gmail.com>
+User-Agent: Alpine 2.10 (LFD 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner wrote:
-> But then systemd/udev mutters:
-> 
->    "You migh be able to work around the timeout with udev rules and
->     OPTIONS+="event_timeout=120", but that code was maybe never used
->     or tested, so it might not work correctly." [1]
-> 
-> AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
-> 
-> And if the udev/systemd event_timeout option is broken it's way better
-> to fix that one instead of hacking random heuristics into the kernel.
+On Mon, 20 Jan 2014, Ingo Molnar wrote:
 
-I haven't tried the event_timeout= option but I think it will not work.
-The timeout is hard coded as shown below and there will be no chance for taking
-the event_timeout= option into account.
+> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+> index d278736..7f26c9a 100644
+> --- a/arch/x86/kernel/apic/apic.c
+> +++ b/arch/x86/kernel/apic/apic.c
+> @@ -1982,21 +1989,20 @@ static inline void __smp_error_interrupt(struct pt_regs *regs)
+>  	};
+>  
+>  	/* First tickle the hardware, only then report what went on. -- REW */
+> -	v0 = apic_read(APIC_ESR);
+>  	apic_write(APIC_ESR, 0);
+> -	v1 = apic_read(APIC_ESR);
+> +	v = apic_read(APIC_ESR);
+>  	ack_APIC_irq();
+>  	atomic_inc(&irq_err_count);
+>  
+> -	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x(%02x)",
+> -		    smp_processor_id(), v0 , v1);
+> +	apic_printk(APIC_DEBUG, KERN_DEBUG "APIC error on CPU%d: %02x",
+> +		    smp_processor_id(), v);
+>  
+> -	v1 = v1 & 0xff;
+> -	while (v1) {
+> -		if (v1 & 0x1)
+> +	v &= 0xff;
+> +	while (v) {
+> +		if (v & 0x1)
+>  			apic_printk(APIC_DEBUG, KERN_CONT " : %s", error_interrupt_reason[i]);
+>  		i++;
+> -		v1 >>= 1;
+> +		v >>= 1;
+>  	}
+>  
+>  	apic_printk(APIC_DEBUG, KERN_CONT "\n");
 
----------- systemd-204/src/udev/udevd.c start ----------
-(...snipped...)
-                        /* check for hanging events */
-                        udev_list_node_foreach(loop, &worker_list) {
-                                struct worker *worker = node_to_worker(loop);
+ Sorry to come up with this so late, I've been cleaning up my mailbox from 
+old mailing traffic and came across your change only now.
 
-                                if (worker->state != WORKER_RUNNING)
-                                        continue;
+ I'm afraid this interferes with an old Pentium APIC erratum:
 
-                                if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
-                                        log_error("worker [%u] %s timeout; kill it\n", worker->pid,
-                                            worker->event ? worker->event->devpath : "<idle>");
-                                        kill(worker->pid, SIGKILL);
-                                        worker->state = WORKER_KILLED;
-                                        /* drop reference taken for state 'running' */
-                                        worker_unref(worker);
-                                        if (worker->event) {
-                                                log_error("seq %llu '%s' killed\n",
-                                                          udev_device_get_seqnum(worker->event->dev), worker->event->devpath);
-                                                worker->event->exitcode = -64;
-                                                event_queue_delete(worker->event, true);
-                                                worker->event = NULL;
-                                        }
-                                }
-                        }
-(...snipped...)
----------- systemd-204/src/udev/udevd.c end ----------
+"3AP. Writes to Error Register Clears Register
+
+PROBLEM: The APIC Error register is intended to only be read.  If there is 
+a write to this register the data in the APIC Error register will be 
+cleared and lost.
+
+IMPLICATION: There is a possibility of clearing the Error register status 
+since the write to the register is not specifically blocked.
+
+WORKAROUND: Writes should not occur to the Pentium processor APIC Error 
+register.
+
+STATUS: For the steppings affected see the Summary Table of Changes at the 
+beginning of this section."
+
+The steppings affected are actually: B1, B3 and B5.  Do we want to keep 
+supporting them?  I think yes, we already handle the erratum elsewhere 
+(lapic_setup_esr).  So how about:
+
+	if (lapic_get_maxlvt() > 3)	/* Due to the Pentium erratum 3AP. */
+		apic_write(APIC_ESR, 0);
+	v = apic_read(APIC_ESR);
+
+instead?  I can make a patch if that would make your life easier.
+
+ There's room for optimisation here, but I think it's not worth the effort 
+as this is a slow path, APIC error interrupts are not supposed to happen 
+and are I believe extremely uncommon with FSB message delivery.
+
+  Maciej
