@@ -1,194 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752661AbaCWTOY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:14:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:5159 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbaCWTJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:09:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
-   d="scan'208";a="497904588"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	id S1752680AbaCWTOw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:14:52 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:60377 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751639AbaCWTOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:14:48 -0400
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v7 15/22] Remove CONFIG_EXT2_FS_XIP and rename CONFIG_FS_XIP to CONFIG_FS_DAX
-Date: Sun, 23 Mar 2014 15:08:41 -0400
-Message-Id: <ff35fb6b662af013eddeb295a01258b42ccaa5ae.1395591795.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH] net/mac80211: Use RCU_INIT_POINTER(x, NULL) in cfg.c
+Date: Mon, 24 Mar 2014 00:43:48 +0530
+Message-Id: <1395602028-12863-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fewer Kconfig options we have the better.  Use the generic
-CONFIG_FS_DAX to enable XIP support in ext2 as well as in the core.
+This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+The rcu_assign_pointer() ensures that the initialization of a structure       
+is carried out before storing a pointer to that structure. 
+And in the case of the NULL pointer, there is no structure to initialize. 
+So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/Kconfig         | 21 ++++++++++++++-------
- fs/Makefile        |  2 +-
- fs/ext2/Kconfig    | 11 -----------
- fs/ext2/ext2.h     |  2 +-
- fs/ext2/file.c     |  4 ++--
- fs/ext2/super.c    |  4 ++--
- include/linux/fs.h |  4 ++--
- 7 files changed, 22 insertions(+), 26 deletions(-)
+ net/mac80211/cfg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/Kconfig b/fs/Kconfig
-index 7385e54..620ab73 100644
---- a/fs/Kconfig
-+++ b/fs/Kconfig
-@@ -13,13 +13,6 @@ if BLOCK
- source "fs/ext2/Kconfig"
- source "fs/ext3/Kconfig"
- source "fs/ext4/Kconfig"
--
--config FS_XIP
--# execute in place
--	bool
--	depends on EXT2_FS_XIP
--	default y
--
- source "fs/jbd/Kconfig"
- source "fs/jbd2/Kconfig"
+diff --git a/net/mac80211/cfg.c b/net/mac80211/cfg.c
+index 1acb291..e92aeea 100644
+--- a/net/mac80211/cfg.c
++++ b/net/mac80211/cfg.c
+@@ -1566,7 +1566,7 @@ static int ieee80211_change_station(struct wiphy *wiphy,
  
-@@ -40,6 +33,20 @@ source "fs/ocfs2/Kconfig"
- source "fs/btrfs/Kconfig"
- source "fs/nilfs2/Kconfig"
+ 		if (sta->sdata->vif.type == NL80211_IFTYPE_AP_VLAN &&
+ 		    sta->sdata->u.vlan.sta) {
+-			rcu_assign_pointer(sta->sdata->u.vlan.sta, NULL);
++			RCU_INIT_POINTER(sta->sdata->u.vlan.sta, NULL);
+ 			prev_4addr = true;
+ 		}
  
-+config FS_DAX
-+	bool "Direct Access support"
-+	depends on MMU
-+	help
-+	  Direct Access (DAX) can be used on memory-backed block devices.
-+	  If the block device supports DAX and the filesystem supports DAX,
-+	  then you can avoid using the pagecache to buffer I/Os.  Turning
-+	  on this option will compile in support for DAX; you will need to
-+	  mount the filesystem using the -o xip option.
-+
-+	  If you do not have a block device that is capable of using this,
-+	  or if unsure, say N.  Saying Y will increase the size of the kernel
-+	  by about 2kB.
-+
- endif # BLOCK
- 
- # Posix ACL utility routines
-diff --git a/fs/Makefile b/fs/Makefile
-index 2f194cd..b7e0a13 100644
---- a/fs/Makefile
-+++ b/fs/Makefile
-@@ -29,7 +29,7 @@ obj-$(CONFIG_SIGNALFD)		+= signalfd.o
- obj-$(CONFIG_TIMERFD)		+= timerfd.o
- obj-$(CONFIG_EVENTFD)		+= eventfd.o
- obj-$(CONFIG_AIO)               += aio.o
--obj-$(CONFIG_FS_XIP)		+= dax.o
-+obj-$(CONFIG_FS_DAX)		+= dax.o
- obj-$(CONFIG_FILE_LOCKING)      += locks.o
- obj-$(CONFIG_COMPAT)		+= compat.o compat_ioctl.o
- obj-$(CONFIG_BINFMT_AOUT)	+= binfmt_aout.o
-diff --git a/fs/ext2/Kconfig b/fs/ext2/Kconfig
-index 14a6780..c634874e 100644
---- a/fs/ext2/Kconfig
-+++ b/fs/ext2/Kconfig
-@@ -42,14 +42,3 @@ config EXT2_FS_SECURITY
- 
- 	  If you are not using a security module that requires using
- 	  extended attributes for file security labels, say N.
--
--config EXT2_FS_XIP
--	bool "Ext2 execute in place support"
--	depends on EXT2_FS && MMU
--	help
--	  Execute in place can be used on memory-backed block devices. If you
--	  enable this option, you can select to mount block devices which are
--	  capable of this feature without using the page cache.
--
--	  If you do not use a block device that is capable of using this,
--	  or if unsure, say N.
-diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-index 5ecf570..b30c3bd 100644
---- a/fs/ext2/ext2.h
-+++ b/fs/ext2/ext2.h
-@@ -380,7 +380,7 @@ struct ext2_inode {
- #define EXT2_MOUNT_NO_UID32		0x000200  /* Disable 32-bit UIDs */
- #define EXT2_MOUNT_XATTR_USER		0x004000  /* Extended user attributes */
- #define EXT2_MOUNT_POSIX_ACL		0x008000  /* POSIX Access Control Lists */
--#ifdef CONFIG_FS_XIP
-+#ifdef CONFIG_FS_DAX
- #define EXT2_MOUNT_XIP			0x010000  /* Execute in place */
- #else
- #define EXT2_MOUNT_XIP			0
-diff --git a/fs/ext2/file.c b/fs/ext2/file.c
-index e3ce10d..ae7f000 100644
---- a/fs/ext2/file.c
-+++ b/fs/ext2/file.c
-@@ -25,7 +25,7 @@
- #include "xattr.h"
- #include "acl.h"
- 
--#ifdef CONFIG_EXT2_FS_XIP
-+#ifdef CONFIG_FS_DAX
- static int ext2_dax_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- {
- 	return dax_fault(vma, vmf, ext2_get_block);
-@@ -109,7 +109,7 @@ const struct file_operations ext2_file_operations = {
- 	.splice_write	= generic_file_splice_write,
- };
- 
--#ifdef CONFIG_EXT2_FS_XIP
-+#ifdef CONFIG_FS_DAX
- const struct file_operations ext2_xip_file_operations = {
- 	.llseek		= generic_file_llseek,
- 	.read		= do_sync_read,
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 752ccb4..fdcacf7 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -287,7 +287,7 @@ static int ext2_show_options(struct seq_file *seq, struct dentry *root)
- 		seq_puts(seq, ",grpquota");
- #endif
- 
--#if defined(CONFIG_EXT2_FS_XIP)
-+#ifdef CONFIG_FS_DAX
- 	if (sbi->s_mount_opt & EXT2_MOUNT_XIP)
- 		seq_puts(seq, ",xip");
- #endif
-@@ -549,7 +549,7 @@ static int parse_options(char *options, struct super_block *sb)
- 			break;
- #endif
- 		case Opt_xip:
--#ifdef CONFIG_EXT2_FS_XIP
-+#ifdef CONFIG_FS_DAX
- 			set_opt (sbi->s_mount_opt, XIP);
- #else
- 			ext2_msg(sb, KERN_INFO, "xip option not supported");
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index aeab3fda..bff394d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1681,7 +1681,7 @@ struct super_operations {
- #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
--#ifdef CONFIG_FS_XIP
-+#ifdef CONFIG_FS_DAX
- #define IS_DAX(inode)		((inode)->i_flags & S_DAX)
- #else
- #define IS_DAX(inode)		0
-@@ -2519,7 +2519,7 @@ extern loff_t fixed_size_llseek(struct file *file, loff_t offset,
- extern int generic_file_open(struct inode * inode, struct file * filp);
- extern int nonseekable_open(struct inode * inode, struct file * filp);
- 
--#ifdef CONFIG_FS_XIP
-+#ifdef CONFIG_FS_DAX
- int dax_clear_blocks(struct inode *, sector_t block, long size);
- int dax_truncate_page(struct inode *, loff_t from, get_block_t);
- ssize_t dax_do_io(int rw, struct kiocb *, struct inode *, const struct iovec *,
 -- 
-1.9.0
+1.7.9.5
 
