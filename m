@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608AbaCWSNU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:13:20 -0400
-Received: from relay5-d.mail.gandi.net ([217.70.183.197]:45010 "EHLO
-	relay5-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752358AbaCWSNT (ORCPT
+	id S1750946AbaCWS0Y (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:26:24 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:49356 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749AbaCWS0W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:13:19 -0400
-X-Originating-IP: 50.43.32.211
-Date: Sun, 23 Mar 2014 11:13:10 -0700
-From: Josh Triplett <josh@freedesktop.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [patch 06/16] rcu: torture: Add missing destroy_timer_on_stack()
-Message-ID: <20140323181309.GA11914@leaf>
-References: <20140323150557.288925975@linutronix.de>
- <20140323150753.205530990@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140323150753.205530990@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sun, 23 Mar 2014 14:26:22 -0400
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
+        ogerlitz@mellanox.com, mschmidt@redhat.com, erezsh@mellanox.com,
+        jinpu.wang@profitbricks.com, dledford@redhat.com, foraker1@llnl.gov,
+        kaber@trash.net, linux-rdma@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/infiniband: Use RCU_INIT_POINTER(x, NULL) in ulp/ipoib/ipoib_main.c
+Date: Sun, 23 Mar 2014 23:55:19 +0530
+Message-Id: <1395599119-6731-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 03:09:27PM -0000, Thomas Gleixner wrote:
-> Otherwise we leak a tracking object if DEBUG_OBJECTS is enabled.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Josh Triplett <josh@freedesktop.org>
-> Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+The rcu_assign_pointer() ensures that the initialization of a structure       
+is carried out before storing a pointer to that structure. 
+And in the case of the NULL pointer, there is no structure to initialize. 
+So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
 
->  kernel/rcu/torture.c |    4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> Index: tip/kernel/rcu/torture.c
-> ===================================================================
-> --- tip.orig/kernel/rcu/torture.c
-> +++ tip/kernel/rcu/torture.c
-> @@ -1038,8 +1038,10 @@ rcu_torture_reader(void *arg)
->  	} while (!kthread_should_stop() && fullstop == FULLSTOP_DONTSTOP);
->  	VERBOSE_PRINTK_STRING("rcu_torture_reader task stopping");
->  	rcutorture_shutdown_absorb("rcu_torture_reader");
-> -	if (irqreader && cur_ops->irq_capable)
-> +	if (irqreader && cur_ops->irq_capable) {
->  		del_timer_sync(&t);
-> +		destroy_timer_on_stack(&t);
-> +	}
->  	while (!kthread_should_stop())
->  		schedule_timeout_uninterruptible(1);
->  	return 0;
-> 
-> 
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+---
+ drivers/infiniband/ulp/ipoib/ipoib_main.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+index 5786a78..64cd5b5 100644
+--- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
++++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
+@@ -1229,7 +1229,7 @@ static void ipoib_flush_neighs(struct ipoib_dev_priv *priv)
+ 	}
+ 
+ free_htbl:
+-	rcu_assign_pointer(ntbl->htbl, NULL);
++	RCU_INIT_POINTER(ntbl->htbl, NULL);
+ 	call_rcu(&htbl->rcu, neigh_hash_free_rcu);
+ 
+ out_unlock:
+-- 
+1.7.9.5
+
