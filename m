@@ -1,119 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752690AbaCWTUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:20:06 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9372 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbaCWTJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:09:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
-   d="scan'208";a="505021418"
-From: Matthew Wilcox <matthew.r.wilcox@intel.com>
-To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+	id S1752869AbaCWTUV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:20:21 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:59198 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348AbaCWTUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:20:14 -0400
+From: Monam Agarwal <monamagarwal123@gmail.com>
+To: linville@tuxdriver.com, johannes@sipsolutions.net, davem@davemloft.net,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
-Subject: [PATCH v7 05/22] Introduce IS_DAX(inode)
-Date: Sun, 23 Mar 2014 15:08:31 -0400
-Message-Id: <6a8918c9a0fb37882179e3699b3e04d96540b24f.1395591795.git.matthew.r.wilcox@intel.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-In-Reply-To: <cover.1395591795.git.matthew.r.wilcox@intel.com>
-References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+Subject: [PATCH] net/mac80211: Use RCU_INIT_POINTER(x, NULL) in mesh.c
+Date: Mon, 24 Mar 2014 00:49:13 +0530
+Message-Id: <1395602353-14254-1-git-send-email-monamagarwal123@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use an inode flag to tag inodes which should avoid using the page cache.
-Convert ext2 to use it instead of mapping_is_xip().
+This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 
-Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+The rcu_assign_pointer() ensures that the initialization of a structure       
+is carried out before storing a pointer to that structure. 
+And in the case of the NULL pointer, there is no structure to initialize. 
+So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+
+Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- fs/ext2/inode.c    | 9 ++++++---
- fs/ext2/xip.h      | 2 --
- include/linux/fs.h | 6 ++++++
- 3 files changed, 12 insertions(+), 5 deletions(-)
+ net/mac80211/mesh.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext2/inode.c b/fs/ext2/inode.c
-index 94ed3684..e7d3192 100644
---- a/fs/ext2/inode.c
-+++ b/fs/ext2/inode.c
-@@ -731,7 +731,7 @@ static int ext2_get_blocks(struct inode *inode,
- 		goto cleanup;
+diff --git a/net/mac80211/mesh.c b/net/mac80211/mesh.c
+index f70e9cd..387f61c 100644
+--- a/net/mac80211/mesh.c
++++ b/net/mac80211/mesh.c
+@@ -829,7 +829,7 @@ void ieee80211_stop_mesh(struct ieee80211_sub_if_data *sdata)
+ 	ieee80211_bss_info_change_notify(sdata, BSS_CHANGED_BEACON_ENABLED);
+ 	bcn = rcu_dereference_protected(ifmsh->beacon,
+ 					lockdep_is_held(&sdata->wdev.mtx));
+-	rcu_assign_pointer(ifmsh->beacon, NULL);
++	RCU_INIT_POINTER(ifmsh->beacon, NULL);
+ 	kfree_rcu(bcn, rcu_head);
+ 
+ 	/* flush STAs and mpaths on this iface */
+@@ -1068,7 +1068,7 @@ int ieee80211_mesh_finish_csa(struct ieee80211_sub_if_data *sdata)
+ 
+ 	/* Remove the CSA and MCSP elements from the beacon */
+ 	tmp_csa_settings = rcu_dereference(ifmsh->csa);
+-	rcu_assign_pointer(ifmsh->csa, NULL);
++	RCU_INIT_POINTER(ifmsh->csa, NULL);
+ 	if (tmp_csa_settings)
+ 		kfree_rcu(tmp_csa_settings, rcu_head);
+ 	ret = ieee80211_mesh_rebuild_beacon(sdata);
+@@ -1102,7 +1102,7 @@ int ieee80211_mesh_csa_beacon(struct ieee80211_sub_if_data *sdata,
+ 	ret = ieee80211_mesh_rebuild_beacon(sdata);
+ 	if (ret) {
+ 		tmp_csa_settings = rcu_dereference(ifmsh->csa);
+-		rcu_assign_pointer(ifmsh->csa, NULL);
++		RCU_INIT_POINTER(ifmsh->csa, NULL);
+ 		kfree_rcu(tmp_csa_settings, rcu_head);
+ 		return ret;
  	}
- 
--	if (ext2_use_xip(inode->i_sb)) {
-+	if (IS_DAX(inode)) {
- 		/*
- 		 * we need to clear the block
- 		 */
-@@ -1201,7 +1201,7 @@ static int ext2_setsize(struct inode *inode, loff_t newsize)
- 
- 	inode_dio_wait(inode);
- 
--	if (mapping_is_xip(inode->i_mapping))
-+	if (IS_DAX(inode))
- 		error = xip_truncate_page(inode->i_mapping, newsize);
- 	else if (test_opt(inode->i_sb, NOBH))
- 		error = nobh_truncate_page(inode->i_mapping,
-@@ -1273,7 +1273,8 @@ void ext2_set_inode_flags(struct inode *inode)
- {
- 	unsigned int flags = EXT2_I(inode)->i_flags;
- 
--	inode->i_flags &= ~(S_SYNC|S_APPEND|S_IMMUTABLE|S_NOATIME|S_DIRSYNC);
-+	inode->i_flags &= ~(S_SYNC | S_APPEND | S_IMMUTABLE | S_NOATIME |
-+				S_DIRSYNC | S_DAX);
- 	if (flags & EXT2_SYNC_FL)
- 		inode->i_flags |= S_SYNC;
- 	if (flags & EXT2_APPEND_FL)
-@@ -1284,6 +1285,8 @@ void ext2_set_inode_flags(struct inode *inode)
- 		inode->i_flags |= S_NOATIME;
- 	if (flags & EXT2_DIRSYNC_FL)
- 		inode->i_flags |= S_DIRSYNC;
-+	if (test_opt(inode->i_sb, XIP))
-+		inode->i_flags |= S_DAX;
- }
- 
- /* Propagate flags from i_flags to EXT2_I(inode)->i_flags */
-diff --git a/fs/ext2/xip.h b/fs/ext2/xip.h
-index 18b34d2..29be737 100644
---- a/fs/ext2/xip.h
-+++ b/fs/ext2/xip.h
-@@ -16,9 +16,7 @@ static inline int ext2_use_xip (struct super_block *sb)
- }
- int ext2_get_xip_mem(struct address_space *, pgoff_t, int,
- 				void **, unsigned long *);
--#define mapping_is_xip(map) unlikely(map->a_ops->get_xip_mem)
- #else
--#define mapping_is_xip(map)			0
- #define ext2_xip_verify_sb(sb)			do { } while (0)
- #define ext2_use_xip(sb)			0
- #define ext2_clear_xip_target(inode, chain)	0
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 23b2a35..47fd219 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1644,6 +1644,7 @@ struct super_operations {
- #define S_IMA		1024	/* Inode has an associated IMA struct */
- #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
- #define S_NOSEC		4096	/* no suid or xattr security attributes */
-+#define S_DAX		8192	/* Direct Access, avoiding the page cache */
- 
- /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -1681,6 +1682,11 @@ struct super_operations {
- #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
- #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
- #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
-+#ifdef CONFIG_FS_XIP
-+#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
-+#else
-+#define IS_DAX(inode)		0
-+#endif
- 
- /*
-  * Inode state bits.  Protected by inode->i_lock
 -- 
-1.9.0
+1.7.9.5
 
