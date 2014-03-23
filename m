@@ -1,67 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbaCWE1I (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 00:27:08 -0400
-Received: from gate.crashing.org ([63.228.1.57]:50058 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893AbaCWE1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 00:27:06 -0400
-Message-ID: <1395543973.3460.96.camel@pasglop>
-Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
- actual Kconfig
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, Tony Luck <tony.luck@intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-s390@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux390@de.ibm.com, linux-arm-kernel@lists.infradead.org
-Date: Sun, 23 Mar 2014 14:06:13 +1100
-In-Reply-To: <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
-References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org>
-	 <1395512032-20575-2-git-send-email-lauraa@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751604AbaCWEgw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 00:36:52 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55045 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750817AbaCWEgt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 00:36:49 -0400
+Date: Sun, 23 Mar 2014 04:36:43 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Imre Deak <imre.deak@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dcache: fix dpath buffer corruption for too small buffers
+Message-ID: <20140323043643.GA25566@ZenIV.linux.org.uk>
+References: <1394666986-24727-1-git-send-email-imre.deak@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1394666986-24727-1-git-send-email-imre.deak@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-03-22 at 11:13 -0700, Laura Abbott wrote:
-> Rather than have architectures #define ARCH_HAS_SG_CHAIN in an architecture
-> specific scatterlist.h, make it a proper Kconfig option and use that
-> instead. At same time, remove the header files are are now mostly
-> useless and just include asm-generic/scatterlist.h.
+On Thu, Mar 13, 2014 at 01:29:46AM +0200, Imre Deak wrote:
+> During dentry path lookups we can end up corrupting memory if the
+> destination path buffer is too small. This is because prepend_path()
+> and prepend() adjust the passed buffer length unconditionally, allowing
+> for the buffer length to go negative. Then a later prepend_name() call
+> will receive a negative length and convert this to unsigned before
+> comparing it against the source string length leading to a possible
+> memory corruption preceeding the destination buffer.
 > 
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 265e0ce..4015fd9 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -2833,7 +2833,8 @@ static int prepend_name(char **buffer, int *buflen, struct qstr *name)
+>  	u32 dlen = ACCESS_ONCE(name->len);
+>  	char *p;
+>  
+> -	if (*buflen < dlen + 1)
+> +	/* make sure we don't convert a negative value to unsigned int */
+> +	if (*buflen < 0 || *buflen < dlen + 1)
+>  		return -ENAMETOOLONG;
+>  	*buflen -= dlen + 1;
 
-For powerpc
+It's much easier to fix, actually.  Look at the callers of prepend_name();
+when it returns a negative value, they either discard the value left in
+*buflen (__dentry_path()) or pass it back to their caller and return a
+negative value themselves (prepend_path()).  The same is true for
+prepend_path() (discared in __d_path(), d_absolute_path(), sys_getcwd();
+passed to caller with negative return value in path_with_deleted()) and
+path_with_deleted() (the only caller is d_path() and it always discards).
 
-Acked-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: "James E.J. Bottomley" <JBottomley@parallels.com>
-> Cc: Fenghua Yu <fenghua.yu@intel.com>
-> Cc: Tony Luck <tony.luck@intel.com>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Laura Abbott <lauraa@codeaurora.org>
-
-
+In other words, when prepend_name() returns -ENAMETOOLONG, it is free to
+leave whatever it wants in *buflen.  So let's do what prepend() does -
+subtract from *buflen, then check if the result has become negative.
+Generates a better code than the original, actually...
