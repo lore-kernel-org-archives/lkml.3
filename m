@@ -1,113 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaCWMPo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 08:15:44 -0400
-Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:57493 "EHLO
-	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbaCWMPm (ORCPT
+	id S1751949AbaCWNwH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 09:52:07 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:27189 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbaCWNwE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 08:15:42 -0400
-Date: Sun, 23 Mar 2014 13:15:41 +0100
-From: Andreas Mohr <andi@lisas.de>
-To: Andreas Mohr <andi@lisas.de>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
- mga_driver_irq_uninstall)
-Message-ID: <20140323121541.GA20971@rhlx01.hs-esslingen.de>
-References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
- <20140322234317.GA10483@rhlx01.hs-esslingen.de>
+	Sun, 23 Mar 2014 09:52:04 -0400
+Message-ID: <532EE6E4.8070903@oracle.com>
+Date: Sun, 23 Mar 2014 09:51:32 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140322234317.GA10483@rhlx01.hs-esslingen.de>
-X-Priority: none
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg KH <greg@kroah.com>, Tejun Heo <tj@kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Minchan Kim <minchan@kernel.org>
+Subject: mm: kswapd/kernfs possible deadlock
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi all,
 
-On Sun, Mar 23, 2014 at 12:43:17AM +0100, Andreas Mohr wrote:
-> Hi,
-> 
-> now testing 3.14-rc7 here (r128 hardware rather than MGA),
-> and I seem to still be experiencing the same or very similar crash as you here:
+While fuzzing with trinity inside KVM tools guest running latest -next kernel
+I've stumbled on the following:
 
-I decided to do some more experimentation:
+[ 1336.998827] ======================================================
+[ 1337.000394] [ INFO: possible circular locking dependency detected ]
+[ 1337.001425] 3.14.0-rc7-next-20140321-sasha-00018-g0516fe6-dirty #265 Tainted: G        W
+[ 1337.001964] -------------------------------------------------------
+[ 1337.001964] trinity-c24/33631 is trying to acquire lock:
+[ 1337.001964]  (&pgdat->kswapd_wait){..-.-.}, at: __wake_up (kernel/sched/wait.c:94)
+[ 1337.001964]
+[ 1337.001964] but task is already holding lock:
+[ 1337.001964]  (&(&n->list_lock)->rlock){-.-.-.}, at: list_locations (mm/slub.c:4159)
+[ 1337.001964]
+[ 1337.001964] which lock already depends on the new lock.
+[ 1337.001964]
+[ 1337.001964]
+[ 1337.001964] the existing dependency chain (in reverse order) is:
+[ 1337.001964]
+-> #3 (&(&n->list_lock)->rlock){-.-.-.}:
+[ 1337.001964]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1337.001964]        _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[ 1337.001964]        get_partial_node.isra.35 (mm/slub.c:1623)
+[ 1337.001964]        __slab_alloc (mm/slub.c:1725 mm/slub.c:2193 mm/slub.c:2359)
+[ 1337.001964]        kmem_cache_alloc (mm/slub.c:2465 mm/slub.c:2476 mm/slub.c:2481)
+[ 1337.001964]        __debug_object_init (lib/debugobjects.c:97 lib/debugobjects.c:311)
+[ 1337.001964]        debug_object_init (lib/debugobjects.c:364)
+[ 1337.001964]        hrtimer_init (kernel/hrtimer.c:432 include/linux/jump_label.h:105 include/trace/events/timer.h:130 kernel/hrtimer.c:477 kernel/hrtimer.c:1199)
+[ 1337.001964]        __sched_fork (kernel/sched/core.c:1732)
+[ 1337.001964]        init_idle (kernel/sched/core.c:4483)
+[ 1337.001964]        fork_idle (kernel/fork.c:1566)
+[ 1337.001964]        idle_threads_init (kernel/smpboot.c:54 kernel/smpboot.c:72)
+[ 1337.001964]        smp_init (kernel/smp.c:493)
+[ 1337.001964]        kernel_init_freeable (init/main.c:757 init/main.c:910)
+[ 1337.001964]        kernel_init (init/main.c:842)
+[ 1337.001964]        ret_from_fork (arch/x86/kernel/entry_64.S:555)
+[ 1337.001964]
+-> #2 (&rq->lock){-.-.-.}:
+[ 1337.001964]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1337.001964]        _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
+[ 1337.001964]        wake_up_new_task (include/linux/sched.h:2884 kernel/sched/core.c:313 kernel/sched/core.c:2014)
+[ 1337.001964]        do_fork (kernel/fork.c:1627)
+[ 1337.001964]        kernel_thread (kernel/fork.c:1647)
+[ 1337.001964]        rest_init (init/main.c:383)
+[ 1337.001964]        start_kernel (init/main.c:653)
+[ 1337.001964]        x86_64_start_reservations (arch/x86/kernel/head64.c:194)
+[ 1337.001964]        x86_64_start_kernel (arch/x86/kernel/head64.c:183)
+[ 1337.001964]
+-> #1 (&p->pi_lock){-.-.-.}:
+[ 1337.001964]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1337.001964]        _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+[ 1337.001964]        try_to_wake_up (kernel/sched/core.c:1592)
+[ 1337.001964]        default_wake_function (kernel/sched/core.c:2846)
+[ 1337.001964]        autoremove_wake_function (kernel/sched/wait.c:294)
+[ 1337.001964]        __wake_up_common (kernel/sched/wait.c:72)
+[ 1337.001964]        __wake_up (include/linux/spinlock.h:358 kernel/sched/wait.c:95)
+[ 1337.001964]        wakeup_kswapd (mm/vmscan.c:3328)
+[ 1337.001964]        __alloc_pages_slowpath (mm/page_alloc.c:2429 mm/page_alloc.c:2530)
+[ 1337.001964]        __alloc_pages_nodemask (mm/page_alloc.c:2767)
+[ 1337.001964]        alloc_pages_current (mm/mempolicy.c:2055)
+[ 1337.001964]        __vmalloc_node_range (include/linux/gfp.h:339 mm/vmalloc.c:1594 mm/vmalloc.c:1650)
+[ 1337.001964]        __vmalloc_node (mm/vmalloc.c:1696)
+[ 1337.001964]        vmalloc (mm/vmalloc.c:1725)
+[ 1337.001964]        SyS_init_module (kernel/module.c:2508 kernel/module.c:3342 kernel/module.c:3330)
+[ 1337.001964]        tracesys (arch/x86/kernel/entry_64.S:749)
+[ 1337.001964]
+-> #0 (&pgdat->kswapd_wait){..-.-.}:
+[ 1337.001964]        __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+[ 1337.001964]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1337.001964]        _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+[ 1337.001964]        __wake_up (kernel/sched/wait.c:94)
+[ 1337.001964]        wakeup_kswapd (mm/vmscan.c:3328)
+[ 1337.001964]        __alloc_pages_slowpath (mm/page_alloc.c:2429 mm/page_alloc.c:2530)
+[ 1337.001964]        __alloc_pages_nodemask (mm/page_alloc.c:2767)
+[ 1337.001964]        alloc_pages_current (mm/mempolicy.c:2055)
+[ 1337.001964]        __get_free_pages (mm/page_alloc.c:2804)
+[ 1337.001964]        alloc_loc_track (mm/slub.c:4030)
+[ 1337.001964]        process_slab (mm/slub.c:4096 mm/slub.c:4130)
+[ 1337.001964]        list_locations (mm/slub.c:4160)
+[ 1337.001964]        alloc_calls_show (mm/slub.c:4765)
+[ 1337.001964]        slab_attr_show (mm/slub.c:5011)
+[ 1337.001964]        sysfs_kf_seq_show (fs/sysfs/file.c:63)
+[ 1337.001964]        kernfs_seq_show (fs/kernfs/file.c:155)
+[ 1337.001964]        seq_read (fs/seq_file.c:223)
+[ 1337.001964]        kernfs_fop_read (fs/kernfs/file.c:230)
+[ 1337.001964]        vfs_read (fs/read_write.c:408)
+[ 1337.001964]        SyS_read (fs/read_write.c:519 fs/read_write.c:511)
+[ 1337.001964]        tracesys (arch/x86/kernel/entry_64.S:749)
+[ 1337.001964]
+[ 1337.001964] other info that might help us debug this:
+[ 1337.001964]
+[ 1337.001964] Chain exists of:
+&pgdat->kswapd_wait --> &rq->lock --> &(&n->list_lock)->rlock
 
-I added a
+[ 1337.001964]  Possible unsafe locking scenario:
+[ 1337.001964]
+[ 1337.001964]        CPU0                    CPU1
+[ 1337.001964]        ----                    ----
+[ 1337.001964]   lock(&(&n->list_lock)->rlock);
+[ 1337.001964]                                lock(&rq->lock);
+[ 1337.001964]                                lock(&(&n->list_lock)->rlock);
+[ 1337.001964]   lock(&pgdat->kswapd_wait);
+[ 1337.001964]
+[ 1337.001964]  *** DEADLOCK ***
+[ 1337.001964]
+[ 1337.001964] 5 locks held by trinity-c24/33631:
+[ 1337.001964]  #0:  (&f->f_pos_lock){+.+.+.}, at: __fdget_pos (fs/file.c:736)
+[ 1337.001964]  #1:  (&p->lock){+.+.+.}, at: seq_read (fs/seq_file.c:175)
+[ 1337.001964]  #2:  (&of->mutex){+.+.+.}, at: kernfs_seq_start (fs/kernfs/file.c:99)
+[ 1337.001964]  #3:  (s_active#87){++++.+}, at: kernfs_seq_start (fs/kernfs/file.c:99)
+[ 1337.001964]  #4:  (&(&n->list_lock)->rlock){-.-.-.}, at: list_locations (mm/slub.c:4159)
+[ 1337.001964]
+[ 1337.001964] stack backtrace:
+[ 1337.001964] CPU: 24 PID: 33631 Comm: trinity-c24 Tainted: G        W     3.14.0-rc7-next-20140321-sasha-00018-g0516fe6-dirty #265
+[ 1337.001964]  ffffffff87972190 ffff88032f1d37e8 ffffffff844b0f37 0000000000000000
+[ 1337.001964]  ffffffff879d65d0 ffff88032f1d3838 ffffffff844a398b 0000000000000005
+[ 1337.001964]  ffff88032f1d38c8 ffff88032f1d3838 ffff8803462f8dd0 ffff8803462f8e08
+[ 1337.001964] Call Trace:
+[ 1337.001964]  dump_stack (lib/dump_stack.c:52)
+[ 1337.001964]  print_circular_bug (kernel/locking/lockdep.c:1216)
+[ 1337.001964]  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+[ 1337.001964]  ? __bfs (kernel/locking/lockdep.c:1030)
+[ 1337.001964]  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[ 1337.001964]  ? __wake_up (kernel/sched/wait.c:94)
+[ 1337.001964]  ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
+[ 1337.001964]  _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
+[ 1337.001964]  ? __wake_up (kernel/sched/wait.c:94)
+[ 1337.001964]  ? zone_watermark_ok_safe (mm/page_alloc.c:1741)
+[ 1337.001964]  __wake_up (kernel/sched/wait.c:94)
+[ 1337.001964]  wakeup_kswapd (mm/vmscan.c:3328)
+[ 1337.001964]  __alloc_pages_slowpath (mm/page_alloc.c:2429 mm/page_alloc.c:2530)
+[ 1337.001964]  ? get_page_from_freelist (mm/page_alloc.c:1940)
+[ 1337.001964]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[ 1337.001964]  ? sched_clock_local (kernel/sched/clock.c:214)
+[ 1337.001964]  __alloc_pages_nodemask (mm/page_alloc.c:2767)
+[ 1337.001964]  alloc_pages_current (mm/mempolicy.c:2055)
+[ 1337.001964]  ? __get_free_pages (mm/page_alloc.c:2804)
+[ 1337.001964]  ? get_parent_ip (kernel/sched/core.c:2472)
+[ 1337.001964]  __get_free_pages (mm/page_alloc.c:2804)
+[ 1337.001964]  alloc_loc_track (mm/slub.c:4030)
+[ 1337.001964]  process_slab (mm/slub.c:4096 mm/slub.c:4130)
+[ 1337.001964]  ? list_locations (mm/slub.c:4159)
+[ 1337.001964]  list_locations (mm/slub.c:4160)
+[ 1337.001964]  alloc_calls_show (mm/slub.c:4765)
+[ 1337.001964]  slab_attr_show (mm/slub.c:5011)
+[ 1337.001964]  sysfs_kf_seq_show (fs/sysfs/file.c:63)
+[ 1337.001964]  kernfs_seq_show (fs/kernfs/file.c:155)
+[ 1337.001964]  seq_read (fs/seq_file.c:223)
+[ 1337.001964]  kernfs_fop_read (fs/kernfs/file.c:230)
+[ 1337.001964]  vfs_read (fs/read_write.c:408)
+[ 1337.001964]  SyS_read (fs/read_write.c:519 fs/read_write.c:511)
+[ 1337.001964]  tracesys (arch/x86/kernel/entry_64.S:749)
 
-Section "Module"
-        Disable "dri"
-EndSection
-
-which did reliably disable dri according to 3.12.0-rc2+ xdpyinfo / Xorg.0.log
-
-On -rc7 however, this changed the issue from a kernel OOPS into merely a
-Xorg.0.log trace and abort (no such issue on working kernel
-given my userspace configuration!):
-
-[    68.334] Backtrace:
-[    68.335] 0: /usr/bin/X (xorg_backtrace+0x49) [0xb7767769]
-[    68.335] 1: /usr/bin/X (0xb75ea000+0x181186) [0xb776b186]
-[    68.335] 2: linux-gate.so.1 (__kernel_rt_sigreturn+0x0) [0xffffe40c]
-[    68.335] 3: /usr/lib/i386-linux-gnu/libpixman-1.so.0 (0xb7430000+0x727c0) [0xb74a27c0]
-[    68.335] 4: /usr/lib/i386-linux-gnu/libpixman-1.so.0 (0xb7430000+0x57abf) [0xb7487abf]
-[    68.335] 5: /usr/lib/i386-linux-gnu/libpixman-1.so.0 (pixman_blt+0x7d) [0xb74367ad]
-[    68.335] 6: /usr/lib/xorg/modules/libfb.so (fbCopyNtoN+0x2af) [0xb6de066f]
-[    68.335] 7: /usr/bin/X (miCopyRegion+0x17c) [0xb7743f6c]
-[    68.336] 8: /usr/bin/X (miDoCopy+0x4f0) [0xb77445a0]
-[    68.336] 9: /usr/lib/xorg/modules/libfb.so (fbCopyArea+0x7e) [0xb6de089e]
-[    68.336] 10: /usr/lib/xorg/modules/libxaa.so (0xb6f04000+0xacf3) [0xb6f0ecf3]
-[    68.336] 11: /usr/lib/xorg/modules/libxaa.so (0xb6f04000+0x548d3) [0xb6f588d3]
-[    68.336] 12: /usr/bin/X (0xb75ea000+0x10929d) [0xb76f329d]
-[    68.336] 13: /usr/bin/X (0xb75ea000+0x15b60f) [0xb774560f]
-[    68.336] 14: /usr/bin/X (0xb75ea000+0x16cd21) [0xb7756d21]
-[    68.336] 15: /usr/bin/X (0xb75ea000+0x16d50c) [0xb775750c]
-[    68.337] 16: /usr/bin/X (0xb75ea000+0xbe0b7) [0xb76a80b7]
-[    68.337] 17: /usr/bin/X (miPointerUpdateSprite+0x2a7) [0xb7751687]
-[    68.337] 18: /usr/bin/X (0xb75ea000+0x16791a) [0xb775191a]
-[    68.337] 19: /usr/bin/X (0xb75ea000+0xcd1c4) [0xb76b71c4]
-[    68.337] 20: /usr/bin/X (0xb75ea000+0x101bfe) [0xb76ebbfe]
-[    68.337] 21: /usr/bin/X (0xb75ea000+0x4437b) [0xb762e37b]
-[    68.337] 22: /usr/bin/X (WindowHasNewCursor+0x3b) [0xb762f6db]
-[    68.337] 23: /usr/bin/X (ChangeWindowAttributes+0xb0c) [0xb7655e1c]
-[    68.338] 24: /usr/bin/X (0xb75ea000+0x35da7) [0xb761fda7]
-[    68.338] 25: /usr/bin/X (0xb75ea000+0x3c375) [0xb7626375]
-[    68.338] 26: /usr/bin/X (0xb75ea000+0x29e95) [0xb7613e95]
-[    68.338] 27: /lib/i386-linux-gnu/i686/cmov/libc.so.6 (__libc_start_main+0xf5) [0xb71ef8f5]
-[    68.338] 28: /usr/bin/X (0xb75ea000+0x2a1e9) [0xb76141e9]
-[    68.338] 
-[    68.338] Bus error at address 0xb4f1ed4e
-[    68.338] 
-Fatal server error:
-[    68.339] Caught signal 7 (Bus error). Server aborting
-
-
-
-
-I then also decided to update libdrm package:
-
-i  libdrm-dev:i386                      2.4.52-1                          i386         Userspace interface to kernel DRM services -- development files
-ii  libdrm-intel1:i386                   2.4.52-1                          i386         Userspace interface to intel-specific kernel DRM services -- runtime
-rc  libdrm-nouveau1                      2.4.21-1~squeeze3                 i386         Userspace interface to nouveau-specific kernel DRM services -- runtime
-ii  libdrm-nouveau2:i386                 2.4.52-1                          i386         Userspace interface to nouveau-specific kernel DRM services -- runtime
-ii  libdrm-radeon1:i386                  2.4.52-1                          i386         Userspace interface to radeon-specific kernel DRM services -- runtime
-ii  libdrm2:i386                         2.4.52-1                          i386         Userspace interface to kernel DRM services -- runtime
-
-
-which did end up flawless on 3.12.0-rc2+, too
-(but failed to improve the issue on 3.14.0-rc7+).
-
-So, for all intents and purposes, drm infrastructure seems unavoidably
-(neither dri disable nor libdrm upgrade helps) affected.
-Does anyone know which change caused that issue?
-(I'm asking because bisect here would be relatively painful).
 
 Thanks,
-
-Andreas Mohr
+Sasha
