@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283AbaCWWUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 18:20:12 -0400
-Received: from mail-oa0-f53.google.com ([209.85.219.53]:52977 "EHLO
-	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798AbaCWWUJ (ORCPT
+	id S1751439AbaCWWVw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 18:21:52 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:42170 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaCWWVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 18:20:09 -0400
+	Sun, 23 Mar 2014 18:21:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <532F28CF.6080600@codeaurora.org>
+In-Reply-To: <532F2C48.6050509@codeaurora.org>
 References: <1392339850-18686-1-git-send-email-keescook@chromium.org>
 	<1392339850-18686-3-git-send-email-keescook@chromium.org>
 	<20140214162257.GB2331@e103592.cambridge.arm.com>
 	<CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
 	<20140217123415.GA2182@e103592.cambridge.arm.com>
-	<CAGXu5j+s70cNVVGf_T4=MqJ0TeYOFAyfWNUozWvHJ4-BvX-yKg@mail.gmail.com>
-	<20140221123645.GA2578@e103592.cambridge.arm.com>
-	<20140221132024.GD21483@n2100.arm.linux.org.uk>
-	<CAGXu5jK2eAD-XWDyXDkQvzMsSQk46yVaSK8ArJbUAbW4DrK08A@mail.gmail.com>
-	<CAGXu5jLhO5WG6Op+8MwLDyA9TMzB4yL-0Ntcm49-3Kegdk+Eeg@mail.gmail.com>
-	<532F28CF.6080600@codeaurora.org>
-Date: Sun, 23 Mar 2014 16:20:08 -0600
-X-Google-Sender-Auth: -MLB-eDoAiwo_GFFkQTmhWnne_U
-Message-ID: <CAGXu5j+N8t=xFHb_AFLCeXQD01GSY+8bDxfgG0DyvQ2PBLZ37A@mail.gmail.com>
+	<532F2C48.6050509@codeaurora.org>
+Date: Sun, 23 Mar 2014 16:21:50 -0600
+X-Google-Sender-Auth: MA-q3KC44Fxk75ablycVyQ0cAzM
+Message-ID: <CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
 Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
 From: Kees Cook <keescook@chromium.org>
 To: Laura Abbott <lauraa@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Martin <Dave.Martin@arm.com>,
+Cc: Dave Martin <Dave.Martin@arm.com>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Will Deacon <will.deacon@arm.com>,
         Larry Bassel <lbassel@codeaurora.org>,
         Stephen Rothwell <sfr@canb.auug.org.au>,
-        Nicolas Pitre <nico@linaro.org>, Ben Dooks <ben.dooks@codethink.co.uk>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
         =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>,
         Grant Likely <grant.likely@linaro.org>, Jiang Liu <liuj97@gmail.com>,
         Christoffer Dall <cdall@cs.columbia.edu>,
-        Marc Zyngier <marc.zyngier@arm.com>, Vitaly Andrianov <vitalya@ti.com>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Jonathan Austin <jonathan.austin@arm.com>,
         Simon Baatz <gmbnomis@gmail.com>,
+        Jonathan Austin <jonathan.austin@arm.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         LKML <linux-kernel@vger.kernel.org>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
@@ -51,215 +48,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 12:32 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
-> On 3/13/2014 12:07 PM, Kees Cook wrote:
->> On Fri, Feb 21, 2014 at 2:09 PM, Kees Cook <keescook@chromium.org> wrote:
->>> On Fri, Feb 21, 2014 at 5:20 AM, Russell King - ARM Linux
->>> <linux@arm.linux.org.uk> wrote:
->>>> On Fri, Feb 21, 2014 at 12:37:04PM +0000, Dave Martin wrote:
->>>>> It would be good if someone who's more familiar with the parms and
->>>>> vmlinux.lds stuff could take a look at it, though I don't see any
->>>>> obvious problem yet.
+On Sun, Mar 23, 2014 at 12:47 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> On 2/17/2014 4:34 AM, Dave Martin wrote:
+>> On Fri, Feb 14, 2014 at 11:11:07AM -0800, Kees Cook wrote:
+>>> On Fri, Feb 14, 2014 at 8:22 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+>>>> On Thu, Feb 13, 2014 at 05:04:10PM -0800, Kees Cook wrote:
+>>>>> Introduce "CONFIG_DEBUG_RODATA" to mostly match the x86 config, though
+>>>>> the behavior is different: it depends on STRICT_KERNMEM_PERMS, which
+>>>>> sets rodata read-only (but executable), where as this option additionally
+>>>>> splits rodata from the kernel text (resulting in potentially more memory
+>>>>> lost to padding) and sets it non-executable as well. The end result is
+>>>>> that on builds with CONFIG_DEBUG_RODATA=y (like x86) the rodata with be
+>>>>> marked purely read-only.
 >>>>
->>>> The biggest issue with it is that we end up with:
->>>>
->>>> - the .text section rounded up to 1MB
->>>> - the .rodata section rounded up to 1MB
->>>>
->>>> That means we can end up wasting up to 1MB of memory for each (in the
->>>> worst case where we encroach into the next 1MB aligned region by a few
->>>> bytes) and this memory can't be re-used.
->>>>
->>>> The alternative is to adjust the maps such that we end up mapping the
->>>> .text / .rodata overlap 1MB using 4K pages, taking the additional TLB
->>>> hit by doing so.
->>>>
->>>> The .text is aligned to 1MB, so the majority of the first 0x8000 to
->>>> 0x100000 is unused.  The end of the .text section is aligned to 1MB,
->>>> and the start of the .data section is also aligned to 1MB.
->>>>
->>>> So, the minimum kernel size is: 0x100000 + MB_ALIGN(sizeof(.text)) +
->>>> MB_ALIGN(sizeof(.rodata)) + MB_ALIGN(sizeof(init sections)) + sizeof(.data)
->>>> - 0x8000
->>>>
->>>> So, looking at this kernel I've recently built:
->>>>
->>>> Idx Name          Size      VMA       LMA       File off  Algn
->>>>   0 .head.text    00000204  c0008000  c0008000  00008000  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>
->>>> --- .text this gets set to 0xc0100000, we lose 0xc0008240 to 0xc0100000
->>>>
->>>>   1 .text         006c4530  c0008240  c0008240  00008240  2**6
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>   2 .text.head    0000004c  c06cc770  c06cc770  006cc770  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>
->>>> --- sizeof(.text) + sizeof(.text.head) becomes 0x700000
->>>> --- .rodata starts at 0xc0800000 instead of 0xc06cd000
->>>>
->>>>   3 .rodata       0022f568  c06cd000  c06cd000  006cd000  2**6
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   4 __bug_table   0000873c  c08fc568  c08fc568  008fc568  2**0
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   5 .pci_fixup    00000030  c0904ca4  c0904ca4  00904ca4  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   6 __ksymtab     00008158  c0904cd4  c0904cd4  00904cd4  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   7 __ksymtab_gpl 00006858  c090ce2c  c090ce2c  0090ce2c  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   8 __kcrctab     000040ac  c0913684  c0913684  00913684  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>   9 __kcrctab_gpl 0000342c  c0917730  c0917730  00917730  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  10 __ksymtab_strings 00022a08  c091ab5c  c091ab5c  0091ab5c  2**0
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  11 __param       00000c70  c093d564  c093d564  0093d564  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  12 __modver      00000e2c  c093e1d4  c093e1d4  0093e1d4  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  13 __ex_table    00000f18  c093f000  c093f000  0093f000  2**3
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  14 .notes        00000024  c093ff18  c093ff18  0093ff18  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>  15 .vectors      00000020  00000000  c0940000  00940000  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>  16 .stubs        00000240  00001000  c0940020  00941000  2**5
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>  17 .init.text    00051760  c0940260  c0940260  00948260  2**5
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>  18 .exit.text    00002130  c09919c0  c09919c0  009999c0  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, CODE
->>>>  19 .init.arch.info 00000108  c0993af0  c0993af0  0099baf0  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  20 .init.tagtable 00000048  c0993bf8  c0993bf8  0099bbf8  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  21 .init.smpalt  000032f8  c0993c40  c0993c40  0099bc40  2**2
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  22 .init.pv_table 00000314  c0996f38  c0996f38  0099ef38  2**0
->>>>                   CONTENTS, ALLOC, LOAD, READONLY, DATA
->>>>  23 .init.data    0000c19c  c0997250  c0997250  0099f250  2**3
->>>>                   CONTENTS, ALLOC, LOAD, DATA
->>>>  24 .data..percpu 000035c0  c09a4000  c09a4000  009ac000  2**6
->>>>                   CONTENTS, ALLOC, LOAD, DATA
->>>>
->>>> --- sizeof previous sections is 0x2db000, which becomes 0x300000
->>>> --- start of .data becomes 0xc0b00000 instead of 0xc09a8000
->>>>
->>>>  25 .data         00062728  c09a8000  c09a8000  009b0000  2**6
->>>>                   CONTENTS, ALLOC, LOAD, DATA
->>>>  26 .bss          00754870  c0a0a740  c0a0a740  00a12728  2**6
->>>>                   ALLOC
->>>>
->>>> --- which means the kernel image finishes at 0xC12B6FB0 whereas it used
->>>>     to finish at 0xC115EFB0.
->>>>
->>>>  27 .comment      00000011  00000000  00000000  00a12728  2**0
->>>>                   CONTENTS, READONLY
->>>>  28 .ARM.attributes 00000010  00000000  00000000  00a12739  2**0
->>>>                   CONTENTS, READONLY
->>>>
->>>> That's almost 1.5MB larger on an image size of 18MB.  Percentage wise,
->>>> that sounds small, but the thing to realise is that growth is independent
->>>> of the image size, so a smaller image sees a larger %age wise growth in
->>>> its size.
->>>>
->>>> People have already complained bitterly when I've said that stealing
->>>> memory and taking out out of memblock should always be 1MB aligned, so
->>>> /no one/ has the right to say "it's only 1.5MB, it doesn't matter"
->>>> because quite frankly they should've been saying that and supporting me
->>>> with the memblock issue.  So, I really don't want to hear that argument!
+>>>> This triggers an Oops in kexec, because we have a block of code in .text
+>>>> which is a template for generating baremetal code to relocate the new
+>>>> kernel, and some literal words are written into it before copying.
 >>>
->>> Absolutely, the memory waste is a problem. This is why I made sure to
->>> leave the rodata as a separate config item. It seems like if people
->>> want this feature, the cost is either going to be this kind of
->>> alignment loss, or TLB hit switching to 4K pages. It seems like the
->>> latter is significantly more "costly". Regardless, that's why it's all
->>> behind config options.
+>>> You're writing into the text area? I would imagine that
+>>> CONFIG_ARM_KERNMEM_PERMS would break that. However, that's not the
+>>> right place to be building code -- shouldn't the module area be used
+>>> for that?
 >>>
->>>> However, if you look at where these boundaries are placed, they're not
->>>> quite in the right place.  For example, the .init.data section is writable,
->>>> and so should be grouped with the .data section.  So should .data..percpu.
->>>>
->>>> Now, a few other things stand out from the above:
->>>>
->>>> (a) .text.head - imx, sunxi and tegra need to fix that.  There is no
->>>>     specific meaning to it.
->>>>
->>>> (b) .init.text is executable, and can't be in a NX region when it's
->>>>     set as non-executable.
->>>>
->>>> (c) we can't free the .init sections (sections 15 through up to and
->>>>     including 23) anymore with this feature enabled because it's setup
->>>>     as read-only memory.
+>>>> Possibly this should be in .rodata, not .text.
 >>>
->>> Perhaps I've misunderstood something, but I don't think b) and c) or
->>> the comments about .init.data and .data..percpu are problems for this
->>> series because of when the mapping happens. Until init finishes, these
->>> sections are fully RXW. Only after init is done is the init section
->>> made NX.
+>>> Well, rodata should be neither writable nor executable.
 >>
->> I haven't heard anything back, and I think I've answered the questions raised.
+>> We're not writing into code exactly.
 >>
->> Since these changes are behind CONFIG items, other folks have
->> successfully tested the series, and at least Google, Linaro, and the
->> codeaurora folks are interested in these features, can I send these to
->> the patch tracker?
+>> This code is never executed in-place in vmlinux.  It gets copied, and
+>> only copies are ever executed.
+>>
+>> Some pointers and offsets get poked into the code to configure it.
+>>
+>> I think it would be better simply to put the code in .rodata, and
+>> poke paramaters into the copy, not the original -- but that's a bit
+>> more awkward to code up, since the values can't be poked simply by
+>> writing global variables.
+>>
+>>>
+>>>> There may be a few other instances of this kind of thing.
+>>>
+>>> This config will certainly find them! :) But, that's why it's behind a config.
+>>
+>> I haven't tested exhaustively, but it think this is sufficient for a
+>> Tested-by.  The patch does seem to be doing what it is intended to
+>> do, and doesn't seem to be triggering false positives all over the
+>> place.
+>>
+>>>
+>>>> Are you aware of similar situations on other arches?
+>>>
+>>> I think there were some problems a long time ago on x86 for rodata too.
+>>
+>> It would be good to get this kexec case fixed -- I'll try to hack up
+>> a separate patch.
+>>
 >
-> I'm getting a section mismatch warning when compiling
+> FWIW, we've hit issues not just with kexec but kprobes as well. The same
+> problems exist with this series:
 
-Ah! Good catch, thanks. That config got turned off for me somewhere
-along the lines. I've turned it back on and I see the same thing.
-
-> WARNING: vmlinux.o(.text+0x1257c): Section mismatch in reference from the
-> function free_initmem() to the (unknown reference) .init.data:(unknown)
-> The function free_initmem() references
-> the (unknown reference) __initdata (unknown).
-> This is often because free_initmem lacks a __initdata
-> annotation or the annotation of (unknown) is wrong.
->
-> free_initmem -> fix_kernmem_perms aren't marked as __init but there is a
-> reference to section_perms which is marked as __initdata.
-
-Yeah, I don't see a way to have fix_kernmem_perms marked as __init
-without continuing to trigger the warnings. Instead, I've now dropped
-__initdata from section_perms instead. That cleaned up the warning for
-me; I will send an updated version.
-
-> Kernel output looks as expected on a v7 non LPAE system
-
-Great, thanks for the confirmation! :)
+For this stage, how about I make this "depends on KEXEC=n &&
+KPROBES=n"? Then as these areas get fixed, we can drop those
+requirements.
 
 -Kees
 
 >
-> / # cat /sys/kernel/debug/kernel_page_tables
-> ---[ Modules ]---
-> 0xbfe01000-0xbfe0d000          48K     RW NX SHD MEM/CACHED/WBWA
-> ---[ Kernel Mapping ]---
-> 0xc0000000-0xc0100000           1M     RW NX SHD
-> 0xc0100000-0xc0600000           5M     ro x  SHD
-> 0xc0600000-0xc0900000           3M     ro NX SHD
-> 0xc0900000-0xef800000         751M     RW NX SHD
-> ---[ vmalloc() Area ]---
-> 0xf0000000-0xf0001000           4K     RW NX SHD DEV/SHARED
-> 0xf0002000-0xf0003000           4K     RW NX SHD DEV/SHARED
-> 0xf0006000-0xf0007000           4K     RW NX SHD DEV/SHARED
-> 0xf0018000-0xf0058000         256K     RW NX SHD MEM/BUFFERABLE/WC
-> 0xf005a000-0xf005b000           4K     RW NX SHD DEV/SHARED
-> 0xf005c000-0xf005f000          12K     RW NX SHD MEM/CACHED/WBWA
-> 0xf0060000-0xf0064000          16K     RW NX SHD DEV/SHARED
-> 0xf0068000-0xf006e000          24K     RW NX SHD DEV/SHARED
-> ---[ vmalloc() End ]---
-> ---[ Fixmap Area ]---
-> 0xfffae000-0xfffb0000           8K     RW NX SHD MEM/CACHED/WBWA
-> 0xfffbe000-0xfffc0000           8K     RW NX SHD MEM/CACHED/WBWA
-> 0xfffce000-0xfffd0000           8K     RW NX SHD MEM/CACHED/WBWA
-> 0xfffde000-0xfffe0000           8K     RW NX SHD MEM/CACHED/WBWA
-> ---[ Vectors ]---
-> 0xffff0000-0xffff1000           4K USR ro x  SHD MEM/CACHED/WBWA
-> 0xffff1000-0xffff2000           4K     ro x  SHD MEM/CACHED/WBWA
-> ---[ Vectors End ]---
+> / # echo p:nl 0xc01d5c00 >> /sys/kernel/debug/tracing/kprobe_events
+> / # echo 1 > /sys/kernel/debug/tracing/events/kprobes/nl/enable
+> [ 1639.739629] Unable to handle kernel paging request at virtual address c01d5c00
+> [ 1639.739655] pgd = edbc4000
+> [ 1639.745730] [c01d5c00] *pgd=0001141e(bad)
+> [ 1639.752413] Internal error: Oops: 80d [#1] PREEMPT SMP ARM
+> [ 1639.752503] Modules linked in:
+> [ 1639.760920] CPU: 0 PID: 58 Comm: sh Not tainted 3.14.0-rc7-next-20140318-00004-ga0191b7-dirty #170
+> [ 1639.761015] task: edb90d80 ti: ed018000 task.ti: ed018000
+> [ 1639.769870] PC is at patch_text+0x4/0x10
+> [ 1639.775333] LR is at arm_kprobe+0x28/0x38
+> [ 1639.779327] pc : [<c058acec>]    lr : [<c058bcc4>]    psr: 20000013
+> [ 1639.779327] sp : ed019f10  ip : a0000013  fp : 01e7fb34
+> [ 1639.783241] r10: 00000000  r9 : 01e80ab8  r8 : 00000002
+> [ 1639.794517] r7 : ed019f80  r6 : ed900bc4  r5 : edb19fa0  r4 : edb19f08
+> [ 1639.799727] r3 : c01d5c00  r2 : ed019f08  r1 : e7f001f8  r0 : c01d5c00
+> [ 1639.806326] Flags: nzCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment user
+> [ 1639.812837] Control: 10c5787d  Table: 2dbc406a  DAC: 00000015
+> [ 1639.820040] Process sh (pid: 58, stack limit = 0xed018240)
+> [ 1639.825768] Stack: (0xed019f10 to 0xed01a000)
+> [ 1639.831150] 9f00:                                     00000000 c058bd5c ed900ba0 c018b724
+> [ 1639.835584] 9f20: ed6fab00 00000000 edb2d240 00000002 ed019f80 c018bdc4 ffffffff 00000001
+> [ 1639.843743] 9f40: edb2d240 01e80ab8 ed019f80 00000002 00000002 c01e1b1c 01e7fb34 c011c3c0
+> [ 1639.851902] 9f60: 00000003 00000000 00000000 edb2d240 edb2d240 00000002 01e80ab8 c01e2108
+> [ 1639.860063] 9f80: 00000000 00000000 00200200 00157ecc 00000001 01e80ab8 00000004 c0106e64
+> [ 1639.868222] 9fa0: ed018000 c0106ce0 00157ecc 00000001 00000001 01e80ab8 00000002 00000000
+> [ 1639.876381] 9fc0: 00157ecc 00000001 01e80ab8 00000004 00000020 01e7fb48 01e7fb14 01e7fb34
+> [ 1639.884542] 9fe0: 00000000 bef4562c 0001ee5d 0000a8cc 60000010 00000001 00000000 00000000
+> [ 1639.892709] [<c058acec>] (patch_text) from [<c058bcc4>] (arm_kprobe+0x28/0x38)
+> [ 1639.900862] [<c058bcc4>] (arm_kprobe) from [<c058bd5c>] (enable_kprobe+0x88/0x94)
+> [ 1639.907983] [<c058bd5c>] (enable_kprobe) from [<c018b724>] (__ftrace_event_enable_disable+0x13c/0x200)
+> [ 1639.915537] [<c018b724>] (__ftrace_event_enable_disable) from [<c018bdc4>] (event_enable_write+0x78/0xd4)
+> [ 1639.924741] [<c018bdc4>] (event_enable_write) from [<c01e1b1c>] (vfs_write+0xac/0x188)
+> [ 1639.934372] [<c01e1b1c>] (vfs_write) from [<c01e2108>] (SyS_write+0x40/0x94)
+> [ 1639.942187] [<c01e2108>] (SyS_write) from [<c0106ce0>] (ret_fast_syscall+0x0/0x30)
+> [ 1639.949386] Code: e4831004 e1a01003 eaee298d e1a03000 (e4831004)
+> [ 1639.956766] ---[ end trace b548269e2c7a3190 ]---
+>
+>
+> We had some functions that allowed the text to be temporarily made writable but something
+> uniform for kexec would be useful as well (our kexec solution has been 'turn it off')
+>
+>
+>> Cheers
+>> ---Dave
+>>
 >
 > Thanks,
 > Laura
