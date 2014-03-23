@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751061AbaCWTIX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:08:23 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:37834 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCWTIW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:08:22 -0400
-From: Monam Agarwal <monamagarwal123@gmail.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com,
+	id S1751397AbaCWTIn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:08:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:3667 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751268AbaCWTIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:08:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,715,1389772800"; 
+   d="scan'208";a="505943968"
+From: Matthew Wilcox <matthew.r.wilcox@intel.com>
+To: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] kernel/trace: Use RCU_INIT_POINTER(x, NULL) in trace_syscalls.c
-Date: Mon, 24 Mar 2014 00:37:21 +0530
-Message-Id: <1395601641-12227-1-git-send-email-monamagarwal123@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, willy@linux.intel.com
+Subject: [PATCH v2 0/6] Page I/O
+Date: Sun, 23 Mar 2014 15:08:22 -0400
+Message-Id: <cover.1395593198.git.matthew.r.wilcox@intel.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+Page I/O allows us to read/write pages to storage without allocating any
+memory (in particular, it avoids allocating a BIO).  This is nice for
+the purposes of swap and reduces overhead for fast storage devices.  The
+downside is that it removes all batching from the I/O path, potentially
+sending dozens of commands for a large I/O instead of just one.
 
-The rcu_assign_pointer() ensures that the initialization of a structure       
-is carried out before storing a pointer to that structure. 
-And in the case of the NULL pointer, there is no structure to initialize. 
-So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+This iteration of the Page I/O patchset has been tested with xfstests
+on ext4 on brd, and there are no unexpected failures.
 
-Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
----
- kernel/trace/trace_syscalls.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Changes since v1:
 
-diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 759d5e0..4dc8b79 100644
---- a/kernel/trace/trace_syscalls.c
-+++ b/kernel/trace/trace_syscalls.c
-@@ -425,7 +425,7 @@ static void unreg_event_syscall_enter(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_enter--;
--	rcu_assign_pointer(tr->enter_syscall_files[num], NULL);
-+	RCU_INIT_POINTER(tr->enter_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_enter)
- 		unregister_trace_sys_enter(ftrace_syscall_enter, tr);
- 	mutex_unlock(&syscall_trace_lock);
-@@ -463,7 +463,7 @@ static void unreg_event_syscall_exit(struct ftrace_event_file *file,
- 		return;
- 	mutex_lock(&syscall_trace_lock);
- 	tr->sys_refcount_exit--;
--	rcu_assign_pointer(tr->exit_syscall_files[num], NULL);
-+	RCU_INIT_POINTER(tr->exit_syscall_files[num], NULL);
- 	if (!tr->sys_refcount_exit)
- 		unregister_trace_sys_exit(ftrace_syscall_exit, tr);
- 	mutex_unlock(&syscall_trace_lock);
+ - Rebased to 3.14-rc7
+ - Separate out the clean_buffers() refactoring into its own patch
+ - Change the page_endio() interface to take an error code rather than
+   a boolean 'success'.  All of its callers prefer this (and my earlier
+   patchset got this wrong in one caller).
+ - Added kerneldoc to bdev_read_page() and bdev_write_page()
+ - bdev_write_page() now does less on failure.  Since its two customers
+   (swap and mpage) want to do different things to the page flags on
+   failure, let them.
+ - Drop the virtio_blk patch, since I don't think it should be included
+
+Keith Busch (1):
+  NVMe: Add support for rw_page
+
+Matthew Wilcox (5):
+  Factor clean_buffers() out of __mpage_writepage()
+  Factor page_endio() out of mpage_end_io()
+  Add bdev_read_page() and bdev_write_page()
+  swap: Use bdev_read_page() / bdev_write_page()
+  brd: Add support for rw_page
+
+ drivers/block/brd.c       |  10 ++++
+ drivers/block/nvme-core.c | 129 +++++++++++++++++++++++++++++++++++++---------
+ fs/block_dev.c            |  63 ++++++++++++++++++++++
+ fs/mpage.c                |  84 +++++++++++++++---------------
+ include/linux/blkdev.h    |   4 ++
+ include/linux/pagemap.h   |   2 +
+ mm/filemap.c              |  25 +++++++++
+ mm/page_io.c              |  23 ++++++++-
+ 8 files changed, 273 insertions(+), 67 deletions(-)
+
 -- 
-1.7.9.5
+1.9.0
 
