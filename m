@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750946AbaCWS0Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 14:26:24 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:49356 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749AbaCWS0W (ORCPT
+	id S1751072AbaCWS1S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:27:18 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:47515 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977AbaCWS1Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 14:26:22 -0400
+	Sun, 23 Mar 2014 14:27:16 -0400
 From: Monam Agarwal <monamagarwal123@gmail.com>
-To: roland@kernel.org, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-        ogerlitz@mellanox.com, mschmidt@redhat.com, erezsh@mellanox.com,
-        jinpu.wang@profitbricks.com, dledford@redhat.com, foraker1@llnl.gov,
-        kaber@trash.net, linux-rdma@vger.kernel.org,
+To: dmitry.torokhov@gmail.com, linux-input@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] drivers/infiniband: Use RCU_INIT_POINTER(x, NULL) in ulp/ipoib/ipoib_main.c
-Date: Sun, 23 Mar 2014 23:55:19 +0530
-Message-Id: <1395599119-6731-1-git-send-email-monamagarwal123@gmail.com>
+Subject: [PATCH] drivers/input: Use RCU_INIT_POINTER(x, NULL) in evdev.c
+Date: Sun, 23 Mar 2014 23:56:17 +0530
+Message-Id: <1395599177-6776-1-git-send-email-monamagarwal123@gmail.com>
 X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,22 +27,22 @@ So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, N
 
 Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 ---
- drivers/infiniband/ulp/ipoib/ipoib_main.c |    2 +-
+ drivers/input/evdev.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/infiniband/ulp/ipoib/ipoib_main.c b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-index 5786a78..64cd5b5 100644
---- a/drivers/infiniband/ulp/ipoib/ipoib_main.c
-+++ b/drivers/infiniband/ulp/ipoib/ipoib_main.c
-@@ -1229,7 +1229,7 @@ static void ipoib_flush_neighs(struct ipoib_dev_priv *priv)
- 	}
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index a06e125..fffa107 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -291,7 +291,7 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
+ 	if (grab != client)
+ 		return  -EINVAL;
  
- free_htbl:
--	rcu_assign_pointer(ntbl->htbl, NULL);
-+	RCU_INIT_POINTER(ntbl->htbl, NULL);
- 	call_rcu(&htbl->rcu, neigh_hash_free_rcu);
+-	rcu_assign_pointer(evdev->grab, NULL);
++	RCU_INIT_POINTER(evdev->grab, NULL);
+ 	synchronize_rcu();
+ 	input_release_device(&evdev->handle);
  
- out_unlock:
 -- 
 1.7.9.5
 
