@@ -1,81 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751497AbaCWXbG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 19:31:06 -0400
-Received: from ozlabs.org ([203.10.76.45]:44708 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751028AbaCWXbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 19:31:04 -0400
-Date: Mon, 24 Mar 2014 10:30:51 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heiko Stuebner <heiko@sntech.de>
-Subject: linux-next: manual merge of the samsung tree with the arm-soc tree
-Message-Id: <20140324103051.59808436210b8b98f1bda0a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Mon__24_Mar_2014_10_30_51_+1100_zL..TeyR.b5jBJcj"
+	id S1751410AbaCWXho (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 19:37:44 -0400
+Received: from www.linutronix.de ([62.245.132.108]:59364 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750971AbaCWXhn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 19:37:43 -0400
+Date: Mon, 24 Mar 2014 00:37:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Julia Lawall <julia.lawall@lip6.fr>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 00/16] timers: Plug debugobject leaks and use del_timer_sync()
+ in exit/teardown
+In-Reply-To: <alpine.DEB.2.02.1403232328480.2019@localhost6.localdomain6>
+Message-ID: <alpine.DEB.2.02.1403240027020.18573@ionos.tec.linutronix.de>
+References: <20140323150557.288925975@linutronix.de> <alpine.DEB.2.02.1403232328480.2019@localhost6.localdomain6>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__24_Mar_2014_10_30_51_+1100_zL..TeyR.b5jBJcj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 23 Mar 2014, Julia Lawall wrote:
+> As far as I could tell, (part of) the issue is that any kind of exit or 
+> close function should use del_timer_sync, because they could be called 
+> from a different CPU than the one that started up the timer?
+> 
+> Here is a semantic patch that takes care of the case of simple module_exit 
+> functions:
+> 
+> @r@
+> declarer name module_exit;
+> identifier ex;
+> @@
+> 
+> module_exit(ex);
+> 
+> @@
+> identifier r.ex;
+> @@
+> 
+> ex(...) {
+>   <...
+> - del_timer
+> + del_timer_sync
+>     (...)
+>   ...>
+> }
+> 
+> The transformations it makes are below.  I haven't had a chance to check 
+> which results overlap with what Thomas has already sent, but I could look 
 
-Hi Kukjin,
+Minimal overlap, but as I said I did just a few conversions.
 
-Today's linux-next merge of the samsung tree got a conflict in
-arch/arm/Kconfig.debug between commit 886545ea7d0b ("ARM: efm32: allow
-uncompress debug output") from the arm-soc tree and commit 90266754801c
-("ARM: SAMSUNG: use generic uncompress.h") from the samsung tree.
+> into it if this is the right idea.  I guess other kinds of close/exit 
+> functions would have to be identified manually, to make more rules.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+If you look through the examples I sent, you'll find the close()
+callbacks of various devices. So everything which is a function
+pointer to a ops->close(), ops->remove(), ops_>teardown() is dangerous
+if using del_timer(). There are a few exceptions, but....
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Another thing I saw is 
 
-diff --cc arch/arm/Kconfig.debug
-index e5a00d421cc4,a160744312ab..000000000000
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@@ -1167,7 -1162,7 +1167,7 @@@ config DEBUG_UNCOMPRES
-  config UNCOMPRESS_INCLUDE
-  	string
-  	default "debug/uncompress.h" if ARCH_MULTIPLATFORM || ARCH_MSM || \
-- 					ARCH_EXYNOS || ARCH_EFM32
- -					PLAT_SAMSUNG
-++					PLAT_SAMSUNG || ARCH_EFM32
-  	default "mach/uncompress.h"
- =20
-  config EARLY_PRINTK
+	del_timer(&bla->timer);
+	....
+	kfree(&bla);
 
---Signature=_Mon__24_Mar_2014_10_30_51_+1100_zL..TeyR.b5jBJcj
-Content-Type: application/pgp-signature
+That's also a potential source of trouble. You can't tell without
+analyzing the code, whether it's a problem or not. But making the
+responsible people to look at it is definitely a good thing.
+ 
+> In what circumstance can one be sure that two instructions are executed on 
+> the same CPU?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+If interrupts or preemption are disabled. But that's not the issue at
+hand.
 
-iQIcBAEBCAAGBQJTL260AAoJEMDTa8Ir7ZwVAlsP/jtgy/EzPH2X6sH+n9j53qeF
-+R5D23VFAd3WWzdmKeW/BVifMckOKfFFJ29koeyLXqmq/Lw5JGP2a928kj0HuZvz
-QHte5+kLAsRpkBHIk6bX1zwomZZGKOSFgp+aTgJOzx7+z+Q1zjX2k0hrzn2rZr6L
-L28cT3rNg84EziXhYDkfJhOYXF/GW474YzTVITH+5B8GrFa/PYYcJDeNjV9VCIOO
-xiNzTVua9da/UJxMPa5TKR8T5iokvEfaQ6YPRJF+mOsdl8GWc2+JgRxSnVH4I6BP
-ins1K43OBc062Lvj7GYSRG5u+sMUTAkt97YXlLhLVicjssDsCk6UB/l97oN/sk/Q
-koLj5UwFQJZTifH6dtgLAHgG5PDDtzCiOq/dqQVCSuBJlVKVVgt0WD4a6kpQ1q69
-GcgpEflEJAg1k1XhozUcp7eoNyhHh66VU2t7BpzOaJYhSySEQ+YGXG4XOtFqXFFd
-2ErDHCAoOKVvYlJkJ531XsO16J3yKHZIlfSzaZ1a3jUXXt0WVRm7h+acf8IbZ5Rc
-HhXwLhXfJVJ7canQvvIvgYhroSxfp87vhq0BjHxHqyEPR75HgFa1AFI9o8CaBuw2
-CBamPp5+W91jfds1KIPf6GFgDAGFrMsBo7n5lPXWoJepaf9Nsbo26v6EATMVr+VI
-9eLAn64CmM54JncLFugi
-=5rkL
------END PGP SIGNATURE-----
+The del_timer vs. del_timer_sync problem is:
 
---Signature=_Mon__24_Mar_2014_10_30_51_+1100_zL..TeyR.b5jBJcj--
+CPU0	      	  		 CPU1
+
+add_timer(&bla->timer);
+
+				 close(bla)
+timer expires		   	   del_timer(&bla->timer);
+  callback is invoked
+				   kfree(bla);
+    derefernces bla
+
+I'll look at your findings on Tuesday, but feel free to send them to
+the relevant maintainers for review.
+
+Thanks,
+
+	tglx
