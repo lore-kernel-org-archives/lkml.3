@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbaCWVu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:50:56 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:54056 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751450AbaCWVuy (ORCPT
+	id S1751290AbaCWWNF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 18:13:05 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:51194 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798AbaCWWND (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:50:54 -0400
-Date: Sun, 23 Mar 2014 16:50:41 -0500
-From: David Fries <David@Fries.net>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, zbr@ioremap.net,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Subject: Re: w1: 3.14-rc7 - possible recursive locking detected
-Message-ID: <20140323215041.GB5096@spacedout.fries.net>
-References: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
+	Sun, 23 Mar 2014 18:13:03 -0400
+Date: Sun, 23 Mar 2014 15:12:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
+        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
+Message-ID: <20140323221256.GG4405@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
+ <20140323194113.GA13633@redhat.com>
+ <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140323213349.GA8832@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAAfyv37OPxJkcyYi0ZZe9MSQZ3TMeCuxa8rmWh8ahNF6Bs01Mg@mail.gmail.com>
+In-Reply-To: <20140323213349.GA8832@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.3.9 (SpacedOut.fries.net [127.0.0.1]); Sun, 23 Mar 2014 16:50:43 -0500 (CDT)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032322-8236-0000-0000-000001013E15
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 10:38:13PM +0100, Belisko Marek wrote:
-> Hi,
+On Sun, Mar 23, 2014 at 11:33:49PM +0200, Michael S. Tsirkin wrote:
+> On Sun, Mar 23, 2014 at 12:54:17PM -0700, Eric Dumazet wrote:
+> > On Sun, 2014-03-23 at 21:41 +0200, Michael S. Tsirkin wrote:
+> > 
+> > > The rcu_assign_pointer() ensures that the initialization of a structure       
+> > > is carried out before storing a pointer to that structure. 
+> > > In the case of the NULL pointer, there is no structure to initialize,
+> > > so we can safely drop smp_wmb in this case.
+> > > 
+> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > 
+> > > --
+> > > 
+> > > Lightly tested.
+> > > v is evaluated twice here but that should be ok since this
+> > > only happens when v is a constant, so evaluating it should
+> > > have no side effects.
+> > > Paul, what do you think?
+> > > 
+> > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> > > index 72bf3a0..d33c9ec 100644
+> > > --- a/include/linux/rcupdate.h
+> > > +++ b/include/linux/rcupdate.h
+> > > @@ -587,7 +587,8 @@ static inline void rcu_preempt_sleep_check(void)
+> > >   */
+> > >  #define rcu_assign_pointer(p, v) \
+> > >  	do { \
+> > > -		smp_wmb(); \
+> > > +		if (!__builtin_constant_p(v) || (v)) \
+> > > +			smp_wmb(); \
+> > >  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
+> > >  	} while (0)
+> > >  
+> > 
+> > Yeah, I suggest you read d322f45ceed525daa changelog ;)
+> > 
 > 
-> booting latest 3.14-rc7 on gta04 board gives following warning:
+> Oh I see. It does not seem hard to silence that warning though.
+> See below.
+
+This would at the very least need to be tested under a wide variety
+of compilers.  And we need to keep 
+
+> Alternatively apply these patches everywhere though it does
+> look like too much work for too little gain to me.
 > 
-> [    3.101409] Driver for 1-wire Dallas network protocol.
-> [    3.109649] omap_hdq omap_hdq: OMAP HDQ Hardware Rev 0.5. Driver in
-> [    3.400146]        CPU0
-> [    3.402709]        ----
-> [    3.405273]   lock(&(&priv->bus_notifier)->rwsem);
-> [    3.410308]   lock(&(&priv->bus_notifier)->rwsem);
-> [    3.415374]
-> [    3.415374]  *** DEADLOCK ***
+> -->
 > 
-> AFAIK we didn't see that on (at least 3/14-rc2).
+> rcu: optimize rcu_assign_pointer with NULL
+> 
+> The rcu_assign_pointer() dropped __builtin_constant_p check to
+> avoid a compiler warning, but we can actually work around it without
+> adding code.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> ---
+> 
+> Untested, too late here, sorry.
+> 
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 72bf3a0..9111d40 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -585,9 +585,14 @@ static inline void rcu_preempt_sleep_check(void)
+>   * please be careful when making changes to rcu_assign_pointer() and the
+>   * other macros that it invokes.
+>   */
+> +/* The convoluted __builtin_constant_p logic is here to prevent
+> + * gcc from emitting a warning when passed a pointer to a variable.
+> + */
+>  #define rcu_assign_pointer(p, v) \
+>  	do { \
+> -		smp_wmb(); \
+> +		if (!__builtin_constant_p(v) || \
+> +		    (__builtin_constant_p(v) ? (v) : NULL)) \
 
-The last drivers/w1 change went in before v3.14-rc1, so if it is
-something in the w1 code, it has either been there or something else
-in the rest of the kernel changed to expose it.  I'm using the ds2490
-USB w1 dongle, I didn't see that problem when enabling lock debugging
-on 3.14.0-rc5+ which includes some changes I'm working on.
+You lost me on this one.  If "v" is not a built-in constant, we want
+the smp_wmb(), right?
 
-https://github.com/dfries/linux.git w1_rework
+							Thanx, Paul
 
--- 
-David Fries <david@fries.net>    PGP pub CB1EE8F0
-http://fries.net/~david/
+> +			smp_wmb(); \
+>  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
+>  	} while (0)
+> 
+> 
+
