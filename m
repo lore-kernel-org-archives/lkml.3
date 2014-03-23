@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179AbaCWVC2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 17:02:28 -0400
-Received: from mout.gmx.net ([212.227.17.21]:55621 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750798AbaCWVC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 17:02:26 -0400
-Date: Sun, 23 Mar 2014 22:02:19 +0100
-From: Helge Deller <deller@gmx.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-parisc@vger.kernel.org,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: [GIT PULL] parisc updates for v3.14
-Message-ID: <20140323210219.GA15854@p100.fritz.box>
+	id S1751546AbaCWVDq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 17:03:46 -0400
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.138]:29466 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750979AbaCWVDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 17:03:41 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-9.tower-179.messagelabs.com!1395608616!26673463!4
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <cover.1395607051.git.stwiss.opensource@diasemi.com>
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Date: Sun, 23 Mar 2014 20:37:31 +0000
+Subject: [RFC V1 0/3]  da9063: Addition of HWMON support for DA9063
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
+        Lee Jones <lee.jones@linaro.org>, Rob Landley <rob@landley.net>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LINUX-DOC <linux-doc@vger.kernel.org>,
+        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
+        LM-SENSORS <lm-sensors@lm-sensors.org>,
+        Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Provags-ID: V03:K0:QS3vli6zITMoicbN3fXI67wBBwA8K3HfRcpqEc6YQuNHv/U+y1N
- MqO8TKqLBtBGmM5aeq/57E8+5TKTn99q339Cskn320Orqqz2RaVR+HsvdajJoXYhx4v5s5t
- BAKIQIW36kuthpHHuT1efPtyhouvVFrsFVDulCfSh3JfRGTQwaaRxIBn3/JFzdecMVhNJ8b
- kFbMK7Rw1UZl+4kqGeqRg==
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
 
-please consider pulling some late patches for the parisc architecture from:
+This patch series covers hardware monitoring support for the DA9063 PMIC.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/deller/parisc-linux.git parisc-3.14
+There are three patches in this set:
+ - Add a new HWMON driver component
+ - Minor MFD core and platform data changes for HWMON
+ - Documentation
 
-This patchset 
-- reverts parts of my latest patch regarding font selection with STICON console,
-- wires up the utimes() syscall for parisc, and
-- removes the unused parisc tmpalias code and unnecessary arch*relax defines
+Thank you,
+Steve Twiss, Dialog Semiconductor Ltd.
 
-Thanks,
-Helge
+S Twiss (3):
+  hwmon: da9063: HWMON driver
+  mfd: da9063: Add HWMON dependencies
+  Documentation: hwmon: New information for DA9063
 
-----------------------------------------------------------------
-Helge Deller (2):
-      partly revert commit 8a10bc9: parisc/sti_console: prefer Linux fonts over built-in ROM fonts
-      parisc: wire up sys_utimes
+ Documentation/hwmon/da9063           |   67 +++++
+ drivers/hwmon/Kconfig                |   10 +
+ drivers/hwmon/Makefile               |    1 +
+ drivers/hwmon/da9063-hwmon.c         |  456 ++++++++++++++++++++++++++++++++++
+ drivers/mfd/da9063-core.c            |   13 +-
+ include/linux/mfd/da9063/core.h      |    3 +
+ include/linux/mfd/da9063/pdata.h     |   18 ++
+ include/linux/mfd/da9063/registers.h |   34 +++
+ 8 files changed, 601 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/hwmon/da9063
+ create mode 100644 drivers/hwmon/da9063-hwmon.c
 
-John David Anglin (1):
-      parisc: Remove unused CONFIG_PARISC_TMPALIAS code
+-- 
+end-of-patch for RFC V1
 
-Will Deacon (1):
-      parisc: locks: remove redundant arch_*_relax operations
-
- arch/parisc/include/asm/page.h        | 11 ------
- arch/parisc/include/asm/spinlock.h    |  4 ---
- arch/parisc/include/uapi/asm/unistd.h |  4 +--
- arch/parisc/kernel/cache.c            | 64 -----------------------------------
- arch/parisc/kernel/syscall_table.S    |  1 +
- lib/fonts/Kconfig                     |  6 ++--
- 6 files changed, 6 insertions(+), 84 deletions(-)
