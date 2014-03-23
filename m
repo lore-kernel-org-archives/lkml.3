@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaCWRu2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 13:50:28 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:64339 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429AbaCWRu1 (ORCPT
+	id S1752583AbaCWSMU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 14:12:20 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:46550 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaCWSML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 13:50:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
-References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <1395436655-21670-3-git-send-email-john.stultz@linaro.org>
-From: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
-Date: Sun, 23 Mar 2014 10:50:06 -0700
-Message-ID: <CAHGf_=rUJwtM-DJ4-Xw9WR3UN3gsA6UdcEvwen=Ku7B03j_2JA@mail.gmail.com>
-Subject: Re: [PATCH 2/5] vrange: Add purged page detection on setting memory non-volatile
-To: John Stultz <john.stultz@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Android Kernel Team <kernel-team@android.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
-        Dave Hansen <dave@sr71.net>, Rik van Riel <riel@redhat.com>,
-        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
-        Jan Kara <jack@suse.cz>, Michel Lespinasse <walken@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 23 Mar 2014 14:12:11 -0400
+Message-ID: <532F23F5.6020001@gmail.com>
+Date: Sun, 23 Mar 2014 19:12:05 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Jean-Francois Moine <moinejf@free.fr>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] drm/i2c: tda998x: Change the compatible strings
+References: <20140321115541.01cbbb06@armhf> <532C40B0.3000805@gmail.com> <20140323111903.51c73c82@armhf>
+In-Reply-To: <20140323111903.51c73c82@armhf>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +/**
-> + * vrange_check_purged_pte - Checks ptes for purged pages
-> + *
-> + * Iterates over the ptes in the pmd checking if they have
-> + * purged swap entries.
-> + *
-> + * Sets the vrange_walker.pages_purged to 1 if any were purged.
-> + */
-> +static int vrange_check_purged_pte(pmd_t *pmd, unsigned long addr,
-> +                                       unsigned long end, struct mm_walk *walk)
-> +{
-> +       struct vrange_walker *vw = walk->private;
-> +       pte_t *pte;
-> +       spinlock_t *ptl;
-> +
-> +       if (pmd_trans_huge(*pmd))
-> +               return 0;
-> +       if (pmd_trans_unstable(pmd))
-> +               return 0;
-> +
-> +       pte = pte_offset_map_lock(walk->mm, pmd, addr, &ptl);
-> +       for (; addr != end; pte++, addr += PAGE_SIZE) {
-> +               if (!pte_present(*pte)) {
-> +                       swp_entry_t vrange_entry = pte_to_swp_entry(*pte);
-> +
-> +                       if (unlikely(is_vpurged_entry(vrange_entry))) {
-> +                               vw->page_was_purged = 1;
-> +                               break;
+On 03/23/2014 11:19 AM, Jean-Francois Moine wrote:
+> On Fri, 21 Mar 2014 14:37:52 +0100
+> Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> wrote:
+>>>    Required properties;
+>>> -  - compatible: must be "nxp,tda998x"
+>>> +  - compatible: may be "nxp,tda9989", "nxp,tda19988" or "nxp,tda19989"
+>>
+>> There is a "DT is ABI" policy and although there is no mainline Linux
+>> user of current compatible, the correct way would be to deprecate
+>> "nxp,tda998x" and introduce new compatibles.
+>
+> Pratically, what is this way?
 
-This function only detect there is vpurge entry or not. But
-VRANGE_NONVOLATILE should remove all vpurge entries.
-Otherwise, non-volatiled range still makes SIGBUS.
+Currently, there is no effective way to deprecate a binding or
+compatible. You just add the one(s) that are more sensible and
+you mark the old one as DEPRECATED by simply writing it in the
+binding doc.
 
-> +                       }
-> +               }
-> +       }
-> +       pte_unmap_unlock(pte - 1, ptl);
-> +       cond_resched();
-> +
-> +       return 0;
-> +}
+The driver should support the old binding at least for a while.
+
+Sebastian
