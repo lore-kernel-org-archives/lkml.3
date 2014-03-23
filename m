@@ -1,63 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515AbaCWTgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 15:36:25 -0400
-Received: from albert.telenet-ops.be ([195.130.137.90]:48880 "EHLO
-	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751079AbaCWTgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 15:36:23 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: [PATCH] ARM: shmobile: r8a7778/bockw: Move "select RENESAS_INTC_IRQPIN" under SoC
-Date: Sun, 23 Mar 2014 20:36:18 +0100
-Message-Id: <1395603378-32199-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751465AbaCWTik (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 15:38:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750749AbaCWTii (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 15:38:38 -0400
+Date: Sun, 23 Mar 2014 20:37:30 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>,
+        Richard Weinberger <richard@nod.at>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 00/11] cleanup/fix allow_signal/disallow_signal
+Message-ID: <20140323193730.GA10464@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Hello.
 
-Move the "select RENESAS_INTC_IRQPIN" from the two bockw-specific sections
-to the one r8a7778-specific section, like is done for the other SoCs.
+allow_signal() and disallow_signal() have the very strange (wrong
+actually) semantics. They mix/confuse "sigprocmask" and "sigaction"
+logic.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
----
- arch/arm/mach-shmobile/Kconfig |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+This series tries to cleanup and fix them, plus other (mostly related)
+cleanups.
 
-diff --git a/arch/arm/mach-shmobile/Kconfig b/arch/arm/mach-shmobile/Kconfig
-index edf61e5c1b7b..75ccebfa16a3 100644
---- a/arch/arm/mach-shmobile/Kconfig
-+++ b/arch/arm/mach-shmobile/Kconfig
-@@ -102,6 +102,7 @@ config ARCH_R8A7778
- 	select ARM_GIC
- 	select USB_ARCH_HAS_EHCI
- 	select USB_ARCH_HAS_OHCI
-+	select RENESAS_INTC_IRQPIN
- 
- config ARCH_R8A7779
- 	bool "R-Car H1 (R8A77790)"
-@@ -198,7 +199,6 @@ config MACH_BOCKW
- 	depends on ARCH_R8A7778
- 	select ARCH_REQUIRE_GPIOLIB
- 	select REGULATOR_FIXED_VOLTAGE if REGULATOR
--	select RENESAS_INTC_IRQPIN
- 	select SND_SOC_AK4554 if SND_SIMPLE_CARD
- 	select SND_SOC_AK4642 if SND_SIMPLE_CARD
- 	select USE_OF
-@@ -207,7 +207,6 @@ config MACH_BOCKW_REFERENCE
- 	bool "BOCK-W  - Reference Device Tree Implementation"
- 	depends on ARCH_R8A7778
- 	select ARCH_REQUIRE_GPIOLIB
--	select RENESAS_INTC_IRQPIN
- 	select REGULATOR_FIXED_VOLTAGE if REGULATOR
- 	select USE_OF
- 	---help---
--- 
-1.7.9.5
+Oleg.
+
+ arch/m68k/include/asm/signal.h |    9 ----
+ arch/x86/include/asm/signal.h  |    6 ---
+ fs/jffs2/background.c          |   12 +++--
+ include/linux/sched.h          |    3 -
+ include/linux/signal.h         |   21 +++++++--
+ kernel/exit.c                  |   39 -----------------
+ kernel/kmod.c                  |    5 +--
+ kernel/signal.c                |   90 ++++++++++++++++++---------------------
+ 8 files changed, 66 insertions(+), 119 deletions(-)
 
