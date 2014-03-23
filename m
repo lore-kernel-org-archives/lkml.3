@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752547AbaCWO1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 10:27:30 -0400
-Received: from nm2-vm1.bullet.mail.bf1.yahoo.com ([98.139.213.158]:29757 "EHLO
-	nm2-vm1.bullet.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752267AbaCWO13 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 10:27:29 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 810636.87454.bm@omp1025.mail.bf1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Rocket-MIMEInfo:X-Mailer:References:Message-ID:Date:From:Reply-To:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=2HhDJNVUx02883mWUnrNzfYYJJ2LIaDrmvtKQdS88iL4cAfWUI41siJ6vhtoT60dpqNq39h7Hig3HcwSKgC4FSyZmMIcDZ968kNzMlyOdWW8V5zJhEl4Q42e/+oTLcg6gIyNJJ9fqFP8Oucq7dpe20fneV/oDOkU7yd8kgVR95s=;
-X-YMail-OSG: ck52ccEVM1kjtjnuUwsz2zFREdW_PpiEp9V9PrEzy7moB9r
- FKXRgvZKeQN51yoIZuY6qegqgzr4bW5HfOtR1elzh8sAjTbiUX8uh_RJP9z7
- xpJ9E_y_SQlVVTYZ4_87CgI02xiA.3lsFidOh0IEjQ2MZCL3kHrAm1ZbUoPI
- dw4qEMgRLCkQbdpff7mMu2bfRkPYpKtX9QiHdC8gQMAfx8cVoSE_QW.zkeYs
- BPgGOxrIZ1BN9z0XPq1ytjk8rm3L7JQMMapH1OyDs19w5kueJztz88HgKAuN
- 7gWpw5wvESTHL362vgbL3eyJHdgP9qOh7rwFsgjJTwBYUVrPEFPD3Vxe1eP5
- s3Jrp5VFPDnqvx90l80v6ExCmbDgSbVdeabp.6CODaBcHiln1QI.jYdU8wr8
- 7DCZRdc8c6JzOfu4NKY2s.HSx0PcZB5ZdBcVgVgfCWXSmvMVYhVD4GQs9S50
- fDlkNJ._k_SjCSHJlww.200v.1bCrBiruggf0nmvJvVQ3FPJYOy0eGDkXxY8
- oOR0UxjgY.a65eG5xLdLOlnRDZA4JGEK9DgqNilGu_SAOqMBEVcHGrhZIFl6
- dWwPllO542d8.
-X-Rocket-MIMEInfo: 002.001,CgoKCk9uIFN1bmRheSwgTWFyY2ggMjMsIDIwMTQgNjozNSBQTSwgTWFyayBLbmVjaHQgPG1hcmtrbmVjaHRAZ21haWwuY29tPiB3cm90ZToKPkluIHRlcm1zIG9mIGNoYW5naW5nIHRoZSBzY2hlZHVsZXIgSSB0aGluayB0aGF0IHlvdSBwb3NzaWJseSBtaXNzZWQKPnJlYWRpbmcgRG9jdW1lbnRhdGlvbi9ibG9jay9zd2l0Y2hpbmctc2NoZWQudHh0IGluIHRoZSBrZXJuZWwncwo.ZG9jdW1lbnRhdGlvbiBkaXJlY3RvcnkuCj4KPkhUSCwKPk1hcmsKClRoYXQgaXMgSU8gc2NoZWR1bGVyLiBDYW4gd2UgdXNlIHQBMAEBAQE-
-X-Mailer: YahooMailWebService/0.8.181.645
-References: <1395223046.28757.YahooMailNeo@web141601.mail.bf1.yahoo.com>	<1395228430.4896.6.camel@marge.simpson.net>	<1395228843.40159.YahooMailNeo@web141603.mail.bf1.yahoo.com>	<CAJ__M-3RTLqU5MBVDGkXXw7cGriRCtfcb3pnMwGpXuJPMxeYHw@mail.gmail.com>	<1395259275.22551.YahooMailNeo@web141602.mail.bf1.yahoo.com>	<1395282203.11039.24.camel@marge.simpson.net>	<1395572478.74811.YahooMailNeo@web141601.mail.bf1.yahoo.com> <CAK2H+edMBcJhqe8=hQvCRYAm6GsqnoqwqU5By_FD6qMyoXvCjQ@mail.gmail.com>
-Message-ID: <1395584848.57698.YahooMailNeo@web141603.mail.bf1.yahoo.com>
-Date: Sun, 23 Mar 2014 07:27:28 -0700 (PDT)
-From: Mahmood Naderan <nt_mahmood@yahoo.com>
-Reply-To: Mahmood Naderan <nt_mahmood@yahoo.com>
-Subject: Re: Thread Scheduler
-To: Mark Knecht <markknecht@gmail.com>
-Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
-        Jack Carrozzo <jack@crepinc.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <CAK2H+edMBcJhqe8=hQvCRYAm6GsqnoqwqU5By_FD6qMyoXvCjQ@mail.gmail.com>
+	id S1752550AbaCWO2L (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 10:28:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57857 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354AbaCWO2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 Mar 2014 10:28:09 -0400
+Date: Sun, 23 Mar 2014 15:28:11 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, oleg@redhat.com,
+        joseph.salisbury@canonical.com, Nagalakshmi.Nandigama@lsi.com,
+        Sreekanth.Reddy@lsi.com, rientjes@google.com,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        tj@kernel.org, linux-kernel@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org,
+        thenzl@redhat.com
+Subject: Re: please fix FUSION
+ (Was:[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
+In-Reply-To: <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
+Message-ID: <alpine.DEB.2.02.1403231524100.18573@ionos.tec.linutronix.de>
+References: <20140321183443.GA3891@redhat.com>  <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp>  <20140322192511.GA14811@redhat.com>  <alpine.DEB.2.02.1403222201300.18573@ionos.tec.linutronix.de>  <alpine.DEB.2.02.1403222242450.18573@ionos.tec.linutronix.de>
+  <201403230857.IGH51500.FOHtQMFVOFOLJS@I-love.SAKURA.ne.jp>  <alpine.DEB.2.02.1403230856500.18573@ionos.tec.linutronix.de> <1395584368.2200.3.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 23 Mar 2014, James Bottomley wrote:
+> On Sun, 2014-03-23 at 09:04 +0100, Thomas Gleixner wrote:
+> > On Sun, 23 Mar 2014, Tetsuo Handa wrote:
+> > 
+> > > Thomas Gleixner wrote:
+> > > > But then systemd/udev mutters:
+> > > > 
+> > > >    "You migh be able to work around the timeout with udev rules and
+> > > >     OPTIONS+="event_timeout=120", but that code was maybe never used
+> > > >     or tested, so it might not work correctly." [1]
+> > > > 
+> > > > AFAICT from the ubuntu bug system [2] nobody bothered even to try that.
+> > > > 
+> > > > And if the udev/systemd event_timeout option is broken it's way better
+> > > > to fix that one instead of hacking random heuristics into the kernel.
+> > > 
+> > > I haven't tried the event_timeout= option but I think it will not work.
+> > > The timeout is hard coded as shown below and there will be no chance for taking
+> > > the event_timeout= option into account.
+> > > 
+> > > ---------- systemd-204/src/udev/udevd.c start ----------
+> > > (...snipped...)
+> > >                         /* check for hanging events */
+> > >                         udev_list_node_foreach(loop, &worker_list) {
+> > >                                 struct worker *worker = node_to_worker(loop);
+> > > 
+> > >                                 if (worker->state != WORKER_RUNNING)
+> > >                                         continue;
+> > > 
+> > >                                 if ((now(CLOCK_MONOTONIC) - worker->event_start_usec) > 30 * 1000 * 1000) {
+> > 
+> > And because systemd has an immutable hardcoded random timeout we add
+> > another hardcoded random timeout into kthread_create() to work around
+> > that.
+> > 
+> > How broken is that?
+> > 
+> > And it seems other people have solved it:
+> > 
+> >     http://www.redhat.com/archives/lvm-devel/2013-September/msg00036.html
+> 
+> I agree with Thomas.  A hardcoded timeout is a systemd bug.  However,
+> could I get confirmation, while you can use this bug to do it, that the
+> patch back in this thread actually fixes the crash when scsi_alloc_host
+> fails, that's the serious SCSI bug, in my view?
+
+Which patch, the one to kthread_create() or the one to SCSI?
+
+Thanks,
+
+	tglx
 
 
-
-
-On Sunday, March 23, 2014 6:35 PM, Mark Knecht <markknecht@gmail.com> wrote:
->In terms of changing the scheduler I think that you possibly missed
->reading Documentation/block/switching-sched.txt in the kernel's
->documentation directory.
->
->HTH,
->Mark
-
-That is IO scheduler. Can we use the same for threads/processes? 
-echo deadline > /proc/10100
-
-Or something like that?
-
-
- 
-Regards,
-Mahmood
 
