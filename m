@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbaCXNyz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:54:55 -0400
-Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.120]:40368 "EHLO
-	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaCXNyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 09:54:53 -0400
-X-Authority-Analysis: v=2.0 cv=MODiabll c=1 sm=0 a=/DbS/tiKggfTkRRHPZEB4g==:17 a=h2n2wN--3AMA:10 a=IBrS0yOrj2QA:10 a=S1A5HrydsesA:10 a=Qsx_du5GiBkA:10 a=8nJEP1OIZ-IA:10 a=fxJcL_dCAAAA:8 a=KGjhK52YXX0A:10 a=QfKxxUxMAAAA:8 a=ishi2uf3pgDuquDZlO8A:9 a=wPNLvfGTeEIA:10 a=/DbS/tiKggfTkRRHPZEB4g==:117
-X-Cloudmark-Score: 0
-X-Authenticated-User: 
-X-Originating-IP: 67.78.168.186
-Message-ID: <53303927.1030004@ubuntu.com>
-Date: Mon, 24 Mar 2014 09:54:47 -0400
-From: Phillip Susi <psusi@ubuntu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753324AbaCXN4V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:56:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44149 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752763AbaCXN4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 09:56:20 -0400
+Date: Mon, 24 Mar 2014 09:56:07 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com,
+        davem@davemloft.net
+Subject: Re: [PATCH] netlink: simplify nfnetlink_bind
+Message-ID: <20140324135607.GB28666@madcap2.tricolour.ca>
+References: <d9a410952c6b88e5855d36f91c06d466d2ce9bed.1395418617.git.rgb@redhat.com>
+ <20140324111044.GC5074@localhost>
 MIME-Version: 1.0
-To: Janani Venkataraman <jananive@linux.vnet.ibm.com>,
-        Karel Zak <kzak@redhat.com>
-CC: amwang@redhat.com, rdunlap@xenotime.net, andi@firstfloor.org,
-        aravinda@linux.vnet.ibm.com, hch@lst.de, mhiramat@redhat.com,
-        jeremy.fitzhardinge@citrix.com, xemul@parallels.com,
-        suzuki@linux.vnet.ibm.com, kosaki.motohiro@jp.fujitsu.com,
-        adobriyan@gmail.com, tarundsk@linux.vnet.ibm.com, vapier@gentoo.org,
-        roland@hack.frob.com, tj@kernel.org, ananth@linux.vnet.ibm.com,
-        gorcunov@openvz.org, avagin@openvz.org, oleg@redhat.com,
-        eparis@redhat.com, d.hatayama@jp.fujitsu.com, james.hogan@imgtec.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        coreutils@gnu.org, procps@freelists.org, util-linux@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/33] [RFC] Non disruptive application core dump infrastructure
-References: <20140320093040.14878.903.stgit@localhost.localdomain> <20140321080855.GE26374@x2.net.home> <532C54A3.3030903@ubuntu.com> <532FFE3A.9060002@linux.vnet.ibm.com>
-In-Reply-To: <532FFE3A.9060002@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140324111044.GC5074@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On 14/03/24, Pablo Neira Ayuso wrote:
+> On Fri, Mar 21, 2014 at 12:44:09PM -0400, Richard Guy Briggs wrote:
+> > Remove duplicity and simplify code flow by moving the rcu_read_unlock() above
+> > the condition and let the flow control exit naturally at the end of the
+> > function.
+> > 
+> > Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+> > ---
+> >  net/netfilter/nfnetlink.c |    4 +---
+> >  1 files changed, 1 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+> > index 046aa13..75619f9 100644
+> > --- a/net/netfilter/nfnetlink.c
+> > +++ b/net/netfilter/nfnetlink.c
+> > @@ -399,12 +399,10 @@ static void nfnetlink_bind(int group)
+> >  
+> >  	rcu_read_lock();
+> >  	ss = nfnetlink_get_subsys(type);
+> > +	rcu_read_unlock();
+> >  	if (!ss) {
+> > -		rcu_read_unlock();
+> >  		request_module("nfnetlink-subsys-%d", type);
+> > -		return;
+> >  	}
+> > -	rcu_read_unlock();
+> 
+> Applied with minor glitch. Removed the brackets in that if branch.
 
-On 3/24/2014 5:43 AM, Janani Venkataraman wrote:
-> Gcore attaches to the process using gdb and runs the gdb gcore
-> command and then detaches. In gcore the dump cannot be issued from
-> a signal handler context as fork() is not signal safe and moreover
-> it is disruptive in
+Good point!  Thanks.
 
-You can fork+exec from a signal handler just fine.
+> Thanks
 
+- RGB
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (MingW32)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJTMDknAAoJEI5FoCIzSKrwo2QH/RCmAn404PlO6cZLNuQ5PXqc
-MdR6U62K/BwZo42Fr694FzzjGKwuqx3YHB8gU+tyE26yZ31reFWG8KpdfV46NRYG
-sEPH/lJOerMXwfbpxE0YFZBow5wZqTg/XsiXMyz8M4/KdMgOgCEqsaG/IRPvK0+B
-NiaQmFct0Y2onwoy50mrR2sGeKOgA5510osoChCq+TKUrsCJp80jYvz6bVOi6kwY
-Oi+bAl/tzcQDy7yHkUqYJXYRf3o9jbHqGxnC/IzygOntggqmIiB8ez4ZDZC2YbOl
-htv0gP/jqZk8Pm3C/gv5S7xhqjy2+yvkWXg7mhsz7gsbSA4K5LXd5bN5ovEBGAw=
-=JWwx
------END PGP SIGNATURE-----
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
