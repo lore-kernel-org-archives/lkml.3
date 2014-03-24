@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302AbaCXTgV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:36:21 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50772 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754277AbaCXTgR convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:36:17 -0400
-X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VPS-2(z579ehz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh109h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
-X-WSS-ID: 0N2YH0D-07-6HO-02
-X-M-MSG: 
-From: "Cornwall, Jay" <Jay.Cornwall@amd.com>
-To: Joerg Roedel <joro@8bytes.org>,
-        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Naru, Kim" <Kim.Naru@amd.com>
-Subject: RE: [PATCH V2] iommu/amd: Fix logic to determine and checking max
- PASID
-Thread-Topic: [PATCH V2] iommu/amd: Fix logic to determine and checking max
- PASID
-Thread-Index: AQHPR3h4vdvUyOrXM0OjsM2WwutzqprwnP0g
-Date: Mon, 24 Mar 2014 19:33:50 +0000
-Message-ID: <99CB3FADB756624A867BE9481439561C334AC1BF@satlexdag03.amd.com>
-References: <1394067258-5968-1-git-send-email-suravee.suthikulpanit@amd.com>
- <20140324154806.GB2775@8bytes.org>
-In-Reply-To: <20140324154806.GB2775@8bytes.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.180.168.240]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: amd.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+	id S1754220AbaCXTfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:35:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60959 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753879AbaCXTfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:35:16 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net, peterz@infradead.org
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com, andi.kleen@intel.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 3/6] Revert "perf: Disable PERF_RECORD_MMAP2 support"
+Date: Mon, 24 Mar 2014 15:34:33 -0400
+Message-Id: <1395689676-214799-4-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
+References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joerg Roedel wrote:
+This reverts commit 3090ffb5a2515990182f3f55b0688a7817325488.
 
->On Wed, Mar 05, 2014 at 06:54:18PM -0600, suravee.suthikulpanit@amd.com wrote:
->> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->> 
->> In reality, the spec can only support 16-bit PASID since 
->> INVALIDATE_IOTLB_PAGES and COMPLETE_PPR_REQUEST commands only allow 
->> 16-bit PASID. So, we updated the PASID_MASK accordingly and invoke 
->>BUG_ON if the hardware is reporting PASmax more than 16-bit.
->> 
->>Besides, max PASID is defined as ((2^(PASmax+1)) - 1). The current 
->> does not determine this correctly.
->> 
->> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->> Tested-by: Jay Cornwall <Jay.Cornwall@amd.com>
-> 
-> Applied, thanks.
-> 
-> Btw, is there any publicly available driver/way/whatever for me to test the AMD IOMMUv2 code paths?
+Conflicts:
+	tools/perf/util/event.c
+---
+ kernel/events/core.c    |  4 ----
+ tools/perf/util/event.c | 36 +++++++++++++++++++-----------------
+ tools/perf/util/evsel.c |  1 +
+ 3 files changed, 20 insertions(+), 21 deletions(-)
 
-We are testing on a kernel development branch which enables ATS translation from shaders on the Kaveri APU. See drivers/gpu/hsa/radeon at http://cgit.freedesktop.org/~gabbayo/linux/ for the kernel driver.
-
-Testing requires some setup in user mode to construct a PM4 command stream and CIK assembly, similar to the DRM/Mesa UMD implementation. Even then, it is not possible to observe translations directly. Our testing is limited to indirect observations; e.g. modifying VA:PA mappings and ensuring shader loads/stores reflect expected results.
-
-I don't know of a way to exercise the IOMMUv2 code paths without an IOTLB client.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 21874d4..ace46f8 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -6882,10 +6882,6 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+ 	if (ret)
+ 		return -EFAULT;
+ 
+-	/* disabled for now */
+-	if (attr->mmap2)
+-		return -EINVAL;
+-
+ 	if (attr->__reserved_1)
+ 		return -EINVAL;
+ 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 6b8646c..86bdf2a 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -179,13 +179,14 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		return -1;
+ 	}
+ 
+-	event->header.type = PERF_RECORD_MMAP;
++	event->header.type = PERF_RECORD_MMAP2;
+ 
+ 	while (1) {
+ 		char bf[BUFSIZ];
+ 		char prot[5];
+ 		char execname[PATH_MAX];
+ 		char anonstr[] = "//anon";
++		unsigned int ino;
+ 		size_t size;
+ 		ssize_t n;
+ 
+@@ -196,14 +197,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 		strcpy(execname, "");
+ 
+ 		/* 00400000-0040c000 r-xp 00000000 fd:01 41038  /bin/cat */
+-		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %*x:%*x %*u %s\n",
+-		       &event->mmap.start, &event->mmap.len, prot,
+-		       &event->mmap.pgoff,
+-		       execname);
+-		/*
+- 		 * Anon maps don't have the execname.
+- 		 */
+-		if (n < 4)
++		n = sscanf(bf, "%"PRIx64"-%"PRIx64" %s %"PRIx64" %x:%x %u %s\n",
++		       &event->mmap2.start, &event->mmap2.len, prot,
++		       &event->mmap2.pgoff, &event->mmap2.maj,
++		       &event->mmap2.min,
++		       &ino, execname);
++
++		event->mmap2.ino = (u64)ino;
++
++		if (n < 7)
+ 			continue;
+ 		/*
+ 		 * Just like the kernel, see __perf_event_mmap in kernel/perf_event.c
+@@ -239,15 +241,15 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
+ 			strcpy(execname, anonstr);
+ 
+ 		size = strlen(execname) + 1;
+-		memcpy(event->mmap.filename, execname, size);
++		memcpy(event->mmap2.filename, execname, size);
+ 		size = PERF_ALIGN(size, sizeof(u64));
+-		event->mmap.len -= event->mmap.start;
+-		event->mmap.header.size = (sizeof(event->mmap) -
+-					(sizeof(event->mmap.filename) - size));
+-		memset(event->mmap.filename + size, 0, machine->id_hdr_size);
+-		event->mmap.header.size += machine->id_hdr_size;
+-		event->mmap.pid = tgid;
+-		event->mmap.tid = pid;
++		event->mmap2.len -= event->mmap.start;
++		event->mmap2.header.size = (sizeof(event->mmap2) -
++					(sizeof(event->mmap2.filename) - size));
++		memset(event->mmap2.filename + size, 0, machine->id_hdr_size);
++		event->mmap2.header.size += machine->id_hdr_size;
++		event->mmap2.pid = tgid;
++		event->mmap2.tid = pid;
+ 
+ 		if (process(tool, event, &synth_sample, machine) != 0) {
+ 			rc = -1;
+diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
+index 5c28d82..21154da 100644
+--- a/tools/perf/util/evsel.c
++++ b/tools/perf/util/evsel.c
+@@ -659,6 +659,7 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
+ 		perf_evsel__set_sample_bit(evsel, WEIGHT);
+ 
+ 	attr->mmap  = track;
++	attr->mmap2 = track && !perf_missing_features.mmap2;
+ 	attr->comm  = track;
+ 
+ 	if (opts->sample_transaction)
+-- 
+1.7.11.7
 
