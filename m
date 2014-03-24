@@ -1,78 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753527AbaCXRFV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 13:05:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:45627 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbaCXRFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 13:05:18 -0400
-Date: Mon, 24 Mar 2014 10:04:27 -0700
-From: tip-bot for Stefani Seibold <tipbot@zytor.com>
-Message-ID: <tip-645a387ecbdb4aa78c8451a66416340616134537@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <1395592694-20571-1-git-send-email-stefani@seibold.net>
-References: <1395592694-20571-1-git-send-email-stefani@seibold.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Fix size of get_unmapped_area()
-Git-Commit-ID: 645a387ecbdb4aa78c8451a66416340616134537
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	id S1753486AbaCXRRY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 13:17:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26667 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752200AbaCXRRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 13:17:22 -0400
+Date: Mon, 24 Mar 2014 13:17:12 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Dave Airlie <airlied@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
+ mga_driver_irq_uninstall)
+In-Reply-To: <20140324085449.GA26878@phenom.ffwll.local>
+Message-ID: <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com> <20140322234317.GA10483@rhlx01.hs-esslingen.de> <20140323121541.GA20971@rhlx01.hs-esslingen.de> <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+ <20140323212715.GA22767@rhlx01.hs-esslingen.de> <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com> <20140324085449.GA26878@phenom.ffwll.local>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  645a387ecbdb4aa78c8451a66416340616134537
-Gitweb:     http://git.kernel.org/tip/645a387ecbdb4aa78c8451a66416340616134537
-Author:     Stefani Seibold <stefani@seibold.net>
-AuthorDate: Sun, 23 Mar 2014 17:38:14 +0100
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 24 Mar 2014 09:31:23 -0700
 
-x86, vdso: Fix size of get_unmapped_area()
 
-The size of the reserved memory for a 32 bit vdso must be the size of the
-32 bit vDSO in pages + HPET page + VVAR page.
+On Mon, 24 Mar 2014, Daniel Vetter wrote:
 
-One page is not enough for this. Grrrr.... silly copy and paste bug,
-was right in previous patch.
+> On Mon, Mar 24, 2014 at 07:45:47AM +1000, Dave Airlie wrote:
+> > On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
+> > > On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
+> > >> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
+> > >> >
+> > >> > which did end up flawless on 3.12.0-rc2+, too
+> > >> > (but failed to improve the issue on 3.14.0-rc7+).
+> > >> >
+> > >> > So, for all intents and purposes, drm infrastructure seems unavoidably
+> > >> > (neither dri disable nor libdrm upgrade helps) affected.
+> > >> > Does anyone know which change caused that issue?
+> > >> > (I'm asking because bisect here would be relatively painful).
+> > >>
+> > >> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
+> > >> 3.14 rc only, or did it happen already in the previous release?
+> > >
+> > > Hmm, given that Mikulas in
+> > > https://lkml.org/lkml/2014/2/26/537
+> > > offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
+> > > that that indeed may have been a regression at <= 3.13 proper even
+> > > (which may pose interesting questions about the level of testing coverage
+> > > we still enjoy [not!?] in this hardware area).
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Link: http://lkml.kernel.org/r/1395592694-20571-1-git-send-email-stefani@seibold.net
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/vdso/vdso32-setup.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+That patch drops a mutex, so it is not correct. There is mutex resursion - 
+we need to uninstall the irq in drm_master_destroy, because here we are 
+committed to destroy the device. But the routine that uninstalls the irq 
+takes struct_mutex, which is already held in drm_master_destroy.
 
-diff --git a/arch/x86/vdso/vdso32-setup.c b/arch/x86/vdso/vdso32-setup.c
-index 791c1cb..0034898 100644
---- a/arch/x86/vdso/vdso32-setup.c
-+++ b/arch/x86/vdso/vdso32-setup.c
-@@ -165,12 +165,14 @@ int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
- 
- 	down_write(&mm->mmap_sem);
- 
--	addr = get_unmapped_area(NULL, 0, PAGE_SIZE, 0, 0);
-+	addr = get_unmapped_area(NULL, 0, vdso32_size + VDSO_OFFSET(VDSO_PREV_PAGES), 0, 0);
- 	if (IS_ERR_VALUE(addr)) {
- 		ret = addr;
- 		goto up_fail;
- 	}
- 
-+	addr += VDSO_OFFSET(VDSO_PREV_PAGES);
-+
- 	current->mm->context.vdso = (void *)addr;
- 
- 	/*
+I suppose that the person who maintains drm reworks the patch so that it's 
+correct:
+
+- could we use a different mutex to protect the irq in drm_irq.c? Or 
+possibly no mutex at all and use cmpxchg to manipulate the variable 
+dev->irq_enabled? - this seems like the best solution. But I am not sure 
+if the code in drm_irq.c somehow depends on the facts that other parts of 
+the drm subsystem take struct_mutex.
+
+- could we pass a new argument to drm_irq_uninstall that tells it not to 
+take the mutex? drm_master_destroy would set this argument to 1. 
+drm_master_destroy is mostly called with struct_mutex held, but there may 
+be places in vmwgfx_drv.c where drm_master_put (which calls 
+drm_master_destroy) may be called without struct_mutex held.
+
+Is it true that drm_master_destroy can be called without struct_mutex 
+held? I don't know.
+
+
+I think drm maintainer should sort out the above issues and modify the 
+patch accordingly.
+
+> > > Oh well, seems I'll have to prepare/build 3.13 now...
+> > 
+> > It's > 15 year old hardware, so yes I believe we have close to 0
+> > testing coverage on it outside of distros,
+> > 
+> > I'm not even sure I have one anymore, I might be able to test an MGA in one box.
+> 
+> I haven't done a full read of all the related code, but this smells like a
+> similar bug I've hit all over the place in the i810 driver (another one of
+> those undead drm drivers of yonders). Ingredients:
+> 
+> 1) Xorg creates a drm mapping of the register space.
+> 2) Xorg tells the hw-specific drm which drm mapping has the hw registers,
+> and the driver uses that. Iirc this has been done as some form of OS
+> abstraction. Also note that these mappings aren't refcounted, so the first
+> guy to call drm_rmmap wins.
+> 
+> -> All hell breaks loose if Xorg dies and takes all it's mappings with it
+> (in master_destroy, since the Xorg /dev fd is the master) and leaves the
+> driver hanging in the air if there's an interrupt still pending (or
+> anything else fwiw).
+
+For me that crash happened when xorg exited with a fatal error too.
+
+Mikulas
