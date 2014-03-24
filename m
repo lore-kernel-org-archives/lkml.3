@@ -1,104 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752542AbaCXIqD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:46:03 -0400
-Received: from hqemgate15.nvidia.com ([216.228.121.64]:2928 "EHLO
-	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaCXIqA (ORCPT
+	id S1752839AbaCXIwe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:52:34 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:42135 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959AbaCXIwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:46:00 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 24 Mar 2014 01:40:08 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 00/12] drm/nouveau: support for GK20A, cont'd
-Date: Mon, 24 Mar 2014 17:42:22 +0900
-Message-ID: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-X-NVConfidentiality: public
+	Mon, 24 Mar 2014 04:52:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
+References: <20140323071601.GH18016@ZenIV.linux.org.uk>
+	<CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
+	<20140323164526.GJ18016@ZenIV.linux.org.uk>
+	<CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
+Date: Mon, 24 Mar 2014 09:52:30 +0100
+Message-ID: <CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
+Subject: Re: [git pull] vfs fixes
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Sun, Mar 23, 2014 at 6:01 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sun, Mar 23, 2014 at 9:45 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>>
+>> It's easier to skip checking the overflow on prepend() of "\0" in the
+>> beginning of the whole thing and just let the next operation to fail.
+>> That's where the corner case comes from.
+>
+> Ok, I'll buy the first four commits. Let's wait for Sedat's report on the rest.
+>
+>                   Linus
+>
 
-Here is the second batch of patches to add GK20A support to Nouveau. This time
-we are adding the actual chip support, and this series brings the driver to a
-point where a slightly-tweaked Mesa successfully runs shaders and renders
-triangles on GBM! Many thanks to Thierry Reding and the people on the
-#nouveau IRC channel for their help without which we would not have reached
-this milestone.
+Hi,
 
-A few lines of hacks (not included here) are still needed to deal with cached
-mappings triggering external aborts and CPU/GPU memory coherency issues, but I
-hope to understand and address these issues next.
+I have tested w/ Al's patch from [1].
 
-Most of the changes below have already been seen (and sometimes reviewed) in an
-earlier patchset. What has been added is proper PGRAPH support (still needing
-an external firmware and mostly reusing NVE4's code) as well as a better RAM
-implementation.
+AFAICS this changes are now updated in vfs.git#for-linus branch as
 
-How to represent and manage VRAM has been the hardest part to deal with, since
-GK20A shares the system memory with the CPU without any kind of partition. I
-have tried various approaches (included some in which no RAM object ever gets
-instanciated) and finally decided to go for one using DMA-contiguous memory
-allocations and relying on BAR mappings for kernel access and exposure to
-user-space, as it fits better with existing code and keeps us safe from most of
-the CPU/GPU memory coherency issues (at the cost of some performance).
+commit 9d25fe7e232b ("switch mnt_hash to hlist").
 
-Looking forward to your review of these few patches! :)
+I had a 2nd trouble w/ the old code, installing a Debian package
+resulted also in a freeze.
+This now works.
 
-Cheers,
-Alex.
+The LTP test is still running... and my -5 kernel with Al's fix seems
+to hit the 700+ KiB barrier in my logs.
 
-Alexandre Courbot (12):
-  drm/nouveau: fix missing newline
-  drm/nouveau/timer: skip calibration on GK20A
-  drm/nouveau/bar: only ioremap BAR3 if it exists
-  drm/nouveau/bar/nvc0: support chips without BAR3
-  drm/nouveau/fifo: add GK20A support
-  drm/nouveau/ibus: add GK20A support
-  drm/nouveau/fb: add GK20A support
-  drm/nouveau/graph: enable when using external firmware
-  drm/nouveau/graph: pad firmware code at load time
-  drm/nouveau/graph: add GK20A support
-  drm/nouveau: support GK20A in nouveau_accel_init()
-  drm/nouveau: support for probing GK20A
+$ LC_ALL=C ls -l /opt/ltp/runltp-log_3.14.0-rc7-[0-9]*-iniza-small.txt
+-rw-r--r-- 1 root root  733184 Mar 23 09:51
+/opt/ltp/runltp-log_3.14.0-rc7-4-iniza-small.txt
+-rw-r--r-- 1 root root  822533 Mar 24 09:51
+/opt/ltp/runltp-log_3.14.0-rc7-5-iniza-small.txt
+-rw-r--r-- 1 root root 1142248 Mar 23 11:44
+/opt/ltp/runltp-log_3.14.0-rc7-66-iniza-small.txt
 
- drivers/gpu/drm/nouveau/Makefile                   |   5 +
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |  20 +++
- drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |   1 +
- drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c    |  35 +++++
- .../gpu/drm/nouveau/core/engine/graph/ctxnve4.c    |   4 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  12 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h   |   9 ++
- drivers/gpu/drm/nouveau/core/engine/graph/nve4.c   |   2 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nvea.c   |  75 +++++++++
- drivers/gpu/drm/nouveau/core/include/engine/fifo.h |   1 +
- .../gpu/drm/nouveau/core/include/engine/graph.h    |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/fb.h   |   1 +
- drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
- drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |   7 +-
- drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 101 +++++++------
- drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c      |  56 +++++++
- drivers/gpu/drm/nouveau/core/subdev/fb/priv.h      |   1 +
- drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c   | 168 +++++++++++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c    | 110 ++++++++++++++
- drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c   |  19 ++-
- drivers/gpu/drm/nouveau/nouveau_drm.c              |  12 +-
- 21 files changed, 578 insertions(+), 63 deletions(-)
- create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/engine/graph/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/nvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/ramnvea.c
- create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/nvea.c
+[ NOTE ]
+-66: vanilla Linus-tree
+-4: -66 plus old vfs-fixes
+-5: -66 plus old vfs-fixes plus Al's fix from [1]
 
--- 
-1.9.1
+If you like give the usual credits.
 
+Regards,
+- Sedat -
+
+P.S.: [Off-topic] With vanilla -66 kernel I have some OOPS in the
+oom[1..5] tests of LTP. Whom to adress? mm-folks?
+
+[1] http://marc.info/?l=linux-kernel&m=139559379906251&w=2
