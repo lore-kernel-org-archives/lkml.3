@@ -1,46 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbaCXUje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:39:34 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:36011 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753639AbaCXUjd (ORCPT
+	id S1754000AbaCXUsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:48:50 -0400
+Received: from e06smtp18.uk.ibm.com ([195.75.94.114]:55962 "EHLO
+	e06smtp18.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753813AbaCXUsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:39:33 -0400
-X-Auth-Info: L19UZLy5Gomkc1EyklblxSwbspRK8sykCTVSrMkTKIo=
-From: Marek Vasut <marex@denx.de>
-To: linux-mtd@lists.infradead.org
-Subject: Re: New NAND driver
-Date: Mon, 24 Mar 2014 21:39:30 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: Lee Jones <lee.jones@linaro.org>, computersforpeace@gmail.com,
-        angus.clark@st.com, dwmw2@infradead.org, linux-kernel@vger.kernel.org,
-        kernel@stlinux.com
-References: <20140324132446.GA21665@lee--X1>
-In-Reply-To: <20140324132446.GA21665@lee--X1>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403242139.30933.marex@denx.de>
+	Mon, 24 Mar 2014 16:48:47 -0400
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>,
+        Christian Borntraeger <borntraeger@de.ibm.com>
+Subject: [PATCH] perf/tool: Fix usage of trace events with '-' in trace system name.
+Date: Mon, 24 Mar 2014 21:49:00 +0100
+Message-Id: <1395694140-43447-1-git-send-email-borntraeger@de.ibm.com>
+X-Mailer: git-send-email 1.8.4.2
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032420-6892-0000-0000-0000083BDC93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, March 24, 2014 at 02:24:46 PM, Lee Jones wrote:
-> Hi Brian,
-> 
-> Firstly I'd like to thank you for supporting the inclusion of ST's SPI
-> NOR (FSM) driver. As promised I will convert it over to the new
-> framework once it has been applied by your good self.
-> 
-> In the meantime however, I have a NAND driver which I need to
-> submit. I wanted to give you a heads-up prior to sending it in case
-> you had any special requests. FYI: Shoving it where the sun don't
-> shine, is not a valid request by the way :). It's 2700 lines and I've
-> split it over 47 patches for reviewing purposes.
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
 
-One nand driver in 47 patches ? Whoa ;-)
+Trace events potentially can have a '-' in their trace system name,
+e.g. kvm on s390 defines kvm-s390:* tracepoints.
+tools/perf could not parse them, because there was no rule for this:
+$ sudo ./perf top -e "kvm-s390:*"
+invalid or unsupported event: 'kvm-s390:*'
 
-Best regards,
-Marek Vasut
+This patch adds an extra rule to event_legacy_tracepoint which handles
+those cases. Without the patch, perf will not accept such tracepoints in
+the -e option.
+
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+---
+ tools/perf/util/parse-events.y | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 4eb67ec..dbbb01c 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -299,6 +299,18 @@ PE_PREFIX_MEM PE_VALUE sep_dc
+ }
+ 
+ event_legacy_tracepoint:
++PE_NAME '-' PE_NAME ':' PE_NAME
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *list;
++	char sys_name[strlen($1) + strlen($3) + 2];
++	sprintf(&sys_name, "%s-%s", $1, $3);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, &sys_name, $5));
++	$$ = list;
++}
++|
+ PE_NAME ':' PE_NAME
+ {
+ 	struct parse_events_evlist *data = _data;
+-- 
+1.8.4.2
+
