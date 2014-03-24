@@ -1,114 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752572AbaCXJuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:50:35 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13732 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752241AbaCXJue (ORCPT
+	id S1752685AbaCXKAr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:00:47 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:20085 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbaCXKAm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:50:34 -0400
-Date: Mon, 24 Mar 2014 09:50:05 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
+	Mon, 24 Mar 2014 06:00:42 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-85-533002488f10
+Date: Mon, 24 Mar 2014 11:00:32 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Jonghwa Lee <jonghwa3.lee@samsung.com>,
+        Lukasz Majewski <l.majewski@majess.pl>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Thomas Abraham <ta.omasab@gmail.com>,
+        Thomas Abraham <thomas.ab@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Christopher Covington <cov@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH] ARM: Use 64-bit DMA addresses for LPAE+VirtIO-MMIO
-Message-ID: <20140324095003.GA3850@arm.com>
-References: <1395250522-30031-1-git-send-email-cov@codeaurora.org>
- <532C96B9.4090805@codeaurora.org>
- <90DB5198-051A-48EC-B577-5342BD706713@arm.com>
- <4272242.L9VmujUH59@wuerfel>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4272242.L9VmujUH59@wuerfel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [RFC v3 0/5] cpufreq:LAB: Support for LAB governor.
+Message-id: <20140324110032.7aeae15e@amdc2363>
+In-reply-to: <CAKohpok1zBsX7n70r=geCOaP-9ONx2QdaUMK6cJeqhFrO1PkUg@mail.gmail.com>
+References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
+ <CAKohpok1zBsX7n70r=geCOaP-9ONx2QdaUMK6cJeqhFrO1PkUg@mail.gmail.com>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t9jAV0PJoNgg3Uf1Sw2zljPavG06Qe7
+	RefZJ8wWbx5xW2x6fI3V4vKuOWwWn3uPMFrMOL+PyeJ24wo2izOnL7FarJ/xmsVi84SNbBYd
+	yxgtNn71cODz2DnrLrvHnWt72Dw2L6n3WDftLbPHlqvtLB59W1YxenzeJBfAHsVlk5Kak1mW
+	WqRvl8CVcWnbDraCd2IVH97rNjC+Euxi5OSQEDCROHh8BiOELSZx4d56ti5GLg4hgUWMEje+
+	LWKFcH4xSmy+PpUVpIpFQFVi0vVdbCA2m4CexOe7T5m6GDk4RAS0JF7eTAWpZxb4wCLx5+1E
+	sKnCAg4SJ3Y1MYPU8ALV79nPDxLmFAiWWH/sPNSyM4wSr749ZgJJ8AtISrT/+8EMcZGdxLlP
+	G9hBbF4BQYkfk++xgNjMQLs2b2tihbDlJTavecs8gVFwFpKyWUjKZiEpW8DIvIpRNLUguaA4
+	KT3XUK84Mbe4NC9dLzk/dxMjOJ6eSe1gXNlgcYhRgINRiYf3Q49+sBBrYllxZe4hRgkOZiUR
+	3nIGg2Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdarQOFBNITS1KzU1MLUotgskwcnFINjNmP
+	Oc7s7tqzlY3topjLj4+X6wIOcj5tWN/Q+LZqtcivaS8T1C67zHvN6sWjl8v9Luih3O+MKKUu
+	wSkftuwq6TnksHOTfv66Gyey7cvehEtyrd9QpLZln5jXhTkHG04s8sioeeQuwD5p6rMpm9fr
+	OJ98ycmm+zFW64Azo319zKWMhff/sR3qmabEUpyRaKjFXFScCADV19zQowIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 11:52:33PM +0000, Arnd Bergmann wrote:
-> On Friday 21 March 2014 23:27:24 Catalin Marinas wrote:
-> > On 21 Mar 2014, at 19:44, Christopher Covington <cov@codeaurora.org> wrote:
-> > > On 03/21/2014 12:27 PM, Catalin Marinas wrote:
-> > >>> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-> > >>> index 1f8fed9..a62bcc9 100644
-> > >>> --- a/arch/arm/mm/Kconfig
-> > >>> +++ b/arch/arm/mm/Kconfig
-> > >>> @@ -617,6 +617,7 @@ config ARM_LPAE
-> > >>>     bool "Support for the Large Physical Address Extension"
-> > >>>     depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && \
-> > >>>             !CPU_32v4 && !CPU_32v3
-> > >>> +   select ARCH_DMA_ADDR_T_64BIT if VIRTIO_MMIO
-> > >> 
-> > >> That's the wrong place to enable ARCH_DMA_ADDR_T_64BIT. Do you have a
-> > >> platform with >32-bit physical address space? If yes, it should be
-> > >> selected there.
-> > > 
-> > > The platforms I'm currently using are models like the Versatile Express
-> > > RTSM/FVP. I can respin with changes to ARCH_VEXPRESS and ARCH_VIRT instead.
-> > 
-> > But do you use RAM beyond 32-bit on such models?
+Hi Viresh,
+
+> On 4 March 2014 15:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
+> > Despite this patch set is working and applicable on top of 3.14-rc5,
+> > please regard it solely as a pure RFC.
 > 
-> I think the more important question here is what the normal behavior is
-> for these platforms. I believe in most cases you don't have RAM above
-> the boundary, so we should not enable the option by default as it can
-> have noticeable overhead (we'd turn it on all the time if it didn't).
+> Okay, I am trying to do a review here and because you have mentioned
+> how different it is from the earlier versions, I am trying with a
+> fresh mind. i.e. with zero memories of earlier discussions :)
 > 
-> How about one of these two 
+> LAB was: Legacy Application Boost ??
+
+Yes, correct.
+
 > 
-> a)
+> Probably mention that in your new threads as well, so that new readers
+> know the details. Also, like other governors, just name it "boost"
+> governor.
+
+I think, that "LAB" name is with us for some time, so it would be a
+pity to discard it.
+
 > 
-> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-> index 9ea4b7b..6e3b6db 100644
-> --- a/arch/arm/mm/Kconfig
-> +++ b/arch/arm/mm/Kconfig
-> @@ -628,7 +628,9 @@ config ARCH_PHYS_ADDR_T_64BIT
->  	def_bool ARM_LPAE
->  
->  config ARCH_DMA_ADDR_T_64BIT
-> -	bool
-> +	def_bool "Allow DMA to high (>4GB) addresses"
-> +	depends on ARCH_PHYS_ADDR_T_64BIT
-> +	default y
->  	help
-
-We should probably call this "Allow DMA to high (>4GB) _bus_ addresses"
-to distinguish it from the actual CPU physical address.
-
-> b)
+> > This patch provides support for LAB governor build on top of
+> > ondemand. Previous version of LAB can be found here:
+> > http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+> >
+> > LAB short reminder:
+> >
+> > LAB uses information about how many cores are in "idle" state (the
+> > core idleness is represented as the value between 0 and 100) and
+> > the overall load of the system (from 0 to 100) to decide about
+> > frequency to be set. It is extremely useful with SoCs like
+> > Exynos4412, which can set only one frequency for all cores.
 > 
-> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-> index 9ea4b7b..4a21b1e 100644
-> --- a/arch/arm/mm/Kconfig
-> +++ b/arch/arm/mm/Kconfig
-[...]
->  config ARCH_PHYS_ADDR_T_64BIT
-> -	def_bool ARM_LPAE
-> +	bool "Support more than 4GB of physical address space" if EXPERT
-> +	depends on ARM_LPAE
-> +	default y
+> Probably a description of how exactly these two values come into play
+> would have been more interesting here for all. Always think of new
+> followers of your patchset and so add all interesting things about it
+> when you resend it.
+> 
+> If I remember well the logic was more or less like this:
+> - More idle cores means run few running cores at high frequency
+> - Less idle cores means don't run them at very high frequencies
+> 
+> Right?
 
-I don't think I ever tested LPAE with ARCH_PHYS_ADDR_T_64BIT off. Even
-if you enable EXPERT, it's a risk that some bit shifting of phys_addr_t
-would break (the pte expects 64-bit entries).
+This is correct. Also, the underlying SoC - Exynos4412 has 4 cores with
+option to set frequency only on all of them.
 
->  config ARCH_DMA_ADDR_T_64BIT
-> -	bool
-> +	def_bool ARCH_PHYS_ADDR_T_64BIT
+> 
+> What about making it as simple as:
+> - changing the ondemand governor only instead of adding a new governor
 
-I recall Russell objecting to this when we reviewed the LPAE patches
-because the CPU address is different from the bus address. I assume
-those arguments still stand.
+My goal is to not touch the ondemand code. It has matured, so I would
+like to leave it as it is.
 
-I would go for (a) but with individual SoCs still selecting
-ARCH_DMA_ADDR_T_64BIT explicitly if they expect bus addresses over
-32-bit.
+> - Keeping the bahavior as is for all platforms not publishing boost
+> frequencies
+
+This is also done - you get the LAB configuration specified in the DT
+for the particular platform/board.
+
+> - If more cores are idle, enable switching to boost frequencies and
+> take them into consideration all the time.
+
+I'm not sure if I have understood you, but something like that is also
+performed in the code.
+
+> - If less cores are idle, disable boost frequencies..
+
+As written above.
+
+> 
+> Lets discuss this first and then I will get into the very details of
+> your implementation.
+
+Discussion about above functionalities requires consulting the
+implementation to be sure that our opinions are the same.
 
 -- 
-Catalin
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
