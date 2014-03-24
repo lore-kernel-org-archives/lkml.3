@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751180AbaCXV2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 17:28:39 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:40004 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806AbaCXV2h (ORCPT
+	id S1751345AbaCXVdU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 17:33:20 -0400
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:49902 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751035AbaCXVdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 17:28:37 -0400
-Date: Mon, 24 Mar 2014 17:28:35 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-To: Anders Berg <anders.berg@lsi.com>
-cc: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        =?ISO-8859-15?Q?Fredrik_Markstr=F6m?= <fredrik.markstrom@gmail.com>
-Subject: Re: [PATCH RFC] ARM: mm: Fix for highmem on machines with more than
- 14 cores
-In-Reply-To: <52661057074abf5bfe6174cb561bec5eea8892fb.1395692531.git.anders.berg@lsi.com>
-Message-ID: <alpine.LFD.2.11.1403241727290.1291@knanqh.ubzr>
-References: <cover.1395692531.git.anders.berg@lsi.com> <52661057074abf5bfe6174cb561bec5eea8892fb.1395692531.git.anders.berg@lsi.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Mon, 24 Mar 2014 17:33:19 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1906557635-1395696516=:1291"
+In-Reply-To: <532FFBDE.7030407@broadcom.com>
+References: <CAK7N6vrgnNdFvo8as+DrhXurxP+SexN9gi3WFrX_SCO9i2Ybyw@mail.gmail.com>
+	<532FFBDE.7030407@broadcom.com>
+Date: Mon, 24 Mar 2014 14:33:18 -0700
+Message-ID: <CAK7N6voRqo5fztqHLM7BLG14GNrMXPu_fpS6weue8hZU5uUJ1w@mail.gmail.com>
+Subject: Re: Disabling gcc inline operation
+From: anish singh <anish198519851985@gmail.com>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: LAK <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel-mail <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
-
---8323328-1906557635-1395696516=:1291
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 24 Mar 2014, Anders Berg wrote:
-
-> The fixmap area was hard coded to 224 pages which was only enough for 14 CPU:s.
-> Now the area adapts to the configured number of CPU:s (NR_CPUS). We still have
-> a hard limit of 30 CPU:s since we only have a single pte-chunk (512 pte:s).
-> 
-> Signed-off-by: Anders Berg <anders.berg@lsi.com>
-> Signed-off-by: Fredrik Markström <fredrik.markstrom@gmail.com>
-
-This is under discussion already.  Please have a look at this thread:
-
-http://news.gmane.org/group/gmane.linux.kernel/thread=1672068/
-
-
-Nicolas
---8323328-1906557635-1395696516=:1291--
+On Mon, Mar 24, 2014 at 2:33 AM, Arend van Spriel <arend@broadcom.com> wrote:
+> On 23/03/14 23:31, anish singh wrote:
+>>
+>> Many a time i have got a crash and it is difficult
+>> to find out the exact function which crashed
+>> because the crash stack doesn't show the "real"
+>> function because gcc inlines many functions when
+>> ever it desires or when it optimizes for speed.
+>>
+>> So i don't want gcc to inline any function instead
+>> just call the function so that i can see the crash
+>> stack of each function called. I just want to do
+>> this for debugging. Please let me know how can
+>> i do that?
+>>
+>> What switch command to pass to gcc in the make
+>> of linux kernel?
+>
+>
+> You tried to look at gcc.gnu.org, right? Your best options are -O0 and/or
+> -Og for debugging purposes.
+It worked with -fno-inline
+>
+> Regards,
+> Arend
+>
+>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
