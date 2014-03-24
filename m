@@ -1,163 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753675AbaCXRas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 13:30:48 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:43614 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753432AbaCXRap (ORCPT
+	id S1753651AbaCXRdl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 13:33:41 -0400
+Received: from mail-yh0-f42.google.com ([209.85.213.42]:61040 "EHLO
+	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107AbaCXRdj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 13:30:45 -0400
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Corentin Chary <corentin.chary@gmail.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Sujith Thomas <sujith.thomas@intel.com>,
-        Eduardo Valentin <eduardo.valentin@ti.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org, linux-pm@vger.kernel.org
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Subject: [PATCH] linux/thermal.h: Rename KELVIN_TO_CELSIUS to DECI_KELVIN_TO_CELSIUS
-Date: Mon, 24 Mar 2014 18:29:09 +0100
-Message-Id: <1395682149-16563-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 1.8.4.rc3.2.g61bff3f
+	Mon, 24 Mar 2014 13:33:39 -0400
+Date: Mon, 24 Mar 2014 14:33:32 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-03-24
+Message-ID: <20140324173332.GA2214@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macros KELVIN_TO_CELSIUS and CELSIUS_TO_KELVIN actually work on
-decikelvins, so rename them to reflect their actual semantics.
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+--yrj/dFKFPuw6o+aM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+
+Hi John,
+
+Here follow another set of patches to 3.15. This is mostly a bug fix pull
+request with the exception of one commit from Marcel which adds tracking to
+the current configured LE scan type parameter.
+
+Please pull or let me know of any issues. Thanks!
+
+	Gustavo
+
 ---
- drivers/acpi/thermal.c              | 12 ++++++------
- drivers/platform/x86/asus-wmi.c     |  2 +-
- drivers/platform/x86/intel_menlow.c |  8 ++++----
- include/linux/thermal.h             |  6 +++---
- 4 files changed, 14 insertions(+), 14 deletions(-)
+The following changes since commit 40b552aa5a0bfa785bc7ddb5c2d7965b1e0bb08d:
 
-diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
-index 08626c8..3742e64 100644
---- a/drivers/acpi/thermal.c
-+++ b/drivers/acpi/thermal.c
-@@ -313,7 +313,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
- 			if (crt == -1) {
- 				tz->trips.critical.flags.valid = 0;
- 			} else if (crt > 0) {
--				unsigned long crt_k = CELSIUS_TO_KELVIN(crt);
-+				unsigned long crt_k = CELSIUS_TO_DECI_KELVIN(crt);
- 				/*
- 				 * Allow override critical threshold
- 				 */
-@@ -349,7 +349,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
- 		if (psv == -1) {
- 			status = AE_SUPPORT;
- 		} else if (psv > 0) {
--			tmp = CELSIUS_TO_KELVIN(psv);
-+			tmp = CELSIUS_TO_DECI_KELVIN(psv);
- 			status = AE_OK;
- 		} else {
- 			status = acpi_evaluate_integer(tz->device->handle,
-@@ -429,7 +429,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
- 					break;
- 				if (i == 1)
- 					tz->trips.active[0].temperature =
--						CELSIUS_TO_KELVIN(act);
-+						CELSIUS_TO_DECI_KELVIN(act);
- 				else
- 					/*
- 					 * Don't allow override higher than
-@@ -437,9 +437,9 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
- 					 */
- 					tz->trips.active[i - 1].temperature =
- 						(tz->trips.active[i - 2].temperature <
--						CELSIUS_TO_KELVIN(act) ?
-+						CELSIUS_TO_DECI_KELVIN(act) ?
- 						tz->trips.active[i - 2].temperature :
--						CELSIUS_TO_KELVIN(act));
-+						CELSIUS_TO_DECI_KELVIN(act));
- 				break;
- 			} else {
- 				tz->trips.active[i].temperature = tmp;
-@@ -1094,7 +1094,7 @@ static int acpi_thermal_add(struct acpi_device *device)
- 		goto free_memory;
- 
- 	pr_info(PREFIX "%s [%s] (%ld C)\n", acpi_device_name(device),
--		acpi_device_bid(device), KELVIN_TO_CELSIUS(tz->temperature));
-+		acpi_device_bid(device), DECI_KELVIN_TO_CELSIUS(tz->temperature));
- 	goto end;
- 
- free_memory:
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index c5e082f..2d81d5a 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1066,7 +1066,7 @@ static ssize_t asus_hwmon_temp1(struct device *dev,
- 	if (err < 0)
- 		return err;
- 
--	value = KELVIN_TO_CELSIUS((value & 0xFFFF)) * 1000;
-+	value = DECI_KELVIN_TO_CELSIUS((value & 0xFFFF)) * 1000;
- 
- 	return sprintf(buf, "%d\n", value);
- }
-diff --git a/drivers/platform/x86/intel_menlow.c b/drivers/platform/x86/intel_menlow.c
-index e8b46d2..0a919d8 100644
---- a/drivers/platform/x86/intel_menlow.c
-+++ b/drivers/platform/x86/intel_menlow.c
-@@ -315,7 +315,7 @@ static ssize_t aux0_show(struct device *dev,
- 
- 	result = sensor_get_auxtrip(attr->handle, 0, &value);
- 
--	return result ? result : sprintf(buf, "%lu", KELVIN_TO_CELSIUS(value));
-+	return result ? result : sprintf(buf, "%lu", DECI_KELVIN_TO_CELSIUS(value));
- }
- 
- static ssize_t aux1_show(struct device *dev,
-@@ -327,7 +327,7 @@ static ssize_t aux1_show(struct device *dev,
- 
- 	result = sensor_get_auxtrip(attr->handle, 1, &value);
- 
--	return result ? result : sprintf(buf, "%lu", KELVIN_TO_CELSIUS(value));
-+	return result ? result : sprintf(buf, "%lu", DECI_KELVIN_TO_CELSIUS(value));
- }
- 
- static ssize_t aux0_store(struct device *dev,
-@@ -345,7 +345,7 @@ static ssize_t aux0_store(struct device *dev,
- 	if (value < 0)
- 		return -EINVAL;
- 
--	result = sensor_set_auxtrip(attr->handle, 0, CELSIUS_TO_KELVIN(value));
-+	result = sensor_set_auxtrip(attr->handle, 0, CELSIUS_TO_DECI_KELVIN(value));
- 	return result ? result : count;
- }
- 
-@@ -364,7 +364,7 @@ static ssize_t aux1_store(struct device *dev,
- 	if (value < 0)
- 		return -EINVAL;
- 
--	result = sensor_set_auxtrip(attr->handle, 1, CELSIUS_TO_KELVIN(value));
-+	result = sensor_set_auxtrip(attr->handle, 1, CELSIUS_TO_DECI_KELVIN(value));
- 	return result ? result : count;
- }
- 
-diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-index f7e11c7..c978aa3 100644
---- a/include/linux/thermal.h
-+++ b/include/linux/thermal.h
-@@ -41,9 +41,9 @@
- #define THERMAL_NO_LIMIT	THERMAL_CSTATE_INVALID
- 
- /* Unit conversion macros */
--#define KELVIN_TO_CELSIUS(t)	(long)(((long)t-2732 >= 0) ?	\
--				((long)t-2732+5)/10 : ((long)t-2732-5)/10)
--#define CELSIUS_TO_KELVIN(t)	((t)*10+2732)
-+#define DECI_KELVIN_TO_CELSIUS(t)	(long)(((long)t-2732 >= 0) ?	\
-+					((long)t-2732+5)/10 : ((long)t-2732-5)/10)
-+#define CELSIUS_TO_DECI_KELVIN(t)	((t)*10+2732)
- 
- /* Adding event notification support elements */
- #define THERMAL_GENL_FAMILY_NAME                "thermal_event"
--- 
-1.8.4.rc3.2.g61bff3f
+  Bluetooth: Enforce strict Secure Connections Only mode security (2014-03-19 23:30:32 +0200)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
+
+for you to fetch changes up to 8396215d4865d66be9cdfcec8d135862e1fd98d1:
+
+  Bluetooth: Remove unnecessary assignment in SMP (2014-03-24 08:43:50 -0700)
+
+----------------------------------------------------------------
+Amitkumar Karwar (1):
+      Bluetooth: btmrvl: don't consume all vendor specific events
+
+Johan Hedberg (10):
+      Bluetooth: Fix passkey endianess in user_confirm and notify_passkey
+      Bluetooth: Fix address value for early disconnection events
+      Bluetooth: Fix potential NULL pointer dereference in SMP
+      Bluetooth: Add missing cmd_status handler for LE_Start_Encryption
+      Bluetooth: Fix SMP confirmation callback handling
+      Bluetooth: Add SMP flag to track which side is the initiator
+      Bluetooth: Don't try to confirm locally initiated SMP pairing
+      Bluetooth: Remove LTK re-encryption procedure
+      Bluetooth: Fix potential NULL pointer dereference in smp_conn_security
+      Bluetooth: Remove unnecessary assignment in SMP
+
+Marcel Holtmann (1):
+      Bluetooth: Track current configured LE scan type parameter
+
+Thomas Gleixner (1):
+      Bluetooth: bluecard: Use del_timer_sync() in teardown path
+
+ drivers/bluetooth/bluecard_cs.c  |  2 +-
+ drivers/bluetooth/btmrvl_main.c  | 11 +++---
+ include/net/bluetooth/hci_core.h |  3 +-
+ net/bluetooth/hci_event.c        | 63 +++++++++++++++++++++++++++++++-
+ net/bluetooth/mgmt.c             | 20 ++--------
+ net/bluetooth/smp.c              | 87 ++++++++++++++++++--------------------------
+ net/bluetooth/smp.h              |  7 +---
+ 7 files changed, 111 insertions(+), 82 deletions(-)
+
+
+--yrj/dFKFPuw6o+aM
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTMGxsAAoJEPs3PUX4s20oFTEQAJ6jBRVgqWax/cdDqHwNF31y
+/d1taW4nLwlbyVQoMjB1i0BxJJAWILgxs8BjiG1jBSkMfi+GmtiJom6LcaRCl3WR
+NaYGY93gseO1Fmj9Q5ChOP71HUFx1/1Fo0diiKDsfl2qOD6lHnY6nLUxst/jn3cu
+yUmWhnM+aE6ixUeagf9/jZO1bodMqOvL2FOoXwlAVSDpm6LQAS7OIrCj+ZRMdDO3
+7OozQaQPr4jeyzWj8sabkUryM2/YUkAWeCMnL8LFYrXiIzFXilxMpN6+aJzxWeqo
+BsXTSz/TDXsiANhWq4ED4wlr87AWYx+9ZNv1CvNB3TvYvQFX1VU56f8lUuh8tJDX
+SFz0BjlmzbYurOtmx+GKnRZxWkdzBQc2/0w0oPeWVxzd5ftZfFA5A4nKQWXgQIuP
+ValvvQ5xZOb8HkPVW9gGqBHs6dll7NVK2IA0fZVTzG9uyNSmbSntLqcfONIMXaO6
+iWTDvl2HuOGuZKbnedNt6iUgTfSUEL25+NF8uaDosBAmzcQm9cTyZiZ9sPzNrLVi
+ogGSNpACaxSzntoLhPs/cunLR+7+FxXwxYnjH/sUpBFYmhpcTjHnaEpplX4EPU+/
+uwIXuJ2TCKSHET89ZGSB3km2W12GHd2c9BOk31+55FW+o84OOcjz5hzieDvW474d
+rbJJsxS0Me3UG916lxJK
+=0ufD
+-----END PGP SIGNATURE-----
+
+--yrj/dFKFPuw6o+aM--
