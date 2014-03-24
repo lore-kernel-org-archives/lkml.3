@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751508AbaCXG1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 02:27:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16794 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaCXG1U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 02:27:20 -0400
-Date: Mon, 24 Mar 2014 08:27:24 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jason Wang <jasowang@redhat.com>
-Cc: rusty@rustcorp.com.au, virtualization@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-Subject: Re: [PATCH net] virtio-net: don't free skb immediately on kick
- failure
-Message-ID: <20140324062724.GB22338@redhat.com>
-References: <1395390601-13177-1-git-send-email-jasowang@redhat.com>
- <20140323112719.GE6989@redhat.com>
- <532FC34D.3040604@redhat.com>
+	id S1752069AbaCXG2J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 02:28:09 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:54178 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbaCXG2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 02:28:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532FC34D.3040604@redhat.com>
+In-Reply-To: <1395083192-3224-3-git-send-email-sthokal@xilinx.com>
+References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
+	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
+Date: Mon, 24 Mar 2014 11:50:49 +0530
+Message-ID: <CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Srikanth Thokala <sthokal@xilinx.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        michal.simek@xilinx.com, Grant Likely <grant.likely@linaro.org>,
+        robh+dt@kernel.org, levex@linux.com,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        dmaengine@vger.kernel.org, andriy.shevchenko@linux.intel.com,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 01:31:57PM +0800, Jason Wang wrote:
-> On 03/23/2014 07:27 PM, Michael S. Tsirkin wrote:
-> > On Fri, Mar 21, 2014 at 04:30:01PM +0800, Jason Wang wrote:
-> >> We free the skb immediately on kick failure during xmit without detaching it
-> >> from the virtqueue. This may lead double free for the skb during
-> >> free_unused_bufs(). This patch fixes this by not freeing it on kick failure and
-> >> let it to be freed through free_unused_bufs().
-> >>
-> >> Fixes 67975901183799af8e93ec60e322f9e2a1940b9b
-> >> ("virtio_net: verify if virtqueue_kick() succeeded").
-> > It's not even obvious we want to increment fifo errors
-> > counter.
-> > So basically we want to ignore these errors.
-> > In that case how about just reverting this chunk
-> > of the patch?
-> 
-> Sure, I think it's safe to do this.
-> > Seems cleaner than adding more code.
-> >
-> > The chunk filling in RX also seems inappropriate:
-> > it will cause RX work to be requeued which isn't what
-> > we wanted.
-> 
-> True, we can also ignore the error here.
+On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
 
-So let's do that - just revert most of that commit
-except the bit that breaks out of look when we submit commands.
+> +
+> +/**
+> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
 
-> >
-> > Also, what happens with virtnet_send_command?
-> 
-> Looks ok, if vq is broken it will return error to the caller or jump out
-> of the busy loop.
-> > Looks like that patch is completely wrong.
-> >
-> >> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> >> Cc: Michael S. Tsirkin <mst@redhat.com>
-> >> Cc: Heinz Graalfs <graalfs@linux.vnet.ibm.com>
-> >> Signed-off-by: Jason Wang <jasowang@redhat.com>
-> >> ---
-> >>  drivers/net/virtio_net.c | 6 ++++--
-> >>  1 file changed, 4 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> >> index 5632a99..d833d38 100644
-> >> --- a/drivers/net/virtio_net.c
-> >> +++ b/drivers/net/virtio_net.c
-> >> @@ -882,8 +882,10 @@ static netdev_tx_t start_xmit(struct sk_buff *skb, struct net_device *dev)
-> >>  		if (net_ratelimit())
-> >>  			dev_warn(&dev->dev,
-> >>  				 "Unexpected TXQ (%d) queue failure: %d\n", qnum, err);
-> >> -		dev->stats.tx_dropped++;
-> >> -		kfree_skb(skb);
-> >> +		if (err) {
-> >> +			dev->stats.tx_dropped++;
-> >> +			kfree_skb(skb);
-> >> +		}
-> >>  		return NETDEV_TX_OK;
-> >>  	}
-> >>  
-> >> -- 
-> >> 1.8.3.2
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+Should be xilinx_vdma_dma_prep_interleaved here.
+
+> +/**
+> + * xilinx_vdma_channel_set_config - Configure VDMA channel
+> + * Run-time configuration for Axi VDMA, supports:
+> + * . halt the channel
+> + * . configure interrupt coalescing and inter-packet delay threshold
+> + * . start/stop parking
+> + * . enable genlock
+> + *
+> + * @dchan: DMA channel
+> + * @cfg: VDMA device configuration pointer
+> + *
+> + * Return: '0' on success and failure value on error
+> + */
+> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+> +                                       struct xilinx_vdma_config *cfg)
+> +{
+> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+> +       u32 dmacr;
+> +
+> +       if (cfg->reset)
+> +               return xilinx_vdma_chan_reset(chan);
+> +
+> +       dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
+> +
+> +       chan->config.frm_dly = cfg->frm_dly;
+> +       chan->config.park = cfg->park;
+> +
+> +       /* genlock settings */
+> +       chan->config.gen_lock = cfg->gen_lock;
+> +       chan->config.master = cfg->master;
+> +
+> +       if (cfg->gen_lock && chan->genlock) {
+> +               dmacr |= XILINX_VDMA_DMACR_GENLOCK_EN;
+> +               dmacr |= cfg->master << XILINX_VDMA_DMACR_MASTER_SHIFT;
+> +       }
+> +
+> +       chan->config.frm_cnt_en = cfg->frm_cnt_en;
+> +       if (cfg->park)
+> +               chan->config.park_frm = cfg->park_frm;
+> +       else
+> +               chan->config.park_frm = -1;
+> +
+> +       chan->config.coalesc = cfg->coalesc;
+> +       chan->config.delay = cfg->delay;
+> +
+> +       if (cfg->coalesc <= XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
+> +               dmacr |= cfg->coalesc << XILINX_VDMA_DMACR_FRAME_COUNT_SHIFT;
+> +               chan->config.coalesc = cfg->coalesc;
+> +       }
+> +
+> +       if (cfg->delay <= XILINX_VDMA_DMACR_DELAY_MAX) {
+> +               dmacr |= cfg->delay << XILINX_VDMA_DMACR_DELAY_SHIFT;
+> +               chan->config.delay = cfg->delay;
+> +       }
+> +
+> +       /* FSync Source selection */
+> +       dmacr &= ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
+> +       dmacr |= cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIFT;
+> +
+> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
+> +
+> +       return 0;
+> +}
+> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
+> +
+Bypassing the DMAEngine api doesn't seem very neat.
+Is there currently any client driver that /changes/ this configuration
+between channel requests? If no, then simply get the configuration
+from DT node and avoid this api.
