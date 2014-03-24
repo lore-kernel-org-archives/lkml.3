@@ -1,262 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754512AbaCXTiK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:38:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54076 "EHLO mx1.redhat.com"
+	id S1754537AbaCXTiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:38:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45763 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754477AbaCXTiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:38:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: [PATCH 04/15 V3] perf c2c: Dump raw records, decode data_src bits
-Date: Mon, 24 Mar 2014 15:36:55 -0400
-Message-Id: <1395689826-215033-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	id S1754107AbaCXTiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:38:17 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        hadi@mojatatu.com, davem@davemloft.net
+Subject: [PATCH][v4] netlink: have netlink per-protocol bind function return an error code.
+Date: Mon, 24 Mar 2014 15:37:32 -0400
+Message-Id: <043a0c6fe4912021ca84f1fc9f8f0b2eaea630af.1395687642.git.rgb@redhat.com>
+In-Reply-To: <218730659282a7f75672d1925104a0246cdb0454.1395685504.git.rgb@redhat.com>
+References: <218730659282a7f75672d1925104a0246cdb0454.1395685504.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Have the netlink per-protocol optional bind function return an int error code
+rather than void to signal a failure.
 
->From the c2c prototype:
+This will enable netlink protocols to perform extra checks including
+capabilities and permissions verifications when updating memberships in
+multicast groups.
 
-[root@sandy ~]# perf c2c -r report | head -7
-T Status    Pid Tid CPU          Inst Adrs     Virt Data Adrs Phys Data Adrs Cycles Source      Decoded Source                ObJect:Symbol
---------------------------------------------------------------------------------------------------------------------------------------------
-  raw input 779 779   7 0xffffffff810865dd 0xffff8803f4d75ec8              0    370 0x68080882 [LOAD,LCL_LLC,MISS,SNP NA]    [kernel.kallsyms]:try_to_wake_up
-  raw input 779 779   7 0xffffffff8107acb3 0xffff8802a5b73158              0    297 0x6a100142 [LOAD,L1,HIT,SNP NONE,LOCKED] [kernel.kallsyms]:up_read
-  raw input 779 779   7       0x3b7e009814     0x7fff87429ea0              0    925 0x68100142 [LOAD,L1,HIT,SNP NONE]        ???:???
-  raw input   0   0   1 0xffffffff8108bf81 0xffff8803eafebf50              0    172 0x68800842 [LOAD,LCL_LLC,HIT,SNP HITM]   [kernel.kallsyms]:update_stats_wait_end
-  raw input 779 779   7       0x3b7e0097cc     0x7fac94b69068              0    228 0x68100242 [LOAD,LFB,HIT,SNP NONE]       ???:???
-[root@sandy ~]#
+In netlink_bind() and netlink_setsockopt() the call to the per-protocol bind
+function was moved above the multicast group update to prevent any access to
+the multicast socket groups before checking with the per-protocol bind
+function.  This will enable the per-protocol bind function to be used to check
+permissions which could be denied before making them available, and to avoid
+the messy job of undoing the addition should the per-protocol bind function
+fail.
 
-The "Phys Data Adrs" column is not available at this point.
+The netfilter subsystem seems to be the only one currently using the
+per-protocol bind function.
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Joe Mario <jmario@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Fowles <rfowles@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 148 +++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 125 insertions(+), 23 deletions(-)
+In particular, the audit subsystem (NETLINK_AUDIT protocol) could benefit by
+being able to check specific capabilities for each multicast group before
+granting membership to the requesting socket.  Currently, all NETLINK_AUDIT
+sockets must have the capability CAP_NET_ADMIN.  No other capabilities are
+required to join a multicast group.  This capability is too broad allowing
+access to this socket by many applications that must not have access to this
+information.  It is proposed to add capability CAP_AUDIT_READ to allow this
+access while dropping the exessively broad capability CAP_NET_ADMIN.
 
-diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 2935484..7082913 100644
---- a/tools/perf/builtin-c2c.c
-+++ b/tools/perf/builtin-c2c.c
-@@ -11,51 +11,148 @@
- 
- struct perf_c2c {
- 	struct perf_tool tool;
-+	bool		 raw_records;
+There has also been some interest expressed by IETF ForCES folk.
+
+v4: fixed a logic error (missing braces) and a C99 error.
+
+v3: added netlink_unbind() option and unwound netlink_insert().
+---
+ include/linux/netlink.h   |    3 ++-
+ net/netfilter/nfnetlink.c |    3 ++-
+ net/netlink/af_netlink.c  |   39 ++++++++++++++++++++++++++-------------
+ net/netlink/af_netlink.h  |    6 ++++--
+ 4 files changed, 34 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 7a6c396..0ba2edd 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -45,7 +45,8 @@ struct netlink_kernel_cfg {
+ 	unsigned int	flags;
+ 	void		(*input)(struct sk_buff *skb);
+ 	struct mutex	*cb_mutex;
+-	void		(*bind)(int group);
++	int		(*bind)(int group);
++	void		(*unbind)(int group);
+ 	bool		(*compare)(struct net *net, struct sock *sk);
  };
  
--static int perf_sample__fprintf(struct perf_sample *sample,
--				struct perf_evsel *evsel,
--				struct addr_location *al, FILE *fp)
-+enum { OP, LVL, SNP, LCK, TLB };
-+
-+static int perf_c2c__scnprintf_data_src(char *bf, size_t size, uint64_t val)
+diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+index 1da5ef1..14c8ac8 100644
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -392,7 +392,7 @@ static void nfnetlink_rcv(struct sk_buff *skb)
+ }
+ 
+ #ifdef CONFIG_MODULES
+-static void nfnetlink_bind(int group)
++static int nfnetlink_bind(int group)
  {
--	return fprintf(fp, "%25.25s: %5d %5d 0x%016" PRIx64 " 0x016%" PRIx64 " %5" PRIu64 " 0x%06" PRIx64 " %s:%s\n",
--		       perf_evsel__name(evsel),
--		       sample->pid, sample->tid, sample->ip, sample->addr,
--		       sample->weight, sample->data_src,
--		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
--		       al->sym ? al->sym->name : "???");
-+#define PREFIX       "["
-+#define SUFFIX       "]"
-+#define ELLIPSIS     "..."
-+	static const struct {
-+		uint64_t   bit;
-+		int64_t    field;
-+		const char *name;
-+	} decode_bits[] = {
-+	{ PERF_MEM_OP_LOAD,       OP,  "LOAD"     },
-+	{ PERF_MEM_OP_STORE,      OP,  "STORE"    },
-+	{ PERF_MEM_OP_NA,         OP,  "OP_NA"    },
-+	{ PERF_MEM_LVL_LFB,       LVL, "LFB"      },
-+	{ PERF_MEM_LVL_L1,        LVL, "L1"       },
-+	{ PERF_MEM_LVL_L2,        LVL, "L2"       },
-+	{ PERF_MEM_LVL_L3,        LVL, "LCL_LLC"  },
-+	{ PERF_MEM_LVL_LOC_RAM,   LVL, "LCL_RAM"  },
-+	{ PERF_MEM_LVL_REM_RAM1,  LVL, "RMT_RAM"  },
-+	{ PERF_MEM_LVL_REM_RAM2,  LVL, "RMT_RAM"  },
-+	{ PERF_MEM_LVL_REM_CCE1,  LVL, "RMT_LLC"  },
-+	{ PERF_MEM_LVL_REM_CCE2,  LVL, "RMT_LLC"  },
-+	{ PERF_MEM_LVL_IO,        LVL, "I/O"	  },
-+	{ PERF_MEM_LVL_UNC,       LVL, "UNCACHED" },
-+	{ PERF_MEM_LVL_NA,        LVL, "N"        },
-+	{ PERF_MEM_LVL_HIT,       LVL, "HIT"      },
-+	{ PERF_MEM_LVL_MISS,      LVL, "MISS"     },
-+	{ PERF_MEM_SNOOP_NONE,    SNP, "SNP NONE" },
-+	{ PERF_MEM_SNOOP_HIT,     SNP, "SNP HIT"  },
-+	{ PERF_MEM_SNOOP_MISS,    SNP, "SNP MISS" },
-+	{ PERF_MEM_SNOOP_HITM,    SNP, "SNP HITM" },
-+	{ PERF_MEM_SNOOP_NA,      SNP, "SNP NA"   },
-+	{ PERF_MEM_LOCK_LOCKED,   LCK, "LOCKED"   },
-+	{ PERF_MEM_LOCK_NA,       LCK, "LOCK_NA"  },
-+	};
-+	union perf_mem_data_src dsrc = { .val = val, };
-+	int printed = scnprintf(bf, size, PREFIX);
-+	size_t i;
-+	bool first_present = true;
+ 	const struct nfnetlink_subsystem *ss;
+ 	int type = nfnl_group2type[group];
+@@ -402,6 +402,7 @@ static void nfnetlink_bind(int group)
+ 	rcu_read_unlock();
+ 	if (!ss)
+ 		request_module("nfnetlink-subsys-%d", type);
++	return 0;
+ }
+ #endif
+ 
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index bca50b9..301dfe9 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1198,7 +1198,8 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 	struct module *module = NULL;
+ 	struct mutex *cb_mutex;
+ 	struct netlink_sock *nlk;
+-	void (*bind)(int group);
++	int (*bind)(int group);
++	void (*unbind)(int group);
+ 	int err = 0;
+ 
+ 	sock->state = SS_UNCONNECTED;
+@@ -1224,6 +1225,7 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 		err = -EPROTONOSUPPORT;
+ 	cb_mutex = nl_table[protocol].cb_mutex;
+ 	bind = nl_table[protocol].bind;
++	unbind = nl_table[protocol].unbind;
+ 	netlink_unlock_table();
+ 
+ 	if (err < 0)
+@@ -1240,6 +1242,7 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 	nlk = nlk_sk(sock->sk);
+ 	nlk->module = module;
+ 	nlk->netlink_bind = bind;
++	nlk->netlink_unbind = unbind;
+ out:
+ 	return err;
+ 
+@@ -1293,6 +1296,7 @@ static int netlink_release(struct socket *sock)
+ 			kfree_rcu(old, rcu);
+ 			nl_table[sk->sk_protocol].module = NULL;
+ 			nl_table[sk->sk_protocol].bind = NULL;
++			nl_table[sk->sk_protocol].unbind = NULL;
+ 			nl_table[sk->sk_protocol].flags = 0;
+ 			nl_table[sk->sk_protocol].registered = 0;
+ 		}
+@@ -1441,6 +1445,22 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+ 	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
+ 		return 0;
+ 
++	if (nlk->netlink_bind && nladdr->nl_groups) {
++		int i;
 +
-+	for (i = 0; i < ARRAY_SIZE(decode_bits); i++) {
-+		int bitval;
-+
-+		switch (decode_bits[i].field) {
-+		case OP:  bitval = decode_bits[i].bit & dsrc.mem_op;    break;
-+		case LVL: bitval = decode_bits[i].bit & dsrc.mem_lvl;   break;
-+		case SNP: bitval = decode_bits[i].bit & dsrc.mem_snoop; break;
-+		case LCK: bitval = decode_bits[i].bit & dsrc.mem_lock;  break;
-+		case TLB: bitval = decode_bits[i].bit & dsrc.mem_dtlb;  break;
-+		default: bitval = 0;					break;
-+		}
-+
-+		if (!bitval)
-+			continue;
-+
-+		if (strlen(decode_bits[i].name) + !!i > size - printed - sizeof(SUFFIX)) {
-+			sprintf(bf + size - sizeof(SUFFIX) - sizeof(ELLIPSIS) + 1, ELLIPSIS);
-+			printed = size - sizeof(SUFFIX);
-+			break;
-+		}
-+
-+		printed += scnprintf(bf + printed, size - printed, "%s%s",
-+				     first_present ? "" : ",", decode_bits[i].name);
-+		first_present = false;
++		for (i = 0; i < nlk->ngroups; i++)
++			if (test_bit(i, (long unsigned int *)&nladdr->nl_groups)) {
++				err = nlk->netlink_bind(i);
++				if (err)
++					if (!nlk->portid)
++						netlink_remove(sk);
++					for (int undo = 0; undo < i; undo++)
++						if (nlk->netlink_unbind)
++							nlk->netlink_unbind(undo);
++					return err;
++			}
 +	}
 +
-+	printed += scnprintf(bf + printed, size - printed, SUFFIX);
-+	return printed;
- }
+ 	netlink_table_grab();
+ 	netlink_update_subscriptions(sk, nlk->subscriptions +
+ 					 hweight32(nladdr->nl_groups) -
+@@ -1449,15 +1469,6 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+ 	netlink_update_listeners(sk);
+ 	netlink_table_ungrab();
  
--static int perf_c2c__process_load(struct perf_evsel *evsel,
--				  struct perf_sample *sample,
--				  struct addr_location *al)
-+static int perf_c2c__fprintf_header(FILE *fp)
- {
--	perf_sample__fprintf(sample, evsel, al, stdout);
--	return 0;
-+	int printed = fprintf(fp, "%c %-16s  %6s  %6s  %4s  %18s  %18s  %18s  %6s  %-10s %-60s %s\n", 
-+			      'T',
-+			      "Status",
-+			      "Pid",
-+			      "Tid",
-+			      "CPU",
-+			      "Inst Adrs",
-+			      "Virt Data Adrs",
-+			      "Phys Data Adrs",
-+			      "Cycles",
-+			      "Source",
-+			      "  Decoded Source",
-+			      "ObJect:Symbol");
-+	return printed + fprintf(fp, "%-*.*s\n", printed, printed, graph_dotted_line);
-+}
-+
-+static int perf_sample__fprintf(struct perf_sample *sample, char tag,
-+				const char *reason, struct addr_location *al, FILE *fp)
-+{
-+	char data_src[61];
-+
-+	perf_c2c__scnprintf_data_src(data_src, sizeof(data_src), sample->data_src);
-+
-+	return fprintf(fp, "%c %-16s  %6d  %6d  %4d  %#18" PRIx64 "  %#18" PRIx64 "  %#18" PRIx64 "  %6" PRIu64 "  %#10" PRIx64 " %-60.60s %s:%s\n",
-+		       tag,
-+		       reason ?: "valid record",
-+		       sample->pid,
-+		       sample->tid,
-+		       sample->cpu,
-+		       sample->ip,
-+		       sample->addr,
-+		       0UL,
-+		       sample->weight,
-+		       sample->data_src,
-+		       data_src,
-+		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
-+		       al->sym ? al->sym->name : "???");
- }
- 
--static int perf_c2c__process_store(struct perf_evsel *evsel,
--				   struct perf_sample *sample,
--				   struct addr_location *al)
-+static int perf_c2c__process_load_store(struct perf_c2c *c2c,
-+					struct perf_sample *sample,
-+					struct addr_location *al)
- {
--	perf_sample__fprintf(sample, evsel, al, stdout);
-+	if (c2c->raw_records)
-+		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
-+
+-	if (nlk->netlink_bind && nlk->groups[0]) {
+-		int i;
+-
+-		for (i=0; i<nlk->ngroups; i++) {
+-			if (test_bit(i, nlk->groups))
+-				nlk->netlink_bind(i);
+-		}
+-	}
+-
  	return 0;
  }
  
- static const struct perf_evsel_str_handler handlers[] = {
--	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
--	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
-+	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load_store, },
-+	{ "cpu/mem-stores/pp",	       perf_c2c__process_load_store, },
- };
+@@ -2095,14 +2106,16 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
+ 			return err;
+ 		if (!val || val - 1 >= nlk->ngroups)
+ 			return -EINVAL;
++		if (nlk->netlink_bind) {
++			err = nlk->netlink_bind(val);
++			if (err)
++				return err;
++		}
+ 		netlink_table_grab();
+ 		netlink_update_socket_mc(nlk, val,
+ 					 optname == NETLINK_ADD_MEMBERSHIP);
+ 		netlink_table_ungrab();
  
--typedef int (*sample_handler)(struct perf_evsel *evsel,
-+typedef int (*sample_handler)(struct perf_c2c *c2c,
- 			      struct perf_sample *sample,
- 			      struct addr_location *al);
- 
--static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
-+static int perf_c2c__process_sample(struct perf_tool *tool,
- 				    union perf_event *event,
- 				    struct perf_sample *sample,
- 				    struct perf_evsel *evsel,
- 				    struct machine *machine)
- {
-+	struct perf_c2c *c2c = container_of(tool, struct perf_c2c, tool);
- 	struct addr_location al;
- 	int err = 0;
- 
-@@ -67,7 +164,7 @@ static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
- 
- 	if (evsel->handler != NULL) {
- 		sample_handler f = evsel->handler;
--		err = f(evsel, sample, &al);
-+		err = f(c2c, sample, &al);
+-		if (nlk->netlink_bind)
+-			nlk->netlink_bind(val);
+-
+ 		err = 0;
+ 		break;
  	}
- 
- 	return err;
-@@ -111,6 +208,10 @@ out:
- static int perf_c2c__report(struct perf_c2c *c2c)
- {
- 	setup_pager();
-+
-+	if (c2c->raw_records)
-+		perf_c2c__fprintf_header(stdout);
-+
- 	return perf_c2c__read_events(c2c);
- }
- 
-@@ -161,6 +262,7 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
- 		},
- 	};
- 	const struct option c2c_options[] = {
-+	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
- 	OPT_END()
- 	};
- 	const char * const c2c_usage[] = {
+diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
+index acbd774..2aeae8a 100644
+--- a/net/netlink/af_netlink.h
++++ b/net/netlink/af_netlink.h
+@@ -37,7 +37,8 @@ struct netlink_sock {
+ 	struct mutex		*cb_mutex;
+ 	struct mutex		cb_def_mutex;
+ 	void			(*netlink_rcv)(struct sk_buff *skb);
+-	void			(*netlink_bind)(int group);
++	int			(*netlink_bind)(int group);
++	void			(*netlink_unbind)(int group);
+ 	struct module		*module;
+ #ifdef CONFIG_NETLINK_MMAP
+ 	struct mutex		pg_vec_lock;
+@@ -73,7 +74,8 @@ struct netlink_table {
+ 	unsigned int		groups;
+ 	struct mutex		*cb_mutex;
+ 	struct module		*module;
+-	void			(*bind)(int group);
++	int			(*bind)(int group);
++	void			(*unbind)(int group);
+ 	bool			(*compare)(struct net *net, struct sock *sock);
+ 	int			registered;
+ };
 -- 
-1.7.11.7
+1.7.1
 
