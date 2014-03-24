@@ -1,323 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754123AbaCXTjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:39:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17640 "EHLO mx1.redhat.com"
+	id S1754478AbaCXTiE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:38:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12368 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754484AbaCXTiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:38:07 -0400
+	id S1754438AbaCXTh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:37:58 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>, Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Richard Fowles <rfowles@redhat.com>
-Subject: [PATCH 03/15 V3] perf c2c: Shared data analyser
-Date: Mon, 24 Mar 2014 15:36:54 -0400
-Message-Id: <1395689826-215033-4-git-send-email-dzickus@redhat.com>
+        andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 11/15 V3] perf, c2c: Add callchain support
+Date: Mon, 24 Mar 2014 15:37:02 -0400
+Message-Id: <1395689826-215033-12-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Seeing cacheline statistics is useful by itself.  Seeing the callchain
+for these cache contentions saves time tracking things down.
 
-This is the start of a new perf tool that will collect information about
-memory accesses and analyse it to find things like hot cachelines, etc.
+This patch tries to add callchain support.  I had to use the generic
+interface from a previous patch to output things to stdout easily.
 
-This is basically trying to get a prototype written by Richard Fowles
-written using the tools/perf coding style and libraries.
+Other than the displaying the results, collecting the callchain and
+merging it was fairly straightforward.
 
-Start it from 'perf sched', this patch starts the process by adding the
-'record' subcommand to collect the needed mem loads and stores samples.
+I used a lot of copying-n-pasting from other builtin tools to get
+the intial parameter setup correctly and the automatic reading of
+'symbol_conf.use_callchain' from the data file.
 
-It also have the basic 'report' skeleton, resolving the sample address
-and hooking the events found in a perf.data file with methods to handle
-them, right now just printing the resolved perf_sample data structure
-after each event name.
+Hopefully this is all correct.  The amount of memory corruption (from the
+callchain dynamic array) seems to have dwindled done to nothing. :-)
 
-[dcz: refreshed to latest upstream changes]
+V2: update to latest api
+V3: remove call_graph variable, unused
 
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Joe Mario <jmario@redhat.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Fowles <rfowles@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-c2c.c |  22 +++++
- tools/perf/Makefile.perf            |   1 +
- tools/perf/builtin-c2c.c            | 185 ++++++++++++++++++++++++++++++++++++
- tools/perf/builtin.h                |   1 +
- tools/perf/perf.c                   |   1 +
- 5 files changed, 210 insertions(+)
- create mode 100644 tools/perf/Documentation/perf-c2c.c
- create mode 100644 tools/perf/builtin-c2c.c
+ tools/perf/builtin-c2c.c | 67 +++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 66 insertions(+), 1 deletion(-)
 
-diff --git a/tools/perf/Documentation/perf-c2c.c b/tools/perf/Documentation/perf-c2c.c
-new file mode 100644
-index 0000000..4d52798
---- /dev/null
-+++ b/tools/perf/Documentation/perf-c2c.c
-@@ -0,0 +1,22 @@
-+perf-c2c(1)
-+===========
-+
-+NAME
-+----
-+perf-c2c - Shared Data C2C/HITM Analyzer.
-+
-+SYNOPSIS
-+--------
-+[verse]
-+'perf c2c' record
-+
-+DESCRIPTION
-+-----------
-+These are the variants of perf c2c:
-+
-+  'perf c2c record <command>' to record the memory accesses of an arbitrary
-+  workload.
-+
-+SEE ALSO
-+--------
-+linkperf:perf-record[1], linkperf:perf-mem[1]
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 667e85a..069bdca 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -431,6 +431,7 @@ BUILTIN_OBJS += $(OUTPUT)bench/futex-hash.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-wake.o
- BUILTIN_OBJS += $(OUTPUT)bench/futex-requeue.o
- 
-+BUILTIN_OBJS += $(OUTPUT)builtin-c2c.o
- BUILTIN_OBJS += $(OUTPUT)builtin-diff.o
- BUILTIN_OBJS += $(OUTPUT)builtin-evlist.o
- BUILTIN_OBJS += $(OUTPUT)builtin-help.o
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-new file mode 100644
-index 0000000..2935484
---- /dev/null
+index e3dbb76..363deec 100644
+--- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -0,0 +1,185 @@
-+#include "builtin.h"
-+#include "cache.h"
+@@ -79,6 +79,8 @@ struct c2c_hit {
+ 	u64		daddr;
+ 	u64		iaddr;
+ 	struct mem_info	*mi;
 +
-+#include "util/evlist.h"
-+#include "util/parse-options.h"
-+#include "util/session.h"
-+#include "util/tool.h"
-+
-+#include <linux/compiler.h>
-+#include <linux/kernel.h>
-+
-+struct perf_c2c {
-+	struct perf_tool tool;
-+};
-+
-+static int perf_sample__fprintf(struct perf_sample *sample,
-+				struct perf_evsel *evsel,
-+				struct addr_location *al, FILE *fp)
-+{
-+	return fprintf(fp, "%25.25s: %5d %5d 0x%016" PRIx64 " 0x016%" PRIx64 " %5" PRIu64 " 0x%06" PRIx64 " %s:%s\n",
-+		       perf_evsel__name(evsel),
-+		       sample->pid, sample->tid, sample->ip, sample->addr,
-+		       sample->weight, sample->data_src,
-+		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
-+		       al->sym ? al->sym->name : "???");
-+}
-+
-+static int perf_c2c__process_load(struct perf_evsel *evsel,
-+				  struct perf_sample *sample,
-+				  struct addr_location *al)
-+{
-+	perf_sample__fprintf(sample, evsel, al, stdout);
-+	return 0;
-+}
-+
-+static int perf_c2c__process_store(struct perf_evsel *evsel,
-+				   struct perf_sample *sample,
-+				   struct addr_location *al)
-+{
-+	perf_sample__fprintf(sample, evsel, al, stdout);
-+	return 0;
-+}
-+
-+static const struct perf_evsel_str_handler handlers[] = {
-+	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load, },
-+	{ "cpu/mem-stores/pp",	       perf_c2c__process_store, },
-+};
-+
-+typedef int (*sample_handler)(struct perf_evsel *evsel,
-+			      struct perf_sample *sample,
-+			      struct addr_location *al);
-+
-+static int perf_c2c__process_sample(struct perf_tool *tool __maybe_unused,
-+				    union perf_event *event,
-+				    struct perf_sample *sample,
-+				    struct perf_evsel *evsel,
-+				    struct machine *machine)
-+{
-+	struct addr_location al;
-+	int err = 0;
-+
-+	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
-+		pr_err("problem processing %d event, skipping it.\n",
-+		       event->header.type);
-+		return -1;
-+	}
-+
-+	if (evsel->handler != NULL) {
-+		sample_handler f = evsel->handler;
-+		err = f(evsel, sample, &al);
-+	}
-+
-+	return err;
-+}
-+
-+static int perf_c2c__read_events(struct perf_c2c *c2c)
-+{
-+	int err = -1;
-+	struct perf_session *session;
-+	struct perf_data_file file = {
-+			.path = input_name,
-+			.mode = PERF_DATA_MODE_READ,
-+	};
-+	struct perf_evsel *evsel;
-+
-+	session = perf_session__new(&file, 0, &c2c->tool);
-+	if (session == NULL) {
-+		pr_debug("No memory for session\n");
-+		goto out;
-+	}
-+
-+	/* setup the evsel handlers for each event type */
-+	evlist__for_each(session->evlist, evsel) {
-+		const char *name = perf_evsel__name(evsel);
-+		unsigned int i;
-+
-+		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
-+			if (!strcmp(name, handlers[i].name))
-+				evsel->handler = handlers[i].handler;
-+		}
-+	}
-+
-+	err = perf_session__process_events(session, &c2c->tool);
++	struct callchain_root   callchain[0]; /* must be last member */
+ };
+ 
+ enum { OP, LVL, SNP, LCK, TLB };
+@@ -382,7 +384,8 @@ static int c2c_decode_stats(struct c2c_stats *stats, struct hist_entry *entry)
+ 
+ static struct c2c_hit *c2c_hit__new(u64 cacheline, struct hist_entry *entry)
+ {
+-	struct c2c_hit *h = zalloc(sizeof(struct c2c_hit));
++	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
++	struct c2c_hit *h = zalloc(sizeof(struct c2c_hit) + callchain_size);
+ 
+ 	if (!h) {
+ 		pr_err("Could not allocate c2c_hit memory\n");
+@@ -396,6 +399,8 @@ static struct c2c_hit *c2c_hit__new(u64 cacheline, struct hist_entry *entry)
+ 	h->cacheline = cacheline;
+ 	h->pid = entry->thread->pid_;
+ 	h->tid = entry->thread->tid;
++	if (symbol_conf.use_callchain)
++		callchain_init(h->callchain);
+ 
+ 	/* use original addresses here, not adjusted al_addr */
+ 	h->iaddr = entry->mem_info->iaddr.addr;
+@@ -519,6 +524,10 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+ 		return 0;
+ 	}
+ 
++	err = sample__resolve_callchain(sample, &parent, evsel, al, PERF_MAX_STACK_DEPTH);
 +	if (err)
-+		pr_err("Failed to process events, error %d", err);
++		return err;
 +
-+out:
-+	return err;
-+}
+ 	cost = sample->weight;
+ 	if (!cost)
+ 		cost = 1;
+@@ -547,6 +556,7 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+ 
+ 	c2c->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
++	err = hist_entry__append_callchain(he, sample);
+ 	return err;
+ 
+ out_mem:
+@@ -948,6 +958,13 @@ static void print_hitm_cacheline_offset(struct c2c_hit *clo,
+ 		print_socket_shared_str(node_stats);
+ 
+ 	printf("\n");
 +
-+static int perf_c2c__report(struct perf_c2c *c2c)
-+{
-+	setup_pager();
-+	return perf_c2c__read_events(c2c);
-+}
-+
-+static int perf_c2c__record(int argc, const char **argv)
-+{
-+	unsigned int rec_argc, i, j;
-+	const char **rec_argv;
-+	const char * const record_args[] = {
-+		"record",
-+		/* "--phys-addr", */
-+		"-W",
-+		"-d",
-+		"-a",
-+	};
-+
-+	rec_argc = ARRAY_SIZE(record_args) + 2 * ARRAY_SIZE(handlers) + argc - 1;
-+	rec_argv = calloc(rec_argc + 1, sizeof(char *));
-+
-+	if (rec_argv == NULL)
-+		return -ENOMEM;
-+
-+	for (i = 0; i < ARRAY_SIZE(record_args); i++)
-+		rec_argv[i] = strdup(record_args[i]);
-+
-+	for (j = 0; j < ARRAY_SIZE(handlers); j++) {
-+		rec_argv[i++] = strdup("-e");
-+		rec_argv[i++] = strdup(handlers[j].name);
++	if (symbol_conf.use_callchain) {
++		generic_entry_callchain__fprintf(clo->callchain,
++						 h->stats.total_period,
++						 clo->stats.total_period,
++						 23, stdout);
 +	}
-+
-+	for (j = 1; j < (unsigned int)argc; j++, i++)
-+		rec_argv[i] = argv[j];
-+
-+	BUG_ON(i != rec_argc);
-+
-+	return cmd_record(i, rec_argv, NULL);
-+}
-+
-+int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ }
+ 
+ static void print_c2c_hitm_report(struct rb_root *hitm_tree,
+@@ -1024,6 +1041,12 @@ static void print_c2c_hitm_report(struct rb_root *hitm_tree,
+ 				c2c_decode_stats(&node_stats[node], entry);
+ 				CPU_SET(entry->cpu, &(node_stats[node].cpuset));
+ 			}
++			if (symbol_conf.use_callchain) {
++				callchain_cursor_reset(&callchain_cursor);
++				callchain_merge(&callchain_cursor,
++						clo->callchain,
++						entry->callchain);
++			}
+ 
+ 		}
+ 		if (clo) {
+@@ -1155,6 +1178,29 @@ err:
+ 	return err;
+ }
+ 
++static int perf_c2c__setup_sample_type(struct perf_c2c *c2c __maybe_unused,
++				       struct perf_session *session)
 +{
-+	struct perf_c2c c2c = {
-+		.tool = {
-+			.sample		 = perf_c2c__process_sample,
-+			.comm		 = perf_event__process_comm,
-+			.exit		 = perf_event__process_exit,
-+			.fork		 = perf_event__process_fork,
-+			.lost		 = perf_event__process_lost,
-+			.ordered_samples = true,
-+		},
-+	};
-+	const struct option c2c_options[] = {
-+	OPT_END()
-+	};
-+	const char * const c2c_usage[] = {
-+		"perf c2c {record|report}",
-+		NULL
-+	};
++	u64 sample_type = perf_evlist__combined_sample_type(session->evlist);
 +
-+	argc = parse_options(argc, argv, c2c_options, c2c_usage,
-+			     PARSE_OPT_STOP_AT_NON_OPTION);
-+	if (!argc)
-+		usage_with_options(c2c_usage, c2c_options);
-+
-+	if (!strncmp(argv[0], "rec", 3)) {
-+		return perf_c2c__record(argc, argv);
-+	} else if (!strncmp(argv[0], "rep", 3)) {
-+		return perf_c2c__report(&c2c);
-+	} else {
-+		usage_with_options(c2c_usage, c2c_options);
++	if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
++		if (symbol_conf.use_callchain) {
++			printf("Selected -g but no callchain data. Did "
++				  "you call 'perf c2c record' without -g?\n");
++			return -1;
++		}
++	} else if (callchain_param.mode != CHAIN_NONE &&
++		   !symbol_conf.use_callchain) {
++			symbol_conf.use_callchain = true;
++			if (callchain_register_param(&callchain_param) < 0) {
++				printf("Can't register callchain params.\n");
++				return -EINVAL;
++			}
 +	}
 +
 +	return 0;
 +}
-diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
-index b210d62..2d0b1b5 100644
---- a/tools/perf/builtin.h
-+++ b/tools/perf/builtin.h
-@@ -17,6 +17,7 @@ extern int cmd_annotate(int argc, const char **argv, const char *prefix);
- extern int cmd_bench(int argc, const char **argv, const char *prefix);
- extern int cmd_buildid_cache(int argc, const char **argv, const char *prefix);
- extern int cmd_buildid_list(int argc, const char **argv, const char *prefix);
-+extern int cmd_c2c(int argc, const char **argv, const char *prefix);
- extern int cmd_diff(int argc, const char **argv, const char *prefix);
- extern int cmd_evlist(int argc, const char **argv, const char *prefix);
- extern int cmd_help(int argc, const char **argv, const char *prefix);
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 431798a..c7012a3 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -35,6 +35,7 @@ struct cmd_struct {
- static struct cmd_struct commands[] = {
- 	{ "buildid-cache", cmd_buildid_cache, 0 },
- 	{ "buildid-list", cmd_buildid_list, 0 },
-+	{ "c2c",	cmd_c2c,	0 },
- 	{ "diff",	cmd_diff,	0 },
- 	{ "evlist",	cmd_evlist,	0 },
- 	{ "help",	cmd_help,	0 },
++
+ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ {
+ 	int err = -1;
+@@ -1174,6 +1220,9 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 	if (symbol__init() < 0)
+ 		goto out_delete;
+ 
++	if (perf_c2c__setup_sample_type(c2c, session) < 0)
++		goto out_delete;
++
+ 	/* setup the evsel handlers for each event type */
+ 	evlist__for_each(session->evlist, evsel) {
+ 		const char *name = perf_evsel__name(evsel);
+@@ -1306,8 +1355,21 @@ opt_no_stores_cb(const struct option *opt __maybe_unused, const char *arg __mayb
+ 	return 0;
+ }
+ 
++static int
++opt_callchain_cb(const struct option *opt __maybe_unused, const char *arg, int unset)
++{
++	/*
++	 * --no-call-graph
++	 */
++	if (unset)
++		return 0;
++
++	return report_parse_callchain_opt(arg);
++}
++
+ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ {
++	char callchain_default_opt[] = "fractal,0.05,callee";
+ 	struct perf_c2c c2c = {
+ 		.tool = {
+ 			.sample		 = perf_c2c__process_sample,
+@@ -1340,6 +1402,9 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		   "separator",
+ 		   "separator for columns, no spaces will be added"
+ 		   " between columns '.' is reserved."),
++	OPT_CALLBACK_DEFAULT('g', "call-graph", &c2c, "output_type,min_percent[,print_limit],call_order",
++			     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
++			     "Default: fractal,0.5,callee,function", &opt_callchain_cb, callchain_default_opt),
+ 	OPT_END()
+ 	};
+ 	const char * const c2c_usage[] = {
 -- 
 1.7.11.7
 
