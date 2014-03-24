@@ -1,155 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751245AbaCXHp4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 03:45:56 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:49226 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850AbaCXHpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 03:45:54 -0400
+	id S1752095AbaCXHso (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 03:48:44 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:44216 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751496AbaCXHsn convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 03:48:43 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-4.tower-193.messagelabs.com!1395647320!2282188!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>
+CC: David Dajun Chen <david.chen@diasemi.com>,
+        LINUX-DOC <linux-doc@vger.kernel.org>,
+        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
+        LM-SENSORS <lm-sensors@lm-sensors.org>,
+        Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        "Rob Landley" <rob@landley.net>, Samuel Ortiz <sameo@linux.intel.com>
+Subject: RE: [RFC V1 1/3] hwmon: da9063: HWMON driver
+Thread-Topic: [RFC V1 1/3] hwmon: da9063: HWMON driver
+Thread-Index: AQHPRttXGKX6/plr5kirxkYUlEAgKprvl5aAgABDwUA=
+Date: Mon, 24 Mar 2014 07:48:37 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A2AFC2F2@SW-EX-MBX01.diasemi.com>
+References: <cover.1395607051.git.stwiss.opensource@diasemi.com>
+ <420d4f5c8436a66b511693531cfeda131258ce69.1395607051.git.stwiss.opensource@diasemi.com>
+ <532FA8ED.2090201@roeck-us.net>
+In-Reply-To: <532FA8ED.2090201@roeck-us.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <532FA20E.7090709@jp.fujitsu.com>
-References: <532FA0E8.4050106@jp.fujitsu.com>
-	<532FA20E.7090709@jp.fujitsu.com>
-Date: Mon, 24 Mar 2014 13:15:54 +0530
-Message-ID: <CAM4v1pPPmiHXNQ19My1Jd8XUQQh+VnbvWwGXq0mVGk4G1vYNfw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] nohz: use seqlock to avoid race on idle time stats
-From: Preeti Murthy <preeti.lkml@gmail.com>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, preeti@linux.vnet.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hidetoshi,
+On 24 March 2014 03:39, Guenter Roeck wrote:
 
-The patch looks good to me except the comments around the monotonicity
-of the return value of the idle stats observer. I am unable to relate them
-to the dependency on nr_iowait_cpu.
+>On 03/23/2014 01:37 PM, Opensource [Steve Twiss] wrote:
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> Add the HWMON driver for DA9063
+>>
+>> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>> ---
+>> Checks performed with linux-next/next-20140321/scripts/checkpatch.pl
+>>   da9063-hwmon.c            total: 0 errors, 0 warnings, 456 lines checked
+>>   Kconfig                   total: 1 errors, 3 warnings, 1643 lines checked
+>>   Makefile                  total: 0 errors, 0 warnings, 154 lines checked
+>>   registers.h               total: 0 errors, 0 warnings, 1066 lines checked
+>> There are errors and warning in Kconfig, however they are not caused
+>> by this patch.
+>>
+>> This is the hardware monitor driver component for DA9063 PMIC.
+>>
+>> The manual measurement allows monitoring of the system voltage
+>> VSYS, the auxiliary channels ADCIN1, ADCIN2 and ADCIN3, VBBAT
+>> measures of the backup battery voltage and a Tjunc value for the
+>> internal junction temperature sensor.
+>>
+>
+>At least this part belongs into the summary.
+>
+>After browsing through patch 2/3, I got suspicious and tried to compile
+>the driver after applying this patch.
+>
+>Here is the result:
+>
+>drivers/hwmon/da9063-hwmon.c: In function 'da9063_adc_manual_read':
+>drivers/hwmon/da9063-hwmon.c:155:2: warning: suggest parentheses around
+>comparison in operand of '&' [-Wparentheses]
+>drivers/hwmon/da9063-hwmon.c: In function 'da9063_hwmon_probe':
+>drivers/hwmon/da9063-hwmon.c:386:14: error: 'struct da9063_pdata' has no
+>member named 'hwmon_pdata'
+>drivers/hwmon/da9063-hwmon.c:387:14: error: 'struct da9063_pdata' has no
+>member named 'hwmon_pdata'
+>drivers/hwmon/da9063-hwmon.c:388:14: error: 'struct da9063_pdata' has no
+>member named 'hwmon_pdata'
+>drivers/hwmon/da9063-hwmon.c:417:50: error: 'struct da9063' has no member
+>named 't_offset'
+>make[1]: *** [drivers/hwmon/da9063-hwmon.o] Error 1
+>make: *** [drivers/hwmon/da9063-hwmon.ko] Error 2
+>
+>Please make sure that each patch, if applied one after another, compiles.
+>Patch 1/3 must not depend on patch 2/3.
 
-I see that when the reader queries for the idle stats and calls
-get_cpu_idle_time_us(), the nr_iowait_cpu might be 0. When he later
-queries get_cpu_iowait_time_us(), it may be >0 . Hence we will be
-accounting for the idle time in both idle time and iowait time. This
-is definitely a problem. But I do not understand what this has got to
-do with the monotonicity of the time
-returned. This is just for my understanding.
+Hi Guenter,
 
-Thanks!
+Thank you for this fast response.
 
-Regards
-Preeti U Murthy
-On 3/24/14, Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com> wrote:
+Ah, the dependencies were not in order. I will check for that in future.
 
-<snip>
-> + * Known bug: Return value is not monotonic in case if @last_update_time
-> + * is NULL and therefore update is not performed. Because it includes
-> + * cputime which is not determined idle or iowait so not accounted yet.
-> + *
->   * This function returns -1 if NOHZ is not enabled.
->   */
->  u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
-> @@ -467,16 +489,28 @@ u64 get_cpu_idle_time_us(int cpu, u64
-> *last_update_time)
+I will also look into using the API with devm_hwmon_device_register_with_groups
+and will resubmit with a RFC V2 later.
+
+Thank you,
+Steve
+
 >
->  	now = ktime_get();
->  	if (last_update_time) {
-> -		update_ts_time_stats(cpu, ts, now, last_update_time);
-> -		idle = ts->idle_sleeptime;
-> +		update_ts_time_stats(cpu, ts, now, &idle, NULL, 0);
-> +		*last_update_time = ktime_to_us(now);
->  	} else {
-> -		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
-> -			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> +		unsigned int seq;
->
-> -			idle = ktime_add(ts->idle_sleeptime, delta);
-> -		} else {
-> +		do {
-> +			seq = read_seqbegin(&ts->idle_sleeptime_seq);
->  			idle = ts->idle_sleeptime;
-> -		}
-> +			/*
-> +			 * FIXME: At this point, delta is determined neither
-> +			 * idle nor iowait. This function temporarily treat
-> +			 * this delta depending on the value of nr_iowait
-> +			 * when this function reaches here. It will result
-> +			 * in non-monotonic return value. So user of this
-> +			 * function must not expect monotonicity here.
-> +			 */
-> +			if (ts->idle_active && !nr_iowait_cpu(cpu)
-> +			    && (ktime_compare(now, ts->idle_entrytime) > 0)) {
-> +				ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> +				idle = ktime_add(ts->idle_sleeptime, delta);
-> +			}
-> +		} while (read_seqretry(&ts->idle_sleeptime_seq, seq));
->  	}
->
->  	return ktime_to_us(idle);
-> @@ -496,6 +530,10 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
->   * This time is measured via accounting rather than sampling,
->   * and is as accurate as ktime_get() is.
->   *
-> + * Known bug: Return value is not monotonic in case if @last_update_time
-> + * is NULL and therefore update is not performed. Because it includes
-> + * cputime which is not determined idle or iowait so not accounted yet.
-> + *
->   * This function returns -1 if NOHZ is not enabled.
->   */
->  u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
-> @@ -508,16 +546,28 @@ u64 get_cpu_iowait_time_us(int cpu, u64
-> *last_update_time)
->
->  	now = ktime_get();
->  	if (last_update_time) {
-> -		update_ts_time_stats(cpu, ts, now, last_update_time);
-> -		iowait = ts->iowait_sleeptime;
-> +		update_ts_time_stats(cpu, ts, now, NULL, &iowait, 0);
-> +		*last_update_time = ktime_to_us(now);
->  	} else {
-> -		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-> -			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> +		unsigned int seq;
->
-> -			iowait = ktime_add(ts->iowait_sleeptime, delta);
-> -		} else {
-> +		do {
-> +			seq = read_seqbegin(&ts->idle_sleeptime_seq);
->  			iowait = ts->iowait_sleeptime;
-> -		}
-> +			/*
-> +			 * FIXME: At this point, delta is determined neither
-> +			 * idle nor iowait. This function temporarily treat
-> +			 * this delta depending on the value of nr_iowait
-> +			 * when this function reaches here. It will result
-> +			 * in non-monotonic return value. So user of this
-> +			 * function must not expect monotonicity here.
-> +			 */
-> +			if (ts->idle_active && nr_iowait_cpu(cpu) > 0
-> +			    && (ktime_compare(now, ts->idle_entrytime) > 0)) {
-> +				ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> +				iowait = ktime_add(ts->iowait_sleeptime, delta);
-> +			}
-> +		} while (read_seqretry(&ts->idle_sleeptime_seq, seq));
->  	}
->
->  	return ktime_to_us(iowait);
-> --
-> 1.7.1
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+>Thanks,
+>Guenter
+
