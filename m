@@ -1,136 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752647AbaCXJAX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:00:23 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:52698 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbaCXJAU (ORCPT
+	id S1752720AbaCXJAe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:00:34 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:22782 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaCXJAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:00:20 -0400
+	Mon, 24 Mar 2014 05:00:31 -0400
+Message-ID: <532FF429.40201@atmel.com>
+Date: Mon, 24 Mar 2014 10:00:25 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
-References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
-	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
-	<CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
-Date: Mon, 24 Mar 2014 14:30:19 +0530
-X-Google-Sender-Auth: 5x8vEa_-Cz8NZOHM7e3GW5NwOO0
-Message-ID: <CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: Jassi Brar <jassisinghbrar@gmail.com>
-Cc: Srikanth Thokala <sthokal@xilinx.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jaswinder Singh <jaswinder.singh@linaro.org>,
-        dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jonathan Cameron <jic23@kernel.org>
+CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        ARM Maintainers <arm@kernel.org>, <linux-iio@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-input@vger.kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 00/15] iio: adc: at91 cleanups and atmel_tsadcc removal
+References: <1394040940-18246-1-git-send-email-alexandre.belloni@free-electrons.com> <5325EDAF.4060003@kernel.org> <53296F2B.3010406@atmel.com> <532D828A.8000108@kernel.org>
+In-Reply-To: <532D828A.8000108@kernel.org>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+On 22/03/2014 13:31, Jonathan Cameron :
+> On 19/03/14 10:19, Nicolas Ferre wrote:
+>> On 16/03/2014 19:30, Jonathan Cameron :
+>>> On 05/03/14 17:35, Alexandre Belloni wrote:
+>>>> This patch set is a followup of my previous series: iio: adc: at91 fixes
+>>>>
+>>>> I'm sorry it is so long, I made sure this is bissectable.
+>>> It's a nice series, don't apologise for doing things right!
+>>>
+>>> Clearly there are a few outstanding snippets from the reviews so far, but we
+>>> are getting to the point where we need to agree on a path for this.  I'm
+>>> happy to take the whole series through the IIO tree if Dmitry and the at91
+>>> maintainers are happy with that.  If it is considered two invasive form the
+>>> atmel side then I'm perfectly happy with someone to take it through the relevant
+>>> platform tree instead.
+>>
+>> Jonathan, Dmitry,
+>>
+>> Considering the amount of AT91 files touched by this series, I would
+>> like to take everything through Atmel's git tree and later on arm-soc.
+> Sure. Just as a warning, there are one or two patches queued up already that this
+> sits on top of.  Give a spot of bad timing these are too late to go in as fixes
+> before the release. Might be worth waiting on those hitting Linus' tree sometime
+> after rc1 before taking this series.
 
-Thanks for the Acked-by.
+Okay, advice well-noted.
 
-On Mon, Mar 24, 2014 at 11:50 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
-> On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
->
->> +
->> +/**
->> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
->
-> Should be xilinx_vdma_dma_prep_interleaved here.
+Thanks Jonathan.
 
-Ok, I will correct it.  Thanks.
+>>> I'm obviously not going to pick it up at all until it has a complete set
+>>> of at91 maintainer acks though!
+>>>
+>>> Realistically it's missed the coming merge window anyway, so we have a fair
+>>> bit of time.
+>>
+>> Yes, I will review Alexandre's v2 series.
+>>
+>> Thanks a lot for your review and for having thought about the path that
+>> these patches would take.
+>>
+>> Bye,
+>>
+>>
+>>> Jonathan
+>>>>
+>>>> 1-3) The first 3 patches are cleaning up the patform_data used for at91_adc.
+>>>>
+>>>> 4-5) Then touchscreen support for older ADCs is added, this allows to use that
+>>>>        for the sam9m10g45ek.
+>>>>
+>>>> 6) Following those modifications, the mach/at91_adc.h is not used anywhere but
+>>>>      in the at91_adc driver so it is remove and its content (register definitions)
+>>>>      placed directly in the driver.
+>>>>
+>>>> 7-9) at91sam9rl support is added to at91_adc and is used for the at91sam9rl
+>>>>        based boards.
+>>>>
+>>>> 10-11) Prepare the atmel_tsadcc removal by switching sam9rl and sam9g45 to use
+>>>>          only at91_adc instead of atmel_tsadcc.
+>>>>
+>>>> 12-15) atmel_tsadcc removal
+>>>>
+>>>>
+>>>> Alexandre Belloni (15):
+>>>>     ARM: at91: sam9g45: remove unused platform_data
+>>>>     ARM: at91: sam9260: remove unused platform_data
+>>>>     iio: adc: at91: cleanup platform_data
+>>>>     iio: adc: at91_adc: Add support for touchscreens without TSMR
+>>>>     ARM: at91: sam9m10g45ek: Add touchscreen support through at91_adc
+>>>>     iio: adc: at91: remove unused include from include/mach
+>>>>     iio: adc: at91: add sam9rl support
+>>>>     ARM: at91: sam9rl: add at91_adc to support adc and touchscreen
+>>>>     ARM: at91: sam9rlek add touchscreen support through at91_adc
+>>>>     ARM: at91: sam9g45: switch from atmel_tsadcc to at91_adc
+>>>>     ARM: at91: sam9rl: switch from atmel_tsadcc to at91_adc
+>>>>     ARM: at91: remove atmel_tsadcc platform_data
+>>>>     ARM: at91: remove atmel_tsadcc from sama5_defconfig
+>>>>     Input: atmel_tsadcc: remove driver
+>>>>     ARM: at91/dt: at91-cosino_mega2560 remove useless tsadcc node
+>>>>
+>>>>    MAINTAINERS                                |   6 -
+>>>>    arch/arm/boot/dts/at91-cosino_mega2560.dts |   5 -
+>>>>    arch/arm/configs/at91sam9g45_defconfig     |   3 +-
+>>>>    arch/arm/configs/at91sam9rl_defconfig      |   3 +-
+>>>>    arch/arm/configs/sama5_defconfig           |   1 -
+>>>>    arch/arm/mach-at91/at91sam9260_devices.c   |  10 -
+>>>>    arch/arm/mach-at91/at91sam9g45.c           |   2 +-
+>>>>    arch/arm/mach-at91/at91sam9g45_devices.c   |  63 +----
+>>>>    arch/arm/mach-at91/at91sam9rl.c            |   7 +
+>>>>    arch/arm/mach-at91/at91sam9rl_devices.c    |  83 +++++--
+>>>>    arch/arm/mach-at91/board-sam9m10g45ek.c    |  16 +-
+>>>>    arch/arm/mach-at91/board-sam9rlek.c        |  16 +-
+>>>>    arch/arm/mach-at91/board.h                 |   3 -
+>>>>    arch/arm/mach-at91/include/mach/at91_adc.h | 107 ---------
+>>>>    drivers/iio/adc/at91_adc.c                 | 339 +++++++++++++++++++++++----
+>>>>    drivers/input/touchscreen/Kconfig          |  12 -
+>>>>    drivers/input/touchscreen/Makefile         |   1 -
+>>>>    drivers/input/touchscreen/atmel_tsadcc.c   | 358 -----------------------------
+>>>>    include/linux/platform_data/at91_adc.h     |  27 +--
+>>>>    include/linux/platform_data/atmel.h        |   7 -
+>>>>    20 files changed, 380 insertions(+), 689 deletions(-)
+>>>>    delete mode 100644 arch/arm/mach-at91/include/mach/at91_adc.h
+>>>>    delete mode 100644 drivers/input/touchscreen/atmel_tsadcc.c
+>>>>
+>>>
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+>>
+> 
+> 
 
->
->> +/**
->> + * xilinx_vdma_channel_set_config - Configure VDMA channel
->> + * Run-time configuration for Axi VDMA, supports:
->> + * . halt the channel
->> + * . configure interrupt coalescing and inter-packet delay threshold
->> + * . start/stop parking
->> + * . enable genlock
->> + *
->> + * @dchan: DMA channel
->> + * @cfg: VDMA device configuration pointer
->> + *
->> + * Return: '0' on success and failure value on error
->> + */
->> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
->> +                                       struct xilinx_vdma_config *cfg)
->> +{
->> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->> +       u32 dmacr;
->> +
->> +       if (cfg->reset)
->> +               return xilinx_vdma_chan_reset(chan);
->> +
->> +       dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
->> +
->> +       chan->config.frm_dly = cfg->frm_dly;
->> +       chan->config.park = cfg->park;
->> +
->> +       /* genlock settings */
->> +       chan->config.gen_lock = cfg->gen_lock;
->> +       chan->config.master = cfg->master;
->> +
->> +       if (cfg->gen_lock && chan->genlock) {
->> +               dmacr |= XILINX_VDMA_DMACR_GENLOCK_EN;
->> +               dmacr |= cfg->master << XILINX_VDMA_DMACR_MASTER_SHIFT;
->> +       }
->> +
->> +       chan->config.frm_cnt_en = cfg->frm_cnt_en;
->> +       if (cfg->park)
->> +               chan->config.park_frm = cfg->park_frm;
->> +       else
->> +               chan->config.park_frm = -1;
->> +
->> +       chan->config.coalesc = cfg->coalesc;
->> +       chan->config.delay = cfg->delay;
->> +
->> +       if (cfg->coalesc <= XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
->> +               dmacr |= cfg->coalesc << XILINX_VDMA_DMACR_FRAME_COUNT_SHIFT;
->> +               chan->config.coalesc = cfg->coalesc;
->> +       }
->> +
->> +       if (cfg->delay <= XILINX_VDMA_DMACR_DELAY_MAX) {
->> +               dmacr |= cfg->delay << XILINX_VDMA_DMACR_DELAY_SHIFT;
->> +               chan->config.delay = cfg->delay;
->> +       }
->> +
->> +       /* FSync Source selection */
->> +       dmacr &= ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
->> +       dmacr |= cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIFT;
->> +
->> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
->> +
->> +       return 0;
->> +}
->> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
->> +
-> Bypassing the DMAEngine api doesn't seem very neat.
-> Is there currently any client driver that /changes/ this configuration
-> between channel requests? If no, then simply get the configuration
-> from DT node and avoid this api.
 
-This change is recently suggested by Lars in the following patch series,
-"dma: Remove comment about embedding dma_slave_config into custom structs"
-
-Thanks,
-Srikanth
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-- 
+Nicolas Ferre
