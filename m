@@ -1,122 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751370AbaCXWK6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 18:10:58 -0400
-Received: from mail-bk0-f50.google.com ([209.85.214.50]:34039 "EHLO
-	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078AbaCXWK4 (ORCPT
+	id S1751532AbaCXWNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 18:13:21 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:58385 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750816AbaCXWNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 18:10:56 -0400
-Date: Mon, 24 Mar 2014 23:10:53 +0100
+	Mon, 24 Mar 2014 18:13:19 -0400
+Date: Mon, 24 Mar 2014 23:13:15 +0100
 From: Thierry Reding <thierry.reding@gmail.com>
 To: Alexandre Courbot <acourbot@nvidia.com>
 Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
         dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
         linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH 04/12] drm/nouveau/bar/nvc0: support chips without BAR3
-Message-ID: <20140324221051.GC17218@mithrandir>
+Subject: Re: [PATCH 03/12] drm/nouveau/bar: only ioremap BAR3 if it exists
+Message-ID: <20140324221314.GD17218@mithrandir>
 References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-5-git-send-email-acourbot@nvidia.com>
+ <1395650554-31925-4-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pAwQNkOnpTn9IO2O"
+	protocol="application/pgp-signature"; boundary="oj4kGyHlBMXGt3Le"
 Content-Disposition: inline
-In-Reply-To: <1395650554-31925-5-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <1395650554-31925-4-git-send-email-acourbot@nvidia.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---pAwQNkOnpTn9IO2O
+--oj4kGyHlBMXGt3Le
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Mon, Mar 24, 2014 at 05:42:26PM +0900, Alexandre Courbot wrote:
-[...]
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c b/drivers/gpu=
-/drm/nouveau/core/subdev/bar/nvc0.c
-[...]
->  static int
-> -nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engi=
-ne,
-> -	      struct nouveau_oclass *oclass, void *data, u32 size,
-> -	      struct nouveau_object **pobject)
-> +nvc0_bar_init_vm(struct nvc0_bar_priv *priv, int nr, int bar)
+On Mon, Mar 24, 2014 at 05:42:25PM +0900, Alexandre Courbot wrote:
+> Some chips that use system memory exclusively (e.g. GK20A) do not
+> expose 2 BAR regions. For them only BAR1 exists, and it should be used
+> for USERD mapping. Do not map BAR3 if its resource does not exist.
+>=20
+> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> ---
+>  drivers/gpu/drm/nouveau/core/subdev/bar/base.c | 7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+>=20
+> diff --git a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c b/drivers/gpu=
+/drm/nouveau/core/subdev/bar/base.c
+> index bdf594116f3f..d713eeb75b13 100644
+> --- a/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+> +++ b/drivers/gpu/drm/nouveau/core/subdev/bar/base.c
+> @@ -110,6 +110,7 @@ nouveau_bar_create_(struct nouveau_object *parent,
 >  {
-[...]
-> -	/* BAR3 */
->  	ret =3D nouveau_gpuobj_new(nv_object(priv), NULL, 0x1000, 0, 0,
-> -				&priv->bar[0].mem);
-> -	mem =3D priv->bar[0].mem;
-> +				&priv->bar[nr].mem);
-> +	mem =3D priv->bar[nr].mem;
->  	if (ret)
->  		return ret;
-> =20
->  	ret =3D nouveau_gpuobj_new(nv_object(priv), NULL, 0x8000, 0, 0,
-> -				&priv->bar[0].pgd);
-> +				&priv->bar[nr].pgd);
->  	if (ret)
->  		return ret;
-[...]
-> +static int
-> +nvc0_bar_ctor(struct nouveau_object *parent, struct nouveau_object *engi=
-ne,
-> +	      struct nouveau_oclass *oclass, void *data, u32 size,
-> +	      struct nouveau_object **pobject)
-> +{
-[...]
-> +	/* BAR3 */
-> +	if (has_bar3) {
-> +		ret =3D nvc0_bar_init_vm(priv, 0, 3);
-[...]
-> +	/* BAR1 */
-> +	ret =3D nvc0_bar_init_vm(priv, 1, 1);
->  	if (ret)
->  		return ret;
+>  	struct nouveau_device *device =3D nv_device(parent);
+>  	struct nouveau_bar *bar;
+> +	bool has_bar3 =3D nv_device_resource_len(device, 3) !=3D 0;
 
-The calls to nvc0_bar_init_vm() are somewhat confusing in my opinion. It
-is hard to see from the invocation what these numbers mean and therefore
-distinguish which parameter is which.
+I don't think this variable is really necessary since you only use the
+expression once anyway, but I don't feel very strongly about it, so
+either way:
 
-Perhaps a slightly more readable way would be to pass in a pointer to a
-structure as second parameter instead of the index into an array. So
-it'd look somewhat like this:
+Reviewed-by: Thierry Reding <treding@nvidia.com>
 
-	if (has_bar3) {
-		ret =3D nvc0_bar_init_vm(priv, &priv->bar[0], 3);
-		...
-	}
-	...
-	ret =3D nvc0_bar_init_vm(priv, &priv->bar[1], 1);
-	...
-
-Unfortunately that would require a new type to be created for the bar[]
-structures, so it'd be slightly more intrusive.
-
-Thierry
-
---pAwQNkOnpTn9IO2O
+--oj4kGyHlBMXGt3Le
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTMK1rAAoJEN0jrNd/PrOhiZAP/24hUvwbKoANoMO1x1FKVMal
-JbgBh9+iFH+AyJYb95yS+KHm8AiXkiQZvdr/R/v8kPKLGgGuzON1CYQxk3iV8gZf
-z8zO5ChnSk4cvkxChAet7RdKQS+gz8ptuEwUoY6hssBdwJ59miTC/w5KBUTWdMqr
-ZDfcnMe3TaMXugn9RU5wVyIjXS7ujxbf1CILp81XvWZK/tOMZVOL1jUPTo9Tn0Da
-U/l5Jz07zD6d3lkzj856OOK11uXY4e07YHRlsno4WynbOqy3bmCwttYkqlSUpkoH
-GNuVv7ywHyxnh66OkUdsl78/lPW5EQ8MBRk8M2q04V/Rf+3fq190d26MJjzcpLTY
-ZPqrUDx6/mwFnfgd6hSGAFi8TpCxF9NyN99YU7TYT0eQL923tW5IvyD6lspWiNfQ
-QXbgyB+HRH+WQKFsxyZ93NLopHq7ts9MhYSj2gKR7hVTZzTrjxjnmq8ym4BkSB08
-pgTqHC8hCu5X3dim8BDsbg6AHY4GJ0+OwR8Rueslz9d/pumVgrX/jBE1HDdWWUZ3
-/XaZXq2Jw++NFvHmr2SOvJyNbp9qbI/Lbp1Z7STZN95jW+ynCDSPugfOFnmNGxTc
-Q3JzFmJ7FarP5Tnfh1ppt8ViiDIV1Jo1zOGGv3O4hbXOyC+EKIgZuHFRrbM6r4F/
-I7UtGztr4DjZc45Qy0U7
-=4xni
+iQIcBAEBAgAGBQJTMK35AAoJEN0jrNd/PrOh62UQALEMxooZCxqPfNArgPHhWmBv
+OqNbub1T3WRwvx3fkm71HHmJJe/gm8DdYU4VnPE1c/CQ/6uzD4ufbpE02AROiU6l
+MzRKZM3qhDrKVZwWw5X+ep4D88Sd2KVxrKYwRtQwfSabE64A8/vimcpL74XR8Pqu
+y+/M7+fa1XHNx2+zgIM0OrNH+dCsKNb6v1Zc52Q876BMis44KXuinGT+ezrPQC8i
+Um93srQZAkC1Qv6jn9/SI1ygChpCTDFRiDCkvMeecsstSzOQ6/eLySF/Gri7mYSq
+CxDAbPs1MS8t9lchrDN5r5Oj0gyjUdkPFpW2wTUGTFxbrxH/B1S1jUMUYuPYd568
+BUHyV6qEdTJ8ZepcJaa+Clc92o53VZBbw+Q3fK3aXgL6t+ZidwXJxk2d49sGY/br
+bdTMdAIrz3uIwplFnki3k9qt8wXk4Y67dJ41aiCrvptiIE33wf6pP05a1QiGOdTh
++wMlDT1SQb4p8/eJGfz1UKHOip/BD6aXqSrB3aDPen1sR1jhnbltG3efmEe0aatb
+3V2t0DLSpnCX0LtzricvSNpaebRGUzDoQcr28DA/bF8NvfDU5Q+JHR+ydUsOS+pR
+C0CsqIdHJJUOR8HOJHhA4rCCcIwcabLOCjH076d2U5cB92/yyClnuTA/mx9wMZvH
+HCjPwJ5iU9pb0UqJL0V5
+=mG23
 -----END PGP SIGNATURE-----
 
---pAwQNkOnpTn9IO2O--
+--oj4kGyHlBMXGt3Le--
