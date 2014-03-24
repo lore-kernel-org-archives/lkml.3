@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbaCXTev (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:34:51 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43617 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaCXTet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:34:49 -0400
-Date: Mon, 24 Mar 2014 15:34:46 -0400 (EDT)
-Message-Id: <20140324.153446.1203497334549825875.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
-        xen-devel@lists.xenproject.org, paul.durrant@citrix.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jonathan.davies@citrix.com
-Subject: Re: [PATCH net-next v2 3/3] xen-netback: Follow-up patch for grant
- mapping series
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395665284-8911-3-git-send-email-zoltan.kiss@citrix.com>
-References: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
-	<1395665284-8911-3-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Mar 2014 12:34:49 -0700 (PDT)
+	id S1754238AbaCXTfZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:35:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753697AbaCXTfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:35:16 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: acme@ghostprotocols.net, peterz@infradead.org
+Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
+        fowles@inreach.com, eranian@google.com, andi.kleen@intel.com,
+        Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 5/6] perf: Update sort to handle MAP_SHARED bits
+Date: Mon, 24 Mar 2014 15:34:35 -0400
+Message-Id: <1395689676-214799-6-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
+References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Remove some of the false positives when sorting by utilizing the MAP_SHARED bit.
 
-Patches #2 and #3 have the same exact Subject line, please repost with unique
-subject lines so that someone scanning the shortlog can tell what might
-be different between these two commits.
+This helps deal with the COW cases where a virtual address is modified but is
+mapped to a read-only shared library area because the perf tool doesn't understand
+COW faults.
 
-Thanks.
+Using the MAP_SHARED bit tells the tool in this example the memory is private
+and will not cause contention with other processes accessing the same shared
+library area.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ tools/perf/util/sort.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
+index e016fc1..be675f4 100644
+--- a/tools/perf/util/sort.c
++++ b/tools/perf/util/sort.c
+@@ -1,3 +1,4 @@
++#include <sys/mman.h>
+ #include "sort.h"
+ #include "hist.h"
+ #include "comm.h"
+@@ -1001,7 +1002,8 @@ sort__physid_daddr_cmp(struct hist_entry *left, struct hist_entry *right)
+ 	 * assumed to be unity mapped.  Sort those on address then pid.
+ 	 */
+ 
+-	if (l_map->maj || l_map->min || l_map->ino || l_map->ino_generation) {
++	if ((l_map->flags & MAP_SHARED) &&
++	   (l_map->maj || l_map->min || l_map->ino || l_map->ino_generation)) {
+ 		/* mmapped areas */
+ 
+ 		if (l_map->maj > r_map->maj) return -1;
+-- 
+1.7.11.7
+
