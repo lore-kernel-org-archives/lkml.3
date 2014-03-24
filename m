@@ -1,146 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416AbaCXTmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:42:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413AbaCXThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754409AbaCXThx (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Mar 2014 15:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28834 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754393AbaCXTht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:37:49 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
         andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 12/15 V3] perf, c2c: Output summary stats
-Date: Mon, 24 Mar 2014 15:37:03 -0400
-Message-Id: <1395689826-215033-13-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 06/15 V3] perf, c2c: Add in new options to configure latency and stores
+Date: Mon, 24 Mar 2014 15:36:57 -0400
+Message-Id: <1395689826-215033-7-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Output some summary stats based on the processed records.
-Mainly diagnostic uses.
+Modified the code to allow latency settings to be tweaked on the command line
+and also the ability to dynamically profile stores (or disable using stores).
 
-Stats done by Dick Fowles, backported by me.
+This allows the tool to be used on older Intel platforms like Westmere.
 
-Sample output:
-
-=================================================
-            Trace Event Information
-=================================================
-  Total records                     :    1322047
-  Locked Load/Store Operations      :     206317
-  Load Operations                   :     355701
-  Loads - uncacheable               :        590
-  Loads - IO                        :          0
-  Loads - Miss                      :        440
-  Loads - no mapping                :        207
-  Load Fill Buffer Hit              :     100214
-  Load L1D hit                      :     148454
-  Load L2D hit                      :      15170
-  Load LLC hit                      :      53872
-  Load Local HITM                   :      15388
-  Load Remote HITM                  :      26760
-  Load Remote HIT                   :       3910
-  Load Local DRAM                   :       2436
-  Load Remote DRAM                  :       3648
-  Load MESI State Exclusive         :       2883
-  Load MESI State Shared            :       3201
-  Load LLC Misses                   :      36754
-  LLC Misses to Local DRAM          :        6.6%
-  LLC Misses to Remote DRAM         :        9.9%
-  LLC Misses to Remote cache (HIT)  :       10.6%
-  LLC Misses to Remote cache (HITM) :       72.8%
-  Store Operations                  :     966322
-  Store - uncacheable               :          0
-  Store - no mapping                :      42931
-  Store L1D Hit                     :     915696
-  Store L1D Miss                    :       7695
-  No Page Map Rejects               :       1193
-  Unable to parse data source       :         24
-
-V2: refresh to hist_entry
-
-Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 46 insertions(+), 1 deletion(-)
+ tools/perf/builtin-c2c.c | 73 +++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 66 insertions(+), 7 deletions(-)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 363deec..37bf0bd 100644
+index 72dd9d5..d7eaf81 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -966,7 +966,6 @@ static void print_hitm_cacheline_offset(struct c2c_hit *clo,
- 						 23, stdout);
- 	}
- }
--
- static void print_c2c_hitm_report(struct rb_root *hitm_tree,
- 				  struct c2c_stats *hitm_stats __maybe_unused,
- 				  struct c2c_stats *c2c_stats)
-@@ -1161,6 +1160,51 @@ cleanup:
- 	return;
+@@ -6,6 +6,7 @@
+ #include "util/session.h"
+ #include "util/tool.h"
+ #include "util/debug.h"
++#include <api/fs/fs.h>
+ 
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+@@ -17,6 +18,12 @@ struct perf_c2c {
+ 
+ enum { OP, LVL, SNP, LCK, TLB };
+ 
++#define DEFAULT_LATENCY_THRES	30
++#define DEFAULT_PRECISION	1
++static int lat_level = DEFAULT_LATENCY_THRES;
++static int prec_level = DEFAULT_PRECISION;
++static bool no_stores = false;
++
+ static int perf_c2c__scnprintf_data_src(char *bf, size_t size, uint64_t val)
+ {
+ #define PREFIX       "["
+@@ -159,9 +166,10 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+ 	return 0;
  }
  
-+static void print_c2c_trace_report(struct perf_c2c *c2c)
++/* setup the basic events for most coverage, options added later */
+ static const struct perf_evsel_str_handler handlers[] = {
+-	{ "cpu/mem-loads,ldlat=30/pp", perf_c2c__process_load_store, },
+-	{ "cpu/mem-stores/pp",	       perf_c2c__process_load_store, },
++	{ "cpu/mem-loads", 		perf_c2c__process_load_store, },
++	{ "cpu/mem-stores",		perf_c2c__process_load_store, },
+ };
+ 
+ typedef int (*sample_handler)(struct perf_c2c *c2c,
+@@ -246,7 +254,8 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 		unsigned int i;
+ 
+ 		for (i = 0; i < ARRAY_SIZE(handlers); i++) {
+-			if (!strcmp(name, handlers[i].name))
++			if (!strncmp(name, handlers[i].name,
++				     sizeof(handlers[i].name)))
+ 				evsel->handler = handlers[i].handler;
+ 		}
+ 	}
+@@ -269,7 +278,7 @@ static int perf_c2c__report(struct perf_c2c *c2c)
+ 
+ static int perf_c2c__record(int argc, const char **argv)
+ {
+-	unsigned int rec_argc, i, j;
++	unsigned int rec_argc, i, j, n;
+ 	const char **rec_argv;
+ 	const char * const record_args[] = {
+ 		"record",
+@@ -277,8 +286,21 @@ static int perf_c2c__record(int argc, const char **argv)
+ 		"-d",
+ 		"-a",
+ 	};
++	char lat[16], prec[4] = "/";
++	char buf[256];
++
++	snprintf(lat, sizeof(lat), "ldlat=%d", lat_level);
++
++	if (prec_level > 3)
++		prec_level = 3;
++
++	for (i = 0; i < (unsigned int)prec_level; i++)
++		prec[i+1] = 'p';
++
++	/* how many events to pass in */
++	n = (no_stores) ? 1 : 2;
+ 
+-	rec_argc = ARRAY_SIZE(record_args) + 2 * ARRAY_SIZE(handlers) + argc - 1;
++	rec_argc = ARRAY_SIZE(record_args) + 2 * n + argc - 1;
+ 	rec_argv = calloc(rec_argc + 1, sizeof(char *));
+ 
+ 	if (rec_argv == NULL)
+@@ -287,9 +309,16 @@ static int perf_c2c__record(int argc, const char **argv)
+ 	for (i = 0; i < ARRAY_SIZE(record_args); i++)
+ 		rec_argv[i] = strdup(record_args[i]);
+ 
+-	for (j = 0; j < ARRAY_SIZE(handlers); j++) {
++	/* mem-loads is first index */
++	snprintf(buf, sizeof(buf), "%s,%s%s", handlers[0].name, lat, prec);
++	rec_argv[i++] = strdup("-e");
++	rec_argv[i++] = strdup(buf);
++
++	if (!no_stores) {
++		/* mem-stores is second index */
+ 		rec_argv[i++] = strdup("-e");
+-		rec_argv[i++] = strdup(handlers[j].name);
++		snprintf(buf, sizeof(buf), "%s%s", handlers[1].name, prec);
++		rec_argv[i++] = strdup(buf);
+ 	}
+ 
+ 	for (j = 1; j < (unsigned int)argc; j++, i++)
+@@ -300,6 +329,30 @@ static int perf_c2c__record(int argc, const char **argv)
+ 	return cmd_record(i, rec_argv, NULL);
+ }
+ 
++static int
++opt_no_stores_cb(const struct option *opt __maybe_unused, const char *arg __maybe_unused, int unset)
 +{
-+	int llc_misses;
-+	struct c2c_stats *stats = &c2c->stats;
++	int ret;
 +
-+	llc_misses = stats->t.lcl_dram +
-+		     stats->t.rmt_dram +
-+		     stats->t.rmt_hit +
-+		     stats->t.rmt_hitm;
++	if (unset) {
++		struct stat st;
++		char path[PATH_MAX];
 +
-+	printf("=================================================\n");
-+	printf("            Trace Event Information              \n");
-+	printf("=================================================\n");
-+	printf("  Total records                     : %10d\n", c2c->stats.nr_entries);
-+	printf("  Locked Load/Store Operations      : %10d\n", stats->t.locks);
-+	printf("  Load Operations                   : %10d\n", stats->t.load);
-+	printf("  Loads - uncacheable               : %10d\n", stats->t.ld_uncache);
-+	printf("  Loads - IO                        : %10d\n", stats->t.ld_io);
-+	printf("  Loads - Miss                      : %10d\n", stats->t.ld_miss);
-+	printf("  Loads - no mapping                : %10d\n", stats->t.ld_noadrs);
-+	printf("  Load Fill Buffer Hit              : %10d\n", stats->t.ld_fbhit);
-+	printf("  Load L1D hit                      : %10d\n", stats->t.ld_l1hit);
-+	printf("  Load L2D hit                      : %10d\n", stats->t.ld_l2hit);
-+	printf("  Load LLC hit                      : %10d\n", stats->t.ld_llchit + stats->t.lcl_hitm);
-+	printf("  Load Local HITM                   : %10d\n", stats->t.lcl_hitm);
-+	printf("  Load Remote HITM                  : %10d\n", stats->t.rmt_hitm);
-+	printf("  Load Remote HIT                   : %10d\n", stats->t.rmt_hit);
-+	printf("  Load Local DRAM                   : %10d\n", stats->t.lcl_dram);
-+	printf("  Load Remote DRAM                  : %10d\n", stats->t.rmt_dram);
-+	printf("  Load MESI State Exclusive         : %10d\n", stats->t.ld_excl);
-+	printf("  Load MESI State Shared            : %10d\n", stats->t.ld_shared);
-+	printf("  Load LLC Misses                   : %10d\n", llc_misses);
-+	printf("  LLC Misses to Local DRAM          : %10.1f%%\n", ((double)stats->t.lcl_dram/(double)llc_misses) * 100.);
-+	printf("  LLC Misses to Remote DRAM         : %10.1f%%\n", ((double)stats->t.rmt_dram/(double)llc_misses) * 100.);
-+	printf("  LLC Misses to Remote cache (HIT)  : %10.1f%%\n", ((double)stats->t.rmt_hit /(double)llc_misses) * 100.);
-+	printf("  LLC Misses to Remote cache (HITM) : %10.1f%%\n", ((double)stats->t.rmt_hitm/(double)llc_misses) * 100.);
-+	printf("  Store Operations                  : %10d\n", stats->t.store);
-+	printf("  Store - uncacheable               : %10d\n", stats->t.st_uncache);
-+	printf("  Store - no mapping                : %10d\n", stats->t.st_noadrs);
-+	printf("  Store L1D Hit                     : %10d\n", stats->t.st_l1hit);
-+	printf("  Store L1D Miss                    : %10d\n", stats->t.st_l1miss);
-+	printf("  No Page Map Rejects               : %10d\n", stats->t.nomap);
-+	printf("  Unable to parse data source       : %10d\n", stats->t.noparse);
++		snprintf(path, PATH_MAX, "%s/bus/event_source/devices/cpu/events/mem-stores",
++			 sysfs__mountpoint());
++
++		ret = stat(path, &st);
++		if (ret) {
++			pr_debug("Omitting mem-stores event");
++			no_stores = true;
++		}
++		return 0;
++	}
++
++	no_stores = true;
++	return 0;
 +}
 +
- static int perf_c2c__process_events(struct perf_session *session,
- 				    struct perf_c2c *c2c)
+ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
  {
-@@ -1172,6 +1216,7 @@ static int perf_c2c__process_events(struct perf_session *session,
- 		goto err;
- 	}
- 
-+	print_c2c_trace_report(c2c);
- 	c2c_analyze_hitms(c2c);
- 
- err:
+ 	struct perf_c2c c2c = {
+@@ -316,6 +369,12 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	const struct option c2c_options[] = {
+ 	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
++	OPT_INTEGER('l', "latency-level", &lat_level,
++		 "specify the latency threshold for loads [default=30]"),
++	OPT_INTEGER('p', "precision-level", &prec_level,
++		 "specify the precision level of events (0,1,2,3) [default=1]"),
++	OPT_CALLBACK_NOOPT(0, "no-stores", &no_stores, "",
++			   "do not record stores", &opt_no_stores_cb),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		 "be more verbose (show counter open errors, etc)"),
+ 	OPT_STRING('i', "input", &input_name, "file",
 -- 
 1.7.11.7
 
