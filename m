@@ -1,151 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751124AbaCXFJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 01:09:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750760AbaCXFJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 01:09:53 -0400
-Date: Mon, 24 Mar 2014 07:09:39 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
-        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
-        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
-Message-ID: <20140324050939.GB8832@redhat.com>
-References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
- <20140323194113.GA13633@redhat.com>
- <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140323213349.GA8832@redhat.com>
- <20140323221256.GG4405@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140323221256.GG4405@linux.vnet.ibm.com>
+	id S1751817AbaCXFLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 01:11:17 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46395 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaCXFLQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 01:11:16 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.2.3
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20140219
+From: Takao Indoh <indou.takao@jp.fujitsu.com>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: ftrace/kprobes: Warning when insmod two modules
+Date: Mon, 24 Mar 2014 14:10:26 +0900
+Message-Id: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com>
+X-Mailer: git-send-email 1.7.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 03:12:56PM -0700, Paul E. McKenney wrote:
-> On Sun, Mar 23, 2014 at 11:33:49PM +0200, Michael S. Tsirkin wrote:
-> > On Sun, Mar 23, 2014 at 12:54:17PM -0700, Eric Dumazet wrote:
-> > > On Sun, 2014-03-23 at 21:41 +0200, Michael S. Tsirkin wrote:
-> > > 
-> > > > The rcu_assign_pointer() ensures that the initialization of a structure       
-> > > > is carried out before storing a pointer to that structure. 
-> > > > In the case of the NULL pointer, there is no structure to initialize,
-> > > > so we can safely drop smp_wmb in this case.
-> > > > 
-> > > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > > > 
-> > > > --
-> > > > 
-> > > > Lightly tested.
-> > > > v is evaluated twice here but that should be ok since this
-> > > > only happens when v is a constant, so evaluating it should
-> > > > have no side effects.
-> > > > Paul, what do you think?
-> > > > 
-> > > > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > > > index 72bf3a0..d33c9ec 100644
-> > > > --- a/include/linux/rcupdate.h
-> > > > +++ b/include/linux/rcupdate.h
-> > > > @@ -587,7 +587,8 @@ static inline void rcu_preempt_sleep_check(void)
-> > > >   */
-> > > >  #define rcu_assign_pointer(p, v) \
-> > > >  	do { \
-> > > > -		smp_wmb(); \
-> > > > +		if (!__builtin_constant_p(v) || (v)) \
-> > > > +			smp_wmb(); \
-> > > >  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
-> > > >  	} while (0)
-> > > >  
-> > > 
-> > > Yeah, I suggest you read d322f45ceed525daa changelog ;)
-> > > 
-> > 
-> > Oh I see. It does not seem hard to silence that warning though.
-> > See below.
-> 
-> This would at the very least need to be tested under a wide variety
-> of compilers.
+Hi all,
 
-Seems an incredibly strict requirement for something that just
-silences a warning.
-What exactly should I test?
-I intended to just verify this produces same code as before
-d322f45ceed525daa under a recent gcc.
+I noticed the following ftrace waring message when I insmod module.
 
->  And we need to keep 
-> 
-> > Alternatively apply these patches everywhere though it does
-> > look like too much work for too little gain to me.
-> > 
-> > -->
-> > 
-> > rcu: optimize rcu_assign_pointer with NULL
-> > 
-> > The rcu_assign_pointer() dropped __builtin_constant_p check to
-> > avoid a compiler warning, but we can actually work around it without
-> > adding code.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > 
-> > ---
-> > 
-> > Untested, too late here, sorry.
-> > 
-> > 
-> > diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> > index 72bf3a0..9111d40 100644
-> > --- a/include/linux/rcupdate.h
-> > +++ b/include/linux/rcupdate.h
-> > @@ -585,9 +585,14 @@ static inline void rcu_preempt_sleep_check(void)
-> >   * please be careful when making changes to rcu_assign_pointer() and the
-> >   * other macros that it invokes.
-> >   */
-> > +/* The convoluted __builtin_constant_p logic is here to prevent
-> > + * gcc from emitting a warning when passed a pointer to a variable.
-> > + */
-> >  #define rcu_assign_pointer(p, v) \
-> >  	do { \
-> > -		smp_wmb(); \
-> > +		if (!__builtin_constant_p(v) || \
-> > +		    (__builtin_constant_p(v) ? (v) : NULL)) \
-> 
-> You lost me on this one.  If "v" is not a built-in constant, we want
-> the smp_wmb(), right?
+[  409.337936] ------------[ cut here ]------------
+[  409.337945] WARNING: CPU: 12 PID: 10028 at /mnt/repos/linux/kernel/trace/ftrace.c:1716 ftrace_bug+0x206/0x270()
+[  409.337971] Modules linked in: test2(O+) test1(O+) ip6table_filter ip6_tables iptable_filter ip_tables ebtable_nat ebtables coretemp kvm_intel kvm crc32c_intel ghash_clmulni_intel aesni_intel sg aes_x86_64 glue_helper nfsd lrw gf128mul ablk_helper auth_rpcgss oid_registry cryptd exportfs nfs_acl lockd iTCO_wdt iTCO_vendor_support i7core_edac lpc_ich dm_mirror microcode serio_raw pcspkr i2c_i801 ioatdma dm_region_hash mfd_core edac_core ipmi_si dm_log shpchp tpm_infineon acpi_cpufreq dm_mod ipmi_msghandler uinput sunrpc ext4 mbcache jbd2 igb ptp mptsas pps_core lpfc i2c_algo_bit scsi_transport_sas scsi_transport_fc i2c_core mptscsih mptbase scsi_tgt megaraid_sas dca ipv6 autofs4 [last unloaded: test2]
+[  409.337974] CPU: 12 PID: 10028 Comm: insmod Tainted: G           O 3.14.0-rc5 #6
+[  409.337975] Hardware name: FUJITSU-SV PRIMERGY BX920 S2/D3030, BIOS 080015 Rev.3D81.3030 02/10/2012
+[  409.337979]  0000000000000009 ffff88023f7efc50 ffffffff81547bfe 0000000000000000
+[  409.337981]  ffff88023f7efc88 ffffffff81049a0d 0000000000000000 ffffffffa0364000
+[  409.337983]  ffff88023f6775c0 0000000000000000 ffff880238570000 ffff88023f7efc98
+[  409.337983] Call Trace:
+[  409.337990]  [<ffffffff81547bfe>] dump_stack+0x45/0x56
+[  409.337993]  [<ffffffff81049a0d>] warn_slowpath_common+0x7d/0xa0
+[  409.337997]  [<ffffffffa0364000>] ? 0xffffffffa0363fff
+[  409.337999]  [<ffffffff81049aea>] warn_slowpath_null+0x1a/0x20
+[  409.338001]  [<ffffffff810e79f6>] ftrace_bug+0x206/0x270
+[  409.338004]  [<ffffffffa0364000>] ? 0xffffffffa0363fff
+[  409.338006]  [<ffffffff810e7d8e>] ftrace_process_locs+0x32e/0x710
+[  409.338008]  [<ffffffff810e8206>] ftrace_module_notify_enter+0x96/0xf0
+[  409.338012]  [<ffffffff81551dec>] notifier_call_chain+0x4c/0x70
+[  409.338018]  [<ffffffff8106fbfd>] __blocking_notifier_call_chain+0x4d/0x70
+[  409.338020]  [<ffffffff8106fc36>] blocking_notifier_call_chain+0x16/0x20
+[  409.338026]  [<ffffffff810bf3f4>] load_module+0x1f54/0x25d0
+[  409.338028]  [<ffffffff810baab0>] ? store_uevent+0x40/0x40
+[  409.338031]  [<ffffffff810bfbe6>] SyS_finit_module+0x86/0xb0
+[  409.338036]  [<ffffffff81556752>] system_call_fastpath+0x16/0x1b
+[  409.338037] ---[ end trace e7e27c36e7a65831 ]---
+[  409.338040] ftrace faulted on writing [<ffffffffa0364000>] handler_pre+0x0/0x10 [test2]
 
-If "v" is not a built-in constant, then !__builtin_constant_p(v)
-is true so (__builtin_constant_p(v) ? (v) : NULL))
-is never evaluated.
+To cause this problem,
+o Insmod two modules almost at the same time
+o At least one of them use kprobe.
 
-Basically if (
+Let's say I'm trying to insmod module A and module B at the same time,
+and module A calls register_kprobe() in it's module_init funciton.
 
-	1.   !A ||
-	2.   A ? B : C
-
-If A  is false, only 1 is evaluated and the expression evaluates to true
-If A  is true, then 2 evaluates to B.
-C is never evaluated.
-
-Makes sense? Did I miss anything?
-
-But the effect as far as I can tell is that instead of converting v to
-integer type we convert an expression involving v, so even though it's
-able to figure out the value, gcc understands it's not a typo
-and does not warn.
+<insmod module A>
+init_module
+  load_module
+    do_init_module
+      do_one_initcall
+        kprobe_init
+          register_kprobe
+            arm_kprobe
+              arm_kprobe_ftrace
+                register_ftrace_function
+                  mutex_lock(&ftrace_lock) ------------------- (1)
+                  ftrace_startup
+                    ftrace_startup_enable
+                      ftrace_run_update_code
+                        ftrace_arch_code_modify_post_process
+                          set_all_modules_text_ro ------------ (2)
+                  mutex_unlock(&ftrace_lock) ----------------- (3)
 
 
-	
+<insmod module B>
+init_module
+  load_module
+    do_init_module
+      blocking_notifier_call_chain
+        ftrace_module_notify_enter
+          ftrace_init_module
+            ftrace_process_locs
+             mutex_lock(&ftrace_lock) ------------------------ (4)
+             ftrace_update_code
+               __ftrace_replace_code
+                 ftrace_make_nop
+                   ftrace_modify_code_direct
+                     do_ftrace_mod_code
+                       probe_kernel_write -------------------- (5)
 
-> 							Thanx, Paul
-> 
-> > +			smp_wmb(); \
-> >  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
-> >  	} while (0)
-> > 
-> > 
+
+o Frist of all, module A gets ftrace_lock at (1)
+o Module B also tries to get ftrace_lock at (4) somewhat late, and wait
+  here because modules A got ftrace_lock.
+o Module A sets all modules text to ReadOnly at (2), and then release
+  ftrace_lock at (3)
+o Module B wakes up and tries to rewrite its text at (5), but it fails
+  because it is already changed to RO at (2) by modules A. The ftrace
+  waring message is outputted.
+
+I'm not familiar with ftrace/kprobe, so any comments/suggestions would
+be appreciatd to fix this.
+
+Thanks,
+Takao Indoh
+
