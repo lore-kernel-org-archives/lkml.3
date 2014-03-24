@@ -1,119 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbaCXIMK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:12:10 -0400
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.146]:12679 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751022AbaCXIMG (ORCPT
+	id S1752100AbaCXIVe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:21:34 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15306 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaCXIVb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:12:06 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-13.tower-179.messagelabs.com!1395648723!26694764!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        "David Dajun Chen" <david.chen@diasemi.com>,
-        LINUX-DOC <linux-doc@vger.kernel.org>,
-        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
-        LM-SENSORS <lm-sensors@lm-sensors.org>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Rob Landley <rob@landley.net>,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: RE: [RFC V1 1/3] hwmon: da9063: HWMON driver
-Thread-Topic: [RFC V1 1/3] hwmon: da9063: HWMON driver
-Thread-Index: AQHPRttXGKX6/plr5kirxkYUlEAgKprv3kKAgAABUKA=
-Date: Mon, 24 Mar 2014 08:12:02 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A2AFC31D@SW-EX-MBX01.diasemi.com>
-References: <cover.1395607051.git.stwiss.opensource@diasemi.com>
- <420d4f5c8436a66b511693531cfeda131258ce69.1395607051.git.stwiss.opensource@diasemi.com>
- <20140324075221.GF8541@lee--X1>
-In-Reply-To: <20140324075221.GF8541@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.61]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Mon, 24 Mar 2014 04:21:31 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-63-532feafe65da
+Date: Mon, 24 Mar 2014 09:21:12 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com
+Subject: Re: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
+Message-id: <20140324092112.74f930d3@amdc2363>
+In-reply-to: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jAd1/r/SDDX4fkLJ42vSD3eLHqg+s
+	Fu8PPWO2uLxrDpvF594jjBZnTl9itbj89TqzRcvH9UwWG796OHB63Lm2h83jwaHNLB63/z1m
+	9thytZ3F4/MmuQDWKC6blNSczLLUIn27BK6Mzy81Cq4JVrRNm8LUwPiYt4uRk0NCwERi2uPT
+	7BC2mMSFe+vZuhi5OIQEFjFKnD4ylwnC+cUocW76EbAqFgFViS/bmphBbDYBPYnPd58CFXFw
+	iAhoSby8mQoSZhZ4yCixZjcniC0s4C1x9vM/sHJeoPITK0+CjeEUSJB4daEfzBYSiJf4cr2d
+	BcTmF5CUaP/3gxniIDuJc582sEP0Ckr8mHyPBWK+lsTmbU2sELa8xOY1b5knMArOQlI2C0nZ
+	LCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER8Mz6R2MqxosDjEKcDAq8fB69OsH
+	C7EmlhVX5h5ilOBgVhLhfdYLFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1
+	tSC1CCbLxMEp1cC4Wj23Zoux+MNYzYyeCb4lD5Zk7rlWJ8x8YfHWbSxlXB95T6jeU+yPPnvD
+	8cGU+Pt9uWUy09cd3Td9XdbW/GQpXts3lUI1grlFOv9VuNZ1FE9wOZzeJe3WnWQWvfX4lUNS
+	PWodIYXR7H3t/JyiE+NmdeyZctmOqdLPsLp1za6/wjr/w+b9eaXEUpyRaKjFXFScCAC7VbtP
+	ggIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2O8CJEo013618
 
-Hi Lee,
-Thank you for the fast reply.
+Hi Viresh,
 
-On 24 March 2014 07:52 Lee Jones wrote,
->> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->>
->> Add the HWMON driver for DA9063
->>
->> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->> ---
->>
->>  drivers/hwmon/Kconfig                |   10 +
->>  drivers/hwmon/Makefile               |    1 +
->>  drivers/hwmon/da9063-hwmon.c         |  456
->++++++++++++++++++++++++++++++++++
->>  include/linux/mfd/da9063/registers.h |   34 +++
->
->I'd prefer to see all values in hex, but this probably a preference
->thing rather than something which would prevent acceptance.
->
->For the MFD header changes:
->  Acked-by: Lee Jones <lee.jones@linaro.org>
->
-Thanks for the Ack.
+> Ideally, .driver_data field of struct cpufreq_frequency_table must
+> not be used by core at all. But during a recent change if its value
+> is same as CPUFREQ_BOOST_FREQ macro, then it is treated specially by
+> core.
+> 
+> The value of this macro was set to ~2 earlier, i.e. 0xFFFFFFFD. In
+> case some driver is using this field for its own data and sets this
+> field to -3, then with two's complement that value will also become
+> 0xFFFFFFFD.
+> 
+> To fix this issue, lets change value of this flag to a very uncommon
+> value which shouldn't be used by any driver unless they want to use
+> BOOST feature.
+> 
+> Along with this update comments to make this more clear.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Gautham/Vaidy: I hope this fixes the problem we discussed for your
+> patchset.
+> 
 
-<snip>
-> +#define DA9063_ADC_RES	(1 << (DA9063_ADC_RES_L_BITS + DA9063_ADC_RES_M_BITS))
-> +#define DA9063_ADC_MAX	(DA9063_ADC_RES - 1)
->> +#define DA9063_2V5	2500
->> +#define DA9063_5V0	5000
->> +#define DA9063_5V5	5500
->> +#define DA9063_TJUNC_M	-420
->> +#define DA9063_TJUNC_C	-812
->> +#define DA9063_VBBAT_M	2048
+I think that a name of the patchset, for which the current setting
+causes problem would be welcome here.
 
-I am using these defines as part of the base-10 calculations in the conversion
-routines for voltage and temperature.
-I guess they do look weird .. and looking at it, I have mixed  division by 1024
-as a right shift 10 in the TJUNC calculation.
+Otherwise, I can only ask why it is not possible to add 
+#define SPECIAL_SETTING ~3 ?
 
-I will re-format that part and put a comment in the defines to explain.
-Thanks.
 
-<snip>
->> +	case DA9063_CHAN_ADCIN1:
->> +	case DA9063_CHAN_ADCIN2:
->> +	case DA9063_CHAN_ADCIN3:
->> +		val = (DA9063_2V5 * val) / DA9063_ADC_MAX;
->> +		break;
->> +	case DA9063_CHAN_VSYS:
->> +		val = ((DA9063_5V5 - DA9063_2V5) * val) / DA9063_ADC_MAX +
->> +			DA9063_2V5;
->> +		break;
->> +	case DA9063_CHAN_TJUNC:
->> +		val -= hwmon->tjunc_offset;
->> +		val = (DA9063_TJUNC_M * (val + DA9063_TJUNC_C)) >> 10;
->> +		break;
->> +	case DA9063_CHAN_VBBAT:
->> +		val = (DA9063_5V0 * val) / DA9063_ADC_MAX;
->> +		break;
+>  include/linux/cpufreq.h | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index c48e595..9f25d9d 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -455,12 +455,18 @@ extern struct cpufreq_governor
+> cpufreq_gov_conservative;
+>   *                     FREQUENCY TABLE HELPERS
+> *
+> *********************************************************************/ 
+> +/* Special Values of .frequency field */
+>  #define CPUFREQ_ENTRY_INVALID ~0
+>  #define CPUFREQ_TABLE_END     ~1
+> -#define CPUFREQ_BOOST_FREQ    ~2
+> +/* Special Values of .driver_data field */
+> +#define CPUFREQ_BOOST_FREQ    0xABABABAB
+>  
+>  struct cpufreq_frequency_table {
+> -	unsigned int	driver_data; /* driver specific data,
+> not used by core */
+> +	/*
+> +	 * driver specific data, not used by core unless it is set to
+> +	 * CPUFREQ_BOOST_FREQ.
+> +	 */
+> +	unsigned int	driver_data;
+>  	unsigned int	frequency; /* kHz - doesn't need to be
+> in ascending
+>  				    * order */
+>  };
 
-<snip>
->
->--
->Lee Jones
->Linaro STMicroelectronics Landing Team Lead
->Linaro.org ‚îÇ Open source software for ARM SoCs
->Follow Linaro: Facebook | Twitter | Blog
 
-Regards,
-Steve
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
