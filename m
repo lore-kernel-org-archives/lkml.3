@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753441AbaCXP2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:28:16 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:30567 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754AbaCXP2O (ORCPT
+	id S1753476AbaCXPay (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:30:54 -0400
+Received: from smtp.adetelgroup.com ([94.247.26.71]:24519 "EHLO
+	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752785AbaCXPaw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:28:14 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-e3-53304f0cee28
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: "David F." <df7729@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-Subject: Re: patch fix for intel sdd s3500 series on Sil3512 controller
-Date: Mon, 24 Mar 2014 16:27:54 +0100
-Message-id: <2140283.ClKsmfFTvU@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <20140324141558.31c169cf@alan.etchedpixels.co.uk>
-References: <CAGRSmLtifL=hFBP1AUHB_va6ZvNfqXo8Bu=6XciH--jOEYVJjQ@mail.gmail.com>
- <20140324141558.31c169cf@alan.etchedpixels.co.uk>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=US-ASCII
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQV0ef4NggzNHtC3m35KymDTlL5vF
-	sR2PmCwu75rD5sDisXPWXXaP1pObWD0+b5ILYI7isklJzcksSy3St0vgyli4ewpLwWrWihdT
-	jrA3ME5g6WLk4JAQMJHY8UWgi5ETyBSTuHBvPVsXIxeHkMB0RolJDZNZIZwWJon2ty+YQarY
-	BKwkJravYgSxRYCam1+9BrOZBWIkbs9sB6sRFnCXOHXsEVicRUBV4nNzOzvIMl4BTYmVb1RA
-	wqICnhI7tq9kA7E5BewkHpz/yA5iCwm0MUpcPSQKYvMKCEr8mHyPBWK8vMS+/VNZIWwtic3b
-	mlgnMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEh+sz6R2Mqxos
-	DjEKcDAq8fBuMDUIFmJNLCuuzD3EKMHBrCTCe0ocKMSbklhZlVqUH19UmpNafIhRmoNFSZz3
-	YKt1oJBAemJJanZqakFqEUyWiYNTqoExV0Pngtx0Me6dH7fwnXiU5VI6ee4X0+O9OVXuJ1cy
-	ezxNu37r08npGpIT6maWNZyeGCrYVy3LzcD+PGhv9oTodSpcKSrnb26L4DtpNSvx8uXq/FNc
-	Dpu5UuPOK//b7bdi9tG8C4s+xK84aOQZ+Lv91zvRhCSVtfrXG8M+qUbcOOT/5otQk/ExJZbi
-	jERDLeai4kQAn0EiLFMCAAA=
+	Mon, 24 Mar 2014 11:30:52 -0400
+Date: Mon, 24 Mar 2014 16:30:49 +0100 (CET)
+From: CHAUMETTE Hubert <hchaumette@adeneo-embedded.com>
+To: Eric =?utf-8?Q?B=C3=A9nard?= <eric@eukrea.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
+        shawn guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
+        kernel@pengutronix.de
+Message-ID: <1762157698.5689069.1395675049240.JavaMail.zimbra@adeneo-embedded.com>
+In-Reply-To: <20140321222320.14370739@e6520eb>
+References: <1395421687-12934-1-git-send-email-hchaumette@adeneo-embedded.com> <20140321222320.14370739@e6520eb>
+Subject: Re: [PATCH] ARM: i.MX6: update KSZ9031 phy fixup
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
+Thread-Topic: i.MX6: update KSZ9031 phy fixup
+Thread-Index: 9CGjHjvpqLnG5Sxh7swxcvNqEExmbA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eric,
 
-+ linux-ide mailing list on Cc:
-
-On Monday, March 24, 2014 02:15:58 PM One Thousand Gnomes wrote:
-> On Sat, 22 Mar 2014 16:32:54 -0700
-> "David F." <df7729@gmail.com> wrote:
+----- Original Message -----
+> From: "Eric Bénard" <eric@eukrea.com>
+> To: "Hubert Chaumette" <hchaumette@adeneo-embedded.com>
+> Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk, "shawn guo" <shawn.guo@linaro.org>,
+> linux-kernel@vger.kernel.org, kernel@pengutronix.de
+> Sent: Friday, March 21, 2014 10:23:20 PM
+> Subject: Re: [PATCH] ARM: i.MX6: update KSZ9031 phy fixup
 > 
-> > Hi,
+> Hi Hubert,
+> 
+> Le Fri, 21 Mar 2014 18:08:07 +0100,
+> Hubert Chaumette <hchaumette@adeneo-embedded.com> a écrit :
+> 
 > > 
-> > It appears if nIEN is set all polling type IO fails.   After an
-> > attempt, future non-polled communications also fails.  This patch
-> > allows it to work.  Not sure if any spin lock protection would be
-> > needed or the system already handles the device existence for the
-> > generated irq with polling enabled.  handler already ignored irq if
-> > queued command was polling type.
+> > Update KSZ9031RN phy fixup for Congatec conga-QEVAL and conga-QMX6 combo :
+> > set RGMII GTX_CLK and RX_CLK pad skew to +0.96ns.
+> > 
+> > Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+> > ---
+> >  arch/arm/mach-imx/mach-imx6q.c | 3 +++
+> >  1 file changed, 3 insertions(+)
+> > 
+> > diff --git a/arch/arm/mach-imx/mach-imx6q.c
+> > b/arch/arm/mach-imx/mach-imx6q.c
+> > index 76e5db4..db307c2 100644
+> > --- a/arch/arm/mach-imx/mach-imx6q.c
+> > +++ b/arch/arm/mach-imx/mach-imx6q.c
+> > @@ -77,6 +77,9 @@ static int ksz9031rn_phy_fixup(struct phy_device *dev)
+> >          mmd_write_reg(dev, 2, 5, 0);
+> >          mmd_write_reg(dev, 2, 8, 0x003ff);
+> >  
+> > +        /* For Congatec conga-QMX6 board */
+> > +        mmd_write_reg(dev, 0x02, 0x06, 0xffff);
+> > +
+> >          return 0;
+> >  }
+> >  
+> that's board specific (the needed delay depends on the routing delay on
+> the PCB), so this should not go in a generic file.
 > 
-> Does it behave plugged into a different controller without the hacks ?
+> Eric
 > 
-> Alan
 
+I admit it may need to be in a separate function, but this file already contains
+board-specific fixups (for imx6q sabrelite, Data Modul eDM-QMX6).
+
+Anyway, do you have any suggestion for the location I should put it ?
+
+Regards,
+
+Hubert
