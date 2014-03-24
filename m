@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840AbaCXCxD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 22:53:03 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:7242
+	id S1751866AbaCXCz2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 22:55:28 -0400
+Received: from mail-bn1lp0145.outbound.protection.outlook.com ([207.46.163.145]:49851
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751131AbaCXCxA convert rfc822-to-8bit (ORCPT
+	id S1750993AbaCXCz0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 22:53:00 -0400
+	Sun, 23 Mar 2014 22:55:26 -0400
 From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Shawn Guo <shawn.guo@linaro.org>
+To: Shawn Guo <Shawn.Guo@freescale.com>
 CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/3] ARM: dts: vf610-twr: Add PWM0's pinctrl node
-Thread-Topic: [PATCH 2/3] ARM: dts: vf610-twr: Add PWM0's pinctrl node
-Thread-Index: AQHPRAEQ//mmfX7ap0aajzxPlxxjt5rvjwUAgAAAN1A=
-Date: Mon, 24 Mar 2014 02:52:56 +0000
-Message-ID: <2396982097064354a789c688a96c661a@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1395292325-8497-1-git-send-email-Li.Xiubo@freescale.com>
- <1395292325-8497-3-git-send-email-Li.Xiubo@freescale.com>
- <20140324024818.GA10184@dragon>
-In-Reply-To: <20140324024818.GA10184@dragon>
+Subject: RE: [PATCH 1/3] ARM: dts: vf610: Add Freescale FTM PWM node.
+Thread-Topic: [PATCH 1/3] ARM: dts: vf610: Add Freescale FTM PWM node.
+Thread-Index: AQHPRAETHfNYzSfrwEmv9d8e2sGEcprvjicAgAACblA=
+Date: Mon, 24 Mar 2014 02:55:23 +0000
+Message-ID: <2ba17bb357784b5990bedc1cfd0d6512@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1395292325-8497-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140324023900.GA4002@dragon>
+In-Reply-To: <20140324023900.GA4002@dragon>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 x-originating-ip: [123.151.195.49]
 x-forefront-prvs: 01604FB62B
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(199002)(189002)(24454002)(164054003)(59766001)(575784001)(76786001)(76576001)(83072002)(76796001)(63696002)(95666003)(93516002)(79102001)(74316001)(81816001)(74876001)(65816001)(33646001)(19580395003)(93136001)(47736001)(66066001)(85852003)(31966008)(20776003)(97186001)(97336001)(56816005)(81686001)(94316002)(94946001)(74366001)(74662001)(47446002)(90146001)(86362001)(19580405001)(80976001)(95416001)(92566001)(49866001)(74502001)(4396001)(2656002)(51856001)(56776001)(69226001)(76482001)(54316002)(85306002)(46102001)(54356001)(87266001)(53806001)(87936001)(81342001)(47976001)(81542001)(80022001)(50986001)(83322001)(74706001)(98676001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:7535EF6F.6CD1BD81.31C6B1CB.EA48ED9.201AA;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(51704005)(24454002)(83322001)(19580395003)(81686001)(31966008)(15975445006)(81816001)(2656002)(65816001)(76796001)(74316001)(74366001)(74876001)(76786001)(98676001)(93136001)(20776003)(19580405001)(94316002)(80022001)(86362001)(93516002)(87936001)(54316002)(66066001)(53806001)(54356001)(97336001)(94946001)(76482001)(47446002)(59766001)(87266001)(69226001)(90146001)(56816005)(83072002)(63696002)(74662001)(74502001)(47976001)(49866001)(47736001)(81342001)(95666003)(4396001)(33646001)(56776001)(79102001)(95416001)(92566001)(51856001)(46102001)(80976001)(85306002)(81542001)(97186001)(50986001)(85852003)(74706001)(76576001)(24736002)(217873001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB347;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:F865EB56.18308E90.F8CC41B7.96A616DA.2024C;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
@@ -37,54 +36,70 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> Subject: Re: [PATCH 2/3] ARM: dts: vf610-twr: Add PWM0's pinctrl node
+> Subject: Re: [PATCH 1/3] ARM: dts: vf610: Add Freescale FTM PWM node.
 > 
-> On Thu, Mar 20, 2014 at 01:12:04PM +0800, Xiubo Li wrote:
+> On Thu, Mar 20, 2014 at 01:12:03PM +0800, Xiubo Li wrote:
+> > This adds devicetree node for VF610, and there are 8 channels
+> > supported.
+> >
 > > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > Reviewed-by: Sascha Hauer <s.hauer@pengutronix.de>
+> > Reviewed-by: Yuan Yao <yao.yuan@freescale.com>
 > 
-> Patch #2 and #3 can be reasonably merged into one.
+> Please copy list linux-arm-kernel instead of linux-kernel on arch/arm/
+> changes, and also be noted that my email and git addresses just got
+> updated [1].
 > 
 
-Yes, they are.
+Okey.
 
-But the Patch #2 is a new one, not reviewed by Sascha Hauer and Yao Yuan.
-I'm not sure could it be merged with Patch #3 ? Or just split them into
-Two patches like this ?
+> > ---
+> >  arch/arm/boot/dts/vf610.dtsi | 13 +++++++++++++
+> >  1 file changed, 13 insertions(+)
+> >
+> > diff --git a/arch/arm/boot/dts/vf610.dtsi b/arch/arm/boot/dts/vf610.dtsi
+> > index acf544e..ccc6d35 100644
+> > --- a/arch/arm/boot/dts/vf610.dtsi
+> > +++ b/arch/arm/boot/dts/vf610.dtsi
+> > @@ -192,6 +192,19 @@
+> >  				status = "disabled";
+> >  			};
+> >
+> > +			pwm0: pwm@40038000 {
+> 
+> The node should be sorted in unit-address.  So shouldn't it be put right
+> after pit node?
+> 
+
+Yes, I will fix it.
 
 Thanks,
 
-BRs
+BRs,
 Xiubo
+
 
 > Shawn
 > 
-> > ---
-> >  arch/arm/boot/dts/vf610-twr.dts | 11 +++++++++++
-> >  1 file changed, 11 insertions(+)
-> >
-> > diff --git a/arch/arm/boot/dts/vf610-twr.dts b/arch/arm/boot/dts/vf610-
-> twr.dts
-> > index f3af8ea..3fabdb5 100644
-> > --- a/arch/arm/boot/dts/vf610-twr.dts
-> > +++ b/arch/arm/boot/dts/vf610-twr.dts
-> > @@ -213,6 +213,17 @@
-> >  			>;
-> >  		};
-> >
-> > +		pinctrl_pwm0: pwm0grp {
-> > +			fsl,pins = <
-> > +				VF610_PAD_PTB0__FTM0_CH0		0x1582
-> > +				VF610_PAD_PTB1__FTM0_CH1		0x1582
-> > +				VF610_PAD_PTB2__FTM0_CH2		0x1582
-> > +				VF610_PAD_PTB3__FTM0_CH3		0x1582
-> > +				VF610_PAD_PTB6__FTM0_CH6		0x1582
-> > +				VF610_PAD_PTB7__FTM0_CH7		0x1582
-> > +			>;
-> > +		};
+> [1]
+> https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=f1c
+> 12837220c54c8d7138a4ee4a08c1ec67b68a2
+> 
+> > +				compatible = "fsl,vf610-ftm-pwm";
+> > +				#pwm-cells = <3>;
+> > +				reg = <0x40038000 0x1000>;
+> > +				clock-names = "ftm_sys", "ftm_ext",
+> > +					      "ftm_fix", "ftm_cnt_clk_en";
+> > +				clocks = <&clks VF610_CLK_FTM0>,
+> > +					<&clks VF610_CLK_FTM0_EXT_SEL>,
+> > +					<&clks VF610_CLK_FTM0_FIX_SEL>,
+> > +					<&clks VF610_CLK_FTM0_EXT_FIX_EN>;
+> > +				status = "disabled";
+> > +			};
 > > +
-> >  		pinctrl_sai2: sai2grp {
-> >  			fsl,pins = <
-> >  				VF610_PAD_PTA16__SAI2_TX_BCLK		0x02ed
+> >  			wdog@4003e000 {
+> >  				compatible = "fsl,vf610-wdt", "fsl,imx21-wdt";
+> >  				reg = <0x4003e000 0x1000>;
 > > --
 > > 1.8.4
 > >
