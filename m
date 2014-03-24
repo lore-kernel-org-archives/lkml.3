@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaCXIsP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:48:15 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:32924 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943AbaCXIsL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:48:11 -0400
+	id S1753048AbaCXIs6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:48:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4571 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753013AbaCXIsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 04:48:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,719,1389772800"; 
+   d="scan'208";a="505290337"
+From: Jani Nikula <jani.nikula@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Dave Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Paulo Zanoni <paulo.r.zanoni@intel.com>
+Subject: Re: linux-next: manual merge of the drm tree with Linus' tree
+In-Reply-To: <20140324130135.d8788dffbc82ad210c53e258@canb.auug.org.au>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+References: <20140324130135.d8788dffbc82ad210c53e258@canb.auug.org.au>
+User-Agent: Notmuch/0.17+142~gb08654f2ff14 (http://notmuchmail.org) Emacs/23.3.1 (x86_64-pc-linux-gnu)
+Date: Mon, 24 Mar 2014 10:49:15 +0200
+Message-ID: <878us0vv5g.fsf@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <1393928852-22725-1-git-send-email-l.majewski@samsung.com>
-References: <1367590072-10496-1-git-send-email-jonghwa3.lee@samsung.com>
-	<1393928852-22725-1-git-send-email-l.majewski@samsung.com>
-Date: Mon, 24 Mar 2014 14:18:10 +0530
-Message-ID: <CAKohpok1zBsX7n70r=geCOaP-9ONx2QdaUMK6cJeqhFrO1PkUg@mail.gmail.com>
-Subject: Re: [RFC v3 0/5] cpufreq:LAB: Support for LAB governor.
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Jonghwa Lee <jonghwa3.lee@samsung.com>,
-        Lukasz Majewski <l.majewski@majess.pl>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Thomas Abraham <ta.omasab@gmail.com>,
-        Thomas Abraham <thomas.ab@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4 March 2014 15:57, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> Despite this patch set is working and applicable on top of 3.14-rc5,
-> please regard it solely as a pure RFC.
-
-Okay, I am trying to do a review here and because you have mentioned
-how different it is from the earlier versions, I am trying with a fresh mind.
-i.e. with zero memories of earlier discussions :)
-
-LAB was: Legacy Application Boost ??
-
-Probably mention that in your new threads as well, so that new readers
-know the details. Also, like other governors, just name it "boost" governor.
-
-> This patch provides support for LAB governor build on top of ondemand.
-> Previous version of LAB can be found here:
-> http://thread.gmane.org/gmane.linux.kernel/1484746/match=cpufreq
+On Mon, 24 Mar 2014, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Dave,
 >
-> LAB short reminder:
+> Today's linux-next merge of the drm tree got conflicts in
+> drivers/gpu/drm/i915/intel_ddi.c and
+> drivers/gpu/drm/i915/intel_dp.c between commit 825938307f81 ("Revert
+> "drm/i915: don't touch the VDD when disabling the panel"") from Linus'
+> tree and commits 4be7378004a0 ("drm/i915: drop ironlake_ prefix from edp
+> panel/backlight functions"), dce56b3c626f ("drm/i915: save some time when
+> waiting the eDP timings") and b3064154dfd3 ("drm/i915: Don't just say it,
+> actually force edp vdd") from the drm tree.
 >
-> LAB uses information about how many cores are in "idle" state (the core
-> idleness is represented as the value between 0 and 100) and the overall
-> load of the system (from 0 to 100) to decide about frequency to be set.
-> It is extremely useful with SoCs like Exynos4412, which can set only one
-> frequency for all cores.
+> This latter commit in the drm tree seems to be solving the same problem
+> as the one in Linus' tree (but slightly differently), so I just
+> effectively dropped the patch from Linus' tree and can carry the fix as
+> necessary (no action is required).
 
-Probably a description of how exactly these two values come into play
-would have been more interesting here for all. Always think of new followers
-of your patchset and so add all interesting things about it when you resend
-it.
+Ack. We took the long route in our -next to come to the conclusion that
+a revert is the way to go, and that was then queued for 3.14.
 
-If I remember well the logic was more or less like this:
-- More idle cores means run few running cores at high frequency
-- Less idle cores means don't run them at very high frequencies
+Thanks,
+Jani.
 
-Right?
 
-What about making it as simple as:
-- changing the ondemand governor only instead of adding a new governor
-- Keeping the bahavior as is for all platforms not publishing boost frequencies
-- If more cores are idle, enable switching to boost frequencies and take them
-into consideration all the time.
-- If less cores are idle, disable boost frequencies..
-
-Lets discuss this first and then I will get into the very details of your
-implementation.
+-- 
+Jani Nikula, Intel Open Source Technology Center
