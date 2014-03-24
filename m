@@ -1,153 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984AbaCXIDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:03:12 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:41265 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750924AbaCXIDH (ORCPT
+	id S1752181AbaCXIGB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:06:01 -0400
+Received: from mail-we0-f176.google.com ([74.125.82.176]:57527 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750936AbaCXIF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:03:07 -0400
-Date: Mon, 24 Mar 2014 08:02:59 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Guenter Roeck <linux@roeck-us.net>, Jean Delvare <jdelvare@suse.de>,
-        LINUX-DOC <linux-doc@vger.kernel.org>,
-        LINUX-KERNEL <linux-kernel@vger.kernel.org>,
-        LM-SENSORS <lm-sensors@lm-sensors.org>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>, Rob Landley <rob@landley.net>
-Subject: Re: [RFC V1 2/3] mfd: da9063: Add HWMON dependencies
-Message-ID: <20140324080259.GG8541@lee--X1>
-References: <cover.1395607051.git.stwiss.opensource@diasemi.com>
- <31eb9829645b11a109e7699d5da888ab7d2a68c1.1395607051.git.stwiss.opensource@diasemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <31eb9829645b11a109e7699d5da888ab7d2a68c1.1395607051.git.stwiss.opensource@diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Mar 2014 04:05:56 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V5 0/3] cpufreq: Introduce cpufreq_freq_transition_{begin|end}()
+Date: Mon, 24 Mar 2014 13:35:43 +0530
+Message-Id: <cover.1395644073.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 23 Mar 2014, Opensource [Steve Twiss] wrote:
+Whenever we change the frequency of a CPU, we call the PRECHANGE and POSTCHANGE
+notifiers. They must be serialized, i.e. PRECHANGE and POSTCHANGE notifiers
+should strictly alternate, thereby preventing two different sets of PRECHANGE or
+POSTCHANGE notifiers from interleaving arbitrarily.
 
-> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> 
-> Dependencies required for DA9063 HWMON support.
-> 
-> Signed-off-by: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
-> ---
-> 
->  drivers/mfd/da9063-core.c        |   13 ++++++++++++-
->  include/linux/mfd/da9063/core.h  |    3 +++
->  include/linux/mfd/da9063/pdata.h |   18 ++++++++++++++++++
->  3 files changed, 33 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
-> index e70ae31..24c1838 100644
-> --- a/drivers/mfd/da9063-core.c
-> +++ b/drivers/mfd/da9063-core.c
-> @@ -111,6 +111,7 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
->  {
->  	struct da9063_pdata *pdata = da9063->dev->platform_data;
->  	int model, variant_id, variant_code;
-> +	int t_offset = 0;
->  	int ret;
->  
->  	if (pdata) {
-> @@ -171,8 +172,18 @@ int da9063_device_init(struct da9063 *da9063, unsigned int irq)
->  	ret = mfd_add_devices(da9063->dev, -1, da9063_devs,
->  			      ARRAY_SIZE(da9063_devs), NULL, da9063->irq_base,
->  			      NULL);
-> -	if (ret)
-> +	if (ret) {
->  		dev_err(da9063->dev, "Cannot add MFD cells\n");
-> +		return ret;
-> +	}
-> +
-> +	ret = regmap_read(da9063->regmap, DA9063_REG_T_OFFSET, &t_offset);
-> +	if (ret < 0)
-> +		dev_warn(da9063->dev,
-> +			 "Temperature trimming value cannot be read (defaulting to 0)\n");
-> +
-> +	/* pass this on to the hwmon driver */
-> +	da9063->t_offset = t_offset;
+The following examples illustrate why this is important:
 
-What's the logic for using a local variable for this prior to setting
-the attribute in the shared container?
+Scenario 1:
+-----------
+A thread reading the value of cpuinfo_cur_freq, will call
+__cpufreq_cpu_get()->cpufreq_out_of_sync()->cpufreq_notify_transition()
 
->  	return ret;
->  }
-> diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
-> index 00a9aac..7327d37 100644
-> --- a/include/linux/mfd/da9063/core.h
-> +++ b/include/linux/mfd/da9063/core.h
-> @@ -86,6 +86,9 @@ struct da9063 {
->  	int		chip_irq;
->  	unsigned int	irq_base;
->  	struct regmap_irq_chip_data *regmap_irq;
-> +
-> +	/* Trimming */
-> +	int		t_offset;
->  };
->  
->  int da9063_device_init(struct da9063 *da9063, unsigned int irq);
-> diff --git a/include/linux/mfd/da9063/pdata.h b/include/linux/mfd/da9063/pdata.h
-> index 95c8742..576033e 100644
-> --- a/include/linux/mfd/da9063/pdata.h
-> +++ b/include/linux/mfd/da9063/pdata.h
-> @@ -62,6 +62,23 @@ struct da9063_regulators_pdata {
->  	struct da9063_regulator_data	*regulator_data;
->  };
->  
-> +/* HWMON platform data */
-> +#define DA9063_SET_ADCIN1_CUR_1UA	0x00
-> +#define DA9063_SET_ADCIN1_CUR_2UA	0x01
-> +#define DA9063_SET_ADCIN1_CUR_10UA	0x02
-> +#define DA9063_SET_ADCIN1_CUR_40UA	0x03
-> +#define DA9063_SET_ADCIN2_CUR_1UA	0x00
-> +#define DA9063_SET_ADCIN2_CUR_2UA	0x01
-> +#define DA9063_SET_ADCIN2_CUR_10UA	0x02
-> +#define DA9063_SET_ADCIN2_CUR_40UA	0x03
-> +#define DA9063_SET_ADCIN3_CUR_10UA	0x00
+The ondemand governor can decide to change the frequency of the CPU at the same
+time and hence it can end up sending the notifications via ->target().
 
-Why differentiate? More succinctly:
+If the notifiers are not serialized, the following sequence can occur:
+- PRECHANGE Notification for freq A (from cpuinfo_cur_freq)
+- PRECHANGE Notification for freq B (from target())
+- Freq changed by target() to B
+- POSTCHANGE Notification for freq B
+- POSTCHANGE Notification for freq A
 
-/* HWMON platform data */
-#define DA9063_SET_CUR_1UA	0x00
-#define DA9063_SET_CUR_2UA	0x01
-#define DA9063_SET_CUR_10UA	0x02
-#define DA9063_SET_CUR_40UA	0x03
+We can see from the above that the last POSTCHANGE Notification happens for freq
+A but the hardware is set to run at freq B.
+
+Where would we break then?: adjust_jiffies() in cpufreq.c & cpufreq_callback()
+in arch/arm/kernel/smp.c (which also adjusts the jiffies). All the
+loops_per_jiffy calculations will get messed up.
+
+Scenario 2:
+-----------
+The governor calls __cpufreq_driver_target() to change the frequency. At the
+same time, if we change scaling_{min|max}_freq from sysfs, it will end up
+calling the governor's CPUFREQ_GOV_LIMITS notification, which will also call
+__cpufreq_driver_target(). And hence we end up issuing concurrent calls to
+->target().
+
+Typically, platforms have the following logic in their ->target() routines:
+(Eg: cpufreq-cpu0, omap, exynos, etc)
+
+A. If new freq is more than old: Increase voltage
+B. Change freq
+C. If new freq is less than old: decrease voltage
+
+Now, if the two concurrent calls to ->target() are X and Y, where X is trying to
+increase the freq and Y is trying to decrease it, we get the following race
+condition:
+
+X.A: voltage gets increased for larger freq
+Y.A: nothing happens
+Y.B: freq gets decreased
+Y.C: voltage gets decreased
+X.B: freq gets increased
+X.C: nothing happens
+
+Thus we can end up setting a freq which is not supported by the voltage we have
+set. That will probably make the clock to the CPU unstable and the system might
+not work properly anymore.
 
 
-> +struct da9063_hwmon_pdata {
-> +	unsigned char adcin1_cur;
-> +	unsigned char adcin2_cur;
-> +	unsigned char adcin3_cur;
-> +};
-> +
->  
+This patchset introduces a new set of routines cpufreq_freq_transition_begin()
+and cpufreq_freq_transition_end(), which will guarantee that calls to frequency
+transition routines are serialized. Later patches force other drivers to use
+these new routines.
 
-Now there are two new lines here.
 
->  /*
->   * RGB LED configuration
-> @@ -106,6 +123,7 @@ struct da9063_pdata {
->  	unsigned			flags;
->  	struct da9063_regulators_pdata	*regulators_pdata;
->  	struct led_platform_data	*leds_pdata;
-> +	struct da9063_hwmon_pdata	*hwmon_pdata;
->  };
+V4: https://lkml.org/lkml/2014/3/21/23
 
-Does this device support Device Tree?
+V4->V5:
+- Replaced false with 0 as the variable was of int type instead of bool.
+- There were some discussions about requirement of a barrier, but it looks like
+  overkill for now. So, leaving that unless we have a real problem.
 
->  #endif	/* __MFD_DA9063_PDATA_H__ */
+Srivatsa S. Bhat (1):
+  cpufreq: Make sure frequency transitions are serialized
+
+Viresh Kumar (2):
+  cpufreq: Convert existing drivers to use
+    cpufreq_freq_transition_{begin|end}
+  cpufreq: Make cpufreq_notify_transition &
+    cpufreq_notify_post_transition static
+
+ drivers/cpufreq/cpufreq-nforce2.c    |  4 +--
+ drivers/cpufreq/cpufreq.c            | 52 +++++++++++++++++++++++++++++-------
+ drivers/cpufreq/exynos5440-cpufreq.c |  4 +--
+ drivers/cpufreq/gx-suspmod.c         |  4 +--
+ drivers/cpufreq/integrator-cpufreq.c |  4 +--
+ drivers/cpufreq/longhaul.c           |  4 +--
+ drivers/cpufreq/pcc-cpufreq.c        |  4 +--
+ drivers/cpufreq/powernow-k6.c        |  4 +--
+ drivers/cpufreq/powernow-k7.c        |  4 +--
+ drivers/cpufreq/powernow-k8.c        |  4 +--
+ drivers/cpufreq/s3c24xx-cpufreq.c    |  4 +--
+ drivers/cpufreq/sh-cpufreq.c         |  4 +--
+ drivers/cpufreq/unicore2-cpufreq.c   |  4 +--
+ include/linux/cpufreq.h              | 12 ++++++---
+ 14 files changed, 76 insertions(+), 36 deletions(-)
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.12.rc2.18.g61b472e
+
