@@ -1,115 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298AbaCXOMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 10:12:33 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:64405 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753141AbaCXOMa (ORCPT
+	id S1753361AbaCXONq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 10:13:46 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:52074 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaCXONo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 10:12:30 -0400
-MIME-Version: 1.0
-Date: Mon, 24 Mar 2014 19:42:30 +0530
-X-Google-Sender-Auth: JucAqoG0UsoPtNt1bKpJ9_7-CQ8
-Message-ID: <CAC4Lta3Bhh45HLjuMPQam_2WyWsTrLoo+bt5jx48KmBkrY0aAw@mail.gmail.com>
-Subject: Re: Enhancement for PLE handler in KVM
-From: Raghavendra KT <raghavendra.kt@linux.vnet.ibm.com>
-To: "Li, Bin (Bin)" <bin.bl.li@alcatel-lucent.com>
-Cc: KVM <kvm@vger.kernel.org>, Neel Jatania <neel.jatania@alcatel-lucent.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Avi Kiviti <avi@redhat.com>,
-        Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Chris Wright <chrisw@sous-sol.org>,
-        ttracy@redhat.com, "Nakajima, Jun" <jun.nakajima@intel.com>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Mar 2014 10:13:44 -0400
+Message-ID: <1395670422.12610.34.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: RE: [RFC] csum experts, csum_replace2() is too expensive
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: David Miller <davem@davemloft.net>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "kaber@trash.net" <kaber@trash.net>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>,
+        "hkchu@google.com" <hkchu@google.com>,
+        "mwdalton@google.com" <mwdalton@google.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Mar 2014 07:13:42 -0700
+In-Reply-To: <1395667063.12610.24.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
+	 <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <20140321.145229.1026128975151125729.davem@davemloft.net>
+	 <1395629410.9117.46.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <063D6719AE5E284EB5DD2968C1650D6D0F6E77A4@AcuExch.aculab.com>
+	 <1395667063.12610.24.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 3, 2014 at 11:54 PM, Li, Bin (Bin)
-<bin.bl.li@alcatel-lucent.com> wrote:
-> Hello, all.
->
-> The PLE handler attempts to determine an alternate vCPU to schedule.  In
-> some cases the wrong vCPU is scheduled and performance suffers.
->
-> This patch allows for the guest OS to signal, using a hypercall, that it's
-> starting/ending a critical section.  Using this information in the PLE
-> handler allows for a more intelligent VCPU scheduling determination to be
-> made.  The patch only changes the PLE behaviour if this new hypercall
-> mechanism is used; if it isn't used, then the existing PLE algorithm
-> continues to be used to determine the next vCPU.
->
-> Benefit from the patch:
->  -  the guest OS real time performance being significantly improved when
-> using hyper call marking entering and leaving guest OS kernel state.
->  - The guest OS system clock jitter measured on on Intel E5 2620 reduced
-> from 400ms down to 6ms.
->  - The guest OS system lock is set to a 2ms clock interrupt. The jitter is
-> measured by the difference between dtsc() value in clock interrupt handler
-> and the expectation of tsc value.
->  - detail of test report is attached as reference.
->
-> Path details:
->
-> From 77edfa193a4e29ab357ec3b1e097f8469d418507 Mon Sep 17 00:00:00 2001
->
-> From: Bin BL LI <bin.bl.li@alcatel-lucent.com>
->
-> Date: Mon, 3 Mar 2014 11:23:35 -0500
->
-> Subject: [PATCH] Initial commit
->
-> ---
->
->  arch/x86/kvm/x86.c            |    7 +++++++
->
->  include/linux/kvm_host.h      |   16 ++++++++++++++++
->
->  include/uapi/linux/kvm_para.h |    2 ++
->
->  virt/kvm/kvm_main.c           |   14 +++++++++++++-
->
->  4 files changed, 38 insertions(+), 1 deletions(-)
->
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->
-> index 39c28f0..e735de3 100644
->
-> --- a/arch/x86/kvm/x86.c
->
-> +++ b/arch/x86/kvm/x86.c
->
-> @@ -5582,6 +5582,7 @@ void kvm_arch_exit(void)
->
->  int kvm_emulate_halt(struct kvm_vcpu *vcpu)
->
->  {
->
->      ++vcpu->stat.halt_exits;
->
-> +    kvm_vcpu_set_holding_lock(vcpu,false);
->
->      if (irqchip_in_kernel(vcpu->kvm)) {
->
->          vcpu->arch.mp_state = KVM_MP_STATE_HALTED;
->
->          return 1;
->
+On Mon, 2014-03-24 at 06:17 -0700, Eric Dumazet wrote:
+> On Mon, 2014-03-24 at 10:30 +0000, David Laight wrote:
 
-Joining late to comment on this :(.
+> > ip_fast_csum() either needs an explicit "m" constraint for the actual
+> > buffer (and target) bytes, or the stronger "memory" constraint.
+> > The 'volatile' is then not needed.
 
-Seeing that you are  trying to set 'holding_lock'  in halt handling
-path, I am just curious if you could try
-https://lkml.org/lkml/2013/7/22/41 to see if you get any benefits. [
-We could not get any convincing
- benefit during pv patch posting and dropped it].
+I am testing the following :
 
- and regarding SPIN_THRESHOLD tuning,  I did some experiment by
-dynamically tuning loop count
-based on head,tail vaules (for e.g. if we are nearer to the
-lock-holder in the queue  loop longer), but that
-also did not yield much result.
+diff --git a/arch/x86/include/asm/checksum_64.h b/arch/x86/include/asm/checksum_64.h
+index e6fd8a026c7b..89d7fa8837b5 100644
+--- a/arch/x86/include/asm/checksum_64.h
++++ b/arch/x86/include/asm/checksum_64.h
+@@ -45,6 +45,9 @@ static inline __sum16 csum_fold(__wsum sum)
+ static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
+ {
+ 	unsigned int sum;
++	struct full_ip_header {
++		unsigned int w[ihl];
++	};
+ 
+ 	asm("  movl (%1), %0\n"
+ 	    "  subl $4, %2\n"
+@@ -67,8 +70,9 @@ static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
+ 	   are modified, we must also specify them as outputs, or gcc
+ 	   will assume they contain their original values. */
+ 	    : "=r" (sum), "=r" (iph), "=r" (ihl)
+-	    : "1" (iph), "2" (ihl)
+-	    : "memory");
++	    : "1" (iph), "2" (ihl),
++	      "m" (*(struct full_ip_header *) iph)
++	);
+ 	return (__force __sum16)sum;
+ }
+ 
 
-[...]
+
