@@ -1,94 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752669AbaCXI7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:59:21 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:36868 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbaCXI7T (ORCPT
+	id S1752647AbaCXJAX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:00:23 -0400
+Received: from mail-la0-f43.google.com ([209.85.215.43]:52698 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920AbaCXJAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:59:19 -0400
+	Mon, 24 Mar 2014 05:00:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <1395085358-1171-1-git-send-email-dh.herrmann@gmail.com>
-References: <1395085358-1171-1-git-send-email-dh.herrmann@gmail.com>
-Date: Mon, 24 Mar 2014 09:59:18 +0100
-Message-ID: <CANq1E4Rb=gqmo+9xGnuC9N2gWb2TqOskaMDhFU9wn28z+HZa4g@mail.gmail.com>
-Subject: Re: [PATCH v4 0/4] Provide netdev naming-policy via sysfs
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, Tom Gundersen <teg@jklm.no>,
-        Johannes berg <johannes@sipsolutions.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        David Herrmann <dh.herrmann@gmail.com>
+In-Reply-To: <CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
+References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
+	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
+	<CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
+Date: Mon, 24 Mar 2014 14:30:19 +0530
+X-Google-Sender-Auth: 5x8vEa_-Cz8NZOHM7e3GW5NwOO0
+Message-ID: <CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jaswinder Singh <jaswinder.singh@linaro.org>,
+        dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave
+Hi Jassi,
 
-Any comments on this?
+Thanks for the Acked-by.
 
-Thanks
-David
+On Mon, Mar 24, 2014 at 11:50 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>
+>> +
+>> +/**
+>> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
+>
+> Should be xilinx_vdma_dma_prep_interleaved here.
 
-On Mon, Mar 17, 2014 at 8:42 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
+Ok, I will correct it.  Thanks.
+
 >
-> This is v4 of the netdev naming-policy series. You can find v1 here:
->   http://thread.gmane.org/gmane.linux.kernel/1657015
-> Changes since v1:
->   - fix mac80211 core to set NET_NAME_ENUM for wlan%d kernel-provided names
->   - acked-by udev developers
->   - avoid padding after name_assign_type in "struct net_device" (David Laight)
->   - move API constants to uapi header (Ben Hutchings)
->
->
-> This series implements a new sysfs attribute for netdevs called
-> "name_assign_type". It provides an integer that describes where an interface
-> name comes from. See Patch #1 for a description of this attribute. It is
-> modelled after the existing "addr_assign_type" attribute.
->
-> The main use-case is to allow udev to skip applying reliable ifnames to virtual
-> devices. For instance, if wifi-P2P devices are created, wpas already provides a
-> suitable naming-policy and udev shouldn't touch these devices. Same is true for
-> other virtual devices.
-> The idea is that if a device-name was provided by user-space, we should always
-> prefer fixing this naming-policy instead of making udev rename the device. For
-> kernel provided names that's hardly possible, though. Providing the
-> naming-policy source via sysfs is thus a simple way to see whether renames are
-> needed.
->
-> Additionally, this field allows to detect whether a netdev has been manually
-> renamed, which is quite useful for debugging and during crash-recovery.
-> Furthermore, it fixes real udev bugs if a netdev is already renamed in the
-> initrd and udev only runs in the real root. Detecting renames avoids overwriting
-> custom user provided names.
->
-> Thanks
-> David
->
-> David Herrmann (4):
->   net: add name_assign_type netdev attribute
->   mac80211: set NET_NAME_USER for user-space created ifs
->   ath6kl: set NET_NAME_USER for P2P ifs
->   brcmfmac: set NET_NAME_USER for P2P ifs
->
->  drivers/net/wireless/ath/ath6kl/cfg80211.c    | 5 ++++-
->  drivers/net/wireless/ath/ath6kl/cfg80211.h    | 1 +
->  drivers/net/wireless/ath/ath6kl/core.c        | 4 ++--
->  drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
->  include/linux/netdevice.h                     | 2 ++
->  include/uapi/linux/netdevice.h                | 4 ++++
->  net/core/dev.c                                | 7 +++++++
->  net/core/net-sysfs.c                          | 2 ++
->  net/core/rtnetlink.c                          | 2 ++
->  net/mac80211/cfg.c                            | 2 +-
->  net/mac80211/ieee80211_i.h                    | 1 +
->  net/mac80211/iface.c                          | 2 ++
->  net/mac80211/main.c                           | 2 +-
->  13 files changed, 30 insertions(+), 5 deletions(-)
->
+>> +/**
+>> + * xilinx_vdma_channel_set_config - Configure VDMA channel
+>> + * Run-time configuration for Axi VDMA, supports:
+>> + * . halt the channel
+>> + * . configure interrupt coalescing and inter-packet delay threshold
+>> + * . start/stop parking
+>> + * . enable genlock
+>> + *
+>> + * @dchan: DMA channel
+>> + * @cfg: VDMA device configuration pointer
+>> + *
+>> + * Return: '0' on success and failure value on error
+>> + */
+>> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+>> +                                       struct xilinx_vdma_config *cfg)
+>> +{
+>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+>> +       u32 dmacr;
+>> +
+>> +       if (cfg->reset)
+>> +               return xilinx_vdma_chan_reset(chan);
+>> +
+>> +       dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
+>> +
+>> +       chan->config.frm_dly = cfg->frm_dly;
+>> +       chan->config.park = cfg->park;
+>> +
+>> +       /* genlock settings */
+>> +       chan->config.gen_lock = cfg->gen_lock;
+>> +       chan->config.master = cfg->master;
+>> +
+>> +       if (cfg->gen_lock && chan->genlock) {
+>> +               dmacr |= XILINX_VDMA_DMACR_GENLOCK_EN;
+>> +               dmacr |= cfg->master << XILINX_VDMA_DMACR_MASTER_SHIFT;
+>> +       }
+>> +
+>> +       chan->config.frm_cnt_en = cfg->frm_cnt_en;
+>> +       if (cfg->park)
+>> +               chan->config.park_frm = cfg->park_frm;
+>> +       else
+>> +               chan->config.park_frm = -1;
+>> +
+>> +       chan->config.coalesc = cfg->coalesc;
+>> +       chan->config.delay = cfg->delay;
+>> +
+>> +       if (cfg->coalesc <= XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
+>> +               dmacr |= cfg->coalesc << XILINX_VDMA_DMACR_FRAME_COUNT_SHIFT;
+>> +               chan->config.coalesc = cfg->coalesc;
+>> +       }
+>> +
+>> +       if (cfg->delay <= XILINX_VDMA_DMACR_DELAY_MAX) {
+>> +               dmacr |= cfg->delay << XILINX_VDMA_DMACR_DELAY_SHIFT;
+>> +               chan->config.delay = cfg->delay;
+>> +       }
+>> +
+>> +       /* FSync Source selection */
+>> +       dmacr &= ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
+>> +       dmacr |= cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIFT;
+>> +
+>> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
+>> +
+>> +       return 0;
+>> +}
+>> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
+>> +
+> Bypassing the DMAEngine api doesn't seem very neat.
+> Is there currently any client driver that /changes/ this configuration
+> between channel requests? If no, then simply get the configuration
+> from DT node and avoid this api.
+
+This change is recently suggested by Lars in the following patch series,
+"dma: Remove comment about embedding dma_slave_config into custom structs"
+
+Thanks,
+Srikanth
+
 > --
-> 1.9.0
->
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
