@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122AbaCXNLt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:11:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:28182 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419AbaCXNLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 09:11:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,720,1389772800"; 
-   d="scan'208";a="478802398"
-Date: Mon, 24 Mar 2014 09:11:04 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
+	id S1753223AbaCXNOj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:14:39 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:48210 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752667AbaCXNOh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 09:14:37 -0400
+Message-ID: <1395666875.12610.21.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH] net/core: Use RCU_INIT_POINTER(x, NULL) in netpoll.c
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        ebiederm@xmission.com, cwang@twopensource.com, kaber@trash.net,
+        antonio@meshcoding.com, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] NVMe: silence GCC warning on 32 bit
-Message-ID: <20140324131104.GC5777@linux.intel.com>
-References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
- <1392934261.15264.22.camel@x220>
- <alpine.LRH.2.03.1402210921010.4656@AMR>
- <1393925767.3038.23.camel@x220>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1393925767.3038.23.camel@x220>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Date: Mon, 24 Mar 2014 06:14:35 -0700
+In-Reply-To: <20140324111144.GA19368@hmsreliant.think-freely.org>
+References: <1395601966-12490-1-git-send-email-monamagarwal123@gmail.com>
+	 <20140324111144.GA19368@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 04, 2014 at 10:36:07AM +0100, Paul Bolle wrote:
-> Also note that it's actually not clear to me why these warnings only
-> trigger on 32 bit. I guess there's some int/long conversion lurking
-> somewhere. I haven't found it. 
+On Mon, 2014-03-24 at 07:11 -0400, Neil Horman wrote:
+> On Mon, Mar 24, 2014 at 12:42:46AM +0530, Monam Agarwal wrote:
+> > This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+> > 
+> > The rcu_assign_pointer() ensures that the initialization of a structure       
+> > is carried out before storing a pointer to that structure. 
+> > And in the case of the NULL pointer, there is no structure to initialize. 
+> > So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> > 
+> > Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+> No, I don't think this is right. __netpoll_cleanup can be called in parallel
+> with bottom half access to dev->npinfo.  rcu_assign pointer is safe against
+> those accesses, but RCU_INIT_POINTER is not.
 
-I bet you're using a different revision of the compiler on 32 and 64 bit.
-Different gcc revisions have different abilities to track initialisation.
+Wow, it is always safe for NULL value.
+
+
