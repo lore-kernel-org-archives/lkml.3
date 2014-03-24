@@ -1,118 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbaCXPLq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:11:46 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:53337 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaCXPLn (ORCPT
+	id S1753634AbaCXPOt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:14:49 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:33733 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753107AbaCXPOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:11:43 -0400
-From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Fugang Duan <B38611@freescale.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Simon Budig <simon.budig@kernelconcepts.de>,
-        =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
-        Daniel Wagener <daniel.wagener@kernelconcepts.de>
-Subject: [PATCHv6 1/5] Input: edt-ft5x06: several cleanups; no functional change
-Date: Mon, 24 Mar 2014 16:11:06 +0100
-Message-Id: <1395673870-29435-2-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
-References: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
- <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
+	Mon, 24 Mar 2014 11:14:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
+References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
+	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
+	<CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
+	<CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com>
+	<CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
+Date: Mon, 24 Mar 2014 20:44:45 +0530
+X-Google-Sender-Auth: xWqlPzdMJ9wyxbdz9nwhgGf0ehI
+Message-ID: <CA+mB=1LRQSpz+Hmtym44x6+KW9ksXj9WQ8UKcHydk-JAWdyP+w@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: Jassi Brar <jaswinder.singh@linaro.org>
+Cc: Srikanth Thokala <sthokal@xilinx.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- remove redundant parens
-- remove redundant type casts
-- fix mixed tab/space indentation
+On Mon, Mar 24, 2014 at 4:21 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
+> On 24 March 2014 14:30, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>> Hi Jassi,
+>>
+>> Thanks for the Acked-by.
+>>
+>> On Mon, Mar 24, 2014 at 11:50 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+>>> On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>>>
+>>>> +
+>>>> +/**
+>>>> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
+>>>
+>>> Should be xilinx_vdma_dma_prep_interleaved here.
+>>
+>> Ok, I will correct it.  Thanks.
+>>
+>>>
+>>>> +/**
+>>>> + * xilinx_vdma_channel_set_config - Configure VDMA channel
+>>>> + * Run-time configuration for Axi VDMA, supports:
+>>>> + * . halt the channel
+>>>> + * . configure interrupt coalescing and inter-packet delay threshold
+>>>> + * . start/stop parking
+>>>> + * . enable genlock
+>>>> + *
+>>>> + * @dchan: DMA channel
+>>>> + * @cfg: VDMA device configuration pointer
+>>>> + *
+>>>> + * Return: '0' on success and failure value on error
+>>>> + */
+>>>> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+>>>> +                                       struct xilinx_vdma_config *cfg)
+>>>> +{
+>>>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
+>>>> +       u32 dmacr;
+>>>> +
+>>>> +       if (cfg->reset)
+>>>> +               return xilinx_vdma_chan_reset(chan);
+>>>> +
+>>>> +       dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
+>>>> +
+>>>> +       chan->config.frm_dly = cfg->frm_dly;
+>>>> +       chan->config.park = cfg->park;
+>>>> +
+>>>> +       /* genlock settings */
+>>>> +       chan->config.gen_lock = cfg->gen_lock;
+>>>> +       chan->config.master = cfg->master;
+>>>> +
+>>>> +       if (cfg->gen_lock && chan->genlock) {
+>>>> +               dmacr |= XILINX_VDMA_DMACR_GENLOCK_EN;
+>>>> +               dmacr |= cfg->master << XILINX_VDMA_DMACR_MASTER_SHIFT;
+>>>> +       }
+>>>> +
+>>>> +       chan->config.frm_cnt_en = cfg->frm_cnt_en;
+>>>> +       if (cfg->park)
+>>>> +               chan->config.park_frm = cfg->park_frm;
+>>>> +       else
+>>>> +               chan->config.park_frm = -1;
+>>>> +
+>>>> +       chan->config.coalesc = cfg->coalesc;
+>>>> +       chan->config.delay = cfg->delay;
+>>>> +
+>>>> +       if (cfg->coalesc <= XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
+>>>> +               dmacr |= cfg->coalesc << XILINX_VDMA_DMACR_FRAME_COUNT_SHIFT;
+>>>> +               chan->config.coalesc = cfg->coalesc;
+>>>> +       }
+>>>> +
+>>>> +       if (cfg->delay <= XILINX_VDMA_DMACR_DELAY_MAX) {
+>>>> +               dmacr |= cfg->delay << XILINX_VDMA_DMACR_DELAY_SHIFT;
+>>>> +               chan->config.delay = cfg->delay;
+>>>> +       }
+>>>> +
+>>>> +       /* FSync Source selection */
+>>>> +       dmacr &= ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
+>>>> +       dmacr |= cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIFT;
+>>>> +
+>>>> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
+>>>> +
+>>>> +       return 0;
+>>>> +}
+>>>> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
+>>>> +
+>>> Bypassing the DMAEngine api doesn't seem very neat.
+>>> Is there currently any client driver that /changes/ this configuration
+>>> between channel requests? If no, then simply get the configuration
+>>> from DT node and avoid this api.
+>>
+>> This change is recently suggested by Lars in the following patch series,
+>> "dma: Remove comment about embedding dma_slave_config into custom structs"
+>>
+> If some user does indeed need to /change/ the configuration across
+> channel requests, we can keep function. Is there currently any such
+> user?
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/input/touchscreen/edt-ft5x06.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+Yes, we are planning to push these changes soon to drivers/media/.
 
-diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
-index 412a85e..155ab3b 100644
---- a/drivers/input/touchscreen/edt-ft5x06.c
-+++ b/drivers/input/touchscreen/edt-ft5x06.c
-@@ -173,7 +173,7 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
- 		x = ((buf[0] << 8) | buf[1]) & 0x0fff;
- 		y = ((buf[2] << 8) | buf[3]) & 0x0fff;
- 		id = (buf[2] >> 4) & 0x0f;
--		down = (type != TOUCH_EVENT_UP);
-+		down = type != TOUCH_EVENT_UP;
- 
- 		input_mt_slot(tsdata->input, id);
- 		input_mt_report_slot_state(tsdata->input, MT_TOOL_FINGER, down);
-@@ -257,7 +257,7 @@ static ssize_t edt_ft5x06_setting_show(struct device *dev,
- 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
- 	struct edt_ft5x06_attribute *attr =
- 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
--	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
-+	u8 *field = (u8 *)tsdata + attr->field_offset;
- 	int val;
- 	size_t count = 0;
- 	int error = 0;
-@@ -299,7 +299,7 @@ static ssize_t edt_ft5x06_setting_store(struct device *dev,
- 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
- 	struct edt_ft5x06_attribute *attr =
- 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
--	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
-+	u8 *field = (u8 *)tsdata + attr->field_offset;
- 	unsigned int val;
- 	int error;
- 
-@@ -479,7 +479,7 @@ static int edt_ft5x06_debugfs_mode_set(void *data, u64 mode)
- 
- 	if (mode != tsdata->factory_mode) {
- 		retval = mode ? edt_ft5x06_factory_mode(tsdata) :
--			        edt_ft5x06_work_mode(tsdata);
-+				edt_ft5x06_work_mode(tsdata);
- 	}
- 
- 	mutex_unlock(&tsdata->mutex);
-@@ -568,7 +568,6 @@ out:
- 	return error ?: read;
- };
- 
--
- static const struct file_operations debugfs_raw_data_fops = {
- 	.open = simple_open,
- 	.read = edt_ft5x06_debugfs_raw_data_read,
-@@ -614,8 +613,6 @@ edt_ft5x06_ts_teardown_debugfs(struct edt_ft5x06_ts_data *tsdata)
- 
- #endif /* CONFIG_DEBUGFS */
- 
--
--
- static int edt_ft5x06_ts_reset(struct i2c_client *client,
- 					 int reset_pin)
- {
-@@ -852,8 +849,8 @@ static SIMPLE_DEV_PM_OPS(edt_ft5x06_ts_pm_ops,
- 			 edt_ft5x06_ts_suspend, edt_ft5x06_ts_resume);
- 
- static const struct i2c_device_id edt_ft5x06_ts_id[] = {
--	{ "edt-ft5x06", 0 },
--	{ }
-+	{ "edt-ft5x06", 0, },
-+	{ /* sentinel */ }
- };
- MODULE_DEVICE_TABLE(i2c, edt_ft5x06_ts_id);
- 
--- 
-1.7.10.4
+Srikanth
 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
