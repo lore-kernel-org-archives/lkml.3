@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaCXNgu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:36:50 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:55256 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753055AbaCXNgs (ORCPT
+	id S1753366AbaCXNhF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:37:05 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:63873 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243AbaCXNgt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 09:36:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <9368307.RXEGmQia1C@wuerfel>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
-	<1395436128-11244-5-git-send-email-robherring2@gmail.com>
-	<20140324112203.GD3850@arm.com>
-	<9368307.RXEGmQia1C@wuerfel>
-Date: Mon, 24 Mar 2014 08:36:46 -0500
-Message-ID: <CAL_JsqJh1R8wxReCvTfE7GecZa0vMaAqnGa0ZoRBMace9qtzvQ@mail.gmail.com>
-Subject: Re: [PATCH 4/8] tty/serial: add generic serial earlycon
-From: Rob Herring <robherring2@gmail.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+	Mon, 24 Mar 2014 09:36:49 -0400
+Date: Mon, 24 Mar 2014 13:36:42 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
         Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
+        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
+Subject: Re: [PATCH v2 1/5] drivers: input: keyboard: st-keyscan: add keyscan
+ driver
+Message-ID: <20140324133642.GB21665@lee--X1>
+References: <1395154806-2810-1-git-send-email-gabriel.fernandez@st.com>
+ <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 6:29 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Monday 24 March 2014 11:22:03 Catalin Marinas wrote:
->> On Fri, Mar 21, 2014 at 09:08:44PM +0000, Rob Herring wrote:
->> > diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
->> > new file mode 100644
->> > index 0000000..241757a
->> > --- /dev/null
->> > +++ b/drivers/tty/serial/earlycon.c
->> [...]
->> > +static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
->> > +{
->> > +   void __iomem *base;
->> > +#ifdef CONFIG_FIX_EARLYCON_MEM
->> > +   set_fixmap_nocache(FIX_EARLYCON_MEM_BASE, paddr & PAGE_MASK);
->> > +   base = (void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
->> > +   base += paddr & ~PAGE_MASK;
->> > +#else
->> > +   base = ioremap_nocache(paddr, size);
->> > +#endif
->>
->> Just curious why not set_fixmap_io (and plain ioremap)?
->
-> Good point. Note that ioremap_nocache() is the same as ioremap()
-> on *all* architectures.
+> This patch adds ST Keyscan driver to use the keypad hw a subset
+> of ST boards provide. Specific board setup will be put in the
+> given dt.
+> 
+> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
+> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
+> ---
+>  .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
+>  drivers/input/keyboard/Kconfig                     |  12 +
+>  drivers/input/keyboard/Makefile                    |   1 +
+>  drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
+>  4 files changed, 333 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
+>  create mode 100644 drivers/input/keyboard/st-keyscan.c
 
-I investigated this before adding this to arm64. set_fixmap_io and
-set_fixmap_nocache are not the same settings on x86. Whether the
-mapping type really matters on x86 or not, I don't know. So I added
-the nocache variant to arm64 to avoid a change to x86.
+FWIW: This looks good to me now:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Rob
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
