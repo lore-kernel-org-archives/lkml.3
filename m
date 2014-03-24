@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178AbaCXLMM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 07:12:12 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:39555 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaCXLMK (ORCPT
+	id S1753065AbaCXLOG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 07:14:06 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:32324 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752675AbaCXLOE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 07:12:10 -0400
-Date: Mon, 24 Mar 2014 07:11:44 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: davem@davemloft.net, ebiederm@xmission.com, cwang@twopensource.com,
-        kaber@trash.net, antonio@meshcoding.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net/core: Use RCU_INIT_POINTER(x, NULL) in netpoll.c
-Message-ID: <20140324111144.GA19368@hmsreliant.think-freely.org>
-References: <1395601966-12490-1-git-send-email-monamagarwal123@gmail.com>
+	Mon, 24 Mar 2014 07:14:04 -0400
+Date: Mon, 24 Mar 2014 11:13:32 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 2/8] arm64: add FIXMAP_PAGE_NOCACHE definition
+Message-ID: <20140324111332.GC3850@arm.com>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
+ <1395436128-11244-3-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395601966-12490-1-git-send-email-monamagarwal123@gmail.com>
+In-Reply-To: <1395436128-11244-3-git-send-email-robherring2@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 12:42:46AM +0530, Monam Agarwal wrote:
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+On Fri, Mar 21, 2014 at 09:08:42PM +0000, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
 > 
-> The rcu_assign_pointer() ensures that the initialization of a structure       
-> is carried out before storing a pointer to that structure. 
-> And in the case of the NULL pointer, there is no structure to initialize. 
-> So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> Similar to ioremap and ioremap_nocache, we want the same definition for
+> both using PROT_DEVICE_nGnRE.
 > 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
-No, I don't think this is right. __netpoll_cleanup can be called in parallel
-with bottom half access to dev->npinfo.  rcu_assign pointer is safe against
-those accesses, but RCU_INIT_POINTER is not.
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
 
-Neil
-
-> ---
->  net/core/netpoll.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-> index 7291dde..41c4e9c 100644
-> --- a/net/core/netpoll.c
-> +++ b/net/core/netpoll.c
-> @@ -809,7 +809,7 @@ void __netpoll_cleanup(struct netpoll *np)
->  		if (ops->ndo_netpoll_cleanup)
->  			ops->ndo_netpoll_cleanup(np->dev);
->  
-> -		rcu_assign_pointer(np->dev->npinfo, NULL);
-> +		RCU_INIT_POINTER(np->dev->npinfo, NULL);
->  		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
->  	}
->  }
-> -- 
-> 1.7.9.5
-> 
-> 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
