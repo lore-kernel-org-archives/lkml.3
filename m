@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751000AbaCXFZb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 01:25:31 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:51759 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750760AbaCXFZ3 (ORCPT
+	id S1751031AbaCXFax (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 01:30:53 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:62963 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750790AbaCXFav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 01:25:29 -0400
-Message-ID: <1395638727.9117.55.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
-        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
-        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 23 Mar 2014 22:25:27 -0700
-In-Reply-To: <20140324050939.GB8832@redhat.com>
-References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
-	 <20140323194113.GA13633@redhat.com>
-	 <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140323213349.GA8832@redhat.com>
-	 <20140323221256.GG4405@linux.vnet.ibm.com>
-	 <20140324050939.GB8832@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 24 Mar 2014 01:30:51 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <532FC307.7050202@roeck-us.net>
+Date: Sun, 23 Mar 2014 22:30:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Joe Perches <joe@perches.com>
+CC: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+Subject: Re: [PATCH] thermal: Fix KELVIN_TO_CELSIUS macro
+References: <1395634496-25040-1-git-send-email-linux@roeck-us.net> <1395635132.13968.40.camel@joe-AO722>
+In-Reply-To: <1395635132.13968.40.camel@joe-AO722>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-24 at 07:09 +0200, Michael S. Tsirkin wrote:
+On 03/23/2014 09:25 PM, Joe Perches wrote:
+> On Sun, 2014-03-23 at 21:14 -0700, Guenter Roeck wrote:
+>> It is always a good idea to use paranthesis around macro parameters
+>> to avoid undesired side effects.
+>>
+>> In this specific case, KELVIN_TO_CELSIUS() is used in
+>> drivers/platform/x86/asus-wmi.c with parameter "value & 0xFFFF",
+>> which due to operator evaluation order causes more or less random
+>> results.
+>
+> Maybe it's better to use a statement expression to avoid
+> multiple calculations of t
+>
+> Maybe;
+>
+> #define KELVIN_TO_CELSIUS(t)				\
+> ({							\
+> 	long _t = (long)(t) - 2732;			\
+> 	_t >= 0 ? (_t + 5) / 10 : (_t - 5) / 10;	\
+> })
+>
+>
 
-> Seems an incredibly strict requirement for something that just
-> silences a warning.
-> What exactly should I test?
-> I intended to just verify this produces same code as before
-> d322f45ceed525daa under a recent gcc.
+Possibly, but I only want to have a bug fixed which should possibly be applied
+to -stable at some point. As such, I prefer the minimalistic approach.
+Anything more fancy on top of that can be submitted as separate patch.
 
-Thats because many rcu_assign_pointer(X, NULL) were already converted to
-RCU_INIT_POINTER(X, NULL)
-
-Quite frankly I don't know why you bother at all.
-
-Adding back the lazy test in rcu_assign_pointer() doesn't help to make
-the API cleaner and easier to understand.
-
-People are usually using RCU API without really understanding
-all the issues. They tend to add superfluous barriers because they feel
-better. 
-
-Having separate RCU_INIT_POINTER() and rcu_assign_pointer() serve as
-better documentation of the code, I find it more easier to immediately
-check what is going on while reviewing stuff.
-
-Presumably, checkpatch.pl could be augmented to suggest to use
-RCU_INIT_POINTER(X, NULL) instead of rcu_assign_pointer(X, NULL)
-
-
+Guenter
 
