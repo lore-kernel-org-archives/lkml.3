@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753356AbaCXPsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:48:12 -0400
-Received: from 8bytes.org ([85.214.48.195]:59807 "EHLO mail.8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752675AbaCXPsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:48:10 -0400
-Date: Mon, 24 Mar 2014 16:48:06 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: suravee.suthikulpanit@amd.com
-Cc: iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        kim.naru@amd.com, jay.cornwall@amd.com
-Subject: Re: [PATCH V2] iommu/amd: Fix logic to determine and checking max
- PASID
-Message-ID: <20140324154806.GB2775@8bytes.org>
-References: <1394067258-5968-1-git-send-email-suravee.suthikulpanit@amd.com>
+	id S1753459AbaCXPtj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:49:39 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:45520 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750983AbaCXPti (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 11:49:38 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394067258-5968-1-git-send-email-suravee.suthikulpanit@amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Mon Mar 24 16:48:08 2014
-X-DSPAM-Confidence: 0.9989
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 533053b820863417519847
+In-Reply-To: <1395675399.6440.14.camel@x220>
+References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
+	<1392934261.15264.22.camel@x220>
+	<alpine.LRH.2.03.1402210921010.4656@AMR>
+	<1393925767.3038.23.camel@x220>
+	<20140324131104.GC5777@linux.intel.com>
+	<20140324133154.GD5777@linux.intel.com>
+	<1395675399.6440.14.camel@x220>
+Date: Mon, 24 Mar 2014 16:49:37 +0100
+X-Google-Sender-Auth: 56-4slkDm7C9cVQ4xmt-YPiOrwY
+Message-ID: <CAMuHMdVMq30_XFLNzwjj6kXWVvasa8Ewog0MmOd1PNDQDuybqA@mail.gmail.com>
+Subject: Re: [PATCH v2] NVMe: silence GCC warning on 32 bit
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Matthew Wilcox <willy@linux.intel.com>,
+        Keith Busch <keith.busch@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-nvme@lists.infradead.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 05, 2014 at 06:54:18PM -0600, suravee.suthikulpanit@amd.com wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> 
-> In reality, the spec can only support 16-bit PASID since
-> INVALIDATE_IOTLB_PAGES and COMPLETE_PPR_REQUEST commands only allow 16-bit
-> PASID. So, we updated the PASID_MASK accordingly and invoke BUG_ON
-> if the hardware is reporting PASmax more than 16-bit.
-> 
-> Besides, max PASID is defined as ((2^(PASmax+1)) - 1). The current does not
-> determine this correctly.
-> 
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> Tested-by: Jay Cornwall <Jay.Cornwall@amd.com>
+Hi Paul,
 
-Applied, thanks.
+On Mon, Mar 24, 2014 at 4:36 PM, Paul Bolle <pebolle@tiscali.nl> wrote:
+> And as this is now unlikely to be in time for v3.14, we might decide to
+> dig deeper. It won't be the first time that a rather small change (say,
+> converting a variable from signed to unsigned) turns out be enough to
+> make GCC understand the flow of the code.
 
-Btw, is there any publicly available driver/way/whatever for me to test the
-AMD IOMMUv2 code paths?
+Anything we can do with factoring out the "if (!first)" in both branches?
 
+Gr{oetje,eeting}s,
 
-	Joerg
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
