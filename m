@@ -1,92 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751481AbaCXXKW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 19:10:22 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:65476 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaCXXKT (ORCPT
+	id S1751679AbaCXXLd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 19:11:33 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:60775 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131AbaCXXLb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 19:10:19 -0400
-Date: Tue, 25 Mar 2014 00:10:16 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH 11/12] drm/nouveau: support GK20A in nouveau_accel_init()
-Message-ID: <20140324231014.GI17218@mithrandir>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-12-git-send-email-acourbot@nvidia.com>
+	Mon, 24 Mar 2014 19:11:31 -0400
+Date: Tue, 25 Mar 2014 00:11:30 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Mikulas Patocka <mpatocka@redhat.com>, Dave Airlie <airlied@gmail.com>,
+        Andreas Mohr <andi@lisas.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
+ mga_driver_irq_uninstall)
+Message-ID: <20140324231130.GA1386@rhlx01.hs-esslingen.de>
+References: <20140322234317.GA10483@rhlx01.hs-esslingen.de>
+ <20140323121541.GA20971@rhlx01.hs-esslingen.de>
+ <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+ <20140323212715.GA22767@rhlx01.hs-esslingen.de>
+ <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
+ <20140324085449.GA26878@phenom.ffwll.local>
+ <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140324202606.GJ26878@phenom.ffwll.local>
+ <alpine.LRH.2.02.1403241627510.18209@file01.intranet.prod.int.rdu2.redhat.com>
+ <CAKMK7uFW9NSF1WhENn9_3GHNvZtEjn=o+NSpY5g41Qg_pqMz8A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="nEsDIrWrg+hrB7l1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395650554-31925-12-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKMK7uFW9NSF1WhENn9_3GHNvZtEjn=o+NSpY5g41Qg_pqMz8A@mail.gmail.com>
+X-Priority: none
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---nEsDIrWrg+hrB7l1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Mon, Mar 24, 2014 at 10:46:49PM +0100, Daniel Vetter wrote:
+> On Mon, Mar 24, 2014 at 9:40 PM, Mikulas Patocka <mpatocka@redhat.com> wrote:
+> > If someone understands the locking issues I pointed out above, it could be
+> > easy to fix.
+> 
+> The locking issue isn't your problem, the real issue is that putting a
+> irq_uninstall into core code will break all the new (properly working)
+> drivers. And you can't really fix this in mga itself since the
+> lifetime rules of the register mappings are totally broken. It's a
+> fundamental misdesign of the legacy drm driver architecture and the
+> _only_ way to fix this bug for real is to rewrite this all. Which was
+> done for all the still used drivers like i915, radeon, nouveau, ...
 
-On Mon, Mar 24, 2014 at 05:42:33PM +0900, Alexandre Courbot wrote:
-> GK20A does not embed a dedicated COPY engine and thus cannot allocate
-> the copy channel that nouveau_accel_init() attempts to create. It also
-> lacks any display hardware, so the creation of a software channel does
-> not apply neither.
+That sounds plausible - yet with meatballs (ok, maybe I should omit
+such quite possibly unjustified qualification) such as this:
 
-Perhaps this should be two separate patches?
+git show --stat 771fe6b912fca54f03
 
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
-[...]
-> +	if (device->chipset == 0xea) {
-> +		/* gk20a does not have CE0/CE1 */
+how is a bunch of marginally-trained hobbyists ever supposed to be implementing
+a working practical (i.e., "base") driver for *various* currently unsupported
+(booted would perhaps even be a more fitting word?) hardware?
 
-This would be another good candidate for a feature flag.
+While the result of a wc -l check of the drivers/gpu/drm/r128 dir itself
+seems quite positive, that still might be not much of help
+when eyeing the large KMS changes that had to be done elsewhere.
 
-> +		arg0 = NVE0_CHANNEL_IND_ENGINE_GR;
-> +		arg1 = 1;
-> +	} else
->  	if (device->card_type >= NV_E0) {
+I guess we can make use of all the practical advice/links that we can get...
+(such as hints at good candidates of existing KMSified drivers
+which don't come with the full bells and whistles package,
+hints at suitably sized KMS support commits, grandma tutorials, ...).
+Some semi-short search wasn't overly successful, with links such as
+http://www.x.org/wiki/ModeSetting/
+https://en.wikipedia.org/wiki/KMS_%28Linux_kernel%29#Linux
+"New, Generic X.Org KMS Driver Work" http://www.phoronix.com/scan.php?page=news_item&px=OTk1OA
 
-The formatting here is somewhat weird. From a brief look I couldn't find
-any indication that nouveau deviates from the standard coding style, so
-this should be:
+Or perhaps I should just state outright that I seem to be in need
+of a working solution for my kernel upgrade pain
+which I would be deemed to want semi-soonish
+(the i810, MGA users and some others might be sharing my thoughts).
+IOW, my r128 driver is somewhat of a "still used driver", thank you very much.
 
-	} else if (...) {
+Thanks for having managed to survive my posting in an asbestos-lined
+garment (apologies if it came across in harsh terms :),
 
-> +	/* Need to figure out how to handle sw for gk20a */
-> +	if (device->chipset == 0xea)
-> +		goto skip_sw_init;
-
-The commit message makes it sound like SW isn't needed since gk20a
-"lacks any display hardware". In that case the comment here doesn't make
-much sense.
-
-Thierry
-
---nEsDIrWrg+hrB7l1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTMLtWAAoJEN0jrNd/PrOh5esP/jQiprOIFwci3I5jV7qXx8QC
-Ihf2f6MxeDPnmods1fSaWBk9Cy4IKiyEeRh5HUk5nsNV3WSs1x1D+o56h9HfpUU5
-z6g4OcZ9GEOO3vzjD0L3N/+rnHBz2jlEbHPcC0Oj3PhD06v7PPMMNGEcbCO5PUqi
-C0H02miAuBaw4QXIu8Soabzo1A6/dvSN6OlUw8B4GYSer59yZwAVrQE41adpyK9h
-G9IhjvBascMggXx3i/NNTURJUIkGHYizerAwg63YIxMjuHVwKeyLjgkjaSNTzg31
-s+k2zw5sKWwGnG0ZeY3JhPCOl9FVYPlE/JBdJGPlRqqQgUxXvVwJAywRz15QsBCg
-E+/bGzpx7//5kDuLxynkH7HLJ1QsTi+lxWiNbVYN8ojW12WyN8Gt5MOG53VHY4BG
-4NMGM4CPljEO7AZXFIhGl1MQDNavijyTTbHcjcz71TaDeZs9uZ1cl1j8voK3mYjc
-cn8HtCbXQw5G0s4llK3G52DzVBENOBJv6MLPNcnLxTlmXoKRNjph69RvGIQ644QL
-T5RjQPwXrIWpUSv+ps9hioqWAG6poOlfCAZEv0nUDxxh0CwOOBXFRUAtTw0MaOG6
-Gz6XxUmVGeFLyp+pNR6pACgchMdoVFQNKjX9pdays7ecz5XLSr/hNmyUZmqpfPTK
-C0BBW/ksjrQY+TNW14YW
-=+eEU
------END PGP SIGNATURE-----
-
---nEsDIrWrg+hrB7l1--
+Andreas Mohr
+(not necessarily a member of the forced-monopoly hardware upgrade treadmill cult)
