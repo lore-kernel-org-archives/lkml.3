@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753713AbaCXSx5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 14:53:57 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:30088 "EHLO
+	id S1753821AbaCXSzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 14:55:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:22441 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753552AbaCXSx4 (ORCPT
+	by vger.kernel.org with ESMTP id S1753583AbaCXSzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 14:53:56 -0400
-Date: Mon, 24 Mar 2014 14:53:51 -0400
+	Mon, 24 Mar 2014 14:55:53 -0400
+Date: Mon, 24 Mar 2014 14:55:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
@@ -22,12 +22,10 @@ Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
         Seiji Aguchi <seiji.aguchi@hds.com>
 Subject: Re: [PATCH -tip v8 03/26] kprobes: Prohibit probing on .entry.text
  code
-Message-ID: <20140324145351.2c65e41f@gandalf.local.home>
-In-Reply-To: <532F8ED2.2030704@hitachi.com>
+Message-ID: <20140324145551.1af360bb@gandalf.local.home>
+In-Reply-To: <20140305115904.22766.57607.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
 	<20140305115904.22766.57607.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140321180400.0c1b2969@gandalf.local.home>
-	<532F8ED2.2030704@hitachi.com>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -38,36 +36,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Mar 2014 10:48:02 +0900
+On Wed, 05 Mar 2014 20:59:04 +0900
 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-> (2014/03/22 7:04), Steven Rostedt wrote:
-> > On Wed, 05 Mar 2014 20:59:04 +0900
-> > Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> > 
-> > 
-> >>  struct kprobe_insn_cache {
-> >>  	struct mutex mutex;
-> >> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-> >> index ceeadfc..5b5ac76 100644
-> >> --- a/kernel/kprobes.c
-> >> +++ b/kernel/kprobes.c
-> >> @@ -96,9 +96,6 @@ static raw_spinlock_t *kretprobe_table_lock_ptr(unsigned long hash)
-> >>  static struct kprobe_blackpoint kprobe_blacklist[] = {
-> >>  	{"preempt_schedule",},
-> >>  	{"native_get_debugreg",},
-> >> -	{"irq_entries_start",},
-> >> -	{"common_interrupt",},
-> >> -	{"mcount",},	/* mcount can be called from everywhere */
-> > 
-> > Is mcount in the entry.text section? Also, what about ftrace_caller and
-> > friends.
+> .entry.text is a code area which is used for interrupt/syscall
+> entries, and there are many sensitive codes.
+> Thus, it is better to prohibit probing on all of such codes
+> instead of a part of that.
+> Since some symbols are already registered on kprobe blacklist,
+> this also removes them from the blacklist.
 > 
-> I saw mcount(and ftrace_caller) in arch/x86/kernel/entry_*.S, and
-> almost all code in it are in ".entry.text" section as far as I can see,
-> or do I miss something?
-> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+> Cc: Al Viro <viro@zeniv.linux.org.uk>
+> Cc: Seiji Aguchi <seiji.aguchi@hds.com>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
 
-Ah, checking the System.map I guess we are OK.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
 -- Steve
