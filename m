@@ -1,77 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268AbaCXTgA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:36:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:47987 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753623AbaCXTf6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:35:58 -0400
-Date: Mon, 24 Mar 2014 15:35:56 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH -tip v8 10/26] kprobes/x86: Allow probe on some kprobe
- preparation functions
-Message-ID: <20140324153556.2ae6b181@gandalf.local.home>
-In-Reply-To: <20140305115953.22766.53497.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140305115953.22766.53497.stgit@ltc230.yrl.intra.hitachi.co.jp>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1754302AbaCXTgV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:36:21 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:50772 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754277AbaCXTgR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:36:17 -0400
+X-Forefront-Antispam-Report: CIP:165.204.84.221;KIP:(null);UIP:(null);IPV:NLI;H:atltwp01.amd.com;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VPS-2(z579ehz98dI1432Izz1f42h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275bh8275dh1de097h186068hz2dh109h839h944hd25hf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh15d0h162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah2222h224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
+X-WSS-ID: 0N2YH0D-07-6HO-02
+X-M-MSG: 
+From: "Cornwall, Jay" <Jay.Cornwall@amd.com>
+To: Joerg Roedel <joro@8bytes.org>,
+        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+CC: "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Naru, Kim" <Kim.Naru@amd.com>
+Subject: RE: [PATCH V2] iommu/amd: Fix logic to determine and checking max
+ PASID
+Thread-Topic: [PATCH V2] iommu/amd: Fix logic to determine and checking max
+ PASID
+Thread-Index: AQHPR3h4vdvUyOrXM0OjsM2WwutzqprwnP0g
+Date: Mon, 24 Mar 2014 19:33:50 +0000
+Message-ID: <99CB3FADB756624A867BE9481439561C334AC1BF@satlexdag03.amd.com>
+References: <1394067258-5968-1-git-send-email-suravee.suthikulpanit@amd.com>
+ <20140324154806.GB2775@8bytes.org>
+In-Reply-To: <20140324154806.GB2775@8bytes.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.180.168.240]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+X-OriginatorOrg: amd.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Mar 2014 20:59:53 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+Joerg Roedel wrote:
 
-> There is no need to prohibit probing on the functions
-> used in preparation phase. Those are safely probed because
-> those are not invoked from breakpoint/fault/debug handlers,
-> there is no chance to cause recursive exceptions.
+>On Wed, Mar 05, 2014 at 06:54:18PM -0600, suravee.suthikulpanit@amd.com wrote:
+>> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>> 
+>> In reality, the spec can only support 16-bit PASID since 
+>> INVALIDATE_IOTLB_PAGES and COMPLETE_PPR_REQUEST commands only allow 
+>> 16-bit PASID. So, we updated the PASID_MASK accordingly and invoke 
+>>BUG_ON if the hardware is reporting PASmax more than 16-bit.
+>> 
+>>Besides, max PASID is defined as ((2^(PASmax+1)) - 1). The current 
+>> does not determine this correctly.
+>> 
+>> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+>> Tested-by: Jay Cornwall <Jay.Cornwall@amd.com>
 > 
-> Following functions are now removed from the kprobes blacklist.
->  can_boost
->  can_probe
->  can_optimize
->  is_IF_modifier
->  __copy_instruction
->  copy_optimized_instructions
->  arch_copy_kprobe
->  arch_prepare_kprobe
->  arch_arm_kprobe
->  arch_disarm_kprobe
->  arch_remove_kprobe
-
-Is there any possibility that the arm and disarm could cause issues if
-we have a probe in the middle of setting it?
-
-I guess not, but I just wanted to ask, as your test only tested the
-start of function and not the middle of it.
-
--- Steve
-
-
->  arch_trampoline_kprobe
->  arch_prepare_kprobe_ftrace
->  arch_prepare_optimized_kprobe
->  arch_check_optimized_kprobe
->  arch_within_optimized_kprobe
->  __arch_remove_optimized_kprobe
->  arch_remove_optimized_kprobe
->  arch_optimize_kprobes
->  arch_unoptimize_kprobe
+> Applied, thanks.
 > 
+> Btw, is there any publicly available driver/way/whatever for me to test the AMD IOMMUv2 code paths?
+
+We are testing on a kernel development branch which enables ATS translation from shaders on the Kaveri APU. See drivers/gpu/hsa/radeon at http://cgit.freedesktop.org/~gabbayo/linux/ for the kernel driver.
+
+Testing requires some setup in user mode to construct a PM4 command stream and CIK assembly, similar to the DRM/Mesa UMD implementation. Even then, it is not possible to observe translations directly. Our testing is limited to indirect observations; e.g. modifying VA:PA mappings and ensuring shader loads/stores reflect expected results.
+
+I don't know of a way to exercise the IOMMUv2 code paths without an IOTLB client.
 
