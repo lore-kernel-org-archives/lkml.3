@@ -1,131 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390AbaCXTht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:37:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49617 "EHLO mx1.redhat.com"
+	id S1754590AbaCXTnd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:43:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49115 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753623AbaCXTho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:44 -0400
+	id S1754235AbaCXThv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:37:51 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
         andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 07/15 V3] perf, c2c: Add in sort on physid
-Date: Mon, 24 Mar 2014 15:36:58 -0400
-Message-Id: <1395689826-215033-8-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 05/15 V3] perf, c2c: Rework setup code to prepare for features
+Date: Mon, 24 Mar 2014 15:36:56 -0400
+Message-Id: <1395689826-215033-6-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the infrastructure is set, add in the support to use
-hist_entry to sort on physid.
+A basic patch that re-arranges some of the c2c code and adds a couple
+of small features to lay the ground work for the rest of the patch
+series.
 
-V2: use new mmap2 sort
+Changes include:
+
+o reworking the report path
+o replace preprocess_sample with simpler calls
+o rework raw output to handle separators
+o remove phys id gunk
+o add some generic options
+
+There isn't much meat in this patch just a bunch of code movement and cleanups.
+
+V2: refresh to latest upstream changes
 
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 51 insertions(+), 1 deletion(-)
+ tools/perf/builtin-c2c.c | 125 +++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 93 insertions(+), 32 deletions(-)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index d7eaf81..b5742bd 100644
+index 7082913..72dd9d5 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -7,6 +7,7 @@
+@@ -5,6 +5,7 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
  #include "util/tool.h"
- #include "util/debug.h"
- #include <api/fs/fs.h>
-+#include "util/annotate.h"
++#include "util/debug.h"
  
  #include <linux/compiler.h>
  #include <linux/kernel.h>
-@@ -14,6 +15,7 @@
- struct perf_c2c {
- 	struct perf_tool tool;
- 	bool		 raw_records;
-+	struct hists	 hists;
- };
- 
- enum { OP, LVL, SNP, LCK, TLB };
-@@ -151,7 +153,11 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
- 					struct perf_sample *sample,
- 					struct perf_evsel *evsel)
- {
-+	struct symbol *parent = NULL;
-+	struct hist_entry *he;
- 	struct mem_info *mi;
-+	uint64_t cost;
-+	int err;
- 
- 	mi = sample__resolve_mem(sample, al);
- 	if (!mi)
-@@ -163,7 +169,33 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
- 		return 0;
- 	}
- 
--	return 0;
-+	cost = sample->weight;
-+	if (!cost)
-+		cost = 1;
-+
-+	/*
-+	 * must pass period=weight in order to get the correct
-+	 * sorting from hists__collapse_resort() which is solely
-+	 * based on periods. We want sorting be done on nr_events * weight
-+	 * and this is indirectly achieved by passing period=weight here
-+	 * and the he_stat__add_period() function.
-+	 */
-+	he = __hists__add_entry(&c2c->hists, al, parent, NULL, mi,
-+				cost, cost, 0);
-+	if (!he) {
-+		err = -ENOMEM;
-+		goto out_mem;
-+	}
-+
-+	c2c->hists.stats.total_period += cost;
-+	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
-+	return err;
-+
-+out_mem:
-+	/* implicitly freed by __hists__add_entry */
-+	free(mi);
-+out:
-+	return err;
+@@ -105,34 +106,55 @@ static int perf_c2c__fprintf_header(FILE *fp)
  }
  
- /* setup the basic events for most coverage, options added later */
-@@ -266,10 +298,28 @@ out:
+ static int perf_sample__fprintf(struct perf_sample *sample, char tag,
+-				const char *reason, struct addr_location *al, FILE *fp)
++				const char *reason, struct mem_info *mi, FILE *fp)
+ {
+ 	char data_src[61];
++	const char *fmt, *sep;
++	struct map *map = mi->iaddr.map;
+ 
+ 	perf_c2c__scnprintf_data_src(data_src, sizeof(data_src), sample->data_src);
+ 
+-	return fprintf(fp, "%c %-16s  %6d  %6d  %4d  %#18" PRIx64 "  %#18" PRIx64 "  %#18" PRIx64 "  %6" PRIu64 "  %#10" PRIx64 " %-60.60s %s:%s\n",
+-		       tag,
+-		       reason ?: "valid record",
+-		       sample->pid,
+-		       sample->tid,
+-		       sample->cpu,
+-		       sample->ip,
+-		       sample->addr,
+-		       0UL,
+-		       sample->weight,
+-		       sample->data_src,
+-		       data_src,
+-		       al->map ? (al->map->dso ? al->map->dso->long_name : "???") : "???",
+-		       al->sym ? al->sym->name : "???");
++	if (symbol_conf.field_sep) {
++		fmt = "%c%s%s%s%d%s%d%s%d%s%#"PRIx64"%s%#"PRIx64"%s"
++		      "%"PRIu64"%s%#"PRIx64"%s%s%s%s:%s\n";
++		sep = symbol_conf.field_sep;
++	} else {
++		fmt = "%c%s%-16s%s%6d%s%6d%s%4d%s%#18"PRIx64"%s%#18"PRIx64"%s"
++		      "%6"PRIu64"%s%#10"PRIx64"%s%-60.60s%s%s:%s\n";
++		sep = " ";
++	}
++
++	return fprintf(fp, fmt,
++		       tag,				sep,
++		       reason ?: "valid record",	sep,
++		       sample->pid,			sep,
++		       sample->tid,			sep,
++		       sample->cpu,			sep,
++		       sample->ip,			sep,
++		       sample->addr,			sep,
++		       sample->weight,			sep,
++		       sample->data_src,		sep,
++		       data_src,			sep,
++		       map ? (map->dso ? map->dso->long_name : "???") : "???",
++		       mi->iaddr.sym ? mi->iaddr.sym->name : "???");
+ }
+ 
+ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
++					struct addr_location *al,
+ 					struct perf_sample *sample,
+-					struct addr_location *al)
++					struct perf_evsel *evsel)
+ {
+-	if (c2c->raw_records)
+-		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
++	struct mem_info *mi;
++
++	mi = sample__resolve_mem(sample, al);
++	if (!mi)
++		return -ENOMEM;
++
++	if (c2c->raw_records) {
++		perf_sample__fprintf(sample, ' ', "raw input", mi, stdout);
++		free(mi);
++		return 0;
++	}
+ 
+ 	return 0;
+ }
+@@ -143,8 +165,9 @@ static const struct perf_evsel_str_handler handlers[] = {
+ };
+ 
+ typedef int (*sample_handler)(struct perf_c2c *c2c,
++			      struct addr_location *al,
+ 			      struct perf_sample *sample,
+-			      struct addr_location *al);
++			      struct perf_evsel *evsel);
+ 
+ static int perf_c2c__process_sample(struct perf_tool *tool,
+ 				    union perf_event *event,
+@@ -153,20 +176,51 @@ static int perf_c2c__process_sample(struct perf_tool *tool,
+ 				    struct machine *machine)
+ {
+ 	struct perf_c2c *c2c = container_of(tool, struct perf_c2c, tool);
+-	struct addr_location al;
+-	int err = 0;
++	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
++	struct thread *thread;
++	sample_handler f;
++	int err = -1;
++	struct addr_location al = {
++			.machine = machine,
++			.cpu = sample->cpu,
++			.cpumode = cpumode,
++	};
++
++	if (evsel->handler == NULL)
++		return 0;
+ 
+-	if (perf_event__preprocess_sample(event, machine, &al, sample) < 0) {
+-		pr_err("problem processing %d event, skipping it.\n",
+-		       event->header.type);
+-		return -1;
++	thread = machine__find_thread(machine, sample->pid, sample->tid);
++	if (thread == NULL) {
++		printf("Could not find thread for tid %d\n", sample->tid);
++		return 0;
+ 	}
+ 
+-	if (evsel->handler != NULL) {
+-		sample_handler f = evsel->handler;
+-		err = f(c2c, sample, &al);
++	al.thread = thread;
++
++	f = evsel->handler;
++	err = f(c2c, &al, sample, evsel);
++	if (err)
++		goto err;
++
++	return 0;
++err:
++	if (err > 0)
++		err = 0;
++	return err;
++}
++
++static int perf_c2c__process_events(struct perf_session *session,
++				    struct perf_c2c *c2c)
++{
++	int err = -1;
++
++	err = perf_session__process_events(session, &c2c->tool);
++	if (err) {
++		pr_err("Failed to process count events, error %d\n", err);
++		goto err;
+ 	}
+ 
++err:
  	return err;
  }
  
-+static int perf_c2c__init(struct perf_c2c *c2c)
-+{
-+	sort__mode = SORT_MODE__PHYSID;
-+	sort__wants_unique = 1;
-+	sort_order = "daddr,iaddr,pid,tid";
-+
-+	if (setup_sorting() < 0) {
-+		pr_err("can not setup sorting\n");
-+		return -1;
-+	}
-+
-+	hists__init(&c2c->hists);
-+
-+	return 0;
-+}
- static int perf_c2c__report(struct perf_c2c *c2c)
- {
- 	setup_pager();
+@@ -197,9 +251,7 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 		}
+ 	}
  
-+	if (perf_c2c__init(c2c))
-+		return -1;
-+
- 	if (c2c->raw_records)
- 		perf_c2c__fprintf_header(stdout);
+-	err = perf_session__process_events(session, &c2c->tool);
+-	if (err)
+-		pr_err("Failed to process events, error %d", err);
++	err = perf_c2c__process_events(session, c2c);
  
+ out:
+ 	return err;
+@@ -221,7 +273,6 @@ static int perf_c2c__record(int argc, const char **argv)
+ 	const char **rec_argv;
+ 	const char * const record_args[] = {
+ 		"record",
+-		/* "--phys-addr", */
+ 		"-W",
+ 		"-d",
+ 		"-a",
+@@ -254,6 +305,8 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	struct perf_c2c c2c = {
+ 		.tool = {
+ 			.sample		 = perf_c2c__process_sample,
++			.mmap2           = perf_event__process_mmap2,
++			.mmap            = perf_event__process_mmap,
+ 			.comm		 = perf_event__process_comm,
+ 			.exit		 = perf_event__process_exit,
+ 			.fork		 = perf_event__process_fork,
+@@ -263,6 +316,14 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	};
+ 	const struct option c2c_options[] = {
+ 	OPT_BOOLEAN('r', "raw_records", &c2c.raw_records, "dump raw events"),
++	OPT_INCR('v', "verbose", &verbose,
++		 "be more verbose (show counter open errors, etc)"),
++	OPT_STRING('i', "input", &input_name, "file",
++		   "the input file to process"),
++	OPT_STRING('x', "field-separator", &symbol_conf.field_sep,
++		   "separator",
++		   "separator for columns, no spaces will be added"
++		   " between columns '.' is reserved."),
+ 	OPT_END()
+ 	};
+ 	const char * const c2c_usage[] = {
 -- 
 1.7.11.7
 
