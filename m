@@ -1,110 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbaCXMsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 08:48:50 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:31345 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbaCXMsP (ORCPT
+	id S1753299AbaCXMtp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 08:49:45 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:54543 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbaCXMtn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 08:48:15 -0400
-X-IronPort-AV: E=Sophos;i="4.97,720,1389744000"; 
-   d="scan'208";a="112949030"
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
-        <xen-devel@lists.xenproject.org>
-CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v2 2/3] xen-netback: Follow-up patch for grant mapping series
-Date: Mon, 24 Mar 2014 12:48:03 +0000
-Message-ID: <1395665284-8911-2-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
+	Mon, 24 Mar 2014 08:49:43 -0400
+Date: Mon, 24 Mar 2014 08:49:39 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Monam Agarwal <monamagarwal123@gmail.com>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel: Use RCU_INIT_POINTER(x, NULL) in cgroup.c
+Message-ID: <20140324124939.GA29892@mtj.dyndns.org>
+References: <1395600438-9838-1-git-send-email-monamagarwal123@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395600438-9838-1-git-send-email-monamagarwal123@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ian made some late comments about the grant mapping series, I incorporated the
-non-functional outcomes into this patch:
+On Mon, Mar 24, 2014 at 12:17:18AM +0530, Monam Agarwal wrote:
+> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+> 
+> The rcu_assign_pointer() ensures that the initialization of a structure       
+> is carried out before storing a pointer to that structure. 
+> And in the case of the NULL pointer, there is no structure to initialize. 
+> So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> 
+> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
 
-- typo fixes in a comment of xenvif_free(), and add another one there as well
-- typo fix for comment of rx_drain_timeout_msecs
-- remove stale comment before calling xenvif_grant_handle_reset()
+Applied to cgroup/for-3.15.
 
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
----
-v2:
-- expand commit message and split this into 2 patch
-- fix typos
+Thanks.
 
-diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
-index e71fb1a..cdc298e 100644
---- a/drivers/net/xen-netback/interface.c
-+++ b/drivers/net/xen-netback/interface.c
-@@ -574,15 +574,15 @@ void xenvif_disconnect(struct xenvif *vif)
- void xenvif_free(struct xenvif *vif)
- {
- 	int i, unmap_timeout = 0;
--	/* Here we want to avoid timeout messages if an skb can be legitimatly
--	 * stucked somewhere else. Realisticly this could be an another vif's
-+	/* Here we want to avoid timeout messages if an skb can be legitimately
-+	 * stuck somewhere else. Realistically this could be an another vif's
- 	 * internal or QDisc queue. That another vif also has this
- 	 * rx_drain_timeout_msecs timeout, but the timer only ditches the
- 	 * internal queue. After that, the QDisc queue can put in worst case
- 	 * XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS skbs into that another vif's
- 	 * internal queue, so we need several rounds of such timeouts until we
- 	 * can be sure that no another vif should have skb's from us. We are
--	 * not sending more skb's, so newly stucked packets are not interesting
-+	 * not sending more skb's, so newly stuck packets are not interesting
- 	 * for us here.
- 	 */
- 	unsigned int worst_case_skb_lifetime = (rx_drain_timeout_msecs/1000) *
-@@ -597,6 +597,13 @@ void xenvif_free(struct xenvif *vif)
- 				netdev_err(vif->dev,
- 					   "Page still granted! Index: %x\n",
- 					   i);
-+			/* If there are still unmapped pages, reset the loop to
-+			 * start checking again. We shouldn't exit here until
-+			 * dealloc thread and NAPI instance release all the
-+			 * pages. If a kernel bug causes the skbs to stall
-+			 * somewhere, the interface cannot be brought down
-+			 * properly.
-+			 */
- 			i = -1;
- 		}
- 	}
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index f5c440b..684c10b 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -56,7 +56,7 @@ bool separate_tx_rx_irq = 1;
- module_param(separate_tx_rx_irq, bool, 0644);
- 
- /* When guest ring is filled up, qdisc queues the packets for us, but we have
-- * to timeout them, otherwise other guests' packets can get stucked there
-+ * to timeout them, otherwise other guests' packets can get stuck there
-  */
- unsigned int rx_drain_timeout_msecs = 10000;
- module_param(rx_drain_timeout_msecs, uint, 0444);
-@@ -1545,7 +1545,6 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
- 					    idx_to_kaddr(vif, pending_idx),
- 					    GNTMAP_host_map,
- 					    vif->grant_tx_handle[pending_idx]);
--			/* Btw. already unmapped? */
- 			xenvif_grant_handle_reset(vif, pending_idx);
- 			++gop;
- 		}
-@@ -1678,7 +1677,6 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
- 			    idx_to_kaddr(vif, pending_idx),
- 			    GNTMAP_host_map,
- 			    vif->grant_tx_handle[pending_idx]);
--	/* Btw. already unmapped? */
- 	xenvif_grant_handle_reset(vif, pending_idx);
- 
- 	ret = gnttab_unmap_refs(&tx_unmap_op, NULL,
+-- 
+tejun
