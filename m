@@ -1,142 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbaCXPXr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:23:47 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50704 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754AbaCXPXp (ORCPT
+	id S1753441AbaCXP2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:28:16 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:30567 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754AbaCXP2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:23:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+mB=1LRQSpz+Hmtym44x6+KW9ksXj9WQ8UKcHydk-JAWdyP+w@mail.gmail.com>
-References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
-	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
-	<CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
-	<CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com>
-	<CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
-	<CA+mB=1LRQSpz+Hmtym44x6+KW9ksXj9WQ8UKcHydk-JAWdyP+w@mail.gmail.com>
-Date: Mon, 24 Mar 2014 20:53:44 +0530
-Message-ID: <CABb+yY1U_XFQndHq4aumZ+BNbCu3Frrk+x9fM9Dg5nxDT=HfoQ@mail.gmail.com>
-Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
- Engine driver support
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Srikanth Thokala <sthokal@xilinx.com>
-Cc: Jassi Brar <jaswinder.singh@linaro.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        dmaengine@vger.kernel.org,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 24 Mar 2014 11:28:14 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-e3-53304f0cee28
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "David F." <df7729@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: patch fix for intel sdd s3500 series on Sil3512 controller
+Date: Mon, 24 Mar 2014 16:27:54 +0100
+Message-id: <2140283.ClKsmfFTvU@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140324141558.31c169cf@alan.etchedpixels.co.uk>
+References: <CAGRSmLtifL=hFBP1AUHB_va6ZvNfqXo8Bu=6XciH--jOEYVJjQ@mail.gmail.com>
+ <20140324141558.31c169cf@alan.etchedpixels.co.uk>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=US-ASCII
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrALMWRmVeSWpSXmKPExsVy+t9jQV0ef4NggzNHtC3m35KymDTlL5vF
+	sR2PmCwu75rD5sDisXPWXXaP1pObWD0+b5ILYI7isklJzcksSy3St0vgyli4ewpLwWrWihdT
+	jrA3ME5g6WLk4JAQMJHY8UWgi5ETyBSTuHBvPVsXIxeHkMB0RolJDZNZIZwWJon2ty+YQarY
+	BKwkJravYgSxRYCam1+9BrOZBWIkbs9sB6sRFnCXOHXsEVicRUBV4nNzOzvIMl4BTYmVb1RA
+	wqICnhI7tq9kA7E5BewkHpz/yA5iCwm0MUpcPSQKYvMKCEr8mHyPBWK8vMS+/VNZIWwtic3b
+	mlgnMArMQlI2C0nZLCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEh+sz6R2Mqxos
+	DjEKcDAq8fBuMDUIFmJNLCuuzD3EKMHBrCTCe0ocKMSbklhZlVqUH19UmpNafIhRmoNFSZz3
+	YKt1oJBAemJJanZqakFqEUyWiYNTqoExV0Pngtx0Me6dH7fwnXiU5VI6ee4X0+O9OVXuJ1cy
+	ezxNu37r08npGpIT6maWNZyeGCrYVy3LzcD+PGhv9oTodSpcKSrnb26L4DtpNSvx8uXq/FNc
+	Dpu5UuPOK//b7bdi9tG8C4s+xK84aOQZ+Lv91zvRhCSVtfrXG8M+qUbcOOT/5otQk/ExJZbi
+	jERDLeai4kQAn0EiLFMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 8:44 PM, Srikanth Thokala <sthokal@xilinx.com> wrote:
-> On Mon, Mar 24, 2014 at 4:21 PM, Jassi Brar <jaswinder.singh@linaro.org> wrote:
->> On 24 March 2014 14:30, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>> Hi Jassi,
->>>
->>> Thanks for the Acked-by.
->>>
->>> On Mon, Mar 24, 2014 at 11:50 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
->>>> On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.com> wrote:
->>>>
->>>>> +
->>>>> +/**
->>>>> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE transaction
->>>>
->>>> Should be xilinx_vdma_dma_prep_interleaved here.
->>>
->>> Ok, I will correct it.  Thanks.
->>>
->>>>
->>>>> +/**
->>>>> + * xilinx_vdma_channel_set_config - Configure VDMA channel
->>>>> + * Run-time configuration for Axi VDMA, supports:
->>>>> + * . halt the channel
->>>>> + * . configure interrupt coalescing and inter-packet delay threshold
->>>>> + * . start/stop parking
->>>>> + * . enable genlock
->>>>> + *
->>>>> + * @dchan: DMA channel
->>>>> + * @cfg: VDMA device configuration pointer
->>>>> + *
->>>>> + * Return: '0' on success and failure value on error
->>>>> + */
->>>>> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
->>>>> +                                       struct xilinx_vdma_config *cfg)
->>>>> +{
->>>>> +       struct xilinx_vdma_chan *chan = to_xilinx_chan(dchan);
->>>>> +       u32 dmacr;
->>>>> +
->>>>> +       if (cfg->reset)
->>>>> +               return xilinx_vdma_chan_reset(chan);
->>>>> +
->>>>> +       dmacr = vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
->>>>> +
->>>>> +       chan->config.frm_dly = cfg->frm_dly;
->>>>> +       chan->config.park = cfg->park;
->>>>> +
->>>>> +       /* genlock settings */
->>>>> +       chan->config.gen_lock = cfg->gen_lock;
->>>>> +       chan->config.master = cfg->master;
->>>>> +
->>>>> +       if (cfg->gen_lock && chan->genlock) {
->>>>> +               dmacr |= XILINX_VDMA_DMACR_GENLOCK_EN;
->>>>> +               dmacr |= cfg->master << XILINX_VDMA_DMACR_MASTER_SHIFT;
->>>>> +       }
->>>>> +
->>>>> +       chan->config.frm_cnt_en = cfg->frm_cnt_en;
->>>>> +       if (cfg->park)
->>>>> +               chan->config.park_frm = cfg->park_frm;
->>>>> +       else
->>>>> +               chan->config.park_frm = -1;
->>>>> +
->>>>> +       chan->config.coalesc = cfg->coalesc;
->>>>> +       chan->config.delay = cfg->delay;
->>>>> +
->>>>> +       if (cfg->coalesc <= XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
->>>>> +               dmacr |= cfg->coalesc << XILINX_VDMA_DMACR_FRAME_COUNT_SHIFT;
->>>>> +               chan->config.coalesc = cfg->coalesc;
->>>>> +       }
->>>>> +
->>>>> +       if (cfg->delay <= XILINX_VDMA_DMACR_DELAY_MAX) {
->>>>> +               dmacr |= cfg->delay << XILINX_VDMA_DMACR_DELAY_SHIFT;
->>>>> +               chan->config.delay = cfg->delay;
->>>>> +       }
->>>>> +
->>>>> +       /* FSync Source selection */
->>>>> +       dmacr &= ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
->>>>> +       dmacr |= cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIFT;
->>>>> +
->>>>> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
->>>>> +
->>>>> +       return 0;
->>>>> +}
->>>>> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
->>>>> +
->>>> Bypassing the DMAEngine api doesn't seem very neat.
->>>> Is there currently any client driver that /changes/ this configuration
->>>> between channel requests? If no, then simply get the configuration
->>>> from DT node and avoid this api.
->>>
->>> This change is recently suggested by Lars in the following patch series,
->>> "dma: Remove comment about embedding dma_slave_config into custom structs"
->>>
->> If some user does indeed need to /change/ the configuration across
->> channel requests, we can keep function. Is there currently any such
->> user?
->
-> Yes, we are planning to push these changes soon to drivers/media/.
->
-This is not what I asked though. I asked if some client driver changes
-the configuration options based on some runtime decision? If yes, then
-the api is warranted. Otherwise, you might consider getting the static
-configuration from DT. That's all I suggest.
+
++ linux-ide mailing list on Cc:
+
+On Monday, March 24, 2014 02:15:58 PM One Thousand Gnomes wrote:
+> On Sat, 22 Mar 2014 16:32:54 -0700
+> "David F." <df7729@gmail.com> wrote:
+> 
+> > Hi,
+> > 
+> > It appears if nIEN is set all polling type IO fails.   After an
+> > attempt, future non-polled communications also fails.  This patch
+> > allows it to work.  Not sure if any spin lock protection would be
+> > needed or the system already handles the device existence for the
+> > generated irq with polling enabled.  handler already ignored irq if
+> > queued command was polling type.
+> 
+> Does it behave plugged into a different controller without the hacks ?
+> 
+> Alan
+
