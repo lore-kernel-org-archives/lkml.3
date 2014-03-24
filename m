@@ -1,65 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752922AbaCXL3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 07:29:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61525 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaCXL3R (ORCPT
+	id S1752835AbaCXLah (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 07:30:37 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:48459 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752259AbaCXLaf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 07:29:17 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Rob Herring <robherring2@gmail.com>, Rob Herring <robh@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 4/8] tty/serial: add generic serial earlycon
-Date: Mon, 24 Mar 2014 12:29:07 +0100
-Message-ID: <9368307.RXEGmQia1C@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140324112203.GD3850@arm.com>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <1395436128-11244-5-git-send-email-robherring2@gmail.com> <20140324112203.GD3850@arm.com>
+	Mon, 24 Mar 2014 07:30:35 -0400
+Message-ID: <53301754.30901@hitachi.com>
+Date: Mon, 24 Mar 2014 20:30:28 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:aCfnwCfvdaT9DFmJGidpYOxHxbP2KYNPw/XUyVCPCoi
- BxpsaL1M2x0LwD808RR4OZEFCsa58xVoNyt0oZ7j2ljgUL/fvE
- WBv1Lkzxe8AlD44PBrlqSuaQQtVboAek5bGVrqMK12sBz88bDL
- 2Kqds9xGbXjtrEP45eQujUqi4ebyUyKygQCGw5HV6nqcqN/V2d
- GYdNszXSXch+i012fVEAHPwa2idM9gvk4wgmC7uuMGCDjZgwmm
- oyfMIoeP9HSJEZmK4f7I1OfIhS98l6K68oovUpHZT4rNGagjb+
- iiDmA+Oja8gEXccMsMAitov+Q1i/jMtGYl+SsmC3FOVG1fw7hF
- YUMSmyLD9ycBqNOV8PhM=
+To: Kees Cook <keescook@chromium.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Andy Honig <ahonig@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jianguo Wu <wujianguo@huawei.com>,
+        David Rientjes <rientjes@google.com>,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [PATCH] x86, kaslr: fix module lock ordering problem
+References: <20140310204248.GA1958@www.outflux.net>
+In-Reply-To: <20140310204248.GA1958@www.outflux.net>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 March 2014 11:22:03 Catalin Marinas wrote:
-> On Fri, Mar 21, 2014 at 09:08:44PM +0000, Rob Herring wrote:
-> > diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-> > new file mode 100644
-> > index 0000000..241757a
-> > --- /dev/null
-> > +++ b/drivers/tty/serial/earlycon.c
-> [...]
-> > +static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
-> > +{
-> > +	void __iomem *base;
-> > +#ifdef CONFIG_FIX_EARLYCON_MEM
-> > +	set_fixmap_nocache(FIX_EARLYCON_MEM_BASE, paddr & PAGE_MASK);
-> > +	base = (void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
-> > +	base += paddr & ~PAGE_MASK;
-> > +#else
-> > +	base = ioremap_nocache(paddr, size);
-> > +#endif
+(2014/03/11 5:42), Kees Cook wrote:
+> There was a potential lock ordering problem with the module kASLR patch
+> ("x86, kaslr: randomize module base load address"). This patch removes
+> the usage of the module_mutex and creates a new mutex to protect the
+> module base address offset value.
 > 
-> Just curious why not set_fixmap_io (and plain ioremap)?
+> Chain exists of:
+>   text_mutex --> kprobe_insn_slots.mutex --> module_mutex
+> 
+> [    0.515561]  Possible unsafe locking scenario:
+> [    0.515561]
+> [    0.515561]        CPU0                    CPU1
+> [    0.515561]        ----                    ----
+> [    0.515561]   lock(module_mutex);
+> [    0.515561]                                lock(kprobe_insn_slots.mutex);
+> [    0.515561]                                lock(module_mutex);
+> [    0.515561]   lock(text_mutex);
+> [    0.515561]
+> [    0.515561]  *** DEADLOCK ***
+> 
+> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+> Signed-off-by: Andy Honig <ahonig@google.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
 
-Good point. Note that ioremap_nocache() is the same as ioremap()
-on *all* architectures.
+Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-	Arnd
+Thanks for fix that ! :)
+
+
+> ---
+>  arch/x86/kernel/module.c |    7 +++++--
+>  1 file changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
+> index 49483137371f..e69f9882bf95 100644
+> --- a/arch/x86/kernel/module.c
+> +++ b/arch/x86/kernel/module.c
+> @@ -48,6 +48,9 @@ do {							\
+>  static unsigned long module_load_offset;
+>  static int randomize_modules = 1;
+>  
+> +/* Mutex protects the module_load_offset. */
+> +static DEFINE_MUTEX(module_kaslr_mutex);
+> +
+>  static int __init parse_nokaslr(char *p)
+>  {
+>  	randomize_modules = 0;
+> @@ -58,7 +61,7 @@ early_param("nokaslr", parse_nokaslr);
+>  static unsigned long int get_module_load_offset(void)
+>  {
+>  	if (randomize_modules) {
+> -		mutex_lock(&module_mutex);
+> +		mutex_lock(&module_kaslr_mutex);
+>  		/*
+>  		 * Calculate the module_load_offset the first time this
+>  		 * code is called. Once calculated it stays the same until
+> @@ -67,7 +70,7 @@ static unsigned long int get_module_load_offset(void)
+>  		if (module_load_offset == 0)
+>  			module_load_offset =
+>  				(get_random_int() % 1024 + 1) * PAGE_SIZE;
+> -		mutex_unlock(&module_mutex);
+> +		mutex_unlock(&module_kaslr_mutex);
+>  	}
+>  	return module_load_offset;
+>  }
+> 
+
+
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
