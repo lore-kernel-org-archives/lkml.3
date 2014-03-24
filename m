@@ -1,150 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaCXKyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 06:54:45 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:53258 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482AbaCXKyn (ORCPT
+	id S1752847AbaCXK7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:59:53 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:36429 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaCXK7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 06:54:43 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: robert.hu@intel.com, jinsong.liu@intel.com, kvm@vger.kernel.org
-Subject: [PATCH] KVM: x86: handle missing MPX in nested virtualization
-Date: Mon, 24 Mar 2014 11:54:35 +0100
-Message-Id: <1395658475-1976-1-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
+	Mon, 24 Mar 2014 06:59:51 -0400
+Message-ID: <53301023.8080301@monstr.eu>
+Date: Mon, 24 Mar 2014 11:59:47 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Jassi Brar <jaswinder.singh@linaro.org>
+CC: Srikanth Thokala <sthokal@xilinx.com>,
+        Jassi Brar <jassisinghbrar@gmail.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com> <1395083192-3224-3-git-send-email-sthokal@xilinx.com> <CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com> <CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com> <CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
+In-Reply-To: <CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="S05dd2pJMCUtcj1SChpUGnf4mcBDeAdXn"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing nested virtualization, we may be able to read BNDCFGS but
-still not be allowed to write to GUEST_BNDCFGS in the VMCS.  Guard
-writes to the field with vmx_mpx_supported(), and similarly hide the
-MSR from userspace if the processor does not support the field.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--S05dd2pJMCUtcj1SChpUGnf4mcBDeAdXn
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-We could work around this with the generic MSR save/load machinery,
-but there is only a limited number of MSR save/load slots and it is
-not really worthwhile to waste one for a scenario that should not
-happen except in the nested virtualization case.
+Hi Vinod,
 
-Based on a patch from Liu Jinsong, who reported it can also fix
-problems with buggy VMX microcode.
+sorry for top posting.
 
-Reported-by: Robert Hu <robert.hu@intel.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/cpuid.c |  5 ++---
- arch/x86/kvm/svm.c   |  6 ++++++
- arch/x86/kvm/vmx.c   |  5 +++++
- arch/x86/kvm/x86.c   | 17 +++++++++++++++++
- 4 files changed, 30 insertions(+), 3 deletions(-)
+is there any chance to get this driver to the 3.15?
+Or have you already closed your dma repo for new drivers?
 
-diff --git a/arch/x86/kvm/cpuid.c b/arch/x86/kvm/cpuid.c
-index 18aefb4d0927..64fae65730f3 100644
---- a/arch/x86/kvm/cpuid.c
-+++ b/arch/x86/kvm/cpuid.c
-@@ -47,7 +47,7 @@ u64 kvm_supported_xcr0(void)
- {
- 	u64 xcr0 = KVM_SUPPORTED_XCR0 & host_xcr0;
- 
--	if (!kvm_x86_ops->mpx_supported || !kvm_x86_ops->mpx_supported())
-+	if (!kvm_x86_ops->mpx_supported())
- 		xcr0 &= ~(XSTATE_BNDREGS | XSTATE_BNDCSR);
- 
- 	return xcr0;
-@@ -259,8 +259,7 @@ static inline int __do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- #endif
- 	unsigned f_rdtscp = kvm_x86_ops->rdtscp_supported() ? F(RDTSCP) : 0;
- 	unsigned f_invpcid = kvm_x86_ops->invpcid_supported() ? F(INVPCID) : 0;
--	unsigned f_mpx = kvm_x86_ops->mpx_supported ?
--			 (kvm_x86_ops->mpx_supported() ? F(MPX) : 0) : 0;
-+	unsigned f_mpx = kvm_x86_ops->mpx_supported() ? F(MPX) : 0;
- 
- 	/* cpuid 1.edx */
- 	const u32 kvm_supported_word0_x86_features =
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index a449c3d76cba..2136cb6ab132 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -4089,6 +4089,11 @@ static bool svm_invpcid_supported(void)
- 	return false;
- }
- 
-+static bool svm_mpx_supported(void)
-+{
-+	return false;
-+}
-+
- static bool svm_has_wbinvd_exit(void)
- {
- 	return true;
-@@ -4371,6 +4376,7 @@ static struct kvm_x86_ops svm_x86_ops = {
- 
- 	.rdtscp_supported = svm_rdtscp_supported,
- 	.invpcid_supported = svm_invpcid_supported,
-+	.mpx_supported = svm_mpx_supported,
- 
- 	.set_supported_cpuid = svm_set_supported_cpuid,
- 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index c95bea17fc1e..1320e0f8e611 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -729,6 +729,7 @@ static unsigned long nested_ept_get_cr3(struct kvm_vcpu *vcpu);
- static u64 construct_eptp(unsigned long root_hpa);
- static void kvm_cpu_vmxon(u64 addr);
- static void kvm_cpu_vmxoff(void);
-+static bool vmx_mpx_supported(void);
- static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
- static void vmx_set_segment(struct kvm_vcpu *vcpu,
- 			    struct kvm_segment *var, int seg);
-@@ -2501,6 +2502,8 @@ static int vmx_get_msr(struct kvm_vcpu *vcpu, u32 msr_index, u64 *pdata)
- 		data = vmcs_readl(GUEST_SYSENTER_ESP);
- 		break;
- 	case MSR_IA32_BNDCFGS:
-+		if (!vmx_mpx_supported())
-+			return 1;
- 		data = vmcs_read64(GUEST_BNDCFGS);
- 		break;
- 	case MSR_IA32_FEATURE_CONTROL:
-@@ -2572,6 +2575,8 @@ static int vmx_set_msr(struct kvm_vcpu *vcpu, struct msr_data *msr_info)
- 		vmcs_writel(GUEST_SYSENTER_ESP, data);
- 		break;
- 	case MSR_IA32_BNDCFGS:
-+		if (!vmx_mpx_supported())
-+			return 1;
- 		vmcs_write64(GUEST_BNDCFGS, data);
- 		break;
- 	case MSR_IA32_TSC:
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 3f5fb4535f9c..aa986959f237 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3937,6 +3937,23 @@ static void kvm_init_msr_list(void)
- 	for (i = j = KVM_SAVE_MSRS_BEGIN; i < ARRAY_SIZE(msrs_to_save); i++) {
- 		if (rdmsr_safe(msrs_to_save[i], &dummy[0], &dummy[1]) < 0)
- 			continue;
-+
-+		/*
-+		 * Even MSRs that are valid in the host may not be exposed
-+		 * to the guests in some cases.  We could work around this
-+		 * in VMX with the generic MSR save/load machinery, but it
-+		 * is not really worthwhile since it will really only
-+		 * happen with nested virtualization.
-+		 */
-+		switch (msrs_to_save[i]) {
-+		case MSR_IA32_BNDCFGS:
-+			if (!kvm_x86_ops->mpx_supported())
-+				continue;
-+			break;
-+		default:
-+			break;
-+		}
-+
- 		if (j < i)
- 			msrs_to_save[j] = msrs_to_save[i];
- 		j++;
--- 
-1.8.3.1
+The driver should be in pretty good shape after long review.
+=46rom email below Srikanth got ACK from Jassi
+and there should be a small fix which Srikanth will send in v7
+which I hope will be the last version.
 
+Thanks,
+Michal
+
+On 03/24/2014 11:51 AM, Jassi Brar wrote:
+> On 24 March 2014 14:30, Srikanth Thokala <sthokal@xilinx.com> wrote:
+>> Hi Jassi,
+>>
+>> Thanks for the Acked-by.
+>>
+>> On Mon, Mar 24, 2014 at 11:50 AM, Jassi Brar <jassisinghbrar@gmail.com=
+> wrote:
+>>> On Tue, Mar 18, 2014 at 12:36 AM, Srikanth Thokala <sthokal@xilinx.co=
+m> wrote:
+>>>
+>>>> +
+>>>> +/**
+>>>> + * xilinx_vdma_prep_slave_sg - prepare a descriptor for a DMA_SLAVE=
+ transaction
+>>>
+>>> Should be xilinx_vdma_dma_prep_interleaved here.
+>>
+>> Ok, I will correct it.  Thanks.
+>>
+>>>
+>>>> +/**
+>>>> + * xilinx_vdma_channel_set_config - Configure VDMA channel
+>>>> + * Run-time configuration for Axi VDMA, supports:
+>>>> + * . halt the channel
+>>>> + * . configure interrupt coalescing and inter-packet delay threshol=
+d
+>>>> + * . start/stop parking
+>>>> + * . enable genlock
+>>>> + *
+>>>> + * @dchan: DMA channel
+>>>> + * @cfg: VDMA device configuration pointer
+>>>> + *
+>>>> + * Return: '0' on success and failure value on error
+>>>> + */
+>>>> +int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
+>>>> +                                       struct xilinx_vdma_config *c=
+fg)
+>>>> +{
+>>>> +       struct xilinx_vdma_chan *chan =3D to_xilinx_chan(dchan);
+>>>> +       u32 dmacr;
+>>>> +
+>>>> +       if (cfg->reset)
+>>>> +               return xilinx_vdma_chan_reset(chan);
+>>>> +
+>>>> +       dmacr =3D vdma_ctrl_read(chan, XILINX_VDMA_REG_DMACR);
+>>>> +
+>>>> +       chan->config.frm_dly =3D cfg->frm_dly;
+>>>> +       chan->config.park =3D cfg->park;
+>>>> +
+>>>> +       /* genlock settings */
+>>>> +       chan->config.gen_lock =3D cfg->gen_lock;
+>>>> +       chan->config.master =3D cfg->master;
+>>>> +
+>>>> +       if (cfg->gen_lock && chan->genlock) {
+>>>> +               dmacr |=3D XILINX_VDMA_DMACR_GENLOCK_EN;
+>>>> +               dmacr |=3D cfg->master << XILINX_VDMA_DMACR_MASTER_S=
+HIFT;
+>>>> +       }
+>>>> +
+>>>> +       chan->config.frm_cnt_en =3D cfg->frm_cnt_en;
+>>>> +       if (cfg->park)
+>>>> +               chan->config.park_frm =3D cfg->park_frm;
+>>>> +       else
+>>>> +               chan->config.park_frm =3D -1;
+>>>> +
+>>>> +       chan->config.coalesc =3D cfg->coalesc;
+>>>> +       chan->config.delay =3D cfg->delay;
+>>>> +
+>>>> +       if (cfg->coalesc <=3D XILINX_VDMA_DMACR_FRAME_COUNT_MAX) {
+>>>> +               dmacr |=3D cfg->coalesc << XILINX_VDMA_DMACR_FRAME_C=
+OUNT_SHIFT;
+>>>> +               chan->config.coalesc =3D cfg->coalesc;
+>>>> +       }
+>>>> +
+>>>> +       if (cfg->delay <=3D XILINX_VDMA_DMACR_DELAY_MAX) {
+>>>> +               dmacr |=3D cfg->delay << XILINX_VDMA_DMACR_DELAY_SHI=
+FT;
+>>>> +               chan->config.delay =3D cfg->delay;
+>>>> +       }
+>>>> +
+>>>> +       /* FSync Source selection */
+>>>> +       dmacr &=3D ~XILINX_VDMA_DMACR_FSYNCSRC_MASK;
+>>>> +       dmacr |=3D cfg->ext_fsync << XILINX_VDMA_DMACR_FSYNCSRC_SHIF=
+T;
+>>>> +
+>>>> +       vdma_ctrl_write(chan, XILINX_VDMA_REG_DMACR, dmacr);
+>>>> +
+>>>> +       return 0;
+>>>> +}
+>>>> +EXPORT_SYMBOL(xilinx_vdma_channel_set_config);
+>>>> +
+>>> Bypassing the DMAEngine api doesn't seem very neat.
+>>> Is there currently any client driver that /changes/ this configuratio=
+n
+>>> between channel requests? If no, then simply get the configuration
+>>> from DT node and avoid this api.
+>>
+>> This change is recently suggested by Lars in the following patch serie=
+s,
+>> "dma: Remove comment about embedding dma_slave_config into custom stru=
+cts"
+>>
+> If some user does indeed need to /change/ the configuration across
+> channel requests, we can keep function. Is there currently any such
+> user?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"=
+ in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>=20
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--S05dd2pJMCUtcj1SChpUGnf4mcBDeAdXn
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlMwECMACgkQykllyylKDCG9awCfQ1VA9WEZMqS2eCsxxUtX/LwL
+KYsAn3aA3qsuPBrWEsPxgOG16mlvhyQq
+=oSSE
+-----END PGP SIGNATURE-----
+
+--S05dd2pJMCUtcj1SChpUGnf4mcBDeAdXn--
