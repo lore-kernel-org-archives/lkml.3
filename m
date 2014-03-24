@@ -1,114 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751459AbaCXV5k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 17:57:40 -0400
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:59297 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751174AbaCXV5i convert rfc822-to-8bit (ORCPT
+	id S1751385AbaCXWEx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 18:04:53 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:45029 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaCXWEu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 17:57:38 -0400
-Content-Type: text/plain; charset="utf-8"
+	Mon, 24 Mar 2014 18:04:50 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Maxime Coquelin <maxime.coquelin@st.com>,
-        "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <532C4816.2080102@st.com>
-Cc: mark.rutland@arm.com, gregkh@linuxfoundation.org, t.figa@samsung.com,
-        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
-        grant.likely@linaro.org, linux@arm.linux.org.uk,
-        m.szyprowski@samsung.com, t-kristo@ti.com
-References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
- <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
- <20140321014551.21989.57253@quantum> <532C4816.2080102@st.com>
-Message-ID: <20140324215729.32624.19272@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents and rates
-Date: Mon, 24 Mar 2014 14:57:29 -0700
+In-Reply-To: <CALCETrVtfvBu0=2hofkSfh-ohrnUCS18yE4N0UYg7kqjJYBp1g@mail.gmail.com>
+References: <CALCETrVG6uRysbXSbyPfKzG7uBHu9PX6SKvDbUQWG1TOfc04zQ@mail.gmail.com>
+ <CADnq5_NJLsF4MmcQVN7jDD6-ZjAobw0bf2ft2HWGid6GMcXWcA@mail.gmail.com>
+ <CALCETrVjHkdbe5N4iov-7dg6tGmuFsr70z2ASpX+=km=FMWe7Q@mail.gmail.com>
+ <CAErSpo4J-rEkr-xDojZNTShRxoimUsYcFwrY-K4K3sZ3rporRw@mail.gmail.com> <CALCETrVtfvBu0=2hofkSfh-ohrnUCS18yE4N0UYg7kqjJYBp1g@mail.gmail.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 24 Mar 2014 16:04:29 -0600
+Message-ID: <CAErSpo71-t_c1dh_B7-HJD45Yd_0WZr1pUK6cn4uOtPUiGQ7Jw@mail.gmail.com>
+Subject: Re: 3.14 radeon regression: radeon is broken (pci bug?)
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Alex Deucher <alexdeucher@gmail.com>,
+        DRI <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Maxime Coquelin (2014-03-21 07:09:26)
-> Hi Mike,
-> 
-> On 03/21/2014 02:45 AM, Mike Turquette wrote:
-> > Quoting Sylwester Nawrocki (2014-03-20 05:42:33)
-> >> Hi Maxime,
-> >>
-> >> On 06/03/14 14:45, Maxime Coquelin wrote:
-> >>> Hi Sylwester,
-> >>>
-> >>>        I like the principle of your implementation, but I have two questions:
-> >>>        1 - How can we manage PM with this solution, as the parent/rate will be
-> >>> set only once at probe time?
-> >>>        2 - How to set the parent of a parent clock (which can be shared with
-> >>> other devices)? Same question about the parent rates.
-> >>
-> >> Thanks for your feedback and apologies for late reply.
-> >>
-> >> IIUC your first concern is about a situation when clocks need to be
-> >> reconfigured upon each resume from system sleep or runtime PM resume ?
-> >> As I mentioned in v1 of the RFC I was considering having individual
-> >> drivers calling explicitly the clocks set up routine. Presumably this
-> >> would allow to resolve the power management related issue.
-> >> One example I'm aware the approach as in this RFC wouldn't work is
-> >> when a device in a SoC belongs to a power domain, which needs to be
-> >> first switched on before we can start setting up and the clocks'
-> >> configuration get lost after the power domain switch off.
-> >
-> > I like Sylwester's approach of handling this one-time setup in the
-> > driver core.
-> >
-> > Any kind of fine grained power management should not be hidden by DT,
-> > and by definition that logic belongs in the device driver. It can still
-> > be nicely abstracted away by runtime pm[1].
-> >
-> > Regards,
-> > Mike
-> >
-> > [1] Message-ID: <20140320114238.GQ7528@n2100.arm.linux.org.uk>
-> How can I access this reference?
+On Sat, Mar 22, 2014 at 9:18 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Fri, Mar 21, 2014 at 9:37 AM, Bjorn Helgaas <bhelgaas@google.com> wrote:
+>> On Fri, Mar 21, 2014 at 9:49 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>> On Fri, Mar 21, 2014 at 7:41 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>> On Thu, Mar 20, 2014 at 10:17 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>>>>> My system works on a 3.13 Fedora kernel.  It does not work on a
+>>>>> more-or-less identically configured 3.14-rc7+ kernel.  The symptom is
+>>>>> that the Plymouth password prompt flashes and them the screen goes
+>>>>> blank.  Hitting escape brings back the text console, and all is well
+>>>>> until X tries to start.  Then I get a blank screen.  killall -9 Xorg
+>>>>> from ssh causes these errors to be logged:
+>>>>>
+>>>>>
+>>>>> [  226.239747] [drm:atom_op_jump] *ERROR* atombios stuck in loop for
+>>>>> more than 5secs aborting
+>>>>> [  226.239751] [drm:atom_execute_table_locked] *ERROR* atombios stuck
+>>>>> executing CD34 (len 55, WS 0, PS 0) @ 0xCD57
+>>>>> [  231.241492] [drm:atom_op_jump] *ERROR* atombios stuck in loop for
+>>>>> more than 5secs aborting
+>>>>> [  231.241496] [drm:atom_execute_table_locked] *ERROR* atombios stuck
+>>>>> executing CD6C (len 62, WS 0, PS 0) @ 0xCD88
+>>>>> [  236.243111] [drm:atom_op_jump] *ERROR* atombios stuck in loop for
+>>>>> more than 5secs aborting
+>>>>> [  236.243115] [drm:atom_execute_table_locked] *ERROR* atombios stuck
+>>>>> executing CD6C (len 62, WS 0, PS 0) @ 0xCD88
+>>>>> [  241.244625] [drm:atom_op_jump] *ERROR* atombios stuck in loop for
+>>>>> more than 5secs aborting
+>>>>> [  241.244628] [drm:atom_execute_table_locked] *ERROR* atombios stuck
+>>>>> executing CD6C (len 62, WS 0, PS 0) @ 0xCD88
+>>>>>
+>>>>>
+>>>>> lspci -vvvxxxnn on 3.14-rc7+ says:
+>>>>>
+>>>>> 09:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc.
+>>>>> [AMD/ATI] Caicos [Radeon HD 6450/7450/8450 / R5 230 OEM] [1002:6779]
+>>>>> (rev ff) (prog-if ff)
+>>>>>     !!! Unknown header type 7f
+>>>>>     Kernel driver in use: radeon
+>>>>> 00: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 10: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 20: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 30: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>>
+>>>>> 09:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI]
+>>>>> Caicos HDMI Audio [Radeon HD 6400 Series] [1002:aa98] (rev ff)
+>>>>> (prog-if ff)
+>>>>>     !!! Unknown header type 7f
+>>>>>     Kernel driver in use: snd_hda_intel
+>>>>> 00: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 10: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 20: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>> 30: ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff ff
+>>>>>
+>>>>> (oops!)
+>>>>>
+>>>>> On 3.13, it says:
+>>>>>
+>>>>> 09:00.0 VGA compatible controller [0300]: Advanced Micro Devices, Inc.
+>>>>> [AMD/ATI] Caicos [Radeon HD 6450/7450/8450 / R5 230 OEM] [1002:6779]
+>>>>> (prog-if 00 [VGA controller])
+>>>>>         Subsystem: PC Partner Limited / Sapphire Technology Radeon HD
+>>>>> 6450 1 GB DDR3 [174b:e164]
+>>>>>         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+>>>>> ParErr- Stepping- SERR- FastB2B- DisINTx+
+>>>>>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>>>>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>>>>         Latency: 0, Cache Line Size: 64 bytes
+>>>>>         Interrupt: pin A routed to IRQ 92
+>>>>>         Region 0: Memory at e0000000 (64-bit, prefetchable) [size=256M]
+>>>>>         Region 2: Memory at f4a20000 (64-bit, non-prefetchable) [size=128K]
+>>>>>         Region 4: I/O ports at c000 [size=256]
+>>>>>         Expansion ROM at f4a00000 [disabled] [size=128K]
+>>>>>         Capabilities: <access denied>
+>>>>>         Kernel driver in use: radeon
+>>>>> 00: 02 10 79 67 07 04 10 00 00 00 00 03 10 00 80 00
+>>>>> 10: 0c 00 00 e0 00 00 00 00 04 00 a2 f4 00 00 00 00
+>>>>> 20: 01 c0 00 00 00 00 00 00 00 00 00 00 4b 17 64 e1
+>>>>> 30: 00 00 a0 f4 50 00 00 00 00 00 00 00 0a 01 00 00
+>>>>>
+>>>>> 09:00.1 Audio device [0403]: Advanced Micro Devices, Inc. [AMD/ATI]
+>>>>> Caicos HDMI Audio [Radeon HD 6400 Series] [1002:aa98]
+>>>>>         Subsystem: PC Partner Limited / Sapphire Technology Radeon HD
+>>>>> 6450 1GB DDR3 [174b:aa98]
+>>>>>         Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+>>>>> ParErr- Stepping- SERR- FastB2B- DisINTx+
+>>>>>         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort-
+>>>>> <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>>>>         Latency: 0, Cache Line Size: 64 bytes
+>>>>>         Interrupt: pin B routed to IRQ 96
+>>>>>         Region 0: Memory at f4a40000 (64-bit, non-prefetchable) [size=16K]
+>>>>>         Capabilities: <access denied>
+>>>>>         Kernel driver in use: snd_hda_intel
+>>>>> 00: 02 10 98 aa 06 04 10 00 00 00 03 04 10 00 80 00
+>>>>> 10: 04 00 a4 f4 00 00 00 00 00 00 00 00 00 00 00 00
+>>>>> 20: 00 00 00 00 00 00 00 00 00 00 00 00 4b 17 98 aa
+>>>>> 30: 00 00 00 00 50 00 00 00 00 00 00 00 05 02 00 00
+>>>>>
+>>>>> Logs attached.
+>>
+>> Hi Andy,
+>>
+>> I'm really sorry that you tripped over this, but thanks a lot for the
+>> report.  Is there any chance the box is currently running v3.13, and
+>> you could collect the dmesg log from it?  I don't see anything unusual
+>> from a PCI perspective in the v3.14-rc7 dmesg; all the PCI device
+>> resources look fine, and we didn't reassign anything.  It seems like
+>> the 0000:09:00.x devices just stopped responding for some reason, and
+>> the PCI core shouldn't really be involved after the radeon driver
+>> claims and enables those devices.  But it's possible I'd get a clue by
+>> comparing the v3.13 and v3.14-rc7 dmesg logs.
+>
+> Attached.  I also clearly screwed something up about my 3.14 config --
+> I meant for it to match the Fedora config, but it doesn't.  At least
+> NR_CPUs is too low.  That shoudn't break radeon, but maybe something
+> odd happens.
+>
+> 3.14 also complains that it can't find an AGP bridge.  3.13 does not
+> complain about that.
 
-I was trying to provide a reference to this thread which is tangentially
-related to this topic:
+CONFIG_GART_IOMMU is not defined for the 3.13.6-200.rc20.x86_64
+kernel, but apparently it is for your v3.14-rc7 kernel.  That explains
+the "No AGP bridge found" difference.
 
-http://www.spinics.net/lists/arm-kernel/msg317016.html
+I'm afraid I still can't shed any light on the problem with the radeon device.
 
-But it hadn't hit any of the mail archives at the time of my writing so
-I just copied Russell's Message-ID from his email. If you have a copy of
-that email then you can search on Message-ID's for that and you will
-find it. :-)
-
-Regards,
-Mike
-
-> 
-> Thanks,
-> Maxime
-> 
-> >
-> >>
-> >> OTOH I suspect devices for which one-time clocks setup is sufficient
-> >> will be quite common. And for these there would need to be a single
-> >> call to the setup routine in probe() I guess, since it wouldn't be
-> >> possible to figure out just from the DT data when the actual call
-> >> should be made.
-> >>
-> >> For a global clocks configuration, I thought about specifying that
-> >> in the clocks controller node, and then to have the setup routine
-> >> called e.g. from of_clk_init(). I think that could work well enough,
-> >> together with the patch [1], adding clock dependencies handling.
-> >> But then the clock frequency set up function would need to be
-> >> modified to respect the clock parent relationships, similarly as
-> >> in patch series [2]. A just noticed [2] recently, after posting
-> >> this RFC (adding Tero at Cc).
-> >>
-> >> --
-> >> Regards,
-> >> Sylwester
-> >>
-> >> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
-> >> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
+Bjorn
