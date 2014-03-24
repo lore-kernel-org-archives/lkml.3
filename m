@@ -1,69 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751860AbaCXBk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 21:40:57 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50694 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751811AbaCXBky (ORCPT
+	id S1751677AbaCXBkb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 21:40:31 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:60629 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbaCXBk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 21:40:54 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Thomas Gleixner <tglx@linutronix.de>, dirk.brandewie@gmail.com,
-        dirk.j.brandewie@intel.com
-Cc: LKML <linux-kernel@vger.kernel.org>, Julia Lawall <Julia.Lawall@lip6.fr>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        cpufreq <cpufreq@vger.kernel.org>, pm <linux-pm@vger.kernel.org>
-Subject: Re: [patch 15/16] cpufreq: intel-pstate: Use del_timer_sync in intel_pstate_cpu_exit()
-Date: Mon, 24 Mar 2014 02:56:30 +0100
-Message-ID: <2311758.L3eN8OTkba@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140323150754.272874059@linutronix.de>
-References: <20140323150557.288925975@linutronix.de> <20140323150754.272874059@linutronix.de>
+	Sun, 23 Mar 2014 21:40:26 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2O1dvWh021147, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <chris@printf.net>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
+        Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 2/2] mmc: rtsx: modify error handle and remove smatch warnings
+Date: Mon, 24 Mar 2014 09:43:28 +0800
+Message-ID: <370ba2995ab57326581bb1a0de5502d729e7d4c1.1395624930.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <cover.1395624929.git.micky_ching@realsil.com.cn>
+References: <cover.1395624929.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, March 23, 2014 03:09:32 PM Thomas Gleixner wrote:
-> We are about to free the data structure. Make sure no timer callback
-> is running. I might be paranoid, but the ->exit callback can be
-> invoked from so many places, that it is not entirely clear whether
-> del_timer is always called on the cpu on which it is enqueued.
-> 
-> While looking through the call sites I noticed, that
-> cpufreq_init_policy() can fail and invoke cpufreq_driver->exit() but
-> it does not return the failure and the callsite happily proceeds.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: cpufreq <cpufreq@vger.kernel.org>
-> Cc: pm <linux-pm@vger.kernel.org>
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-Dirk?
+Using non-DMA dump-regs, which would be more exactly for DMA transfer failed.
 
-> ---
-> 
->  drivers/cpufreq/intel_pstate.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> Index: tip/drivers/cpufreq/intel_pstate.c
-> ===================================================================
-> --- tip.orig/drivers/cpufreq/intel_pstate.c
-> +++ tip/drivers/cpufreq/intel_pstate.c
-> @@ -777,7 +777,7 @@ static int intel_pstate_cpu_exit(struct
->  {
->  	int cpu = policy->cpu;
->  
-> -	del_timer(&all_cpu_data[cpu]->timer);
-> +	del_timer_sync(&all_cpu_data[cpu]->timer);
->  	kfree(all_cpu_data[cpu]);
->  	all_cpu_data[cpu] = NULL;
->  	return 0;
-> 
-> 
+More careful handle when cmd/data timeout, add stop(CMD12) cmd before go to
+finish request when multi-rw timeout.
 
+Remove some static checher warings.
+on commit: <mmc: rtsx: add support for pre_req and post_req>
+drivers/mmc/host/rtsx_pci_sdmmc.c:194 sd_finish_request()
+error: we previously assumed 'mrq' could be null (see line 158)
+drivers/mmc/host/rtsx_pci_sdmmc.c:504 sd_get_rsp()
+error: we previously assumed 'cmd' could be null (see line 434)
+drivers/mmc/host/rtsx_pci_sdmmc.c:525 sd_pre_dma_transfer()
+warn: we tested 'next' before and it was 'false'
+
+Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+---
+ drivers/mmc/host/rtsx_pci_sdmmc.c |  118 ++++++++++++++++++++-----------------
+ 1 file changed, 64 insertions(+), 54 deletions(-)
+
+diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+index 0d8904a..d00a94e 100644
+--- a/drivers/mmc/host/rtsx_pci_sdmmc.c
++++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+@@ -81,25 +81,23 @@ static inline void sd_clear_error(struct realtek_pci_sdmmc *host)
+ }
+ 
+ #ifdef DEBUG
++static inline void sd_print_reg(struct realtek_pci_sdmmc *host, u16 reg)
++{
++	u8 val;
++	if (rtsx_pci_read_register(host->pcr, reg, &val) < 0)
++		dev_dbg(sdmmc_dev(host), "read 0x%04x failed\n", reg);
++	else
++		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", reg, val);
++}
++
+ static void sd_print_debug_regs(struct realtek_pci_sdmmc *host)
+ {
+-	struct rtsx_pcr *pcr = host->pcr;
+ 	u16 i;
+-	u8 *ptr;
+-
+-	/* Print SD host internal registers */
+-	rtsx_pci_init_cmd(pcr);
+-	for (i = 0xFDA0; i <= 0xFDAE; i++)
+-		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+-	for (i = 0xFD52; i <= 0xFD69; i++)
+-		rtsx_pci_add_cmd(pcr, READ_REG_CMD, i, 0, 0);
+-	rtsx_pci_send_cmd(pcr, 100);
+ 
+-	ptr = rtsx_pci_get_cmd_data(pcr);
+ 	for (i = 0xFDA0; i <= 0xFDAE; i++)
+-		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
++		sd_print_reg(host, i);
+ 	for (i = 0xFD52; i <= 0xFD69; i++)
+-		dev_dbg(sdmmc_dev(host), "0x%04X: 0x%02x\n", i, *(ptr++));
++		sd_print_reg(host, i);
+ }
+ #else
+ #define sd_print_debug_regs(host)
+@@ -125,19 +123,27 @@ static void sd_request_timeout(unsigned long host_addr)
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	if (!host->mrq) {
+-		dev_err(sdmmc_dev(host), "error: no request exist\n");
+-		goto out;
++		dev_err(sdmmc_dev(host), "error: request not exist\n");
++		spin_unlock_irqrestore(&host->lock, flags);
++		return;
+ 	}
+ 
+-	if (host->cmd)
++	if (host->cmd && host->data)
++		dev_err(sdmmc_dev(host), "error: cmd and data conflict\n");
++
++	if (host->cmd) {
+ 		host->cmd->error = -ETIMEDOUT;
+-	if (host->data)
+-		host->data->error = -ETIMEDOUT;
++		dev_dbg(sdmmc_dev(host), "timeout for cmd %d\n",
++			host->cmd->opcode);
++		tasklet_schedule(&host->cmd_tasklet);
++	}
+ 
+-	dev_dbg(sdmmc_dev(host), "timeout for request\n");
++	if (host->data) {
++		host->data->error = -ETIMEDOUT;
++		dev_dbg(sdmmc_dev(host), "timeout for data transfer\n");
++		tasklet_schedule(&host->data_tasklet);
++	}
+ 
+-out:
+-	tasklet_schedule(&host->finish_tasklet);
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
+@@ -157,7 +163,8 @@ static void sd_finish_request(unsigned long host_addr)
+ 	mrq = host->mrq;
+ 	if (!mrq) {
+ 		dev_err(sdmmc_dev(host), "error: no request need finish\n");
+-		goto out;
++		spin_unlock_irqrestore(&host->lock, flags);
++		return;
+ 	}
+ 
+ 	cmd = mrq->cmd;
+@@ -167,11 +174,6 @@ static void sd_finish_request(unsigned long host_addr)
+ 		(mrq->stop && mrq->stop->error) ||
+ 		(cmd && cmd->error) || (data && data->error);
+ 
+-	if (any_error) {
+-		rtsx_pci_stop_cmd(pcr);
+-		sd_clear_error(host);
+-	}
+-
+ 	if (data) {
+ 		if (any_error)
+ 			data->bytes_xfered = 0;
+@@ -188,7 +190,6 @@ static void sd_finish_request(unsigned long host_addr)
+ 	host->cmd = NULL;
+ 	host->data = NULL;
+ 
+-out:
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ 	mutex_unlock(&pcr->pcr_mutex);
+ 	mmc_request_done(host->mmc, mrq);
+@@ -373,8 +374,11 @@ static void sd_send_cmd(struct realtek_pci_sdmmc *host, struct mmc_command *cmd)
+ 	if (cmd->opcode == SD_SWITCH_VOLTAGE) {
+ 		err = rtsx_pci_write_register(pcr, SD_BUS_STAT,
+ 				0xFF, SD_CLK_TOGGLE_EN);
+-		if (err < 0)
++		if (err < 0) {
++			rtsx_pci_write_register(pcr, SD_BUS_STAT,
++				SD_CLK_TOGGLE_EN | SD_CLK_FORCE_STOP, 0);
+ 			goto out;
++		}
+ 	}
+ 
+ 	rtsx_pci_init_cmd(pcr);
+@@ -436,7 +440,8 @@ static void sd_get_rsp(unsigned long host_addr)
+ 
+ 	if (!cmd) {
+ 		dev_err(sdmmc_dev(host), "error: cmd not exist\n");
+-		goto out;
++		spin_unlock_irqrestore(&host->lock, flags);
++		return;
+ 	}
+ 
+ 	spin_lock(&pcr->lock);
+@@ -446,16 +451,18 @@ static void sd_get_rsp(unsigned long host_addr)
+ 		err = -EINVAL;
+ 	spin_unlock(&pcr->lock);
+ 
+-	if (err < 0)
++	if (err < 0) {
++		rtsx_pci_stop_cmd(host->pcr);
++		sd_print_debug_regs(host);
++		sd_clear_error(host);
+ 		goto out;
++	}
+ 
+ 	rsp_type = host->rsp_type;
+ 	stat_idx = host->rsp_len;
+ 
+-	if (rsp_type == SD_RSP_TYPE_R0) {
+-		err = 0;
++	if (rsp_type == SD_RSP_TYPE_R0)
+ 		goto out;
+-	}
+ 
+ 	/* Eliminate returned value of CHECK_REG_CMD */
+ 	ptr = rtsx_pci_get_cmd_data(pcr) + 1;
+@@ -498,14 +505,19 @@ static void sd_get_rsp(unsigned long host_addr)
+ 		goto out;
+ 
+ 	if (cmd->data) {
+-		sd_start_multi_rw(host, host->mrq);
++		err = sd_start_multi_rw(host, host->mrq);
++		if (err) {
++			cmd->data->error = err;
++			dev_err(sdmmc_dev(host),
++				"error: start data transfer failed\n");
++			tasklet_schedule(&host->data_tasklet);
++		}
+ 		spin_unlock_irqrestore(&host->lock, flags);
+ 		return;
+ 	}
+ 
+ out:
+ 	cmd->error = err;
+-
+ 	tasklet_schedule(&host->finish_tasklet);
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+@@ -525,7 +537,7 @@ static int sd_pre_dma_transfer(struct realtek_pci_sdmmc *host,
+ 		data->host_cookie = 0;
+ 	}
+ 
+-	if (next || (!next && data->host_cookie != host->next_data.cookie))
++	if (next || data->host_cookie != host->next_data.cookie)
+ 		sg_count = rtsx_pci_dma_map_sg(pcr,
+ 				data->sg, data->sg_len, read);
+ 	else
+@@ -580,7 +592,6 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
+ 	int uhs = mmc_card_uhs(card);
+ 	int read = data->flags & MMC_DATA_READ;
+ 	u8 cfg2, trans_mode;
+-	int err;
+ 	size_t data_len = data->blksz * data->blocks;
+ 
+ 	if (host->data)
+@@ -641,12 +652,7 @@ static int sd_start_multi_rw(struct realtek_pci_sdmmc *host,
+ 	mod_timer(&host->timer, jiffies + 10 * HZ);
+ 	rtsx_pci_send_cmd_no_wait(pcr);
+ 
+-	err = rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
+-	if (err < 0) {
+-		data->error = err;
+-		tasklet_schedule(&host->finish_tasklet);
+-	}
+-	return 0;
++	return rtsx_pci_dma_transfer(pcr, data->sg, host->sg_count, read);
+ }
+ 
+ static void sd_finish_multi_rw(unsigned long host_addr)
+@@ -660,8 +666,9 @@ static void sd_finish_multi_rw(unsigned long host_addr)
+ 	spin_lock_irqsave(&host->lock, flags);
+ 
+ 	if (!host->data) {
+-		dev_err(sdmmc_dev(host), "error: no data exist\n");
+-		goto out;
++		dev_err(sdmmc_dev(host), "error: data not exist\n");
++		spin_unlock_irqrestore(&host->lock, flags);
++		return;
+ 	}
+ 
+ 	data = host->data;
+@@ -672,19 +679,22 @@ static void sd_finish_multi_rw(unsigned long host_addr)
+ 	else if (pcr->trans_result != TRANS_RESULT_OK)
+ 		err = -EINVAL;
+ 
+-	if (err < 0) {
++	if (err < 0)
+ 		data->error = err;
+-		goto out;
++
++	if (data->error) {
++		rtsx_pci_stop_cmd(host->pcr);
++		sd_print_debug_regs(host);
++		sd_clear_error(host);
++		dev_dbg(sdmmc_dev(host), "data transfer failed %d\n",
++			data->error);
+ 	}
+ 
+-	if (!host->mrq->sbc && data->stop) {
++	if (!host->mrq->sbc && data->stop)
+ 		sd_send_cmd(host, data->stop);
+-		spin_unlock_irqrestore(&host->lock, flags);
+-		return;
+-	}
++	else
++		tasklet_schedule(&host->finish_tasklet);
+ 
+-out:
+-	tasklet_schedule(&host->finish_tasklet);
+ 	spin_unlock_irqrestore(&host->lock, flags);
+ }
+ 
 -- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+1.7.9.5
+
