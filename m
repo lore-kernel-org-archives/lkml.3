@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361AbaCXONq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 10:13:46 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:52074 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750984AbaCXONo (ORCPT
+	id S1753394AbaCXON6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 10:13:58 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:41832 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaCXONz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 10:13:44 -0400
-Message-ID: <1395670422.12610.34.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: RE: [RFC] csum experts, csum_replace2() is too expensive
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Laight <David.Laight@ACULAB.COM>
-Cc: David Miller <davem@davemloft.net>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "kaber@trash.net" <kaber@trash.net>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>,
-        "hkchu@google.com" <hkchu@google.com>,
-        "mwdalton@google.com" <mwdalton@google.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 Mar 2014 07:13:42 -0700
-In-Reply-To: <1395667063.12610.24.camel@edumazet-glaptop2.roam.corp.google.com>
-References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
-	 <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140321.145229.1026128975151125729.davem@davemloft.net>
-	 <1395629410.9117.46.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <063D6719AE5E284EB5DD2968C1650D6D0F6E77A4@AcuExch.aculab.com>
-	 <1395667063.12610.24.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Mon, 24 Mar 2014 10:13:55 -0400
+MIME-Version: 1.0
+Date: Mon, 24 Mar 2014 15:13:54 +0100
+Message-ID: <CAMEA=P1AaDL94S8kaep-F012WAseimAyB7ME11Qzd0UMbp-BGg@mail.gmail.com>
+Subject: [PATCH: 3.11] usb_8dev: Fix memory leak in usb_8dev_start_xmit
+From: Bjorn Van Tilt <bjorn.vantilt@gmail.com>
+To: krumboeck@universalnet.at, wg@grandegger.com, mkl@pengutronix.de,
+        linux-can@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-24 at 06:17 -0700, Eric Dumazet wrote:
-> On Mon, 2014-03-24 at 10:30 +0000, David Laight wrote:
+Fixed a memory leak when an error occurred in the transmit function.
+In the error handling the urb wasn't freed before returning. There was
+also a call to the usb_unanchor_urb() function but the urb wasn't
+anchored.
 
-> > ip_fast_csum() either needs an explicit "m" constraint for the actual
-> > buffer (and target) bytes, or the stronger "memory" constraint.
-> > The 'volatile' is then not needed.
+Signed-off-by: Bjorn Van Tilt <bjorn.vantilt@gmail.com>
 
-I am testing the following :
+---
+--- drivers/net/can/usb/usb_8dev.c.orig 2014-03-24 13:40:45.000000000 +0100
++++ drivers/net/can/usb/usb_8dev.c 2014-03-24 13:44:32.076086036 +0100
+@@ -698,8 +698,8 @@ static netdev_tx_t usb_8dev_start_xmit(s
+  return NETDEV_TX_OK;
 
-diff --git a/arch/x86/include/asm/checksum_64.h b/arch/x86/include/asm/checksum_64.h
-index e6fd8a026c7b..89d7fa8837b5 100644
---- a/arch/x86/include/asm/checksum_64.h
-+++ b/arch/x86/include/asm/checksum_64.h
-@@ -45,6 +45,9 @@ static inline __sum16 csum_fold(__wsum sum)
- static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
- {
- 	unsigned int sum;
-+	struct full_ip_header {
-+		unsigned int w[ihl];
-+	};
- 
- 	asm("  movl (%1), %0\n"
- 	    "  subl $4, %2\n"
-@@ -67,8 +70,9 @@ static inline __sum16 ip_fast_csum(const void *iph, unsigned int ihl)
- 	   are modified, we must also specify them as outputs, or gcc
- 	   will assume they contain their original values. */
- 	    : "=r" (sum), "=r" (iph), "=r" (ihl)
--	    : "1" (iph), "2" (ihl)
--	    : "memory");
-+	    : "1" (iph), "2" (ihl),
-+	      "m" (*(struct full_ip_header *) iph)
-+	);
- 	return (__force __sum16)sum;
- }
- 
+ nofreecontext:
+- usb_unanchor_urb(urb);
+  usb_free_coherent(priv->udev, size, buf, urb->transfer_dma);
++ usb_free_urb(urb);
 
-
+  netdev_warn(netdev, "couldn't find free context");
