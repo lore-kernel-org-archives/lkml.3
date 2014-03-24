@@ -1,92 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943AbaCXBnJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 Mar 2014 21:43:09 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:46048 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaCXBnF (ORCPT
+	id S1751684AbaCXBpX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 Mar 2014 21:45:23 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:49797 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750881AbaCXBpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 Mar 2014 21:43:05 -0400
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Chris Ball <chris@printf.net>
-Cc: Ulf Hansson <ulf.hansson@linaro.org>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Andrew Bresticker <abrestic@chromium.org>
-Subject: [PATCH V2] mmc: sdhci: don't read cd-gpio while holding spinlock
-Date: Sun, 23 Mar 2014 18:43:00 -0700
-Message-Id: <1395625380-12507-1-git-send-email-abrestic@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1395341232-14490-1-git-send-email-abrestic@chromium.org>
-References: <1395341232-14490-1-git-send-email-abrestic@chromium.org>
+	Sun, 23 Mar 2014 21:45:19 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bhelgaas@google.com, matthew.garrett@nebula.com,
+        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
+Subject: Re: [PATCH V4 07/11] ACPI: use platform bus as the default bus for _HID enumeration
+Date: Mon, 24 Mar 2014 03:00:56 +0100
+Message-ID: <28494711.6ccuzjUcKA@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1395042580-3344-8-git-send-email-rui.zhang@intel.com>
+References: <1395042580-3344-1-git-send-email-rui.zhang@intel.com> <1395042580-3344-8-git-send-email-rui.zhang@intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-sdhci_request() and sdhci_card_event() read the cd-gpio via
-mmc_gpio_get_cd(), which can sleep, while holding host->lock.
-This may result in the following BUG:
+On Monday, March 17, 2014 03:49:36 PM Zhang Rui wrote:
+> Because of the growing demand for enumerating ACPI devices to platform bus,
+> this patch changes the code to enumerate ACPI devices with _HID to
+> platform bus by default, unless the device already has a scan handler attached.
 
-  BUG: spinlock wrong CPU on CPU#2, kworker/u8:16/4296
-  lock: 0xea6b9c80, .magic: dead4ead, .owner: kworker/u8:16/4296, .owner_cpu: 0
-  CPU: 2 PID: 4296 Comm: kworker/u8:16 Tainted: G         C   3.10.18 #137
-  Workqueue: kmmcd mmc_rescan
-  [<8020cf8c>] (unwind_backtrace+0x0/0x118) from [<8020a0c8>] (show_stack+0x20/0x24)
-  [<8020a0c8>] (show_stack+0x20/0x24) from [<8075e5b8>] (dump_stack+0x20/0x28)
-  [<8075e5b8>] (dump_stack+0x20/0x28) from [<804184a8>] (spin_dump+0x80/0x94)
-  [<804184a8>] (spin_dump+0x80/0x94) from [<804184e8>] (spin_bug+0x2c/0x30)
-  [<804184e8>] (spin_bug+0x2c/0x30) from [<80418790>] (do_raw_spin_unlock+0x94/0xd4)
-  [<80418790>] (do_raw_spin_unlock+0x94/0xd4) from [<80761a44>] (_raw_spin_unlock_irqrestore+0x1c/0x24)
-  [<80761a44>] (_raw_spin_unlock_irqrestore+0x1c/0x24) from [<805ff66c>] (sdhci_request+0x1c8/0x1d0)
-  [<805ff66c>] (sdhci_request+0x1c8/0x1d0) from [<805ebb5c>] (mmc_start_request+0xec/0xf4)
-  [<805ebb5c>] (mmc_start_request+0xec/0xf4) from [<805ebcbc>] (mmc_wait_for_req+0x80/0xf4)
-  ...
+I think we need to be more careful here still.
 
-Read the cd-gpio before acquiring the spinlock instead.
+For example, we shouldn't create platform devices for ACPI device objects that
+correspond to I2C devices (or any other "simple peripheral bus" devices for that
+matter).
 
-Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
----
- drivers/mmc/host/sdhci.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+> Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+> ---
+>  drivers/acpi/acpi_platform.c |   28 ----------------------------
+>  drivers/acpi/scan.c          |   12 ++++++------
+>  2 files changed, 6 insertions(+), 34 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_platform.c b/drivers/acpi/acpi_platform.c
+> index dbfe49e..33376a9 100644
+> --- a/drivers/acpi/acpi_platform.c
+> +++ b/drivers/acpi/acpi_platform.c
+> @@ -22,24 +22,6 @@
+>  
+>  ACPI_MODULE_NAME("platform");
+>  
+> -/*
+> - * The following ACPI IDs are known to be suitable for representing as
+> - * platform devices.
+> - */
+> -static const struct acpi_device_id acpi_platform_device_ids[] = {
+> -
+> -	{ "PNP0D40" },
+> -	{ "ACPI0003" },
+> -	{ "VPC2004" },
+> -	{ "BCM4752" },
+> -
+> -	/* Intel Smart Sound Technology */
+> -	{ "INT33C8" },
+> -	{ "80860F28" },
+> -
+> -	{ }
+> -};
+> -
+>  /**
+>   * acpi_create_platform_device - Create platform device for ACPI device node
+>   * @adev: ACPI device node to create a platform device for.
+> @@ -125,13 +107,3 @@ int acpi_create_platform_device(struct acpi_device *adev,
+>  	kfree(resources);
+>  	return 1;
+>  }
+> -
+> -static struct acpi_scan_handler platform_handler = {
+> -	.ids = acpi_platform_device_ids,
+> -	.attach = acpi_create_platform_device,
+> -};
+> -
+> -void __init acpi_platform_init(void)
+> -{
+> -	acpi_scan_add_handler(&platform_handler);
+> -}
+> diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
+> index e41b5e6..c0456e7 100644
+> --- a/drivers/acpi/scan.c
+> +++ b/drivers/acpi/scan.c
+> @@ -2028,14 +2028,15 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
+>  		handler = acpi_scan_match_handler(hwid->id, &devid);
+>  		if (handler) {
+>  			ret = handler->attach(device, devid);
+> -			if (ret > 0) {
+> +			if (ret > 0)
+>  				device->handler = handler;
+> -				break;
+> -			} else if (ret < 0) {
+> -				break;
+> -			}
+> +			if (ret)
+> +				goto end;
+>  		}
+>  	}
+> +end:
+> +	if (device->pnp.type.platform_id && !device->handler)
+> +		acpi_create_platform_device(device, NULL);
+>  	return ret;
+>  }
+>  
+> @@ -2191,7 +2192,6 @@ int __init acpi_scan_init(void)
+>  	acpi_pci_root_init();
+>  	acpi_pci_link_init();
+>  	acpi_processor_init();
+> -	acpi_platform_init();
+>  	acpi_lpss_init();
+>  	acpi_cmos_rtc_init();
+>  	acpi_container_init();
+> 
 
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 04a5e25..328b250 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1340,6 +1340,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	u32 tuning_opcode;
- 
- 	host = mmc_priv(mmc);
-+	present = mmc_gpio_get_cd(host->mmc);
- 
- 	sdhci_runtime_pm_get(host);
- 
-@@ -1371,7 +1372,6 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 	 *     zero: cd-gpio is used, and card is removed
- 	 *     one: cd-gpio is used, and card is present
- 	 */
--	present = mmc_gpio_get_cd(host->mmc);
- 	if (present < 0) {
- 		/* If polling, assume that the card is always present. */
- 		if (host->quirks & SDHCI_QUIRK_BROKEN_CARD_DETECTION)
-@@ -2082,15 +2082,16 @@ static void sdhci_card_event(struct mmc_host *mmc)
- {
- 	struct sdhci_host *host = mmc_priv(mmc);
- 	unsigned long flags;
-+	int present;
- 
- 	/* First check if client has provided their own card event */
- 	if (host->ops->card_event)
- 		host->ops->card_event(host);
- 
-+	present = sdhci_get_cd(mmc);
- 	spin_lock_irqsave(&host->lock, flags);
- 
--	/* Check host->mrq first in case we are runtime suspended */
--	if (host->mrq && !sdhci_do_get_cd(host)) {
-+	if (host->mrq && !present) {
- 		pr_err("%s: Card removed during transfer!\n",
- 			mmc_hostname(host->mmc));
- 		pr_err("%s: Resetting controller.\n",
 -- 
-1.9.1.423.g4596e3a
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
