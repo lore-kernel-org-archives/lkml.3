@@ -1,55 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbaCXIdZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:33:25 -0400
-Received: from mail-oa0-f49.google.com ([209.85.219.49]:48431 "EHLO
-	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752093AbaCXIdV (ORCPT
+	id S1752501AbaCXIcB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:32:01 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:59551 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414AbaCXIb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:33:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140324092112.74f930d3@amdc2363>
-References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
-	<20140324092112.74f930d3@amdc2363>
-Date: Mon, 24 Mar 2014 14:03:20 +0530
-Message-ID: <CAKohpom95rVO4AP6spzHWp3Oy6Lxmm3OnJte6d-E+vrdDQ2UUg@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Lukasz Majewski <l.majewski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 24 Mar 2014 04:31:58 -0400
+From: Boris BREZILLON <brezillonboris@gmail.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: [PATCH v2 04/11] clk: at91: add slow clk documentation
+Date: Mon, 24 Mar 2014 09:27:16 +0100
+Message-Id: <1395649643-9146-5-git-send-email-b.brezillon.dev@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com>
+References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 March 2014 13:51, Lukasz Majewski <l.majewski@samsung.com> wrote:
-> I think that a name of the patchset, for which the current setting
-> causes problem would be welcome here.
+Add slow clk, and slow oscillators documentation.
 
-I couldn't find a lkml link to the exact message earlier, but it was discussed
-here:
+Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+---
+ .../devicetree/bindings/clock/at91-clock.txt       |   72 ++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
-https://patchwork.kernel.org/patch/3865481/
+diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+index 9a7025b..820061c 100644
+--- a/Documentation/devicetree/bindings/clock/at91-clock.txt
++++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+@@ -6,6 +6,16 @@ This binding uses the common clock binding[1].
+ 
+ Required properties:
+ - compatible : shall be one of the following:
++	"atmel,at91sam9x5-sckc":
++		at91 SCKC (Slow Clock Controller)
++		This node contains the slow clock definitions.
++
++	"atmel,at91sam9x5-clk-slow-osc":
++		at91 slow oscillator
++
++	"atmel,at91sam9x5-clk-slow-rc-osc":
++		at91 internal slow RC oscillator
++
+ 	"atmel,at91rm9200-pmc" or
+ 	"atmel,at91sam9g45-pmc" or
+ 	"atmel,at91sam9n12-pmc" or
+@@ -15,6 +25,11 @@ Required properties:
+ 		All at91 specific clocks (clocks defined below) must be child
+ 		node of the PMC node.
+ 
++	"atmel,at91sam9x5-clk-slow" (under sckc node)
++	or
++	"atmel,at91sam9260-clk-slow" (under pmc node):
++		at91 slow clk
++
+ 	"atmel,at91rm9200-clk-main-osc"
+ 	"atmel,at91sam9x5-clk-main-rc-osc"
+ 		at91 main clk sources
+@@ -59,6 +74,63 @@ Required properties:
+ 	"atmel,at91sam9x5-clk-utmi":
+ 		at91 utmi clock
+ 
++Required properties for SCKC node:
++- reg : defines the IO memory reserved for the SCKC.
++- #size-cells : shall be 0 (reg is used to encode clk id).
++- #address-cells : shall be 1 (reg is used to encode clk id).
++
++
++For example:
++	ckc: sckc@fffffe50 {
++		compatible = "atmel,sama5d3-pmc";
++		reg = <0xfffffe50 0x4>
++		#size-cells = <0>;
++		#address-cells = <1>;
++
++		/* put at91 slow clocks here */
++	};
++
++
++Required properties for internal slow RC oscillator:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clock-frequency : define the internal RC oscillator frequency.
++
++Optional properties:
++- clock-accuracy : define the internal RC oscillator accuracy.
++
++For example:
++	slow_rc_osc: slow_rc_osc {
++		compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
++		clock-frequency = <32768>;
++		clock-accuracy = <50000000>;
++	};
++
++Required properties for slow oscillator:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall encode the main osc source clk sources (see atmel datasheet).
++
++Optional properties:
++- atmel,osc-bypass : boolean property. Set this when a clock signal is directly
++  provided on XIN.
++
++For example:
++	slow_osc: slow_osc {
++		compatible = "atmel,at91rm9200-clk-slow-osc";
++		#clock-cells = <0>;
++		clocks = <&slow_xtal>;
++	};
++
++Required properties for slow clock:
++- #clock-cells : from common clock binding; shall be set to 0.
++- clocks : shall encode the slow clk sources (see atmel datasheet).
++
++For example:
++	clk32k: slck {
++		compatible = "atmel,at91sam9x5-clk-slow";
++		#clock-cells = <0>;
++		clocks = <&slow_rc_osc &slow_osc>;
++	};
++
+ Required properties for PMC node:
+ - reg : defines the IO memory reserved for the PMC.
+ - #size-cells : shall be 0 (reg is used to encode clk id).
+-- 
+1.7.9.5
 
-> Otherwise, I can only ask why it is not possible to add
-> #define SPECIAL_SETTING ~3 ?
-
-Driver wants to use this field for +ve and -ve values and it should be free
-to do so.... And ~2 was creating problems when he used -3 for this field..
-If we make it ~3, then he will face problem for -4..
-
-So, I used a special value 0xABABABAB here whose integer value is:
--1414812757
-
-The only other option we have is to add another field "bool boost" in
-cpufreq_frequency_table, which is the last thing I wanted to do.
-
-And that's the point Gautham was trying to make in one of our IRC
-chats as well..
