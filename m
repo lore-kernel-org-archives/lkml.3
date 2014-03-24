@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaCXSBL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 14:01:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22955 "EHLO mx1.redhat.com"
+	id S1753807AbaCXSBu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 14:01:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7597 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753275AbaCXSBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 14:01:10 -0400
-Date: Mon, 24 Mar 2014 18:58:31 +0100
+	id S1753554AbaCXSBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 14:01:48 -0400
+Date: Mon, 24 Mar 2014 18:59:32 +0100
 From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
 To: Paolo Bonzini <pbonzini@redhat.com>
 Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, gleb@kernel.org,
         mtosatti@redhat.com, alex.williamson@redhat.com,
         jan.kiszka@siemens.com
-Subject: Re: [PATCH v2 4/4] KVM: ioapic: reinject pending interrupts on
- KVM_SET_IRQCHIP
-Message-ID: <20140324175830.GA8721@potion.brq.redhat.com>
+Subject: Re: [PATCH v2 0/4] KVM: cleanup ioapic and fix KVM_SET_IRQCHIP with
+ irr != 0
+Message-ID: <20140324175932.GA9199@potion.brq.redhat.com>
 References: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
- <1395394081-16252-5-git-send-email-pbonzini@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1395394081-16252-5-git-send-email-pbonzini@redhat.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395394081-16252-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-21 10:28+0100, Paolo Bonzini:
-> After the previous patches, an interrupt whose bit is set in the IRR
-> register will never be in the LAPIC's IRR and has never been injected
-> on the migration source.  So inject it on the destination.
+2014-03-21 10:27+0100, Paolo Bonzini:
+> Unlike the old qemu-kvm, which really never did that, with new QEMU
+> it is for some reason somewhat likely to migrate a VM with a nonzero
+> IRR in the ioapic.  In the case of ISA edge-triggered interrupts,
+> this represents an interrupt that has not left the IOAPIC, which would
+> be okay but it is not handled right by KVM_SET_IRQCHIP.  Because the
+> interrupt is never injected, the guest never acknowledges it, the host
+> never deasserts the pin and new interrupts are dropped.
 > 
-> This fixes migration of Windows guests without HPET (they use the RTC
-> to trigger the scheduler tick, and lose it after migration).
+> There are two problems to solve.
 > 
-> Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-> ---
-> 	v1->v2:
-> 	use IOAPIC_NUM_PINS as a limit to for_each_set_bit
-> 	remove debug printk
+> The obvious one is that interrupts are not reinjected upon KVM_SET_IRQCHIP,
+> which is taken care of by patches 3-4.
 > 
->  virt/kvm/ioapic.c | 15 ++++++++++++++-
->  1 file changed, 14 insertions(+), 1 deletion(-)
+> The second is that right now the IRR value depends on the falling edge
+> of the interrupt (as passed by the userspace via kvm_ioapic_set_irq).
+> This is unnecessary, and may lead to spurious reinjection in the
+> destination of migration; instead, we can clear the (internal-only)
+> IRR bit as soon as the interrupt leaves the IOAPIC.  This is done by
+> patch 2, which patch 1 prepares for.
 > 
-> diff --git a/virt/kvm/ioapic.c b/virt/kvm/ioapic.c
-> index 270f7fe73f39..d4b601547f1f 100644
-> --- a/virt/kvm/ioapic.c
-> +++ b/virt/kvm/ioapic.c
-> @@ -212,6 +212,18 @@ out:
->  	return ret;
->  }
->  
-> +static void kvm_ioapic_inject_all(struct kvm_ioapic *ioapic, unsigned long irr)
-> +{
-> +	u32 idx;
-> +
-> +	rtc_irq_eoi_tracking_reset(ioapic);
-> +	for_each_set_bit(idx, &irr, IOAPIC_NUM_PINS)
-> +		ioapic_set_irq(ioapic, idx, 1, true);
-> +
-> +	kvm_rtc_eoi_tracking_restore_all(ioapic);
+> This fixes migration of Windows guests without HPET.  Please review.
+> 
+> Paolo
+> 
+> v1->v2:
+> 	more comments in patch 3
+> 	change argument name in patch 3 from level to irq_level
+> 	use IOAPIC_NUM_PINS in patch 4 as a limit to for_each_set_bit
+> 	remove debug printk in patch 4
 
-(We shouldn't have RTC interrupt with pending EOI in irr, so the
- function could be independent.
- I'd prefer 'ioapic->irr = 0' here ...)
+Nice solution to a tricky problem,
 
-> +}
-> +
-> +
->  static void update_handled_vectors(struct kvm_ioapic *ioapic)
->  {
->  	DECLARE_BITMAP(handled_vectors, 256);
-> @@ -612,9 +624,10 @@ int kvm_set_ioapic(struct kvm *kvm, struct kvm_ioapic_state *state)
->  
->  	spin_lock(&ioapic->lock);
->  	memcpy(ioapic, state, sizeof(struct kvm_ioapic_state));
-> +	ioapic->irr = 0;
->  	update_handled_vectors(ioapic);
->  	kvm_vcpu_request_scan_ioapic(kvm);
-> -	kvm_rtc_eoi_tracking_restore_all(ioapic);
-> +	kvm_ioapic_inject_all(ioapic, state->irr);
->  	spin_unlock(&ioapic->lock);
->  	return 0;
->  }
+Reviewed-by: Radim Krčmář <rkrcmar@redhat.com>
+
+> Paolo Bonzini (4):
+>   KVM: ioapic: merge ioapic_deliver into ioapic_service
+>   KVM: ioapic: clear IRR for edge-triggered interrupts at delivery
+>   KVM: ioapic: extract body of kvm_ioapic_set_irq
+>   KVM: ioapic: reinject pending interrupts on KVM_SET_IRQCHIP
+> 
+>  virt/kvm/ioapic.c | 107 +++++++++++++++++++++++++++++++++++-------------------
+>  1 file changed, 69 insertions(+), 38 deletions(-)
+> 
 > -- 
 > 1.8.3.1
 > 
