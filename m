@@ -1,166 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445AbaCXTrv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:47:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61560 "EHLO mx1.redhat.com"
+	id S1754527AbaCXTsT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:48:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8881 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754178AbaCXTfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:35:18 -0400
+	id S1753984AbaCXTfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:35:17 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net, peterz@infradead.org
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, eranian@google.com, andi.kleen@intel.com,
         Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 2/6] perf: Update mmap2 interface with protection and flag bits
-Date: Mon, 24 Mar 2014 15:34:32 -0400
-Message-Id: <1395689676-214799-3-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 1/6] events, perf: Pass protection and flags bits through mmap2 interface
+Date: Mon, 24 Mar 2014 15:34:31 -0400
+Message-Id: <1395689676-214799-2-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
 References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel piece passes more info now.  Update the perf tool to reflect
-that and adjust the synthesized maps to play along.
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
+The mmap2 interface was missing the protection and flags bits needed to
+accurately determine if a mmap memory area was shared or private and
+if it was readable or not.
+
+[tweaked patch to compile and wrote changelog - Don
 Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/util/event.c   | 23 +++++++++++++++++++++--
- tools/perf/util/event.h   |  2 ++
- tools/perf/util/machine.c |  4 +++-
- tools/perf/util/map.c     |  4 +++-
- tools/perf/util/map.h     |  4 +++-
- 5 files changed, 32 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 9d12aa6..6b8646c 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -1,4 +1,5 @@
- #include <linux/types.h>
-+#include <sys/mman.h>
- #include "event.h"
- #include "debug.h"
- #include "hist.h"
-@@ -212,6 +213,21 @@ int perf_event__synthesize_mmap_events(struct perf_tool *tool,
- 		else
- 			event->header.misc = PERF_RECORD_MISC_GUEST_USER;
+--
+Peter you mentioned writing up a changelog for this patch, but you
+seemed busy, so I jumped the gun a little bit.  Let me know how you
+want to do this patch if this approach is wrong.
+---
+ include/uapi/linux/perf_event.h |  1 +
+ kernel/events/core.c            | 33 +++++++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/include/uapi/linux/perf_event.h b/include/uapi/linux/perf_event.h
+index 853bc1c..2ed502f 100644
+--- a/include/uapi/linux/perf_event.h
++++ b/include/uapi/linux/perf_event.h
+@@ -699,6 +699,7 @@ enum perf_event_type {
+ 	 *	u32				min;
+ 	 *	u64				ino;
+ 	 *	u64				ino_generation;
++	 *	u32				prot, flags;
+ 	 *	char				filename[];
+ 	 * 	struct sample_id		sample_id;
+ 	 * };
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 661951a..21874d4 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -39,6 +39,7 @@
+ #include <linux/hw_breakpoint.h>
+ #include <linux/mm_types.h>
+ #include <linux/cgroup.h>
++#include <linux/mman.h>
  
-+		/* map protection and flags bits */
-+		event->mmap2.prot = 0;
-+		event->mmap2.flags = 0;
-+		if (prot[0] == 'r')
-+			event->mmap2.prot |= PROT_READ;
-+		if (prot[1] == 'w')
-+			event->mmap2.prot |= PROT_WRITE;
-+		if (prot[2] == 'x')
-+			event->mmap2.prot |= PROT_EXEC;
+ #include "internal.h"
+ 
+@@ -5100,6 +5101,7 @@ struct perf_mmap_event {
+ 	int			maj, min;
+ 	u64			ino;
+ 	u64			ino_generation;
++	u32			prot, flags;
+ 
+ 	struct {
+ 		struct perf_event_header	header;
+@@ -5141,6 +5143,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->min);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino);
+ 		mmap_event->event_id.header.size += sizeof(mmap_event->ino_generation);
++		mmap_event->event_id.header.size += sizeof(mmap_event->prot);
++		mmap_event->event_id.header.size += sizeof(mmap_event->flags);
+ 	}
+ 
+ 	perf_event_header__init_id(&mmap_event->event_id.header, &sample, event);
+@@ -5159,6 +5163,8 @@ static void perf_event_mmap_output(struct perf_event *event,
+ 		perf_output_put(&handle, mmap_event->min);
+ 		perf_output_put(&handle, mmap_event->ino);
+ 		perf_output_put(&handle, mmap_event->ino_generation);
++		perf_output_put(&handle, mmap_event->prot);
++		perf_output_put(&handle, mmap_event->flags);
+ 	}
+ 
+ 	__output_copy(&handle, mmap_event->file_name,
+@@ -5177,6 +5183,7 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 	struct file *file = vma->vm_file;
+ 	int maj = 0, min = 0;
+ 	u64 ino = 0, gen = 0;
++	u32 prot = 0, flags = 0;
+ 	unsigned int size;
+ 	char tmp[16];
+ 	char *buf = NULL;
+@@ -5207,6 +5214,28 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+ 		gen = inode->i_generation;
+ 		maj = MAJOR(dev);
+ 		min = MINOR(dev);
 +
-+		if (prot[3] == 's')
-+			event->mmap2.flags |= MAP_SHARED;
++		if (vma->vm_flags & VM_READ)
++			prot |= PROT_READ;
++		if (vma->vm_flags & VM_WRITE)
++			prot |= PROT_WRITE;
++		if (vma->vm_flags & VM_EXEC)
++			prot |= PROT_EXEC;
++
++		if (vma->vm_flags & VM_MAYSHARE)
++			flags = MAP_SHARED;
 +		else
-+			event->mmap2.flags |= MAP_PRIVATE;
++			flags = MAP_PRIVATE;
 +
- 		if (prot[2] != 'x') {
- 			if (!mmap_data || prot[0] != 'r')
- 				continue;
-@@ -612,12 +628,15 @@ size_t perf_event__fprintf_mmap(union perf_event *event, FILE *fp)
- size_t perf_event__fprintf_mmap2(union perf_event *event, FILE *fp)
- {
- 	return fprintf(fp, " %d/%d: [%#" PRIx64 "(%#" PRIx64 ") @ %#" PRIx64
--			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c %s\n",
-+			   " %02x:%02x %"PRIu64" %"PRIu64"]: %c%c%c%c %s\n",
- 		       event->mmap2.pid, event->mmap2.tid, event->mmap2.start,
- 		       event->mmap2.len, event->mmap2.pgoff, event->mmap2.maj,
- 		       event->mmap2.min, event->mmap2.ino,
- 		       event->mmap2.ino_generation,
--		       (event->header.misc & PERF_RECORD_MISC_MMAP_DATA) ? 'r' : 'x',
-+		       (event->mmap2.prot & PROT_READ) ? 'r' : '-',
-+		       (event->mmap2.prot & PROT_WRITE) ? 'w' : '-',
-+		       (event->mmap2.prot & PROT_EXEC) ? 'x' : '-',
-+		       (event->mmap2.flags & MAP_SHARED) ? 's' : 'p',
- 		       event->mmap2.filename);
- }
++		if (vma->vm_flags & VM_DENYWRITE)
++			flags |= MAP_DENYWRITE;
++		if (vma->vm_flags & VM_MAYEXEC)
++			flags |= MAP_EXECUTABLE;
++		if (vma->vm_flags & VM_LOCKED)
++			flags |= MAP_LOCKED;
++		if (vma->vm_flags & VM_HUGETLB)
++			flags |= MAP_HUGETLB;
++
+ 		goto got_name;
+ 	} else {
+ 		name = (char *)arch_vma_name(vma);
+@@ -5247,6 +5276,8 @@ got_name:
+ 	mmap_event->min = min;
+ 	mmap_event->ino = ino;
+ 	mmap_event->ino_generation = gen;
++	mmap_event->prot = prot;
++	mmap_event->flags = flags;
  
-diff --git a/tools/perf/util/event.h b/tools/perf/util/event.h
-index 38457d4..96bd19c 100644
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -27,6 +27,8 @@ struct mmap2_event {
- 	u32 min;
- 	u64 ino;
- 	u64 ino_generation;
-+	u32 prot;
-+	u32 flags;
- 	char filename[PATH_MAX];
- };
+ 	if (!(vma->vm_flags & VM_EXEC))
+ 		mmap_event->event_id.header.misc |= PERF_RECORD_MISC_MMAP_DATA;
+@@ -5287,6 +5318,8 @@ void perf_event_mmap(struct vm_area_struct *vma)
+ 		/* .min (attr_mmap2 only) */
+ 		/* .ino (attr_mmap2 only) */
+ 		/* .ino_generation (attr_mmap2 only) */
++		/* .prot (attr_mmap2 only) */
++		/* .flags (attr_mmap2 only) */
+ 	};
  
-diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
-index a53cd0b..f3cf46f 100644
---- a/tools/perf/util/machine.c
-+++ b/tools/perf/util/machine.c
-@@ -1041,6 +1041,8 @@ int machine__process_mmap2_event(struct machine *machine,
- 			event->mmap2.pid, event->mmap2.maj,
- 			event->mmap2.min, event->mmap2.ino,
- 			event->mmap2.ino_generation,
-+			event->mmap2.prot,
-+			event->mmap2.flags,
- 			event->mmap2.filename, type);
- 
- 	if (map == NULL)
-@@ -1086,7 +1088,7 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
- 
- 	map = map__new(&machine->user_dsos, event->mmap.start,
- 			event->mmap.len, event->mmap.pgoff,
--			event->mmap.pid, 0, 0, 0, 0,
-+			event->mmap.pid, 0, 0, 0, 0, 0, 0,
- 			event->mmap.filename,
- 			type);
- 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 39cd2d0..f98f8fe 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -51,7 +51,7 @@ void map__init(struct map *map, enum map_type type,
- 
- struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
--		     u64 ino_gen, char *filename,
-+		     u64 ino_gen, u32 prot, u32 flags, char *filename,
- 		     enum map_type type)
- {
- 	struct map *map = malloc(sizeof(*map));
-@@ -69,6 +69,8 @@ struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 		map->min = d_min;
- 		map->ino = ino;
- 		map->ino_generation = ino_gen;
-+		map->prot = prot;
-+		map->flags = flags;
- 
- 		if ((anon || no_dso) && type == MAP__FUNCTION) {
- 			snprintf(newfilename, sizeof(newfilename), "/tmp/perf-%d.map", pid);
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index f00f058..8cd0cff 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -35,6 +35,8 @@ struct map {
- 	bool			referenced;
- 	bool			erange_warned;
- 	u32			priv;
-+	u32			prot;
-+	u32			flags;
- 	u64			pgoff;
- 	u64			reloc;
- 	u32			maj, min; /* only valid for MMAP2 record */
-@@ -106,7 +108,7 @@ void map__init(struct map *map, enum map_type type,
- 	       u64 start, u64 end, u64 pgoff, struct dso *dso);
- struct map *map__new(struct list_head *dsos__list, u64 start, u64 len,
- 		     u64 pgoff, u32 pid, u32 d_maj, u32 d_min, u64 ino,
--		     u64 ino_gen,
-+		     u64 ino_gen, u32 prot, u32 flags,
- 		     char *filename, enum map_type type);
- struct map *map__new2(u64 start, struct dso *dso, enum map_type type);
- void map__delete(struct map *map);
+ 	perf_event_mmap_event(&mmap_event);
 -- 
 1.7.11.7
 
