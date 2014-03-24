@@ -1,31 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752060AbaCXHWK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 03:22:10 -0400
-Received: from mail.mp.al.gov.br ([200.223.178.28]:29406 "EHLO
-	mail.mp.al.gov.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaCXHWF (ORCPT
+	id S1752135AbaCXHWU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 03:22:20 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:55187 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbaCXHWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 03:22:05 -0400
-X-Greylist: delayed 523 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 03:22:05 EDT
-Date: Mon, 24 Mar 2014 04:09:04 -0300 (BRT)
-From: =?utf-8?Q?N=C3=BAcleo?= de Defesa da Mulher MPAL 
-	<nudemp@mpal.mp.br>
-Reply-To: claimsdptwu2913@outlook.com
-Message-ID: <1768764374.4186.1395644944374.JavaMail.root@mpal.mp.br>
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [78.129.243.185]
-X-Mailer: Zimbra 8.0.0_GA_5434 (zclient/8.0.0_GA_5434)
-Thread-Topic: 
-Thread-Index: syY6Ev5a6/ZqmDyce9BoUKrDQBAMHQ==
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 24 Mar 2014 03:22:17 -0400
+From: Jakub Sitnicki <jsitnicki@gmail.com>
+To: tytso@mit.edu, adilger.kernel@dilger.ca
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Sitnicki <jsitnicki@gmail.com>
+Subject: [PATCH 2/2] ext4: acl: remove unneeded include of linux/capability.h
+Date: Mon, 24 Mar 2014 08:22:12 +0100
+Message-Id: <1395645732-26569-1-git-send-email-jsitnicki@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+acl.c has not been (directly) using the interface defined by
+linux/capability.h header since commit 3bd858ab1c451725c07a
+("Introduce is_owner_or_cap() to wrap CAP_FOWNER use with fsuid
+check"). Remove it.
 
+Signed-off-by: Jakub Sitnicki <jsitnicki@gmail.com>
+---
+ fs/ext4/acl.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Congratulation !! Confirm your 500,000,00 Euros. Contact claims office via : dptwu_claims@outlook.com
+diff --git a/fs/ext4/acl.c b/fs/ext4/acl.c
+index d40c8db..26e880e 100644
+--- a/fs/ext4/acl.c
++++ b/fs/ext4/acl.c
+@@ -7,7 +7,6 @@
+ #include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+-#include <linux/capability.h>
+ #include <linux/fs.h>
+ #include "ext4_jbd2.h"
+ #include "ext4.h"
+-- 
+1.8.5.3
+
