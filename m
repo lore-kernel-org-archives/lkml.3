@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbaCXKa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 06:30:58 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:56003 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750998AbaCXKa4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 06:30:56 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Eric Dumazet'" <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>
-CC: "andi@firstfloor.org" <andi@firstfloor.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "kaber@trash.net" <kaber@trash.net>,
-        "herbert@gondor.apana.org.au" <herbert@gondor.apana.org.au>,
-        "hkchu@google.com" <hkchu@google.com>,
-        "mwdalton@google.com" <mwdalton@google.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC] csum experts, csum_replace2() is too expensive
-Thread-Topic: [RFC] csum experts, csum_replace2() is too expensive
-Thread-Index: AQHPRTa1GDrZTVBHAkePrJRr0yADAZrvjR0AgAB/ZWA=
-Date: Mon, 24 Mar 2014 10:30:19 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E77A4@AcuExch.aculab.com>
-References: <1395341341.9114.93.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <87a9cknwk4.fsf@tassilo.jf.intel.com>
-	 <1395406250.9114.142.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <20140321.145229.1026128975151125729.davem@davemloft.net>
- <1395629410.9117.46.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1395629410.9117.46.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752807AbaCXKeb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:34:31 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:8514 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998AbaCXKea (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 06:34:30 -0400
+X-IronPort-AV: E=Sophos;i="4.97,720,1389744000"; 
+   d="scan'208";a="114252960"
+Message-ID: <1395657267.19365.26.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next] xen-netback: Follow-up patch for grant mapping
+ series
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Date: Mon, 24 Mar 2014 10:34:27 +0000
+In-Reply-To: <532C9389.4040908@citrix.com>
+References: <1395343961-4744-1-git-send-email-zoltan.kiss@citrix.com>
+		 <1395343961-4744-2-git-send-email-zoltan.kiss@citrix.com>
+	 <1395394872.27358.11.camel@kazak.uk.xensource.com>
+	 <532C9389.4040908@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
 MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2OAVEUK014351
 
-From: Eric Dumazet
-> On Fri, 2014-03-21 at 14:52 -0400, David Miller wrote:
-> > From: Eric Dumazet <eric.dumazet@gmail.com>
-> > Date: Fri, 21 Mar 2014 05:50:50 -0700
+On Fri, 2014-03-21 at 19:31 +0000, Zoltan Kiss wrote:
+> On 21/03/14 09:41, Ian Campbell wrote:
+> > On Thu, 2014-03-20 at 19:32 +0000, Zoltan Kiss wrote:
+> >> Ian made some late comments about the grant mapping series, I incorporated the
+> >> outcomes into this patch. Additional comments, refactoring etc.
 > >
-> > > It looks like a barrier() would be more appropriate.
-> >
-> > barrier() == __asm__ __volatile__(:::"memory")
-> 
-> Indeed, but now you mention it, ip_fast_csum() do not uses volatile
-> keyword on x86_64, and has no "m" constraint either.
+> > I don't know how davem feels about merging these kinds of thing into one
+> > patch but from my point of view the least thing to do is to enumerate
+> > the cleanups -- so that people can verify that the patch does infact do
+> > exactly what it says it does, no more, no less.
+> Ok, I'll make a detailed list in the commit message about what are the 
+> changes, and fix up the typos you mentioned below.
 
-Adding 'volatile' isn't sufficient to force gcc to write data
-into the area being checksummed.
-ip_fast_csum() either needs an explicit "m" constraint for the actual
-buffer (and target) bytes, or the stronger "memory" constraint.
-The 'volatile' is then not needed.
+Thanks. Also note Davem's request to split out any real changes from the
+pure non-functional cleanups. 
 
-	David
+Ian.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
