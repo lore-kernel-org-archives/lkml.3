@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751864AbaCXXLw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 19:11:52 -0400
-Received: from mail-bk0-f51.google.com ([209.85.214.51]:55908 "EHLO
-	mail-bk0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751720AbaCXXLu (ORCPT
+	id S1752088AbaCXXMQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 19:12:16 -0400
+Received: from qmta03.emeryville.ca.mail.comcast.net ([76.96.30.32]:39952 "EHLO
+	qmta03.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751737AbaCXXMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 19:11:50 -0400
-Date: Tue, 25 Mar 2014 00:11:46 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH 12/12] drm/nouveau: support for probing GK20A
-Message-ID: <20140324231144.GJ17218@mithrandir>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-13-git-send-email-acourbot@nvidia.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ibvzjYYg+QDzMCy1"
-Content-Disposition: inline
-In-Reply-To: <1395650554-31925-13-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 24 Mar 2014 19:12:14 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, john@jjdev.com, ced@ryick.net
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        shuahkhan@gmail.com
+Subject: [PATCH] staging/usbip: fix store_attach() sscanf return value check
+Date: Mon, 24 Mar 2014 17:12:09 -0600
+Message-Id: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix commit - 88fa1ebfa21b5deaaad2dc88ecd9f6af91796cf7
+This commit added return value check for sscanf() that parses the
+input buffer for four input items. However, the return value check
+is incorrect, as it checks for one input item instead of four which
+is what it is expecting in the input buffer. As a result, sscanf()
+will always fail even when the input buffer is correct.
 
---ibvzjYYg+QDzMCy1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+---
+ drivers/staging/usbip/vhci_sysfs.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-On Mon, Mar 24, 2014 at 05:42:34PM +0900, Alexandre Courbot wrote:
-[...]
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-[...]
-> +		/* TODO will need an implementation for this at some point... */
+diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
+index e098032..1ff24e9 100644
+--- a/drivers/staging/usbip/vhci_sysfs.c
++++ b/drivers/staging/usbip/vhci_sysfs.c
+@@ -183,7 +183,7 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
+ 	 * @devid: unique device identifier in a remote host
+ 	 * @speed: usb device speed in a remote host
+ 	 */
+-	if (sscanf(buf, "%u %u %u %u", &rhport, &sockfd, &devid, &speed) != 1)
++	if (sscanf(buf, "%u %u %u %u", &rhport, &sockfd, &devid, &speed) != 4)
+ 		return -EINVAL;
+ 
+ 	usbip_dbg_vhci_sysfs("rhport(%u) sockfd(%u) devid(%u) speed(%u)\n",
+-- 
+1.7.10.4
 
-Do we? If so the commit message in 11/12 is misleading.
-
-Thierry
-
---ibvzjYYg+QDzMCy1
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTMLuwAAoJEN0jrNd/PrOhEUYQAIlqEosdzccDwcUzmlwIhjHQ
-JZHA8dEtrvl+8s6nAuqZvaIdTroeR4dTM3a1MEY3bSajXM8/PEHmClMPHL5rF91G
-GXJU21MUtyFHc1P4/e+RCpww6crY/W5BYptUJfns3QJ+aCt1MJGKqb4uVYi5VjLS
-fewXFMPw4qgHb5ebc24nR/HXBHj+CA8ZcMHgqt4re/VYr4hzWfo11AsuswhrzsDb
-vvIA8zFKQfjb1c73ZEWjUoV/cJE3SzCeR00Yf0F/yMUndWBhrT8hToq7w9/V6gxy
-WBwYtqxKS2jM1XFxYuiwXefqvlStM/RzJn90X/xE1qHZhhBlpSq9rS3HqNSzzGA4
-8gQzD6eu7O7dxbV8dKHhExCfdqAPGzQQp69gALySOqTnzkwvuu6iXs19cykAgfc/
-6rqkgF7ZbxhyFIDc5JOkqMmES+QN97p6RAcKNcPwvFIIN8yd6pwChUQ1EoG6ZJEl
-Wvhee/dQiGPP4tktbtG1tzh7BHUvwGTNmdUJkHrjxOUNkRKMt/2B7EnIDVqRbhc7
-XHUS83Izwaj4BlG2IO8hTvNtIB5mztY0nQKSczjAKDlZCydUrp+ntjTEwR+NBIQ3
-UQAdX0zpZWhvXocjn2KF6DHmKKBZ+43ey+ipFcSYhZww0hACPy0sr2MJ2TTbPWvb
-1Vzj3rA7Ioe6MEZBvCA/
-=KUjz
------END PGP SIGNATURE-----
-
---ibvzjYYg+QDzMCy1--
