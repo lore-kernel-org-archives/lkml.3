@@ -1,970 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607AbaCXUVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:21:35 -0400
-Received: from smtprelay0241.hostedemail.com ([216.40.44.241]:52543 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754076AbaCXUV2 (ORCPT
+	id S1754172AbaCXU0N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:26:13 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:39571 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876AbaCXU0M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:21:28 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:69:327:355:379:541:960:968:973:982:988:989:1260:1345:1359:1437:1605:1730:1747:1777:1792:2194:2198:2199:2200:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3867:3868:3871:4321:4605:5007:6261:7903:8603:8829:10004:10026:10848:11026:11232:11233:11657:11914:12043:12294:12296:12438:12517:12519:12555:12679:12681,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: touch82_1934b1cd49b3f
-X-Filterd-Recvd-Size: 35621
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next 7/7] rtlwifi: Remove casts of pointer to same type
-Date: Mon, 24 Mar 2014 13:15:40 -0700
-Message-Id: <a7751e9c8d815a5d68614b4e662f3f1bba6d45c2.1395692043.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
-In-Reply-To: <cover.1395692043.git.joe@perches.com>
-References: <cover.1395692043.git.joe@perches.com>
+	Mon, 24 Mar 2014 16:26:12 -0400
+Date: Mon, 24 Mar 2014 21:26:06 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Daniel Vetter <daniel@ffwll.ch>, Dave Airlie <airlied@gmail.com>,
+        Andreas Mohr <andi@lisas.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
+ mga_driver_irq_uninstall)
+Message-ID: <20140324202606.GJ26878@phenom.ffwll.local>
+Mail-Followup-To: Mikulas Patocka <mpatocka@redhat.com>,
+	Dave Airlie <airlied@gmail.com>, Andreas Mohr <andi@lisas.de>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140322234317.GA10483@rhlx01.hs-esslingen.de>
+ <20140323121541.GA20971@rhlx01.hs-esslingen.de>
+ <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+ <20140323212715.GA22767@rhlx01.hs-esslingen.de>
+ <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
+ <20140324085449.GA26878@phenom.ffwll.local>
+ <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
+X-Operating-System: Linux phenom 3.12.0+
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Casting a pointer to a pointer of the same type is pointless,
-so remove these unnecessary casts.
+On Mon, Mar 24, 2014 at 01:17:12PM -0400, Mikulas Patocka wrote:
+> 
+> 
+> On Mon, 24 Mar 2014, Daniel Vetter wrote:
+> 
+> > On Mon, Mar 24, 2014 at 07:45:47AM +1000, Dave Airlie wrote:
+> > > On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
+> > > > On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
+> > > >> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
+> > > >> >
+> > > >> > which did end up flawless on 3.12.0-rc2+, too
+> > > >> > (but failed to improve the issue on 3.14.0-rc7+).
+> > > >> >
+> > > >> > So, for all intents and purposes, drm infrastructure seems unavoidably
+> > > >> > (neither dri disable nor libdrm upgrade helps) affected.
+> > > >> > Does anyone know which change caused that issue?
+> > > >> > (I'm asking because bisect here would be relatively painful).
+> > > >>
+> > > >> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
+> > > >> 3.14 rc only, or did it happen already in the previous release?
+> > > >
+> > > > Hmm, given that Mikulas in
+> > > > https://lkml.org/lkml/2014/2/26/537
+> > > > offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
+> > > > that that indeed may have been a regression at <= 3.13 proper even
+> > > > (which may pose interesting questions about the level of testing coverage
+> > > > we still enjoy [not!?] in this hardware area).
+> 
+> That patch drops a mutex, so it is not correct. There is mutex resursion - 
+> we need to uninstall the irq in drm_master_destroy, because here we are 
+> committed to destroy the device. But the routine that uninstalls the irq 
+> takes struct_mutex, which is already held in drm_master_destroy.
+> 
+> I suppose that the person who maintains drm reworks the patch so that it's 
+> correct:
+> 
+> - could we use a different mutex to protect the irq in drm_irq.c? Or 
+> possibly no mutex at all and use cmpxchg to manipulate the variable 
+> dev->irq_enabled? - this seems like the best solution. But I am not sure 
+> if the code in drm_irq.c somehow depends on the facts that other parts of 
+> the drm subsystem take struct_mutex.
+> 
+> - could we pass a new argument to drm_irq_uninstall that tells it not to 
+> take the mutex? drm_master_destroy would set this argument to 1. 
+> drm_master_destroy is mostly called with struct_mutex held, but there may 
+> be places in vmwgfx_drv.c where drm_master_put (which calls 
+> drm_master_destroy) may be called without struct_mutex held.
+> 
+> Is it true that drm_master_destroy can be called without struct_mutex 
+> held? I don't know.
+> 
+> 
+> I think drm maintainer should sort out the above issues and modify the 
+> patch accordingly.
+> 
+> > > > Oh well, seems I'll have to prepare/build 3.13 now...
+> > > 
+> > > It's > 15 year old hardware, so yes I believe we have close to 0
+> > > testing coverage on it outside of distros,
+> > > 
+> > > I'm not even sure I have one anymore, I might be able to test an MGA in one box.
+> > 
+> > I haven't done a full read of all the related code, but this smells like a
+> > similar bug I've hit all over the place in the i810 driver (another one of
+> > those undead drm drivers of yonders). Ingredients:
+> > 
+> > 1) Xorg creates a drm mapping of the register space.
+> > 2) Xorg tells the hw-specific drm which drm mapping has the hw registers,
+> > and the driver uses that. Iirc this has been done as some form of OS
+> > abstraction. Also note that these mappings aren't refcounted, so the first
+> > guy to call drm_rmmap wins.
+> > 
+> > -> All hell breaks loose if Xorg dies and takes all it's mappings with it
+> > (in master_destroy, since the Xorg /dev fd is the master) and leaves the
+> > driver hanging in the air if there's an interrupt still pending (or
+> > anything else fwiw).
+> 
+> For me that crash happened when xorg exited with a fatal error too.
 
-Around these changes:
+Is this fatal error itself a regression or have you seen that on older
+kernels, too?
 
-o Remove unnecessary parentheses
-o Use consistent dereference style (change ptr[0] to *ptr)
-o Argument alignment
-
-Done via coccinelle script: (and some typing)
-
-$ cat typecast_2.cocci
-@@
-type T;
-T *foo;
-@@
-
--	(T *)foo
-+	foo
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/wireless/rtlwifi/core.c                |  2 +-
- drivers/net/wireless/rtlwifi/ps.c                  | 19 ++++---
- drivers/net/wireless/rtlwifi/rtl8188ee/dm.c        |  5 +-
- drivers/net/wireless/rtlwifi/rtl8188ee/fw.c        |  4 +-
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c        | 57 ++++++++++----------
- drivers/net/wireless/rtlwifi/rtl8188ee/trx.c       |  4 +-
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c        | 14 ++---
- drivers/net/wireless/rtlwifi/rtl8192se/hw.c        | 14 +++--
- drivers/net/wireless/rtlwifi/rtl8723ae/dm.c        |  5 +-
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c        | 60 ++++++++++------------
- drivers/net/wireless/rtlwifi/rtl8723ae/trx.c       |  4 +-
- drivers/net/wireless/rtlwifi/rtl8723be/dm.c        |  2 +-
- drivers/net/wireless/rtlwifi/rtl8723be/hw.c        | 57 ++++++++++----------
- drivers/net/wireless/rtlwifi/rtl8723be/trx.c       |  4 +-
- .../net/wireless/rtlwifi/rtl8723com/fw_common.c    |  4 +-
- 15 files changed, 118 insertions(+), 137 deletions(-)
-
-diff --git a/drivers/net/wireless/rtlwifi/core.c b/drivers/net/wireless/rtlwifi/core.c
-index ded691f..4ec424f 100644
---- a/drivers/net/wireless/rtlwifi/core.c
-+++ b/drivers/net/wireless/rtlwifi/core.c
-@@ -982,7 +982,7 @@ static void rtl_op_bss_info_changed(struct ieee80211_hw *hw,
- 				u8 keep_alive = 10;
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 						 HW_VAR_KEEP_ALIVE,
--						 (u8 *)(&keep_alive));
-+						 &keep_alive);
- 
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 						      HW_VAR_H2C_FW_JOINBSSRPT,
-diff --git a/drivers/net/wireless/rtlwifi/ps.c b/drivers/net/wireless/rtlwifi/ps.c
-index de7f05f..5050494 100644
---- a/drivers/net/wireless/rtlwifi/ps.c
-+++ b/drivers/net/wireless/rtlwifi/ps.c
-@@ -759,7 +759,7 @@ static void rtl_p2p_noa_ie(struct ieee80211_hw *hw, void *data,
- 			   unsigned int len)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	struct ieee80211_mgmt *mgmt = (void *)data;
-+	struct ieee80211_mgmt *mgmt = data;
- 	struct rtl_p2p_ps_info *p2pinfo = &(rtlpriv->psc.p2p_ps_info);
- 	u8 *pos, *end, *ie;
- 	u16 noa_len;
-@@ -858,7 +858,7 @@ static void rtl_p2p_action_ie(struct ieee80211_hw *hw, void *data,
- 			      unsigned int len)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	struct ieee80211_mgmt *mgmt = (void *)data;
-+	struct ieee80211_mgmt *mgmt = data;
- 	struct rtl_p2p_ps_info *p2pinfo = &(rtlpriv->psc.p2p_ps_info);
- 	u8 noa_num, index, i, noa_index = 0;
- 	u8 *pos, *end, *ie;
-@@ -950,9 +950,8 @@ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state)
- 	switch (p2p_ps_state) {
- 	case P2P_PS_DISABLE:
- 		p2pinfo->p2p_ps_state = p2p_ps_state;
--		rtlpriv->cfg->ops->set_hw_reg(hw,
--				 HW_VAR_H2C_FW_P2P_PS_OFFLOAD,
--				 (u8 *)(&p2p_ps_state));
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_P2P_PS_OFFLOAD,
-+					      &p2p_ps_state);
- 
- 		p2pinfo->noa_index = 0;
- 		p2pinfo->ctwindow = 0;
-@@ -964,7 +963,7 @@ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state)
- 				rtlps->smart_ps = 2;
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 					 HW_VAR_H2C_FW_PWRMODE,
--					 (u8 *)(&rtlps->pwr_mode));
-+					 &rtlps->pwr_mode);
- 			}
- 		}
- 		break;
-@@ -977,12 +976,12 @@ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state)
- 					rtlps->smart_ps = 0;
- 					rtlpriv->cfg->ops->set_hw_reg(hw,
- 						 HW_VAR_H2C_FW_PWRMODE,
--						 (u8 *)(&rtlps->pwr_mode));
-+						 &rtlps->pwr_mode);
- 				}
- 			}
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 				 HW_VAR_H2C_FW_P2P_PS_OFFLOAD,
--				 (u8 *)(&p2p_ps_state));
-+				 &p2p_ps_state);
- 		}
- 		break;
- 	case P2P_PS_SCAN:
-@@ -992,7 +991,7 @@ void rtl_p2p_ps_cmd(struct ieee80211_hw *hw, u8 p2p_ps_state)
- 			p2pinfo->p2p_ps_state = p2p_ps_state;
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 				 HW_VAR_H2C_FW_P2P_PS_OFFLOAD,
--				 (u8 *)(&p2p_ps_state));
-+				 &p2p_ps_state);
- 		}
- 		break;
- 	default:
-@@ -1012,7 +1011,7 @@ void rtl_p2p_info(struct ieee80211_hw *hw, void *data, unsigned int len)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
--	struct ieee80211_hdr *hdr = (void *)data;
-+	struct ieee80211_hdr *hdr = data;
- 
- 	if (!mac->p2p)
- 		return;
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-index 97bc9aa..f8daa61 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/dm.c
-@@ -851,9 +851,8 @@ static void rtl88e_dm_check_edca_turbo(struct ieee80211_hw *hw)
- 	} else {
- 		if (rtlpriv->dm.current_turbo_edca) {
- 			u8 tmp = AC0_BE;
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--						      HW_VAR_AC_PARAM,
--						      (u8 *)(&tmp));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
-+						      &tmp);
- 			rtlpriv->dm.current_turbo_edca = false;
- 		}
- 	}
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-index 557bc5b..4f9376a 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/fw.c
-@@ -119,7 +119,7 @@ static void _rtl88e_write_fw(struct ieee80211_hw *hw,
- 			     enum version_8188e version, u8 *buffer, u32 size)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u8 *buf_ptr = (u8 *)buffer;
-+	u8 *buf_ptr = buffer;
- 	u32 page_no, remain;
- 	u32 page, offset;
- 
-@@ -213,7 +213,7 @@ int rtl88e_download_fw(struct ieee80211_hw *hw, bool buse_wake_on_wlan_fw)
- 		return 1;
- 
- 	pfwheader = (struct rtl92c_firmware_header *)rtlhal->pfirmware;
--	pfwdata = (u8 *)rtlhal->pfirmware;
-+	pfwdata = rtlhal->pfirmware;
- 	fwsize = rtlhal->fwsize;
- 	RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
- 		 "normal Firmware SIZE %d\n", fwsize);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-index 5a30e4e..94cd9df 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-@@ -147,8 +147,7 @@ static void _rtl88ee_set_fw_clock_on(struct ieee80211_hw *hw,
- 	}
- 
- 	if (IS_IN_LOW_POWER_STATE_88E(rtlhal->fw_ps_state)) {
--		rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+		rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_SET_RPWM, &rpwm_val);
- 		if (FW_PS_IS_ACK(rpwm_val)) {
- 			isr_regaddr = REG_HISR;
- 			content = rtl_read_dword(rtlpriv, isr_regaddr);
-@@ -225,7 +224,7 @@ static void _rtl88ee_set_fw_clock_off(struct ieee80211_hw *hw,
- 			rtlhal->fw_ps_state = FW_PS_STATE(rpwm_val);
- 			rtl_write_word(rtlpriv, REG_HISR, 0x0100);
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--						      (u8 *)(&rpwm_val));
-+						      &rpwm_val);
- 			spin_lock_bh(&rtlpriv->locks.fw_ps_lock);
- 			rtlhal->fw_clk_change_in_progress = false;
- 			spin_unlock_bh(&rtlpriv->locks.fw_ps_lock);
-@@ -273,15 +272,14 @@ static void _rtl88ee_fwlps_leave(struct ieee80211_hw *hw)
- 		_rtl88ee_set_fw_clock_on(hw, rpwm_val, false);
- 		rtlhal->allow_sw_to_change_hwclc = false;
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&fw_pwrmode));
-+					      &fw_pwrmode);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 	} else {
- 		rpwm_val = FW_PS_STATE_ALL_ON_88E;	/* RF on */
--		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM, &rpwm_val);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&fw_pwrmode));
-+					      &fw_pwrmode);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 	}
-@@ -300,7 +298,7 @@ static void _rtl88ee_fwlps_enter(struct ieee80211_hw *hw)
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&ppsc->fwctrl_psmode));
-+					      &ppsc->fwctrl_psmode);
- 		rtlhal->allow_sw_to_change_hwclc = true;
- 		_rtl88ee_set_fw_clock_off(hw, rpwm_val);
- 	} else {
-@@ -308,9 +306,8 @@ static void _rtl88ee_fwlps_enter(struct ieee80211_hw *hw)
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&ppsc->fwctrl_psmode));
--		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+					      &ppsc->fwctrl_psmode);
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM, &rpwm_val);
- 	}
- }
- 
-@@ -419,12 +416,12 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 
- 		for (e_aci = 0; e_aci < AC_MAX; e_aci++) {
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
--						      (u8 *)(&e_aci));
-+						      &e_aci);
- 		}
- 		break; }
- 	case HW_VAR_ACK_PREAMBLE:{
- 		u8 reg_tmp;
--		u8 short_preamble = (bool) (*(u8 *)val);
-+		u8 short_preamble = (bool)*val;
- 		reg_tmp = rtl_read_byte(rtlpriv, REG_TRXPTCL_CTL+2);
- 		if (short_preamble) {
- 			reg_tmp |= 0x02;
-@@ -435,13 +432,13 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		}
- 		break; }
- 	case HW_VAR_WPA_CONFIG:
--		rtl_write_byte(rtlpriv, REG_SECCFG, *((u8 *)val));
-+		rtl_write_byte(rtlpriv, REG_SECCFG, *val);
- 		break;
- 	case HW_VAR_AMPDU_MIN_SPACE:{
- 		u8 min_spacing_to_set;
- 		u8 sec_min_space;
- 
--		min_spacing_to_set = *((u8 *)val);
-+		min_spacing_to_set = *val;
- 		if (min_spacing_to_set <= 7) {
- 			sec_min_space = 0;
- 
-@@ -464,7 +461,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 	case HW_VAR_SHORTGI_DENSITY:{
- 		u8 density_to_set;
- 
--		density_to_set = *((u8 *)val);
-+		density_to_set = *val;
- 		mac->min_space_cfg |= (density_to_set << 3);
- 
- 		RT_TRACE(rtlpriv, COMP_MLME, DBG_LOUD,
-@@ -482,7 +479,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 
- 		reg = regtoset_normal;
- 
--		factor = *((u8 *)val);
-+		factor = *val;
- 		if (factor <= 3) {
- 			factor = (1 << (factor + 2));
- 			if (factor > 0xf)
-@@ -505,15 +502,15 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		}
- 		break; }
- 	case HW_VAR_AC_PARAM:{
--		u8 e_aci = *((u8 *)val);
-+		u8 e_aci = *val;
- 		rtl88e_dm_init_edca_turbo(hw);
- 
- 		if (rtlpci->acm_method != EACMWAY2_SW)
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_ACM_CTRL,
--						      (u8 *)(&e_aci));
-+						      &e_aci);
- 		break; }
- 	case HW_VAR_ACM_CTRL:{
--		u8 e_aci = *((u8 *)val);
-+		u8 e_aci = *val;
- 		union aci_aifsn *p_aci_aifsn =
- 		    (union aci_aifsn *)(&(mac->ac[0].aifs));
- 		u8 acm = p_aci_aifsn->f.acm;
-@@ -566,7 +563,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlpci->receive_config = ((u32 *)(val))[0];
- 		break;
- 	case HW_VAR_RETRY_LIMIT:{
--		u8 retry_limit = ((u8 *)(val))[0];
-+		u8 retry_limit = *val;
- 
- 		rtl_write_word(rtlpriv, REG_RL,
- 			       retry_limit << RETRY_LIMIT_SHORT_SHIFT |
-@@ -579,7 +576,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlefuse->efuse_usedbytes = *((u16 *)val);
- 		break;
- 	case HW_VAR_EFUSE_USAGE:
--		rtlefuse->efuse_usedpercentage = *((u8 *)val);
-+		rtlefuse->efuse_usedpercentage = *val;
- 		break;
- 	case HW_VAR_IO_CMD:
- 		rtl88e_phy_set_io_cmd(hw, (*(enum io_type *)val));
-@@ -591,15 +588,13 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		udelay(1);
- 
- 		if (rpwm_val & BIT(7)) {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM,
--				       (*(u8 *)val));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val);
- 		} else {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM,
--				       ((*(u8 *)val) | BIT(7)));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val | BIT(7));
- 		}
- 		break; }
- 	case HW_VAR_H2C_FW_PWRMODE:
--		rtl88e_set_fw_pwrmode_cmd(hw, (*(u8 *)val));
-+		rtl88e_set_fw_pwrmode_cmd(hw, *val);
- 		break;
- 	case HW_VAR_FW_PSMODE_STATUS:
- 		ppsc->fw_current_inpsmode = *((bool *)val);
-@@ -616,7 +611,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			_rtl88ee_fwlps_leave(hw);
- 		 break; }
- 	case HW_VAR_H2C_FW_JOINBSSRPT:{
--		u8 mstatus = (*(u8 *)val);
-+		u8 mstatus = *val;
- 		u8 tmp, tmp_reg422, uval;
- 		u8 count = 0, dlbcn_count = 0;
- 		bool recover = false;
-@@ -667,10 +662,10 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			}
- 			rtl_write_byte(rtlpriv, REG_CR + 1, (tmp & ~(BIT(0))));
- 		}
--		rtl88e_set_fw_joinbss_report_cmd(hw, (*(u8 *)val));
-+		rtl88e_set_fw_joinbss_report_cmd(hw, *val);
- 		break; }
- 	case HW_VAR_H2C_FW_P2P_PS_OFFLOAD:
--		rtl88e_set_p2p_ps_offload_cmd(hw, (*(u8 *)val));
-+		rtl88e_set_p2p_ps_offload_cmd(hw, *val);
- 		break;
- 	case HW_VAR_AID:{
- 		u16 u2btmp;
-@@ -680,7 +675,7 @@ void rtl88ee_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			       mac->assoc_id));
- 		break; }
- 	case HW_VAR_CORRECT_TSF:{
--		u8 btype_ibss = ((u8 *)(val))[0];
-+		u8 btype_ibss = *val;
- 
- 		if (btype_ibss == true)
- 			_rtl88ee_stop_tx_beacon(hw);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-index 2ba6f51..06ef47c 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-@@ -497,7 +497,7 @@ void rtl88ee_tx_fill_desc(struct ieee80211_hw *hw,
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
- 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	u8 *pdesc = (u8 *)pdesc_tx;
-+	u8 *pdesc = pdesc_tx;
- 	u16 seq_number;
- 	__le16 fc = hdr->frame_control;
- 	unsigned int buf_len = 0;
-@@ -716,7 +716,7 @@ void rtl88ee_tx_fill_cmddesc(struct ieee80211_hw *hw,
- 
- 	SET_TX_DESC_OWN(pdesc, 1);
- 
--	SET_TX_DESC_PKT_SIZE((u8 *)pdesc, (u16)(skb->len));
-+	SET_TX_DESC_PKT_SIZE(pdesc, (u16)(skb->len));
- 
- 	SET_TX_DESC_FIRST_SEG(pdesc, 1);
- 	SET_TX_DESC_LAST_SEG(pdesc, 1);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index 4ae51d5..55adf04 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -476,7 +476,7 @@ void rtl92ce_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			break;
- 		}
- 	case HW_VAR_H2C_FW_P2P_PS_OFFLOAD:
--		rtl92c_set_p2p_ps_offload_cmd(hw, (*(u8 *)val));
-+		rtl92c_set_p2p_ps_offload_cmd(hw, *val);
- 		break;
- 	case HW_VAR_AID:{
- 			u16 u2btmp;
-@@ -521,21 +521,21 @@ void rtl92ce_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 						(u8 *)(&fw_current_inps));
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 						HW_VAR_H2C_FW_PWRMODE,
--						(u8 *)(&ppsc->fwctrl_psmode));
-+						&ppsc->fwctrl_psmode);
- 
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
--						HW_VAR_SET_RPWM,
--						(u8 *)(&rpwm_val));
-+							      HW_VAR_SET_RPWM,
-+							      &rpwm_val);
- 			} else {
- 				rpwm_val = 0x0C;	/* RF on */
- 				fw_pwrmode = FW_PS_ACTIVE_MODE;
- 				fw_current_inps = false;
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
--						HW_VAR_SET_RPWM,
--						(u8 *)(&rpwm_val));
-+							      HW_VAR_SET_RPWM,
-+							      &rpwm_val);
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 						HW_VAR_H2C_FW_PWRMODE,
--						(u8 *)(&fw_pwrmode));
-+						&fw_pwrmode);
- 
- 				rtlpriv->cfg->ops->set_hw_reg(hw,
- 						HW_VAR_FW_PSMODE_STATUS,
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
-index 3015af1..9098558 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192se/hw.c
-@@ -413,20 +413,18 @@ void rtl92se_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 					(u8 *)(&fw_current_inps));
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 					HW_VAR_H2C_FW_PWRMODE,
--					(u8 *)(&ppsc->fwctrl_psmode));
-+					&ppsc->fwctrl_psmode);
- 
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--					HW_VAR_SET_RPWM,
--					(u8 *)(&rpwm_val));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
-+						      &rpwm_val);
- 		} else {
- 			rpwm_val = 0x0C;	/* RF on */
- 			fw_pwrmode = FW_PS_ACTIVE_MODE;
- 			fw_current_inps = false;
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					(u8 *)(&rpwm_val));
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--					HW_VAR_H2C_FW_PWRMODE,
--					(u8 *)(&fw_pwrmode));
-+						      &rpwm_val);
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
-+						      &fw_pwrmode);
- 
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 					HW_VAR_FW_PSMODE_STATUS,
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/dm.c b/drivers/net/wireless/rtlwifi/rtl8723ae/dm.c
-index 863ddb3..25cc830 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/dm.c
-@@ -647,9 +647,8 @@ static void rtl8723ae_dm_check_edca_turbo(struct ieee80211_hw *hw)
- 	} else {
- 		if (rtlpriv->dm.current_turbo_edca) {
- 			u8 tmp = AC0_BE;
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--						      HW_VAR_AC_PARAM,
--						      (u8 *) (&tmp));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
-+						      &tmp);
- 			rtlpriv->dm.current_turbo_edca = false;
- 		}
- 	}
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-index dd383b1..65c9e80 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -207,14 +207,13 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtl_write_byte(rtlpriv, REG_SLOT, val[0]);
- 
- 		for (e_aci = 0; e_aci < AC_MAX; e_aci++) {
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--						      HW_VAR_AC_PARAM,
--						      (u8 *) (&e_aci));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
-+						      &e_aci);
- 		}
- 		break; }
- 	case HW_VAR_ACK_PREAMBLE:{
- 		u8 reg_tmp;
--		u8 short_preamble = (bool) (*(u8 *) val);
-+		u8 short_preamble = (bool)*val;
- 		reg_tmp = (mac->cur_40_prime_sc) << 5;
- 		if (short_preamble)
- 			reg_tmp |= 0x80;
-@@ -225,7 +224,7 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		u8 min_spacing_to_set;
- 		u8 sec_min_space;
- 
--		min_spacing_to_set = *((u8 *) val);
-+		min_spacing_to_set = *val;
- 		if (min_spacing_to_set <= 7) {
- 			sec_min_space = 0;
- 
-@@ -249,7 +248,7 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 	case HW_VAR_SHORTGI_DENSITY:{
- 		u8 density_to_set;
- 
--		density_to_set = *((u8 *) val);
-+		density_to_set = *val;
- 		mac->min_space_cfg |= (density_to_set << 3);
- 
- 		RT_TRACE(rtlpriv, COMP_MLME, DBG_LOUD,
-@@ -273,7 +272,7 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		else
- 			p_regtoset = regtoset_normal;
- 
--		factor_toset = *((u8 *) val);
-+		factor_toset = *val;
- 		if (factor_toset <= 3) {
- 			factor_toset = (1 << (factor_toset + 2));
- 			if (factor_toset > 0xf)
-@@ -304,16 +303,15 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		}
- 		break; }
- 	case HW_VAR_AC_PARAM:{
--		u8 e_aci = *((u8 *) val);
-+		u8 e_aci = *val;
- 		rtl8723_dm_init_edca_turbo(hw);
- 
- 		if (rtlpci->acm_method != EACMWAY2_SW)
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--						      HW_VAR_ACM_CTRL,
--						      (u8 *) (&e_aci));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_ACM_CTRL,
-+						      &e_aci);
- 		break; }
- 	case HW_VAR_ACM_CTRL:{
--		u8 e_aci = *((u8 *) val);
-+		u8 e_aci = *val;
- 		union aci_aifsn *p_aci_aifsn =
- 		    (union aci_aifsn *)(&(mac->ac[0].aifs));
- 		u8 acm = p_aci_aifsn->f.acm;
-@@ -366,7 +364,7 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlpci->receive_config = ((u32 *) (val))[0];
- 		break;
- 	case HW_VAR_RETRY_LIMIT:{
--		u8 retry_limit = ((u8 *) (val))[0];
-+		u8 retry_limit = *val;
- 
- 		rtl_write_word(rtlpriv, REG_RL,
- 			       retry_limit << RETRY_LIMIT_SHORT_SHIFT |
-@@ -379,13 +377,13 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlefuse->efuse_usedbytes = *((u16 *) val);
- 		break;
- 	case HW_VAR_EFUSE_USAGE:
--		rtlefuse->efuse_usedpercentage = *((u8 *) val);
-+		rtlefuse->efuse_usedpercentage = *val;
- 		break;
- 	case HW_VAR_IO_CMD:
- 		rtl8723ae_phy_set_io_cmd(hw, (*(enum io_type *)val));
- 		break;
- 	case HW_VAR_WPA_CONFIG:
--		rtl_write_byte(rtlpriv, REG_SECCFG, *((u8 *) val));
-+		rtl_write_byte(rtlpriv, REG_SECCFG, *val);
- 		break;
- 	case HW_VAR_SET_RPWM:{
- 		u8 rpwm_val;
-@@ -394,27 +392,25 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		udelay(1);
- 
- 		if (rpwm_val & BIT(7)) {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM,
--				       (*(u8 *) val));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val);
- 		} else {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM,
--				       ((*(u8 *) val) | BIT(7)));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val | BIT(7));
- 		}
- 
- 		break; }
- 	case HW_VAR_H2C_FW_PWRMODE:{
--		u8 psmode = (*(u8 *) val);
-+		u8 psmode = *val;
- 
- 		if (psmode != FW_PS_ACTIVE_MODE)
- 			rtl8723ae_dm_rf_saving(hw, true);
- 
--		rtl8723ae_set_fw_pwrmode_cmd(hw, (*(u8 *) val));
-+		rtl8723ae_set_fw_pwrmode_cmd(hw, *val);
- 		break; }
- 	case HW_VAR_FW_PSMODE_STATUS:
- 		ppsc->fw_current_inpsmode = *((bool *) val);
- 		break;
- 	case HW_VAR_H2C_FW_JOINBSSRPT:{
--		u8 mstatus = (*(u8 *) val);
-+		u8 mstatus = *val;
- 		u8 tmp_regcr, tmp_reg422;
- 		bool recover = false;
- 
-@@ -447,11 +443,11 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			rtl_write_byte(rtlpriv, REG_CR + 1,
- 				       (tmp_regcr & ~(BIT(0))));
- 		}
--		rtl8723ae_set_fw_joinbss_report_cmd(hw, (*(u8 *) val));
-+		rtl8723ae_set_fw_joinbss_report_cmd(hw, *val);
- 
- 		break; }
- 	case HW_VAR_H2C_FW_P2P_PS_OFFLOAD:
--		rtl8723ae_set_p2p_ps_offload_cmd(hw, (*(u8 *)val));
-+		rtl8723ae_set_p2p_ps_offload_cmd(hw, *val);
- 		break;
- 	case HW_VAR_AID:{
- 		u16 u2btmp;
-@@ -461,7 +457,7 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 				mac->assoc_id));
- 		break; }
- 	case HW_VAR_CORRECT_TSF:{
--		u8 btype_ibss = ((u8 *) (val))[0];
-+		u8 btype_ibss = *val;
- 
- 		if (btype_ibss == true)
- 			_rtl8723ae_stop_tx_beacon(hw);
-@@ -491,20 +487,18 @@ void rtl8723ae_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 					(u8 *)(&fw_current_inps));
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 					HW_VAR_H2C_FW_PWRMODE,
--					(u8 *)(&ppsc->fwctrl_psmode));
-+					&ppsc->fwctrl_psmode);
- 
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--					HW_VAR_SET_RPWM,
--					(u8 *)(&rpwm_val));
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
-+						      &rpwm_val);
- 		} else {
- 			rpwm_val = 0x0C;	/* RF on */
- 			fw_pwrmode = FW_PS_ACTIVE_MODE;
- 			fw_current_inps = false;
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					(u8 *)(&rpwm_val));
--			rtlpriv->cfg->ops->set_hw_reg(hw,
--					HW_VAR_H2C_FW_PWRMODE,
--					(u8 *)(&fw_pwrmode));
-+						      &rpwm_val);
-+			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
-+						      &fw_pwrmode);
- 
- 			rtlpriv->cfg->ops->set_hw_reg(hw,
- 					HW_VAR_FW_PSMODE_STATUS,
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-index 29adf55..10b7577 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/trx.c
-@@ -375,7 +375,7 @@ void rtl8723ae_tx_fill_desc(struct ieee80211_hw *hw,
- 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
- 	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
- 	bool defaultadapter = true;
--	u8 *pdesc = (u8 *) pdesc_tx;
-+	u8 *pdesc = pdesc_tx;
- 	u16 seq_number;
- 	__le16 fc = hdr->frame_control;
- 	u8 fw_qsel = _rtl8723ae_map_hwqueue_to_fwqueue(skb, hw_queue);
-@@ -577,7 +577,7 @@ void rtl8723ae_tx_fill_cmddesc(struct ieee80211_hw *hw,
- 
- 	SET_TX_DESC_OWN(pdesc, 1);
- 
--	SET_TX_DESC_PKT_SIZE((u8 *) pdesc, (u16) (skb->len));
-+	SET_TX_DESC_PKT_SIZE(pdesc, (u16) (skb->len));
- 
- 	SET_TX_DESC_FIRST_SEG(pdesc, 1);
- 	SET_TX_DESC_LAST_SEG(pdesc, 1);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/dm.c b/drivers/net/wireless/rtlwifi/rtl8723be/dm.c
-index 736bfcb..13d53a1 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723be/dm.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723be/dm.c
-@@ -1083,7 +1083,7 @@ static void rtl8723be_dm_check_edca_turbo(struct ieee80211_hw *hw)
- 		if (rtlpriv->dm.current_turbo_edca) {
- 			u8 tmp = AC0_BE;
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
--						      (u8 *)(&tmp));
-+						      &tmp);
- 		}
- 		rtlpriv->dm.current_turbo_edca = false;
- 	}
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/hw.c b/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-index 223728d..0fdf090 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723be/hw.c
-@@ -147,7 +147,7 @@ static void _rtl8723be_set_fw_clock_on(struct ieee80211_hw *hw, u8 rpwm_val,
- 	}
- 	if (IS_IN_LOW_POWER_STATE_88E(rtlhal->fw_ps_state)) {
- 		rtlpriv->cfg->ops->get_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+					      &rpwm_val);
- 		if (FW_PS_IS_ACK(rpwm_val)) {
- 			isr_regaddr = REG_HISR;
- 			content = rtl_read_dword(rtlpriv, isr_regaddr);
-@@ -221,7 +221,7 @@ static void _rtl8723be_set_fw_clock_off(struct ieee80211_hw *hw, u8 rpwm_val)
- 			rtlhal->fw_ps_state = FW_PS_STATE(rpwm_val);
- 			rtl_write_word(rtlpriv, REG_HISR, 0x0100);
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--						      (u8 *)(&rpwm_val));
-+						      &rpwm_val);
- 			spin_lock_bh(&rtlpriv->locks.fw_ps_lock);
- 			rtlhal->fw_clk_change_in_progress = false;
- 			spin_unlock_bh(&rtlpriv->locks.fw_ps_lock);
-@@ -253,15 +253,14 @@ static void _rtl8723be_fwlps_leave(struct ieee80211_hw *hw)
- 		_rtl8723be_set_fw_clock_on(hw, rpwm_val, false);
- 		rtlhal->allow_sw_to_change_hwclc = false;
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&fw_pwrmode));
-+					      &fw_pwrmode);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 	} else {
- 		rpwm_val = FW_PS_STATE_ALL_ON_88E;	/* RF on */
--		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM, &rpwm_val);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&fw_pwrmode));
-+					      &fw_pwrmode);
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 	}
-@@ -280,7 +279,7 @@ static void _rtl8723be_fwlps_enter(struct ieee80211_hw *hw)
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&ppsc->fwctrl_psmode));
-+					      &ppsc->fwctrl_psmode);
- 		rtlhal->allow_sw_to_change_hwclc = true;
- 		_rtl8723be_set_fw_clock_off(hw, rpwm_val);
- 
-@@ -289,9 +288,8 @@ static void _rtl8723be_fwlps_enter(struct ieee80211_hw *hw)
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_FW_PSMODE_STATUS,
- 					      (u8 *)(&fw_current_inps));
- 		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_H2C_FW_PWRMODE,
--					      (u8 *)(&ppsc->fwctrl_psmode));
--		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM,
--					      (u8 *)(&rpwm_val));
-+					      &ppsc->fwctrl_psmode);
-+		rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_SET_RPWM, &rpwm_val);
- 	}
- }
- 
-@@ -400,12 +398,12 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 
- 		for (e_aci = 0; e_aci < AC_MAX; e_aci++) {
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_AC_PARAM,
--						      (u8 *)(&e_aci));
-+						      &e_aci);
- 		}
- 		break; }
- 	case HW_VAR_ACK_PREAMBLE: {
- 		u8 reg_tmp;
--		u8 short_preamble = (bool) (*(u8 *)val);
-+		u8 short_preamble = (bool)*val;
- 		reg_tmp = rtl_read_byte(rtlpriv, REG_TRXPTCL_CTL + 2);
- 		if (short_preamble) {
- 			reg_tmp |= 0x02;
-@@ -416,13 +414,13 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		}
- 		break; }
- 	case HW_VAR_WPA_CONFIG:
--		rtl_write_byte(rtlpriv, REG_SECCFG, *((u8 *)val));
-+		rtl_write_byte(rtlpriv, REG_SECCFG, *val);
- 		break;
- 	case HW_VAR_AMPDU_MIN_SPACE: {
- 		u8 min_spacing_to_set;
- 		u8 sec_min_space;
- 
--		min_spacing_to_set = *((u8 *)val);
-+		min_spacing_to_set = *val;
- 		if (min_spacing_to_set <= 7) {
- 			sec_min_space = 0;
- 
-@@ -445,7 +443,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 	case HW_VAR_SHORTGI_DENSITY: {
- 		u8 density_to_set;
- 
--		density_to_set = *((u8 *)val);
-+		density_to_set = *val;
- 		mac->min_space_cfg |= (density_to_set << 3);
- 
- 		RT_TRACE(rtlpriv, COMP_MLME, DBG_LOUD,
-@@ -463,7 +461,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 
- 		p_regtoset = regtoset_normal;
- 
--		factor_toset = *((u8 *)val);
-+		factor_toset = *val;
- 		if (factor_toset <= 3) {
- 			factor_toset = (1 << (factor_toset + 2));
- 			if (factor_toset > 0xf)
-@@ -491,15 +489,15 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		}
- 		break; }
- 	case HW_VAR_AC_PARAM: {
--		u8 e_aci = *((u8 *)val);
-+		u8 e_aci = *val;
- 		rtl8723_dm_init_edca_turbo(hw);
- 
- 		if (rtlpci->acm_method != EACMWAY2_SW)
- 			rtlpriv->cfg->ops->set_hw_reg(hw, HW_VAR_ACM_CTRL,
--						      (u8 *)(&e_aci));
-+						      &e_aci);
- 		break; }
- 	case HW_VAR_ACM_CTRL: {
--		u8 e_aci = *((u8 *)val);
-+		u8 e_aci = *val;
- 		union aci_aifsn *p_aci_aifsn =
- 				(union aci_aifsn *)(&(mac->ac[0].aifs));
- 		u8 acm = p_aci_aifsn->f.acm;
-@@ -552,7 +550,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlpci->receive_config = ((u32 *)(val))[0];
- 		break;
- 	case HW_VAR_RETRY_LIMIT: {
--		u8 retry_limit = ((u8 *)(val))[0];
-+		u8 retry_limit = *val;
- 
- 		rtl_write_word(rtlpriv, REG_RL,
- 			       retry_limit << RETRY_LIMIT_SHORT_SHIFT |
-@@ -565,7 +563,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		rtlefuse->efuse_usedbytes = *((u16 *)val);
- 		break;
- 	case HW_VAR_EFUSE_USAGE:
--		rtlefuse->efuse_usedpercentage = *((u8 *)val);
-+		rtlefuse->efuse_usedpercentage = *val;
- 		break;
- 	case HW_VAR_IO_CMD:
- 		rtl8723be_phy_set_io_cmd(hw, (*(enum io_type *)val));
-@@ -577,14 +575,13 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 		udelay(1);
- 
- 		if (rpwm_val & BIT(7)) {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, (*(u8 *)val));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val);
- 		} else {
--			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM,
--				       ((*(u8 *)val) | BIT(7)));
-+			rtl_write_byte(rtlpriv, REG_PCIE_HRPWM, *val | BIT(7));
- 		}
- 		break; }
- 	case HW_VAR_H2C_FW_PWRMODE:
--		rtl8723be_set_fw_pwrmode_cmd(hw, (*(u8 *)val));
-+		rtl8723be_set_fw_pwrmode_cmd(hw, *val);
- 		break;
- 	case HW_VAR_FW_PSMODE_STATUS:
- 		ppsc->fw_current_inpsmode = *((bool *)val);
-@@ -602,7 +599,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 
- 		break; }
- 	case HW_VAR_H2C_FW_JOINBSSRPT: {
--		u8 mstatus = (*(u8 *)val);
-+		u8 mstatus = *val;
- 		u8 tmp_regcr, tmp_reg422, bcnvalid_reg;
- 		u8 count = 0, dlbcn_count = 0;
- 		bool recover = false;
-@@ -657,10 +654,10 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			rtl_write_byte(rtlpriv, REG_CR + 1,
- 				       (tmp_regcr & ~(BIT(0))));
- 		}
--		rtl8723be_set_fw_joinbss_report_cmd(hw, (*(u8 *)val));
-+		rtl8723be_set_fw_joinbss_report_cmd(hw, *val);
- 		break; }
- 	case HW_VAR_H2C_FW_P2P_PS_OFFLOAD:
--		rtl8723be_set_p2p_ps_offload_cmd(hw, (*(u8 *)val));
-+		rtl8723be_set_p2p_ps_offload_cmd(hw, *val);
- 		break;
- 	case HW_VAR_AID: {
- 		u16 u2btmp;
-@@ -670,7 +667,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 			       (u2btmp | mac->assoc_id));
- 		break; }
- 	case HW_VAR_CORRECT_TSF: {
--		u8 btype_ibss = ((u8 *)(val))[0];
-+		u8 btype_ibss = *val;
- 
- 		if (btype_ibss)
- 			_rtl8723be_stop_tx_beacon(hw);
-@@ -690,7 +687,7 @@ void rtl8723be_set_hw_reg(struct ieee80211_hw *hw, u8 variable, u8 *val)
- 	case HW_VAR_KEEP_ALIVE: {
- 		u8 array[2];
- 		array[0] = 0xff;
--		array[1] = *((u8 *)val);
-+		array[1] = *val;
- 		rtl8723be_fill_h2c_cmd(hw, H2C_8723BE_KEEP_ALIVE_CTRL,
- 				       2, array);
- 		break; }
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723be/trx.c b/drivers/net/wireless/rtlwifi/rtl8723be/trx.c
-index 74a75dc..e0a0d8c 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723be/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723be/trx.c
-@@ -647,7 +647,7 @@ void rtl8723be_tx_fill_desc(struct ieee80211_hw *hw,
- 	struct rtl_mac *mac = rtl_mac(rtl_priv(hw));
- 	struct rtl_pci *rtlpci = rtl_pcidev(rtl_pcipriv(hw));
- 	struct rtl_hal *rtlhal = rtl_hal(rtlpriv);
--	u8 *pdesc = (u8 *)pdesc_tx;
-+	u8 *pdesc = pdesc_tx;
- 	u16 seq_number;
- 	__le16 fc = hdr->frame_control;
- 	unsigned int buf_len = 0;
-@@ -850,7 +850,7 @@ void rtl8723be_tx_fill_cmddesc(struct ieee80211_hw *hw, u8 *pdesc,
- 
- 	SET_TX_DESC_OWN(pdesc, 1);
- 
--	SET_TX_DESC_PKT_SIZE((u8 *)pdesc, (u16)(skb->len));
-+	SET_TX_DESC_PKT_SIZE(pdesc, (u16)(skb->len));
- 
- 	SET_TX_DESC_FIRST_SEG(pdesc, 1);
- 	SET_TX_DESC_LAST_SEG(pdesc, 1);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723com/fw_common.c b/drivers/net/wireless/rtlwifi/rtl8723com/fw_common.c
-index c12da55..540278f 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723com/fw_common.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723com/fw_common.c
-@@ -115,7 +115,7 @@ void rtl8723_write_fw(struct ieee80211_hw *hw,
- 		      u8 *buffer, u32 size)
- {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
--	u8 *bufferptr = (u8 *)buffer;
-+	u8 *bufferptr = buffer;
- 	u32 pagenums, remainsize;
- 	u32 page, offset;
- 
-@@ -257,7 +257,7 @@ int rtl8723_download_fw(struct ieee80211_hw *hw,
- 		return 1;
- 
- 	pfwheader = (struct rtl92c_firmware_header *)rtlhal->pfirmware;
--	pfwdata = (u8 *)rtlhal->pfirmware;
-+	pfwdata = rtlhal->pfirmware;
- 	fwsize = rtlhal->fwsize;
- 	RT_TRACE(rtlpriv, COMP_FW, DBG_DMESG,
- 		 "normal Firmware SIZE %d\n", fwsize);
+Like I've said the entire teardown sequence for legacy drm drivers is
+terminally busted, so the only hope we have is to reapply this missing
+duct-tape which made your X crash. But if that itself isn't a regression
+there's no way to fix the current drm/mga driver without a complete
+rewrite as a new-style kernel modesetting driver.
+-Daniel
 -- 
-1.8.1.2.459.gbcd45b4.dirty
-
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
