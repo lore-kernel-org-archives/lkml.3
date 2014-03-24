@@ -1,123 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813AbaCXIfe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:35:34 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:41075 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750865AbaCXIbx (ORCPT
+	id S1752565AbaCXIg5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:36:57 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:59867 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924AbaCXIgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:31:53 -0400
-From: Boris BREZILLON <brezillonboris@gmail.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: [PATCH v2 02/11] clk: at91: update main clk documentation
-Date: Mon, 24 Mar 2014 09:27:14 +0100
-Message-Id: <1395649643-9146-3-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com>
+	Mon, 24 Mar 2014 04:36:55 -0400
+Date: Mon, 24 Mar 2014 08:36:50 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: st-pwm: Convert to get_voltage_sel
+Message-ID: <20140324083650.GI8541@lee--X1>
+References: <1395444158.25974.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395444158.25974.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update main clk documentation to match main clk implementation rework.
+> Also remove test for selector in st_pwm_regulator_set_voltage_sel, the checking
+> is already done in .list_voltage.
+> 
+> Signed-off-by: Axel Lin <axel.lin@ingics.com>
+> ---
+>  drivers/regulator/st-pwm.c | 9 +++------
+>  1 file changed, 3 insertions(+), 6 deletions(-)
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- .../devicetree/bindings/clock/at91-clock.txt       |   56 ++++++++++++++++----
- 1 file changed, 47 insertions(+), 9 deletions(-)
+Wow! Not even going to give me a chance to fix it myself eh?
 
-diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-index cd5e239..9a7025b 100644
---- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-@@ -15,8 +15,13 @@ Required properties:
- 		All at91 specific clocks (clocks defined below) must be child
- 		node of the PMC node.
- 
-+	"atmel,at91rm9200-clk-main-osc"
-+	"atmel,at91sam9x5-clk-main-rc-osc"
-+		at91 main clk sources
-+
-+	"atmel,at91sam9x5-clk-main"
- 	"atmel,at91rm9200-clk-main":
--		at91 main oscillator
-+		at91 main clock
- 
- 	"atmel,at91rm9200-clk-master" or
- 	"atmel,at91sam9x5-clk-master":
-@@ -85,24 +90,57 @@ For example:
- 		/* put at91 clocks here */
- 	};
- 
-+Required properties for main clock oscillator:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<0>".
-+- clock-frequency : define the internal RC oscillator frequency.
-+
-+Optional properties:
-+- clock-accuracy : define the internal RC oscillator accuracy.
-+
-+For example:
-+	main_rc_osc: main_rc_osc {
-+		compatible = "atmel,at91sam9x5-clk-main-rc-osc";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <0>;
-+		clock-frequency = <12000000>;
-+		clock-accuracy = <50000000>;
-+	};
-+
-+Required properties for main clock internal RC oscillator:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<0>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall encode the main osc source clk sources (see atmel datasheet).
-+
-+Optional properties:
-+- atmel,osc-bypass : boolean property. Specified if a clock signal is provided
-+  on XIN.
-+
-+  clock signal is directly provided on XIN pin.
-+
-+For example:
-+	main_osc: main_osc {
-+		compatible = "atmel,at91rm9200-clk-main-osc";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <0>;
-+		#clock-cells = <0>;
-+		clocks = <&main_xtal>;
-+	};
-+
- Required properties for main clock:
- - interrupt-parent : must reference the PMC node.
- - interrupts : shall be set to "<0>".
- - #clock-cells : from common clock binding; shall be set to 0.
--- clocks (optional if clock-frequency is provided) : shall be the slow clock
--	phandle. This clock is used to calculate the main clock rate if
--	"clock-frequency" is not provided.
--- clock-frequency : the main oscillator frequency.Prefer the use of
--	"clock-frequency" over automatic clock rate calculation.
-+- clocks : shall encode the main clk sources (see atmel datasheet).
- 
- For example:
- 	main: mainck {
--		compatible = "atmel,at91rm9200-clk-main";
-+		compatible = "atmel,at91sam9x5-clk-main";
- 		interrupt-parent = <&pmc>;
- 		interrupts = <0>;
- 		#clock-cells = <0>;
--		clocks = <&ck32k>;
--		clock-frequency = <18432000>;
-+		clocks = <&main_rc_osc &main_osc>;
- 	};
- 
- Required properties for master clock:
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
 -- 
-1.7.9.5
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
