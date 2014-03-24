@@ -1,107 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752155AbaCXGu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 02:50:27 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52955 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752095AbaCXGuZ (ORCPT
+	id S1752223AbaCXGum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 02:50:42 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:53767 "EHLO
+	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750810AbaCXGuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 02:50:25 -0400
-Message-ID: <532FD53E.8020402@linux.vnet.ibm.com>
-Date: Mon, 24 Mar 2014 12:18:30 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Mon, 24 Mar 2014 02:50:40 -0400
+X-IronPort-AV: E=Sophos;i="4.97,719,1389740400"; 
+   d="scan'208";a="64371805"
+Date: Mon, 24 Mar 2014 07:50:38 +0100 (CET)
+From: Julia Lawall <julia.lawall@lip6.fr>
+X-X-Sender: jll@localhost6.localdomain6
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [patch 00/16] timers: Plug debugobject leaks and use del_timer_sync()
+ in exit/teardown
+In-Reply-To: <alpine.DEB.2.02.1403240027020.18573@ionos.tec.linutronix.de>
+Message-ID: <alpine.DEB.2.02.1403240749580.2211@localhost6.localdomain6>
+References: <20140323150557.288925975@linutronix.de> <alpine.DEB.2.02.1403232328480.2019@localhost6.localdomain6> <alpine.DEB.2.02.1403240027020.18573@ionos.tec.linutronix.de>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
-Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
-References: <cover.1395379422.git.viresh.kumar@linaro.org> <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org> <532BEE64.3090501@linux.vnet.ibm.com> <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com> <532BFB77.5060107@linux.vnet.ibm.com> <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com> <20140321110559.GB13596@arm.com> <532C2160.4030909@linux.vnet.ibm.com> <20140321180723.GM13596@arm.com>
-In-Reply-To: <20140321180723.GM13596@arm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032406-5490-0000-0000-0000053C2A25
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 11:37 PM, Catalin Marinas wrote:
-> On Fri, Mar 21, 2014 at 11:24:16AM +0000, Srivatsa S. Bhat wrote:
->> On 03/21/2014 04:35 PM, Catalin Marinas wrote:
->>> On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
->>>> @Catalin: We have a problem here and need your expert advice. After changing
->>>> CPU frequency we need to call this code:
->>>>
->>>> cpufreq_notify_post_transition();
->>>> policy->transition_ongoing = false;
->>>>
->>>> And the sequence must be like this only. Is this guaranteed without any
->>>> memory barriers? cpufreq_notify_post_transition() isn't touching
->>>> transition_ongoing at all..
->>>
->>> The above sequence doesn't say much. As rmk said, the compiler wouldn't
->>> reorder the transition_ongoing write before the function call. I think
->>> most architectures (not sure about Alpha) don't do speculative stores,
->>> so hardware wouldn't reorder them either. However, other stores inside
->>> the cpufreq_notify_post_transition() could be reordered after
->>> transition_ongoing store. The same for memory accesses after the
->>> transition_ongoing update, they could be reordered before.
->>>
->>> So what we actually need to know is what are the other relevant memory
->>> accesses that require strict ordering with transition_ongoing.
->>
->> Hmm.. The thing is, _everything_ inside the post_transition() function
->> should complete before writing to transition_ongoing. Because, setting the
->> flag to 'false' indicates the end of the critical section, and the next
->> contending task can enter the critical section.
+
+
+On Mon, 24 Mar 2014, Thomas Gleixner wrote:
+
+> On Sun, 23 Mar 2014, Julia Lawall wrote:
+> > As far as I could tell, (part of) the issue is that any kind of exit or 
+> > close function should use del_timer_sync, because they could be called 
+> > from a different CPU than the one that started up the timer?
+> > 
+> > Here is a semantic patch that takes care of the case of simple module_exit 
+> > functions:
+> > 
+> > @r@
+> > declarer name module_exit;
+> > identifier ex;
+> > @@
+> > 
+> > module_exit(ex);
+> > 
+> > @@
+> > identifier r.ex;
+> > @@
+> > 
+> > ex(...) {
+> >   <...
+> > - del_timer
+> > + del_timer_sync
+> >     (...)
+> >   ...>
+> > }
+> > 
+> > The transformations it makes are below.  I haven't had a chance to check 
+> > which results overlap with what Thomas has already sent, but I could look 
 > 
-> smp_mb() is all about relative ordering. So if you want memory accesses
-> in post_transition() to be visible to other observers before
-> transition_ongoing = false, you also need to make sure that the readers
-> of transition_ongoing have a barrier before subsequent memory accesses.
+> Minimal overlap, but as I said I did just a few conversions.
 > 
-
-The reader takes a spin-lock before reading the flag.. won't that suffice?
-
-+wait:
-+	wait_event(policy->transition_wait, !policy->transition_ongoing);
-+
-+	spin_lock(&policy->transition_lock);
-+
-+	if (unlikely(policy->transition_ongoing)) {
-+		spin_unlock(&policy->transition_lock);
-+		goto wait;
-+	}
-
->>> What I find strange in your patch is that
->>> cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
->>> update but cpufreq_freq_transition_end() doesn't.
->>
->> The reason is that, by the time we drop the spinlock, we would have set
->> the transition_ongoing flag to true, which prevents any other task from
->> entering the critical section. Hence, when we call the _end() function,
->> we are 100% sure that only one task is executing it. Hence locks are not
->> necessary around that second update. In fact, that very update marks the
->> end of the critical section (which acts much like a spin_unlock(&lock)
->> in a "regular" critical section).
+> > into it if this is the right idea.  I guess other kinds of close/exit 
+> > functions would have to be identified manually, to make more rules.
 > 
-> OK, I start to get it. Is there a risk of missing a wake_up event? E.g.
-> one thread waking up earlier, noticing that transition is in progress
-> and waiting indefinitely?
->
+> If you look through the examples I sent, you'll find the close()
+> callbacks of various devices. So everything which is a function
+> pointer to a ops->close(), ops->remove(), ops_>teardown() is dangerous
+> if using del_timer(). There are a few exceptions, but....
+> 
+> Another thing I saw is 
+> 
+> 	del_timer(&bla->timer);
+> 	....
+> 	kfree(&bla);
+> 
+> That's also a potential source of trouble. You can't tell without
+> analyzing the code, whether it's a problem or not. But making the
+> responsible people to look at it is definitely a good thing.
+>  
+> > In what circumstance can one be sure that two instructions are executed on 
+> > the same CPU?
+> 
+> If interrupts or preemption are disabled. But that's not the issue at
+> hand.
+> 
+> The del_timer vs. del_timer_sync problem is:
+> 
+> CPU0	      	  		 CPU1
+> 
+> add_timer(&bla->timer);
+> 
+> 				 close(bla)
+> timer expires		   	   del_timer(&bla->timer);
+>   callback is invoked
+> 				   kfree(bla);
+>     derefernces bla
+> 
+> I'll look at your findings on Tuesday, but feel free to send them to
+> the relevant maintainers for review.
 
-No, the only downside to having the CPU reorder the assignment to the
-flag is that a new transition can begin while the old one is still
-finishing up the frequency transition by calling the _post_transition()
-notifiers.
+Thanks for all of the suggestions!
 
-Regards,
-Srivatsa S. Bhat
-
+julia
