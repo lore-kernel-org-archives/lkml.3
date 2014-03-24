@@ -1,42 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318AbaCXMuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 08:50:13 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:59317 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752667AbaCXMuM (ORCPT
+	id S1753330AbaCXMvd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 08:51:33 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:53234 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785AbaCXMvb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 08:50:12 -0400
-Date: Mon, 24 Mar 2014 08:50:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: akpm@linux-foundation.org, jlayton@redhat.com, jdelvare@suse.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib: Use RCU_INIT_POINTER(x, NULL) in idr.c
-Message-ID: <20140324125008.GB29892@mtj.dyndns.org>
-References: <1395601808-12365-1-git-send-email-monamagarwal123@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395601808-12365-1-git-send-email-monamagarwal123@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 24 Mar 2014 08:51:31 -0400
+Date: Mon, 24 Mar 2014 13:51:10 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sascha Hauer <kernel@pengutronix.de>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/5] ARM: dts: tx53: remove redundant regulator-boot-on
+Message-ID: <20140324135110.06dd13cc@ipc1.ka-ro>
+In-Reply-To: <20140322064747.GD5938@dragon>
+References: <1395235721-13847-1-git-send-email-LW@KARO-electronics.de>
+	<20140322064747.GD5938@dragon>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 12:40:08AM +0530, Monam Agarwal wrote:
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+Hi,
+
+Shawn Guo wrote:
+> On Wed, Mar 19, 2014 at 02:28:37PM +0100, Lothar Waßmann wrote:
+> > 
+> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
 > 
-> The rcu_assign_pointer() ensures that the initialization of a structure       
-> is carried out before storing a pointer to that structure. 
-> And in the case of the NULL pointer, there is no structure to initialize. 
-> So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> Please add something in the commit log, e.g. why regulator-boot-on is
+> redundant in this case.
 > 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+OK.
 
-Acked-by: Tejun Heo <tj@kernel.org>
 
-Thanks.
-
+Lothar Waßmann
 -- 
-tejun
+___________________________________________________________
+
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
