@@ -1,126 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155AbaCXTek (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:34:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753671AbaCXTdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:33:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 4/4] perf, report: Use new generic report parse callchain callback
-Date: Mon, 24 Mar 2014 15:32:57 -0400
-Message-Id: <1395689577-214654-5-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
-References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
+	id S1754174AbaCXTev (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:34:51 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43617 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406AbaCXTet (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:34:49 -0400
+Date: Mon, 24 Mar 2014 15:34:46 -0400 (EDT)
+Message-Id: <20140324.153446.1203497334549825875.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: ian.campbell@citrix.com, wei.liu2@citrix.com,
+        xen-devel@lists.xenproject.org, paul.durrant@citrix.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jonathan.davies@citrix.com
+Subject: Re: [PATCH net-next v2 3/3] xen-netback: Follow-up patch for grant
+ mapping series
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395665284-8911-3-git-send-email-zoltan.kiss@citrix.com>
+References: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
+	<1395665284-8911-3-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Mar 2014 12:34:49 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the new routine.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/builtin-report.c | 77 +--------------------------------------------
- 1 file changed, 1 insertion(+), 76 deletions(-)
+Patches #2 and #3 have the same exact Subject line, please repost with unique
+subject lines so that someone scanning the shortlog can tell what might
+be different between these two commits.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index c8f2113..c87412b 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -576,8 +576,6 @@ static int
- parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- {
- 	struct report *rep = (struct report *)opt->value;
--	char *tok, *tok2;
--	char *endptr;
- 
- 	/*
- 	 * --no-call-graph
-@@ -587,80 +585,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
- 		return 0;
- 	}
- 
--	symbol_conf.use_callchain = true;
--
--	if (!arg)
--		return 0;
--
--	tok = strtok((char *)arg, ",");
--	if (!tok)
--		return -1;
--
--	/* get the output mode */
--	if (!strncmp(tok, "graph", strlen(arg)))
--		callchain_param.mode = CHAIN_GRAPH_ABS;
--
--	else if (!strncmp(tok, "flat", strlen(arg)))
--		callchain_param.mode = CHAIN_FLAT;
--
--	else if (!strncmp(tok, "fractal", strlen(arg)))
--		callchain_param.mode = CHAIN_GRAPH_REL;
--
--	else if (!strncmp(tok, "none", strlen(arg))) {
--		callchain_param.mode = CHAIN_NONE;
--		symbol_conf.use_callchain = false;
--
--		return 0;
--	}
--
--	else
--		return -1;
--
--	/* get the min percentage */
--	tok = strtok(NULL, ",");
--	if (!tok)
--		goto setup;
--
--	callchain_param.min_percent = strtod(tok, &endptr);
--	if (tok == endptr)
--		return -1;
--
--	/* get the print limit */
--	tok2 = strtok(NULL, ",");
--	if (!tok2)
--		goto setup;
--
--	if (tok2[0] != 'c') {
--		callchain_param.print_limit = strtoul(tok2, &endptr, 0);
--		tok2 = strtok(NULL, ",");
--		if (!tok2)
--			goto setup;
--	}
--
--	/* get the call chain order */
--	if (!strncmp(tok2, "caller", strlen("caller")))
--		callchain_param.order = ORDER_CALLER;
--	else if (!strncmp(tok2, "callee", strlen("callee")))
--		callchain_param.order = ORDER_CALLEE;
--	else
--		return -1;
--
--	/* Get the sort key */
--	tok2 = strtok(NULL, ",");
--	if (!tok2)
--		goto setup;
--	if (!strncmp(tok2, "function", strlen("function")))
--		callchain_param.key = CCKEY_FUNCTION;
--	else if (!strncmp(tok2, "address", strlen("address")))
--		callchain_param.key = CCKEY_ADDRESS;
--	else
--		return -1;
--setup:
--	if (callchain_register_param(&callchain_param) < 0) {
--		pr_err("Can't register callchain params\n");
--		return -1;
--	}
--	return 0;
-+	return report_parse_callchain_opt(arg);
- }
- 
- int
--- 
-1.7.11.7
-
+Thanks.
