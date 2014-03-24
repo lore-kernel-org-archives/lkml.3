@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753403AbaCXOEN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 10:04:13 -0400
-Received: from zproxy110.enst.fr ([137.194.52.33]:52845 "EHLO
-	zproxy110.enst.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbaCXOEM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 10:04:12 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 10:04:11 EDT
-From: ioana.ileana@telecom-paristech.fr
-To: linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org, gregkh@linuxfoundation.org, joe@perches.com,
-        teobaluta@gmail.com, forest@alittletooquiet.net,
-        Ioana Ileana <ioana.ileana@telecom-paristech.fr>
-Subject: [PATCH] staging: vt6655: fix sparse warning
-Date: Mon, 24 Mar 2014 14:58:05 +0100
-Message-Id: <1395669485-703-1-git-send-email-ioana.ileana@telecom-paristech.fr>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753414AbaCXOFT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 10:05:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10007 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752829AbaCXOFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 10:05:16 -0400
+From: Aaron Tomlin <atomlin@redhat.com>
+To: rostedt@goodmis.org
+Cc: mingo@redhat.com, dzickus@redhat.com, atomlin@redhat.com, jgh@redhat.com,
+        mguzik@redhat.com, pzijlstr@redhat.com, peterz@infradead.org,
+        hpa@linux.intel.com, riel@redhat.com, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] tracing: Add BUG_ON when stack end location is over written
+Date: Mon, 24 Mar 2014 14:03:57 +0000
+Message-Id: <1395669837-30209-1-git-send-email-atomlin@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ioana Ileana <ioana.ileana@telecom-paristech.fr>
+It is difficult to detect a stack overrun when it
+actually occurs.
 
-Added missing static qualifier
+We have observed that this type of corruption is often
+silent and can go unnoticed. Once the corrupted region
+is examined, the outcome is undefined and often
+results in sporadic system crashes.
 
-Signed-off-by: Ioana Ileana <ioana.ileana@telecom-paristech.fr>
+When the stack tracing feature is enabled, let's check
+for this condition and take appropriate action.
+
+Note: init_task doesn't get its stack end location
+set to STACK_END_MAGIC.
+
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
 ---
- drivers/staging/vt6655/datarate.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/trace/trace_stack.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/staging/vt6655/datarate.c b/drivers/staging/vt6655/datarate.c
-index c9a89cd..2d760da 100644
---- a/drivers/staging/vt6655/datarate.c
-+++ b/drivers/staging/vt6655/datarate.c
-@@ -51,7 +51,7 @@ extern unsigned short TxRate_iwconfig; //2008-5-8 <add> by chester
- /*---------------------  Static Variables  --------------------------*/
- //static int          msglevel                =MSG_LEVEL_DEBUG;
- static int msglevel = MSG_LEVEL_INFO;
--const unsigned char acbyIERate[MAX_RATE] =
-+static const unsigned char acbyIERate[MAX_RATE] =
- {0x02, 0x04, 0x0B, 0x16, 0x0C, 0x12, 0x18, 0x24, 0x30, 0x48, 0x60, 0x6C};
+diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
+index e6be585..21b320e 100644
+--- a/kernel/trace/trace_stack.c
++++ b/kernel/trace/trace_stack.c
+@@ -13,6 +13,7 @@
+ #include <linux/sysctl.h>
+ #include <linux/init.h>
+ #include <linux/fs.h>
++#include <linux/magic.h>
  
- #define AUTORATE_TXOK_CNT       0x0400
+ #include <asm/setup.h>
+ 
+@@ -144,6 +145,8 @@ check_stack(unsigned long ip, unsigned long *stack)
+ 			i++;
+ 	}
+ 
++	BUG_ON(current != &init_task &&
++		*(end_of_stack(current)) != STACK_END_MAGIC);
+  out:
+ 	arch_spin_unlock(&max_stack_lock);
+ 	local_irq_restore(flags);
 -- 
-1.7.9.5
+1.8.5.3
 
