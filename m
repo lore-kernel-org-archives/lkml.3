@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379AbaCXO1j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 10:27:39 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:14376 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753337AbaCXO1i (ORCPT
+	id S1753328AbaCXOeZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 10:34:25 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50903 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923AbaCXOeY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 10:27:38 -0400
-Date: Mon, 24 Mar 2014 10:27:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: ftrace/kprobes: Warning when insmod two modules
-Message-ID: <20140324102735.122e1cf2@gandalf.local.home>
-In-Reply-To: <5330164D.6030507@hitachi.com>
-References: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com>
-	<5330164D.6030507@hitachi.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Mon, 24 Mar 2014 10:34:24 -0400
+Message-ID: <53304266.2060200@pengutronix.de>
+Date: Mon, 24 Mar 2014 15:34:14 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Bjorn Van Tilt <bjorn.vantilt@gmail.com>, krumboeck@universalnet.at,
+        wg@grandegger.com, linux-can@vger.kernel.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH: 3.11] usb_8dev: Fix memory leak in usb_8dev_start_xmit
+References: <CAMEA=P1AaDL94S8kaep-F012WAseimAyB7ME11Qzd0UMbp-BGg@mail.gmail.com>
+In-Reply-To: <CAMEA=P1AaDL94S8kaep-F012WAseimAyB7ME11Qzd0UMbp-BGg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="4BxXFMgP27k7aG9M8lretMcCKXEeH2dpx"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 Mar 2014 20:26:05 +0900
-Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--4BxXFMgP27k7aG9M8lretMcCKXEeH2dpx
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
- 
-> Thank you for reporting with this pretty backtrace :)
-> Steven, I think this is not the kprobe bug but ftrace (and perhaps, module).
-> 
-> If the ftrace can set loading module text read only before the module subsystem
-> expected, I think it should be protected by the module subsystem itself
-> (e.g. set_all_modules_text_ro(rw) skips the modules which is MODULE_STATE_COMING)
-> 
+On 03/24/2014 03:13 PM, Bjorn Van Tilt wrote:
+> Fixed a memory leak when an error occurred in the transmit function.
+> In the error handling the urb wasn't freed before returning. There was
+> also a call to the usb_unanchor_urb() function but the urb wasn't
+> anchored.
+>=20
+> Signed-off-by: Bjorn Van Tilt <bjorn.vantilt@gmail.com>
 
-I have to admit. I never thought about having the module init code
-enabling ftrace :-)
+Applied to the can tree.
 
-Yeah, it looks like we need to handle this case. I'll take a look into
-it.
+Tnx,
+Marc
 
-Thanks for the report,
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
--- Steve
+
+--4BxXFMgP27k7aG9M8lretMcCKXEeH2dpx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlMwQmYACgkQjTAFq1RaXHPalwCdHKXhTEQdgpj9Wt3mzFxrmESf
+9BQAnRoWQ9w4Syma/bm99ViKmN/E2vGc
+=KnL4
+-----END PGP SIGNATURE-----
+
+--4BxXFMgP27k7aG9M8lretMcCKXEeH2dpx--
