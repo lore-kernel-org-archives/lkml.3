@@ -1,61 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492AbaCXW5M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 18:57:12 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:54222 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751067AbaCXW5K (ORCPT
+	id S1751711AbaCXW6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 18:58:09 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:44680 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaCXW6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 18:57:10 -0400
-Date: Mon, 24 Mar 2014 18:57:08 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
-        John Kacur <jkacur@redhat.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.4.84-rt105
-Message-ID: <20140324185708.0577599c@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Mon, 24 Mar 2014 18:58:07 -0400
+Date: Mon, 24 Mar 2014 23:58:03 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Alexandre Courbot <acourbot@nvidia.com>
+Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gnurou@gmail.com
+Subject: Re: [PATCH 08/12] drm/nouveau/graph: enable when using external
+ firmware
+Message-ID: <20140324225802.GG17218@mithrandir>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+ <1395650554-31925-9-git-send-email-acourbot@nvidia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7uYPyRQQ5N0D02nI"
+Content-Disposition: inline
+In-Reply-To: <1395650554-31925-9-git-send-email-acourbot@nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Dear RT Folks,
+--7uYPyRQQ5N0D02nI
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm pleased to announce the 3.4.84-rt105 stable release.
+On Mon, Mar 24, 2014 at 05:42:30PM +0900, Alexandre Courbot wrote:
+[...]
+> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/g=
+pu/drm/nouveau/core/engine/graph/nvc0.c
+> index 6ef8bf181b2d..f997a18f5760 100644
+> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+> @@ -1133,10 +1133,14 @@ nvc0_graph_ctor(struct nouveau_object *parent, st=
+ruct nouveau_object *engine,
+>  	struct nvc0_graph_oclass *oclass =3D (void *)bclass;
+>  	struct nouveau_device *device =3D nv_device(parent);
+>  	struct nvc0_graph_priv *priv;
+> +	bool use_fw;
 
+Perhaps "ext_fw" or "use_ext_fw" would be more accurate.
 
-This release is just an update to the new stable 3.4.84 version
-and no RT specific changes have been made.
+>  	int ret, i;
+> =20
+> +	use_fw =3D nouveau_boolopt(device->cfgopt, "NvGrUseFW", false);
+> +
+>  	ret =3D nouveau_graph_create(parent, engine, bclass,
+> -				   (oclass->fecs.ucode !=3D NULL), &priv);
+> +				   (oclass->fecs.ucode !=3D NULL) || use_fw,
+> +				   &priv);
 
+Or perhaps a more intuitive way would be to name the variable "enable"
+and have something like:
 
-You can get this release via the git tree at:
+	if (!nouveau_boolopt(device->cfgopt, "NvGrUseFW", false))
+		enable =3D oclass->fecs.ucode !=3D NULL;
+	else
+		enable =3D true;
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+	ret =3D nouveau_graph_create(parent, engine, bclass, enable, &priv);
+	...
 
-  branch: v3.4-rt
-  Head SHA1: ebbe3adc6986d0908248e6c45a7b186a4f7f8d92
+Thierry
 
+--7uYPyRQQ5N0D02nI
+Content-Type: application/pgp-signature
 
-Or to build 3.4.84-rt105 directly, the following patches should be applied:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
+iQIcBAEBAgAGBQJTMLh6AAoJEN0jrNd/PrOh4P0QAIXhJPYt+gjAo+ncR+2zvSnS
+0RBpqsNooVqrsxVAVDZJLSqLAcVIJqw6zJvO7tpLq6O4EG1b+gPu7EBeJEqb+EwK
+4kLCeGtx3IAIsi7qKDzwfF/2aUoMxKIHynWzvHv0M+GwA6WY0DogtuSn2XHJG5v8
+eB0sV/R18TwYjL7yMLFMl3ZYYBSSzeRNHBb4pSIt0FDSwKuPdwGmKMYBYWCb0LId
+BpJQIZnqwsnP5dDNuxxGiW7iN41F9KmdGX8pdIH5fdZ1V8vQMTUW2lXsEMxtht/y
+eiVF2v8aiQ5sd6sGlblcOI0LoLukMfnorD8+td3VaidXEquJJ1S0lkR/RGe87wsJ
+eqeDa1aqtUa4oY+FQYlRtXKAgfudBfUKI+qE1dlWMQlgDk+Jg+vsNRaZM0lwZ4HY
+HCXpzORYvXbckNr2ClDtI53gqorTG/RMTzwxKm1vZR51ZrriyyBs59/TRADkqQ0o
+8jtDsFHMbszrq0DOfVsVHDNBPfWDOpiixTTaMpUMhZLrBbWsny91hlyDx+roeVUd
+DEqwKDPWBfax3H2H+j9fvlU6E+s6jBz8IQ/PDWOxo/lyt3q808Ct+ZPS1YE12kQs
+WRtTnbxPYjRb7MjTApGCw3Ltg2YD+zGvdAiiRVp5CpjfzCJhYzosv+47ZSQLQxHW
+lQqJopsX03nlPPK6AiE0
+=L8DW
+-----END PGP SIGNATURE-----
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.84.xz
-
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.84-rt105.patch.xz
-
-
-
-
-Enjoy,
-
--- Steve
-
+--7uYPyRQQ5N0D02nI--
