@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753101AbaCXIuN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:50:13 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:7378 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752451AbaCXIqM (ORCPT
+	id S1752810AbaCXIv2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:51:28 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:2941 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551AbaCXIqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:46:12 -0400
+	Mon, 24 Mar 2014 04:46:04 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 24 Mar 2014 01:42:11 -0700
+	by hqnvupgp07.nvidia.com on Mon, 24 Mar 2014 01:40:12 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>
 CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
         <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 05/12] drm/nouveau/fifo: add GK20A support
-Date: Mon, 24 Mar 2014 17:42:27 +0900
-Message-ID: <1395650554-31925-6-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH 02/12] drm/nouveau/timer: skip calibration on GK20A
+Date: Mon, 24 Mar 2014 17:42:24 +0900
+Message-ID: <1395650554-31925-3-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
 References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
@@ -28,95 +28,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-GK20A's FIFO is compatible with NVE0, but only features 128 channels and
-1 runlist.
+GK20A's timer is directly attached to the system timer and cannot be
+calibrated. Skip the calibration phase on that chip since the
+corresponding registers do not exist.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/Makefile                   |  1 +
- drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |  1 +
- drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c    | 35 ++++++++++++++++++++++
- drivers/gpu/drm/nouveau/core/include/engine/fifo.h |  1 +
- 4 files changed, 38 insertions(+)
- create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
+ drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19 +++++++++++++------
+ 1 file changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-index d310c195bdfe..a90087bbdf88 100644
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -237,6 +237,7 @@ nouveau-y += core/engine/fifo/nv50.o
- nouveau-y += core/engine/fifo/nv84.o
- nouveau-y += core/engine/fifo/nvc0.o
- nouveau-y += core/engine/fifo/nve0.o
-+nouveau-y += core/engine/fifo/nvea.o
- nouveau-y += core/engine/fifo/nv108.o
- nouveau-y += core/engine/graph/ctxnv40.o
- nouveau-y += core/engine/graph/ctxnv50.o
-diff --git a/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h b/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
-index 014344ebee66..e96b32bb1bbc 100644
---- a/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
-+++ b/drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h
-@@ -8,6 +8,7 @@ int  nve0_fifo_ctor(struct nouveau_object *, struct nouveau_object *,
- 		    struct nouveau_object **);
- void nve0_fifo_dtor(struct nouveau_object *);
- int  nve0_fifo_init(struct nouveau_object *);
-+int  nve0_fifo_fini(struct nouveau_object *, bool);
+diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+index c0bdd10358d7..822fe0d8a871 100644
+--- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
++++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
+@@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
+ 	if (ret)
+ 		return ret;
  
- struct nve0_fifo_impl {
- 	struct nouveau_oclass base;
-diff --git a/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c b/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
-new file mode 100644
-index 000000000000..5e3a9514df5d
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
-@@ -0,0 +1,35 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
++	/* gk20a does not have the calibration registers */
++	if (device->chipset == 0xea)
++		goto skip_clk_init;
 +
-+#include "nve0.h"
-+
-+struct nouveau_oclass *
-+nvea_fifo_oclass = &(struct nve0_fifo_impl) {
-+	.base.handle = NV_ENGINE(FIFO, 0xea),
-+	.base.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = nve0_fifo_ctor,
-+		.dtor = nve0_fifo_dtor,
-+		.init = nve0_fifo_init,
-+		.fini = nve0_fifo_fini,
-+	},
-+	.channels = 128,
-+}.base;
-diff --git a/drivers/gpu/drm/nouveau/core/include/engine/fifo.h b/drivers/gpu/drm/nouveau/core/include/engine/fifo.h
-index 26b6b2bb1112..823356f45137 100644
---- a/drivers/gpu/drm/nouveau/core/include/engine/fifo.h
-+++ b/drivers/gpu/drm/nouveau/core/include/engine/fifo.h
-@@ -109,6 +109,7 @@ extern struct nouveau_oclass *nv50_fifo_oclass;
- extern struct nouveau_oclass *nv84_fifo_oclass;
- extern struct nouveau_oclass *nvc0_fifo_oclass;
- extern struct nouveau_oclass *nve0_fifo_oclass;
-+extern struct nouveau_oclass *nvea_fifo_oclass;
- extern struct nouveau_oclass *nv108_fifo_oclass;
+ 	/* aim for 31.25MHz, which gives us nanosecond timestamps */
+ 	d = 1000000 / 32;
  
- void nv04_fifo_intr(struct nouveau_subdev *);
+@@ -235,20 +239,23 @@ nv04_timer_init(struct nouveau_object *object)
+ 		d >>= 1;
+ 	}
+ 
+-	/* restore the time before suspend */
+-	lo = priv->suspend_time;
+-	hi = (priv->suspend_time >> 32);
+-
+ 	nv_debug(priv, "input frequency : %dHz\n", f);
+ 	nv_debug(priv, "input multiplier: %d\n", m);
+ 	nv_debug(priv, "numerator       : 0x%08x\n", n);
+ 	nv_debug(priv, "denominator     : 0x%08x\n", d);
+ 	nv_debug(priv, "timer frequency : %dHz\n", (f * m) * d / n);
+-	nv_debug(priv, "time low        : 0x%08x\n", lo);
+-	nv_debug(priv, "time high       : 0x%08x\n", hi);
+ 
+ 	nv_wr32(priv, NV04_PTIMER_NUMERATOR, n);
+ 	nv_wr32(priv, NV04_PTIMER_DENOMINATOR, d);
++
++skip_clk_init:
++	/* restore the time before suspend */
++	lo = priv->suspend_time;
++	hi = (priv->suspend_time >> 32);
++
++	nv_debug(priv, "time low        : 0x%08x\n", lo);
++	nv_debug(priv, "time high       : 0x%08x\n", hi);
++
+ 	nv_wr32(priv, NV04_PTIMER_INTR_0, 0xffffffff);
+ 	nv_wr32(priv, NV04_PTIMER_INTR_EN_0, 0x00000000);
+ 	nv_wr32(priv, NV04_PTIMER_TIME_1, hi);
 -- 
 1.9.1
 
