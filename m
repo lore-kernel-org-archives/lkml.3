@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbaCXLe6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 07:34:58 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30323 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752325AbaCXLe5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 07:34:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,720,1389772800"; 
-   d="scan'208";a="506278328"
-Message-ID: <53301A90.6050803@linux.intel.com>
-Date: Mon, 24 Mar 2014 13:44:16 +0200
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752976AbaCXLip (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 07:38:45 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:39978 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752454AbaCXLim (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 07:38:42 -0400
+Date: Mon, 24 Mar 2014 11:38:21 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <Will.Deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 7/8] tty/serial: add arm64 semihosting earlycon
+Message-ID: <20140324113821.GF3850@arm.com>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
+ <1395436128-11244-8-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-To: David Cohen <david.a.cohen@linux.intel.com>
-CC: Felipe Balbi <balbi@ti.com>, gregkh@linuxfoundation.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] usb/xhci: fix compilation warning when !CONFIG_PCI
- && !CONFIG_PM
-References: <1389059068-18491-1-git-send-email-david.a.cohen@linux.intel.com> <1389063739-6028-1-git-send-email-david.a.cohen@linux.intel.com> <20140218180030.GA10029@psi-dev26.jf.intel.com> <20140218184741.GI28506@saruman.home> <20140218190412.GA32402@psi-dev26.jf.intel.com> <20140321214123.GB10097@psi-dev26.jf.intel.com>
-In-Reply-To: <20140321214123.GB10097@psi-dev26.jf.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395436128-11244-8-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 11:41 PM, David Cohen wrote:
-> Hi Mathias,
->
->>
->> Thanks for commenting. That would be actually the v1 of my patch :)
->> I changed after I see the proper function has __maybe_unused flag.
->>
->> But I'm fine with Sarah picking any of the patch's versions.
->
-> Guess you're handling the review of this trivial patch now :)
-> Comments are very welcome.
->
-> Br, David
->
+On Fri, Mar 21, 2014 at 09:08:47PM +0000, Rob Herring wrote:
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index 81bdd52..e96e2ba 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -888,6 +888,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  		uart[8250],mmio,<addr>[,options]
+>  		uart[8250],mmio32,<addr>[,options]
+>  		pl011,<addr>
+> +		smh
+>  			Start an early, polled-mode console on a serial port
+>  			at the specified I/O port or MMIO address. 8250
+>  			MMIO inter-register address stride is either 8-bit
 
-Hi
+Same comment as per a previous patch, "smh" does not take any parameters
+at all here.
 
-Patch version 1 inlining the stubs looks good to me. I'll queue it for 
-Greg’s usb-linus once 3.15-rc1 is out.
+> --- /dev/null
+> +++ b/drivers/tty/serial/earlycon-arm-semihost.c
+> @@ -0,0 +1,44 @@
+> +/*
+> + * Copyright (C) 2012 ARM Ltd.
+> + * Author: Catalin Marinas <catalin.marinas@arm.com>
 
--Mathias
+Nitpick: author should be Mark Zyngier <marc.zyngier@arm.com> as per
+commit 0492f72508184 (arm64: early_printk: add support for FastModel
+console output)
 
+-- 
+Catalin
