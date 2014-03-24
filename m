@@ -1,285 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754258AbaCXTmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:42:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10766 "EHLO mx1.redhat.com"
+	id S1754416AbaCXTmn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:42:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754393AbaCXThy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:54 -0400
+	id S1754413AbaCXThx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:37:53 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
         andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 09/15 V3] perf, c2c: Sort based on hottest cache line
-Date: Mon, 24 Mar 2014 15:37:00 -0400
-Message-Id: <1395689826-215033-10-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 12/15 V3] perf, c2c: Output summary stats
+Date: Mon, 24 Mar 2014 15:37:03 -0400
+Message-Id: <1395689826-215033-13-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that we have all the events sort on a unique address, we can walk
-the rbtree sequential and count up all the HITMs for each cacheline
-fairly easily.
+Output some summary stats based on the processed records.
+Mainly diagnostic uses.
 
-Once we encounter a new event on a different cacheline, process the previous
-cacheline.  That includes determining if any HITMs were present on that
-cacheline and if so, add it to another rbtree sorted on the number of HITMs.
+Stats done by Dick Fowles, backported by me.
 
-This second rbtree sorted on number of HITMs will be the interesting data
-we want to report and will be displayed in a follow up patch.
+Sample output:
 
-For now, organize the data properly.
+=================================================
+            Trace Event Information
+=================================================
+  Total records                     :    1322047
+  Locked Load/Store Operations      :     206317
+  Load Operations                   :     355701
+  Loads - uncacheable               :        590
+  Loads - IO                        :          0
+  Loads - Miss                      :        440
+  Loads - no mapping                :        207
+  Load Fill Buffer Hit              :     100214
+  Load L1D hit                      :     148454
+  Load L2D hit                      :      15170
+  Load LLC hit                      :      53872
+  Load Local HITM                   :      15388
+  Load Remote HITM                  :      26760
+  Load Remote HIT                   :       3910
+  Load Local DRAM                   :       2436
+  Load Remote DRAM                  :       3648
+  Load MESI State Exclusive         :       2883
+  Load MESI State Shared            :       3201
+  Load LLC Misses                   :      36754
+  LLC Misses to Local DRAM          :        6.6%
+  LLC Misses to Remote DRAM         :        9.9%
+  LLC Misses to Remote cache (HIT)  :       10.6%
+  LLC Misses to Remote cache (HITM) :       72.8%
+  Store Operations                  :     966322
+  Store - uncacheable               :          0
+  Store - no mapping                :      42931
+  Store L1D Hit                     :     915696
+  Store L1D Miss                    :       7695
+  No Page Map Rejects               :       1193
+  Unable to parse data source       :         24
 
-V2: re-work using hist_entries
+V2: refresh to hist_entry
 
+Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 201 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 201 insertions(+)
+ tools/perf/builtin-c2c.c | 47 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 46 insertions(+), 1 deletion(-)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 55c5ce9..8674626 100644
+index 363deec..37bf0bd 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -59,6 +59,25 @@ struct perf_c2c {
- 	struct c2c_stats	stats;
- };
- 
-+#define CACHE_LINESIZE       64
-+#define CLINE_OFFSET_MSK     (CACHE_LINESIZE - 1)
-+#define CLADRS(a)            ((a) & ~(CLINE_OFFSET_MSK))
-+#define CLOFFSET(a)          (int)((a) &  (CLINE_OFFSET_MSK))
-+
-+struct c2c_hit {
-+	struct rb_node	rb_node;
-+	struct rb_root  tree;
-+	struct list_head list;
-+	u64		cacheline;
-+	int		color;
-+	struct c2c_stats	stats;
-+	pid_t		pid;
-+	pid_t		tid;
-+	u64		daddr;
-+	u64		iaddr;
-+	struct mem_info	*mi;
-+};
-+
- enum { OP, LVL, SNP, LCK, TLB };
- 
- #define DEFAULT_LATENCY_THRES	30
-@@ -160,6 +179,44 @@ static int perf_c2c__scnprintf_data_src(char *bf, size_t size, uint64_t val)
- 	return printed;
+@@ -966,7 +966,6 @@ static void print_hitm_cacheline_offset(struct c2c_hit *clo,
+ 						 23, stdout);
+ 	}
+ }
+-
+ static void print_c2c_hitm_report(struct rb_root *hitm_tree,
+ 				  struct c2c_stats *hitm_stats __maybe_unused,
+ 				  struct c2c_stats *c2c_stats)
+@@ -1161,6 +1160,51 @@ cleanup:
+ 	return;
  }
  
-+static int c2c_hitm__add_to_list(struct rb_root *root, struct c2c_hit *h)
++static void print_c2c_trace_report(struct perf_c2c *c2c)
 +{
-+	struct rb_node **p;
-+	struct rb_node *parent = NULL;
-+	struct c2c_hit *he;
-+	int64_t cmp;
-+	u64 l_hitms, r_hitms;
++	int llc_misses;
++	struct c2c_stats *stats = &c2c->stats;
 +
-+	p = &root->rb_node;
++	llc_misses = stats->t.lcl_dram +
++		     stats->t.rmt_dram +
++		     stats->t.rmt_hit +
++		     stats->t.rmt_hitm;
 +
-+	while (*p != NULL) {
-+		parent = *p;
-+		he = rb_entry(parent, struct c2c_hit, rb_node);
-+
-+		/* sort on remote hitms first */
-+		l_hitms = he->stats.t.rmt_hitm;
-+		r_hitms = h->stats.t.rmt_hitm;
-+		cmp = r_hitms - l_hitms;
-+
-+		if (!cmp) {
-+			/* sort on local hitms */
-+			l_hitms = he->stats.t.lcl_hitm;
-+			r_hitms = h->stats.t.lcl_hitm;
-+			cmp = r_hitms - l_hitms;
-+		}
-+
-+		if (cmp > 0)
-+			p = &(*p)->rb_left;
-+		else
-+			p = &(*p)->rb_right;
-+	}
-+
-+	rb_link_node(&h->rb_node, parent, p);
-+	rb_insert_color(&h->rb_node, root);
-+
-+	return 0;
-+}
-+
- static int perf_c2c__fprintf_header(FILE *fp)
- {
- 	int printed = fprintf(fp, "%c %-16s  %6s  %6s  %4s  %18s  %18s  %18s  %6s  %-10s %-60s %s\n", 
-@@ -315,6 +372,50 @@ static int c2c_decode_stats(struct c2c_stats *stats, struct hist_entry *entry)
- 	return err;
- }
- 
-+static struct c2c_hit *c2c_hit__new(u64 cacheline, struct hist_entry *entry)
-+{
-+	struct c2c_hit *h = zalloc(sizeof(struct c2c_hit));
-+
-+	if (!h) {
-+		pr_err("Could not allocate c2c_hit memory\n");
-+		return NULL;
-+	}
-+
-+	CPU_ZERO(&h->stats.cpuset);
-+	INIT_LIST_HEAD(&h->list);
-+	init_stats(&h->stats.stats);
-+	h->tree = RB_ROOT;
-+	h->cacheline = cacheline;
-+	h->pid = entry->thread->pid_;
-+	h->tid = entry->thread->tid;
-+
-+	/* use original addresses here, not adjusted al_addr */
-+	h->iaddr = entry->mem_info->iaddr.addr;
-+	h->daddr = entry->mem_info->daddr.addr;
-+
-+	h->mi = entry->mem_info;
-+	return h;
-+}
-+
-+static void c2c_hit__update_strings(struct c2c_hit *h,
-+				    struct hist_entry *n)
-+{
-+	if (h->pid != n->thread->pid_)
-+		h->pid = -1;
-+
-+	if (h->tid != n->thread->tid)
-+		h->tid = -1;
-+
-+	/* use original addresses here, not adjusted al_addr */
-+	if (h->iaddr != n->mem_info->iaddr.addr)
-+		h->iaddr = -1;
-+
-+	if (CLADRS(h->daddr) != CLADRS(n->mem_info->daddr.addr))
-+		h->daddr = -1;
-+
-+	CPU_SET(n->cpu, &h->stats.cpuset);
-+}
-+
- static int perf_c2c__process_load_store(struct perf_c2c *c2c,
- 					struct addr_location *al,
- 					struct perf_sample *sample,
-@@ -424,6 +525,104 @@ err:
- 	return err;
- }
- 
-+#define HAS_HITMS(h) (h->stats.t.lcl_hitm || h->stats.t.rmt_hitm)
-+
-+static void c2c_hit__update_stats(struct c2c_stats *new,
-+				  struct c2c_stats *old)
-+{
-+	new->t.load		+= old->t.load;
-+	new->t.ld_fbhit		+= old->t.ld_fbhit;
-+	new->t.ld_l1hit		+= old->t.ld_l1hit;
-+	new->t.ld_l2hit		+= old->t.ld_l2hit;
-+	new->t.ld_llchit	+= old->t.ld_llchit;
-+	new->t.locks		+= old->t.locks;
-+	new->t.lcl_dram		+= old->t.lcl_dram;
-+	new->t.rmt_dram		+= old->t.rmt_dram;
-+	new->t.lcl_hitm		+= old->t.lcl_hitm;
-+	new->t.rmt_hitm		+= old->t.rmt_hitm;
-+	new->t.rmt_hit		+= old->t.rmt_hit;
-+	new->t.store		+= old->t.store;
-+	new->t.st_l1hit		+= old->t.st_l1hit;
-+
-+	new->total_period	+= old->total_period;
-+}
-+
-+static inline int valid_hitm_or_store(union perf_mem_data_src *dsrc)
-+{
-+	return ((dsrc->mem_snoop & P(SNOOP,HITM)) ||
-+		(dsrc->mem_op & P(OP,STORE)));
-+}
-+
-+static void c2c_analyze_hitms(struct perf_c2c *c2c)
-+{
-+
-+	struct rb_node *next = rb_first(c2c->hists.entries_in);
-+	struct hist_entry *he;
-+	struct c2c_hit *h = NULL;
-+	struct c2c_stats hitm_stats;
-+	struct rb_root hitm_tree = RB_ROOT;
-+	int shared_clines = 0;
-+	u64 cl = 0;
-+
-+	memset(&hitm_stats, 0, sizeof(struct c2c_stats));
-+
-+	/* find HITMs */
-+	while (next) {
-+		he = rb_entry(next, struct hist_entry, rb_node_in);
-+		next = rb_next(&he->rb_node_in);
-+
-+		cl = he->mem_info->daddr.al_addr;
-+
-+		/* switch cache line objects */
-+		/* 'color' forces a boundary change based on the original sort */
-+		if (!h || !he->color || (CLADRS(cl) != h->cacheline)) {
-+			if (h && HAS_HITMS(h)) {
-+				c2c_hit__update_stats(&hitm_stats, &h->stats);
-+
-+				/* sort based on hottest cacheline */
-+				c2c_hitm__add_to_list(&hitm_tree, h);
-+				shared_clines++;
-+			} else {
-+				/* stores-only are un-interesting */
-+				free(h);
-+			}
-+			h = c2c_hit__new(CLADRS(cl), he);
-+			if (!h)
-+				goto cleanup;
-+		}
-+
-+
-+		c2c_decode_stats(&h->stats, he);
-+
-+		/* filter out non-hitms as un-interesting noise */
-+		if (valid_hitm_or_store(&he->mem_info->data_src)) {
-+			/* save the entry for later processing */
-+			list_add_tail(&he->pairs.node, &h->list);
-+
-+			c2c_hit__update_strings(h, he);
-+		}
-+	}
-+
-+	/* last chunk */
-+	if (h && HAS_HITMS(h)) {
-+		c2c_hit__update_stats(&hitm_stats, &h->stats);
-+		c2c_hitm__add_to_list(&hitm_tree, h);
-+		shared_clines++;
-+	} else
-+		free(h);
-+
-+cleanup:
-+	next = rb_first(&hitm_tree);
-+	while (next) {
-+		h = rb_entry(next, struct c2c_hit, rb_node);
-+		next = rb_next(&h->rb_node);
-+		rb_erase(&h->rb_node, &hitm_tree);
-+
-+		free(h);
-+	}
-+	return;
++	printf("=================================================\n");
++	printf("            Trace Event Information              \n");
++	printf("=================================================\n");
++	printf("  Total records                     : %10d\n", c2c->stats.nr_entries);
++	printf("  Locked Load/Store Operations      : %10d\n", stats->t.locks);
++	printf("  Load Operations                   : %10d\n", stats->t.load);
++	printf("  Loads - uncacheable               : %10d\n", stats->t.ld_uncache);
++	printf("  Loads - IO                        : %10d\n", stats->t.ld_io);
++	printf("  Loads - Miss                      : %10d\n", stats->t.ld_miss);
++	printf("  Loads - no mapping                : %10d\n", stats->t.ld_noadrs);
++	printf("  Load Fill Buffer Hit              : %10d\n", stats->t.ld_fbhit);
++	printf("  Load L1D hit                      : %10d\n", stats->t.ld_l1hit);
++	printf("  Load L2D hit                      : %10d\n", stats->t.ld_l2hit);
++	printf("  Load LLC hit                      : %10d\n", stats->t.ld_llchit + stats->t.lcl_hitm);
++	printf("  Load Local HITM                   : %10d\n", stats->t.lcl_hitm);
++	printf("  Load Remote HITM                  : %10d\n", stats->t.rmt_hitm);
++	printf("  Load Remote HIT                   : %10d\n", stats->t.rmt_hit);
++	printf("  Load Local DRAM                   : %10d\n", stats->t.lcl_dram);
++	printf("  Load Remote DRAM                  : %10d\n", stats->t.rmt_dram);
++	printf("  Load MESI State Exclusive         : %10d\n", stats->t.ld_excl);
++	printf("  Load MESI State Shared            : %10d\n", stats->t.ld_shared);
++	printf("  Load LLC Misses                   : %10d\n", llc_misses);
++	printf("  LLC Misses to Local DRAM          : %10.1f%%\n", ((double)stats->t.lcl_dram/(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote DRAM         : %10.1f%%\n", ((double)stats->t.rmt_dram/(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote cache (HIT)  : %10.1f%%\n", ((double)stats->t.rmt_hit /(double)llc_misses) * 100.);
++	printf("  LLC Misses to Remote cache (HITM) : %10.1f%%\n", ((double)stats->t.rmt_hitm/(double)llc_misses) * 100.);
++	printf("  Store Operations                  : %10d\n", stats->t.store);
++	printf("  Store - uncacheable               : %10d\n", stats->t.st_uncache);
++	printf("  Store - no mapping                : %10d\n", stats->t.st_noadrs);
++	printf("  Store L1D Hit                     : %10d\n", stats->t.st_l1hit);
++	printf("  Store L1D Miss                    : %10d\n", stats->t.st_l1miss);
++	printf("  No Page Map Rejects               : %10d\n", stats->t.nomap);
++	printf("  Unable to parse data source       : %10d\n", stats->t.noparse);
 +}
 +
  static int perf_c2c__process_events(struct perf_session *session,
  				    struct perf_c2c *c2c)
  {
-@@ -435,6 +634,8 @@ static int perf_c2c__process_events(struct perf_session *session,
+@@ -1172,6 +1216,7 @@ static int perf_c2c__process_events(struct perf_session *session,
  		goto err;
  	}
  
-+	c2c_analyze_hitms(c2c);
-+
++	print_c2c_trace_report(c2c);
+ 	c2c_analyze_hitms(c2c);
+ 
  err:
- 	return err;
- }
 -- 
 1.7.11.7
 
