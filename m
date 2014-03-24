@@ -1,78 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753641AbaCXR1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 13:27:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372AbaCXR1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 13:27:16 -0400
-Date: Mon, 24 Mar 2014 18:01:15 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        joseph.salisbury@canonical.com, Nagalakshmi.Nandigama@lsi.com,
-        Sreekanth.Reddy@lsi.com, rientjes@google.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        tj@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, linux-scsi@vger.kernel.org,
-        thenzl@redhat.com
-Subject: Re: please fix FUSION (Was:
-	[v3.13][v3.14][Regression]kthread:makekthread_create()killable)
-Message-ID: <20140324170115.GA30307@redhat.com>
-References: <20140319182910.GA14511@redhat.com> <20140319194232.GA6207@redhat.com> <532B1B67.5050104@canonical.com> <20140320192307.GA11883@redhat.com> <20140321183443.GA3891@redhat.com> <201403221525.FJC69759.MSLOtHOJOVFFQF@I-love.SAKURA.ne.jp> <20140322192511.GA14811@redhat.com> <1395521330.2143.51.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395521330.2143.51.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753675AbaCXRas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 13:30:48 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:43614 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753432AbaCXRap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 13:30:45 -0400
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Zhang Rui <rui.zhang@intel.com>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Sujith Thomas <sujith.thomas@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, acpi4asus-user@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-pm@vger.kernel.org
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Subject: [PATCH] linux/thermal.h: Rename KELVIN_TO_CELSIUS to DECI_KELVIN_TO_CELSIUS
+Date: Mon, 24 Mar 2014 18:29:09 +0100
+Message-Id: <1395682149-16563-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 1.8.4.rc3.2.g61bff3f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/22, James Bottomley wrote:
->
-> OK, the fix from the SCSI point of view is to make the mpt teardown path
-> actually work.  The whole thing looks to be a complete mess because
-> there's another place where it will do the wrong thing in
-> mptscsih_remove().  You always have to call mpt_detach() otherwise the
-> device doesn't get removed from the lists.  In theory this patch fixes
-> both bugs in the driver.
+The macros KELVIN_TO_CELSIUS and CELSIUS_TO_KELVIN actually work on
+decikelvins, so rename them to reflect their actual semantics.
 
-Yes, I obviously thought about the same change ;)
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/acpi/thermal.c              | 12 ++++++------
+ drivers/platform/x86/asus-wmi.c     |  2 +-
+ drivers/platform/x86/intel_menlow.c |  8 ++++----
+ include/linux/thermal.h             |  6 +++---
+ 4 files changed, 14 insertions(+), 14 deletions(-)
 
-But note that mpt_detach() doesn't look correct too. This is almost
-off-topic, but still...
-
-At least it needs s/cancel_delayed_work/cancel_delayed_work_sync/ to
-sync with mpt_fault_reset_work().
-
-And it is not clear if it is safe to simply destroy ->fw_event_q,
-perhaps it can't have the pending works if the caller is teardown
-path, and otherwise we rely on mptsas_cleanup_fw_event_q(), I do
-not know... but mptsas_cleanup_fw_event_q() needs _sync too I guess,
-and obviously mptsas_free_fw_event() should be called unconditionally.
-
-OTOH, mpt_attach() doesn't verify that ->fw_event_q was created
-succesfully. And, if mpt_do_ioc_recovery() fails it destroys
-->reset_work_q but not ->fw_event_q. Looks like this driver needs
-some cleanups.
-
-> --- a/drivers/message/fusion/mptscsih.c
-> +++ b/drivers/message/fusion/mptscsih.c
-> @@ -1176,10 +1176,14 @@ mptscsih_remove(struct pci_dev *pdev)
->  	MPT_SCSI_HOST		*hd;
->  	int sz1;
->
-> +	if (!host)
-> +		/* not brought up far enough to do scsi_host_attach() */
-                                                   ^^^^^^^^^^^^^^^^
-scsi_host_alloc ;)
-
-> +		goto out;
-> +
-
-Yes, I think this is correct. mpt_attach() does kzalloc(MPT_ADAPTER) so
-we can probably rely on ->sh == NULL if _alloc failed.
-
-Oleg.
+diff --git a/drivers/acpi/thermal.c b/drivers/acpi/thermal.c
+index 08626c8..3742e64 100644
+--- a/drivers/acpi/thermal.c
++++ b/drivers/acpi/thermal.c
+@@ -313,7 +313,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
+ 			if (crt == -1) {
+ 				tz->trips.critical.flags.valid = 0;
+ 			} else if (crt > 0) {
+-				unsigned long crt_k = CELSIUS_TO_KELVIN(crt);
++				unsigned long crt_k = CELSIUS_TO_DECI_KELVIN(crt);
+ 				/*
+ 				 * Allow override critical threshold
+ 				 */
+@@ -349,7 +349,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
+ 		if (psv == -1) {
+ 			status = AE_SUPPORT;
+ 		} else if (psv > 0) {
+-			tmp = CELSIUS_TO_KELVIN(psv);
++			tmp = CELSIUS_TO_DECI_KELVIN(psv);
+ 			status = AE_OK;
+ 		} else {
+ 			status = acpi_evaluate_integer(tz->device->handle,
+@@ -429,7 +429,7 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
+ 					break;
+ 				if (i == 1)
+ 					tz->trips.active[0].temperature =
+-						CELSIUS_TO_KELVIN(act);
++						CELSIUS_TO_DECI_KELVIN(act);
+ 				else
+ 					/*
+ 					 * Don't allow override higher than
+@@ -437,9 +437,9 @@ static int acpi_thermal_trips_update(struct acpi_thermal *tz, int flag)
+ 					 */
+ 					tz->trips.active[i - 1].temperature =
+ 						(tz->trips.active[i - 2].temperature <
+-						CELSIUS_TO_KELVIN(act) ?
++						CELSIUS_TO_DECI_KELVIN(act) ?
+ 						tz->trips.active[i - 2].temperature :
+-						CELSIUS_TO_KELVIN(act));
++						CELSIUS_TO_DECI_KELVIN(act));
+ 				break;
+ 			} else {
+ 				tz->trips.active[i].temperature = tmp;
+@@ -1094,7 +1094,7 @@ static int acpi_thermal_add(struct acpi_device *device)
+ 		goto free_memory;
+ 
+ 	pr_info(PREFIX "%s [%s] (%ld C)\n", acpi_device_name(device),
+-		acpi_device_bid(device), KELVIN_TO_CELSIUS(tz->temperature));
++		acpi_device_bid(device), DECI_KELVIN_TO_CELSIUS(tz->temperature));
+ 	goto end;
+ 
+ free_memory:
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index c5e082f..2d81d5a 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -1066,7 +1066,7 @@ static ssize_t asus_hwmon_temp1(struct device *dev,
+ 	if (err < 0)
+ 		return err;
+ 
+-	value = KELVIN_TO_CELSIUS((value & 0xFFFF)) * 1000;
++	value = DECI_KELVIN_TO_CELSIUS((value & 0xFFFF)) * 1000;
+ 
+ 	return sprintf(buf, "%d\n", value);
+ }
+diff --git a/drivers/platform/x86/intel_menlow.c b/drivers/platform/x86/intel_menlow.c
+index e8b46d2..0a919d8 100644
+--- a/drivers/platform/x86/intel_menlow.c
++++ b/drivers/platform/x86/intel_menlow.c
+@@ -315,7 +315,7 @@ static ssize_t aux0_show(struct device *dev,
+ 
+ 	result = sensor_get_auxtrip(attr->handle, 0, &value);
+ 
+-	return result ? result : sprintf(buf, "%lu", KELVIN_TO_CELSIUS(value));
++	return result ? result : sprintf(buf, "%lu", DECI_KELVIN_TO_CELSIUS(value));
+ }
+ 
+ static ssize_t aux1_show(struct device *dev,
+@@ -327,7 +327,7 @@ static ssize_t aux1_show(struct device *dev,
+ 
+ 	result = sensor_get_auxtrip(attr->handle, 1, &value);
+ 
+-	return result ? result : sprintf(buf, "%lu", KELVIN_TO_CELSIUS(value));
++	return result ? result : sprintf(buf, "%lu", DECI_KELVIN_TO_CELSIUS(value));
+ }
+ 
+ static ssize_t aux0_store(struct device *dev,
+@@ -345,7 +345,7 @@ static ssize_t aux0_store(struct device *dev,
+ 	if (value < 0)
+ 		return -EINVAL;
+ 
+-	result = sensor_set_auxtrip(attr->handle, 0, CELSIUS_TO_KELVIN(value));
++	result = sensor_set_auxtrip(attr->handle, 0, CELSIUS_TO_DECI_KELVIN(value));
+ 	return result ? result : count;
+ }
+ 
+@@ -364,7 +364,7 @@ static ssize_t aux1_store(struct device *dev,
+ 	if (value < 0)
+ 		return -EINVAL;
+ 
+-	result = sensor_set_auxtrip(attr->handle, 1, CELSIUS_TO_KELVIN(value));
++	result = sensor_set_auxtrip(attr->handle, 1, CELSIUS_TO_DECI_KELVIN(value));
+ 	return result ? result : count;
+ }
+ 
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index f7e11c7..c978aa3 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -41,9 +41,9 @@
+ #define THERMAL_NO_LIMIT	THERMAL_CSTATE_INVALID
+ 
+ /* Unit conversion macros */
+-#define KELVIN_TO_CELSIUS(t)	(long)(((long)t-2732 >= 0) ?	\
+-				((long)t-2732+5)/10 : ((long)t-2732-5)/10)
+-#define CELSIUS_TO_KELVIN(t)	((t)*10+2732)
++#define DECI_KELVIN_TO_CELSIUS(t)	(long)(((long)t-2732 >= 0) ?	\
++					((long)t-2732+5)/10 : ((long)t-2732-5)/10)
++#define CELSIUS_TO_DECI_KELVIN(t)	((t)*10+2732)
+ 
+ /* Adding event notification support elements */
+ #define THERMAL_GENL_FAMILY_NAME                "thermal_event"
+-- 
+1.8.4.rc3.2.g61bff3f
 
