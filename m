@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751304AbaCXXzK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 19:55:10 -0400
-Received: from ozlabs.org ([203.10.76.45]:52759 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750875AbaCXXzI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 19:55:08 -0400
-Date: Tue, 25 Mar 2014 10:55:01 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: linux-next: manual merge of the keystone tree with the arm-soc tree
-Message-Id: <20140325105501.e63fcdd78d0d604b4e5309a1@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Mar_2014_10_55_01_+1100_IuY/9hO6kyanNOrR"
+	id S1751797AbaCYAAD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 20:00:03 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:54844 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751192AbaCYAAA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 20:00:00 -0400
+X-IronPort-AV: E=Sophos;i="4.97,723,1389744000"; 
+   d="scan'208";a="113177532"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v3 1/3] xen-netback: Stop using xenvif_tx_pending_slots_available
+Date: Mon, 24 Mar 2014 23:59:49 +0000
+Message-ID: <1395705591-23976-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Mar_2014_10_55_01_+1100_IuY/9hO6kyanNOrR
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Since the early days TX stops if there isn't enough free pending slots to
+consume a maximum sized (slot-wise) packet. Probably the reason for that is to
+avoid the case when we don't have enough free pending slot in the ring to finish
+the packet. But if we make sure that the pending ring has the same size as the
+shared ring, that shouldn't really happen. The frontend can only post packets
+which fit the to the free space of the shared ring. If it doesn't, the frontend
+has to stop, as it can only increase the req_prod when the whole packet fits
+onto the ring.
+This patch avoid using this checking, makes sure the 2 ring has the same size,
+and remove a checking from the callback. As now we don't stop the NAPI instance
+on this condition, we don't have to wake it up if we free pending slots up.
 
-Hi Santosh,
-
-Today's linux-next merge of the keystone tree got a conflict in
-arch/arm/boot/dts/Makefile between commit ba5a37e52194 ("ARM: mvebu: Move
-kirkwood DT boards into mach-mvebu") from the arm-soc tree and commit
-400550ae7e77 ("ARM: dts: Build all keystone dt blobs") from the keystone
-tree.
-
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/boot/dts/Makefile
-index 94939ee0c10b,49ff796dc02e..000000000000
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@@ -82,9 -81,11 +82,12 @@@ dtb-$(CONFIG_ARCH_HIGHBANK) +=3D highbank
-  	ecx-2000.dtb
-  dtb-$(CONFIG_ARCH_INTEGRATOR) +=3D integratorap.dtb \
-  	integratorcp.dtb
-+ dtb-$(CONFIG_ARCH_KEYSTONE) +=3D k2hk-evm.dtb \
-+ 	k2l-evm.dtb \
-+ 	k2e-evm.dtb
- -dtb-$(CONFIG_ARCH_LPC32XX) +=3D ea3250.dtb phy3250.dtb
- -dtb-$(CONFIG_ARCH_KIRKWOOD) +=3D kirkwood-cloudbox.dtb \
- +kirkwood :=3D \
- +	kirkwood-b3.dtb \
- +	kirkwood-cloudbox.dtb \
-  	kirkwood-db-88f6281.dtb \
-  	kirkwood-db-88f6282.dtb \
-  	kirkwood-dns320.dtb \
-
---Signature=_Tue__25_Mar_2014_10_55_01_+1100_IuY/9hO6kyanNOrR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTMMXZAAoJEMDTa8Ir7ZwVZBsP/RL+4nv7ZPQJc2W3/UE2XTsS
-sBjeXQ+wNxMzLSFX2zpkgLZ4ubPkbNiFBfCMZJalRoKgr3AWO5T6kP+F8aIYYY6E
-Jrju4PW0rkRWlw0/qzWgMOKpryT/nBuEx5sqoQlNrWs/Ww4uIP7ABugFTgZsZM6a
-xZ42DkbtaN67UUhZXbHy3GwIHUHSzMQif1LZW4KHQePZwrvPjTew0RA1NBinZAMq
-c4jv29bTrvkrl0Lx0YDz25oic3xZgUp/e6lAPK7wxiM+QZU1945sCSPnOqVFBJaV
-zCLG+bwiL/tZNNdyk0qIMMXoHKpNeEn6oVmdviM7CdOvUg1wAkIZXO1Tx7hzvvHR
-oRolNfFWNsfBMNk0KUSNmP250wQvRPKdjuQEz4f53Vf9w0wvYZYDI+8C5AR5xKN0
-sF7V67XU+O71ymZmB591JYL5/tLqjQ2iGKnC1+RxqCyGxa4bYtO6LDMsrOFdGZOL
-c/gbSXXEtPW8/ZCDEgPtkbqrcS6Lgm5hkNl02iAg+NHI0O655WvtRcnrIjtsmETr
-FxEakoMp9YUoNX+YOKd1AIvtRrmKYwpaXHondIUPiRgbCkP/g9iQQH6wtLlOJBi5
-14Au0uUf+2fAVejUdlpyoKffSmUZzQ3BKnMoLM6QHFHnxhgALkvhig8jEF1iodte
-tG/GoYFgojowu4pKHtMr
-=qzX6
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Mar_2014_10_55_01_+1100_IuY/9hO6kyanNOrR--
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index bef37be..a800a8e 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -81,7 +81,7 @@ struct xenvif_rx_meta {
+ 
+ #define MAX_BUFFER_OFFSET PAGE_SIZE
+ 
+-#define MAX_PENDING_REQS 256
++#define MAX_PENDING_REQS XEN_NETIF_TX_RING_SIZE
+ 
+ /* It's possible for an skb to have a maximal number of frags
+  * but still be less than MAX_BUFFER_OFFSET in size. Thus the
+@@ -253,12 +253,6 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
+ 		vif->pending_prod + vif->pending_cons;
+ }
+ 
+-static inline bool xenvif_tx_pending_slots_available(struct xenvif *vif)
+-{
+-	return nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
+-		< MAX_PENDING_REQS;
+-}
+-
+ /* Callback from stack when TX packet can be released */
+ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
+ 
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 83a71ac..7bb7734 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -88,8 +88,7 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+ 		local_irq_save(flags);
+ 
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, more_to_do);
+-		if (!(more_to_do &&
+-		      xenvif_tx_pending_slots_available(vif)))
++		if (!more_to_do)
+ 			__napi_complete(napi);
+ 
+ 		local_irq_restore(flags);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index bc94320..5df8d63 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1175,8 +1175,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 	struct sk_buff *skb;
+ 	int ret;
+ 
+-	while (xenvif_tx_pending_slots_available(vif) &&
+-	       (skb_queue_len(&vif->tx_queue) < budget)) {
++	while (skb_queue_len(&vif->tx_queue) < budget) {
+ 		struct xen_netif_tx_request txreq;
+ 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+@@ -1516,13 +1515,6 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+ 	wake_up(&vif->dealloc_wq);
+ 	spin_unlock_irqrestore(&vif->callback_lock, flags);
+ 
+-	if (RING_HAS_UNCONSUMED_REQUESTS(&vif->tx) &&
+-	    xenvif_tx_pending_slots_available(vif)) {
+-		local_bh_disable();
+-		napi_schedule(&vif->napi);
+-		local_bh_enable();
+-	}
+-
+ 	if (likely(zerocopy_success))
+ 		vif->tx_zerocopy_success++;
+ 	else
+@@ -1714,8 +1706,7 @@ static inline int rx_work_todo(struct xenvif *vif)
+ static inline int tx_work_todo(struct xenvif *vif)
+ {
+ 
+-	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
+-	    xenvif_tx_pending_slots_available(vif))
++	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)))
+ 		return 1;
+ 
+ 	return 0;
