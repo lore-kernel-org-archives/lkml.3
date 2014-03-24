@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752213AbaCXHuR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 03:50:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:52537 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaCXHuP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 03:50:15 -0400
-Message-ID: <532FE3B2.9060808@biereigel-wb.de>
-Date: Mon, 24 Mar 2014 08:50:10 +0100
-From: Stefan Biereigel <security@biereigel-wb.de>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: Stefan Biereigel <stefan@biereigel.de>, lenb@kernel.org, rjw@rjwysocki.net
-Subject: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after suspend
- to RAM.
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:pWoaDIMxg18WaQYAEOUfC6D2ckZJS1w63R+SaLNgAsM
- QQPxYWFko5b+oCJhAYIYTFo6LloFMMNaLDh7Wcea3hFhQLjbKy
- vyheIcigo32dYRXupBJ3mYrzgMOsI4ErLawK1l0hFD8MiSo6zj
- OQlTkxxXwlYBlDiFABG9G4fMdZaf4vjVjclq/bIaYMm9jDgB50
- th8m5BhLqIUTa2rPgWLw12lYTxNLpac0gAMBtN9Jp4FhMPUgq4
- QnPz2QW+1QRIvZxFKJ1ZgeDhHnvgJLQcngimXRSwz90Jvo637n
- d7u5RCyYNXH74QpXll9HI5mXHm2SCo1BapohQJTV/Efgl+5Uxs
- BIh/IEmfTX36KBjrn+3fo4SoNYH1pkJTRwVR549Zr
+	id S1752272AbaCXHwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 03:52:18 -0400
+Received: from m12-11.163.com ([220.181.12.11]:53588 "EHLO m12-11.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbaCXHwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 03:52:16 -0400
+X-Greylist: delayed 926 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 03:52:14 EDT
+From: Wei Zhang <asuka.com@163.com>
+To: xeb@mail.ru, davem@davemloft.net, kuznet@ms2.inr.ac.ru, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Wei Zhang <asuka.com@163.com>
+Subject: [PATCH] ipv4: gre: Fix null pointer dereference in gre_cisco_err()
+Date: Mon, 24 Mar 2014 15:34:31 +0800
+Message-Id: <1395646471-637-1-git-send-email-asuka.com@163.com>
+X-Mailer: git-send-email 1.7.1
+X-CM-TRANSID: C8CowEBZN0pJ4C9Tj81aAQ--.1191S2
+X-Coremail-Antispam: 1Uf129KBjvdXoW7Gr4rKry3CFy7try8Zw1rXrb_yoWfXFg_uF
+	95trWUuw48u3ZYy343Ars3C3yfK3yFkFWFgr10qrWUJas8Jry5A3Wvkr9xCrW7XFWakryI
+	qw1DWrWfJr47ZjkaLaAFLSUrUUUUjb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU1IeHJUUUUU==
+X-Originating-IP: [221.237.158.191]
+X-CM-SenderInfo: 5dvxytoofrzqqrwthudrp/xtbB0QpY1lEAKnLudwAAsF
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+When use the gre vport, openvswitch register a gre_cisco_protocol but
+does not supply a err_handler with it. The gre_cisco_err() call the
+err_handler without existence check, cause the kernel crash.
 
-starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
-system is set up, so that it should suspend to RAM as soon as the lid is
-closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
-correctly the first time (and the system suspends), but after resuming
-from standby (by opening the lid), the lid does not change to "open" again.
-Of course, closing the lid again does not induce suspend to RAM then.
-Opening the lid now (while not sleeping), makes ACPI notify the opening,
-so I guess ACPI "misses" or discards the lid open event from the EC when
-coming from sleep.
-Now, closing the lid again does induce suspend to RAM. This behaviour is
-reproducible: every other time, suspending works.
+This patch base on v3.14-rc7. But the bug affect all kernel newer than
+3.11!
 
-This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
-Clear stale EC events on Samsung systems.
-Which was introduced after 3.14-rc5.
+Signed-off-by: Wei Zhang <asuka.com@163.com>
+---
+ net/ipv4/gre_demux.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-When opening the lid to resume from standby, i see in dmesg:
-Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
-events cleared
-(which comes from drivers/acpi/ec.c)
+diff --git a/net/ipv4/gre_demux.c b/net/ipv4/gre_demux.c
+index 1863422..56b0d67 100644
+--- a/net/ipv4/gre_demux.c
++++ b/net/ipv4/gre_demux.c
+@@ -250,7 +250,7 @@ static void gre_cisco_err(struct sk_buff *skb, u32 info)
+ 		struct gre_cisco_protocol *proto;
+ 
+ 		proto = rcu_dereference(gre_cisco_proto_list[i]);
+-		if (!proto)
++		if (!proto || !proto->err_handler)
+ 			continue;
+ 
+ 		if (proto->err_handler(skb, info, &tpi) == PACKET_RCVD)
+-- 
+1.7.1
 
-Seems to me, that the "open" event is cleared from the EC, but also
-discarded instead of passed on. Shouldn't the correct behaviour be to
-report all the pending events, read from the EC, as ACPI events? Can you
-point me in a direction for fixing the issue cleanly, then I will try to
-find a solution and prepare a patch for this issue.
-
-Best regards,
-Stefan
 
