@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753148AbaCXMsA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 08:48:00 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:53224 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaCXMr6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 08:47:58 -0400
-Date: Mon, 24 Mar 2014 13:47:32 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Shawn Guo <shawn.guo@freescale.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sascha Hauer <kernel@pengutronix.de>, <devicetree@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 5/5] ARM: dts: tx53: Add IPU DI ports and endpoints
-Message-ID: <20140324134732.43e59627@ipc1.ka-ro>
-In-Reply-To: <20140322065038.GE5938@dragon>
-References: <1395235721-13847-1-git-send-email-LW@KARO-electronics.de>
-	<1395235721-13847-5-git-send-email-LW@KARO-electronics.de>
-	<20140322065038.GE5938@dragon>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753212AbaCXMsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 08:48:16 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:39005 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753156AbaCXMsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 08:48:13 -0400
+X-IronPort-AV: E=Sophos;i="4.97,720,1389744000"; 
+   d="scan'208";a="114281218"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
+        <xen-devel@lists.xenproject.org>
+CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v2 1/3] xen-netback: Stop using xenvif_tx_pending_slots_available
+Date: Mon, 24 Mar 2014 12:48:02 +0000
+Message-ID: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Since the early days TX stops if there isn't enough free pending slots to
+consume a maximum sized (slot-wise) packet. Probably the reason for that is to
+avoid the case when we don't have enough free pending slot in the ring to finish
+the packet. But if we make sure that the pending ring has the same size as the
+shared ring, that shouldn't really happen. The frontend can only post packets
+which fit the to the free space of the shared ring. If it doesn't, the frontend
+has to stop, as it can only increase the req_prod when the whole packet fits
+onto the ring.
+This patch avoid using this checking, makes sure the 2 ring has the same size,
+and remove a checking from the callback. As now we don't stop the NAPI instance
+on this condition, we don't have to wake it up if we free pending slots up.
 
-Shawn Guo wrote:
-> On Wed, Mar 19, 2014 at 02:28:41PM +0100, Lothar Waßmann wrote:
-> > 
-> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > ---
-> >  arch/arm/boot/dts/imx53-tx53-x03x.dts |    7 ++++++-
-> >  1 file changed, 6 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/arch/arm/boot/dts/imx53-tx53-x03x.dts b/arch/arm/boot/dts/imx53-tx53-x03x.dts
-> > index 0217dde3..43b4b7b 100644
-> > --- a/arch/arm/boot/dts/imx53-tx53-x03x.dts
-> > +++ b/arch/arm/boot/dts/imx53-tx53-x03x.dts
-> > @@ -25,12 +25,17 @@
-> >  	soc {
-> >  		display: display@di0 {
-> >  			compatible = "fsl,imx-parallel-display";
-> > -			crtcs = <&ipu 0>;
-> >  			interface-pix-fmt = "rgb24";
-> >  			pinctrl-names = "default";
-> >  			pinctrl-0 = <&pinctrl_rgb24_vga1>;
-> >  			status = "okay";
-> >  
-> > +			port {
-> > +				display0_in: endpoint {
-> > +					remote-endpoint = <&ipu_di0_disp0>;
-> > +				};
-> > +			};
-> > +
-> 
-> I shouldn't apply this until I rebase my branch on 3.15-rc1 where
-> Philipp's OF graph is to be seen, right?
-> 
-That's ok with me.
-
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index bef37be..a800a8e 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -81,7 +81,7 @@ struct xenvif_rx_meta {
+ 
+ #define MAX_BUFFER_OFFSET PAGE_SIZE
+ 
+-#define MAX_PENDING_REQS 256
++#define MAX_PENDING_REQS XEN_NETIF_TX_RING_SIZE
+ 
+ /* It's possible for an skb to have a maximal number of frags
+  * but still be less than MAX_BUFFER_OFFSET in size. Thus the
+@@ -253,12 +253,6 @@ static inline pending_ring_idx_t nr_pending_reqs(struct xenvif *vif)
+ 		vif->pending_prod + vif->pending_cons;
+ }
+ 
+-static inline bool xenvif_tx_pending_slots_available(struct xenvif *vif)
+-{
+-	return nr_pending_reqs(vif) + XEN_NETBK_LEGACY_SLOTS_MAX
+-		< MAX_PENDING_REQS;
+-}
+-
+ /* Callback from stack when TX packet can be released */
+ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success);
+ 
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 83a71ac..7bb7734 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -88,8 +88,7 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+ 		local_irq_save(flags);
+ 
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, more_to_do);
+-		if (!(more_to_do &&
+-		      xenvif_tx_pending_slots_available(vif)))
++		if (!more_to_do)
+ 			__napi_complete(napi);
+ 
+ 		local_irq_restore(flags);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index bc94320..5df8d63 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -1175,8 +1175,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+ 	struct sk_buff *skb;
+ 	int ret;
+ 
+-	while (xenvif_tx_pending_slots_available(vif) &&
+-	       (skb_queue_len(&vif->tx_queue) < budget)) {
++	while (skb_queue_len(&vif->tx_queue) < budget) {
+ 		struct xen_netif_tx_request txreq;
+ 		struct xen_netif_tx_request txfrags[XEN_NETBK_LEGACY_SLOTS_MAX];
+ 		struct xen_netif_extra_info extras[XEN_NETIF_EXTRA_TYPE_MAX-1];
+@@ -1516,13 +1515,6 @@ void xenvif_zerocopy_callback(struct ubuf_info *ubuf, bool zerocopy_success)
+ 	wake_up(&vif->dealloc_wq);
+ 	spin_unlock_irqrestore(&vif->callback_lock, flags);
+ 
+-	if (RING_HAS_UNCONSUMED_REQUESTS(&vif->tx) &&
+-	    xenvif_tx_pending_slots_available(vif)) {
+-		local_bh_disable();
+-		napi_schedule(&vif->napi);
+-		local_bh_enable();
+-	}
+-
+ 	if (likely(zerocopy_success))
+ 		vif->tx_zerocopy_success++;
+ 	else
+@@ -1714,8 +1706,7 @@ static inline int rx_work_todo(struct xenvif *vif)
+ static inline int tx_work_todo(struct xenvif *vif)
+ {
+ 
+-	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)) &&
+-	    xenvif_tx_pending_slots_available(vif))
++	if (likely(RING_HAS_UNCONSUMED_REQUESTS(&vif->tx)))
+ 		return 1;
+ 
+ 	return 0;
