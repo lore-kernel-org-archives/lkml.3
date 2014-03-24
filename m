@@ -1,973 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751875AbaCXE5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 00:57:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34555 "EHLO
+	id S1751924AbaCXE6q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 00:58:46 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:34560 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804AbaCXE5m (ORCPT
+	with ESMTP id S1750816AbaCXE6o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 00:57:42 -0400
-Date: Sun, 23 Mar 2014 21:59:15 -0700
+	Mon, 24 Mar 2014 00:58:44 -0400
+Date: Sun, 23 Mar 2014 22:00:18 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
         torvalds@linux-foundation.org, stable@vger.kernel.org
 Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.4.84
-Message-ID: <20140324045915.GB25974@kroah.com>
-References: <20140324045902.GA25974@kroah.com>
+Subject: Linux 3.10.34
+Message-ID: <20140324050018.GA26149@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="envbJBWh7q8WU6mo"
 Content-Disposition: inline
-In-Reply-To: <20140324045902.GA25974@kroah.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-diff --git a/Makefile b/Makefile
-index e677b662f8c5..f75a853f8524 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 4
--SUBLEVEL = 83
-+SUBLEVEL = 84
- EXTRAVERSION =
- NAME = Saber-toothed Squirrel
- 
-diff --git a/arch/arm/mach-sa1100/include/mach/collie.h b/arch/arm/mach-sa1100/include/mach/collie.h
-index f33679d2d3ee..50e1d850ee2e 100644
---- a/arch/arm/mach-sa1100/include/mach/collie.h
-+++ b/arch/arm/mach-sa1100/include/mach/collie.h
-@@ -13,6 +13,8 @@
- #ifndef __ASM_ARCH_COLLIE_H
- #define __ASM_ARCH_COLLIE_H
- 
-+#include "hardware.h" /* Gives GPIO_MAX */
-+
- extern void locomolcd_power(int on);
- 
- #define COLLIE_SCOOP_GPIO_BASE	(GPIO_MAX + 1)
-diff --git a/arch/powerpc/kernel/reloc_64.S b/arch/powerpc/kernel/reloc_64.S
-index b47a0e1ab001..c712ecec13ba 100644
---- a/arch/powerpc/kernel/reloc_64.S
-+++ b/arch/powerpc/kernel/reloc_64.S
-@@ -81,6 +81,7 @@ _GLOBAL(relocate)
- 
- 6:	blr
- 
-+.balign 8
- p_dyn:	.llong	__dynamic_start - 0b
- p_rela:	.llong	__rela_dyn_start - 0b
- p_st:	.llong	_stext - 0b
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 03920a15a632..28a3e62fcc50 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -525,7 +525,7 @@ static void __init quirk_amd_nb_node(struct pci_dev *dev)
- 		return;
- 
- 	pci_read_config_dword(nb_ht, 0x60, &val);
--	node = val & 7;
-+	node = pcibus_to_node(dev->bus) | (val & 7);
- 	/*
- 	 * Some hardware may return an invalid node ID,
- 	 * so check it first:
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index e334389e1c75..b567285efceb 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -3007,10 +3007,8 @@ static int cr8_write_interception(struct vcpu_svm *svm)
- 	u8 cr8_prev = kvm_get_cr8(&svm->vcpu);
- 	/* instruction emulation calls kvm_set_cr8() */
- 	r = cr_interception(svm);
--	if (irqchip_in_kernel(svm->vcpu.kvm)) {
--		clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-+	if (irqchip_in_kernel(svm->vcpu.kvm))
- 		return r;
--	}
- 	if (cr8_prev <= kvm_get_cr8(&svm->vcpu))
- 		return r;
- 	kvm_run->exit_reason = KVM_EXIT_SET_TPR;
-@@ -3566,6 +3564,8 @@ static void update_cr8_intercept(struct kvm_vcpu *vcpu, int tpr, int irr)
- 	if (is_guest_mode(vcpu) && (vcpu->arch.hflags & HF_VINTR_MASK))
- 		return;
- 
-+	clr_cr_intercept(svm, INTERCEPT_CR8_WRITE);
-+
- 	if (irr == -1)
- 		return;
- 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 400b8c6eb8eb..f2f37171e21a 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4106,6 +4106,7 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 
- 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
- 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
-+	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
- 
- 	/* Blacklist entries taken from Silicon Image 3124/3132
- 	   Windows driver .inf file - also several Linux problem reports */
-diff --git a/drivers/firewire/core-device.c b/drivers/firewire/core-device.c
-index 04ebeaf8cffe..1026609dc32e 100644
---- a/drivers/firewire/core-device.c
-+++ b/drivers/firewire/core-device.c
-@@ -878,7 +878,7 @@ static int lookup_existing_device(struct device *dev, void *data)
- 		old->config_rom_retries = 0;
- 		fw_notice(card, "rediscovered device %s\n", dev_name(dev));
- 
--		PREPARE_DELAYED_WORK(&old->work, fw_device_update);
-+		old->workfn = fw_device_update;
- 		fw_schedule_device_work(old, 0);
- 
- 		if (current_node == card->root_node)
-@@ -1040,7 +1040,7 @@ static void fw_device_init(struct work_struct *work)
- 	if (atomic_cmpxchg(&device->state,
- 			   FW_DEVICE_INITIALIZING,
- 			   FW_DEVICE_RUNNING) == FW_DEVICE_GONE) {
--		PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+		device->workfn = fw_device_shutdown;
- 		fw_schedule_device_work(device, SHUTDOWN_DELAY);
- 	} else {
- 		fw_notice(card, "created device %s: GUID %08x%08x, S%d00\n",
-@@ -1172,13 +1172,20 @@ static void fw_device_refresh(struct work_struct *work)
- 		  dev_name(&device->device));
-  gone:
- 	atomic_set(&device->state, FW_DEVICE_GONE);
--	PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+	device->workfn = fw_device_shutdown;
- 	fw_schedule_device_work(device, SHUTDOWN_DELAY);
-  out:
- 	if (node_id == card->root_node->node_id)
- 		fw_schedule_bm_work(card, 0);
- }
- 
-+static void fw_device_workfn(struct work_struct *work)
-+{
-+	struct fw_device *device = container_of(to_delayed_work(work),
-+						struct fw_device, work);
-+	device->workfn(work);
-+}
-+
- void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- {
- 	struct fw_device *device;
-@@ -1228,7 +1235,8 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		 * power-up after getting plugged in.  We schedule the
- 		 * first config rom scan half a second after bus reset.
- 		 */
--		INIT_DELAYED_WORK(&device->work, fw_device_init);
-+		device->workfn = fw_device_init;
-+		INIT_DELAYED_WORK(&device->work, fw_device_workfn);
- 		fw_schedule_device_work(device, INITIAL_DELAY);
- 		break;
- 
-@@ -1244,7 +1252,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		if (atomic_cmpxchg(&device->state,
- 			    FW_DEVICE_RUNNING,
- 			    FW_DEVICE_INITIALIZING) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_refresh);
-+			device->workfn = fw_device_refresh;
- 			fw_schedule_device_work(device,
- 				device->is_local ? 0 : INITIAL_DELAY);
- 		}
-@@ -1259,7 +1267,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		smp_wmb();  /* update node_id before generation */
- 		device->generation = card->generation;
- 		if (atomic_read(&device->state) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_update);
-+			device->workfn = fw_device_update;
- 			fw_schedule_device_work(device, 0);
- 		}
- 		break;
-@@ -1284,7 +1292,7 @@ void fw_node_event(struct fw_card *card, struct fw_node *node, int event)
- 		device = node->data;
- 		if (atomic_xchg(&device->state,
- 				FW_DEVICE_GONE) == FW_DEVICE_RUNNING) {
--			PREPARE_DELAYED_WORK(&device->work, fw_device_shutdown);
-+			device->workfn = fw_device_shutdown;
- 			fw_schedule_device_work(device,
- 				list_empty(&card->link) ? 0 : SHUTDOWN_DELAY);
- 		}
-diff --git a/drivers/firewire/net.c b/drivers/firewire/net.c
-index 638e1f71284a..7cff7f7e69e1 100644
---- a/drivers/firewire/net.c
-+++ b/drivers/firewire/net.c
-@@ -1014,8 +1014,6 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
- 	if (rcode == RCODE_COMPLETE) {
- 		fwnet_transmit_packet_done(ptask);
- 	} else {
--		fwnet_transmit_packet_failed(ptask);
--
- 		if (printk_timed_ratelimit(&j,  1000) || rcode != last_rcode) {
- 			dev_err(&ptask->dev->netdev->dev,
- 				"fwnet_write_complete failed: %x (skipped %d)\n",
-@@ -1023,8 +1021,10 @@ static void fwnet_write_complete(struct fw_card *card, int rcode,
- 
- 			errors_skipped = 0;
- 			last_rcode = rcode;
--		} else
-+		} else {
- 			errors_skipped++;
-+		}
-+		fwnet_transmit_packet_failed(ptask);
- 	}
- }
- 
-diff --git a/drivers/firewire/sbp2.c b/drivers/firewire/sbp2.c
-index b7e65d7eab64..23a928352498 100644
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -146,6 +146,7 @@ struct sbp2_logical_unit {
- 	 */
- 	int generation;
- 	int retries;
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	bool has_sdev;
- 	bool blocked;
-@@ -865,7 +866,7 @@ static void sbp2_login(struct work_struct *work)
- 	/* set appropriate retry limit(s) in BUSY_TIMEOUT register */
- 	sbp2_set_busy_timeout(lu);
- 
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_reconnect);
-+	lu->workfn = sbp2_reconnect;
- 	sbp2_agent_reset(lu);
- 
- 	/* This was a re-login. */
-@@ -919,7 +920,7 @@ static void sbp2_login(struct work_struct *work)
- 	 * If a bus reset happened, sbp2_update will have requeued
- 	 * lu->work already.  Reset the work from reconnect to login.
- 	 */
--	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
- }
- 
- static void sbp2_reconnect(struct work_struct *work)
-@@ -953,7 +954,7 @@ static void sbp2_reconnect(struct work_struct *work)
- 		    lu->retries++ >= 5) {
- 			dev_err(tgt_dev(tgt), "failed to reconnect\n");
- 			lu->retries = 0;
--			PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+			lu->workfn = sbp2_login;
- 		}
- 		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
- 
-@@ -973,6 +974,13 @@ static void sbp2_reconnect(struct work_struct *work)
- 	sbp2_conditionally_unblock(lu);
- }
- 
-+static void sbp2_lu_workfn(struct work_struct *work)
-+{
-+	struct sbp2_logical_unit *lu = container_of(to_delayed_work(work),
-+						struct sbp2_logical_unit, work);
-+	lu->workfn(work);
-+}
-+
- static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
- {
- 	struct sbp2_logical_unit *lu;
-@@ -999,7 +1007,8 @@ static int sbp2_add_logical_unit(struct sbp2_target *tgt, int lun_entry)
- 	lu->blocked  = false;
- 	++tgt->dont_block;
- 	INIT_LIST_HEAD(&lu->orb_list);
--	INIT_DELAYED_WORK(&lu->work, sbp2_login);
-+	lu->workfn = sbp2_login;
-+	INIT_DELAYED_WORK(&lu->work, sbp2_lu_workfn);
- 
- 	list_add_tail(&lu->link, &tgt->lu_list);
- 	return 0;
-diff --git a/drivers/gpu/drm/radeon/atombios_encoders.c b/drivers/gpu/drm/radeon/atombios_encoders.c
-index 6f4627fe24a1..072229dca464 100644
---- a/drivers/gpu/drm/radeon/atombios_encoders.c
-+++ b/drivers/gpu/drm/radeon/atombios_encoders.c
-@@ -1048,7 +1048,7 @@ atombios_dig_transmitter_setup(struct drm_encoder *encoder, int action, uint8_t
- 			}
- 			if (is_dp)
- 				args.v5.ucLaneNum = dp_lane_count;
--			else if (radeon_encoder->pixel_clock > 165000)
-+			else if (radeon_dig_monitor_is_duallink(encoder, radeon_encoder->pixel_clock))
- 				args.v5.ucLaneNum = 8;
- 			else
- 				args.v5.ucLaneNum = 4;
-diff --git a/drivers/gpu/drm/ttm/ttm_bo.c b/drivers/gpu/drm/ttm/ttm_bo.c
-index 8b73ae84efe7..ceb70dde21ab 100644
---- a/drivers/gpu/drm/ttm/ttm_bo.c
-+++ b/drivers/gpu/drm/ttm/ttm_bo.c
-@@ -430,9 +430,11 @@ static int ttm_bo_handle_move_mem(struct ttm_buffer_object *bo,
- 
- moved:
- 	if (bo->evicted) {
--		ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
--		if (ret)
--			pr_err("Can not flush read caches\n");
-+		if (bdev->driver->invalidate_caches) {
-+			ret = bdev->driver->invalidate_caches(bdev, bo->mem.placement);
-+			if (ret)
-+				pr_err("Can not flush read caches\n");
-+		}
- 		bo->evicted = false;
- 	}
- 
-diff --git a/drivers/net/can/flexcan.c b/drivers/net/can/flexcan.c
-index eb4014a25d3c..75e9233aabaf 100644
---- a/drivers/net/can/flexcan.c
-+++ b/drivers/net/can/flexcan.c
-@@ -805,7 +805,7 @@ static int flexcan_open(struct net_device *dev)
- 
- 	err = request_irq(dev->irq, flexcan_irq, IRQF_SHARED, dev->name, dev);
- 	if (err)
--		goto out_close;
-+		goto out_free_irq;
- 
- 	/* start chip and queuing */
- 	err = flexcan_chip_start(dev);
-@@ -816,6 +816,8 @@ static int flexcan_open(struct net_device *dev)
- 
- 	return 0;
- 
-+ out_free_irq:
-+	free_irq(dev->irq, dev);
-  out_close:
- 	close_candev(dev);
-  out:
-diff --git a/drivers/net/ethernet/broadcom/tg3.c b/drivers/net/ethernet/broadcom/tg3.c
-index 558974f466de..6f4604958d63 100644
---- a/drivers/net/ethernet/broadcom/tg3.c
-+++ b/drivers/net/ethernet/broadcom/tg3.c
-@@ -5844,8 +5844,7 @@ static int tg3_rx(struct tg3_napi *tnapi, int budget)
- 
- 		work_mask |= opaque_key;
- 
--		if ((desc->err_vlan & RXD_ERR_MASK) != 0 &&
--		    (desc->err_vlan != RXD_ERR_ODD_NIBBLE_RCVD_MII)) {
-+		if (desc->err_vlan & RXD_ERR_MASK) {
- 		drop_it:
- 			tg3_recycle_rx(tnapi, tpr, opaque_key,
- 				       desc_idx, *post_ptr);
-diff --git a/drivers/net/ethernet/broadcom/tg3.h b/drivers/net/ethernet/broadcom/tg3.h
-index 93865f899a4f..780604de73f4 100644
---- a/drivers/net/ethernet/broadcom/tg3.h
-+++ b/drivers/net/ethernet/broadcom/tg3.h
-@@ -2484,7 +2484,11 @@ struct tg3_rx_buffer_desc {
- #define RXD_ERR_TOO_SMALL		0x00400000
- #define RXD_ERR_NO_RESOURCES		0x00800000
- #define RXD_ERR_HUGE_FRAME		0x01000000
--#define RXD_ERR_MASK			0xffff0000
-+
-+#define RXD_ERR_MASK	(RXD_ERR_BAD_CRC | RXD_ERR_COLLISION |		\
-+			 RXD_ERR_LINK_LOST | RXD_ERR_PHY_DECODE |	\
-+			 RXD_ERR_MAC_ABRT | RXD_ERR_TOO_SMALL |		\
-+			 RXD_ERR_NO_RESOURCES | RXD_ERR_HUGE_FRAME)
- 
- 	u32				reserved;
- 	u32				opaque;
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index bc177b996f4c..efb50d6dfb6c 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1084,7 +1084,8 @@ static int virtnet_probe(struct virtio_device *vdev)
- 	/* If we can receive ANY GSO packets, we must allocate large ones. */
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
- 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
--	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
-+	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
- 		vi->big_packets = true;
- 
- 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 3f04ba0a5454..d43df93dc83a 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -1729,11 +1729,20 @@ vmxnet3_netpoll(struct net_device *netdev)
- {
- 	struct vmxnet3_adapter *adapter = netdev_priv(netdev);
- 
--	if (adapter->intr.mask_mode == VMXNET3_IMM_ACTIVE)
--		vmxnet3_disable_all_intrs(adapter);
--
--	vmxnet3_do_poll(adapter, adapter->rx_queue[0].rx_ring[0].size);
--	vmxnet3_enable_all_intrs(adapter);
-+	switch (adapter->intr.type) {
-+#ifdef CONFIG_PCI_MSI
-+	case VMXNET3_IT_MSIX: {
-+		int i;
-+		for (i = 0; i < adapter->num_rx_queues; i++)
-+			vmxnet3_msix_rx(0, &adapter->rx_queue[i]);
-+		break;
-+	}
-+#endif
-+	case VMXNET3_IT_MSI:
-+	default:
-+		vmxnet3_intr(0, adapter->netdev);
-+		break;
-+	}
- 
- }
- #endif	/* CONFIG_NET_POLL_CONTROLLER */
-diff --git a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-index b6ba1e8149be..15960024d4a0 100644
---- a/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-+++ b/drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h
-@@ -55,7 +55,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
- 	{0x00009e14, 0x37b95d5e, 0x37b9605e, 0x3376605e, 0x33795d5e},
- 	{0x00009e18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x00009e1c, 0x0001cf9c, 0x0001cf9c, 0x00021f9c, 0x00021f9c},
--	{0x00009e20, 0x000003b5, 0x000003b5, 0x000003ce, 0x000003ce},
-+	{0x00009e20, 0x000003a5, 0x000003a5, 0x000003a5, 0x000003a5},
- 	{0x00009e2c, 0x0000001c, 0x0000001c, 0x00000021, 0x00000021},
- 	{0x00009e3c, 0xcf946220, 0xcf946220, 0xcfd5c782, 0xcfd5c282},
- 	{0x00009e44, 0x62321e27, 0x62321e27, 0xfe291e27, 0xfe291e27},
-@@ -94,7 +94,7 @@ static const u32 ar9462_2p0_baseband_postamble[][5] = {
- 	{0x0000ae04, 0x001c0000, 0x001c0000, 0x001c0000, 0x00100000},
- 	{0x0000ae18, 0x00000000, 0x00000000, 0x00000000, 0x00000000},
- 	{0x0000ae1c, 0x0000019c, 0x0000019c, 0x0000019c, 0x0000019c},
--	{0x0000ae20, 0x000001b5, 0x000001b5, 0x000001ce, 0x000001ce},
-+	{0x0000ae20, 0x000001a6, 0x000001a6, 0x000001aa, 0x000001aa},
- 	{0x0000b284, 0x00000000, 0x00000000, 0x00000550, 0x00000550},
- };
- 
-diff --git a/drivers/net/wireless/mwifiex/11n.c b/drivers/net/wireless/mwifiex/11n.c
-index a5e182b5e944..6f882bcf96f1 100644
---- a/drivers/net/wireless/mwifiex/11n.c
-+++ b/drivers/net/wireless/mwifiex/11n.c
-@@ -340,8 +340,7 @@ mwifiex_cmd_append_11n_tlv(struct mwifiex_private *priv,
- 		ht_cap->header.len =
- 				cpu_to_le16(sizeof(struct ieee80211_ht_cap));
- 		memcpy((u8 *) ht_cap + sizeof(struct mwifiex_ie_types_header),
--		       (u8 *) bss_desc->bcn_ht_cap +
--		       sizeof(struct ieee_types_header),
-+		       (u8 *)bss_desc->bcn_ht_cap,
- 		       le16_to_cpu(ht_cap->header.len));
- 
- 		mwifiex_fill_cap_info(priv, radio_type, ht_cap);
-diff --git a/drivers/scsi/isci/host.h b/drivers/scsi/isci/host.h
-index adbad69d1069..15bd1a42f236 100644
---- a/drivers/scsi/isci/host.h
-+++ b/drivers/scsi/isci/host.h
-@@ -310,9 +310,8 @@ static inline struct isci_pci_info *to_pci_info(struct pci_dev *pdev)
- }
- 
- #define for_each_isci_host(id, ihost, pdev) \
--	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
--	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
--	     ihost = to_pci_info(pdev)->hosts[++id])
-+	for (id = 0; id < SCI_MAX_CONTROLLERS && \
-+	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
- 
- static inline enum isci_status isci_host_get_state(struct isci_host *isci_host)
- {
-diff --git a/drivers/scsi/isci/port_config.c b/drivers/scsi/isci/port_config.c
-index 6d1e9544cbe5..b81f34ddc025 100644
---- a/drivers/scsi/isci/port_config.c
-+++ b/drivers/scsi/isci/port_config.c
-@@ -619,13 +619,6 @@ static void sci_apc_agent_link_up(struct isci_host *ihost,
- 					  SCIC_SDS_APC_WAIT_LINK_UP_NOTIFICATION);
- 	} else {
- 		/* the phy is already the part of the port */
--		u32 port_state = iport->sm.current_state_id;
--
--		/* if the PORT'S state is resetting then the link up is from
--		 * port hard reset in this case, we need to tell the port
--		 * that link up is recieved
--		 */
--		BUG_ON(port_state != SCI_PORT_RESETTING);
- 		port_agent->phy_ready_mask |= 1 << phy_index;
- 		sci_port_link_up(iport, iphy);
- 	}
-diff --git a/drivers/scsi/isci/task.c b/drivers/scsi/isci/task.c
-index 374254ede9d4..2a81e1793e5d 100644
---- a/drivers/scsi/isci/task.c
-+++ b/drivers/scsi/isci/task.c
-@@ -1312,7 +1312,7 @@ int isci_task_I_T_nexus_reset(struct domain_device *dev)
- 		/* XXX: need to cleanup any ireqs targeting this
- 		 * domain_device
- 		 */
--		ret = TMF_RESP_FUNC_COMPLETE;
-+		ret = -ENODEV;
- 		goto out;
- 	}
- 
-diff --git a/drivers/scsi/qla2xxx/qla_def.h b/drivers/scsi/qla2xxx/qla_def.h
-index a2443031dbe7..09bedb7f47e9 100644
---- a/drivers/scsi/qla2xxx/qla_def.h
-+++ b/drivers/scsi/qla2xxx/qla_def.h
-@@ -2600,8 +2600,7 @@ struct qla_hw_data {
- 				IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
- 				IS_QLA82XX(ha) || IS_QLA83XX(ha))
- #define IS_MSIX_NACK_CAPABLE(ha) (IS_QLA81XX(ha) || IS_QLA83XX(ha))
--#define IS_NOPOLLING_TYPE(ha)	((IS_QLA25XX(ha) || IS_QLA81XX(ha) || \
--			IS_QLA83XX(ha)) && (ha)->flags.msix_enabled)
-+#define IS_NOPOLLING_TYPE(ha)	(IS_QLA81XX(ha) && (ha)->flags.msix_enabled)
- #define IS_FAC_REQUIRED(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_NOCACHE_VPD_TYPE(ha)	(IS_QLA81XX(ha) || IS_QLA83XX(ha))
- #define IS_ALOGIO_CAPABLE(ha)	(IS_QLA23XX(ha) || IS_FWI2_CAPABLE(ha))
-diff --git a/drivers/scsi/storvsc_drv.c b/drivers/scsi/storvsc_drv.c
-index f9986ccbd80c..446c02379c80 100644
---- a/drivers/scsi/storvsc_drv.c
-+++ b/drivers/scsi/storvsc_drv.c
-@@ -1131,6 +1131,9 @@ static void storvsc_device_destroy(struct scsi_device *sdevice)
- {
- 	struct stor_mem_pools *memp = sdevice->hostdata;
- 
-+	if (!memp)
-+		return;
-+
- 	mempool_destroy(memp->request_mempool);
- 	kmem_cache_destroy(memp->request_pool);
- 	kfree(memp);
-diff --git a/fs/btrfs/compression.c b/fs/btrfs/compression.c
-index 86eff48dab78..503a6bdc1d17 100644
---- a/fs/btrfs/compression.c
-+++ b/fs/btrfs/compression.c
-@@ -995,6 +995,8 @@ int btrfs_decompress_buf2page(char *buf, unsigned long buf_start,
- 		bytes = min(bytes, working_bytes);
- 		kaddr = kmap_atomic(page_out);
- 		memcpy(kaddr + *pg_offset, buf + buf_offset, bytes);
-+		if (*pg_index == (vcnt - 1) && *pg_offset == 0)
-+			memset(kaddr + bytes, 0, PAGE_CACHE_SIZE - bytes);
- 		kunmap_atomic(kaddr);
- 		flush_dcache_page(page_out);
- 
-diff --git a/fs/nfs/delegation.c b/fs/nfs/delegation.c
-index 89af1d269274..16d16e56cc39 100644
---- a/fs/nfs/delegation.c
-+++ b/fs/nfs/delegation.c
-@@ -540,16 +540,19 @@ int nfs_async_inode_return_delegation(struct inode *inode,
- 
- 	rcu_read_lock();
- 	delegation = rcu_dereference(NFS_I(inode)->delegation);
-+	if (delegation == NULL)
-+		goto out_enoent;
- 
--	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid)) {
--		rcu_read_unlock();
--		return -ENOENT;
--	}
-+	if (!clp->cl_mvops->match_stateid(&delegation->stateid, stateid))
-+		goto out_enoent;
- 	nfs_mark_return_delegation(server, delegation);
- 	rcu_read_unlock();
- 
- 	nfs_delegation_run_state_manager(clp);
- 	return 0;
-+out_enoent:
-+	rcu_read_unlock();
-+	return -ENOENT;
- }
- 
- static struct inode *
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 7602783d7f41..8021098ff507 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -2389,8 +2389,8 @@ out_dio:
- 
- 	if (((file->f_flags & O_DSYNC) && !direct_io) || IS_SYNC(inode) ||
- 	    ((file->f_flags & O_DIRECT) && !direct_io)) {
--		ret = filemap_fdatawrite_range(file->f_mapping, pos,
--					       pos + count - 1);
-+		ret = filemap_fdatawrite_range(file->f_mapping, *ppos,
-+					       *ppos + count - 1);
- 		if (ret < 0)
- 			written = ret;
- 
-@@ -2403,8 +2403,8 @@ out_dio:
- 		}
- 
- 		if (!ret)
--			ret = filemap_fdatawait_range(file->f_mapping, pos,
--						      pos + count - 1);
-+			ret = filemap_fdatawait_range(file->f_mapping, *ppos,
-+						      *ppos + count - 1);
- 	}
- 
- 	/*
-diff --git a/fs/ocfs2/quota_global.c b/fs/ocfs2/quota_global.c
-index 92fcd575775a..a40e5cedd6d4 100644
---- a/fs/ocfs2/quota_global.c
-+++ b/fs/ocfs2/quota_global.c
-@@ -712,6 +712,12 @@ static int ocfs2_release_dquot(struct dquot *dquot)
- 	 */
- 	if (status < 0)
- 		mlog_errno(status);
-+	/*
-+	 * Clear dq_off so that we search for the structure in quota file next
-+	 * time we acquire it. The structure might be deleted and reallocated
-+	 * elsewhere by another node while our dquot structure is on freelist.
-+	 */
-+	dquot->dq_off = 0;
- 	clear_bit(DQ_ACTIVE_B, &dquot->dq_flags);
- out_trans:
- 	ocfs2_commit_trans(osb, handle);
-@@ -750,16 +756,17 @@ static int ocfs2_acquire_dquot(struct dquot *dquot)
- 	status = ocfs2_lock_global_qf(info, 1);
- 	if (status < 0)
- 		goto out;
--	if (!test_bit(DQ_READ_B, &dquot->dq_flags)) {
--		status = ocfs2_qinfo_lock(info, 0);
--		if (status < 0)
--			goto out_dq;
--		status = qtree_read_dquot(&info->dqi_gi, dquot);
--		ocfs2_qinfo_unlock(info, 0);
--		if (status < 0)
--			goto out_dq;
--	}
--	set_bit(DQ_READ_B, &dquot->dq_flags);
-+	status = ocfs2_qinfo_lock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
-+	/*
-+	 * We always want to read dquot structure from disk because we don't
-+	 * know what happened with it while it was on freelist.
-+	 */
-+	status = qtree_read_dquot(&info->dqi_gi, dquot);
-+	ocfs2_qinfo_unlock(info, 0);
-+	if (status < 0)
-+		goto out_dq;
- 
- 	OCFS2_DQUOT(dquot)->dq_use_count++;
- 	OCFS2_DQUOT(dquot)->dq_origspace = dquot->dq_dqb.dqb_curspace;
-diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
-index f100bf70a906..b6cfcf263d7f 100644
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -1300,10 +1300,6 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
- 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
- 
- out:
--	/* Clear the read bit so that next time someone uses this
--	 * dquot he reads fresh info from disk and allocates local
--	 * dquot structure */
--	clear_bit(DQ_READ_B, &dquot->dq_flags);
- 	return status;
- }
- 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 9fc77b412ac4..754ac4ddd826 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2092,6 +2092,7 @@ static int proc_map_files_get_link(struct dentry *dentry, struct path *path)
- 	if (rc)
- 		goto out_mmput;
- 
-+	rc = -ENOENT;
- 	down_read(&mm->mmap_sem);
- 	vma = find_exact_vma(mm, vm_start, vm_end);
- 	if (vma && vma->vm_file) {
-diff --git a/include/linux/firewire.h b/include/linux/firewire.h
-index 4d259fc7722c..66e013b7c9f2 100644
---- a/include/linux/firewire.h
-+++ b/include/linux/firewire.h
-@@ -186,6 +186,7 @@ struct fw_device {
- 	unsigned irmc:1;
- 	unsigned bc_implemented:2;
- 
-+	work_func_t workfn;
- 	struct delayed_work work;
- 	struct fw_attribute_group attribute_group;
- };
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 265e2c3cbd1c..f5df3dcfe811 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -106,13 +106,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after(a,b)		\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(b) - (long)(a) < 0))
-+	 ((long)((b) - (a)) < 0))
- #define time_before(a,b)	time_after(b,a)
- 
- #define time_after_eq(a,b)	\
- 	(typecheck(unsigned long, a) && \
- 	 typecheck(unsigned long, b) && \
--	 ((long)(a) - (long)(b) >= 0))
-+	 ((long)((a) - (b)) >= 0))
- #define time_before_eq(a,b)	time_after_eq(b,a)
- 
- /*
-@@ -135,13 +135,13 @@ static inline u64 get_jiffies_64(void)
- #define time_after64(a,b)	\
- 	(typecheck(__u64, a) &&	\
- 	 typecheck(__u64, b) && \
--	 ((__s64)(b) - (__s64)(a) < 0))
-+	 ((__s64)((b) - (a)) < 0))
- #define time_before64(a,b)	time_after64(b,a)
- 
- #define time_after_eq64(a,b)	\
- 	(typecheck(__u64, a) && \
- 	 typecheck(__u64, b) && \
--	 ((__s64)(a) - (__s64)(b) >= 0))
-+	 ((__s64)((a) - (b)) >= 0))
- #define time_before_eq64(a,b)	time_after_eq64(b,a)
- 
- /*
-diff --git a/include/linux/tracepoint.h b/include/linux/tracepoint.h
-index bd96ecd0e05c..c49c363f5bfd 100644
---- a/include/linux/tracepoint.h
-+++ b/include/linux/tracepoint.h
-@@ -60,6 +60,12 @@ struct tp_module {
- 	unsigned int num_tracepoints;
- 	struct tracepoint * const *tracepoints_ptrs;
- };
-+bool trace_module_has_bad_taint(struct module *mod);
-+#else
-+static inline bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return false;
-+}
- #endif /* CONFIG_MODULES */
- 
- struct tracepoint_iter {
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index e372d9495e42..4b843ace285c 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -2338,9 +2338,9 @@ int __cpuset_node_allowed_softwall(int node, gfp_t gfp_mask)
- 
- 	task_lock(current);
- 	cs = nearest_hardwall_ancestor(task_cs(current));
-+	allowed = node_isset(node, cs->mems_allowed);
- 	task_unlock(current);
- 
--	allowed = node_isset(node, cs->mems_allowed);
- 	mutex_unlock(&callback_mutex);
- 	return allowed;
- }
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 86a500d7ea59..3d1bbbcc2923 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -777,8 +777,7 @@ static irqreturn_t irq_thread_fn(struct irq_desc *desc,
- 
- static void wake_threads_waitq(struct irq_desc *desc)
- {
--	if (atomic_dec_and_test(&desc->threads_active) &&
--	    waitqueue_active(&desc->wait_for_threads))
-+	if (atomic_dec_and_test(&desc->threads_active))
- 		wake_up(&desc->wait_for_threads);
- }
- 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index dd33c9fd8009..d21498e3c503 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5270,15 +5270,15 @@ static void switched_from_fair(struct rq *rq, struct task_struct *p)
- 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
- 
- 	/*
--	 * Ensure the task's vruntime is normalized, so that when its
-+	 * Ensure the task's vruntime is normalized, so that when it's
- 	 * switched back to the fair class the enqueue_entity(.flags=0) will
- 	 * do the right thing.
- 	 *
--	 * If it was on_rq, then the dequeue_entity(.flags=0) will already
--	 * have normalized the vruntime, if it was !on_rq, then only when
-+	 * If it's on_rq, then the dequeue_entity(.flags=0) will already
-+	 * have normalized the vruntime, if it's !on_rq, then only when
- 	 * the task is sleeping will it still have non-normalized vruntime.
- 	 */
--	if (!se->on_rq && p->state != TASK_RUNNING) {
-+	if (!p->on_rq && p->state != TASK_RUNNING) {
- 		/*
- 		 * Fix up our vruntime so that the current sleep doesn't
- 		 * cause 'unlimited' sleep bonus.
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 29111da1d100..2f737f536c27 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -1354,6 +1354,16 @@ static void trace_module_add_events(struct module *mod)
- 	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call **call, **start, **end;
- 
-+	if (!mod->num_trace_events)
-+		return;
-+
-+	/* Don't add infrastructure for mods without tracepoints */
-+	if (trace_module_has_bad_taint(mod)) {
-+		pr_err("%s: module has bad taint, not creating trace events\n",
-+		       mod->name);
-+		return;
-+	}
-+
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
- 
-diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-index d96ba22dabfa..23d8560dbc56 100644
---- a/kernel/tracepoint.c
-+++ b/kernel/tracepoint.c
-@@ -628,6 +628,11 @@ void tracepoint_iter_reset(struct tracepoint_iter *iter)
- EXPORT_SYMBOL_GPL(tracepoint_iter_reset);
- 
- #ifdef CONFIG_MODULES
-+bool trace_module_has_bad_taint(struct module *mod)
-+{
-+	return mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP));
-+}
-+
- static int tracepoint_module_coming(struct module *mod)
- {
- 	struct tp_module *tp_mod, *iter;
-@@ -638,7 +643,7 @@ static int tracepoint_module_coming(struct module *mod)
- 	 * module headers (for forced load), to make sure we don't cause a crash.
- 	 * Staging and out-of-tree GPL modules are fine.
- 	 */
--	if (mod->taints & ~((1 << TAINT_OOT_MODULE) | (1 << TAINT_CRAP)))
-+	if (trace_module_has_bad_taint(mod))
- 		return 0;
- 	mutex_lock(&tracepoints_mutex);
- 	tp_mod = kmalloc(sizeof(struct tp_module), GFP_KERNEL);
-diff --git a/net/mac80211/sta_info.c b/net/mac80211/sta_info.c
-index e2e0e0bc6622..569eb2cef3c9 100644
---- a/net/mac80211/sta_info.c
-+++ b/net/mac80211/sta_info.c
-@@ -242,6 +242,7 @@ struct sta_info *sta_info_alloc(struct ieee80211_sub_if_data *sdata,
- 		return NULL;
- 
- 	spin_lock_init(&sta->lock);
-+	spin_lock_init(&sta->ps_lock);
- 	INIT_WORK(&sta->drv_unblock_wk, sta_unblock);
- 	INIT_WORK(&sta->ampdu_mlme.work, ieee80211_ba_session_work);
- 	mutex_init(&sta->ampdu_mlme.mtx);
-@@ -971,6 +972,8 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
- 
- 	skb_queue_head_init(&pending);
- 
-+	/* sync with ieee80211_tx_h_unicast_ps_buf */
-+	spin_lock(&sta->ps_lock);
- 	/* Send all buffered frames to the station */
- 	for (ac = 0; ac < IEEE80211_NUM_ACS; ac++) {
- 		int count = skb_queue_len(&pending), tmp;
-@@ -990,6 +993,7 @@ void ieee80211_sta_ps_deliver_wakeup(struct sta_info *sta)
- 	}
- 
- 	ieee80211_add_pending_skbs_fn(local, &pending, clear_sta_ps_flags, sta);
-+	spin_unlock(&sta->ps_lock);
- 
- 	local->total_ps_buffered -= buffered;
- 
-diff --git a/net/mac80211/sta_info.h b/net/mac80211/sta_info.h
-index ab0576827baf..249f4d087936 100644
---- a/net/mac80211/sta_info.h
-+++ b/net/mac80211/sta_info.h
-@@ -227,6 +227,7 @@ struct sta_ampdu_mlme {
-  * @drv_unblock_wk: used for driver PS unblocking
-  * @listen_interval: listen interval of this station, when we're acting as AP
-  * @_flags: STA flags, see &enum ieee80211_sta_info_flags, do not use directly
-+ * @ps_lock: used for powersave (when mac80211 is the AP) related locking
-  * @ps_tx_buf: buffers (per AC) of frames to transmit to this station
-  *	when it leaves power saving state or polls
-  * @tx_filtered: buffers (per AC) of frames we already tried to
-@@ -297,10 +298,8 @@ struct sta_info {
- 	/* use the accessors defined below */
- 	unsigned long _flags;
- 
--	/*
--	 * STA powersave frame queues, no more than the internal
--	 * locking required.
--	 */
-+	/* STA powersave lock and frame queues */
-+	spinlock_t ps_lock;
- 	struct sk_buff_head ps_tx_buf[IEEE80211_NUM_ACS];
- 	struct sk_buff_head tx_filtered[IEEE80211_NUM_ACS];
- 	unsigned long driver_buffered_tids;
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index e4b7188a0572..b7fc3dd4b8ef 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -471,6 +471,20 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- #endif /* CONFIG_MAC80211_VERBOSE_PS_DEBUG */
- 		if (tx->local->total_ps_buffered >= TOTAL_MAX_TX_BUFFER)
- 			purge_old_ps_buffers(tx->local);
-+
-+		/* sync with ieee80211_sta_ps_deliver_wakeup */
-+		spin_lock(&sta->ps_lock);
-+		/*
-+		 * STA woke up the meantime and all the frames on ps_tx_buf have
-+		 * been queued to pending queue. No reordering can happen, go
-+		 * ahead and Tx the packet.
-+		 */
-+		if (!test_sta_flag(sta, WLAN_STA_PS_STA) &&
-+		    !test_sta_flag(sta, WLAN_STA_PS_DRIVER)) {
-+			spin_unlock(&sta->ps_lock);
-+			return TX_CONTINUE;
-+		}
-+
- 		if (skb_queue_len(&sta->ps_tx_buf[ac]) >= STA_MAX_TX_BUFFER) {
- 			struct sk_buff *old = skb_dequeue(&sta->ps_tx_buf[ac]);
- #ifdef CONFIG_MAC80211_VERBOSE_PS_DEBUG
-@@ -487,6 +501,7 @@ ieee80211_tx_h_unicast_ps_buf(struct ieee80211_tx_data *tx)
- 		info->control.vif = &tx->sdata->vif;
- 		info->flags |= IEEE80211_TX_INTFL_NEED_TXPROCESSING;
- 		skb_queue_tail(&sta->ps_tx_buf[ac], tx->skb);
-+		spin_unlock(&sta->ps_lock);
- 
- 		if (!timer_pending(&local->sta_cleanup))
- 			mod_timer(&local->sta_cleanup,
-diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
-index cb1c4303a07a..f131caf06a19 100644
---- a/net/sctp/sm_statefuns.c
-+++ b/net/sctp/sm_statefuns.c
-@@ -747,6 +747,13 @@ sctp_disposition_t sctp_sf_do_5_1D_ce(const struct sctp_endpoint *ep,
- 		struct sctp_chunk auth;
- 		sctp_ierror_t ret;
- 
-+		/* Make sure that we and the peer are AUTH capable */
-+		if (!sctp_auth_enable || !new_asoc->peer.auth_capable) {
-+			kfree_skb(chunk->auth_chunk);
-+			sctp_association_free(new_asoc);
-+			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
-+		}
-+
- 		/* set-up our fake chunk so that we can process it */
- 		auth.skb = chunk->auth_chunk;
- 		auth.asoc = chunk->asoc;
-diff --git a/sound/pci/oxygen/xonar_dg.c b/sound/pci/oxygen/xonar_dg.c
-index 793bdf03d7e0..71527467de05 100644
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_kcontrol *ctl,
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
-@@ -597,7 +607,7 @@ struct oxygen_model model_xonar_dg = {
- 	.model_data_size = sizeof(struct dg),
- 	.device_config = PLAYBACK_0_TO_I2S |
- 			 PLAYBACK_1_TO_SPDIF |
--			 CAPTURE_0_FROM_I2S_2 |
-+			 CAPTURE_0_FROM_I2S_1 |
- 			 CAPTURE_1_FROM_SPDIF,
- 	.dac_channels_pcm = 6,
- 	.dac_channels_mixer = 0,
-diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
-index 5ca46525d47e..30515583cab3 100644
---- a/sound/usb/mixer.c
-+++ b/sound/usb/mixer.c
-@@ -819,6 +819,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
- 		}
- 		break;
- 
-+	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
- 	case USB_ID(0x046d, 0x0808):
- 	case USB_ID(0x046d, 0x0809):
- 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+--envbJBWh7q8WU6mo
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+I'm announcing the release of the 3.10.34 kernel.
+
+All users of the 3.10 kernel series must upgrade.
+
+The updated 3.10.y git tree can be found at:
+	git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-stable.git linu=
+x-3.10.y
+and can be browsed at the normal kernel.org git web browser:
+	http://git.kernel.org/?p=3Dlinux/kernel/git/stable/linux-stable.git;a=3Dsu=
+mmary
+
+thanks,
+
+greg k-h
+
+------------
+
+ Makefile                                             |    2=20
+ arch/arm/include/asm/spinlock.h                      |    2=20
+ arch/arm/kernel/setup.c                              |   30 +++-
+ arch/arm/mach-sa1100/include/mach/collie.h           |    2=20
+ arch/mips/include/asm/mipsregs.h                     |    1=20
+ arch/powerpc/kernel/reloc_64.S                       |    1=20
+ arch/x86/kernel/head_32.S                            |    7 -
+ arch/x86/kernel/head_64.S                            |    6=20
+ arch/x86/kernel/i387.c                               |   15 +-
+ arch/x86/kernel/quirks.c                             |    2=20
+ arch/x86/kvm/svm.c                                   |    6=20
+ drivers/acpi/resource.c                              |   10 +
+ drivers/acpi/sleep.c                                 |   32 ++--
+ drivers/ata/libata-core.c                            |    1=20
+ drivers/firewire/core-device.c                       |   22 ++-
+ drivers/firewire/net.c                               |    6=20
+ drivers/firewire/sbp2.c                              |   17 +-
+ drivers/gpu/drm/radeon/atombios_encoders.c           |    2=20
+ drivers/gpu/drm/ttm/ttm_bo.c                         |    8 -
+ drivers/infiniband/ulp/isert/ib_isert.c              |  124 ++++++++------=
+-----
+ drivers/infiniband/ulp/isert/ib_isert.h              |    4=20
+ drivers/md/dm-cache-target.c                         |   11 -
+ drivers/net/can/flexcan.c                            |    4=20
+ drivers/net/ethernet/broadcom/tg3.c                  |    3=20
+ drivers/net/ethernet/broadcom/tg3.h                  |    6=20
+ drivers/net/ethernet/sfc/ptp.c                       |    7 +
+ drivers/net/virtio_net.c                             |    3=20
+ drivers/net/vmxnet3/vmxnet3_drv.c                    |   19 ++
+ drivers/net/wireless/ath/ath9k/ar9462_2p0_initvals.h |    4=20
+ drivers/net/wireless/iwlwifi/dvm/mac80211.c          |   22 +++
+ drivers/net/wireless/iwlwifi/dvm/sta.c               |    1=20
+ drivers/net/wireless/iwlwifi/dvm/tx.c                |   14 +-
+ drivers/net/wireless/iwlwifi/iwl-drv.c               |    2=20
+ drivers/net/wireless/iwlwifi/iwl-modparams.h         |   11 +
+ drivers/net/wireless/iwlwifi/mvm/bt-coex.c           |    7 -
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c          |   22 +++
+ drivers/net/wireless/iwlwifi/mvm/tx.c                |   18 +-
+ drivers/net/wireless/mwifiex/11ac.c                  |    3=20
+ drivers/net/wireless/mwifiex/11n.c                   |    3=20
+ drivers/net/wireless/mwifiex/pcie.c                  |   34 ++---
+ drivers/net/wireless/mwifiex/scan.c                  |    8 -
+ drivers/net/wireless/mwifiex/usb.c                   |    8 -
+ drivers/net/wireless/mwifiex/wmm.c                   |    3=20
+ drivers/pci/pci.c                                    |    3=20
+ drivers/pnp/pnpacpi/rsparser.c                       |   15 +-
+ drivers/rapidio/devices/tsi721.h                     |    1=20
+ drivers/rapidio/devices/tsi721_dma.c                 |   27 ++--
+ drivers/regulator/core.c                             |   14 +-
+ drivers/s390/block/dasd.c                            |    8 -
+ drivers/scsi/isci/host.h                             |    5=20
+ drivers/scsi/isci/port_config.c                      |    7 -
+ drivers/scsi/isci/task.c                             |    2=20
+ drivers/scsi/qla2xxx/qla_def.h                       |    3=20
+ drivers/scsi/storvsc_drv.c                           |    3=20
+ drivers/spi/spi-ath79.c                              |    4=20
+ drivers/target/iscsi/iscsi_target.c                  |    8 -
+ drivers/target/iscsi/iscsi_target_erl2.c             |   16 +-
+ drivers/target/iscsi/iscsi_target_tpg.c              |    2=20
+ drivers/usb/core/config.c                            |    4=20
+ drivers/usb/core/quirks.c                            |    4=20
+ fs/bio-integrity.c                                   |    2=20
+ fs/btrfs/compression.c                               |    2=20
+ fs/namei.c                                           |    1=20
+ fs/nfs/delegation.c                                  |   11 +
+ fs/nfs/nfs4proc.c                                    |    5=20
+ fs/ocfs2/file.c                                      |    8 -
+ fs/ocfs2/quota_global.c                              |   27 ++--
+ fs/ocfs2/quota_local.c                               |    4=20
+ fs/proc/base.c                                       |    1=20
+ include/linux/firewire.h                             |    1=20
+ include/linux/jiffies.h                              |    8 -
+ include/linux/tracepoint.h                           |    6=20
+ include/net/tcp.h                                    |    3=20
+ include/target/iscsi/iscsi_transport.h               |    1=20
+ ipc/msg.c                                            |    2=20
+ kernel/cpuset.c                                      |    2=20
+ kernel/irq/manage.c                                  |    3=20
+ kernel/sched/fair.c                                  |    8 -
+ kernel/time/tick-broadcast.c                         |   13 +
+ kernel/trace/trace_events.c                          |   10 +
+ kernel/tracepoint.c                                  |    7 -
+ mm/compaction.c                                      |   20 +--
+ mm/memcontrol.c                                      |   14 ++
+ net/core/neighbour.c                                 |    6=20
+ net/ipv4/tcp.c                                       |    8 -
+ net/ipv4/tcp_output.c                                |    7 -
+ net/ipv6/exthdrs_core.c                              |    2=20
+ net/ipv6/udp_offload.c                               |    2=20
+ net/mac80211/mesh_ps.c                               |    1=20
+ net/mac80211/mlme.c                                  |   23 +++
+ net/mac80211/sta_info.c                              |    5=20
+ net/mac80211/sta_info.h                              |    7 -
+ net/mac80211/tx.c                                    |   15 ++
+ net/mac80211/wme.c                                   |    5=20
+ net/sctp/sm_statefuns.c                              |    7 +
+ net/unix/af_unix.c                                   |    3=20
+ sound/pci/hda/patch_analog.c                         |    1=20
+ sound/pci/hda/patch_realtek.c                        |    1=20
+ sound/pci/oxygen/xonar_dg.c                          |   12 +
+ sound/usb/mixer.c                                    |    1=20
+ 100 files changed, 596 insertions(+), 308 deletions(-)
+
+Al Viro (1):
+      ocfs2 syncs the wrong range...
+
+Ales Novak (1):
+      SCSI: storvsc: NULL pointer dereference fix
+
+Alex Deucher (1):
+      drm/radeon/atom: select the proper number of lanes in transmitter set=
+up
+
+Alexandre Bounine (1):
+      rapidio/tsi721: fix tasklet termination in dma channel release
+
+Amitkumar Karwar (4):
+      mwifiex: add NULL check for PCIe Rx skb
+      mwifiex: fix cmd and Tx data timeout issue for PCIe cards
+      mwifiex: copy AP's HT capability info correctly
+      mwifiex: save and copy AP's VHT capability info correctly
+
+Anton Blanchard (2):
+      powerpc: Align p_dyn, p_rela and p_st symbols
+      net: unix socket code abuses csum_partial
+
+Arnd Bergmann (1):
+      vmxnet3: fix building without CONFIG_PCI_MSI
+
+Artem Fetishev (1):
+      fs/proc/base.c: fix GPF in /proc/$PID/map_files
+
+Avinash Patil (1):
+      mwifiex: clean pcie ring only when device is present
+
+Bing Zhao (1):
+      mwifiex: do not advertise usb autosuspend support
+
+Bjorn Helgaas (1):
+      PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not ena=
+bled
+
+Chuansheng Liu (1):
+      genirq: Remove racy waitqueue_active check
+
+Dan Williams (1):
+      SCSI: isci: fix reset timeout handling
+
+Daniel Borkmann (1):
+      net: sctp: fix sctp_sf_do_5_1D_ce to verify if we/peer is AUTH capable
+
+Daniel J Blueman (1):
+      x86/amd/numa: Fix northbridge quirk to assign correct NUMA node
+
+Duan Jiong (1):
+      neigh: recompute reachabletime before returning from neigh_periodic_w=
+ork()
+
+Edward Cree (1):
+      sfc: check for NULL efx->ptp_data in efx_ptp_event
+
+Emmanuel Grumbach (4):
+      mac80211: fix AP powersave TX vs. wakeup race
+      iwlwifi: dvm: clear IWL_STA_UCODE_INPROGRESS when assoc fails
+      iwlwifi: disable TX AMPDU by default for iwldvm
+      iwlwifi: mvm: don't WARN when statistics are handled late
+
+Eric Dumazet (1):
+      net-tcp: fastopen: fix high order allocations
+
+Felix Fietkau (1):
+      mac80211: send control port protocol frames to the VO queue
+
+Filipe Brandenburger (1):
+      memcg: reparent charges of children before processing parent
+
+Filipe David Borba Manana (1):
+      Btrfs: fix data corruption when reading/updating compressed extents
+
+Gabor Juhos (1):
+      spi: spi-ath79: fix initial GPIO CS line setup
+
+George McCollister (1):
+      sched: Fix double normalization of vruntime
+
+Giridhar Malavali (1):
+      SCSI: qla2xxx: Poll during initialization for ISP25xx and ISP83xx
+
+Greg Kroah-Hartman (1):
+      Linux 3.10.34
+
+H. Peter Anvin (1):
+      x86: Ignore NMIs that come in during early boot
+
+Hannes Frederic Sowa (1):
+      ipv6: reuse ip6_frag_id from ip6_ufo_append_data
+
+Hans Schillstrom (1):
+      ipv6: ipv6_find_hdr restore prev functionality
+
+Heiko Carstens (1):
+      s390/dasd: hold request queue sysfs lock when calling elevator_init()
+
+Heinz Mauelshagen (2):
+      dm cache: fix truncation bug when copying a block to/from >2TB fast d=
+evice
+      dm cache: fix access beyond end of origin device
+
+Jan Kara (1):
+      ocfs2: fix quota file corruption
+
+Jason Wang (1):
+      virtio-net: alloc big buffers also when guest can receive UFO
+
+Johannes Berg (4):
+      mac80211: don't validate unchanged AP bandwidth while tracking
+      mac80211: fix association to 20/40 MHz VHT networks
+      mac80211: clear sequence/fragment number in QoS-null frames
+      iwlwifi: fix TX status for aggregated packets
+
+Julius Werner (2):
+      usb: Add device quirk for Logitech HD Pro Webcams C920 and C930e
+      usb: Make DELAY_INIT quirk wait 100ms between Get Configuration reque=
+sts
+
+Laura Abbott (1):
+      mm/compaction: break out of loop on !PageBuddy in isolate_freepages_b=
+lock
+
+Li Zefan (1):
+      cpuset: fix a race condition in __cpuset_node_allowed_softwall()
+
+Linus Torvalds (1):
+      x86: fix compile error due to X86_TRAP_NMI use in asm files
+
+Linus Walleij (1):
+      ARM: 7991/1: sa1100: fix compile problem on Collie
+
+Lukasz Dorau (1):
+      SCSI: isci: correct erroneous for_each_isci_host macro
+
+Magnus Damm (1):
+      ARM: 7864/1: Handle 64-bit memory in case of 32-bit phys_addr_t
+
+Marc Kleine-Budde (1):
+      can: flexcan: flexcan_open(): fix error path if flexcan_chip_start() =
+fails
+
+Marius Knaust (1):
+      ALSA: hda - Added inverted digital-mic handling for Acer TravelMate 8=
+371
+
+Markus Pargmann (1):
+      regulator: core: Replace direct ops->enable usage
+
+Michael Chan (1):
+      tg3: Don't check undefined error bits in RXBD
+
+Michael Kerrisk (1):
+      ipc: Fix 2 bugs in msgrcv() MSG_COPY implementation
+
+Michele Baldessari (1):
+      libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk for Seagate Momentus Sp=
+inPoint M8 (2BA30001)
+
+Neil Horman (1):
+      vmxnet3: fix netpoll race condition
+
+Nicholas Bellinger (5):
+      iscsi-target: Fix iscsit_get_tpg_from_np tpg_state bug
+      bio-integrity: Fix bio_integrity_verify segment start bug
+      iscsi/iser-target: Use list_del_init for ->i_conn_node
+      iscsi/iser-target: Fix isert_conn->state hung shutdown issues
+      iser-target: Fix post_send_buf_count for RDMA READ/WRITE
+
+Oleg Drokin (1):
+      Fix mountpoint reference leakage in linkat
+
+Paul E. McKenney (1):
+      jiffies: Avoid undefined behavior from signed overflow
+
+Qais Yousef (1):
+      MIPS: include linux/types.h
+
+Radim Kr=C4=8Dm=C3=A1=C5=99 (1):
+      KVM: SVM: fix cr8 intercept window
+
+Rafael J. Wysocki (1):
+      ACPI / sleep: Add extra checks for HW Reduced ACPI mode sleep states
+
+Rob Clark (1):
+      drm/ttm: don't oops if no invalidate_caches()
+
+Roman Volkov (2):
+      ALSA: oxygen: Xonar DG(X): capture from I2S channel 1, not 2
+      ALSA: oxygen: modify adjust_dg_dac_routing function
+
+Russell King (1):
+      ARM: ignore memory below PHYS_OFFSET
+
+Stefan Richter (1):
+      firewire: net: fix use after free
+
+Steven Rostedt (Red Hat) (1):
+      tracing: Do not add event files for modules that fail tracepoints
+
+Sujith Manoharan (1):
+      ath9k: Fix ETSI compliance for AR9462 2.0
+
+Suresh Siddha (1):
+      x86, fpu: Check tsk_used_math() in kernel_fpu_end() for eager FPU
+
+Takashi Iwai (2):
+      ALSA: usb-audio: Add quirk for Logitech Webcam C500
+      ALSA: hda - Add missing loopback merge path for AD1884/1984 codecs
+
+Tejun Heo (1):
+      firewire: don't use PREPARE_DELAYED_WORK
+
+Thomas Gleixner (1):
+      tick: Make oneshot broadcast robust vs. CPU offlining
+
+Trond Myklebust (2):
+      NFS: Fix a delegation callback race
+      NFSv4: nfs4_stateid_is_current should return 'true' for an invalid st=
+ateid
+
+Will Deacon (1):
+      ARM: 7811/1: locks: use early clobber in arch_spin_trylock
+
+Zhang Rui (2):
+      ACPI / resources: ignore invalid ACPI device resources
+      PNP / ACPI: proper handling of ACPI IO/Memory resource parsing failur=
+es
+
+
+--envbJBWh7q8WU6mo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTL7viAAoJEDjbvchgkmk+wL4QAKqpy4/frPZ7s3+8ACcfSVkZ
+g0yh0dC594+OChlFyIJpXtJn3ksCyHqts5lgcZ0KRNYPz35UV3J6kbErKByf6x0W
+2Tj2XLwWpy3VEQ/mH/ui7Atdm3lywgkOByeVGhAhZNCWAkXqZKnLI7f5wP3Yn0Hs
+N5BqdGdiF5fzK1lAVbUW8om7DKqQlg0//7d+J5hEAS+fBowVNEGuUuESKbM3Eigw
+DWtout52olFYrNRYTc7YZA25+MnNV8NXdONWdjdfKlJGbswU8zzIjJxvyTO79qFS
+iN5xmMRoX9w2IubxUz2fJuly4scXk+8BIdvpRK0uQ0m63HPpDzXo5jNFbA64xVAY
+D8Q8nOC8mEI0IzTWyHL7TTUNY/FAAMAl4QUil0rulvt8PilBqCEGaD1ATpo/CcnF
+2CWTbsR5wi5JMsslWRGOsQZpvmV77MnQ4mftRNikUwGTjllF90hsN/0AnZgp2MNZ
+lElGQ2UuECsV/9B5u6EpzgzTezEaOIA+QmpGL3X+eZkvQ83RitRXOu7GjMy/KwdD
+J2Tn1v7/gqWNqGA/tQfdraOfRla5NwWWzCd4iTsef4CrIVxIjEkRA2hOP0QF8MPl
+mIHv3hr5L+JzJRUBiRAxwDNLmExwu3Oe1tg1eb7G2Qoz1foduL8qPA5n3SfHY/MB
+BQJsztVHax2+6Eys4dQ4
+=WNE0
+-----END PGP SIGNATURE-----
+
+--envbJBWh7q8WU6mo--
