@@ -1,674 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754430AbaCXTh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:37:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10573 "EHLO mx1.redhat.com"
+	id S1754168AbaCXTlu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:41:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48301 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389AbaCXTht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:49 -0400
+	id S1754416AbaCXThz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:37:55 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
         andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 10/15 V3] perf, c2c: Display cacheline HITM analysis to stdout
-Date: Mon, 24 Mar 2014 15:37:01 -0400
-Message-Id: <1395689826-215033-11-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 08/15 V3] perf, c2c: Add stats to track data source bits and cpu to node maps
+Date: Mon, 24 Mar 2014 15:36:59 -0400
+Message-Id: <1395689826-215033-9-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch mainly focuses on processing and displaying the collected
-HITMs to stdout.  Most of it is just printing data in a pretty way.
+This patch adds a bunch of stats that will be used later in post-processing
+to determine where and with what frequency the HITMs are coming from.
 
-There is one trick used when walking the cacheline.  When we get this
-far we have two rbtrees.  One rbtree holds every record sorted on a
-unique id (using the mmap2 decoder), the other rbtree holds every
-cacheline with at least one HITM sorted on number of HITMs.
+Most of the stats are decoded from the data source response.  Another
+piece of the stats is tracking which cpu the record came in on.
 
-To display the output, the tool walks the second rbtree to display
-the hottest cachelines.  Inside each hot cacheline, the tool displays
-the offsets and the loads/stores it generates.  To determine the
-cacheline offset, it uses linked list inside the cacheline elment
-to walk the first rbtree elements for that particular cacheline.
+Credit to Dick Fowles for determining which bits are important and how to
+properly track them.  Ported to perf by me.
 
-The first rbtree elements are already sorted correctly in offset order, so
-processing the offsets is fairly trivial and is done sequentially.
-
-This is why you will see two while loops in the print_c2c_hitm_report(),
-the outer one walks the cachelines, the inner one walks the offsets.
-
-A knob has been added to display node information, which is useful
-to see which cpus are involved in the contention and their nodes.
-
-Another knob has been added to change the coalescing levels.  You can
-coalesce the output based on pid, tid, ip, and/or symbol.
-
-Original output and statistics done by Dick Fowles, backported by me.
-
-Sample output:
-
-=================================================
-    Global Shared Cache Line Event Information
-=================================================
-  Total Shared Cache Lines          :       1327
-  Load HITs on shared lines         :     167131
-  Fill Buffer Hits on shared lines  :      43469
-  L1D hits on shared lines          :      50497
-  L2D hits on shared lines          :        960
-  LLC hits on shared lines          :      38467
-  Locked Access on shared lines     :     100032
-  Store HITs on shared lines        :     118659
-  Store L1D hits on shared lines    :     113783
-  Total Merged records              :     160807
-
-===========================================================================================================================================================
-
-                                                                                      Shared Cache Line Distribution Pareto
-
-     ---- All ----  -- Shared --    ---- HITM ----                                                                        Load Inst Execute Latency
-       Data Misses   Data Misses   Remote    Local  -- Store Refs --
-                                                                                                                          ---- cycles ----             cpu
- Num  %dist  %cumm  %dist  %cumm  LLCmiss   LLChit   L1 hit  L1 Miss       Data Address    Pid    Tid       Inst Address   median     mean     CV      cnt
-==========================================================================================================================================================
------------------------------------------------------------------------------------------------
-   0  17.0%  17.0%  23.3%  23.3%     6238     3288    28098      813 0xffff881fa55b0140    ***
------------------------------------------------------------------------------------------------
-                                     0.0%     0.0%     0.0%     0.0%               0x00    375    375 0xffffffffa018ff5b      n/a      n/a      n/a      1
-                                     0.0%     0.0%     0.0%     0.0%               0x08  18156  18156 0xffffffffa018b7f9       -1      384     0.0%      1
-                                     0.2%     0.0%     0.0%     0.0%               0x10  18156  18156 0xffffffff811ca1aa       -1      387    10.7%      7
-                                     0.0%     0.0%    23.2%     0.0%               0x18  18156  18156 0xffffffff815c1615       -1      684     0.0%     50
-
------------------------------------------------------------------------------------------------
-   1   5.3%  22.3%   7.3%  30.6%     1944     1143     7916        0 0xffff881fba47f000  18156
------------------------------------------------------------------------------------------------
-                                   100.0%   100.0%     0.0%     0.0%               0x00  18156  18156 0xffffffffa01b410e       -1      401    13.5%     50
-                                     0.0%     0.0%    10.1%     0.0%               0x28  18156  18156 0xffffffffa0167409      n/a      n/a      n/a     50
-                                     0.0%     0.0%    89.9%     0.0%               0x28  18156  18156 0xffffffff815c4be9      n/a      n/a      n/a     50
+V2: refresh with hist_entry
 
 Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 519 +++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 519 insertions(+)
+ tools/perf/builtin-c2c.c | 187 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 187 insertions(+)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index 8674626..e3dbb76 100644
+index b5742bd..55c5ce9 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -59,10 +59,13 @@ struct perf_c2c {
- 	struct c2c_stats	stats;
+@@ -5,17 +5,58 @@
+ #include "util/parse-options.h"
+ #include "util/session.h"
+ #include "util/tool.h"
++#include "util/stat.h"
++#include "util/cpumap.h"
+ #include "util/debug.h"
+ #include <api/fs/fs.h>
+ #include "util/annotate.h"
+ 
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
++#include <sched.h>
++
++typedef struct {
++	int  locks;               /* count of 'lock' transactions */
++	int  store;               /* count of all stores in trace */
++	int  st_uncache;          /* stores to uncacheable address */
++	int  st_noadrs;           /* cacheable store with no address */
++	int  st_l1hit;            /* count of stores that hit L1D */
++	int  st_l1miss;           /* count of stores that miss L1D */
++	int  load;                /* count of all loads in trace */
++	int  ld_excl;             /* exclusive loads, rmt/lcl DRAM - snp none/miss */
++	int  ld_shared;           /* shared loads, rmt/lcl DRAM - snp hit */
++	int  ld_uncache;          /* loads to uncacheable address */
++	int  ld_io;               /* loads to io address */
++	int  ld_miss;             /* loads miss */
++	int  ld_noadrs;           /* cacheable load with no address */
++	int  ld_fbhit;            /* count of loads hitting Fill Buffer */
++	int  ld_l1hit;            /* count of loads that hit L1D */
++	int  ld_l2hit;            /* count of loads that hit L2D */
++	int  ld_llchit;           /* count of loads that hit LLC */
++	int  lcl_hitm;            /* count of loads with local HITM  */
++	int  rmt_hitm;            /* count of loads with remote HITM */
++	int  rmt_hit;             /* count of loads with remote hit clean; */
++	int  lcl_dram;            /* count of loads miss to local DRAM */
++	int  rmt_dram;            /* count of loads miss to remote DRAM */
++	int  nomap;               /* count of load/stores with no phys adrs */
++	int  noparse;             /* count of unparsable data sources */
++} trinfo_t;
++
++struct c2c_stats {
++	cpu_set_t		cpuset;
++	int			nr_entries;
++	u64			total_period;
++	trinfo_t		t;
++	struct stats		stats;
++};
+ 
+ struct perf_c2c {
+ 	struct perf_tool tool;
+ 	bool		 raw_records;
+ 	struct hists	 hists;
++
++	/* stats */
++	struct c2c_stats	stats;
  };
  
-+#define DISPLAY_LINE_LIMIT  0.0015
- #define CACHE_LINESIZE       64
- #define CLINE_OFFSET_MSK     (CACHE_LINESIZE - 1)
- #define CLADRS(a)            ((a) & ~(CLINE_OFFSET_MSK))
- #define CLOFFSET(a)          (int)((a) &  (CLINE_OFFSET_MSK))
-+#define MAXTITLE_SZ          400
-+#define MAXLBL_SZ            256
+ enum { OP, LVL, SNP, LCK, TLB };
+@@ -26,6 +67,29 @@ static int lat_level = DEFAULT_LATENCY_THRES;
+ static int prec_level = DEFAULT_PRECISION;
+ static bool no_stores = false;
  
- struct c2c_hit {
- 	struct rb_node	rb_node;
-@@ -109,6 +112,11 @@ static bool no_stores = false;
- #define LCL_HITM(a,b)        (L3CACHE_HIT(a) && ((b) & PERF_MEM_SNOOP_HITM))
- #define LCL_MEM(a)           (((a) & PERF_MEM_LVL_LOC_RAM) && ((a) & PERF_MEM_LVL_HIT))
- 
-+enum { LVL0, LVL1, LVL2, LVL3, LVL4, MAX_LVL };
-+static int cloffset = LVL1;
-+static int node_info = 0;
-+static int coalesce_level = LVL1;
++#define RMT_RAM              (PERF_MEM_LVL_REM_RAM1 | PERF_MEM_LVL_REM_RAM2)
++#define RMT_LLC              (PERF_MEM_LVL_REM_CCE1 | PERF_MEM_LVL_REM_CCE2)
++
++#define L1CACHE_HIT(a)       (((a) & PERF_MEM_LVL_L1 ) && ((a) & PERF_MEM_LVL_HIT))
++#define FILLBUF_HIT(a)       (((a) & PERF_MEM_LVL_LFB) && ((a) & PERF_MEM_LVL_HIT))
++#define L2CACHE_HIT(a)       (((a) & PERF_MEM_LVL_L2 ) && ((a) & PERF_MEM_LVL_HIT))
++#define L3CACHE_HIT(a)       (((a) & PERF_MEM_LVL_L3 ) && ((a) & PERF_MEM_LVL_HIT))
++
++#define L1CACHE_MISS(a)      (((a) & PERF_MEM_LVL_L1 ) && ((a) & PERF_MEM_LVL_MISS))
++#define L3CACHE_MISS(a)      (((a) & PERF_MEM_LVL_L3 ) && ((a) & PERF_MEM_LVL_MISS))
++
++#define LD_UNCACHED(a)       (((a) & PERF_MEM_LVL_UNC) && ((a) & PERF_MEM_LVL_HIT))
++#define ST_UNCACHED(a)       (((a) & PERF_MEM_LVL_UNC) && ((a) & PERF_MEM_LVL_HIT))
++
++#define RMT_LLCHIT(a)        (((a) & RMT_LLC) && ((a) & PERF_MEM_LVL_HIT))
++#define RMT_HIT(a,b)         (((a) & RMT_LLC) && ((b) & PERF_MEM_SNOOP_HIT))
++#define RMT_HITM(a,b)        (((a) & RMT_LLC) && ((b) & PERF_MEM_SNOOP_HITM))
++#define RMT_MEM(a)           (((a) & RMT_RAM) && ((a) & PERF_MEM_LVL_HIT))
++
++#define LCL_HIT(a,b)         (L3CACHE_HIT(a) && ((b) & PERF_MEM_SNOOP_HIT))
++#define LCL_HITM(a,b)        (L3CACHE_HIT(a) && ((b) & PERF_MEM_SNOOP_HITM))
++#define LCL_MEM(a)           (((a) & PERF_MEM_LVL_LOC_RAM) && ((a) & PERF_MEM_LVL_HIT))
 +
  static int perf_c2c__scnprintf_data_src(char *bf, size_t size, uint64_t val)
  {
  #define PREFIX       "["
-@@ -416,6 +424,80 @@ static void c2c_hit__update_strings(struct c2c_hit *h,
- 	CPU_SET(n->cpu, &h->stats.cpuset);
+@@ -148,6 +212,109 @@ static int perf_sample__fprintf(struct perf_sample *sample, char tag,
+ 		       mi->iaddr.sym ? mi->iaddr.sym->name : "???");
  }
  
-+static inline bool matching_coalescing(struct c2c_hit *h,
-+				       struct hist_entry *e)
++static int c2c_decode_stats(struct c2c_stats *stats, struct hist_entry *entry)
 +{
-+	bool value = false;
-+	struct mem_info *mi = e->mem_info;
++	union perf_mem_data_src *data_src = &entry->mem_info->data_src;
++	u64 daddr = entry->mem_info->daddr.addr;
++	u64 weight = entry->stat.weight;
++	int err = 0;
 +
-+	if (coalesce_level > MAX_LVL)
-+		printf("DON: bad coalesce level %d\n", coalesce_level);
++	u64 op = data_src->mem_op;
++	u64 lvl = data_src->mem_lvl;
++	u64 snoop = data_src->mem_snoop;
++	u64 lock = data_src->mem_lock;
 +
-+	if (e->cpumode != PERF_RECORD_MISC_KERNEL) {
++#define P(a,b) PERF_MEM_##a##_##b
 +
-+		switch (coalesce_level) {
++	stats->nr_entries++;
++	stats->total_period += entry->stat.period;
 +
-+		case LVL0:
-+		case LVL1:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->pid   == e->thread->pid_) &&
-+				 (h->tid   == e->thread->tid) &&
-+				 (h->iaddr == mi->iaddr.addr));
-+			break;
++	if (lock & P(LOCK,LOCKED)) stats->t.locks++;
 +
-+		case LVL2:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->pid   == e->thread->pid_) &&
-+				 (h->iaddr == mi->iaddr.addr));
-+			break;
++	if (op & P(OP,LOAD)) {
++		stats->t.load++;
 +
-+		case LVL3:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->iaddr == mi->iaddr.addr));
-+			break;
-+
-+		case LVL4:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->mi->iaddr.sym == mi->iaddr.sym));
-+			break;
-+
-+		default:
-+			break;
-+
++		if (!daddr) {
++			stats->t.ld_noadrs++;
++			return -1;
 +		}
 +
++		if (lvl & P(LVL,HIT)) {
++			if (lvl & P(LVL,UNC)) stats->t.ld_uncache++;
++			if (lvl & P(LVL,IO))  stats->t.ld_io++;
++			if (lvl & P(LVL,LFB)) stats->t.ld_fbhit++;
++			if (lvl & P(LVL,L1 )) stats->t.ld_l1hit++;
++			if (lvl & P(LVL,L2 )) stats->t.ld_l2hit++;
++			if (lvl & P(LVL,L3 )) {
++				if (snoop & P(SNOOP,HITM))
++					stats->t.lcl_hitm++;
++				else
++					stats->t.ld_llchit++;
++			}
++
++			if (lvl & P(LVL,LOC_RAM)) {
++				stats->t.lcl_dram++;
++				if (snoop & P(SNOOP,HIT))
++					stats->t.ld_shared++;
++				else
++					stats->t.ld_excl++;
++			}
++
++			if ((lvl & P(LVL,REM_RAM1)) ||
++			    (lvl & P(LVL,REM_RAM2))) {
++				stats->t.rmt_dram++;
++				if (snoop & P(SNOOP,HIT))
++					stats->t.ld_shared++;
++				else
++					stats->t.ld_excl++;
++			}
++		}
++
++		if ((lvl & P(LVL,REM_CCE1)) ||
++		    (lvl & P(LVL,REM_CCE2))) {
++			if (snoop & P(SNOOP, HIT))
++				stats->t.rmt_hit++;
++			else if (snoop & P(SNOOP, HITM)) {
++				stats->t.rmt_hitm++;
++				update_stats(&stats->stats, weight);
++			}
++		}
++
++		if ((lvl & P(LVL,MISS)))
++			stats->t.ld_miss++;
++
++	} else if (op & P(OP,STORE)) {
++		/* store */
++		stats->t.store++;
++
++		if (!daddr) {
++			stats->t.st_noadrs++;
++			return -1;
++		}
++
++		if (lvl & P(LVL,HIT)) {
++			if (lvl & P(LVL,UNC)) stats->t.st_uncache++;
++			if (lvl & P(LVL,L1 )) stats->t.st_l1hit++;
++		}
++		if (lvl & P(LVL,MISS))
++			if (lvl & P(LVL,L1)) stats->t.st_l1miss++;
 +	} else {
-+
-+		switch (coalesce_level) {
-+
-+		case LVL0:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->pid   == e->thread->pid_) &&
-+				 (h->tid   == e->thread->tid) &&
-+				 (h->iaddr == mi->iaddr.addr));
-+			break;
-+
-+		case LVL1:
-+		case LVL2:
-+		case LVL3:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->iaddr == mi->iaddr.addr));
-+			break;
-+
-+		case LVL4:
-+			value = ((h->daddr == mi->daddr.addr) &&
-+				 (h->mi->iaddr.sym == mi->iaddr.sym));
-+			break;
-+
-+		default:
-+			break;
-+
-+		}
++		/* unparsable data_src? */
++		stats->t.noparse++;
++		return -1;
 +	}
 +
-+	return value;
++	if (!entry->mem_info->daddr.map || !entry->mem_info->iaddr.map) {
++		stats->t.nomap++;
++		pr_debug("Dropping data 0x%lx (%p) and inst 0x%lx (%p)\n",
++			 entry->mem_info->daddr.addr, entry->mem_info->daddr.map,
++			 entry->mem_info->iaddr.addr, entry->mem_info->iaddr.map);
++		return -1;
++	}
++
++	return err;
 +}
 +
  static int perf_c2c__process_load_store(struct perf_c2c *c2c,
  					struct addr_location *al,
  					struct perf_sample *sample,
-@@ -547,12 +629,442 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
- 	new->total_period	+= old->total_period;
+@@ -187,6 +354,14 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+ 		goto out_mem;
+ 	}
+ 
++	err = c2c_decode_stats(&c2c->stats, he);
++	if (err < 0) {
++		err = 0;
++		rb_erase(&he->rb_node_in, c2c->hists.entries_in);
++		free(he);
++		goto out;
++	}
++
+ 	c2c->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
+ 	return err;
+@@ -280,6 +455,9 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 		goto out;
+ 	}
+ 
++	if (symbol__init() < 0)
++		goto out_delete;
++
+ 	/* setup the evsel handlers for each event type */
+ 	evlist__for_each(session->evlist, evsel) {
+ 		const char *name = perf_evsel__name(evsel);
+@@ -294,12 +472,20 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
+ 
+ 	err = perf_c2c__process_events(session, c2c);
+ 
++out_delete:
++	perf_session__delete(session);
+ out:
+ 	return err;
  }
  
-+static void print_hitm_cacheline_header(void)
-+{
-+#define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
-+#define PARTICIPANTS1         "Node{cpus %hitms %stores} Node{cpus %hitms %stores} ..."
-+#define PARTICIPANTS2         "Node{cpu list}; Node{cpu list}; Node{cpu list}; ..."
-+
-+	int i;
-+	const  char *docptr;
-+	static char  delimit[MAXTITLE_SZ];
-+	static char  title2[MAXTITLE_SZ];
-+	int       pad;
-+
-+	docptr = " ";
-+	if (node_info == 1)
-+		docptr = PARTICIPANTS1;
-+	if (node_info  == 2)
-+		docptr = PARTICIPANTS2;
-+
-+	sprintf(title2, "%4s %6s %6s %6s %6s %8s %8s %8s %8s %18s %6s %6s %18s %8s %8s %8s %6s %-30s %-20s %s",
-+			"Num",
-+			"%dist",
-+			"%cumm",
-+			"%dist",
-+			"%cumm",
-+			"LLCmiss",
-+			"LLChit",
-+			"L1 hit",
-+			"L1 Miss",
-+			"Data Address",
-+			"Pid",
-+			"Tid",
-+			"Inst Address",
-+			"median",
-+			"mean",
-+			"CV  ",
-+			"cnt",
-+			"Symbol",
-+			"Object",
-+			docptr);
-+
-+	for (i = 0; i < (int)strlen(title2); i++) strcat(delimit, "=");
-+
-+
-+	printf("\n\n");
-+	printf("%s\n", delimit);
-+	printf("\n");
-+
-+	pad = (strlen(title2)/2) - (strlen(SHARING_REPORT_TITLE)/2);
-+	for (i = 0; i < pad; i++) printf(" ");
-+	printf("%s\n", SHARING_REPORT_TITLE);
-+
-+	printf("\n");
-+	printf("%4s %13s %13s %17s %8s %8s %18s %6s %6s %18s %26s %6s %30s %20s %s\n",
-+		" ",
-+		"---- All ----",
-+		"-- Shared --",
-+		"---- HITM ----",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		"Load Inst Execute Latency",
-+		" ",
-+		" ",
-+		" ",
-+		node_info  ? "Shared Data Participants" : " ");
-+
-+
-+	printf("%4s %13s %13s %8s %8s %17s %18s %6s %6s %17s %18s\n",
-+		" ",
-+		" Data Misses",
-+		" Data Misses",
-+		"Remote",
-+		"Local",
-+		"-- Store Refs --",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ");
-+
-+	printf("%4s %13s %13s %8s %8s %8s %8s %18s %6s %6s %17s %18s %8s %6s\n",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		"---- cycles ----",
-+		" ",
-+		"cpu");
-+
-+	printf("%s\n", title2);
-+	printf("%s\n", delimit);
-+}
-+
-+static void print_hitm_cacheline(struct c2c_hit *h,
-+				 int record,
-+				 double tot_cumm,
-+				 double ld_cumm,
-+				 double tot_dist,
-+				 double ld_dist)
-+{
-+	char pidstr[7];
-+	char addrstr[20];
-+	static char  summary[MAXLBL_SZ];
-+	int j;
-+
-+	if (h->pid > 0)
-+		sprintf(pidstr, "%6d", h->pid);
-+	else
-+		sprintf(pidstr, "***");
-+	/*
-+	 * It is possible to have none distinct virtual addresses
-+	 * pointing to a distinct SYstem V shared memory region.
-+	 * if there are multple virtual addresses the address
-+	 * field will be astericks. It would be possible to subsitute
-+	 * the physical address but this count be confusing as some
-+	 * times the field is a virtual address while or times it
-+	 * may be a physical address which may lead to confusion.
-+	 */
-+	if (h->daddr != ~0UL)
-+		sprintf(addrstr, "%#18lx", CLADRS(h->daddr));
-+	else
-+		sprintf(addrstr, "****************");
-+
-+
-+	sprintf(summary, "%4d %5.1f%% %5.1f%% %5.1f%% %5.1f%% %8d %8d %8d %8d %18s %6s\n",
-+			record,
-+			tot_dist * 100.,
-+			tot_cumm * 100.,
-+			ld_dist * 100.,
-+			ld_cumm * 100.,
-+			h->stats.t.rmt_hitm,
-+			h->stats.t.lcl_hitm,
-+			h->stats.t.st_l1hit,
-+			h->stats.t.st_l1miss,
-+			addrstr,
-+			pidstr);
-+
-+	for (j = 0; j < (int)strlen(summary); j++) printf("-");
-+	printf("\n");
-+	printf("%s", summary);
-+	for (j = 0; j < (int)strlen(summary); j++) printf("-");
-+	printf("\n");
-+}
-+
-+static void print_socket_stats_str(struct c2c_hit *clo,
-+				   struct c2c_stats *node_stats)
-+{
-+	int i, j;
-+
-+	if (!node_stats)
-+		return;
-+
-+	for (i = 0; i < max_node_num; i++) {
-+		struct c2c_stats *stats = &node_stats[i];
-+		int num = CPU_COUNT(&stats->cpuset);
-+
-+		if (!num) {
-+			/* pad align socket info */
-+			for (j = 0; j < 21; j++)
-+				printf(" ");
-+			continue;
-+		}
-+
-+		printf("%2d{%2d ", i, num);
-+
-+		if (clo->stats.t.rmt_hitm > 0)
-+			printf("%5.1f%% ", 100. * ((double)stats->t.rmt_hitm / (double) clo->stats.t.rmt_hitm));
-+		else
-+			printf("%6s ", "n/a");
-+
-+		if (clo->stats.t.store > 0)
-+			printf("%5.1f%%} ", 100. * ((double)stats->t.store / (double)clo->stats.t.store));
-+		else
-+			printf("%6s} ", "n/a");
-+	}
-+}
-+
-+static void print_socket_shared_str(struct c2c_stats *node_stats)
-+{
-+	int i, j;
-+
-+	if (!node_stats)
-+		return;
-+
-+	for (i = 0; i < max_node_num; i++) {
-+		struct c2c_stats *stats = &node_stats[i];
-+		int num = CPU_COUNT(&stats->cpuset);
-+		int start = -1;
-+		bool first = true;
-+
-+		if (!num)
-+			continue;
-+
-+		printf("%d{", i);
-+
-+		for (j = 0; j < max_cpu_num; j++) {
-+			if (!CPU_ISSET(j, &stats->cpuset)) {
-+				if (start != -1) {
-+					if ((j-1) - start)
-+						/* print the range */
-+						printf("%s%d-%d", (first ? "" : ","), start, j-1);
-+					else
-+						/* standalone */
-+						printf("%s%d", (first ? "" : ",") , start);
-+					start = -1;
-+					first = false;
-+				}
-+				continue;
-+			}
-+
-+			if (start == -1)
-+				start = j;
-+		}
-+		/* last chunk */
-+		if (start != -1) {
-+			if ((j-1) - start)
-+				/* print the range */
-+				printf("%s%d-%d", (first ? "" : ","), start, j-1);
-+			else
-+				/* standalone */
-+				printf("%s%d", (first ? "" : ",") , start);
-+		}
-+
-+		printf("}; ");
-+	}
-+}
-+
-+static void print_hitm_cacheline_offset(struct c2c_hit *clo,
-+					struct c2c_hit *h,
-+					struct c2c_stats *node_stats)
-+{
-+#define SHORT_STR_LEN	7
-+#define LONG_STR_LEN	30
-+
-+	char pidstr[SHORT_STR_LEN];
-+	char tidstr[SHORT_STR_LEN];
-+	char addrstr[LONG_STR_LEN];
-+	char latstr[LONG_STR_LEN];
-+	char objptr[LONG_STR_LEN];
-+	char symptr[LONG_STR_LEN];
-+	struct c2c_stats *stats = &clo->stats;
-+	struct addr_map_symbol *ams;
-+
-+	ams = &clo->mi->iaddr;
-+
-+	if (clo->pid >= 0)
-+		snprintf(pidstr, SHORT_STR_LEN, "%6d", clo->pid);
-+	else
-+		sprintf(pidstr, "***");
-+
-+	if (clo->tid >= 0)
-+		snprintf(tidstr, SHORT_STR_LEN, "%6d", clo->tid);
-+	else
-+		sprintf(tidstr, "***");
-+
-+	if (clo->iaddr != ~0UL)
-+		snprintf(addrstr, LONG_STR_LEN, "%#18lx", clo->iaddr);
-+	else
-+		sprintf(addrstr, "****************");
-+	snprintf(objptr, LONG_STR_LEN, "%-18s", ams->map->dso->short_name);
-+	snprintf(symptr, LONG_STR_LEN, "%-18s", (ams->sym ? ams->sym->name : "?????"));
-+
-+	if (stats->t.rmt_hitm > 0) {
-+		double mean = avg_stats(&stats->stats);
-+		double std = stddev_stats(&stats->stats);
-+
-+		sprintf(latstr, "%8.0f %8.0f %7.1f%%",
-+			-1.0, /* FIXME */
-+			mean,
-+			rel_stddev_stats(std, mean));
-+	} else {
-+		sprintf(latstr, "%8s %8s %8s",
-+			"n/a",
-+			"n/a",
-+			"n/a");
-+
-+	}
-+
-+	/*
-+	 * implicit assumption that we are not coalescing over IPs
-+	 */
-+	printf("%4s %6s %6s %6s %6s %7.1f%% %7.1f%% %7.1f%% %7.1f%% %14s0x%02lx %6s %6s %18s %8s %6d %-30s %-20s",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		" ",
-+		(stats->t.rmt_hitm  > 0) ? (100. * ((double)stats->t.rmt_hitm  / (double)h->stats.t.rmt_hitm))  : 0.0,
-+		(stats->t.lcl_hitm  > 0) ? (100. * ((double)stats->t.lcl_hitm  / (double)h->stats.t.lcl_hitm))  : 0.0,
-+		(stats->t.st_l1hit  > 0) ? (100. * ((double)stats->t.st_l1hit  / (double)h->stats.t.st_l1hit))  : 0.0,
-+		(stats->t.st_l1miss > 0) ? (100. * ((double)stats->t.st_l1miss / (double)h->stats.t.st_l1miss)) : 0.0,
-+		" ",
-+		(cloffset == LVL2) ? (clo->daddr & 0xff) : CLOFFSET(clo->daddr),
-+		pidstr,
-+		tidstr,
-+		addrstr,
-+		latstr,
-+		CPU_COUNT(&clo->stats.cpuset),
-+		symptr,
-+		objptr);
-+
-+	if (node_info == 0)
-+		printf("  ");
-+	else if (node_info  == 1)
-+		print_socket_stats_str(clo, node_stats);
-+	else if (node_info  == 2)
-+		print_socket_shared_str(node_stats);
-+
-+	printf("\n");
-+}
-+
-+static void print_c2c_hitm_report(struct rb_root *hitm_tree,
-+				  struct c2c_stats *hitm_stats __maybe_unused,
-+				  struct c2c_stats *c2c_stats)
-+{
-+	struct rb_node	*next = rb_first(hitm_tree);
-+	struct c2c_hit	*h, *clo = NULL;
-+	u64		addr;
-+	double		tot_dist, tot_cumm;
-+	double		ld_dist, ld_cumm;
-+	int		llc_misses;
-+	int		record = 0;
-+	struct c2c_stats *node_stats = NULL;
-+
-+	if (node_info) {
-+		node_stats = zalloc(sizeof(struct c2c_stats) * cpu__max_node());
-+		if (!node_stats) {
-+			printf("Can not allocate stats for node output\n");
-+			return;
-+		}
-+	}
-+
-+	print_hitm_cacheline_header();
-+
-+	llc_misses = c2c_stats->t.lcl_dram +
-+		     c2c_stats->t.rmt_dram +
-+		     c2c_stats->t.rmt_hit +
-+		     c2c_stats->t.rmt_hitm;
-+
-+	/*
-+	 * generate distinct cache line report
-+	 */
-+	tot_cumm = 0.0;
-+	ld_cumm  = 0.0;
-+
-+	while (next) {
-+		struct hist_entry *entry;
-+
-+		h = rb_entry(next, struct c2c_hit, rb_node);
-+		next = rb_next(&h->rb_node);
-+
-+		tot_dist  = ((double)h->stats.t.rmt_hitm / llc_misses);
-+		tot_cumm += tot_dist;
-+
-+		ld_dist  = ((double)h->stats.t.rmt_hitm / c2c_stats->t.rmt_hitm);
-+		ld_cumm += ld_dist;
-+
-+		/*
-+		 * don't display lines with insignificant sharing contribution
-+		 */
-+		if (ld_dist < DISPLAY_LINE_LIMIT)
-+			break;
-+
-+		print_hitm_cacheline(h, record, tot_cumm, ld_cumm, tot_dist, ld_dist);
-+
-+		list_for_each_entry(entry, &h->list, pairs.node) {
-+
-+			if (!clo || !matching_coalescing(clo, entry)) {
-+				if (clo)
-+					print_hitm_cacheline_offset(clo, h, node_stats);
-+
-+				free(clo);
-+				addr = entry->mem_info->iaddr.al_addr;
-+				clo = c2c_hit__new(addr, entry);
-+				if (node_info)
-+					memset(node_stats, 0, sizeof(struct c2c_stats) * cpu__max_node());
-+			}
-+			c2c_decode_stats(&clo->stats, entry);
-+			c2c_hit__update_strings(clo, entry);
-+
-+			if (node_info) {
-+				int node = cpu__get_node(entry->cpu);
-+				c2c_decode_stats(&node_stats[node], entry);
-+				CPU_SET(entry->cpu, &(node_stats[node].cpuset));
-+			}
-+
-+		}
-+		if (clo) {
-+			print_hitm_cacheline_offset(clo, h, node_stats);
-+			free(clo);
-+			clo = NULL;
-+		}
-+
-+		if (node_info)
-+			memset(node_stats, 0, sizeof(struct c2c_stats) * cpu__max_node());
-+
-+		printf("\n");
-+		record++;
-+	}
-+}
-+
- static inline int valid_hitm_or_store(union perf_mem_data_src *dsrc)
+ static int perf_c2c__init(struct perf_c2c *c2c)
  {
- 	return ((dsrc->mem_snoop & P(SNOOP,HITM)) ||
- 		(dsrc->mem_op & P(OP,STORE)));
++	/* setup cpu map */
++	if (cpu__setup_cpunode_map() < 0) {
++		pr_err("can not setup cpu map\n");
++		return -1;
++	}
++
+ 	sort__mode = SORT_MODE__PHYSID;
+ 	sort__wants_unique = 1;
+ 	sort_order = "daddr,iaddr,pid,tid";
+@@ -310,6 +496,7 @@ static int perf_c2c__init(struct perf_c2c *c2c)
+ 	}
+ 
+ 	hists__init(&c2c->hists);
++	CPU_ZERO(&c2c->stats.cpuset);
+ 
+ 	return 0;
  }
- 
-+static void print_shared_cacheline_info(struct c2c_stats *stats, int cline_cnt)
-+{
-+	int hitm_cnt = stats->t.lcl_hitm + stats->t.rmt_hitm;
-+
-+	printf("=================================================\n");
-+	printf("    Global Shared Cache Line Event Information   \n");
-+	printf("=================================================\n");
-+	printf("  Total Shared Cache Lines          : %10d\n", cline_cnt);
-+	printf("  Load HITs on shared lines         : %10d\n", stats->t.load);
-+	printf("  Fill Buffer Hits on shared lines  : %10d\n", stats->t.ld_fbhit);
-+	printf("  L1D hits on shared lines          : %10d\n", stats->t.ld_l1hit);
-+	printf("  L2D hits on shared lines          : %10d\n", stats->t.ld_l2hit);
-+	printf("  LLC hits on shared lines          : %10d\n", stats->t.ld_llchit + stats->t.lcl_hitm);
-+	printf("  Locked Access on shared lines     : %10d\n", stats->t.locks);
-+	printf("  Store HITs on shared lines        : %10d\n", stats->t.store);
-+	printf("  Store L1D hits on shared lines    : %10d\n", stats->t.st_l1hit);
-+	printf("  Total Merged records              : %10d\n", hitm_cnt + stats->t.store);
-+}
-+
- static void c2c_analyze_hitms(struct perf_c2c *c2c)
- {
- 
-@@ -611,6 +1123,9 @@ static void c2c_analyze_hitms(struct perf_c2c *c2c)
- 	} else
- 		free(h);
- 
-+	print_shared_cacheline_info(&hitm_stats, shared_clines);
-+	print_c2c_hitm_report(&hitm_tree, &hitm_stats, &c2c->stats);
-+
- cleanup:
- 	next = rb_first(&hitm_tree);
- 	while (next) {
-@@ -813,6 +1328,10 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
- 		 "specify the precision level of events (0,1,2,3) [default=1]"),
- 	OPT_CALLBACK_NOOPT(0, "no-stores", &no_stores, "",
- 			   "do not record stores", &opt_no_stores_cb),
-+	OPT_INCR('N', "node-info", &node_info,
-+		 "show extra node info in report (repeat for more info)"),
-+	OPT_INTEGER('c', "coalesce-level", &coalesce_level,
-+		 "how much coalescing for tid, pid, and ip is done (repeat for more coalescing)"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		 "be more verbose (show counter open errors, etc)"),
- 	OPT_STRING('i', "input", &input_name, "file",
 -- 
 1.7.11.7
 
