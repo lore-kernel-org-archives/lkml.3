@@ -1,75 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751585AbaCXWPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 18:15:06 -0400
-Received: from mail-bk0-f46.google.com ([209.85.214.46]:38596 "EHLO
-	mail-bk0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750790AbaCXWPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 18:15:03 -0400
-Date: Mon, 24 Mar 2014 23:14:59 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH 05/12] drm/nouveau/fifo: add GK20A support
-Message-ID: <20140324221457.GE17218@mithrandir>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-6-git-send-email-acourbot@nvidia.com>
+	id S1751320AbaCXWXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 18:23:35 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:33962 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750936AbaCXWXd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 18:23:33 -0400
+From: Bing Zhao <bzhao@marvell.com>
+To: Joe Perches <joe@perches.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Mar 2014 15:23:26 -0700
+Subject: RE: [PATCH net-next 6/7] mwifiex: Remove casts of pointer to same
+ type
+Thread-Topic: [PATCH net-next 6/7] mwifiex: Remove casts of pointer to same
+ type
+Thread-Index: Ac9HneYxvoIZoCEvTfu3eQx3ahxyaAAEZv4A
+Message-ID: <477F20668A386D41ADCC57781B1F70430F53F34172@SC-VEXCH1.marvell.com>
+References: <cover.1395692043.git.joe@perches.com>
+ <6acb416fd1434c218ce14f2dd0878e561cc5ff9e.1395692043.git.joe@perches.com>
+In-Reply-To: <6acb416fd1434c218ce14f2dd0878e561cc5ff9e.1395692043.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3O1VwFp74L81IIeR"
-Content-Disposition: inline
-In-Reply-To: <1395650554-31925-6-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-24_04:2014-03-24,2014-03-24,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1403240136
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Joe,
 
---3O1VwFp74L81IIeR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks for the patch.
 
-On Mon, Mar 24, 2014 at 05:42:27PM +0900, Alexandre Courbot wrote:
-> GK20A's FIFO is compatible with NVE0, but only features 128 channels and
-> 1 runlist.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+> Casting a pointer to a pointer of the same type is pointless,
+> so remove these unnecessary casts.
+> 
+> Done via coccinelle script:
+> 
+> $ cat typecast_2.cocci
+> @@
+> type T;
+> T *foo;
+> @@
+> 
+> -	(T *)foo
+> +	foo
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Bing Zhao <bzhao@marvell.com>
+
+Thanks,
+Bing
+
 > ---
->  drivers/gpu/drm/nouveau/Makefile                   |  1 +
->  drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |  1 +
->  drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c    | 35 ++++++++++++++++=
-++++++
->  drivers/gpu/drm/nouveau/core/include/engine/fifo.h |  1 +
->  4 files changed, 38 insertions(+)
->  create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/nvea.c
+>  drivers/net/wireless/mwifiex/pcie.c | 6 +++---
+>  drivers/net/wireless/mwifiex/scan.c | 2 +-
+>  drivers/net/wireless/mwifiex/tdls.c | 6 +++---
+>  3 files changed, 7 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/mwifiex/pcie.c b/drivers/net/wireless/mwifiex/pcie.c
+> index 9f1683b..c0c598d 100644
+> --- a/drivers/net/wireless/mwifiex/pcie.c
+> +++ b/drivers/net/wireless/mwifiex/pcie.c
+> @@ -1009,7 +1009,7 @@ static int mwifiex_pcie_send_data_complete(struct mwifiex_adapter *adapter)
+>  		card->tx_buf_list[wrdoneidx] = NULL;
+> 
+>  		if (reg->pfu_enabled) {
+> -			desc2 = (void *)card->txbd_ring[wrdoneidx];
+> +			desc2 = card->txbd_ring[wrdoneidx];
+>  			memset(desc2, 0, sizeof(*desc2));
+>  		} else {
+>  			desc = card->txbd_ring[wrdoneidx];
+> @@ -1094,7 +1094,7 @@ mwifiex_pcie_send_data(struct mwifiex_adapter *adapter, struct sk_buff *skb,
+>  		card->tx_buf_list[wrindx] = skb;
+> 
+>  		if (reg->pfu_enabled) {
+> -			desc2 = (void *)card->txbd_ring[wrindx];
+> +			desc2 = card->txbd_ring[wrindx];
+>  			desc2->paddr = buf_pa;
+>  			desc2->len = (u16)skb->len;
+>  			desc2->frag_len = (u16)skb->len;
+> @@ -1254,7 +1254,7 @@ static int mwifiex_pcie_process_recv_data(struct mwifiex_adapter *adapter)
+>  		card->rx_buf_list[rd_index] = skb_tmp;
+> 
+>  		if (reg->pfu_enabled) {
+> -			desc2 = (void *)card->rxbd_ring[rd_index];
+> +			desc2 = card->rxbd_ring[rd_index];
+>  			desc2->paddr = buf_pa;
+>  			desc2->len = skb_tmp->len;
+>  			desc2->frag_len = skb_tmp->len;
+> diff --git a/drivers/net/wireless/mwifiex/scan.c b/drivers/net/wireless/mwifiex/scan.c
+> index f139244..825aeec 100644
+> --- a/drivers/net/wireless/mwifiex/scan.c
+> +++ b/drivers/net/wireless/mwifiex/scan.c
+> @@ -1653,7 +1653,7 @@ mwifiex_parse_single_response_buf(struct mwifiex_private *priv, u8 **bss_info,
+>  	curr_bcn_bytes -= ETH_ALEN;
+> 
+>  	if (!ext_scan) {
+> -		rssi = (s32) *(u8 *)current_ptr;
+> +		rssi = (s32) *current_ptr;
+>  		rssi = (-rssi) * 100;		/* Convert dBm to mBm */
+>  		current_ptr += sizeof(u8);
+>  		curr_bcn_bytes -= sizeof(u8);
+> diff --git a/drivers/net/wireless/mwifiex/tdls.c b/drivers/net/wireless/mwifiex/tdls.c
+> index 8cec6e4..97662a1 100644
+> --- a/drivers/net/wireless/mwifiex/tdls.c
+> +++ b/drivers/net/wireless/mwifiex/tdls.c
+> @@ -730,13 +730,13 @@ void mwifiex_process_tdls_action_frame(struct mwifiex_private *priv,
+> 
+>  	if (len < (sizeof(struct ethhdr) + 3))
+>  		return;
+> -	if (*(u8 *)(buf + sizeof(struct ethhdr)) != WLAN_TDLS_SNAP_RFTYPE)
+> +	if (*(buf + sizeof(struct ethhdr)) != WLAN_TDLS_SNAP_RFTYPE)
+>  		return;
+> -	if (*(u8 *)(buf + sizeof(struct ethhdr) + 1) != WLAN_CATEGORY_TDLS)
+> +	if (*(buf + sizeof(struct ethhdr) + 1) != WLAN_CATEGORY_TDLS)
+>  		return;
+> 
+>  	peer = buf + ETH_ALEN;
+> -	action = *(u8 *)(buf + sizeof(struct ethhdr) + 2);
+> +	action = *(buf + sizeof(struct ethhdr) + 2);
+> 
+>  	/* just handle TDLS setup request/response/confirm */
+>  	if (action > WLAN_TDLS_SETUP_CONFIRM)
+> --
+> 1.8.1.2.459.gbcd45b4.dirty
 
-Looks good to me:
-
-Reviewed-by: Thierry Reding <treding@nvidia.com>
-
---3O1VwFp74L81IIeR
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTMK5hAAoJEN0jrNd/PrOhGDoP/0pgl3HDKM0+XYJVa8Eum5Jf
-hPoM7RHtn7CGjaTKF9lhlngWiovM0tEPKH8sb1NoNoPWE+T+4hBuGHrFr07x2zdQ
-v9R1YIddeEefc6sL7JWpC1MSNNUqySEA0MgO1S/iT4WMUmvB0AoJHZ5XGo2j2lV/
-Cr89JvkrXsmu/h9tTXB1EHaAAbGAPidDoY2a1t/kFt8J9fHXft0ucN7UIBqyEXgY
-VYIG3GHSEgjoneictNnAcCRn7pL7MhiimkuuZjkHpaoyfEYAdddhsBjHdwNiAkp4
-CvsvIgE739IVopLONXFR8c694TA/PxMPTXR+OnHIGOlJ/MvxDtRvF6O4A+VyNY2p
-IjPzrFQQ8rlcpnBIs6fCj80W5zxsNZdSOAesyQByQss3EVZ+/CIduKVMh19Daikn
-n/Q0L8liB4fxGP2pG6+hlavnqRVmyOp9ogG4t6pOeDWaPQZej16V2l0drXhi7jP+
-fw77+M6fhaTcxMW1/xHApQloXUOqZGaejaOGO5RKHomkR5dlMkoM63klf+kIfBAr
-+ICD0WxmeM3n90nbwW/2pRzum+MhfBCwYNmuUu4shz2+FyXu2hpmcU87hyXojlj+
-60v/cqQw7VBpuI4nD0hm731u5wuHLrol6TyvUeZnnLB40tHihQmX08/RoiIhf4bZ
-oE2iLTpAisDEkdpfE6wK
-=SOCw
------END PGP SIGNATURE-----
-
---3O1VwFp74L81IIeR--
