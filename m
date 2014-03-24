@@ -1,80 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbaCXTFs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:05:48 -0400
-Received: from mail.efficios.com ([78.47.125.74]:51571 "EHLO mail.efficios.com"
+	id S1753849AbaCXTHq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:07:46 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:35454 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753506AbaCXTFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:05:46 -0400
-Date: Mon, 24 Mar 2014 19:05:50 +0000 (UTC)
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: rostedt@goodmis.org, keun-o park <keun-o.park@windriver.com>,
-        linux-kernel@vger.kernel.org
-Message-ID: <1254335726.9892.1395687950937.JavaMail.zimbra@efficios.com>
-In-Reply-To: <1395601748-12313-1-git-send-email-monamagarwal123@gmail.com>
-References: <1395601748-12313-1-git-send-email-monamagarwal123@gmail.com>
-Subject: Re: [PATCH] kernel: Use RCU_INIT_POINTER(x, NULL) in tracepoint.c
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [206.248.138.119]
-X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Linux)/8.0.5_GA_5839)
-Thread-Topic: kernel: Use RCU_INIT_POINTER(x, NULL) in tracepoint.c
-Thread-Index: GouAMI1WWrsuwy7MLjdpXPezBcNQWQ==
+	id S1753360AbaCXTHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:07:44 -0400
+Date: Mon, 24 Mar 2014 15:07:43 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        jmoyer@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        miaox@cn.fujitsu.com, linux-aio@kvack.org,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] aio: ensure access to ctx->ring_pages is correctly serialised
+Message-ID: <20140324190743.GJ4173@kvack.org>
+References: <532A80B1.5010002@cn.fujitsu.com> <20140320143207.GA3760@redhat.com> <20140320163004.GE28970@kvack.org> <532B9C54.80705@cn.fujitsu.com> <20140321183509.GC23173@kvack.org> <533077CE.6010204@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <533077CE.6010204@oracle.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message -----
-> From: "Monam Agarwal" <monamagarwal123@gmail.com>
-> To: "mathieu desnoyers" <mathieu.desnoyers@efficios.com>, rostedt@goodmis.org, "keun-o park"
-> <keun-o.park@windriver.com>, linux-kernel@vger.kernel.org
-> Sent: Sunday, March 23, 2014 3:09:08 PM
-> Subject: [PATCH] kernel: Use RCU_INIT_POINTER(x, NULL) in tracepoint.c
+On Mon, Mar 24, 2014 at 02:22:06PM -0400, Sasha Levin wrote:
+> On 03/21/2014 02:35 PM, Benjamin LaHaise wrote:
+> >Hi all,
+> >
+> >Based on the issues reported by Tang and Gu, I've come up with the an
+> >alternative fix that avoids adding additional locking in the event read
+> >code path.  The fix is to take the ring_lock mutex during page migration,
+> >which is already used to syncronize event readers and thus does not add
+> >any new locking requirements in aio_read_events_ring().  I've dropped
+> >the patches from Tang and Gu as a result.  This patch is now in my
+> >git://git.kvack.org/~bcrl/aio-next.git tree and will be sent to Linus
+> >once a few other people chime in with their reviews of this change.
+> >Please review Tang, Gu.  Thanks!
 > 
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x,
-> NULL)
+> Hi Benjamin,
 > 
-> The rcu_assign_pointer() ensures that the initialization of a structure
-> is carried out before storing a pointer to that structure.
-> And in the case of the NULL pointer, there is no structure to initialize.
-> So, rcu_assign_pointer(p, NULL) can be safely converted to
-> RCU_INIT_POINTER(p, NULL)
+> This patch seems to trigger:
+> 
+> [  433.476216] ======================================================
+> [  433.478468] [ INFO: possible circular locking dependency detected ]
+...
 
-This change makes sense. However, it would conflict with the changes
-I'm proposing for 3.15, which are making this patch obsolete. This would
-cause merging headaches for Steven. So it's his call.
+Yeah, that's a problem -- thanks for the report.  The ring_lock mutex can't 
+be nested inside of mmap_sem, as aio_read_events_ring() can take a page 
+fault while holding ring_mutex.  That makes the following change required.  
+I'll fold this change into the patch that caused this issue.
 
-Thanks,
-
-Mathieu
-
-> 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
-> ---
->  kernel/tracepoint.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/tracepoint.c b/kernel/tracepoint.c
-> index 031cc56..72dfa96 100644
-> --- a/kernel/tracepoint.c
-> +++ b/kernel/tracepoint.c
-> @@ -291,7 +291,7 @@ static void disable_tracepoint(struct tracepoint *elem)
->  
->  	if (static_key_enabled(&elem->key))
->  		static_key_slow_dec(&elem->key);
-> -	rcu_assign_pointer(elem->funcs, NULL);
-> +	RCU_INIT_POINTER(elem->funcs, NULL);
->  }
->  
->  /**
-> --
-> 1.7.9.5
-> 
-> 
-
+		-ben
 -- 
-Mathieu Desnoyers
-EfficiOS Inc.
-http://www.efficios.com
+"Thought is the essence of where you are now."
+
+diff --git a/fs/aio.c b/fs/aio.c
+index c97cee8..f645e7e 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -300,7 +300,10 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
+ 	if (!ctx)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&ctx->ring_lock);
++	if (!mutex_trylock(&ctx->ring_lock)) {
++		percpu_ref_put(&ctx->users);
++		return -EAGAIN;
++	}
+ 
+ 	/* Make sure the old page hasn't already been changed */
+ 	spin_lock(&mapping->private_lock);
