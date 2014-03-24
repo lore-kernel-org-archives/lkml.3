@@ -1,199 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaCXTiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:38:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12368 "EHLO mx1.redhat.com"
+	id S1754560AbaCXTkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:40:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18860 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754438AbaCXTh6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:58 -0400
+	id S1754472AbaCXTiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:38:03 -0400
 From: Don Zickus <dzickus@redhat.com>
 To: acme@ghostprotocols.net
 Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
         fowles@inreach.com, peterz@infradead.org, eranian@google.com,
         andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 11/15 V3] perf, c2c: Add callchain support
-Date: Mon, 24 Mar 2014 15:37:02 -0400
-Message-Id: <1395689826-215033-12-git-send-email-dzickus@redhat.com>
+Subject: [PATCH 14/15 V3] perf, c2c: Add symbol count table
+Date: Mon, 24 Mar 2014 15:37:05 -0400
+Message-Id: <1395689826-215033-15-git-send-email-dzickus@redhat.com>
 In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seeing cacheline statistics is useful by itself.  Seeing the callchain
-for these cache contentions saves time tracking things down.
+Just another table that displays the referenced symbols in the analysis
+report.  The table lists the most frequently used symbols first.
 
-This patch tries to add callchain support.  I had to use the generic
-interface from a previous patch to output things to stdout easily.
+It is just another way to look at similar data to figure out who
+is causing the most contention (based on the workload used).
 
-Other than the displaying the results, collecting the callchain and
-merging it was fairly straightforward.
+Original done by Dick Fowles, backported by me.
 
-I used a lot of copying-n-pasting from other builtin tools to get
-the intial parameter setup correctly and the automatic reading of
-'symbol_conf.use_callchain' from the data file.
+Sample output:
 
-Hopefully this is all correct.  The amount of memory corruption (from the
-callchain dynamic array) seems to have dwindled done to nothing. :-)
+=======================================================================================================
+                                                   Object Name, Path & Reference Counts
 
-V2: update to latest api
-V3: remove call_graph variable, unused
+Index    Records   Object Name                       Object Path
+=======================================================================================================
+    0     931379   [kernel.kallsyms]                 [kernel.kallsyms]
+    1     192258   fio                               /home/joe/old_fio-2.0.15/fio
+    2      80302   [jbd2]                            /lib/modules/3.10.0c2c_all+/kernel/fs/jbd2/jbd2.ko
+    3      65392   [ext4]                            /lib/modules/3.10.0c2c_all+/kernel/fs/ext4/ext4.ko
 
+V2: refresh to latest upstream changes and hist_entry
+
+Original-by: Dick Fowles <rfowles@redhat.com>
 Signed-off-by: Don Zickus <dzickus@redhat.com>
 ---
- tools/perf/builtin-c2c.c | 67 +++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 66 insertions(+), 1 deletion(-)
+ tools/perf/builtin-c2c.c | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 99 insertions(+)
 
 diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index e3dbb76..363deec 100644
+index a937c4b..e30ce2f 100644
 --- a/tools/perf/builtin-c2c.c
 +++ b/tools/perf/builtin-c2c.c
-@@ -79,6 +79,8 @@ struct c2c_hit {
- 	u64		daddr;
- 	u64		iaddr;
- 	struct mem_info	*mi;
-+
-+	struct callchain_root   callchain[0]; /* must be last member */
- };
- 
- enum { OP, LVL, SNP, LCK, TLB };
-@@ -382,7 +384,8 @@ static int c2c_decode_stats(struct c2c_stats *stats, struct hist_entry *entry)
- 
- static struct c2c_hit *c2c_hit__new(u64 cacheline, struct hist_entry *entry)
- {
--	struct c2c_hit *h = zalloc(sizeof(struct c2c_hit));
-+	size_t callchain_size = symbol_conf.use_callchain ? sizeof(struct callchain_root) : 0;
-+	struct c2c_hit *h = zalloc(sizeof(struct c2c_hit) + callchain_size);
- 
- 	if (!h) {
- 		pr_err("Could not allocate c2c_hit memory\n");
-@@ -396,6 +399,8 @@ static struct c2c_hit *c2c_hit__new(u64 cacheline, struct hist_entry *entry)
- 	h->cacheline = cacheline;
- 	h->pid = entry->thread->pid_;
- 	h->tid = entry->thread->tid;
-+	if (symbol_conf.use_callchain)
-+		callchain_init(h->callchain);
- 
- 	/* use original addresses here, not adjusted al_addr */
- 	h->iaddr = entry->mem_info->iaddr.addr;
-@@ -519,6 +524,10 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
- 		return 0;
- 	}
- 
-+	err = sample__resolve_callchain(sample, &parent, evsel, al, PERF_MAX_STACK_DEPTH);
-+	if (err)
-+		return err;
-+
- 	cost = sample->weight;
- 	if (!cost)
- 		cost = 1;
-@@ -547,6 +556,7 @@ static int perf_c2c__process_load_store(struct perf_c2c *c2c,
- 
- 	c2c->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&c2c->hists, PERF_RECORD_SAMPLE);
-+	err = hist_entry__append_callchain(he, sample);
- 	return err;
- 
- out_mem:
-@@ -948,6 +958,13 @@ static void print_hitm_cacheline_offset(struct c2c_hit *clo,
- 		print_socket_shared_str(node_stats);
- 
- 	printf("\n");
-+
-+	if (symbol_conf.use_callchain) {
-+		generic_entry_callchain__fprintf(clo->callchain,
-+						 h->stats.total_period,
-+						 clo->stats.total_period,
-+						 23, stdout);
-+	}
+@@ -688,6 +688,104 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
+ 	new->total_period	+= old->total_period;
  }
  
- static void print_c2c_hitm_report(struct rb_root *hitm_tree,
-@@ -1024,6 +1041,12 @@ static void print_c2c_hitm_report(struct rb_root *hitm_tree,
- 				c2c_decode_stats(&node_stats[node], entry);
- 				CPU_SET(entry->cpu, &(node_stats[node].cpuset));
- 			}
-+			if (symbol_conf.use_callchain) {
-+				callchain_cursor_reset(&callchain_cursor);
-+				callchain_merge(&callchain_cursor,
-+						clo->callchain,
-+						entry->callchain);
-+			}
- 
- 		}
- 		if (clo) {
-@@ -1155,6 +1178,29 @@ err:
- 	return err;
- }
- 
-+static int perf_c2c__setup_sample_type(struct perf_c2c *c2c __maybe_unused,
-+				       struct perf_session *session)
++LIST_HEAD(ref_tree);
++LIST_HEAD(ref_tree_sorted);
++struct refs {
++	struct list_head	list;
++	int			nr;
++	const char		*name;
++	const char		*long_name;
++};
++
++static int update_ref_list(struct hist_entry *entry)
 +{
-+	u64 sample_type = perf_evlist__combined_sample_type(session->evlist);
++	struct refs *p;
++	struct dso *dso = entry->mem_info->iaddr.map->dso;
++	const char *name = dso->short_name;
 +
-+	if (!(sample_type & PERF_SAMPLE_CALLCHAIN)) {
-+		if (symbol_conf.use_callchain) {
-+			printf("Selected -g but no callchain data. Did "
-+				  "you call 'perf c2c record' without -g?\n");
-+			return -1;
-+		}
-+	} else if (callchain_param.mode != CHAIN_NONE &&
-+		   !symbol_conf.use_callchain) {
-+			symbol_conf.use_callchain = true;
-+			if (callchain_register_param(&callchain_param) < 0) {
-+				printf("Can't register callchain params.\n");
-+				return -EINVAL;
-+			}
++	list_for_each_entry(p, &ref_tree, list) {
++		if (!strcmp(p->name, name))
++			goto found;
 +	}
 +
++	p = zalloc(sizeof(struct refs));
++	if (!p)
++		return -1;
++	p->name = name;
++	p->long_name = dso->long_name;
++	list_add_tail(&p->list, &ref_tree);
++
++found:
++	p->nr++;
 +	return 0;
 +}
 +
- static int perf_c2c__read_events(struct perf_c2c *c2c)
- {
- 	int err = -1;
-@@ -1174,6 +1220,9 @@ static int perf_c2c__read_events(struct perf_c2c *c2c)
- 	if (symbol__init() < 0)
- 		goto out_delete;
- 
-+	if (perf_c2c__setup_sample_type(c2c, session) < 0)
-+		goto out_delete;
-+
- 	/* setup the evsel handlers for each event type */
- 	evlist__for_each(session->evlist, evsel) {
- 		const char *name = perf_evsel__name(evsel);
-@@ -1306,8 +1355,21 @@ opt_no_stores_cb(const struct option *opt __maybe_unused, const char *arg __mayb
- 	return 0;
- }
- 
-+static int
-+opt_callchain_cb(const struct option *opt __maybe_unused, const char *arg, int unset)
++static void print_symbol_record_count(struct rb_root *tree)
 +{
-+	/*
-+	 * --no-call-graph
-+	 */
-+	if (unset)
-+		return 0;
++	struct rb_node *next = rb_first(tree);
++	struct hist_entry *he;
++	struct refs *p, *q, *pn;
++	char      string[256];
++	char      delimit[256];
++	int       i;
++	int       idx = 0;
 +
-+	return report_parse_callchain_opt(arg);
++	/* gather symbol references */
++	while (next) {
++		he = rb_entry(next, struct hist_entry, rb_node_in);
++		next = rb_next(&he->rb_node_in);
++
++		if (update_ref_list(he)) {
++			pr_err("Could not update reference tree\n");
++			goto cleanup;
++		}
++	}
++
++	/* sort on number of references per symbol */
++	list_for_each_entry_safe(p, pn, &ref_tree, list) {
++		list_del_init(&p->list);
++		list_for_each_entry(q, &ref_tree_sorted, list) {
++			if (p->nr > q->nr) {
++				list_add_tail(&p->list, &q->list);
++				break;
++			}
++		}
++		if (list_empty(&p->list))
++			list_add_tail(&p->list, &ref_tree_sorted);
++	}
++
++	/* print header info */
++	sprintf(string, "%5s   %8s   %-32s  %-80s",
++		"Index",
++		"Records",
++		"Object Name",
++		"Object Path");
++
++	delimit[0] = '\0';
++	for (i = 0; i < (int)strlen(string); i++) strcat(delimit, "=");
++
++	printf("\n\n");
++	printf("%s\n", delimit);
++	printf("%50s %s\n", " ", "Object Name, Path & Reference Counts");
++	printf("\n");
++	printf("%s\n", string);
++	printf("%s\n", delimit);
++
++	/* print out table */
++	list_for_each_entry(p, &ref_tree_sorted, list) {
++		printf("%5d   %8d   %-32s  %-80s\n",
++			idx, p->nr, p->name, p->long_name);
++		idx++;
++	}
++	printf("\n");
++
++cleanup:
++	list_for_each_entry_safe(p, pn, &ref_tree_sorted, list) {
++		list_del(&p->list);
++		free(p);
++	}
 +}
 +
- int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
+ static void print_hitm_cacheline_header(void)
  {
-+	char callchain_default_opt[] = "fractal,0.05,callee";
- 	struct perf_c2c c2c = {
- 		.tool = {
- 			.sample		 = perf_c2c__process_sample,
-@@ -1340,6 +1402,9 @@ int cmd_c2c(int argc, const char **argv, const char *prefix __maybe_unused)
- 		   "separator",
- 		   "separator for columns, no spaces will be added"
- 		   " between columns '.' is reserved."),
-+	OPT_CALLBACK_DEFAULT('g', "call-graph", &c2c, "output_type,min_percent[,print_limit],call_order",
-+			     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
-+			     "Default: fractal,0.5,callee,function", &opt_callchain_cb, callchain_default_opt),
- 	OPT_END()
- 	};
- 	const char * const c2c_usage[] = {
+ #define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
+@@ -1269,6 +1367,7 @@ static int perf_c2c__process_events(struct perf_session *session,
+ 		dump_rb_tree(c2c->hists.entries_in, c2c);
+ 	print_c2c_trace_report(c2c);
+ 	c2c_analyze_hitms(c2c);
++	print_symbol_record_count(c2c->hists.entries_in);
+ 
+ err:
+ 	return err;
 -- 
 1.7.11.7
 
