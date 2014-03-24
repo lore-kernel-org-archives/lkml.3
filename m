@@ -1,65 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731AbaCXKHT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 06:07:19 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:53972 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaCXKHR (ORCPT
+	id S1752743AbaCXKOC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:14:02 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:59417 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088AbaCXKN7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 06:07:17 -0400
-Message-ID: <533003CD.2010503@hitachi.com>
-Date: Mon, 24 Mar 2014 19:07:09 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v8 02/26] kprobes/x86: Allow to handle reentered
- kprobe on singlestepping
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140305115857.22766.61414.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140321174400.581551a2@gandalf.local.home>
-In-Reply-To: <20140321174400.581551a2@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 24 Mar 2014 06:13:59 -0400
+Message-ID: <53300566.c947440a.1a01.1b19@mx.google.com>
+From: Mike Sampson <mike@sambodata.com>
+To: Luca Risolia <luca.risolia@studio.unibo.it>
+CC: Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-usb@vger.kernel.org
+CC: linux-media@vger.kernel.org
+CC: devel@driverdev.osuosl.org
+CC: linux-kernel@vger.kernel.org
+CC: trivial@kernel.org
+Date: Mon, 24 Mar 2014 20:04:49 +1100
+Subject: [PATCH] next-20140324 drivers/staging/media/sn9c102/sn9c102_hv7131r.c fix style warnings flagged by checkpatch.pl.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/22 6:44), Steven Rostedt wrote:
-> On Wed, 05 Mar 2014 20:58:57 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> Since the NMI handlers(e.g. perf) can interrupt in the
->> single stepping (or preparing the single stepping, do_debug
->> etc.), we should consider a kprobe is hit in the NMI
->> handler. Even in that case, the kprobe is allowed to be
->> reentered as same as the kprobes hit in kprobe handlers
->> (KPROBE_HIT_ACTIVE or KPROBE_HIT_SSDONE).
->> The real issue will happen when a kprobe hit while another
->> reentered kprobe is processing (KPROBE_REENTER), because
->> we already consumed a saved-area for the previous kprobe.
->>
->> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Thomas Gleixner <tglx@linutronix.de>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> 
-> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-> 
+Signed-off-by: Mike Sampson <mike@sambodata.com>
 
-Thanks! :)
+---
+ drivers/staging/media/sn9c102/sn9c102_hv7131r.c |   23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
 
-
+diff --git a/drivers/staging/media/sn9c102/sn9c102_hv7131r.c b/drivers/staging/media/sn9c102/sn9c102_hv7131r.c
+index 26a9111..51b24e0 100644
+--- a/drivers/staging/media/sn9c102/sn9c102_hv7131r.c
++++ b/drivers/staging/media/sn9c102/sn9c102_hv7131r.c
+@@ -23,7 +23,7 @@
+ #include "sn9c102_devtable.h"
+ 
+ 
+-static int hv7131r_init(struct sn9c102_device* cam)
++static int hv7131r_init(struct sn9c102_device *cam)
+ {
+ 	int err = 0;
+ 
+@@ -137,8 +137,8 @@ static int hv7131r_init(struct sn9c102_device* cam)
+ }
+ 
+ 
+-static int hv7131r_get_ctrl(struct sn9c102_device* cam,
+-			    struct v4l2_control* ctrl)
++static int hv7131r_get_ctrl(struct sn9c102_device *cam,
++			    struct v4l2_control *ctrl)
+ {
+ 	switch (ctrl->id) {
+ 	case V4L2_CID_GAIN:
+@@ -176,8 +176,8 @@ static int hv7131r_get_ctrl(struct sn9c102_device* cam,
+ }
+ 
+ 
+-static int hv7131r_set_ctrl(struct sn9c102_device* cam,
+-			    const struct v4l2_control* ctrl)
++static int hv7131r_set_ctrl(struct sn9c102_device *cam,
++			    const struct v4l2_control *ctrl)
+ {
+ 	int err = 0;
+ 
+@@ -197,6 +197,7 @@ static int hv7131r_set_ctrl(struct sn9c102_device* cam,
+ 	case V4L2_CID_BLACK_LEVEL:
+ 		{
+ 			int r = sn9c102_i2c_read(cam, 0x01);
++
+ 			if (r < 0)
+ 				return -EIO;
+ 			err += sn9c102_i2c_write(cam, 0x01,
+@@ -211,10 +212,10 @@ static int hv7131r_set_ctrl(struct sn9c102_device* cam,
+ }
+ 
+ 
+-static int hv7131r_set_crop(struct sn9c102_device* cam,
+-			    const struct v4l2_rect* rect)
++static int hv7131r_set_crop(struct sn9c102_device *cam,
++			    const struct v4l2_rect *rect)
+ {
+-	struct sn9c102_sensor* s = sn9c102_get_sensor(cam);
++	struct sn9c102_sensor *s = sn9c102_get_sensor(cam);
+ 	int err = 0;
+ 	u8 h_start = (u8)(rect->left - s->cropcap.bounds.left) + 1,
+ 	   v_start = (u8)(rect->top - s->cropcap.bounds.top) + 1;
+@@ -226,8 +227,8 @@ static int hv7131r_set_crop(struct sn9c102_device* cam,
+ }
+ 
+ 
+-static int hv7131r_set_pix_format(struct sn9c102_device* cam,
+-				  const struct v4l2_pix_format* pix)
++static int hv7131r_set_pix_format(struct sn9c102_device *cam,
++				  const struct v4l2_pix_format *pix)
+ {
+ 	int err = 0;
+ 
+@@ -347,7 +348,7 @@ static const struct sn9c102_sensor hv7131r = {
+ };
+ 
+ 
+-int sn9c102_probe_hv7131r(struct sn9c102_device* cam)
++int sn9c102_probe_hv7131r(struct sn9c102_device *cam)
+ {
+ 	int devid, err;
+ 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.7.10.4
 
