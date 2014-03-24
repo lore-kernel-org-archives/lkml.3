@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaCXGJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 02:09:42 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17170 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751508AbaCXGJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 02:09:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,719,1389772800"; 
-   d="scan'208";a="505220769"
-Date: Mon, 24 Mar 2014 02:09:35 -0400
-From: Matthew Wilcox <willy@linux.intel.com>
-To: liaohengquan1986 <liaohengquan1986@163.com>
-Cc: "Keith Busch" <keith.busch@intel.com>,
-        "Alexander Gordeev" <agordeev@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-nvme@lists.infradead.org
-Subject: Re: Re: A question about NVMe's nvme-irq
-Message-ID: <20140324060935.GB5777@linux.intel.com>
-References: <cover.1390897693.git.agordeev@redhat.com>
- <20140311150841.GA25564@dhcp-26-207.brq.redhat.com>
- <196070e8.d690.144bb7e553f.Coremail.liaohengquan1986@163.com>
- <20140313192045.GD6091@linux.intel.com>
- <785daaf7.5696.144e2af49b0.Coremail.liaohengquan1986@163.com>
- <20140321201109.GC5705@linux.intel.com>
- <42744e02.6f7d.144f1b148b3.Coremail.liaohengquan1986@163.com>
+	id S1752042AbaCXGNV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 02:13:21 -0400
+Received: from smtp03.stone-is.org ([87.238.162.6]:60690 "EHLO
+	smtpgw.stone-is.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaCXGNU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 02:13:20 -0400
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+X-No-Relay: not in my network
+Message-ID: <532FCCFB.7010007@acm.org>
+Date: Mon, 24 Mar 2014 07:13:15 +0100
+From: Bart Van Assche <bvanassche@acm.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <42744e02.6f7d.144f1b148b3.Coremail.liaohengquan1986@163.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: device-mapper development <dm-devel@redhat.com>,
+        Matias Bj??rling <m@bjorling.me>
+CC: snitzer@redhat.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, agk@redhat.com,
+        Takashi HOSHINO <hoshino@labs.cybozu.co.jp>
+Subject: Re: [dm-devel] [PATCH RFC v1 01/01] dm-lightnvm: An open FTL for
+ open firmware SSDs
+References: <1395383538-18019-1-git-send-email-m@bjorling.me>	<1395383538-18019-2-git-send-email-m@bjorling.me> <20140321153749.GA17155@infradead.org>
+In-Reply-To: <20140321153749.GA17155@infradead.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 09:25:31AM +0800, liaohengquan1986 wrote:
+On 03/21/14 16:37, Christoph Hellwig wrote:
+> Just curious:  why do you think implementing this as a block remapper
+> inside device mapper is a better idea than as a blk-mq driver?
 > 
+> At the request layer you already get a lot of infrastructure for all the
+> queueing infrastructure for free, as well as all kinds of other helpers.
+> And the driver never remaps bios anyway but always submits new ones as
+> far as I can tell.
 > 
-> In our server environment , The  mistakenly returning  IRQ_NONE will  make the OS(suse11 sp3) crush, should we fix it up? if yes, how?
+> Does it even make sense to expose the underlying devices as block
+> devices?  It surely would help to send this together with a driver
+> that you plan to use it on top of.
 
-You should raise this with SUSE.
+There might be some overlap between the functionality available in the
+lightnvm driver and the WalB driver announced last year. That last
+driver might have a wider user base and hence may have received more
+testing. See also http://thread.gmane.org/gmane.linux.file-systems/75124.
+
+Bart.
+
