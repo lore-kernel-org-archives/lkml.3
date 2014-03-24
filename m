@@ -1,230 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890AbaCXIrl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:47:41 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:11539 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaCXIqZ (ORCPT
+	id S1752942AbaCXIsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:48:10 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:50759 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752912AbaCXIsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:46:25 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp08.nvidia.com on Mon, 24 Mar 2014 01:42:24 -0700
-From: Alexandre Courbot <acourbot@nvidia.com>
-To: Ben Skeggs <bskeggs@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
-        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
-        Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH 10/12] drm/nouveau/graph: add GK20A support
-Date: Mon, 24 Mar 2014 17:42:32 +0900
-Message-ID: <1395650554-31925-11-git-send-email-acourbot@nvidia.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
-X-NVConfidentiality: public
+	Mon, 24 Mar 2014 04:48:05 -0400
+Message-ID: <532FF476.9060008@oracle.com>
+Date: Mon, 24 Mar 2014 17:01:42 +0800
+From: "zheng.li" <zheng.x.li@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Jay Vosburgh <fubar@us.ibm.com>
+CC: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, joe.jin@oracle.com
+Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
+ value to 1.
+References: <1395305504-29973-1-git-send-email-zheng.x.li@oracle.com> <3119.1395334953@death.nxdomain> <532BA648.6060600@oracle.com> <13028.1395423785@death.nxdomain>
+In-Reply-To: <13028.1395423785@death.nxdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a GR device for GK20A based on NVE4, with the correct classes
-definitions (GK20A's 3D class is 0xa297).
+Recreate patch again as below, please check.
 
-Most of the NVE4 code can be used on GK20A, so make relevant bits of
-NVE4 available to other chips as well.
 
-Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>From 9f504b1ee94e87dcfbb330ebd2f5bc6ca91f4b5b Mon Sep 17 00:00:00 2001
+From: Zheng Li <zheng.x.li@oracle.com>
+Date: Mon, 24 Mar 2014 16:53:25 +0800
+Subject: [PATCH] bonding: Inactive slaves should keep inactive flag's
+value to 1 in
+ tlb and alb mode.
+
+In bond mode tlb and alb, inactive slaves should keep inactive flag to
+1 to refuse to receive broadcast packets. Now, active slave send
+broadcast packets
+(for example ARP requests) which will arrive inactive slaves on same
+host from switch,
+but inactive slave's inactive flag is zero that cause bridge receive the
+broadcast
+packets to produce a wrong entry in forward table. Typical situation is
+domu send some
+ARP request which go out from dom0 bond's active slave, then the ARP
+broadcast request
+packets go back to inactive slave from switch, because the inactive
+slave's inactive
+flag is zero, kernel will receive the packets and pass them to bridge,
+that cause dom0's
+bridge map domu's MAC address to port of bond, bridge should map domu's
+MAC to port of vif.
+
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
 ---
- drivers/gpu/drm/nouveau/Makefile                   |  1 +
- .../gpu/drm/nouveau/core/engine/graph/ctxnve4.c    |  4 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h   |  9 +++
- drivers/gpu/drm/nouveau/core/engine/graph/nve4.c   |  2 +-
- drivers/gpu/drm/nouveau/core/engine/graph/nvea.c   | 75 ++++++++++++++++++++++
- .../gpu/drm/nouveau/core/include/engine/graph.h    |  1 +
- 6 files changed, 89 insertions(+), 3 deletions(-)
- create mode 100644 drivers/gpu/drm/nouveau/core/engine/graph/nvea.c
+ drivers/net/bonding/bond_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/Makefile b/drivers/gpu/drm/nouveau/Makefile
-index 708d2e33835f..032a4744f843 100644
---- a/drivers/gpu/drm/nouveau/Makefile
-+++ b/drivers/gpu/drm/nouveau/Makefile
-@@ -270,6 +270,7 @@ nouveau-y += core/engine/graph/nvc8.o
- nouveau-y += core/engine/graph/nvd7.o
- nouveau-y += core/engine/graph/nvd9.o
- nouveau-y += core/engine/graph/nve4.o
-+nouveau-y += core/engine/graph/nvea.o
- nouveau-y += core/engine/graph/nvf0.o
- nouveau-y += core/engine/graph/nv108.o
- nouveau-y += core/engine/mpeg/nv31.o
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnve4.c b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnve4.c
-index e2de73ee5eee..3904073f860d 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/ctxnve4.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/ctxnve4.c
-@@ -804,7 +804,7 @@ nve4_grctx_init_unk[] = {
- 	{}
- };
- 
--static void
-+void
- nve4_grctx_generate_mods(struct nvc0_graph_priv *priv, struct nvc0_grctx *info)
- {
- 	u32 magic[GPC_MAX][2];
-@@ -962,7 +962,7 @@ nve4_grctx_generate_main(struct nvc0_graph_priv *priv, struct nvc0_grctx *info)
- 	nv_mask(priv, 0x41be10, 0x00800000, 0x00800000);
- }
- 
--static struct nvc0_graph_init *
-+struct nvc0_graph_init *
- nve4_grctx_init_hub[] = {
- 	nvc0_grctx_init_base,
- 	nve4_grctx_init_unk40xx,
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h
-index b0ab6de270b2..904f09b540c5 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h
-@@ -221,6 +221,8 @@ void nvc0_grctx_generate_r418bb8(struct nvc0_graph_priv *);
- void nve4_grctx_generate_r418bb8(struct nvc0_graph_priv *);
- void nvc0_grctx_generate_r406800(struct nvc0_graph_priv *);
- 
-+void nve4_grctx_generate_mods(struct nvc0_graph_priv *, struct nvc0_grctx *);
-+
- extern struct nouveau_oclass *nvc0_grctx_oclass;
- extern struct nvc0_graph_init *nvc0_grctx_init_hub[];
- extern struct nvc0_graph_init nvc0_grctx_init_base[];
-@@ -237,12 +239,17 @@ extern struct nvc0_graph_init nvc0_grctx_init_gpc_1[];
- extern struct nvc0_graph_init nvc0_grctx_init_tpc[];
- extern struct nvc0_graph_init nvc0_grctx_init_icmd[];
- extern struct nvc0_graph_init nvd9_grctx_init_icmd[]; //
-+extern struct nvc0_graph_init nve4_grctx_init_icmd[];
-+
-+extern struct nvc0_graph_init *nve4_grctx_init_hub[];
-+extern struct nvc0_graph_init *nve4_grctx_init_gpc[];
- 
- extern struct nvc0_graph_mthd nvc0_grctx_init_mthd[];
- extern struct nvc0_graph_init nvc0_grctx_init_902d[];
- extern struct nvc0_graph_init nvc0_grctx_init_9039[];
- extern struct nvc0_graph_init nvc0_grctx_init_90c0[];
- extern struct nvc0_graph_init nvc0_grctx_init_mthd_magic[];
-+extern struct nvc0_graph_init nve4_grctx_init_a097[];
- 
- void nvc1_grctx_generate_mods(struct nvc0_graph_priv *, struct nvc0_grctx *);
- void nvc1_grctx_generate_unkn(struct nvc0_graph_priv *);
-@@ -277,6 +284,8 @@ extern struct nvc0_graph_init nvf0_grctx_init_unk60xx[];
- 
- extern struct nouveau_oclass *nv108_grctx_oclass;
- 
-+extern struct nvc0_graph_init *nve4_graph_init_mmio[];
-+
- #define mmio_data(s,a,p) do {                                                  \
- 	info->buffer[info->buffer_nr] = round_up(info->addr, (a));             \
- 	info->addr = info->buffer[info->buffer_nr++] + (s);                    \
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nve4.c b/drivers/gpu/drm/nouveau/core/engine/graph/nve4.c
-index 05ec09c88517..442857c5c120 100644
---- a/drivers/gpu/drm/nouveau/core/engine/graph/nve4.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nve4.c
-@@ -298,7 +298,7 @@ nve4_graph_init(struct nouveau_object *object)
- 	return nvc0_graph_init_ctxctl(priv);
- }
- 
--static struct nvc0_graph_init *
-+struct nvc0_graph_init *
- nve4_graph_init_mmio[] = {
- 	nve4_graph_init_regs,
- 	nvc0_graph_init_unk40xx,
-diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvea.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvea.c
-new file mode 100644
-index 000000000000..d5e6a1adcacb
---- /dev/null
-+++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvea.c
-@@ -0,0 +1,75 @@
-+/*
-+ * Copyright (c) 2014, NVIDIA CORPORATION. All rights reserved.
-+ *
-+ * Permission is hereby granted, free of charge, to any person obtaining a
-+ * copy of this software and associated documentation files (the "Software"),
-+ * to deal in the Software without restriction, including without limitation
-+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
-+ * and/or sell copies of the Software, and to permit persons to whom the
-+ * Software is furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
-+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#include "nvc0.h"
-+
-+static struct nouveau_oclass
-+nvea_graph_sclass[] = {
-+	{ 0x902d, &nouveau_object_ofuncs },
-+	{ 0xa040, &nouveau_object_ofuncs },
-+	{ 0xa297, &nouveau_object_ofuncs },
-+	{ 0xa0c0, &nouveau_object_ofuncs },
-+	{}
-+};
-+
-+static struct nvc0_graph_mthd
-+nvea_grctx_init_mthd[] = {
-+	{ 0xa297, nve4_grctx_init_a097, },
-+	{ 0x902d, nvc0_grctx_init_902d, },
-+	{ 0x902d, nvc0_grctx_init_mthd_magic, },
-+	{}
-+};
-+
-+struct nouveau_oclass *
-+nvea_grctx_oclass = &(struct nvc0_grctx_oclass) {
-+	.base.handle = NV_ENGCTX(GR, 0xea),
-+	.base.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = nvc0_graph_context_ctor,
-+		.dtor = nvc0_graph_context_dtor,
-+		.init = _nouveau_graph_context_init,
-+		.fini = _nouveau_graph_context_fini,
-+		.rd32 = _nouveau_graph_context_rd32,
-+		.wr32 = _nouveau_graph_context_wr32,
-+	},
-+	.main = nve4_grctx_generate_main,
-+	.mods = nve4_grctx_generate_mods,
-+	.unkn = nve4_grctx_generate_unkn,
-+	.hub  = nve4_grctx_init_hub,
-+	.gpc  = nve4_grctx_init_gpc,
-+	.icmd = nve4_grctx_init_icmd,
-+	.mthd = nvea_grctx_init_mthd,
-+}.base;
-+
-+
-+struct nouveau_oclass *
-+nvea_graph_oclass = &(struct nvc0_graph_oclass) {
-+	.base.handle = NV_ENGINE(GR, 0xea),
-+	.base.ofuncs = &(struct nouveau_ofuncs) {
-+		.ctor = nvc0_graph_ctor,
-+		.dtor = nvc0_graph_dtor,
-+		.init = nve4_graph_init,
-+		.fini = _nouveau_graph_fini,
-+	},
-+	.cclass = &nvea_grctx_oclass,
-+	.sclass = nvea_graph_sclass,
-+	.mmio = nve4_graph_init_mmio,
-+}.base;
-diff --git a/drivers/gpu/drm/nouveau/core/include/engine/graph.h b/drivers/gpu/drm/nouveau/core/include/engine/graph.h
-index 97705618de97..632d7e172172 100644
---- a/drivers/gpu/drm/nouveau/core/include/engine/graph.h
-+++ b/drivers/gpu/drm/nouveau/core/include/engine/graph.h
-@@ -68,6 +68,7 @@ extern struct nouveau_oclass *nvc8_graph_oclass;
- extern struct nouveau_oclass *nvd7_graph_oclass;
- extern struct nouveau_oclass *nvd9_graph_oclass;
- extern struct nouveau_oclass *nve4_graph_oclass;
-+extern struct nouveau_oclass *nvea_graph_oclass;
- extern struct nouveau_oclass *nvf0_graph_oclass;
- extern struct nouveau_oclass *nv108_graph_oclass;
- 
--- 
-1.9.1
+diff --git a/drivers/net/bonding/bond_main.c
+b/drivers/net/bonding/bond_main.c
+index e5628fc..8761df6 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
+                                && (slave != bond->curr_active_slave)) {
+                                bond_set_slave_inactive_flags(slave,
+
+BOND_SLAVE_NOTIFY_NOW);
+-                       } else {
++                       } else if (!bond_is_lb(bond)) {
+                                bond_set_slave_active_flags(slave,
+
+BOND_SLAVE_NOTIFY_NOW);
+                        }
+--
+1.7.6.5
+
+
+Thanks,
+Zheng Li
+
+于 2014年03月22日 01:43, Jay Vosburgh 写道:
+> zheng.li <zheng.x.li@oracle.com> wrote:
+> 
+>> 于 2014年03月21日 01:02, Jay Vosburgh 写道:
+>>> Zheng Li <zheng.x.li@oracle.com> wrote:
+>>>
+>>>> Except bond mode 1, in other bond modes, inactive slaves should keep
+>>>> inactive flag to 1 to refuse to receive broadcast packets. Now, active
+>>>> slave send broadcast packets (for example ARP requests) which will
+>>>> arrive inactive slaves on same host from switch, but inactive slave's
+>>>> inactive flag is zero that cause bridge receive the broadcast packets
+>>>> to produce a wrong entry in forward table. Typical situation is domu
+>>>> send some ARP request which go out from dom0 bond's active slave, then
+>>>> the ARP broadcast request packets go back to inactive slave from
+>>>> switch, because the inactive slave's inactive flag is zero, kernel will
+>>>> receive the packets and pass them to bridge, that cause dom0's bridge
+>>>> map domu's MAC address to port of bond, bridge should map domu's MAC to
+>>>> port of vif.
+>>>
+>>> 	I suspect this will break LACP (802.3ad) and Etherchannel
+>>> (balance-xor, balance-rr) modes, as those modes can receive broadcast or
+>>> multicast on any slave.  In those cases, the switch knows about the
+>>> aggregation, and will only send the broadcast / multicast to one of the
+>>> ports, but the port selected is not always the same one.
+>>>
+>>> 	In which mode are you having trouble?
+>>>
+>>> 	-J
+>>
+>> Except bond mode 1, in other modes (major test in mode 6, and test all
+>> other mode,  except mode 1, all other modes has the bug), the bridge
+>> make a wrong entry which map guest MAC to the port of bond, it should
+>> map guest MAC to the port of vif.
+>>
+>> Env description: dom0's bridge contains bond1 and vif ports, bond1 as
+>> port 1 , vif as port 2, bond1 has two slaves which connect a switch.
+>> when from guest ping others ,the arp broadcast request will go out from
+>> bond1's active slave, and then go back to itself inactive slave from
+>> switch , in function of bond_should_deliver_exact_match will return
+>> false by inactive is zero, return false will cause bridge receive the
+>> arp request packets whose original is from guest through vif that let
+>> bridge consider the SRC MAC of guest is from bond1 by analyzing the arp
+>> broadcast packets, then make a wrong forward entry "MAC of guest, from
+>> port 1 (bond1)" , the correct entry should be "MAC of guest , from port
+>> 2 (vif)".
+> 
+> 	I believe I understand; the crux of the problem is that the
+> broadcast is looped by the switch to the other bond port, which then
+> processes it as a received packet.
+> 
+> 	For the tlb and alb modes, you're logically correct; the slaves
+> other than the active slave should be set to inactive when the bond is
+> opened.  This is how they are set when configured normally to limit
+> inbound broadcast and multicast traffic to just one slave (because these
+> modes do not configure the switch ports into channel groups or
+> aggregators; the switch has no knowledge of the bond).
+> 
+> 	Your patch is still incorrect, though; the slaves should be set
+> to actually be inactive via bond_set_slave_inactive_flags, not left
+> "semi-active," i.e., BOND_STATE_ACTIVE but slave->inactive set. More on
+> the slave->inactive flag handling later, though.
+> 
+> 	For the balance-rr/-xor and 802.3ad modes, I suspect you have a
+> configuration problem of some sort.  For those modes, the switch should
+> not loop back the broadcast as you describe when correctly configured.
+> 
+> 	The balance-rr/-xor modes should be connected to switch ports
+> that are configured into a single Etherchannel group (static link
+> aggregation).  If they are not, the looping back behavior you describe
+> is expected, as the switch will flood the broadcast to all ports.
+> 
+> 	Similarly, the 802.3ad mode should be connected to a switch with
+> the ports configured for LACP, in which case the ports will
+> automatically configure into one or more aggregators, and again, the
+> switch will limit broadcast and multicast traffic to just one member of
+> an aggregator.
+> 
+> 	The -rr/-xor/802.3ad modes must have all slaves set to active in
+> order for them to correctly process incoming broadcast and multicast
+> traffic in their proper configuration.  Setting them to inactive will
+> cause packet loss in those configurations.
+> 
+> 	The 802.3ad mode is probably the easiest to examine; if you
+> configure the switch ports for LACP mode, the /proc/net/bonding/bond0
+> file should indicate that all the slaves are in the same aggregator
+> (have the same Aggregator ID), and that that aggregator is the active
+> one.  The switch should have similar indications, although the format is
+> vendor-specific.  If your switch is configured for LACP and you still
+> have issues, please post the /proc/net/bonding/bond0 contents.
+> 
+> 	Finally, getting back to the slave->inactive flag.  The only
+> difference between bond_set_slave_active_flags or _inactive_flags and
+> bond_set_slave_state is that the slave->inactive flag (whose only
+> purpose is duplicate suppression for incoming packets) is cleared by the
+> first (_flags variant), but not by the second.  Right now, the only
+> caller of _set_slave_state are the _active/_inactive_flags functions, so
+> it all works.  If _set_slave_state is called independently, then the
+> slave->inactive flag and the actual state may become unsynchronized.
+> 
+> 	In summary, it looks to me like:
+> 
+> 	(a) bond_set_slave_state should fix slave->inactive to match the
+> slave state if there are going to be callers other than
+> bond_set_slave_active_flags or _inactive_flags, or remove the
+> slave->inactive field entirely and have bond_is_slave_inactive use
+> slave->back directly.
+> 
+> 	and, the immediate problem here,
+> 
+> 	(b) bond_open should call bond_set_slave_active_flags or
+> _inactive_flags based on the mode and whether or not the slave is the
+> curr_active_slave.  For active-backup, alb and tlb modes, the active
+> slave is active, the others are inactive; for -rr, -xor and 802.3ad
+> modes, all slaves are active.  I dunno what to do with broadcast mode;
+> make 'em all active, I guess.
+> 
+> 	-J
+> 
+>> bond_should_deliver_exact_match(struct sk_buff *skb,
+>> 					    struct slave *slave,
+>> 					    struct bonding *bond)
+>> {
+>> 	if (bond_is_slave_inactive(slave)) {
+>> 		if (bond->params.mode == BOND_MODE_ALB &&
+>> 		    skb->pkt_type != PACKET_BROADCAST &&
+>> 		    skb->pkt_type != PACKET_MULTICAST)
+>> 			return false;
+>> 		return true;
+>> 	}
+>> 	return false;
+>> }
+>>
+>> Thanks,
+>> Zheng Li
+>>
+>>
+>>>
+>>>>
+>>>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>>>> ---
+>>>> drivers/net/bonding/bond_main.c |    2 +-
+>>>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>>>
+>>>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>>>> index e5628fc..2f73f18 100644
+>>>> --- a/drivers/net/bonding/bond_main.c
+>>>> +++ b/drivers/net/bonding/bond_main.c
+>>>> @@ -3063,7 +3063,7 @@ static int bond_open(struct net_device *bond_dev)
+>>>> 				bond_set_slave_inactive_flags(slave,
+>>>> 							      BOND_SLAVE_NOTIFY_NOW);
+>>>> 			} else {
+>>>> -				bond_set_slave_active_flags(slave,
+>>>> +				bond_set_slave_state(slave, BOND_STATE_ACTIVE,
+>>>> 							    BOND_SLAVE_NOTIFY_NOW);
+>>>> 			}
+>>>> 		}
+>>>> -- 
+>>>> 1.7.6.5
+> 
+> ---
+> 	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
 
