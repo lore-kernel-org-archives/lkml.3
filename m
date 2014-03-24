@@ -1,82 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753476AbaCXPay (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:30:54 -0400
-Received: from smtp.adetelgroup.com ([94.247.26.71]:24519 "EHLO
-	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752785AbaCXPaw convert rfc822-to-8bit (ORCPT
+	id S1753491AbaCXPeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:34:20 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:50175 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113AbaCXPeS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:30:52 -0400
-Date: Mon, 24 Mar 2014 16:30:49 +0100 (CET)
-From: CHAUMETTE Hubert <hchaumette@adeneo-embedded.com>
-To: Eric =?utf-8?Q?B=C3=A9nard?= <eric@eukrea.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk,
-        shawn guo <shawn.guo@linaro.org>, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Message-ID: <1762157698.5689069.1395675049240.JavaMail.zimbra@adeneo-embedded.com>
-In-Reply-To: <20140321222320.14370739@e6520eb>
-References: <1395421687-12934-1-git-send-email-hchaumette@adeneo-embedded.com> <20140321222320.14370739@e6520eb>
-Subject: Re: [PATCH] ARM: i.MX6: update KSZ9031 phy fixup
+	Mon, 24 Mar 2014 11:34:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF24 (Linux)/8.0.6_GA_5922)
-Thread-Topic: i.MX6: update KSZ9031 phy fixup
-Thread-Index: 9CGjHjvpqLnG5Sxh7swxcvNqEExmbA==
+In-Reply-To: <20140321130917.GA8667@localhost>
+References: <532c2aaa.lXHUJ9RIRCRIxqPO%fengguang.wu@intel.com>
+	<20140321130917.GA8667@localhost>
+Date: Mon, 24 Mar 2014 16:34:17 +0100
+Message-ID: <CA+MoWDrGGE4X9aX0=_iaacXUar17fb1B+CR5VcsPAwLFFiPCCA@mail.gmail.com>
+Subject: Fwd: cx23885-dvb.c:undefined reference to `tda18271_attach'
+From: Peter Senna Tschudin <peter.senna@gmail.com>
+To: linux-media <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kbuild-all@01.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Hi,
 
------ Original Message -----
-> From: "Eric Bénard" <eric@eukrea.com>
-> To: "Hubert Chaumette" <hchaumette@adeneo-embedded.com>
-> Cc: linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk, "shawn guo" <shawn.guo@linaro.org>,
-> linux-kernel@vger.kernel.org, kernel@pengutronix.de
-> Sent: Friday, March 21, 2014 10:23:20 PM
-> Subject: Re: [PATCH] ARM: i.MX6: update KSZ9031 phy fixup
-> 
-> Hi Hubert,
-> 
-> Le Fri, 21 Mar 2014 18:08:07 +0100,
-> Hubert Chaumette <hchaumette@adeneo-embedded.com> a écrit :
-> 
-> > 
-> > Update KSZ9031RN phy fixup for Congatec conga-QEVAL and conga-QMX6 combo :
-> > set RGMII GTX_CLK and RX_CLK pad skew to +0.96ns.
-> > 
-> > Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-> > ---
-> >  arch/arm/mach-imx/mach-imx6q.c | 3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > diff --git a/arch/arm/mach-imx/mach-imx6q.c
-> > b/arch/arm/mach-imx/mach-imx6q.c
-> > index 76e5db4..db307c2 100644
-> > --- a/arch/arm/mach-imx/mach-imx6q.c
-> > +++ b/arch/arm/mach-imx/mach-imx6q.c
-> > @@ -77,6 +77,9 @@ static int ksz9031rn_phy_fixup(struct phy_device *dev)
-> >          mmd_write_reg(dev, 2, 5, 0);
-> >          mmd_write_reg(dev, 2, 8, 0x003ff);
-> >  
-> > +        /* For Congatec conga-QMX6 board */
-> > +        mmd_write_reg(dev, 0x02, 0x06, 0xffff);
-> > +
-> >          return 0;
-> >  }
-> >  
-> that's board specific (the needed delay depends on the routing delay on
-> the PCB), so this should not go in a generic file.
-> 
-> Eric
-> 
+I'm being blamed for some bugs for more than one year, and this
+weekend I was able to reproduce the error for the first time. I have
+the impression that the issue is related to Kconfig because when
+compiling the Kernel for x86(not x86_64), and
+when:
+CONFIG_VIDEO_CX23885=y
 
-I admit it may need to be in a separate function, but this file already contains
-board-specific fixups (for imx6q sabrelite, Data Modul eDM-QMX6).
+and
 
-Anyway, do you have any suggestion for the location I should put it ?
+CONFIG_MEDIA_TUNER_TDA18271=m
 
-Regards,
+the build fails as the tuner code was compiled as a module when it
+should have been compiled as part of the Kernel. On the Kconfig file
+drivers/media/pci/cx23885/Kconfig:
+config VIDEO_CX23885
+        tristate "Conexant cx23885 (2388x successor) support"
+        ...
+        select MEDIA_TUNER_TDA18271 if MEDIA_SUBDRV_AUTOSELECT
 
-Hubert
+which I think is the problem. Can I just remove this 'if
+MEDIA_SUBDRV_AUTOSELECT'? Or what is the correct way of telling
+Kconfig to set CONFIG_MEDIA_TUNER_TDA18271 based on the value of
+CONFIG_VIDEO_CX23885?
+
+There are at least 6 similar cases which I'm willing to send patches.
+
+Thank you,
+
+Peter
