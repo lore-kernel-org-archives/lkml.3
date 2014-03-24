@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752802AbaCXKpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 06:45:55 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36346 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752515AbaCXKpy (ORCPT
+	id S1752863AbaCXKtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:49:18 -0400
+Received: from smarthost01d.mail.zen.net.uk ([212.23.1.7]:55616 "EHLO
+	smarthost01d.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752564AbaCXKtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 06:45:54 -0400
-Date: Mon, 24 Mar 2014 10:45:10 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Laura Abbott <lauraa@codeaurora.org>, Fenghua Yu <fenghua.yu@intel.com>,
-        Tony Luck <tony.luck@intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
-        linux-s390@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, x86@kernel.org,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, linux390@de.ibm.com,
-        sparclinux@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
-	actual Kconfig
-Message-ID: <20140324104510.GQ7528@n2100.arm.linux.org.uk>
-References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org> <1395512032-20575-2-git-send-email-lauraa@codeaurora.org> <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com> <20140322222306.GM7528@n2100.arm.linux.org.uk> <1395527860.2143.61.camel@dabdike.int.hansenpartnership.com> <20140322225201.GN7528@n2100.arm.linux.org.uk> <1395529151.2143.64.camel@dabdike.int.hansenpartnership.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395529151.2143.64.camel@dabdike.int.hansenpartnership.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 24 Mar 2014 06:49:17 -0400
+Message-ID: <1395658064.3465.7.camel@linaro1.home>
+Subject: Re: [PATCH 2/2] ARM: mm: keep rodata non-executable
+From: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        Larry Bassel <lbassel@codeaurora.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Russell King <linux@arm.linux.org.uk>, Nicolas Pitre <nico@linaro.org>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Dave Martin <Dave.Martin@arm.com>, Jiang Liu <liuj97@gmail.com>,
+        Christoffer Dall <cdall@cs.columbia.edu>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Vitaly Andrianov <vitalya@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        Simon Baatz <gmbnomis@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Mon, 24 Mar 2014 10:47:44 +0000
+In-Reply-To: <CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
+References: <1392339850-18686-1-git-send-email-keescook@chromium.org>
+	 <1392339850-18686-3-git-send-email-keescook@chromium.org>
+	 <20140214162257.GB2331@e103592.cambridge.arm.com>
+	 <CAGXu5jLmYLQpu9CDhoL-2OTdwxqrfVCFbojmpjpcpLqmA=wWYA@mail.gmail.com>
+	 <20140217123415.GA2182@e103592.cambridge.arm.com>
+	 <532F2C48.6050509@codeaurora.org>
+	 <CAGXu5jK_8adL=6DoF9gFBMWxKcxKUHw7238ighE2agFU7cqhWg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-smarthost01d-IP: [82.69.122.217]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 03:59:11PM -0700, James Bottomley wrote:
-> On Sat, 2014-03-22 at 22:52 +0000, Russell King - ARM Linux wrote:
-> > And I'm disagreeing with that statement which implies that it's something
-> > that is an architecture wide property for any particular architecture.
-> > 
-> > Right now in mainline, if ARM has IOMMU support enabled, then SG_CHAIN
-> > support will also be enabled.  I've a patch out of tree which I've been
-> > using for years which enables SG_CHAIN for a particular SoC (Dove).
-> > Otherwise, it doesn't have support for SG_CHAIN.
-> > 
-> > PARISC on the other hand (as you list) has no support to enable SG_CHAIN
-> > under any circumstances.
-> > 
-> > Where we're disagreeing is whether this is something that is always-on or
-> > always-off for any particular architecture.
+On Sun, 2014-03-23 at 16:21 -0600, Kees Cook wrote:
+> On Sun, Mar 23, 2014 at 12:47 PM, Laura Abbott <lauraa@codeaurora.org> wrote:
+> > On 2/17/2014 4:34 AM, Dave Martin wrote:
+> >> On Fri, Feb 14, 2014 at 11:11:07AM -0800, Kees Cook wrote:
+> >>> On Fri, Feb 14, 2014 at 8:22 AM, Dave Martin <Dave.Martin@arm.com> wrote:
+> >>>> On Thu, Feb 13, 2014 at 05:04:10PM -0800, Kees Cook wrote:
+> >>>>> Introduce "CONFIG_DEBUG_RODATA" to mostly match the x86 config, though
+> >>>>> the behavior is different: it depends on STRICT_KERNMEM_PERMS, which
+> >>>>> sets rodata read-only (but executable), where as this option additionally
+> >>>>> splits rodata from the kernel text (resulting in potentially more memory
+> >>>>> lost to padding) and sets it non-executable as well. The end result is
+> >>>>> that on builds with CONFIG_DEBUG_RODATA=y (like x86) the rodata with be
+> >>>>> marked purely read-only.
+> >>>>
+> >>>> This triggers an Oops in kexec, because we have a block of code in .text
+> >>>> which is a template for generating baremetal code to relocate the new
+> >>>> kernel, and some literal words are written into it before copying.
+> >>>
+> >>> You're writing into the text area? I would imagine that
+> >>> CONFIG_ARM_KERNMEM_PERMS would break that. However, that's not the
+> >>> right place to be building code -- shouldn't the module area be used
+> >>> for that?
+> >>>
+> >>>> Possibly this should be in .rodata, not .text.
+> >>>
+> >>> Well, rodata should be neither writable nor executable.
+> >>
+> >> We're not writing into code exactly.
+> >>
+> >> This code is never executed in-place in vmlinux.  It gets copied, and
+> >> only copies are ever executed.
+> >>
+> >> Some pointers and offsets get poked into the code to configure it.
+> >>
+> >> I think it would be better simply to put the code in .rodata, and
+> >> poke paramaters into the copy, not the original -- but that's a bit
+> >> more awkward to code up, since the values can't be poked simply by
+> >> writing global variables.
+> >>
+> >>>
+> >>>> There may be a few other instances of this kind of thing.
+> >>>
+> >>> This config will certainly find them! :) But, that's why it's behind a config.
+> >>
+> >> I haven't tested exhaustively, but it think this is sufficient for a
+> >> Tested-by.  The patch does seem to be doing what it is intended to
+> >> do, and doesn't seem to be triggering false positives all over the
+> >> place.
+> >>
+> >>>
+> >>>> Are you aware of similar situations on other arches?
+> >>>
+> >>> I think there were some problems a long time ago on x86 for rodata too.
+> >>
+> >> It would be good to get this kexec case fixed -- I'll try to hack up
+> >> a separate patch.
+> >>
+> >
+> > FWIW, we've hit issues not just with kexec but kprobes as well. The same
+> > problems exist with this series:
 > 
-> Actually, I don't disagree with that.  PA used to share sb_iommu with
-> ia64 (it's the same chipset for the HP versions), but we can't now
-> because ia64 is chained and we're not and there's no way to say chained
-> for this platform but not for these other more legacy ones.  If you have
-> a proposal for this, I'd be interested, so I don't have to do an all or
-> nothing conversion, but the config option isn't it because our platform
-> configuration is runtime determined (we usually select every driver and
-> let the actual one be chosen at runtime from the config table).
+> For this stage, how about I make this "depends on KEXEC=n &&
+> KPROBES=n"? 
 
-At runtime, it's obviously a lot harder to resolve.  However, that's not
-what we're trying to do with this patch.
-
-The main issue is that Laura is trying to add SG chain support to ARM64.
-At the moment, ARM64 uses the asm-generic version of scatterlist.h
-directly.
-
-Her first spin of the patch involved creating
-arch/arm64/include/asm/scatterlist.h, which was nothing more than an
-include of the asm-generic header file of the same name, and the
-definition of ARCH_HAS_SG_CHAIN.  That seemed to be extremely wasteful
-and sub-optimal way to handle this.
-
-Moving this symbol into the Kconfig means that ARM64 no longer has to
-have this additional file (and probably a bunch of other architectures
-fall into that same camp) and the ARM specific CONFIG_ARM_HAS_SG_CHAIN
-can be eliminated in favour of the now generic cross-arch config symbol.
-
-We have plenty of other Kconfig symbols which control similar features
-throughout the kernel source, there is no reason that this one should
-not be the same.
+There's also ftrace (CONFIG_DYNAMIC_FTRACE I believe) which modifies
+kernel code with a call to probe_kernel_write(), which GDB uses as well.
+ 
+And grepping for the patch_text() function also shows
+__arch_jump_label_transform() modifies kernel code. Not sure how and
+when that gets used.
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Tixy
+
