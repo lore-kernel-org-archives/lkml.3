@@ -1,109 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaCXNil (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:38:41 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:40447 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753158AbaCXNii (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 09:38:38 -0400
-Date: Mon, 24 Mar 2014 06:38:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
-        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
-        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
-Message-ID: <20140324133831.GK4405@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
- <20140323194113.GA13633@redhat.com>
- <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
- <20140323213349.GA8832@redhat.com>
- <20140323221256.GG4405@linux.vnet.ibm.com>
- <20140324050939.GB8832@redhat.com>
- <1395638727.9117.55.camel@edumazet-glaptop2.roam.corp.google.com>
- <532FF124.1030209@cn.fujitsu.com>
+	id S1753401AbaCXNjp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:39:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60290 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753243AbaCXNjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 09:39:43 -0400
+Date: Mon, 24 Mar 2014 14:39:42 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+cc: Jani Nikula <jani.nikula@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>
+Subject: Re: i915 resume-from-hibernation problems on resume with current
+ Linus' tree
+In-Reply-To: <CAKMK7uHE+cpdf42oL80H8ui=j0QiQsY5+v_paz6E+YeC-Zzr_Q@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1403241431160.17500@pobox.suse.cz>
+References: <alpine.LNX.2.00.1402271153480.21399@pobox.suse.cz> <alpine.LNX.2.00.1403031519500.7030@pobox.suse.cz> <alpine.LNX.2.00.1403101525220.3690@pobox.suse.cz> <CAKMK7uG1PG=h8uiofNXt_-GOGgL354skaQeqA5OxK4VbYk2Vkg@mail.gmail.com>
+ <alpine.LNX.2.00.1403101540140.3690@pobox.suse.cz> <alpine.LNX.2.00.1403211621510.3690@pobox.suse.cz> <CAKMK7uHE+cpdf42oL80H8ui=j0QiQsY5+v_paz6E+YeC-Zzr_Q@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532FF124.1030209@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032413-6688-0000-0000-000000962F47
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 04:47:32PM +0800, Lai Jiangshan wrote:
-> On 03/24/2014 01:25 PM, Eric Dumazet wrote:
-> > On Mon, 2014-03-24 at 07:09 +0200, Michael S. Tsirkin wrote:
-> > 
-> >> Seems an incredibly strict requirement for something that just
-> >> silences a warning.
-> >> What exactly should I test?
-> >> I intended to just verify this produces same code as before
-> >> d322f45ceed525daa under a recent gcc.
-> > 
-> > Thats because many rcu_assign_pointer(X, NULL) were already converted to
-> > RCU_INIT_POINTER(X, NULL)
-> > 
-> > Quite frankly I don't know why you bother at all.
-> > 
-> > Adding back the lazy test in rcu_assign_pointer() doesn't help to make
-> > the API cleaner and easier to understand.
-> > 
-> > People are usually using RCU API without really understanding
-> > all the issues. They tend to add superfluous barriers because they feel
-> > better. 
-> > 
-> > Having separate RCU_INIT_POINTER() and rcu_assign_pointer() serve as
-> > better documentation of the code, I find it more easier to immediately
-> > check what is going on while reviewing stuff.
-> > 
-> > Presumably, checkpatch.pl could be augmented to suggest to use
-> > RCU_INIT_POINTER(X, NULL) instead of rcu_assign_pointer(X, NULL)
+On Fri, 21 Mar 2014, Daniel Vetter wrote:
+
+> > So I am still seeing this with current Linus' tree rather regularly (but
+> > it's not deterministic enough for a reliable bisect).
+> >
+> > Unfortunately I haven't received any patches to test; what do you propose?
+> > Would reporting this on bugs.freedesktop.org instead of ranting here
+> > change anything?
 > 
+> Yeah, filing a bug on fdo to keep track of this should help. Please
+> add a [gm45 regression] tag to the summary so that it shows up in our
+> queries at the right spot ;-)
 > 
-> I prefer rcu_assign_pointer(X, NULL) than RCU_INIT_POINTER(X, NULL),
-> NULL should not be a special pointer value to the users of RCU.
-> 
-> the RCU implements should hide the difference if RCU implements
-> differentiate the values for optimization.
-> 
-> RCU_INIT_POINTER() sounds as an initialization-stage API. If we need
-> something different for NULL pointer, I prefer
-> rcu_assign_*null*_pointer().
+> One thing to test would be to give -nightly (or drm-intel-testing as
+> of today) a shot. We've merged a few patches recently to slightly
+> improve the ring init sequence in the generic code, they might
+> actually help here. Sorry for not correlating them with your patch
+> when I've merged them, only just realized this now.
 
-Let's keep what we have for a year or so, and then see how things look at
-that point.  A really easy Coccinelle script will make the needed changes,
-so we aren't losing anything by waiting.  And who knows, perhaps someone
-will come up with a clever idea in that time.
+I just tested current Linus' tree + drm-intel-testing (HEAD == 14347c2 
+("drm-intel-nightly: 2014y-03m-21d-16h-13m-30s integration manifest")), 
+and on 3rd suspend-resume cycle I got the ring initialization failure 
+again, with Xorg going crazy afterwards. So unfortunately it's still 
+unfixed.
 
-> rcu_assign_pointer(X, NULL) implies compiler barrier(), but
-> RCU_INIT_POINTER(X, NULL) doesn't.
+Now submitted as
 
-Good point!  I don't believe that the current docbook mentions this,
-will fix.  And you are right, this is a good argument for maintaining
-a separate API for NULL-pointer assignment rather than making
-rcu_assign_pointer() sometimes do the smp_wmb() and sometimes not.
-With the current approach, you can count on rcu_assign_pointer()
-always implying a memory barrier.
+	https://bugs.freedesktop.org/show_bug.cgi?id=76554
 
-Also, one thing I forgot earlier, rcu_assign_pointer() now uses
-smp_store_release() rather than smp_wmb().
+as well.
 
-							Thanx, Paul
+Thanks,
 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> 
-
+-- 
+Jiri Kosina
+SUSE Labs
