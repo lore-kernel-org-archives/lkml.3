@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065AbaCXVG4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 17:06:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753824AbaCXVGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 17:06:55 -0400
-Date: Mon, 24 Mar 2014 16:40:08 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
-To: Daniel Vetter <daniel@ffwll.ch>
-cc: Dave Airlie <airlied@gmail.com>, Andreas Mohr <andi@lisas.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
- mga_driver_irq_uninstall)
-In-Reply-To: <20140324202606.GJ26878@phenom.ffwll.local>
-Message-ID: <alpine.LRH.2.02.1403241627510.18209@file01.intranet.prod.int.rdu2.redhat.com>
-References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com> <20140322234317.GA10483@rhlx01.hs-esslingen.de> <20140323121541.GA20971@rhlx01.hs-esslingen.de> <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
- <20140323212715.GA22767@rhlx01.hs-esslingen.de> <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com> <20140324085449.GA26878@phenom.ffwll.local> <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
- <20140324202606.GJ26878@phenom.ffwll.local>
-User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+	id S1751258AbaCXVSi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 17:18:38 -0400
+Received: from mail-bn1lp0141.outbound.protection.outlook.com ([207.46.163.141]:36143
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751070AbaCXVSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 17:18:36 -0400
+X-Greylist: delayed 883 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 17:18:36 EDT
+From: Anders Berg <anders.berg@lsi.com>
+To: Russell King <linux@arm.linux.org.uk>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Anders Berg <anders.berg@lsi.com>,
+        =?UTF-8?q?Fredrik=20Markstr=C3=B6m?= <fredrik.markstrom@gmail.com>
+Subject: [PATCH RFC] ARM: mm: Fix for highmem on machines with more than 14 cores
+Date: Mon, 24 Mar 2014 22:02:12 +0100
+Message-ID: <52661057074abf5bfe6174cb561bec5eea8892fb.1395692531.git.anders.berg@lsi.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1395692531.git.anders.berg@lsi.com>
+References: <cover.1395692531.git.anders.berg@lsi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [85.229.45.38]
+X-ClientProxiedBy: DB4PR07CA040.eurprd07.prod.outlook.com (10.242.229.50) To
+ CO1PR07MB377.namprd07.prod.outlook.com (10.141.74.156)
+X-Forefront-PRVS: 01604FB62B
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(6069001)(428001)(189002)(199002)(89996001)(95666003)(69226001)(81342001)(94946001)(46102001)(4396001)(90146001)(47976001)(51856001)(93916002)(85306002)(33646001)(62966002)(95416001)(56816005)(87976001)(50226001)(19580405001)(50466002)(88136002)(80976001)(97186001)(74366001)(53806001)(81816001)(97336001)(81686001)(98676001)(93136001)(92726001)(50986001)(86362001)(94316002)(47736001)(49866001)(85852003)(92566001)(81542001)(74876001)(76482001)(87286001)(83322001)(56776001)(54316002)(19580395003)(87266001)(93516002)(42186004)(63696002)(47776003)(76786001)(20776003)(76796001)(77096001)(65816001)(77156001)(80022001)(36756003)(79102001)(31966008)(77982001)(59766001)(66066001)(74662001)(47446002)(74502001)(23676002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB377;H:localhost.localdomain;FPR:DCDD70F2.8CDEBCE9.4C51B4E.88EAEA69.20211;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The fixmap area was hard coded to 224 pages which was only enough for 14 CPU:s.
+Now the area adapts to the configured number of CPU:s (NR_CPUS). We still have
+a hard limit of 30 CPU:s since we only have a single pte-chunk (512 pte:s).
 
+Signed-off-by: Anders Berg <anders.berg@lsi.com>
+Signed-off-by: Fredrik Markström <fredrik.markstrom@gmail.com>
+---
+ arch/arm/include/asm/fixmap.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-On Mon, 24 Mar 2014, Daniel Vetter wrote:
+diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
+index bbae919..40f1f05 100644
+--- a/arch/arm/include/asm/fixmap.h
++++ b/arch/arm/include/asm/fixmap.h
+@@ -7,15 +7,15 @@
+  * On ARM we already have well known fixed virtual addresses imposed by
+  * the architecture such as the vector page which is located at 0xffff0000,
+  * therefore a second level page table is already allocated covering
+- * 0xfff00000 upwards.
++ * 0xffe00000 upwards.
+  *
+  * The cache flushing code in proc-xscale.S uses the virtual area between
+  * 0xfffe0000 and 0xfffeffff.
+  */
+ 
+-#define FIXADDR_START		0xfff00000UL
++#define FIXADDR_SIZE		((KM_TYPE_NR * NR_CPUS) << PAGE_SHIFT)
+ #define FIXADDR_TOP		0xfffe0000UL
+-#define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
++#define FIXADDR_START		(FIXADDR_TOP - FIXADDR_SIZE)
+ 
+ #define FIX_KMAP_BEGIN		0
+ #define FIX_KMAP_END		(FIXADDR_SIZE >> PAGE_SHIFT)
+-- 
+1.8.3.2
 
-> On Mon, Mar 24, 2014 at 01:17:12PM -0400, Mikulas Patocka wrote:
-
-> > > > > Hmm, given that Mikulas in
-> > > > > https://lkml.org/lkml/2014/2/26/537
-> > > > > offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
-> > > > > that that indeed may have been a regression at <= 3.13 proper even
-> > > > > (which may pose interesting questions about the level of testing coverage
-> > > > > we still enjoy [not!?] in this hardware area).
-> > 
-> > That patch drops a mutex, so it is not correct. There is mutex resursion - 
-> > we need to uninstall the irq in drm_master_destroy, because here we are 
-> > committed to destroy the device. But the routine that uninstalls the irq 
-> > takes struct_mutex, which is already held in drm_master_destroy.
-> > 
-> > I suppose that the person who maintains drm reworks the patch so that it's 
-> > correct:
-> > 
-> > - could we use a different mutex to protect the irq in drm_irq.c? Or 
-> > possibly no mutex at all and use cmpxchg to manipulate the variable 
-> > dev->irq_enabled? - this seems like the best solution. But I am not sure 
-> > if the code in drm_irq.c somehow depends on the facts that other parts of 
-> > the drm subsystem take struct_mutex.
-> > 
-> > - could we pass a new argument to drm_irq_uninstall that tells it not to 
-> > take the mutex? drm_master_destroy would set this argument to 1. 
-> > drm_master_destroy is mostly called with struct_mutex held, but there may 
-> > be places in vmwgfx_drv.c where drm_master_put (which calls 
-> > drm_master_destroy) may be called without struct_mutex held.
-> > 
-> > Is it true that drm_master_destroy can be called without struct_mutex 
-> > held? I don't know.
-> > 
-> > 
-> > I think drm maintainer should sort out the above issues and modify the 
-> > patch accordingly.
-> > 
-> > > -> All hell breaks loose if Xorg dies and takes all it's mappings with it
-> > > (in master_destroy, since the Xorg /dev fd is the master) and leaves the
-> > > driver hanging in the air if there's an interrupt still pending (or
-> > > anything else fwiw).
-> > 
-> > For me that crash happened when xorg exited with a fatal error too.
-> 
-> Is this fatal error itself a regression or have you seen that on older
-> kernels, too?
-
-In my case that Xorg error was not kernel-related at all. It happened 
-because of unknown symbol because I used mga_dri.so from Debian 6 in 
-Debian 7 (mga_dri.so isn't shipped in Debian 7 anymore). I can still play 
-quake with that old mga_dri.so, although in some other scenario it causes 
-failure because of unknown symbol. I should probably recompile mga_dri on 
-my own.
-
-> Like I've said the entire teardown sequence for legacy drm drivers is
-> terminally busted, so the only hope we have is to reapply this missing
-> duct-tape which made your X crash. But if that itself isn't a regression
-> there's no way to fix the current drm/mga driver without a complete
-> rewrite as a new-style kernel modesetting driver.
-> -Daniel
-
-If someone understands the locking issues I pointed out above, it could be 
-easy to fix.
-
-Mikulas
