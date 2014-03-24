@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754530AbaCXTo3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:44:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21938 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375AbaCXThm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:42 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 02/15 V3] perf, callchain: Add generic callchain print handler for stdio
-Date: Mon, 24 Mar 2014 15:36:53 -0400
-Message-Id: <1395689826-215033-3-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	id S1754547AbaCXTpW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:45:22 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:44480
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753931AbaCXTpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:45:17 -0400
+From: Shuah Khan <shuah.kh@samsung.com>
+To: gregkh@linuxfoundation.org, valentina.manea.m@gmail.com,
+        xypron.glpk@gmx.de
+Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/usbip: userspace - fix usbipd SIGSEGV from refresh_exported_devices()
+Date: Mon, 24 Mar 2014 13:45:13 -0600
+Message-Id: <1395690313-19068-1-git-send-email-shuah.kh@samsung.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My initial implementation for rbtree sorting in the c2c tool does not use the
-normal history elements.  As a result, adding callchain support (which is
-deeply integrated with history elements) is more challenging when trying to
-display its output.
+refresh_exported_devices() doesn't check udev_device_new_from_syspath()
+return value and passed in null dev to udev_device_get_driver() resulting
+in a segmentation fault. Change it to check for null return value from
+both udev_device_new_from_syspath() and udev_device_get_driver().
 
-To make things simpler for myself (and to avoid rewriting the same code into
-the c2c tool), I provided a generic interface that takes an unsorted callchain
-list along with its total and relative sample size, and sorts it locally based
-on period and calls the appropriate graph function (passing the correct sample
-size).
-
-This makes things easier because the c2c tool can be dumber and just collect
-callchains and not worry about the magic needed to sort and display them
-correctly.
-
-Unfortunately, this is assuming a stdio output only and does not use the other
-gui type outputs.
-
-Regardless, this patch provides useful info for the tool right now.  Tweaks and
-recommendations for a better approach are welcomed. :-)
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
+Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
 ---
- tools/perf/ui/stdio/hist.c | 37 +++++++++++++++++++++++++++++++++++++
- tools/perf/util/hist.h     |  4 ++++
- 2 files changed, 41 insertions(+)
+ drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/stdio/hist.c b/tools/perf/ui/stdio/hist.c
-index d59893e..c98ea06 100644
---- a/tools/perf/ui/stdio/hist.c
-+++ b/tools/perf/ui/stdio/hist.c
-@@ -529,3 +529,40 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp)
+diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
+index c5bf60b..92caef7 100644
+--- a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
++++ b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
+@@ -118,6 +118,7 @@ static int refresh_exported_devices(void)
+ 	struct udev_list_entry *devices, *dev_list_entry;
+ 	struct udev_device *dev;
+ 	const char *path;
++	const char *driver;
  
- 	return ret;
- }
-+
-+size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
-+					u64 total_samples, u64 relative_samples,
-+					int left_margin, FILE *fp)
-+{
-+	struct rb_root sorted_chain;
-+	u64 min_callchain_hits;
-+
-+	if (!symbol_conf.use_callchain)
-+		return 0;
-+
-+	min_callchain_hits = total_samples * (callchain_param.min_percent / 100);
-+
-+	callchain_param.sort(&sorted_chain, unsorted_callchain,
-+				min_callchain_hits, &callchain_param);
-+
-+	switch (callchain_param.mode) {
-+	case CHAIN_GRAPH_REL:
-+		return callchain__fprintf_graph(fp, &sorted_chain, relative_samples,
-+						left_margin);
-+		break;
-+	case CHAIN_GRAPH_ABS:
-+		return callchain__fprintf_graph(fp, &sorted_chain, total_samples,
-+						left_margin);
-+		break;
-+	case CHAIN_FLAT:
-+		return callchain__fprintf_flat(fp, &sorted_chain, total_samples);
-+		break;
-+	case CHAIN_NONE:
-+		break;
-+	default:
-+		pr_err("Bad callchain mode\n");
-+	}
-+
-+	return 0;
-+}
-+
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index 664d83f..9da9981 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -128,6 +128,10 @@ size_t events_stats__fprintf(struct events_stats *stats, FILE *fp);
- size_t hists__fprintf(struct hists *hists, bool show_header, int max_rows,
- 		      int max_cols, float min_pcnt, FILE *fp);
+ 	enumerate = udev_enumerate_new(udev_context);
+ 	udev_enumerate_add_match_subsystem(enumerate, "usb");
+@@ -128,10 +129,12 @@ static int refresh_exported_devices(void)
+ 	udev_list_entry_foreach(dev_list_entry, devices) {
+ 		path = udev_list_entry_get_name(dev_list_entry);
+ 		dev = udev_device_new_from_syspath(udev_context, path);
++		if (dev == NULL)
++			continue;
  
-+size_t generic_entry_callchain__fprintf(struct callchain_root *unsorted_callchain,
-+					u64 total_samples, u64 relative_samples,
-+					int left_margin, FILE *fp);
-+
- void hists__filter_by_dso(struct hists *hists);
- void hists__filter_by_thread(struct hists *hists);
- void hists__filter_by_symbol(struct hists *hists);
+ 		/* Check whether device uses usbip-host driver. */
+-		if (!strcmp(udev_device_get_driver(dev),
+-			    USBIP_HOST_DRV_NAME)) {
++		driver = udev_device_get_driver(dev);
++		if (driver != NULL && !strcmp(driver, USBIP_HOST_DRV_NAME)) {
+ 			edev = usbip_exported_device_new(path);
+ 			if (!edev) {
+ 				dbg("usbip_exported_device_new failed");
 -- 
-1.7.11.7
+1.7.10.4
 
