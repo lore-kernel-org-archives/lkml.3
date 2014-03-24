@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753409AbaCXOiy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 10:38:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38314 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322AbaCXOiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 10:38:52 -0400
-Date: Mon, 24 Mar 2014 10:38:43 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
-        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com
-Subject: Re: [PATCH] netlink: have netlink per-protocol bind function return
- an error code.
-Message-ID: <20140324143843.GC28666@madcap2.tricolour.ca>
-References: <1239812af16a5c746772913ef68d3570383f2e50.1395419169.git.rgb@redhat.com>
- <20140323.005010.1898428719601246326.davem@davemloft.net>
+	id S1753428AbaCXOj4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 10:39:56 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:42251 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752322AbaCXOjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 10:39:55 -0400
+Date: Mon, 24 Mar 2014 10:39:52 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Aaron Tomlin <atomlin@redhat.com>
+Cc: mingo@redhat.com, dzickus@redhat.com, jgh@redhat.com, mguzik@redhat.com,
+        pzijlstr@redhat.com, peterz@infradead.org, hpa@linux.intel.com,
+        riel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] tracing: Add BUG_ON when stack end location is over
+ written
+Message-ID: <20140324103952.51f4a5c7@gandalf.local.home>
+In-Reply-To: <1395669837-30209-1-git-send-email-atomlin@redhat.com>
+References: <1395669837-30209-1-git-send-email-atomlin@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140323.005010.1898428719601246326.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/23, David Miller wrote:
-> From: Richard Guy Briggs <rgb@redhat.com>
-> Date: Fri, 21 Mar 2014 12:39:11 -0400
+On Mon, 24 Mar 2014 14:03:57 +0000
+Aaron Tomlin <atomlin@redhat.com> wrote:
+
+> It is difficult to detect a stack overrun when it
+> actually occurs.
 > 
-> > @@ -1441,6 +1441,17 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
-> >  	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
-> >  		return 0;
-> >  
-> > +	if (nlk->netlink_bind && nladdr->nl_groups) {
-> > +		int i;
-> > +
-> > +		for (i = 0; i < nlk->ngroups; i++)
-> > +			if (test_bit(i, (long unsigned int *)&nladdr->nl_groups)) {
-> > +				err = nlk->netlink_bind(i);
-> > +				if (err)
-> > +					return err;
-> > +			}
-> > +	}
-> > +
+> We have observed that this type of corruption is often
+> silent and can go unnoticed. Once the corrupted region
+> is examined, the outcome is undefined and often
+> results in sporadic system crashes.
 > 
-> You can't just leave a partially set of completed bindings in place.
+> When the stack tracing feature is enabled, let's check
+> for this condition and take appropriate action.
+> 
+> Note: init_task doesn't get its stack end location
+> set to STACK_END_MAGIC.
+> 
+> Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+> ---
 
-In the general case, I agree.
+I added this to my 3.15 queue, and if it survives testing, I'll push it
+to my for-next branch.
 
-> It's not valid to leave half-baked state like this.
+Thanks,
 
-In the one existing case (netfilter), it adds a module that is never
-unloaded.  (refcounts are bumped up and down, but I don't see an
-auto-reap based on cleared multicast group subscriptions.)  For that
-matter, netlink_realloc_groups() isn't reversed on error either.
-
-In the proposed case (audit) it is only a permissions check, so there is
-nothing to undo.
-
-So, I was being lazy looking at the existing situation.
-
-> If you return an error, all of the binding state changes must be
-> completely undone.
-
-Is it time to add a ".unbind = netlink_unbind" to struct proto_ops
-netlink_ops?  (I am only half serious here...)
-
-> If you can't find a way to do this cleanly, you'll need to find
-> a way for the audit code to not return an error.
-
-Fair enough.  I'll go back and look at updating subscriptions and
-listeners first and undoing those actions if the bind fails.  In the
-case of netlink_setsockopt() it is just one to undo, which is easy.
-netlink_bind() is a bit more complex, but doable.
-
-The whole purpose here was to add a way for each protocol to be able to
-add its own permissions check and signal a way for netlink to refuse the
-subscription if the userspace process doesn't have the required
-permissions, so not returning an error defeats that whole purpose.
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+-- Steve
