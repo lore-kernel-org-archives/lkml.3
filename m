@@ -1,60 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbaCXNhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:37:05 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:63873 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243AbaCXNgt (ORCPT
+	id S1753386AbaCXNil (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:38:41 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40447 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753158AbaCXNii (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 09:36:49 -0400
-Date: Mon, 24 Mar 2014 13:36:42 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com, Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [PATCH v2 1/5] drivers: input: keyboard: st-keyscan: add keyscan
- driver
-Message-ID: <20140324133642.GB21665@lee--X1>
-References: <1395154806-2810-1-git-send-email-gabriel.fernandez@st.com>
- <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
+	Mon, 24 Mar 2014 09:38:38 -0400
+Date: Mon, 24 Mar 2014 06:38:32 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
+        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
+Message-ID: <20140324133831.GK4405@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
+ <20140323194113.GA13633@redhat.com>
+ <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140323213349.GA8832@redhat.com>
+ <20140323221256.GG4405@linux.vnet.ibm.com>
+ <20140324050939.GB8832@redhat.com>
+ <1395638727.9117.55.camel@edumazet-glaptop2.roam.corp.google.com>
+ <532FF124.1030209@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395154806-2810-2-git-send-email-gabriel.fernandez@st.com>
+In-Reply-To: <532FF124.1030209@cn.fujitsu.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032413-6688-0000-0000-000000962F47
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch adds ST Keyscan driver to use the keypad hw a subset
-> of ST boards provide. Specific board setup will be put in the
-> given dt.
+On Mon, Mar 24, 2014 at 04:47:32PM +0800, Lai Jiangshan wrote:
+> On 03/24/2014 01:25 PM, Eric Dumazet wrote:
+> > On Mon, 2014-03-24 at 07:09 +0200, Michael S. Tsirkin wrote:
+> > 
+> >> Seems an incredibly strict requirement for something that just
+> >> silences a warning.
+> >> What exactly should I test?
+> >> I intended to just verify this produces same code as before
+> >> d322f45ceed525daa under a recent gcc.
+> > 
+> > Thats because many rcu_assign_pointer(X, NULL) were already converted to
+> > RCU_INIT_POINTER(X, NULL)
+> > 
+> > Quite frankly I don't know why you bother at all.
+> > 
+> > Adding back the lazy test in rcu_assign_pointer() doesn't help to make
+> > the API cleaner and easier to understand.
+> > 
+> > People are usually using RCU API without really understanding
+> > all the issues. They tend to add superfluous barriers because they feel
+> > better. 
+> > 
+> > Having separate RCU_INIT_POINTER() and rcu_assign_pointer() serve as
+> > better documentation of the code, I find it more easier to immediately
+> > check what is going on while reviewing stuff.
+> > 
+> > Presumably, checkpatch.pl could be augmented to suggest to use
+> > RCU_INIT_POINTER(X, NULL) instead of rcu_assign_pointer(X, NULL)
 > 
-> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@st.com>
-> Signed-off-by: Giuseppe Condorelli <giuseppe.condorelli@st.com>
-> ---
->  .../devicetree/bindings/input/st-keyscan.txt       |  60 +++++
->  drivers/input/keyboard/Kconfig                     |  12 +
->  drivers/input/keyboard/Makefile                    |   1 +
->  drivers/input/keyboard/st-keyscan.c                | 260 +++++++++++++++++++++
->  4 files changed, 333 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/input/st-keyscan.txt
->  create mode 100644 drivers/input/keyboard/st-keyscan.c
+> 
+> I prefer rcu_assign_pointer(X, NULL) than RCU_INIT_POINTER(X, NULL),
+> NULL should not be a special pointer value to the users of RCU.
+> 
+> the RCU implements should hide the difference if RCU implements
+> differentiate the values for optimization.
+> 
+> RCU_INIT_POINTER() sounds as an initialization-stage API. If we need
+> something different for NULL pointer, I prefer
+> rcu_assign_*null*_pointer().
 
-FWIW: This looks good to me now:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+Let's keep what we have for a year or so, and then see how things look at
+that point.  A really easy Coccinelle script will make the needed changes,
+so we aren't losing anything by waiting.  And who knows, perhaps someone
+will come up with a clever idea in that time.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> rcu_assign_pointer(X, NULL) implies compiler barrier(), but
+> RCU_INIT_POINTER(X, NULL) doesn't.
+
+Good point!  I don't believe that the current docbook mentions this,
+will fix.  And you are right, this is a good argument for maintaining
+a separate API for NULL-pointer assignment rather than making
+rcu_assign_pointer() sometimes do the smp_wmb() and sometimes not.
+With the current approach, you can count on rcu_assign_pointer()
+always implying a memory barrier.
+
+Also, one thing I forgot earlier, rcu_assign_pointer() now uses
+smp_store_release() rather than smp_wmb().
+
+							Thanx, Paul
+
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+
