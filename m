@@ -1,79 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbaCXIwe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:52:34 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42135 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751959AbaCXIwc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:52:32 -0400
+	id S1752857AbaCXIxE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:53:04 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39201 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750984AbaCXIxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 04:53:00 -0400
+Date: Mon, 24 Mar 2014 14:22:39 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, l.majewski@samsung.com
+Subject: Re: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
+Message-ID: <20140324085239.GA30828@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
-References: <20140323071601.GH18016@ZenIV.linux.org.uk>
-	<CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
-	<20140323164526.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
-Date: Mon, 24 Mar 2014 09:52:30 +0100
-Message-ID: <CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: No
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032408-7182-0000-0000-00000A1EFE6C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 23, 2014 at 6:01 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sun, Mar 23, 2014 at 9:45 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->>
->> It's easier to skip checking the overflow on prepend() of "\0" in the
->> beginning of the whole thing and just let the next operation to fail.
->> That's where the corner case comes from.
->
-> Ok, I'll buy the first four commits. Let's wait for Sedat's report on the rest.
->
->                   Linus
->
+On Mon, Mar 24, 2014 at 12:18:14PM +0530, Viresh Kumar wrote:
+> Ideally, .driver_data field of struct cpufreq_frequency_table must not be used
+> by core at all. But during a recent change if its value is same as
+> CPUFREQ_BOOST_FREQ macro, then it is treated specially by core.
+> 
+> The value of this macro was set to ~2 earlier, i.e. 0xFFFFFFFD. In case some
+> driver is using this field for its own data and sets this field to -3, then with
+> two's complement that value will also become 0xFFFFFFFD.
+> 
+> To fix this issue, lets change value of this flag to a very uncommon value which
+> shouldn't be used by any driver unless they want to use BOOST
+> feature
+> 
+> Along with this update comments to make this more clear.
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+> 
+> Gautham/Vaidy: I hope this fixes the problem we discussed for your
+> patchset.
 
-Hi,
+Since the type of .driver_data is "unsigned int", the cpufreq core
+seems to be assuming that the value cannot be -ve. So, drivers should
+be storing -ve values in these fields at their own risk. Because apart
+from determining whether the corresponding frequency is a boost
+frequency or not, the cpufreq core seems to be using the .driver_data
+field in pr_debugs(). The value of .driver_data formatted as "%u" is
+not useful in these pr_debugs, if the driver stores -ve value in this
+field.
 
-I have tested w/ Al's patch from [1].
+On the other hand, if we change the type of .driver_data to "int" then
+restricting the driver to not use specific values is unreasonable
+since .driver_data field is supposed to be private to the driver and
+the core is not supposed to intepret it. In which case we should
+be having a separate field for determining if the frequency is a BOOST
+frequency or not.
 
-AFAICS this changes are now updated in vfs.git#for-linus branch as
+So while it fixes the problem for us, I don't think this patch fixes
+the problem in general for the reasons mentioned above.
 
-commit 9d25fe7e232b ("switch mnt_hash to hlist").
+--
+Thanks and Regards
+gautham.
 
-I had a 2nd trouble w/ the old code, installing a Debian package
-resulted also in a freeze.
-This now works.
+> 
+>  include/linux/cpufreq.h | 10 ++++++++--
+>  1 file changed, 8 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
+> index c48e595..9f25d9d 100644
+> --- a/include/linux/cpufreq.h
+> +++ b/include/linux/cpufreq.h
+> @@ -455,12 +455,18 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
+>   *                     FREQUENCY TABLE HELPERS                       *
+>   *********************************************************************/
+> 
+> +/* Special Values of .frequency field */
+>  #define CPUFREQ_ENTRY_INVALID ~0
+>  #define CPUFREQ_TABLE_END     ~1
+> -#define CPUFREQ_BOOST_FREQ    ~2
+> +/* Special Values of .driver_data field */
+> +#define CPUFREQ_BOOST_FREQ    0xABABABAB
+> 
+>  struct cpufreq_frequency_table {
+> -	unsigned int	driver_data; /* driver specific data, not used by core */
+> +	/*
+> +	 * driver specific data, not used by core unless it is set to
+> +	 * CPUFREQ_BOOST_FREQ.
+> +	 */
+> +	unsigned int	driver_data;
+>  	unsigned int	frequency; /* kHz - doesn't need to be in ascending
+>  				    * order */
+>  };
+> -- 
+> 1.7.12.rc2.18.g61b472e
+> 
 
-The LTP test is still running... and my -5 kernel with Al's fix seems
-to hit the 700+ KiB barrier in my logs.
-
-$ LC_ALL=C ls -l /opt/ltp/runltp-log_3.14.0-rc7-[0-9]*-iniza-small.txt
--rw-r--r-- 1 root root  733184 Mar 23 09:51
-/opt/ltp/runltp-log_3.14.0-rc7-4-iniza-small.txt
--rw-r--r-- 1 root root  822533 Mar 24 09:51
-/opt/ltp/runltp-log_3.14.0-rc7-5-iniza-small.txt
--rw-r--r-- 1 root root 1142248 Mar 23 11:44
-/opt/ltp/runltp-log_3.14.0-rc7-66-iniza-small.txt
-
-[ NOTE ]
--66: vanilla Linus-tree
--4: -66 plus old vfs-fixes
--5: -66 plus old vfs-fixes plus Al's fix from [1]
-
-If you like give the usual credits.
-
-Regards,
-- Sedat -
-
-P.S.: [Off-topic] With vanilla -66 kernel I have some OOPS in the
-oom[1..5] tests of LTP. Whom to adress? mm-folks?
-
-[1] http://marc.info/?l=linux-kernel&m=139559379906251&w=2
