@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbaCXMsV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 08:48:21 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:39005 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753156AbaCXMsS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 08:48:18 -0400
+	id S1753270AbaCXMsu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 08:48:50 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:31345 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbaCXMsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 08:48:15 -0400
 X-IronPort-AV: E=Sophos;i="4.97,720,1389744000"; 
-   d="scan'208";a="114281234"
+   d="scan'208";a="112949030"
 From: Zoltan Kiss <zoltan.kiss@citrix.com>
 To: <ian.campbell@citrix.com>, <wei.liu2@citrix.com>,
         <xen-devel@lists.xenproject.org>
 CC: <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>,
         Zoltan Kiss <zoltan.kiss@citrix.com>
-Subject: [PATCH net-next v2 3/3] xen-netback: Follow-up patch for grant mapping series
-Date: Mon, 24 Mar 2014 12:48:04 +0000
-Message-ID: <1395665284-8911-3-git-send-email-zoltan.kiss@citrix.com>
+Subject: [PATCH net-next v2 2/3] xen-netback: Follow-up patch for grant mapping series
+Date: Mon, 24 Mar 2014 12:48:03 +0000
+Message-ID: <1395665284-8911-2-git-send-email-zoltan.kiss@citrix.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
 References: <1395665284-8911-1-git-send-email-zoltan.kiss@citrix.com>
@@ -29,11 +30,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Ian made some late comments about the grant mapping series, I incorporated the
-functional outcomes into this patch:
+non-functional outcomes into this patch:
 
-- use callback_param macro to shorten access to pending_tx_info in
-  xenvif_fill_frags() and xenvif_tx_submit()
-- print an error message in xenvif_idx_unmap() before panic
+- typo fixes in a comment of xenvif_free(), and add another one there as well
+- typo fix for comment of rx_drain_timeout_msecs
+- remove stale comment before calling xenvif_grant_handle_reset()
 
 Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 ---
@@ -41,72 +42,69 @@ v2:
 - expand commit message and split this into 2 patch
 - fix typos
 
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index e71fb1a..cdc298e 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -574,15 +574,15 @@ void xenvif_disconnect(struct xenvif *vif)
+ void xenvif_free(struct xenvif *vif)
+ {
+ 	int i, unmap_timeout = 0;
+-	/* Here we want to avoid timeout messages if an skb can be legitimatly
+-	 * stucked somewhere else. Realisticly this could be an another vif's
++	/* Here we want to avoid timeout messages if an skb can be legitimately
++	 * stuck somewhere else. Realistically this could be an another vif's
+ 	 * internal or QDisc queue. That another vif also has this
+ 	 * rx_drain_timeout_msecs timeout, but the timer only ditches the
+ 	 * internal queue. After that, the QDisc queue can put in worst case
+ 	 * XEN_NETIF_RX_RING_SIZE / MAX_SKB_FRAGS skbs into that another vif's
+ 	 * internal queue, so we need several rounds of such timeouts until we
+ 	 * can be sure that no another vif should have skb's from us. We are
+-	 * not sending more skb's, so newly stucked packets are not interesting
++	 * not sending more skb's, so newly stuck packets are not interesting
+ 	 * for us here.
+ 	 */
+ 	unsigned int worst_case_skb_lifetime = (rx_drain_timeout_msecs/1000) *
+@@ -597,6 +597,13 @@ void xenvif_free(struct xenvif *vif)
+ 				netdev_err(vif->dev,
+ 					   "Page still granted! Index: %x\n",
+ 					   i);
++			/* If there are still unmapped pages, reset the loop to
++			 * start checking again. We shouldn't exit here until
++			 * dealloc thread and NAPI instance release all the
++			 * pages. If a kernel bug causes the skbs to stall
++			 * somewhere, the interface cannot be brought down
++			 * properly.
++			 */
+ 			i = -1;
+ 		}
+ 	}
 diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index f5c440b..0efa32d 100644
+index f5c440b..684c10b 100644
 --- a/drivers/net/xen-netback/netback.c
 +++ b/drivers/net/xen-netback/netback.c
-@@ -99,6 +99,9 @@ static inline unsigned long idx_to_kaddr(struct xenvif *vif,
- 	return (unsigned long)pfn_to_kaddr(idx_to_pfn(vif, idx));
- }
+@@ -56,7 +56,7 @@ bool separate_tx_rx_irq = 1;
+ module_param(separate_tx_rx_irq, bool, 0644);
  
-+#define callback_param(vif, pending_idx) \
-+	(vif->pending_tx_info[pending_idx].callback_struct)
-+
- /* Find the containing VIF's structure from a pointer in pending_tx_info array
+ /* When guest ring is filled up, qdisc queues the packets for us, but we have
+- * to timeout them, otherwise other guests' packets can get stucked there
++ * to timeout them, otherwise other guests' packets can get stuck there
   */
- static inline struct xenvif* ubuf_to_vif(struct ubuf_info *ubuf)
-@@ -1020,12 +1023,12 @@ static void xenvif_fill_frags(struct xenvif *vif, struct sk_buff *skb)
- 		/* If this is not the first frag, chain it to the previous*/
- 		if (unlikely(prev_pending_idx == INVALID_PENDING_IDX))
- 			skb_shinfo(skb)->destructor_arg =
--				&vif->pending_tx_info[pending_idx].callback_struct;
-+				&callback_param(vif, pending_idx);
- 		else if (likely(pending_idx != prev_pending_idx))
--			vif->pending_tx_info[prev_pending_idx].callback_struct.ctx =
--				&(vif->pending_tx_info[pending_idx].callback_struct);
-+			callback_param(vif, prev_pending_idx).ctx =
-+				&callback_param(vif, pending_idx);
- 
--		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
-+		callback_param(vif, pending_idx).ctx = NULL;
- 		prev_pending_idx = pending_idx;
- 
- 		txp = &vif->pending_tx_info[pending_idx].req;
-@@ -1395,13 +1398,13 @@ static int xenvif_tx_submit(struct xenvif *vif)
- 		memcpy(skb->data,
- 		       (void *)(idx_to_kaddr(vif, pending_idx)|txp->offset),
- 		       data_len);
--		vif->pending_tx_info[pending_idx].callback_struct.ctx = NULL;
-+		callback_param(vif, pending_idx).ctx = NULL;
- 		if (data_len < txp->size) {
- 			/* Append the packet payload as a fragment. */
- 			txp->offset += data_len;
- 			txp->size -= data_len;
- 			skb_shinfo(skb)->destructor_arg =
--				&vif->pending_tx_info[pending_idx].callback_struct;
-+				&callback_param(vif, pending_idx);
- 		} else {
- 			/* Schedule a response immediately. */
- 			xenvif_idx_unmap(vif, pending_idx);
-@@ -1678,12 +1680,20 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
+ unsigned int rx_drain_timeout_msecs = 10000;
+ module_param(rx_drain_timeout_msecs, uint, 0444);
+@@ -1545,7 +1545,6 @@ static inline void xenvif_tx_dealloc_action(struct xenvif *vif)
+ 					    idx_to_kaddr(vif, pending_idx),
+ 					    GNTMAP_host_map,
+ 					    vif->grant_tx_handle[pending_idx]);
+-			/* Btw. already unmapped? */
+ 			xenvif_grant_handle_reset(vif, pending_idx);
+ 			++gop;
+ 		}
+@@ -1678,7 +1677,6 @@ void xenvif_idx_unmap(struct xenvif *vif, u16 pending_idx)
  			    idx_to_kaddr(vif, pending_idx),
  			    GNTMAP_host_map,
  			    vif->grant_tx_handle[pending_idx]);
+-	/* Btw. already unmapped? */
  	xenvif_grant_handle_reset(vif, pending_idx);
  
  	ret = gnttab_unmap_refs(&tx_unmap_op, NULL,
- 				&vif->mmap_pages[pending_idx], 1);
--	BUG_ON(ret);
-+	if (ret) {
-+		netdev_err(vif->dev,
-+			   "Unmap fail: ret: %d pending_idx: %d host_addr: %llx handle: %x status: %d\n",
-+			   ret,
-+			   pending_idx,
-+			   tx_unmap_op.host_addr,
-+			   tx_unmap_op.handle,
-+			   tx_unmap_op.status);
-+		BUG();
-+	}
- 
- 	xenvif_idx_release(vif, pending_idx, XEN_NETIF_RSP_OKAY);
- }
