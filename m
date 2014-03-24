@@ -1,108 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbaCXIxE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:53:04 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:39201 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750984AbaCXIxA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:53:00 -0400
-Date: Mon, 24 Mar 2014 14:22:39 +0530
-From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, l.majewski@samsung.com
-Subject: Re: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
-Message-ID: <20140324085239.GA30828@in.ibm.com>
-Reply-To: ego@linux.vnet.ibm.com
-References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+	id S1752414AbaCXI44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:56:56 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:62256 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988AbaCXI4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 04:56:54 -0400
+Date: Mon, 24 Mar 2014 09:56:44 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Andreas Mohr <andi@lisas.de>, Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
+ mga_driver_irq_uninstall)
+Message-ID: <20140324085449.GA26878@phenom.ffwll.local>
+Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
+	Andreas Mohr <andi@lisas.de>, Mikulas Patocka <mpatocka@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	DRI <dri-devel@lists.freedesktop.org>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140322234317.GA10483@rhlx01.hs-esslingen.de>
+ <20140323121541.GA20971@rhlx01.hs-esslingen.de>
+ <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+ <20140323212715.GA22767@rhlx01.hs-esslingen.de>
+ <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+In-Reply-To: <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
+X-Operating-System: Linux phenom 3.12.0+
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032408-7182-0000-0000-00000A1EFE6C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 12:18:14PM +0530, Viresh Kumar wrote:
-> Ideally, .driver_data field of struct cpufreq_frequency_table must not be used
-> by core at all. But during a recent change if its value is same as
-> CPUFREQ_BOOST_FREQ macro, then it is treated specially by core.
+On Mon, Mar 24, 2014 at 07:45:47AM +1000, Dave Airlie wrote:
+> On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
+> > On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
+> >> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
+> >> >
+> >> > which did end up flawless on 3.12.0-rc2+, too
+> >> > (but failed to improve the issue on 3.14.0-rc7+).
+> >> >
+> >> > So, for all intents and purposes, drm infrastructure seems unavoidably
+> >> > (neither dri disable nor libdrm upgrade helps) affected.
+> >> > Does anyone know which change caused that issue?
+> >> > (I'm asking because bisect here would be relatively painful).
+> >>
+> >> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
+> >> 3.14 rc only, or did it happen already in the previous release?
+> >
+> > Hmm, given that Mikulas in
+> > https://lkml.org/lkml/2014/2/26/537
+> > offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
+> > that that indeed may have been a regression at <= 3.13 proper even
+> > (which may pose interesting questions about the level of testing coverage
+> > we still enjoy [not!?] in this hardware area).
+> >
+> > Oh well, seems I'll have to prepare/build 3.13 now...
 > 
-> The value of this macro was set to ~2 earlier, i.e. 0xFFFFFFFD. In case some
-> driver is using this field for its own data and sets this field to -3, then with
-> two's complement that value will also become 0xFFFFFFFD.
+> It's > 15 year old hardware, so yes I believe we have close to 0
+> testing coverage on it outside of distros,
 > 
-> To fix this issue, lets change value of this flag to a very uncommon value which
-> shouldn't be used by any driver unless they want to use BOOST
-> feature
-> 
-> Along with this update comments to make this more clear.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Gautham/Vaidy: I hope this fixes the problem we discussed for your
-> patchset.
+> I'm not even sure I have one anymore, I might be able to test an MGA in one box.
 
-Since the type of .driver_data is "unsigned int", the cpufreq core
-seems to be assuming that the value cannot be -ve. So, drivers should
-be storing -ve values in these fields at their own risk. Because apart
-from determining whether the corresponding frequency is a boost
-frequency or not, the cpufreq core seems to be using the .driver_data
-field in pr_debugs(). The value of .driver_data formatted as "%u" is
-not useful in these pr_debugs, if the driver stores -ve value in this
-field.
+I haven't done a full read of all the related code, but this smells like a
+similar bug I've hit all over the place in the i810 driver (another one of
+those undead drm drivers of yonders). Ingredients:
 
-On the other hand, if we change the type of .driver_data to "int" then
-restricting the driver to not use specific values is unreasonable
-since .driver_data field is supposed to be private to the driver and
-the core is not supposed to intepret it. In which case we should
-be having a separate field for determining if the frequency is a BOOST
-frequency or not.
+1) Xorg creates a drm mapping of the register space.
+2) Xorg tells the hw-specific drm which drm mapping has the hw registers,
+and the driver uses that. Iirc this has been done as some form of OS
+abstraction. Also note that these mappings aren't refcounted, so the first
+guy to call drm_rmmap wins.
 
-So while it fixes the problem for us, I don't think this patch fixes
-the problem in general for the reasons mentioned above.
+-> All hell breaks loose if Xorg dies and takes all it's mappings with it
+(in master_destroy, since the Xorg /dev fd is the master) and leaves the
+driver hanging in the air if there's an interrupt still pending (or
+anything else fwiw).
 
---
-Thanks and Regards
-gautham.
+In my case with i810 it was some subtle thing with error codes somewhere
+else (iirc, been a while) which made Xorg fall over a bit differently and
+so crash the kernel. Presuming this is the case I think we need a proper
+bisect here to figure out the root-cause and re-apply the lost duct-tape.
 
-> 
->  include/linux/cpufreq.h | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index c48e595..9f25d9d 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -455,12 +455,18 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
->   *                     FREQUENCY TABLE HELPERS                       *
->   *********************************************************************/
-> 
-> +/* Special Values of .frequency field */
->  #define CPUFREQ_ENTRY_INVALID ~0
->  #define CPUFREQ_TABLE_END     ~1
-> -#define CPUFREQ_BOOST_FREQ    ~2
-> +/* Special Values of .driver_data field */
-> +#define CPUFREQ_BOOST_FREQ    0xABABABAB
-> 
->  struct cpufreq_frequency_table {
-> -	unsigned int	driver_data; /* driver specific data, not used by core */
-> +	/*
-> +	 * driver specific data, not used by core unless it is set to
-> +	 * CPUFREQ_BOOST_FREQ.
-> +	 */
-> +	unsigned int	driver_data;
->  	unsigned int	frequency; /* kHz - doesn't need to be in ascending
->  				    * order */
->  };
-> -- 
-> 1.7.12.rc2.18.g61b472e
-> 
-
+"Properly" fixing the underlying bug for any sane definition of "proper"
+is impossible - the legacy drm driver model is just too broken for that.
+And for new-style drivers killing the irq support when they don't expect
+it is not cool, since those drivers are sane and assume full control over
+all hw interactions (not like their legacy bethren).
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
