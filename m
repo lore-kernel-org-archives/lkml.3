@@ -1,159 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751444AbaCXEGv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 00:06:51 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37242 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750790AbaCXEGg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 00:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,718,1389772800"; 
-   d="scan'208";a="505176971"
-Message-ID: <1395633969.2206.36.camel@rzhang1-mobl4>
-Subject: Re: [PATCH V4 07/11] ACPI: use platform bus as the default bus for
- _HID enumeration
-From: Zhang Rui <rui.zhang@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        bhelgaas@google.com, matthew.garrett@nebula.com,
-        rafael.j.wysocki@intel.com, dmitry.torokhov@gmail.com
-Date: Mon, 24 Mar 2014 12:06:09 +0800
-In-Reply-To: <28494711.6ccuzjUcKA@vostro.rjw.lan>
-References: <1395042580-3344-1-git-send-email-rui.zhang@intel.com>
-	 <1395042580-3344-8-git-send-email-rui.zhang@intel.com>
-	 <28494711.6ccuzjUcKA@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751633AbaCXEHg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 00:07:36 -0400
+Received: from mail-by2lp0243.outbound.protection.outlook.com ([207.46.163.243]:57712
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750988AbaCXEGo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 00:06:44 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Grant Likely <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>
+CC: "panto@antoniou-consulting.com" <panto@antoniou-consulting.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCHv2 2/2] of: fix of_update_property()
+Thread-Topic: [PATCHv2 2/2] of: fix of_update_property()
+Thread-Index: AQHPFz8Sq/yUThZFaUK54PYhkUsIIZrQ3IwAgB8hRlA=
+Date: Mon, 24 Mar 2014 04:06:40 +0000
+Message-ID: <d545df066db84eadbfa575a5bd8eca1f@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1390370260-11273-1-git-send-email-Li.Xiubo@freescale.com> <
+ 1390370260-11273-2-git-send-email-Li.Xiubo@freescale.com>
+ <20140304084122.E3353C4308B@trevor.secretlab.ca>
+In-Reply-To: <20140304084122.E3353C4308B@trevor.secretlab.ca>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01604FB62B
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(189002)(199002)(24454002)(79102001)(76576001)(49866001)(2656002)(81816001)(93516002)(81686001)(86362001)(20776003)(85306002)(94316002)(80976001)(81342001)(47736001)(47976001)(50986001)(59766001)(98676001)(87936001)(4396001)(97186001)(97336001)(56816005)(66066001)(81542001)(87266001)(63696002)(46102001)(80022001)(83072002)(74366001)(69226001)(90146001)(74662001)(74706001)(76482001)(95666003)(74502001)(47446002)(31966008)(74316001)(54356001)(74876001)(19580395003)(56776001)(94946001)(76786001)(33646001)(93136001)(76796001)(95416001)(53806001)(51856001)(85852003)(65816001)(83322001)(92566001)(54316002)(19580405001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB507;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:EC2DFA53.ADC2AD28.B1C7A37F.4AD5A601.202E6;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-03-24 at 03:00 +0100, Rafael J. Wysocki wrote:
-> On Monday, March 17, 2014 03:49:36 PM Zhang Rui wrote:
-> > Because of the growing demand for enumerating ACPI devices to platform bus,
-> > this patch changes the code to enumerate ACPI devices with _HID to
-> > platform bus by default, unless the device already has a scan handler attached.
+> Subject: Re: [PATCHv2 2/2] of: fix of_update_property()
 > 
-> I think we need to be more careful here still.
+> On Wed, 22 Jan 2014 13:57:40 +0800, Xiubo Li <Li.Xiubo@freescale.com> wrote:
+> > The of_update_property() is intented to update a property in a node
+> > and if the property does not exist, will add it.
+> >
+> > The second search of the property is possibly won't be found, that
+> > maybe removed by other thread just before the second search begain.
+> >
+> > Using the __of_find_property() and __of_add_property() instead and
+> > move them into lock operations.
+> >
+> > Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> > Cc: Pantelis Antoniou <panto@antoniou-consulting.com>
 > 
-> For example, we shouldn't create platform devices for ACPI device objects that
-> correspond to I2C devices (or any other "simple peripheral bus" devices for that
-> matter).
+> I've had to revert this patch. See below...
 > 
-agreed. Then how about the patch below?
-Note that I've just finished with build test.
+> > ---
+> >  drivers/of/base.c | 36 ++++++++++++++----------------------
+> >  1 file changed, 14 insertions(+), 22 deletions(-)
+> >
+> > diff --git a/drivers/of/base.c b/drivers/of/base.c
+> > index b86b77a..458072d 100644
+> > --- a/drivers/of/base.c
+> > +++ b/drivers/of/base.c
+> > @@ -1573,7 +1573,7 @@ int of_update_property(struct device_node *np, struct
+> property *newprop)
+> >  {
+> >  	struct property **next, *oldprop;
+> >  	unsigned long flags;
+> > -	int rc, found = 0;
+> > +	int rc = 0;
+> >
+> >  	rc = of_property_notify(OF_RECONFIG_UPDATE_PROPERTY, np, newprop);
+> >  	if (rc)
+> > @@ -1582,36 +1582,28 @@ int of_update_property(struct device_node *np,
+> struct property *newprop)
+> >  	if (!newprop->name)
+> >  		return -EINVAL;
+> >
+> > -	oldprop = of_find_property(np, newprop->name, NULL);
+> > -	if (!oldprop)
+> > -		return of_add_property(np, newprop);
+> > -
+> >  	raw_spin_lock_irqsave(&devtree_lock, flags);
+> > -	next = &np->properties;
+> > -	while (*next) {
+> > -		if (*next == oldprop) {
+> > -			/* found the node */
+> > -			newprop->next = oldprop->next;
+> > -			*next = newprop;
+> > -			oldprop->next = np->deadprops;
+> > -			np->deadprops = oldprop;
+> > -			found = 1;
+> > -			break;
+> > -		}
+> > -		next = &(*next)->next;
+> > +	oldprop = __of_find_property(np, newprop->name, NULL);
+> > +	if (!oldprop) {
+> > +		/* add the node */
+> > +		rc = __of_add_property(np, newprop);
+> > +	} else {
+> > +		/* replace the node */
+> > +		next = &oldprop;
+> 
+> Ugh. I just looked closer and the above line is completely broken.
+> &oldprop is the address of 'oldprop' on the stack, *not* the address of
+> the previous item in the list. The while loop is still required to find it.
+> 
 
-thanks,
-rui
+Yes, I'll fix this.
 
+Thanks very much.
 
->From a21cef9a840d979362bfaac3feeae19236a93d22 Mon Sep 17 00:00:00 2001
-From: Zhang Rui <rui.zhang@intel.com>
-Date: Mon, 24 Mar 2014 11:48:05 +0800
-Subject: [PATCH] ACPI: introduce .handle_children flag for acpi scan handler
-
-For some devices with scan handler attached, their children devices
-are enumerated by the scan handler, indirectly, as well.
-
-In this case, we do not want to enumerate the children devices in
-acpi scan code explicitly.
-
-Thus a new flag .handle_children is introduced in this patch.
-
-For scan handlers with this flag set, we will do default enumeration neither
-for the attached devices nor for the children of the attached devices.
-
-Signed-off-by: Zhang Rui <rui.zhang@intel.com>
----
- drivers/acpi/acpi_lpss.c |    1 +
- drivers/acpi/scan.c      |   28 ++++++++++++++++++++++++++--
- include/acpi/acpi_bus.h  |    4 +++-
- 3 files changed, 30 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index cfbf2c0..9857343 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -453,6 +453,7 @@ static int acpi_lpss_dummy_attach(struct acpi_device *adev,
- static struct acpi_scan_handler lpss_dummy_handler = {
- 	.ids = acpi_lpss_device_ids,
- 	.attach = acpi_lpss_dummy_attach,
-+	.handle_children = true,
- };
- 
- void __init acpi_lpss_init(void)
-diff --git a/drivers/acpi/scan.c b/drivers/acpi/scan.c
-index c0456e7..cd833f4 100644
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -2016,6 +2016,31 @@ static acpi_status acpi_bus_check_add(acpi_handle handle, u32 lvl_not_used,
- 	return AE_OK;
- }
- 
-+static void acpi_do_default_enumeration(struct acpi_device *device)
-+{
-+	/*
-+	 * Do not do enumeration for device object that
-+	 * its parent doesn't want to
-+	 */
-+	if (device->parent && device->parent->flags.no_child_enumeration) {
-+		device->flags.no_child_enumeration = 1;
-+		return;
-+	}
-+
-+	/* Do not do enumeration for device object with scan handler attached */
-+	if (device->handler) {
-+		if (device->handler->handle_children)
-+			device->flags.no_child_enumeration = 1;
-+		return;
-+	}
-+
-+	/* Do not do enumeration for device object w/o platform_id */
-+	if (!device->pnp.type.platform_id)
-+		return;
-+
-+	acpi_create_platform_device(device, NULL);
-+}
-+
- static int acpi_scan_attach_handler(struct acpi_device *device)
- {
- 	struct acpi_hardware_id *hwid;
-@@ -2035,8 +2060,7 @@ static int acpi_scan_attach_handler(struct acpi_device *device)
- 		}
- 	}
- end:
--	if (device->pnp.type.platform_id && !device->handler)
--		acpi_create_platform_device(device, NULL);
-+	acpi_do_default_enumeration(device);
- 	return ret;
- }
- 
-diff --git a/include/acpi/acpi_bus.h b/include/acpi/acpi_bus.h
-index f998746..bc7235f 100644
---- a/include/acpi/acpi_bus.h
-+++ b/include/acpi/acpi_bus.h
-@@ -135,6 +135,7 @@ struct acpi_scan_handler {
- 	int (*attach)(struct acpi_device *dev, const struct acpi_device_id *id);
- 	void (*detach)(struct acpi_device *dev);
- 	struct acpi_hotplug_profile hotplug;
-+	bool handle_children;
- };
- 
- /*
-@@ -191,7 +192,8 @@ struct acpi_device_flags {
- 	u32 initialized:1;
- 	u32 visited:1;
- 	u32 no_hotplug:1;
--	u32 reserved:24;
-+	u32 no_child_enumeration:1;
-+	u32 reserved:23;
- };
- 
- /* File System */
--- 
-1.7.9.5
+BRs
+Xiubo
 
 
+> g.
+> 
+> > +		newprop->next = oldprop->next;
+> > +		*next = newprop;
+> > +		oldprop->next = np->deadprops;
+> > +		np->deadprops = oldprop;
+> >  	}
+> >  	raw_spin_unlock_irqrestore(&devtree_lock, flags);
+> >
+> > -	if (!found)
+> > -		return -ENODEV;
+> > -
+> >  #ifdef CONFIG_PROC_DEVICETREE
+> >  	/* try to add to proc as well if it was initialized */
+> > -	if (np->pde)
+> > +	if (!rc && np->pde)
+> >  		proc_device_tree_update_prop(np->pde, newprop, oldprop);
+> >  #endif /* CONFIG_PROC_DEVICETREE */
+> >
+> > -	return 0;
+> > +	return rc;
+> >  }
+> >
+> >  #if defined(CONFIG_OF_DYNAMIC)
+> > --
+> > 1.8.4
+> >
+> >
+> 
+> 
 
