@@ -1,91 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaCXVyQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 17:54:16 -0400
-Received: from mail-bk0-f41.google.com ([209.85.214.41]:41406 "EHLO
-	mail-bk0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbaCXVyN (ORCPT
+	id S1751459AbaCXV5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 17:57:40 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:59297 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751174AbaCXV5i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 17:54:13 -0400
-Date: Mon, 24 Mar 2014 22:54:09 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>, nouveau@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gnurou@gmail.com
-Subject: Re: [PATCH 02/12] drm/nouveau/timer: skip calibration on GK20A
-Message-ID: <20140324215408.GB17218@mithrandir>
-References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
- <1395650554-31925-3-git-send-email-acourbot@nvidia.com>
+	Mon, 24 Mar 2014 17:57:38 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RASg3xLB4tUQ4RcS"
-Content-Disposition: inline
-In-Reply-To: <1395650554-31925-3-git-send-email-acourbot@nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+To: Maxime Coquelin <maxime.coquelin@st.com>,
+        "Sylwester Nawrocki" <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <532C4816.2080102@st.com>
+Cc: mark.rutland@arm.com, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, linux@arm.linux.org.uk,
+        m.szyprowski@samsung.com, t-kristo@ti.com
+References: <1393870533-20845-1-git-send-email-s.nawrocki@samsung.com>
+ <53187C13.3040202@st.com> <532AE239.9000800@samsung.com>
+ <20140321014551.21989.57253@quantum> <532C4816.2080102@st.com>
+Message-ID: <20140324215729.32624.19272@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [RFC PATCH v2 0/2] clk: Support for DT assigned clock parents and rates
+Date: Mon, 24 Mar 2014 14:57:29 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Quoting Maxime Coquelin (2014-03-21 07:09:26)
+> Hi Mike,
+> 
+> On 03/21/2014 02:45 AM, Mike Turquette wrote:
+> > Quoting Sylwester Nawrocki (2014-03-20 05:42:33)
+> >> Hi Maxime,
+> >>
+> >> On 06/03/14 14:45, Maxime Coquelin wrote:
+> >>> Hi Sylwester,
+> >>>
+> >>>        I like the principle of your implementation, but I have two questions:
+> >>>        1 - How can we manage PM with this solution, as the parent/rate will be
+> >>> set only once at probe time?
+> >>>        2 - How to set the parent of a parent clock (which can be shared with
+> >>> other devices)? Same question about the parent rates.
+> >>
+> >> Thanks for your feedback and apologies for late reply.
+> >>
+> >> IIUC your first concern is about a situation when clocks need to be
+> >> reconfigured upon each resume from system sleep or runtime PM resume ?
+> >> As I mentioned in v1 of the RFC I was considering having individual
+> >> drivers calling explicitly the clocks set up routine. Presumably this
+> >> would allow to resolve the power management related issue.
+> >> One example I'm aware the approach as in this RFC wouldn't work is
+> >> when a device in a SoC belongs to a power domain, which needs to be
+> >> first switched on before we can start setting up and the clocks'
+> >> configuration get lost after the power domain switch off.
+> >
+> > I like Sylwester's approach of handling this one-time setup in the
+> > driver core.
+> >
+> > Any kind of fine grained power management should not be hidden by DT,
+> > and by definition that logic belongs in the device driver. It can still
+> > be nicely abstracted away by runtime pm[1].
+> >
+> > Regards,
+> > Mike
+> >
+> > [1] Message-ID: <20140320114238.GQ7528@n2100.arm.linux.org.uk>
+> How can I access this reference?
 
---RASg3xLB4tUQ4RcS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I was trying to provide a reference to this thread which is tangentially
+related to this topic:
 
-On Mon, Mar 24, 2014 at 05:42:24PM +0900, Alexandre Courbot wrote:
-> GK20A's timer is directly attached to the system timer and cannot be
-> calibrated. Skip the calibration phase on that chip since the
-> corresponding registers do not exist.
->=20
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c | 19 +++++++++++++------
->  1 file changed, 13 insertions(+), 6 deletions(-)
->=20
-> diff --git a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c b/drivers/g=
-pu/drm/nouveau/core/subdev/timer/nv04.c
-> index c0bdd10358d7..822fe0d8a871 100644
-> --- a/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-> +++ b/drivers/gpu/drm/nouveau/core/subdev/timer/nv04.c
-> @@ -185,6 +185,10 @@ nv04_timer_init(struct nouveau_object *object)
->  	if (ret)
->  		return ret;
-> =20
-> +	/* gk20a does not have the calibration registers */
-> +	if (device->chipset =3D=3D 0xea)
-> +		goto skip_clk_init;
+http://www.spinics.net/lists/arm-kernel/msg317016.html
 
-I'm concerned that this won't scale in the future. Perhaps a better
-solution would be to add a "flags" or "features" field to struct
-nouveau_device along with feature bits such as HAS_CALIBRATION or
-similar.
+But it hadn't hit any of the mail archives at the time of my writing so
+I just copied Russell's Message-ID from his email. If you have a copy of
+that email then you can search on Message-ID's for that and you will
+find it. :-)
 
-That way we don't have to touch this code for every new future Tegra
-chip. Unless perhaps if there's a reason to expect things to change in
-newer generations.
+Regards,
+Mike
 
-Thierry
-
---RASg3xLB4tUQ4RcS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTMKmAAAoJEN0jrNd/PrOhJsEQAJcXGbrjZueUP8WLMd+Zwozx
-eupilYYQ18I0YeUle/n0ol5uuhz629rQ7ls8HG1wJ0zdE15YQiK9WkHALcKuYyJt
-5GDKxdT67g+Za14dOj1MFoMvzuQcCp3/XcjcEeP1bGL/W7fAmFnwg7fTtAZepjL9
-NF/3SsBo6YAu2Cm60LLHCFzKxypQaJrU7sUPSzEvpd9Pvh47/XDsFiRnohUHkAbq
-k2E8tvMTsTWNtmsOkGuaN80QhqHEHHfdYaBZj2jOkfbqE5OkF03YX3WDIV9hYfU+
-AdogH2LqIvmwRIyybNyRhN39wanYR82AQDCywJ4ckbJTK0VKp71gTA+SBM8T+jiD
-PXgjlQZfcOpGRVNHJUz3q4DcWUc3bGI6MhLMV6k7dKHkC7gO4pKGX+cAiun4mi9k
-SYYQe5xZ5DsOVz0Knjb8kK4oXOidWlLtUryLoRb0DBAy471B9XZ+ZS7xaMWWruFk
-Ajdk083IqXHpiUu/CviMKBuPkAEJlCM1aKvHTksz35YkNTplE0JwlAVCGerKyYC8
-TpefAGUt5RVhFiYqXFw8Pw6MEqWZJY8/Lyurasjp9zvgdtvyiSmN04VjjytFlTXJ
-2dBoGhptpkkAAp2IFaftmzbpm17/brY0AiG6MUAnaw3CtSKiQoEewzcYurgC1FFd
-v7qZnRdm9J7qPyQvMdDO
-=Hw+n
------END PGP SIGNATURE-----
-
---RASg3xLB4tUQ4RcS--
+> 
+> Thanks,
+> Maxime
+> 
+> >
+> >>
+> >> OTOH I suspect devices for which one-time clocks setup is sufficient
+> >> will be quite common. And for these there would need to be a single
+> >> call to the setup routine in probe() I guess, since it wouldn't be
+> >> possible to figure out just from the DT data when the actual call
+> >> should be made.
+> >>
+> >> For a global clocks configuration, I thought about specifying that
+> >> in the clocks controller node, and then to have the setup routine
+> >> called e.g. from of_clk_init(). I think that could work well enough,
+> >> together with the patch [1], adding clock dependencies handling.
+> >> But then the clock frequency set up function would need to be
+> >> modified to respect the clock parent relationships, similarly as
+> >> in patch series [2]. A just noticed [2] recently, after posting
+> >> this RFC (adding Tero at Cc).
+> >>
+> >> --
+> >> Regards,
+> >> Sylwester
+> >>
+> >> [1] http://www.spinics.net/lists/arm-kernel/msg310507.html
+> >> [2] http://www.spinics.net/lists/linux-omap/msg103069.html
