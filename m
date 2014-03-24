@@ -1,110 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753651AbaCXRdl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 13:33:41 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:61040 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107AbaCXRdj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 13:33:39 -0400
-Date: Mon, 24 Mar 2014 14:33:32 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth-next 2014-03-24
-Message-ID: <20140324173332.GA2214@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753653AbaCXRfT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 13:35:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56981 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753147AbaCXRfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 13:35:16 -0400
+Message-ID: <53306C73.9030808@redhat.com>
+Date: Mon, 24 Mar 2014 13:33:39 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="yrj/dFKFPuw6o+aM"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: John Stultz <john.stultz@linaro.org>, LKML <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Android Kernel Team <kernel-team@android.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, Robert Love <rlove@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, Hugh Dickins <hughd@google.com>,
+        Dave Hansen <dave@sr71.net>,
+        Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+        Neil Brown <neilb@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Hommey <mh@glandium.org>, Taras Glek <tglek@mozilla.com>,
+        Jan Kara <jack@suse.cz>, KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Michel Lespinasse <walken@google.com>,
+        Minchan Kim <minchan@kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH 5/5] vmscan: Age anonymous memory even when swap is off.
+References: <1395436655-21670-1-git-send-email-john.stultz@linaro.org> <1395436655-21670-6-git-send-email-john.stultz@linaro.org>
+In-Reply-To: <1395436655-21670-6-git-send-email-john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 03/21/2014 05:17 PM, John Stultz wrote:
+> Currently we don't shrink/scan the anonymous lrus when swap is off.
+> This is problematic for volatile range purging on swapless systems/
+>
+> This patch naievely changes the vmscan code to continue scanning
+> and shrinking the lrus even when there is no swap.
+>
+> It obviously has performance issues.
+>
+> Thoughts on how best to implement this would be appreciated.
+>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Android Kernel Team <kernel-team@android.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Robert Love <rlove@google.com>
+> Cc: Mel Gorman <mel@csn.ul.ie>
+> Cc: Hugh Dickins <hughd@google.com>
+> Cc: Dave Hansen <dave@sr71.net>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Dmitry Adamushko <dmitry.adamushko@gmail.com>
+> Cc: Neil Brown <neilb@suse.de>
+> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> Cc: Mike Hommey <mh@glandium.org>
+> Cc: Taras Glek <tglek@mozilla.com>
+> Cc: Jan Kara <jack@suse.cz>
+> Cc: KOSAKI Motohiro <kosaki.motohiro@gmail.com>
+> Cc: Michel Lespinasse <walken@google.com>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: linux-mm@kvack.org <linux-mm@kvack.org>
+> Signed-off-by: John Stultz <john.stultz@linaro.org>
+> ---
+>   mm/vmscan.c | 26 ++++----------------------
+>   1 file changed, 4 insertions(+), 22 deletions(-)
+>
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 34f159a..07b0a8c 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -155,9 +155,8 @@ static unsigned long zone_reclaimable_pages(struct zone *zone)
+>   	nr = zone_page_state(zone, NR_ACTIVE_FILE) +
+>   	     zone_page_state(zone, NR_INACTIVE_FILE);
+>
+> -	if (get_nr_swap_pages() > 0)
+> -		nr += zone_page_state(zone, NR_ACTIVE_ANON) +
+> -		      zone_page_state(zone, NR_INACTIVE_ANON);
+> +	nr += zone_page_state(zone, NR_ACTIVE_ANON) +
+> +	      zone_page_state(zone, NR_INACTIVE_ANON);
+>
+>   	return nr;
 
---yrj/dFKFPuw6o+aM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Not all of the anonymous pages will be reclaimable.
 
-Hi John,
-
-Here follow another set of patches to 3.15. This is mostly a bug fix pull
-request with the exception of one commit from Marcel which adds tracking to
-the current configured LE scan type parameter.
-
-Please pull or let me know of any issues. Thanks!
-
-	Gustavo
-
----
-The following changes since commit 40b552aa5a0bfa785bc7ddb5c2d7965b1e0bb08d:
-
-  Bluetooth: Enforce strict Secure Connections Only mode security (2014-03-19 23:30:32 +0200)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git for-upstream
-
-for you to fetch changes up to 8396215d4865d66be9cdfcec8d135862e1fd98d1:
-
-  Bluetooth: Remove unnecessary assignment in SMP (2014-03-24 08:43:50 -0700)
-
-----------------------------------------------------------------
-Amitkumar Karwar (1):
-      Bluetooth: btmrvl: don't consume all vendor specific events
-
-Johan Hedberg (10):
-      Bluetooth: Fix passkey endianess in user_confirm and notify_passkey
-      Bluetooth: Fix address value for early disconnection events
-      Bluetooth: Fix potential NULL pointer dereference in SMP
-      Bluetooth: Add missing cmd_status handler for LE_Start_Encryption
-      Bluetooth: Fix SMP confirmation callback handling
-      Bluetooth: Add SMP flag to track which side is the initiator
-      Bluetooth: Don't try to confirm locally initiated SMP pairing
-      Bluetooth: Remove LTK re-encryption procedure
-      Bluetooth: Fix potential NULL pointer dereference in smp_conn_security
-      Bluetooth: Remove unnecessary assignment in SMP
-
-Marcel Holtmann (1):
-      Bluetooth: Track current configured LE scan type parameter
-
-Thomas Gleixner (1):
-      Bluetooth: bluecard: Use del_timer_sync() in teardown path
-
- drivers/bluetooth/bluecard_cs.c  |  2 +-
- drivers/bluetooth/btmrvl_main.c  | 11 +++---
- include/net/bluetooth/hci_core.h |  3 +-
- net/bluetooth/hci_event.c        | 63 +++++++++++++++++++++++++++++++-
- net/bluetooth/mgmt.c             | 20 ++--------
- net/bluetooth/smp.c              | 87 ++++++++++++++++++--------------------------
- net/bluetooth/smp.h              |  7 +---
- 7 files changed, 111 insertions(+), 82 deletions(-)
+Is there some counter that keeps track of how many
+volatile range pages there are in each zone?
 
 
---yrj/dFKFPuw6o+aM
-Content-Type: application/pgp-signature
+> @@ -1764,13 +1763,6 @@ static int inactive_anon_is_low_global(struct zone *zone)
+>    */
+>   static int inactive_anon_is_low(struct lruvec *lruvec)
+>   {
+> -	/*
+> -	 * If we don't have swap space, anonymous page deactivation
+> -	 * is pointless.
+> -	 */
+> -	if (!total_swap_pages)
+> -		return 0;
+> -
+>   	if (!mem_cgroup_disabled())
+>   		return mem_cgroup_inactive_anon_is_low(lruvec);
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+This part is correct, and needed.
 
-iQIcBAEBAgAGBQJTMGxsAAoJEPs3PUX4s20oFTEQAJ6jBRVgqWax/cdDqHwNF31y
-/d1taW4nLwlbyVQoMjB1i0BxJJAWILgxs8BjiG1jBSkMfi+GmtiJom6LcaRCl3WR
-NaYGY93gseO1Fmj9Q5ChOP71HUFx1/1Fo0diiKDsfl2qOD6lHnY6nLUxst/jn3cu
-yUmWhnM+aE6ixUeagf9/jZO1bodMqOvL2FOoXwlAVSDpm6LQAS7OIrCj+ZRMdDO3
-7OozQaQPr4jeyzWj8sabkUryM2/YUkAWeCMnL8LFYrXiIzFXilxMpN6+aJzxWeqo
-BsXTSz/TDXsiANhWq4ED4wlr87AWYx+9ZNv1CvNB3TvYvQFX1VU56f8lUuh8tJDX
-SFz0BjlmzbYurOtmx+GKnRZxWkdzBQc2/0w0oPeWVxzd5ftZfFA5A4nKQWXgQIuP
-ValvvQ5xZOb8HkPVW9gGqBHs6dll7NVK2IA0fZVTzG9uyNSmbSntLqcfONIMXaO6
-iWTDvl2HuOGuZKbnedNt6iUgTfSUEL25+NF8uaDosBAmzcQm9cTyZiZ9sPzNrLVi
-ogGSNpACaxSzntoLhPs/cunLR+7+FxXwxYnjH/sUpBFYmhpcTjHnaEpplX4EPU+/
-uwIXuJ2TCKSHET89ZGSB3km2W12GHd2c9BOk31+55FW+o84OOcjz5hzieDvW474d
-rbJJsxS0Me3UG916lxJK
-=0ufD
------END PGP SIGNATURE-----
+> @@ -1880,12 +1872,6 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+>   	if (!global_reclaim(sc))
+>   		force_scan = true;
+>
+> -	/* If we have no swap space, do not bother scanning anon pages. */
+> -	if (!sc->may_swap || (get_nr_swap_pages() <= 0)) {
+> -		scan_balance = SCAN_FILE;
+> -		goto out;
+> -	}
+> -
+>   	/*
 
---yrj/dFKFPuw6o+aM--
+This part is too.
+
+> @@ -2181,8 +2166,8 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>   	 */
+>   	pages_for_compaction = (2UL << sc->order);
+>   	inactive_lru_pages = zone_page_state(zone, NR_INACTIVE_FILE);
+> -	if (get_nr_swap_pages() > 0)
+> -		inactive_lru_pages += zone_page_state(zone, NR_INACTIVE_ANON);
+> +	inactive_lru_pages += zone_page_state(zone, NR_INACTIVE_ANON);
+> +
+>   	if (sc->nr_reclaimed < pages_for_compaction &&
+>   			inactive_lru_pages > pages_for_compaction)
+
+Not sure this is a good idea, since the pages may not actually
+be reclaimable, and the inactive list will continue to be
+refilled indefinitely...
+
+If there was a counter of the number of volatile range pages
+in a zone, this would be easier.
+
+Of course, the overhead of keeping such a counter might be
+too high for what volatile ranges are designed for...
+
+>   		return true;
+> @@ -2726,9 +2711,6 @@ static void age_active_anon(struct zone *zone, struct scan_control *sc)
+>   {
+>   	struct mem_cgroup *memcg;
+>
+> -	if (!total_swap_pages)
+> -		return;
+> -
+
+This bit is correct and needed.
+
