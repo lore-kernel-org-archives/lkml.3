@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaCXU12 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:27:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42929 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753559AbaCXU10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:27:26 -0400
-Date: Mon, 24 Mar 2014 16:26:27 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
-        andi.kleen@intel.com
-Subject: Re: [PATCH 4/6] perf, sort:  Add physid sorting based on mmap2 data
-Message-ID: <20140324202627.GD25953@redhat.com>
-References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
- <1395689676-214799-5-git-send-email-dzickus@redhat.com>
- <8761n3pe2w.fsf@tassilo.jf.intel.com>
- <20140324201757.GC25953@redhat.com>
- <20140324202045.GT22728@two.firstfloor.org>
+	id S1754042AbaCXUaf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:30:35 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:53048 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593AbaCXUae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 16:30:34 -0400
+Date: Mon, 24 Mar 2014 21:30:32 +0100
+From: Andreas Mohr <andi@lisas.de>
+To: Mahmood Naderan <nt_mahmood@yahoo.com>
+Cc: Mike Galbraith <umgwanakikbuti@gmail.com>,
+        Jack Carrozzo <jack@crepinc.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Thread Scheduler
+Message-ID: <20140324203032.GA16964@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140324202045.GT22728@two.firstfloor.org>
+In-Reply-To: <1395572478.74811.YahooMailNeo@web141601.mail.bf1.yahoo.com>
+X-Priority: none
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 09:20:45PM +0100, Andi Kleen wrote:
-> On Mon, Mar 24, 2014 at 04:17:57PM -0400, Don Zickus wrote:
-> > On Mon, Mar 24, 2014 at 12:54:31PM -0700, Andi Kleen wrote:
-> > > Don Zickus <dzickus@redhat.com> writes:
-> > > 
-> > > > In order for the c2c tool to work correctly, it needs to properly
-> > > > sort all the records on uniquely identifiable data addresses.  These
-> > > > unique addresses are converted from virtual addresses provided by the
-> > > > hardware into a kernel address using an mmap2 record as the decoder.
-> > > 
-> > > No documentation for the new option?
-> > > 
-> > > Probably the new mode should be also supported by --sort
-> > 
-> > I hid the new option further in the changelog, so it isn't obvious.  Sorry
-> > about that.
+Hi,
+
+> OK I read them and it seems that in order to change the scheduler, I have to write a C code and call the sched_set* functions. Please correct that if I am wrong.
 > 
-> I meant there's no manpage change
+> So in order to use my custom scheduler, I have to do the following steps.
+> 
+> 1- Write my  code using the APIs and save that in kernel/sched_custom.c
+> 2- Invoke sched_custom.c in kernel/sched.c
+> 3- Recompile the kernel source
+> 4- Reboot using the new kernel
+> 5- write a C code and call sched_setschedule() to use my scheduler.
+> 
+> Is that all? Your reply is appreciated.
 
-Ah, right.  I missed that.  Thanks for noticing.  Let me respin that.
+No, AFAIK these are *user-space* APIs, thus they're supposed to be used by
+applications (correct me if I'm wrong).
 
-Cheers,
-Don
+
+So the question would be what exactly you're trying to achieve:
+either you want to actively modify the kernel-side scheduler sources,
+in which case these APIs probably are not what you want (to use there),
+or you're trying to modify scheduling configuration of user-space applications,
+in which case they possibly are.
+Or you want both, in which case you probably
+modify kernel scheduler implementation *and* use sched_*() in user-space
+with the intent to ensure that that modified scheduler implementation
+gets chosen.
+
+HTH,
+
+Andreas Mohr
