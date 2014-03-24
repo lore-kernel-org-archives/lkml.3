@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaCXLAz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 07:00:55 -0400
-Received: from owamsq.epam.com ([217.21.63.36]:14938 "EHLO
-	EVBYMINSA0101.epam.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752207AbaCXLAy (ORCPT
+	id S1753084AbaCXLCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 07:02:39 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:57252 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051AbaCXLCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 07:00:54 -0400
-Date: Tue, 25 Mar 2014 01:59:10 +0300
-From: Artem Fetishev <artem_fetishev@epam.com>
-To: <akpm@linux-foundation.org>, <eranian@google.com>
-CC: <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: Fix boot on uniprocessor systems
-Message-ID: <20140324225910.GB4937@owamsq.epam.com>
+	Mon, 24 Mar 2014 07:02:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-X-Originating-IP: [10.6.161.188]
-X-ClientProxiedBy: EVBYMINSA0102.epam.com (10.6.110.11) To
- EPBYMINSA0001.epam.com (10.6.110.2)
+In-Reply-To: <53301023.8080301@monstr.eu>
+References: <1395083192-3224-1-git-send-email-sthokal@xilinx.com>
+	<1395083192-3224-3-git-send-email-sthokal@xilinx.com>
+	<CABb+yY1z1Rr-EyJaeHQDb+thmKZVk5V93avokx6Z_EEuQFHyrw@mail.gmail.com>
+	<CA+mB=1Lwq=Z3E+K7KTCgDKdmEQ8s5DMsAQVLVijdNPknNzx+SA@mail.gmail.com>
+	<CAJe_Zhdnz+bdFiAqPgdH5hOTfzYUsoMyd0qpoWkeDAqqU+itSQ@mail.gmail.com>
+	<53301023.8080301@monstr.eu>
+Date: Mon, 24 Mar 2014 16:32:36 +0530
+Message-ID: <CABb+yY13sheOvhVUkYNAO7t16egnPdf5x_fSvNuXVsU4E=W1Eg@mail.gmail.com>
+Subject: Re: [PATCH v6 2/2] dma: Add Xilinx AXI Video Direct Memory Access
+ Engine driver support
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: monstr@monstr.eu
+Cc: Jassi Brar <jaswinder.singh@linaro.org>,
+        Srikanth Thokala <sthokal@xilinx.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Levente Kurusa <levex@linux.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dmaengine@vger.kernel.org,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On x86 uniprocessor systems topology_physical_package_id() returns -1 which
-causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized which leads
-to GPF in rapl_pmu_init(). See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+On Mon, Mar 24, 2014 at 4:29 PM, Michal Simek <monstr@monstr.eu> wrote:
+> Hi Vinod,
+>
+> sorry for top posting.
+>
+> is there any chance to get this driver to the 3.15?
+> Or have you already closed your dma repo for new drivers?
+>
+> The driver should be in pretty good shape after long review.
+> From email below Srikanth got ACK from Jassi
+> and there should be a small fix which Srikanth will send in v7
+> which I hope will be the last version.
+>
++1  Any change may come incrementally.
 
-It turns out that physical_package_id and core_id can actually be retreived for
-uniprocessor systems too. Enabling them also fixes rapl_pmu code.
-
-Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
----
-diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
-index d35f24e..1306d11 100644
---- a/arch/x86/include/asm/topology.h
-+++ b/arch/x86/include/asm/topology.h
-@@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
- 
- extern const struct cpumask *cpu_coregroup_mask(int cpu);
- 
--#ifdef ENABLE_TOPO_DEFINES
- #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
- #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
-+
-+#ifdef ENABLE_TOPO_DEFINES
- #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
- #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
- #endif
+Btw, here's the ack
+   Acked-by: Jassi Brar <jassisinghbrar@gmail.com>
