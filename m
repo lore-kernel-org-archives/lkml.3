@@ -1,91 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752682AbaCXKlE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 06:41:04 -0400
-Received: from rrzmta2.uni-regensburg.de ([194.94.155.52]:36479 "EHLO
-	rrzmta2.uni-regensburg.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbaCXKlC convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:1:1>);
-	Mon, 24 Mar 2014 06:41:02 -0400
-Message-Id: <533019C9020000A100014F79@gwsmtp1.uni-regensburg.de>
-X-Mailer: Novell GroupWise Internet Agent 12.0.2 
-Date: Mon, 24 Mar 2014 11:40:57 +0100
-From: "Ulrich Windl" <Ulrich.Windl@rz.uni-regensburg.de>
-To: <linux-kernel@vger.kernel.org>
-Subject: Q: uniqueness of pthread_t
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S1752802AbaCXKpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 06:45:55 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:36346 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752515AbaCXKpy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 06:45:54 -0400
+Date: Mon, 24 Mar 2014 10:45:10 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Laura Abbott <lauraa@codeaurora.org>, Fenghua Yu <fenghua.yu@intel.com>,
+        Tony Luck <tony.luck@intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-scsi@vger.kernel.org,
+        linux-s390@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, x86@kernel.org,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        linux-kernel@vger.kernel.org, linux390@de.ibm.com,
+        sparclinux@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        linuxppc-dev@lists.ozlabs.org, "David S. Miller" <davem@davemloft.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND][PATCH 1/2] lib/scatterlist: Make ARCH_HAS_SG_CHAIN an
+	actual Kconfig
+Message-ID: <20140324104510.GQ7528@n2100.arm.linux.org.uk>
+References: <1395512032-20575-1-git-send-email-lauraa@codeaurora.org> <1395512032-20575-2-git-send-email-lauraa@codeaurora.org> <1395523881.2143.58.camel@dabdike.int.hansenpartnership.com> <20140322222306.GM7528@n2100.arm.linux.org.uk> <1395527860.2143.61.camel@dabdike.int.hansenpartnership.com> <20140322225201.GN7528@n2100.arm.linux.org.uk> <1395529151.2143.64.camel@dabdike.int.hansenpartnership.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1395529151.2143.64.camel@dabdike.int.hansenpartnership.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Sat, Mar 22, 2014 at 03:59:11PM -0700, James Bottomley wrote:
+> On Sat, 2014-03-22 at 22:52 +0000, Russell King - ARM Linux wrote:
+> > And I'm disagreeing with that statement which implies that it's something
+> > that is an architecture wide property for any particular architecture.
+> > 
+> > Right now in mainline, if ARM has IOMMU support enabled, then SG_CHAIN
+> > support will also be enabled.  I've a patch out of tree which I've been
+> > using for years which enables SG_CHAIN for a particular SoC (Dove).
+> > Otherwise, it doesn't have support for SG_CHAIN.
+> > 
+> > PARISC on the other hand (as you list) has no support to enable SG_CHAIN
+> > under any circumstances.
+> > 
+> > Where we're disagreeing is whether this is something that is always-on or
+> > always-off for any particular architecture.
+> 
+> Actually, I don't disagree with that.  PA used to share sb_iommu with
+> ia64 (it's the same chipset for the HP versions), but we can't now
+> because ia64 is chained and we're not and there's no way to say chained
+> for this platform but not for these other more legacy ones.  If you have
+> a proposal for this, I'd be interested, so I don't have to do an all or
+> nothing conversion, but the config option isn't it because our platform
+> configuration is runtime determined (we usually select every driver and
+> let the actual one be chosen at runtime from the config table).
 
-I'm programming a little bit with pthreads in Linux. As I understand pthread_t is an opaque type (a pointer address?) that cannot be mapped to the kernel's TID easily. Anyway: Is it expected that when one thread terminates and another thread is created (in fact the same thread again), that the p_thread my be resused?
+At runtime, it's obviously a lot harder to resolve.  However, that's not
+what we're trying to do with this patch.
 
-It seems it just happened when debugging my program (or I made a programming mistake (code compiles clean with -Wall):
----
-[...]
-cleanup_thread: 1 used connection entries
- 5888 [^D] (null) -> 192.168.255.18/80
-cleanup_thread: leaves with -1: No child processes
-8407: [8413](172.20.64.67/54560) handles socket 4
-cleanup_thread 139852035340032 terminated
-created cleanup_thread 139852035340032
-accepting connection (1 handlers)
-[...]
----
-libgthread-2_0-0-2.22.5-0.8.12.1 (SLES11 SP3 on x86_64)
+The main issue is that Laura is trying to add SG chain support to ARM64.
+At the moment, ARM64 uses the asm-generic version of scatterlist.h
+directly.
 
-The code handling the threads looks like this (so the results should be reliable, I guess):
+Her first spin of the patch involved creating
+arch/arm64/include/asm/scatterlist.h, which was nothing more than an
+include of the asm-generic header file of the same name, and the
+definition of ARCH_HAS_SG_CHAIN.  That seemed to be extremely wasteful
+and sub-optimal way to handle this.
 
-                        if ( tid != 0 && pthread_tryjoin_np(tid, &ret) == 0 )
-                        {
-                                DEBUG(1) printf("cleanup_thread %ld terminated\\
-n",
-                                                (long) tid);
-                                tid = 0;
-                        }
-[...]
-                        if ( tid != 0 && pthread_tryjoin_np(tid, &ret) == 0 )
-                        {
-                                DEBUG(1) printf("cleanup_thread %ld terminated\\
-n",
-                                                (long) tid);
-                                tid = 0;
-                        }
+Moving this symbol into the Kconfig means that ARM64 no longer has to
+have this additional file (and probably a bunch of other architectures
+fall into that same camp) and the ARM specific CONFIG_ARM_HAS_SG_CHAIN
+can be eliminated in favour of the now generic cross-arch config symbol.
 
-(The code above also runs strictly sequential)
+We have plenty of other Kconfig symbols which control similar features
+throughout the kernel source, there is no reason that this one should
+not be the same.
 
-And while I'm at it: There's a bug in the man page:
----
-PTHREAD_TRYJOIN_NP(3)      Linux Programmer's Manual     PTHREAD_TRYJOIN_NP(3)
-
-
-
-NAME
-       pthread_tryjoin_np,  pthread_timedjoin_np  -  try to join with a termi-
-       nated thread
-
-SYNOPSIS
-       #define _GNU_SOURCE
-       #include <pthread.h>
-
-       int pthread_tryjoin_np(pthread_t thread, void **retval);
-
-       int pthread_timedjoin_np(pthread_t thread, void **retval,
-                                const struct timespec *abstime);
-
-       Compile and link with -pthread.
----
-
-You must include <features.h> after defining  _GNU_SOURCE, and you must do this early in your includes...
-
-I'm not subscribed d to LKML, so please CC your answers to me.
-
-Regards,
-Ulrich
-
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
