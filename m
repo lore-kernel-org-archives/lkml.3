@@ -1,142 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753692AbaCXSW2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 14:22:28 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:30221 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389AbaCXSW0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 14:22:26 -0400
-Message-ID: <533077CE.6010204@oracle.com>
-Date: Mon, 24 Mar 2014 14:22:06 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753644AbaCXSbc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 14:31:32 -0400
+Received: from smtp2-g21.free.fr ([212.27.42.2]:53576 "EHLO smtp2-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753107AbaCXSba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 14:31:30 -0400
+Date: Mon, 24 Mar 2014 19:31:11 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: linux-gpio@vger.kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [bisected] NULL pointer dereference in acpi_gpiochip_add (on
+ modprobe ssb)
+Message-ID: <20140324183111.GC25669@kria>
+References: <20140324154944.GB25669@kria>
+ <20140324180033.GM19349@intel.com>
+ <20140324181112.GN19349@intel.com>
 MIME-Version: 1.0
-To: Benjamin LaHaise <bcrl@kvack.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>
-CC: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        jmoyer@redhat.com, kosaki.motohiro@jp.fujitsu.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        miaox@cn.fujitsu.com, linux-aio@kvack.org,
-        fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] aio: ensure access to ctx->ring_pages is correctly serialised
-References: <532A80B1.5010002@cn.fujitsu.com> <20140320143207.GA3760@redhat.com> <20140320163004.GE28970@kvack.org> <532B9C54.80705@cn.fujitsu.com> <20140321183509.GC23173@kvack.org>
-In-Reply-To: <20140321183509.GC23173@kvack.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140324181112.GN19349@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/21/2014 02:35 PM, Benjamin LaHaise wrote:
-> Hi all,
->
-> Based on the issues reported by Tang and Gu, I've come up with the an
-> alternative fix that avoids adding additional locking in the event read
-> code path.  The fix is to take the ring_lock mutex during page migration,
-> which is already used to syncronize event readers and thus does not add
-> any new locking requirements in aio_read_events_ring().  I've dropped
-> the patches from Tang and Gu as a result.  This patch is now in my
-> git://git.kvack.org/~bcrl/aio-next.git tree and will be sent to Linus
-> once a few other people chime in with their reviews of this change.
-> Please review Tang, Gu.  Thanks!
+2014-03-24, 20:11:12 +0200, Mika Westerberg wrote:
+> On Mon, Mar 24, 2014 at 08:00:33PM +0200, Mika Westerberg wrote:
+> > On Mon, Mar 24, 2014 at 04:49:44PM +0100, Sabrina Dubroca wrote:
+> > > Hi,
+> > > 
+> > > With next-20140324, I get the BUG below when I modprobe ssb.
+> > > I bisected it to aa92b6f689ac
+> > > "gpio / ACPI: Allocate ACPI specific data directly in acpi_gpiochip_add()"
+> > > 
+> > > The device that needs ssb is:
+> > > 0c:00.0 Network controller [0280]: Broadcom Corporation BCM4321 802.11a/b/g/n [14e4:4328] (rev 03)
+> > >         Subsystem: Dell Wireless 1500 Draft 802.11n WLAN Mini-card [1028:000a]
+> > >         Kernel driver in use: b43-pci-bridge
+> > >         Kernel modules: ssb
+> > > 
+> > > 
+> > > [   92.693606] ssb: Found chip with id 0x4321, rev 0x03 and package 0x00
+> > > [   92.693649] ssb: Core 0 found: ChipCommon (cc 0x800, rev 0x13, vendor 0x4243)
+> > > [   92.693675] ssb: Core 1 found: IEEE 802.11 (cc 0x812, rev 0x0C, vendor 0x4243)
+> > > [   92.693699] ssb: Core 2 found: PCI-E (cc 0x820, rev 0x04, vendor 0x4243)
+> > > [   92.693723] ssb: Core 3 found: PCI (cc 0x804, rev 0x0D, vendor 0x4243)
+> > > [   92.693746] ssb: Core 4 found: USB 1.1 Host (cc 0x817, rev 0x04, vendor 0x4243)
+> > > [   92.753554] BUG: unable to handle kernel NULL pointer dereference at 00000138
+> > > [   92.753760] IP: [<c126c2b3>] acpi_gpiochip_add+0x13/0x190
+> > > [   92.753901] *pde = 00000000 
+> > > [   92.753986] Oops: 0000 [#1] PREEMPT SMP 
+> > > [   92.754125] Modules linked in: ssb(+) mmc_core netconsole nouveau mxm_wmi i2c_algo_bit drm_kms_helper ttm drm joydev mousedev tg3 coretemp kvm_intel ptp pcmcia kvm pps_core libphy dell_laptop gpio_ich rfkill yenta_socket pcmcia_rsrc intel_agp intel_gtt iTCO_wdt iTCO_vendor_support dell_wmi sparse_keymap pcmcia_core evdev agpgart dcdbas snd_hda_codec_idt snd_hda_codec_generic microcode psmouse pcspkr i2c_i801 i2c_core serio_raw lpc_ich mfd_core acpi_cpufreq ac battery thermal button wmi snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep snd_pcm video snd_timer shpchp processor snd soundcore nfs lockd sunrpc ext4 crc16 mbcache jbd2 sd_mod sr_mod cdrom ata_generic pata_acpi ata_piix libata scsi_mod firewire_ohci firewire_core crc_itu_t uhci_hcd ehci_pci ehci_hcd usbcore usb_common
+> > > [   92.756833] CPU: 0 PID: 512 Comm: modprobe Tainted: G        W     3.14.0-rc7-next-20140324-t1 #24
+> > > [   92.756833] Hardware name: Dell Inc. Latitude D830                   /0UY141, BIOS A02 06/07/2007
+> > > [   92.756833] task: f5799900 ti: f543e000 task.ti: f543e000
+> > > [   92.756833] EIP: 0060:[<c126c2b3>] EFLAGS: 00010282 CPU: 0
+> > > [   92.756833] EIP is at acpi_gpiochip_add+0x13/0x190
+> > > [   92.756833] EAX: 00000000 EBX: f57824c4 ECX: 00000000 EDX: 00000000
+> > > [   92.756833] ESI: f57824c4 EDI: 00000010 EBP: f543fc54 ESP: f543fc40
+> > > [   92.756833]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+> > > [   92.756833] CR0: 8005003b CR2: 00000138 CR3: 355f8000 CR4: 000007d0
+> > 
+> > To me looks like chip->dev is NULL. My understanding is that the GPIO core
+> > wants to have it non-NULL.
+> 
+> Actually gpiolib seems to handle ->dev as optional. Can you try this patch
+> instead? Thanks.
+> 
+> diff --git a/drivers/gpio/gpiolib-acpi.c b/drivers/gpio/gpiolib-acpi.c
+> index bf0f8b476696..642b2bf3360e 100644
+> --- a/drivers/gpio/gpiolib-acpi.c
+> +++ b/drivers/gpio/gpiolib-acpi.c
+> @@ -501,6 +501,9 @@ void acpi_gpiochip_add(struct gpio_chip *chip)
+>  	acpi_handle handle;
+>  	acpi_status status;
+>  
+> +	if (!chip || !chip->dev)
+> +		return;
+> +
+>  	handle = ACPI_HANDLE(chip->dev);
+>  	if (!handle)
+>  		return;
+> @@ -531,6 +534,9 @@ void acpi_gpiochip_remove(struct gpio_chip *chip)
+>  	acpi_handle handle;
+>  	acpi_status status;
+>  
+> +	if (!chip || !chip->dev)
+> +		return;
+> +
+>  	handle = ACPI_HANDLE(chip->dev);
+>  	if (!handle)
+>  		return;
 
-Hi Benjamin,
+Thanks, this patch solves the problem.
 
-This patch seems to trigger:
-
-[  433.476216] ======================================================
-[  433.478468] [ INFO: possible circular locking dependency detected ]
-[  433.480900] 3.14.0-rc7-next-20140324-sasha-00015-g1fb7de8 #267 Tainted: G        W
-[  433.480900] -------------------------------------------------------
-[  433.480900] trinity-c57/13776 is trying to acquire lock:
-[  433.480900]  (&ctx->ring_lock){+.+.+.}, at: aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]
-[  433.480900] but task is already holding lock:
-[  433.480900]  (&mm->mmap_sem){++++++}, at: SYSC_move_pages (mm/migrate.c:1215 mm/migrate.c:1353 mm/migrate.c:1508)
-[  433.480900]
-[  433.480900] which lock already depends on the new lock.
-[  433.480900]
-[  433.480900]
-[  433.480900] the existing dependency chain (in reverse order) is:
-[  433.480900]
--> #1 (&mm->mmap_sem){++++++}:
-[  433.480900]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[  433.480900]        down_write (arch/x86/include/asm/rwsem.h:130 kernel/locking/rwsem.c:50)
-[  433.480900]        SyS_io_setup (fs/aio.c:442 fs/aio.c:689 fs/aio.c:1201 fs/aio.c:1184)
-[  433.480900]        tracesys (arch/x86/kernel/entry_64.S:749)
-[  433.480900]
--> #0 (&ctx->ring_lock){+.+.+.}:
-[  433.480900]        __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-[  433.480900]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[  433.480900]        mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
-[  433.480900]        aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]        move_to_new_page (mm/migrate.c:777)
-[  433.480900]        migrate_pages (mm/migrate.c:921 mm/migrate.c:960 mm/migrate.c:1126)
-[  433.480900]        SYSC_move_pages (mm/migrate.c:1278 mm/migrate.c:1353 mm/migrate.c:1508)
-[  433.480900]        SyS_move_pages (mm/migrate.c:1456)
-[  433.480900]        tracesys (arch/x86/kernel/entry_64.S:749)
-[  433.480900]
-[  433.480900] other info that might help us debug this:
-[  433.480900]
-[  433.480900]  Possible unsafe locking scenario:
-[  433.480900]
-[  433.480900]        CPU0                    CPU1
-[  433.480900]        ----                    ----
-[  433.480900]   lock(&mm->mmap_sem);
-[  433.480900]                                lock(&ctx->ring_lock);
-[  433.480900]                                lock(&mm->mmap_sem);
-[  433.480900]   lock(&ctx->ring_lock);
-[  433.480900]
-[  433.480900]  *** DEADLOCK ***
-[  433.480900]
-[  433.480900] 1 lock held by trinity-c57/13776:
-[  433.480900]  #0:  (&mm->mmap_sem){++++++}, at: SYSC_move_pages (mm/migrate.c:1215 mm/migrate.c:1353 mm/migrate.c:1508)
-[  433.480900]
-[  433.480900] stack backtrace:
-[  433.480900] CPU: 4 PID: 13776 Comm: trinity-c57 Tainted: G        W     3.14.0-rc7-next-20140324-sasha-00015-g1fb7de8 #267
-[  433.480900]  ffffffff87a80790 ffff8806abbbb9a8 ffffffff844bae02 0000000000000000
-[  433.480900]  ffffffff87a80790 ffff8806abbbb9f8 ffffffff844ad86d 0000000000000001
-[  433.480900]  ffff8806abbbba88 ffff8806abbbb9f8 ffff8806ab8fbcf0 ffff8806ab8fbd28
-[  433.480900] Call Trace:
-[  433.480900]  dump_stack (lib/dump_stack.c:52)
-[  433.480900]  print_circular_bug (kernel/locking/lockdep.c:1216)
-[  433.480900]  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-[  433.480900]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[  433.480900]  ? sched_clock_local (kernel/sched/clock.c:214)
-[  433.480900]  ? sched_clock_cpu (kernel/sched/clock.c:311)
-[  433.480900]  ? __lock_acquire (kernel/locking/lockdep.c:3189)
-[  433.480900]  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]  mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
-[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]  ? aio_migratepage (fs/aio.c:303)
-[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]  ? aio_migratepage (include/linux/rcupdate.h:324 include/linux/rcupdate.h:909 include/linux/percpu-refcount.h:117 fs/aio.c:297)
-[  433.480900]  ? preempt_count_sub (kernel/sched/core.c:2527)
-[  433.480900]  aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
-[  433.480900]  ? aio_migratepage (include/linux/rcupdate.h:886 include/linux/percpu-refcount.h:108 fs/aio.c:297)
-[  433.480900]  ? mutex_unlock (kernel/locking/mutex.c:220)
-[  433.480900]  move_to_new_page (mm/migrate.c:777)
-[  433.480900]  ? try_to_unmap (mm/rmap.c:1516)
-[  433.480900]  ? try_to_unmap_nonlinear (mm/rmap.c:1113)
-[  433.480900]  ? invalid_migration_vma (mm/rmap.c:1472)
-[  433.480900]  ? page_remove_rmap (mm/rmap.c:1380)
-[  433.480900]  ? anon_vma_fork (mm/rmap.c:446)
-[  433.480900]  migrate_pages (mm/migrate.c:921 mm/migrate.c:960 mm/migrate.c:1126)
-[  433.480900]  ? follow_page_mask (mm/memory.c:1544)
-[  433.480900]  ? alloc_misplaced_dst_page (mm/migrate.c:1177)
-[  433.480900]  SYSC_move_pages (mm/migrate.c:1278 mm/migrate.c:1353 mm/migrate.c:1508)
-[  433.480900]  ? SYSC_move_pages (include/linux/rcupdate.h:800 mm/migrate.c:1472)
-[  433.480900]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[  433.480900]  SyS_move_pages (mm/migrate.c:1456)
-[  433.480900]  tracesys (arch/x86/kernel/entry_64.S:749)
-
-
-Thanks,
-Sasha
+-- 
+Sabrina
