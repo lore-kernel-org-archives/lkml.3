@@ -1,82 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434AbaCXIWp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:22:45 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37294 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231AbaCXIWm (ORCPT
+	id S1752487AbaCXIXh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:23:37 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:37067 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752292AbaCXIXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:22:42 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <532FEB03.20600@jp.fujitsu.com>
-Date: Mon, 24 Mar 2014 17:21:23 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Mon, 24 Mar 2014 04:23:34 -0400
+Message-ID: <532FEB70.3030206@linux.vnet.ibm.com>
+Date: Mon, 24 Mar 2014 13:53:12 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
 MIME-Version: 1.0
-To: Preeti Murthy <preeti.lkml@gmail.com>
-CC: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>, preeti@linux.vnet.ibm.com
-Subject: Re: [PATCH 1/2] nohz: use seqlock to avoid race on idle time stats
-References: <532FA0E8.4050106@jp.fujitsu.com>	<532FA20E.7090709@jp.fujitsu.com> <CAM4v1pPPmiHXNQ19My1Jd8XUQQh+VnbvWwGXq0mVGk4G1vYNfw@mail.gmail.com>
-In-Reply-To: <CAM4v1pPPmiHXNQ19My1Jd8XUQQh+VnbvWwGXq0mVGk4G1vYNfw@mail.gmail.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V5 0/3] cpufreq: Introduce cpufreq_freq_transition_{begin|end}()
+References: <cover.1395644073.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1395644073.git.viresh.kumar@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032408-5816-0000-0000-00000D012EA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/24 16:45), Preeti Murthy wrote:
-> Hi Hidetoshi,
+On 03/24/2014 01:35 PM, Viresh Kumar wrote:
+> Whenever we change the frequency of a CPU, we call the PRECHANGE and POSTCHANGE
+> notifiers. They must be serialized, i.e. PRECHANGE and POSTCHANGE notifiers
+> should strictly alternate, thereby preventing two different sets of PRECHANGE or
+> POSTCHANGE notifiers from interleaving arbitrarily.
 > 
-> The patch looks good to me except the comments around the monotonicity
-> of the return value of the idle stats observer. I am unable to relate them
-> to the dependency on nr_iowait_cpu.
+> The following examples illustrate why this is important:
+[...] 
+> This patchset introduces a new set of routines cpufreq_freq_transition_begin()
+> and cpufreq_freq_transition_end(), which will guarantee that calls to frequency
+> transition routines are serialized. Later patches force other drivers to use
+> these new routines.
 > 
-> I see that when the reader queries for the idle stats and calls
-> get_cpu_idle_time_us(), the nr_iowait_cpu might be 0. When he later
-> queries get_cpu_iowait_time_us(), it may be >0 . Hence we will be
-> accounting for the idle time in both idle time and iowait time. This
-> is definitely a problem. But I do not understand what this has got to
-> do with the monotonicity of the time
-> returned. This is just for my understanding.
 
-Thank you for your comment!
+All the patches in this version look good to me.
 
-Ah yes, I think I could write better comments around here to clarify
-the monotonicity problem. (It will be happy if someone can give me
-such better sentence for here :-D)
+Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
 
-One important point is that readers do not update idle stats when they
-use these function. i.e.
+Regards,
+Srivatsa S. Bhat
 
-given:
-   idle stats:  idle=1000, iowait=100
-   stamp at idle entry: entry=50
-   nr tasks waiting io: nr_iowait=1
-
-1st reader:
-   query @ now=60
-     idle=1000
-     iowait=110 (=100+(60-50))
-
-(here nr_iowait changed to 0)
-
-2nd reader:
-   query @ now=70
-     idle=1020 (=1000+(70-50))
-     iowait=100
-
-So you will see iowait is decreased from 110 to 100.
-
-I hope this short story helps you.
-
-Thanks,
-H.Seto
+> 
+> V4: https://lkml.org/lkml/2014/3/21/23
+> 
+> V4->V5:
+> - Replaced false with 0 as the variable was of int type instead of bool.
+> - There were some discussions about requirement of a barrier, but it looks like
+>   overkill for now. So, leaving that unless we have a real problem.
+> 
+> Srivatsa S. Bhat (1):
+>   cpufreq: Make sure frequency transitions are serialized
+> 
+> Viresh Kumar (2):
+>   cpufreq: Convert existing drivers to use
+>     cpufreq_freq_transition_{begin|end}
+>   cpufreq: Make cpufreq_notify_transition &
+>     cpufreq_notify_post_transition static
+> 
+>  drivers/cpufreq/cpufreq-nforce2.c    |  4 +--
+>  drivers/cpufreq/cpufreq.c            | 52 +++++++++++++++++++++++++++++-------
+>  drivers/cpufreq/exynos5440-cpufreq.c |  4 +--
+>  drivers/cpufreq/gx-suspmod.c         |  4 +--
+>  drivers/cpufreq/integrator-cpufreq.c |  4 +--
+>  drivers/cpufreq/longhaul.c           |  4 +--
+>  drivers/cpufreq/pcc-cpufreq.c        |  4 +--
+>  drivers/cpufreq/powernow-k6.c        |  4 +--
+>  drivers/cpufreq/powernow-k7.c        |  4 +--
+>  drivers/cpufreq/powernow-k8.c        |  4 +--
+>  drivers/cpufreq/s3c24xx-cpufreq.c    |  4 +--
+>  drivers/cpufreq/sh-cpufreq.c         |  4 +--
+>  drivers/cpufreq/unicore2-cpufreq.c   |  4 +--
+>  include/linux/cpufreq.h              | 12 ++++++---
+>  14 files changed, 76 insertions(+), 36 deletions(-)
+> 
 
