@@ -1,106 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314AbaCXVAB (ORCPT <rfc822;w@1wt.eu>);
+	id S1754393AbaCXVAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 17:00:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23840 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753601AbaCXVAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 Mar 2014 17:00:01 -0400
-Received: from mail.coding4coffee.org ([5.9.171.142]:33127 "EHLO
-	mail.coding4coffee.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753601AbaCXU77 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:59:59 -0400
-X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 16:59:59 EDT
-From: Fabian Mewes <architekt@coding4coffee.org>
-To: gregkh@linuxfoundation.org
-Cc: ashvinivaratharaj@gmail.com, cbajumpa@gmail.com, rashika.kheria@gmail.com,
-        berardi.dav@gmail.com, monamagarwal123@gmail.com, lisa@xenapiadmin.com,
-        ebru.akagunduz@gmail.com, stefanha@gmail.com, dan.carpenter@oracle.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Fabian Mewes <architekt@coding4coffee.org>
-Subject: [PATCH] staging: line6: Fix missing blanks after declarations
-Date: Mon, 24 Mar 2014 21:51:05 +0100
-Message-Id: <1395694265-2133-1-git-send-email-architekt@coding4coffee.org>
-X-Mailer: git-send-email 1.9.1
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, eparis@redhat.com, sgrubb@redhat.com,
+        hadi@mojatatu.com, davem@davemloft.net
+Subject: [PATCH][v5] netlink: have netlink per-protocol bind function return an error code.
+Date: Mon, 24 Mar 2014 16:59:23 -0400
+Message-Id: <5bf7c2b8ad25b31bb34ae00f5fe6ec7f5d653f4b.1395693533.git.rgb@redhat.com>
+In-Reply-To: <20140324183406.GE28666@madcap2.tricolour.ca>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is part of eudyptula challenge task 10
+Have the netlink per-protocol optional bind function return an int error code
+rather than void to signal a failure.
 
-Signed-off-by: Fabian Mewes <architekt@coding4coffee.org>
+This will enable netlink protocols to perform extra checks including
+capabilities and permissions verifications when updating memberships in
+multicast groups.
+
+In netlink_bind() and netlink_setsockopt() the call to the per-protocol bind
+function was moved above the multicast group update to prevent any access to
+the multicast socket groups before checking with the per-protocol bind
+function.  This will enable the per-protocol bind function to be used to check
+permissions which could be denied before making them available, and to avoid
+the messy job of undoing the addition should the per-protocol bind function
+fail.
+
+The netfilter subsystem seems to be the only one currently using the
+per-protocol bind function.
+
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
-applies to next-20140324
- drivers/staging/line6/driver.c   | 1 +
- drivers/staging/line6/playback.c | 5 +++++
- drivers/staging/line6/toneport.c | 1 +
- 3 files changed, 7 insertions(+)
+In particular, the audit subsystem (NETLINK_AUDIT protocol) could benefit by
+being able to check specific capabilities for each multicast group before
+granting membership to the requesting socket.  Currently, all NETLINK_AUDIT
+sockets must have the capability CAP_NET_ADMIN.  No other capabilities are
+required to join a multicast group.  This capability is too broad allowing
+access to this socket by many applications that must not have access to this
+information.  It is proposed to add capability CAP_AUDIT_READ to allow this
+access while dropping the exessively broad capability CAP_NET_ADMIN.
 
-diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
-index 77f1b42..ef511c7 100644
---- a/drivers/staging/line6/driver.c
-+++ b/drivers/staging/line6/driver.c
-@@ -124,6 +124,7 @@ static int line6_send_raw_message_async_part(struct message *msg,
- static int line6_start_listen(struct usb_line6 *line6)
+There has also been some interest expressed by IETF ForCES folk.
+
+v5: *really* fixed a logic error (missing braces) and a C99 error.
+
+v3: added netlink_unbind() option and unwound netlink_insert().
+---
+ include/linux/netlink.h   |    3 ++-
+ net/netfilter/nfnetlink.c |    3 ++-
+ net/netlink/af_netlink.c  |   39 ++++++++++++++++++++++++++-------------
+ net/netlink/af_netlink.h  |    6 ++++--
+ 4 files changed, 34 insertions(+), 17 deletions(-)
+
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 7a6c396..0ba2edd 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -45,7 +45,8 @@ struct netlink_kernel_cfg {
+ 	unsigned int	flags;
+ 	void		(*input)(struct sk_buff *skb);
+ 	struct mutex	*cb_mutex;
+-	void		(*bind)(int group);
++	int		(*bind)(int group);
++	void		(*unbind)(int group);
+ 	bool		(*compare)(struct net *net, struct sock *sk);
+ };
+ 
+diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+index 1da5ef1..14c8ac8 100644
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -392,7 +392,7 @@ static void nfnetlink_rcv(struct sk_buff *skb)
+ }
+ 
+ #ifdef CONFIG_MODULES
+-static void nfnetlink_bind(int group)
++static int nfnetlink_bind(int group)
  {
- 	int err;
-+
- 	usb_fill_int_urb(line6->urb_listen, line6->usbdev,
- 			 usb_rcvintpipe(line6->usbdev, line6->ep_control_read),
- 			 line6->buffer_listen, LINE6_BUFSIZE_LISTEN,
-diff --git a/drivers/staging/line6/playback.c b/drivers/staging/line6/playback.c
-index 41869ca..0f72db5 100644
---- a/drivers/staging/line6/playback.c
-+++ b/drivers/staging/line6/playback.c
-@@ -34,6 +34,7 @@ static void change_volume(struct urb *urb_out, int volume[],
+ 	const struct nfnetlink_subsystem *ss;
+ 	int type = nfnl_group2type[group];
+@@ -402,6 +402,7 @@ static void nfnetlink_bind(int group)
+ 	rcu_read_unlock();
+ 	if (!ss)
+ 		request_module("nfnetlink-subsys-%d", type);
++	return 0;
+ }
+ #endif
  
- 	if (bytes_per_frame == 4) {
- 		short *p, *buf_end;
-+
- 		p = (short *)urb_out->transfer_buffer;
- 		buf_end = p + urb_out->transfer_buffer_length / sizeof(*p);
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index bca50b9..301dfe9 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -1198,7 +1198,8 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 	struct module *module = NULL;
+ 	struct mutex *cb_mutex;
+ 	struct netlink_sock *nlk;
+-	void (*bind)(int group);
++	int (*bind)(int group);
++	void (*unbind)(int group);
+ 	int err = 0;
  
-@@ -48,6 +49,7 @@ static void change_volume(struct urb *urb_out, int volume[],
+ 	sock->state = SS_UNCONNECTED;
+@@ -1224,6 +1225,7 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 		err = -EPROTONOSUPPORT;
+ 	cb_mutex = nl_table[protocol].cb_mutex;
+ 	bind = nl_table[protocol].bind;
++	unbind = nl_table[protocol].unbind;
+ 	netlink_unlock_table();
  
- 		for (; p < buf_end; p += 3) {
- 			int val;
-+
- 			val = p[0] + (p[1] << 8) + ((signed char)p[2] << 16);
- 			val = (val * volume[chn & 1]) >> 8;
- 			p[0] = val;
-@@ -116,6 +118,7 @@ static void add_monitor_signal(struct urb *urb_out, unsigned char *signal,
+ 	if (err < 0)
+@@ -1240,6 +1242,7 @@ static int netlink_create(struct net *net, struct socket *sock, int protocol,
+ 	nlk = nlk_sk(sock->sk);
+ 	nlk->module = module;
+ 	nlk->netlink_bind = bind;
++	nlk->netlink_unbind = unbind;
+ out:
+ 	return err;
  
- 	if (bytes_per_frame == 4) {
- 		short *pi, *po, *buf_end;
-+
- 		pi = (short *)signal;
- 		po = (short *)urb_out->transfer_buffer;
- 		buf_end = po + urb_out->transfer_buffer_length / sizeof(*po);
-@@ -171,6 +174,7 @@ static int submit_audio_out_urb(struct snd_line6_pcm *line6pcm)
+@@ -1293,6 +1296,7 @@ static int netlink_release(struct socket *sock)
+ 			kfree_rcu(old, rcu);
+ 			nl_table[sk->sk_protocol].module = NULL;
+ 			nl_table[sk->sk_protocol].bind = NULL;
++			nl_table[sk->sk_protocol].unbind = NULL;
+ 			nl_table[sk->sk_protocol].flags = 0;
+ 			nl_table[sk->sk_protocol].registered = 0;
+ 		}
+@@ -1441,6 +1445,22 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+ 	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
+ 		return 0;
  
- 		if (fsize == 0) {
- 			int n;
++	if (nlk->netlink_bind && nladdr->nl_groups) {
++		int i;
 +
- 			line6pcm->count_out += frame_increment;
- 			n = line6pcm->count_out / frame_factor;
- 			line6pcm->count_out -= n * frame_factor;
-@@ -207,6 +211,7 @@ static int submit_audio_out_urb(struct snd_line6_pcm *line6pcm)
- 			   copy the data to the temp buffer.
- 			 */
- 			int len;
++		for (i = 0; i < nlk->ngroups; i++)
++			if (test_bit(i, (long unsigned int *)&nladdr->nl_groups)) {
++				err = nlk->netlink_bind(i);
++				if (err)
++					if (!nlk->portid)
++						netlink_remove(sk);
++					for (int undo = 0; undo < i; undo++)
++						if (nlk->netlink_unbind)
++							nlk->netlink_unbind(undo);
++					return err;
++			}
++	}
 +
- 			len = runtime->buffer_size - line6pcm->pos_out;
+ 	netlink_table_grab();
+ 	netlink_update_subscriptions(sk, nlk->subscriptions +
+ 					 hweight32(nladdr->nl_groups) -
+@@ -1449,15 +1469,6 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+ 	netlink_update_listeners(sk);
+ 	netlink_table_ungrab();
  
- 			if (len > 0) {
-diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
-index af2e7e5..dcab647 100644
---- a/drivers/staging/line6/toneport.c
-+++ b/drivers/staging/line6/toneport.c
-@@ -213,6 +213,7 @@ static int snd_toneport_source_info(struct snd_kcontrol *kcontrol,
- 				    struct snd_ctl_elem_info *uinfo)
- {
- 	const int size = ARRAY_SIZE(toneport_source_info);
-+
- 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
- 	uinfo->count = 1;
- 	uinfo->value.enumerated.items = size;
+-	if (nlk->netlink_bind && nlk->groups[0]) {
+-		int i;
+-
+-		for (i=0; i<nlk->ngroups; i++) {
+-			if (test_bit(i, nlk->groups))
+-				nlk->netlink_bind(i);
+-		}
+-	}
+-
+ 	return 0;
+ }
+ 
+@@ -2095,14 +2106,16 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
+ 			return err;
+ 		if (!val || val - 1 >= nlk->ngroups)
+ 			return -EINVAL;
++		if (nlk->netlink_bind) {
++			err = nlk->netlink_bind(val);
++			if (err)
++				return err;
++		}
+ 		netlink_table_grab();
+ 		netlink_update_socket_mc(nlk, val,
+ 					 optname == NETLINK_ADD_MEMBERSHIP);
+ 		netlink_table_ungrab();
+ 
+-		if (nlk->netlink_bind)
+-			nlk->netlink_bind(val);
+-
+ 		err = 0;
+ 		break;
+ 	}
+diff --git a/net/netlink/af_netlink.h b/net/netlink/af_netlink.h
+index acbd774..2aeae8a 100644
+--- a/net/netlink/af_netlink.h
++++ b/net/netlink/af_netlink.h
+@@ -37,7 +37,8 @@ struct netlink_sock {
+ 	struct mutex		*cb_mutex;
+ 	struct mutex		cb_def_mutex;
+ 	void			(*netlink_rcv)(struct sk_buff *skb);
+-	void			(*netlink_bind)(int group);
++	int			(*netlink_bind)(int group);
++	void			(*netlink_unbind)(int group);
+ 	struct module		*module;
+ #ifdef CONFIG_NETLINK_MMAP
+ 	struct mutex		pg_vec_lock;
+@@ -73,7 +74,8 @@ struct netlink_table {
+ 	unsigned int		groups;
+ 	struct mutex		*cb_mutex;
+ 	struct module		*module;
+-	void			(*bind)(int group);
++	int			(*bind)(int group);
++	void			(*unbind)(int group);
+ 	bool			(*compare)(struct net *net, struct sock *sock);
+ 	int			registered;
+ };
 -- 
-1.9.1
+1.7.1
 
