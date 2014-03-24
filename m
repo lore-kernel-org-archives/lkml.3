@@ -1,41 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaCXJXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:23:35 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39843 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752512AbaCXJXd (ORCPT
+	id S1752659AbaCXJYm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:24:42 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:42534 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512AbaCXJYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:23:33 -0400
-Message-ID: <532FF7BB.5020003@st.com>
-Date: Mon, 24 Mar 2014 09:15:39 +0000
-From: srinivas kandagatla <srinivas.kandagatla@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Mon, 24 Mar 2014 05:24:41 -0400
+Date: Mon, 24 Mar 2014 10:24:37 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] x86/apic changes for v3.14
+Message-ID: <20140324092437.GA9344@gmail.com>
+References: <20140120134220.GA12050@gmail.com>
+ <alpine.LFD.2.10.1403222327130.21669@eddie.linux-mips.org>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, Dinh Nguyen <dinh.linux@gmail.com>
-Cc: Dinh Nguyen <dinguyen@altera.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        <arm@kernel.org>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
-Subject: Re: stmmac-socfpga breakage in arm-soc
-References: <201403191333.01095.arnd@arndb.de> <4337501.shzGE38xmF@wuerfel> <5329A7A1.20606@gmail.com> <4171731.dt8xNWCpb2@wuerfel>
-In-Reply-To: <4171731.dt8xNWCpb2@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.65.51.147]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-23_03:2014-03-21,2014-03-23,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.10.1403222327130.21669@eddie.linux-mips.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/14 15:07, Arnd Bergmann wrote:
-> Ok, so the two of you basically moved in opposite directions where
-> Srinivas started out with the method you ended up with and vice versa.
-Yes thats correct, While adding dwmac-sunxi.c we decided to go with
-callback methods given its flexibility for calling at runtime(example:
-when link speed changes).
 
+* Maciej W. Rozycki <macro@linux-mips.org> wrote:
 
---srini
+> IMPLICATION: There is a possibility of clearing the Error register 
+> status since the write to the register is not specifically blocked.
+> 
+> WORKAROUND: Writes should not occur to the Pentium processor APIC 
+> Error register.
+> 
+> STATUS: For the steppings affected see the Summary Table of Changes 
+> at the beginning of this section."
+> 
+> The steppings affected are actually: B1, B3 and B5.  Do we want to 
+> keep supporting them?  I think yes, we already handle the erratum 
+> elsewhere (lapic_setup_esr).  So how about:
+> 
+> 	if (lapic_get_maxlvt() > 3)	/* Due to the Pentium erratum 3AP. */
+> 		apic_write(APIC_ESR, 0);
+> 	v = apic_read(APIC_ESR);
+> 
+> instead?  I can make a patch if that would make your life easier.
+
+Sure, a patch would be helpful.
+
+>  There's room for optimisation here, but I think it's not worth the 
+> effort as this is a slow path, APIC error interrupts are not 
+> supposed to happen and are I believe extremely uncommon with FSB 
+> message delivery.
+
+Agreed.
+
+Thanks,
+
+	Ingo
