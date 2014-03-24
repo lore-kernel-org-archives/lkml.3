@@ -1,108 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090AbaCXT7F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:59:05 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:59396 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbaCXT7D (ORCPT
+	id S1754106AbaCXUAy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:00:54 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:62158 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827AbaCXUAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:59:03 -0400
-X-AuditID: cbfec373-b7f4a6d000005e0a-8c-53308e8625f7
-Date: Mon, 24 Mar 2014 16:58:56 -0300
-From: Mauro Carvalho Chehab <m.chehab@samsung.com>
-To: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: linux-media <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kbuild-all@01.org
-Subject: Re: cx23885-dvb.c:undefined reference to `tda18271_attach'
-Message-id: <20140324165856.738bd750@samsung.com>
-In-reply-to: <CA+MoWDrGGE4X9aX0=_iaacXUar17fb1B+CR5VcsPAwLFFiPCCA@mail.gmail.com>
-References: <532c2aaa.lXHUJ9RIRCRIxqPO%fengguang.wu@intel.com>
- <20140321130917.GA8667@localhost>
- <CA+MoWDrGGE4X9aX0=_iaacXUar17fb1B+CR5VcsPAwLFFiPCCA@mail.gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKLMWRmVeSWpSXmKPExsVy+t/hQN22PoNgg6dbWSyOXZ/IbHF51xw2
-	i54NW1ktvr3tZHRg8bi/l91j56y77B6fN8kFMEdx2aSk5mSWpRbp2yVwZXy+XF2wh7+icctZ
-	5gbG6TxdjJwcEgImEm9OLWCEsMUkLtxbz9bFyMUhJLCEUeLuxK2sEE4Pk8S0bVfBqlgEVCXO
-	dq1hArHZBIwkXjW2sILYIgIGEn/3XGUGaWAWaGaUaH+6hRkkISzgLHHr3UWwIl4BQ4lv2+eB
-	xTkFgiXmtU1jgdiwklGiY9YcJog7nCRevZ7MBNEgKPFj8j0WEJtZQEti87YmVghbXmLzmrfM
-	ExgFZiEpm4WkbBaSsgWMzKsYRUuLkwuKk9JzjfSKE3OLS/PS9ZLzczcxQoK2eAfjiw1WhxgF
-	OBiVeHg3mBoEC7EmlhVX5h5ilOBgVhLhvVQBFOJNSaysSi3Kjy8qzUktPsTIxMEp1cDYFLLp
-	VMrNP02Vhj7WCdWHzk5t9rjCsvvB1VrZ6bc1ns35o3kpgudifUPZhTNaR5zUCow3lLv1vfaK
-	vlS6O+T98WPXrsf2HZ7ZdfRM4REvKXOHq2fKNE8/edC09aZyQHPd2g28IfuWq6YkzW+JZal0
-	y3H786/S23vln2WW347J2vLnLc/6I6SkxFKckWioxVxUnAgApgQIxzgCAAA=
+	Mon, 24 Mar 2014 16:00:53 -0400
+Date: Mon, 24 Mar 2014 16:00:50 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Liu Hua <sdu.liu@huawei.com>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wangnan0@huawei.com, peifeiyue@huawei.com
+Subject: Re: [PATCH RFC] ARM: extend fixmap mapping region to support 30
+ CPUs
+In-Reply-To: <1395652367-12308-1-git-send-email-sdu.liu@huawei.com>
+Message-ID: <alpine.LFD.2.11.1403241250560.1291@knanqh.ubzr>
+References: <1395652367-12308-1-git-send-email-sdu.liu@huawei.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Mon, 24 Mar 2014, Liu Hua wrote:
 
-Em Mon, 24 Mar 2014 16:34:17 +0100
-Peter Senna Tschudin <peter.senna@gmail.com> escreveu:
-
-> Hi,
+> In 32-bit ARM systems, the fixmap mapping region can support
+> no more than 14 CPUs(total: 896k; one CPU: 64K). And we can
+> configure NR_CPUS up to 32. So there is a mismatch.
 > 
-> I'm being blamed for some bugs for more than one year, and this
-> weekend I was able to reproduce the error for the first time. I have
-> the impression that the issue is related to Kconfig because when
-> compiling the Kernel for x86(not x86_64), and
-> when:
-> CONFIG_VIDEO_CX23885=y
-> 
-> and
-> 
-> CONFIG_MEDIA_TUNER_TDA18271=m
-> 
-> the build fails as the tuner code was compiled as a module when it
-> should have been compiled as part of the Kernel. 
+> This patch extends the fixmapping region downwards to boundary
+> of DMA mapping region(0xffe00000-0xfffe0000). Then the fixmap
+> mapping region can support up to 30 CPUs.
 
-No. It is valid to have those I2C drivers compiled as module while
-the main driver is compiled builtin.
+You failed to update CONSISTENT_END in your patch.
 
-The trick is to use dvb_attach() macro. This macro is very bad
-named. It should be named as something like:
-	request_module_and_execute_symbol()
-In order to express what it really does.
+Hmmm?  Waitaminute...
 
-> On the Kconfig file
-> drivers/media/pci/cx23885/Kconfig:
-> config VIDEO_CX23885
->         tristate "Conexant cx23885 (2388x successor) support"
->         ...
->         select MEDIA_TUNER_TDA18271 if MEDIA_SUBDRV_AUTOSELECT
-> 
-> which I think is the problem. Can I just remove this 'if
-> MEDIA_SUBDRV_AUTOSELECT'? Or what is the correct way of telling
-> Kconfig to set CONFIG_MEDIA_TUNER_TDA18271 based on the value of
-> CONFIG_VIDEO_CX23885?
+Well well...
 
-You shouldn't be doing any of this. In this specific setup,
-we have:
+It looks like the static mapping area for DMA was removed from the code 
+by commit e9da6e9905e6 but the information in 
+Documentation/arm/memory.txt was not updated accordingly.
 
-# CONFIG_MEDIA_SUBDRV_AUTOSELECT is not set
-CONFIG_MEDIA_TUNER_TDA18271=m
-CONFIG_VIDEO_CX23885=y
+CONSISTENT_END in arch/arm/include/asm/memory.h has no more users and 
+shoule probably be removed.
 
-With should be a valid configuration. 
+This means 0xffc00000 to 0xffefffff is no longer used by anything.
 
-I'll try to reproduce and fix this one locally and send a fix for it
-latter.
+> There seems to be no easy way to support 32 CPUs by simply 
+> changing memory layout on ARM Linux. So I also limit the 
+> maximal CPU number one can configure.
 
-> There are at least 6 similar cases which I'm willing to send patches.
-> 
-> Thank you,
-> 
-> Peter
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I think the above should help you solve your CPU limit easily.
 
 
--- 
-
-Regards,
-Mauro
+Nicolas
