@@ -1,29 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaCXTqE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:46:04 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41186 "EHLO
+	id S1754555AbaCXTqA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:46:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:51893 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753833AbaCXThE (ORCPT
+	by vger.kernel.org with ESMTP id S1754272AbaCXTpU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:37:04 -0400
-Date: Mon, 24 Mar 2014 15:37:01 -0400
+	Mon, 24 Mar 2014 15:45:20 -0400
+Date: Mon, 24 Mar 2014 15:45:18 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andi Kleen <ak@linux.intel.com>, Andi Kleen <andi@firstfloor.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        Oleg Nesterov <oleg@redhat.com>, fche@redhat.com, mingo@redhat.com,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip v8 11/26] kprobes: Allow probe on some kprobe
- functions
-Message-ID: <20140324153701.18857126@gandalf.local.home>
-In-Reply-To: <20140305120000.22766.77897.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        Seiji Aguchi <seiji.aguchi@hds.com>, systemtap@sourceware.org,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Subject: Re: [PATCH -tip v8 14/26] x86: Use NOKPROBE_SYMBOL() instead of
+ __kprobes annotation
+Message-ID: <20140324154518.77096045@gandalf.local.home>
+In-Reply-To: <20140305120021.22766.59.stgit@ltc230.yrl.intra.hitachi.co.jp>
 References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
-	<20140305120000.22766.77897.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305120021.22766.59.stgit@ltc230.yrl.intra.hitachi.co.jp>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -34,92 +36,120 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 05 Mar 2014 21:00:00 +0900
+On Wed, 05 Mar 2014 21:00:21 +0900
 Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+  
+>  /*
+>   * This is gone through when something in the kernel has done something bad
+> diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+> index ae5aafb..d00103a 100644
+> --- a/arch/x86/kernel/kprobes/core.c
+> +++ b/arch/x86/kernel/kprobes/core.c
+> @@ -112,7 +112,8 @@ struct kretprobe_blackpoint kretprobe_blacklist[] = {
+>  
+>  const int kretprobe_blacklist_size = ARRAY_SIZE(kretprobe_blacklist);
+>  
+> -static void __kprobes __synthesize_relative_insn(void *from, void *to, u8 op)
+> +static nokprobe_inline
+> +void __synthesize_relative_insn(void *from, void *to, u8 op)
 
-> There is no need to prohibit probing on the functions
-> used for preparation, registeration, optimization,
-> controll etc. Those are safely probed because those are
-> not invoked from breakpoint/fault/debug handlers,
-> there is no chance to cause recursive exceptions.
-> 
-> Following functions are now removed from the kprobes blacklist.
-> add_new_kprobe
-> aggr_kprobe_disabled
-> alloc_aggr_kprobe
-> alloc_aggr_kprobe
-> arm_all_kprobes
-> __arm_kprobe
-> arm_kprobe
-> arm_kprobe_ftrace
-> check_kprobe_address_safe
-> collect_garbage_slots
-> collect_garbage_slots
-> collect_one_slot
-> debugfs_kprobe_init
-> __disable_kprobe
-> disable_kprobe
-> disarm_all_kprobes
-> __disarm_kprobe
-> disarm_kprobe
-> disarm_kprobe_ftrace
-> do_free_cleaned_kprobes
-> do_optimize_kprobes
-> do_unoptimize_kprobes
-> enable_kprobe
-> force_unoptimize_kprobe
-> free_aggr_kprobe
-> free_aggr_kprobe
-> __free_insn_slot
-> __get_insn_slot
-> get_optimized_kprobe
-> __get_valid_kprobe
-> init_aggr_kprobe
-> init_aggr_kprobe
-> in_nokprobe_functions
-> kick_kprobe_optimizer
-> kill_kprobe
-> kill_optimized_kprobe
-> kprobe_addr
-> kprobe_optimizer
-> kprobe_queued
-> kprobe_seq_next
-> kprobe_seq_start
-> kprobe_seq_stop
-> kprobes_module_callback
-> kprobes_open
-> optimize_all_kprobes
-> optimize_kprobe
-> prepare_kprobe
-> prepare_optimized_kprobe
-> register_aggr_kprobe
-> register_jprobe
-> register_jprobes
-> register_kprobe
-> register_kprobes
-> register_kretprobe
-> register_kretprobe
-> register_kretprobes
-> register_kretprobes
-> report_probe
-> show_kprobe_addr
-> try_to_optimize_kprobe
-> unoptimize_all_kprobes
-> unoptimize_kprobe
-> unregister_jprobe
-> unregister_jprobes
-> unregister_kprobe
-> __unregister_kprobe_bottom
-> unregister_kprobes
-> __unregister_kprobe_top
-> unregister_kretprobe
-> unregister_kretprobe
-> unregister_kretprobes
-> unregister_kretprobes
-> wait_for_kprobe_optimizer
-> 
+I believe the proper way to break this up is:
 
-Did you test these like you did with the previous patch? What about the
-middle of these functions?
+static nokprobe_inline void
+__synthesize_relative_insn(...)
+
+
+  
+> -static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
+> +static nokprobe_inline
+> +void save_previous_kprobe(struct kprobe_ctlblk *kcb)
+
+Here too.
+
+>  {
+>  	kcb->prev_kprobe.kp = kprobe_running();
+>  	kcb->prev_kprobe.status = kcb->kprobe_status;
+> @@ -433,7 +438,8 @@ static void __kprobes save_previous_kprobe(struct kprobe_ctlblk *kcb)
+>  	kcb->prev_kprobe.saved_flags = kcb->kprobe_saved_flags;
+>  }
+>  
+> -static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+> +static nokprobe_inline
+> +void restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+
+and again.
+
+>  {
+>  	__this_cpu_write(current_kprobe, kcb->prev_kprobe.kp);
+>  	kcb->kprobe_status = kcb->prev_kprobe.status;
+> @@ -441,8 +447,9 @@ static void __kprobes restore_previous_kprobe(struct kprobe_ctlblk *kcb)
+>  	kcb->kprobe_saved_flags = kcb->prev_kprobe.saved_flags;
+>  }
+>  
+> -static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+> -				struct kprobe_ctlblk *kcb)
+> +static nokprobe_inline
+> +void set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+
+and again.
+
+> +			struct kprobe_ctlblk *kcb)
+>  {
+>  	__this_cpu_write(current_kprobe, p);
+>  	kcb->kprobe_saved_flags = kcb->kprobe_old_flags
+> @@ -451,7 +458,7 @@ static void __kprobes set_current_kprobe(struct kprobe *p, struct pt_regs *regs,
+>  		kcb->kprobe_saved_flags &= ~X86_EFLAGS_IF;
+>  }
+
+
+
+> diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
+> index dcaa131..717b02a 100644
+> --- a/arch/x86/kernel/kprobes/ftrace.c
+> +++ b/arch/x86/kernel/kprobes/ftrace.c
+> @@ -25,8 +25,9 @@
+>  
+>  #include "common.h"
+>  
+> -static int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+> -			     struct kprobe_ctlblk *kcb)
+> +static nokprobe_inline
+> +int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+
+Here too.
+
+> +		      struct kprobe_ctlblk *kcb)
+>  {
+>  	/*
+>  	 * Emulate singlestep (and also recover regs->ip)
+> @@ -41,18 +42,19 @@ static int __skip_singlestep(struct kprobe *p, struct pt_regs *regs,
+>  	return 1;
+>  }
+>  
+
+
+
+> diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
+> index ba9abe9..3c8ae7d 100644
+> --- a/arch/x86/kernel/traps.c
+> +++ b/arch/x86/kernel/traps.c
+> @@ -106,7 +106,7 @@ static inline void preempt_conditional_cli(struct pt_regs *regs)
+>  	preempt_count_dec();
+>  }
+>  
+> -static int __kprobes
+> +static nokprobe_inline int
+>  do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
+
+Here you do it correctly :-)
+
+>  		  struct pt_regs *regs,	long error_code)
+>  {
+> @@ -136,7 +136,7 @@ do_trap_no_signal(struct task_struct *tsk, int trapnr, char *str,
+>  	return -1;
+>  }
+>  
+
 
 -- Steve
+
