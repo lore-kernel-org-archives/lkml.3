@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754176AbaCXUPv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:15:51 -0400
-Received: from smtprelay0212.hostedemail.com ([216.40.44.212]:48842 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753671AbaCXUPt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:15:49 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::,RULES_HIT:41:69:355:379:541:968:973:988:989:1260:1345:1437:1534:1541:1711:1730:1747:1777:1792:2194:2199:2393:2559:2562:3138:3139:3140:3141:3142:3352:3866:3867:4225:4605:5007:6261:6642:10004:10026:10848:11026:11657:11658:11914:12043:12517:12519:12679:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: hook63_1589302484260
-X-Filterd-Recvd-Size: 2613
-From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org
-Cc: nios2-dev@lists.rocketboards.org, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, linux-wireless@vger.kernel.org
-Subject: [PATCH net-next 0/7] drivers/net: Remove pointer casts to same type
-Date: Mon, 24 Mar 2014 13:15:33 -0700
-Message-Id: <cover.1395692043.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	id S1754493AbaCXUSr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:18:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38358 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754074AbaCXUSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 16:18:45 -0400
+Date: Mon, 24 Mar 2014 16:17:57 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: acme@ghostprotocols.net, peterz@infradead.org,
+        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
+        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
+        andi.kleen@intel.com
+Subject: Re: [PATCH 4/6] perf, sort:  Add physid sorting based on mmap2 data
+Message-ID: <20140324201757.GC25953@redhat.com>
+References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
+ <1395689676-214799-5-git-send-email-dzickus@redhat.com>
+ <8761n3pe2w.fsf@tassilo.jf.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8761n3pe2w.fsf@tassilo.jf.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All of these are pointless...
+On Mon, Mar 24, 2014 at 12:54:31PM -0700, Andi Kleen wrote:
+> Don Zickus <dzickus@redhat.com> writes:
+> 
+> > In order for the c2c tool to work correctly, it needs to properly
+> > sort all the records on uniquely identifiable data addresses.  These
+> > unique addresses are converted from virtual addresses provided by the
+> > hardware into a kernel address using an mmap2 record as the decoder.
+> 
+> No documentation for the new option?
+> 
+> Probably the new mode should be also supported by --sort
 
-Joe Perches (7):
-  altera: Remove casts of pointer to same type
-  alx: Remove casts of pointer to same type
-  intel: Remove casts of pointer to same type
-  qlcnic: Remove casts of pointer to same type
-  carl9170: Remove casts of pointer to same type
-  mwifiex: Remove casts of pointer to same type
-  rtlwifi: Remove casts of pointer to same type
+I hid the new option further in the changelog, so it isn't obvious.  Sorry
+about that.
 
- drivers/net/ethernet/altera/altera_tse_main.c      |  4 +-
- drivers/net/ethernet/atheros/alx/main.c            |  2 +-
- drivers/net/ethernet/intel/i40e/i40e_ethtool.c     |  4 +-
- .../net/ethernet/qlogic/qlcnic/qlcnic_83xx_init.c  |  2 +-
- drivers/net/wireless/ath/carl9170/rx.c             |  2 +-
- drivers/net/wireless/mwifiex/pcie.c                |  6 +--
- drivers/net/wireless/mwifiex/scan.c                |  2 +-
- drivers/net/wireless/mwifiex/tdls.c                |  6 +--
- drivers/net/wireless/rtlwifi/core.c                |  2 +-
- drivers/net/wireless/rtlwifi/ps.c                  | 19 ++++---
- drivers/net/wireless/rtlwifi/rtl8188ee/dm.c        |  5 +-
- drivers/net/wireless/rtlwifi/rtl8188ee/fw.c        |  4 +-
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c        | 57 ++++++++++----------
- drivers/net/wireless/rtlwifi/rtl8188ee/trx.c       |  4 +-
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c        | 14 ++---
- drivers/net/wireless/rtlwifi/rtl8192se/hw.c        | 14 +++--
- drivers/net/wireless/rtlwifi/rtl8723ae/dm.c        |  5 +-
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c        | 60 ++++++++++------------
- drivers/net/wireless/rtlwifi/rtl8723ae/trx.c       |  4 +-
- drivers/net/wireless/rtlwifi/rtl8723be/dm.c        |  2 +-
- drivers/net/wireless/rtlwifi/rtl8723be/hw.c        | 57 ++++++++++----------
- drivers/net/wireless/rtlwifi/rtl8723be/trx.c       |  4 +-
- .../net/wireless/rtlwifi/rtl8723com/fw_common.c    |  4 +-
- 23 files changed, 132 insertions(+), 151 deletions(-)
+Sample output: (perf report --stdio --physid-mode)
 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+So the option was '--physid-mode' and if you don't pass in a '--sort' then
+it takes the default sort of
 
+'daddr,iaddr,pid,tid,major,minor,inode,inode_gen'
+
+Otherwise you could pass in a combination of the other fields.
+
+The output is not the best way to use the mmap2 data as it just gives you
+hottest data addresses.  Our c2c tool really takes the data addresses and
+combines them into a cacheline and then processes the cacheline for
+interesting bottlenecks (HITMs in our case).
+
+I don't know a good way to present the data and yet still have the sort
+useful for our c2c tool.  So I threw this interface together.  I am open
+to suggestions.
+
+Cheers,
+Don
