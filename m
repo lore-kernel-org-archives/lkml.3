@@ -1,100 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752414AbaCXI44 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:56:56 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:62256 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988AbaCXI4y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:56:54 -0400
-Date: Mon, 24 Mar 2014 09:56:44 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Andreas Mohr <andi@lisas.de>, Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
-Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
- mga_driver_irq_uninstall)
-Message-ID: <20140324085449.GA26878@phenom.ffwll.local>
-Mail-Followup-To: Dave Airlie <airlied@gmail.com>,
-	Andreas Mohr <andi@lisas.de>, Mikulas Patocka <mpatocka@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	DRI <dri-devel@lists.freedesktop.org>
-References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com>
- <20140322234317.GA10483@rhlx01.hs-esslingen.de>
- <20140323121541.GA20971@rhlx01.hs-esslingen.de>
- <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
- <20140323212715.GA22767@rhlx01.hs-esslingen.de>
- <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
+	id S1752643AbaCXI5r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:57:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41891 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751556AbaCXI5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 04:57:46 -0400
+Date: Mon, 24 Mar 2014 10:57:21 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        jasowang@redhat.com, xemul@parallels.com, wuzhy@linux.vnet.ibm.com,
+        therbert@google.com, yamato@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers/net: Use RCU_INIT_POINTER(x, NULL) in tun.c
+Message-ID: <20140324085721.GA23093@redhat.com>
+References: <1395599552-7486-1-git-send-email-monamagarwal123@gmail.com>
+ <20140323194113.GA13633@redhat.com>
+ <1395604457.9117.21.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140323213349.GA8832@redhat.com>
+ <20140323221256.GG4405@linux.vnet.ibm.com>
+ <20140324050939.GB8832@redhat.com>
+ <1395638727.9117.55.camel@edumazet-glaptop2.roam.corp.google.com>
+ <20140324062225.GA22338@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140324062225.GA22338@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 07:45:47AM +1000, Dave Airlie wrote:
-> On Mon, Mar 24, 2014 at 7:27 AM, Andreas Mohr <andi@lisas.de> wrote:
-> > On Sun, Mar 23, 2014 at 09:39:16AM -0700, Linus Torvalds wrote:
-> >> On Sun, Mar 23, 2014 at 5:15 AM, Andreas Mohr <andi@lisas.de> wrote:
-> >> >
-> >> > which did end up flawless on 3.12.0-rc2+, too
-> >> > (but failed to improve the issue on 3.14.0-rc7+).
-> >> >
-> >> > So, for all intents and purposes, drm infrastructure seems unavoidably
-> >> > (neither dri disable nor libdrm upgrade helps) affected.
-> >> > Does anyone know which change caused that issue?
-> >> > (I'm asking because bisect here would be relatively painful).
-> >>
-> >> So 3.12-rc2 works. Does 3.13 work? Is this a regression in the current
-> >> 3.14 rc only, or did it happen already in the previous release?
-> >
-> > Hmm, given that Mikulas in
-> > https://lkml.org/lkml/2014/2/26/537
-> > offered a diff of linux-3.13.5 files, it truly seems (shock! ack! noo!)
-> > that that indeed may have been a regression at <= 3.13 proper even
-> > (which may pose interesting questions about the level of testing coverage
-> > we still enjoy [not!?] in this hardware area).
-> >
-> > Oh well, seems I'll have to prepare/build 3.13 now...
+On Mon, Mar 24, 2014 at 08:22:25AM +0200, Michael S. Tsirkin wrote:
+> On Sun, Mar 23, 2014 at 10:25:27PM -0700, Eric Dumazet wrote:
+> > On Mon, 2014-03-24 at 07:09 +0200, Michael S. Tsirkin wrote:
+> > 
+> > > Seems an incredibly strict requirement for something that just
+> > > silences a warning.
+> > > What exactly should I test?
+> > > I intended to just verify this produces same code as before
+> > > d322f45ceed525daa under a recent gcc.
+> > 
+> > Thats because many rcu_assign_pointer(X, NULL) were already converted to
+> > RCU_INIT_POINTER(X, NULL)
+> > 
+> > Quite frankly I don't know why you bother at all.
+> > 
+> > Adding back the lazy test in rcu_assign_pointer() doesn't help to make
+> > the API cleaner and easier to understand.
+> > 
+> > People are usually using RCU API without really understanding
+> > all the issues. They tend to add superfluous barriers because they feel
+> > better. 
 > 
-> It's > 15 year old hardware, so yes I believe we have close to 0
-> testing coverage on it outside of distros,
+> Cute.  This is exactly what d322f45ceed525daa did actually -
+> made the barrier unconditional even when not needed.
 > 
-> I'm not even sure I have one anymore, I might be able to test an MGA in one box.
+> > Having separate RCU_INIT_POINTER() and rcu_assign_pointer() serve as
+> > better documentation of the code, I find it more easier to immediately
+> > check what is going on while reviewing stuff.
+> > 
+> > Presumably, checkpatch.pl could be augmented to suggest to use
+> > RCU_INIT_POINTER(X, NULL) instead of rcu_assign_pointer(X, NULL)
+> > 
+> > 
+> 
+> 
+> What happens if someone then changes that NULL to something else?
+> Things will start to break in subtle way, won't they?
+> 
+> To me RCU_INIT_POINTER seems to say "safe to use when initializing
+> pointer field when no one can access the structure".
+> The patch that started it all changed a path that clearly
+> does not satisfy this: it is mutating a field not initializing
+> it before use. After looking at the implementation, it does
+> seem safe.  So if some people actually like this API, I don't mind.
+> A matter of taste I guess.
+> 
+> If someone still wants to make rcu_assign_pointer more optimal, without
+> a warning, I see a cleaner way to do this now, below.
+> Lightly tested - if someone sees value in this but requires more testing, let me know,
+> if no one responds I'll just drop the whole thing.
+> 
+> --->
+> 
+> rcu: optimize rcu_assign_pointer with NULL
+> 
+> The rcu_assign_pointer() dropped __builtin_constant_p check to
+> avoid a compiler warning, but we can actually work around it
+> using an inline wrapper, without adding code.
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> ---
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 72bf3a0..0d45b6d 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -585,9 +585,18 @@ static inline void rcu_preempt_sleep_check(void)
+>   * please be careful when making changes to rcu_assign_pointer() and the
+>   * other macros that it invokes.
+>   */
+> +/* The inline wrapper is here to prevent gcc from emitting a warning when
+> + * passed a pointer to a variable.
+> + */
+> +static inline _rcu_safe_smp_wmb_unless_null(const void *v)
 
-I haven't done a full read of all the related code, but this smells like a
-similar bug I've hit all over the place in the i810 driver (another one of
-those undead drm drivers of yonders). Ingredients:
+doh should be static inline void
 
-1) Xorg creates a drm mapping of the register space.
-2) Xorg tells the hw-specific drm which drm mapping has the hw registers,
-and the driver uses that. Iirc this has been done as some form of OS
-abstraction. Also note that these mappings aren't refcounted, so the first
-guy to call drm_rmmap wins.
 
--> All hell breaks loose if Xorg dies and takes all it's mappings with it
-(in master_destroy, since the Xorg /dev fd is the master) and leaves the
-driver hanging in the air if there's an interrupt still pending (or
-anything else fwiw).
+anyway, I'll go away now
 
-In my case with i810 it was some subtle thing with error codes somewhere
-else (iirc, been a while) which made Xorg fall over a bit differently and
-so crash the kernel. Presuming this is the case I think we need a proper
-bisect here to figure out the root-cause and re-apply the lost duct-tape.
-
-"Properly" fixing the underlying bug for any sane definition of "proper"
-is impossible - the legacy drm driver model is just too broken for that.
-And for new-style drivers killing the irq support when they don't expect
-it is not cool, since those drivers are sane and assume full control over
-all hw interactions (not like their legacy bethren).
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> +{
+> +	if (!__builtin_constant_p(v) || ((v) != NULL))
+> +		smp_wmb();
+> +}
+> +
+>  #define rcu_assign_pointer(p, v) \
+>  	do { \
+> -		smp_wmb(); \
+> +		_rcu_safe_smp_wmb_unless_null((__force const void *)(v)); \
+>  		ACCESS_ONCE(p) = RCU_INITIALIZER(v); \
+>  	} while (0)
+>  
