@@ -1,46 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbaCXJ0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:26:51 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:29030 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998AbaCXJ0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:26:50 -0400
-X-IronPort-AV: E=Sophos;i="4.97,719,1389744000"; 
-   d="scan'208";a="114239594"
-Message-ID: <1395653207.19365.1.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next] Revert "xen-netback: Aggregate TX unmap
- operations"
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Date: Mon, 24 Mar 2014 09:26:47 +0000
-In-Reply-To: <1395422584-16213-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1395422584-16213-1-git-send-email-zoltan.kiss@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.4.4-3 
+	id S1752784AbaCXJ1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:27:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36527 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752451AbaCXJ1T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 05:27:19 -0400
+Date: Mon, 24 Mar 2014 10:27:16 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Boris BREZILLON <brezillonboris@gmail.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: Re: [PATCH v2 10/11] ARM: at91/dt: move at91sam9rl SoC to the new
+ slow/main clock models
+Message-ID: <20140324092716.GA20484@piout.net>
+References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com>
+ <1395649643-9146-11-git-send-email-b.brezillon.dev@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395649643-9146-11-git-send-email-b.brezillon.dev@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 17:23 +0000, Zoltan Kiss wrote:
-> This reverts commit e9275f5e2df1b2098a8cc405d87b88b9affd73e6. This commit is the
-> last in the netback grant mapping series, and it tries to do more aggressive
-> aggreagtion of unmap operations. However practical use showed almost no
-> positive effect, whilst with certain frontends it causes significant performance
-> regression.
+On 24/03/2014 at 09:27:22 +0100, Boris BREZILLON wrote :
+> Move at91sam9rl SoC to the new main/slow clock model.
+> 
+> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
 
-That's a shame -- do you have any insight into why?
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> ---
+>  arch/arm/boot/dts/at91sam9rl.dtsi |   47 +++++++++++++++++++++++++++++++------
+>  1 file changed, 40 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
+> index 63e1784..56220d8 100644
+> --- a/arch/arm/boot/dts/at91sam9rl.dtsi
+> +++ b/arch/arm/boot/dts/at91sam9rl.dtsi
+> @@ -48,6 +48,20 @@
+>  		reg = <0x20000000 0x04000000>;
+>  	};
+>  
+> +	clocks {
+> +		slow_xtal: slow_xtal {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <0>;
+> +		};
+> +
+> +		main_xtal: main_xtal {
+> +			compatible = "fixed-clock";
+> +			#clock-cells = <0>;
+> +			clock-frequency = <0>;
+> +		};
+> +	};
+> +
+>  	ahb {
+>  		compatible = "simple-bus";
+>  		#address-cells = <1>;
+> @@ -548,17 +562,11 @@
+>  				#size-cells = <0>;
+>  				#interrupt-cells = <1>;
+>  
+> -				clk32k: slck {
+> -					compatible = "fixed-clock";
+> -					#clock-cells = <0>;
+> -					clock-frequency = <32768>;
+> -				};
+> -
+>  				main: mainck {
+>  					compatible = "atmel,at91rm9200-clk-main";
+>  					#clock-cells = <0>;
+>  					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
+> -					clocks = <&clk32k>;
+> +					clocks = <&main_xtal>;
+>  				};
+>  
+>  				plla: pllack {
+> @@ -769,6 +777,31 @@
+>  				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+>  				status = "disabled";
+>  			};
+> +
+> +			sckc@fffffd50 {
+> +				compatible = "atmel,at91sam9x5-sckc";
+> +
+> +				slow_osc: slow_osc {
+> +					compatible = "atmel,at91sam9x5-clk-slow-osc";
+> +					#clock-cells = <0>;
+> +					atmel,startup-time-usec = <1200000>;
+> +					clocks = <&slow_xtal>;
+> +				};
+> +
+> +				slow_rc_osc: slow_rc_osc {
+> +					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
+> +					#clock-cells = <0>;
+> +					atmel,startup-time-usec = <75>;
+> +					clock-frequency = <32768>;
+> +					clock-accuracy = <50000000>;
+> +				};
+> +
+> +				clk32k: slck {
+> +					compatible = "atmel,at91sam9x5-clk-slow";
+> +					#clock-cells = <0>;
+> +					clocks = <&slow_rc_osc &slow_osc>;
+> +				};
+> +			};
+>  		};
+>  	};
+>  
+> -- 
+> 1.7.9.5
+> 
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
-
-
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
