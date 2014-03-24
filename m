@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbaCXPmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:42:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.24]:64070 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753220AbaCXPml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 11:42:41 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH 4/8] tty/serial: add generic serial earlycon
-Date: Mon, 24 Mar 2014 16:42:02 +0100
-Message-ID: <21117957.8m9iUdR1VN@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqJh1R8wxReCvTfE7GecZa0vMaAqnGa0ZoRBMace9qtzvQ@mail.gmail.com>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <9368307.RXEGmQia1C@wuerfel> <CAL_JsqJh1R8wxReCvTfE7GecZa0vMaAqnGa0ZoRBMace9qtzvQ@mail.gmail.com>
+	id S1752449AbaCXPp2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 11:45:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50924 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750859AbaCXPp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 11:45:26 -0400
+Date: Mon, 24 Mar 2014 11:43:48 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: James Morris <jmorris@namei.org>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com,
+        akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
+        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
+        davem@davemloft.net, linux-kernel@vger.kernel.org, mingo@elte.hu,
+        rostedt@goodmis.org, tglx@linutronix.de,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Change task_struct->comm to use RCU.
+Message-ID: <20140324154348.GA20004@madcap2.tricolour.ca>
+References: <201403072120.BJB73489.OFMSOFHQFtOJLV@I-love.SAKURA.ne.jp>
+ <20140307155415.GB16640@madcap2.tricolour.ca>
+ <201403082143.BIH86903.QtVMHJFFOOSFOL@I-love.SAKURA.ne.jp>
+ <20140310202155.GR16640@madcap2.tricolour.ca>
+ <201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
+ <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
+ <alpine.LRH.2.02.1403120052040.23883@tundra.namei.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:BGXm+E+fP5Pa0+f0bf1GEztgEEZeds57lK891+sVIIH
- GFCjaj/TSgseDaNlq6t+UKZ4n5KsUgPzElvkfGVG+py48PoaSf
- EtPWah07RL4kmwyv77iNHKei6oN0ztzi4vw4MEPNH235YCeCGk
- XrbyA7iax2ZN8gcU6cUKjdzjKRxgY453vDGxNRLM1KilvPIvEh
- YLuLNSxamqFnZEWc8E9sni1XDCZCtQtowQw+nAEG/V+1onsAAY
- RT9X8az2kcS9VuhUIbOUgkOvJqQGUGpDXCogr3YaTJQ/wvBqTY
- 6kMXdF09MPoEhL+eUMbOMHrhaLUbiS1tMIlEVupcIlEmOhT99Q
- MxaUuuWkfCGJjOwNxe8I=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.02.1403120052040.23883@tundra.namei.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 March 2014 08:36:46 Rob Herring wrote:
-> On Mon, Mar 24, 2014 at 6:29 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Monday 24 March 2014 11:22:03 Catalin Marinas wrote:
-> >> On Fri, Mar 21, 2014 at 09:08:44PM +0000, Rob Herring wrote:
-> >> > diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
-> >> > new file mode 100644
-> >> > index 0000000..241757a
-> >> > --- /dev/null
-> >> > +++ b/drivers/tty/serial/earlycon.c
-> >> [...]
-> >> > +static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
-> >> > +{
-> >> > +   void __iomem *base;
-> >> > +#ifdef CONFIG_FIX_EARLYCON_MEM
-> >> > +   set_fixmap_nocache(FIX_EARLYCON_MEM_BASE, paddr & PAGE_MASK);
-> >> > +   base = (void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
-> >> > +   base += paddr & ~PAGE_MASK;
-> >> > +#else
-> >> > +   base = ioremap_nocache(paddr, size);
-> >> > +#endif
-> >>
-> >> Just curious why not set_fixmap_io (and plain ioremap)?
-> >
-> > Good point. Note that ioremap_nocache() is the same as ioremap()
-> > on *all* architectures.
+On 14/03/12, James Morris wrote:
+> On Tue, 11 Mar 2014, Tetsuo Handa wrote:
+> > And the same phrase goes to James Morris...
+> > 
+> > If you are sure that it is safe to use get_task_comm() from
+> > dump_common_audit_data() and you prefer locked version, please pick up below
+> > patch via your git tree.
+> > 
+> > If you are unsure or prefer lockless version, I'll make a lockless version
+> > using do_get_task_comm() proposed in this thread.
 > 
-> I investigated this before adding this to arm64. set_fixmap_io and
-> set_fixmap_nocache are not the same settings on x86. Whether the
-> mapping type really matters on x86 or not, I don't know. So I added
-> the nocache variant to arm64 to avoid a change to x86.
+> If you can't understand whether your patch is correct or not, don't ask me 
+> to apply it to my tree.
+> 
+> If you're unsure, get it reviewed first.
 
-My best guess is that it's an x86 bug. ioremap() always uses an uncached
-mapping on x86, so it's strange to see early_ioremap() and set_fixmap_io()
-use a cached mapping. It probably doesn't matter as long as the mtrr is
-set up to treat all MMIO registers as non-cacheable, but I think there
-should not be a difference.
+I looked at the calling function tree back a number of steps and didn't
+see any other evidence of task locks held, so I'm comfortable with this
+patch and would prefer it to either memcpy() or do_get_task_comm(), but
+would still like to get an opinion from others.
 
-	Arnd
+> - James
+
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
