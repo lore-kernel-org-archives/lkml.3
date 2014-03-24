@@ -1,240 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894AbaCXSPR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 14:15:17 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:34815 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbaCXSOJ (ORCPT
+	id S1753692AbaCXSW2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 14:22:28 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:30221 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389AbaCXSW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 14:14:09 -0400
-From: Bharath Ravi <rbharath@google.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        David Sharp <dhsharp@google.com>, Bharath Ravi <rbharath@google.com>,
-        Laurent Chavey <chavey@google.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] tracing: Allow instances to have independent trace flags/trace options.
-Date: Mon, 24 Mar 2014 11:13:45 -0700
-Message-Id: <1395684826-22931-3-git-send-email-rbharath@google.com>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1395684826-22931-1-git-send-email-rbharath@google.com>
-References: <1395684826-22931-1-git-send-email-rbharath@google.com>
+	Mon, 24 Mar 2014 14:22:26 -0400
+Message-ID: <533077CE.6010204@oracle.com>
+Date: Mon, 24 Mar 2014 14:22:06 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Benjamin LaHaise <bcrl@kvack.org>, Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>
+CC: Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        jmoyer@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        miaox@cn.fujitsu.com, linux-aio@kvack.org,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] aio: ensure access to ctx->ring_pages is correctly serialised
+References: <532A80B1.5010002@cn.fujitsu.com> <20140320143207.GA3760@redhat.com> <20140320163004.GE28970@kvack.org> <532B9C54.80705@cn.fujitsu.com> <20140321183509.GC23173@kvack.org>
+In-Reply-To: <20140321183509.GC23173@kvack.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, the trace options are global, and shared among all
-instances. This change divides the set of trace options into global
-options and instance specific options. This division is done by using a
-"global_flags_start" offset in the list of available trace options, that
-marks the first global trace option, and is preceded by options that are
-instance specific.
+On 03/21/2014 02:35 PM, Benjamin LaHaise wrote:
+> Hi all,
+>
+> Based on the issues reported by Tang and Gu, I've come up with the an
+> alternative fix that avoids adding additional locking in the event read
+> code path.  The fix is to take the ring_lock mutex during page migration,
+> which is already used to syncronize event readers and thus does not add
+> any new locking requirements in aio_read_events_ring().  I've dropped
+> the patches from Tang and Gu as a result.  This patch is now in my
+> git://git.kvack.org/~bcrl/aio-next.git tree and will be sent to Linus
+> once a few other people chime in with their reviews of this change.
+> Please review Tang, Gu.  Thanks!
 
-Instance specific options may be set independently by an instance
-without affecting either the global tracer or other instances. Global
-options are viewable and modifiable only from the global tracer,
-preventing instances from modifying shared flags.
+Hi Benjamin,
 
-Currently, there are no instance specific options (global_flags_start is
-set to 0). This patch only adds the infrastructure for allowing instance
-specific trace options. Subsequently, options may be made instance
-specific by changing global_flags_start and moving the option to a
-position less than global_flags_start in the trace_options list.
+This patch seems to trigger:
 
-Signed-off-by: Bharath Ravi <rbharath@google.com>
----
- kernel/trace/trace.c | 73 ++++++++++++++++++++++++++++++++++++++++------------
- kernel/trace/trace.h |  2 +-
- 2 files changed, 57 insertions(+), 18 deletions(-)
+[  433.476216] ======================================================
+[  433.478468] [ INFO: possible circular locking dependency detected ]
+[  433.480900] 3.14.0-rc7-next-20140324-sasha-00015-g1fb7de8 #267 Tainted: G        W
+[  433.480900] -------------------------------------------------------
+[  433.480900] trinity-c57/13776 is trying to acquire lock:
+[  433.480900]  (&ctx->ring_lock){+.+.+.}, at: aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]
+[  433.480900] but task is already holding lock:
+[  433.480900]  (&mm->mmap_sem){++++++}, at: SYSC_move_pages (mm/migrate.c:1215 mm/migrate.c:1353 mm/migrate.c:1508)
+[  433.480900]
+[  433.480900] which lock already depends on the new lock.
+[  433.480900]
+[  433.480900]
+[  433.480900] the existing dependency chain (in reverse order) is:
+[  433.480900]
+-> #1 (&mm->mmap_sem){++++++}:
+[  433.480900]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[  433.480900]        down_write (arch/x86/include/asm/rwsem.h:130 kernel/locking/rwsem.c:50)
+[  433.480900]        SyS_io_setup (fs/aio.c:442 fs/aio.c:689 fs/aio.c:1201 fs/aio.c:1184)
+[  433.480900]        tracesys (arch/x86/kernel/entry_64.S:749)
+[  433.480900]
+-> #0 (&ctx->ring_lock){+.+.+.}:
+[  433.480900]        __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+[  433.480900]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[  433.480900]        mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+[  433.480900]        aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]        move_to_new_page (mm/migrate.c:777)
+[  433.480900]        migrate_pages (mm/migrate.c:921 mm/migrate.c:960 mm/migrate.c:1126)
+[  433.480900]        SYSC_move_pages (mm/migrate.c:1278 mm/migrate.c:1353 mm/migrate.c:1508)
+[  433.480900]        SyS_move_pages (mm/migrate.c:1456)
+[  433.480900]        tracesys (arch/x86/kernel/entry_64.S:749)
+[  433.480900]
+[  433.480900] other info that might help us debug this:
+[  433.480900]
+[  433.480900]  Possible unsafe locking scenario:
+[  433.480900]
+[  433.480900]        CPU0                    CPU1
+[  433.480900]        ----                    ----
+[  433.480900]   lock(&mm->mmap_sem);
+[  433.480900]                                lock(&ctx->ring_lock);
+[  433.480900]                                lock(&mm->mmap_sem);
+[  433.480900]   lock(&ctx->ring_lock);
+[  433.480900]
+[  433.480900]  *** DEADLOCK ***
+[  433.480900]
+[  433.480900] 1 lock held by trinity-c57/13776:
+[  433.480900]  #0:  (&mm->mmap_sem){++++++}, at: SYSC_move_pages (mm/migrate.c:1215 mm/migrate.c:1353 mm/migrate.c:1508)
+[  433.480900]
+[  433.480900] stack backtrace:
+[  433.480900] CPU: 4 PID: 13776 Comm: trinity-c57 Tainted: G        W     3.14.0-rc7-next-20140324-sasha-00015-g1fb7de8 #267
+[  433.480900]  ffffffff87a80790 ffff8806abbbb9a8 ffffffff844bae02 0000000000000000
+[  433.480900]  ffffffff87a80790 ffff8806abbbb9f8 ffffffff844ad86d 0000000000000001
+[  433.480900]  ffff8806abbbba88 ffff8806abbbb9f8 ffff8806ab8fbcf0 ffff8806ab8fbd28
+[  433.480900] Call Trace:
+[  433.480900]  dump_stack (lib/dump_stack.c:52)
+[  433.480900]  print_circular_bug (kernel/locking/lockdep.c:1216)
+[  433.480900]  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
+[  433.480900]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[  433.480900]  ? sched_clock_local (kernel/sched/clock.c:214)
+[  433.480900]  ? sched_clock_cpu (kernel/sched/clock.c:311)
+[  433.480900]  ? __lock_acquire (kernel/locking/lockdep.c:3189)
+[  433.480900]  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
+[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]  mutex_lock_nested (kernel/locking/mutex.c:486 kernel/locking/mutex.c:587)
+[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]  ? aio_migratepage (fs/aio.c:303)
+[  433.480900]  ? aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]  ? aio_migratepage (include/linux/rcupdate.h:324 include/linux/rcupdate.h:909 include/linux/percpu-refcount.h:117 fs/aio.c:297)
+[  433.480900]  ? preempt_count_sub (kernel/sched/core.c:2527)
+[  433.480900]  aio_migratepage (include/linux/spinlock.h:303 fs/aio.c:306)
+[  433.480900]  ? aio_migratepage (include/linux/rcupdate.h:886 include/linux/percpu-refcount.h:108 fs/aio.c:297)
+[  433.480900]  ? mutex_unlock (kernel/locking/mutex.c:220)
+[  433.480900]  move_to_new_page (mm/migrate.c:777)
+[  433.480900]  ? try_to_unmap (mm/rmap.c:1516)
+[  433.480900]  ? try_to_unmap_nonlinear (mm/rmap.c:1113)
+[  433.480900]  ? invalid_migration_vma (mm/rmap.c:1472)
+[  433.480900]  ? page_remove_rmap (mm/rmap.c:1380)
+[  433.480900]  ? anon_vma_fork (mm/rmap.c:446)
+[  433.480900]  migrate_pages (mm/migrate.c:921 mm/migrate.c:960 mm/migrate.c:1126)
+[  433.480900]  ? follow_page_mask (mm/memory.c:1544)
+[  433.480900]  ? alloc_misplaced_dst_page (mm/migrate.c:1177)
+[  433.480900]  SYSC_move_pages (mm/migrate.c:1278 mm/migrate.c:1353 mm/migrate.c:1508)
+[  433.480900]  ? SYSC_move_pages (include/linux/rcupdate.h:800 mm/migrate.c:1472)
+[  433.480900]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
+[  433.480900]  SyS_move_pages (mm/migrate.c:1456)
+[  433.480900]  tracesys (arch/x86/kernel/entry_64.S:749)
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 9f0a5f9..61f2301 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -406,20 +406,24 @@ static inline void trace_access_lock_init(void)
- 
- #endif
- 
--/* trace_flags holds trace_options default values */
--unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
--	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO |	TRACE_ITER_SLEEP_TIME |
--	TRACE_ITER_GRAPH_TIME |	TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
--	TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
-+/* Sets default values for a tracer's  trace_options */
-+static inline void init_trace_flags(unsigned long *trace_flags)
-+{
-+	*trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
-+		TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO |
-+		TRACE_ITER_SLEEP_TIME |	TRACE_ITER_GRAPH_TIME |
-+		TRACE_ITER_RECORD_CMD | TRACE_ITER_OVERWRITE |
-+		TRACE_ITER_IRQ_INFO | TRACE_ITER_MARKERS | TRACE_ITER_FUNCTION;
-+}
- 
- unsigned long global_trace_flags(void)
- {
--	return trace_flags;
-+	return global_trace.trace_flags;
- }
- 
- void set_global_trace_flags(unsigned long flags)
- {
--	trace_flags = flags;
-+	global_trace.trace_flags = flags;
- }
- 
- static void tracer_tracing_on(struct trace_array *tr)
-@@ -799,6 +803,13 @@ static const char *trace_options[] = {
- 	NULL
- };
- 
-+/*
-+ * The index of the first global flag in trace_options. Indices higher than or
-+ * equal to this are global flags, while indices smaller than this are
-+ * per-instance flags.
-+ */
-+static const int global_flags_start;
-+
- static struct {
- 	u64 (*func)(void);
- 	const char *name;
-@@ -3333,13 +3344,23 @@ static int tracing_trace_options_show(struct seq_file *m, void *v)
- 	tracer_flags = tr->current_trace->flags->val;
- 	trace_opts = tr->current_trace->flags->opts;
- 
--	for (i = 0; trace_options[i]; i++) {
--		if (global_trace_flags() & (1 << i))
-+	for (i = 0; i < global_flags_start; i++) {
-+		if (tr->trace_flags & (1 << i))
- 			seq_printf(m, "%s\n", trace_options[i]);
- 		else
- 			seq_printf(m, "no%s\n", trace_options[i]);
- 	}
- 
-+	/* For the global trace, also display global options*/
-+	if (tr->flags & TRACE_ARRAY_FL_GLOBAL) {
-+		for (i = global_flags_start; trace_options[i]; i++) {
-+			if (global_trace_flags() & (1 << i))
-+				seq_printf(m, "%s\n", trace_options[i]);
-+			else
-+				seq_printf(m, "no%s\n", trace_options[i]);
-+		}
-+	}
-+
- 	for (i = 0; trace_opts[i].name; i++) {
- 		if (tracer_flags & trace_opts[i].bit)
- 			seq_printf(m, "%s\n", trace_opts[i].name);
-@@ -3397,9 +3418,14 @@ int trace_keep_overwrite(struct tracer *tracer, u32 mask, int set)
- 
- int set_tracer_flag(struct trace_array *tr, unsigned int mask, int enabled)
- {
--	unsigned long trace_flags = global_trace_flags();
-+	/* If this is a global flag, disallow instances from modifying it. */
-+	if (mask >= (1 << global_flags_start) &&
-+	    !(tr->flags & TRACE_ARRAY_FL_GLOBAL))
-+		return -EINVAL;
-+
-+
- 	/* do nothing if flag is already set */
--	if (!!(trace_flags & mask) == !!enabled)
-+	if (!!(tr->trace_flags & mask) == !!enabled)
- 		return 0;
- 
- 	/* Give the tracer a chance to approve the change */
-@@ -3408,9 +3434,9 @@ int set_tracer_flag(struct trace_array *tr, unsigned int mask, int enabled)
- 			return -EINVAL;
- 
- 	if (enabled)
--		trace_flags |= mask;
-+		tr->trace_flags |= mask;
- 	else
--		trace_flags &= ~mask;
-+		tr->trace_flags &= ~mask;
- 
- 	if (mask == TRACE_ITER_RECORD_CMD)
- 		trace_event_enable_cmd_record(enabled);
-@@ -3434,6 +3460,7 @@ static int trace_set_options(struct trace_array *tr, char *option)
- 	int neg = 0;
- 	int ret = -ENODEV;
- 	int i;
-+	bool option_found = false;
- 
- 	cmp = strstrip(option);
- 
-@@ -3444,15 +3471,26 @@ static int trace_set_options(struct trace_array *tr, char *option)
- 
- 	mutex_lock(&trace_types_lock);
- 
--	for (i = 0; trace_options[i]; i++) {
-+	for (i = 0; i < global_flags_start; i++) {
- 		if (strcmp(cmp, trace_options[i]) == 0) {
- 			ret = set_tracer_flag(tr, 1 << i, !neg);
- 			break;
- 		}
- 	}
- 
-+	if (i < global_flags_start) {
-+		option_found = true;
-+	} else if (tr->flags & TRACE_ARRAY_FL_GLOBAL) {
-+		/* If this is the global trace, try the global options */
-+		for (i = global_flags_start; trace_options[i]; i++) {
-+			ret = set_tracer_flag(tr, 1 << i, !neg);
-+			break;
-+		}
-+		option_found = trace_options[i];
-+	}
-+
- 	/* If no option could be set, test the specific tracer options */
--	if (!trace_options[i])
-+	if (!option_found)
- 		ret = set_tracer_option(tr->current_trace, cmp, neg);
- 
- 	mutex_unlock(&trace_types_lock);
-@@ -5967,9 +6005,8 @@ static int
- allocate_trace_buffer(struct trace_array *tr, struct trace_buffer *buf, int size)
- {
- 	enum ring_buffer_flags rb_flags;
--	unsigned long trace_flags = global_trace_flags();
- 
--	rb_flags = trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
-+	rb_flags = tr->trace_flags & TRACE_ITER_OVERWRITE ? RB_FL_OVERWRITE : 0;
- 
- 	buf->tr = tr;
- 
-@@ -6045,6 +6082,7 @@ static int new_instance_create(const char *name)
- 	cpumask_copy(tr->tracing_cpumask, cpu_all_mask);
- 
- 	raw_spin_lock_init(&tr->start_lock);
-+	init_trace_flags(&(tr->trace_flags));
- 
- 	tr->current_trace = &nop_trace;
- 
-@@ -6507,6 +6545,7 @@ __init static int tracer_alloc_buffers(void)
- 	cpumask_copy(global_trace.tracing_cpumask, cpu_all_mask);
- 
- 	raw_spin_lock_init(&global_trace.start_lock);
-+	init_trace_flags(&global_trace.trace_flags);
- 
- 	/* TODO: make the number of buffers hot pluggable with CPUS */
- 	if (allocate_trace_buffers(&global_trace, ring_buf_size) < 0) {
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 82b50a0..38b511a 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -201,6 +201,7 @@ struct trace_array {
- 	int			clock_id;
- 	struct tracer		*current_trace;
- 	unsigned int		flags;
-+	unsigned long		trace_flags;
- 	raw_spinlock_t		start_lock;
- 	struct dentry		*dir;
- 	struct dentry		*options;
-@@ -704,7 +705,6 @@ int trace_array_printk_buf(struct ring_buffer *buffer,
- void trace_printk_seq(struct trace_seq *s);
- enum print_line_t print_trace_line(struct trace_iterator *iter);
- 
--extern unsigned long trace_flags;
- unsigned long global_trace_flags(void);
- void set_global_trace_flags(unsigned long flags);
- 
--- 
-1.9.1.423.g4596e3a
 
+Thanks,
+Sasha
