@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbaCXUSr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:18:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38358 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074AbaCXUSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:18:45 -0400
-Date: Mon, 24 Mar 2014 16:17:57 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: acme@ghostprotocols.net, peterz@infradead.org,
-        LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com,
-        jmario@redhat.com, fowles@inreach.com, eranian@google.com,
-        andi.kleen@intel.com
-Subject: Re: [PATCH 4/6] perf, sort:  Add physid sorting based on mmap2 data
-Message-ID: <20140324201757.GC25953@redhat.com>
-References: <1395689676-214799-1-git-send-email-dzickus@redhat.com>
- <1395689676-214799-5-git-send-email-dzickus@redhat.com>
- <8761n3pe2w.fsf@tassilo.jf.intel.com>
+	id S1754517AbaCXUTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 16:19:13 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:2466 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753993AbaCXUTL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 16:19:11 -0400
+Date: Mon, 24 Mar 2014 16:19:09 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v8 19/26] kprobes: Show blacklist entries via
+ debugfs
+Message-ID: <20140324161909.5b8f854d@gandalf.local.home>
+In-Reply-To: <20140305120056.22766.10704.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305120056.22766.10704.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8761n3pe2w.fsf@tassilo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 12:54:31PM -0700, Andi Kleen wrote:
-> Don Zickus <dzickus@redhat.com> writes:
+On Wed, 05 Mar 2014 21:00:56 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+
+>  kernel/kprobes.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++-------
+>  1 file changed, 53 insertions(+), 8 deletions(-)
 > 
-> > In order for the c2c tool to work correctly, it needs to properly
-> > sort all the records on uniquely identifiable data addresses.  These
-> > unique addresses are converted from virtual addresses provided by the
-> > hardware into a kernel address using an mmap2 record as the decoder.
-> 
-> No documentation for the new option?
-> 
-> Probably the new mode should be also supported by --sort
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index a21b4e6..3214289 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -2249,6 +2249,46 @@ static const struct file_operations debugfs_kprobes_operations = {
+>  	.release        = seq_release,
+>  };
+>  
+> +/* kprobes/blacklist -- shows which functions can not be probed */
+> +static void *kprobe_blacklist_seq_start(struct seq_file *m, loff_t *pos)
+> +{
+> +	return seq_list_start(&kprobe_blacklist, *pos);
+> +}
+> +
+> +static void *kprobe_blacklist_seq_next(struct seq_file *m, void *v, loff_t *pos)
+> +{
+> +	return seq_list_next(v, &kprobe_blacklist, pos);
+> +}
+> +
 
-I hid the new option further in the changelog, so it isn't obvious.  Sorry
-about that.
+Can modules use NOKPROBE_SYMBOL() and have items being added to the
+list as this is being read? That is, do we need locks?
 
-Sample output: (perf report --stdio --physid-mode)
+Also, are items removed. I need to go back and look at the
+implementation of NOKPROBE_SYMBOL(), I'm just writing this as I think
+about it ;-)
 
-So the option was '--physid-mode' and if you don't pass in a '--sort' then
-it takes the default sort of
-
-'daddr,iaddr,pid,tid,major,minor,inode,inode_gen'
-
-Otherwise you could pass in a combination of the other fields.
-
-The output is not the best way to use the mmap2 data as it just gives you
-hottest data addresses.  Our c2c tool really takes the data addresses and
-combines them into a cacheline and then processes the cacheline for
-interesting bottlenecks (HITMs in our case).
-
-I don't know a good way to present the data and yet still have the sort
-useful for our c2c tool.  So I threw this interface together.  I am open
-to suggestions.
-
-Cheers,
-Don
+-- Steve
