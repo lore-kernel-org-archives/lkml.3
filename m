@@ -1,95 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbaCXJXM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:23:12 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:28888 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751493AbaCXJXK (ORCPT
+	id S1752604AbaCXJXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:23:35 -0400
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:39843 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752512AbaCXJXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:23:10 -0400
-From: Liu Hua <sdu.liu@huawei.com>
-To: <nicolas.pitre@linaro.org>
-CC: <linux@arm.linux.org.uk>, <will.deacon@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wangnan0@huawei.com>, <peifeiyue@huawei.com>,
-        Liu Hua <sdu.liu@huawei.com>
-Subject: [PATCH RFC] ARM: extend fixmap mapping region to support 30 CPUs
-Date: Mon, 24 Mar 2014 17:12:47 +0800
-Message-ID: <1395652367-12308-1-git-send-email-sdu.liu@huawei.com>
-X-Mailer: git-send-email 1.9.0.dirty
+	Mon, 24 Mar 2014 05:23:33 -0400
+Message-ID: <532FF7BB.5020003@st.com>
+Date: Mon, 24 Mar 2014 09:15:39 +0000
+From: srinivas kandagatla <srinivas.kandagatla@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+To: Arnd Bergmann <arnd@arndb.de>, Dinh Nguyen <dinh.linux@gmail.com>
+Cc: Dinh Nguyen <dinguyen@altera.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        <arm@kernel.org>, Giuseppe Cavallaro <peppe.cavallaro@st.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>
+Subject: Re: stmmac-socfpga breakage in arm-soc
+References: <201403191333.01095.arnd@arndb.de> <4337501.shzGE38xmF@wuerfel> <5329A7A1.20606@gmail.com> <4171731.dt8xNWCpb2@wuerfel>
+In-Reply-To: <4171731.dt8xNWCpb2@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.65.51.147]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-23_03:2014-03-21,2014-03-23,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In 32-bit ARM systems, the fixmap mapping region can support
-no more than 14 CPUs(total: 896k; one CPU: 64K). And we can
-configure NR_CPUS up to 32. So there is a mismatch.
-
-This patch extends the fixmapping region downwards to boundary
-of DMA mapping region(0xffe00000-0xfffe0000). Then the fixmap
-mapping region can support up to 30 CPUs.
-
-There seems to be no easy way to support 32 CPUs by simply 
-changing memory layout on ARM Linux. So I also limit the 
-maximal CPU number one can configure.
+On 19/03/14 15:07, Arnd Bergmann wrote:
+> Ok, so the two of you basically moved in opposite directions where
+> Srinivas started out with the method you ended up with and vice versa.
+Yes thats correct, While adding dwmac-sunxi.c we decided to go with
+callback methods given its flexibility for calling at runtime(example:
+when link speed changes).
 
 
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
----
- Documentation/arm/memory.txt  | 4 ++--
- arch/arm/Kconfig              | 4 ++--
- arch/arm/include/asm/fixmap.h | 2 +-
- 3 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/Documentation/arm/memory.txt b/Documentation/arm/memory.txt
-index 4bfb9ff..cc31560 100644
---- a/Documentation/arm/memory.txt
-+++ b/Documentation/arm/memory.txt
-@@ -41,10 +41,10 @@ fffe8000	fffeffff	DTCM mapping area for platforms with
- fffe0000	fffe7fff	ITCM mapping area for platforms with
- 				ITCM mounted inside the CPU.
- 
--fff00000	fffdffff	Fixmap mapping region.  Addresses provided
-+ffe00000	fffdffff	Fixmap mapping region.  Addresses provided
- 				by fix_to_virt() will be located here.
- 
--ffc00000	ffefffff	DMA memory mapping region.  Memory returned
-+ffc00000	ffdfffff	DMA memory mapping region.  Memory returned
- 				by the dma_alloc_xxx functions will be
- 				dynamically mapped here.
- 
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index e254198..f599040 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -1600,8 +1600,8 @@ config PAGE_OFFSET
- 	default 0xC0000000
- 
- config NR_CPUS
--	int "Maximum number of CPUs (2-32)"
--	range 2 32
-+	int "Maximum number of CPUs (2-30)"
-+	range 2 30
- 	depends on SMP
- 	default "4"
- 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index bbae919..38c9ffd 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -13,7 +13,7 @@
-  * 0xfffe0000 and 0xfffeffff.
-  */
- 
--#define FIXADDR_START		0xfff00000UL
-+#define FIXADDR_START		0xffe00000UL
- #define FIXADDR_TOP		0xfffe0000UL
- #define FIXADDR_SIZE		(FIXADDR_TOP - FIXADDR_START)
- 
--- 
-1.9.0
-
+--srini
