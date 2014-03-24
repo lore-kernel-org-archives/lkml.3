@@ -1,73 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752067AbaCXGsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 02:48:32 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62815 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957AbaCXGs2 (ORCPT
+	id S1752155AbaCXGu1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 02:50:27 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:52955 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752095AbaCXGuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 02:48:28 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com, l.majewski@samsung.com,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
-Date: Mon, 24 Mar 2014 12:18:14 +0530
-Message-Id: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Mon, 24 Mar 2014 02:50:25 -0400
+Message-ID: <532FD53E.8020402@linux.vnet.ibm.com>
+Date: Mon, 24 Mar 2014 12:18:30 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>
+Subject: Re: [PATCH V4 1/3] cpufreq: Make sure frequency transitions are serialized
+References: <cover.1395379422.git.viresh.kumar@linaro.org> <f6116069b730c0c3a74ff627fa818b98dc4f1491.1395379422.git.viresh.kumar@linaro.org> <532BEE64.3090501@linux.vnet.ibm.com> <CAKohpom8ZHXxVmuSHYL5nyZzNrK8EFNVdx5XJdJxiHWPb13aeg@mail.gmail.com> <532BFB77.5060107@linux.vnet.ibm.com> <CAKohpomY4xf4tOFTGt-ykE7sUi4ks7vW5qp8ytgopm6CiY9QRg@mail.gmail.com> <20140321110559.GB13596@arm.com> <532C2160.4030909@linux.vnet.ibm.com> <20140321180723.GM13596@arm.com>
+In-Reply-To: <20140321180723.GM13596@arm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032406-5490-0000-0000-0000053C2A25
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ideally, .driver_data field of struct cpufreq_frequency_table must not be used
-by core at all. But during a recent change if its value is same as
-CPUFREQ_BOOST_FREQ macro, then it is treated specially by core.
+On 03/21/2014 11:37 PM, Catalin Marinas wrote:
+> On Fri, Mar 21, 2014 at 11:24:16AM +0000, Srivatsa S. Bhat wrote:
+>> On 03/21/2014 04:35 PM, Catalin Marinas wrote:
+>>> On Fri, Mar 21, 2014 at 09:21:02AM +0000, Viresh Kumar wrote:
+>>>> @Catalin: We have a problem here and need your expert advice. After changing
+>>>> CPU frequency we need to call this code:
+>>>>
+>>>> cpufreq_notify_post_transition();
+>>>> policy->transition_ongoing = false;
+>>>>
+>>>> And the sequence must be like this only. Is this guaranteed without any
+>>>> memory barriers? cpufreq_notify_post_transition() isn't touching
+>>>> transition_ongoing at all..
+>>>
+>>> The above sequence doesn't say much. As rmk said, the compiler wouldn't
+>>> reorder the transition_ongoing write before the function call. I think
+>>> most architectures (not sure about Alpha) don't do speculative stores,
+>>> so hardware wouldn't reorder them either. However, other stores inside
+>>> the cpufreq_notify_post_transition() could be reordered after
+>>> transition_ongoing store. The same for memory accesses after the
+>>> transition_ongoing update, they could be reordered before.
+>>>
+>>> So what we actually need to know is what are the other relevant memory
+>>> accesses that require strict ordering with transition_ongoing.
+>>
+>> Hmm.. The thing is, _everything_ inside the post_transition() function
+>> should complete before writing to transition_ongoing. Because, setting the
+>> flag to 'false' indicates the end of the critical section, and the next
+>> contending task can enter the critical section.
+> 
+> smp_mb() is all about relative ordering. So if you want memory accesses
+> in post_transition() to be visible to other observers before
+> transition_ongoing = false, you also need to make sure that the readers
+> of transition_ongoing have a barrier before subsequent memory accesses.
+> 
 
-The value of this macro was set to ~2 earlier, i.e. 0xFFFFFFFD. In case some
-driver is using this field for its own data and sets this field to -3, then with
-two's complement that value will also become 0xFFFFFFFD.
+The reader takes a spin-lock before reading the flag.. won't that suffice?
 
-To fix this issue, lets change value of this flag to a very uncommon value which
-shouldn't be used by any driver unless they want to use BOOST feature.
++wait:
++	wait_event(policy->transition_wait, !policy->transition_ongoing);
++
++	spin_lock(&policy->transition_lock);
++
++	if (unlikely(policy->transition_ongoing)) {
++		spin_unlock(&policy->transition_lock);
++		goto wait;
++	}
 
-Along with this update comments to make this more clear.
+>>> What I find strange in your patch is that
+>>> cpufreq_freq_transition_begin() uses spinlocks around transition_ongoing
+>>> update but cpufreq_freq_transition_end() doesn't.
+>>
+>> The reason is that, by the time we drop the spinlock, we would have set
+>> the transition_ongoing flag to true, which prevents any other task from
+>> entering the critical section. Hence, when we call the _end() function,
+>> we are 100% sure that only one task is executing it. Hence locks are not
+>> necessary around that second update. In fact, that very update marks the
+>> end of the critical section (which acts much like a spin_unlock(&lock)
+>> in a "regular" critical section).
+> 
+> OK, I start to get it. Is there a risk of missing a wake_up event? E.g.
+> one thread waking up earlier, noticing that transition is in progress
+> and waiting indefinitely?
+>
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
+No, the only downside to having the CPU reorder the assignment to the
+flag is that a new transition can begin while the old one is still
+finishing up the frequency transition by calling the _post_transition()
+notifiers.
 
-Gautham/Vaidy: I hope this fixes the problem we discussed for your patchset.
-
- include/linux/cpufreq.h | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-index c48e595..9f25d9d 100644
---- a/include/linux/cpufreq.h
-+++ b/include/linux/cpufreq.h
-@@ -455,12 +455,18 @@ extern struct cpufreq_governor cpufreq_gov_conservative;
-  *                     FREQUENCY TABLE HELPERS                       *
-  *********************************************************************/
- 
-+/* Special Values of .frequency field */
- #define CPUFREQ_ENTRY_INVALID ~0
- #define CPUFREQ_TABLE_END     ~1
--#define CPUFREQ_BOOST_FREQ    ~2
-+/* Special Values of .driver_data field */
-+#define CPUFREQ_BOOST_FREQ    0xABABABAB
- 
- struct cpufreq_frequency_table {
--	unsigned int	driver_data; /* driver specific data, not used by core */
-+	/*
-+	 * driver specific data, not used by core unless it is set to
-+	 * CPUFREQ_BOOST_FREQ.
-+	 */
-+	unsigned int	driver_data;
- 	unsigned int	frequency; /* kHz - doesn't need to be in ascending
- 				    * order */
- };
--- 
-1.7.12.rc2.18.g61b472e
+Regards,
+Srivatsa S. Bhat
 
