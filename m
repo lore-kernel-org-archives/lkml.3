@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754257AbaCXU6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 16:58:09 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:39963 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753559AbaCXU6G (ORCPT
+	id S1754314AbaCXVAB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 17:00:01 -0400
+Received: from mail.coding4coffee.org ([5.9.171.142]:33127 "EHLO
+	mail.coding4coffee.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753601AbaCXU77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 16:58:06 -0400
-Date: Mon, 24 Mar 2014 13:58:02 -0700
-From: John de la Garza <john@jjdev.com>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org
-Subject: [PATCH] drivers:staging:lustre Fixed sparse warning: plain integer
- as NULL pointer
-Message-ID: <20140324205754.GA18927@vega.socal.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 24 Mar 2014 16:59:59 -0400
+X-Greylist: delayed 484 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 Mar 2014 16:59:59 EDT
+From: Fabian Mewes <architekt@coding4coffee.org>
+To: gregkh@linuxfoundation.org
+Cc: ashvinivaratharaj@gmail.com, cbajumpa@gmail.com, rashika.kheria@gmail.com,
+        berardi.dav@gmail.com, monamagarwal123@gmail.com, lisa@xenapiadmin.com,
+        ebru.akagunduz@gmail.com, stefanha@gmail.com, dan.carpenter@oracle.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Fabian Mewes <architekt@coding4coffee.org>
+Subject: [PATCH] staging: line6: Fix missing blanks after declarations
+Date: Mon, 24 Mar 2014 21:51:05 +0100
+Message-Id: <1395694265-2133-1-git-send-email-architekt@coding4coffee.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes these sparse warnings:
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:202:51: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:203:51: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:204:51: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:205:51: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:206:51: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:207:11: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:213:47: warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/lmv/lproc_lmv.c:214:11: warning: Using plain integer as NULL pointer
+This patch is part of eudyptula challenge task 10
 
-Signed-off-by: John de la Garza <john@jjdev.com>
+Signed-off-by: Fabian Mewes <architekt@coding4coffee.org>
 ---
- drivers/staging/lustre/lustre/lmv/lproc_lmv.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+applies to next-20140324
+ drivers/staging/line6/driver.c   | 1 +
+ drivers/staging/line6/playback.c | 5 +++++
+ drivers/staging/line6/toneport.c | 1 +
+ 3 files changed, 7 insertions(+)
 
-diff --git a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-index b355d01..5d75e8c 100644
---- a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-+++ b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
-@@ -199,19 +199,19 @@ static int lmv_target_seq_open(struct inode *inode, struct file *file)
- LPROC_SEQ_FOPS_RO_TYPE(lmv, uuid);
+diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
+index 77f1b42..ef511c7 100644
+--- a/drivers/staging/line6/driver.c
++++ b/drivers/staging/line6/driver.c
+@@ -124,6 +124,7 @@ static int line6_send_raw_message_async_part(struct message *msg,
+ static int line6_start_listen(struct usb_line6 *line6)
+ {
+ 	int err;
++
+ 	usb_fill_int_urb(line6->urb_listen, line6->usbdev,
+ 			 usb_rcvintpipe(line6->usbdev, line6->ep_control_read),
+ 			 line6->buffer_listen, LINE6_BUFSIZE_LISTEN,
+diff --git a/drivers/staging/line6/playback.c b/drivers/staging/line6/playback.c
+index 41869ca..0f72db5 100644
+--- a/drivers/staging/line6/playback.c
++++ b/drivers/staging/line6/playback.c
+@@ -34,6 +34,7 @@ static void change_volume(struct urb *urb_out, int volume[],
  
- struct lprocfs_vars lprocfs_lmv_obd_vars[] = {
--	{ "numobd",	  &lmv_numobd_fops,	  0, 0 },
--	{ "placement",	  &lmv_placement_fops,    0, 0 },
--	{ "activeobd",	  &lmv_activeobd_fops,    0, 0 },
--	{ "uuid",	  &lmv_uuid_fops,	  0, 0 },
--	{ "desc_uuid",	  &lmv_desc_uuid_fops,    0, 0 },
--	{ 0 }
-+	{ "numobd",	  &lmv_numobd_fops,	  NULL, 0 },
-+	{ "placement",	  &lmv_placement_fops,    NULL, 0 },
-+	{ "activeobd",	  &lmv_activeobd_fops,    NULL, 0 },
-+	{ "uuid",	  &lmv_uuid_fops,	  NULL, 0 },
-+	{ "desc_uuid",	  &lmv_desc_uuid_fops,    NULL, 0 },
-+	{ NULL }
- };
+ 	if (bytes_per_frame == 4) {
+ 		short *p, *buf_end;
++
+ 		p = (short *)urb_out->transfer_buffer;
+ 		buf_end = p + urb_out->transfer_buffer_length / sizeof(*p);
  
- LPROC_SEQ_FOPS_RO_TYPE(lmv, numrefs);
+@@ -48,6 +49,7 @@ static void change_volume(struct urb *urb_out, int volume[],
  
- static struct lprocfs_vars lprocfs_lmv_module_vars[] = {
--	{ "num_refs",	   &lmv_numrefs_fops, 0, 0 },
--	{ 0 }
-+	{ "num_refs",	   &lmv_numrefs_fops, NULL, 0 },
-+	{ NULL }
- };
+ 		for (; p < buf_end; p += 3) {
+ 			int val;
++
+ 			val = p[0] + (p[1] << 8) + ((signed char)p[2] << 16);
+ 			val = (val * volume[chn & 1]) >> 8;
+ 			p[0] = val;
+@@ -116,6 +118,7 @@ static void add_monitor_signal(struct urb *urb_out, unsigned char *signal,
  
- struct file_operations lmv_proc_target_fops = {
+ 	if (bytes_per_frame == 4) {
+ 		short *pi, *po, *buf_end;
++
+ 		pi = (short *)signal;
+ 		po = (short *)urb_out->transfer_buffer;
+ 		buf_end = po + urb_out->transfer_buffer_length / sizeof(*po);
+@@ -171,6 +174,7 @@ static int submit_audio_out_urb(struct snd_line6_pcm *line6pcm)
+ 
+ 		if (fsize == 0) {
+ 			int n;
++
+ 			line6pcm->count_out += frame_increment;
+ 			n = line6pcm->count_out / frame_factor;
+ 			line6pcm->count_out -= n * frame_factor;
+@@ -207,6 +211,7 @@ static int submit_audio_out_urb(struct snd_line6_pcm *line6pcm)
+ 			   copy the data to the temp buffer.
+ 			 */
+ 			int len;
++
+ 			len = runtime->buffer_size - line6pcm->pos_out;
+ 
+ 			if (len > 0) {
+diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
+index af2e7e5..dcab647 100644
+--- a/drivers/staging/line6/toneport.c
++++ b/drivers/staging/line6/toneport.c
+@@ -213,6 +213,7 @@ static int snd_toneport_source_info(struct snd_kcontrol *kcontrol,
+ 				    struct snd_ctl_elem_info *uinfo)
+ {
+ 	const int size = ARRAY_SIZE(toneport_source_info);
++
+ 	uinfo->type = SNDRV_CTL_ELEM_TYPE_ENUMERATED;
+ 	uinfo->count = 1;
+ 	uinfo->value.enumerated.items = size;
 -- 
-1.9.0
+1.9.1
 
