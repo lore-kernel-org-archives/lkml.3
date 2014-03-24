@@ -1,62 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754547AbaCXTpW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:45:22 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:44480
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753931AbaCXTpR (ORCPT
+	id S1754623AbaCXTqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:46:04 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41186 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753833AbaCXThE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:45:17 -0400
-From: Shuah Khan <shuah.kh@samsung.com>
-To: gregkh@linuxfoundation.org, valentina.manea.m@gmail.com,
-        xypron.glpk@gmx.de
-Cc: Shuah Khan <shuah.kh@samsung.com>, linux-usb@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging/usbip: userspace - fix usbipd SIGSEGV from refresh_exported_devices()
-Date: Mon, 24 Mar 2014 13:45:13 -0600
-Message-Id: <1395690313-19068-1-git-send-email-shuah.kh@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
+	Mon, 24 Mar 2014 15:37:04 -0400
+Date: Mon, 24 Mar 2014 15:37:01 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH -tip v8 11/26] kprobes: Allow probe on some kprobe
+ functions
+Message-ID: <20140324153701.18857126@gandalf.local.home>
+In-Reply-To: <20140305120000.22766.77897.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305120000.22766.77897.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-refresh_exported_devices() doesn't check udev_device_new_from_syspath()
-return value and passed in null dev to udev_device_get_driver() resulting
-in a segmentation fault. Change it to check for null return value from
-both udev_device_new_from_syspath() and udev_device_get_driver().
+On Wed, 05 Mar 2014 21:00:00 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
----
- drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+> There is no need to prohibit probing on the functions
+> used for preparation, registeration, optimization,
+> controll etc. Those are safely probed because those are
+> not invoked from breakpoint/fault/debug handlers,
+> there is no chance to cause recursive exceptions.
+> 
+> Following functions are now removed from the kprobes blacklist.
+> add_new_kprobe
+> aggr_kprobe_disabled
+> alloc_aggr_kprobe
+> alloc_aggr_kprobe
+> arm_all_kprobes
+> __arm_kprobe
+> arm_kprobe
+> arm_kprobe_ftrace
+> check_kprobe_address_safe
+> collect_garbage_slots
+> collect_garbage_slots
+> collect_one_slot
+> debugfs_kprobe_init
+> __disable_kprobe
+> disable_kprobe
+> disarm_all_kprobes
+> __disarm_kprobe
+> disarm_kprobe
+> disarm_kprobe_ftrace
+> do_free_cleaned_kprobes
+> do_optimize_kprobes
+> do_unoptimize_kprobes
+> enable_kprobe
+> force_unoptimize_kprobe
+> free_aggr_kprobe
+> free_aggr_kprobe
+> __free_insn_slot
+> __get_insn_slot
+> get_optimized_kprobe
+> __get_valid_kprobe
+> init_aggr_kprobe
+> init_aggr_kprobe
+> in_nokprobe_functions
+> kick_kprobe_optimizer
+> kill_kprobe
+> kill_optimized_kprobe
+> kprobe_addr
+> kprobe_optimizer
+> kprobe_queued
+> kprobe_seq_next
+> kprobe_seq_start
+> kprobe_seq_stop
+> kprobes_module_callback
+> kprobes_open
+> optimize_all_kprobes
+> optimize_kprobe
+> prepare_kprobe
+> prepare_optimized_kprobe
+> register_aggr_kprobe
+> register_jprobe
+> register_jprobes
+> register_kprobe
+> register_kprobes
+> register_kretprobe
+> register_kretprobe
+> register_kretprobes
+> register_kretprobes
+> report_probe
+> show_kprobe_addr
+> try_to_optimize_kprobe
+> unoptimize_all_kprobes
+> unoptimize_kprobe
+> unregister_jprobe
+> unregister_jprobes
+> unregister_kprobe
+> __unregister_kprobe_bottom
+> unregister_kprobes
+> __unregister_kprobe_top
+> unregister_kretprobe
+> unregister_kretprobe
+> unregister_kretprobes
+> unregister_kretprobes
+> wait_for_kprobe_optimizer
+> 
 
-diff --git a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-index c5bf60b..92caef7 100644
---- a/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-+++ b/drivers/staging/usbip/userspace/libsrc/usbip_host_driver.c
-@@ -118,6 +118,7 @@ static int refresh_exported_devices(void)
- 	struct udev_list_entry *devices, *dev_list_entry;
- 	struct udev_device *dev;
- 	const char *path;
-+	const char *driver;
- 
- 	enumerate = udev_enumerate_new(udev_context);
- 	udev_enumerate_add_match_subsystem(enumerate, "usb");
-@@ -128,10 +129,12 @@ static int refresh_exported_devices(void)
- 	udev_list_entry_foreach(dev_list_entry, devices) {
- 		path = udev_list_entry_get_name(dev_list_entry);
- 		dev = udev_device_new_from_syspath(udev_context, path);
-+		if (dev == NULL)
-+			continue;
- 
- 		/* Check whether device uses usbip-host driver. */
--		if (!strcmp(udev_device_get_driver(dev),
--			    USBIP_HOST_DRV_NAME)) {
-+		driver = udev_device_get_driver(dev);
-+		if (driver != NULL && !strcmp(driver, USBIP_HOST_DRV_NAME)) {
- 			edev = usbip_exported_device_new(path);
- 			if (!edev) {
- 				dbg("usbip_exported_device_new failed");
--- 
-1.7.10.4
+Did you test these like you did with the previous patch? What about the
+middle of these functions?
 
+-- Steve
