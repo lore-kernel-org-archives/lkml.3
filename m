@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753627AbaCXRjr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 13:39:47 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:36284 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753107AbaCXRjo (ORCPT
+	id S1753574AbaCXRpT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 13:45:19 -0400
+Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:50376 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752653AbaCXRpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 13:39:44 -0400
-Message-ID: <53306DD8.8020002@redhat.com>
-Date: Mon, 24 Mar 2014 18:39:36 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Stefan Bader <stefan.bader@canonical.com>
-CC: Borislav Petkov <bp@alien8.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        MASAO TAKAHASHI <masao-takahashi@kanno.co.jp>,
-        Joerg Roedel <joro@8bytes.org>
-Subject: Re: Another preempt folding issue?
-References: <52FCFA23.4060701@canonical.com> <20140213173852.GH6835@laptop.programming.kicks-ass.net> <52FD090C.7010408@canonical.com> <20140213182605.GC14089@laptop.programming.kicks-ass.net> <20140214133428.GB26356@pd.tnic> <52FE2709.3050505@canonical.com> <20140214144700.GC26356@pd.tnic> <52FE4C28.1080500@canonical.com> <20140214172157.GJ6835@laptop.programming.kicks-ass.net> <53062165.3040202@canonical.com> <20140220155041.GG9987@twins.programming.kicks-ass.net>
-In-Reply-To: <20140220155041.GG9987@twins.programming.kicks-ass.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Mon, 24 Mar 2014 13:45:17 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::,RULES_HIT:41:355:379:541:800:960:966:968:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2538:2559:2562:2828:3138:3139:3140:3141:3142:3352:3865:3867:3871:4321:4385:5007:7652:10004:10400:10848:11026:11473:11657:11658:11914:12043:12296:12517:12519:12555:13069:13311:13357:21060,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: vase33_10aecb3662c4e
+X-Filterd-Recvd-Size: 2310
+Message-ID: <1395683112.13968.59.camel@joe-AO722>
+Subject: [PATCH net-next] chelsio: Remove addressof casts to same type
+From: Joe Perches <joe@perches.com>
+To: Dimitris Michailidis <dm@chelsio.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Date: Mon, 24 Mar 2014 10:45:12 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 20/02/2014 16:50, Peter Zijlstra ha scritto:
->>>> > >> One thing I likely should do is to reinstall the exact same laptop with 64bit
->>>> > >> kernel and userspace... maybe only 64bit kernel first... and make sure on my
->>>> > >> side that this does not show up on 64bit, too. I took the word of reporters for
->>>> > >> that (and the impression that otherwise many more people would have complained).
->>> > >
->>> > > Yeha, I'm going to try and install some 32bit userspace on a usb
->>> > > harddisk I've got and see if I can boot my Core2 laptop from that to try
->>> > > and reproduce.
->>> > >
->>> > > But all that is probably going to be Monday :/
->>> > >
->> > *sigh* Already Thursday...
->> >
->> > Peter, did you get to reproduce this locally? Unfortunately I had some
->> > interruption and have not more Information than on last Friday (which is that
->> > the same hw but 64bit kernel does not show it).
-> I got side-tracked as well, someone reported crashes, which come above
-> weird behaviour :/
->
+Using addressof then casting to the original type is pointless,
+so remove these unnecessary casts.
 
-Stefan, Peter, any news here?
+Done via coccinelle script:
 
-Paolo
+$ cat typecast.cocci 
+@@
+type T;
+T foo;
+@@
+
+-	(T *)&foo
++	&foo
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+index cc04d09..a7a41e0 100644
+--- a/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
++++ b/drivers/net/ethernet/chelsio/cxgb4/cxgb4_main.c
+@@ -3220,8 +3220,8 @@ static int cxgb4_clip_get(const struct net_device *dev,
+ 	c.op_to_write = htonl(FW_CMD_OP(FW_CLIP_CMD) |
+ 			FW_CMD_REQUEST | FW_CMD_WRITE);
+ 	c.alloc_to_len16 = htonl(F_FW_CLIP_CMD_ALLOC | FW_LEN16(c));
+-	*(__be64 *)&c.ip_hi = *(__be64 *)(lip->s6_addr);
+-	*(__be64 *)&c.ip_lo = *(__be64 *)(lip->s6_addr + 8);
++	c.ip_hi = *(__be64 *)(lip->s6_addr);
++	c.ip_lo = *(__be64 *)(lip->s6_addr + 8);
+ 	return t4_wr_mbox_meat(adap, adap->mbox, &c, sizeof(c), &c, false);
+ }
+ 
+@@ -3236,8 +3236,8 @@ static int cxgb4_clip_release(const struct net_device *dev,
+ 	c.op_to_write = htonl(FW_CMD_OP(FW_CLIP_CMD) |
+ 			FW_CMD_REQUEST | FW_CMD_READ);
+ 	c.alloc_to_len16 = htonl(F_FW_CLIP_CMD_FREE | FW_LEN16(c));
+-	*(__be64 *)&c.ip_hi = *(__be64 *)(lip->s6_addr);
+-	*(__be64 *)&c.ip_lo = *(__be64 *)(lip->s6_addr + 8);
++	c.ip_hi = *(__be64 *)(lip->s6_addr);
++	c.ip_lo = *(__be64 *)(lip->s6_addr + 8);
+ 	return t4_wr_mbox_meat(adap, adap->mbox, &c, sizeof(c), &c, false);
+ }
+ 
+
+
