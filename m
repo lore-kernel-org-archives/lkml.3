@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100AbaCXIVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 04:21:34 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15306 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750936AbaCXIVb (ORCPT
+	id S1752294AbaCXIVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 04:21:40 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:36359 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaCXIVe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 04:21:31 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-63-532feafe65da
-Date: Mon, 24 Mar 2014 09:21:12 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
-        svaidy@linux.vnet.ibm.com
-Subject: Re: [PATCH] cpufreq: set value of CPUFREQ_BOOST_FREQ to 0xABABABAB
-Message-id: <20140324092112.74f930d3@amdc2363>
-In-reply-to: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
-References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jAd1/r/SDDX4fkLJ42vSD3eLHqg+s
-	Fu8PPWO2uLxrDpvF594jjBZnTl9itbj89TqzRcvH9UwWG796OHB63Lm2h83jwaHNLB63/z1m
-	9thytZ3F4/MmuQDWKC6blNSczLLUIn27BK6Mzy81Cq4JVrRNm8LUwPiYt4uRk0NCwERi2uPT
-	7BC2mMSFe+vZuhi5OIQEFjFKnD4ylwnC+cUocW76EbAqFgFViS/bmphBbDYBPYnPd58CFXFw
-	iAhoSby8mQoSZhZ4yCixZjcniC0s4C1x9vM/sHJeoPITK0+CjeEUSJB4daEfzBYSiJf4cr2d
-	BcTmF5CUaP/3gxniIDuJc582sEP0Ckr8mHyPBWK+lsTmbU2sELa8xOY1b5knMArOQlI2C0nZ
-	LCRlCxiZVzGKphYkFxQnpeca6RUn5haX5qXrJefnbmIER8Mz6R2MqxosDjEKcDAq8fB69OsH
-	C7EmlhVX5h5ilOBgVhLhfdYLFOJNSaysSi3Kjy8qzUktPsQozcGiJM57sNU6UEggPbEkNTs1
-	tSC1CCbLxMEp1cC4Wj23Zoux+MNYzYyeCb4lD5Zk7rlWJ8x8YfHWbSxlXB95T6jeU+yPPnvD
-	8cGU+Pt9uWUy09cd3Td9XdbW/GQpXts3lUI1grlFOv9VuNZ1FE9wOZzeJe3WnWQWvfX4lUNS
-	PWodIYXR7H3t/JyiE+NmdeyZctmOqdLPsLp1za6/wjr/w+b9eaXEUpyRaKjFXFScCAC7VbtP
-	ggIAAA==
+	Mon, 24 Mar 2014 04:21:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <532E3DB4.9060908@linux.vnet.ibm.com>
+References: <1395246165-31150-1-git-send-email-vincent.guittot@linaro.org>
+ <1395246165-31150-7-git-send-email-vincent.guittot@linaro.org> <532E3DB4.9060908@linux.vnet.ibm.com>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Mon, 24 Mar 2014 09:21:14 +0100
+Message-ID: <CAKfTPtCAgKysDU-PhwbQJjbABQbqbVS678iOa3TGoygzt7GquA@mail.gmail.com>
+Subject: Re: [PATCH v3 6/6] sched: powerpc: Add SD_SHARE_POWERDOMAIN for SMT level
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "james.hogan@imgtec.com" <james.hogan@imgtec.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+On 23 March 2014 02:49, Preeti U Murthy <preeti@linux.vnet.ibm.com> wrote:
+> Hi Vincent,
+>
+> On 03/19/2014 09:52 PM, Vincent Guittot wrote:
+>> Set the power domain dependency at SMT level of Power8 but keep the flag
+>> clear at CPU level. The goal is to consolidate tasks on the threads of a
+>> core up to a level as explained by Preeti:
+>> "On powerpc we would want to clear the SD_SHARE_POWERDOMAIN flag at the CPU
+>> domain. On Power8, considering we have 8 threads per core, we would want to
+>> consolidate tasks atleast upto 4 threads without significant performance
+>> impact before spilling over to the other cores. By doing so, besides making
+>> use of the higher power of the core we could do cpuidle management at the
+>> core level for the remaining idle cores as a result of this consolidation."
+>>
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+>
+> We were discussing the impact of this consolidation and we are not too
+> sure if it will yield us good power efficiency. So we would want to
+> experiment with the power aware scheduler to find the "sweet spot" for
+> the number of threads to consolidate to and more importantly if there is
+> one such number at all. Else we would not want to go this way at all.
+> Hence it looks best if this patch is dropped until we validate it. We
+> don't want the code getting in and then out if we find out later there
+> are no benefits to it.
+>
+> I am sorry that I suggested this patch a bit pre-mature in the
+> experimentation and validation stage. When you release the load
+> balancing patchset for power aware scheduler I shall validate this
+> patch. But until then its best if it does not get merged.
 
-> Ideally, .driver_data field of struct cpufreq_frequency_table must
-> not be used by core at all. But during a recent change if its value
-> is same as CPUFREQ_BOOST_FREQ macro, then it is treated specially by
-> core.
-> 
-> The value of this macro was set to ~2 earlier, i.e. 0xFFFFFFFD. In
-> case some driver is using this field for its own data and sets this
-> field to -3, then with two's complement that value will also become
-> 0xFFFFFFFD.
-> 
-> To fix this issue, lets change value of this flag to a very uncommon
-> value which shouldn't be used by any driver unless they want to use
-> BOOST feature.
-> 
-> Along with this update comments to make this more clear.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-> ---
-> 
-> Gautham/Vaidy: I hope this fixes the problem we discussed for your
-> patchset.
-> 
+Hi Preeti,
 
-I think that a name of the patchset, for which the current setting
-causes problem would be welcome here.
+ok. I will drop this patch. Nevertheless, this patch only adds details
+about the power domain topology of Powerpc arch but it doesn't make
+any assumption about the scheduler policy or how it can be used by a
+power aware scheduler.
 
-Otherwise, I can only ask why it is not possible to add 
-#define SPECIAL_SETTING ~3 ?
+Regards,
+Vincent
 
-
->  include/linux/cpufreq.h | 10 ++++++++--
->  1 file changed, 8 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/linux/cpufreq.h b/include/linux/cpufreq.h
-> index c48e595..9f25d9d 100644
-> --- a/include/linux/cpufreq.h
-> +++ b/include/linux/cpufreq.h
-> @@ -455,12 +455,18 @@ extern struct cpufreq_governor
-> cpufreq_gov_conservative;
->   *                     FREQUENCY TABLE HELPERS
-> *
-> *********************************************************************/ 
-> +/* Special Values of .frequency field */
->  #define CPUFREQ_ENTRY_INVALID ~0
->  #define CPUFREQ_TABLE_END     ~1
-> -#define CPUFREQ_BOOST_FREQ    ~2
-> +/* Special Values of .driver_data field */
-> +#define CPUFREQ_BOOST_FREQ    0xABABABAB
->  
->  struct cpufreq_frequency_table {
-> -	unsigned int	driver_data; /* driver specific data,
-> not used by core */
-> +	/*
-> +	 * driver specific data, not used by core unless it is set to
-> +	 * CPUFREQ_BOOST_FREQ.
-> +	 */
-> +	unsigned int	driver_data;
->  	unsigned int	frequency; /* kHz - doesn't need to be
-> in ascending
->  				    * order */
->  };
-
-
-
--- 
-Best regards,
-
-Lukasz Majewski
-
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+>
+> Thanks
+>
+> Regards
+> Preeti U Murthy
+>> ---
+>>  arch/powerpc/kernel/smp.c | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/arch/powerpc/kernel/smp.c b/arch/powerpc/kernel/smp.c
+>> index c9cade5..fbbac3c 100644
+>> --- a/arch/powerpc/kernel/smp.c
+>> +++ b/arch/powerpc/kernel/smp.c
+>> @@ -759,7 +759,7 @@ int setup_profiling_timer(unsigned int multiplier)
+>>  /* cpumask of CPUs with asymetric SMT dependancy */
+>>  static const int powerpc_smt_flags(void)
+>>  {
+>> -     int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES;
+>> +     int flags = SD_SHARE_CPUPOWER | SD_SHARE_PKG_RESOURCES | SD_SHARE_POWERDOMAIN;
+>>
+>>       if (cpu_has_feature(CPU_FTR_ASYM_SMT)) {
+>>               printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
+>>
+>
