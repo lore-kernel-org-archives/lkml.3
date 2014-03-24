@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaCXPLu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 11:11:50 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:53342 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753453AbaCXPLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753461AbaCXPLq (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Mar 2014 11:11:46 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:53337 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750984AbaCXPLn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 11:11:43 -0400
 From: =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Fugang Duan <B38611@freescale.com>,
@@ -22,12 +22,13 @@ To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Simon Budig <simon.budig@kernelconcepts.de>,
         =?UTF-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
         Daniel Wagener <daniel.wagener@kernelconcepts.de>
-Subject: [PATCHv6 0/5] Input: edt-ft5x06: Add DT support
-Date: Mon, 24 Mar 2014 16:11:05 +0100
-Message-Id: <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
+Subject: [PATCHv6 1/5] Input: edt-ft5x06: several cleanups; no functional change
+Date: Mon, 24 Mar 2014 16:11:06 +0100
+Message-Id: <1395673870-29435-2-git-send-email-LW@KARO-electronics.de>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
+In-Reply-To: <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
 References: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
+ <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -35,35 +36,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes wrt. v1:
-addressed the comments from Jingoo Han and Mark Rutland
-- added another patch to convert the driver to use devm_* functions
-- removed sysfs reference from bindings documentation
-- changed '_' to '-' in property name
-- added 'edt,' prefix to properties names
-- added sanity check for parameters read from DT
-- cleaned up the gpio handling code
+- remove redundant parens
+- remove redundant type casts
+- fix mixed tab/space indentation
 
-Changes wrt. v2:
-- fixed the devm_* messup reported by Dmitry Torokhov
-- added unit for report-rate property to the binding doc
-- added separate patch to fix the reset delays
+Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
+---
+ drivers/input/touchscreen/edt-ft5x06.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-Changes wrt: v3:
-- removed patches that have already been applied in the mean time
-- ignore touchdown events, since those may report bad coordinates
-- added support for a new firmware version
-
-Changes wrt: v4:
-- removed some empty lines in the cleanup patch
-- addressed comments by Mark Rutland concerning the binding doc
-- use of_property_read_u32() instead of of_property_get()
-- dropped the 'report_rate' property
-- addressed comments by Fugang Duan
-- added Daniel Wagener and myself to the Copyright header in the
-  source file
-- use msleep() rather than mdelay() for the reset/wake pin timing
-
-Changes wrt: v5:
-- added missing '&' to parameter of of_property_read_u32()
+diff --git a/drivers/input/touchscreen/edt-ft5x06.c b/drivers/input/touchscreen/edt-ft5x06.c
+index 412a85e..155ab3b 100644
+--- a/drivers/input/touchscreen/edt-ft5x06.c
++++ b/drivers/input/touchscreen/edt-ft5x06.c
+@@ -173,7 +173,7 @@ static irqreturn_t edt_ft5x06_ts_isr(int irq, void *dev_id)
+ 		x = ((buf[0] << 8) | buf[1]) & 0x0fff;
+ 		y = ((buf[2] << 8) | buf[3]) & 0x0fff;
+ 		id = (buf[2] >> 4) & 0x0f;
+-		down = (type != TOUCH_EVENT_UP);
++		down = type != TOUCH_EVENT_UP;
+ 
+ 		input_mt_slot(tsdata->input, id);
+ 		input_mt_report_slot_state(tsdata->input, MT_TOOL_FINGER, down);
+@@ -257,7 +257,7 @@ static ssize_t edt_ft5x06_setting_show(struct device *dev,
+ 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
+ 	struct edt_ft5x06_attribute *attr =
+ 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
+-	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
++	u8 *field = (u8 *)tsdata + attr->field_offset;
+ 	int val;
+ 	size_t count = 0;
+ 	int error = 0;
+@@ -299,7 +299,7 @@ static ssize_t edt_ft5x06_setting_store(struct device *dev,
+ 	struct edt_ft5x06_ts_data *tsdata = i2c_get_clientdata(client);
+ 	struct edt_ft5x06_attribute *attr =
+ 			container_of(dattr, struct edt_ft5x06_attribute, dattr);
+-	u8 *field = (u8 *)((char *)tsdata + attr->field_offset);
++	u8 *field = (u8 *)tsdata + attr->field_offset;
+ 	unsigned int val;
+ 	int error;
+ 
+@@ -479,7 +479,7 @@ static int edt_ft5x06_debugfs_mode_set(void *data, u64 mode)
+ 
+ 	if (mode != tsdata->factory_mode) {
+ 		retval = mode ? edt_ft5x06_factory_mode(tsdata) :
+-			        edt_ft5x06_work_mode(tsdata);
++				edt_ft5x06_work_mode(tsdata);
+ 	}
+ 
+ 	mutex_unlock(&tsdata->mutex);
+@@ -568,7 +568,6 @@ out:
+ 	return error ?: read;
+ };
+ 
+-
+ static const struct file_operations debugfs_raw_data_fops = {
+ 	.open = simple_open,
+ 	.read = edt_ft5x06_debugfs_raw_data_read,
+@@ -614,8 +613,6 @@ edt_ft5x06_ts_teardown_debugfs(struct edt_ft5x06_ts_data *tsdata)
+ 
+ #endif /* CONFIG_DEBUGFS */
+ 
+-
+-
+ static int edt_ft5x06_ts_reset(struct i2c_client *client,
+ 					 int reset_pin)
+ {
+@@ -852,8 +849,8 @@ static SIMPLE_DEV_PM_OPS(edt_ft5x06_ts_pm_ops,
+ 			 edt_ft5x06_ts_suspend, edt_ft5x06_ts_resume);
+ 
+ static const struct i2c_device_id edt_ft5x06_ts_id[] = {
+-	{ "edt-ft5x06", 0 },
+-	{ }
++	{ "edt-ft5x06", 0, },
++	{ /* sentinel */ }
+ };
+ MODULE_DEVICE_TABLE(i2c, edt_ft5x06_ts_id);
+ 
+-- 
+1.7.10.4
 
