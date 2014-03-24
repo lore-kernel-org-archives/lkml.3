@@ -1,170 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbaCXTkB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 15:40:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18860 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754472AbaCXTiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 15:38:03 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: acme@ghostprotocols.net
-Cc: LKML <linux-kernel@vger.kernel.org>, jolsa@redhat.com, jmario@redhat.com,
-        fowles@inreach.com, peterz@infradead.org, eranian@google.com,
-        andi.kleen@intel.com, Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 14/15 V3] perf, c2c: Add symbol count table
-Date: Mon, 24 Mar 2014 15:37:05 -0400
-Message-Id: <1395689826-215033-15-git-send-email-dzickus@redhat.com>
-In-Reply-To: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
-References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+	id S1754574AbaCXTkZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 15:40:25 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:41586 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754090AbaCXTkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 15:40:21 -0400
+Date: Mon, 24 Mar 2014 15:40:18 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v8 13/26] x86: Allow kprobes on
+ text_poke/hw_breakpoint
+Message-ID: <20140324154018.7b4e26ca@gandalf.local.home>
+In-Reply-To: <20140305120014.22766.2114.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp>
+	<20140305120014.22766.2114.stgit@ltc230.yrl.intra.hitachi.co.jp>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just another table that displays the referenced symbols in the analysis
-report.  The table lists the most frequently used symbols first.
+On Wed, 05 Mar 2014 21:00:14 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-It is just another way to look at similar data to figure out who
-is causing the most contention (based on the workload used).
+> Allow kprobes on text_poke/hw_breakpoint because
+> those are not related to the critical int3-debug
+> recursive path of kprobes at this moment.
+> 
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Original done by Dick Fowles, backported by me.
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-Sample output:
-
-=======================================================================================================
-                                                   Object Name, Path & Reference Counts
-
-Index    Records   Object Name                       Object Path
-=======================================================================================================
-    0     931379   [kernel.kallsyms]                 [kernel.kallsyms]
-    1     192258   fio                               /home/joe/old_fio-2.0.15/fio
-    2      80302   [jbd2]                            /lib/modules/3.10.0c2c_all+/kernel/fs/jbd2/jbd2.ko
-    3      65392   [ext4]                            /lib/modules/3.10.0c2c_all+/kernel/fs/ext4/ext4.ko
-
-V2: refresh to latest upstream changes and hist_entry
-
-Original-by: Dick Fowles <rfowles@redhat.com>
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- tools/perf/builtin-c2c.c | 99 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 99 insertions(+)
-
-diff --git a/tools/perf/builtin-c2c.c b/tools/perf/builtin-c2c.c
-index a937c4b..e30ce2f 100644
---- a/tools/perf/builtin-c2c.c
-+++ b/tools/perf/builtin-c2c.c
-@@ -688,6 +688,104 @@ static void c2c_hit__update_stats(struct c2c_stats *new,
- 	new->total_period	+= old->total_period;
- }
- 
-+LIST_HEAD(ref_tree);
-+LIST_HEAD(ref_tree_sorted);
-+struct refs {
-+	struct list_head	list;
-+	int			nr;
-+	const char		*name;
-+	const char		*long_name;
-+};
-+
-+static int update_ref_list(struct hist_entry *entry)
-+{
-+	struct refs *p;
-+	struct dso *dso = entry->mem_info->iaddr.map->dso;
-+	const char *name = dso->short_name;
-+
-+	list_for_each_entry(p, &ref_tree, list) {
-+		if (!strcmp(p->name, name))
-+			goto found;
-+	}
-+
-+	p = zalloc(sizeof(struct refs));
-+	if (!p)
-+		return -1;
-+	p->name = name;
-+	p->long_name = dso->long_name;
-+	list_add_tail(&p->list, &ref_tree);
-+
-+found:
-+	p->nr++;
-+	return 0;
-+}
-+
-+static void print_symbol_record_count(struct rb_root *tree)
-+{
-+	struct rb_node *next = rb_first(tree);
-+	struct hist_entry *he;
-+	struct refs *p, *q, *pn;
-+	char      string[256];
-+	char      delimit[256];
-+	int       i;
-+	int       idx = 0;
-+
-+	/* gather symbol references */
-+	while (next) {
-+		he = rb_entry(next, struct hist_entry, rb_node_in);
-+		next = rb_next(&he->rb_node_in);
-+
-+		if (update_ref_list(he)) {
-+			pr_err("Could not update reference tree\n");
-+			goto cleanup;
-+		}
-+	}
-+
-+	/* sort on number of references per symbol */
-+	list_for_each_entry_safe(p, pn, &ref_tree, list) {
-+		list_del_init(&p->list);
-+		list_for_each_entry(q, &ref_tree_sorted, list) {
-+			if (p->nr > q->nr) {
-+				list_add_tail(&p->list, &q->list);
-+				break;
-+			}
-+		}
-+		if (list_empty(&p->list))
-+			list_add_tail(&p->list, &ref_tree_sorted);
-+	}
-+
-+	/* print header info */
-+	sprintf(string, "%5s   %8s   %-32s  %-80s",
-+		"Index",
-+		"Records",
-+		"Object Name",
-+		"Object Path");
-+
-+	delimit[0] = '\0';
-+	for (i = 0; i < (int)strlen(string); i++) strcat(delimit, "=");
-+
-+	printf("\n\n");
-+	printf("%s\n", delimit);
-+	printf("%50s %s\n", " ", "Object Name, Path & Reference Counts");
-+	printf("\n");
-+	printf("%s\n", string);
-+	printf("%s\n", delimit);
-+
-+	/* print out table */
-+	list_for_each_entry(p, &ref_tree_sorted, list) {
-+		printf("%5d   %8d   %-32s  %-80s\n",
-+			idx, p->nr, p->name, p->long_name);
-+		idx++;
-+	}
-+	printf("\n");
-+
-+cleanup:
-+	list_for_each_entry_safe(p, pn, &ref_tree_sorted, list) {
-+		list_del(&p->list);
-+		free(p);
-+	}
-+}
-+
- static void print_hitm_cacheline_header(void)
- {
- #define SHARING_REPORT_TITLE  "Shared Cache Line Distribution Pareto"
-@@ -1269,6 +1367,7 @@ static int perf_c2c__process_events(struct perf_session *session,
- 		dump_rb_tree(c2c->hists.entries_in, c2c);
- 	print_c2c_trace_report(c2c);
- 	c2c_analyze_hitms(c2c);
-+	print_symbol_record_count(c2c->hists.entries_in);
- 
- err:
- 	return err;
--- 
-1.7.11.7
-
+-- Steve
