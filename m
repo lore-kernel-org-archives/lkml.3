@@ -1,65 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753311AbaCXNAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 09:00:49 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45391 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663AbaCXM7a (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 08:59:30 -0400
-Message-Id: <20140324125925.911631019@openvz.org>
-User-Agent: quilt/0.60-1
-Date: Mon, 24 Mar 2014 16:28:39 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Cc: hughd@google.com, xemul@parallels.com, akpm@linux-foundation.org,
-        gorcunov@openvz.org
-Subject: [patch 1/4] mm: Make freshly remapped file pages being softdirty unconditionally
-References: <20140324122838.490106581@openvz.org>
-Content-Disposition: inline; filename=mm-file-pte-softdirty-update-2
+	id S1753122AbaCXNLt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 09:11:49 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28182 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752419AbaCXNLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 09:11:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,720,1389772800"; 
+   d="scan'208";a="478802398"
+Date: Mon, 24 Mar 2014 09:11:04 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Keith Busch <keith.busch@intel.com>, linux-nvme@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] NVMe: silence GCC warning on 32 bit
+Message-ID: <20140324131104.GC5777@linux.intel.com>
+References: <1392714172-2712-1-git-send-email-geert@linux-m68k.org>
+ <1392934261.15264.22.camel@x220>
+ <alpine.LRH.2.03.1402210921010.4656@AMR>
+ <1393925767.3038.23.camel@x220>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1393925767.3038.23.camel@x220>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hugh reported:
+On Tue, Mar 04, 2014 at 10:36:07AM +0100, Paul Bolle wrote:
+> Also note that it's actually not clear to me why these warnings only
+> trigger on 32 bit. I guess there's some int/long conversion lurking
+> somewhere. I haven't found it. 
 
- | I noticed your soft_dirty work in install_file_pte(): which looked
- | good at first, until I realized that it's propagating the soft_dirty
- | of a pte it's about to zap completely, to the unrelated entry it's
- | about to insert in its place.  Which seems very odd to me.
-
-Indeed this code ends up being nop in result -- pte_file_mksoft_dirty()
-operates with pte_t argument and returns new pte_t which were never
-used after. After looking more I think what we need is to soft-dirtify
-all newely remapped file pages because it should look like a new mapping
-for memory tracker.
-
-Reported-by: Hugh Dickins <hughd@google.com>
-CC: Pavel Emelyanov <xemul@parallels.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- mm/fremap.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
-
-Index: linux-2.6.git/mm/fremap.c
-===================================================================
---- linux-2.6.git.orig/mm/fremap.c
-+++ linux-2.6.git/mm/fremap.c
-@@ -66,13 +66,10 @@ static int install_file_pte(struct mm_st
- 
- 	ptfile = pgoff_to_pte(pgoff);
- 
--	if (!pte_none(*pte)) {
--		if (pte_present(*pte) && pte_soft_dirty(*pte))
--			pte_file_mksoft_dirty(ptfile);
-+	if (!pte_none(*pte))
- 		zap_pte(mm, vma, addr, pte);
--	}
- 
--	set_pte_at(mm, addr, pte, ptfile);
-+	set_pte_at(mm, addr, pte, pte_file_mksoft_dirty(ptfile));
- 	/*
- 	 * We don't need to run update_mmu_cache() here because the "file pte"
- 	 * being installed by install_file_pte() is not a real pte - it's a
-
+I bet you're using a different revision of the compiler on 32 and 64 bit.
+Different gcc revisions have different abilities to track initialisation.
