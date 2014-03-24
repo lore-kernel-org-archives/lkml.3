@@ -1,84 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777AbaCXJqz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 05:46:55 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36610 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752511AbaCXJqw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 05:46:52 -0400
-Date: Mon, 24 Mar 2014 10:46:51 +0100
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jonathan Cameron <jic23@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-Subject: Re: [PATCH v2 12/15] ARM: at91: remove atmel_tsadcc platform_data
-Message-ID: <20140324094650.GB20484@piout.net>
-References: <1395064628-644-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1395064628-644-13-git-send-email-alexandre.belloni@free-electrons.com>
- <532D8474.8020601@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532D8474.8020601@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752819AbaCXJrT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 05:47:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44572 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752781AbaCXJrQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 05:47:16 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1395640404-27958-1-git-send-email-behanw@converseincode.com>
+References: <1395640404-27958-1-git-send-email-behanw@converseincode.com> <1395506558.2143.18.camel@dabdike.int.hansenpartnership.com>
+To: behanw@converseincode.com
+Cc: dhowells@redhat.com, arnd@arndb.de, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dwmw2@infradead.org,
+        pageexec@freemail.hu, Mark Charlebois <charlebm@gmail.com>
+Subject: Re: [PATCH v4] LLVMLinux: Remove warning about returning an uninitialized variable
+Date: Mon, 24 Mar 2014 09:46:32 +0000
+Message-ID: <11930.1395654392@warthog.procyon.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/03/2014 at 12:39:16 +0000, Jonathan Cameron wrote :
-> On 17/03/14 13:57, Alexandre Belloni wrote:
-> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> See below.
-> >---
-> >  arch/arm/mach-at91/board.h          | 3 ---
-> >  include/linux/platform_data/atmel.h | 7 -------
-> >  2 files changed, 10 deletions(-)
-> >
-> >diff --git a/arch/arm/mach-at91/board.h b/arch/arm/mach-at91/board.h
-> >index 6c08b341167d..4e773b55bc2d 100644
-> >--- a/arch/arm/mach-at91/board.h
-> >+++ b/arch/arm/mach-at91/board.h
-> >@@ -118,9 +118,6 @@ struct isi_platform_data;
-> >  extern void __init at91_add_device_isi(struct isi_platform_data *data,
-> >  		bool use_pck_as_mck);
-> >
-> >- /* Touchscreen Controller */
-> >-extern void __init at91_add_device_tsadcc(struct at91_tsadcc_data *data);
-> >-
-> >  /* CAN */
-> >  extern void __init at91_add_device_can(struct at91_can_data *data);
-> >
-> >diff --git a/include/linux/platform_data/atmel.h b/include/linux/platform_data/atmel.h
-> >index cea9f70133c5..4b452c6a2f7b 100644
-> >--- a/include/linux/platform_data/atmel.h
-> >+++ b/include/linux/platform_data/atmel.h
-> >@@ -86,13 +86,6 @@ struct atmel_uart_data {
-> >  	struct serial_rs485	rs485;		/* rs485 settings */
-> >  };
-> >
-> >- /* Touchscreen Controller */
-> >-struct at91_tsadcc_data {
-> >-	unsigned int    adc_clock;
-> >-	u8		pendet_debounce;
-> >-	u8		ts_sample_hold_time;
-> >-};
-> >-
-> I believe this is still in use in the driver you don't remove until patch 14.
+behanw@converseincode.com wrote:
+
+> From: Behan Webster <behanw@converseincode.com>
 > 
-> Probably best to reorder the patches...
+> Fix uninitialized return code in default case in cmpxchg-local.h
+> 
+> This patch fixes the code to prevent an uninitialized return value that is detected
+> when compiling with clang. The bug produces numerous warnings when compiling the
+> Linux kernel with clang.
+> 
+> Signed-off-by: Behan Webster <behanw@converseincode.com>
+> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
 
-Indeed, you are right.
-
-Nicolas, do you take care of that or should I send a v3 ?
-
-
--- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Acked-by: David Howells <dhowells@redhat.com>
