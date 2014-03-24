@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751909AbaCXHAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 03:00:38 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:37447 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750839AbaCXHAg (ORCPT
+	id S1751874AbaCXHV5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 03:21:57 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:40624 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827AbaCXHVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 03:00:36 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: rjw@rjwysocki.net
-Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH] cpufreq: resume drivers before enabling governors
-Date: Mon, 24 Mar 2014 12:30:29 +0530
-Message-Id: <f067d833e8aded9d83fc4869121afdc78e96c544.1395644255.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+	Mon, 24 Mar 2014 03:21:55 -0400
+From: Jakub Sitnicki <jsitnicki@gmail.com>
+To: jack@suse.cz
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Sitnicki <jsitnicki@gmail.com>
+Subject: [PATCH 1/2] ext2: acl: remove unneeded include of linux/capability.h
+Date: Mon, 24 Mar 2014 08:21:24 +0100
+Message-Id: <1395645684-26512-1-git-send-email-jsitnicki@gmail.com>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During suspend, we first stop governors and then suspend cpufreq drivers and
-resume must be exactly opposite of that. i.e. resume drivers first and then
-start governors.
+acl.c has not been (directly) using the interface defined by
+linux/capability.h header since commit 3bd858ab1c451725c07a
+("Introduce is_owner_or_cap() to wrap CAP_FOWNER use with fsuid
+check"). Remove it.
 
-But the current code in resume enables governors first and then resume drivers.
-Fix it be changing code sequence there.
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Jakub Sitnicki <jsitnicki@gmail.com>
 ---
-For 3.15-rc2 ..
+ fs/ext2/acl.c | 1 -
+ 1 file changed, 1 deletion(-)
 
- drivers/cpufreq/cpufreq.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
-index 3aa7a7a..d8d6bc9 100644
---- a/drivers/cpufreq/cpufreq.c
-+++ b/drivers/cpufreq/cpufreq.c
-@@ -1652,14 +1652,13 @@ void cpufreq_resume(void)
- 	cpufreq_suspended = false;
+diff --git a/fs/ext2/acl.c b/fs/ext2/acl.c
+index 1b8001b..27695e6 100644
+--- a/fs/ext2/acl.c
++++ b/fs/ext2/acl.c
+@@ -4,7 +4,6 @@
+  * Copyright (C) 2001-2003 Andreas Gruenbacher, <agruen@suse.de>
+  */
  
- 	list_for_each_entry(policy, &cpufreq_policy_list, policy_list) {
--		if (__cpufreq_governor(policy, CPUFREQ_GOV_START)
-+		if (cpufreq_driver->resume && cpufreq_driver->resume(policy))
-+			pr_err("%s: Failed to resume driver: %p\n", __func__,
-+				policy);
-+		else if (__cpufreq_governor(policy, CPUFREQ_GOV_START)
- 		    || __cpufreq_governor(policy, CPUFREQ_GOV_LIMITS))
- 			pr_err("%s: Failed to start governor for policy: %p\n",
- 				__func__, policy);
--		else if (cpufreq_driver->resume
--		    && cpufreq_driver->resume(policy))
--			pr_err("%s: Failed to resume driver: %p\n", __func__,
--				policy);
- 
- 		/*
- 		 * schedule call cpufreq_update_policy() for boot CPU, i.e. last
+-#include <linux/capability.h>
+ #include <linux/init.h>
+ #include <linux/sched.h>
+ #include <linux/slab.h>
 -- 
-1.7.12.rc2.18.g61b472e
+1.8.5.3
 
