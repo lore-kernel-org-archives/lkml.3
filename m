@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191AbaCYIiz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:38:55 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:55419 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830AbaCYIir (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:38:47 -0400
-Date: Tue, 25 Mar 2014 10:38:37 +0200
-From: Johan Hedberg <johan.hedberg@gmail.com>
-To: Surendra Patil <surendra.tux@gmail.com>
-Cc: marcel@holtmann.org, gustavo@padovan.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:bluetooth:ath3k.c: Fixed sparse warning for cast
- to restricted __le32
-Message-ID: <20140325083837.GB5490@t440s.lan>
-Mail-Followup-To: Surendra Patil <surendra.tux@gmail.com>,
-	marcel@holtmann.org, gustavo@padovan.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1395735950-17968-1-git-send-email-surendra.tux@gmail.com>
+	id S1754214AbaCYIjZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:39:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46080 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753438AbaCYIjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 04:39:21 -0400
+Date: Tue, 25 Mar 2014 04:38:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 3.14-rc8
+Message-ID: <20140325083844.GA2516@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395735950-17968-1-git-send-email-surendra.tux@gmail.com>
+In-Reply-To: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, Mar 24, 2014 at 07:40:06PM -0700, Linus Torvalds wrote:
+ > I delayed things a day from my normal schedule, hoping I'd feel more
+ > comfortable doing a 3.14 release, but that was not to be. So here's an
+ > rc8, and I expect to do the final 3.14 release next weekend.
+ > 
+ > There wasn't that much scary stuff going on, but there's a few vfs
+ > fixes still pending, and we did end up having some interesting core
+ > fixes last week too (not new regressions, but newly detected by
+ > Trinity. Kudos to Hugh Dickins for figuring them out and fixing the
+ > causes). There's also some networking fixes and random noise (mainly
+ > MIPS).  So I really wanted another week before release after all.
 
-On Tue, Mar 25, 2014, Surendra Patil wrote:
-> This patch fixes below Sparse warnings -
-> drivers/bluetooth/ath3k.c:370:17: warning: cast to restricted __le32
-> drivers/bluetooth/ath3k.c:432:17: warning: cast to restricted __le32
-> 
-> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
-> ---
->  drivers/bluetooth/ath3k.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
-> index be571fe..badacbc 100644
-> --- a/drivers/bluetooth/ath3k.c
-> +++ b/drivers/bluetooth/ath3k.c
-> @@ -367,7 +367,7 @@ static int ath3k_load_patch(struct usb_device *udev)
->  	}
->  
->  	snprintf(filename, ATH3K_NAME_LEN, "ar3k/AthrBT_0x%08x.dfu",
-> -		le32_to_cpu(fw_version.rom_version));
-> +		fw_version.rom_version);
->  
->  	ret = request_firmware(&firmware, filename, &udev->dev);
->  	if (ret < 0) {
-> @@ -429,7 +429,7 @@ static int ath3k_load_syscfg(struct usb_device *udev)
->  	}
->  
->  	snprintf(filename, ATH3K_NAME_LEN, "ar3k/ramps_0x%08x_%d%s",
-> -		le32_to_cpu(fw_version.rom_version), clk_value, ".dfu");
-> +		 fw_version.rom_version, clk_value, ".dfu");
->  
->  	ret = request_firmware(&firmware, filename, &udev->dev);
->  	if (ret < 0) {
+FWIW, since Hugh's heroic work nailing those bugs, I've managed to run
+trinity for days since without problems[1]. As we discussed today at the VM summit,
+Sasha has found a bunch of things in -next that may be a problem in .14 too, 
+(and in fact I've hit one of those BUGONs once), but on the whole it's looking
+a lot better.
 
-Are you sure this doesn't introduce a bug on big endian systems? We just
-recently applied commit b9e2535acad8f52a17e2aa843d45a6b756b59592 which
-adds this le32_to_cpu conversion. Probably the correct fix is to update
-this fw_version struct definition to use __le32 for any member that's
-expected to be in little endian format?
+	Dave
 
-Johan
+[1] Actually, I've since crashed my test box for stupid reasons now that
+    I'm 3000 miles away from it until the end of the week, but I have a way better
+    opinion of rc8 than I did of rc7.
+
+	Dave
+
