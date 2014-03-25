@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422AbaCYIWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:22:14 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:65291 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaCYIVu (ORCPT
+	id S1753427AbaCYIW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:22:56 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:62935 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274AbaCYIVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:21:50 -0400
+	Tue, 25 Mar 2014 04:21:45 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 47/47] mtd: nand: stm_nand_bch: catch unsupported calls
-Date: Tue, 25 Mar 2014 08:20:04 +0000
-Message-Id: <1395735604-26706-48-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 45/47] mtd: nand: stm_nand_bch: read and write buffers (FLEX)
+Date: Tue, 25 Mar 2014 08:20:02 +0000
+Message-Id: <1395735604-26706-46-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,62 +22,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Display a BUG() message and return appropriate/expected value.
+read or write in 4 Byte chunks at a time until there is less than
+8 Bytes remaining, at which point split down into reading the
+reset a single Byte at a time.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 30 ++++++++++++++++++++++++++++++
- 1 file changed, 30 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 72 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 72 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 4103d4f..e732bf3 100644
+index f5b0a00..975326e 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -852,6 +852,31 @@ static void flex_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
- 	}
+@@ -686,6 +686,75 @@ static void flex_addr(struct nandi_controller *nandi,
+ 	writel(addr, nandi->base + NANDHAM_FLEX_ADD);
  }
  
-+/* Catch calls to non-supported functions */
-+static uint16_t flex_read_word_bug(struct mtd_info *mtd)
++static void flex_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
 +{
-+	BUG();
-+	return 0;
++	struct nand_chip *chip = mtd->priv;
++	struct nandi_controller *nandi = chip->priv;
++	int aligned;
++
++	emiss_nandi_select(STM_NANDI_HAMMING);
++
++	/* Read bytes until buf is 4-byte aligned */
++	while (len && ((unsigned int)buf & 0x3)) {
++		*buf++ = (uint8_t)(readl(nandi->base + NANDHAM_FLEX_DATA)
++				   & 0xff);
++		len--;
++	};
++
++	/* Use 'BEATS_4'/readsl */
++	if (len > 8) {
++		aligned = len & ~0x3;
++		writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
++		       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
++
++		readsl(nandi->base + NANDHAM_FLEX_DATA, buf, aligned >> 2);
++
++		buf += aligned;
++		len -= aligned;
++
++		writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
++		       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
++	}
++
++	/* Mop up remaining bytes */
++	while (len > 0) {
++		*buf++ = (uint8_t)(readl(nandi->base + NANDHAM_FLEX_DATA)
++				   & 0xff);
++		len--;
++	}
 +}
 +
-+static int flex_block_bad_bug(struct mtd_info *mtd, loff_t ofs, int getchip)
++static void flex_write_buf(struct mtd_info *mtd, const uint8_t *buf, int len)
 +{
-+	BUG();
-+	return 1;
-+}
++	struct nand_chip *chip = mtd->priv;
++	struct nandi_controller *nandi = chip->priv;
++	int aligned;
 +
-+static int flex_block_markbad_bug(struct mtd_info *mtd, loff_t ofs)
-+{
-+	BUG();
-+	return 1;
-+}
++	/* Write bytes until buf is 4-byte aligned */
++	while (len && ((unsigned int)buf & 0x3)) {
++		writel(*buf++, nandi->base + NANDHAM_FLEX_DATA);
++		len--;
++	};
 +
-+int flex_scan_bbt_bug(struct mtd_info *mtd)
-+{
-+	BUG();
-+	return 1;
++	/* USE 'BEATS_4/writesl */
++	if (len > 8) {
++		aligned = len & ~0x3;
++		writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
++		       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
++		writesl(nandi->base + NANDHAM_FLEX_DATA, buf, aligned >> 2);
++		buf += aligned;
++		len -= aligned;
++		writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
++		       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
++	}
++
++	/* Mop up remaining bytes */
++	while (len > 0) {
++		writel(*buf++, nandi->base + NANDHAM_FLEX_DATA);
++		len--;
++	}
 +}
 +
  /*
   * Hamming-FLEX operations (optimised replacements for nand_base.c versions)
   */
-@@ -1916,7 +1941,12 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
- 	chip->read_buf = flex_read_buf;
- 	chip->write_buf = flex_write_buf;
+@@ -1743,6 +1812,9 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 	chip->priv = nandi;
+ 	chip->ecc.layout = &info->ecclayout;
  
-+	chip->read_word = flex_read_word_bug;
-+	chip->block_bad = flex_block_bad_bug;
-+	chip->block_markbad = flex_block_markbad_bug;
++	chip->read_buf = flex_read_buf;
++	chip->write_buf = flex_write_buf;
 +
  	chip->bbt_options |= NAND_BBT_USE_FLASH;
-+	chip->scan_bbt = flex_scan_bbt_bug;
  
  	/* mtd_info */
- 	mtd->owner = THIS_MODULE;
 -- 
 1.8.3.2
 
