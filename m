@@ -1,161 +1,328 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470AbaCYRQI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:16:08 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:45894 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751958AbaCYRQG (ORCPT
+	id S1753948AbaCYRQo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:16:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55565 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721AbaCYRQl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:16:06 -0400
-Message-ID: <5331B9C8.7080106@oracle.com>
-Date: Tue, 25 Mar 2014 13:15:52 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 13:16:41 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [3.8.y.z extended stable] Linux 3.8.13.20 stable review
+Date: Tue, 25 Mar 2014 10:15:13 -0700
+Message-Id: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Extended-Stable: 3.8
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>, Michal Hocko <mhocko@suse.cz>
-CC: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: slub: gpf in deactivate_slab
-References: <53208A87.2040907@oracle.com> <5331A6C3.2000303@oracle.com> <20140325165247.GA7519@dhcp22.suse.cz> <alpine.DEB.2.10.1403251205140.24534@nuc>
-In-Reply-To: <alpine.DEB.2.10.1403251205140.24534@nuc>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 01:06 PM, Christoph Lameter wrote:
-> On Tue, 25 Mar 2014, Michal Hocko wrote:
->
->> You are right. The function even does VM_BUG_ON(!irqs_disabled())...
->> Unfortunatelly we do not seem to have an _irq alternative of the bit
->> spinlock.
->> Not sure what to do about it. Christoph?
->>
->> Btw. it seems to go way back to 3.1 (1d07171c5e58e).
->
-> Well there is a preempt_enable() (bit_spin_lock) and a preempt_disable()
-> bit_spin_unlock() within a piece of code where irqs are disabled.
->
-> Is that a problem? Has been there for a long time.
+This is the start of the review cycle for the Linux 3.8.13.20 stable kernel.
 
-So here's the full trace. There's obviously something wrong here since we
-pagefault inside the section that was supposed to be running with irqs disabled
-and I don't see another cause besides this.
+This version contains 81 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-The unreliable entries in the stack trace also somewhat suggest that the
-fault is with the code I've pointed out.
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.8.y-review;a=shortlog
 
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.8.y-review
 
-[  584.145271] BUG: sleeping function called from invalid context at arch/x86/mm/fault.c:1167
-[  584.148787] in_atomic(): 0, irqs_disabled(): 1, pid: 10089, name: trinity-c42
-[  584.150413] 1 lock held by trinity-c42/10089:
-[  584.151834]  #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8450aec3>] __do_page_fault+0x2e3/0x630
-[  584.151834] irq event stamp: 33318
-[  584.151834] hardirqs last  enabled at (33317): [<ffffffff81282f15>] context_tracking_user_exit+0x1b5/0x260
-[  584.151834] hardirqs last disabled at (33318): [<ffffffff844b10d6>] __slab_alloc+0x41/0x637
-[  584.151834] softirqs last  enabled at (33070): [<ffffffff81161a3e>] __do_softirq+0x3fe/0x560
-[  584.151834] softirqs last disabled at (33065): [<ffffffff81161f7c>] irq_exit+0x6c/0x170
-[  584.151834] CPU: 42 PID: 10089 Comm: trinity-c42 Tainted: G        W     3.14.0-rc7-next-20140324-sasha-00015-g2fee858-dirty #271
-[  584.151834]  ffff8800bc043000 ffff8800bc06f9c8 ffffffff844baf42 0000000000000001
-[  584.151834]  0000000000000000 ffff8800bc06f9f8 ffffffff81197ee1 ffffffff8450aec3
-[  584.151834]  0000000000000028 ffff8800bc06fb68 0000000000000a94 ffff8800bc06fb08
-[  584.151834] Call Trace:
-[  584.151834]  [<ffffffff844baf42>] dump_stack+0x4f/0x7c
-[  584.151834]  [<ffffffff81197ee1>] __might_sleep+0x221/0x240
-[  584.151834]  [<ffffffff8450aec3>] ? __do_page_fault+0x2e3/0x630
-[  584.151834]  [<ffffffff8450af0b>] __do_page_fault+0x32b/0x630
-[  584.151834]  [<ffffffff8107aab5>] ? sched_clock+0x15/0x20
-[  584.151834]  [<ffffffff811a2295>] ? sched_clock_local+0x25/0xa0
-[  584.151834]  [<ffffffff811a2578>] ? sched_clock_cpu+0xa8/0xf0
-[  584.151834]  [<ffffffff81282f07>] ? context_tracking_user_exit+0x1a7/0x260
-[  584.151834]  [<ffffffff81b37063>] ? __this_cpu_preempt_check+0x13/0x20
-[  584.151834]  [<ffffffff811c0664>] ? trace_hardirqs_off_caller+0x174/0x1a0
-[  584.151834]  [<ffffffff8450b25e>] do_page_fault+0x4e/0xa0
-[  584.151834]  [<ffffffff8450a775>] do_async_page_fault+0x35/0x100
-[  584.151834]  [<ffffffff845073d8>] async_page_fault+0x28/0x30
-[  584.151834]  [<ffffffff812e60e8>] ? deactivate_slab+0xc8/0x620
-[  584.151834]  [<ffffffff812e5f70>] ? __cmpxchg_double_slab.isra.26+0x120/0x1d0
-[  584.151834]  [<ffffffff812e611b>] ? deactivate_slab+0xfb/0x620
-[  584.151834]  [<ffffffff812e60e8>] ? deactivate_slab+0xc8/0x620
-[  584.151834]  [<ffffffff84506345>] ? _raw_spin_unlock+0x35/0x60
-[  584.151834]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.151834]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.151834]  [<ffffffff81b37087>] ? debug_smp_processor_id+0x17/0x20
-[  584.151834]  [<ffffffff812e3676>] ? set_track+0x96/0x180
-[  584.151834]  [<ffffffff812e35ce>] ? init_object+0x6e/0x80
-[  584.151834]  [<ffffffff844b15f9>] __slab_alloc+0x564/0x637
-[  584.151834]  [<ffffffff810b9b24>] ? kvm_clock_read+0x24/0x40
-[  584.151834]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.151834]  [<ffffffff8119b041>] ? get_parent_ip+0x11/0x50
-[  584.151834]  [<ffffffff812e7ddc>] kmem_cache_alloc+0x12c/0x3b0
-[  584.151834]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.151834]  [<ffffffff811a3288>] ? vtime_account_user+0x98/0xb0
-[  584.151834]  [<ffffffff8132c5e1>] alloc_inode+0x41/0xa0
-[  584.151834]  [<ffffffff8132e4fa>] new_inode_pseudo+0x1a/0x70
-[  584.151834]  [<ffffffff8131837a>] create_pipe_files+0x2a/0x220
-[  584.151834]  [<ffffffff811c28f4>] ? trace_hardirqs_on_caller+0x1f4/0x290
-[  584.151834]  [<ffffffff813185b5>] __do_pipe_flags+0x45/0xe0
-[  584.151834]  [<ffffffff81318770>] SyS_pipe+0x20/0xb0
-[  584.151834]  [<ffffffff84510975>] ? tracesys+0x7e/0xe6
-[  584.151834]  [<ffffffff845109d8>] tracesys+0xe1/0xe6
+The review period for version 3.8.13.20 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
 
-It was also followed by a straightforward NULL ptr deref in deactivate_slab():
+For more information about the Linux 3.8.y.z extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
 
-[  584.151834] BUG: unable to handle kernel NULL pointer dereference at 0000000000000a94
-[  584.151834] IP: [<ffffffff812e611b>] deactivate_slab+0xfb/0x620
-[  584.223982] PGD bc06c067 PUD bc06d067 PMD 0
-[  584.223982] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-[  584.223982] Dumping ftrace buffer:
-[  584.223982]    (ftrace buffer empty)
-[  584.223982] Modules linked in:
-[  584.223982] CPU: 42 PID: 10089 Comm: trinity-c42 Tainted: G        W     3.14.0-rc7-next-20140324-sasha-00015-g2fee858-dirty #271
-[  584.223982] task: ffff8800bc043000 ti: ffff8800bc06e000 task.ti: ffff8800bc06e000
-[  584.223982] RIP: 0010:[<ffffffff812e611b>]  [<ffffffff812e611b>] deactivate_slab+0xfb/0x620
-[  584.223982] RSP: 0018:ffff8800bc06fc18  EFLAGS: 00010006
-[  584.223982] RAX: 0000000000000410 RBX: ffffea002bb04200 RCX: 0000000180180016
-[  584.223982] RDX: 0000000000000001 RSI: ffffffff812e60e8 RDI: ffffffff812e5f70
-[  584.223982] RBP: ffff8800bc06fd08 R08: ffffea0023ac6000 R09: 0000000000000080
-[  584.223982] R10: ffff880aec108408 R11: 0000000000000001 R12: ffffea0023ac6000
-[  584.223982] R13: ffff880a6c520000 R14: 0000000000000684 R15: 0000000000000684
-[  584.223982] FS:  00007feaa0845700(0000) GS:ffff880aecc00000(0000) knlGS:0000000000000000
-[  584.223982] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  584.223982] CR2: 0000000000000a94 CR3: 00000000bc06b000 CR4: 00000000000006a0
-[  584.223982] DR0: 0000000000698000 DR1: 0000000000698000 DR2: 0000000000000000
-[  584.223982] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000d9060a
-[  584.223982] Stack:
-[  584.223982]  ffff8800bc043000 0000002a8450b958 ffff8800bc06e000 ffff8800bc06fc78
-[  584.223982]  00000000bc06fc58 ffffffff84506345 ffff88000000000f ffff880aec805600
-[  584.223982]  ffffffff8132c5e1 0000000000000082 ffff880aec108418 0000000180180015
-[  584.223982] Call Trace:
-[  584.223982]  [<ffffffff84506345>] ? _raw_spin_unlock+0x35/0x60
-[  584.223982]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.223982]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.223982]  [<ffffffff81b37087>] ? debug_smp_processor_id+0x17/0x20
-[  584.223982]  [<ffffffff812e3676>] ? set_track+0x96/0x180
-[  584.223982]  [<ffffffff812e35ce>] ? init_object+0x6e/0x80
-[  584.223982]  [<ffffffff844b15f9>] __slab_alloc+0x564/0x637
-[  584.223982]  [<ffffffff810b9b24>] ? kvm_clock_read+0x24/0x40
-[  584.223982]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.223982]  [<ffffffff8119b041>] ? get_parent_ip+0x11/0x50
-[  584.223982]  [<ffffffff812e7ddc>] kmem_cache_alloc+0x12c/0x3b0
-[  584.223982]  [<ffffffff8132c5e1>] ? alloc_inode+0x41/0xa0
-[  584.223982]  [<ffffffff811a3288>] ? vtime_account_user+0x98/0xb0
-[  584.223982]  [<ffffffff8132c5e1>] alloc_inode+0x41/0xa0
-[  584.223982]  [<ffffffff8132e4fa>] new_inode_pseudo+0x1a/0x70
-[  584.223982]  [<ffffffff8131837a>] create_pipe_files+0x2a/0x220
-[  584.223982]  [<ffffffff811c28f4>] ? trace_hardirqs_on_caller+0x1f4/0x290
-[  584.223982]  [<ffffffff813185b5>] __do_pipe_flags+0x45/0xe0
-[  584.223982]  [<ffffffff81318770>] SyS_pipe+0x20/0xb0
-[  584.223982]  [<ffffffff84510975>] ? tracesys+0x7e/0xe6
-[  584.223982]  [<ffffffff845109d8>] tracesys+0xe1/0xe6
-[  584.223982] Code: 49 63 45 20 eb b2 66 2e 0f 1f 84 00 00 00 00 00 4d 85 f6 75 0b 4c 8b 63 10 45 31 ff eb 22 66 90 49 63 45 20 4d 89 f7 4c 8b 63 10 <49> 8b 14 06 48 85 d2 74 0c 49 89 d6 e9 7c ff ff ff 0f 1f 40 00
-[  584.223982] RIP  [<ffffffff812e611b>] deactivate_slab+0xfb/0x620
-[  584.223982]  RSP <ffff8800bc06fc18>
-[  584.223982] CR2: 0000000000000a94
+ -Kamal
 
+--
+ arch/arm/include/asm/cacheflush.h              |   1 +
+ arch/arm/include/asm/spinlock.h                |  15 +--
+ arch/arm/lib/memset.S                          | 100 +++++++++----------
+ arch/arm/mm/dma-mapping.c                      |   2 +-
+ arch/arm/mm/proc-v6.S                          |   3 +-
+ arch/arm/mm/proc-v7.S                          |   2 +-
+ arch/arm64/include/asm/pgtable.h               |   8 +-
+ arch/arm64/kernel/stacktrace.c                 |   6 +-
+ arch/avr32/Makefile                            |   2 +-
+ arch/avr32/boards/mimc200/fram.c               |   1 +
+ arch/powerpc/kernel/crash_dump.c               |   8 +-
+ arch/powerpc/platforms/pseries/hotplug-cpu.c   |  22 ++--
+ arch/x86/kernel/cpu/perf_event.c               |   3 +
+ arch/x86/kernel/pci-dma.c                      |   4 +-
+ arch/x86/kvm/x86.c                             |   2 +-
+ arch/xtensa/include/asm/traps.h                |  35 +++++++
+ arch/xtensa/kernel/entry.S                     |  60 ++++++++---
+ arch/xtensa/kernel/traps.c                     |  21 +---
+ drivers/acpi/pci_irq.c                         |   2 +
+ drivers/acpi/processor_throttling.c            |  69 ++++++-------
+ drivers/acpi/video.c                           |   8 +-
+ drivers/ata/ahci.c                             |  14 +++
+ drivers/ata/libata-pmp.c                       |   7 +-
+ drivers/ata/sata_sil.c                         |   1 +
+ drivers/base/firmware_class.c                  |   1 +
+ drivers/block/rbd.c                            |   4 -
+ drivers/cpufreq/powernow-k8.c                  |  10 +-
+ drivers/dma/ste_dma40.c                        |   4 +-
+ drivers/edac/i7300_edac.c                      |  38 +++----
+ drivers/edac/i7core_edac.c                     |   9 +-
+ drivers/gpu/drm/i915/intel_display.c           |  14 +++
+ drivers/gpu/drm/i915/intel_dp.c                |  19 ++--
+ drivers/gpu/drm/i915/intel_ringbuffer.c        |  21 ++++
+ drivers/gpu/drm/i915/intel_ringbuffer.h        |   1 +
+ drivers/gpu/drm/radeon/atombios_crtc.c         |  16 ++-
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c   |   3 +-
+ drivers/gpu/drm/radeon/radeon_kms.c            |   6 ++
+ drivers/gpu/drm/vmwgfx/svga3d_surfacedefs.h    |  11 +-
+ drivers/hwmon/max1668.c                        |   2 +-
+ drivers/input/misc/arizona-haptics.c           |  19 ----
+ drivers/md/dm-mpath.c                          |   7 +-
+ drivers/md/dm-thin-metadata.c                  |  17 ++++
+ drivers/md/dm-thin-metadata.h                  |   2 +
+ drivers/md/dm-thin.c                           |   8 +-
+ drivers/mfd/da9055-i2c.c                       |  10 +-
+ drivers/net/can/usb/kvaser_usb.c               |   2 +
+ drivers/net/wireless/rtl818x/rtl8187/rtl8187.h |  10 +-
+ drivers/net/wireless/rtlwifi/ps.c              |   2 +-
+ drivers/net/wireless/rtlwifi/rtl8192ce/hw.c    |  18 +++-
+ drivers/pci/pci.c                              |  10 ++
+ drivers/scsi/qla2xxx/qla_target.c              |   3 +-
+ drivers/usb/gadget/bcm63xx_udc.c               |  58 ++++++-----
+ drivers/usb/host/ehci-hcd.c                    |  13 ++-
+ drivers/usb/host/ehci-hub.c                    |  26 ++++-
+ drivers/usb/serial/ftdi_sio.c                  |   3 +
+ drivers/usb/serial/ftdi_sio_ids.h              |  12 +++
+ drivers/usb/serial/option.c                    |   3 +-
+ fs/cifs/file.c                                 |  37 ++++++-
+ fs/cifs/smb2glob.h                             |   3 +
+ fs/cifs/smb2ops.c                              |  14 +--
+ fs/cifs/smb2pdu.c                              |   4 +-
+ fs/ext4/ext4.h                                 |   2 +
+ fs/ext4/resize.c                               |  32 +++---
+ fs/ext4/super.c                                |  20 ++--
+ fs/quota/dquot.c                               |  14 ++-
+ fs/reiserfs/reiserfs.h                         |   2 -
+ fs/xfs/xfs_iops.c                              |  18 ++--
+ include/linux/ipc_namespace.h                  |   2 -
+ include/linux/kernel.h                         |  13 +++
+ include/sound/soc-dapm.h                       |   8 ++
+ ipc/mq_sysctl.c                                |  18 ++--
+ ipc/mqueue.c                                   |   6 +-
+ kernel/cgroup.c                                |  10 +-
+ kernel/events/core.c                           |  12 +--
+ kernel/workqueue.c                             |   7 ++
+ net/sunrpc/xprtsock.c                          |   6 +-
+ security/selinux/ss/policydb.c                 |   8 +-
+ sound/soc/codecs/da732x.c                      |  12 +++
+ sound/soc/codecs/da9055.c                      |  11 +-
+ sound/soc/codecs/sta32x.c                      |  76 +++++++-------
+ sound/soc/codecs/wm8770.c                      |   4 +-
+ sound/soc/codecs/wm8958-dsp2.c                 |   2 +-
+ sound/soc/soc-dapm.c                           | 133 +++++++++++++++++++++++--
+ sound/usb/mixer_maps.c                         |  19 ++++
+ sound/usb/quirks.c                             |  14 +++
+ 85 files changed, 894 insertions(+), 391 deletions(-)
 
-Thanks,
-Sasha
+Adam Thomson (1):
+      ASoC: da9055: Fix device registration of PMIC and CODEC devices
+
+Alan Stern (1):
+      USB: EHCI: add delay during suspend to prevent erroneous wakeups
+
+Aleksander Morgado (1):
+      USB: serial: option: blacklist interface 4 for Cinterion PHS8 and PXS8
+
+Alex Deucher (2):
+      drm/radeon: print the supported atpx function mask
+      drm/radeon: disable pll sharing for DP on DCE4.1
+
+Alex Elder (1):
+      kernel.h: define u8, s8, u32, etc. limits
+
+Andrew Honig (1):
+      kvm: x86: fix emulator buffer overflow (CVE-2014-0049)
+
+Bjorn Helgaas (1):
+      PCI: Enable INTx if BIOS left them disabled
+
+Charles Keepax (2):
+      Input - arizona-haptics: Fix double lock of dapm_mutex
+      ASoC: dapm: Add locking to snd_soc_dapm_xxxx_pin functions
+
+Chen Gang (1):
+      avr32: Makefile: add '-D__linux__' flag for gcc-4.4.7 use
+
+Christian König (1):
+      drm/radeon: fix missing bo reservation
+
+Christoph Hellwig (1):
+      xfs: ensure correct timestamp updates from truncate
+
+Clemens Ladisch (1):
+      ALSA: usb-audio: work around KEF X300A firmware bug
+
+Davidlohr Bueso (1):
+      ipc,mqueue: remove limits for the amount of system-wide queues
+
+Denis V. Lunev (1):
+      ata: enable quirk from jmicron JMB350 for JMB394
+
+Dr. Greg Wettstein (1):
+      qla2xxx: Fix kernel panic on selective retransmission request
+
+Eric Paris (1):
+      SELinux: bigendian problems with filename trans rules
+
+Florian Fainelli (1):
+      usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
+
+Guenter Roeck (1):
+      hwmon: (max1668) Fix writing the minimum temperature
+
+Hannes Reinecke (1):
+      dm mpath: fix stalls when handling invalid ioctls
+
+Hans de Goede (1):
+      ACPI / video: Filter the _BCL table for duplicate brightness values
+
+Ivan Djelic (1):
+      ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
+
+Jan Kara (1):
+      quota: Fix race between dqput() and dquot_scan_active()
+
+Jani Nikula (2):
+      drm/i915/dp: increase native aux defer retry timeout
+      drm/i915/dp: add native aux defer retry limit
+
+Jean Delvare (2):
+      i7core_edac: Fix PCI device reference count
+      i7300_edac: Fix device reference count
+
+Jeff Layton (1):
+      cifs: ensure that uncached writes handle unmapped areas correctly
+
+Joerg Dorchain (1):
+      USB: ftdi_sio: add Cressi Leonardo PID
+
+Kamal Mostafa (1):
+      kernel.h: undef clashing U64_MAX, U32_MAX size limits
+
+Lai Jiangshan (1):
+      workqueue: ensure @task is valid across kthread_stop()
+
+Lan Tianyu (1):
+      ACPI / processor: Rework processor throttling with work_on_cpu()
+
+Lars-Peter Clausen (2):
+      ASoC: sta32x: Fix cache sync
+      ASoC: wm8958-dsp: Fix firmware block loading
+
+Laurent Dufour (1):
+      powerpc/crashdump : Fix page frame number check in copy_oldmem_page
+
+Levente Kurusa (1):
+      ahci: disable NCQ on Samsung pci-e SSDs on macbooks
+
+Linus Walleij (1):
+      dma: ste_dma40: don't dereference free:d descriptor
+
+Marek Szyprowski (2):
+      ARM: dma-mapping: fix GFP_ATOMIC macro usage
+      x86: dma-mapping: fix GFP_ATOMIC macro usage
+
+Mark Brown (1):
+      ASoC: da732x: Mark DC offset control registers volatile
+
+Max Filippov (3):
+      xtensa: move spill_registers to traps.h
+      xtensa: clean up stpill_registers
+      xtensa: introduce spill_registers_kernel macro
+
+Mike Snitzer (2):
+      dm thin: avoid metadata commit if a pool's thin devices haven't changed
+      dm thin: fix the error path for the thin device constructor
+
+Nicolas Pitre (1):
+      ARM: 7670/1: fix the memset fix
+
+Olivier Langlois (2):
+      rtlwifi: rtl8192ce: Fix too long disable of IRQs
+      rtlwifi: Fix incorrect return from rtl_ps_enable_nic()
+
+Olivier Sobrie (1):
+      can: kvaser_usb: check number of channels returned by HW
+
+Olof Johansson (1):
+      ARM64: unwind: Fix PC calculation
+
+Paul Gortmaker (1):
+      avr32: fix missing module.h causing build failure in mimc200/fram.c
+
+Pavel Shilovsky (1):
+      CIFS: Fix too big maxBuf size for SMB3 mounts
+
+Peter Zijlstra (2):
+      perf/x86: Fix event scheduling
+      perf: Fix hotplug splat
+
+Sebastian Capella (1):
+      PM / hibernate: Fix restore hang in freeze_processes()
+
+Srivatsa S. Bhat (1):
+      cpufreq: powernow-k8: Initialize per-cpu data-structures properly
+
+Stanislaw Gruszka (2):
+      rtl8187: fix regression on MIPS without coherent DMA
+      usb: ehci: fix deadlock when threadirqs option is used
+
+Steve Capper (1):
+      arm64: mm: Add double logical invert to pte accessors
+
+Takashi Iwai (4):
+      ALSA: usb-audio: Add a quirk for Plantronics Gamecom 780
+      ASoC: sta32x: Fix array access overflow
+      ASoC: wm8770: Fix wrong number of enum items
+      ASoC: sta32x: Fix wrong enum for limiter2 release rate
+
+Tejun Heo (3):
+      sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
+      cgroup: fix locking in cgroup_cfts_commit()
+      cgroup: update cgroup_enable_task_cg_lists() to grab siglock
+
+Theodore Ts'o (4):
+      ext4: don't try to modify s_flags if the the file system is read-only
+      ext4: fix online resize with very large inode tables
+      ext4: fix online resize with a non-standard blocks per group setting
+      ext4: don't leave i_crtime.tv_sec uninitialized
+
+Thomas Hellstrom (1):
+      drm/vmwgfx: Fix possible integer overflow
+
+Tomasz Nowicki (1):
+      ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+
+Tony Breeds (1):
+      powerpc/le: Ensure that the 'stop-self' RTAS token is handled correctly
+
+Trond Myklebust (1):
+      SUNRPC: Fix races in xs_nospace()
+
+Ville Syrjälä (2):
+      drm/i915: Add intel_ring_cachline_align()
+      drm/i915: Prevent MI_DISPLAY_FLIP straddling two cachelines on IVB
+
+Vinayak Kale (1):
+      ARM: 7957/1: add DSB after icache flush in __flush_icache_all()
+
+Will Deacon (2):
+      ARM: 7953/1: mm: ensure TLB invalidation is complete before enabling MMU
+      ARM: 7955/1: spinlock: ensure we have a compiler barrier before sev
+
+Алексей Крамаренко (1):
+      USB: serial: ftdi_sio: add id for Z3X Box device
