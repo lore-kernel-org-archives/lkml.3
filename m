@@ -1,239 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281AbaCYNdM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 09:33:12 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:40393 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499AbaCYNdK (ORCPT
+	id S1753144AbaCYNsE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 09:48:04 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:42036 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbaCYNsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 09:33:10 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org
-Cc: rdunlap@infradead.org, Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] [trivial]treewide: Fix typo in printk
-Date: Tue, 25 Mar 2014 22:32:55 +0900
-Message-Id: <1395754375-18482-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.1.315.g3f09db0
+	Tue, 25 Mar 2014 09:48:00 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-dd-533188f60206
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mm/page_alloc: fix freeing of MIGRATE_RESERVE
+ migratetype pages
+Date: Tue, 25 Mar 2014 14:47:15 +0100
+Message-id: <4172657.DtyuUtBQfn@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <532C49BF.8090001@suse.cz>
+References: <3269714.29dGMiCR2L@amdc1032> <532C49BF.8090001@suse.cz>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t9jAd1vHYbBBm/XW1g8/dTHYnF51xw2
+	i3tr/rNarD1yl91i8rtnjBazG/sYLR6v53Zg91iwqdRj06dJ7B59W1YxepxZcITdY/Ppao/P
+	m+QC2KK4bFJSczLLUov07RK4Mtbu28xUsM+44tSPI6wNjI80uhg5OSQETCRmtP1lhLDFJC7c
+	W8/WxcjFISSwiFHi/7Y57BBOC5PE82vNzCBVbAJWEhPbV4F1iAioSDzacJQVpIhZ4DSjxK2t
+	X1hAEsICkRIbfs9kA7FZBFQljk/ZzgRi8wpoShz4dgKsWVTAU2LH9pVgNZwC6hL7e7aygthC
+	Ai4SN1Z1sEPUC0r8mHwPbCazgLzEvv1TWSFsHYn9rdPYJjAKzEJSNgtJ2SwkZQsYmVcxiqYW
+	JBcUJ6XnGukVJ+YWl+al6yXn525iBAf7M+kdjKsaLA4xCnAwKvHwbjA1CBZiTSwrrsw9xCjB
+	wawkwpvVbhgsxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1Oq
+	gVHtb5vPjDb+65t53d+GCj3y/2+fqbj2f5mwOsvjrWyrfnnb6Fu+nOASb/VWmX2qOvuE52tl
+	ZW7+ln+7vD9vy/odmzft00ieFzet4r3t6mNLXua557FZr9UuOcvdd4ql0+vA3/Pa2vNK3fzT
+	Z88xXm4velT6g5dUuYRh3XdWUV+elzHrKuNSLZRYijMSDbWYi4oTAc4iVfpyAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling typo in printk from various part of kernel source.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/powerpc/platforms/powernv/opal.c                 | 2 +-
- drivers/i2c/busses/i2c-s3c2410.c                      | 2 +-
- drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c         | 8 ++++----
- drivers/misc/mei/hw-txe.c                             | 2 +-
- drivers/net/bonding/bond_sysfs_slave.c                | 2 +-
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    | 2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        | 2 +-
- drivers/net/ethernet/via/via-velocity.c               | 2 +-
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 6 +++---
- drivers/scsi/qla2xxx/qla_nx2.c                        | 2 +-
- drivers/scsi/scsi_transport_fc.c                      | 2 +-
- sound/soc/davinci/davinci-mcasp.c                     | 2 +-
- 12 files changed, 17 insertions(+), 17 deletions(-)
+Hi,
 
-diff --git a/arch/powerpc/platforms/powernv/opal.c b/arch/powerpc/platforms/powernv/opal.c
-index 2e269c2..7adcf62 100644
---- a/arch/powerpc/platforms/powernv/opal.c
-+++ b/arch/powerpc/platforms/powernv/opal.c
-@@ -275,7 +275,7 @@ static void opal_handle_message(void)
- 
- 	/* check for errors. */
- 	if (ret) {
--		pr_warning("%s: Failed to retrive opal message, err=%lld\n",
-+		pr_warning("%s: Failed to retrieve opal message, err=%lld\n",
- 				__func__, ret);
- 		return;
- 	}
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index ae44910..4bef480 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -244,7 +244,7 @@ static bool is_ack(struct s3c24xx_i2c *i2c)
- 		}
- 		usleep_range(1000, 2000);
- 	}
--	dev_err(i2c->dev, "ack was not recieved\n");
-+	dev_err(i2c->dev, "ack was not received\n");
- 	return false;
- }
- 
-diff --git a/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c b/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-index f8dfd76..f92e083 100644
---- a/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-+++ b/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-@@ -49,7 +49,7 @@ const char *usnic_ib_qp_grp_state_to_string(enum ib_qp_state state)
- 	case IB_QPS_ERR:
- 		return "ERR";
- 	default:
--		return "UNKOWN STATE";
-+		return "UNKNOWN STATE";
- 
- 	}
- }
-@@ -506,12 +506,12 @@ int usnic_ib_qp_grp_modify(struct usnic_ib_qp_grp *qp_grp,
- 
- 	if (!status) {
- 		qp_grp->state = new_state;
--		usnic_info("Transistioned %u from %s to %s",
-+		usnic_info("Transitioned %u from %s to %s",
- 		qp_grp->grp_id,
- 		usnic_ib_qp_grp_state_to_string(old_state),
- 		usnic_ib_qp_grp_state_to_string(new_state));
- 	} else {
--		usnic_err("Failed to transistion %u from %s to %s",
-+		usnic_err("Failed to transition %u from %s to %s",
- 		qp_grp->grp_id,
- 		usnic_ib_qp_grp_state_to_string(old_state),
- 		usnic_ib_qp_grp_state_to_string(new_state));
-@@ -672,7 +672,7 @@ usnic_ib_qp_grp_create(struct usnic_fwd_dev *ufdev, struct usnic_ib_vf *vf,
- 	err = usnic_vnic_res_spec_satisfied(&min_transport_spec[transport],
- 						res_spec);
- 	if (err) {
--		usnic_err("Spec does not meet miniumum req for transport %d\n",
-+		usnic_err("Spec does not meet minimum req for transport %d\n",
- 				transport);
- 		log_spec(res_spec);
- 		return ERR_PTR(err);
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index f60182a..00d328d 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -781,7 +781,7 @@ static int mei_txe_hw_start(struct mei_device *dev)
- 
- 	ret = mei_txe_readiness_wait(dev);
- 	if (ret < 0) {
--		dev_err(&dev->pdev->dev, "wating for readiness failed\n");
-+		dev_err(&dev->pdev->dev, "waiting for readiness failed\n");
- 		return ret;
- 	}
- 
-diff --git a/drivers/net/bonding/bond_sysfs_slave.c b/drivers/net/bonding/bond_sysfs_slave.c
-index 2e4eec5..a4de46b 100644
---- a/drivers/net/bonding/bond_sysfs_slave.c
-+++ b/drivers/net/bonding/bond_sysfs_slave.c
-@@ -36,7 +36,7 @@ static ssize_t state_show(struct slave *slave, char *buf)
- 	case BOND_STATE_BACKUP:
- 		return sprintf(buf, "backup\n");
- 	default:
--		return sprintf(buf, "UNKONWN\n");
-+		return sprintf(buf, "UNKNOWN\n");
- 	}
- }
- static SLAVE_ATTR_RO(state);
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-index db4280c..716fc37 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-@@ -922,7 +922,7 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd)
- 
- 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
- 	if (rv != 0) {
--		printk(KERN_ERR "%s: could not notify %s IP 0x%x reuqest\n",
-+		printk(KERN_ERR "%s: could not notify %s IP 0x%x request\n",
- 				adapter->netdev->name,
- 				(cmd == NX_IP_UP) ? "Add" : "Remove", ip);
- 	}
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-index 9f3adf4..a16d33f 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-@@ -951,7 +951,7 @@ void qlcnic_82xx_config_ipaddr(struct qlcnic_adapter *adapter,
- 	rv = qlcnic_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
- 	if (rv != 0)
- 		dev_err(&adapter->netdev->dev,
--				"could not notify %s IP 0x%x reuqest\n",
-+				"could not notify %s IP 0x%x request\n",
- 				(cmd == QLCNIC_IP_UP) ? "Add" : "Remove", ip);
- }
- 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index ad61d26..0a85eb6 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -2056,7 +2056,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 	struct sk_buff *skb;
- 
- 	if (rd->rdesc0.RSR & (RSR_STP | RSR_EDP)) {
--		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multple RDs.\n", vptr->netdev->name);
-+		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multiple RDs.\n", vptr->netdev->name);
- 		stats->rx_length_errors++;
- 		return -EINVAL;
- 	}
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-index 9f75afb..da46f1f 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -3303,7 +3303,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 
- 	if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 		err = -EINVAL;
--		brcmf_err("ivalid OUI\n");
-+		brcmf_err("invalid OUI\n");
- 		goto exit;
- 	}
- 	offset += TLV_OUI_LEN;
-@@ -3342,7 +3342,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 	for (i = 0; i < count; i++) {
- 		if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 			err = -EINVAL;
--			brcmf_err("ivalid OUI\n");
-+			brcmf_err("invalid OUI\n");
- 			goto exit;
- 		}
- 		offset += TLV_OUI_LEN;
-@@ -3376,7 +3376,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 	for (i = 0; i < count; i++) {
- 		if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 			err = -EINVAL;
--			brcmf_err("ivalid OUI\n");
-+			brcmf_err("invalid OUI\n");
- 			goto exit;
- 		}
- 		offset += TLV_OUI_LEN;
-diff --git a/drivers/scsi/qla2xxx/qla_nx2.c b/drivers/scsi/qla2xxx/qla_nx2.c
-index 86cf108..36fdd01 100644
---- a/drivers/scsi/qla2xxx/qla_nx2.c
-+++ b/drivers/scsi/qla2xxx/qla_nx2.c
-@@ -307,7 +307,7 @@ qla8044_idc_lock(struct qla_hw_data *ha)
- 				 */
- 				 ql_dbg(ql_dbg_p3p, vha, 0xb08a,
- 				     "%s: IDC lock Recovery by %d "
--				     "failed, Retrying timout\n", __func__,
-+				     "failed, Retrying timeout\n", __func__,
- 				     ha->portnum);
- 				 timeout = 0;
- 			}
-diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
-index f80908f..d2adfb6 100644
---- a/drivers/scsi/scsi_transport_fc.c
-+++ b/drivers/scsi/scsi_transport_fc.c
-@@ -3064,7 +3064,7 @@ fc_remote_port_rolechg(struct fc_rport  *rport, u32 roles)
- 		ret = fc_tgt_it_nexus_create(shost, (unsigned long)rport,
- 					     (char *)&rport->node_name);
- 		if (ret)
--			printk(KERN_ERR "FC Remore Port tgt nexus failed %d\n",
-+			printk(KERN_ERR "FC Remote Port tgt nexus failed %d\n",
- 			       ret);
- 	}
- 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index a01ae97..790c145 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -620,7 +620,7 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
- 	if (mcasp->bclk_master) {
- 		unsigned int bclk_freq = snd_soc_params_to_bclk(params);
- 		if (mcasp->sysclk_freq % bclk_freq != 0) {
--			dev_err(mcasp->dev, "Can't produce requred BCLK\n");
-+			dev_err(mcasp->dev, "Can't produce required BCLK\n");
- 			return -EINVAL;
- 		}
- 		davinci_mcasp_set_clkdiv(
--- 
-1.9.1.315.g3f09db0
+On Friday, March 21, 2014 03:16:31 PM Vlastimil Babka wrote:
+> On 03/06/2014 06:35 PM, Bartlomiej Zolnierkiewicz wrote:
+> > Pages allocated from MIGRATE_RESERVE migratetype pageblocks
+> > are not freed back to MIGRATE_RESERVE migratetype free
+> > lists in free_pcppages_bulk()->__free_one_page() if we got
+> > to free_pcppages_bulk() through drain_[zone_]pages().
+> > The freeing through free_hot_cold_page() is okay because
+> > freepage migratetype is set to pageblock migratetype before
+> > calling free_pcppages_bulk().
+> 
+> I think this is somewhat misleading and got me confused for a while. 
+> It's not about the call path of free_pcppages_bulk(), but about the
+> fact that rmqueue_bulk() has been called at some point to fill up the 
+> pcp lists, and had to resort to __rmqueue_fallback(). So, going through 
+> free_hot_cold_page() might give you correct migratetype for the last 
+> page freed, but the pcp lists may still contain misplaced pages from 
+> earlier rmqueue_bulk().
+
+Ok, you're right.  I'll fix this.
+
+> > If pages of MIGRATE_RESERVE
+> > migratetype end up on the free lists of other migratetype
+> > whole Reserved pageblock may be later changed to the other
+> > migratetype in __rmqueue_fallback() and it will be never
+> > changed back to be a Reserved pageblock.  Fix the issue by
+> > moving freepage migratetype setting from rmqueue_bulk() to
+> > __rmqueue[_fallback]() and preserving freepage migratetype
+> > as an original pageblock migratetype for MIGRATE_RESERVE
+> > migratetype pages.
+> 
+> Actually wouldn't the easiest solution to this particular problem to 
+> check current pageblock migratetype in try_to_steal_freepages() and 
+> disallow changing it. However I agree that preventing the misplaced page 
+> in the first place would be even better.
+> 
+> > The problem was introduced in v2.6.31 by commit ed0ae21
+> > ("page allocator: do not call get_pageblock_migratetype()
+> > more than necessary").
+> >
+> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+> > Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
+> > Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+> > Cc: Mel Gorman <mgorman@suse.de>
+> > Cc: Hugh Dickins <hughd@google.com>
+> > ---
+> > v2:
+> > - updated patch description, there is no __zone_pcp_update()
+> >    in newer kernels
+> > v3:
+> > - set freepage migratetype in __rmqueue[_fallback]()
+> >    instead of rmqueue_bulk() (per Mel's request)
+> >
+> >   mm/page_alloc.c |   27 ++++++++++++++++++---------
+> >   1 file changed, 18 insertions(+), 9 deletions(-)
+> >
+> > Index: b/mm/page_alloc.c
+> > ===================================================================
+> > --- a/mm/page_alloc.c	2014-03-06 18:10:21.884422983 +0100
+> > +++ b/mm/page_alloc.c	2014-03-06 18:10:27.016422895 +0100
+> > @@ -1094,7 +1094,7 @@ __rmqueue_fallback(struct zone *zone, in
+> >   	struct free_area *area;
+> >   	int current_order;
+> >   	struct page *page;
+> > -	int migratetype, new_type, i;
+> > +	int migratetype, new_type, mt = start_migratetype, i;
+> 
+> A better naming would help, "mt" and "migratetype" are the same thing 
+> and it gets too confusing.
+
+Well, yes, though 'mt' is short and the check code is consistent with
+the corresponding code in rmqueue_bulk().
+
+Do you have a proposal for a better name for this variable?
+
+> >
+> >   	/* Find the largest possible block of pages in the other list */
+> >   	for (current_order = MAX_ORDER-1; current_order >= order;
+> > @@ -1125,6 +1125,14 @@ __rmqueue_fallback(struct zone *zone, in
+> >   			expand(zone, page, order, current_order, area,
+> >   			       new_type);
+> >
+> > +			if (IS_ENABLED(CONFIG_CMA)) {
+> > +				mt = get_pageblock_migratetype(page);
+> > +				if (!is_migrate_cma(mt) &&
+> > +				    !is_migrate_isolate(mt))
+> > +					mt = start_migratetype;
+> > +			}
+> > +			set_freepage_migratetype(page, mt);
+> > +
+> >   			trace_mm_page_alloc_extfrag(page, order, current_order,
+> >   				start_migratetype, migratetype, new_type);
+> >
+> > @@ -1147,7 +1155,9 @@ static struct page *__rmqueue(struct zon
+> >   retry_reserve:
+> >   	page = __rmqueue_smallest(zone, order, migratetype);
+> >
+> > -	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
+> > +	if (likely(page)) {
+> > +		set_freepage_migratetype(page, migratetype);
+> 
+> Are you sure that here the checking of of CMA and ISOLATE is not needed? 
+
+CMA and ISOLATE migratetype pages are always put back on the correct
+free lists (since set_freepage_migratetype() sets freepage migratetype
+to the original one for CMA and ISOLATE migratetype pages) and
+__rmqueue_smallest() can take page only from the 'migratetype' free
+list.
+
++ It was suggested to do it this way by Mel.
+
+> Did the original rmqueue_bulk() have this checking only for the 
+> __rmqueue_fallback() case? Why wouldn't the check already be only in 
+> __rmqueue_fallback() then?
+
+Probably because of historical reasons.  The rmqueue_bulk() contained
+set_page_private() call when CMA was introduced and added the special
+handling for CMA and ISOLATE migratetype pages, please see commit
+47118af ("mm: mmzone: MIGRATE_CMA migration type added").
+
+> > +	} else if (migratetype != MIGRATE_RESERVE) {
+> >   		page = __rmqueue_fallback(zone, order, migratetype);
+> >
+> >   		/*
+> > @@ -1174,7 +1184,7 @@ static int rmqueue_bulk(struct zone *zon
+> >   			unsigned long count, struct list_head *list,
+> >   			int migratetype, int cold)
+> >   {
+> > -	int mt = migratetype, i;
+> > +	int i;
+> >
+> >   	spin_lock(&zone->lock);
+> >   	for (i = 0; i < count; ++i) {
+> > @@ -1195,16 +1205,15 @@ static int rmqueue_bulk(struct zone *zon
+> >   			list_add(&page->lru, list);
+> >   		else
+> >   			list_add_tail(&page->lru, list);
+> > +		list = &page->lru;
+> >   		if (IS_ENABLED(CONFIG_CMA)) {
+> > -			mt = get_pageblock_migratetype(page);
+> > +			int mt = get_pageblock_migratetype(page);
+> >   			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
+> >   				mt = migratetype;
+> > +			if (is_migrate_cma(mt))
+> > +				__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
+> > +						      -(1 << order));
+> >   		}
+> > -		set_freepage_migratetype(page, mt);
+> > -		list = &page->lru;
+> > -		if (is_migrate_cma(mt))
+> > -			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
+> > -					      -(1 << order));
+> >   	}
+> >   	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
+> >   	spin_unlock(&zone->lock);
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
