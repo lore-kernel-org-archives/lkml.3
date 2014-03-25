@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755184AbaCYRWK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55957 "EHLO
+	id S1755680AbaCYRfT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:35:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55969 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754034AbaCYRWG (ORCPT
+	with ESMTP id S1754161AbaCYRWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:06 -0400
+	Tue, 25 Mar 2014 13:22:09 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 59/81] dm thin: fix the error path for the thin device constructor
-Date: Tue, 25 Mar 2014 10:16:12 -0700
-Message-Id: <1395767794-5012-60-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 54/81] Input - arizona-haptics: Fix double lock of dapm_mutex
+Date: Tue, 25 Mar 2014 10:16:07 -0700
+Message-Id: <1395767794-5012-55-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,57 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
+commit c4204960e9d0ba99459dbf1db918f99a45e7a62a upstream.
 
-dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
-fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
-pool will still have an open thin device:
+snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
+it externally as well. This patch fixes this.
 
- device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
- device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
-
-Also, must establish error code if failing thin_ctr() because the pool
-is in fail_io mode.
-
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-thin.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ drivers/input/misc/arizona-haptics.c | 11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index e66e366..4d9659b 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -2623,6 +2623,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
+diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
+index 7a04f54..e7e12a5 100644
+--- a/drivers/input/misc/arizona-haptics.c
++++ b/drivers/input/misc/arizona-haptics.c
+@@ -77,16 +77,14 @@ static void arizona_haptics_work(struct work_struct *work)
+ 			return;
+ 		}
  
- 	if (get_pool_mode(tc->pool) == PM_FAIL) {
- 		ti->error = "Couldn't open thin device, Pool is in fail mode";
-+		r = -EINVAL;
- 		goto bad_thin_open;
- 	}
++		mutex_unlock(dapm_mutex);
++
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
+-
+-		mutex_unlock(dapm_mutex);
+-
+ 	} else {
+ 		/* This disable sequence will be a noop if already enabled */
+ 		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+@@ -99,16 +97,15 @@ static void arizona_haptics_work(struct work_struct *work)
+ 			return;
+ 		}
  
-@@ -2634,7 +2635,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
++		mutex_unlock(dapm_mutex);
++
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
  
- 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
- 	if (r)
--		goto bad_thin_open;
-+		goto bad_target_max_io_len;
- 
- 	ti->num_flush_requests = 1;
- 	ti->flush_supported = true;
-@@ -2655,6 +2656,8 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
- 
- 	return 0;
- 
-+bad_target_max_io_len:
-+	dm_pool_close_thin_device(tc->td);
- bad_thin_open:
- 	__pool_dec(tc->pool);
- bad_pool_lookup:
+-		mutex_unlock(dapm_mutex);
+-
+ 		ret = regmap_update_bits(arizona->regmap,
+ 					 ARIZONA_HAPTICS_CONTROL_1,
+ 					 ARIZONA_HAP_CTRL_MASK,
 -- 
 1.8.3.2
 
