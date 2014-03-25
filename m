@@ -1,162 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187AbaCYNyE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 09:54:04 -0400
-Received: from mail-yh0-f54.google.com ([209.85.213.54]:56166 "EHLO
-	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752360AbaCYNyB (ORCPT
+	id S1753348AbaCYNyi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 09:54:38 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:52270 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360AbaCYNyg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 09:54:01 -0400
-Message-ID: <53318A74.7080604@gmail.com>
-Date: Tue, 25 Mar 2014 10:53:56 -0300
-From: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Kieran Clancy <clancy.kieran@gmail.com>,
-        Lan Tianyu <lantianyu1986@gmail.com>
-CC: Stefan Biereigel <security@biereigel-wb.de>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        Stefan Biereigel <stefan@biereigel.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, San Zamoyski <san@plusnet.pl>,
-        "D. Jansen" <dennis.jansen@web.de>,
-        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
-Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
- suspend to RAM.
-References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
-In-Reply-To: <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Mar 2014 09:54:36 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-9f-53318a997a94
+Message-id: <1395755672.24026.0.camel@AMDC1943>
+Subject: Re: [PATCH] clocksource: exynos_mct: Fix stall after CPU hotplugging
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Tomasz Figa <t.figa@samsung.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Tue, 25 Mar 2014 14:54:32 +0100
+In-reply-to: <53316966.90600@samsung.com>
+References: <1395744087-8655-1-git-send-email-k.kozlowski@samsung.com>
+ <53316966.90600@samsung.com>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNLMWRmVeSWpSXmKPExsVy+t/xa7ozuwyDDfpWmlpsnLGe1WLeZ1mL
+	3gVX2SzONr1ht9j0+BqrxeVdc9gsZpzfx2Sx9shddov1M16zWGzeNJXZgcvjzrU9bB7vzp1j
+	99i8pN6jb8sqRo/Pm+QCWKO4bFJSczLLUov07RK4MtbPZC84K1jRt6mXpYHxFm8XIyeHhICJ
+	xMWJG1ggbDGJC/fWs3UxcnEICSxllLj66z+U85lR4u20J2wgVbwC+hLf5x4H6xAW8JXYtnwL
+	I4jNJmAssXn5ErAaEQEVicunpjOCNDMLfGeS+HzmNjtIgkVAVWLOg39gRZwCmhI9N7rBbCGB
+	VIk1zd/BhjILqEtMmreIGeIkJYnd7Z3sEHF5ic1r3jJDHCEo8WPyPZYJjAKzkLTMQlI2C0nZ
+	AkbmVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghEfB1B+PSY1aHGAU4GJV4eDeYGgQLsSaW
+	FVfmHmKU4GBWEuHNajcMFuJNSaysSi3Kjy8qzUktPsTIxMEp1cAoae2gMpP7RItk5RKby2Vx
+	WgrfKv6tfGzKr7tmu1PldUkjJ66i55kMX9ZdK4v0WZ9nHX9Db+ExLolpv4yYzkgGCmzZ2PDn
+	/0KrAKNvB+XUoi+4xl5O9lgZ0vo2XL7XmJWpIe7LSguHrfZaAaX3FNNmmbmfvGx6YlHk7i4d
+	SUM++ZmOMmsf/1NiKc5INNRiLipOBAAiOnENXgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I bet that his _WAK dsdt method isn't re-checking the lid state on resume
-(maybe I'm wrong).
+On Tue, 2014-03-25 at 12:32 +0100, Tomasz Figa wrote:
+> Hi Krzysztof,
+> 
+> Two comments inline.
+> 
+> On 25.03.2014 11:41, Krzysztof Kozlowski wrote:
+> 
+> [snip]
+> 
+> > diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> > index 48f76bc05da0..0b49b09dd1a9 100644
+> > --- a/drivers/clocksource/exynos_mct.c
+> > +++ b/drivers/clocksource/exynos_mct.c
+> > @@ -339,7 +339,14 @@ static void exynos4_mct_tick_start(unsigned long cycles,
+> >   static int exynos4_tick_set_next_event(unsigned long cycles,
+> >   				       struct clock_event_device *evt)
+> >   {
+> > -	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+> > +	/*
+> > +	 * In case of hotplugging non-boot CPU, the set_next_event could be
+> > +	 * called on CPU0 by ISR before IRQ affinity is set to proper CPU.
+> 
+> Hmm, is this a desired behavior? I guess this is a question for Thomas 
+> and Daniel.
+> 
+> > +	 * Thus for accessing proper MCT Lx timer, 'per_cpu' for cpumask
+> > +	 * in event must be used instead of 'this_cpu_ptr'.
+> > +	 */
+> > +	struct mct_clock_event_device *mevt = &per_cpu(percpu_mct_tick,
+> > +			cpumask_first(evt->cpumask));
+> >
+> >   	exynos4_mct_tick_start(cycles, mevt);
+> >
+> > @@ -371,23 +378,13 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
+> >
+> >   static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+> >   {
+> > -	struct clock_event_device *evt = &mevt->evt;
+> > -
+> > -	/*
+> > -	 * This is for supporting oneshot mode.
+> > -	 * Mct would generate interrupt periodically
+> > -	 * without explicit stopping.
+> > -	 */
+> > -	if (evt->mode != CLOCK_EVT_MODE_PERIODIC)
+> > -		exynos4_mct_tick_stop(mevt);
+> > -
+> >   	/* Clear the MCT tick interrupt */
+> >   	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
+> >   		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
+> >   		return 1;
+> > -	} else {
+> > -		return 0;
+> >   	}
+> > +
+> > +	return 0;
+> 
+> Nobody seems to be checking return value of this function (and I don't 
+> see what it could be used for anyway), so I guess it could be simply 
+> made void.
 
-I retested on my system just to make sure, and the lid is correctly reported open
-always after resume from a sleep by closing the lid, using a different kernel with that same patch.
+I'll send a another patch for it.
 
-My system is the Samsung Series 5 NP530U3C in which the patch works fine:
-      
-           Manufacturer: SAMSUNG ELECTRONICS CO., LTD.
-           Product Name: 530U3C/530U4C
-
-"sudo acpi_listen" shows the following on resume:
-
-      video GFX0 00000080 00000000
-      button/lid LID0 00000080 00000001
-      button/lid LID0 00000080 00000002
-
-"cat /proc/acpi/button/lid/LID0/state" shows its open always on resume. I suspended
-several times, and on each time it was open.
-
-I bet that that system's _WAK method doesn't recheck the lid, I might be wrong.
-*Stefan*: Can you extract that method and send it? Something like this:
-
-           sudo cat /sys/firmware/acpi/tables/DSDT > /tmp/dsdt.bin
-           cd /tmp/dsdt.bin
-           iasl -d dsdt.bin
-           # AND EDIT the resulting dsdt.dsl and search for and send us the _WAK method
-
-Also, on my system, the DSDT Q event for lid state change reads it from the EC to the LIDS var,
-instead of just toggling the "LIDS" variable (Lid Status). My own dsdt is downloadable from my
-blog, at http://zenstep.com.ar/files/DSDT_SamsungSeries5-NP530U3c-AB1_WithBios_P14AAJ.dsl
-
-Cheers!
---
-Juan Manuel Cabo
-
-
-On 03/25/2014 10:23 AM, Kieran Clancy wrote:
-> On Tue, Mar 25, 2014 at 8:04 PM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
->> 2014-03-24 19:19 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
->>> Hi,
->>> thank you for the suggestion. The patch resolves the issue on my N150
->>> when applied to a clean 3.14-rc7. Anyways I'm wondering if similar
->>> problems to mine now exist on the Samsung Series 7/9 notebooks?
->>>
->>> Is any further action from my part required?
->> Do you have these machines? If yes, please provide the output of
->> dmidecode command.
->>
->> Cc guys  of commit ad332c8a.
-> Hi guys,
->
-> That's a surprising side-effect, although I guess I shouldn't be
-> surprised by Samsung ACPI weirdness anymore.
->
-> If we can, I'd like to get to the bottom of this rather than just turn
-> off this fix (which we know works for series 5, 7 and 9 without
-> problems).
->
->>>> 2014-03-24 15:50 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
->>>>> Hi,
->>>>>
->>>>> starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
->>>>> system is set up, so that it should suspend to RAM as soon as the lid is
->>>>> closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
->>>>> correctly the first time (and the system suspends), but after resuming
->>>>> from standby (by opening the lid), the lid does not change to "open" again.
->>>>> Of course, closing the lid again does not induce suspend to RAM then.
->>>>> Opening the lid now (while not sleeping), makes ACPI notify the opening,
->>>>> so I guess ACPI "misses" or discards the lid open event from the EC when
->>>>> coming from sleep.
->>>>> Now, closing the lid again does induce suspend to RAM. This behaviour is
->>>>> reproducible: every other time, suspending works.
->>>>>
->>>>> This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
->>>>> Clear stale EC events on Samsung systems.
->>>>> Which was introduced after 3.14-rc5.
->>>>>
->>>>> When opening the lid to resume from standby, i see in dmesg:
->>>>> Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
->>>>> events cleared
->>>>> (which comes from drivers/acpi/ec.c)
->>>>>
->>>>> Seems to me, that the "open" event is cleared from the EC, but also
->>>>> discarded instead of passed on. Shouldn't the correct behaviour be to
->>>>> report all the pending events, read from the EC, as ACPI events? Can you
->>>>> point me in a direction for fixing the issue cleanly, then I will try to
->>>>> find a solution and prepare a patch for this issue.
-> Stefan, thank you for reporting this issue.
->
-> Our rationale for discarding the events was that events queued during
-> sleep are probably no longer relevant. There could also be other
-> unwanted side-effects of blindly executing all of the old
-> instructions. But in your case, this assumption might be wrong.
->
-> What command are you using to check if the lid is "open" or "closed"?
-> Is it because the screen is not waking up, or some other effect, or
-> just because it won't suspend again when it's re-closed?
->
-> Do other events like AC plug/unplug affect any of this if you do them
-> during this bad state?
->
-> I'd like to see exactly which EC command byte is being thrown away
-> here. If you do something like this (with dynamic debug enabled)
->
-> echo -n 'file ec.c +p' | sudo tee /sys/kernel/debug/dynamic_debug/control
->
-> You should get massively verbose EC stuff filling your dmesg, but I am
-> just interested in the EC read/write bytes just before and around the
-> "1 stale EC events cleared" message. Grab this out of dmesg before it
-> fills with other stuff.
->
-> This will tell us what command we are being asked to run. If you can,
-> please do it a few times to see if it's the same command each time or
-> something different.
->
-> You can turn the debug output off again with:
->
-> echo -n 'file ec.c -p' | sudo tee /sys/kernel/debug/dynamic_debug/control
->
-> I might also need a copy of your DSDT, if you can send me that
-> separately in another email (not to the list):
->
-> cat /sys/firmware/acpi/tables/DSDT > .DSDT.aml
->
-> Thank you,
-> Kieran.
->
+Best regards,
+Krzysztof
 
