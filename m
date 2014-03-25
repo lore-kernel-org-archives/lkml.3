@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883AbaCYLqn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 07:46:43 -0400
-Received: from mail-yk0-f173.google.com ([209.85.160.173]:52963 "EHLO
-	mail-yk0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaCYLql (ORCPT
+	id S1753191AbaCYLsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 07:48:47 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:11971 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753119AbaCYLsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 07:46:41 -0400
+	Tue, 25 Mar 2014 07:48:46 -0400
+Message-ID: <53316D0F.7040600@arm.com>
+Date: Tue, 25 Mar 2014 11:48:31 +0000
+From: Marc Zyngier <marc.zyngier@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-X-Originating-IP: [92.17.186.38]
-In-Reply-To: <20140325103525.GA14789@ulmo>
-References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
-	<1395707726-20437-4-git-send-email-m-karicheri2@ti.com>
-	<235376049.yyfljDtinu@wuerfel>
-	<20140325103525.GA14789@ulmo>
-Date: Tue, 25 Mar 2014 11:46:41 +0000
-Message-ID: <CAPcvp5Gy8uNW3UULi8jYk7GNbmgTd2B_qOEAXnP4H4Wq3v9BCw@mail.gmail.com>
-Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based on
- designware core driver
-From: Andrew Murray <amurray@embedded-bits.co.uk>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>,
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Richard Zhu <r65037@freescale.com>, linux-samsung-soc@vger.kernel.org,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Jingoo Han <jg1.han@samsung.com>, LKML <linux-kernel@vger.kernel.org>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "olof@lixom.net" <olof@lixom.net>, "arnd@arndb.de" <arnd@arndb.de>,
+        "nico@linaro.org" <nico@linaro.org>,
+        "cov@codeaurora.org" <cov@codeaurora.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>
+Subject: Re: [PATCH v9 4/5] arm64: introduce CONFIG_PARAVIRT, PARAVIRT_TIME_ACCOUNTING
+ and pv_time_ops
+References: <alpine.DEB.2.02.1401091755390.21510@kaball.uk.xensource.com> <1389292336-9292-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.02.1402171225000.27926@kaball.uk.xensource.com> <20140217175552.GB8361@arm.com> <alpine.DEB.2.02.1403251119050.8273@kaball.uk.xensource.com>
+In-Reply-To: <alpine.DEB.2.02.1403251119050.8273@kaball.uk.xensource.com>
+X-Enigmail-Version: 1.4.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25 March 2014 10:35, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Tue, Mar 25, 2014 at 08:44:36AM +0100, Arnd Bergmann wrote:
->> On Monday 24 March 2014 20:35:26 Murali Karicheri wrote:
-> [...]
->> > +/* Keystone PCIe driver does not allow module unload */
->> > +static int __init ks_pcie_init(void)
->> > +{
->> > +   return platform_driver_probe(&ks_pcie_driver, ks_pcie_probe);
->> > +}
->> > +subsys_initcall(ks_pcie_init);
+On 25/03/14 11:19, Stefano Stabellini wrote:
+> On Mon, 17 Feb 2014, Catalin Marinas wrote:
+>> On Mon, Feb 17, 2014 at 12:25:42PM +0000, Stefano Stabellini wrote:
+>>> On Thu, 9 Jan 2014, Stefano Stabellini wrote:
+>>>> Introduce CONFIG_PARAVIRT and PARAVIRT_TIME_ACCOUNTING on ARM64.
+>>>> Necessary duplication of paravirt.h and paravirt.c with ARM.
+>>>>
+>>>> The only paravirt interface supported is pv_time_ops.steal_clock, so no
+>>>> runtime pvops patching needed.
+>>>>
+>>>> This allows us to make use of steal_account_process_tick for stolen
+>>>> ticks accounting.
+>>>>
+>>>> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>> CC: will.deacon@arm.com
+>>>> CC: nico@linaro.org
+>>>> CC: marc.zyngier@arm.com
+>>>> CC: cov@codeaurora.org
+>>>> CC: arnd@arndb.de
+>>>> CC: olof@lixom.net
+>>>> CC: Catalin.Marinas@arm.com
+>>>
+>>> Catalin, Will, are you happy with this patch for 3.15?
 >>
->> Why subsys_initcall?
->>
->> We should probably try to fix unloading soon.
->
-> I did some work on this a few months ago but never got around to
-> cleaning up the patches. Let me see if I can resurrect that work.
+>> It's pretty small and looks fine to me. However, I would like someone
+>> with more virtualisation experience than me to ack it (e.g. Marc Z).
+> 
+> Ping? Marc, could you please give it a review?
 
-I think there may be merit in these drivers using subsys_init. I've
-not had time to investigate, but as far as I can remember this causes
-issues with piceport.
+Yup, that looks OK to me. It's a generic feature anyway, so I don't see
+any harm in enabling it for Xen. We may also use it for KVM at some point.
 
-For ARM32 host drivers, pci_fixup_irqs (arch/arm/kernel/bios32.c) must
-be called before init_service_irqs (portdrv_core.c) otherwise pcieport
-acts on invalid information in dev->irq and breaks. It seems that its
-possible for the portbus driver to pick up new devices before bios32
-has been able to fixup the irqs. Making the host bridge drivers subsys
-will overcome this. I guess this hasn't been an issue in the past as
-host bridge drivers were always in the arch/ directories.
+Acked-by: Marc Zyngier <marc.zyngier@arm.com>
 
-In any case it may be worth testing this driver with PCIEPORTBUS enabled.
-
-Andrew Murray
+	M.
+-- 
+Jazz is not dead. It just smells funny...
