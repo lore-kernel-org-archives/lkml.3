@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaCYIrN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:47:13 -0400
-Received: from mail-we0-f169.google.com ([74.125.82.169]:58575 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbaCYIVE (ORCPT
+	id S1754496AbaCYIrt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:47:49 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:50686 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752939AbaCYIVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:21:04 -0400
+	Tue, 25 Mar 2014 04:21:03 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 24/47] mtd: nand: stm_nand_bch: find IBBT signature
-Date: Tue, 25 Mar 2014 08:19:41 +0000
-Message-Id: <1395735604-26706-25-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 23/47] mtd: nand: stm_nand_bch: read and write page (BCH)
+Date: Tue, 25 Mar 2014 08:19:40 +0000
+Message-Id: <1395735604-26706-24-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,118 +22,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Scan block for IBBT signature, either "Bbt0" or "1tbB" from
-pre-specified data block.
+Use DMA to read and/or write a single page of data.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 91 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 91 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 119 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 119 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 6323590..5bcaabbc 100644
+index 7874d85..6323590 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -43,6 +43,37 @@ static int bch_ecc_sizes[] = {
- 	[BCH_NO_ECC] = 0,
- };
- 
-+/*
-+ * Inband Bad Block Table (IBBT)
-+ */
-+#define NAND_IBBT_NBLOCKS	4
-+#define NAND_IBBT_SIGLEN	4
-+#define NAND_IBBT_PRIMARY	0
-+#define NAND_IBBT_MIRROR	1
-+#define NAND_IBBT_SCHEMA	0x10
-+#define NAND_IBBT_BCH_SCHEMA	0x10
-+
-+static uint8_t ibbt_sigs[2][NAND_IBBT_SIGLEN] = {
-+	{'B', 'b', 't', '0'},
-+	{'1', 't', 'b', 'B'},
-+};
-+
-+/* IBBT header */
-+struct nand_ibbt_header {
-+	uint8_t	signature[4];		/* "Bbt0" or "1tbB" signature */
-+	uint8_t version;		/* BBT version ("age") */
-+	uint8_t reserved[3];		/* padding */
-+	uint8_t schema[4];		/* "base" schema (x4) */
-+} __packed;
-+
-+/* Extend IBBT header with some stm-nand-bch niceties */
-+struct nand_ibbt_bch_header {
-+	struct nand_ibbt_header base;
-+	uint8_t schema[4];		/* "private" schema (x4) */
-+	uint8_t ecc_size[4];		/* ECC bytes (0, 32, 54) (x4) */
-+	char	author[64];		/* Arbitrary string for S/W to use */
-+} __packed;
-+
- /* Bad Block Table (BBT) */
- struct nandi_bbt_info {
- 	uint32_t	bbt_size;		/* Size of bad-block table */
-@@ -464,6 +495,66 @@ static uint8_t bch_write_page(struct nandi_controller *nandi,
- 	return status;
+@@ -21,6 +21,7 @@
+ #include <linux/interrupt.h>
+ #include <linux/device.h>
+ #include <linux/platform_device.h>
++#include <linux/dma-mapping.h>
+ #include <linux/completion.h>
+ #include <linux/mtd/nand.h>
+ #include <linux/mtd/stm_nand.h>
+@@ -345,6 +346,124 @@ static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
+ 	return zeros;
  }
  
-+/* Scan block for IBBT signature */
-+static int bch_find_ibbt_sig(struct nandi_controller *nandi,
-+			     uint32_t block, int *bak, uint8_t *vers,
-+			     char *author)
++/* Returns the number of ECC errors, or '-1' for uncorrectable error */
++static int bch_read_page(struct nandi_controller *nandi,
++			 loff_t offs,
++			 uint8_t *buf)
 +{
-+	struct mtd_info *mtd = &nandi->info.mtd;
-+	struct nand_ibbt_bch_header *ibbt_header;
-+	loff_t offs;
-+	uint8_t *buf = nandi->page_buf;
-+	int match_sig;
-+	unsigned int b;
-+	unsigned int i;
++	struct bch_prog *prog = &bch_prog_read_page;
++	uint32_t page_size = nandi->info.mtd.writesize;
++	unsigned long list_phys;
++	unsigned long buf_phys;
++	uint32_t ecc_err;
++	int ret = 0;
 +
-+	nandi->cached_page = -1;
++	dev_dbg(nandi->dev, "%s: offs = 0x%012llx\n", __func__, offs);
 +
-+	/* Load last page of block */
-+	offs = (loff_t)block << nandi->block_shift;
-+	offs += mtd->erasesize - mtd->writesize;
-+	if (bch_read_page(nandi, offs, buf) < 0) {
-+		dev_info(nandi->dev,
-+			 "Uncorrectable ECC error while scanning BBT signature at block %u [0x%012llx]\n",
-+			 block, offs);
-+		return 0;
++	BUG_ON((unsigned long)buf & (NANDI_BCH_DMA_ALIGNMENT - 1));
++	BUG_ON(offs & (NANDI_BCH_DMA_ALIGNMENT - 1));
++
++	emiss_nandi_select(STM_NANDI_BCH);
++
++	nandi_enable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
++	reinit_completion(&nandi->seq_completed);
++
++	/* Reset ECC stats */
++	writel(CFG_RESET_ECC_ALL | CFG_ENABLE_AFM,
++	       nandi->base + NANDBCH_CONTROLLER_CFG);
++	writel(CFG_ENABLE_AFM, nandi->base + NANDBCH_CONTROLLER_CFG);
++
++	prog->addr = (uint32_t)((offs >> (nandi->page_shift - 8)) & 0xffffff00);
++
++	buf_phys = dma_map_single(NULL, buf, page_size, DMA_FROM_DEVICE);
++
++	memset(nandi->buf_list, 0x00, NANDI_BCH_BUF_LIST_SIZE);
++	nandi->buf_list[0] = buf_phys | (nandi->sectors_per_page - 1);
++
++	list_phys = dma_map_single(NULL, nandi->buf_list,
++				   NANDI_BCH_BUF_LIST_SIZE, DMA_TO_DEVICE);
++
++	writel(list_phys, nandi->base + NANDBCH_BUFFER_LIST_PTR);
++
++	bch_load_prog_cpu(nandi, prog);
++
++	bch_wait_seq(nandi);
++
++	nandi_disable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
++
++	dma_unmap_single(NULL, list_phys, NANDI_BCH_BUF_LIST_SIZE,
++			 DMA_TO_DEVICE);
++	dma_unmap_single(NULL, buf_phys, page_size, DMA_FROM_DEVICE);
++
++	/* Use the maximum per-sector ECC count! */
++	ecc_err = readl(nandi->base + NANDBCH_ECC_SCORE_REG_A) & 0xff;
++	if (ecc_err == 0xff) {
++		/*
++		 * Downgrade uncorrectable ECC error for an erased page,
++		 * tolerating 'sectors_per_page' bits at zero.
++		 */
++		ret = check_erased_page(buf, page_size,
++					nandi->sectors_per_page);
++		if (ret >= 0)
++			dev_dbg(nandi->dev,
++				"%s: erased page detected: \n"
++				"  downgrading uncorrectable ECC error.\n",
++				__func__);
++	} else {
++		ret = (int)ecc_err;
 +	}
-+	ibbt_header = (struct nand_ibbt_bch_header *)buf;
 +
-+	/* Test IBBT signature */
-+	match_sig = 0;
-+	for (b = 0; b < 2 && !match_sig; b++) {
-+		match_sig = 1;
-+		for (i = 0; i < NAND_IBBT_SIGLEN; i++) {
-+			if (ibbt_header->base.signature[i] != ibbt_sigs[b][i]) {
-+				match_sig = 0;
-+				break;
-+			}
-+		}
++	return ret;
++}
 +
-+	}
++/* Returns the status of the NAND device following the write operation */
++static uint8_t bch_write_page(struct nandi_controller *nandi,
++			      loff_t offs, const uint8_t *buf)
++{
++	struct bch_prog *prog = &bch_prog_write_page;
++	uint32_t page_size = nandi->info.mtd.writesize;
++	uint8_t *p = (uint8_t *)buf;
++	unsigned long list_phys;
++	unsigned long buf_phys;
++	uint8_t status;
 +
-+	if (!match_sig)
-+		return 0; /* Failed to match IBBT signature */
++	dev_dbg(nandi->dev, "%s: offs = 0x%012llx\n", __func__, offs);
 +
-+	/* Test IBBT schema */
-+	for (i = 0; i < 4; i++)
-+		if (ibbt_header->base.schema[i] != NAND_IBBT_SCHEMA)
-+			return 0;
++	BUG_ON((unsigned int)buf & (NANDI_BCH_DMA_ALIGNMENT - 1));
++	BUG_ON(offs & (page_size - 1));
 +
-+	/* Test IBBT BCH schema */
-+	for (i = 0; i < 4; i++)
-+		if (ibbt_header->schema[i] != NAND_IBBT_BCH_SCHEMA)
-+			return 0;
++	emiss_nandi_select(STM_NANDI_BCH);
 +
-+	/* We have a match */
-+	*vers = ibbt_header->base.version;
-+	*bak = b - 1;
-+	strncpy(author, ibbt_header->author, 64);
++	nandi_enable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
++	reinit_completion(&nandi->seq_completed);
 +
-+	return 1;
++	prog->addr = (uint32_t)((offs >> (nandi->page_shift - 8)) & 0xffffff00);
++
++	buf_phys = dma_map_single(NULL, p, page_size, DMA_TO_DEVICE);
++	memset(nandi->buf_list, 0x00, NANDI_BCH_BUF_LIST_SIZE);
++	nandi->buf_list[0] = buf_phys | (nandi->sectors_per_page - 1);
++
++	list_phys = dma_map_single(NULL, nandi->buf_list,
++				   NANDI_BCH_BUF_LIST_SIZE, DMA_TO_DEVICE);
++
++	writel(list_phys, nandi->base + NANDBCH_BUFFER_LIST_PTR);
++
++	bch_load_prog_cpu(nandi, prog);
++
++	bch_wait_seq(nandi);
++
++	nandi_disable_interrupts(nandi, NANDBCH_INT_SEQNODESOVER);
++
++	dma_unmap_single(NULL, list_phys, NANDI_BCH_BUF_LIST_SIZE,
++			 DMA_TO_DEVICE);
++	dma_unmap_single(NULL, buf_phys, page_size, DMA_FROM_DEVICE);
++
++	status = (uint8_t)(readl(nandi->base +
++				 NANDBCH_CHECK_STATUS_REG_A) & 0xff);
++
++	return status;
 +}
 +
  /*
