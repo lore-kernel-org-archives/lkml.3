@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbaCYQiM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:38:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58086 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753913AbaCYQh7 (ORCPT
+	id S1754085AbaCYQiw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:38:52 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:54179 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027AbaCYQis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:37:59 -0400
-Date: Tue, 25 Mar 2014 09:37:38 -0700
-From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-b712c8dae05931a76b6c17a4254f403798e6caef@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, tglx@linutronix.de
-In-Reply-To: <20140323141940.034005322@linutronix.de>
-References: <20140323141940.034005322@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] x86: hpet:
-  Use proper destructor for delayed work
-Git-Commit-ID: b712c8dae05931a76b6c17a4254f403798e6caef
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 25 Mar 2014 12:38:48 -0400
+Message-ID: <5331B10F.3050402@biereigel.de>
+Date: Tue, 25 Mar 2014 17:38:39 +0100
+From: Stefan Biereigel <stefan@biereigel.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+To: Kieran Clancy <clancy.kieran@gmail.com>,
+        Lan Tianyu <lantianyu1986@gmail.com>
+CC: Stefan Biereigel <security@biereigel-wb.de>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>,
+        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+In-Reply-To: <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:gAmKDsagTXYiDTGuHs7/t9mNEn1wX8/wzESD6bJpl+u
+ 5BtXjFJQeBtb1+b7C+BhYpofgP2kzEOipZ94CKmZAiAmqKNU46
+ j8+/v4P1otzevRnzG1SH5q5aULF0YdAaHXT2WeHncAE66tBH4j
+ FUZQ6Lo8QYgH+7IO8Q6OZsQ4m08SwhdExdNt/jy3nJcpMoCzj+
+ HOOZBsuCzaJ5L7mHOOGUeqU2U3NgfVilS+ERp3QUSEA3y9dtI3
+ 2Xtx2S4V2CS9R6gU6nqZGtP1Fv9ogE4GKFLIjlgiucyIR9VEEd
+ YoYnw7qj4De6FcjXeoc3spPxFekWWwJYjG/VPzhp4oKb0ER6kp
+ 370nBSfYKgkJykRldh1Y=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b712c8dae05931a76b6c17a4254f403798e6caef
-Gitweb:     http://git.kernel.org/tip/b712c8dae05931a76b6c17a4254f403798e6caef
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Mar 2014 14:20:45 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 25 Mar 2014 17:34:01 +0100
+Hello Kieran,
 
-x86: hpet: Use proper destructor for delayed work
+thanks for the input. I use /proc/acpi/button/lid/LID0/state as an
+indicator - whenever I resume from sleep on a bad kernel, state is
+"closed" afterwards, until i close and re-open the lid.
 
-destroy_timer_on_stack() is hardly the right thing for a delayed
-work. We leak a tracking object for the work itself when DEBUG_OBJECTS
-is enabled.
+I will build a kernel with dynamic debug enabled and grab the output if
+it is of any help. Until then - my DSDT is uploaded here:
+http://filebin.ca/1GkDaYm5U1lp/dsdt-samsung-n150
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Vince Weaver <vincent.weaver@maine.edu>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/20140323141940.034005322@linutronix.de
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/hpet.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Stefan
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index da85a8e..b91abfd 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -699,7 +699,7 @@ static int hpet_cpuhp_notify(struct notifier_block *n,
- 		/* FIXME: add schedule_work_on() */
- 		schedule_delayed_work_on(cpu, &work.work, 0);
- 		wait_for_completion(&work.complete);
--		destroy_timer_on_stack(&work.work.timer);
-+		destroy_delayed_work_on_stack(&work.work);
- 		break;
- 	case CPU_DEAD:
- 		if (hdev) {
+Am 25.03.2014 14:23, schrieb Kieran Clancy:
+> On Tue, Mar 25, 2014 at 8:04 PM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
+>> 2014-03-24 19:19 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>> Hi,
+>>> thank you for the suggestion. The patch resolves the issue on my N150
+>>> when applied to a clean 3.14-rc7. Anyways I'm wondering if similar
+>>> problems to mine now exist on the Samsung Series 7/9 notebooks?
+>>>
+>>> Is any further action from my part required?
+>>
+>> Do you have these machines? If yes, please provide the output of
+>> dmidecode command.
+>>
+>> Cc guys  of commit ad332c8a.
+> 
+> Hi guys,
+> 
+> That's a surprising side-effect, although I guess I shouldn't be
+> surprised by Samsung ACPI weirdness anymore.
+> 
+> If we can, I'd like to get to the bottom of this rather than just turn
+> off this fix (which we know works for series 5, 7 and 9 without
+> problems).
+> 
+>>>> 2014-03-24 15:50 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>>>> Hi,
+>>>>>
+>>>>> starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
+>>>>> system is set up, so that it should suspend to RAM as soon as the lid is
+>>>>> closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
+>>>>> correctly the first time (and the system suspends), but after resuming
+>>>>> from standby (by opening the lid), the lid does not change to "open" again.
+>>>>> Of course, closing the lid again does not induce suspend to RAM then.
+>>>>> Opening the lid now (while not sleeping), makes ACPI notify the opening,
+>>>>> so I guess ACPI "misses" or discards the lid open event from the EC when
+>>>>> coming from sleep.
+>>>>> Now, closing the lid again does induce suspend to RAM. This behaviour is
+>>>>> reproducible: every other time, suspending works.
+>>>>>
+>>>>> This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
+>>>>> Clear stale EC events on Samsung systems.
+>>>>> Which was introduced after 3.14-rc5.
+>>>>>
+>>>>> When opening the lid to resume from standby, i see in dmesg:
+>>>>> Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
+>>>>> events cleared
+>>>>> (which comes from drivers/acpi/ec.c)
+>>>>>
+>>>>> Seems to me, that the "open" event is cleared from the EC, but also
+>>>>> discarded instead of passed on. Shouldn't the correct behaviour be to
+>>>>> report all the pending events, read from the EC, as ACPI events? Can you
+>>>>> point me in a direction for fixing the issue cleanly, then I will try to
+>>>>> find a solution and prepare a patch for this issue.
+> 
+> Stefan, thank you for reporting this issue.
+> 
+> Our rationale for discarding the events was that events queued during
+> sleep are probably no longer relevant. There could also be other
+> unwanted side-effects of blindly executing all of the old
+> instructions. But in your case, this assumption might be wrong.
+> 
+> What command are you using to check if the lid is "open" or "closed"?
+> Is it because the screen is not waking up, or some other effect, or
+> just because it won't suspend again when it's re-closed?
+> 
+> Do other events like AC plug/unplug affect any of this if you do them
+> during this bad state?
+> 
+> I'd like to see exactly which EC command byte is being thrown away
+> here. If you do something like this (with dynamic debug enabled)
+> 
+> echo -n 'file ec.c +p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+> 
+> You should get massively verbose EC stuff filling your dmesg, but I am
+> just interested in the EC read/write bytes just before and around the
+> "1 stale EC events cleared" message. Grab this out of dmesg before it
+> fills with other stuff.
+> 
+> This will tell us what command we are being asked to run. If you can,
+> please do it a few times to see if it's the same command each time or
+> something different.
+> 
+> You can turn the debug output off again with:
+> 
+> echo -n 'file ec.c -p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+> 
+> I might also need a copy of your DSDT, if you can send me that
+> separately in another email (not to the list):
+> 
+> cat /sys/firmware/acpi/tables/DSDT > .DSDT.aml
+> 
+> Thank you,
+> Kieran.
+> 
