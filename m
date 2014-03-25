@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101AbaCYRuE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:50:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55759 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754739AbaCYRU3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754736AbaCYRU3 (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 25 Mar 2014 13:20:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55743 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097AbaCYRUU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:20:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 77/81] drm/radeon: fix missing bo reservation
-Date: Tue, 25 Mar 2014 10:16:30 -0700
-Message-Id: <1395767794-5012-78-git-send-email-kamal@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Stephane Eranian <eranian@google.com>, Dave Jones <davej@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 73/81] perf/x86: Fix event scheduling
+Date: Tue, 25 Mar 2014 10:16:26 -0700
+Message-Id: <1395767794-5012-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,43 +29,118 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Christian=20K=C3=B6nig?= <christian.koenig@amd.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit 5e386b574cf7e1593e1296e5b0feea4108ed6ad8 upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-Otherwise we might get a crash here.
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-Signed-off-by: Christian König <christian.koenig@amd.com>
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This is I think the relevant bit:
+
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/radeon/radeon_kms.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ arch/x86/kernel/cpu/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/radeon/radeon_kms.c b/drivers/gpu/drm/radeon/radeon_kms.c
-index 2e9209c..89c85e0 100644
---- a/drivers/gpu/drm/radeon/radeon_kms.c
-+++ b/drivers/gpu/drm/radeon/radeon_kms.c
-@@ -459,6 +459,10 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 6774c17..b6027d7 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1159,6 +1159,9 @@ static void x86_pmu_del(struct perf_event *event, int flags)
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
  
- 		radeon_vm_init(rdev, &fpriv->vm);
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
++
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
  
-+		r = radeon_bo_reserve(rdev->ring_tmp_bo.bo, false);
-+		if (r)
-+			return r;
-+
- 		/* map the ib pool buffer read only into
- 		 * virtual address space */
- 		bo_va = radeon_vm_bo_add(rdev, &fpriv->vm,
-@@ -466,6 +470,8 @@ int radeon_driver_open_kms(struct drm_device *dev, struct drm_file *file_priv)
- 		r = radeon_vm_bo_set_addr(rdev, bo_va, RADEON_VA_IB_OFFSET,
- 					  RADEON_VM_PAGE_READABLE |
- 					  RADEON_VM_PAGE_SNOOPED);
-+
-+		radeon_bo_unreserve(rdev->ring_tmp_bo.bo);
- 		if (r) {
- 			radeon_vm_fini(rdev, &fpriv->vm);
- 			kfree(fpriv);
 -- 
 1.8.3.2
 
