@@ -1,77 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaCYSTr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:19:47 -0400
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:52159 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032AbaCYSTh (ORCPT
+	id S1754674AbaCYSUB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:20:01 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:49415 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754446AbaCYSTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:19:37 -0400
-From: jon@ringle.org
-To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
-Cc: Jon Ringle <jringle@gridpoint.com>
-Subject: [PATCH v2 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
-Date: Tue, 25 Mar 2014 14:19:24 -0400
-Message-Id: <1395771564-30534-2-git-send-email-jon@ringle.org>
-X-Mailer: git-send-email 1.8.5.4
-In-Reply-To: <1395771564-30534-1-git-send-email-jon@ringle.org>
-References: <1395771564-30534-1-git-send-email-jon@ringle.org>
+	Tue, 25 Mar 2014 14:19:54 -0400
+Date: Tue, 25 Mar 2014 14:19:39 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: David Vrabel <david.vrabel@citrix.com>, mgorman@suse.de,
+        akpm@linux-foundation.org, steven@uplinklabs.net,
+        boris.ostrovsky@oracle.com
+Cc: David Sutton <kantras@gmail.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH 1/2] Revert "xen: properly account for
+ _PAGE_NUMA during xen pte translations"
+Message-ID: <20140325181939.GA11073@phenom.dumpdata.com>
+References: <CAPCj91+c8kE8dgp7U3N1ti=XOzFrgcg3Z3S9dYK4AG1tEMqsaA@mail.gmail.com>
+ <5331B94F.9020601@citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5331B94F.9020601@citrix.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jon Ringle <jringle@gridpoint.com>
+On Tue, Mar 25, 2014 at 05:13:51PM +0000, David Vrabel wrote:
+> On 25/03/14 15:28, David Sutton wrote:
+> > David,
+> > 
+> >> This reverts commit a9c8e4beeeb64c22b84c803747487857fe424b68.
+> >>
+> > Please note: this particular patch also helped to resolve an issue
+> > reported by some of the people using the xen package under Arch Linux,
+> > where they would see stability issues running certain software
+> > (particularly firefox) under dom0 - the software would start crashing
+> > under relatively light usage, with a kernel BUG message.
+> 
+> We are aware that Xen PV guests will not work if CONFIG_NUMA_BALANCING
+> is enabled with this revert.  But that patch introduced fundamental
+> breakage to how a guest must read/write non-present page tables entries
+> which caused even worse breakage.
+> 
+> I suspect that the problematic patch 1667918b6483 ("mm: numa: clear numa
+> hinting information on mprotect") is not needed on x86 and could be
+> safely reverted as a temporarily fix.
 
-This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
+Hey Andrew,
 
-Signed-off-by: Jon Ringle <jringle@gridpoint.com>
----
- .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 35 ++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+In the rc3 time-frame Steve Noonan (Amazon EC2 engineering) found an issue
+with Mel's "mm: numa: clear numa hinting information on mprotect" patch
+(see http://lists.xen.org/archives/html/xen-devel/2014-02/msg00169.html)
 
-diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
-new file mode 100644
-index 0000000..cd9ae33
---- /dev/null
-+++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
-@@ -0,0 +1,35 @@
-+* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
-+
-+Required properties:
-+- compatible: Should be one of the following:
-+  - "nxp,sc16is740" for NXP SC16IS740,
-+  - "nxp,sc16is741" for NXP SC16IS741,
-+  - "nxp,sc16is750" for NXP SC16IS750,
-+  - "nxp,sc16is752" for NXP SC16IS752,
-+  - "nxp,sc16is760" for NXP SC16IS760,
-+  - "nxp,sc16is762" for NXP SC16IS762.
-+- reg: I2C address of the SC16IS7xx device.
-+- interrupt-parent: The phandle for the interrupt controller that
-+  services interrupts for this IC.
-+- interrupts: Specifies the interrupt source of the parent interrupt
-+  controller. The format of the interrupt specifier depends on the
-+  parent interrupt controller.
-+- clocks: phandle to the IC source clock.
-+
-+Optional properties:
-+- gpio-controller: Marks the device node as a GPIO controller.
-+- #gpio-cells: Should be two. The first cell is the GPIO number and
-+  the second cell is used to specify the GPIO polarity:
-+    0 = active high,
-+    1 = active low.
-+
-+Example:
-+        sc16is750: sc16is750@51 {
-+                compatible = "nxp,sc16is750";
-+                reg = <0x51>;
-+                clocks = <&clk20m>;
-+                interrupt-parent = <&gpio3>;
-+                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
-+                gpio-controller;
-+                #gpio-cells = <2>;
-+        };
--- 
-1.8.5.4
+A patch was proposed, looked good, you took it in and .. an rc later I
+realized that migration was busted (of course only seen on my automated
+test system). Boris Ostrovsky took a look and after a lot of digging realized
+that it is an general issue wherein we lose page's contents after a migration
+if they have been treated with the hinting information. I saw it with
+'iscsid' halting, but Boris confirmed that it is a general problem:
 
+"This can be easily triggered by Linux' page-types
+(tools/vm/page-types.c) after save/restore.
+
+All it does is it walks the page tables (in fs/proc/task_mmu.c) and
+eventually trips on bad page. For example:
+
+# /page-types -p  2273 -L> /tmp/new
+[ 2634.501440] pfn 0x159f75 highest_memmap_pfn=0x3ffff
+[ 2634.502345] BUG: Bad page map in process page-types pte:159f75420
+pmd:3178a067
+"
+Which means that any application should be able to trigger this depending
+on whether 'mprotect' was doing its stuff and migration happend.
+
+Please note that these guests have no NUMA information exposed at all.
+
+I should also mention that the initial report was reproduced when
+CONFIG_NUMA_BALANCING was enabled, and the 'xen: properly account for _PAGE_NUMA
+during xen pte translations' fixed that. However it introduced another
+bug that can be seen with either CONFIG_NUMA_BALANCING enabled or disabled.
+
+So, we are reverting the 'xen: properly account for _PAGE_NUMA during xen pte translations'
+and an GIT PULL to Linus was sent today with said revert along with
+another fix. However going forward there needs to be a fix for the
+regression that '("mm: numa: clear numa hinting information on mprotect'
+introduced.
+
+David Vrabel is furiously trying to figure out a nice fix that will satisfy
+everybody - and Linus has been saying he might do an rc8 - but Linus might
+change his mind and the fix might take more than a week to be hammered out,
+tested, Acked, etc.
+
+With that in mind I was wondering whether it would be possible to revert 
+Mel's 1667918b6483 ("mm: numa: clear numa hinting information on mprotect")
+so there is a bit more time in 3.15 to re-introduce his patch and also a
+proper fix so that Xen guests won't fall flat on their face?
+
+Thanks!
+> 
+> David
+> 
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xen.org
+> http://lists.xen.org/xen-devel
