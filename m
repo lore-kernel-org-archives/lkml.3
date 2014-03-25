@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615AbaCYAgq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 20:36:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40895 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752129AbaCYAgn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 20:36:43 -0400
-Date: Mon, 24 Mar 2014 17:38:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: john@jjdev.com, ced@ryick.net, devel@driverdev.osuosl.org,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        shuahkhan@gmail.com
-Subject: Re: [PATCH] staging/usbip: fix store_attach() sscanf return value
- check
-Message-ID: <20140325003854.GB10953@kroah.com>
-References: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
+	id S1752355AbaCYAgF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 20:36:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46248 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751791AbaCYAgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 20:36:00 -0400
+From: Murali Karicheri <m-karicheri2@ti.com>
+To: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Murali Karicheri <m-karicheri2@ti.com>, Jingoo Han <jg1.han@samsung.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Richard Zhu <r65037@freescale.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Mohit Kumar <mohit.kumar@st.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [RESEND: RFC PATCH 0/3] Add Keystone pcie driver
+Date: Mon, 24 Mar 2014 20:35:23 -0400
+Message-ID: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 05:12:09PM -0600, Shuah Khan wrote:
-> Fix commit - 88fa1ebfa21b5deaaad2dc88ecd9f6af91796cf7
+This is a RFC to add Keystone pcie driver. I had some earlier discussion on
+the pcie mailing about this driver and at that time I didn't have the driver
+ported to dw core driver. I now have a driver working with intel's e1000e
+ethernet driver and want to review this RFC on this list.
 
-What do you mean by this line?
+Kestone PCIE hardware is based on dw version 3.65. It lacks ATU port and
+standard MSI controller found in newer version of the dw hardware. This version
+uses registers in PCIE application space to configure MSI controller. It has 4
+host irqs for legacy IRQs A/B/C/D and 8 host irqs to muliplex 32 MSI irqs.
+Also has one host irq line for errors.
 
-> This commit added return value check for sscanf() that parses the
-> input buffer for four input items. However, the return value check
-> is incorrect, as it checks for one input item instead of four which
-> is what it is expecting in the input buffer. As a result, sscanf()
-> will always fail even when the input buffer is correct.
-> 
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-> ---
->  drivers/staging/usbip/vhci_sysfs.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/usbip/vhci_sysfs.c b/drivers/staging/usbip/vhci_sysfs.c
-> index e098032..1ff24e9 100644
-> --- a/drivers/staging/usbip/vhci_sysfs.c
-> +++ b/drivers/staging/usbip/vhci_sysfs.c
-> @@ -183,7 +183,7 @@ static ssize_t store_attach(struct device *dev, struct device_attribute *attr,
->  	 * @devid: unique device identifier in a remote host
->  	 * @speed: usb device speed in a remote host
->  	 */
-> -	if (sscanf(buf, "%u %u %u %u", &rhport, &sockfd, &devid, &speed) != 1)
-> +	if (sscanf(buf, "%u %u %u %u", &rhport, &sockfd, &devid, &speed) != 4)
->  		return -EINVAL;
->  
->  	usbip_dbg_vhci_sysfs("rhport(%u) sockfd(%u) devid(%u) speed(%u)\n",
-> -- 
-> 1.7.10.4
-> 
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
+Please review and provide your comments.
+
+CC: Jingoo Han <jg1.han@samsung.com>
+CC: Bjorn Helgaas <bhelgaas@google.com>
+CC: Kukjin Kim <kgene.kim@samsung.com>
+CC: Richard Zhu <r65037@freescale.com>
+CC: Shawn Guo <shawn.guo@linaro.org>
+CC: Mohit Kumar <mohit.kumar@st.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
+
+Murali Karicheri (3):
+  ARM: keystone: add pcie related options
+  pci: designware: enhancements to support keystone pcie
+  pcie: keystone: add pcie driver based on designware core driver
+
+ .../devicetree/bindings/pci/pcie-keystone.txt      |   32 +
+ arch/arm/mach-keystone/Kconfig                     |    2 +
+ drivers/pci/host/Kconfig                           |    5 +
+ drivers/pci/host/Makefile                          |    1 +
+ drivers/pci/host/k2-platform.c                     |  191 +++++
+ drivers/pci/host/pci-exynos.c                      |    2 +-
+ drivers/pci/host/pci-imx6.c                        |    2 +-
+ drivers/pci/host/pcie-designware.c                 |   99 ++-
+ drivers/pci/host/pcie-designware.h                 |   14 +-
+ drivers/pci/host/pcie-keystone.c                   |  860 ++++++++++++++++++++
+ drivers/pci/host/pcie-ks-pdata.h                   |   19 +
+ drivers/pci/quirks.c                               |   12 +
+ 12 files changed, 1203 insertions(+), 36 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/pci/pcie-keystone.txt
+ create mode 100644 drivers/pci/host/k2-platform.c
+ create mode 100644 drivers/pci/host/pcie-keystone.c
+ create mode 100644 drivers/pci/host/pcie-ks-pdata.h
+
+-- 
+1.7.9.5
+
