@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754324AbaCYRR0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:17:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55613 "EHLO
+	id S1754349AbaCYRR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:17:29 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55605 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162AbaCYRRQ (ORCPT
+	with ESMTP id S1754161AbaCYRRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Mar 2014 13:17:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 09/81] ASoC: da9055: Fix device registration of PMIC and CODEC devices
-Date: Tue, 25 Mar 2014 10:15:22 -0700
-Message-Id: <1395767794-5012-10-git-send-email-kamal@canonical.com>
+Cc: Christoph Hellwig <hch@lst.de>, Dave Chinner <david@fromorbit.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 06/81] xfs: ensure correct timestamp updates from truncate
+Date: Tue, 25 Mar 2014 10:15:19 -0700
+Message-Id: <1395767794-5012-7-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,88 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+From: Christoph Hellwig <hch@infradead.org>
 
-commit 07b0e5b10258b48e5edfb6c8ac156f05510eb775 upstream.
+commit fe60a8a0919eeee862054137fed49f00b710d9cd upstream.
 
-Currently the I2C device Ids conflict for the MFD and CODEC so
-cannot be both instantiated on one platform. This patch updates
-the Ids and names to make them unique from each other.
+The VFS doesn't set the proper ATTR_CTIME and ATTR_MTIME values for
+truncate, so filesystems have to manually add them.  The
+introduction of xfs_setattr_time accidentally broke this special
+case an caused a regression in generic/313.  Fix this by removing
+the local mask variable in xfs_setattr_size so that we only have a
+single place to keep the attribute information.
 
-It should be noted that the I2C addresses for both PMIC and CODEC
-are modifiable so instantiation of the two are kept as separate
-devices, rather than instantiating the CODEC from the MFD code.
-
-Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-Acked-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Reviewed-by: Brian Foster <bfoster@redhat.com>
+Reviewed-by: Jie Liu <jeff.liu@oracle.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+[ kamal: backport to 3.8 ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/da9055-i2c.c  | 10 +++++++++-
- sound/soc/codecs/da9055.c | 11 +++++++++--
- 2 files changed, 18 insertions(+), 3 deletions(-)
+ fs/xfs/xfs_iops.c | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
-index 607387f..8103e43 100644
---- a/drivers/mfd/da9055-i2c.c
-+++ b/drivers/mfd/da9055-i2c.c
-@@ -53,17 +53,25 @@ static int da9055_i2c_remove(struct i2c_client *i2c)
- 	return 0;
- }
+diff --git a/fs/xfs/xfs_iops.c b/fs/xfs/xfs_iops.c
+index ca9ecaa..152411e 100644
+--- a/fs/xfs/xfs_iops.c
++++ b/fs/xfs/xfs_iops.c
+@@ -706,7 +706,6 @@ xfs_setattr_size(
+ {
+ 	struct xfs_mount	*mp = ip->i_mount;
+ 	struct inode		*inode = VFS_I(ip);
+-	int			mask = iattr->ia_valid;
+ 	xfs_off_t		oldsize, newsize;
+ 	struct xfs_trans	*tp;
+ 	int			error;
+@@ -726,8 +725,8 @@ xfs_setattr_size(
+ 		return XFS_ERROR(error);
  
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the PMIC and CODEC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 ids for PMIC
-+ * and CODEC, which must be different to operate together.
-+ */
- static struct i2c_device_id da9055_i2c_id[] = {
- 	{"da9055-pmic", 0},
- 	{ }
- };
-+MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+ 	ASSERT(S_ISREG(ip->i_d.di_mode));
+-	ASSERT((mask & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
+-			ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
++	ASSERT((iattr->ia_valid & (ATTR_UID|ATTR_GID|ATTR_ATIME|ATTR_ATIME_SET|
++		ATTR_MTIME_SET|ATTR_KILL_PRIV|ATTR_TIMES_SET)) == 0);
  
- static struct i2c_driver da9055_i2c_driver = {
- 	.probe = da9055_i2c_probe,
- 	.remove = da9055_i2c_remove,
- 	.id_table = da9055_i2c_id,
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-pmic",
- 		.owner = THIS_MODULE,
- 	},
- };
-diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
-index fc9802d..620f804 100644
---- a/sound/soc/codecs/da9055.c
-+++ b/sound/soc/codecs/da9055.c
-@@ -1523,8 +1523,15 @@ static int da9055_remove(struct i2c_client *client)
- 	return 0;
- }
+ 	if (!(flags & XFS_ATTR_NOLOCK)) {
+ 		lock_flags |= XFS_IOLOCK_EXCL;
+@@ -741,7 +740,7 @@ xfs_setattr_size(
+ 	 * Short circuit the truncate case for zero length files.
+ 	 */
+ 	if (newsize == 0 && oldsize == 0 && ip->i_d.di_nextents == 0) {
+-		if (!(mask & (ATTR_CTIME|ATTR_MTIME)))
++		if (!(iattr->ia_valid & (ATTR_CTIME|ATTR_MTIME)))
+ 			goto out_unlock;
  
-+/*
-+ * DO NOT change the device Ids. The naming is intentionally specific as both
-+ * the CODEC and PMIC parts of this chip are instantiated separately as I2C
-+ * devices (both have configurable I2C addresses, and are to all intents and
-+ * purposes separate). As a result there are specific DA9055 Ids for CODEC
-+ * and PMIC, which must be different to operate together.
-+ */
- static const struct i2c_device_id da9055_i2c_id[] = {
--	{ "da9055", 0 },
-+	{ "da9055-codec", 0 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
-@@ -1532,7 +1539,7 @@ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
- /* I2C codec control layer */
- static struct i2c_driver da9055_i2c_driver = {
- 	.driver = {
--		.name = "da9055",
-+		.name = "da9055-codec",
- 		.owner = THIS_MODULE,
- 	},
- 	.probe		= da9055_i2c_probe,
+ 		/*
+@@ -832,10 +831,11 @@ xfs_setattr_size(
+ 	 * these flags set.  For all other operations the VFS set these flags
+ 	 * explicitly if it wants a timestamp update.
+ 	 */
+-	if (newsize != oldsize && (!(mask & (ATTR_CTIME | ATTR_MTIME)))) {
++	if (newsize != oldsize &&
++	    !(iattr->ia_valid & (ATTR_CTIME | ATTR_MTIME))) {
+ 		iattr->ia_ctime = iattr->ia_mtime =
+ 			current_fs_time(inode->i_sb);
+-		mask |= ATTR_CTIME | ATTR_MTIME;
++		iattr->ia_valid |= ATTR_CTIME | ATTR_MTIME;
+ 	}
+ 
+ 	/*
+@@ -874,15 +874,15 @@ xfs_setattr_size(
+ 	/*
+ 	 * Change file access modes.
+ 	 */
+-	if (mask & ATTR_MODE)
++	if (iattr->ia_valid & ATTR_MODE)
+ 		xfs_setattr_mode(tp, ip, iattr);
+ 
+-	if (mask & ATTR_CTIME) {
++	if (iattr->ia_valid & ATTR_CTIME) {
+ 		inode->i_ctime = iattr->ia_ctime;
+ 		ip->i_d.di_ctime.t_sec = iattr->ia_ctime.tv_sec;
+ 		ip->i_d.di_ctime.t_nsec = iattr->ia_ctime.tv_nsec;
+ 	}
+-	if (mask & ATTR_MTIME) {
++	if (iattr->ia_valid & ATTR_MTIME) {
+ 		inode->i_mtime = iattr->ia_mtime;
+ 		ip->i_d.di_mtime.t_sec = iattr->ia_mtime.tv_sec;
+ 		ip->i_d.di_mtime.t_nsec = iattr->ia_mtime.tv_nsec;
 -- 
 1.8.3.2
 
