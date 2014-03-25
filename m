@@ -1,170 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755120AbaCYWkq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 18:40:46 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:46229 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751904AbaCYWko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 18:40:44 -0400
-From: Roy Franz <roy.franz@linaro.org>
-To: matt@console-pimps.org
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com, leif.lindholm@linaro.org, hpa@zytor.com,
-        bp@alien8.de, alan@lxorguk.ukuu.org.uk, mjg59@srcf.ucam.org,
-        Roy Franz <roy.franz@linaro.org>
-Subject: [PATCH] Add efi_early_call() macro
-Date: Tue, 25 Mar 2014 15:40:30 -0700
-Message-Id: <1395787231-14298-1-git-send-email-roy.franz@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <20140322110515.GF2815@console-pimps.org>
-References: <20140322110515.GF2815@console-pimps.org>
+	id S1755250AbaCYWmX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 18:42:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754189AbaCYWmV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 18:42:21 -0400
+Date: Tue, 25 Mar 2014 18:42:13 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: Daniel Vetter <daniel@ffwll.ch>
+cc: Dave Airlie <airlied@gmail.com>, Andreas Mohr <andi@lisas.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 3.14-rc7 crashes in drm ([PATCH] a crash in
+ mga_driver_irq_uninstall)
+In-Reply-To: <CAKMK7uFW9NSF1WhENn9_3GHNvZtEjn=o+NSpY5g41Qg_pqMz8A@mail.gmail.com>
+Message-ID: <alpine.LRH.2.02.1403251836160.28109@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1402261551010.9913@file01.intranet.prod.int.rdu2.redhat.com> <20140322234317.GA10483@rhlx01.hs-esslingen.de> <20140323121541.GA20971@rhlx01.hs-esslingen.de> <CA+55aFyu_5eE5j2LLjhEQSAOAiLyuA65Z2o_TGdvhVMedWKTwA@mail.gmail.com>
+ <20140323212715.GA22767@rhlx01.hs-esslingen.de> <CAPM=9tx1Cqkt1u0TUTJm7==B3M7c-ymdLFJ=qyTKaFaCqB4d_g@mail.gmail.com> <20140324085449.GA26878@phenom.ffwll.local> <alpine.LRH.2.02.1403241302260.15351@file01.intranet.prod.int.rdu2.redhat.com>
+ <20140324202606.GJ26878@phenom.ffwll.local> <alpine.LRH.2.02.1403241627510.18209@file01.intranet.prod.int.rdu2.redhat.com> <CAKMK7uFW9NSF1WhENn9_3GHNvZtEjn=o+NSpY5g41Qg_pqMz8A@mail.gmail.com>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the efi_early_call() macro to invoke functions in the efi_early
-structure. Using a macro for these invocations allows the arm32/arm64
-architectures to define the macro differently so that they can directly
-invoke the boot services functions that are exposed in the efi_early
-structure on x86. Prior to the introduction of the efi_early structure
-the efi_call_physN macros were used on all architectures and allowed
-for this differentiation.
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
----
- arch/x86/boot/compressed/eboot.c       |    5 +++++
- drivers/firmware/efi/efi-stub-helper.c |   26 +++++++++++++-------------
- 2 files changed, 18 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 5e1ba4f..374de94 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -44,6 +44,11 @@ static void setup_boot_services##bits(struct efi_config *c)		\
- }
- BOOT_SERVICES(32);
- BOOT_SERVICES(64);
-+/*
-+ * Use macro to invoke efi_early->call so that on ARM this macro can
-+ * implement a direct call.*
-+ */
-+#define efi_early_call(...) efi_early->call(efi_early->__VA_ARGS__)
- 
- static void efi_printk(efi_system_table_t *, char *);
- static void efi_char16_printk(efi_system_table_t *, efi_char16_t *);
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index a028287..be58a18 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -53,22 +53,22 @@ again:
- 	 * allocation which may be in a new descriptor region.
- 	 */
- 	*map_size += sizeof(*m);
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
-+	status = efi_early_call(allocate_pool, EFI_LOADER_DATA,
- 				 *map_size, (void **)&m);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
- 
- 	*desc_size = 0;
- 	key = 0;
--	status = efi_early->call(efi_early->get_memory_map, map_size, m,
-+	status = efi_early_call(get_memory_map, map_size, m,
- 				 &key, desc_size, &desc_version);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		efi_early->call(efi_early->free_pool, m);
-+		efi_early_call(free_pool, m);
- 		goto again;
- 	}
- 
- 	if (status != EFI_SUCCESS)
--		efi_early->call(efi_early->free_pool, m);
-+		efi_early_call(free_pool, m);
- 
- 	if (key_ptr && status == EFI_SUCCESS)
- 		*key_ptr = key;
-@@ -149,7 +149,7 @@ again:
- 	if (!max_addr)
- 		status = EFI_NOT_FOUND;
- 	else {
--		status = efi_early->call(efi_early->allocate_pages,
-+		status = efi_early_call(allocate_pages,
- 					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
- 					 nr_pages, &max_addr);
- 		if (status != EFI_SUCCESS) {
-@@ -161,7 +161,7 @@ again:
- 		*addr = max_addr;
- 	}
- 
--	efi_early->call(efi_early->free_pool, map);
-+	efi_early_call(free_pool, map);
- fail:
- 	return status;
- }
-@@ -221,7 +221,7 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 		if ((start + size) > end)
- 			continue;
- 
--		status = efi_early->call(efi_early->allocate_pages,
-+		status = efi_early_call(allocate_pages,
- 					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
- 					 nr_pages, &start);
- 		if (status == EFI_SUCCESS) {
-@@ -233,7 +233,7 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 	if (i == map_size / desc_size)
- 		status = EFI_NOT_FOUND;
- 
--	efi_early->call(efi_early->free_pool, map);
-+	efi_early_call(free_pool, map);
- fail:
- 	return status;
- }
-@@ -247,7 +247,7 @@ static void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
- 		return;
- 
- 	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
--	efi_early->call(efi_early->free_pages, addr, nr_pages);
-+	efi_early_call(free_pages, addr, nr_pages);
- }
- 
- 
-@@ -307,7 +307,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 	if (!nr_files)
- 		return EFI_SUCCESS;
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
-+	status = efi_early_call(allocate_pool, EFI_LOADER_DATA,
- 				 nr_files * sizeof(*files), (void **)&files);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
-@@ -413,7 +413,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 
- 	}
- 
--	efi_early->call(efi_early->free_pool, files);
-+	efi_early_call(free_pool, files);
- 
- 	*load_addr = file_addr;
- 	*load_size = file_size_total;
-@@ -427,7 +427,7 @@ close_handles:
- 	for (k = j; k < i; k++)
- 		efi_file_close(fh, files[k].handle);
- free_files:
--	efi_early->call(efi_early->free_pool, files);
-+	efi_early_call(free_pool, files);
- fail:
- 	*load_addr = 0;
- 	*load_size = 0;
-@@ -473,7 +473,7 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
- 	 * as possible while respecting the required alignment.
- 	 */
- 	nr_pages = round_up(alloc_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
--	status = efi_early->call(efi_early->allocate_pages,
-+	status = efi_early_call(allocate_pages,
- 				 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
- 				 nr_pages, &efi_addr);
- 	new_addr = efi_addr;
--- 
-1.7.10.4
+On Mon, 24 Mar 2014, Daniel Vetter wrote:
 
+> >> Like I've said the entire teardown sequence for legacy drm drivers is
+> >> terminally busted, so the only hope we have is to reapply this missing
+> >> duct-tape which made your X crash. But if that itself isn't a regression
+> >> there's no way to fix the current drm/mga driver without a complete
+> >> rewrite as a new-style kernel modesetting driver.
+> >> -Daniel
+> >
+> > If someone understands the locking issues I pointed out above, it could be
+> > easy to fix.
+> 
+> The locking issue isn't your problem, the real issue is that putting a
+> irq_uninstall into core code will break all the new (properly working)
+> drivers. And you can't really fix this in mga itself since the
+> lifetime rules of the register mappings are totally broken. It's a
+> fundamental misdesign of the legacy drm driver architecture and the
+> _only_ way to fix this bug for real is to rewrite this all. Which was
+> done for all the still used drivers like i915, radeon, nouveau, ...
+> -Daniel
+
+When I tried Radeon AGP card with the KMS driver, it lacked the 
+possibility to set video mode with fbset and the framebuffer console was 
+very slow because it wasn't accelerated.
+
+So, Radeon with the new driver is much less useable than Matrox.
+
+Did I misconfigure something? Or, is console acceleration and modesetting 
+deliberately unsupported in KMS drivers?
+
+Mikulas
