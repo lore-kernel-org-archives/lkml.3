@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757AbaCYRp6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:45:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55823 "EHLO
+	id S1754887AbaCYRVN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:21:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55803 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaCYRVP (ORCPT
+	with ESMTP id S1753241AbaCYRVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:21:15 -0400
+	Tue, 25 Mar 2014 13:21:11 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+Cc: Pavel Shilovsky <piastry@etersoft.ru>, Steve French <smfrench@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 30/81] ALSA: usb-audio: work around KEF X300A firmware bug
-Date: Tue, 25 Mar 2014 10:15:43 -0700
-Message-Id: <1395767794-5012-31-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 25/81] CIFS: Fix too big maxBuf size for SMB3 mounts
+Date: Tue, 25 Mar 2014 10:15:38 -0700
+Message-Id: <1395767794-5012-26-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,48 +27,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Pavel Shilovsky <piastry@etersoft.ru>
 
-commit 624aef494f86ed0c58056361c06347ad62b26806 upstream.
+commit 2365c4eaf077c48574ab6f143960048fc0f31518 upstream.
 
-When the driver tries to access Function Unit 10, the KEF X300A
-speakers' firmware apparently locks up, making even PCM streaming
-impossible.  Work around this by ignoring this FU.
+SMB3 servers can respond with MaxTransactSize of more than 4M
+that can cause a memory allocation error returned from kmalloc
+in a lock codepath. Also the client doesn't support multicredit
+requests now and allows buffer sizes of 65536 bytes only. Set
+MaxTransactSize to this maximum supported value.
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Pavel Shilovsky <piastry@etersoft.ru>
+Acked-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Steve French <smfrench@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/mixer_maps.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/cifs/smb2glob.h |  3 +++
+ fs/cifs/smb2ops.c  | 14 ++++----------
+ fs/cifs/smb2pdu.c  |  4 +++-
+ 3 files changed, 10 insertions(+), 11 deletions(-)
 
-diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
-index 65e1d7a..87db644 100644
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -328,6 +328,11 @@ static struct usbmix_name_map gamecom780_map[] = {
- 	{}
- };
+diff --git a/fs/cifs/smb2glob.h b/fs/cifs/smb2glob.h
+index 7c0e214..cc592ef 100644
+--- a/fs/cifs/smb2glob.h
++++ b/fs/cifs/smb2glob.h
+@@ -55,4 +55,7 @@
+ #define SMB2_NTLMV2_SESSKEY_SIZE (16)
+ #define SMB2_HMACSHA256_SIZE (32)
  
-+static const struct usbmix_name_map kef_x300a_map[] = {
-+	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
-+	{ 0 }
-+};
++/* Maximum buffer size value we can send with 1 credit */
++#define SMB2_MAX_BUFFER_SIZE 65536
 +
- /*
-  * Control map entries
-  */
-@@ -415,6 +420,10 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
- 		.id = USB_ID(0x200c, 0x1018),
- 		.map = ebox44_map,
- 	},
-+	{
-+		.id = USB_ID(0x27ac, 0x1000),
-+		.map = kef_x300a_map,
-+	},
- 	{ 0 } /* terminator */
- };
+ #endif	/* _SMB2_GLOB_H */
+diff --git a/fs/cifs/smb2ops.c b/fs/cifs/smb2ops.c
+index bceffe7..542efd2 100644
+--- a/fs/cifs/smb2ops.c
++++ b/fs/cifs/smb2ops.c
+@@ -181,11 +181,8 @@ smb2_negotiate_wsize(struct cifs_tcon *tcon, struct smb_vol *volume_info)
+ 	/* start with specified wsize, or default */
+ 	wsize = volume_info->wsize ? volume_info->wsize : CIFS_DEFAULT_IOSIZE;
+ 	wsize = min_t(unsigned int, wsize, server->max_write);
+-	/*
+-	 * limit write size to 2 ** 16, because we don't support multicredit
+-	 * requests now.
+-	 */
+-	wsize = min_t(unsigned int, wsize, 2 << 15);
++	/* set it to the maximum buffer size value we can send with 1 credit */
++	wsize = min_t(unsigned int, wsize, SMB2_MAX_BUFFER_SIZE);
  
+ 	return wsize;
+ }
+@@ -199,11 +196,8 @@ smb2_negotiate_rsize(struct cifs_tcon *tcon, struct smb_vol *volume_info)
+ 	/* start with specified rsize, or default */
+ 	rsize = volume_info->rsize ? volume_info->rsize : CIFS_DEFAULT_IOSIZE;
+ 	rsize = min_t(unsigned int, rsize, server->max_read);
+-	/*
+-	 * limit write size to 2 ** 16, because we don't support multicredit
+-	 * requests now.
+-	 */
+-	rsize = min_t(unsigned int, rsize, 2 << 15);
++	/* set it to the maximum buffer size value we can send with 1 credit */
++	rsize = min_t(unsigned int, rsize, SMB2_MAX_BUFFER_SIZE);
+ 
+ 	return rsize;
+ }
+diff --git a/fs/cifs/smb2pdu.c b/fs/cifs/smb2pdu.c
+index 41d9d07..8a9b5df 100644
+--- a/fs/cifs/smb2pdu.c
++++ b/fs/cifs/smb2pdu.c
+@@ -407,7 +407,9 @@ SMB2_negotiate(const unsigned int xid, struct cifs_ses *ses)
+ 	}
+ 	server->dialect = le16_to_cpu(rsp->DialectRevision);
+ 
+-	server->maxBuf = le32_to_cpu(rsp->MaxTransactSize);
++	/* set it to the maximum buffer size value we can send with 1 credit */
++	server->maxBuf = min_t(unsigned int, le32_to_cpu(rsp->MaxTransactSize),
++			       SMB2_MAX_BUFFER_SIZE);
+ 	server->max_read = le32_to_cpu(rsp->MaxReadSize);
+ 	server->max_write = le32_to_cpu(rsp->MaxWriteSize);
+ 	/* BB Do we need to validate the SecurityMode? */
 -- 
 1.8.3.2
 
