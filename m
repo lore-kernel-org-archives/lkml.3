@@ -1,60 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260AbaCYKWX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:22:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65306 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751414AbaCYKWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:22:21 -0400
-Message-ID: <533158CF.9040303@redhat.com>
-Date: Tue, 25 Mar 2014 11:22:07 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1752652AbaCYKYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:24:08 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:55753 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaCYKYG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 06:24:06 -0400
+Message-ID: <5331593E.7060803@hitachi.com>
+Date: Tue, 25 Mar 2014 19:23:58 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@kernel.org
-CC: avi.kivity@gmail.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
-        kvm@vger.kernel.org
-Subject: Re: [PATCH v4 0/5] KVM: x86: flush tlb out of mmu-lock after write
- protection
-References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <5330F82D.4070601@linux.vnet.ibm.com>
-In-Reply-To: <5330F82D.4070601@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v8 17/26] notifier: Use NOKPROBE_SYMBOL macro in
+ notifier
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140305120042.22766.48538.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140324161227.6b93b5af@gandalf.local.home>
+In-Reply-To: <20140324161227.6b93b5af@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/03/2014 04:29, Xiao Guangrong ha scritto:
-> Ping......
+(2014/03/25 5:12), Steven Rostedt wrote:
+> On Wed, 05 Mar 2014 21:00:42 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Use NOKPROBE_SYMBOL macro to protect functions from
+>> kprobes instead of __kprobes annotation in notifier.
+>>
+>> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+>>  /*
+>>   *	Blocking notifier chain routines.  All access to the chain is
+>> @@ -527,7 +530,7 @@ EXPORT_SYMBOL_GPL(srcu_init_notifier_head);
+>>  
+>>  static ATOMIC_NOTIFIER_HEAD(die_chain);
+>>  
+>> -int notrace __kprobes notify_die(enum die_val val, const char *str,
+>> +int notrace notify_die(enum die_val val, const char *str,
+> 
+> Hmm, I wonder why notify_die() is marked notrace? But that's unrelated
+> to this patch.
+> 
+> Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
 
-Hi Xiao, I'll look at these patches soon.  I plan to merge them for 3.16.
+Thanks! I guess since notify_die() is called from any kind of fault,
+which may be happen inside ftrace too.
 
-Paolo
+Thank you,
 
-> On 03/10/2014 10:01 PM, Xiao Guangrong wrote:
->> This patchset is splited from my previous patchset:
->> [PATCH v3 00/15] KVM: MMU: locklessly write-protect
->> that can be found at:
->> https://lkml.org/lkml/2013/10/23/265
->>
->> Changelog v4 :
->> - add more comments for patch 5 and thank for Marcelo's review
->>
->> Xiao Guangrong (5):
->>   Revert "KVM: Simplify kvm->tlbs_dirty handling"
->>   KVM: MMU: properly check last spte in fast_page_fault()
->>   KVM: MMU: lazily drop large spte
->>   KVM: MMU: flush tlb if the spte can be locklessly modified
->>   KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
->>
->>  arch/x86/kvm/mmu.c         | 72 ++++++++++++++++++++++++++++++----------------
->>  arch/x86/kvm/mmu.h         | 14 +++++++++
->>  arch/x86/kvm/paging_tmpl.h |  7 ++---
->>  arch/x86/kvm/x86.c         | 20 ++++++++++---
->>  include/linux/kvm_host.h   |  4 +--
->>  virt/kvm/kvm_main.c        |  5 +++-
->>  6 files changed, 85 insertions(+), 37 deletions(-)
->>
->
+-- 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
