@@ -1,48 +1,388 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754567AbaCYIvV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:51:21 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:42506 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752748AbaCYIvP (ORCPT
+	id S1754128AbaCYIv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:51:56 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:49088 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752729AbaCYIUp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:51:15 -0400
-Message-ID: <5331437A.9090306@gmail.com>
-Date: Tue, 25 Mar 2014 16:51:06 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-CC: =?ISO-8859-1?Q?H=E5vard_Skinnemoen?= <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol flush_icache_range()
- for module using
-References: <531B8D32.6000000@gmail.com> <531B8FD8.6040704@gmail.com> <20140308221721.GA30934@samfundet.no> <531C8683.2010908@gmail.com> <5324C3B2.1000802@gmail.com> <532E18EE.3090008@gmail.com> <20140325084802.GA30149@samfundet.no>
-In-Reply-To: <20140325084802.GA30149@samfundet.no>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Mar 2014 04:20:45 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
+        pekon@ti.com
+Subject: [RFC 14/47] mtd: nand: stm_nand_bch: configure BCH and FLEX by ONFI timing mode
+Date: Tue, 25 Mar 2014 08:19:31 +0000
+Message-Id: <1395735604-26706-15-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 04:48 PM, Hans-Christian Egtvedt wrote:
-> Around Sun 23 Mar 2014 07:12:46 +0800 or thereabout, Chen Gang wrote:
->> Is this patch OK?
->>
-> 
-> I reread everything you said, and it looks sane.
-> 
->> If it is necessary to continue analysing more details, please let me
->> know, and I will/should continue.
-> 
-> No, I will append it to my for-linus branch, and submit it early in the next
-> cycle. It should be just around the corner, Linus just released rc8 (-:
-> 
+This patch adds support for configuring the NAND Controller timing
+registers according to 'nand_timing_spec' data. Since the stm_nand_bch
+driver falls back to Hamming FLEX mode for certain operations, it is
+necessary to configure the timing registers of both the Hamming
+Controller and the BCH Controller.
 
-Thank you very much.
+The device initialisation is now performed in two stages,
+nand_scan_ident() and nand_scan_tail(), rather than a single call to
+nand_scan(). This allows information obtained during device discovery
+(e.g. ONFI parameter data) to help optimise the timing configuration
+prior to performing some of the more data intensive tasks found in
+nand_scan_tail() (e.g. bad block scanning).
 
+If 'nand_timing_spec' is supplied via platform data, then this is used
+in preference for configuring the timing registers. Failing that, we
+test for the timing mode advertised by ONFI-compliant NAND, and select
+one of the predefined timing specifications. Finally, if no timing
+data is available, the timing registers are left unmodified
+(i.e. reset values, or as programmed by the boot-loader).
 
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/nand/stm_nand_bch.c | 311 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 311 insertions(+)
+
+diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
+index 3115fb4..fbcd1b9 100644
+--- a/drivers/mtd/nand/stm_nand_bch.c
++++ b/drivers/mtd/nand/stm_nand_bch.c
+@@ -172,6 +172,10 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 	mtd->_resume = nand_resume;
+ }
+ 
++/*
++ * Timing and Clocks
++ */
++
+ static void nandi_clk_enable(struct nandi_controller *nandi)
+ {
+ 	if (nandi->emi_clk)
+@@ -210,6 +214,291 @@ static struct clk *nandi_clk_setup(struct nandi_controller *nandi,
+ 	return clk;
+ }
+ 
++/* Derive Hamming-FLEX timing register values from 'nand_timing_spec' data */
++static void flex_calc_timing_registers(struct nand_timing_spec *spec,
++				       int tCLK, int relax,
++				       uint32_t *ctl_timing,
++				       uint32_t *wen_timing,
++				       uint32_t *ren_timing)
++{
++	int tMAX_HOLD;
++	int n_ctl_setup;
++	int n_ctl_hold;
++	int n_ctl_wb;
++
++	int tMAX_WEN_OFF;
++	int n_wen_on;
++	int n_wen_off;
++
++	int tMAX_REN_OFF;
++	int n_ren_on;
++	int n_ren_off;
++
++	/*
++	 * CTL_TIMING
++	 */
++
++	/*	- SETUP */
++	n_ctl_setup = (spec->tCLS - spec->tWP + tCLK - 1)/tCLK;
++	if (n_ctl_setup < 1)
++		n_ctl_setup = 1;
++	n_ctl_setup += relax;
++
++	/*	- HOLD */
++	tMAX_HOLD = spec->tCLH;
++	if (spec->tCH > tMAX_HOLD)
++		tMAX_HOLD = spec->tCH;
++	if (spec->tALH > tMAX_HOLD)
++		tMAX_HOLD = spec->tALH;
++	if (spec->tDH > tMAX_HOLD)
++		tMAX_HOLD = spec->tDH;
++	n_ctl_hold = (tMAX_HOLD + tCLK - 1)/tCLK + relax;
++
++	/*	- CE_deassert_hold = 0 */
++
++	/*	- WE_high_to_RBn_low */
++	n_ctl_wb = (spec->tWB + tCLK - 1)/tCLK;
++
++	*ctl_timing = ((n_ctl_setup & 0xff) |
++		       (n_ctl_hold & 0xff) << 8 |
++		       (n_ctl_wb & 0xff) << 24);
++
++	/*
++	 * WEN_TIMING
++	 */
++
++	/*	- ON */
++	n_wen_on = (spec->tWH + tCLK - 1)/tCLK + relax;
++
++	/*	- OFF */
++	tMAX_WEN_OFF = spec->tWC - spec->tWH;
++	if (spec->tWP > tMAX_WEN_OFF)
++		tMAX_WEN_OFF = spec->tWP;
++	n_wen_off = (tMAX_WEN_OFF + tCLK - 1)/tCLK + relax;
++
++	*wen_timing = ((n_wen_on & 0xff) |
++		       (n_wen_off & 0xff) << 8);
++
++	/*
++	 * REN_TIMING
++	 */
++
++	/*	- ON */
++	n_ren_on = (spec->tREH + tCLK - 1)/tCLK + relax;
++
++	/*	- OFF */
++	tMAX_REN_OFF = spec->tRC - spec->tREH;
++	if (spec->tRP > tMAX_REN_OFF)
++		tMAX_REN_OFF = spec->tRP;
++	if (spec->tREA > tMAX_REN_OFF)
++		tMAX_REN_OFF = spec->tREA;
++	n_ren_off = (tMAX_REN_OFF + tCLK - 1)/tCLK + 1 + relax;
++
++	*ren_timing = ((n_ren_on & 0xff) |
++		       (n_ren_off & 0xff) << 8);
++}
++
++/* Derive BCH timing register values from 'nand_timing_spec' data */
++static void bch_calc_timing_registers(struct nand_timing_spec *spec,
++				      int tCLK, int relax,
++				      uint32_t *ctl_timing,
++				      uint32_t *wen_timing,
++				      uint32_t *ren_timing)
++{
++	int tMAX_HOLD;
++	int n_ctl_setup;
++	int n_ctl_hold;
++	int n_ctl_wb;
++
++	int n_wen_on;
++	int n_wen_off;
++	int wen_half_on;
++	int wen_half_off;
++
++	int tMAX_REN_ON;
++	int tMAX_CS_DEASSERT;
++	int n_d_latch;
++	int n_telqv;
++	int n_ren_on;
++	int n_ren_off;
++	int ren_half_on;
++	int ren_half_off;
++
++	/*
++	 * CTL_TIMING
++	 */
++
++	/*	- SETUP */
++	if (spec->tCLS > spec->tWP)
++		n_ctl_setup = (spec->tCLS - spec->tWP + tCLK - 1)/tCLK;
++	else
++		n_ctl_setup = 0;
++	n_ctl_setup += relax;
++
++	/*	- HOLD */
++	tMAX_HOLD = spec->tCLH;
++	if (spec->tCH > tMAX_HOLD)
++		tMAX_HOLD = spec->tCH;
++	if (spec->tALH > tMAX_HOLD)
++		tMAX_HOLD = spec->tALH;
++	if (spec->tDH > tMAX_HOLD)
++		tMAX_HOLD = spec->tDH;
++	n_ctl_hold = (tMAX_HOLD + tCLK - 1)/tCLK + relax;
++	/*	- CE_deassert_hold = 0 */
++
++	/*	- WE_high_to_RBn_low */
++	n_ctl_wb = (spec->tWB + tCLK - 1)/tCLK;
++
++	*ctl_timing = ((n_ctl_setup & 0xff) |
++		       (n_ctl_hold & 0xff) << 8 |
++		       (n_ctl_wb & 0xff) << 24);
++
++	/*
++	 * WEN_TIMING
++	 */
++
++	/*	- ON */
++	n_wen_on = (2 * spec->tWH + tCLK - 1)/tCLK;
++	wen_half_on = n_wen_on % 2;
++	n_wen_on /= 2;
++	n_wen_on += relax;
++
++	/*	- OFF */
++	n_wen_off = (2 * spec->tWP + tCLK - 1)/tCLK;
++	wen_half_off = n_wen_off % 2;
++	n_wen_off /= 2;
++	n_wen_off += relax;
++
++	*wen_timing = ((n_wen_on & 0xff) |
++		       (n_wen_off & 0xff) << 8 |
++		       (wen_half_on << 16) |
++		       (wen_half_off << 17));
++
++	/*
++	 * REN_TIMING
++	 */
++
++	/*	- ON */
++	tMAX_REN_ON = spec->tRC - spec->tRP;
++	if (spec->tREH > tMAX_REN_ON)
++		tMAX_REN_ON = spec->tREH;
++
++	n_ren_on = (2 * tMAX_REN_ON + tCLK - 1)/tCLK;
++	ren_half_on = n_ren_on % 2;
++	n_ren_on /= 2;
++	n_ren_on += relax;
++
++	/*	- OFF */
++	n_ren_off = (2 * spec->tREA + tCLK - 1)/tCLK;
++	ren_half_off = n_ren_off % 2;
++	n_ren_off /= 2;
++	n_ren_off += relax;
++
++	/*	- DATA_LATCH */
++	if (spec->tREA <= (spec->tRP - (2 * tCLK)))
++		n_d_latch = 0;
++	else if (spec->tREA <= (spec->tRP - tCLK))
++		n_d_latch = 1;
++	else if ((spec->tREA <= spec->tRP) && (spec->tRHOH >= 2 * tCLK))
++		n_d_latch = 2;
++	else
++		n_d_latch = 3;
++
++	/*	- TELQV */
++	tMAX_CS_DEASSERT = spec->tCOH;
++	if (spec->tCHZ > tMAX_CS_DEASSERT)
++		tMAX_CS_DEASSERT = spec->tCHZ;
++	if (spec->tCSD > tMAX_CS_DEASSERT)
++		tMAX_CS_DEASSERT = spec->tCSD;
++
++	n_telqv = (tMAX_CS_DEASSERT + tCLK - 1)/tCLK;
++
++	*ren_timing = ((n_ren_on & 0xff) |
++		       (n_ren_off & 0xff) << 8 |
++		       (n_d_latch & 0x3) << 16 |
++		       (wen_half_on << 18) |
++		       (wen_half_off << 19) |
++		       (n_telqv & 0xff) << 24);
++}
++
++static void flex_configure_timing_registers(struct nandi_controller *nandi,
++					    struct nand_timing_spec *spec,
++					    int relax)
++{
++	uint32_t ctl_timing;
++	uint32_t wen_timing;
++	uint32_t ren_timing;
++	int emi_t_ns;
++
++	/* Select Hamming Controller */
++	emiss_nandi_select(STM_NANDI_HAMMING);
++
++	/* Get EMI clock (default 100MHz) */
++	if (nandi->emi_clk)
++		emi_t_ns = 1000000000UL / clk_get_rate(nandi->emi_clk);
++	else {
++		dev_warn(nandi->dev,
++			 "No EMI clock available; assuming default 100MHz\n");
++		emi_t_ns = 10;
++	}
++
++	/* Derive timing register values from specification */
++	flex_calc_timing_registers(spec, emi_t_ns, relax,
++				   &ctl_timing, &wen_timing, &ren_timing);
++
++	dev_dbg(nandi->dev,
++		"updating FLEX timing configuration [0x%08x, 0x%08x, 0x%08x]\n",
++		ctl_timing, wen_timing, ren_timing);
++
++	/* Program timing registers */
++	writel(ctl_timing, nandi->base + NANDHAM_CTL_TIMING);
++	writel(wen_timing, nandi->base + NANDHAM_WEN_TIMING);
++	writel(ren_timing, nandi->base + NANDHAM_REN_TIMING);
++}
++
++static void bch_configure_timing_registers(struct nandi_controller *nandi,
++					   struct nand_timing_spec *spec,
++					   int relax)
++{
++	uint32_t ctl_timing;
++	uint32_t wen_timing;
++	uint32_t ren_timing;
++	int bch_t_ns;
++
++	/* Select BCH Controller */
++	emiss_nandi_select(STM_NANDI_BCH);
++
++	/* Get BCH clock (default 200MHz) */
++	if (nandi->bch_clk)
++		bch_t_ns = 1000000000UL / clk_get_rate(nandi->bch_clk);
++	else {
++		dev_warn(nandi->dev,
++			 "No BCH clock available; assuming default 200MHz\n");
++		bch_t_ns = 5;
++	}
++
++	/* Derive timing register values from specification */
++	bch_calc_timing_registers(spec, bch_t_ns, relax,
++				  &ctl_timing, &wen_timing, &ren_timing);
++
++	dev_dbg(nandi->dev,
++		"updating BCH timing configuration [0x%08x, 0x%08x, 0x%08x]\n",
++		ctl_timing, wen_timing, ren_timing);
++
++	/* Program timing registers */
++	writel(ctl_timing, nandi->base + NANDBCH_CTL_TIMING);
++	writel(wen_timing, nandi->base + NANDBCH_WEN_TIMING);
++	writel(ren_timing, nandi->base + NANDBCH_REN_TIMING);
++}
++
++static void nandi_configure_timing_registers(struct nandi_controller *nandi,
++					     struct nand_timing_spec *spec,
++					     int relax)
++{
++	bch_configure_timing_registers(nandi, spec, relax);
++	flex_configure_timing_registers(nandi, spec, relax);
++}
++
+ static void nandi_init_hamming(struct nandi_controller *nandi, int emi_bank)
+ {
+ 	dev_dbg(nandi->dev, "%s\n", __func__);
+@@ -463,6 +752,28 @@ static int stm_nand_bch_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
++	/*
++	 * Configure timing registers
++	 */
++	if (bank && bank->timing_spec) {
++		dev_info(&pdev->dev, "Using platform timing data\n");
++		nandi_configure_timing_registers(nandi, bank->timing_spec,
++						 bank->timing_relax);
++	} else if (chip->onfi_version) {
++		int mode = fls(onfi_get_async_timing_mode(chip) - 1);
++
++		/* Modes 4 and 5 (EDO) are not supported on our H/W */
++		if (mode > 3)
++			mode = 3;
++
++		dev_info(&pdev->dev, "Using ONFI Timing Mode %d\n", mode);
++		nandi_configure_timing_registers(nandi,
++						 &nand_onfi_timing_specs[mode],
++						 bank ? bank->timing_relax : 0);
++	} else {
++		dev_warn(&pdev->dev, "No timing data available\n");
++	}
++
+ 	return 0;
+ }
+ 
 -- 
-Chen Gang
+1.8.3.2
 
-Open, share, and attitude like air, water, and life which God blessed
