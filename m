@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaCYRz2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:55:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58443 "EHLO mx2.suse.de"
+	id S1756317AbaCYR4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:56:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58474 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754976AbaCYRzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:55:18 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 3/8] printk: Enable interrupts before calling console_trylock_for_printk()
-Date: Tue, 25 Mar 2014 18:54:56 +0100
-Message-Id: <1395770101-24534-4-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1395770101-24534-1-git-send-email-jack@suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	id S1755320AbaCYR4j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:56:39 -0400
+Date: Tue, 25 Mar 2014 10:56:34 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Christoph Lameter <cl@linux.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: slub: gpf in deactivate_slab
+Message-ID: <20140325175634.GC7519@dhcp22.suse.cz>
+References: <53208A87.2040907@oracle.com>
+ <5331A6C3.2000303@oracle.com>
+ <20140325165247.GA7519@dhcp22.suse.cz>
+ <alpine.DEB.2.10.1403251205140.24534@nuc>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.10.1403251205140.24534@nuc>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need interrupts disabled when calling console_trylock_for_printk()
-only so that cpu id we pass to can_use_console() remains valid (for
-other things console_sem provides all the exclusion we need and
-deadlocks on console_sem due to interrupts are impossible because we use
-down_trylock()).  However if we are rescheduled, we are guaranteed to
-run on an online cpu so we can easily just get the cpu id in
-can_use_console().
+On Tue 25-03-14 12:06:36, Christoph Lameter wrote:
+> On Tue, 25 Mar 2014, Michal Hocko wrote:
+> 
+> > You are right. The function even does VM_BUG_ON(!irqs_disabled())...
+> > Unfortunatelly we do not seem to have an _irq alternative of the bit
+> > spinlock.
+> > Not sure what to do about it. Christoph?
+> >
+> > Btw. it seems to go way back to 3.1 (1d07171c5e58e).
+> 
+> Well there is a preempt_enable() (bit_spin_lock) and a preempt_disable()
+> bit_spin_unlock() within a piece of code where irqs are disabled.
+> 
+> Is that a problem? Has been there for a long time.
 
-We can loose a bit of performance when we enable interrupts in
-vprintk_emit() and then disable them again in console_unlock() but OTOH
-it can somewhat reduce interrupt latency caused by console_unlock()
-especially since later in the patch series we will want to spin on
-console_sem in console_trylock_for_printk().
-
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- kernel/printk/printk.c | 29 ++++++++++++++++++-----------
- 1 file changed, 18 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 7a8ffd89875c..56649edfae9c 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1314,10 +1314,9 @@ static int have_callable_console(void)
- /*
-  * Can we actually use the console at this time on this cpu?
-  *
-- * Console drivers may assume that per-cpu resources have
-- * been allocated. So unless they're explicitly marked as
-- * being able to cope (CON_ANYTIME) don't call them until
-- * this CPU is officially up.
-+ * Console drivers may assume that per-cpu resources have been allocated. So
-+ * unless they're explicitly marked as being able to cope (CON_ANYTIME) don't
-+ * call them until this CPU is officially up.
-  */
- static inline int can_use_console(unsigned int cpu)
- {
-@@ -1330,8 +1329,10 @@ static inline int can_use_console(unsigned int cpu)
-  * console_lock held, and 'console_locked' set) if it
-  * is successful, false otherwise.
-  */
--static int console_trylock_for_printk(unsigned int cpu)
-+static int console_trylock_for_printk(void)
- {
-+	unsigned int cpu = smp_processor_id();
-+
- 	if (!console_trylock())
- 		return 0;
- 	/*
-@@ -1501,7 +1502,8 @@ asmlinkage int vprintk_emit(int facility, int level,
- 		 */
- 		if (!oops_in_progress && !lockdep_recursing(current)) {
- 			recursion_bug = 1;
--			goto out_restore_irqs;
-+			local_irq_restore(flags);
-+			return 0;
- 		}
- 		zap_locks();
- 	}
-@@ -1597,17 +1599,22 @@ asmlinkage int vprintk_emit(int facility, int level,
+It is because preempt_enable calls __preempt_schedule when the preempt
+count drops down to 0. You would need to call preempt_disable before you
+disable interrupts or use an irq safe bit spin unlock which doesn't
+enabled preemption unconditionally.
  
- 	logbuf_cpu = UINT_MAX;
- 	raw_spin_unlock(&logbuf_lock);
-+	lockdep_on();
-+	local_irq_restore(flags);
-+
-+	/*
-+	 * Disable preemption to avoid being preempted while holding
-+	 * console_sem which would prevent anyone from printing to console
-+	 */
-+	preempt_disable();
- 	/*
- 	 * Try to acquire and then immediately release the console semaphore.
- 	 * The release will print out buffers and wake up /dev/kmsg and syslog()
- 	 * users.
- 	 */
--	if (console_trylock_for_printk(this_cpu))
-+	if (console_trylock_for_printk())
- 		console_unlock();
--
--	lockdep_on();
--out_restore_irqs:
--	local_irq_restore(flags);
-+	preempt_enable();
- 
- 	return printed_len;
- }
+
 -- 
-1.8.1.4
-
+Michal Hocko
+SUSE Labs
