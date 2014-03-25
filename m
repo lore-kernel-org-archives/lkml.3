@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755242AbaCYUlx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:41:53 -0400
-Received: from fieldses.org ([174.143.236.118]:46027 "EHLO fieldses.org"
+	id S1755280AbaCYUmb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:42:31 -0400
+Received: from mail1.ugh.no ([178.79.162.34]:53510 "EHLO mail1.ugh.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754797AbaCYUlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:41:51 -0400
-Date: Tue, 25 Mar 2014 16:41:50 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "J. R. Okajima" <hooanon05g@gmail.com>
-Cc: "J. Bruce Fields" <bfields@redhat.com>, Jeff Layton <jlayton@redhat.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] NFSD, lost nfserrno() call in nfsd_setattr()
-Message-ID: <20140325204149.GB30430@fieldses.org>
-References: <20699.1392737273@jrobl>
- <20140218204438.GA12930@fieldses.org>
- <6158.1395735542@jrobl>
+	id S1754022AbaCYUm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 16:42:28 -0400
+X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Mar 2014 16:42:28 EDT
+Message-ID: <5331E8CB.3060708@tomt.net>
+Date: Tue, 25 Mar 2014 21:36:27 +0100
+From: Andre Tomt <andre@tomt.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6158.1395735542@jrobl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org, Eric Paris <eparis@redhat.com>
+Subject: Re: Linux 3.14-rc8 (LXC broken)
+References: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
+In-Reply-To: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 05:19:02PM +0900, J. R. Okajima wrote:
-> 
-> "J. Bruce Fields":
-> > On Wed, Feb 19, 2014 at 12:27:53AM +0900, J. R. Okajima wrote:
-> > > 
-> > > There is a regression in
-> > > 	208d0ac 2014-01-07 nfsd4: break only delegations when appropriate
-> > > which deletes an nfserrno() call in nfsd_setattr() (by accident,
-> > > probably), and NFSD becomes ignoring an error from VFS.
-> > > 
-> > > Here is a patch to fix it.
-> >
-> > Thanks for cathing that!  Queueing up for 3.14.
-> 
-> Now rc8 is released, but this patch is still un-merged.
-> The bug is actually a show-stopper for my local tests.
-> Do you really have a plan to do it? Or should I ask Linus Torvalds
-> directly?
+*testing hat on*
 
-If you remember, just bug me once a week or so.  Snd then if it gets
-this late, yes, sending straight to Linus with a cc: to the unresponsive
-maintainer and any relevant mailing list is probably a reasonable thing
-to do in this sort of situation.
+PAM within namespaces (say, LXC) does not work anymore with 3.14-rc8,
+making login, ssh etc fail in containers unless you boot with audit=0.
 
-Anyway, my screwup, apologies for not getting that merged at the start.
+This is due to a change in return value to user space; and is
+appearantly a known issue as evident in this earlier post from february:
+https://www.redhat.com/archives/linux-audit/2014-February/msg00087.html
 
---b.
+Judging from the post it seems they want to ship 3.14 with this IMO
+quite serious regression? What is the namespace/container folks take on
+this?
