@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaCYIUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:20:49 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:52060 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752610AbaCYIUi (ORCPT
+	id S1752924AbaCYIU5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:20:57 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:50656 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610AbaCYIUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:20:38 -0400
+	Tue, 25 Mar 2014 04:20:51 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 10/47] mtd: nand: stm_nand_bch: initialise the Hamming Controller
-Date: Tue, 25 Mar 2014 08:19:27 +0000
-Message-Id: <1395735604-26706-11-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 17/47] mtd: nand: stm_nand_bch: automatically set EEC mode if requested
+Date: Tue, 25 Mar 2014 08:19:34 +0000
+Message-Id: <1395735604-26706-18-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,65 +22,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Here we automatically select the strongest ECC scheme compatible with
+the size of the OOB.
+
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 36 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 36 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 7333ad6..8ab8e7b 100644
+index f5a3e80..60a7800 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -207,6 +207,41 @@ static struct clk *nandi_clk_setup(struct nandi_controller *nandi,
- 	return clk;
+@@ -32,6 +32,13 @@
+ /* NANDi BCH Controller properties */
+ #define NANDI_BCH_SECTOR_SIZE			1024
+ 
++/* BCH ECC sizes */
++static int bch_ecc_sizes[] = {
++	[BCH_18BIT_ECC] = 32,
++	[BCH_30BIT_ECC] = 54,
++	[BCH_NO_ECC] = 0,
++};
++
+ /* Bad Block Table (BBT) */
+ struct nandi_bbt_info {
+ 	uint32_t	bbt_size;		/* Size of bad-block table */
+@@ -135,6 +142,25 @@ static void nandi_disable_interrupts(struct nandi_controller *nandi,
+ 	writel(val, nandi->base + NANDBCH_INT_EN);
  }
  
-+static void nandi_init_hamming(struct nandi_controller *nandi, int emi_bank)
++/* Select strongest ECC scheme compatible with OOB size */
++static int bch_set_ecc_auto(struct nandi_controller *nandi,
++			    struct mtd_info *mtd)
 +{
-+	dev_dbg(nandi->dev, "%s\n", __func__);
++	int oob_bytes_per_sector = mtd->oobsize / nandi->sectors_per_page;
++	int try_ecc_modes[] = { BCH_30BIT_ECC, BCH_18BIT_ECC, -1 };
++	int m, ecc_mode;
 +
-+	emiss_nandi_select(STM_NANDI_HAMMING);
++	for (m = 0; try_ecc_modes[m] >= 0; m++) {
++		ecc_mode = try_ecc_modes[m];
++		if (oob_bytes_per_sector >= bch_ecc_sizes[ecc_mode]) {
++			nandi->bch_ecc_mode = ecc_mode;
++			return 0;
++		}
++	}
 +
-+	/* Reset and disable boot-mode controller */
-+	writel(BOOT_CFG_RESET, nandi->base + NANDHAM_BOOTBANK_CFG);
-+	udelay(1);
-+	writel(0x00000000, nandi->base + NANDHAM_BOOTBANK_CFG);
-+
-+	/* Reset controller */
-+	writel(CFG_RESET, nandi->base + NANDHAM_FLEXMODE_CFG);
-+	udelay(1);
-+	writel(0x00000000, nandi->base + NANDHAM_FLEXMODE_CFG);
-+
-+	/* Set EMI Bank */
-+	writel(0x1 << emi_bank, nandi->base + NANDHAM_FLEX_MUXCTRL);
-+
-+	/* Enable FLEX mode */
-+	writel(CFG_ENABLE_FLEX, nandi->base + NANDHAM_FLEXMODE_CFG);
-+
-+	/* Configure FLEX_DATA_READ/WRITE for 1-byte access */
-+	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
-+	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
-+
-+	/* RBn interrupt on rising edge */
-+	writel(NAND_EDGE_CFG_RBN_RISING, nandi->base + NANDHAM_INT_EDGE_CFG);
-+
-+	/* Enable interrupts */
-+	nandi_enable_interrupts(nandi, NAND_INT_ENABLE);
++	return -EINVAL;
 +}
 +
- static void nandi_init_bch(struct nandi_controller *nandi, int emi_bank)
+ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 				   struct mtd_info *mtd, struct nand_chip *chip)
  {
- 	dev_dbg(nandi->dev, "%s\n", __func__);
-@@ -255,6 +290,7 @@ static void nandi_init_controller(struct nandi_controller *nandi,
- 				  int emi_bank)
- {
- 	nandi_init_bch(nandi, emi_bank);
-+	nandi_init_hamming(nandi, emi_bank);
+@@ -792,6 +818,20 @@ static int stm_nand_bch_probe(struct platform_device *pdev)
+ 			     0x10000) ? true : false;
+ 	mtd->writebufsize = mtd->writesize;
+ 
++	/* Set ECC mode */
++	if (pdata->bch_ecc_cfg == BCH_ECC_AUTO) {
++		err = bch_set_ecc_auto(nandi, mtd);
++		if (err) {
++			dev_err(nandi->dev, "insufficient OOB for BCH ECC\n");
++			return err;
++		}
++	} else {
++		nandi->bch_ecc_mode = pdata->bch_ecc_cfg;
++	}
++
++	info->ecclayout.eccbytes =
++		nandi->sectors_per_page * bch_ecc_sizes[nandi->bch_ecc_mode];
++
+ 	return 0;
  }
  
- static int remap_named_resource(struct platform_device *pdev,
 -- 
 1.8.3.2
 
