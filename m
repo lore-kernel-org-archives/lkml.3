@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755395AbaCYUpa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:45:30 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:61025 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755121AbaCYUp1 (ORCPT
+	id S1755423AbaCYUqg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:46:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60721 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755065AbaCYUqe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:45:27 -0400
+	Tue, 25 Mar 2014 16:46:34 -0400
+Date: Tue, 25 Mar 2014 13:45:36 -0700
+From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
+Message-ID: <tip-psizrnant8x3nrhbgvq2vekr@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
+        hpa@linux.intel.com
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso: Actually discard the .discard sections
+Git-Commit-ID: 26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
-Date: Tue, 25 Mar 2014 21:45:26 +0100
-Message-ID: <CACRpkdbFj+Msq5HjcV8N5A6TN9sic1+Y2v9aWAMa2g+0zO=D1Q@mail.gmail.com>
-Subject: Re: dwapb: a bug fix a few cleanups, v2
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Jamie Iles <jamie@jamieiles.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Alan Tull <delicious.quinoa@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 22, 2014 at 5:16 PM, Sebastian Andrzej Siewior
-<bigeasy@linutronix.de> wrote:
+Commit-ID:  26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
+Gitweb:     http://git.kernel.org/tip/26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Tue, 25 Mar 2014 13:41:36 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 25 Mar 2014 13:41:36 -0700
 
-> Since Alan said that he had drop two patches from earlier series to make
-> it work I decided to spent some extra time to check if this is really the
-> case.
-> I dropped "gpio: dwapb: do not create the irq mapping upfront." until the
-> discussion there is over.
->
-> This series has been tested back ported and tested on a v3.13 kernel with
-> the dummy test [0] here. It was tested on the Arrow board and the dev kit. I
-> tested edge and level interrupts. On the Arrow board releasing the button
-> causes a lot of interrupts so I assume debouncing is no working well
-> there. On the dev kit I see only one interrupt. If I realse it really
-> slowly, then the extra interrupts are visible there as well but way less.
->
-> [0] http://breakpoint.cc/gpio-dwapb-test.c
+x86, vdso: Actually discard the .discard sections
 
-Okay so can we have Jamie and Sebastian H. have a look at this
-series?
+The .discard/.discard.* sections are used to generate intermediate
+results for the assembler (effectively "test assembly".)  The output
+is waste and should not be retained.
 
-Yours,
-Linus Walleij
+Cc: Stefani Seibold <stefani@seibold.net>
+Cc: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-psizrnant8x3nrhbgvq2vekr@git.kernel.org
+---
+ arch/x86/vdso/vdso-layout.lds.S | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index c6d0e1b..2e263f3 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -62,6 +62,11 @@ SECTIONS
+ 	. = ALIGN(0x100);
+ 
+ 	.text		: { *(.text*) }			:text	=0x90909090
++
++	/DISCARD/ : {
++		*(.discard)
++		*(.discard.*)
++	}
+ }
+ 
+ /*
