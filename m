@@ -1,38 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755280AbaCYUmb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:42:31 -0400
-Received: from mail1.ugh.no ([178.79.162.34]:53510 "EHLO mail1.ugh.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754022AbaCYUm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:42:28 -0400
-X-Greylist: delayed 356 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Mar 2014 16:42:28 EDT
-Message-ID: <5331E8CB.3060708@tomt.net>
-Date: Tue, 25 Mar 2014 21:36:27 +0100
-From: Andre Tomt <andre@tomt.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755292AbaCYUnx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:43:53 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:41167 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487AbaCYUnu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 16:43:50 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        containers@lists.linux-foundation.org, Eric Paris <eparis@redhat.com>
-Subject: Re: Linux 3.14-rc8 (LXC broken)
-References: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
-In-Reply-To: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <532D83F1.5070001@linutronix.de>
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>
+	<1395345324-18299-3-git-send-email-bigeasy@linutronix.de>
+	<CANk1AXTjuBWa_DdKaV2dCPjhbKRHE9bR2uHyuoCYtt_-zk7EoQ@mail.gmail.com>
+	<532D83F1.5070001@linutronix.de>
+Date: Tue, 25 Mar 2014 21:43:49 +0100
+Message-ID: <CACRpkdYxeieES5Y5tbCRfSe=Cnj2QsoU5KvSPZ99XsJ9AUrEmw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] gpio: dwapb: do not create the irq mapping upfront.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: delicious quinoa <delicious.quinoa@gmail.com>,
+        Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*testing hat on*
+On Sat, Mar 22, 2014 at 1:37 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
 
-PAM within namespaces (say, LXC) does not work anymore with 3.14-rc8,
-making login, ssh etc fail in containers unless you boot with audit=0.
+> Linus, I don't understand why you need the mapping upfront.
 
-This is due to a change in return value to user space; and is
-appearantly a known issue as evident in this earlier post from february:
-https://www.redhat.com/archives/linux-audit/2014-February/msg00087.html
+This is because irqchips and gpiochips need to be orthogonal
+APIs.
 
-Judging from the post it seems they want to ship 3.14 with this IMO
-quite serious regression? What is the namespace/container folks take on
-this?
+> I looked at
+> those two links and you quote gpio_to_irq() which is not required.
+
+In a *lot* of drivers it is implicitly required that gpio_to_irq()
+is called first because they only call irq_create_mapping()
+there. (And not in subsequent interrupt handlers etc.)
+
+No matter what, I would worry less about that and spend
+some time on using my new gpiolib helpers for
+gpiochip_irqchip_add() and
+gpiochip_set_chained_irqchip().
+
+Yours,
+Linus Walleij
