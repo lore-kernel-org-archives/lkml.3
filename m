@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754534AbaCYS4v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:56:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63719 "EHLO mx1.redhat.com"
+	id S1754634AbaCYS5a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:57:30 -0400
+Received: from kanga.kvack.org ([205.233.56.17]:41148 "EHLO kanga.kvack.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009AbaCYS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:56:50 -0400
-Message-ID: <1395773793.632.152.camel@ul30vt.home>
-Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
- the device fd
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Eric Auger <eric.auger@linaro.org>
-Cc: a.motakis@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, tech@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, B08248@freescale.com,
-        kim.phillips@linaro.org, jan.kiszka@siemens.com, kvm@vger.kernel.org,
-        R65777@freescale.com, B07421@freescale.com,
-        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
-        will.deacon@arm.com
-Date: Tue, 25 Mar 2014 12:56:33 -0600
-In-Reply-To: <5331B22C.6090100@linaro.org>
-References: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
-	 <5331B22C.6090100@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
+	id S1753751AbaCYS52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 14:57:28 -0400
+Date: Tue, 25 Mar 2014 14:57:27 -0400
+From: Benjamin LaHaise <bcrl@kvack.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>, Tang Chen <tangchen@cn.fujitsu.com>,
+        Dave Jones <davej@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        jmoyer@redhat.com, kosaki.motohiro@jp.fujitsu.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        miaox@cn.fujitsu.com, linux-aio@kvack.org,
+        fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH] aio: ensure access to ctx->ring_pages is correctly serialised
+Message-ID: <20140325185727.GU4173@kvack.org>
+References: <532A80B1.5010002@cn.fujitsu.com> <20140320143207.GA3760@redhat.com> <20140320163004.GE28970@kvack.org> <532B9C54.80705@cn.fujitsu.com> <20140321183509.GC23173@kvack.org> <533077CE.6010204@oracle.com> <20140324190743.GJ4173@kvack.org> <5331C13C.8030507@oracle.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5331C13C.8030507@oracle.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-25 at 17:43 +0100, Eric Auger wrote:
-> > Date: Sat,  8 Feb 2014 18:29:36 +0100
-> > VFIO returns a file descriptor which we can use to manipulate the memory
-> > regions of the device. Since some memory regions we cannot mmap due to
-> > security concerns, we also allow to read and write to this file descriptor
-> > directly.
-> > 
-> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> > Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
-> > ---
-> >  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
-> >  1 file changed, 125 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> > index f7db5c0..ee96078 100644
-> > --- a/drivers/vfio/platform/vfio_platform.c
-> > +++ b/drivers/vfio/platform/vfio_platform.c
-> > @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
-> >  
-> >  		region.addr = res->start;
-> >  		region.size = resource_size(res);
-> > -		region.flags = 0;
-> > +		region.flags = VFIO_REGION_INFO_FLAG_READ
-> > +				| VFIO_REGION_INFO_FLAG_WRITE;
-> >  
-> >  		vdev->region[i] = region;
-> >  	}
-> > @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
-> >  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
-> >  			     size_t count, loff_t *ppos)
-> >  {
-> > -	return 0;
-> > +	struct vfio_platform_device *vdev = device_data;
-> > +	unsigned int *io;
-> > +	int i;
-> > +
-> > +	for (i = 0; i < vdev->num_regions; i++) {
-> > +		struct vfio_platform_region region = vdev->region[i];
-> > +		unsigned int done = 0;
-> > +		loff_t off;
-> > +
-> > +		if ((*ppos < region.addr)
-> > +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> > +			continue;
-> > +
-> > +		io = ioremap_nocache(region.addr, region.size);
-> > +
-> > +		off = *ppos - region.addr;
-> > +
-> > +		while (count) {
-> > +			size_t filled;
-> > +
-> > +			if (count >= 4 && !(off % 4)) {
-> > +				u32 val;
-> > +
-> > +				val = ioread32(io + off);
+Hi Sasha,
+
+On Tue, Mar 25, 2014 at 01:47:40PM -0400, Sasha Levin wrote:
+> On 03/24/2014 03:07 PM, Benjamin LaHaise wrote:
+...
+> >Yeah, that's a problem -- thanks for the report.  The ring_lock mutex can't
+> >be nested inside of mmap_sem, as aio_read_events_ring() can take a page
+> >fault while holding ring_mutex.  That makes the following change required.
+> >I'll fold this change into the patch that caused this issue.
 > 
-> Hi Antonios,
+> Yup, that does the trick.
 > 
-> I suspect there is an issue with the read address. Indeed io being an
-> unsigned int* the read address is io + off x sizeof (unsigned int) ie.
-> io+ offx4  whereas we expect to read io + off. declaring io as a void*
-> corrects the issue (or void __iomem *io). Same issue on write.
+> Could you please add something to document why this is a trylock instead of 
+> a lock? If
+> I were reading the code there's no way I'd understand what's the reason 
+> behind it
+> without knowing of this bug report.
 
-Yep, the same code for vfio/pci uses void __iomem *io.  Thanks,
+Done.  I've updated the patch in my aio-next.git tree, so it should be in 
+tomorrow's linux-next, and will give it one last day for any further problem 
+reports.  Thanks for testing!
 
-Alex
+		-ben
 
+> Thanks,
+> Sasha
+
+-- 
+"Thought is the essence of where you are now."
