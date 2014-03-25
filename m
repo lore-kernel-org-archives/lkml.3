@@ -1,73 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754712AbaCYUai (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:30:38 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:39326 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaCYUag (ORCPT
+	id S1755097AbaCYUbw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:31:52 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:64567 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060AbaCYUbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:30:36 -0400
-X-Amavis-Alert: BAD HEADER SECTION, Duplicate header field: "References"
-From: silvio@port1024.net
-To: linux-kernel@vger.kernel.org
-Cc: silvio@port1024.net, Silvio F <silvio.fricke@gmail.com>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH 1/3] staging: vt6655: removed incorrect casting in wpactl.c
-Date: Tue, 25 Mar 2014 21:30:18 +0100
-Message-Id: <9ae62ba7dd9abff5839457e0870f75a53b1bc709.1395778852.git.silvio.fricke@gmail.com>
-X-Mailer: git-send-email 1.8.5.2
-In-Reply-To: <cover.1395778852.git.silvio.fricke@gmail.com>
-References: <cover.1395778852.git.silvio.fricke@gmail.com>
-In-Reply-To: <cover.1395778852.git.silvio.fricke@gmail.com>
-References: <1395362529-17182-1-git-send-email-cse.cem@gmail.com> <cover.1395778852.git.silvio.fricke@gmail.com>
+	Tue, 25 Mar 2014 16:31:46 -0400
+MIME-Version: 1.0
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20140325085609.9132a2e1.akpm@linux-foundation.org>
+References: <CA+icZUUr2Wua1kNoB1oCje2rU0KQx5c+V6A76UP0c99gg6UxTg@mail.gmail.com>
+	<20140325085609.9132a2e1.akpm@linux-foundation.org>
+Date: Tue, 25 Mar 2014 21:31:45 +0100
+Message-ID: <CA+icZUVH98q=-n9WKJkxqkUPkUtUU1FCMVdT7Vye0x5-vPU7cA@mail.gmail.com>
+Subject: Re: [v3.17-rc8] LTP oom testsuite produces OOPS
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm <linux-mm@kvack.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Silvio F <silvio.fricke@gmail.com>
+On Tue, Mar 25, 2014 at 4:56 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 25 Mar 2014 08:45:34 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrote:
+>
+>> Hi,
+>>
+>> as reported in [1] in my post-scriptum I see several OOPs when running
+>> LTP and OOM tests (here: oom3).
+>> Linus requested to send you mm-folks my bug-report.
+>>
+>> # cd /opt/ltp/
+>>
+>> # cat Version
+>> 20140115
+>>
+>> # ./testcases/bin/oom03
+>>
+>> I have tested with latest LTP (15-Jan-2014).
+>>
+>> If you need additional information, please let me know.
+>
+> I don't actually see any oopses there.  There are some stack traces
+> associated with the oom-killing events:
+>
+>
+> [  104.383349] Memory cgroup out of memory: Kill process 2518 (oom03) score 777 or sacrifice child
+> [  104.383352] Killed process 2518 (oom03) total-vm:3152196kB, anon-rss:1048444kB, file-rss:192kB
+> [  107.946908] oom03 invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
+> [  107.946912] oom03 cpuset=/ mems_allowed=0
+> [  107.946915] CPU: 0 PID: 2521 Comm: oom03 Not tainted 3.14.0-rc8-1-iniza-small #1
+> [  107.946917] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH, BIOS 13XK 03/28/2013
+> [  107.946919]  ffff880108e58400 ffff880064125be8 ffffffff8170fb45 0000000000000007
+> [  107.946923]  ffff880108e7a190 ffff880064125c68 ffffffff8170c6e5 ffff880064125cd8
+> [  107.946925]  ffff88010b686858 ffff88011fdf9d80 ffff88010b6863d0 0000000000000000
+> [  107.946928] Call Trace:
+> [  107.946934]  [<ffffffff8170fb45>] dump_stack+0x46/0x58
+> [  107.946937]  [<ffffffff8170c6e5>] dump_header+0x7e/0x1c3
+> [  107.946942]  [<ffffffff813881e0>] ? ___ratelimit+0xa0/0x120
+> [  107.946946]  [<ffffffff811580e4>] oom_kill_process+0x214/0x370
+> [  107.946949]  [<ffffffff81075ce5>] ? has_ns_capability_noaudit+0x15/0x20
+> ...
+>
+> But these aren't oopses - mm/oom_kill.c:dump_header() deliberately
+> performs a dump_stack() while reporting on the event.
+>
 
-This patch fixes the following type of sparse warnings:
+Indicated by the lines '...expected victim is...' and according to you
+'expected'?
 
-drivers/staging/vt6655/wpactl.c:596:47: warning: cast from restricted gfp_t
-drivers/staging/vt6655/wpactl.c:638:68: warning: cast from restricted gfp_t
-drivers/staging/vt6655/wpactl.c:860:42: warning: cast from restricted gfp_t
+# cd /opt/ltp/
 
-Signed-off-by: Silvio F <silvio.fricke@gmail.com>
----
- drivers/staging/vt6655/wpactl.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+# ./testcases/bin/oom03
+oom03       0  TINFO  :  set overcommit_memory to 1
+oom03       0  TINFO  :  start normal OOM testing.
+oom03       0  TINFO  :  expected victim is 2834.
+oom03       0  TINFO  :  allocating 3221225472 bytes.
+oom03       0  TINFO  :  start OOM testing for mlocked pages.
+oom03       0  TINFO  :  expected victim is 2835.
+oom03       0  TINFO  :  allocating 3221225472 bytes.
+oom03       0  TINFO  :  start OOM testing for KSM pages.
+oom03       0  TINFO  :  expected victim is 2836.
+oom03       0  TINFO  :  allocating 3221225472 bytes.
+oom03       1  TCONF  :  memcg swap accounting is disabled
+oom03       0  TINFO  :  set overcommit_memory to 0
 
-diff --git a/drivers/staging/vt6655/wpactl.c b/drivers/staging/vt6655/wpactl.c
-index d17224f..4745429 100644
---- a/drivers/staging/vt6655/wpactl.c
-+++ b/drivers/staging/vt6655/wpactl.c
-@@ -593,7 +593,7 @@ static int wpa_get_scan(PSDevice pDevice,
- 
- 	unsigned char *ptempBSS;
- 
--	ptempBSS = kmalloc(sizeof(KnownBSS), (int)GFP_ATOMIC);
-+	ptempBSS = kmalloc(sizeof(KnownBSS), GFP_ATOMIC);
- 
- 	if (ptempBSS == NULL) {
- 		printk(KERN_ERR "bubble sort kmalloc memory fail@@@\n");
-@@ -635,7 +635,7 @@ static int wpa_get_scan(PSDevice pDevice,
- 		count++;
- 	}
- 
--	pBuf = kcalloc(count, sizeof(struct viawget_scan_result), (int)GFP_ATOMIC);
-+	pBuf = kcalloc(count, sizeof(struct viawget_scan_result), GFP_ATOMIC);
- 
- 	if (pBuf == NULL) {
- 		ret = -ENOMEM;
-@@ -857,7 +857,7 @@ int wpa_ioctl(PSDevice pDevice, struct iw_point *p)
- 	    p->length > VIAWGET_WPA_MAX_BUF_SIZE || !p->pointer)
- 		return -EINVAL;
- 
--	param = kmalloc((int)p->length, (int)GFP_KERNEL);
-+	param = kmalloc((int)p->length, GFP_KERNEL);
- 	if (param == NULL)
- 		return -ENOMEM;
- 
--- 
-1.9.0
+# dmesg | egrep '2834|2835|2836'
+[ 1220.478440] CPU: 0 PID: 2834 Comm: oom03 Not tainted
+3.14.0-rc8-1-iniza-small #1
+[ 1220.478552] [ 2834]     0  2834   788049   248262     623    65524
+           0 oom03
+[ 1220.478554] Memory cgroup out of memory: Kill process 2834 (oom03)
+score 930 or sacrifice child
+[ 1220.478558] Killed process 2834 (oom03) total-vm:3152196kB,
+anon-rss:992852kB, file-rss:196kB
+[ 1221.544018] CPU: 0 PID: 2835 Comm: oom03 Not tainted
+3.14.0-rc8-1-iniza-small #1
+[ 1221.544151] [ 2835]     0  2835   788049   262161     522       13
+           0 oom03
+[ 1221.544152] Memory cgroup out of memory: Kill process 2835 (oom03)
+score 777 or sacrifice child
+[ 1221.544155] Killed process 2835 (oom03) total-vm:3152196kB,
+anon-rss:1048452kB, file-rss:192kB
+[ 1225.016810] CPU: 0 PID: 2836 Comm: oom03 Not tainted
+3.14.0-rc8-1-iniza-small #1
+[ 1225.016941] [ 2836]     0  2836   788049   250693     628    65535
+           0 oom03
+[ 1225.016943] Memory cgroup out of memory: Kill process 2836 (oom03)
+score 937 or sacrifice child
+[ 1225.016945] Killed process 2836 (oom03) total-vm:3152196kB,
+anon-rss:1002564kB, file-rss:208kB
 
+- Sedat -
