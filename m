@@ -1,86 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763AbaCYLJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 07:09:25 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:65189 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578AbaCYLJX (ORCPT
+	id S1752632AbaCYLQl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 07:16:41 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:58379 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbaCYLQ3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 07:09:23 -0400
-Message-ID: <533163D4.6030205@linaro.org>
-Date: Tue, 25 Mar 2014 19:09:08 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>
-CC: "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] arm64: Fix duplicated Kconfig entries again
-References: <1395738060-18489-1-git-send-email-hanjun.guo@linaro.org> <533153BF.3070308@arm.com>
-In-Reply-To: <533153BF.3070308@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Mar 2014 07:16:29 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH] clk: Neaten clk_summary output
+Date: Tue, 25 Mar 2014 12:16:24 +0100
+Message-Id: <1395746185-16686-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sudeep,
+From: Geert Uytterhoeven <geert+renesas@glider.be>
 
-On 2014-3-25 18:00, Sudeep Holla wrote:
-> Hi Hanjun,
-> 
-> On 25/03/14 09:00, Hanjun Guo wrote:
->> After commit 74397174989e5 (arm64: Fix duplicated Kconfig entries),
->> I still get a duplicate Power management options section in linux-next
->> git repo, may be due to some merge conflicts, anyway, fix that in this
->> patch.
->>
-> I reported this and Mark Brown posted the patch[1].
-> I assumed it is already pulled, but looks like that's not the case.
-[...]
-> [1] http://www.spinics.net/lists/arm-kernel/msg314472.html
+  - Limit ruler to 80 characters (was: 81),
+  - Widen rate column by 1 for nicer spacing,
+  - Right-align numbers and their column headers,
+  - Move a newline to reduce the number of seq_printf() calls,
+  - Use set_puts() for fixed strings.
 
-Yes, I noticed this patch in arm maillist, and I can see that this
-patch was already merged into linux-next, but I still got duplicate
-Power management options in the Kconfig:
----------------------------------
-menu "Power management options"
+Before:
 
-source "kernel/power/Kconfig"
+   clock                        enable_cnt  prepare_cnt  rate        accuracy
+---------------------------------------------------------------------------------
+ extal                          2           2            20000000   0
+    thermal                     1           1            20000000   0
+    cp                          0           0            10000000   0
+       tpu0                     0           0            10000000   0
+       tmu0                     0           0            10000000   0
+    main                        1           1            20000000   0
+       pll3                     0           0            1600000000 0
+          ddr                   0           0            200000000  0
+          zb3d2                 0           0            200000000  0
+          zb3                   0           0            400000000  0
+       pll1                     4           4            1560000000 0
+          oscclk                0           0            126953     0
+          rclk                  1           1            31738      0
+             cmt1               0           0            31738      0
+             cmt0               1           1            31738      0
+          imp                   0           0            390000000  0
 
-config ARCH_SUSPEND_POSSIBLE
-	def_bool y
+After:
 
-config ARM64_CPU_SUSPEND
-	def_bool PM_SLEEP
+   clock                         enable_cnt  prepare_cnt        rate   accuracy
+--------------------------------------------------------------------------------
+ extal                                    2            2    20000000          0
+    thermal                               1            1    20000000          0
+    cp                                    0            0    10000000          0
+       tpu0                               0            0    10000000          0
+       tmu0                               0            0    10000000          0
+    main                                  1            1    20000000          0
+       pll3                               0            0  1600000000          0
+          ddr                             0            0   200000000          0
+          zb3d2                           0            0   200000000          0
+          zb3                             0            0   400000000          0
+       pll1                               4            4  1560000000          0
+          oscclk                          0            0      126953          0
+          rclk                            1            1       31738          0
+             cmt1                         0            0       31738          0
+             cmt0                         1            1       31738          0
+          imp                             0            0   390000000          0
 
-endmenu
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+ drivers/clk/clk.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-menu "CPU Power Management"
-
-source "drivers/cpuidle/Kconfig"
-
-source "drivers/cpufreq/Kconfig"
-
-endmenu
-
-menu "Power management options"
-
-source "kernel/power/Kconfig"
-
-source "drivers/cpufreq/Kconfig"
-
-endmenu
---------------------------------
-here is the link:
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/arm64/Kconfig
-
-Thanks
-Hanjun
-> 
+diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+index fb3c40b4fbe2..73fe1fade11f 100644
+--- a/drivers/clk/clk.c
++++ b/drivers/clk/clk.c
+@@ -106,12 +106,11 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
+ 	if (!c)
+ 		return;
+ 
+-	seq_printf(s, "%*s%-*s %-11d %-12d %-10lu %-11lu",
++	seq_printf(s, "%*s%-*s %11d %12d %11lu %10lu\n",
+ 		   level * 3 + 1, "",
+ 		   30 - level * 3, c->name,
+ 		   c->enable_count, c->prepare_count, clk_get_rate(c),
+ 		   clk_get_accuracy(c));
+-	seq_printf(s, "\n");
+ }
+ 
+ static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
+@@ -132,8 +131,8 @@ static int clk_summary_show(struct seq_file *s, void *data)
+ {
+ 	struct clk *c;
+ 
+-	seq_printf(s, "   clock                        enable_cnt  prepare_cnt  rate        accuracy\n");
+-	seq_printf(s, "---------------------------------------------------------------------------------\n");
++	seq_puts(s, "   clock                         enable_cnt  prepare_cnt        rate   accuracy\n");
++	seq_puts(s, "--------------------------------------------------------------------------------\n");
+ 
+ 	clk_prepare_lock();
+ 
+-- 
+1.7.9.5
 
