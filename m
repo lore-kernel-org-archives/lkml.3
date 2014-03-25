@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbaCYSch (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:32:37 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:40367 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaCYScf (ORCPT
+	id S1754336AbaCYSet (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:34:49 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:56221 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaCYSer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:32:35 -0400
-Message-ID: <5331CBB0.8080500@linux.vnet.ibm.com>
-Date: Tue, 25 Mar 2014 11:32:16 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Tue, 25 Mar 2014 14:34:47 -0400
 MIME-Version: 1.0
-To: Anton Blanchard <anton@samba.org>
-CC: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        scottwood@freescale.com
-Subject: Re: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7 interface
-References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com> <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com> <20140325214356.4a2f7d95@kryten>
-In-Reply-To: <20140325214356.4a2f7d95@kryten>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032518-0928-0000-0000-000000BAC770
+In-Reply-To: <1395767794-5012-24-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com> <1395767794-5012-24-git-send-email-kamal@canonical.com>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Tue, 25 Mar 2014 12:34:26 -0600
+Message-ID: <CAErSpo6iSiYn0pcv86c3srAXHznYf_Xdqa+yJnhz_BezgXmeig@mail.gmail.com>
+Subject: Re: [PATCH 3.8 23/81] PCI: Enable INTx if BIOS left them disabled
+To: Kamal Mostafa <kamal@canonical.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        kernel-team@lists.ubuntu.com,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 03:43 AM, Anton Blanchard wrote:
->
-> Hi Cody,
->
-> hv-24x7: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
-> hv-gpci: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
->
->> +		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
->
-> That's a lot of padding :)
->
-> I think this should also be a pr_debug, considering this is not relevant
-> to most ppc64 boxes.
+On Tue, Mar 25, 2014 at 11:15 AM, Kamal Mostafa <kamal@canonical.com> wrote:
+> 3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-Yep, s/info/debug/ makes sense. The format should have been "%08lx" not 
-"%80lx", not sure when I screwed that up.
+If you pick up this one, you need the follow-up fix as well:
 
+866d54177b4e671cd52bed1fb487d140d7b691f5 PCI: Enable INTx in
+pci_reenable_device() only when MSI/MSI-X not enabled
+
+
+> From: Bjorn Helgaas <bhelgaas@google.com>
+>
+> commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
+>
+> Some firmware leaves the Interrupt Disable bit set even if the device uses
+> INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
+>
+> Based on the report mentioned below, if the user selects the "EHCI only"
+> option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
+> with the PCI_COMMAND_INTX_DISABLE bit set.
+>
+> Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
+> Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
+> Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> ---
+>  drivers/pci/pci.c | 10 ++++++++++
+>  1 file changed, 10 insertions(+)
+>
+> diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+> index d1b4e00..4235728 100644
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1126,6 +1126,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
+>  static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>  {
+>         int err;
+> +       u16 cmd;
+> +       u8 pin;
+>
+>         err = pci_set_power_state(dev, PCI_D0);
+>         if (err < 0 && err != -EIO)
+> @@ -1135,6 +1137,14 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
+>                 return err;
+>         pci_fixup_device(pci_fixup_enable, dev);
+>
+> +       pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+> +       if (pin) {
+> +               pci_read_config_word(dev, PCI_COMMAND, &cmd);
+> +               if (cmd & PCI_COMMAND_INTX_DISABLE)
+> +                       pci_write_config_word(dev, PCI_COMMAND,
+> +                                             cmd & ~PCI_COMMAND_INTX_DISABLE);
+> +       }
+> +
+>         return 0;
+>  }
+>
+> --
+> 1.8.3.2
+>
