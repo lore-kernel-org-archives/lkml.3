@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753585AbaCYXlE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 19:41:04 -0400
-Received: from mga09.intel.com ([134.134.136.24]:42617 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929AbaCYXlA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 19:41:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,732,1389772800"; 
-   d="scan'208";a="507544312"
-Subject: Re: [PATCH] Fix late crypto work queue initialization
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "David S.Miller" <davem@davemloft.net>,
-        linux-crypto@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "Huang, Ying" <ying.huang@intel.com>, stable@vger.kernel.org
-In-Reply-To: <20140321144040.GD25820@gondor.apana.org.au>
-References: <1395100347.2970.14.camel@schen9-DESK>
-	 <20140321144040.GD25820@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 Mar 2014 16:40:56 -0700
-Message-ID: <1395790856.2970.33.camel@schen9-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+	id S1753417AbaCYXsR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 19:48:17 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:54405 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbaCYXsP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 19:48:15 -0400
+Message-ID: <53321311.8060604@ahsoftware.de>
+Date: Wed, 26 Mar 2014 00:36:49 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sebastian Capella <sebastian.capella@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Len Brown <len.brown@intel.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>	<20140316070917.GA3094@arch.cereza>	<CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com>	<20140317204410.GA1118@arch.cereza>	<CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com>	<20140319154434.GA3488@arch.cereza>	<CADHgK6vLB3h0zrdpve=ZyjNu2pe1VYsGxrYgv=2C-JV37vE9tQ@mail.gmail.com> <CADHgK6vkwjXyJxRcOXjJpJJaR0-YR869NpPZ+CBBS8kEdE0qCQ@mail.gmail.com> <5331CD43.1010601@ahsoftware.de>
+In-Reply-To: <5331CD43.1010601@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-21 at 22:40 +0800, Herbert Xu wrote:
-> On Mon, Mar 17, 2014 at 04:52:26PM -0700, Tim Chen wrote:
-> > The crypto algorithm modules utilizing the crypto daemon could
-> > be used early when the system start up.  Using module_init
-> > does not guarantee that the daemon's work queue is initialized
-> > when the cypto alorithm depending on crypto_wq starts.  It is necessary
-> > to initialize the crypto work queue earlier at the subsystem
-> > init time to make sure that it is initialized
-> > when used.
-> > 
-> > Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
-> 
-> Patch applied.
+Am 25.03.2014 19:38, schrieb Alexander Holler:
 
-Herbert,
+> reboot too. Another solution would be to unregister the reboot_notifier
+> in the reboot_nofifier itself. I've just seen one watchdog driver
+> (drivers/rtc/rtc-m41t80.c) which does that. But I still think such
 
-Probably this patch should go to the stable patches as well.
-Copying Greg.
+That, btw. is broken. ;)
 
-Thanks.
+Right after having send the mail, I've became that intuition, had a look 
+and ... notifier.h does state the following:
 
-Tim
+  * atomic_notifier_chain_unregister(), 
+blocking_notifier_chain_unregister(),
+  * and srcu_notifier_chain_unregister() _must not_ be called from within
+  * the call chain.
+
+(The reboot-notifier chain is of type blocking_notifier_chain)
+
+So I've picked up one user of reboot_notifier by random and had the luck 
+to choose a broken one. ;)
+
+I will make a patch and will have a look if the same failure can be 
+found elsewhere. There aren't that much users of the reboot-notifier, so 
+it shouldn't cost me that much time.
+
+Regards,
+
+Alexander Holler
+
 
