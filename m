@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbaCYSuG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:50:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:46447 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaCYSuD (ORCPT
+	id S1754337AbaCYSu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:50:58 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:61357 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753371AbaCYSu4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:50:03 -0400
-Date: Tue, 25 Mar 2014 11:51:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: rtl8188eu: remove spaces, correct counts to
- unbreak P2P ioctls
-Message-ID: <20140325185145.GA4509@kroah.com>
-References: <20140325175939.GC17209@kaos.lebenslange-mailadresse.de>
- <20140325181749.GE3233@kroah.com>
- <20140325183618.GD17209@kaos.lebenslange-mailadresse.de>
+	Tue, 25 Mar 2014 14:50:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140325183618.GD17209@kaos.lebenslange-mailadresse.de>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CAHdzE-_cAndCNhBM1N0RpjQDhoh3Snas-eza4rYN33Rf69PXyw@mail.gmail.com>
+References: <1394841445-16142-1-git-send-email-venkateshs@google.com>
+	<1394854471-25700-1-git-send-email-tytso@mit.edu>
+	<87siqhu048.fsf@rustcorp.com.au>
+	<20140317054053.GF14162@thunk.org>
+	<871txysnw2.fsf@rustcorp.com.au>
+	<CAHdzE-_cAndCNhBM1N0RpjQDhoh3Snas-eza4rYN33Rf69PXyw@mail.gmail.com>
+Date: Tue, 25 Mar 2014 11:50:55 -0700
+Message-ID: <CAHdzE--CvgsPOFQ5OFRoe7L+kkJ0J3eRWR0JQv34i4AmNDBJug@mail.gmail.com>
+Subject: Re: [PATCH] virtio-blk: make the queue depth the max supportable by
+ the hypervisor
+From: Venkatesh Srinivas <venkateshs@google.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Theodore Ts'o" <tytso@mit.edu>,
+        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        virtualization@lists.linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 06:36:18PM +0000, Wilfried Klaebe wrote:
-> Am Tue, Mar 25, 2014 at 11:17:49AM -0700 schrieb Greg KH:
-> > On Tue, Mar 25, 2014 at 05:59:39PM +0000, Wilfried Klaebe wrote:
-> > > staging: rtl8188eu: remove spaces, correct counts to unbreak P2P ioctls
-> > > 
-> > > It looks like someone did a search-and-replace on that driver, putting
-> > > spaces before "=" characters, without checking this is OK everywhere.
-> > > Also, in some places, there's memcpm()s/strncmp()s checking for some
-> > > different length than the fixed string argument.
-> > > 
-> > > These things result in code not working as intended. Fix that.
-> > 
-> > What code is parsing string output from the kernel?
-> 
-> I know about some userspace apps, for example a MiraCast Sink
-> implementation for the Raspberry Pi, called piracast.
-> 
-> This patch though is about the rtl8188eu driver parsing strings
-> handed to it via "iwpriv wlanX p2p_set name=value". Which breaks,
-> because the driver checks for "name =" instead of "name=" in several
-> cases.
+On Wed, Mar 19, 2014 at 10:48 AM, Venkatesh Srinivas
+<venkateshs@google.com> wrote:
+>> And I rewrote it substantially, mainly to take
+>> VIRTIO_RING_F_INDIRECT_DESC into account.
+>>
+>> As QEMU sets the vq size for PCI to 128, Venkatash's patch wouldn't
+>> have made a change.  This version does (since QEMU also offers
+>> VIRTIO_RING_F_INDIRECT_DESC.
+>
+> That divide-by-2 produced the same queue depth as the prior
+> computation in QEMU was deliberate -- but raising it to 128 seems
+> pretty reasonable.
+>
+> Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
 
-That's horrid on so many levels...
+Soft ping about this patch.
+
+Thanks,
+-- vs;
