@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754305AbaCYIyu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:54:50 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:52333 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbaCYIUc (ORCPT
+	id S1754600AbaCYIz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:55:59 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51467 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752470AbaCYIU1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:20:32 -0400
+	Tue, 25 Mar 2014 04:20:27 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 07/47] mtd: nand: stm_nand_bch: initialise the BCH Controller
-Date: Tue, 25 Mar 2014 08:19:24 +0000
-Message-Id: <1395735604-26706-8-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 04/47] mtd: nand: adding ST's BCH NAND Controller driver
+Date: Tue, 25 Mar 2014 08:19:21 +0000
+Message-Id: <1395735604-26706-5-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,131 +22,243 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+First introduction of the driver. Includes the basic device struct
+(some functionality isn't utilised as of yet) and supplies some of the
+important resources required for basic running of the Controller.
+
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 56 +++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/stm_nand.h    | 20 +++++++++++++++
- 2 files changed, 76 insertions(+)
+ drivers/mtd/nand/Kconfig        |   6 ++
+ drivers/mtd/nand/Makefile       |   1 +
+ drivers/mtd/nand/stm_nand_bch.c | 151 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/stm_nand.h    |  33 +++++++++
+ 4 files changed, 191 insertions(+)
+ create mode 100644 drivers/mtd/nand/stm_nand_bch.c
+ create mode 100644 include/linux/mtd/stm_nand.h
 
+diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
+index 93ae6a6..2bf972c 100644
+--- a/drivers/mtd/nand/Kconfig
++++ b/drivers/mtd/nand/Kconfig
+@@ -510,4 +510,10 @@ config MTD_NAND_XWAY
+ 	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
+ 	  to the External Bus Unit (EBU).
+ 
++config MTD_NAND_STM_BCH
++	tristate "STMicroelectronics: NANDi BCH Controller"
++	depends on ARM
++	help
++	  Adds support for the STMicroelectronics NANDi BCH Controller.
++
+ endif # MTD_NAND
+diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
+index 542b568..94e7737 100644
+--- a/drivers/mtd/nand/Makefile
++++ b/drivers/mtd/nand/Makefile
+@@ -46,6 +46,7 @@ obj-$(CONFIG_MTD_NAND_NUC900)		+= nuc900_nand.o
+ obj-$(CONFIG_MTD_NAND_MPC5121_NFC)	+= mpc5121_nfc.o
+ obj-$(CONFIG_MTD_NAND_RICOH)		+= r852.o
+ obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
++obj-$(CONFIG_MTD_NAND_STM_BCH)		+= stm_nand_bch.o
+ obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
+ obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
+ obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)	+= bcm47xxnflash/
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 76a0d02..1a93f8d 100644
---- a/drivers/mtd/nand/stm_nand_bch.c
+new file mode 100644
+index 0000000..bd11070
+--- /dev/null
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -14,6 +14,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
-+#include <linux/delay.h>
- #include <linux/io.h>
- #include <linux/interrupt.h>
- #include <linux/device.h>
-@@ -102,6 +103,56 @@ static void nandi_disable_interrupts(struct nandi_controller *nandi,
- 	writel(val, nandi->base + NANDBCH_INT_EN);
- }
- 
-+static void nandi_init_bch(struct nandi_controller *nandi, int emi_bank)
-+{
-+	dev_dbg(nandi->dev, "%s\n", __func__);
-+
-+	/* Initialise BCH Controller */
-+	emiss_nandi_select(STM_NANDI_BCH);
-+
-+	/* Reset and disable boot-mode controller */
-+	writel(BOOT_CFG_RESET, nandi->base + NANDBCH_BOOTBANK_CFG);
-+	udelay(1);
-+	writel(0x00000000, nandi->base + NANDBCH_BOOTBANK_CFG);
-+
-+	/* Reset AFM controller */
-+	writel(CFG_RESET, nandi->base + NANDBCH_CONTROLLER_CFG);
-+	udelay(1);
-+	writel(0x00000000, nandi->base + NANDBCH_CONTROLLER_CFG);
-+
-+	/* Set EMI Bank */
-+	writel(0x1 << emi_bank, nandi->base + NANDBCH_FLEX_MUXCTRL);
-+
-+	/* Reset ECC stats */
-+	writel(0x7f0, nandi->base + NANDBCH_CONTROLLER_CFG);
-+	udelay(1);
-+
-+	/* Enable AFM */
-+	writel(CFG_ENABLE_AFM, nandi->base + NANDBCH_CONTROLLER_CFG);
-+
-+	/* Configure Read DMA Plugs (values supplied by Validation) */
-+	writel(0x00000005, nandi->dma + EMISS_NAND_RD_DMA_PAGE_SIZE);
-+	writel(0x00000005, nandi->dma + EMISS_NAND_RD_DMA_MAX_OPCODE_SIZE);
-+	writel(0x00000002, nandi->dma + EMISS_NAND_RD_DMA_MIN_OPCODE_SIZE);
-+	writel(0x00000001, nandi->dma + EMISS_NAND_RD_DMA_MAX_CHUNK_SIZE);
-+	writel(0x00000000, nandi->dma + EMISS_NAND_RD_DMA_MAX_MESSAGE_SIZE);
-+
-+	/* Configure Write DMA Plugs (values supplied by Validation) */
-+	writel(0x00000005, nandi->dma + EMISS_NAND_WR_DMA_PAGE_SIZE);
-+	writel(0x00000005, nandi->dma + EMISS_NAND_WR_DMA_MAX_OPCODE_SIZE);
-+	writel(0x00000002, nandi->dma + EMISS_NAND_WR_DMA_MIN_OPCODE_SIZE);
-+	writel(0x00000001, nandi->dma + EMISS_NAND_WR_DMA_MAX_CHUNK_SIZE);
-+	writel(0x00000000, nandi->dma + EMISS_NAND_WR_DMA_MAX_MESSAGE_SIZE);
-+
-+	nandi_enable_interrupts(nandi, NAND_INT_ENABLE);
-+}
-+
-+static void nandi_init_controller(struct nandi_controller *nandi,
-+				  int emi_bank)
-+{
-+	nandi_init_bch(nandi, emi_bank);
-+}
-+
- static int remap_named_resource(struct platform_device *pdev,
- 				char *name,
- 				void __iomem **io_ptr)
-@@ -174,6 +225,7 @@ nandi_init_resources(struct platform_device *pdev)
- static int stm_nand_bch_probe(struct platform_device *pdev)
- {
- 	struct stm_plat_nand_bch_data *pdata = pdev->dev.platform_data;
-+	struct stm_nand_bank_data *bank;
- 	struct nandi_controller *nandi;
- 
- 	if (!pdata) {
-@@ -190,6 +242,10 @@ static int stm_nand_bch_probe(struct platform_device *pdev)
- 	init_completion(&nandi->seq_completed);
- 	init_completion(&nandi->rbn_completed);
- 
-+	bank = pdata->bank;
-+	if (bank)
-+		nandi_init_controller(nandi, bank->csn);
-+
- 	return 0;
- }
- 
-diff --git a/include/linux/mtd/stm_nand.h b/include/linux/mtd/stm_nand.h
-index da2006c..99a69ca 100644
---- a/include/linux/mtd/stm_nand.h
-+++ b/include/linux/mtd/stm_nand.h
-@@ -17,6 +17,26 @@
- 
- #include <linux/io.h>
- 
+@@ -0,0 +1,151 @@
 +/*
-+ * Board-level specification relating to a 'bank' of NAND Flash
++ * drivers/mtd/nand/stm_nand_bch.c
++ *
++ * Support for STMicroelectronics NANDi BCH Controller
++ *
++ * Copyright (c) 2014 STMicroelectronics Limited
++ * Author: Angus Clark <Angus.Clark@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
 + */
-+struct stm_nand_bank_data {
-+	int			csn;
-+	int			nr_partitions;
-+	struct mtd_partition	*partitions;
-+	unsigned int		options;
-+	unsigned int		bbt_options;
 +
-+	struct nand_timing_spec *timing_spec;
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/io.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/completion.h>
++#include <linux/mtd/stm_nand.h>
++
++/* NANDi Controller (Hamming/BCH) */
++struct nandi_controller {
++	void __iomem		*base;		/* Controller base*/
++	void __iomem		*dma;		/* DMA control base */
++						/* IRQ-triggered Completions: */
++	struct completion	seq_completed;	/*   SEQ Over */
++	struct completion	rbn_completed;	/*   RBn */
++
++	struct device		*dev;
++
++	int			bch_ecc_mode;	/* ECC mode */
++	bool			extra_addr;	/* Extra address cycle */
 +
 +	/*
-+	 * No. of IP clk cycles by which to 'relax' the timing configuration.
-+	 * Required on some boards to to accommodate board-level limitations.
-+	 * Used in conjunction with 'nand_timing_spec' and ONFI configuration.
++	 * The threshold at which the number of corrected bit-flips per sector
++	 * is deemed to have reached an excessive level (triggers '-EUCLEAN'
++	 * return code).
 +	 */
-+	int			timing_relax;
++	int			bitflip_threshold;
++
++	uint32_t		page_shift;	/* Some working variables */
++	uint32_t		block_shift;
++	uint32_t		blocks_per_device;
++	uint32_t		sectors_per_page;
++
++	uint8_t			*buf;		/* Some buffers to use */
++	uint8_t			*page_buf;
++	uint8_t			*oob_buf;
++	uint32_t		*buf_list;
++
++	int			cached_page;	/* page number of page in */
++						/* 'page_buf'             */
 +};
 +
- struct stm_plat_nand_bch_data {
- 	struct stm_nand_bank_data *bank;
- 	enum stm_nand_bch_ecc_config bch_ecc_cfg;
++static int remap_named_resource(struct platform_device *pdev,
++				char *name,
++				void __iomem **io_ptr)
++{
++	struct resource *res, *mem;
++	resource_size_t size;
++	void __iomem *p;
++
++	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, name);
++	if (!res)
++		return -ENXIO;
++
++	size = resource_size(res);
++
++	mem = devm_request_mem_region(&pdev->dev, res->start, size, name);
++	if (!mem)
++		return -EBUSY;
++
++	p = devm_ioremap_nocache(&pdev->dev, res->start, size);
++	if (!p)
++		return -ENOMEM;
++
++	*io_ptr = p;
++
++	return 0;
++}
++
++static struct nandi_controller *
++nandi_init_resources(struct platform_device *pdev)
++{
++	struct nandi_controller *nandi;
++	int err;
++
++	nandi = devm_kzalloc(&pdev->dev, sizeof(*nandi), GFP_KERNEL);
++	if (!nandi) {
++		dev_err(&pdev->dev,
++			"failed to allocate NANDi controller data\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	nandi->dev = &pdev->dev;
++
++	err = remap_named_resource(pdev, "nand_mem", &nandi->base);
++	if (err)
++		return ERR_PTR(err);
++
++	err = remap_named_resource(pdev, "nand_dma", &nandi->dma);
++	if (err)
++		return ERR_PTR(err);
++
++	platform_set_drvdata(pdev, nandi);
++
++	return nandi;
++}
++
++static int stm_nand_bch_probe(struct platform_device *pdev)
++{
++	struct stm_plat_nand_bch_data *pdata = pdev->dev.platform_data;
++	struct nandi_controller *nandi;
++
++	if (!pdata) {
++		dev_err(&pdev->dev, "no platform data found\n");
++		return -EINVAL;
++	}
++
++	nandi = nandi_init_resources(pdev);
++	if (IS_ERR(nandi)) {
++		dev_err(&pdev->dev, "failed to initialise NANDi resources\n");
++		return PTR_ERR(nandi);
++	}
++
++	init_completion(&nandi->seq_completed);
++	init_completion(&nandi->rbn_completed);
++
++	return 0;
++}
++
++static int stm_nand_bch_remove(struct platform_device *pdev)
++{
++	return 0;
++}
++
++static struct platform_driver stm_nand_bch_driver = {
++	.probe	= stm_nand_bch_probe ,
++	.remove	= stm_nand_bch_remove,
++	.driver	= {
++		.name	= "stm-nand-bch",
++		.owner	= THIS_MODULE,
++	},
++};
++module_platform_driver(stm_nand_bch_driver);
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Angus Clark");
++MODULE_DESCRIPTION("STM NAND BCH driver");
+diff --git a/include/linux/mtd/stm_nand.h b/include/linux/mtd/stm_nand.h
+new file mode 100644
+index 0000000..9210d5c
+--- /dev/null
++++ b/include/linux/mtd/stm_nand.h
+@@ -0,0 +1,33 @@
++/*
++ * include/linux/mtd/stm_mtd.h
++ *
++ * Support for STMicroelectronics NAND Controllers
++ *
++ * Copyright (c) 2014 STMicroelectronics Limited
++ * Author: Angus Clark <Angus.Clark@st.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
++
++#ifndef __LINUX_STM_NAND_H
++#define __LINUX_STM_NAND_H
++
++struct stm_plat_nand_bch_data {
++	struct stm_nand_bank_data *bank;
++	enum stm_nand_bch_ecc_config bch_ecc_cfg;
++
++	/* The threshold at which the number of corrected bit-flips per sector
++	 * is deemed to have reached an excessive level (triggers '-EUCLEAN' to
++	 * be returned to the caller).  The value should be in the range 1 to
++	 * <ecc-strength> where <ecc-strength> is 18 or 30, depending on the BCH
++	 * ECC mode in operation.  A value of 0 is interpreted by the driver as
++	 * <ecc-strength>.
++	 */
++	unsigned int bch_bitflip_threshold;
++	bool flashss;
++};
++
++#endif /* __LINUX_STM_NAND_H */
 -- 
 1.8.3.2
 
