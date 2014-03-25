@@ -1,85 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754363AbaCYIsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:48:11 -0400
-Received: from cassarossa.samfundet.no ([193.35.52.29]:55404 "EHLO
-	cassarossa.samfundet.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752939AbaCYIsG (ORCPT
+	id S1754211AbaCYIsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:48:45 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:39558 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752938AbaCYIVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:48:06 -0400
-Date: Tue, 25 Mar 2014 09:48:02 +0100
-From: Hans-Christian Egtvedt <egtvedt@samfundet.no>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: =?iso-8859-1?Q?H=E5vard?= Skinnemoen <hskinnemoen@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arch/avr32/mm/cache.c: export symbol
- flush_icache_range() for module using
-Message-ID: <20140325084802.GA30149@samfundet.no>
-References: <531B8D32.6000000@gmail.com>
- <531B8FD8.6040704@gmail.com>
- <20140308221721.GA30934@samfundet.no>
- <531C8683.2010908@gmail.com>
- <5324C3B2.1000802@gmail.com>
- <532E18EE.3090008@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <532E18EE.3090008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 25 Mar 2014 04:21:01 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
+        pekon@ti.com
+Subject: [RFC 22/47] mtd: nand: stm_nand_bch: check erased page for zeros
+Date: Tue, 25 Mar 2014 08:19:39 +0000
+Message-Id: <1395735604-26706-23-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Around Sun 23 Mar 2014 07:12:46 +0800 or thereabout, Chen Gang wrote:
-> Is this patch OK?
-> 
+Detect an erased page, tolerating and correcting up to a specified number
+of bits at '0'. Downgrade uncorrectable ECC error for an erased page,
+tolerating 'sectors_per_page' bits at '0'.
 
-I reread everything you said, and it looks sane.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/nand/stm_nand_bch.c | 27 +++++++++++++++++++++++++++
+ 1 file changed, 27 insertions(+)
 
-> If it is necessary to continue analysing more details, please let me
-> know, and I will/should continue.
-
-No, I will append it to my for-linus branch, and submit it early in the next
-cycle. It should be just around the corner, Linus just released rc8 (-:
-
-> On 03/16/2014 05:18 AM, Chen Gang wrote:
->> On 03/09/2014 11:19 PM, Chen Gang wrote:
->>> On 03/09/2014 06:17 AM, Hans-Christian Egtvedt wrote:
->>>> Around Sun 09 Mar 2014 05:47:04 +0800 or thereabout, Chen Gang wrote:
->>>>>
->>>>> After this patch, our linux kernel can pass "avr32-linux-" allmodconfig
->>>>> (it contents quite a few of warnings, but after check, I guess they are
->>>>> not kernel's issue).
->>>>
->>>> That sounds great, I am a bit surprised however that the lkdtm module need
->>>> flush_icache_range. Would have been interesting to look into what causes this
->>>> dependency.
->>>>
->> 
->> After read a little more details for lkdtm, I guess "after overwrite an
->> executable area by do_nothing(), it needs flush_icache_range() to be
->> sure the new instructions/data must have effect with all cpu".
->> 
->> Welcome any additional information for it.
->> 
->> Thanks.
->> 
->>>
->>> "driver/misc/lkdtm.c" will use this flush_icache_range().
->>>
->>> And some architectures export it to modules.
->>>
->>>   [root@gchen arch]# grep -rn flush_icache_range * | grep EXPORT
->>>   arm64/mm/flush.c:105:EXPORT_SYMBOL(flush_icache_range);
->>>   avr32/mm/cache.c:114:EXPORT_SYMBOL(flush_icache_range);
->>>   m68k/mm/cache.c:106:EXPORT_SYMBOL(flush_icache_range);
->>>   mn10300/mm/cache-inv-icache.c:129:EXPORT_SYMBOL(flush_icache_range);
->>>   mn10300/mm/cache-flush-icache.c:155:EXPORT_SYMBOL(flush_icache_range);
->>>   sparc/mm/init_64.c:435:EXPORT_SYMBOL(flush_icache_range);
->>>
->>> Welcome any more details information by any other members, thanks.
->> 
->> Thanks.
+diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
+index 2042cdd..7874d85 100644
+--- a/drivers/mtd/nand/stm_nand_bch.c
++++ b/drivers/mtd/nand/stm_nand_bch.c
+@@ -319,6 +319,33 @@ static uint8_t bch_erase_block(struct nandi_controller *nandi,
+ }
+ 
+ /*
++ * Detect an erased page, tolerating and correcting up to a specified number of
++ * bits at '0'.  (For many devices, it is now deemed within spec for an erased
++ * page to include a number of bits at '0', either as a result of read-disturb
++ * behaviour or 'stuck-at-zero' failures.)  Returns the number of corrected
++ * bits, or a '-1' if we have exceeded the maximum number of bits at '0' (likely
++ * to be a genuine uncorrectable ECC error).  In the latter case, the data must
++ * be returned unmodified, in accordance with the MTD API.
++ */
++static int check_erased_page(uint8_t *data, uint32_t page_size, int max_zeros)
++{
++	uint8_t *b = data;
++	int zeros = 0;
++	int i;
++
++	for (i = 0; i < page_size; i++) {
++		zeros += hweight8(~*b++);
++		if (zeros > max_zeros)
++			return -1;
++	}
++
++	if (zeros)
++		memset(data, 0xff, page_size);
++
++	return zeros;
++}
++
++/*
+  * Initialisation
+  */
+ static int bch_check_compatibility(struct nandi_controller *nandi,
 -- 
-mvh
-Hans-Christian Egtvedt
+1.8.3.2
+
