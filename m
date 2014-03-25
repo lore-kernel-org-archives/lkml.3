@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097AbaCYWuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 18:50:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49869 "EHLO
+	id S1756117AbaCYWvW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 18:51:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49856 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755873AbaCYWtB (ORCPT
+	with ESMTP id S1752108AbaCYWs6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 18:49:01 -0400
+	Tue, 25 Mar 2014 18:48:58 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
@@ -18,9 +18,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5 11/14] ARM: mvebu: Set the start address of a CPU in a separate function
-Date: Tue, 25 Mar 2014 23:48:22 +0100
-Message-Id: <1395787705-31061-12-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v5 09/14] ARM: mvebu: Allow to power down L2 cache controller in idle mode
+Date: Tue, 25 Mar 2014 23:48:20 +0100
+Message-Id: <1395787705-31061-10-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
@@ -28,44 +28,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Setting the start (or boot) address of a CPU is no more used only
-during SMP bring up, but it will also be used by the CPU idle
-functions or later by the CPU hot plug ones.
+This commit adds a function which adjusts the PMSU configuration to
+automatically power down the L2 and coherency fabric when we enter a
+certain idle state.
 
-This commit moves it in a separate function.
+This feature is part of the Power Management Service Unit of the
+Armada 370 and Armada XP SoCs.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/mach-mvebu/pmsu.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ arch/arm/mach-mvebu/pmsu.c | 24 ++++++++++++++++++++++--
+ 1 file changed, 22 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index c45029f0c0b4..3fc25d94e893 100644
+index 865bcb651e01..3cfb56f980f3 100644
 --- a/arch/arm/mach-mvebu/pmsu.c
 +++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -76,6 +76,12 @@ static struct of_device_id of_pmsu_table[] = {
- 	{ /* end of list */ },
- };
+@@ -30,8 +30,15 @@ static void __iomem *pmsu_reset_base;
+ #define PMSU_BASE_OFFSET    0x100
+ #define PMSU_REG_SIZE	    0x1000
  
-+static void armada_370_xp_pmsu_set_start_addr(void *start_addr, int hw_cpu)
+-#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu)	((cpu * 0x100) + 0x124)
+-#define PMSU_RESET_CTL_OFFSET(cpu)		(cpu * 0x8)
++/* PMSU MP registers */
++#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu) ((cpu * 0x100) + 0x124)
++
++/* PMSU reset registers */
++#define PMSU_RESET_CTL_OFFSET(cpu)	    (cpu * 0x8)
++
++/* PMSU fabric registers */
++#define L2C_NFABRIC_PM_CTL		    0x4
++#define L2C_NFABRIC_PM_CTL_PWR_DOWN		BIT(20)
+ 
+ static struct of_device_id of_pmsu_table[] = {
+ 	{
+@@ -111,4 +118,17 @@ static int __init armada_370_xp_pmsu_init(void)
+ 	return 0;
+ }
+ 
++static void armada_370_xp_pmsu_enable_l2_powerdown_onidle(void)
 +{
-+	writel(virt_to_phys(start_addr), pmsu_mp_base +
-+		PMSU_BOOT_ADDR_REDIRECT_OFFSET(hw_cpu));
++	u32 reg;
++
++	if (pmsu_mp_base == NULL)
++		return;
++
++	/* Enable L2 & Fabric powerdown in Deep-Idle mode - Fabric */
++	reg = readl(pmsu_mp_base + L2C_NFABRIC_PM_CTL);
++	reg |= L2C_NFABRIC_PM_CTL_PWR_DOWN;
++	writel(reg, pmsu_mp_base + L2C_NFABRIC_PM_CTL);
 +}
 +
- #ifdef CONFIG_SMP
- int armada_xp_boot_cpu(unsigned int cpu_id, void *boot_addr)
- {
-@@ -88,8 +94,7 @@ int armada_xp_boot_cpu(unsigned int cpu_id, void *boot_addr)
- 
- 	hw_cpu = cpu_logical_map(cpu_id);
- 
--	writel(virt_to_phys(boot_addr), pmsu_mp_base +
--			PMSU_BOOT_ADDR_REDIRECT_OFFSET(hw_cpu));
-+	armada_370_xp_pmsu_set_start_addr(boot_addr, hw_cpu);
- 
- 	/* Release CPU from reset by clearing reset bit*/
- 	reg = readl(pmsu_reset_base + PMSU_RESET_CTL_OFFSET(hw_cpu));
+ early_initcall(armada_370_xp_pmsu_init);
 -- 
 1.8.1.2
 
