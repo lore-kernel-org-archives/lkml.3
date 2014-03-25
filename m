@@ -1,124 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaCYNX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 09:23:59 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:42463 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751906AbaCYNX5 (ORCPT
+	id S1753463AbaCYNZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 09:25:50 -0400
+Received: from usmamail.tilera.com ([12.216.194.151]:58840 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499AbaCYNZs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 09:23:57 -0400
+	Tue, 25 Mar 2014 09:25:48 -0400
+Message-ID: <533183D5.8020704@tilera.com>
+Date: Tue, 25 Mar 2014 09:25:41 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com>
-References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com>
- <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com>
-From: Kieran Clancy <clancy.kieran@gmail.com>
-Date: Tue, 25 Mar 2014 23:53:26 +1030
-Message-ID: <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
-Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
- suspend to RAM.
-To: Lan Tianyu <lantianyu1986@gmail.com>
-Cc: Stefan Biereigel <security@biereigel-wb.de>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        Stefan Biereigel <stefan@biereigel.de>, Len Brown <lenb@kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, San Zamoyski <san@plusnet.pl>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        "D. Jansen" <dennis.jansen@web.de>,
-        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: AKASHI Takahiro <takahiro.akashi@linaro.org>,
+        Eric Paris <eparis@redhat.com>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] compat_audit: allow it to work without asm/unistd32.h
+References: <201403201730.s2KHUVpf005157@farm-0039.internal.tilera.com> <1395678071.24733.3.camel@flatline.rdu.redhat.com> <53305FC4.3040002@tilera.com> <5330E6E0.4020503@linaro.org>
+In-Reply-To: <5330E6E0.4020503@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 8:04 PM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
-> 2014-03-24 19:19 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
->> Hi,
->> thank you for the suggestion. The patch resolves the issue on my N150
->> when applied to a clean 3.14-rc7. Anyways I'm wondering if similar
->> problems to mine now exist on the Samsung Series 7/9 notebooks?
+On 3/24/2014 10:16 PM, AKASHI Takahiro wrote:
+> On 03/25/2014 01:39 AM, Chris Metcalf wrote:
+>> The problem is that audit_is_compat() is a dynamic test that the compiler
+>> can't optimize away, so you end with an undefined reference to
+>> audit_classify_compat_syscall().
 >>
->> Is any further action from my part required?
+>>
 >
-> Do you have these machines? If yes, please provide the output of
-> dmidecode command.
->
-> Cc guys  of commit ad332c8a.
+> [...]
+> I prefer
+> #ifdef CONFIG_AUDIT_COMPAT_GENERIC
+> #define audit_is_compat(arch) (...)
+> #else
+> #define audit_is_compat(arch) false
+> #endif
 
-Hi guys,
+This works fine for tilegx:
 
-That's a surprising side-effect, although I guess I shouldn't be
-surprised by Samsung ACPI weirdness anymore.
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 9af01d77dc44..3273d01ba417 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -362,7 +362,7 @@ enum {
+ #define AUDIT_ARCH_SPARC64     (EM_SPARCV9|__AUDIT_ARCH_64BIT)
+ #define AUDIT_ARCH_X86_64      (EM_X86_64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
 
-If we can, I'd like to get to the bottom of this rather than just turn
-off this fix (which we know works for series 5, 7 and 9 without
-problems).
+-#ifdef CONFIG_COMPAT
++#ifdef CONFIG_AUDIT_COMPAT_GENERIC
+ #define audit_is_compat(arch)  (!((arch) & __AUDIT_ARCH_64BIT))
+ #else
+ #define audit_is_compat(arch)  false
 
->>> 2014-03-24 15:50 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
->>>> Hi,
+Thanks!
+
+>> On 3/24/2014 12:21 PM, Eric Paris wrote:
+>>> I don't know tilegx, but I have replaced 223b24d807610 with
+>>> 4b58841149dcaa5.  I believe adding AUDIT_ARCH_COMPAT_GENERIC was
+>>> akashi-san's  fix for this problem on mips.  Is this a better fix?
+>>>
+>>> Thanks
+>>> -Eric
+>>>
+>>> On Thu, 2014-03-20 at 11:31 -0400, Chris Metcalf wrote:
+>>>> For architectures that use the asm-generic syscall table for both
+>>>> 32- and 64-bit, there should be no need to provide a separate
+>>>> <asm/unistd32.h>; just using <linux/unistd.h> is sufficient.
+>>>> Conditionalize use of <asm/unistd32.h> on the one platform that
+>>>> currently requires it (arm64).  If another platform ends up needing
+>>>> it we can create a suitable config flag at that point.
 >>>>
->>>> starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
->>>> system is set up, so that it should suspend to RAM as soon as the lid is
->>>> closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
->>>> correctly the first time (and the system suspends), but after resuming
->>>> from standby (by opening the lid), the lid does not change to "open" again.
->>>> Of course, closing the lid again does not induce suspend to RAM then.
->>>> Opening the lid now (while not sleeping), makes ACPI notify the opening,
->>>> so I guess ACPI "misses" or discards the lid open event from the EC when
->>>> coming from sleep.
->>>> Now, closing the lid again does induce suspend to RAM. This behaviour is
->>>> reproducible: every other time, suspending works.
+>>>> This change fixes the tilegx build failure seen in linux-next.
 >>>>
->>>> This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
->>>> Clear stale EC events on Samsung systems.
->>>> Which was introduced after 3.14-rc5.
+>>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>>>> ---
+>>>> By the way - I also note that commit 223b24d807610 that introduced
+>>>> this also put an "#ifdef COMPAT_xxx" in a UAPI header.  This seems
+>>>> like a pretty clear signal that the added code should be in
+>>>> linux/include/audit.h, not linux/uapi/include/audit.h.  But here
+>>>> I'm just focussing on getting tilegx to continue to build...
 >>>>
->>>> When opening the lid to resume from standby, i see in dmesg:
->>>> Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
->>>> events cleared
->>>> (which comes from drivers/acpi/ec.c)
+>>>>   lib/compat_audit.c | 7 ++++++-
+>>>>   1 file changed, 6 insertions(+), 1 deletion(-)
 >>>>
->>>> Seems to me, that the "open" event is cleared from the EC, but also
->>>> discarded instead of passed on. Shouldn't the correct behaviour be to
->>>> report all the pending events, read from the EC, as ACPI events? Can you
->>>> point me in a direction for fixing the issue cleanly, then I will try to
->>>> find a solution and prepare a patch for this issue.
+>>>> diff --git a/lib/compat_audit.c b/lib/compat_audit.c
+>>>> index 873f75b640ab..e89a84b3fbe8 100644
+>>>> --- a/lib/compat_audit.c
+>>>> +++ b/lib/compat_audit.c
+>>>> @@ -1,6 +1,11 @@
+>>>>   #include <linux/init.h>
+>>>>   #include <linux/types.h>
+>>>> -#include <asm/unistd32.h>
+>>>> +#ifdef COMPAT_ARM64
+>>>> +/* 64-bit syscalls are generic, but 32-bit are not. */
+>>>> +# include <asm/unistd32.h>
+>>>> +#else
+>>>> +# include <linux/unistd.h>
+>>>> +#endif
+>>>>
+>>>>   unsigned compat_dir_class[] = {
+>>>>   #include <asm-generic/audit_dir_write.h>
+>>>
+>>
 
-Stefan, thank you for reporting this issue.
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
-Our rationale for discarding the events was that events queued during
-sleep are probably no longer relevant. There could also be other
-unwanted side-effects of blindly executing all of the old
-instructions. But in your case, this assumption might be wrong.
-
-What command are you using to check if the lid is "open" or "closed"?
-Is it because the screen is not waking up, or some other effect, or
-just because it won't suspend again when it's re-closed?
-
-Do other events like AC plug/unplug affect any of this if you do them
-during this bad state?
-
-I'd like to see exactly which EC command byte is being thrown away
-here. If you do something like this (with dynamic debug enabled)
-
-echo -n 'file ec.c +p' | sudo tee /sys/kernel/debug/dynamic_debug/control
-
-You should get massively verbose EC stuff filling your dmesg, but I am
-just interested in the EC read/write bytes just before and around the
-"1 stale EC events cleared" message. Grab this out of dmesg before it
-fills with other stuff.
-
-This will tell us what command we are being asked to run. If you can,
-please do it a few times to see if it's the same command each time or
-something different.
-
-You can turn the debug output off again with:
-
-echo -n 'file ec.c -p' | sudo tee /sys/kernel/debug/dynamic_debug/control
-
-I might also need a copy of your DSDT, if you can send me that
-separately in another email (not to the list):
-
-cat /sys/firmware/acpi/tables/DSDT > .DSDT.aml
-
-Thank you,
-Kieran.
