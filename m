@@ -1,53 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754901AbaCYS3I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:29:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:45762 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754033AbaCYS3E (ORCPT
+	id S1754872AbaCYSao (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:30:44 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:27865 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434AbaCYSan (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:29:04 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18teHyyOOjCrVIuLIgzvDd3
-Date: Tue, 25 Mar 2014 11:28:56 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, linux-serial@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, peter@hurleysoftware.com,
-        m-karicheri2@ti.com, b32955@freescale.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
-Message-ID: <20140325182856.GA31906@atomide.com>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com>
- <1395343807-21618-10-git-send-email-balbi@ti.com>
+	Tue, 25 Mar 2014 14:30:43 -0400
+X-IronPort-AV: E=Sophos;i="4.97,730,1389744000"; 
+   d="scan'208";a="113474072"
+Message-ID: <5331CB50.9000306@citrix.com>
+Date: Tue, 25 Mar 2014 18:30:40 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395343807-21618-10-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: <mgorman@suse.de>, <akpm@linux-foundation.org>, <steven@uplinklabs.net>,
+        <boris.ostrovsky@oracle.com>, David Sutton <kantras@gmail.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [Xen-devel] [PATCH 1/2] Revert "xen: properly account for _PAGE_NUMA
+ during xen pte translations"
+References: <CAPCj91+c8kE8dgp7U3N1ti=XOzFrgcg3Z3S9dYK4AG1tEMqsaA@mail.gmail.com> <5331B94F.9020601@citrix.com> <20140325181939.GA11073@phenom.dumpdata.com>
+In-Reply-To: <20140325181939.GA11073@phenom.dumpdata.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Felipe Balbi <balbi@ti.com> [140320 12:39]:
-> This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
+On 25/03/14 18:19, Konrad Rzeszutek Wilk wrote:
 > 
-> That commit tried to fix a deadlock problem when using
-> hci_ldisc, but it turns out the bug was in hci_ldsic
-> all along where it was calling ->write() from within
-> ->write_wakeup() callback.
-> 
-> The problem is that ->write_wakeup() was called with
-> port lock held and ->write() tried to grab the same
-> port lock.
+> With that in mind I was wondering whether it would be possible to revert 
+> Mel's 1667918b6483 ("mm: numa: clear numa hinting information on mprotect")
+> so there is a bit more time in 3.15 to re-introduce his patch and also a
+> proper fix so that Xen guests won't fall flat on their face?
 
-Should this and the next patch be earlier in the series
-as a fix for the v3.15-rc cycle? Should they be cc: stable
-as well?
+Unfortunately, I think this can only be safely reverted on architectures
+with ARCH_WANTS_PROT_NUMA_PROT_NONE (x86) and would cause regressions on
+other architectures with only ARCH_SUPPORTS_NUMA_BALANCING (powerpc).
 
-Regards,
-
-Tony
+David
