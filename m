@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbaCYKxE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:53:04 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:35151 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343AbaCYKuc (ORCPT
+	id S1754108AbaCYKxd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:53:33 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:38234 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753650AbaCYKuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:50:32 -0400
+	Tue, 25 Mar 2014 06:50:16 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mark.hambleton@broadcom.com, mark.brown@linaro.org,
         eduardo.valentin@ti.com, mporter@linaro.org, lsk-interest@linaro.org,
         linaro-kernel@linaro.org
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Alex Shi <alex.shi@linaro.org>
-Subject: [PATCH 07/19] hwmon: lm75: expose to thermal fw via DT nodes
-Date: Tue, 25 Mar 2014 18:49:20 +0800
-Message-Id: <1395744572-20014-8-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 05/19] thermal: core: introduce thermal_of_cooling_device_register
+Date: Tue, 25 Mar 2014 18:49:18 +0800
+Message-Id: <1395744572-20014-6-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
 References: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
@@ -25,118 +25,156 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 
-This patch adds to lm75 temperature sensor the possibility
-to expose itself as thermal zone device, registered on the
-thermal framework.
+This patch adds a new API to allow registering cooling devices
+in the thermal framework derived from device tree nodes.
 
-The thermal zone is built only if a device tree node
-describing a thermal zone for this sensor is present
-inside the lm75 DT node. Otherwise, the driver behavior
-will be the same.
+This API links the cooling device with the device tree node
+so that binding with thermal zones is possible, given
+that thermal zones are pointing to cooling device
+device tree nodes.
 
-Note: This patch has also been reviewed by Jean D. He has
-requested to perform a wider inspection of possible
-users of thermal and hwmon interaction API. On the other
-hand, the change on this patch is acceptable on first
-step of overall code change.
-
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: lm-sensors@lm-sensors.org
+Cc: Zhang Rui <rui.zhang@intel.com>
+Cc: linux-pm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Acked-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-(cherry picked from commit 22e731838b0e337fed5f16c67aa0b954028dfe93)
+(cherry picked from commit a116b5d44f144586ef03a93f14ddc63f4a85e906)
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
----
- drivers/hwmon/lm75.c | 35 ++++++++++++++++++++++++++++++-----
- 1 file changed, 30 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/hwmon/lm75.c b/drivers/hwmon/lm75.c
-index c03b490..1d3600a 100644
---- a/drivers/hwmon/lm75.c
-+++ b/drivers/hwmon/lm75.c
-@@ -27,6 +27,8 @@
- #include <linux/hwmon-sysfs.h>
- #include <linux/err.h>
- #include <linux/mutex.h>
+Conflicts:
+	drivers/thermal/thermal_core.c
+---
+ drivers/thermal/thermal_core.c | 59 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/thermal.h        |  4 +++
+ 2 files changed, 59 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/thermal/thermal_core.c b/drivers/thermal/thermal_core.c
+index ed5f765..916bde1 100644
+--- a/drivers/thermal/thermal_core.c
++++ b/drivers/thermal/thermal_core.c
+@@ -33,6 +33,8 @@
+ #include <linux/idr.h>
+ #include <linux/thermal.h>
+ #include <linux/reboot.h>
++#include <linux/string.h>
 +#include <linux/of.h>
-+#include <linux/thermal.h>
- #include "lm75.h"
+ #include <net/netlink.h>
+ #include <net/genetlink.h>
  
+@@ -1037,7 +1039,8 @@ static struct class thermal_class = {
+ };
  
-@@ -70,6 +72,7 @@ static const u8 LM75_REG_TEMP[3] = {
- /* Each client has this additional data */
- struct lm75_data {
- 	struct device		*hwmon_dev;
-+	struct thermal_zone_device	*tz;
- 	struct mutex		update_lock;
- 	u8			orig_conf;
- 	u8			resolution;	/* In bits, between 9 and 12 */
-@@ -90,22 +93,36 @@ static struct lm75_data *lm75_update_device(struct device *dev);
- 
- /*-----------------------------------------------------------------------*/
- 
-+static inline long lm75_reg_to_mc(s16 temp, u8 resolution)
-+{
-+	return ((temp >> (16 - resolution)) * 1000) >> (resolution - 8);
-+}
-+
- /* sysfs attributes for hwmon */
- 
-+static int lm75_read_temp(void *dev, long *temp)
-+{
-+	struct lm75_data *data = lm75_update_device(dev);
-+
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
-+
-+	*temp = lm75_reg_to_mc(data->temp[0], data->resolution);
-+
-+	return 0;
-+}
-+
- static ssize_t show_temp(struct device *dev, struct device_attribute *da,
- 			 char *buf)
+ /**
+- * thermal_cooling_device_register() - register a new thermal cooling device
++ * __thermal_cooling_device_register() - register a new thermal cooling device
++ * @np:		a pointer to a device tree node.
+  * @type:	the thermal cooling device type.
+  * @devdata:	device private data.
+  * @ops:		standard thermal cooling devices callbacks.
+@@ -1045,13 +1048,16 @@ static struct class thermal_class = {
+  * This interface function adds a new thermal cooling device (fan/processor/...)
+  * to /sys/class/thermal/ folder as cooling_device[0-*]. It tries to bind itself
+  * to all the thermal zone devices registered at the same time.
++ * It also gives the opportunity to link the cooling device to a device tree
++ * node, so that it can be bound to a thermal zone created out of device tree.
+  *
+  * Return: a pointer to the created struct thermal_cooling_device or an
+  * ERR_PTR. Caller must check return value with IS_ERR*() helpers.
+  */
+-struct thermal_cooling_device *
+-thermal_cooling_device_register(char *type, void *devdata,
+-				const struct thermal_cooling_device_ops *ops)
++static struct thermal_cooling_device *
++__thermal_cooling_device_register(struct device_node *np,
++				  char *type, void *devdata,
++				  const struct thermal_cooling_device_ops *ops)
  {
- 	struct sensor_device_attribute *attr = to_sensor_dev_attr(da);
- 	struct lm75_data *data = lm75_update_device(dev);
--	long temp;
- 
- 	if (IS_ERR(data))
- 		return PTR_ERR(data);
- 
--	temp = ((data->temp[attr->index] >> (16 - data->resolution)) * 1000)
--	       >> (data->resolution - 8);
--
--	return sprintf(buf, "%ld\n", temp);
-+	return sprintf(buf, "%ld\n", lm75_reg_to_mc(data->temp[attr->index],
-+						    data->resolution));
+ 	struct thermal_cooling_device *cdev;
+ 	int result;
+@@ -1076,6 +1082,7 @@ thermal_cooling_device_register(char *type, void *devdata,
+ 	strlcpy(cdev->type, type ? : "", sizeof(cdev->type));
+ 	mutex_init(&cdev->lock);
+ 	INIT_LIST_HEAD(&cdev->thermal_instances);
++	cdev->np = np;
+ 	cdev->ops = ops;
+ 	cdev->updated = true;
+ 	cdev->device.class = &thermal_class;
+@@ -1118,9 +1125,53 @@ unregister:
+ 	device_unregister(&cdev->device);
+ 	return ERR_PTR(result);
  }
- 
- static ssize_t set_temp(struct device *dev, struct device_attribute *da,
-@@ -271,6 +288,13 @@ lm75_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 		goto exit_remove;
- 	}
- 
-+	data->tz = thermal_zone_of_sensor_register(&client->dev,
-+						   0,
-+						   &client->dev,
-+						   lm75_read_temp, NULL);
-+	if (IS_ERR(data->tz))
-+		data->tz = NULL;
 +
- 	dev_info(&client->dev, "%s: sensor '%s'\n",
- 		 dev_name(data->hwmon_dev), client->name);
++/**
++ * thermal_cooling_device_register() - register a new thermal cooling device
++ * @type:	the thermal cooling device type.
++ * @devdata:	device private data.
++ * @ops:		standard thermal cooling devices callbacks.
++ *
++ * This interface function adds a new thermal cooling device (fan/processor/...)
++ * to /sys/class/thermal/ folder as cooling_device[0-*]. It tries to bind itself
++ * to all the thermal zone devices registered at the same time.
++ *
++ * Return: a pointer to the created struct thermal_cooling_device or an
++ * ERR_PTR. Caller must check return value with IS_ERR*() helpers.
++ */
++struct thermal_cooling_device *
++thermal_cooling_device_register(char *type, void *devdata,
++				const struct thermal_cooling_device_ops *ops)
++{
++	return __thermal_cooling_device_register(NULL, type, devdata, ops);
++}
+ EXPORT_SYMBOL_GPL(thermal_cooling_device_register);
  
-@@ -285,6 +309,7 @@ static int lm75_remove(struct i2c_client *client)
- {
- 	struct lm75_data *data = i2c_get_clientdata(client);
+ /**
++ * thermal_of_cooling_device_register() - register an OF thermal cooling device
++ * @np:		a pointer to a device tree node.
++ * @type:	the thermal cooling device type.
++ * @devdata:	device private data.
++ * @ops:		standard thermal cooling devices callbacks.
++ *
++ * This function will register a cooling device with device tree node reference.
++ * This interface function adds a new thermal cooling device (fan/processor/...)
++ * to /sys/class/thermal/ folder as cooling_device[0-*]. It tries to bind itself
++ * to all the thermal zone devices registered at the same time.
++ *
++ * Return: a pointer to the created struct thermal_cooling_device or an
++ * ERR_PTR. Caller must check return value with IS_ERR*() helpers.
++ */
++struct thermal_cooling_device *
++thermal_of_cooling_device_register(struct device_node *np,
++				   char *type, void *devdata,
++				   const struct thermal_cooling_device_ops *ops)
++{
++	return __thermal_cooling_device_register(np, type, devdata, ops);
++}
++EXPORT_SYMBOL_GPL(thermal_of_cooling_device_register);
++
++/**
+  * thermal_cooling_device_unregister - removes the registered thermal cooling device
+  * @cdev:	the thermal cooling device to remove.
+  *
+diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+index bd2533b..55fce47 100644
+--- a/include/linux/thermal.h
++++ b/include/linux/thermal.h
+@@ -25,6 +25,7 @@
+ #ifndef __THERMAL_H__
+ #define __THERMAL_H__
  
-+	thermal_zone_of_sensor_unregister(&client->dev, data->tz);
- 	hwmon_device_unregister(data->hwmon_dev);
- 	sysfs_remove_group(&client->dev.kobj, &lm75_group);
- 	lm75_write_value(client, LM75_REG_CONF, data->orig_conf);
++#include <linux/of.h>
+ #include <linux/idr.h>
+ #include <linux/device.h>
+ #include <linux/workqueue.h>
+@@ -270,6 +271,9 @@ void thermal_zone_device_update(struct thermal_zone_device *);
+ 
+ struct thermal_cooling_device *thermal_cooling_device_register(char *, void *,
+ 		const struct thermal_cooling_device_ops *);
++struct thermal_cooling_device *
++thermal_of_cooling_device_register(struct device_node *np, char *, void *,
++				   const struct thermal_cooling_device_ops *);
+ void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+ struct thermal_zone_device *thermal_zone_get_zone_by_name(const char *name);
+ int thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned long *temp);
 -- 
 1.8.1.2
 
