@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755653AbaCYRdu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:33:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57963 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755498AbaCYRdp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:33:45 -0400
-Date: Tue, 25 Mar 2014 18:33:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jan Kara <jack@suse.cz>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: gpf in simple_setattr
-Message-ID: <20140325173340.GB17292@quack.suse.cz>
-References: <20140303214040.GA15265@quack.suse.cz>
- <53166920.709@oracle.com>
- <20140305124536.GA32371@quack.suse.cz>
- <53189BF8.1010308@oracle.com>
- <531A7CFD.9030603@oracle.com>
- <20140310104350.GB28797@quack.suse.cz>
- <531DC89A.9010601@oracle.com>
- <53304451.7030800@oracle.com>
- <20140324214851.GB10057@quack.suse.cz>
- <5330D15E.2000702@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5330D15E.2000702@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755184AbaCYRWK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55957 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034AbaCYRWG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:22:06 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 59/81] dm thin: fix the error path for the thin device constructor
+Date: Tue, 25 Mar 2014 10:16:12 -0700
+Message-Id: <1395767794-5012-60-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 24-03-14 20:44:14, Sasha Levin wrote:
-> On 03/24/2014 05:48 PM, Jan Kara wrote:
-> >>>[  339.948946] ** 4194304 ffff8805ac03ba38 [eventpoll] ffff8806ec051fe0
-> >>>[eventpoll] ffffffff84666040 ffff88056c73e7b0           (null)
-> >   OK, great. So finally we have something useful. We know we have problems
-> >with [eventpoll] dentry. That is actually a special filesystem not mounted
-> >anywhere - likely you get to that dentry through/proc/<pid>/fd/. Now
-> >eventpoll is interesting because it uses single anon inode for all
-> >eventpoll instances. And that inode should stay in place as long as
-> >eventpoll filesystem exists. So it's not clear how come that inode is
-> >freed. The basic check of handling of inode use count didn't find anything
-> >suspicious. But I can check in more detail and if I fail, we now have a
-> >pretty narrow area where to look...
-> 
-> Seems like it's not specific to eventpoll, I saw the same error message with
-> "eventfd" and "perf_event".
-  Yup, all these use anon_inode_getfile() so it all points to the fact that
-for some reason we freed anon_inode_inode. But I don't see where the
-problem is. Can you maybe make 'anon_inode_inode' external to
-fs/anon_inodes.c and dump stack for all iput() calls to anon_inode_inode?
-There must be some suckers which don't belong there...
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-								Honza
+------------------
+
+From: Mike Snitzer <snitzer@redhat.com>
+
+commit 1acacc0784aab45627b6009e0e9224886279ac0b upstream.
+
+dm_pool_close_thin_device() must be called if dm_set_target_max_io_len()
+fails in thin_ctr().  Otherwise __pool_destroy() will fail because the
+pool will still have an open thin device:
+
+ device-mapper: thin metadata: attempt to close pmd when 1 device(s) are still open
+ device-mapper: thin: __pool_destroy: dm_pool_metadata_close() failed.
+
+Also, must establish error code if failing thin_ctr() because the pool
+is in fail_io mode.
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/md/dm-thin.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index e66e366..4d9659b 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -2623,6 +2623,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 
+ 	if (get_pool_mode(tc->pool) == PM_FAIL) {
+ 		ti->error = "Couldn't open thin device, Pool is in fail mode";
++		r = -EINVAL;
+ 		goto bad_thin_open;
+ 	}
+ 
+@@ -2634,7 +2635,7 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 
+ 	r = dm_set_target_max_io_len(ti, tc->pool->sectors_per_block);
+ 	if (r)
+-		goto bad_thin_open;
++		goto bad_target_max_io_len;
+ 
+ 	ti->num_flush_requests = 1;
+ 	ti->flush_supported = true;
+@@ -2655,6 +2656,8 @@ static int thin_ctr(struct dm_target *ti, unsigned argc, char **argv)
+ 
+ 	return 0;
+ 
++bad_target_max_io_len:
++	dm_pool_close_thin_device(tc->td);
+ bad_thin_open:
+ 	__pool_dec(tc->pool);
+ bad_pool_lookup:
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.2
+
