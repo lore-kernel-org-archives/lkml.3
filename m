@@ -1,29 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850AbaCYQH4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:07:56 -0400
-Received: from [217.26.70.12] ([217.26.70.12]:60386 "EHLO mxhost-1.verat.net"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751722AbaCYQHx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:07:53 -0400
-X-Greylist: delayed 451 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Mar 2014 12:07:53 EDT
-From: DanskeBank Group Online <7502748-hldgyaa@nwsl.com>
-To: linux-kernel@vger.kernel.org
-Subject: Ny melding !!!  -  ( 76831733 )
-Date: 25 Mar 2014 18:00:16 +0200
-Message-ID: <20140325180016.31E2FA2D1234F10B@nwsl.com>
+	id S1753728AbaCYQHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:07:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.24]:63218 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751200AbaCYQHv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 12:07:51 -0400
+Message-ID: <5331A9CC.1050205@biereigel.de>
+Date: Tue, 25 Mar 2014 17:07:40 +0100
+From: Stefan Biereigel <stefan@biereigel.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="x-ias-norwegian"
-Content-Transfer-Encoding: 8bit
+To: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Kieran Clancy <clancy.kieran@gmail.com>,
+        Lan Tianyu <lantianyu1986@gmail.com>
+CC: Stefan Biereigel <security@biereigel-wb.de>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com> <53318A74.7080604@gmail.com>
+In-Reply-To: <53318A74.7080604@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:J71UkEXW3eQdY23qOC+RAkKVnFjaHR+Dm+O1m4e8vOD
+ CvfnVEnLTDNgAfYGSnS1lXc+SSXr+VLBUcXazZYx6xPH9uNw/H
+ zNjW4J5fWzZU/HQGLvfVcgAPDeF6Uy5ikiwi4D1isw7guMjIAp
+ 9diaWkx2A5sK4tvl9aP97kSXg+rKiVKcpeRXqBRZM9uHmjwhry
+ st5ylySmlCHIOJawJXYrdccqdxgfAV2bHcrslwWqertOnOIebk
+ f+XzsIZpLw8OhNqMcmC/iwWRWwLZK9ams5WtuzSnJpcUz/8eKB
+ ivqkuCnBA08t8QYuilEcSn+UPtsXnnPYIuo4ZDR3CiXwkqsl+y
+ 5LCITwWgd7fFuKOeT7Jg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kjære , linux-kernel@vger.kernel.org,
+Hello,
 
-Vi la merke til kontoen din er åpen et annet sted med nettverk IP-adresse (219.18.27.85)
+I can see the same acpi_listen events with a working kernel (patch
+applied or kernels before rc5), but the lid open is not there with rc6
+and rc7 (unpatched).
 
-Klikk her / åpen http://jrunited.net/danskeprivatebank/  å logge på kontoen
+You can find my _WAK below. It seems not to do anything with LIDS, so I
+guess this is the cause for the problem.
 
-Copyright © 2008 - 2014 Danske Bank Group
+Method (_WAK, 1, NotSerialized)
+{
+    Store (0x00, \_SB.PCI0.PEXE)
+    If (LEqual (Arg0, 0x03))
+    {
+        Store (0x01, \SPNF)
+        TRAP (0x46)
+        TRAP (0x50)
+        \_SB.SECS (0xB3)
+        P8XH (0x00, 0x03)
+    }
+
+    Store (\_SB.PCI0.LPC0.H_EC.ACEX, \PWRS)
+    If (LEqual (Arg0, 0x04))
+    {
+        \_SB.OSHT ()
+        If (DTSE)
+        {
+            TRAP (0x47)
+        }
+
+        P8XH (0x00, 0x04)
+    }
+
+    \_SB.SECS (0xAA)
+    PNOT ()
+    If (LEqual (OSYS, 0x07CE)) {}
+}
+
+Am 25.03.2014 14:53, schrieb Juan Manuel Cabo:
+> I bet that his _WAK dsdt method isn't re-checking the lid state on resume
+> (maybe I'm wrong).
+> 
+> I retested on my system just to make sure, and the lid is correctly reported open
+> always after resume from a sleep by closing the lid, using a different kernel with that same patch.
+> 
+> My system is the Samsung Series 5 NP530U3C in which the patch works fine:
+>       
+>            Manufacturer: SAMSUNG ELECTRONICS CO., LTD.
+>            Product Name: 530U3C/530U4C
+> 
+> "sudo acpi_listen" shows the following on resume:
+> 
+>       video GFX0 00000080 00000000
+>       button/lid LID0 00000080 00000001
+>       button/lid LID0 00000080 00000002
+> 
+> "cat /proc/acpi/button/lid/LID0/state" shows its open always on resume. I suspended
+> several times, and on each time it was open.
+> 
+> I bet that that system's _WAK method doesn't recheck the lid, I might be wrong.
+> *Stefan*: Can you extract that method and send it? Something like this:
+> 
+>            sudo cat /sys/firmware/acpi/tables/DSDT > /tmp/dsdt.bin
+>            cd /tmp/dsdt.bin
+>            iasl -d dsdt.bin
+>            # AND EDIT the resulting dsdt.dsl and search for and send us the _WAK method
+> 
+> Also, on my system, the DSDT Q event for lid state change reads it from the EC to the LIDS var,
+> instead of just toggling the "LIDS" variable (Lid Status). My own dsdt is downloadable from my
+> blog, at http://zenstep.com.ar/files/DSDT_SamsungSeries5-NP530U3c-AB1_WithBios_P14AAJ.dsl
+> 
+> Cheers!
+> --
+> Juan Manuel Cabo
+> 
+> 
+> On 03/25/2014 10:23 AM, Kieran Clancy wrote:
+>> On Tue, Mar 25, 2014 at 8:04 PM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
+>>> 2014-03-24 19:19 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>>> Hi,
+>>>> thank you for the suggestion. The patch resolves the issue on my N150
+>>>> when applied to a clean 3.14-rc7. Anyways I'm wondering if similar
+>>>> problems to mine now exist on the Samsung Series 7/9 notebooks?
+>>>>
+>>>> Is any further action from my part required?
+>>> Do you have these machines? If yes, please provide the output of
+>>> dmidecode command.
+>>>
+>>> Cc guys  of commit ad332c8a.
+>> Hi guys,
+>>
+>> That's a surprising side-effect, although I guess I shouldn't be
+>> surprised by Samsung ACPI weirdness anymore.
+>>
+>> If we can, I'd like to get to the bottom of this rather than just turn
+>> off this fix (which we know works for series 5, 7 and 9 without
+>> problems).
+>>
+>>>>> 2014-03-24 15:50 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>>>>> Hi,
+>>>>>>
+>>>>>> starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
+>>>>>> system is set up, so that it should suspend to RAM as soon as the lid is
+>>>>>> closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
+>>>>>> correctly the first time (and the system suspends), but after resuming
+>>>>>> from standby (by opening the lid), the lid does not change to "open" again.
+>>>>>> Of course, closing the lid again does not induce suspend to RAM then.
+>>>>>> Opening the lid now (while not sleeping), makes ACPI notify the opening,
+>>>>>> so I guess ACPI "misses" or discards the lid open event from the EC when
+>>>>>> coming from sleep.
+>>>>>> Now, closing the lid again does induce suspend to RAM. This behaviour is
+>>>>>> reproducible: every other time, suspending works.
+>>>>>>
+>>>>>> This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
+>>>>>> Clear stale EC events on Samsung systems.
+>>>>>> Which was introduced after 3.14-rc5.
+>>>>>>
+>>>>>> When opening the lid to resume from standby, i see in dmesg:
+>>>>>> Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
+>>>>>> events cleared
+>>>>>> (which comes from drivers/acpi/ec.c)
+>>>>>>
+>>>>>> Seems to me, that the "open" event is cleared from the EC, but also
+>>>>>> discarded instead of passed on. Shouldn't the correct behaviour be to
+>>>>>> report all the pending events, read from the EC, as ACPI events? Can you
+>>>>>> point me in a direction for fixing the issue cleanly, then I will try to
+>>>>>> find a solution and prepare a patch for this issue.
+>> Stefan, thank you for reporting this issue.
+>>
+>> Our rationale for discarding the events was that events queued during
+>> sleep are probably no longer relevant. There could also be other
+>> unwanted side-effects of blindly executing all of the old
+>> instructions. But in your case, this assumption might be wrong.
+>>
+>> What command are you using to check if the lid is "open" or "closed"?
+>> Is it because the screen is not waking up, or some other effect, or
+>> just because it won't suspend again when it's re-closed?
+>>
+>> Do other events like AC plug/unplug affect any of this if you do them
+>> during this bad state?
+>>
+>> I'd like to see exactly which EC command byte is being thrown away
+>> here. If you do something like this (with dynamic debug enabled)
+>>
+>> echo -n 'file ec.c +p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+>>
+>> You should get massively verbose EC stuff filling your dmesg, but I am
+>> just interested in the EC read/write bytes just before and around the
+>> "1 stale EC events cleared" message. Grab this out of dmesg before it
+>> fills with other stuff.
+>>
+>> This will tell us what command we are being asked to run. If you can,
+>> please do it a few times to see if it's the same command each time or
+>> something different.
+>>
+>> You can turn the debug output off again with:
+>>
+>> echo -n 'file ec.c -p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+>>
+>> I might also need a copy of your DSDT, if you can send me that
+>> separately in another email (not to the list):
+>>
+>> cat /sys/firmware/acpi/tables/DSDT > .DSDT.aml
+>>
+>> Thank you,
+>> Kieran.
+>>
+> 
