@@ -1,107 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086AbaCYRWP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55953 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157AbaCYRWF (ORCPT
+	id S1755468AbaCYR0p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:26:45 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56567 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755443AbaCYR0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:05 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 42/81] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
-Date: Tue, 25 Mar 2014 10:15:55 -0700
-Message-Id: <1395767794-5012-43-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
-References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 25 Mar 2014 13:26:41 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-6b-5331bc50a659
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spear-devel@list.st.com, b.zolnierkie@samsung.com
+Subject: [PATCH v3 1/4] ata: ahci_platform: fix ahci_platform_data->suspend
+ method handling
+Date: Tue, 25 Mar 2014 18:26:12 +0100
+Message-id: <1395768375-21123-2-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1395768375-21123-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1395768375-21123-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAd2APYbBBg9fKFlsnLGe1eLcrQZW
+	izfHpzNZ3FnBbLHp8TVWi2M7HjFZXN41h81if+8GJouG7h52izkzNrNa/Fp+lNFi5cW/zA48
+	Htdf/Wfy2DnrLrvHplWdbB5zpjWxeJy8cJLFY/OSeo/3+66yefRtWcXo8fTHXmaP4ze2M3l8
+	3iQXwB3FZZOSmpNZllqkb5fAlbFpRhdrwTauip4tQg2M5zm6GDk5JARMJO4cOMECYYtJXLi3
+	nq2LkYtDSGARo0TbhH5WCKeLSeL+mz52kCo2ASuJie2rGEFsEQFZiSvTHjKCFDELdDFLLJm9
+	BSwhLBArcaj5ACuIzSKgKrH32Q4mEJtXwEPi2betTBDrFCW6n01gA7E5BTwlDn66CLZACKhm
+	5YK5TBMYeRcwMqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECA7gZ1I7GFc2WBxiFOBgVOLh
+	nTDBMFiINbGsuDL3EKMEB7OSCK/CBqAQb0piZVVqUX58UWlOavEhRmkOFiVx3gOt1oFCAumJ
+	JanZqakFqUUwWSYOTqkGxoVPInMjvWt8oo/f1lrosWYLj7pR3cbo29+Ned7c/nAmIbbgxpsJ
+	4add1G1UZrz6HSGbfnHvsy8GehF9Sc362U9sGsslGquKaxmPSmUbmMjs+cTv8qfk4oyit6Hm
+	nOsz045wBkTsfD91v7Dxg/zorvee5wK39Oh6/Hv+f6bF1y8PcgO01HUclViKMxINtZiLihMB
+	dyK3bFwCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
+Looking at ST SPEAr1340 AHCI code (the only user of the deprecated
+pdata->suspend and pdata->resume) it is obvious the we should return
+after calling pdata->suspend() only if the function have returned
+non-zero return value.  The code has been broken since commit 1e70c2
+("ata/ahci_platform: Add clock framework support").  Fix it.
 
-------------------
-
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-
-commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
-
-The powernow-k8 driver maintains a per-cpu data-structure called
-powernow_data that is used to perform the frequency transitions.
-It initializes this data structure only for the policy->cpu. So,
-accesses to this data structure by other CPUs results in various
-problems because they would have been uninitialized.
-
-Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
-function, it returns 0 as the KHz value, since its per-cpu memory
-doesn't point to anything valid. This causes problems during
-suspend/resume since cpufreq_update_policy() tries to enforce this
-(0 KHz) as the current frequency of the CPU, and this madness gets
-propagated to adjust_jiffies() as well. Eventually, lots of things
-start breaking down, including the r8169 ethernet card, in one
-particularly interesting case reported by Pierre Ossman.
-
-Fix this by initializing the per-cpu data-structures of all the CPUs
-in the policy appropriately.
-
-References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
-Reported-by: Pierre Ossman <pierre@ossman.eu>
-Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+Cc: Viresh Kumar <viresh.linux@gmail.com>
+Cc: Shiraz Hashim <shiraz.hashim@st.com>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 ---
- drivers/cpufreq/powernow-k8.c | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+v3:
+- no changes
+v2:
+- updated patch description
 
-diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
-index 056faf6..69bf037 100644
---- a/drivers/cpufreq/powernow-k8.c
-+++ b/drivers/cpufreq/powernow-k8.c
-@@ -1102,7 +1102,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- {
- 	struct powernow_k8_data *data;
- 	struct init_on_cpu init_on_cpu;
--	int rc;
-+	int rc, cpu;
+ drivers/ata/ahci_platform.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index 70fbf66..7bd6adf 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -521,12 +521,19 @@ int ahci_platform_suspend(struct device *dev)
+ 	if (rc)
+ 		return rc;
  
- 	if (!cpu_online(pol->cpu))
- 		return -ENODEV;
-@@ -1174,7 +1174,9 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
- 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
- 		 data->currfid, data->currvid);
+-	if (pdata && pdata->suspend)
+-		return pdata->suspend(dev);
++	if (pdata && pdata->suspend) {
++		rc = pdata->suspend(dev);
++		if (rc)
++			goto resume_host;
++	}
  
--	per_cpu(powernow_data, pol->cpu) = data;
-+	/* Point all the CPUs in this policy to the same data */
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = data;
- 
- 	return 0;
- 
-@@ -1189,6 +1191,7 @@ err_out:
- static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
- {
- 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
-+	int cpu;
- 
- 	if (!data)
- 		return -EINVAL;
-@@ -1199,7 +1202,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
- 
- 	kfree(data->powernow_table);
- 	kfree(data);
--	per_cpu(powernow_data, pol->cpu) = NULL;
-+	for_each_cpu(cpu, pol->cpus)
-+		per_cpu(powernow_data, cpu) = NULL;
+ 	ahci_platform_disable_resources(hpriv);
  
  	return 0;
++
++resume_host:
++	ahci_platform_resume_host(dev);
++	return rc;
  }
+ EXPORT_SYMBOL_GPL(ahci_platform_suspend);
+ 
 -- 
-1.8.3.2
+1.8.2.3
 
