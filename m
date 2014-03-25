@@ -1,50 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbaCYRQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:16:54 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:60979 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010AbaCYRQr (ORCPT
+	id S1754451AbaCYRRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:17:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55664 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754148AbaCYRRZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:16:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: behanw@converseincode.com
-Subject: Re: [PATCH v4] LLVMLinux: Remove warning about returning an uninitialized variable
-Date: Tue, 25 Mar 2014 18:16:10 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dwmw2@infradead.org, pageexec@freemail.hu,
-        Mark Charlebois <charlebm@gmail.com>
-References: <1395506558.2143.18.camel@dabdike.int.hansenpartnership.com> <1395640404-27958-1-git-send-email-behanw@converseincode.com>
-In-Reply-To: <1395640404-27958-1-git-send-email-behanw@converseincode.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403251816.10589.arnd@arndb.de>
-X-Provags-ID: V02:K0:aNcNfXUJlD1mMx1mm6TT2cYE3Bmk6ZqQcp9CTbVBuH8
- f8zv8twb2cIkoq6/g6zJhyhEx9u7WPS+QE5tvXxvHBJxgVIl88
- wYej5QXDF2RoAO+KEkafOCTuEJUVa/GK0oHCH74ewJV+d3zR0G
- PkEIzp1o/hdUXGxPjzoWACFNK0j6CoMg6+kya//q6NI0kj54vn
- kjTw4zUWo1hxfUU7cqxxepNVHUPYdzSAYMr3YzF2H+mO7QPT4A
- b9aWXjXoAl+6Y+Hovct3rqTtafxGJg9RCI9xifNvDakE7JuRJS
- 13ypZGVXmpJA/9ULDxb5VBfkPumQxsaFHG0N7q7/70Tqtzs3AY
- Tu3yBdhv6WpdCmd0uw7rcZjrPRrliG+CbyMPlg5Zq
+	Tue, 25 Mar 2014 13:17:25 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Will Deacon <will.deacon@arm.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 07/81] ARM: 7953/1: mm: ensure TLB invalidation is complete before enabling MMU
+Date: Tue, 25 Mar 2014 10:15:20 -0700
+Message-Id: <1395767794-5012-8-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 March 2014, behanw@converseincode.com wrote:
-> 
-> From: Behan Webster <behanw@converseincode.com>
-> 
-> Fix uninitialized return code in default case in cmpxchg-local.h
-> 
-> This patch fixes the code to prevent an uninitialized return value that is detected
-> when compiling with clang. The bug produces numerous warnings when compiling the
-> Linux kernel with clang.
-> 
-> Signed-off-by: Behan Webster <behanw@converseincode.com>
-> Signed-off-by: Mark Charlebois <charlebm@gmail.com>
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+------------------
+
+From: Will Deacon <will.deacon@arm.com>
+
+commit bae0ca2bc550d1ec6a118fb8f2696f18c4da3d8e upstream.
+
+During __v{6,7}_setup, we invalidate the TLBs since we are about to
+enable the MMU on return to head.S. Unfortunately, without a subsequent
+dsb instruction, the invalidation is not guaranteed to have completed by
+the time we write to the sctlr, potentially exposing us to junk/stale
+translations cached in the TLB.
+
+This patch reworks the init functions so that the dsb used to ensure
+completion of cache/predictor maintenance is also used to ensure
+completion of the TLB invalidation.
+
+Reported-by: Albin Tonnerre <Albin.Tonnerre@arm.com>
+Signed-off-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ arch/arm/mm/proc-v6.S | 3 ++-
+ arch/arm/mm/proc-v7.S | 2 +-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/mm/proc-v6.S b/arch/arm/mm/proc-v6.S
+index d222215..9029c63 100644
+--- a/arch/arm/mm/proc-v6.S
++++ b/arch/arm/mm/proc-v6.S
+@@ -208,7 +208,6 @@ __v6_setup:
+ 	mcr	p15, 0, r0, c7, c14, 0		@ clean+invalidate D cache
+ 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
+ 	mcr	p15, 0, r0, c7, c15, 0		@ clean+invalidate cache
+-	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
+ 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
+@@ -218,6 +217,8 @@ __v6_setup:
+ 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
+ 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
+ #endif /* CONFIG_MMU */
++	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer and
++						@ complete invalidations
+ 	adr	r5, v6_crval
+ 	ldmia	r5, {r5, r6}
+ #ifdef CONFIG_CPU_ENDIAN_BE8
+diff --git a/arch/arm/mm/proc-v7.S b/arch/arm/mm/proc-v7.S
+index 1b09ef1..7f28fd9 100644
+--- a/arch/arm/mm/proc-v7.S
++++ b/arch/arm/mm/proc-v7.S
+@@ -305,7 +305,6 @@ __v7_setup:
+ 
+ 3:	mov	r10, #0
+ 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
+-	dsb
+ #ifdef CONFIG_MMU
+ 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
+ 	v7_ttb_setup r10, r4, r8, r5		@ TTBCR, TTBRx setup
+@@ -314,6 +313,7 @@ __v7_setup:
+ 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
+ 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
+ #endif
++	dsb					@ Complete invalidations
+ #ifndef CONFIG_ARM_THUMBEE
+ 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
+ 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
+-- 
+1.8.3.2
+
