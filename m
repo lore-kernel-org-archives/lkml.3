@@ -1,211 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748AbaCYKuf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:50:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51136 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753706AbaCYKuY (ORCPT
+	id S1753824AbaCYKuw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:50:52 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:46249 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753796AbaCYKur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:50:24 -0400
+	Tue, 25 Mar 2014 06:50:47 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mark.hambleton@broadcom.com, mark.brown@linaro.org,
         eduardo.valentin@ti.com, mporter@linaro.org, lsk-interest@linaro.org,
         linaro-kernel@linaro.org
-Cc: Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
+Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, Alex Shi <alex.shi@linaro.org>
-Subject: [PATCH 06/19] thermal: cpu_cooling: introduce of_cpufreq_cooling_register
-Date: Tue, 25 Mar 2014 18:49:19 +0800
-Message-Id: <1395744572-20014-7-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 09/19] arm: dts: add omap4 CPU thermal data
+Date: Tue, 25 Mar 2014 18:49:22 +0800
+Message-Id: <1395744572-20014-10-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
 References: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 
-This patch introduces an API to register cpufreq cooling device
-based on device tree node.
+This patch changes a dtsi file to contain the thermal data
+for MPU domain on OMAP4 and later SoCs. This data will
+enable the passive cooling with CPUfreq cooling device
+at 100C and the system will do a thermal shutdown at 125C.
 
-The registration via device tree node differs from normal
-registration due to the fact that it is needed to fill
-the device_node structure in order to be able to match
-the cooling devices with trip points.
+This thermal data can be reused across TI SoC devices.
 
-Cc: Zhang Rui <rui.zhang@intel.com>
-Cc: linux-pm@vger.kernel.org
+Cc: "Benoît Cousson" <bcousson@baylibre.com>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Rob Herring <rob.herring@calxeda.com>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: linux-omap@vger.kernel.org
+Cc: devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-(cherry picked from commit 39d99cff76bf2992fd6dd4b1fc62da139e62e90c)
+(cherry picked from commit 0bbf6c54d100836db40ba020b7c9793ea3e6be0b)
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
-
-Conflicts:
-	drivers/thermal/Kconfig
-	drivers/thermal/cpu_cooling.c
 ---
- drivers/thermal/Kconfig       |  1 +
- drivers/thermal/cpu_cooling.c | 58 +++++++++++++++++++++++++++++++++++++------
- include/linux/cpu_cooling.h   | 25 +++++++++++++++++++
- 3 files changed, 77 insertions(+), 7 deletions(-)
+ arch/arm/boot/dts/omap4-cpu-thermal.dtsi | 41 ++++++++++++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 arch/arm/boot/dts/omap4-cpu-thermal.dtsi
 
-diff --git a/drivers/thermal/Kconfig b/drivers/thermal/Kconfig
-index 3630c07..e92e1dc 100644
---- a/drivers/thermal/Kconfig
-+++ b/drivers/thermal/Kconfig
-@@ -91,6 +91,7 @@ config THERMAL_GOV_USER_SPACE
- config CPU_THERMAL
- 	bool "generic cpu cooling support"
- 	depends on CPU_FREQ
-+	depends on THERMAL_OF
- 	select CPU_FREQ_TABLE
- 	help
- 	  This implements the generic cpu cooling mechanism through frequency
-diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
-index c94bf2e..78de794 100644
---- a/drivers/thermal/cpu_cooling.c
-+++ b/drivers/thermal/cpu_cooling.c
-@@ -415,18 +415,21 @@ static struct notifier_block thermal_cpufreq_notifier_block = {
- };
- 
- /**
-- * cpufreq_cooling_register - function to create cpufreq cooling device.
-+ * __cpufreq_cooling_register - helper function to create cpufreq cooling device
-+ * @np: a valid struct device_node to the cooling device device tree node
-  * @clip_cpus: cpumask of cpus where the frequency constraints will happen.
-  *
-  * This interface function registers the cpufreq cooling device with the name
-  * "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
-- * cooling devices.
-+ * cooling devices. It also gives the opportunity to link the cooling device
-+ * with a device tree node, in order to bind it via the thermal DT code.
-  *
-  * Return: a valid struct thermal_cooling_device pointer on success,
-  * on failure, it returns a corresponding ERR_PTR().
-  */
--struct thermal_cooling_device *
--cpufreq_cooling_register(const struct cpumask *clip_cpus)
-+static struct thermal_cooling_device *
-+__cpufreq_cooling_register(struct device_node *np,
-+			   const struct cpumask *clip_cpus)
- {
- 	struct thermal_cooling_device *cool_dev;
- 	struct cpufreq_cooling_device *cpufreq_dev = NULL;
-@@ -465,9 +468,9 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus)
- 	snprintf(dev_name, sizeof(dev_name), "thermal-cpufreq-%d",
- 		 cpufreq_dev->id);
- 
--	cool_dev = thermal_cooling_device_register(dev_name, cpufreq_dev,
--						   &cpufreq_cooling_ops);
--	if (!cool_dev) {
-+	cool_dev = thermal_of_cooling_device_register(np, dev_name, cpufreq_dev,
-+						      &cpufreq_cooling_ops);
-+	if (IS_ERR(cool_dev)) {
- 		release_idr(&cpufreq_idr, cpufreq_dev->id);
- 		kfree(cpufreq_dev);
- 		return ERR_PTR(-EINVAL);
-@@ -486,9 +489,50 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus)
- 
- 	return cool_dev;
- }
-+
-+/**
-+ * cpufreq_cooling_register - function to create cpufreq cooling device.
-+ * @clip_cpus: cpumask of cpus where the frequency constraints will happen.
+diff --git a/arch/arm/boot/dts/omap4-cpu-thermal.dtsi b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+new file mode 100644
+index 0000000..cb9458f
+--- /dev/null
++++ b/arch/arm/boot/dts/omap4-cpu-thermal.dtsi
+@@ -0,0 +1,41 @@
++/*
++ * Device Tree Source for OMAP4/5 SoC CPU thermal
 + *
-+ * This interface function registers the cpufreq cooling device with the name
-+ * "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
-+ * cooling devices.
++ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
++ * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
 + *
-+ * Return: a valid struct thermal_cooling_device pointer on success,
-+ * on failure, it returns a corresponding ERR_PTR().
++ * This file is licensed under the terms of the GNU General Public License
++ * version 2.  This program is licensed "as is" without any warranty of any
++ * kind, whether express or implied.
 + */
-+struct thermal_cooling_device *
-+cpufreq_cooling_register(const struct cpumask *clip_cpus)
-+{
-+	return __cpufreq_cooling_register(NULL, clip_cpus);
-+}
- EXPORT_SYMBOL_GPL(cpufreq_cooling_register);
- 
- /**
-+ * of_cpufreq_cooling_register - function to create cpufreq cooling device.
-+ * @np: a valid struct device_node to the cooling device device tree node
-+ * @clip_cpus: cpumask of cpus where the frequency constraints will happen.
-+ *
-+ * This interface function registers the cpufreq cooling device with the name
-+ * "thermal-cpufreq-%x". This api can support multiple instances of cpufreq
-+ * cooling devices. Using this API, the cpufreq cooling device will be
-+ * linked to the device tree node provided.
-+ *
-+ * Return: a valid struct thermal_cooling_device pointer on success,
-+ * on failure, it returns a corresponding ERR_PTR().
-+ */
-+struct thermal_cooling_device *
-+of_cpufreq_cooling_register(struct device_node *np,
-+			    const struct cpumask *clip_cpus)
-+{
-+	if (!np)
-+		return ERR_PTR(-EINVAL);
 +
-+	return __cpufreq_cooling_register(np, clip_cpus);
-+}
-+EXPORT_SYMBOL_GPL(of_cpufreq_cooling_register);
++#include <dt-bindings/thermal/thermal.h>
 +
-+/**
-  * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
-  * @cdev: thermal cooling device pointer.
-  *
-diff --git a/include/linux/cpu_cooling.h b/include/linux/cpu_cooling.h
-index a5d52ee..c303d38 100644
---- a/include/linux/cpu_cooling.h
-+++ b/include/linux/cpu_cooling.h
-@@ -24,6 +24,7 @@
- #ifndef __CPU_COOLING_H__
- #define __CPU_COOLING_H__
- 
-+#include <linux/of.h>
- #include <linux/thermal.h>
- #include <linux/cpumask.h>
- 
-@@ -36,6 +37,24 @@ struct thermal_cooling_device *
- cpufreq_cooling_register(const struct cpumask *clip_cpus);
- 
- /**
-+ * of_cpufreq_cooling_register - create cpufreq cooling device based on DT.
-+ * @np: a valid struct device_node to the cooling device device tree node.
-+ * @clip_cpus: cpumask of cpus where the frequency constraints will happen
-+ */
-+#ifdef CONFIG_THERMAL_OF
-+struct thermal_cooling_device *
-+of_cpufreq_cooling_register(struct device_node *np,
-+			    const struct cpumask *clip_cpus);
-+#else
-+static inline struct thermal_cooling_device *
-+of_cpufreq_cooling_register(struct device_node *np,
-+			    const struct cpumask *clip_cpus)
-+{
-+	return NULL;
-+}
-+#endif
++cpu_thermal: cpu_thermal {
++	polling-delay-passive = <250>; /* milliseconds */
++	polling-delay = <1000>; /* milliseconds */
 +
-+/**
-  * cpufreq_cooling_unregister - function to remove cpufreq cooling device.
-  * @cdev: thermal cooling device pointer.
-  */
-@@ -48,6 +67,12 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus)
- {
- 	return NULL;
- }
-+static inline struct thermal_cooling_device *
-+of_cpufreq_cooling_register(struct device_node *np,
-+			    const struct cpumask *clip_cpus)
-+{
-+	return NULL;
-+}
- static inline
- void cpufreq_cooling_unregister(struct thermal_cooling_device *cdev)
- {
++			/* sensor       ID */
++        thermal-sensors = <&bandgap     0>;
++
++        trips {
++                cpu_alert0: cpu_alert {
++                        temperature = <100000>; /* millicelsius */
++                        hysteresis = <2000>; /* millicelsius */
++                        type = "passive";
++                };
++                cpu_crit: cpu_crit {
++                        temperature = <125000>; /* millicelsius */
++                        hysteresis = <2000>; /* millicelsius */
++                        type = "critical";
++                };
++        };
++
++	cooling-maps {
++		map0 {
++			trip = <&cpu_alert0>;
++			cooling-device =
++				<&cpu0 THERMAL_NO_LIMIT THERMAL_NO_LIMIT>;
++		};
++	};
++};
 -- 
 1.8.1.2
 
