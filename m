@@ -1,11 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752132AbaCYAet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 20:34:49 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:44370 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751466AbaCYAeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751638AbaCYAeH (ORCPT <rfc822;w@1wt.eu>);
 	Mon, 24 Mar 2014 20:34:07 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59375 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875AbaCYAeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 20:34:05 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
@@ -14,28 +15,19 @@ CC: Murali Karicheri <m-karicheri2@ti.com>, Jingoo Han <jg1.han@samsung.com>,
         Kukjin Kim <kgene.kim@samsung.com>, Richard Zhu <r65037@freescale.com>,
         Shawn Guo <shawn.guo@linaro.org>, Mohit Kumar <mohit.kumar@st.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [RFC PATCH 0/3] Add Keystone pcie driver
-Date: Mon, 24 Mar 2014 20:33:20 -0400
-Message-ID: <1395707604-20377-1-git-send-email-m-karicheri2@ti.com>
+Subject: [PATCH 1/3] ARM: keystone: add pcie related options
+Date: Mon, 24 Mar 2014 20:33:22 -0400
+Message-ID: <1395707604-20377-3-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395707604-20377-1-git-send-email-m-karicheri2@ti.com>
+References: <1395707604-20377-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a RFC to add Keystone pcie driver. I had some earlier discussion on
-the pcie mailing about this driver and at that time I didn't have the driver
-ported to dw core driver. I now have a driver working with intel's e1000e
-ethernet driver and want to review this RFC on this list.
-
-Kestone PCIE hardware is based on dw version 3.65. It lacks ATU port and
-standard MSI controller found in newer version of the dw hardware. This version
-uses registers in PCIE application space to configure MSI controller. It has 4
-host irqs for legacy IRQs A/B/C/D and 8 host irqs to muliplex 32 MSI irqs.
-Also has one host irq line for errors.
-
-Please review and provide your comments.
+Add pcie related options by default for keystone architecture
 
 CC: Jingoo Han <jg1.han@samsung.com>
 CC: Bjorn Helgaas <bhelgaas@google.com>
@@ -45,29 +37,24 @@ CC: Shawn Guo <shawn.guo@linaro.org>
 CC: Mohit Kumar <mohit.kumar@st.com>
 CC: Santosh Shilimkar <santosh.shilimkar@ti.com>
 
-Murali Karicheri (3):
-  ARM: keystone: add pcie related options
-  pci: designware: enhancements to support keystone pcie
-  pcie: keystone: add pcie driver based on designware core driver
+Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ arch/arm/mach-keystone/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
- .../devicetree/bindings/pci/pcie-keystone.txt      |   32 +
- arch/arm/mach-keystone/Kconfig                     |    2 +
- drivers/pci/host/Kconfig                           |    5 +
- drivers/pci/host/Makefile                          |    1 +
- drivers/pci/host/k2-platform.c                     |  191 +++++
- drivers/pci/host/pci-exynos.c                      |    2 +-
- drivers/pci/host/pci-imx6.c                        |    2 +-
- drivers/pci/host/pcie-designware.c                 |   99 ++-
- drivers/pci/host/pcie-designware.h                 |   14 +-
- drivers/pci/host/pcie-keystone.c                   |  860 ++++++++++++++++++++
- drivers/pci/host/pcie-ks-pdata.h                   |   19 +
- drivers/pci/quirks.c                               |   12 +
- 12 files changed, 1203 insertions(+), 36 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/pci/pcie-keystone.txt
- create mode 100644 drivers/pci/host/k2-platform.c
- create mode 100644 drivers/pci/host/pcie-keystone.c
- create mode 100644 drivers/pci/host/pcie-ks-pdata.h
-
+diff --git a/arch/arm/mach-keystone/Kconfig b/arch/arm/mach-keystone/Kconfig
+index 7e16d07..22c2174 100644
+--- a/arch/arm/mach-keystone/Kconfig
++++ b/arch/arm/mach-keystone/Kconfig
+@@ -17,6 +17,8 @@ config ARCH_KEYSTONE
+ 	select TI_KEYSTONE
+ 	select ARCH_SUPPORTS_BIG_ENDIAN
+ 	select ZONE_DMA if ARM_LPAE
++	select MIGHT_HAVE_PCI
++	select ARCH_SUPPORTS_MSI
+ 	help
+ 	  Support for boards based on the Texas Instruments Keystone family of
+ 	  SoCs.
 -- 
 1.7.9.5
 
