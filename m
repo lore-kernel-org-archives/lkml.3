@@ -1,35 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866AbaCYThX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:37:23 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:61901 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754243AbaCYThU (ORCPT
+	id S1754835AbaCYTkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:40:18 -0400
+Received: from www.linutronix.de ([62.245.132.108]:54999 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699AbaCYTkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:37:20 -0400
+	Tue, 25 Mar 2014 15:40:16 -0400
+Message-ID: <5331DB9C.4020208@linutronix.de>
+Date: Tue, 25 Mar 2014 20:40:12 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1395774051-22470-1-git-send-email-michele@acksyn.org>
-References: <1395774051-22470-1-git-send-email-michele@acksyn.org>
-Date: Tue, 25 Mar 2014 20:37:18 +0100
-Message-ID: <CAN_we7MZW+iympXsg2Z6N5YtPydxBY3RLv4UH-0PnnCRXcuJwQ@mail.gmail.com>
-Subject: Re: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes VX-001 ExpressCard
-From: Daniele Forsi <dforsi@gmail.com>
-To: Michele Baldessari <michele@acksyn.org>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        USB list <linux-usb@vger.kernel.org>, linux-kernel@vger.kernel.org
+To: delicious quinoa <delicious.quinoa@gmail.com>
+CC: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Subject: Re: [PATCH 6/7] gpio: dwapb: use a second irq chip
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>	<1395505004-22650-7-git-send-email-bigeasy@linutronix.de> <CANk1AXTUr2MevsXphxicgZEPC2tQBUh6pEXa78Fa6Jt4bPiRdQ@mail.gmail.com>
+In-Reply-To: <CANk1AXTUr2MevsXphxicgZEPC2tQBUh6pEXa78Fa6Jt4bPiRdQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-25 20:00 GMT+01:00 Michele Baldessari:
+On 03/25/2014 07:48 PM, delicious quinoa wrote:
+> I'm trying to test against recent tag next-20140312.  Got a build error.
+> 
+> /home/atull/repos/linux-socfpga/drivers/gpio/gpio-dwapb.c:254:11:
+> error: 'struct irq_chip' has no member named 'irq_request_resources'
+> /home/atull/repos/linux-socfpga/drivers/gpio/gpio-dwapb.c:254:36:
+> error: 'dwapb_irq_reqres' undeclared (first use in this function)
+> /home/atull/repos/linux-socfpga/drivers/gpio/gpio-dwapb.c:255:11:
+> error: 'struct irq_chip' has no member named 'irq_release_resources'
+> /home/atull/repos/linux-socfpga/drivers/gpio/gpio-dwapb.c:255:36:
+> error: 'dwapb_irq_relres' undeclared (first use in this function)
+> Build failed...
 
-> Custom VID/PID for Brainboxes VX-001 ExpressCard RS232 as reported in
+The change in the driver got first introduced in commit 57ef0428
+("gpio: switch drivers to use new callback") and it builds for me. You
+probably miss the change in the core code c1bacba ("genirq: Provide
+irq_request/release_resources chip callbacks").
 
-> + * Product: ExpressCard 1 Port RS2323
+I pushed to
+	git://git.breakpoint.cc/bigeasy/linux.git gpio_dw_v3
 
-there is a stray trailing "3"
+my gpio-next + my patches + linux-next which is currently at -next-
+20140325 btw. With those you should not get the build anymore.
 
--- 
-Daniele Forsi
+> Alan Tull
+> aka
+> delicious quinoa
+
+Sebastian
