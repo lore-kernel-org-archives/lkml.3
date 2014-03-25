@@ -1,43 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752200AbaCYAAu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 20:00:50 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43387 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589AbaCYAAq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 20:00:46 -0400
-Message-ID: <5330C703.5030705@ti.com>
-Date: Mon, 24 Mar 2014 20:00:03 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751396AbaCYAHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 20:07:17 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:52297 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132AbaCYAHO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 20:07:14 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
-CC: <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>
-Subject: Re: linux-next: manual merge of the keystone tree with the arm-soc
- tree
-References: <20140325105501.e63fcdd78d0d604b4e5309a1@canb.auug.org.au>
-In-Reply-To: <20140325105501.e63fcdd78d0d604b4e5309a1@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1395404297-12133-1-git-send-email-k.kozlowski@samsung.com>
+Cc: "Tushar Behera" <tushar.behera@linaro.org>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Marek Szyprowski" <m.szyprowski@samsung.com>,
+        "Bartlomiej Zolnierkiewicz" <b.zolnierkie@samsung.com>,
+        "Tomasz Figa" <t.figa@samsung.com>,
+        "Krzysztof Kozlowski" <k.kozlowski@samsung.com>,
+        stable@vger.kernel.org
+References: <1395404297-12133-1-git-send-email-k.kozlowski@samsung.com>
+Message-ID: <20140325000705.32624.49820@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 1/2] clk: s2mps11: Fix possible NULL pointer dereference
+Date: Mon, 24 Mar 2014 17:07:05 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 March 2014 07:55 PM, Stephen Rothwell wrote:
-> Hi Santosh,
+Quoting Krzysztof Kozlowski (2014-03-21 05:18:17)
+> If parent device does not have of_node set the s2mps11_clk_parse_dt()
+> returned NULL. This NULL was later passed to of_clk_add_provider() which
+> dereferenced it in pr_debug() call.
 > 
-> Today's linux-next merge of the keystone tree got a conflict in
-> arch/arm/boot/dts/Makefile between commit ba5a37e52194 ("ARM: mvebu: Move
-> kirkwood DT boards into mach-mvebu") from the arm-soc tree and commit
-> 400550ae7e77 ("ARM: dts: Build all keystone dt blobs") from the keystone
-> tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-> 
-Looks fine. Thanks
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Regards,
-Santosh
+I've taken both of these patches into clk-next.
+
+Thanks!
+Mike
+
+> Cc: <stable@vger.kernel.org>
+> ---
+>  drivers/clk/clk-s2mps11.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/clk/clk-s2mps11.c b/drivers/clk/clk-s2mps11.c
+> index 00a3abe103a5..27c83e45eaed 100644
+> --- a/drivers/clk/clk-s2mps11.c
+> +++ b/drivers/clk/clk-s2mps11.c
+> @@ -130,7 +130,7 @@ static struct device_node *s2mps11_clk_parse_dt(struct platform_device *pdev)
+>         int i;
+>  
+>         if (!iodev->dev->of_node)
+> -               return NULL;
+> +               return ERR_PTR(-EINVAL);
+>  
+>         clk_np = of_find_node_by_name(iodev->dev->of_node, "clocks");
+>         if (!clk_np) {
+> -- 
+> 1.7.9.5
+> 
