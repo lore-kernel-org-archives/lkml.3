@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754AbaCYRUb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:20:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55749 "EHLO
+	id S1754768AbaCYRUh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:20:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55765 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753434AbaCYRU0 (ORCPT
+	with ESMTP id S1753434AbaCYRUc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:20:26 -0400
+	Tue, 25 Mar 2014 13:20:32 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Alexey E. Kramarenko" <alexeyk13@yandex.ru>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 69/81] USB: serial: ftdi_sio: add id for Z3X Box device
-Date: Tue, 25 Mar 2014 10:16:22 -0700
-Message-Id: <1395767794-5012-70-git-send-email-kamal@canonical.com>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 63/81] i7300_edac: Fix device reference count
+Date: Tue, 25 Mar 2014 10:16:16 -0700
+Message-Id: <1395767794-5012-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,46 +29,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?=D0=90=D0=BB=D0=B5=D0=BA=D1=81=D0=B5=D0=B9=20=D0=9A=D1=80?=
+From: Jean Delvare <jdelvare@suse.de>
 
-commit e1466ad5b1aeda303f9282463d55798d2eda218c upstream.
+commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
 
-Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
+pci_get_device() decrements the reference count of "from" (last
+argument) so when we break off the loop successfully we have only one
+device reference - and we don't know which device we have. If we want
+a reference to each device, we must take them explicitly and let
+the pci_get_device() walk complete to avoid duplicate references.
 
-Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+This is serious, as over-putting device references will cause
+the device to eventually disappear. Without this fix, the kernel
+crashes after a few insmod/rmmod cycles.
+
+Tested on an Intel S7000FC4UR system with a 7300 chipset.
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 1 +
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 7 insertions(+)
+ drivers/edac/i7300_edac.c | 38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index df8a23d..f9bdb50 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -911,6 +911,7 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
- 	/* Crucible Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 9cf48543..1e2d369 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1314,3 +1314,9 @@
-  * Manufacturer: Crucible Technologies
-  */
- #define FTDI_CT_COMET_PID	0x8e08
+diff --git a/drivers/edac/i7300_edac.c b/drivers/edac/i7300_edac.c
+index 087c27b..11ba318 100644
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -932,33 +932,35 @@ static int i7300_get_devices(struct mem_ctl_info *mci)
+ 
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
+-
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
+ 
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
 +
-+/*
-+ * Product: Z3X Box
-+ * Manufacturer: Smart GSM Team
-+ */
-+#define FTDI_Z3X_PID		0x0011
+ 	edac_dbg(1, "System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		 pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		 pvt->pci_dev_16_0_fsb_ctlr->vendor,
 -- 
 1.8.3.2
 
