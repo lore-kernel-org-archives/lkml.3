@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755201AbaCYRWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55961 "EHLO
+	id S1755303AbaCYRYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:24:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55972 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270AbaCYRWH (ORCPT
+	with ESMTP id S1755183AbaCYRWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:07 -0400
+	Tue, 25 Mar 2014 13:22:10 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 35/81] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
-Date: Tue, 25 Mar 2014 10:15:48 -0700
-Message-Id: <1395767794-5012-36-git-send-email-kamal@canonical.com>
+Cc: Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 62/81] i7core_edac: Fix PCI device reference count
+Date: Tue, 25 Mar 2014 10:16:15 -0700
+Message-Id: <1395767794-5012-63-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,61 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Levente Kurusa <levex@linux.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
+commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
 
-Samsung's pci-e SSDs with device ID 0x1600 which are found on some
-macbooks time out on NCQ commands.  Blacklist NCQ on the device so
-that the affected machines can at least boot.
+The reference count changes done by pci_get_device can be a little
+misleading when the usage diverges from the most common scheme. The
+reference count of the device passed as the last parameter is always
+decreased, even if the function returns no new device. So if we are
+going to try alternative device IDs, we must manually increment the
+device reference count before each retry. If we don't, we end up
+decreasing the reference count, and after a few modprobe/rmmod cycles
+the PCI devices will vanish.
 
-Original-patch-by: Levente Kurusa <levex@linux.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+In other words and as Alan put it: without this fix the EDAC code
+corrupts the PCI device list.
+
+This fixes kernel bug #50491:
+https://bugzilla.kernel.org/show_bug.cgi?id=50491
+
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
+Reviewed-by: Alan Cox <alan@linux.intel.com>
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/ahci.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ drivers/edac/i7core_edac.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-index 67fb282..f0faa0d 100644
---- a/drivers/ata/ahci.c
-+++ b/drivers/ata/ahci.c
-@@ -61,6 +61,7 @@ enum board_ids {
- 	/* board IDs by feature in alphabetical order */
- 	board_ahci,
- 	board_ahci_ign_iferr,
-+	board_ahci_noncq,
- 	board_ahci_nosntf,
- 	board_ahci_yes_fbs,
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index e213d03..04e7b9b 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -1334,14 +1334,19 @@ static int i7core_get_onedevice(struct pci_dev **prev,
+ 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
+ 	 * to probe for the alternate address in case of failure
+ 	 */
+-	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
++	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
++		pci_dev_get(*prev);	/* pci_get_device will put it */
+ 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
++	}
  
-@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_port_info[] = {
- 		.udma_mask	= ATA_UDMA6,
- 		.port_ops	= &ahci_ops,
- 	},
-+	[board_ahci_noncq] = {
-+		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
-+		.flags		= AHCI_FLAG_COMMON,
-+		.pio_mask	= ATA_PIO4,
-+		.udma_mask	= ATA_UDMA6,
-+		.port_ops	= &ahci_ops,
-+	},
- 	[board_ahci_nosntf] = {
- 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
- 		.flags		= AHCI_FLAG_COMMON,
-@@ -446,6 +454,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
- 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
- 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+-	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
++	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
++	    !pdev) {
++		pci_dev_get(*prev);	/* pci_get_device will put it */
+ 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+ 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
+ 				      *prev);
++	}
  
-+	/*
-+	 * Samsung SSDs found on some macbooks.  NCQ times out.
-+	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
-+	 */
-+	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
-+
- 	/* Enmotus */
- 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
- 
+ 	if (!pdev) {
+ 		if (*prev) {
 -- 
 1.8.3.2
 
