@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078AbaCYRV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:21:57 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55928 "EHLO
+	id S1755139AbaCYRWA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55933 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755117AbaCYRVy (ORCPT
+	with ESMTP id S932082AbaCYRV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:21:54 -0400
+	Tue, 25 Mar 2014 13:21:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Vinod Koul <vinod.koul@intel.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 49/81] dma: ste_dma40: don't dereference free:d descriptor
-Date: Tue, 25 Mar 2014 10:16:02 -0700
-Message-Id: <1395767794-5012-50-git-send-email-kamal@canonical.com>
+Cc: "Dr. Greg Wettstein" <greg@enjellic.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 60/81] qla2xxx: Fix kernel panic on selective retransmission request
+Date: Tue, 25 Mar 2014 10:16:13 -0700
+Message-Id: <1395767794-5012-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,54 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: "Dr. Greg Wettstein" <greg@enjellic.com>
 
-commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
+commit 6f58c780e5a5b43a6d2121e0d43cdcba1d3cc5fc upstream.
 
-It appears that in the DMA40 driver the DMA tasklet will very
-often dereference memory for a descriptor just free:d from the
-DMA40 slab. Nothing happens because no other part of the driver
-has yet had a chance to claim this memory, but it's really
-nasty to dereference free:d memory, so let's check the flag
-before the descriptor is free and store it in a bool variable.
+A selective retransmission request (SRR) is a fibre-channel
+protocol control request which provides support for requesting
+retransmission of a data sequence in response to an issue such as
+frame loss or corruption.  These events are experienced
+infrequently in fibre-channel based networks which makes
+it difficult to test and assess codepaths which handle these
+events.
 
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+We were fortunate enough, for some definition of fortunate, to
+have a metro-area single-mode SAN link which, at 10 GBPS
+sustained load levels, would consistently generate SRR's in
+a SCST based target implementation using our SCST/in-kernel
+Qlogic target interface driver.  In response to an SRR the
+in-kernel Qlogic target driver immediately panics resulting
+in a catastrophic storage failure for serviced initiators.
+
+The culprit was a debug statement in the qla_target.c file which
+does not verify that a pointer to the SCSI CDB is not null.
+The unchecked pointer dereference results in the kernel panic
+and resultant system failure.
+
+The other two references to the SCSI CDB by the SRR handling code
+use a ternary operator to verify a non-null pointer is being
+acted on.  This patch simply adds a similar test to the implicated
+debug statement.
+
+This patch is a candidate for any stable kernel being maintained
+since it addresses a potentially catastrophic event with
+minimal downside.
+
+Signed-off-by: Dr. Greg Wettstein <greg@enjellic.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/dma/ste_dma40.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/scsi/qla2xxx/qla_target.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 17459ad..da6426e 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1410,6 +1410,7 @@ static void dma_tasklet(unsigned long data)
- 	struct d40_chan *d40c = (struct d40_chan *) data;
- 	struct d40_desc *d40d;
- 	unsigned long flags;
-+	bool callback_active;
- 	dma_async_tx_callback callback;
- 	void *callback_param;
+diff --git a/drivers/scsi/qla2xxx/qla_target.c b/drivers/scsi/qla2xxx/qla_target.c
+index 66c6214..1bec379 100644
+--- a/drivers/scsi/qla2xxx/qla_target.c
++++ b/drivers/scsi/qla2xxx/qla_target.c
+@@ -3358,7 +3358,8 @@ restart:
+ 		ql_dbg(ql_dbg_tgt_mgt, vha, 0xf02c,
+ 		    "SRR cmd %p (se_cmd %p, tag %d, op %x), "
+ 		    "sg_cnt=%d, offset=%d", cmd, &cmd->se_cmd, cmd->tag,
+-		    se_cmd->t_task_cdb[0], cmd->sg_cnt, cmd->offset);
++		    se_cmd->t_task_cdb ? se_cmd->t_task_cdb[0] : 0,
++		    cmd->sg_cnt, cmd->offset);
  
-@@ -1433,6 +1434,7 @@ static void dma_tasklet(unsigned long data)
- 	}
+ 		qlt_handle_srr(vha, sctio, imm);
  
- 	/* Callback to client */
-+	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
- 	callback = d40d->txd.callback;
- 	callback_param = d40d->txd.callback_param;
- 
-@@ -1457,7 +1459,7 @@ static void dma_tasklet(unsigned long data)
- 
- 	spin_unlock_irqrestore(&d40c->lock, flags);
- 
--	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
-+	if (callback_active && callback)
- 		callback(callback_param);
- 
- 	return;
 -- 
 1.8.3.2
 
