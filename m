@@ -1,57 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513AbaCYSCB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:02:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58564 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755151AbaCYSB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:01:56 -0400
-Date: Tue, 25 Mar 2014 11:01:50 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Christoph Lameter <cl@linux.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: slub: gpf in deactivate_slab
-Message-ID: <20140325180149.GD7519@dhcp22.suse.cz>
-References: <53208A87.2040907@oracle.com>
- <5331A6C3.2000303@oracle.com>
- <20140325165247.GA7519@dhcp22.suse.cz>
- <alpine.DEB.2.10.1403251205140.24534@nuc>
- <20140325175634.GC7519@dhcp22.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140325175634.GC7519@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756618AbaCYSCw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:02:52 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55584 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142AbaCYRRQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:17:16 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 12/81] SUNRPC: Fix races in xs_nospace()
+Date: Tue, 25 Mar 2014 10:15:25 -0700
+Message-Id: <1395767794-5012-13-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-03-14 10:56:34, Michal Hocko wrote:
-> On Tue 25-03-14 12:06:36, Christoph Lameter wrote:
-> > On Tue, 25 Mar 2014, Michal Hocko wrote:
-> > 
-> > > You are right. The function even does VM_BUG_ON(!irqs_disabled())...
-> > > Unfortunatelly we do not seem to have an _irq alternative of the bit
-> > > spinlock.
-> > > Not sure what to do about it. Christoph?
-> > >
-> > > Btw. it seems to go way back to 3.1 (1d07171c5e58e).
-> > 
-> > Well there is a preempt_enable() (bit_spin_lock) and a preempt_disable()
-> > bit_spin_unlock() within a piece of code where irqs are disabled.
-> > 
-> > Is that a problem? Has been there for a long time.
-> 
-> It is because preempt_enable calls __preempt_schedule when the preempt
-> count drops down to 0. You would need to call preempt_disable before you
-> disable interrupts or use an irq safe bit spin unlock which doesn't
-> enabled preemption unconditionally.
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-Hmm, now that I am looking into the code more closely it seems that
-preempt_schedule bails out when interrupts are disabled.
+------------------
+
+From: Trond Myklebust <trond.myklebust@primarydata.com>
+
+commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
+
+When a send failure occurs due to the socket being out of buffer space,
+we call xs_nospace() in order to have the RPC task wait until the
+socket has drained enough to make it worth while trying again.
+The current patch fixes a race in which the socket is drained before
+we get round to setting up the machinery in xs_nospace(), and which
+is reported to cause hangs.
+
+Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
+Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
+Reported-by: Neil Brown <neilb@suse.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/sunrpc/xprtsock.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index c50ac35..01adf5e 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -501,6 +501,7 @@ static int xs_nospace(struct rpc_task *task)
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct sock *sk = transport->inet;
+ 	int ret = -EAGAIN;
+ 
+ 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
+@@ -518,7 +519,7 @@ static int xs_nospace(struct rpc_task *task)
+ 			 * window size
+ 			 */
+ 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
+-			transport->inet->sk_write_pending++;
++			sk->sk_write_pending++;
+ 			/* ...and wait for more buffer space */
+ 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
+ 		}
+@@ -528,6 +529,9 @@ static int xs_nospace(struct rpc_task *task)
+ 	}
+ 
+ 	spin_unlock_bh(&xprt->transport_lock);
++
++	/* Race breaker in case memory is freed before above code is called */
++	sk->sk_write_space(sk);
+ 	return ret;
+ }
+ 
 -- 
-Michal Hocko
-SUSE Labs
+1.8.3.2
+
