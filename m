@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753151AbaCYON2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 10:13:28 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:26710 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaCYON1 (ORCPT
+	id S1753127AbaCYOZz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 10:25:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50377 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbaCYOZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 10:13:27 -0400
-X-IronPort-AV: E=Sophos;i="4.97,728,1389772800"; 
-   d="scan'208";a="21167112"
-Message-ID: <53318EEC.7050504@broadcom.com>
-Date: Tue, 25 Mar 2014 15:13:00 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 10:25:53 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Date: Tue, 25 Mar 2014 15:25:22 +0100
+Message-Id: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, <trivial@kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: <rdunlap@infradead.org>
-Subject: Re: [PATCH] [trivial]treewide: Fix typo in printk
-References: <1395754375-18482-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1395754375-18482-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [PATCH] clocksource: efm32: use $vendor,$device scheme for compatible string
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/03/14 14:32, Masanari Iida wrote:
-> Fix spelling typo in printk from various part of kernel source.
->
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->   arch/powerpc/platforms/powernv/opal.c                 | 2 +-
->   drivers/i2c/busses/i2c-s3c2410.c                      | 2 +-
->   drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c         | 8 ++++----
->   drivers/misc/mei/hw-txe.c                             | 2 +-
->   drivers/net/bonding/bond_sysfs_slave.c                | 2 +-
->   drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    | 2 +-
->   drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        | 2 +-
->   drivers/net/ethernet/via/via-velocity.c               | 2 +-
->   drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 6 +++---
+Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
+common scheme and prefix device with "efm32-". The old compatible string
+is left in place until arch/arm/boot/dts/efm32* is fixed.
 
-For this file you may add:
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/clocksource/time-efm32.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Acked-by: Arend van Spriel <arend@broadcom.com>
-
->   drivers/scsi/qla2xxx/qla_nx2.c                        | 2 +-
->   drivers/scsi/scsi_transport_fc.c                      | 2 +-
->   sound/soc/davinci/davinci-mcasp.c                     | 2 +-
->   12 files changed, 17 insertions(+), 17 deletions(-)
+diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
+index 1a6205b7bed3..bba62f9deefb 100644
+--- a/drivers/clocksource/time-efm32.c
++++ b/drivers/clocksource/time-efm32.c
+@@ -272,4 +272,5 @@ static void __init efm32_timer_init(struct device_node *np)
+ 		}
+ 	}
+ }
+-CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
++CLOCKSOURCE_OF_DECLARE(efm32compat, "efm32,timer", efm32_timer_init);
++CLOCKSOURCE_OF_DECLARE(efm32, "energymicro,efm32-timer", efm32_timer_init);
+-- 
+1.9.1
 
