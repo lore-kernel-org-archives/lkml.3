@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbaCYMwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 08:52:40 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:38891 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123AbaCYMwg (ORCPT
+	id S1753337AbaCYMwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 08:52:46 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:39786 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753253AbaCYMwm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 08:52:36 -0400
+	Tue, 25 Mar 2014 08:52:42 -0400
 From: Linus Walleij <linus.walleij@linaro.org>
 To: linux-gpio@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
 Cc: Alexandre Courbot <acourbot@nvidia.com>, linux-kernel@vger.kernel.org,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 1/4] gpio: add IRQ chip helpers in gpiolib
-Date: Tue, 25 Mar 2014 13:51:31 +0100
-Message-Id: <1395751894-7110-2-git-send-email-linus.walleij@linaro.org>
+Subject: [PATCH 2/4] gpio: pl061: convert driver to use gpiolib irqchip
+Date: Tue, 25 Mar 2014 13:51:32 +0100
+Message-Id: <1395751894-7110-3-git-send-email-linus.walleij@linaro.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395751894-7110-1-git-send-email-linus.walleij@linaro.org>
 References: <1395751894-7110-1-git-send-email-linus.walleij@linaro.org>
@@ -21,307 +21,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This provides a function gpiochip_irqchip_add() to set
-up an irqchip for a GPIO controller, and a function
-gpiochip_set_chained_irqchip() to chain it to a parent
-irqchip.
+This converts the PL061 driver to register its chained irq
+handler and irqchip using the helpers in the gpiolib core.
 
-Most GPIOs are of the type where a number of lines form
-a cascaded interrupt controller chained onto
-the primary system interrupt controller (or further down the
-chain) so let's add this helper and factor the code to
-request the lines to be used as IRQs, the .to_irq() function
-and the irqdomain into the core as well.
-
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/gpio/Kconfig        |   3 +
- drivers/gpio/gpiolib.c      | 188 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/gpio/driver.h |  29 +++++++
- 3 files changed, 220 insertions(+)
+ drivers/gpio/Kconfig      |  1 +
+ drivers/gpio/gpio-pl061.c | 80 +++++++++++------------------------------------
+ 2 files changed, 19 insertions(+), 62 deletions(-)
 
 diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 2e461e459d88..51c782532687 100644
+index 51c782532687..92d8e9a064b4 100644
 --- a/drivers/gpio/Kconfig
 +++ b/drivers/gpio/Kconfig
-@@ -55,6 +55,9 @@ config GPIO_ACPI
- 	def_bool y
- 	depends on ACPI
+@@ -247,6 +247,7 @@ config GPIO_PL061
+ 	bool "PrimeCell PL061 GPIO support"
+ 	depends on ARM_AMBA
+ 	select IRQ_DOMAIN
++	select GPIOLIB_IRQCHIP
+ 	help
+ 	  Say yes here to support the PrimeCell PL061 GPIO device
  
-+config GPIOLIB_IRQCHIP
-+	bool
-+
- config DEBUG_GPIO
- 	bool "Debug GPIO calls"
- 	depends on DEBUG_KERNEL
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 584d2b465f84..f76c952e08b2 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1254,6 +1254,9 @@ fail:
- }
- EXPORT_SYMBOL_GPL(gpiochip_add);
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index d2a0ad5fc752..b0f475243cef 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -15,7 +15,6 @@
+ #include <linux/io.h>
+ #include <linux/ioport.h>
+ #include <linux/irq.h>
+-#include <linux/irqdomain.h>
+ #include <linux/irqchip/chained_irq.h>
+ #include <linux/bitops.h>
+ #include <linux/workqueue.h>
+@@ -53,7 +52,6 @@ struct pl061_gpio {
+ 	spinlock_t		lock;
  
-+/* Forward-declaration */
-+static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip);
-+
- /**
-  * gpiochip_remove() - unregister a gpio_chip
-  * @chip: the chip to unregister
-@@ -1270,6 +1273,7 @@ int gpiochip_remove(struct gpio_chip *chip)
+ 	void __iomem		*base;
+-	struct irq_domain	*domain;
+ 	struct gpio_chip	gc;
  
- 	spin_lock_irqsave(&gpio_lock, flags);
- 
-+	gpiochip_irqchip_remove(chip);
- 	gpiochip_remove_pin_ranges(chip);
- 	of_gpiochip_remove(chip);
- 
-@@ -1339,6 +1343,190 @@ static struct gpio_chip *find_chip_by_name(const char *name)
- 	return gpiochip_find((void *)name, gpiochip_match_name);
+ #ifdef CONFIG_PM
+@@ -137,16 +135,10 @@ static void pl061_set_value(struct gpio_chip *gc, unsigned offset, int value)
+ 	writeb(!!value << offset, chip->base + (1 << (offset + 2)));
  }
  
-+#ifdef CONFIG_GPIOLIB_IRQCHIP
-+
-+/*
-+ * The following is irqchip helper code for gpiochips.
-+ */
-+
-+/**
-+ * gpiochip_add_chained_irqchip() - adds a chained irqchip to a gpiochip
-+ * @gpiochip: the gpiochip to add the irqchip to
-+ * @irqchip: the irqchip to add to the gpiochip
-+ * @parent_irq: the irq number corresponding to the parent IRQ for this
-+ * chained irqchip
-+ * @parent_handler: the parent interrupt handler for the accumulated IRQ
-+ * coming out of the gpiochip
-+ */
-+void gpiochip_set_chained_irqchip(struct gpio_chip *gpiochip,
-+				  struct irq_chip *irqchip,
-+				  int parent_irq,
-+				  irq_flow_handler_t parent_handler)
-+{
-+	irq_set_chained_handler(parent_irq, parent_handler);
-+	/*
-+	 * The parent irqchip is already using the chip_data for this
-+	 * irqchip, so our callbacks simply use the handler_data.
-+	 */
-+	irq_set_handler_data(parent_irq, gpiochip);
-+}
-+EXPORT_SYMBOL_GPL(gpiochip_set_chained_irqchip);
-+
-+/**
-+ * gpiochip_irq_map() - maps an IRQ into a GPIO irqchip
-+ * @d: the irqdomain used by this irqchip
-+ * @irq: the global irq number used by this GPIO irqchip irq
-+ * @hwirq: the local IRQ/GPIO line offset on this gpiochip
-+ *
-+ * This function will set up the mapping for a certain IRQ line on a
-+ * gpiochip by assigning the gpiochip as chip data, and using the irqchip
-+ * stored inside the gpiochip.
-+ */
-+static int gpiochip_irq_map(struct irq_domain *d, unsigned int irq,
-+			    irq_hw_number_t hwirq)
-+{
-+	struct gpio_chip *chip = d->host_data;
-+
-+	irq_set_chip_and_handler(irq, chip->irqchip, chip->irq_handler);
-+	irq_set_chip_data(irq, chip);
-+#ifdef CONFIG_ARM
-+	set_irq_flags(irq, IRQF_VALID);
-+#else
-+	irq_set_noprobe(irq);
-+#endif
-+	irq_set_irq_type(irq, chip->irq_default_type);
-+
-+	return 0;
-+}
-+
-+static const struct irq_domain_ops gpiochip_domain_ops = {
-+	.map	= gpiochip_irq_map,
-+	/* Virtually all GPIO irqchips are twocell:ed */
-+	.xlate	= irq_domain_xlate_twocell,
-+};
-+
-+static int gpiochip_irq_reqres(struct irq_data *d)
-+{
-+	struct gpio_chip *chip = irq_data_get_irq_chip_data(d);
-+
-+	if (gpio_lock_as_irq(chip, d->hwirq)) {
-+		chip_err(chip,
-+			"unable to lock HW IRQ %lu for IRQ\n",
-+			d->hwirq);
-+		return -EINVAL;
-+	}
-+	return 0;
-+}
-+
-+static void gpiochip_irq_relres(struct irq_data *d)
-+{
-+	struct gpio_chip *chip = irq_data_get_irq_chip_data(d);
-+
-+	gpio_unlock_as_irq(chip, d->hwirq);
-+}
-+
-+static int gpiochip_to_irq(struct gpio_chip *chip, unsigned offset)
-+{
-+	return irq_find_mapping(chip->irqdomain, offset);
-+}
-+
-+/**
-+ * gpiochip_irqchip_remove() - removes an irqchip added to a gpiochip
-+ * @gpiochip: the gpiochip to remove the irqchip from
-+ *
-+ * This is called only from gpiochip_remove()
-+ */
-+static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip)
-+{
-+	if (gpiochip->irqdomain)
-+		irq_domain_remove(gpiochip->irqdomain);
-+
-+	if (gpiochip->irqchip) {
-+		gpiochip->irqchip->irq_request_resources = NULL;
-+		gpiochip->irqchip->irq_release_resources = NULL;
-+		gpiochip->irqchip = NULL;
-+	}
-+}
-+
-+/**
-+ * gpiochip_irqchip_add() - adds an irqchip to a gpiochip
-+ * @gpiochip: the gpiochip to add the irqchip to
-+ * @irqchip: the irqchip to add to the gpiochip
-+ * @first_irq: if not dynamically assigned, the base (first) IRQ to
-+ * allocate gpiochip irqs from
-+ * @handler: the irq handler to use (often a predefined irq core function)
-+ * @type: the default type for IRQs on this irqchip
-+ *
-+ * This function closely associates a certain irqchip with a certain
-+ * gpiochip, providing an irq domain to translate the local IRQs to
-+ * global irqs in the gpiolib core, and making sure that the gpiochip
-+ * is passed as chip data to all related functions. Driver callbacks
-+ * need to use container_of() to get their local state containers back
-+ * from the gpiochip passed as chip data. An irqdomain will be stored
-+ * in the gpiochip that shall be used by the driver to handle IRQ number
-+ * translation. The gpiochip will need to be initialized and registered
-+ * before calling this function.
-+ *
-+ * This function will handle two cell:ed simple IRQs. Everything else
-+ * need to be open coded.
-+ */
-+int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
-+			 struct irq_chip *irqchip,
-+			 unsigned int first_irq,
-+			 irq_flow_handler_t handler,
-+			 unsigned int type)
-+{
-+	struct device_node *of_node;
-+	unsigned int offset;
-+
-+	if (!gpiochip || !irqchip)
-+		return -EINVAL;
-+
-+	if (!gpiochip->dev) {
-+		pr_err("missing gpiochip .dev parent pointer\n");
-+		return -EINVAL;
-+	}
-+	of_node = gpiochip->dev->of_node;
-+#if CONFIG_OF_GPIO
-+	/*
-+	 * If the gpiochip has an assigned OF node this takes precendence
-+	 * FIXME: get rid of this and use gpiochip->dev->of_node everywhere
-+	 */
-+	if (gpiochip->of_node)
-+		of_node = gpiochip->of_node;
-+#endif
-+	gpiochip->irqchip = irqchip;
-+	gpiochip->irq_handler = handler;
-+	gpiochip->irq_default_type = type;
-+	gpiochip->to_irq = gpiochip_to_irq;
-+	gpiochip->irqdomain = irq_domain_add_simple(of_node,
-+					gpiochip->ngpio, first_irq,
-+					&gpiochip_domain_ops, gpiochip);
-+	if (!gpiochip->irqdomain) {
-+		gpiochip->irqchip = NULL;
-+		return -EINVAL;
-+	}
-+	irqchip->irq_request_resources = gpiochip_irq_reqres;
-+	irqchip->irq_release_resources = gpiochip_irq_relres;
-+
-+	/*
-+	 * Prepare the mapping since the irqchip shall be orthogonal to
-+	 * to any gpiochip calls. If the first_irq was zero, this is
-+	 * necessary to allocate descriptors for all IRQs.
-+	 */
-+	for (offset = 0; offset < gpiochip->ngpio; offset++)
-+		irq_create_mapping(gpiochip->irqdomain, offset);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(gpiochip_irqchip_add);
-+
-+#else /* CONFIG_GPIOLIB_IRQCHIP */
-+
-+static void gpiochip_irqchip_remove(struct gpio_chip *gpiochip) {}
-+
-+#endif /* CONFIG_GPIOLIB_IRQCHIP */
-+
- #ifdef CONFIG_PINCTRL
+-static int pl061_to_irq(struct gpio_chip *gc, unsigned offset)
+-{
+-	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+-
+-	return irq_create_mapping(chip->domain, offset);
+-}
+-
+ static int pl061_irq_type(struct irq_data *d, unsigned trigger)
+ {
+-	struct pl061_gpio *chip = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+ 	int offset = irqd_to_hwirq(d);
+ 	unsigned long flags;
+ 	u8 gpiois, gpioibe, gpioiev;
+@@ -194,7 +186,8 @@ static void pl061_irq_handler(unsigned irq, struct irq_desc *desc)
+ {
+ 	unsigned long pending;
+ 	int offset;
+-	struct pl061_gpio *chip = irq_desc_get_handler_data(desc);
++	struct gpio_chip *gc = irq_desc_get_handler_data(desc);
++	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+ 	struct irq_chip *irqchip = irq_desc_get_chip(desc);
  
- /**
-diff --git a/include/linux/gpio/driver.h b/include/linux/gpio/driver.h
-index 9fe283642253..c1c5c2368fc8 100644
---- a/include/linux/gpio/driver.h
-+++ b/include/linux/gpio/driver.h
-@@ -3,6 +3,9 @@
+ 	chained_irq_enter(irqchip, desc);
+@@ -203,7 +196,8 @@ static void pl061_irq_handler(unsigned irq, struct irq_desc *desc)
+ 	writeb(pending, chip->base + GPIOIC);
+ 	if (pending) {
+ 		for_each_set_bit(offset, &pending, PL061_GPIO_NR)
+-			generic_handle_irq(pl061_to_irq(&chip->gc, offset));
++			generic_handle_irq(irq_find_mapping(gc->irqdomain,
++							    offset));
+ 	}
  
- #include <linux/types.h>
- #include <linux/module.h>
-+#include <linux/irq.h>
-+#include <linux/irqchip/chained_irq.h>
-+#include <linux/irqdomain.h>
+ 	chained_irq_exit(irqchip, desc);
+@@ -211,7 +205,8 @@ static void pl061_irq_handler(unsigned irq, struct irq_desc *desc)
  
- struct device;
- struct gpio_desc;
-@@ -97,6 +100,17 @@ struct gpio_chip {
- 	bool			can_sleep;
- 	bool			exported;
+ static void pl061_irq_mask(struct irq_data *d)
+ {
+-	struct pl061_gpio *chip = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+ 	u8 mask = 1 << (irqd_to_hwirq(d) % PL061_GPIO_NR);
+ 	u8 gpioie;
  
-+#ifdef CONFIG_GPIOLIB_IRQCHIP
-+	/*
-+	 * With CONFIG_GPIO_IRQCHIP we get an irqchip inside the gpiolib
-+	 * to handle IRQs for most practical cases.
-+	 */
-+	struct irq_chip		*irqchip;
-+	struct irq_domain	*irqdomain;
-+	irq_flow_handler_t	irq_handler;
-+	unsigned int		irq_default_type;
-+#endif
-+
- #if defined(CONFIG_OF_GPIO)
- 	/*
- 	 * If CONFIG_OF is enabled, then all GPIO controllers described in the
-@@ -190,6 +204,21 @@ struct gpiod_lookup_table {
+@@ -223,7 +218,8 @@ static void pl061_irq_mask(struct irq_data *d)
  
- void gpiod_add_lookup_table(struct gpiod_lookup_table *table);
+ static void pl061_irq_unmask(struct irq_data *d)
+ {
+-	struct pl061_gpio *chip = irq_data_get_irq_chip_data(d);
++	struct gpio_chip *gc = irq_data_get_irq_chip_data(d);
++	struct pl061_gpio *chip = container_of(gc, struct pl061_gpio, gc);
+ 	u8 mask = 1 << (irqd_to_hwirq(d) % PL061_GPIO_NR);
+ 	u8 gpioie;
  
-+#ifdef CONFIG_GPIOLIB_IRQCHIP
-+
-+void gpiochip_set_chained_irqchip(struct gpio_chip *gpiochip,
-+		struct irq_chip *irqchip,
-+		int parent_irq,
-+		irq_flow_handler_t parent_handler);
-+
-+int gpiochip_irqchip_add(struct gpio_chip *gpiochip,
-+		struct irq_chip *irqchip,
-+		unsigned int first_irq,
-+		irq_flow_handler_t handler,
-+		unsigned int type);
-+
-+#endif /* CONFIG_GPIO_IRQCHIP */
-+
- #else /* CONFIG_GPIOLIB */
+@@ -233,50 +229,11 @@ static void pl061_irq_unmask(struct irq_data *d)
+ 	spin_unlock(&chip->lock);
+ }
  
- static inline struct gpio_chip *gpiod_to_chip(const struct gpio_desc *desc)
+-static int pl061_irq_reqres(struct irq_data *d)
+-{
+-	struct pl061_gpio *chip = irq_data_get_irq_chip_data(d);
+-
+-	if (gpio_lock_as_irq(&chip->gc, irqd_to_hwirq(d))) {
+-		dev_err(chip->gc.dev,
+-			"unable to lock HW IRQ %lu for IRQ\n",
+-			irqd_to_hwirq(d));
+-		return -EINVAL;
+-	}
+-	return 0;
+-}
+-
+-static void pl061_irq_relres(struct irq_data *d)
+-{
+-	struct pl061_gpio *chip = irq_data_get_irq_chip_data(d);
+-
+-	gpio_unlock_as_irq(&chip->gc, irqd_to_hwirq(d));
+-}
+-
+ static struct irq_chip pl061_irqchip = {
+ 	.name		= "pl061",
+ 	.irq_mask	= pl061_irq_mask,
+ 	.irq_unmask	= pl061_irq_unmask,
+ 	.irq_set_type	= pl061_irq_type,
+-	.irq_request_resources = pl061_irq_reqres,
+-	.irq_release_resources = pl061_irq_relres,
+-};
+-
+-static int pl061_irq_map(struct irq_domain *d, unsigned int irq,
+-			 irq_hw_number_t hwirq)
+-{
+-	struct pl061_gpio *chip = d->host_data;
+-
+-	irq_set_chip_and_handler(irq, &pl061_irqchip, handle_simple_irq);
+-	irq_set_chip_data(irq, chip);
+-	irq_set_irq_type(irq, IRQ_TYPE_NONE);
+-
+-	return 0;
+-}
+-
+-static const struct irq_domain_ops pl061_domain_ops = {
+-	.map	= pl061_irq_map,
+-	.xlate	= irq_domain_xlate_twocell,
+ };
+ 
+ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+@@ -314,7 +271,6 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 	chip->gc.direction_output = pl061_direction_output;
+ 	chip->gc.get = pl061_get_value;
+ 	chip->gc.set = pl061_set_value;
+-	chip->gc.to_irq = pl061_to_irq;
+ 	chip->gc.ngpio = PL061_GPIO_NR;
+ 	chip->gc.label = dev_name(dev);
+ 	chip->gc.dev = dev;
+@@ -334,15 +290,15 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 		return -ENODEV;
+ 	}
+ 
+-	irq_set_chained_handler(irq, pl061_irq_handler);
+-	irq_set_handler_data(irq, chip);
+-
+-	chip->domain = irq_domain_add_simple(adev->dev.of_node, PL061_GPIO_NR,
+-					     irq_base, &pl061_domain_ops, chip);
+-	if (!chip->domain) {
+-		dev_err(&adev->dev, "no irq domain\n");
+-		return -ENODEV;
++	ret = gpiochip_irqchip_add(&chip->gc, &pl061_irqchip,
++				   irq_base, handle_simple_irq,
++				   IRQ_TYPE_NONE);
++	if (ret) {
++		dev_info(&adev->dev, "could not add irqchip\n");
++		return ret;
+ 	}
++	gpiochip_set_chained_irqchip(&chip->gc, &pl061_irqchip,
++				     irq, pl061_irq_handler);
+ 
+ 	for (i = 0; i < PL061_GPIO_NR; i++) {
+ 		if (pdata) {
 -- 
 1.8.5.3
 
