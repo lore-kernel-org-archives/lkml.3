@@ -1,39 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718AbaCYRsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:48:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33262 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755643AbaCYRsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:48:12 -0400
-Date: Tue, 25 Mar 2014 18:46:49 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Khalid Aziz <khalid.aziz@oracle.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
-        viro@zeniv.linux.org.uk, gnomes@lxorguk.ukuu.org.uk, riel@redhat.com,
-        snorcht@gmail.com, dhowells@redhat.com, luto@amacapital.net,
-        daeseok.youn@gmail.com, ebiederm@xmission.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] Pre-emption control for userspace
-Message-ID: <20140325174624.GA15527@redhat.com>
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com> <1395767870-28053-1-git-send-email-khalid.aziz@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395767870-28053-1-git-send-email-khalid.aziz@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755788AbaCYRss (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:48:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55787 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754813AbaCYRVC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:21:02 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 19/81] drm/i915/dp: add native aux defer retry limit
+Date: Tue, 25 Mar 2014 10:15:32 -0700
+Message-Id: <1395767794-5012-20-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25, Khalid Aziz wrote:
->
->  fs/proc/base.c                                     |  89 ++++++++
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-This code can be simplified, but the real question is why do we need it.
+------------------
 
-Just add PR_SET_PREEMPT_DELAY ?
+From: Jani Nikula <jani.nikula@intel.com>
 
-Oleg.
+commit f51a44b9a6c4982cc25bfb3727de9bb893621ebc upstream.
+
+Retrying indefinitely places too much trust on the aux implementation of
+the sink devices.
+
+Reported-by: Daniel Martin <consume.noise@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=71267
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Tested-by: Theodore Ts'o <tytso@mit.edu>
+Tested-by: Sree Harsha Totakura <freedesktop@h.totakura.in>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/gpu/drm/i915/intel_dp.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index 394fa61..64c9d7e 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -491,6 +491,7 @@ intel_dp_aux_native_write(struct intel_dp *intel_dp,
+ 	uint8_t	msg[20];
+ 	int msg_bytes;
+ 	uint8_t	ack;
++	int retry;
+ 
+ 	intel_dp_check_edp(intel_dp);
+ 	if (send_bytes > 16)
+@@ -501,18 +502,20 @@ intel_dp_aux_native_write(struct intel_dp *intel_dp,
+ 	msg[3] = send_bytes - 1;
+ 	memcpy(&msg[4], send, send_bytes);
+ 	msg_bytes = send_bytes + 4;
+-	for (;;) {
++	for (retry = 0; retry < 7; retry++) {
+ 		ret = intel_dp_aux_ch(intel_dp, msg, msg_bytes, &ack, 1);
+ 		if (ret < 0)
+ 			return ret;
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+-			break;
++			return send_bytes;
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+ 			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
+-	return send_bytes;
++
++	DRM_ERROR("too many retries, giving up\n");
++	return -EIO;
+ }
+ 
+ /* Write a single byte to the aux channel in native mode */
+@@ -534,6 +537,7 @@ intel_dp_aux_native_read(struct intel_dp *intel_dp,
+ 	int reply_bytes;
+ 	uint8_t ack;
+ 	int ret;
++	int retry;
+ 
+ 	intel_dp_check_edp(intel_dp);
+ 	msg[0] = AUX_NATIVE_READ << 4;
+@@ -544,7 +548,7 @@ intel_dp_aux_native_read(struct intel_dp *intel_dp,
+ 	msg_bytes = 4;
+ 	reply_bytes = recv_bytes + 1;
+ 
+-	for (;;) {
++	for (retry = 0; retry < 7; retry++) {
+ 		ret = intel_dp_aux_ch(intel_dp, msg, msg_bytes,
+ 				      reply, reply_bytes);
+ 		if (ret == 0)
+@@ -561,6 +565,9 @@ intel_dp_aux_native_read(struct intel_dp *intel_dp,
+ 		else
+ 			return -EIO;
+ 	}
++
++	DRM_ERROR("too many retries, giving up\n");
++	return -EIO;
+ }
+ 
+ static int
+-- 
+1.8.3.2
 
