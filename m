@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759AbaCYJoK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 05:44:10 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:51322 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752588AbaCYJoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 05:44:07 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2P9hdXX008113, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <chris@printf.net>, <sameo@linux.intel.com>
-CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
-        <ulf.hansson@linaro.org>, <devel@linuxdriverproject.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
-        Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 1/2] mmc: rtsx: add R1-no-CRC mmc command type handle
-Date: Tue, 25 Mar 2014 17:47:15 +0800
-Message-ID: <d450ec5a404692c840e46cc0ab3147fae607d22a.1395625491.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1395625491.git.micky_ching@realsil.com.cn>
-References: <cover.1395625491.git.micky_ching@realsil.com.cn>
+	id S1752866AbaCYJtp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 05:49:45 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:54847 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414AbaCYJtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 05:49:42 -0400
+Message-ID: <53315121.3040900@ti.com>
+Date: Tue, 25 Mar 2014 11:49:21 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+To: George Cherian <george.cherian@ti.com>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+CC: <balbi@ti.com>, <kishon@ti.com>, <rob@landley.net>, <galak@codeaurora.org>,
+        <ijc+devicetree@hellion.org.uk>, <mark.rutland@arm.com>,
+        <pawel.moll@arm.com>, <robh+dt@kernel.org>, <tony@atomide.com>,
+        <anatol.pomozov@gmail.com>, <bcousson@baylibre.com>
+Subject: Re: [PATCH v5 2/5] ARM: dts: am43xx clock data
+References: <1395223803-4714-1-git-send-email-george.cherian@ti.com> <1395223803-4714-3-git-send-email-george.cherian@ti.com>
+In-Reply-To: <1395223803-4714-3-git-send-email-george.cherian@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+On 03/19/2014 12:10 PM, George Cherian wrote:
+> Add USB and USB PHY reference clock data
+> 
+> Signed-off-by: George Cherian <george.cherian@ti.com>
 
-commit a27fbf2f067b0cd6f172c8b696b9a44c58bfaa7a
-<mmc: add ignorance case for CMD13 CRC error>
-produced a cmd.flags unhandled in realtek pci host driver.
-This will make MMC card failed initialize, this patch is
-used to handle the new cmd.flags condition and MMC card can be used.
+Acked-by: Roger Quadros <rogerq@ti.com>
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/mmc/host/rtsx_pci_sdmmc.c |    3 +++
- 1 file changed, 3 insertions(+)
+cheers,
+-roger
 
-diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-index 5fb994f..0d8904a 100644
---- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-+++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-@@ -346,6 +346,9 @@ static void sd_send_cmd(struct realtek_pci_sdmmc *host, struct mmc_command *cmd)
- 	case MMC_RSP_R1:
- 		rsp_type = SD_RSP_TYPE_R1;
- 		break;
-+	case MMC_RSP_R1 & ~MMC_RSP_CRC:
-+		rsp_type = SD_RSP_TYPE_R1 | SD_NO_CHECK_CRC7;
-+		break;
- 	case MMC_RSP_R1B:
- 		rsp_type = SD_RSP_TYPE_R1b;
- 		break;
--- 
-1.7.9.5
+> ---
+>  arch/arm/boot/dts/am43xx-clocks.dtsi | 32 ++++++++++++++++++++++++++++++++
+>  1 file changed, 32 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/am43xx-clocks.dtsi b/arch/arm/boot/dts/am43xx-clocks.dtsi
+> index 142009c..5171d3e 100644
+> --- a/arch/arm/boot/dts/am43xx-clocks.dtsi
+> +++ b/arch/arm/boot/dts/am43xx-clocks.dtsi
+> @@ -653,4 +653,36 @@
+>  		clocks = <&clk_32768_ck>, <&clk_32k_tpm_ck>;
+>  		reg = <0x4260>;
+>  	};
+> +
+> +	usb_phy0_always_on_clk32k: usb_phy0_always_on_clk32k {
+> +        	#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +	        clocks = <&usbphy_32khz_clkmux>;
+> +	        ti,bit-shift = <8>;
+> +	        reg = <0x2a40>;
+> +	};
+> +
+> +	usb_phy1_always_on_clk32k: usb_phy1_always_on_clk32k {
+> +        	#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +	        clocks = <&usbphy_32khz_clkmux>;
+> +	        ti,bit-shift = <8>;
+> +	        reg = <0x2a48>;
+> +	};
+> +
+> +	usb_otg_ss0_refclk960m: usb_otg_ss0_refclk960m {
+> +		#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +		clocks = <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift = <8>;
+> +	        reg = <0x8a60>;
+> +	};
+> +
+> +	usb_otg_ss1_refclk960m: usb_otg_ss1_refclk960m {
+> +		#clock-cells = <0>;
+> +	        compatible = "ti,gate-clock";
+> +		clocks = <&dpll_per_clkdcoldo>;
+> +	        ti,bit-shift = <8>;
+> +		reg = <0x8a68>;
+> +	};
+>  };
+> 
 
