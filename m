@@ -1,64 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbaCYRBI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:01:08 -0400
-Received: from quartz.orcorp.ca ([184.70.90.242]:41815 "EHLO quartz.orcorp.ca"
+	id S1754096AbaCYRDu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:03:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaCYRBG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:01:06 -0400
-Date: Tue, 25 Mar 2014 11:01:02 -0600
-From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        angus.clark@st.com, kernel@stlinux.com, linux-mtd@lists.infradead.org,
-        pekon@ti.com, computersforpeace@gmail.com, dwmw2@infradead.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: Re: [RFC 02/47] mtd: nand: add ONFI NAND Timing Mode Specifications
-Message-ID: <20140325170102.GC30641@obsidianresearch.com>
-References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
- <1395735604-26706-3-git-send-email-lee.jones@linaro.org>
+	id S1751907AbaCYRDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:03:48 -0400
+Date: Tue, 25 Mar 2014 13:03:25 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org, dm-devel@redhat.com,
+        linux-kernel@vger.kernel.org, "Alasdair G. Kergon" <agk@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>
+Subject: Re: slab_common: fix the check for duplicate slab names
+Message-ID: <20140325170324.GC580@redhat.com>
+References: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395735604-26706-3-git-send-email-lee.jones@linaro.org>
+In-Reply-To: <alpine.LRH.2.02.1403041711300.29476@file01.intranet.prod.int.rdu2.redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 08:19:19AM +0000, Lee Jones wrote:
-> This patch adds a new structure, 'nand_timing_spec', to capture the A/C
-> timing characteristics of NAND devices.
+[Sorry for top-post but...]
 
-Boris BREZILLON <b.brezillon.dev@gmail.com> has been working on a
-similar patch for a time now, and I think has an implementation for
-the sunxi driver.
- 
-> some of the major NAND manufacturers (e.g. Samsung, Toshiba). Here we
-> have followed broadly the ONFI timing definitions.
+This patch still isn't upstream.  Who should be shepherding it to Linus?
 
-Timing specifications that are not precisely defined are
-useless.. I would stick entirely with the well defined ONFI ones
-until a need arises..
+Without it we're seeing crashes on Fedora when running regression tests
+that use dm-raid (dm target that wraps MD raid), e.g.:
 
-> + * Note, 'tR' field (maximum page read time) is extracted from the ONFI
-> + * parameter page during device probe.
-> + */
-> +struct nand_timing_spec nand_onfi_timing_specs[] = {
+6,484484,682379136295,-;md: mdX: recovery done.
+6,484485,682379145308,-;bio: create slab <bio-0> at 0
+6,484486,682379147581,-;md/raid:mdX: device dm-17 operational as raid disk 4
+6,484487,682379149216,-;md/raid:mdX: device dm-11 operational as raid disk 2
+6,484488,682379150829,-;md/raid:mdX: device dm-20 operational as raid disk 1
+6,484489,682379152369,-;md/raid:mdX: device dm-9 operational as raid disk 0
+3,484490,682379153954,-;kmem_cache_sanity_check (raid6-ffff880014e8b010): Cache name already exists.
+4,484491,682379155824,-;CPU: 0 PID: 11228 Comm: lvm Not tainted 3.14.0-0.rc6.git0.1.fc21.x86_64 #1
+4,484492,682379157704,-;Hardware name: Red Hat KVM, BIOS 0.5.1 01/01/2007
+4,484493,682379159298,-; 0000000000000000 00000000a0bb80c5 ffff88003428d9d8 ffffffff816edd6b
+4,484494,682379161238,-; ffff880076b51700 ffff88003428da50 ffffffff811982c3 0000000000000000
+4,484495,682379163199,-; 0000000000000000 0000000000000790 0000000000000000 0000000000000000
+4,484496,682379165206,-;Call Trace:
+4,484497,682379166523,-; [<ffffffff816edd6b>] dump_stack+0x45/0x56
+4,484498,682379168098,-; [<ffffffff811982c3>] kmem_cache_create_memcg+0x143/0x3e0
+4,484499,682379169854,-; [<ffffffff8119858b>] kmem_cache_create+0x2b/0x30
+4,484500,682379171541,-; [<ffffffffa020fc6c>] setup_conf+0x5cc/0x810 [raid456]
+4,484501,682379173264,-; [<ffffffff811771ad>] ? mempool_create_node+0xdd/0x140
+4,484502,682379174988,-; [<ffffffff81176dd0>] ? mempool_alloc_slab+0x20/0x20
+4,484503,682379176728,-; [<ffffffffa0210a38>] run+0x868/0xa60 [raid456]
+4,484504,682379178380,-; [<ffffffff81220a3e>] ? bioset_create+0x21e/0x2e0
+4,484505,682379180038,-; [<ffffffff81563d3a>] md_run+0x3fa/0x980
+4,484506,682379181631,-; [<ffffffff81221778>] ? bio_put+0x78/0x90
+4,484507,682379183339,-; [<ffffffff8155badd>] ? sync_page_io+0x8d/0x110
+4,484508,682379185000,-; [<ffffffffa0227570>] raid_ctr+0xf30/0x1389 [dm_raid]
+4,484509,682379186771,-; [<ffffffff8156f857>] dm_table_add_target+0x177/0x460
+4,484510,682379188538,-; [<ffffffff81572d57>] table_load+0x157/0x380
+4,484511,682379190198,-; [<ffffffff81572c00>] ? retrieve_status+0x1c0/0x1c0
+4,484512,682379191925,-; [<ffffffff815739c5>] ctl_ioctl+0x255/0x500
+4,484513,682379193589,-; [<ffffffff811e8b00>] ? do_sync_write+0x50/0xa0
+4,484514,682379195256,-; [<ffffffff81573c83>] dm_ctl_ioctl+0x13/0x20
+4,484515,682379196900,-; [<ffffffff811fc790>] do_vfs_ioctl+0x2e0/0x4a0
+4,484516,682379198600,-; [<ffffffff811eb931>] ? __sb_end_write+0x31/0x60
+4,484517,682379200286,-; [<ffffffff811e9392>] ? vfs_write+0x172/0x1e0
+4,484518,682379201957,-; [<ffffffff811fc9f1>] SyS_ioctl+0xa1/0xc0
+4,484519,682379203651,-; [<ffffffff816fe129>] system_call_fastpath+0x16/0x1b
+3,484520,682379205496,-;md/raid:mdX: couldn't allocate 0kB for buffers
 
-const?
+On Tue, Mar 04 2014 at  5:13pm -0500,
+Mikulas Patocka <mpatocka@redhat.com> wrote:
 
-> +	/*
-> +	 * ONFI Timing Mode '0' (supported on all ONFI compliant devices)
-> +	 */
-> +	[0] = {
-> +		.tCLS	= 50,
-> +		.tCS	= 70,
-> +		.tALS	= 50,
-
-Use picoseconds, ns is already loosing precision at the higher timing
-modes.
-
-Cheers,
-Jason
+> The patch 3e374919b314f20e2a04f641ebc1093d758f66a4 is supposed to fix the
+> problem where kmem_cache_create incorrectly reports duplicate cache name
+> and fails. The problem is described in the header of that patch.
+> 
+> However, the patch doesn't really fix the problem because of these
+> reasons:
+> 
+> * the logic to test for debugging is reversed. It was intended to perform
+>   the check only if slub debugging is enabled (which implies that caches
+>   with the same parameters are not merged). Therefore, there should be
+>   #if !defined(CONFIG_SLUB) || defined(CONFIG_SLUB_DEBUG_ON)
+>   The current code has the condition reversed and performs the test if
+>   debugging is disabled.
+> 
+> * slub debugging may be enabled or disabled based on kernel command line,
+>   CONFIG_SLUB_DEBUG_ON is just the default settings. Therefore the test
+>   based on definition of CONFIG_SLUB_DEBUG_ON is unreliable.
+> 
+> This patch fixes the problem by removing the test
+> "!defined(CONFIG_SLUB_DEBUG_ON)". Therefore, duplicate names are never
+> checked if the SLUB allocator is used.
+> 
+> Note to stable kernel maintainers: when backporint this patch, please
+> backport also the patch 3e374919b314f20e2a04f641ebc1093d758f66a4.
+> 
+> Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+> Cc: stable@vger.kernel.org	# 3.6+
+> 
+> ---
+>  mm/slab_common.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> Index: linux-3.14-rc5/mm/slab_common.c
+> ===================================================================
+> --- linux-3.14-rc5.orig/mm/slab_common.c	2014-03-04 22:47:02.000000000 +0100
+> +++ linux-3.14-rc5/mm/slab_common.c	2014-03-04 22:47:08.000000000 +0100
+> @@ -56,7 +56,7 @@ static int kmem_cache_sanity_check(struc
+>  			continue;
+>  		}
+>  
+> -#if !defined(CONFIG_SLUB) || !defined(CONFIG_SLUB_DEBUG_ON)
+> +#if !defined(CONFIG_SLUB)
+>  		/*
+>  		 * For simplicity, we won't check this in the list of memcg
+>  		 * caches. We have control over memcg naming, and if there
+> 
+> --
+> dm-devel mailing list
+> dm-devel@redhat.com
+> https://www.redhat.com/mailman/listinfo/dm-devel
