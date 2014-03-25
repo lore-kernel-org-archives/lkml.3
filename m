@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755362AbaCYUpO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:45:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45963 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755332AbaCYUpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:45:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,730,1389772800"; 
-   d="scan'208";a="506606917"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
-        Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] tools, perf: Allow the user to disable time stamps
-Date: Tue, 25 Mar 2014 13:44:32 -0700
-Message-Id: <1395780272-27106-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1755395AbaCYUpa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:45:30 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:61025 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755121AbaCYUp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 16:45:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+Date: Tue, 25 Mar 2014 21:45:26 +0100
+Message-ID: <CACRpkdbFj+Msq5HjcV8N5A6TN9sic1+Y2v9aWAMa2g+0zO=D1Q@mail.gmail.com>
+Subject: Re: dwapb: a bug fix a few cleanups, v2
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alan Tull <delicious.quinoa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+On Sat, Mar 22, 2014 at 5:16 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
 
-[post with updated description]
+> Since Alan said that he had drop two patches from earlier series to make
+> it work I decided to spent some extra time to check if this is really the
+> case.
+> I dropped "gpio: dwapb: do not create the irq mapping upfront." until the
+> discussion there is over.
+>
+> This series has been tested back ported and tested on a v3.13 kernel with
+> the dummy test [0] here. It was tested on the Arrow board and the dev kit. I
+> tested edge and level interrupts. On the Arrow board releasing the button
+> causes a lot of interrupts so I assume debouncing is no working well
+> there. On the dev kit I see only one interrupt. If I realse it really
+> slowly, then the extra interrupts are visible there as well but way less.
+>
+> [0] http://breakpoint.cc/gpio-dwapb-test.c
 
-Time stamps are always implicitely enabled for record currently.
-The old --time/-T option is a nop.
+Okay so can we have Jamie and Sebastian H. have a look at this
+series?
 
-The time stamps are needed to handle library mmaps correctly.
-This mainly matters at program startup, but is not useful
-when profiling long running programs.
-
-Allow the user to disable timestamps by using --no-time
-
-This can cause some minor misaccounting, but lowers the
-size of the perf.data nicely:
-
-% perl -e 'while(1) {}' &
-[1] 5827
-% perf record -p 5827 --no-time -c 1000003 sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.089 MB perf.data (~3872 samples) ]
-% perf record -p 5827  -c 1000003  sleep 1
-[ perf record: Woken up 1 times to write data ]
-[ perf record: Captured and wrote 0.114 MB perf.data (~4967 samples) ]
-
-22% smaller data file, even though we got more samples.
-It also seems to speed up perf slightly, that is why we get more
-samples.
-
-The defaults are unchanged.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/builtin-record.c | 1 +
- tools/perf/util/evsel.c     | 9 ++++++---
- 2 files changed, 7 insertions(+), 3 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index 3c394bf..8e92d3c 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -800,6 +800,7 @@ static const char * const record_usage[] = {
-  */
- static struct record record = {
- 	.opts = {
-+		.sample_time	     = true,
- 		.mmap_pages	     = UINT_MAX,
- 		.user_freq	     = UINT_MAX,
- 		.user_interval	     = ULLONG_MAX,
-diff --git a/tools/perf/util/evsel.c b/tools/perf/util/evsel.c
-index 22e18a2..a15efc4 100644
---- a/tools/perf/util/evsel.c
-+++ b/tools/perf/util/evsel.c
-@@ -613,9 +613,12 @@ void perf_evsel__config(struct perf_evsel *evsel, struct record_opts *opts)
- 	if (opts->period)
- 		perf_evsel__set_sample_bit(evsel, PERIOD);
- 
--	if (!perf_missing_features.sample_id_all &&
--	    (opts->sample_time || !opts->no_inherit ||
--	     target__has_cpu(&opts->target) || per_cpu))
-+	/*
-+	 * When the user explicitely disabled time don't force it here.
-+	 */
-+	if (opts->sample_time &&
-+	    (!perf_missing_features.sample_id_all &&
-+	    (!opts->no_inherit || target__has_cpu(&opts->target) || per_cpu)))
- 		perf_evsel__set_sample_bit(evsel, TIME);
- 
- 	if (opts->raw_samples) {
--- 
-1.8.5.3
-
+Yours,
+Linus Walleij
