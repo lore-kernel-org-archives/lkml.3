@@ -1,79 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467AbaCYIXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:23:22 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:19747 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753437AbaCYIXQ (ORCPT
+	id S1753331AbaCYIVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:21:44 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:56649 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753274AbaCYIVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:23:16 -0400
-Message-ID: <53314017.8040104@oracle.com>
-Date: Tue, 25 Mar 2014 16:36:39 +0800
-From: "zheng.li" <zheng.x.li@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
-MIME-Version: 1.0
-To: Ding Tianhong <dingtianhong@huawei.com>
-CC: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net,
-        linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
- value to 1 in tlb and alb mode.
-References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com> <5330FB34.4090005@huawei.com>
-In-Reply-To: <5330FB34.4090005@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 25 Mar 2014 04:21:40 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
+        pekon@ti.com
+Subject: [RFC 42/47] mtd: nand: stm_nand_bch: add read and write OOB (BCH)
+Date: Tue, 25 Mar 2014 08:19:59 +0000
+Message-Id: <1395735604-26706-43-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年03月25日 11:42, Ding Tianhong 写道:
-> On 2014/3/25 11:00, Zheng Li wrote:
->> In bond mode tlb and alb, inactive slaves should keep inactive flag to
->> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
->> (for example ARP requests) which will arrive inactive slaves on same host from switch,
->> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
->> packets to produce a wrong entry in forward table. Typical situation is domu send some
->> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
->> packets go back to inactive slave from switch, because the inactive slave's inactive
->> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
->> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
->>
->> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->> ---
->>  drivers/net/bonding/bond_main.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->> index e5628fc..8761df6 100644
->> --- a/drivers/net/bonding/bond_main.c
->> +++ b/drivers/net/bonding/bond_main.c
->> @@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
->>  				&& (slave != bond->curr_active_slave)) {
->>  				bond_set_slave_inactive_flags(slave,
->>  							      BOND_SLAVE_NOTIFY_NOW);
->> -			} else {
->> +			} else if (!bond_is_lb(bond)) {
->>  				bond_set_slave_active_flags(slave,
->>  							    BOND_SLAVE_NOTIFY_NOW);
->>  			}
->>
-> I think you did not fix the problem completely, the state monitor will change the status for the slaves
-> and the inactive slave still could receive the broadcast.
+Provide functions to read and write to the Out-Of-Bounds (OOB) area.
 
-Had tested, it can fix the issue, verified by our QA.
-Default set slave of bond as inactive when add a slave to bond, when
-link UP, just set one slave as current active slave and clear its
-inactive flag, the inactive slave's inactive flag will keep the value of 1.
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+---
+ drivers/mtd/nand/stm_nand_bch.c | 107 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 107 insertions(+)
 
-
-> 
-> Regards
-> Ding
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-
+diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
+index 38658b8..389ccee 100644
+--- a/drivers/mtd/nand/stm_nand_bch.c
++++ b/drivers/mtd/nand/stm_nand_bch.c
+@@ -1218,6 +1218,111 @@ static int flex_do_write_ops(struct nandi_controller *nandi,
+ 	return 0;
+ }
+ 
++static char *mtd_oob_mode_strs[] = {"PLACE", "AUTO", "RAW"};
++
++static int bch_mtd_read_and_write_oob(struct mtd_info *mtd, loff_t tofrom,
++				      struct mtd_oob_ops *ops,
++				      bool read)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct nandi_controller *nandi = chip->priv;
++	uint32_t page_mask = mtd->writesize - 1;
++	int ret;
++
++	dev_dbg(nandi->dev, "%s: 0x%012llx [page = %u, oob = %u mode = %s]\n",
++		__func__, tofrom,
++		(ops->datbuf ? ops->len : 0),
++		(ops->oobbuf ? ops->ooblen : 0),
++		mtd_oob_mode_strs[ops->mode]);
++
++	if (!ops->oobbuf && ops->mode != MTD_OPS_RAW) {
++		if (read)
++			return mtd_read(mtd, tofrom, ops->len,
++					&ops->retlen, ops->datbuf);
++		else
++			return mtd_write(mtd, tofrom, ops->len,
++					 &ops->retlen, ops->datbuf);
++	}
++
++	ops->oobretlen = 0;
++	ops->retlen = 0;
++
++	/*
++	 * We report OOB as unavailable (i.e. oobavail = 0), therefore nothing
++	 * should call this
++	 */
++	if (ops->oobbuf && ops->mode == MTD_OPS_AUTO_OOB)
++		return -ENOTSUPP;
++
++	/* Not currently supported by MTD */
++	if (ops->datbuf && ops->oobbuf && ops->mode == MTD_OPS_PLACE_OOB)
++		return -ENOTSUPP;
++
++	/* Do not allow oob reads with ooboffs */
++	if (ops->oobbuf && ops->ooboffs)
++		return -ENOTSUPP;
++
++	/* Do not allow reads past end of device */
++	if (ops->datbuf && (tofrom + ops->len) > mtd->size) {
++		dev_err(nandi->dev, "attempt %s beyond end of device\n",
++			read ? "read" : "write");
++		return -EINVAL;
++	}
++
++	if (ops->oobbuf &&
++	    (tofrom + mtd->writesize * (ops->ooblen / mtd->oobsize))
++	    > mtd->size) {
++		dev_err(nandi->dev, "attempt %s beyond end of device\n",
++			read ? "read" : "write");
++		return -EINVAL;
++	}
++
++	/* Do not allow non-aligned reads/writes */
++	if ((tofrom & page_mask) ||
++	    (ops->datbuf && (ops->len & page_mask)) ||
++	    (ops->oobbuf && (ops->ooblen % mtd->oobsize))) {
++		dev_err(nandi->dev, "attempt to %s non-aligned data\n",
++			read ? "read" : "write");
++		return -EINVAL;
++	}
++
++	/* Do not allow inconsistent data and oob lengths */
++	if (ops->datbuf && ops->oobbuf &&
++	    (ops->len / mtd->writesize != ops->ooblen / mtd->oobsize)) {
++		dev_err(nandi->dev,
++			"data length inconsistent with oob length\n");
++		return -EINVAL;
++	}
++
++	nand_get_device(mtd, read ? FL_READING : FL_WRITING);
++
++	if (!read && flex_check_wp(nandi)) {
++		dev_dbg(nandi->dev, "device is write-protected\n");
++		return -EIO;
++	}
++
++	if (read)
++		ret = flex_do_read_ops(nandi, tofrom, ops);
++	else
++		ret = flex_do_write_ops(nandi, tofrom, ops);
++
++	nand_release_device(mtd);
++
++	return ret;
++}
++
++static int bch_mtd_read_oob(struct mtd_info *mtd, loff_t from,
++			    struct mtd_oob_ops *ops)
++{
++	return bch_mtd_read_and_write_oob(mtd, from, ops, true);
++}
++
++static int bch_mtd_write_oob(struct mtd_info *mtd, loff_t to,
++			     struct mtd_oob_ops *ops)
++{
++	return bch_mtd_read_and_write_oob(mtd, to, ops, false);
++}
++
+ static int bch_mtd_block_isbad(struct mtd_info *mtd, loff_t offs)
+ {
+ 	struct nand_chip *chip = mtd->priv;
+@@ -1454,6 +1559,8 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 	mtd->subpage_sft = 0;
+ 
+ 	mtd->_erase = bch_mtd_erase;
++	mtd->_read_oob = bch_mtd_read_oob;
++	mtd->_write_oob = bch_mtd_write_oob;
+ 	mtd->_block_isbad = bch_mtd_block_isbad;
+ 	mtd->_block_markbad = bch_mtd_block_markbad;
+ 
+-- 
+1.8.3.2
 
