@@ -1,205 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144AbaCYNsE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 09:48:04 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:42036 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaCYNsA (ORCPT
+	id S1753187AbaCYNyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 09:54:04 -0400
+Received: from mail-yh0-f54.google.com ([209.85.213.54]:56166 "EHLO
+	mail-yh0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752360AbaCYNyB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 09:48:00 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-dd-533188f60206
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Yong-Taek Lee <ytk.lee@samsung.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] mm/page_alloc: fix freeing of MIGRATE_RESERVE
- migratetype pages
-Date: Tue, 25 Mar 2014 14:47:15 +0100
-Message-id: <4172657.DtyuUtBQfn@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-In-reply-to: <532C49BF.8090001@suse.cz>
-References: <3269714.29dGMiCR2L@amdc1032> <532C49BF.8090001@suse.cz>
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=ISO-8859-1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsVy+t9jAd1vHYbBBm/XW1g8/dTHYnF51xw2
-	i3tr/rNarD1yl91i8rtnjBazG/sYLR6v53Zg91iwqdRj06dJ7B59W1YxepxZcITdY/Ppao/P
-	m+QC2KK4bFJSczLLUov07RK4Mtbu28xUsM+44tSPI6wNjI80uhg5OSQETCRmtP1lhLDFJC7c
-	W8/WxcjFISSwiFHi/7Y57BBOC5PE82vNzCBVbAJWEhPbV4F1iAioSDzacJQVpIhZ4DSjxK2t
-	X1hAEsICkRIbfs9kA7FZBFQljk/ZzgRi8wpoShz4dgKsWVTAU2LH9pVgNZwC6hL7e7aygthC
-	Ai4SN1Z1sEPUC0r8mHwPbCazgLzEvv1TWSFsHYn9rdPYJjAKzEJSNgtJ2SwkZQsYmVcxiqYW
-	JBcUJ6XnGukVJ+YWl+al6yXn525iBAf7M+kdjKsaLA4xCnAwKvHwbjA1CBZiTSwrrsw9xCjB
-	wawkwpvVbhgsxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1Oq
-	gVHtb5vPjDb+65t53d+GCj3y/2+fqbj2f5mwOsvjrWyrfnnb6Fu+nOASb/VWmX2qOvuE52tl
-	ZW7+ln+7vD9vy/odmzft00ieFzet4r3t6mNLXua557FZr9UuOcvdd4ql0+vA3/Pa2vNK3fzT
-	Z88xXm4velT6g5dUuYRh3XdWUV+elzHrKuNSLZRYijMSDbWYi4oTAc4iVfpyAgAA
+	Tue, 25 Mar 2014 09:54:01 -0400
+Message-ID: <53318A74.7080604@gmail.com>
+Date: Tue, 25 Mar 2014 10:53:56 -0300
+From: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Kieran Clancy <clancy.kieran@gmail.com>,
+        Lan Tianyu <lantianyu1986@gmail.com>
+CC: Stefan Biereigel <security@biereigel-wb.de>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Stefan Biereigel <stefan@biereigel.de>, Len Brown <lenb@kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, San Zamoyski <san@plusnet.pl>,
+        "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+In-Reply-To: <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I bet that his _WAK dsdt method isn't re-checking the lid state on resume
+(maybe I'm wrong).
 
-Hi,
+I retested on my system just to make sure, and the lid is correctly reported open
+always after resume from a sleep by closing the lid, using a different kernel with that same patch.
 
-On Friday, March 21, 2014 03:16:31 PM Vlastimil Babka wrote:
-> On 03/06/2014 06:35 PM, Bartlomiej Zolnierkiewicz wrote:
-> > Pages allocated from MIGRATE_RESERVE migratetype pageblocks
-> > are not freed back to MIGRATE_RESERVE migratetype free
-> > lists in free_pcppages_bulk()->__free_one_page() if we got
-> > to free_pcppages_bulk() through drain_[zone_]pages().
-> > The freeing through free_hot_cold_page() is okay because
-> > freepage migratetype is set to pageblock migratetype before
-> > calling free_pcppages_bulk().
-> 
-> I think this is somewhat misleading and got me confused for a while. 
-> It's not about the call path of free_pcppages_bulk(), but about the
-> fact that rmqueue_bulk() has been called at some point to fill up the 
-> pcp lists, and had to resort to __rmqueue_fallback(). So, going through 
-> free_hot_cold_page() might give you correct migratetype for the last 
-> page freed, but the pcp lists may still contain misplaced pages from 
-> earlier rmqueue_bulk().
+My system is the Samsung Series 5 NP530U3C in which the patch works fine:
+      
+           Manufacturer: SAMSUNG ELECTRONICS CO., LTD.
+           Product Name: 530U3C/530U4C
 
-Ok, you're right.  I'll fix this.
+"sudo acpi_listen" shows the following on resume:
 
-> > If pages of MIGRATE_RESERVE
-> > migratetype end up on the free lists of other migratetype
-> > whole Reserved pageblock may be later changed to the other
-> > migratetype in __rmqueue_fallback() and it will be never
-> > changed back to be a Reserved pageblock.  Fix the issue by
-> > moving freepage migratetype setting from rmqueue_bulk() to
-> > __rmqueue[_fallback]() and preserving freepage migratetype
-> > as an original pageblock migratetype for MIGRATE_RESERVE
-> > migratetype pages.
-> 
-> Actually wouldn't the easiest solution to this particular problem to 
-> check current pageblock migratetype in try_to_steal_freepages() and 
-> disallow changing it. However I agree that preventing the misplaced page 
-> in the first place would be even better.
-> 
-> > The problem was introduced in v2.6.31 by commit ed0ae21
-> > ("page allocator: do not call get_pageblock_migratetype()
-> > more than necessary").
-> >
-> > Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> > Reported-by: Yong-Taek Lee <ytk.lee@samsung.com>
-> > Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-> > Cc: Mel Gorman <mgorman@suse.de>
-> > Cc: Hugh Dickins <hughd@google.com>
-> > ---
-> > v2:
-> > - updated patch description, there is no __zone_pcp_update()
-> >    in newer kernels
-> > v3:
-> > - set freepage migratetype in __rmqueue[_fallback]()
-> >    instead of rmqueue_bulk() (per Mel's request)
-> >
-> >   mm/page_alloc.c |   27 ++++++++++++++++++---------
-> >   1 file changed, 18 insertions(+), 9 deletions(-)
-> >
-> > Index: b/mm/page_alloc.c
-> > ===================================================================
-> > --- a/mm/page_alloc.c	2014-03-06 18:10:21.884422983 +0100
-> > +++ b/mm/page_alloc.c	2014-03-06 18:10:27.016422895 +0100
-> > @@ -1094,7 +1094,7 @@ __rmqueue_fallback(struct zone *zone, in
-> >   	struct free_area *area;
-> >   	int current_order;
-> >   	struct page *page;
-> > -	int migratetype, new_type, i;
-> > +	int migratetype, new_type, mt = start_migratetype, i;
-> 
-> A better naming would help, "mt" and "migratetype" are the same thing 
-> and it gets too confusing.
+      video GFX0 00000080 00000000
+      button/lid LID0 00000080 00000001
+      button/lid LID0 00000080 00000002
 
-Well, yes, though 'mt' is short and the check code is consistent with
-the corresponding code in rmqueue_bulk().
+"cat /proc/acpi/button/lid/LID0/state" shows its open always on resume. I suspended
+several times, and on each time it was open.
 
-Do you have a proposal for a better name for this variable?
+I bet that that system's _WAK method doesn't recheck the lid, I might be wrong.
+*Stefan*: Can you extract that method and send it? Something like this:
 
-> >
-> >   	/* Find the largest possible block of pages in the other list */
-> >   	for (current_order = MAX_ORDER-1; current_order >= order;
-> > @@ -1125,6 +1125,14 @@ __rmqueue_fallback(struct zone *zone, in
-> >   			expand(zone, page, order, current_order, area,
-> >   			       new_type);
-> >
-> > +			if (IS_ENABLED(CONFIG_CMA)) {
-> > +				mt = get_pageblock_migratetype(page);
-> > +				if (!is_migrate_cma(mt) &&
-> > +				    !is_migrate_isolate(mt))
-> > +					mt = start_migratetype;
-> > +			}
-> > +			set_freepage_migratetype(page, mt);
-> > +
-> >   			trace_mm_page_alloc_extfrag(page, order, current_order,
-> >   				start_migratetype, migratetype, new_type);
-> >
-> > @@ -1147,7 +1155,9 @@ static struct page *__rmqueue(struct zon
-> >   retry_reserve:
-> >   	page = __rmqueue_smallest(zone, order, migratetype);
-> >
-> > -	if (unlikely(!page) && migratetype != MIGRATE_RESERVE) {
-> > +	if (likely(page)) {
-> > +		set_freepage_migratetype(page, migratetype);
-> 
-> Are you sure that here the checking of of CMA and ISOLATE is not needed? 
+           sudo cat /sys/firmware/acpi/tables/DSDT > /tmp/dsdt.bin
+           cd /tmp/dsdt.bin
+           iasl -d dsdt.bin
+           # AND EDIT the resulting dsdt.dsl and search for and send us the _WAK method
 
-CMA and ISOLATE migratetype pages are always put back on the correct
-free lists (since set_freepage_migratetype() sets freepage migratetype
-to the original one for CMA and ISOLATE migratetype pages) and
-__rmqueue_smallest() can take page only from the 'migratetype' free
-list.
+Also, on my system, the DSDT Q event for lid state change reads it from the EC to the LIDS var,
+instead of just toggling the "LIDS" variable (Lid Status). My own dsdt is downloadable from my
+blog, at http://zenstep.com.ar/files/DSDT_SamsungSeries5-NP530U3c-AB1_WithBios_P14AAJ.dsl
 
-+ It was suggested to do it this way by Mel.
-
-> Did the original rmqueue_bulk() have this checking only for the 
-> __rmqueue_fallback() case? Why wouldn't the check already be only in 
-> __rmqueue_fallback() then?
-
-Probably because of historical reasons.  The rmqueue_bulk() contained
-set_page_private() call when CMA was introduced and added the special
-handling for CMA and ISOLATE migratetype pages, please see commit
-47118af ("mm: mmzone: MIGRATE_CMA migration type added").
-
-> > +	} else if (migratetype != MIGRATE_RESERVE) {
-> >   		page = __rmqueue_fallback(zone, order, migratetype);
-> >
-> >   		/*
-> > @@ -1174,7 +1184,7 @@ static int rmqueue_bulk(struct zone *zon
-> >   			unsigned long count, struct list_head *list,
-> >   			int migratetype, int cold)
-> >   {
-> > -	int mt = migratetype, i;
-> > +	int i;
-> >
-> >   	spin_lock(&zone->lock);
-> >   	for (i = 0; i < count; ++i) {
-> > @@ -1195,16 +1205,15 @@ static int rmqueue_bulk(struct zone *zon
-> >   			list_add(&page->lru, list);
-> >   		else
-> >   			list_add_tail(&page->lru, list);
-> > +		list = &page->lru;
-> >   		if (IS_ENABLED(CONFIG_CMA)) {
-> > -			mt = get_pageblock_migratetype(page);
-> > +			int mt = get_pageblock_migratetype(page);
-> >   			if (!is_migrate_cma(mt) && !is_migrate_isolate(mt))
-> >   				mt = migratetype;
-> > +			if (is_migrate_cma(mt))
-> > +				__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
-> > +						      -(1 << order));
-> >   		}
-> > -		set_freepage_migratetype(page, mt);
-> > -		list = &page->lru;
-> > -		if (is_migrate_cma(mt))
-> > -			__mod_zone_page_state(zone, NR_FREE_CMA_PAGES,
-> > -					      -(1 << order));
-> >   	}
-> >   	__mod_zone_page_state(zone, NR_FREE_PAGES, -(i << order));
-> >   	spin_unlock(&zone->lock);
-
-Best regards,
+Cheers!
 --
-Bartlomiej Zolnierkiewicz
-Samsung R&D Institute Poland
-Samsung Electronics
+Juan Manuel Cabo
+
+
+On 03/25/2014 10:23 AM, Kieran Clancy wrote:
+> On Tue, Mar 25, 2014 at 8:04 PM, Lan Tianyu <lantianyu1986@gmail.com> wrote:
+>> 2014-03-24 19:19 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>> Hi,
+>>> thank you for the suggestion. The patch resolves the issue on my N150
+>>> when applied to a clean 3.14-rc7. Anyways I'm wondering if similar
+>>> problems to mine now exist on the Samsung Series 7/9 notebooks?
+>>>
+>>> Is any further action from my part required?
+>> Do you have these machines? If yes, please provide the output of
+>> dmidecode command.
+>>
+>> Cc guys  of commit ad332c8a.
+> Hi guys,
+>
+> That's a surprising side-effect, although I guess I shouldn't be
+> surprised by Samsung ACPI weirdness anymore.
+>
+> If we can, I'd like to get to the bottom of this rather than just turn
+> off this fix (which we know works for series 5, 7 and 9 without
+> problems).
+>
+>>>> 2014-03-24 15:50 GMT+08:00 Stefan Biereigel <security@biereigel-wb.de>:
+>>>>> Hi,
+>>>>>
+>>>>> starting with 3.14-rc6, the lid on my Samsung N150 behaves weird: My
+>>>>> system is set up, so that it should suspend to RAM as soon as the lid is
+>>>>> closed. Beginning with 3.14-rc6, the lid goes from "open" to "closed"
+>>>>> correctly the first time (and the system suspends), but after resuming
+>>>>> from standby (by opening the lid), the lid does not change to "open" again.
+>>>>> Of course, closing the lid again does not induce suspend to RAM then.
+>>>>> Opening the lid now (while not sleeping), makes ACPI notify the opening,
+>>>>> so I guess ACPI "misses" or discards the lid open event from the EC when
+>>>>> coming from sleep.
+>>>>> Now, closing the lid again does induce suspend to RAM. This behaviour is
+>>>>> reproducible: every other time, suspending works.
+>>>>>
+>>>>> This behaviour seems to be introduced by commit ad332c8a: ACPI / EC:
+>>>>> Clear stale EC events on Samsung systems.
+>>>>> Which was introduced after 3.14-rc5.
+>>>>>
+>>>>> When opening the lid to resume from standby, i see in dmesg:
+>>>>> Mar 23 22:12:04 little1 kernel: [ 7630.932074] ACPI : EC: 1 stale EC
+>>>>> events cleared
+>>>>> (which comes from drivers/acpi/ec.c)
+>>>>>
+>>>>> Seems to me, that the "open" event is cleared from the EC, but also
+>>>>> discarded instead of passed on. Shouldn't the correct behaviour be to
+>>>>> report all the pending events, read from the EC, as ACPI events? Can you
+>>>>> point me in a direction for fixing the issue cleanly, then I will try to
+>>>>> find a solution and prepare a patch for this issue.
+> Stefan, thank you for reporting this issue.
+>
+> Our rationale for discarding the events was that events queued during
+> sleep are probably no longer relevant. There could also be other
+> unwanted side-effects of blindly executing all of the old
+> instructions. But in your case, this assumption might be wrong.
+>
+> What command are you using to check if the lid is "open" or "closed"?
+> Is it because the screen is not waking up, or some other effect, or
+> just because it won't suspend again when it's re-closed?
+>
+> Do other events like AC plug/unplug affect any of this if you do them
+> during this bad state?
+>
+> I'd like to see exactly which EC command byte is being thrown away
+> here. If you do something like this (with dynamic debug enabled)
+>
+> echo -n 'file ec.c +p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+>
+> You should get massively verbose EC stuff filling your dmesg, but I am
+> just interested in the EC read/write bytes just before and around the
+> "1 stale EC events cleared" message. Grab this out of dmesg before it
+> fills with other stuff.
+>
+> This will tell us what command we are being asked to run. If you can,
+> please do it a few times to see if it's the same command each time or
+> something different.
+>
+> You can turn the debug output off again with:
+>
+> echo -n 'file ec.c -p' | sudo tee /sys/kernel/debug/dynamic_debug/control
+>
+> I might also need a copy of your DSDT, if you can send me that
+> separately in another email (not to the list):
+>
+> cat /sys/firmware/acpi/tables/DSDT > .DSDT.aml
+>
+> Thank you,
+> Kieran.
+>
 
