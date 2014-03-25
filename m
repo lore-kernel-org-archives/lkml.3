@@ -1,375 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbaCYUI3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:08:29 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15293 "EHLO mga11.intel.com"
+	id S1754798AbaCYUKg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:10:36 -0400
+Received: from siggy.segv.de ([78.46.139.7]:40578 "EHLO siggy.segv.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753545AbaCYUI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:08:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,730,1389772800"; 
-   d="scan'208";a="506581643"
-From: Andi Kleen <andi@firstfloor.org>
-To: acme@infradead.org
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
-        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
-        wcohen@redhat.com, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] perf, tools: Fix metrics calculation with event qualifiers
-Date: Tue, 25 Mar 2014 13:07:27 -0700
-Message-Id: <1395778047-23111-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1752825AbaCYUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 16:10:34 -0400
+X-Greylist: delayed 2552 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 Mar 2014 16:10:34 EDT
+Date: Tue, 25 Mar 2014 20:27:59 +0100
+From: Alexander Elbs <alex@segv.de>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bonbons@linux-vserver.org
+Subject: Re: mvsdio: unhandled interrupt, mmc writes queuing up
+Message-ID: <20140325192759.GJ29769@segv.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <alpine.LFD.2.11.1403191221310.1291@knanqh.ubzr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+Hello Nicolas,
 
-Currently in perf IPC and other metrics cannot be directly shown
-separately for both user and kernel in a single run. The problem was
-that the metrics matching code did not check event qualifiers.
+> On Wed, 19 Mar 2014, Bruno Prémont wrote:
+> > Hi,
+> > 
+> > Since upgrading my Sheevaplug from 3.7.2 to 3.13.6 (FDT) I'm seeing
+> >   mvsdio f1090000.mvsdio: unhandled interrupt status=0x8810 en=0x0000 pio=0
+> > at varied timings.
+>
 
-With this patch the following case works correctly.
+I have the same problem on my sheevaplug.
 
-% perf stat -e cycles:k,cycles:u,instructions:k,instructions:u true
+> It has been many years since I've looked at the code for this driver.  
+> I'm therefore including Thomas Petazzoni to the CC list as he appears to 
+> have been the most active since then.
+>
+> The reported status seems to indicate missing data in the context of a 
+> transfer with CMD12, and a CRC error ensued of course.
+>
+> At this point I'd suggest testing intermediate kernels between 3.7 and 
+> 3.13, and try bisection until you find the offending commit.
+>
+> [...]
+> > I get same results with 3.14-rc7.
+>
+> Excellent, that reduces the search space significantly.  You can do a 
+> git bisect directly.
 
- Performance counter stats for 'true':
+I did a git bisect.
+  good: no message "unhandled interrupt"
+  bad: message above appears
+  skipped: unbootable kernel, usually stuck after the line "Uncompressing Linux". 
 
-           531,718      cycles:k
-           203,895      cycles:u
-           338,151      instructions:k            #    0.64  insns per cycle
-           105,961      instructions:u            #    0.52  insns per cycle
+So far I am down to a few commits after 3.11.
 
-       0.002989739 seconds time elapsed
+$ git bisect view --oneline
+2326f04 (refs/bisect/bad) ARM: kirkwood: convert to DT irqchip and clocksource
+f07d73e ARM: dove: convert to DT irqchip and clocksource
+cabbd6b (refs/bisect/skip-cabbd6bd15723ffa60f954f3a6c76dc45062289b) ARM: orion5x: update intc device tree node to new reg layout
+15f1859 (refs/bisect/skip-15f18591d63fa78da87121ba0687fe1f4bcc5468) ARM: kirkwood: move device tree nodes to DT irqchip and clocksource
+953b710 (HEAD) ARM: dove: move device tree nodes to DT irqchip and clocksource
+497d3d0 (refs/bisect/skip-497d3d0f1899eeabdfe9c6e0095c162e72b6a6a6) ARM: orion5x: remove legacy mv643xx_eth board setup
+c0f27f6 (refs/bisect/skip-c0f27f63db4a969dfdb2f135df1134da992c39fb) ARM: kirkwood: remove legacy clk alias for mv643xx_eth
+a977e18 (refs/bisect/skip-a977e18e4cfc2ed73cc5bf05642f21323d9ec517) ARM: kirkwood: remove redundant DT board files
+b4715df ARM: dove: remove legacy mv643xx_eth setup
+99d6455 (refs/bisect/skip-99d6455b8ecbc7d29e279f66cde564998718e0ee) ARM: orion5x: add gigabit ethernet and mvmdio device tree nodes
+876e233 ARM: kirkwood: add gigabit ethernet and mvmdio device tree nodes
+4c3f6b8 ARM: dove: add gigabit ethernet and mvmdio device tree nodes
 
-Previously it would misreport the ratios because they were matching
-the wrong value.
+I hope this helps.
 
-The patch is fairly big, but quite mechanic as it just
-adds context indexes everywhere.
 
-I didn't support Hypervisor. It's not clear it's worth it.
 
-Reported-by: William Cohen <wcohen@redhat.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- tools/perf/builtin-stat.c | 129 +++++++++++++++++++++++++++-------------------
- 1 file changed, 77 insertions(+), 52 deletions(-)
+Full bisect log:
+# bad: [5e01dc7b26d9f24f39abace5da98ccbd6a5ceb52] Linux 3.12
+# good: [6e4664525b1db28f8c4e1130957f70a94c19213e] Linux 3.11
+git bisect start 'v3.12' 'v3.11'
+# good: [cc998ff8811530be521f6b316f37ab7676a07938] Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next
+git bisect good cc998ff8811530be521f6b316f37ab7676a07938
+# bad: [81a6fcae3ff3f6af1c9d7e31499e68fda2b3f58d] mm, hugetlb: clean-up alloc_huge_page()
+git bisect bad 81a6fcae3ff3f6af1c9d7e31499e68fda2b3f58d
+# bad: [c7c4591db64dbd1e504bc4e2806d7ef290a3c81b] Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/user-namespace
+git bisect bad c7c4591db64dbd1e504bc4e2806d7ef290a3c81b
+# skip: [8e73e367f7dc50f1d1bc22a63e5764bb4eea9b48] Merge tag 'cleanup-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect skip 8e73e367f7dc50f1d1bc22a63e5764bb4eea9b48
+# skip: [8dd21c93197cc465ae87e142435b3f7f262eade9] ARM: DRA7: Add the build support in omap2plus
+git bisect skip 8dd21c93197cc465ae87e142435b3f7f262eade9
+# good: [202127031a14f244c15ae4434993d36bd10a439c] powerpc/eeh: powerpc/eeh: Fix undefined variable
+git bisect good 202127031a14f244c15ae4434993d36bd10a439c
+# good: [f0d8e3f186a55ee2296f15e0e6c515beb8cefacf] ARM: dts: imx27-phytec-phycore-som: Using labels for reusing UART, I2C and FEC
+git bisect good f0d8e3f186a55ee2296f15e0e6c515beb8cefacf
+# good: [f2acf003cd399994172a5ec342b47741841746f1] ARM: debug: move keystone debug to generic 8250 code
+git bisect good f2acf003cd399994172a5ec342b47741841746f1
+# good: [2ce05a14bb379bd81ba3ad12cc08b2c4bda83480] ARM: ux500: fix devicetree builds
+git bisect good 2ce05a14bb379bd81ba3ad12cc08b2c4bda83480
+# good: [051168df528fe4456d63f5f65b041c147c26fe97] tile: don't assume user privilege is zero
+git bisect good 051168df528fe4456d63f5f65b041c147c26fe97
+# good: [8157107b13099d6eb2e8ccd00b9aba009c698c38] tilegx: support KGDB
+git bisect good 8157107b13099d6eb2e8ccd00b9aba009c698c38
+# good: [ebea60bee85fc043b02fd3438c381c28085eed69] ARM: msm: Move mach/board.h contents to common.h
+git bisect good ebea60bee85fc043b02fd3438c381c28085eed69
+# good: [9854a6f929956c9099dcc837157fd344f6f1c227] HID: hid-holtekff: don't push static constants on stack for %*ph
+git bisect good 9854a6f929956c9099dcc837157fd344f6f1c227
+# good: [dccfd1e439c11422d7aca0d834b0430d24650e85] Merge tag 'dt-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect good dccfd1e439c11422d7aca0d834b0430d24650e85
+# good: [b4b50fd78b1e31989940dfc647e64453d0f7176a] Merge tag 'soc-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/arm/arm-soc
+git bisect good b4b50fd78b1e31989940dfc647e64453d0f7176a
+# bad: [27c7651a6a5f143eccd66db38c7a3035e1f8bcfb] Merge tag 'gpio-v3.12-1' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio
+git bisect bad 27c7651a6a5f143eccd66db38c7a3035e1f8bcfb
+# bad: [293d0e3bf0818f3f7307a56d3ac31f41b5078aa1] Merge branch 'armsoc/for-3.12/soc' of git://github.com/broadcom/bcm11351 into next/boards
+git bisect bad 293d0e3bf0818f3f7307a56d3ac31f41b5078aa1
+# bad: [6b08e4370c0ffa57acfdb593d69306bbd6ca8b03] Merge tag 'renesas-defconfig-for-v3.12' of git://git.kernel.org/pub/scm/linux/kernel/git/horms/renesas into next/boards
+git bisect bad 6b08e4370c0ffa57acfdb593d69306bbd6ca8b03
+# bad: [4ddbed9618724d52a7a79c1e10ef5adb46fcccf7] Merge tag 'boards-3.12' of git://git.infradead.org/linux-mvebu into next/boards
+git bisect bad 4ddbed9618724d52a7a79c1e10ef5adb46fcccf7
+# bad: [2326f04321a9aec591c1d159b3a9d12c2bf89438] ARM: kirkwood: convert to DT irqchip and clocksource
+git bisect bad 2326f04321a9aec591c1d159b3a9d12c2bf89438
+# skip: [c0f27f63db4a969dfdb2f135df1134da992c39fb] ARM: kirkwood: remove legacy clk alias for mv643xx_eth
+git bisect skip c0f27f63db4a969dfdb2f135df1134da992c39fb
+# skip: [99d6455b8ecbc7d29e279f66cde564998718e0ee] ARM: orion5x: add gigabit ethernet and mvmdio device tree nodes
+git bisect skip 99d6455b8ecbc7d29e279f66cde564998718e0ee
+# skip: [497d3d0f1899eeabdfe9c6e0095c162e72b6a6a6] ARM: orion5x: remove legacy mv643xx_eth board setup
+git bisect skip 497d3d0f1899eeabdfe9c6e0095c162e72b6a6a6
+# skip: [15f18591d63fa78da87121ba0687fe1f4bcc5468] ARM: kirkwood: move device tree nodes to DT irqchip and clocksource
+git bisect skip 15f18591d63fa78da87121ba0687fe1f4bcc5468
+# skip: [a977e18e4cfc2ed73cc5bf05642f21323d9ec517] ARM: kirkwood: remove redundant DT board files
+git bisect skip a977e18e4cfc2ed73cc5bf05642f21323d9ec517
+# skip: [cabbd6bd15723ffa60f954f3a6c76dc45062289b] ARM: orion5x: update intc device tree node to new reg layout
+git bisect skip cabbd6bd15723ffa60f954f3a6c76dc45062289b
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 8b0e1c9..57da752 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -239,21 +239,35 @@ out_free:
- 	return -1;
- }
- 
-+#define NUM_CTX 3
-+
-+enum { CTX_USER, CTX_KERNEL, CTX_ALL };
-+
- static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
--static struct stats runtime_cycles_stats[MAX_NR_CPUS];
--static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
--static struct stats runtime_stalled_cycles_back_stats[MAX_NR_CPUS];
--static struct stats runtime_branches_stats[MAX_NR_CPUS];
--static struct stats runtime_cacherefs_stats[MAX_NR_CPUS];
--static struct stats runtime_l1_dcache_stats[MAX_NR_CPUS];
--static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
--static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
--static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
--static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
--static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
-+static struct stats runtime_cycles_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_stalled_cycles_front_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_stalled_cycles_back_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_branches_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_cacherefs_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_l1_dcache_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_l1_icache_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_ll_cache_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_itlb_cache_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_dtlb_cache_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_cycles_in_tx_stats[NUM_CTX][MAX_NR_CPUS];
- static struct stats walltime_nsecs_stats;
--static struct stats runtime_transaction_stats[MAX_NR_CPUS];
--static struct stats runtime_elision_stats[MAX_NR_CPUS];
-+static struct stats runtime_transaction_stats[NUM_CTX][MAX_NR_CPUS];
-+static struct stats runtime_elision_stats[NUM_CTX][MAX_NR_CPUS];
-+
-+static int evsel_context(struct perf_evsel *evsel)
-+{
-+	if (evsel->attr.exclude_kernel)
-+		return CTX_USER;
-+	if (evsel->attr.exclude_user)
-+		return CTX_KERNEL;
-+	/* Handle hypervisor too? */
-+	return CTX_ALL;
-+}
- 
- static void perf_stat__reset_stats(struct perf_evlist *evlist)
- {
-@@ -347,37 +361,39 @@ static struct perf_evsel *nth_evsel(int n)
-  */
- static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
- {
-+	int ctx = evsel_context(counter);
-+
- 	if (perf_evsel__match(counter, SOFTWARE, SW_TASK_CLOCK))
- 		update_stats(&runtime_nsecs_stats[0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
--		update_stats(&runtime_cycles_stats[0], count[0]);
-+		update_stats(&runtime_cycles_stats[ctx][0], count[0]);
- 	else if (transaction_run &&
- 		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
--		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
-+		update_stats(&runtime_cycles_in_tx_stats[ctx][0], count[0]);
- 	else if (transaction_run &&
- 		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
--		update_stats(&runtime_transaction_stats[0], count[0]);
-+		update_stats(&runtime_transaction_stats[ctx][0], count[0]);
- 	else if (transaction_run &&
- 		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
--		update_stats(&runtime_elision_stats[0], count[0]);
-+		update_stats(&runtime_elision_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
--		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
-+		update_stats(&runtime_stalled_cycles_front_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
--		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
-+		update_stats(&runtime_stalled_cycles_back_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
--		update_stats(&runtime_branches_stats[0], count[0]);
-+		update_stats(&runtime_branches_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HARDWARE, HW_CACHE_REFERENCES))
--		update_stats(&runtime_cacherefs_stats[0], count[0]);
-+		update_stats(&runtime_cacherefs_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_L1D))
--		update_stats(&runtime_l1_dcache_stats[0], count[0]);
-+		update_stats(&runtime_l1_dcache_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_L1I))
--		update_stats(&runtime_l1_icache_stats[0], count[0]);
-+		update_stats(&runtime_l1_icache_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_LL))
--		update_stats(&runtime_ll_cache_stats[0], count[0]);
-+		update_stats(&runtime_ll_cache_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_DTLB))
--		update_stats(&runtime_dtlb_cache_stats[0], count[0]);
-+		update_stats(&runtime_dtlb_cache_stats[ctx][0], count[0]);
- 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_ITLB))
--		update_stats(&runtime_itlb_cache_stats[0], count[0]);
-+		update_stats(&runtime_itlb_cache_stats[ctx][0], count[0]);
- }
- 
- /*
-@@ -794,8 +810,9 @@ static void print_stalled_cycles_frontend(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_cycles_stats[cpu]);
-+	total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -813,8 +830,9 @@ static void print_stalled_cycles_backend(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_cycles_stats[cpu]);
-+	total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -832,8 +850,9 @@ static void print_branch_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_branches_stats[cpu]);
-+	total = avg_stats(&runtime_branches_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -851,8 +870,9 @@ static void print_l1_dcache_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_l1_dcache_stats[cpu]);
-+	total = avg_stats(&runtime_l1_dcache_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -870,8 +890,9 @@ static void print_l1_icache_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_l1_icache_stats[cpu]);
-+	total = avg_stats(&runtime_l1_icache_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -889,8 +910,9 @@ static void print_dtlb_cache_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_dtlb_cache_stats[cpu]);
-+	total = avg_stats(&runtime_dtlb_cache_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -908,8 +930,9 @@ static void print_itlb_cache_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_itlb_cache_stats[cpu]);
-+	total = avg_stats(&runtime_itlb_cache_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -927,8 +950,9 @@ static void print_ll_cache_misses(int cpu,
- {
- 	double total, ratio = 0.0;
- 	const char *color;
-+	int ctx = evsel_context(evsel);
- 
--	total = avg_stats(&runtime_ll_cache_stats[cpu]);
-+	total = avg_stats(&runtime_ll_cache_stats[ctx][cpu]);
- 
- 	if (total)
- 		ratio = avg / total * 100.0;
-@@ -945,6 +969,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 	double total, ratio = 0.0, total2;
- 	double sc =  evsel->scale;
- 	const char *fmt;
-+	int ctx = evsel_context(evsel);
- 
- 	if (csv_output) {
- 		fmt = sc != 1.0 ?  "%.2f%s" : "%.0f%s";
-@@ -976,13 +1001,13 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 		return;
- 
- 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
--		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
- 		if (total) {
- 			ratio = avg / total;
- 			fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
- 		}
--		total = avg_stats(&runtime_stalled_cycles_front_stats[cpu]);
--		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[cpu]));
-+		total = avg_stats(&runtime_stalled_cycles_front_stats[ctx][cpu]);
-+		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[ctx][cpu]));
- 
- 		if (total && avg) {
- 			ratio = total / avg;
-@@ -993,46 +1018,46 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 		}
- 
- 	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
--			runtime_branches_stats[cpu].n != 0) {
-+			runtime_branches_stats[ctx][cpu].n != 0) {
- 		print_branch_misses(cpu, evsel, avg);
- 	} else if (
- 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
- 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_L1D |
- 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
- 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
--			runtime_l1_dcache_stats[cpu].n != 0) {
-+			runtime_l1_dcache_stats[ctx][cpu].n != 0) {
- 		print_l1_dcache_misses(cpu, evsel, avg);
- 	} else if (
- 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
- 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_L1I |
- 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
- 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
--			runtime_l1_icache_stats[cpu].n != 0) {
-+			runtime_l1_icache_stats[ctx][cpu].n != 0) {
- 		print_l1_icache_misses(cpu, evsel, avg);
- 	} else if (
- 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
- 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_DTLB |
- 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
- 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
--			runtime_dtlb_cache_stats[cpu].n != 0) {
-+			runtime_dtlb_cache_stats[ctx][cpu].n != 0) {
- 		print_dtlb_cache_misses(cpu, evsel, avg);
- 	} else if (
- 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
- 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_ITLB |
- 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
- 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
--			runtime_itlb_cache_stats[cpu].n != 0) {
-+			runtime_itlb_cache_stats[ctx][cpu].n != 0) {
- 		print_itlb_cache_misses(cpu, evsel, avg);
- 	} else if (
- 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
- 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_LL |
- 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
- 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
--			runtime_ll_cache_stats[cpu].n != 0) {
-+			runtime_ll_cache_stats[ctx][cpu].n != 0) {
- 		print_ll_cache_misses(cpu, evsel, avg);
- 	} else if (perf_evsel__match(evsel, HARDWARE, HW_CACHE_MISSES) &&
--			runtime_cacherefs_stats[cpu].n != 0) {
--		total = avg_stats(&runtime_cacherefs_stats[cpu]);
-+			runtime_cacherefs_stats[ctx][cpu].n != 0) {
-+		total = avg_stats(&runtime_cacherefs_stats[ctx][cpu]);
- 
- 		if (total)
- 			ratio = avg * 100 / total;
-@@ -1052,15 +1077,15 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 		}
- 	} else if (transaction_run &&
- 		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
--		total = avg_stats(&runtime_cycles_stats[cpu]);
-+		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
- 		if (total)
- 			fprintf(output,
- 				" #   %5.2f%% transactional cycles   ",
- 				100.0 * (avg / total));
- 	} else if (transaction_run &&
- 		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
--		total = avg_stats(&runtime_cycles_stats[cpu]);
--		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
-+		total2 = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
- 		if (total2 < avg)
- 			total2 = avg;
- 		if (total)
-@@ -1070,8 +1095,8 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 	} else if (transaction_run &&
- 		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
- 		   avg > 0 &&
--		   runtime_cycles_in_tx_stats[cpu].n != 0) {
--		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+		   runtime_cycles_in_tx_stats[ctx][cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
- 
- 		if (total)
- 			ratio = total / avg;
-@@ -1080,8 +1105,8 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
- 	} else if (transaction_run &&
- 		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
- 		   avg > 0 &&
--		   runtime_cycles_in_tx_stats[cpu].n != 0) {
--		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
-+		   runtime_cycles_in_tx_stats[ctx][cpu].n != 0) {
-+		total = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
- 
- 		if (total)
- 			ratio = total / avg;
--- 
-1.8.5.3
-
+Regards,
+Alexander Elbs
