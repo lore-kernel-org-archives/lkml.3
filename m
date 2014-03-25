@@ -1,106 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842AbaCYRjV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:39:21 -0400
-Received: from mta-out.inet.fi ([195.156.147.13]:57901 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753943AbaCYRjR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:39:17 -0400
-Date: Tue, 25 Mar 2014 19:36:05 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH 1/1] mm: move FAULT_AROUND_ORDER to arch/
-Message-ID: <20140325173605.GA21411@node.dhcp.inet.fi>
-References: <1395730215-11604-1-git-send-email-maddy@linux.vnet.ibm.com>
- <1395730215-11604-2-git-send-email-maddy@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395730215-11604-2-git-send-email-maddy@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.22.1-rc1 (2013-10-16)
+	id S1755881AbaCYRjo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:39:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55902 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754982AbaCYRVf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:21:35 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 34/81] ACPI / PCI: Fix memory leak in acpi_pci_irq_enable()
+Date: Tue, 25 Mar 2014 10:15:47 -0700
+Message-Id: <1395767794-5012-35-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 12:20:15PM +0530, Madhavan Srinivasan wrote:
-> Kirill A. Shutemov with the commit 96bacfe542 introduced
-> vm_ops->map_pages() for mapping easy accessible pages around
-> fault address in hope to reduce number of minor page faults.
-> Based on his workload runs, suggested FAULT_AROUND_ORDER
-> (knob to control the numbers of pages to map) is 4.
-> 
-> This patch moves the FAULT_AROUND_ORDER macro to arch/ for
-> architecture maintainers to decide on suitable FAULT_AROUND_ORDER
-> value based on performance data for that architecture.
-> 
-> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-> ---
->  arch/powerpc/include/asm/pgtable.h |    6 ++++++
->  arch/x86/include/asm/pgtable.h     |    5 +++++
->  include/asm-generic/pgtable.h      |   10 ++++++++++
->  mm/memory.c                        |    2 --
->  4 files changed, 21 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
-> index 3ebb188..9fcbd48 100644
-> --- a/arch/powerpc/include/asm/pgtable.h
-> +++ b/arch/powerpc/include/asm/pgtable.h
-> @@ -19,6 +19,12 @@ struct mm_struct;
->  #endif
->  
->  /*
-> + * With a few real world workloads that were run,
-> + * the performance data showed that a value of 3 is more advantageous.
-> + */
-> +#define FAULT_AROUND_ORDER	3
-> +
-> +/*
->   * We save the slot number & secondary bit in the second half of the
->   * PTE page. We use the 8 bytes per each pte entry.
->   */
-> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
-> index 938ef1d..8387a65 100644
-> --- a/arch/x86/include/asm/pgtable.h
-> +++ b/arch/x86/include/asm/pgtable.h
-> @@ -7,6 +7,11 @@
->  #include <asm/pgtable_types.h>
->  
->  /*
-> + * Based on Kirill's test results, fault around order is set to 4
-> + */
-> +#define FAULT_AROUND_ORDER 4
-> +
-> +/*
->   * Macro to mark a page protection value as UC-
->   */
->  #define pgprot_noncached(prot)					\
-> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
-> index 1ec08c1..62f7f07 100644
-> --- a/include/asm-generic/pgtable.h
-> +++ b/include/asm-generic/pgtable.h
-> @@ -7,6 +7,16 @@
->  #include <linux/mm_types.h>
->  #include <linux/bug.h>
->  
-> +
-> +/*
-> + * Fault around order is a control knob to decide the fault around pages.
-> + * Default value is set to 0UL (disabled), but the arch can override it as
-> + * desired.
-> + */
-> +#ifndef FAULT_AROUND_ORDER
-> +#define FAULT_AROUND_ORDER	0UL
-> +#endif
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-FAULT_AROUND_ORDER == 0 case should be handled separately in
-do_read_fault(): no reason to go to do_fault_around() if we are going to
-fault in only one page.
+------------------
 
+From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+
+commit b685f3b1744061aa9ad822548ba9c674de5be7c6 upstream.
+
+acpi_pci_link_allocate_irq() can return negative gsi even if
+entry != NULL.  For that case we have a memory leak, so free
+entry before returning from acpi_pci_irq_enable() for gsi < 0.
+
+Signed-off-by: Tomasz Nowicki <tomasz.nowicki@linaro.org>
+[rjw: Subject and changelog]
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/acpi/pci_irq.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/acpi/pci_irq.c b/drivers/acpi/pci_irq.c
+index 68a921d..bee8d6d 100644
+--- a/drivers/acpi/pci_irq.c
++++ b/drivers/acpi/pci_irq.c
+@@ -470,6 +470,8 @@ int acpi_pci_irq_enable(struct pci_dev *dev)
+ 			dev_warn(&dev->dev, "PCI INT %c: no GSI\n",
+ 				 pin_name(pin));
+ 		}
++
++		kfree(entry);
+ 		return 0;
+ 	}
+ 
 -- 
- Kirill A. Shutemov
+1.8.3.2
+
