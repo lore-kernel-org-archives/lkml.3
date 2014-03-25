@@ -1,51 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaCYSTh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:19:37 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:55610 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaCYSTf (ORCPT
+	id S1754371AbaCYSTr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:19:47 -0400
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:52159 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752032AbaCYSTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:19:35 -0400
-Message-ID: <5331C8A3.7070204@linux.vnet.ibm.com>
-Date: Tue, 25 Mar 2014 11:19:15 -0700
-From: Cody P Schafer <cody@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Anton Blanchard <anton@samba.org>
-CC: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        scottwood@freescale.com
-Subject: Re: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7 interface
-References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com> <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com> <20140325214356.4a2f7d95@kryten>
-In-Reply-To: <20140325214356.4a2f7d95@kryten>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032518-0928-0000-0000-000000AC611A
+	Tue, 25 Mar 2014 14:19:37 -0400
+From: jon@ringle.org
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH v2 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
+Date: Tue, 25 Mar 2014 14:19:24 -0400
+Message-Id: <1395771564-30534-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1395771564-30534-1-git-send-email-jon@ringle.org>
+References: <1395771564-30534-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 03:43 AM, Anton Blanchard wrote:
->
-> Hi Cody,
->
-> hv-24x7: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
-> hv-gpci: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
->
->> +		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
->
-> That's a lot of padding :)
->
-> I think this should also be a pr_debug, considering this is not relevant
-> to most ppc64 boxes.
+From: Jon Ringle <jringle@gridpoint.com>
 
-I'm fine with that. It should probably be "0x%08lx" not "0x%80lx", not 
-sure when I screwed that up.
+This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
+
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+---
+ .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 35 ++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+
+diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+new file mode 100644
+index 0000000..cd9ae33
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+@@ -0,0 +1,35 @@
++* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
++
++Required properties:
++- compatible: Should be one of the following:
++  - "nxp,sc16is740" for NXP SC16IS740,
++  - "nxp,sc16is741" for NXP SC16IS741,
++  - "nxp,sc16is750" for NXP SC16IS750,
++  - "nxp,sc16is752" for NXP SC16IS752,
++  - "nxp,sc16is760" for NXP SC16IS760,
++  - "nxp,sc16is762" for NXP SC16IS762.
++- reg: I2C address of the SC16IS7xx device.
++- interrupt-parent: The phandle for the interrupt controller that
++  services interrupts for this IC.
++- interrupts: Specifies the interrupt source of the parent interrupt
++  controller. The format of the interrupt specifier depends on the
++  parent interrupt controller.
++- clocks: phandle to the IC source clock.
++
++Optional properties:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the GPIO number and
++  the second cell is used to specify the GPIO polarity:
++    0 = active high,
++    1 = active low.
++
++Example:
++        sc16is750: sc16is750@51 {
++                compatible = "nxp,sc16is750";
++                reg = <0x51>;
++                clocks = <&clk20m>;
++                interrupt-parent = <&gpio3>;
++                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
+-- 
+1.8.5.4
 
