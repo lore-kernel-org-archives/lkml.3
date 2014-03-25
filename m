@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbaCYUqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:46:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60721 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755065AbaCYUqe (ORCPT
+	id S1755187AbaCYUto (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:49:44 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:62294 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754450AbaCYUtl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:46:34 -0400
-Date: Tue, 25 Mar 2014 13:45:36 -0700
-From: "tip-bot for H. Peter Anvin" <tipbot@zytor.com>
-Message-ID: <tip-psizrnant8x3nrhbgvq2vekr@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
-        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
-        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de,
-        hpa@linux.intel.com
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/vdso] x86, vdso: Actually discard the .discard sections
-Git-Commit-ID: 26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 25 Mar 2014 16:49:41 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+In-Reply-To: <1395505004-22650-3-git-send-email-bigeasy@linutronix.de>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+	<1395505004-22650-3-git-send-email-bigeasy@linutronix.de>
+Date: Tue, 25 Mar 2014 21:49:40 +0100
+Message-ID: <CACRpkdaD=hZGJA0r5DcJs-hFnnkKCFeQ9JwJZ4kcLq5Sb+=ZqQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] gpio: dwapb: correct gpio-cells in binding document
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
-Gitweb:     http://git.kernel.org/tip/26f5ef2e3c3c18f1dc31461ddf1db00b014edcd4
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Tue, 25 Mar 2014 13:41:36 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 25 Mar 2014 13:41:36 -0700
+On Sat, Mar 22, 2014 at 5:16 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
 
-x86, vdso: Actually discard the .discard sections
+> The example uses gpio-cells = 1 while it should be two (it is even
+> mentioned in the text above).
+>
+> Cc: devicetree@vger.kernel.org
+> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-The .discard/.discard.* sections are used to generate intermediate
-results for the assembler (effectively "test assembly".)  The output
-is waste and should not be retained.
+This is obviously correct so patch applied.
 
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-psizrnant8x3nrhbgvq2vekr@git.kernel.org
----
- arch/x86/vdso/vdso-layout.lds.S | 5 +++++
- 1 file changed, 5 insertions(+)
+How come I cannot see patch 1/7 in my mailbox :-(
 
-diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
-index c6d0e1b..2e263f3 100644
---- a/arch/x86/vdso/vdso-layout.lds.S
-+++ b/arch/x86/vdso/vdso-layout.lds.S
-@@ -62,6 +62,11 @@ SECTIONS
- 	. = ALIGN(0x100);
- 
- 	.text		: { *(.text*) }			:text	=0x90909090
-+
-+	/DISCARD/ : {
-+		*(.discard)
-+		*(.discard.*)
-+	}
- }
- 
- /*
+I see patches 2-7/7...
+
+Something on my end?
+
+Yours,
+Linus Walleij
