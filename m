@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaCYFbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 01:31:34 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:42026 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834AbaCYFbd (ORCPT
+	id S1751305AbaCYFsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 01:48:51 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:60235 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750845AbaCYFst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 01:31:33 -0400
-Message-ID: <533113C4.2000007@linux.vnet.ibm.com>
-Date: Tue, 25 Mar 2014 10:57:32 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	Tue, 25 Mar 2014 01:48:49 -0400
+Date: Tue, 25 Mar 2014 06:48:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: peterz@infradead.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL rcu/next] Additional RCU commit for 3.15
+Message-ID: <20140325054845.GA27206@gmail.com>
+References: <20140325041638.GA23624@linux.vnet.ibm.com>
 MIME-Version: 1.0
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: Preeti Murthy <preeti.lkml@gmail.com>, linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/2] nohz: use seqlock to avoid race on idle time stats
-References: <532FA0E8.4050106@jp.fujitsu.com> <532FA20E.7090709@jp.fujitsu.com> <CAM4v1pPPmiHXNQ19My1Jd8XUQQh+VnbvWwGXq0mVGk4G1vYNfw@mail.gmail.com> <532FEB03.20600@jp.fujitsu.com>
-In-Reply-To: <532FEB03.20600@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032505-9574-0000-0000-00000C9A1411
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140325041638.GA23624@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/24/2014 01:51 PM, Hidetoshi Seto wrote:
-> (2014/03/24 16:45), Preeti Murthy wrote:
->> Hi Hidetoshi,
->>
->> The patch looks good to me except the comments around the monotonicity
->> of the return value of the idle stats observer. I am unable to relate them
->> to the dependency on nr_iowait_cpu.
->>
->> I see that when the reader queries for the idle stats and calls
->> get_cpu_idle_time_us(), the nr_iowait_cpu might be 0. When he later
->> queries get_cpu_iowait_time_us(), it may be >0 . Hence we will be
->> accounting for the idle time in both idle time and iowait time. This
->> is definitely a problem. But I do not understand what this has got to
->> do with the monotonicity of the time
->> returned. This is just for my understanding.
-> 
-> Thank you for your comment!
-> 
-> Ah yes, I think I could write better comments around here to clarify
-> the monotonicity problem. (It will be happy if someone can give me
-> such better sentence for here :-D)
-> 
-> One important point is that readers do not update idle stats when they
-> use these function. i.e.
-> 
-> given:
->    idle stats:  idle=1000, iowait=100
->    stamp at idle entry: entry=50
->    nr tasks waiting io: nr_iowait=1
-> 
-> 1st reader:
->    query @ now=60
->      idle=1000
->      iowait=110 (=100+(60-50))
-> 
-> (here nr_iowait changed to 0)
-> 
-> 2nd reader:
->    query @ now=70
->      idle=1020 (=1000+(70-50))
->      iowait=100
-> 
-> So you will see iowait is decreased from 110 to 100.
 
-Ah ok! I get it. Please do add my Reviewed-by to it.
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
+> Hello, Ingo,
 > 
-> I hope this short story helps you.
+> And, if you are willing to take it, one late-breaking commit.  This one
+> was requested for 3.15 by Peter Zijlstra. [...]
 
-Thanks!
+No objections at all, looks like a useful facility!
 
-Regards
-Preeti U Murthy
+> [...] It is low risk because it adds a new in-kernel API with 
+> minimal changes to the existing code.  Those minimal changes are the 
+> addition of memory barriers and ACCESS_ONCE() macro calls, neither 
+> of which should be able to break things.  This commit has passed 
+> significant rcutorture testing, with these additional additions to 
+> rcutorture slated for 3.16.  This commit has also been exposed to 
+> -next testing.
 > 
-> Thanks,
-> H.Seto
+> This change is available in the git repository at:
 > 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git rcu/next
+> 
+> for you to fetch changes up to 765a3f4fed708ae429ee095914a7897acb3a65bd:
+> 
+>   rcu: Provide grace-period piggybacking API (2014-03-20 17:12:25 -0700)
+> 
+> ----------------------------------------------------------------
+> Paul E. McKenney (1):
+>       rcu: Provide grace-period piggybacking API
+> 
+>  include/linux/rcutiny.h | 10 ++++++++
+>  include/linux/rcutree.h |  2 ++
+>  kernel/rcu/tree.c       | 62 +++++++++++++++++++++++++++++++++++++++++++++----
+>  3 files changed, 70 insertions(+), 4 deletions(-)
 
+Pulled, thanks a lot Paul!
+
+	Ingo
