@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395AbaCYK6T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:58:19 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:48919 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751067AbaCYK6S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:58:18 -0400
-Date: Tue, 25 Mar 2014 06:58:14 -0400 (EDT)
-From: Steven Rostedt <rostedt@goodmis.org>
-X-X-Sender: rostedt@localhost.localdomain
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v8 17/26] notifier: Use NOKPROBE_SYMBOL macro in
- notifier
-In-Reply-To: <5331593E.7060803@hitachi.com>
-Message-ID: <alpine.DEB.2.10.1403250656380.28591@localhost.localdomain>
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140305120042.22766.48538.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140324161227.6b93b5af@gandalf.local.home> <5331593E.7060803@hitachi.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	id S1752778AbaCYK7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:59:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49149 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751697AbaCYK7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 06:59:49 -0400
+Date: Tue, 25 Mar 2014 11:59:47 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: YongHwan Ki <kyhw@afoi.co.kr>
+cc: rydberg@euromail.se, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO.,
+ LTD.
+In-Reply-To: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr>
+Message-ID: <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz>
+References: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 25 Mar 2014, YongHwan Ki wrote:
 
-On Tue, 25 Mar 2014, Masami Hiramatsu wrote:
-> Thanks! I guess since notify_die() is called from any kind of fault,
-> which may be happen inside ftrace too.
+> There is no way to support the hid-type AFO multi touch modules.
 
-I see it was added by commit 36dcd67ae, which was when we tried to keep 
-ftrace from tracing nmi functions. It is safe to do so now, so that 
-notrace can be removed. I'll make a note of that and remove it later :-)
+Could you please elaborate? What tree is this patch against? I don't have 
+AFO-related defines in my tree.
 
--- Steve
+> Add the VID/PID of AFO to the hid-related lists.
+> 
+> Kernel Version : linux-3.14.rc7
+> 
+> Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
+> 
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7/drivers/hid/hid-core.c
+> --- ./drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
+> +++ ../linux-3.14-rc7/drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
+> @@ -1881,8 +1881,6 @@ static const struct hid_device_id hid_ha
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
+> -	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
+>  
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-ids.h ../linux-3.14-rc7/drivers/hid/hid-ids.h
+> --- ./drivers/hid/hid-ids.h	2014-03-21 17:30:34.478959555 +0900
+> +++ ../linux-3.14-rc7/drivers/hid/hid-ids.h	2014-03-17 10:51:24.000000000 +0900
+> @@ -960,9 +960,5 @@
+>  #define USB_VENDOR_ID_PRIMAX	0x0461
+>  #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+>  
+> -#define USB_VENDOR_ID_AFO		0x2576
+> -#define USB_DEVICE_ID_AFO_TCM		0x0003
+> -#define USB_DEVICE_ID_AFO_BL		0x0005
+> -#define USB_DEVICE_ID_AFO_THM		0x0011
+>  
+>  #endif
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-multitouch.c ../linux-3.14-rc7/drivers/hid/hid-multitouch.c
+> --- ./drivers/hid/hid-multitouch.c	2014-03-21 17:45:25.946933088 +0900
+> +++ ../linux-3.14-rc7/drivers/hid/hid-multitouch.c	2014-03-17 10:51:24.000000000 +0900
+> @@ -1395,15 +1395,6 @@ static const struct hid_device_id mt_dev
+>  	{  .driver_data = MT_CLS_WIN_8,
+>  		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
+>  			HID_ANY_ID, HID_ANY_ID) },
+> -
+> -	/* AFO MultiTouch device */
+> -	{  .driver_data = MT_CLS_SERIAL,
+> -		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
+> -			USB_DEVICE_ID_AFO_TCM) },
+> -	{  .driver_data = MT_CLS_SERIAL,
+> -		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
+> -			USB_DEVICE_ID_AFO_THM) },
+> -
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(hid, mt_devices);
+> Binary files ./kernel/x509_certificate_list and ../linux-3.14-rc7/kernel/x509_certificate_list differ
+> diff -uprN -X Documentation/dontdiff ./lib/oid_registry_data.c ../linux-3.14-rc7/lib/oid_registry_data.c
+> --- ./lib/oid_registry_data.c	2014-03-24 21:43:59.826812763 +0900
+> +++ ../linux-3.14-rc7/lib/oid_registry_data.c	2014-03-21 18:45:37.598825862 +0900
+> @@ -1,5 +1,5 @@
+>  /*
+> - * Automatically generated by /usr/src/linux-3.14-rc7m/lib/build_OID_registry.  Do not edit
+> + * Automatically generated by /usr/src/linux-3.14-rc7/lib/build_OID_registry.  Do not edit
+>   */
+>  
+>  static const unsigned short oid_index[OID__NR + 1] = {
+> diff -uprN -X Documentation/dontdiff ./signing_key.priv ../linux-3.14-rc7/signing_key.priv
+> --- ./signing_key.priv	2014-03-24 20:22:01.946958769 +0900
+> +++ ../linux-3.14-rc7/signing_key.priv	2014-03-21 17:24:11.874970914 +0900
+> @@ -1,52 +1,52 @@
+>  -----BEGIN PRIVATE KEY-----
 
+I doubt this was intended.
+
+-- 
+Jiri Kosina
+SUSE Labs
