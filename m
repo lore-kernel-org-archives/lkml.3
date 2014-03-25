@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540AbaCYSCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:02:37 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55643 "EHLO
+	id S1756524AbaCYSCe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:02:34 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55644 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754190AbaCYRRR (ORCPT
+	with ESMTP id S1754203AbaCYRRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Mar 2014 13:17:17 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Elder <elder@linaro.org>, Sage Weil <sage@inktank.com>,
-        David Miller <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Jani Nikula <jani.nikula@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 01/81] kernel.h: define u8, s8, u32, etc. limits
-Date: Tue, 25 Mar 2014 10:15:14 -0700
-Message-Id: <1395767794-5012-2-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 18/81] drm/i915/dp: increase native aux defer retry timeout
+Date: Tue, 25 Mar 2014 10:15:31 -0700
+Message-Id: <1395767794-5012-19-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -30,48 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Elder <alex.elder@linaro.org>
+From: Jani Nikula <jani.nikula@intel.com>
 
-commit 89a0714106aac7309c7dfa0f004b39e1e89d2942 upstream.
+commit 04eada25d1f72efdecd32d702706594f81de65d5 upstream.
 
-Create constants that define the maximum and minimum values
-representable by the kernel types u8, s8, u16, s16, and so on.
+Give more slack to sink devices before retrying on native aux
+defer. AFAICT the 100 us timeout was not based on the DP spec.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Cc: Sage Weil <sage@inktank.com>
-Cc: David Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: 3.8 stable for backport convenience ]
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/kernel.h | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ drivers/gpu/drm/i915/intel_dp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index c566927..8a7a12b 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -29,6 +29,19 @@
- #define ULLONG_MAX	(~0ULL)
- #define SIZE_MAX	(~(size_t)0)
- 
-+#define U8_MAX		((u8)~0U)
-+#define S8_MAX		((s8)(U8_MAX>>1))
-+#define S8_MIN		((s8)(-S8_MAX - 1))
-+#define U16_MAX		((u16)~0U)
-+#define S16_MAX		((s16)(U16_MAX>>1))
-+#define S16_MIN		((s16)(-S16_MAX - 1))
-+#define U32_MAX		((u32)~0U)
-+#define S32_MAX		((s32)(U32_MAX>>1))
-+#define S32_MIN		((s32)(-S32_MAX - 1))
-+#define U64_MAX		((u64)~0ULL)
-+#define S64_MAX		((s64)(U64_MAX>>1))
-+#define S64_MIN		((s64)(-S64_MAX - 1))
-+
- #define STACK_MAGIC	0xdeadbeef
- 
- #define REPEAT_BYTE(x)	((~0ul / 0xff) * (x))
+diff --git a/drivers/gpu/drm/i915/intel_dp.c b/drivers/gpu/drm/i915/intel_dp.c
+index a671223..394fa61 100644
+--- a/drivers/gpu/drm/i915/intel_dp.c
++++ b/drivers/gpu/drm/i915/intel_dp.c
+@@ -508,7 +508,7 @@ intel_dp_aux_native_write(struct intel_dp *intel_dp,
+ 		if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_ACK)
+ 			break;
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
+@@ -557,7 +557,7 @@ intel_dp_aux_native_read(struct intel_dp *intel_dp,
+ 			return ret - 1;
+ 		}
+ 		else if ((ack & AUX_NATIVE_REPLY_MASK) == AUX_NATIVE_REPLY_DEFER)
+-			udelay(100);
++			usleep_range(400, 500);
+ 		else
+ 			return -EIO;
+ 	}
 -- 
 1.8.3.2
 
