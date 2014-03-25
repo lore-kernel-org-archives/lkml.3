@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777AbaCYPiW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 11:38:22 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:44353 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753440AbaCYPiU (ORCPT
+	id S1753683AbaCYPsj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 11:48:39 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50553 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607AbaCYPsi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 11:38:20 -0400
-Message-ID: <5331B0F9.9000403@cogentembedded.com>
-Date: Tue, 25 Mar 2014 19:38:17 +0300
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Organization: Cogent Embedded
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 11:48:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org, Insop Song <insop.song@gainspeed.com>
+Subject: [PATCH] staging: gs_fpgaboot: remove __TIMESTAMP__ macro
+Date: Tue, 25 Mar 2014 16:48:35 +0100
+Message-ID: <1398516318.KXtUGEPAeQ@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-To: Shuah Khan <shuah.kh@samsung.com>, gregkh@linuxfoundation.org,
-        john@jjdev.com, ced@ryick.net
-CC: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
-Subject: Re: [PATCH] staging/usbip: fix store_attach() sscanf return value
- check
-References: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
-In-Reply-To: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:+Bn+yJGbPHANx3frIZieJzOdHGVv3fxGx2cM0kHM3ny
+ pkcpxOKhfhHVeODDH56nIKLx0igKiFeJRE5kjtqHUuVosJiOk/
+ FSy4rWfEq9yjPH3Byqt8hNvQS98tqNxgg4CVT+eV3QIwlrDf0d
+ oXd9SnMykJVIGWHRFqP4y33I/e+EsPkvTT4GW8q4zcLifwkpKa
+ QwbpBx/ygnkc7A1H6qW/v/1aLRnXGWUMXYIKeqyTFHIhGzvwBZ
+ Cy75rr8eAwpl9gZmlpeUr3czSYnFn1ex/DZvUclbBzKOwmFPNF
+ V5Jr3PsxKHVPDic9ehLF3f1kyNPLBeoCXYlzFc7fXt/SWYEJP3
+ /PkCNV+zictVbWoHsf8U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+We specifically build the kernel with -Werror=date-time to detect
+such macros, which gives us this error:
 
-On 03/25/2014 02:12 AM, Shuah Khan wrote:
+gs_fpgaboot/gs_fpgaboot.c:376:44: error: macro "__TIMESTAMP__" might prevent reproducible builds [-Werror=date-time]
+  pr_info("built at %s UTC\n", __TIMESTAMP__);
 
-> Fix commit - 88fa1ebfa21b5deaaad2dc88ecd9f6af91796cf7
+The obvious fix is to remove the printk output line.
 
-    Please also specify that commit's summary line in parens. Also, there's 
-now an established format for such things:
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Fixes: <12-digit SHA ID> ("<summary line>")
-
-    You can place such line before your signoff line.
-
-> This commit added return value check for sscanf() that parses the
-> input buffer for four input items. However, the return value check
-> is incorrect, as it checks for one input item instead of four which
-> is what it is expecting in the input buffer. As a result, sscanf()
-> will always fail even when the input buffer is correct.
-
-> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
-
-WBR, Sergei
+diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+index 89bc84d..7506900 100644
+--- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
++++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+@@ -373,7 +373,6 @@ static int __init gs_fpgaboot_init(void)
+ 	r = -1;
+ 
+ 	pr_info("FPGA DOWNLOAD --->\n");
+-	pr_info("built at %s UTC\n", __TIMESTAMP__);
+ 
+ 	pr_info("FPGA image file name: %s\n", file);
+ 
 
