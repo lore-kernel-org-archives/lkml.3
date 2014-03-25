@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaCYP4I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 11:56:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45355 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291AbaCYP4F (ORCPT
+	id S1753723AbaCYQBR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:01:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61338 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752070AbaCYQBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 11:56:05 -0400
-Date: Tue, 25 Mar 2014 08:56:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: sedat.dilek@gmail.com
-Cc: linux-mm <linux-mm@kvack.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [v3.17-rc8] LTP oom testsuite produces OOPS
-Message-Id: <20140325085609.9132a2e1.akpm@linux-foundation.org>
-In-Reply-To: <CA+icZUUr2Wua1kNoB1oCje2rU0KQx5c+V6A76UP0c99gg6UxTg@mail.gmail.com>
-References: <CA+icZUUr2Wua1kNoB1oCje2rU0KQx5c+V6A76UP0c99gg6UxTg@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Mar 2014 12:01:16 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>,
+        Xen <xen-devel@lists.xenproject.org>
+Subject: Re: [PATCH] Xen: do hv callback accounting only on x86
+Date: Tue, 25 Mar 2014 17:00:21 +0100
+Message-ID: <12121341.4lKFpaRMcO@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <5057041.71iuvlcH4G@wuerfel>
+References: <5057041.71iuvlcH4G@wuerfel>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:4NNkgRlyhQmbl/i9l6stTqiqacy5OWjmZgPYTKQEZqy
+ Rwjcof3xY3IbmTAH5vvh8pPvrwb5L3Fv3NpBhPOsJMwhC9fpdM
+ 5PJm9FzVxQOzgCggG6XSa7QNebjZII0JYjQ41VmDx3dfLSO4Yu
+ R1z3U7xvcxrBlnx8UhfRlytRHmu2aDifCGB2WFjgnrJILkzH7I
+ UbPDaQ1OOEwg3B/Fo0Gtq8jFhnJWZ4SXczmiR6IMCFJX0ol8Ul
+ Gpr8wELqYNIaSyYBhPYEAcvJytlzdLTuMMJIa1Mhs8bJn0OdzW
+ Q8qSdgsD4MJhlQC1vq5HyXcffWvHcTBvq0mfRhbYaSLkpGYSz5
+ 80wWKpbvblPYOvO1DacY=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar 2014 08:45:34 +0100 Sedat Dilek <sedat.dilek@gmail.com> wrote:
-
-> Hi,
+On Tuesday 25 March 2014 16:52:25 Arnd Bergmann wrote:
+> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+> index 5dd2ddf..8b91c256 100644
+> --- a/drivers/xen/events/events_base.c
+> +++ b/drivers/xen/events/events_base.c
+> @@ -1235,6 +1235,7 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+>  #ifdef CONFIG_X86
+>         exit_idle();
+>  #endif
+> +       inc_irq_stat(irq_hv_callback_count);
 > 
-> as reported in [1] in my post-scriptum I see several OOPs when running
-> LTP and OOM tests (here: oom3).
-> Linus requested to send you mm-folks my bug-report.
+>         __xen_evtchn_do_upcall();
 > 
-> # cd /opt/ltp/
-> 
-> # cat Version
-> 20140115
-> 
-> # ./testcases/bin/oom03
-> 
-> I have tested with latest LTP (15-Jan-2014).
-> 
-> If you need additional information, please let me know.
+> diff --git a/drivers/xen/events/events_base.c b/drivers/xen/events/events_base.c
+> index d5a3de8..dfa12a4 100644
+> --- a/drivers/xen/events/events_base.c
+> +++ b/drivers/xen/events/events_base.c
+> @@ -1248,8 +1248,8 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
+>         irq_enter();
+>  #ifdef CONFIG_X86
+>         exit_idle();
+> -#endif
+>         inc_irq_stat(irq_hv_callback_count);
+> +#endif
+>  
+>         __xen_evtchn_do_upcall();
 
-I don't actually see any oopses there.  There are some stack traces
-associated with the oom-killing events:
+That was unintended: the first half of this email is actually the patch
+that introduced the bug, while the second half is my workaround.
+The way it's formatted, you won't be able to apply it without removing
+the first half again. I'll wait if the approach is ok first and then
+resend it properly if needed.
 
-
-[  104.383349] Memory cgroup out of memory: Kill process 2518 (oom03) score 777 or sacrifice child
-[  104.383352] Killed process 2518 (oom03) total-vm:3152196kB, anon-rss:1048444kB, file-rss:192kB
-[  107.946908] oom03 invoked oom-killer: gfp_mask=0xd0, order=0, oom_score_adj=0
-[  107.946912] oom03 cpuset=/ mems_allowed=0
-[  107.946915] CPU: 0 PID: 2521 Comm: oom03 Not tainted 3.14.0-rc8-1-iniza-small #1
-[  107.946917] Hardware name: SAMSUNG ELECTRONICS CO., LTD. 530U3BI/530U4BI/530U4BH/530U3BI/530U4BI/530U4BH, BIOS 13XK 03/28/2013
-[  107.946919]  ffff880108e58400 ffff880064125be8 ffffffff8170fb45 0000000000000007
-[  107.946923]  ffff880108e7a190 ffff880064125c68 ffffffff8170c6e5 ffff880064125cd8
-[  107.946925]  ffff88010b686858 ffff88011fdf9d80 ffff88010b6863d0 0000000000000000
-[  107.946928] Call Trace:
-[  107.946934]  [<ffffffff8170fb45>] dump_stack+0x46/0x58
-[  107.946937]  [<ffffffff8170c6e5>] dump_header+0x7e/0x1c3
-[  107.946942]  [<ffffffff813881e0>] ? ___ratelimit+0xa0/0x120
-[  107.946946]  [<ffffffff811580e4>] oom_kill_process+0x214/0x370
-[  107.946949]  [<ffffffff81075ce5>] ? has_ns_capability_noaudit+0x15/0x20
-...
-
-But these aren't oopses - mm/oom_kill.c:dump_header() deliberately
-performs a dump_stack() while reporting on the event.
-
+	Arnd
