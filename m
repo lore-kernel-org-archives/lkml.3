@@ -1,101 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999AbaCYKvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:51:25 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:38121 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753932AbaCYKvT (ORCPT
+	id S1753323AbaCYKuq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:50:46 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:52493 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753754AbaCYKui (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:51:19 -0400
+	Tue, 25 Mar 2014 06:50:38 -0400
 From: Alex Shi <alex.shi@linaro.org>
 To: mark.hambleton@broadcom.com, mark.brown@linaro.org,
         eduardo.valentin@ti.com, mporter@linaro.org, lsk-interest@linaro.org,
         linaro-kernel@linaro.org
-Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Rob Herring <rob.herring@calxeda.com>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
         linux-kernel@vger.kernel.org, Alex Shi <alex.shi@linaro.org>
-Subject: [PATCH 13/19] arm: dts: add omap5 CORE thermal data
-Date: Tue, 25 Mar 2014 18:49:26 +0800
-Message-Id: <1395744572-20014-14-git-send-email-alex.shi@linaro.org>
+Subject: [PATCH 08/19] hwmon: tmp102: expose to thermal fw via DT nodes
+Date: Tue, 25 Mar 2014 18:49:21 +0800
+Message-Id: <1395744572-20014-9-git-send-email-alex.shi@linaro.org>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
 References: <1395744572-20014-1-git-send-email-alex.shi@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eduardo Valentin <eduardo.valentin@ti.com>
 
-This patch changes a dtsi file to contain the thermal data
-for CORE domain on OMAP5 and later SoCs. This data will
-enable a thermal shutdown at 125C.
+This patch adds to tmp102 temperature sensor the possibility
+to expose itself as thermal zone device, registered on the
+thermal framework.
 
-This thermal data can be reused across TI SoC devices.
+The thermal zone is built only if a device tree node
+describing a thermal zone for this sensor is present
+inside the tmp102 DT node. Otherwise, the driver behavior
+will be the same.
 
-Cc: "Benoît Cousson" <bcousson@baylibre.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Cc: Rob Herring <rob.herring@calxeda.com>
-Cc: Pawel Moll <pawel.moll@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: Stephen Warren <swarren@wwwdotorg.org>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-omap@vger.kernel.org
-Cc: devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org
+Note: This patch has also been reviewed by Jean D. He has
+requested to perform a wider inspection of possible
+users of thermal and hwmon interaction API. On the other
+hand, the change on this patch is acceptable on first
+step of overall code change.
+
+Cc: Jean Delvare <khali@linux-fr.org>
+Cc: lm-sensors@lm-sensors.org
 Cc: linux-kernel@vger.kernel.org
+Acked-by: Guenter Roeck <linux@roeck-us.net>
 Signed-off-by: Eduardo Valentin <eduardo.valentin@ti.com>
-(cherry picked from commit dcb5004fceeb15f0fdfc4a2b8cd68c6ad515a80b)
+(cherry picked from commit 6a027523f30f1cc90037686e6a682d15c6a555d6)
 
 Signed-off-by: Alex Shi <alex.shi@linaro.org>
 ---
- arch/arm/boot/dts/omap5-core-thermal.dtsi | 28 ++++++++++++++++++++++++++++
- 1 file changed, 28 insertions(+)
- create mode 100644 arch/arm/boot/dts/omap5-core-thermal.dtsi
+ drivers/hwmon/tmp102.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/arch/arm/boot/dts/omap5-core-thermal.dtsi b/arch/arm/boot/dts/omap5-core-thermal.dtsi
-new file mode 100644
-index 0000000..19212ac
---- /dev/null
-+++ b/arch/arm/boot/dts/omap5-core-thermal.dtsi
-@@ -0,0 +1,28 @@
-+/*
-+ * Device Tree Source for OMAP543x SoC CORE thermal
-+ *
-+ * Copyright (C) 2013 Texas Instruments Incorporated - http://www.ti.com/
-+ * Contact: Eduardo Valentin <eduardo.valentin@ti.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public License
-+ * version 2.  This program is licensed "as is" without any warranty of any
-+ * kind, whether express or implied.
-+ */
+diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
+index d7b47ab..6748b45 100644
+--- a/drivers/hwmon/tmp102.c
++++ b/drivers/hwmon/tmp102.c
+@@ -27,6 +27,8 @@
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+ #include <linux/jiffies.h>
++#include <linux/thermal.h>
++#include <linux/of.h>
+ 
+ #define	DRIVER_NAME "tmp102"
+ 
+@@ -50,6 +52,7 @@
+ 
+ struct tmp102 {
+ 	struct device *hwmon_dev;
++	struct thermal_zone_device *tz;
+ 	struct mutex lock;
+ 	u16 config_orig;
+ 	unsigned long last_update;
+@@ -93,6 +96,15 @@ static struct tmp102 *tmp102_update_device(struct i2c_client *client)
+ 	return tmp102;
+ }
+ 
++static int tmp102_read_temp(void *dev, long *temp)
++{
++	struct tmp102 *tmp102 = tmp102_update_device(to_i2c_client(dev));
 +
-+#include <dt-bindings/thermal/thermal.h>
++	*temp = tmp102->temp[0];
 +
-+core_thermal: core_thermal {
-+	polling-delay-passive = <250>; /* milliseconds */
-+	polling-delay = <1000>; /* milliseconds */
++	return 0;
++}
 +
-+			/* sensor       ID */
-+	thermal-sensors = <&bandgap     2>;
+ static ssize_t tmp102_show_temp(struct device *dev,
+ 				struct device_attribute *attr,
+ 				char *buf)
+@@ -204,6 +216,12 @@ static int tmp102_probe(struct i2c_client *client,
+ 		goto fail_remove_sysfs;
+ 	}
+ 
++	tmp102->tz = thermal_zone_of_sensor_register(&client->dev, 0,
++						     &client->dev,
++						     tmp102_read_temp, NULL);
++	if (IS_ERR(tmp102->tz))
++		tmp102->tz = NULL;
 +
-+	trips {
-+		core_crit: core_crit {
-+			temperature = <125000>; /* milliCelsius */
-+			hysteresis = <2000>; /* milliCelsius */
-+			type = "critical";
-+		};
-+	};
-+};
+ 	dev_info(&client->dev, "initialized\n");
+ 
+ 	return 0;
+@@ -220,6 +238,7 @@ static int tmp102_remove(struct i2c_client *client)
+ {
+ 	struct tmp102 *tmp102 = i2c_get_clientdata(client);
+ 
++	thermal_zone_of_sensor_unregister(&client->dev, tmp102->tz);
+ 	hwmon_device_unregister(tmp102->hwmon_dev);
+ 	sysfs_remove_group(&client->dev.kobj, &tmp102_attr_group);
+ 
 -- 
 1.8.1.2
 
