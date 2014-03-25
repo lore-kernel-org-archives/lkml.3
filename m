@@ -1,49 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752826AbaCYKj1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:39:27 -0400
-Received: from mail-we0-f175.google.com ([74.125.82.175]:37067 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750903AbaCYKj0 (ORCPT
+	id S1753087AbaCYKj7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:39:59 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:46707 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbaCYKj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:39:26 -0400
+	Tue, 25 Mar 2014 06:39:58 -0400
+MIME-Version: 1.0
+In-Reply-To: <CADmjqpMqdN0kRA3ee9D8NkDHGrMcXPJKn9XYj+nXp8yYhqH1=A@mail.gmail.com>
+References: <8af4518de872a12afe063edd72e209fe60423280.1395739927.git.viresh.kumar@linaro.org>
+	<CADmjqpMqdN0kRA3ee9D8NkDHGrMcXPJKn9XYj+nXp8yYhqH1=A@mail.gmail.com>
+Date: Tue, 25 Mar 2014 16:09:57 +0530
+Message-ID: <CAKohpo=O2zNzr6TUXZKpB8actq7pu51zzFhrUcX4C7jqCBXPYA@mail.gmail.com>
+Subject: Re: [PATCH] tick: fix spelling mistake in tick_handle_periodic()
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        skarafotis@gmail.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2] tick: fix spelling mistake in tick_handle_periodic()
-Date: Tue, 25 Mar 2014 16:09:18 +0530
-Message-Id: <2b29ca4230c163e44179941d7c7a16c1474385c2.1395743878.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+To: Stratos Karafotis <skarafotis@gmail.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One of the comments in tick_handle_periodic() had 'when' instead of 'which' (My
-guess :)). Fix it.
+On 25 March 2014 16:05, Stratos Karafotis <skarafotis@gmail.com> wrote:
+> Also, on the same line
+> s/posibly/possibly
 
-Also fix spelling mistake in 'Possible'.
+Can't believe I missed that :)
 
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
----
-V1->V2: Fix spelling mistake of possible as well.
-
- kernel/time/tick-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 20b2fe3..0fec634 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -118,7 +118,7 @@ void tick_handle_periodic(struct clock_event_device *dev)
- 		 * to be sure we're using a real hardware clocksource.
- 		 * Otherwise we could get trapped in an infinite
- 		 * loop, as the tick_periodic() increments jiffies,
--		 * when then will increment time, posibly causing
-+		 * which then will increment time, possibly causing
- 		 * the loop to trigger again and again.
- 		 */
- 		if (timekeeping_valid_for_hres())
--- 
-1.7.12.rc2.18.g61b472e
-
+Sent V2.
