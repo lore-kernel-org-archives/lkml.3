@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaCYSAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:00:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55657 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaCYRRT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:17:19 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bjoern C <lkml@call-home.ch>,
-        Alexandru DAMIAN <alexandru.damian@intel.com>,
-        Enrico Tagliavini <enrico.tagliavini@gmail.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 13/81] drm/i915: Add intel_ring_cachline_align()
-Date: Tue, 25 Mar 2014 10:15:26 -0700
-Message-Id: <1395767794-5012-14-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
-References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+	id S1756513AbaCYSCB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:02:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58564 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755151AbaCYSB4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 14:01:56 -0400
+Date: Tue, 25 Mar 2014 11:01:50 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Christoph Lameter <cl@linux.com>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Pekka Enberg <penberg@kernel.org>,
+        Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: slub: gpf in deactivate_slab
+Message-ID: <20140325180149.GD7519@dhcp22.suse.cz>
+References: <53208A87.2040907@oracle.com>
+ <5331A6C3.2000303@oracle.com>
+ <20140325165247.GA7519@dhcp22.suse.cz>
+ <alpine.DEB.2.10.1403251205140.24534@nuc>
+ <20140325175634.GC7519@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140325175634.GC7519@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
+On Tue 25-03-14 10:56:34, Michal Hocko wrote:
+> On Tue 25-03-14 12:06:36, Christoph Lameter wrote:
+> > On Tue, 25 Mar 2014, Michal Hocko wrote:
+> > 
+> > > You are right. The function even does VM_BUG_ON(!irqs_disabled())...
+> > > Unfortunatelly we do not seem to have an _irq alternative of the bit
+> > > spinlock.
+> > > Not sure what to do about it. Christoph?
+> > >
+> > > Btw. it seems to go way back to 3.1 (1d07171c5e58e).
+> > 
+> > Well there is a preempt_enable() (bit_spin_lock) and a preempt_disable()
+> > bit_spin_unlock() within a piece of code where irqs are disabled.
+> > 
+> > Is that a problem? Has been there for a long time.
+> 
+> It is because preempt_enable calls __preempt_schedule when the preempt
+> count drops down to 0. You would need to call preempt_disable before you
+> disable interrupts or use an irq safe bit spin unlock which doesn't
+> enabled preemption unconditionally.
 
-------------------
-
-From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
-
-commit 753b1ad4a281b0663329409d410243e91825c323 upstream.
-
-intel_ring_cachline_align() emits MI_NOOPs until the ring tail is
-aligned to a cacheline boundary.
-
-Cc: Bjoern C <lkml@call-home.ch>
-Cc: Alexandru DAMIAN <alexandru.damian@intel.com>
-Cc: Enrico Tagliavini <enrico.tagliavini@gmail.com>
-Suggested-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/gpu/drm/i915/intel_ringbuffer.c | 21 +++++++++++++++++++++
- drivers/gpu/drm/i915/intel_ringbuffer.h |  1 +
- 2 files changed, 22 insertions(+)
-
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index cd0ba21..b548cb2 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -1453,6 +1453,27 @@ int intel_ring_begin(struct intel_ring_buffer *ring,
- 	return 0;
- }
- 
-+/* Align the ring tail to a cacheline boundary */
-+int intel_ring_cacheline_align(struct intel_ring_buffer *ring)
-+{
-+	int num_dwords = (64 - (ring->tail & 63)) / sizeof(uint32_t);
-+	int ret;
-+
-+	if (num_dwords == 0)
-+		return 0;
-+
-+	ret = intel_ring_begin(ring, num_dwords);
-+	if (ret)
-+		return ret;
-+
-+	while (num_dwords--)
-+		intel_ring_emit(ring, MI_NOOP);
-+
-+	intel_ring_advance(ring);
-+
-+	return 0;
-+}
-+
- void intel_ring_advance(struct intel_ring_buffer *ring)
- {
- 	struct drm_i915_private *dev_priv = ring->dev->dev_private;
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.h b/drivers/gpu/drm/i915/intel_ringbuffer.h
-index 6af87cd..f23812f 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.h
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.h
-@@ -200,6 +200,7 @@ intel_read_status_page(struct intel_ring_buffer *ring,
- void intel_cleanup_ring_buffer(struct intel_ring_buffer *ring);
- 
- int __must_check intel_ring_begin(struct intel_ring_buffer *ring, int n);
-+int __must_check intel_ring_cacheline_align(struct intel_ring_buffer *ring);
- static inline void intel_ring_emit(struct intel_ring_buffer *ring,
- 				   u32 data)
- {
+Hmm, now that I am looking into the code more closely it seems that
+preempt_schedule bails out when interrupts are disabled.
 -- 
-1.8.3.2
-
+Michal Hocko
+SUSE Labs
