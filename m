@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753054AbaCYKn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:43:58 -0400
-Received: from ozlabs.org ([203.10.76.45]:51854 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469AbaCYKn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:43:57 -0400
-Date: Tue, 25 Mar 2014 21:43:56 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Cody P Schafer <cody@linux.vnet.ibm.com>
-Cc: Linux PPC <linuxppc-dev@lists.ozlabs.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <michael@ellerman.id.au>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        scottwood@freescale.com
-Subject: Re: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7
- interface
-Message-ID: <20140325214356.4a2f7d95@kryten>
-In-Reply-To: <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com>
-References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
-	<1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753196AbaCYKo7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:44:59 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:52484 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752771AbaCYKo5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 06:44:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <cover.1395625491.git.micky_ching@realsil.com.cn>
+References: <cover.1395625491.git.micky_ching@realsil.com.cn>
+Date: Tue, 25 Mar 2014 11:44:57 +0100
+Message-ID: <CAPDyKFrk-7msEVcYzY5Vc+ZODtMbiCWGAMU7G2oscgN1Ad9URA@mail.gmail.com>
+Subject: Re: [PATCH 0/2] mmc: rtsx: add new cmd type handle and modify error handle
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 25 March 2014 10:47,  <micky_ching@realsil.com.cn> wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
+>
+> Add new command type(R1 without CRC) handle, without this
+> patch mmc card initialize will be failed.
+>
+> Using a more careful handle in request timeout, this would
+> improve error recover capability. Debug info is printed
+> using non DMA mode, this would help print more accurately
+> for DMA command failed. Smatch warning was removed.
 
-Hi Cody,
+Hi Micky,
 
-hv-24x7: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
-hv-gpci: could not obtain capabilities, error 0x                                                                fffffffffffffffe, not enabling
+Seems like this patchset has been around for some time, sorry for the delay.
 
-> +		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
+I don't have any objections to it getting merged, but you need to run
+checkpatch of your patches. Patch2 has a warning you should fix.
 
-That's a lot of padding :)
+Kind regards
+Ulf Hansson
 
-I think this should also be a pr_debug, considering this is not relevant
-to most ppc64 boxes.
 
-Anton
+>
+> Micky Ching (2):
+>   mmc: rtsx: add R1-no-CRC mmc command type handle
+>   mmc: rtsx: modify error handle and remove smatch warnings
+>
+>  drivers/mmc/host/rtsx_pci_sdmmc.c |  121 ++++++++++++++++++++-----------------
+>  1 file changed, 67 insertions(+), 54 deletions(-)
+>
+> --
+> 1.7.9.5
