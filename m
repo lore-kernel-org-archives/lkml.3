@@ -1,67 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbaCYIak (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:30:40 -0400
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:52770 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753340AbaCYIad (ORCPT
+	id S1754030AbaCYIcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:32:42 -0400
+Received: from smtprelay0148.hostedemail.com ([216.40.44.148]:42442 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752086AbaCYIch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:30:33 -0400
-Message-ID: <53313E39.9080605@st.com>
-Date: Tue, 25 Mar 2014 09:28:41 +0100
-From: Gabriel Fernandez <gabriel.fernandez@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mike Turquette <mturquette@linaro.org>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>,
-        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Pankaj Dev <pankaj.dev@st.com>
-Subject: Re: [PATCH v0 01/15] drivers: clk: st: Support for DIVMUX and PreDiv
- Clocks
-References: <1393514668-17440-1-git-send-email-gabriel.fernandez@st.com> <1393514668-17440-2-git-send-email-gabriel.fernandez@st.com> <20140325052725.32624.39974@quantum>
-In-Reply-To: <20140325052725.32624.39974@quantum>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Tue, 25 Mar 2014 04:32:37 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3866:3867:3870:3873:4321:5007:7514:7652:10004:10400:10848:11232:11473:11658:11914:12043:12114:12295:12296:12517:12519:12555:12740:13019:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cave64_33b1356a4dc4b
+X-Filterd-Recvd-Size: 2317
+Message-ID: <1395736353.3010.6.camel@joe-AO722>
+Subject: Re: [PATCH] drivers:bluetooth:ath3k.c: Fixed sparse warning for
+ cast to restricted __le32
+From: Joe Perches <joe@perches.com>
+To: Surendra Patil <surendra.tux@gmail.com>
+Cc: marcel@holtmann.org, gustavo@padovan.org, johan.hedberg@gmail.com,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 25 Mar 2014 01:32:33 -0700
+In-Reply-To: <1395735950-17968-1-git-send-email-surendra.tux@gmail.com>
+References: <1395735950-17968-1-git-send-email-surendra.tux@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.19.41]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-25_03:2014-03-24,2014-03-25,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+On Tue, 2014-03-25 at 01:25 -0700, Surendra Patil wrote:
+> This patch fixes below Sparse warnings -
+> drivers/bluetooth/ath3k.c:370:17: warning: cast to restricted __le32
+> drivers/bluetooth/ath3k.c:432:17: warning: cast to restricted __le32
 
-I want that you take theses patches directly.
+You are changing output here.
 
-Many thanks
+I suspect rom_version should be marked __le32 instead
+of unsigned int in "struct ath3k_version" instead.
+
+> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+> ---
+>  drivers/bluetooth/ath3k.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+> index be571fe..badacbc 100644
+> --- a/drivers/bluetooth/ath3k.c
+> +++ b/drivers/bluetooth/ath3k.c
+> @@ -367,7 +367,7 @@ static int ath3k_load_patch(struct usb_device *udev)
+>  	}
+>  
+>  	snprintf(filename, ATH3K_NAME_LEN, "ar3k/AthrBT_0x%08x.dfu",
+> -		le32_to_cpu(fw_version.rom_version));
+> +		fw_version.rom_version);
+>  
+>  	ret = request_firmware(&firmware, filename, &udev->dev);
+>  	if (ret < 0) {
+> @@ -429,7 +429,7 @@ static int ath3k_load_syscfg(struct usb_device *udev)
+>  	}
+>  
+>  	snprintf(filename, ATH3K_NAME_LEN, "ar3k/ramps_0x%08x_%d%s",
+> -		le32_to_cpu(fw_version.rom_version), clk_value, ".dfu");
+> +		 fw_version.rom_version, clk_value, ".dfu");
+>  
+>  	ret = request_firmware(&firmware, filename, &udev->dev);
+>  	if (ret < 0) {
 
 
-Best regards
-
-Gabriel.
-
-
-On 03/25/2014 06:27 AM, Mike Turquette wrote:
-> Quoting Gabriel FERNANDEZ (2014-02-27 07:24:14)
->> +/**
->> + * DOC: Clock mux with a programmable divider on each of its three inputs.
->> + *      The mux has an input setting which effectively gates its output.
->> + *
->> + * Traits of this clock:
->> + * prepare - clk_(un)prepare only ensures parent is (un)prepared
-> Minor nitpick but it doesn't look like .prepare or .unprepare are
-> supported below. It looks like this copy/paste comment applies to most
-> of the clk patches as well.
->
-> It's a small problem and doesn't require a patch respin. But perhaps can
-> be cleaned up some day in the future.
->
-> Do you want me to take these patches directly or are you just looking
-> for an Ack?
->
-> Regards,
-> Mike
 
