@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079AbaCYRVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:21:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55908 "EHLO
+	id S1755784AbaCYRhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:37:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55922 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755049AbaCYRVh (ORCPT
+	with ESMTP id S1754993AbaCYRVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:21:37 -0400
+	Tue, 25 Mar 2014 13:21:42 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 29/81] ALSA: usb-audio: Add a quirk for Plantronics Gamecom 780
-Date: Tue, 25 Mar 2014 10:15:42 -0700
-Message-Id: <1395767794-5012-30-git-send-email-kamal@canonical.com>
+Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 51/81] dm thin: avoid metadata commit if a pool's thin devices haven't changed
+Date: Tue, 25 Mar 2014 10:16:04 -0700
+Message-Id: <1395767794-5012-52-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,84 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mike Snitzer <snitzer@redhat.com>
 
-commit 19570d747795f0ecff79403698b868dc5ad7fa86 upstream.
+commit 4d1662a30dde6e545086fe0e8fd7e474c4e0b639 upstream.
 
-Plantronics Gamecom 780 headset has a firmware problem, and when the
-FU 0x09 volume is changed, it results in either too loud or silence
-except for a very narrow range.  This patch provides a workaround,
-ignoring the node, initialize the volume in a sane value and keep
-untouched.
+Commit 905e51b ("dm thin: commit outstanding data every second")
+introduced a periodic commit.  This commit occurs regardless of whether
+any thin devices have made changes.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=65251
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fix the periodic commit to check if any of a pool's thin devices have
+changed using dm_pool_changed_this_transaction().
+
+Reported-by: Alexander Larsson <alexl@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+Acked-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/usb/mixer_maps.c | 10 ++++++++++
- sound/usb/quirks.c     | 14 ++++++++++++++
- 2 files changed, 24 insertions(+)
+ drivers/md/dm-thin-metadata.c | 17 +++++++++++++++++
+ drivers/md/dm-thin-metadata.h |  2 ++
+ drivers/md/dm-thin.c          |  3 ++-
+ 3 files changed, 21 insertions(+), 1 deletion(-)
 
-diff --git a/sound/usb/mixer_maps.c b/sound/usb/mixer_maps.c
-index 0e2ed3d..65e1d7a 100644
---- a/sound/usb/mixer_maps.c
-+++ b/sound/usb/mixer_maps.c
-@@ -322,6 +322,12 @@ static struct usbmix_name_map hercules_usb51_map[] = {
- 	{ 0 }				/* terminator */
- };
- 
-+/* Plantronics Gamecom 780 has a broken volume control, better to disable it */
-+static struct usbmix_name_map gamecom780_map[] = {
-+	{ 9, NULL }, /* FU, speaker out */
-+	{}
-+};
-+
- /*
-  * Control map entries
-  */
-@@ -358,6 +364,10 @@ static struct usbmix_ctl_map usbmix_ctl_maps[] = {
- 		.id = USB_ID(0x046d, 0x09a4),
- 		.ignore_ctl_error = 1,
- 	},
-+	{	/* Plantronics GameCom 780 */
-+		.id = USB_ID(0x047f, 0xc010),
-+		.map = gamecom780_map,
-+	},
- 	{
- 		/* Hercules DJ Console (Windows Edition) */
- 		.id = USB_ID(0x06f8, 0xb000),
-diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
-index f581c3e..d138d1ef 100644
---- a/sound/usb/quirks.c
-+++ b/sound/usb/quirks.c
-@@ -445,6 +445,18 @@ static int snd_usb_cm6206_boot_quirk(struct usb_device *dev)
- 	return err;
+diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
+index 6727958..4f67945 100644
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -1489,6 +1489,23 @@ bool dm_thin_changed_this_transaction(struct dm_thin_device *td)
+ 	return r;
  }
  
-+/* quirk for Plantronics GameCom 780 with CM6302 chip */
-+static int snd_usb_gamecon780_boot_quirk(struct usb_device *dev)
++bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd)
 +{
-+	/* set the initial volume and don't change; other values are either
-+	 * too loud or silent due to firmware bug (bko#65251)
-+	 */
-+	u8 buf[2] = { 0x74, 0xdc };
-+	return snd_usb_ctl_msg(dev, usb_sndctrlpipe(dev, 0), UAC_SET_CUR,
-+			USB_RECIP_INTERFACE | USB_TYPE_CLASS | USB_DIR_OUT,
-+			UAC_FU_VOLUME << 8, 9 << 8, buf, 2);
++	bool r = false;
++	struct dm_thin_device *td, *tmp;
++
++	down_read(&pmd->root_lock);
++	list_for_each_entry_safe(td, tmp, &pmd->thin_devices, list) {
++		if (td->changed) {
++			r = td->changed;
++			break;
++		}
++	}
++	up_read(&pmd->root_lock);
++
++	return r;
 +}
 +
- /*
-  * This call will put the synth in "USB send" mode, i.e it will send MIDI
-  * messages through USB (this is disabled at startup). The synth will
-@@ -756,6 +768,8 @@ int snd_usb_apply_boot_quirk(struct usb_device *dev,
- 		return snd_usb_nativeinstruments_boot_quirk(dev);
- 	case USB_ID(0x0763, 0x2012):  /* M-Audio Fast Track Pro USB */
- 		return snd_usb_fasttrackpro_boot_quirk(dev);
-+	case USB_ID(0x047f, 0xc010): /* Plantronics Gamecom 780 */
-+		return snd_usb_gamecon780_boot_quirk(dev);
- 	}
+ bool dm_thin_aborted_changes(struct dm_thin_device *td)
+ {
+ 	bool r;
+diff --git a/drivers/md/dm-thin-metadata.h b/drivers/md/dm-thin-metadata.h
+index 149d326..457dea1 100644
+--- a/drivers/md/dm-thin-metadata.h
++++ b/drivers/md/dm-thin-metadata.h
+@@ -160,6 +160,8 @@ int dm_thin_remove_block(struct dm_thin_device *td, dm_block_t block);
+  */
+ bool dm_thin_changed_this_transaction(struct dm_thin_device *td);
  
- 	return 0;
++bool dm_pool_changed_this_transaction(struct dm_pool_metadata *pmd);
++
+ bool dm_thin_aborted_changes(struct dm_thin_device *td);
+ 
+ int dm_thin_get_highest_mapped_block(struct dm_thin_device *td,
+diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
+index 3bc2d39..e66e366 100644
+--- a/drivers/md/dm-thin.c
++++ b/drivers/md/dm-thin.c
+@@ -1267,7 +1267,8 @@ static void process_deferred_bios(struct pool *pool)
+ 	bio_list_init(&pool->deferred_flush_bios);
+ 	spin_unlock_irqrestore(&pool->lock, flags);
+ 
+-	if (bio_list_empty(&bios) && !need_commit_due_to_time(pool))
++	if (bio_list_empty(&bios) &&
++	    !(dm_pool_changed_this_transaction(pool->pmd) && need_commit_due_to_time(pool)))
+ 		return;
+ 
+ 	if (commit(pool)) {
 -- 
 1.8.3.2
 
