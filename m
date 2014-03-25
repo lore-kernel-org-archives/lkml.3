@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266AbaCYU5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:57:46 -0400
-Received: from www.linutronix.de ([62.245.132.108]:55372 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754487AbaCYU5o (ORCPT
+	id S1755420AbaCYU7B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:59:01 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28525 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755166AbaCYU6z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:57:44 -0400
-Message-ID: <5331EDC4.1040104@linutronix.de>
-Date: Tue, 25 Mar 2014 21:57:40 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Alan Tull <delicious.quinoa@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/7] gpio: dwapb: correct gpio-cells in binding document
-References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>	<1395505004-22650-3-git-send-email-bigeasy@linutronix.de> <CACRpkdaD=hZGJA0r5DcJs-hFnnkKCFeQ9JwJZ4kcLq5Sb+=ZqQ@mail.gmail.com>
-In-Reply-To: <CACRpkdaD=hZGJA0r5DcJs-hFnnkKCFeQ9JwJZ4kcLq5Sb+=ZqQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Tue, 25 Mar 2014 16:58:55 -0400
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org
+Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, eshelton@pobox.com,
+        fenghua.yu@intel.com, hpa@zytor.com, ian.campbell@citrix.com,
+        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
+        matt.fleming@intel.com, mingo@redhat.com,
+        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
+        tony.luck@intel.com, Daniel Kiper <daniel.kiper@oracle.com>
+Subject: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range() on native EFI platform only
+Date: Tue, 25 Mar 2014 21:57:54 +0100
+Message-Id: <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 09:49 PM, Linus Walleij wrote:
-> This is obviously correct so patch applied.
+Call efi_memblock_x86_reserve_range() on native EFI platform only.
+This is not needed and even it should not be called on platforms
+which wraps EFI infrastructure like Xen.
 
-Thanks.
+Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+---
+ arch/x86/kernel/setup.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> How come I cannot see patch 1/7 in my mailbox :-(
-> 
-> I see patches 2-7/7...
-> 
-> Something on my end?
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index ce72964..992b67a 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -933,7 +933,7 @@ void __init setup_arch(char **cmdline_p)
+ 		set_bit(EFI_64BIT, &x86_efi_facility);
+ 	}
+ 
+-	if (efi_enabled(EFI_BOOT))
++	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature, "EL", 2))
+ 		efi_memblock_x86_reserve_range();
+ #endif
+ 
+-- 
+1.7.10.4
 
-Maybe but you can still blame google for loosing your emails.
-It make it to lkml:
-	https://lkml.org/lkml/2014/3/22/112
-> 
-> Yours,
-> Linus Walleij
-
-Sebastian
