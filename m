@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254AbaCYRWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55989 "EHLO
+	id S1755214AbaCYRWR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55978 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342AbaCYRWY (ORCPT
+	with ESMTP id S1754270AbaCYRWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:24 -0400
+	Tue, 25 Mar 2014 13:22:14 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
+Cc: Kevin Cernekee <cernekee@gmail.com>, Jonas Gorski <jogo@openwrt.org>,
+        Florian Fainelli <florian@openwrt.org>, Felipe Balbi <balbi@ti.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 61/81] ASoC: wm8958-dsp: Fix firmware block loading
-Date: Tue, 25 Mar 2014 10:16:14 -0700
-Message-Id: <1395767794-5012-62-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 36/81] usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
+Date: Tue, 25 Mar 2014 10:15:49 -0700
+Message-Id: <1395767794-5012-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,37 +28,168 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lars-Peter Clausen <lars@metafoo.de>
+From: Florian Fainelli <florian@openwrt.org>
 
-commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
+commit 2d1f7af3d60dd09794e0738a915d272c6c27abc5 upstream.
 
-The codec->control_data contains a pointer to the device's regmap struct. But
-wm8994_bulk_write() expects a pointer to the parent wm8998 device.
+Commit 3dc6475 ("bcm63xx_enet: add support Broadcom BCM6345 Ethernet")
+changed the ENETDMA[CS] macros such that they are no longer macros, but
+actual register offset definitions. The bcm63xx_udc driver was not
+updated, and as a result, causes the following build error to pop up:
 
-The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
-WM8994 I/O code").
+ CC      drivers/usb/gadget/u_ether.o
+drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_write':
+drivers/usb/gadget/bcm63xx_udc.c:642:24: error: called object '0' is not
+a function
+drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_reset_channel':
+drivers/usb/gadget/bcm63xx_udc.c:698:46: error: called object '0' is not
+a function
+drivers/usb/gadget/bcm63xx_udc.c:700:49: error: called object '0' is not
+a function
 
-Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fix this by updating usb_dmac_{read,write}l and usb_dmas_{read,write}l to
+take an extra channel argument, and use the channel width
+(ENETDMA_CHAN_WIDTH) to offset the register we want to access, hence
+doing again what the macro implicitely did for us.
+
+Cc: Kevin Cernekee <cernekee@gmail.com>
+Cc: Jonas Gorski <jogo@openwrt.org>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- sound/soc/codecs/wm8958-dsp2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/gadget/bcm63xx_udc.c | 58 ++++++++++++++++++++++------------------
+ 1 file changed, 32 insertions(+), 26 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8958-dsp2.c b/sound/soc/codecs/wm8958-dsp2.c
-index b0710d8..754f88e 100644
---- a/sound/soc/codecs/wm8958-dsp2.c
-+++ b/sound/soc/codecs/wm8958-dsp2.c
-@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc_codec *codec, const char *name,
+diff --git a/drivers/usb/gadget/bcm63xx_udc.c b/drivers/usb/gadget/bcm63xx_udc.c
+index 47a4993..a95fb3c 100644
+--- a/drivers/usb/gadget/bcm63xx_udc.c
++++ b/drivers/usb/gadget/bcm63xx_udc.c
+@@ -361,24 +361,30 @@ static inline void usb_dma_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
+ 	bcm_writel(val, udc->iudma_regs + off);
+ }
  
- 			data32 &= 0xffffff;
+-static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off)
++static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off, int chan)
+ {
+-	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
++	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
  
--			wm8994_bulk_write(codec->control_data,
-+			wm8994_bulk_write(wm8994->wm8994,
- 					  data32 & 0xffffff,
- 					  block_len / 2,
- 					  (void *)(data + 8));
+-static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
++static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
++					int chan)
+ {
+-	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
++	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+-static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off)
++static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off, int chan)
+ {
+-	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
++	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+-static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
++static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
++					int chan)
+ {
+-	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
++	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
++			(ENETDMA_CHAN_WIDTH * chan));
+ }
+ 
+ static inline void set_clocks(struct bcm63xx_udc *udc, bool is_enabled)
+@@ -639,7 +645,7 @@ static void iudma_write(struct bcm63xx_udc *udc, struct iudma_ch *iudma,
+ 	} while (!last_bd);
+ 
+ 	usb_dmac_writel(udc, ENETDMAC_CHANCFG_EN_MASK,
+-			ENETDMAC_CHANCFG_REG(iudma->ch_idx));
++			ENETDMAC_CHANCFG_REG, iudma->ch_idx);
+ }
+ 
+ /**
+@@ -695,9 +701,9 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
+ 		bcm63xx_fifo_reset_ep(udc, max(0, iudma->ep_num));
+ 
+ 	/* stop DMA, then wait for the hardware to wrap up */
+-	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG(ch_idx));
++	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG, ch_idx);
+ 
+-	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)) &
++	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx) &
+ 				   ENETDMAC_CHANCFG_EN_MASK) {
+ 		udelay(1);
+ 
+@@ -714,10 +720,10 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
+ 			dev_warn(udc->dev, "forcibly halting IUDMA channel %d\n",
+ 				 ch_idx);
+ 			usb_dmac_writel(udc, ENETDMAC_CHANCFG_BUFHALT_MASK,
+-					ENETDMAC_CHANCFG_REG(ch_idx));
++					ENETDMAC_CHANCFG_REG, ch_idx);
+ 		}
+ 	}
+-	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG(ch_idx));
++	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG, ch_idx);
+ 
+ 	/* don't leave "live" HW-owned entries for the next guy to step on */
+ 	for (d = iudma->bd_ring; d <= iudma->end_bd; d++)
+@@ -729,11 +735,11 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
+ 
+ 	/* set up IRQs, UBUS burst size, and BD base for this channel */
+ 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
+-			ENETDMAC_IRMASK_REG(ch_idx));
+-	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG(ch_idx));
++			ENETDMAC_IRMASK_REG, ch_idx);
++	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG, ch_idx);
+ 
+-	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG(ch_idx));
+-	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG(ch_idx));
++	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG, ch_idx);
++	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG, ch_idx);
+ }
+ 
+ /**
+@@ -2038,7 +2044,7 @@ static irqreturn_t bcm63xx_udc_data_isr(int irq, void *dev_id)
+ 	spin_lock(&udc->lock);
+ 
+ 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
+-			ENETDMAC_IR_REG(iudma->ch_idx));
++			ENETDMAC_IR_REG, iudma->ch_idx);
+ 	bep = iudma->bep;
+ 	rc = iudma_read(udc, iudma);
+ 
+@@ -2178,18 +2184,18 @@ static int bcm63xx_iudma_dbg_show(struct seq_file *s, void *p)
+ 		seq_printf(s, " [ep%d]:\n",
+ 			   max_t(int, iudma_defaults[ch_idx].ep_num, 0));
+ 		seq_printf(s, "  cfg: %08x; irqstat: %08x; irqmask: %08x; maxburst: %08x\n",
+-			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_IR_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG(ch_idx)),
+-			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG(ch_idx)));
++			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_IR_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG, ch_idx),
++			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG, ch_idx));
+ 
+-		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG(ch_idx));
+-		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG(ch_idx));
++		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG, ch_idx);
++		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG, ch_idx);
+ 		seq_printf(s, "  base: %08x; index: %04x_%04x; desc: %04x_%04x %08x\n",
+-			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG(ch_idx)),
++			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG, ch_idx),
+ 			   sram2 >> 16, sram2 & 0xffff,
+ 			   sram3 >> 16, sram3 & 0xffff,
+-			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG(ch_idx)));
++			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG, ch_idx));
+ 		seq_printf(s, "  desc: %d/%d used", iudma->n_bds_used,
+ 			   iudma->n_bds);
+ 
 -- 
 1.8.3.2
 
