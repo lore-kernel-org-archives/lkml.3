@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbaCYMGG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 08:06:06 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:21898 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbaCYMGC (ORCPT
+	id S1753156AbaCYMG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 08:06:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:25104 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067AbaCYMG5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 08:06:02 -0400
-Message-ID: <5331711B.9040405@huawei.com>
-Date: Tue, 25 Mar 2014 20:05:47 +0800
-From: Jianguo Wu <wujianguo@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
+	Tue, 25 Mar 2014 08:06:57 -0400
+X-IronPort-AV: E=Sophos;i="4.97,728,1389744000"; 
+   d="scan'208";a="113298811"
+Date: Tue, 25 Mar 2014 12:06:09 +0000
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball.uk.xensource.com
+To: <peterz@infradead.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <konrad.wilk@oracle.com>, <marc.zyngier@arm.com>,
+        <will.deacon@arm.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        <linux@arm.linux.org.uk>, <olof@lixom.net>, <arnd@arndb.de>,
+        <catalin.marinas@arm.com>, <mingo@redhat.com>,
+        <xen-devel@lists.xensource.com>
+Subject: Re: [PATCH v9 2/5] kernel: missing include in cputime.c
+In-Reply-To: <1389292336-9292-2-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.02.1403251204240.8273@kaball.uk.xensource.com>
+References: <alpine.DEB.2.02.1401091755390.21510@kaball.uk.xensource.com> <1389292336-9292-2-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-CC: Ben Hutchings <ben@decadent.org.uk>, <linux-kernel@vger.kernel.org>,
-        <stable@vger.kernel.org>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Andres Bertens <abertensu@yahoo.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
-References: <20140308010611.468206150@linuxfoundation.org> <1553572.xqrhDm938v@tux200s> <1395716117.2832.86.camel@deadeye.wl.decadent.org.uk> <3326096.NJGQSn5Qfa@tux200s>
-In-Reply-To: <3326096.NJGQSn5Qfa@tux200s>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.24.155]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset="US-ASCII"
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/25 17:29, Andreas Sturmlechner wrote:
+Peter,
+is this patch OK for you?
 
-> Original Message from: Ben Hutchings <ben@decadent.org.uk>
->>
->> One piece of my backport to 3.2.y went missing in the forward-port to
->> 3.4.y.  Can you test 3.4.83 with this patch on top?
->>
->> Ben.
+On Thu, 9 Jan 2014, Stefano Stabellini wrote:
+> steal_account_process_tick calls paravirt_steal_clock, but paravirt.h is
+> currently missing among the included header files.
+> Add include asm/paravirt.h.
 > 
-> iwlwifi works with the additional patch, thanks :)
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> CC: mingo@redhat.com
+> CC: peterz@infradead.org
+> ---
+>  kernel/sched/cputime.c |    3 +++
+>  1 file changed, 3 insertions(+)
 > 
+> diff --git a/kernel/sched/cputime.c b/kernel/sched/cputime.c
+> index 9994791..951833e 100644
+> --- a/kernel/sched/cputime.c
+> +++ b/kernel/sched/cputime.c
+> @@ -5,6 +5,9 @@
+>  #include <linux/static_key.h>
+>  #include <linux/context_tracking.h>
+>  #include "sched.h"
+> +#ifdef CONFIG_PARAVIRT
+> +#include <asm/paravirt.h>
+> +#endif
+>  
+>  
+>  #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+> -- 
+> 1.7.10.4
 > 
-> 
-
-
-Sorry for the missing part, thanks, Ben.
-
