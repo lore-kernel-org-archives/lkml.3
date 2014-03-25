@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689AbaCYTBH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:01:07 -0400
-Received: from palahniuk.acksyn.org ([5.9.7.26]:44648 "EHLO
-	palahniuk.acksyn.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754010AbaCYTBF (ORCPT
+	id S1754275AbaCYTKw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:10:52 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:41860 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750929AbaCYTKt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:01:05 -0400
-From: Michele Baldessari <michele@acksyn.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Michele Baldessari <michele@acksyn.org>
-Subject: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes VX-001 ExpressCard
-Date: Tue, 25 Mar 2014 19:00:51 +0000
-Message-Id: <1395774051-22470-1-git-send-email-michele@acksyn.org>
-X-Mailer: git-send-email 1.8.5.3
+	Tue, 25 Mar 2014 15:10:49 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-43-5331d4b7e54c
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
+        linux-ide@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ata: limit sata_rcar host driver to ARCH_SHMOBILE
+Date: Tue, 25 Mar 2014 20:10:27 +0100
+Message-id: <9835622.nRa3VdL61G@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrMLMWRmVeSWpSXmKPExsVy+t9jQd3tVwyDDc6uULNo3vqV0WLT42us
+	Fsd2PGKyuLxrDpvFnD9TmC0erH7LZvFr+VFGB3aPnbPusntsWtXJ5rF5Sb3HnJ/fWDw+b5IL
+	YI3isklJzcksSy3St0vgyvj4+ixTwXW2iuVPVzE2MJ5h7WLk5JAQMJF4eXY9M4QtJnHh3no2
+	EFtIYDqjxNk3gl2MXEB2C5PEt7erwBrYBKwkJravYgSxRQRkJa5Me8gIUsQscJxRovfGZRaQ
+	hLCAk0T3lcNMIDaLgKrE+8/zwGxeAU2JL/O/gw0SFfCU2LF9JRtEXFDix+R7YL3MAvIS+/ZP
+	ZYWwtSTW7zzONIGRbxaSsllIymYhKVvAyLyKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzho
+	n0ntYFzZYHGIUYCDUYmHd8IEw2Ah1sSy4srcQ4wSHMxKIrx/TwKFeFMSK6tSi/Lji0pzUosP
+	MUpzsCiJ8x5otQ4UEkhPLEnNTk0tSC2CyTJxcEo1MIq8z0ydk7vfY0XzX/FYw5bJpiZa7A/v
+	6vzueXsvUYyzeW7EqzKPeZuSnrV8z4rPDwmc/3LV1GYp7yprS67V/MpfZGzbq9I+VHpuFNnK
+	xXeG421bnujtgtKd0WuzrvO8eKu9nTuN3+jXPJn7/xjfbG38sKVu2nznfxF2+UaL8v6EzHI9
+	tuersBJLcUaioRZzUXEiAG2nucRWAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Custom VID/PID for Brainboxes VX-001 ExpressCard RS232 as reported in
-https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+Limit sata_rcar host driver to ARCH_SHMOBILE as Renesas R-Car SATA
+support is specific to Renesas SoCs and the driver to work requires
+suitable device tree node (or platform device) to be defined.
 
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Cc: Simon Horman <horms@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 7 +++++++
- 2 files changed, 9 insertions(+)
+ drivers/ata/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 44ab12986805..bf72063d6f48 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -909,6 +909,8 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	/* Cressi Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-+	/* Brainbox Devices */
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
- 	{ }					/* Terminating entry */
- };
+Index: b/drivers/ata/Kconfig
+===================================================================
+--- a/drivers/ata/Kconfig	2014-03-25 19:52:31.952327027 +0100
++++ b/drivers/ata/Kconfig	2014-03-25 19:57:21.104322097 +0100
+@@ -298,6 +298,7 @@ config SATA_PROMISE
  
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index e599fbfcde5f..ae842a203371 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1326,3 +1326,10 @@
-  * Manufacturer: Cressi
-  */
- #define FTDI_CRESSI_PID		0x87d0
-+
-+/*
-+ * Product: ExpressCard 1 Port RS2323
-+ * Manufacturer: Brainboxes
-+ */
-+#define BRAINBOXES_VID		0x05d1
-+#define BRAINBOXES_VX_001_PID	0x1001
--- 
-1.8.5.3
+ config SATA_RCAR
+ 	tristate "Renesas R-Car SATA support"
++	depends on ARCH_SHMOBILE
+ 	help
+ 	  This option enables support for Renesas R-Car Serial ATA.
+ 
 
