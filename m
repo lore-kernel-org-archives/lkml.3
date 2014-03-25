@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419AbaCYRRd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:17:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55607 "EHLO
+	id S1754520AbaCYRST (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:18:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55675 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167AbaCYRRQ (ORCPT
+	with ESMTP id S1754481AbaCYRSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:17:16 -0400
+	Tue, 25 Mar 2014 13:18:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 16/81] ext4: don't try to modify s_flags if the the file system is read-only
-Date: Tue, 25 Mar 2014 10:15:29 -0700
-Message-Id: <1395767794-5012-17-git-send-email-kamal@canonical.com>
+Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 80/81] powerpc/crashdump : Fix page frame number check in copy_oldmem_page
+Date: Tue, 25 Mar 2014 10:16:33 -0700
+Message-Id: <1395767794-5012-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,57 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-commit 23301410972330c0ae9a8afc379ba2005e249cc6 upstream.
+commit f5295bd8ea8a65dc5eac608b151386314cb978f1 upstream.
 
-If an ext4 file system is created by some tool other than mke2fs
-(perhaps by someone who has a pathalogical fear of the GPL) that
-doesn't set one or the other of the EXT2_FLAGS_{UN}SIGNED_HASH flags,
-and that file system is then mounted read-only, don't try to modify
-the s_flags field.  Otherwise, if dm_verity is in use, the superblock
-will change, causing an dm_verity failure.
+In copy_oldmem_page, the current check using max_pfn and min_low_pfn to
+decide if the page is backed or not, is not valid when the memory layout is
+not continuous.
 
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This happens when running as a QEMU/KVM guest, where RTAS is mapped higher
+in the memory. In that case max_pfn points to the end of RTAS, and a hole
+between the end of the kdump kernel and RTAS is not backed by PTEs. As a
+consequence, the kdump kernel is crashing in copy_oldmem_page when accessing
+in a direct way the pages in that hole.
+
+This fix relies on the memblock's service memblock_is_region_memory to
+check if the read page is part or not of the directly accessible memory.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Tested-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/super.c | 20 +++++++++++++-------
- 1 file changed, 13 insertions(+), 7 deletions(-)
+ arch/powerpc/kernel/crash_dump.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index c27683e..3e87d3a 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -3578,16 +3578,22 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	for (i = 0; i < 4; i++)
- 		sbi->s_hash_seed[i] = le32_to_cpu(es->s_hash_seed[i]);
- 	sbi->s_def_hash_version = es->s_def_hash_version;
--	i = le32_to_cpu(es->s_flags);
--	if (i & EXT2_FLAGS_UNSIGNED_HASH)
--		sbi->s_hash_unsigned = 3;
--	else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
-+	if (EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_DIR_INDEX)) {
-+		i = le32_to_cpu(es->s_flags);
-+		if (i & EXT2_FLAGS_UNSIGNED_HASH)
-+			sbi->s_hash_unsigned = 3;
-+		else if ((i & EXT2_FLAGS_SIGNED_HASH) == 0) {
- #ifdef __CHAR_UNSIGNED__
--		es->s_flags |= cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
--		sbi->s_hash_unsigned = 3;
-+			if (!(sb->s_flags & MS_RDONLY))
-+				es->s_flags |=
-+					cpu_to_le32(EXT2_FLAGS_UNSIGNED_HASH);
-+			sbi->s_hash_unsigned = 3;
- #else
--		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
-+			if (!(sb->s_flags & MS_RDONLY))
-+				es->s_flags |=
-+					cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
- #endif
-+		}
- 	}
+diff --git a/arch/powerpc/kernel/crash_dump.c b/arch/powerpc/kernel/crash_dump.c
+index b3ba516..9d6a4a4 100644
+--- a/arch/powerpc/kernel/crash_dump.c
++++ b/arch/powerpc/kernel/crash_dump.c
+@@ -108,17 +108,19 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
+ 			size_t csize, unsigned long offset, int userbuf)
+ {
+ 	void  *vaddr;
++	phys_addr_t paddr;
  
- 	/* Handle clustersize */
+ 	if (!csize)
+ 		return 0;
+ 
+ 	csize = min_t(size_t, csize, PAGE_SIZE);
++	paddr = pfn << PAGE_SHIFT;
+ 
+-	if ((min_low_pfn < pfn) && (pfn < max_pfn)) {
+-		vaddr = __va(pfn << PAGE_SHIFT);
++	if (memblock_is_region_memory(paddr, csize)) {
++		vaddr = __va(paddr);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 	} else {
+-		vaddr = __ioremap(pfn << PAGE_SHIFT, PAGE_SIZE, 0);
++		vaddr = __ioremap(paddr, PAGE_SIZE, 0);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 		iounmap(vaddr);
+ 	}
 -- 
 1.8.3.2
 
