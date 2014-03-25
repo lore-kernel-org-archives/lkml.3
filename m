@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697AbaCYRgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:36:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55948 "EHLO
+	id S1755728AbaCYRgk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:36:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55938 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754322AbaCYRWD (ORCPT
+	with ESMTP id S1755126AbaCYRV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:03 -0400
+	Tue, 25 Mar 2014 13:21:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 56/81] SELinux: bigendian problems with filename trans rules
-Date: Tue, 25 Mar 2014 10:16:09 -0700
-Message-Id: <1395767794-5012-57-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 58/81] ASoC: sta32x: Fix cache sync
+Date: Tue, 25 Mar 2014 10:16:11 -0700
+Message-Id: <1395767794-5012-59-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,44 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Paris <eparis@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
+commit 70ff00f82a6af0ff68f8f7b411738634ce2f20d0 upstream.
 
-When writing policy via /sys/fs/selinux/policy I wrote the type and class
-of filename trans rules in CPU endian instead of little endian.  On
-x86_64 this works just fine, but it means that on big endian arch's like
-ppc64 and s390 userspace reads the policy and converts it from
-le32_to_cpu.  So the values are all screwed up.  Write the values in le
-format like it should have been to start.
+codec->control_data contains a pointer to the regmap struct of the device, not
+to the device private data. Use snd_soc_codec_get_drvdata() instead.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
-Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+The issue was introduced in commit 29fdf4fbbe ("ASoC: sta32x: Convert to
+regmap").
+
+Fixes: 29fdf4fbbe (ASoC: sta32x: Convert to regmap)
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- security/selinux/ss/policydb.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ sound/soc/codecs/sta32x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 142a59f..bcdca73 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -3258,10 +3258,10 @@ static int filename_write_helper(void *key, void *data, void *ptr)
- 	if (rc)
- 		return rc;
+diff --git a/sound/soc/codecs/sta32x.c b/sound/soc/codecs/sta32x.c
+index dc5e7f5..4d8a3ae 100644
+--- a/sound/soc/codecs/sta32x.c
++++ b/sound/soc/codecs/sta32x.c
+@@ -331,7 +331,7 @@ static int sta32x_sync_coef_shadow(struct snd_soc_codec *codec)
  
--	buf[0] = ft->stype;
--	buf[1] = ft->ttype;
--	buf[2] = ft->tclass;
--	buf[3] = otype->otype;
-+	buf[0] = cpu_to_le32(ft->stype);
-+	buf[1] = cpu_to_le32(ft->ttype);
-+	buf[2] = cpu_to_le32(ft->tclass);
-+	buf[3] = cpu_to_le32(otype->otype);
+ static int sta32x_cache_sync(struct snd_soc_codec *codec)
+ {
+-	struct sta32x_priv *sta32x = codec->control_data;
++	struct sta32x_priv *sta32x = snd_soc_codec_get_drvdata(codec);
+ 	unsigned int mute;
+ 	int rc;
  
- 	rc = put_entry(buf, sizeof(u32), 4, fp);
- 	if (rc)
 -- 
 1.8.3.2
 
