@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996AbaCYVXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 17:23:08 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:36935 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751926AbaCYVXE (ORCPT
+	id S1752071AbaCYVZX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 17:25:23 -0400
+Received: from smtprelay0115.hostedemail.com ([216.40.44.115]:59596 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751702AbaCYVZV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 17:23:04 -0400
-Message-ID: <5331F3B2.9000602@gmail.com>
-Date: Tue, 25 Mar 2014 22:22:58 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        =?ISO-8859-1?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-Subject: Re: [PATCH v3] clk: berlin: add support for berlin plls
-References: <1395775772-19685-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1395775772-19685-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Mar 2014 17:25:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:973:981:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:2892:3138:3139:3140:3141:3142:3352:3622:3865:3867:3873:4321:5007:7652:10004:10400:10848:11026:11473:11658:11914:12296:12438:12517:12519:12740:13019:13069:13161:13229:13311:13357:13848,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: rifle48_687a782346353
+X-Filterd-Recvd-Size: 2441
+Message-ID: <1395782716.3010.31.camel@joe-AO722>
+Subject: Re: [PATCH 7/7 v2] gpio: dwapb: use d->mask instead od BIT(bit)
+From: Joe Perches <joe@perches.com>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alexandre Courbot <gnurou@gmail.com>, atull@altera.com,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        dinguyen@altera.com, delicious.quinoa@gmail.com
+Date: Tue, 25 Mar 2014 14:25:16 -0700
+In-Reply-To: <20140325211841.GA31253@linutronix.de>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+	 <1395505004-22650-8-git-send-email-bigeasy@linutronix.de>
+	 <CAAVeFu+WQCpo=LEZqdAhpMcO1PLqUzfcVKTafnwe=BiLGLjFZQ@mail.gmail.com>
+	 <20140325211841.GA31253@linutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 08:29 PM, Alexandre Belloni wrote:
-> This drivers allows to provide DT clocks for the cpu and system PLLs found on
-> Marvell Berlin SoCs.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+On Tue, 2014-03-25 at 22:18 +0100, Sebastian Andrzej Siewior wrote:
+> d->mask contains exact the same information as BIT(bit) so we could save
+> a few cycles here.
 
-Tested on BG2 and BG2CD, therefore
+I think you actually lose a few cycles here as
+the pointer has to be dereferenced for each use.
 
-Acked-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+> diff --git a/drivers/gpio/gpio-dwapb.c b/drivers/gpio/gpio-dwapb.c
+[]
+> @@ -171,24 +170,24 @@ static int dwapb_irq_set_type(struct irq_data *d, u32 type)
+>  
+>  	switch (type) {
+>  	case IRQ_TYPE_EDGE_BOTH:
+> -		level |= BIT(bit);
+> -		dwapb_toggle_trigger(gpio, bit);
+> +		level |= d->mask;
+> +		dwapb_toggle_trigger(gpio, d->hwirq);
+>  		break;
+>  	case IRQ_TYPE_EDGE_RISING:
+> -		level |= BIT(bit);
+> -		polarity |= BIT(bit);
+> +		level |= d->mask;
+> +		polarity |= d->mask;
+>  		break;
+>  	case IRQ_TYPE_EDGE_FALLING:
+> -		level |= BIT(bit);
+> -		polarity &= ~BIT(bit);
+> +		level |= d->mask;
+> +		polarity &= ~d->mask;
+>  		break;
+>  	case IRQ_TYPE_LEVEL_HIGH:
+> -		level &= ~BIT(bit);
+> -		polarity |= BIT(bit);
+> +		level &= ~d->mask;
+> +		polarity |= d->mask;
+>  		break;
+>  	case IRQ_TYPE_LEVEL_LOW:
+> -		level &= ~BIT(bit);
+> -		polarity &= ~BIT(bit);
+> +		level &= ~d->mask;
+> +		polarity &= ~d->mask;
+>  		break;
+>  	}
+>  
 
-> ---
-> Changes in v3:
->  - removed empty lines a the end of the files
->  - vcodiv are now arrays filled with zeros by default
->  - use an u64 temporary variable to calculate the rate
->  - warn when refdiv or vcodiv are zero
-> 
-> ---
->  drivers/clk/Makefile              |   1 +
->  drivers/clk/berlin/Makefile       |   4 ++
->  drivers/clk/berlin/common.h       |  35 ++++++++++++
->  drivers/clk/berlin/pll-berlin2.c  |  40 +++++++++++++
->  drivers/clk/berlin/pll-berlin2q.c |  40 +++++++++++++
->  drivers/clk/berlin/pll.c          | 114 ++++++++++++++++++++++++++++++++++++++
->  6 files changed, 234 insertions(+)
->  create mode 100644 drivers/clk/berlin/Makefile
->  create mode 100644 drivers/clk/berlin/common.h
->  create mode 100644 drivers/clk/berlin/pll-berlin2.c
->  create mode 100644 drivers/clk/berlin/pll-berlin2q.c
->  create mode 100644 drivers/clk/berlin/pll.c
+
 
