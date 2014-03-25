@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaCYQh4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:37:56 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58085 "EHLO
+	id S1754016AbaCYQiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:38:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58086 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545AbaCYQhy (ORCPT
+	with ESMTP id S1753913AbaCYQh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:37:54 -0400
-Date: Tue, 25 Mar 2014 09:37:26 -0700
+	Tue, 25 Mar 2014 12:37:59 -0400
+Date: Tue, 25 Mar 2014 09:37:38 -0700
 From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
-Message-ID: <tip-ea2e64f280d2a34a8ed9ae3d783cd770d14b70ec@git.kernel.org>
+Message-ID: <tip-b712c8dae05931a76b6c17a4254f403798e6caef@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        vincent.weaver@maine.edu, tj@kernel.org, tglx@linutronix.de
+        vincent.weaver@maine.edu, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        vincent.weaver@maine.edu, tj@kernel.org, tglx@linutronix.de
-In-Reply-To: <20140323141939.911487677@linutronix.de>
-References: <20140323141939.911487677@linutronix.de>
+        vincent.weaver@maine.edu, tglx@linutronix.de
+In-Reply-To: <20140323141940.034005322@linutronix.de>
+References: <20140323141940.034005322@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/core] workqueue:
-  Provide destroy_delayed_work_on_stack()
-Git-Commit-ID: ea2e64f280d2a34a8ed9ae3d783cd770d14b70ec
+Subject: [tip:timers/core] x86: hpet:
+  Use proper destructor for delayed work
+Git-Commit-ID: b712c8dae05931a76b6c17a4254f403798e6caef
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,64 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ea2e64f280d2a34a8ed9ae3d783cd770d14b70ec
-Gitweb:     http://git.kernel.org/tip/ea2e64f280d2a34a8ed9ae3d783cd770d14b70ec
+Commit-ID:  b712c8dae05931a76b6c17a4254f403798e6caef
+Gitweb:     http://git.kernel.org/tip/b712c8dae05931a76b6c17a4254f403798e6caef
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Sun, 23 Mar 2014 14:20:44 +0000
+AuthorDate: Sun, 23 Mar 2014 14:20:45 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 25 Mar 2014 17:33:42 +0100
+CommitDate: Tue, 25 Mar 2014 17:34:01 +0100
 
-workqueue: Provide destroy_delayed_work_on_stack()
+x86: hpet: Use proper destructor for delayed work
 
-If a delayed or deferrable work is on stack we need to tell debug
-objects that we are destroying the timer and the work. Otherwise we
-leak the tracking object.
+destroy_timer_on_stack() is hardly the right thing for a delayed
+work. We leak a tracking object for the work itself when DEBUG_OBJECTS
+is enabled.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Vince Weaver <vincent.weaver@maine.edu>
-Acked-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/20140323141939.911487677@linutronix.de
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20140323141940.034005322@linutronix.de
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/workqueue.h | 2 ++
- kernel/workqueue.c        | 7 +++++++
- 2 files changed, 9 insertions(+)
+ arch/x86/kernel/hpet.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 594521b..abdbe5a 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -191,6 +191,7 @@ struct execute_work {
- #ifdef CONFIG_DEBUG_OBJECTS_WORK
- extern void __init_work(struct work_struct *work, int onstack);
- extern void destroy_work_on_stack(struct work_struct *work);
-+extern void destroy_delayed_work_on_stack(struct delayed_work *work);
- static inline unsigned int work_static(struct work_struct *work)
- {
- 	return *work_data_bits(work) & WORK_STRUCT_STATIC;
-@@ -198,6 +199,7 @@ static inline unsigned int work_static(struct work_struct *work)
- #else
- static inline void __init_work(struct work_struct *work, int onstack) { }
- static inline void destroy_work_on_stack(struct work_struct *work) { }
-+static inline void destroy_delayed_work_on_stack(struct delayed_work *work) { }
- static inline unsigned int work_static(struct work_struct *work) { return 0; }
- #endif
- 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 82ef9f3..5b690b5 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -516,6 +516,13 @@ void destroy_work_on_stack(struct work_struct *work)
- }
- EXPORT_SYMBOL_GPL(destroy_work_on_stack);
- 
-+void destroy_delayed_work_on_stack(struct delayed_work *work)
-+{
-+	destroy_timer_on_stack(&work->timer);
-+	debug_object_free(&work->work, &work_debug_descr);
-+}
-+EXPORT_SYMBOL_GPL(destroy_delayed_work_on_stack);
-+
- #else
- static inline void debug_work_activate(struct work_struct *work) { }
- static inline void debug_work_deactivate(struct work_struct *work) { }
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index da85a8e..b91abfd 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -699,7 +699,7 @@ static int hpet_cpuhp_notify(struct notifier_block *n,
+ 		/* FIXME: add schedule_work_on() */
+ 		schedule_delayed_work_on(cpu, &work.work, 0);
+ 		wait_for_completion(&work.complete);
+-		destroy_timer_on_stack(&work.work.timer);
++		destroy_delayed_work_on_stack(&work.work);
+ 		break;
+ 	case CPU_DEAD:
+ 		if (hdev) {
