@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaCYW2c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 18:28:32 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42016 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751431AbaCYW2b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 18:28:31 -0400
+	id S1755578AbaCYWfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 18:35:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5746 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126AbaCYWfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 18:35:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,730,1389772800"; 
+   d="scan'208";a="507508589"
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Subject: Re: [PATCH] tools, perf: Allow the user to disable time stamps
+References: <1395780272-27106-1-git-send-email-andi@firstfloor.org>
+	<CABPqkBSpoc1LX3=hZTnwM9KAeu943kbS0UgCbupWJf1idtdWNg@mail.gmail.com>
+	<20140325210109.GH15074@tassilo.jf.intel.com>
+	<CABPqkBT48Nx0qkPgnS=JsX0Etb7Xr1rLgoOAk1bt7L+DHvugGA@mail.gmail.com>
+Date: Tue, 25 Mar 2014 15:34:52 -0700
+In-Reply-To: <CABPqkBT48Nx0qkPgnS=JsX0Etb7Xr1rLgoOAk1bt7L+DHvugGA@mail.gmail.com>
+	(Stephane Eranian's message of "Tue, 25 Mar 2014 23:15:05 +0100")
+Message-ID: <87wqfhoqk3.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1394512286-31481-1-git-send-email-nunes.erico@gmail.com>
-References: <1394512286-31481-1-git-send-email-nunes.erico@gmail.com>
-Date: Tue, 25 Mar 2014 19:28:30 -0300
-Message-ID: <CAK4VdL33t-rbVGfj5xH3nVeGt5fjnZjvcNH+zZ=4Dibj7snsYg@mail.gmail.com>
-Subject: Re: [PATCH] mtd: nand: fix mention to CONFIG_MTD_NAND_ECC_BCH
-From: Erico Nunes <nunes.erico@gmail.com>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Brian Norris <computersforpeace@gmail.com>, b32955@freescale.com,
-        artem.bityutskiy@linux.intel.com,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Erico Nunes <nunes.erico@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-11 1:31 GMT-03:00 Erico Nunes <nunes.erico@gmail.com>:
-> Mention to CONFIG_MTD_ECC_BCH in the warning message can be confusing as this
-> doesn't match the exact name of the configuration option.
-> This warning showed up once to me when I was starting to set up BCH. After
-> checking my .config file, it took a moment before realizing it is
-> CONFIG_MTD_NAND_ECC_BCH instead of CONFIG_MTD_ECC_BCH.
->
-> Signed-off-by: Erico Nunes <nunes.erico@gmail.com>
-> ---
->  drivers/mtd/nand/nand_base.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mtd/nand/nand_base.c b/drivers/mtd/nand/nand_base.c
-> index 9715a7b..5a93787 100644
-> --- a/drivers/mtd/nand/nand_base.c
-> +++ b/drivers/mtd/nand/nand_base.c
-> @@ -3825,7 +3825,7 @@ int nand_scan_tail(struct mtd_info *mtd)
->
->         case NAND_ECC_SOFT_BCH:
->                 if (!mtd_nand_has_bch()) {
-> -                       pr_warn("CONFIG_MTD_ECC_BCH not enabled\n");
-> +                       pr_warn("CONFIG_MTD_NAND_ECC_BCH not enabled\n");
->                         BUG();
->                 }
->                 ecc->calculate = nand_bch_calculate_ecc;
-> --
-> 1.9.0
->
+Stephane Eranian <eranian@google.com> writes:
+>>
+> But getting the mmaps at the right moment is crucial for some apps
+> especially if address space is recycled otherwise symbolization
+> may be incorrect.
 
-Ping.
+Yes that is why it is only an option and not default.
+You need to know what you're doing.
+
+BTW I think the recycle case is not very likely on non JIT.
+
+>> You're right for some special analysis it matters, that is why
+>> it is only an option.
+>>
+>> But for the standard "only care about perf report and
+>> don't care about about program startup" case it's a nice saving.
+>>
+> How do you know in advance you won't need mmap ordering?
+
+When I measure a long running process and I know it doesn't
+fork/dlopen/jit. Using --initial-delay also helps to skip
+the startup phase or attaching later.
+
+I believe it's actually a good choice for most non
+forky workloads. But yes it cannot be made default.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
