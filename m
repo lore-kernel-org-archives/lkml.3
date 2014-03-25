@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaCYXtQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 19:49:16 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:41175 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751619AbaCYXtM (ORCPT
+	id S1754364AbaCYXtO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 19:49:14 -0400
+Received: from mail-ob0-f201.google.com ([209.85.214.201]:65377 "EHLO
+	mail-ob0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021AbaCYXtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Mar 2014 19:49:12 -0400
 From: Gwendal Grignou <gwendal@chromium.org>
 To: axboe@kernel.dk, ulf.hansson@linaro.org
 Cc: linux-mtd@lists.infradead.org, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, Gwendal Grignou <gwendal@chromium.org>
-Subject: [PATCH 1/4] Limit max_discard_sectors to UINT_MAX>>9
-Date: Tue, 25 Mar 2014 16:48:23 -0700
-Message-Id: <1395791307-23727-2-git-send-email-gwendal@chromium.org>
+Subject: [PATCH 2/4] Limit max_discard_sectors to UINT_MAX>>9
+Date: Tue, 25 Mar 2014 16:48:24 -0700
+Message-Id: <1395791307-23727-3-git-send-email-gwendal@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1395791307-23727-1-git-send-email-gwendal@chromium.org>
 References: <1395791307-23727-1-git-send-email-gwendal@chromium.org>
@@ -27,22 +27,22 @@ into a request larger than 4GB.
 
 Signed-off-by: Gwendal Grignou <gwendal@chromium.org>
 ---
- drivers/block/nbd.c | 2 +-
+ block/blk-lib.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-index 2dc3b51..f30128b 100644
---- a/drivers/block/nbd.c
-+++ b/drivers/block/nbd.c
-@@ -859,7 +859,7 @@ static int __init nbd_init(void)
- 		 */
- 		queue_flag_set_unlocked(QUEUE_FLAG_NONROT, disk->queue);
- 		disk->queue->limits.discard_granularity = 512;
--		disk->queue->limits.max_discard_sectors = UINT_MAX;
-+		disk->queue->limits.max_discard_sectors = UINT_MAX >> 9;
- 		disk->queue->limits.discard_zeroes_data = 0;
- 		blk_queue_max_hw_sectors(disk->queue, 65536);
- 		disk->queue->limits.max_sectors = 256;
+diff --git a/block/blk-lib.c b/block/blk-lib.c
+index 9b5b561..67bb0e7 100644
+--- a/block/blk-lib.c
++++ b/block/blk-lib.c
+@@ -64,7 +64,7 @@ int blkdev_issue_discard(struct block_device *bdev, sector_t sector,
+ 	 * Ensure that max_discard_sectors is of the proper
+ 	 * granularity, so that requests stay aligned after a split.
+ 	 */
+-	max_discard_sectors = min(q->limits.max_discard_sectors, UINT_MAX >> 9);
++	max_discard_sectors = q->limits.max_discard_sectors;
+ 	max_discard_sectors -= max_discard_sectors % granularity;
+ 	if (unlikely(!max_discard_sectors)) {
+ 		/* Avoid infinite loop below. Being cautious never hurts. */
 -- 
 1.9.1.423.g4596e3a
 
