@@ -1,67 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaCYCFD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 22:05:03 -0400
-Received: from ozlabs.org ([203.10.76.45]:58169 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751141AbaCYCFA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 22:05:00 -0400
-Date: Tue, 25 Mar 2014 13:04:47 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li RongQing <roy.qing.li@gmail.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140325130447.e38f4242c03090fd48eae340@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__25_Mar_2014_13_04_47_+1100_q5Yz5lBu0t/4cwzT"
+	id S1751832AbaCYCQL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 22:16:11 -0400
+Received: from mail-yh0-f47.google.com ([209.85.213.47]:33838 "EHLO
+	mail-yh0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141AbaCYCQJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 22:16:09 -0400
+Message-ID: <5330E6E0.4020503@linaro.org>
+Date: Tue, 25 Mar 2014 11:16:00 +0900
+From: AKASHI Takahiro <takahiro.akashi@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Chris Metcalf <cmetcalf@tilera.com>, Eric Paris <eparis@redhat.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] compat_audit: allow it to work without asm/unistd32.h
+References: <201403201730.s2KHUVpf005157@farm-0039.internal.tilera.com> <1395678071.24733.3.camel@flatline.rdu.redhat.com> <53305FC4.3040002@tilera.com>
+In-Reply-To: <53305FC4.3040002@tilera.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_Mar_2014_13_04_47_+1100_q5Yz5lBu0t/4cwzT
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 03/25/2014 01:39 AM, Chris Metcalf wrote:
+> The problem is that audit_is_compat() is a dynamic test that the compiler
+> can't optimize away, so you end with an undefined reference to
+> audit_classify_compat_syscall().
+>
+> For some reason audit_classify_compat_syscall() is declared as __weak
+> in <linux/audit.h>; usually the __weak tag is only provided on the definition.
+> But I suppose you could imagine providing a weak definition in lib/audit.c
+> itself.
 
-Hi all,
+I still believe that a function can be declared with __weak and replaced
+by a strong definition later on (at link time).
+But this is not the case anyway.
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/core/netpoll.c between commit c27f0872a344 ("netpoll: fix the skb
-check in pkt_is_ns") from the net tree and commit 9c62a68d1311 ("netpoll:
-Remove dead packet receive code (CONFIG_NETPOLL_TRAP)") from the net-next
-tree.
+> Or there could be a CONFIG_AUDIT_COMPAT symbol that architectures need to
+> set if they want to have audit_is_compat() return anything other than "false",
+> and then just use that symbol in the #ifdef in <uapi/linux/audit.h>.  In that
+> case the compiler would optimize away the call to audit_classify_compat_syscall().
+>
+> My guess is that the second option is probably cleanest.
 
-I fixed it up (the latter removes the code fixed by the former, so I did
-that) and can carry the fix as necessary (no action is required).
+Yep, but I don't want to add new CONFIG_AUDIT_COMPAT symbol just for
+audit_is_compat() because it is only used in lib/audit.c(AUDIT_GENERIC).
+Instead, I prefer
+#ifdef CONFIG_AUDIT_COMPAT_GENERIC
+#define audit_is_compat(arch) (...)
+#else
+#define audit_is_compat(arch) false
+#endif
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks,
+-Takahiro AKASHI
 
---Signature=_Tue__25_Mar_2014_13_04_47_+1100_q5Yz5lBu0t/4cwzT
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTMORGAAoJEMDTa8Ir7ZwVotYP/RQ/etjEXxXCbXOlSgp55ENy
-M4VOBwdGomaZA4n8Kz4fX2XrI7CLLT/vW0xWaVt+8GMeSXLFQXu6sgK63o7pTDL+
-oXgbt8AOyVc7qDs0ApwIZWI3jOJO5oGZpNBEvT/zXqwOcJsnJKrEa70CWnKEM1CM
-p1OBXJsy0w+3kczOZiMZ2mf6c7dwrRbSwFVEeWeWaVs6oCCpQ85AP85p9pFVMft3
-5ie7pl3nH/hs5FY1i/6ssaUb6DNE/HYCRkueVh3t4mZ2HJt+iQz0n1ubM3fmyD6F
-E8yp1GA9Zpch4zmDRLJ8L9ZPaRS60lY4E0avAzoMuO1IrszzYGX9pIFp2Fb+A0UM
-Dy+i8hPdjiLLwu2ZfMvoRxb2pXfLD32061VrIP0z+/j6wGm86bFsefrbaZ9y4tQ+
-K4L4Eh66yQPzVkxzfXYe2HAsXUT3kFek799eu5PZqGjiGgkubQ+ypqMnh3nEHRSV
-QPI0M8Uj/LVHZU8eTj3GVmDJ6glNMGjTEsAHXVOyPnPNKgfW0kVq/GYFWw6oEkP4
-U9HYHL0LDeDJiRsogZPUkm7PnyUFLf59o2JcjC5OvoF8im+FOsMKrrgXHaUiuwHa
-91XlreOQ0mHBAaQvM6YxYLuTvxfFVdcGiUb0Fb9TjeqIyA2oTIZADw04YAeW/hZV
-MM1+rBqav0bon/Y1UaQm
-=gQcs
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_Mar_2014_13_04_47_+1100_q5Yz5lBu0t/4cwzT--
+> On 3/24/2014 12:21 PM, Eric Paris wrote:
+>> I don't know tilegx, but I have replaced 223b24d807610 with
+>> 4b58841149dcaa5.  I believe adding AUDIT_ARCH_COMPAT_GENERIC was
+>> akashi-san's  fix for this problem on mips.  Is this a better fix?
+>>
+>> Thanks
+>> -Eric
+>>
+>> On Thu, 2014-03-20 at 11:31 -0400, Chris Metcalf wrote:
+>>> For architectures that use the asm-generic syscall table for both
+>>> 32- and 64-bit, there should be no need to provide a separate
+>>> <asm/unistd32.h>; just using <linux/unistd.h> is sufficient.
+>>> Conditionalize use of <asm/unistd32.h> on the one platform that
+>>> currently requires it (arm64).  If another platform ends up needing
+>>> it we can create a suitable config flag at that point.
+>>>
+>>> This change fixes the tilegx build failure seen in linux-next.
+>>>
+>>> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+>>> ---
+>>> By the way - I also note that commit 223b24d807610 that introduced
+>>> this also put an "#ifdef COMPAT_xxx" in a UAPI header.  This seems
+>>> like a pretty clear signal that the added code should be in
+>>> linux/include/audit.h, not linux/uapi/include/audit.h.  But here
+>>> I'm just focussing on getting tilegx to continue to build...
+>>>
+>>>   lib/compat_audit.c | 7 ++++++-
+>>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/lib/compat_audit.c b/lib/compat_audit.c
+>>> index 873f75b640ab..e89a84b3fbe8 100644
+>>> --- a/lib/compat_audit.c
+>>> +++ b/lib/compat_audit.c
+>>> @@ -1,6 +1,11 @@
+>>>   #include <linux/init.h>
+>>>   #include <linux/types.h>
+>>> -#include <asm/unistd32.h>
+>>> +#ifdef COMPAT_ARM64
+>>> +/* 64-bit syscalls are generic, but 32-bit are not. */
+>>> +# include <asm/unistd32.h>
+>>> +#else
+>>> +# include <linux/unistd.h>
+>>> +#endif
+>>>
+>>>   unsigned compat_dir_class[] = {
+>>>   #include <asm-generic/audit_dir_write.h>
+>>
+>
