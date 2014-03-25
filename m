@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753984AbaCYQrG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:47:06 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.117]:36347 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751697AbaCYQrE (ORCPT
+	id S1753923AbaCYQwE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:52:04 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:33488 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752382AbaCYQwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:47:04 -0400
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-11.tower-193.messagelabs.com!1395766021!12802349!1
-X-Originating-IP: [94.185.165.51]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
-To: Lee Jones <lee.jones@linaro.org>
-CC: Alessandro Zummo <a.zummo@towertech.it>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        RTC linux <rtc-linux@googlegroups.com>
-Subject: RE: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
-Thread-Topic: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
-Thread-Index: AQHPPSVKUI+aJH4Lh0O1h4CC/fc/HJryEIjA
-Date: Tue, 25 Mar 2014 16:46:59 +0000
-Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A2AFD1F8@SW-EX-MBX01.diasemi.com>
-References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
- <93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
- <20140311122725.GK21216@lee--X1>
-In-Reply-To: <20140311122725.GK21216@lee--X1>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.20.26.61]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	Tue, 25 Mar 2014 12:52:02 -0400
+Date: Tue, 25 Mar 2014 11:51:59 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@nuc
+To: Sasha Levin <sasha.levin@oracle.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: slub: gpf in deactivate_slab
+In-Reply-To: <5331A6C3.2000303@oracle.com>
+Message-ID: <alpine.DEB.2.10.1403251150330.16870@nuc>
+References: <53208A87.2040907@oracle.com> <5331A6C3.2000303@oracle.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2PGlD4c022858
 
-Hi Lee,
+On Tue, 25 Mar 2014, Sasha Levin wrote:
 
-I realise that you and Alessandro are very busy (I have not often seen
-Alessandro do any posting in the past fortnight), but a  couple of weeks
-ago I sent an RTC patch set with register.h changes ...
-
->> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
->>
->> Add the RTC driver for DA9063.
-<snip>
->> The original patch is here:
->>  - https://lkml.org/lkml/2014/3/6/346
-
-I believe you applied the first half of my alterations here:
-https://lkml.org/lkml/2014/3/6/348
-https://lkml.org/lkml/2014/3/10/369
-
-And the other half, was Acked by Alessandro Zummo here:
-https://lkml.org/lkml/2014/3/7/112
-
-On 11 March 2014 12:27, Lee Jones wrote:
+> I have a lead on this. Consider the following:
 >
->Alessandro,
->  Are you happy for me to take this set through the MFD tree and send
->  you a pull-request for an immutable branch?
+>   kmem_cache_alloc
+> 	__slab_alloc
+> 		local_irq_save()
+> 		deactivate_slab
+> 			__cmpxchg_double_slab
+> 				slab_unlock
+> 					__bit_spin_unlock
+> 						preempt_enable
+> 		[ Page Fault ]
 >
+> With this trace, it manifests as a "BUG: sleeping function called from invalid
+> context at arch/x86/mm/fault.c" on a might_sleep() in the page fault handler
+> (which is an issue on it's own), but I suspect it's also the cause of the
+> trace
+> above - preemption enabled and a race that removed the page.
+>
+> Could someone confirm please?
 
-There was a suggestion that this RTC patch could be taken through by you?
-Can I ask if this still an option please?
+The preempt count is incremented earlier in bit_spin_lock so the
+preempt_enable() should not do anything.
 
-I tried to contact Alessandro after about 1 week, but I guess that other things
-are getting in the way and I have not had a reply.
-https://lkml.org/lkml/2014/3/21/248
-
-The reason I ask -- is because I have several patches waiting to add support
-for an older variant of the silicon, but in order to send those changes I will
-need to patch the pending RTC with the updates.
-
-Regards,
-Steve
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
