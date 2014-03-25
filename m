@@ -1,254 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbaCYL22 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 07:28:28 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:31057 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752167AbaCYL21 (ORCPT
+	id S1752823AbaCYLdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 07:33:10 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:38542 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158AbaCYLdI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 07:28:27 -0400
-X-IronPort-AV: E=Sophos;i="4.97,728,1389744000"; 
-   d="scan'208";a="113289760"
-Date: Tue, 25 Mar 2014 11:27:55 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "jaccon.bastiaansen@gmail.com" <jaccon.bastiaansen@gmail.com>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xenproject.org" <xen-devel@lists.xenproject.org>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCH v4] arm: remove !CPU_V6 and !GENERIC_ATOMIC64 build
- dependencies for XEN
-In-Reply-To: <alpine.DEB.2.02.1402171232220.27926@kaball.uk.xensource.com>
-Message-ID: <alpine.DEB.2.02.1403251127270.8273@kaball.uk.xensource.com>
-References: <1390311864-19119-1-git-send-email-stefano.stabellini@eu.citrix.com> <20140121180750.GO30706@mudshark.cambridge.arm.com> <alpine.DEB.2.02.1402171232220.27926@kaball.uk.xensource.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+	Tue, 25 Mar 2014 07:33:08 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-77-533169719aa5
+Message-id: <53316966.90600@samsung.com>
+Date: Tue, 25 Mar 2014 12:32:54 +0100
+From: Tomasz Figa <t.figa@samsung.com>
+Organization: Samsung R&D Institute Poland
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH] clocksource: exynos_mct: Fix stall after CPU hotplugging
+References: <1395744087-8655-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1395744087-8655-1-git-send-email-k.kozlowski@samsung.com>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xq7qFmYbBBp0dlhYbZ6xntZj3Wdbi
+	9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dksfbIXXaLzZumMjtwedy5tofN4925c+we
+	m5fUe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGlM9T2Qu+8Vf8XNLH3MB4haeLkZNDQsBE
+	YkfjOkYIW0ziwr31bF2MXBxCAksZJTZtfM8I4XxmlFj5YDoTSBWvgIbE9gfzmUFsFgFVic6W
+	TWDdbAJqEp8bHrGB2PwCWhJrmq6zgNiiAhES9xoPs0L0Ckr8mHyPBWSoiMA0JonlNz6AOcwC
+	UxglmictBdsgLOArsW35FrCpQgJuEivmbAbbxingLvHq4mKwDcwC1hIrJ21jhLDlJTavecs8
+	gVFwFpIls5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGx83cG49JjVIUYB
+	DkYlHt4NpgbBQqyJZcWVuYcYJTiYlUR4DcMMg4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwTrnL
+	wC3zNXmSzUdrlc5pP7ccUjs4Yw3vByXXD9evvPbt/u7dsd25vqzqyc7neXcmbGO7d0fl4d+j
+	EVdbvvYr224JEVQO+yan8dzOel3qx5NbzwYprcoIEqi/bLFf22e+mpZZROSl04Zus2Uf6KUv
+	OnmQh8MwXP3V/8C5cf/TpBJnvo+xe+nmqsRSnJFoqMVcVJwIAJKNFUtrAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 Feb 2014, Stefano Stabellini wrote:
-> On Tue, 21 Jan 2014, Will Deacon wrote:
-> > On Tue, Jan 21, 2014 at 01:44:24PM +0000, Stefano Stabellini wrote:
-> > > Remove !GENERIC_ATOMIC64 build dependency:
-> > > - introduce xen_atomic64_xchg
-> > > - use it to implement xchg_xen_ulong
-> > > 
-> > > Remove !CPU_V6 build dependency:
-> > > - introduce __cmpxchg8 and __cmpxchg16, compiled even ifdef
-> > >   CONFIG_CPU_V6
-> > > - implement sync_cmpxchg using __cmpxchg8 and __cmpxchg16
-> > > 
-> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > > CC: arnd@arndb.de
-> > > CC: linux@arm.linux.org.uk
-> > > CC: will.deacon@arm.com
-> > > CC: catalin.marinas@arm.com
-> > > CC: linux-arm-kernel@lists.infradead.org
-> > > CC: linux-kernel@vger.kernel.org
-> > > CC: xen-devel@lists.xenproject.org
-> > 
-> >   Reviewed-by: Will Deacon <will.deacon@arm.com>
-> 
-> Russell, are you OK with this patch for 3.15?
+Hi Krzysztof,
 
-Ping?
-Is there anything else that I need to do here?
-Do you want me to submit to your patch tracking system?
+Two comments inline.
 
-> 
-> > Changes in v4:
-> > - avoid moving and renaming atomic64_xchg
-> > - introduce xen_atomic64_xchg
-> > - fix asm comment in __cmpxchg8 and __cmpxchg16.
-> > 
-> > ---
-> >  arch/arm/Kconfig                   |    3 +-
-> >  arch/arm/include/asm/cmpxchg.h     |   60 ++++++++++++++++++++++++------------
-> >  arch/arm/include/asm/sync_bitops.h |   24 ++++++++++++++-
-> >  arch/arm/include/asm/xen/events.h  |   32 ++++++++++++++++++-
-> >  4 files changed, 95 insertions(+), 24 deletions(-)
-> > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index c1f1a7e..ae54ae0 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -1881,8 +1881,7 @@ config XEN_DOM0
-> >  config XEN
-> >  	bool "Xen guest support on ARM (EXPERIMENTAL)"
-> >  	depends on ARM && AEABI && OF
-> > -	depends on CPU_V7 && !CPU_V6
-> > -	depends on !GENERIC_ATOMIC64
-> > +	depends on CPU_V7
-> >  	select ARM_PSCI
-> >  	select SWIOTLB_XEN
-> >  	help
-> > diff --git a/arch/arm/include/asm/cmpxchg.h b/arch/arm/include/asm/cmpxchg.h
-> > index df2fbba..a17cff1 100644
-> > --- a/arch/arm/include/asm/cmpxchg.h
-> > +++ b/arch/arm/include/asm/cmpxchg.h
-> > @@ -133,6 +133,44 @@ extern void __bad_cmpxchg(volatile void *ptr, int size);
-> >   * cmpxchg only support 32-bits operands on ARMv6.
-> >   */
-> >  
-> > +static inline unsigned long __cmpxchg8(volatile void *ptr, unsigned long old,
-> > +				      unsigned long new)
-> > +{
-> > +	unsigned long oldval, res;
-> > +
-> > +	do {
-> > +		asm volatile("@ __cmpxchg8\n"
-> > +		"	ldrexb	%1, [%2]\n"
-> > +		"	mov	%0, #0\n"
-> > +		"	teq	%1, %3\n"
-> > +		"	strexbeq %0, %4, [%2]\n"
-> > +			: "=&r" (res), "=&r" (oldval)
-> > +			: "r" (ptr), "Ir" (old), "r" (new)
-> > +			: "memory", "cc");
-> > +	} while (res);
-> > +
-> > +	return oldval;
-> > +}
-> > +
-> > +static inline unsigned long __cmpxchg16(volatile void *ptr, unsigned long old,
-> > +				      unsigned long new)
-> > +{
-> > +	unsigned long oldval, res;
-> > +
-> > +	do {
-> > +		asm volatile("@ __cmpxchg16\n"
-> > +		"	ldrexh	%1, [%2]\n"
-> > +		"	mov	%0, #0\n"
-> > +		"	teq	%1, %3\n"
-> > +		"	strexheq %0, %4, [%2]\n"
-> > +			: "=&r" (res), "=&r" (oldval)
-> > +			: "r" (ptr), "Ir" (old), "r" (new)
-> > +			: "memory", "cc");
-> > +	} while (res);
-> > +
-> > +	return oldval;
-> > +}
-> > +
-> >  static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
-> >  				      unsigned long new, int size)
-> >  {
-> > @@ -141,28 +179,10 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
-> >  	switch (size) {
-> >  #ifndef CONFIG_CPU_V6	/* min ARCH >= ARMv6K */
-> >  	case 1:
-> > -		do {
-> > -			asm volatile("@ __cmpxchg1\n"
-> > -			"	ldrexb	%1, [%2]\n"
-> > -			"	mov	%0, #0\n"
-> > -			"	teq	%1, %3\n"
-> > -			"	strexbeq %0, %4, [%2]\n"
-> > -				: "=&r" (res), "=&r" (oldval)
-> > -				: "r" (ptr), "Ir" (old), "r" (new)
-> > -				: "memory", "cc");
-> > -		} while (res);
-> > +		oldval = __cmpxchg8(ptr, old, new);
-> >  		break;
-> >  	case 2:
-> > -		do {
-> > -			asm volatile("@ __cmpxchg1\n"
-> > -			"	ldrexh	%1, [%2]\n"
-> > -			"	mov	%0, #0\n"
-> > -			"	teq	%1, %3\n"
-> > -			"	strexheq %0, %4, [%2]\n"
-> > -				: "=&r" (res), "=&r" (oldval)
-> > -				: "r" (ptr), "Ir" (old), "r" (new)
-> > -				: "memory", "cc");
-> > -		} while (res);
-> > +		oldval = __cmpxchg16(ptr, old, new);
-> >  		break;
-> >  #endif
-> >  	case 4:
-> > diff --git a/arch/arm/include/asm/sync_bitops.h b/arch/arm/include/asm/sync_bitops.h
-> > index 63479ee..942659a 100644
-> > --- a/arch/arm/include/asm/sync_bitops.h
-> > +++ b/arch/arm/include/asm/sync_bitops.h
-> > @@ -21,7 +21,29 @@
-> >  #define sync_test_and_clear_bit(nr, p)	_test_and_clear_bit(nr, p)
-> >  #define sync_test_and_change_bit(nr, p)	_test_and_change_bit(nr, p)
-> >  #define sync_test_bit(nr, addr)		test_bit(nr, addr)
-> > -#define sync_cmpxchg			cmpxchg
-> >  
-> > +static inline unsigned long sync_cmpxchg(volatile void *ptr,
-> > +										 unsigned long old,
-> > +										 unsigned long new)
-> > +{
-> > +	unsigned long oldval;
-> > +	int size = sizeof(*(ptr));
-> > +
-> > +	smp_mb();
-> > +	switch (size) {
-> > +	case 1:
-> > +		oldval = __cmpxchg8(ptr, old, new);
-> > +		break;
-> > +	case 2:
-> > +		oldval = __cmpxchg16(ptr, old, new);
-> > +		break;
-> > +	default:
-> > +		oldval = __cmpxchg(ptr, old, new, size);
-> > +		break;
-> > +	}
-> > +	smp_mb();
-> > +
-> > +	return oldval;
-> > +}
-> >  
-> >  #endif
-> > diff --git a/arch/arm/include/asm/xen/events.h b/arch/arm/include/asm/xen/events.h
-> > index 8b1f37b..2032ee6 100644
-> > --- a/arch/arm/include/asm/xen/events.h
-> > +++ b/arch/arm/include/asm/xen/events.h
-> > @@ -16,7 +16,37 @@ static inline int xen_irqs_disabled(struct pt_regs *regs)
-> >  	return raw_irqs_disabled_flags(regs->ARM_cpsr);
-> >  }
-> >  
-> > -#define xchg_xen_ulong(ptr, val) atomic64_xchg(container_of((ptr),	\
-> > +#ifdef CONFIG_GENERIC_ATOMIC64
-> > +/* if CONFIG_GENERIC_ATOMIC64 is defined we cannot use the generic
-> > + * atomic64_xchg function because it is implemented using spin locks.
-> > + * Here we need proper atomic instructions to read and write memory
-> > + * shared with the hypervisor.
-> > + */
-> > +static inline u64 xen_atomic64_xchg(atomic64_t *ptr, u64 new)
-> > +{
-> > +	u64 result;
-> > +	unsigned long tmp;
-> > +
-> > +	smp_mb();
-> > +
-> > +	__asm__ __volatile__("@ xen_atomic64_xchg\n"
-> > +"1:	ldrexd	%0, %H0, [%3]\n"
-> > +"	strexd	%1, %4, %H4, [%3]\n"
-> > +"	teq	%1, #0\n"
-> > +"	bne	1b"
-> > +	: "=&r" (result), "=&r" (tmp), "+Qo" (ptr->counter)
-> > +	: "r" (&ptr->counter), "r" (new)
-> > +	: "cc");
-> > +
-> > +	smp_mb();
-> > +
-> > +	return result;
-> > +}
-> > +#else
-> > +#define xen_atomic64_xchg atomic64_xchg
-> > +#endif
-> > +
-> > +#define xchg_xen_ulong(ptr, val) xen_atomic64_xchg(container_of((ptr),	\
-> >  							    atomic64_t,	\
-> >  							    counter), (val))
-> >  
-> > -- 
-> > 1.7.10.4
-> 
+On 25.03.2014 11:41, Krzysztof Kozlowski wrote:
+
+[snip]
+
+> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+> index 48f76bc05da0..0b49b09dd1a9 100644
+> --- a/drivers/clocksource/exynos_mct.c
+> +++ b/drivers/clocksource/exynos_mct.c
+> @@ -339,7 +339,14 @@ static void exynos4_mct_tick_start(unsigned long cycles,
+>   static int exynos4_tick_set_next_event(unsigned long cycles,
+>   				       struct clock_event_device *evt)
+>   {
+> -	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
+> +	/*
+> +	 * In case of hotplugging non-boot CPU, the set_next_event could be
+> +	 * called on CPU0 by ISR before IRQ affinity is set to proper CPU.
+
+Hmm, is this a desired behavior? I guess this is a question for Thomas 
+and Daniel.
+
+> +	 * Thus for accessing proper MCT Lx timer, 'per_cpu' for cpumask
+> +	 * in event must be used instead of 'this_cpu_ptr'.
+> +	 */
+> +	struct mct_clock_event_device *mevt = &per_cpu(percpu_mct_tick,
+> +			cpumask_first(evt->cpumask));
+>
+>   	exynos4_mct_tick_start(cycles, mevt);
+>
+> @@ -371,23 +378,13 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
+>
+>   static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
+>   {
+> -	struct clock_event_device *evt = &mevt->evt;
+> -
+> -	/*
+> -	 * This is for supporting oneshot mode.
+> -	 * Mct would generate interrupt periodically
+> -	 * without explicit stopping.
+> -	 */
+> -	if (evt->mode != CLOCK_EVT_MODE_PERIODIC)
+> -		exynos4_mct_tick_stop(mevt);
+> -
+>   	/* Clear the MCT tick interrupt */
+>   	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
+>   		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
+>   		return 1;
+> -	} else {
+> -		return 0;
+>   	}
+> +
+> +	return 0;
+
+Nobody seems to be checking return value of this function (and I don't 
+see what it could be used for anyway), so I guess it could be simply 
+made void.
+
+Best regards,
+Tomasz
