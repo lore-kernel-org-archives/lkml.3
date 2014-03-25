@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754345AbaCYTNa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:13:30 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:46060 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751458AbaCYTN2 (ORCPT
+	id S1754722AbaCYTPA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:15:00 -0400
+Received: from mail0.toppoint.de ([217.70.197.20]:55711 "EHLO
+	mail0.toppoint.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750982AbaCYTO6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:13:28 -0400
-Date: Tue, 25 Mar 2014 15:13:24 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        linux-ide@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ata: limit sata_rcar host driver to ARCH_SHMOBILE
-Message-ID: <20140325191324.GA3279@htj.dyndns.org>
-References: <9835622.nRa3VdL61G@amdc1032>
+	Tue, 25 Mar 2014 15:14:58 -0400
+Date: Tue, 25 Mar 2014 19:04:34 +0000
+From: Wilfried Klaebe <w-lkml@lebenslange-mailadresse.de>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8188eu: remove spaces, correct counts to
+ unbreak P2P ioctls
+Message-ID: <20140325190434.GE17209@kaos.lebenslange-mailadresse.de>
+Mail-Followup-To: Greg KH <gregkh@linuxfoundation.org>,
+	Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+	linux-kernel@vger.kernel.org
+References: <20140325175939.GC17209@kaos.lebenslange-mailadresse.de>
+ <20140325181749.GE3233@kroah.com>
+ <20140325183618.GD17209@kaos.lebenslange-mailadresse.de>
+ <20140325185145.GA4509@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <9835622.nRa3VdL61G@amdc1032>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140325185145.GA4509@kroah.com>
+X-message-flag: Get yourself a real email client. http://www.mutt.org/
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 08:10:27PM +0100, Bartlomiej Zolnierkiewicz wrote:
-> Limit sata_rcar host driver to ARCH_SHMOBILE as Renesas R-Car SATA
-> support is specific to Renesas SoCs and the driver to work requires
-> suitable device tree node (or platform device) to be defined.
+Am Tue, Mar 25, 2014 at 11:51:45AM -0700 schrieb Greg KH:
+> On Tue, Mar 25, 2014 at 06:36:18PM +0000, Wilfried Klaebe wrote:
+> > Am Tue, Mar 25, 2014 at 11:17:49AM -0700 schrieb Greg KH:
+> > > On Tue, Mar 25, 2014 at 05:59:39PM +0000, Wilfried Klaebe wrote:
+> > > > staging: rtl8188eu: remove spaces, correct counts to unbreak P2P ioctls
+> > > > 
+> > > > It looks like someone did a search-and-replace on that driver, putting
+> > > > spaces before "=" characters, without checking this is OK everywhere.
+> > > > Also, in some places, there's memcpm()s/strncmp()s checking for some
+> > > > different length than the fixed string argument.
+> > > > 
+> > > > These things result in code not working as intended. Fix that.
+> > > 
+> > > What code is parsing string output from the kernel?
+> > 
+> > I know about some userspace apps, for example a MiraCast Sink
+> > implementation for the Raspberry Pi, called piracast.
+> > 
+> > This patch though is about the rtl8188eu driver parsing strings
+> > handed to it via "iwpriv wlanX p2p_set name=value". Which breaks,
+> > because the driver checks for "name =" instead of "name=" in several
+> > cases.
 > 
-> Cc: Simon Horman <horms@verge.net.au>
-> Cc: Magnus Damm <magnus.damm@gmail.com>
-> Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-> ---
->  drivers/ata/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> Index: b/drivers/ata/Kconfig
-> ===================================================================
-> --- a/drivers/ata/Kconfig	2014-03-25 19:52:31.952327027 +0100
-> +++ b/drivers/ata/Kconfig	2014-03-25 19:57:21.104322097 +0100
-> @@ -298,6 +298,7 @@ config SATA_PROMISE
->  
->  config SATA_RCAR
->  	tristate "Renesas R-Car SATA support"
-> +	depends on ARCH_SHMOBILE
+> That's horrid on so many levels...
 
-COMPILE_TEST?
+The real WTF is: why doesn't this driver use the stuff already there for
+Wi-Fi Direct (aka P2P Wifi)?
 
--- 
-tejun
+But well, for now I just wanted to contribute my fixes to this obvious
+breakage; making a sensible driver out of that mess is a longer-term
+project.
+
+Regards,
+Wilfried
+
