@@ -1,119 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbaCYObj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 10:31:39 -0400
-Received: from mga02.intel.com ([134.134.136.20]:22358 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771AbaCYObd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 10:31:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,728,1389772800"; 
-   d="scan'208";a="507164593"
-From: sagar.a.kamble@intel.com
-To: intel-gfx@lists.freedesktop.org
-Cc: Sagar Kamble <sagar.a.kamble@intel.com>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/4] drm: Added plane alpha and color blending property
-Date: Tue, 25 Mar 2014 20:02:25 +0530
-Message-Id: <1395757947-16492-2-git-send-email-sagar.a.kamble@intel.com>
-X-Mailer: git-send-email 1.8.5
-In-Reply-To: <1395757947-16492-1-git-send-email-sagar.a.kamble@intel.com>
-References: <20140320135151.GO6912@strange.amr.corp.intel.com>
- <1395757947-16492-1-git-send-email-sagar.a.kamble@intel.com>
+	id S1753314AbaCYOu4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 10:50:56 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:33063 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752937AbaCYOuz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 10:50:55 -0400
+From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
+        Wolfram Sang <wsa@the-dreams.de>
+Date: Tue, 25 Mar 2014 15:50:44 +0100
+Message-Id: <1395759044-10700-1-git-send-email-u.kleine-koenig@pengutronix.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+Subject: [PATCH v2] clocksource: efm32: use $vendor,$device scheme for compatible string
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sagar Kamble <sagar.a.kamble@intel.com>
+Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
+common scheme and prefix device with "efm32-". The old compatible string
+is left in place until arch/arm/boot/dts/efm32* is fixed.
 
-This patch creates a generic blending bitmask property modeled after
-glBlendFunc. Drivers may support subset of these values.
-
-v2: Removing blend properties that are not applicable
-    [Damien's Review Comments].
-    Adding DRM_MODE_PROP_32BIT_PAIR flag to blend property.
-
-Cc: airlied@linux.ie
-Cc: dri-devel@lists.freedesktop.org
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/gpu/drm/drm_crtc.c | 27 +++++++++++++++++++++++++++
- include/drm/drm_crtc.h     | 19 +++++++++++++++++++
- 2 files changed, 46 insertions(+)
+Changes since (implicit) v1, sent with
+Message-Id: 1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de:
+ - fix binding doc accordingly
 
-diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
-index d0d03ec..a1f254e 100644
---- a/drivers/gpu/drm/drm_crtc.c
-+++ b/drivers/gpu/drm/drm_crtc.c
-@@ -4157,3 +4157,30 @@ void drm_mode_config_cleanup(struct drm_device *dev)
- 	idr_destroy(&dev->mode_config.crtc_idr);
+ .../bindings/timer/{efm32,timer.txt => energymicro,efm32-timer.txt}   | 4 ++--
+ drivers/clocksource/time-efm32.c                                      | 3 ++-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+ rename Documentation/devicetree/bindings/timer/{efm32,timer.txt => energymicro,efm32-timer.txt} (87%)
+
+diff --git a/Documentation/devicetree/bindings/timer/efm32,timer.txt b/Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
+similarity index 87%
+rename from Documentation/devicetree/bindings/timer/efm32,timer.txt
+rename to Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
+index 97a568f696c9..e502c11b2211 100644
+--- a/Documentation/devicetree/bindings/timer/efm32,timer.txt
++++ b/Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
+@@ -6,7 +6,7 @@ channels and can be used as PWM or Quadrature Decoder. Available clock sources
+ are the cpu's HFPERCLK (with a 10-bit prescaler) or an external pin.
+ 
+ Required properties:
+-- compatible : Should be efm32,timer
++- compatible : Should be "energymicro,efm32-timer"
+ - reg : Address and length of the register set
+ - clocks : Should contain a reference to the HFPERCLK
+ 
+@@ -16,7 +16,7 @@ Optional properties:
+ Example:
+ 
+ timer@40010c00 {
+-	compatible = "efm32,timer";
++	compatible = "energymicro,efm32-timer";
+ 	reg = <0x40010c00 0x400>;
+ 	interrupts = <14>;
+ 	clocks = <&cmu clk_HFPERCLKTIMER3>;
+diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
+index 1a6205b7bed3..bba62f9deefb 100644
+--- a/drivers/clocksource/time-efm32.c
++++ b/drivers/clocksource/time-efm32.c
+@@ -272,4 +272,5 @@ static void __init efm32_timer_init(struct device_node *np)
+ 		}
+ 	}
  }
- EXPORT_SYMBOL(drm_mode_config_cleanup);
-+
-+struct drm_property *drm_mode_create_blend_property(struct drm_device *dev,
-+				unsigned int supported_factors)
-+{
-+	static const struct drm_prop_enum_list props[] = {
-+		{ DRM_BLEND_ZERO,  			"zero" },
-+		{ DRM_BLEND_ONE, 			"one" },
-+		{ DRM_BLEND_SRC_COLOR, 			"src-color" },
-+		{ DRM_BLEND_ONE_MINUS_SRC_COLOR,  	"one-minus-src-color" },
-+		{ DRM_BLEND_DST_COLOR, 			"dst-color" },
-+		{ DRM_BLEND_ONE_MINUS_DST_COLOR,  	"one-minus-dst-color" },
-+		{ DRM_BLEND_SRC_ALPHA, 			"src-alpha" },
-+		{ DRM_BLEND_ONE_MINUS_SRC_ALPHA, 	"one-minus-src-alpha" },
-+		{ DRM_BLEND_DST_ALPHA, 			"dst-alpha" },
-+		{ DRM_BLEND_ONE_MINUS_DST_ALPHA, 	"one-minus-dst-alpha" },
-+		{ DRM_BLEND_CONSTANT_COLOR, 		"constant-color" },
-+		{ DRM_BLEND_ONE_MINUS_CONSTANT_COLOR, 	"one-minus-constant-color" },
-+		{ DRM_BLEND_CONSTANT_ALPHA, 		"constant-alpha" },
-+		{ DRM_BLEND_ONE_MINUS_CONSTANT_ALPHA, 	"one-minus-constant-alpha" },
-+		{ DRM_BLEND_SRC_ALPHA_SATURATE, 	"alpha-saturate" }
-+	};
-+
-+	return drm_property_create_bitmask(dev, DRM_MODE_PROP_32BIT_PAIR, "blend",
-+					   props, ARRAY_SIZE(props),
-+					   supported_factors);
-+}
-+EXPORT_SYMBOL(drm_mode_create_blend_property);
-diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 784a568..a9fbfec 100644
---- a/include/drm/drm_crtc.h
-+++ b/include/drm/drm_crtc.h
-@@ -65,6 +65,23 @@ struct drm_object_properties {
- 	uint64_t values[DRM_OBJECT_MAX_PROPERTY];
- };
- 
-+/* Blending property bits */
-+#define DRM_BLEND_ZERO				0
-+#define DRM_BLEND_ONE				1
-+#define DRM_BLEND_SRC_COLOR			2
-+#define DRM_BLEND_ONE_MINUS_SRC_COLOR		3
-+#define DRM_BLEND_DST_COLOR			4
-+#define DRM_BLEND_ONE_MINUS_DST_COLOR		5
-+#define DRM_BLEND_SRC_ALPHA			6
-+#define DRM_BLEND_ONE_MINUS_SRC_ALPHA		7
-+#define DRM_BLEND_DST_ALPHA			8
-+#define DRM_BLEND_ONE_MINUS_DST_ALPHA		9
-+#define DRM_BLEND_CONSTANT_COLOR		10
-+#define DRM_BLEND_ONE_MINUS_CONSTANT_COLOR	11
-+#define DRM_BLEND_CONSTANT_ALPHA		12
-+#define DRM_BLEND_ONE_MINUS_CONSTANT_ALPHA	13
-+#define DRM_BLEND_SRC_ALPHA_SATURATE		14
-+
- /*
-  * Note on terminology:  here, for brevity and convenience, we refer to connector
-  * control chips as 'CRTCs'.  They can control any type of connector, VGA, LVDS,
-@@ -1179,6 +1196,8 @@ extern int drm_format_plane_cpp(uint32_t format, int plane);
- extern int drm_format_horz_chroma_subsampling(uint32_t format);
- extern int drm_format_vert_chroma_subsampling(uint32_t format);
- extern const char *drm_get_format_name(uint32_t format);
-+extern struct drm_property *drm_mode_create_blend_property(struct drm_device *dev,
-+				unsigned int supported_factors);
- 
- /* Helpers */
- static inline struct drm_crtc *drm_crtc_find(struct drm_device *dev,
+-CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
++CLOCKSOURCE_OF_DECLARE(efm32compat, "efm32,timer", efm32_timer_init);
++CLOCKSOURCE_OF_DECLARE(efm32, "energymicro,efm32-timer", efm32_timer_init);
 -- 
-1.8.5
+1.9.1
 
