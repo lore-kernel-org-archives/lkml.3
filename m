@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381AbaCYIoJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:44:09 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:47216 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076AbaCYIVQ (ORCPT
+	id S1754360AbaCYIoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:44:06 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:51675 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791AbaCYIVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:21:16 -0400
+	Tue, 25 Mar 2014 04:21:18 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 30/47] mtd: nand: stm_nand_bch: read and write raw (FLEX)
-Date: Tue, 25 Mar 2014 08:19:47 +0000
-Message-Id: <1395735604-26706-31-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 31/47] mtd: nand: stm_nand_bch: scan block for BBM(s) according to specified BBT options
+Date: Tue, 25 Mar 2014 08:19:48 +0000
+Message-Id: <1395735604-26706-32-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,103 +22,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once the correct READ/WRITE(SEQIN) commands and address locations have
-been sent to the Controller, these calls are able to read/write the
-requested information from the FLEX_DATA register.
+Search the specified (first and, second or last) page in a block for
+the BBT. Support Hamming or Advanced Flex Mode (AFM) BBMs too.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 77 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 62 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index baecc40..4812431 100644
+index 4812431..29eeee8 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -537,6 +537,83 @@ static void flex_addr(struct nandi_controller *nandi,
- 	writel(addr, nandi->base + NANDHAM_FLEX_ADD);
+@@ -643,6 +643,66 @@ static int bbt_is_block_bad(uint8_t *bbt, uint32_t block)
+ 	return bbt_get_block_mark(bbt, block) == BBT_MARK_GOOD ? 0 : 1;
  }
  
-+static int flex_read_raw(struct nandi_controller *nandi,
-+			 uint32_t page_addr,
-+			 uint32_t col_addr,
-+			 uint8_t *buf, uint32_t len)
++/* Scan page for BBM(s), according to specified BBT options */
++static int nandi_scan_bad_block_markers_page(struct nandi_controller *nandi,
++					     uint32_t page)
 +{
-+	dev_dbg(nandi->dev, "%s %u bytes at [0x%06x,0x%04x]\n",
-+		__func__, len, page_addr, col_addr);
++	struct mtd_info *mtd = &nandi->info.mtd;
++	struct nand_chip *chip = mtd->priv;
++	uint8_t *oob_buf = nandi->oob_buf;
++	int i, e;
 +
-+	BUG_ON(len & 0x3);
-+	BUG_ON((unsigned long)buf & 0x3);
++	/* Read the OOB area */
++	flex_read_raw(nandi, page, mtd->writesize, oob_buf, mtd->oobsize);
 +
-+	emiss_nandi_select(STM_NANDI_HAMMING);
-+	nandi_enable_interrupts(nandi, NAND_INT_RBN);
-+	reinit_completion(&nandi->rbn_completed);
++	if (oob_buf[chip->badblockpos] == 0xff)
++		return 0;
 +
-+	writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
++	/* Tolerate 'alien' Hamming Boot Mode ECC */
++	e = 0;
++	for (i = 0; i < mtd->oobsize; i += 16)
++		e += hweight8(oob_buf[i + 3] ^ 'B');
++	if (e <= 1)
++		return 0;
 +
-+	flex_cmd(nandi, NAND_CMD_READ0);
-+	flex_addr(nandi, col_addr, 2);
-+	flex_addr(nandi, page_addr, nandi->extra_addr ? 3 : 2);
-+	flex_cmd(nandi, NAND_CMD_READSTART);
++	/* Tolerate 'alien' Hamming AFM ECC */
++	e = 0;
++	for (i = 0; i < mtd->oobsize; i += 16) {
++		e += hweight8(oob_buf[i + 3] ^ 'A');
++		e += hweight8(oob_buf[i + 4] ^ 'F');
++		e += hweight8(oob_buf[i + 5] ^ 'M');
++		if (e <= 1)
++			return 0;
++	}
 +
-+	flex_wait_rbn(nandi);
++	return 1;
++}
 +
-+	readsl(nandi->base + NANDHAM_FLEX_DATA, buf, len / 4);
++/* Scan block for BBM(s), according to specified BBT options */
++static int nandi_scan_bad_block_markers_block(struct nandi_controller *nandi,
++					      uint32_t block)
 +
-+	nandi_disable_interrupts(nandi, NAND_INT_RBN);
++{
++	struct mtd_info *mtd = &nandi->info.mtd;
++	struct nand_chip *chip = mtd->priv;
++	uint32_t pages_per_block = mtd->erasesize >> nandi->page_shift;
++	uint32_t page = block << (nandi->block_shift - nandi->page_shift);
 +
-+	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
++	if (nandi_scan_bad_block_markers_page(nandi, page))
++		return 1;
++
++	if ((chip->bbt_options & NAND_BBT_SCAN2NDPAGE) &&
++	    nandi_scan_bad_block_markers_page(nandi, page + 1))
++		return 1;
++
++	if ((chip->bbt_options & NAND_BBT_SCANLASTPAGE) &&
++	    nandi_scan_bad_block_markers_page(nandi,
++					      page + pages_per_block - 1))
++		return 1;
 +
 +	return 0;
 +}
 +
-+static int flex_write_raw(struct nandi_controller *nandi,
-+			  uint32_t page_addr,
-+			  uint32_t col_addr,
-+			  uint8_t *buf, uint32_t len)
-+{
-+	uint8_t status;
+ /* Populate IBBT BCH Header */
+ static void bch_fill_ibbt_header(struct nandi_controller *nandi,
+ 				 struct nand_ibbt_bch_header *ibbt_header,
+@@ -957,6 +1017,8 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 	chip->priv = nandi;
+ 	chip->ecc.layout = &info->ecclayout;
+ 
++	chip->bbt_options |= NAND_BBT_USE_FLASH;
 +
-+	dev_dbg(nandi->dev, "%s %u bytes at [0x%06x,0x%04x]\n",
-+		__func__, len, page_addr, col_addr);
-+
-+	BUG_ON(len & 0x3);
-+	BUG_ON((unsigned long)buf & 0x3);
-+
-+	emiss_nandi_select(STM_NANDI_HAMMING);
-+	nandi_enable_interrupts(nandi, NAND_INT_RBN);
-+	reinit_completion(&nandi->rbn_completed);
-+
-+	writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
-+
-+	flex_cmd(nandi, NAND_CMD_SEQIN);
-+	flex_addr(nandi, col_addr, 2);
-+	flex_addr(nandi, page_addr, nandi->extra_addr ? 3 : 2);
-+
-+	writesl(nandi->base + NANDHAM_FLEX_DATA, buf, len / 4);
-+
-+	flex_cmd(nandi, NAND_CMD_PAGEPROG);
-+
-+	flex_wait_rbn(nandi);
-+
-+	nandi_disable_interrupts(nandi, NAND_INT_RBN);
-+
-+	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
-+	       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
-+
-+	flex_cmd(nandi, NAND_CMD_STATUS);
-+
-+	status = (uint8_t)(readl(nandi->base + NANDHAM_FLEX_DATA) & 0xff);
-+
-+	return status;
-+}
-+
- /*
-  * Bad Block Tables/Bad Block Markers
-  */
+ 	/* mtd_info */
+ 	mtd->owner = THIS_MODULE;
+ 	mtd->type = MTD_NANDFLASH;
 -- 
 1.8.3.2
 
