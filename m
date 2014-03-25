@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662AbaCYRTF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:19:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55708 "EHLO
+	id S1754681AbaCYRTS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:19:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55718 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594AbaCYRTB (ORCPT
+	with ESMTP id S1754594AbaCYRTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:19:01 -0400
+	Tue, 25 Mar 2014 13:19:15 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 64/81] ipc,mqueue: remove limits for the amount of system-wide queues
-Date: Tue, 25 Mar 2014 10:16:17 -0700
-Message-Id: <1395767794-5012-65-git-send-email-kamal@canonical.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 74/81] perf: Fix hotplug splat
+Date: Tue, 25 Mar 2014 10:16:27 -0700
+Message-Id: <1395767794-5012-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -30,122 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Davidlohr Bueso <davidlohr@hp.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit f3713fd9cff733d9df83116422d8e4af6e86b2bb upstream.
+commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
 
-Commit 93e6f119c0ce ("ipc/mqueue: cleanup definition names and
-locations") added global hardcoded limits to the amount of message
-queues that can be created.  While these limits are per-namespace,
-reality is that it ends up breaking userspace applications.
-Historically users have, at least in theory, been able to create up to
-INT_MAX queues, and limiting it to just 1024 is way too low and dramatic
-for some workloads and use cases.  For instance, Madars reports:
+Drew Richardson reported that he could make the kernel go *boom* when hotplugging
+while having perf events active.
 
- "This update imposes bad limits on our multi-process application.  As
-  our app uses approaches that each process opens its own set of queues
-  (usually something about 3-5 queues per process).  In some scenarios
-  we might run up to 3000 processes or more (which of-course for linux
-  is not a problem).  Thus we might need up to 9000 queues or more.  All
-  processes run under one user."
+It turned out that when you have a group event, the code in
+__perf_event_exit_context() fails to remove the group siblings from
+the context.
 
-Other affected users can be found in launchpad bug #1155695:
-  https://bugs.launchpad.net/ubuntu/+source/manpages/+bug/1155695
+We then proceed with destroying and freeing the event, and when you
+re-plug the CPU and try and add another event to that CPU, things go
+*boom* because you've still got dead entries there.
 
-Instead of increasing this limit, revert it entirely and fallback to the
-original way of dealing queue limits -- where once a user's resource
-limit is reached, and all memory is used, new queues cannot be created.
-
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Reported-by: Madars Vitolins <m@silodev.com>
-Acked-by: Doug Ledford <dledford@redhat.com>
-Cc: Manfred Spraul <manfred@colorfullife.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Reported-by: Drew Richardson <drew.richardson@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/ipc_namespace.h |  2 --
- ipc/mq_sysctl.c               | 18 ++++++++++++------
- ipc/mqueue.c                  |  6 +++---
- 3 files changed, 15 insertions(+), 11 deletions(-)
+ kernel/events/core.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index c4d870b..c8db9ca 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -119,9 +119,7 @@ extern int mq_init_ns(struct ipc_namespace *ns);
-  *     the new maximum will handle anyone else.  I may have to revisit this
-  *     in the future.
-  */
--#define MIN_QUEUESMAX			1
- #define DFLT_QUEUESMAX		      256
--#define HARD_QUEUESMAX		     1024
- #define MIN_MSGMAX			1
- #define DFLT_MSG		       10U
- #define DFLT_MSGMAX		       10
-diff --git a/ipc/mq_sysctl.c b/ipc/mq_sysctl.c
-index 383d638..5bb8bfe 100644
---- a/ipc/mq_sysctl.c
-+++ b/ipc/mq_sysctl.c
-@@ -22,6 +22,16 @@ static void *get_mq(ctl_table *table)
- 	return which;
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9c53789..108aa71 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7330,14 +7330,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
+ static void __perf_event_exit_context(void *__info)
+ {
+ 	struct perf_event_context *ctx = __info;
+-	struct perf_event *event, *tmp;
++	struct perf_event *event;
+ 
+ 	perf_pmu_rotate_stop(ctx->pmu);
+ 
+-	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
+-		__perf_remove_from_context(event);
+-	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
++	rcu_read_lock();
++	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
+ 		__perf_remove_from_context(event);
++	rcu_read_unlock();
  }
  
-+static int proc_mq_dointvec(ctl_table *table, int write,
-+			    void __user *buffer, size_t *lenp, loff_t *ppos)
-+{
-+	struct ctl_table mq_table;
-+	memcpy(&mq_table, table, sizeof(mq_table));
-+	mq_table.data = get_mq(table);
-+
-+	return proc_dointvec(&mq_table, write, buffer, lenp, ppos);
-+}
-+
- static int proc_mq_dointvec_minmax(ctl_table *table, int write,
- 	void __user *buffer, size_t *lenp, loff_t *ppos)
+ static void perf_event_exit_cpu_context(int cpu)
+@@ -7361,11 +7361,11 @@ static void perf_event_exit_cpu(int cpu)
  {
-@@ -33,12 +43,10 @@ static int proc_mq_dointvec_minmax(ctl_table *table, int write,
- 					lenp, ppos);
+ 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
+ 
++	perf_event_exit_cpu_context(cpu);
++
+ 	mutex_lock(&swhash->hlist_mutex);
+ 	swevent_hlist_release(swhash);
+ 	mutex_unlock(&swhash->hlist_mutex);
+-
+-	perf_event_exit_cpu_context(cpu);
  }
  #else
-+#define proc_mq_dointvec NULL
- #define proc_mq_dointvec_minmax NULL
- #endif
- 
--static int msg_queues_limit_min = MIN_QUEUESMAX;
--static int msg_queues_limit_max = HARD_QUEUESMAX;
--
- static int msg_max_limit_min = MIN_MSGMAX;
- static int msg_max_limit_max = HARD_MSGMAX;
- 
-@@ -51,9 +59,7 @@ static ctl_table mq_sysctls[] = {
- 		.data		= &init_ipc_ns.mq_queues_max,
- 		.maxlen		= sizeof(int),
- 		.mode		= 0644,
--		.proc_handler	= proc_mq_dointvec_minmax,
--		.extra1		= &msg_queues_limit_min,
--		.extra2		= &msg_queues_limit_max,
-+		.proc_handler	= proc_mq_dointvec,
- 	},
- 	{
- 		.procname	= "msg_max",
-diff --git a/ipc/mqueue.c b/ipc/mqueue.c
-index f3f40dc..f2fa658 100644
---- a/ipc/mqueue.c
-+++ b/ipc/mqueue.c
-@@ -433,9 +433,9 @@ static int mqueue_create(struct inode *dir, struct dentry *dentry,
- 		error = -EACCES;
- 		goto out_unlock;
- 	}
--	if (ipc_ns->mq_queues_count >= HARD_QUEUESMAX ||
--	    (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
--	     !capable(CAP_SYS_RESOURCE))) {
-+
-+	if (ipc_ns->mq_queues_count >= ipc_ns->mq_queues_max &&
-+	    !capable(CAP_SYS_RESOURCE)) {
- 		error = -ENOSPC;
- 		goto out_unlock;
- 	}
+ static inline void perf_event_exit_cpu(int cpu) { }
 -- 
 1.8.3.2
 
