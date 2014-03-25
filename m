@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaCYRVY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:21:24 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55839 "EHLO
+	id S1755999AbaCYRnB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:43:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55847 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938AbaCYRVV (ORCPT
+	with ESMTP id S1754946AbaCYRVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:21:21 -0400
+	Tue, 25 Mar 2014 13:21:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Ivan Djelic <ivan.djelic@parrot.com>, Dirk Behme <dirk.behme@gmail.com>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Florian Fainelli <f.fainelli@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 37/81] USB: EHCI: add delay during suspend to prevent erroneous wakeups
-Date: Tue, 25 Mar 2014 10:15:50 -0700
-Message-Id: <1395767794-5012-38-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 44/81] ARM: 7668/1: fix memset-related crashes caused by recent GCC (4.7.2) optimizations
+Date: Tue, 25 Mar 2014 10:15:57 -0700
+Message-Id: <1395767794-5012-45-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,100 +29,258 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Ivan Djelic <ivan.djelic@parrot.com>
 
-commit 3e8d6d85adedc59115a564c0a54b36e42087c4d9 upstream.
+commit 455bd4c430b0c0a361f38e8658a0d6cb469942b5 upstream.
 
-High-speed USB connections revert back to full-speed signalling when
-the device goes into suspend.  This takes several milliseconds, and
-during that time it's not possible to tell reliably whether the device
-has been disconnected.
+Recent GCC versions (e.g. GCC-4.7.2) perform optimizations based on
+assumptions about the implementation of memset and similar functions.
+The current ARM optimized memset code does not return the value of
+its first argument, as is usually expected from standard implementations.
 
-On some platforms, the Wake-On-Disconnect circuitry gets confused
-during this intermediate state.  It generates a false wakeup signal,
-which can prevent the controller from going to sleep.
+For instance in the following function:
 
-To avoid this problem, this patch adds a 5-ms delay to the
-ehci_bus_suspend() routine if any ports have to switch over to
-full-speed signalling.  (Actually, the delay was already present for
-devices using a particular kind of PHY power management; the patch
-merely causes the delay to be used more widely.)
+void debug_mutex_lock_common(struct mutex *lock, struct mutex_waiter *waiter)
+{
+	memset(waiter, MUTEX_DEBUG_INIT, sizeof(*waiter));
+	waiter->magic = waiter;
+	INIT_LIST_HEAD(&waiter->list);
+}
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reviewed-by: Peter Chen <Peter.Chen@freescale.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ kamal: backport to 3.8 (context) ]
+compiled as:
+
+800554d0 <debug_mutex_lock_common>:
+800554d0:       e92d4008        push    {r3, lr}
+800554d4:       e1a00001        mov     r0, r1
+800554d8:       e3a02010        mov     r2, #16 ; 0x10
+800554dc:       e3a01011        mov     r1, #17 ; 0x11
+800554e0:       eb04426e        bl      80165ea0 <memset>
+800554e4:       e1a03000        mov     r3, r0
+800554e8:       e583000c        str     r0, [r3, #12]
+800554ec:       e5830000        str     r0, [r3]
+800554f0:       e5830004        str     r0, [r3, #4]
+800554f4:       e8bd8008        pop     {r3, pc}
+
+GCC assumes memset returns the value of pointer 'waiter' in register r0; causing
+register/memory corruptions.
+
+This patch fixes the return value of the assembly version of memset.
+It adds a 'mov' instruction and merges an additional load+store into
+existing load/store instructions.
+For ease of review, here is a breakdown of the patch into 4 simple steps:
+
+Step 1
+======
+Perform the following substitutions:
+ip -> r8, then
+r0 -> ip,
+and insert 'mov ip, r0' as the first statement of the function.
+At this point, we have a memset() implementation returning the proper result,
+but corrupting r8 on some paths (the ones that were using ip).
+
+Step 2
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 1:
+
+save r8:
+-       str     lr, [sp, #-4]!
++       stmfd   sp!, {r8, lr}
+
+and restore r8 on both exit paths:
+-       ldmeqfd sp!, {pc}               @ Now <64 bytes to go.
++       ldmeqfd sp!, {r8, pc}           @ Now <64 bytes to go.
+(...)
+        tst     r2, #16
+        stmneia ip!, {r1, r3, r8, lr}
+-       ldr     lr, [sp], #4
++       ldmfd   sp!, {r8, lr}
+
+Step 3
+======
+Make sure r8 is saved and restored when (! CALGN(1)+0) == 0:
+
+save r8:
+-       stmfd   sp!, {r4-r7, lr}
++       stmfd   sp!, {r4-r8, lr}
+
+and restore r8 on both exit paths:
+        bgt     3b
+-       ldmeqfd sp!, {r4-r7, pc}
++       ldmeqfd sp!, {r4-r8, pc}
+(...)
+        tst     r2, #16
+        stmneia ip!, {r4-r7}
+-       ldmfd   sp!, {r4-r7, lr}
++       ldmfd   sp!, {r4-r8, lr}
+
+Step 4
+======
+Rewrite register list "r4-r7, r8" as "r4-r8".
+
+Signed-off-by: Ivan Djelic <ivan.djelic@parrot.com>
+Reviewed-by: Nicolas Pitre <nico@linaro.org>
+Signed-off-by: Dirk Behme <dirk.behme@gmail.com>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Cc: Florian Fainelli <f.fainelli@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/host/ehci-hub.c | 26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
+ arch/arm/lib/memset.S | 85 ++++++++++++++++++++++++++-------------------------
+ 1 file changed, 44 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
-index f578493..a77869d 100644
---- a/drivers/usb/host/ehci-hub.c
-+++ b/drivers/usb/host/ehci-hub.c
-@@ -224,6 +224,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 	int			port;
- 	int			mask;
- 	int			changed;
-+	bool			fs_idle_delay;
+diff --git a/arch/arm/lib/memset.S b/arch/arm/lib/memset.S
+index 650d592..d912e73 100644
+--- a/arch/arm/lib/memset.S
++++ b/arch/arm/lib/memset.S
+@@ -19,9 +19,9 @@
+ 1:	subs	r2, r2, #4		@ 1 do we have enough
+ 	blt	5f			@ 1 bytes to align with?
+ 	cmp	r3, #2			@ 1
+-	strltb	r1, [r0], #1		@ 1
+-	strleb	r1, [r0], #1		@ 1
+-	strb	r1, [r0], #1		@ 1
++	strltb	r1, [ip], #1		@ 1
++	strleb	r1, [ip], #1		@ 1
++	strb	r1, [ip], #1		@ 1
+ 	add	r2, r2, r3		@ 1 (r2 = r2 - (4 - r3))
+ /*
+  * The pointer is now aligned and the length is adjusted.  Try doing the
+@@ -29,10 +29,14 @@
+  */
  
- 	ehci_dbg(ehci, "suspend root hub\n");
+ ENTRY(memset)
+-	ands	r3, r0, #3		@ 1 unaligned?
++/*
++ * Preserve the contents of r0 for the return value.
++ */
++	mov	ip, r0
++	ands	r3, ip, #3		@ 1 unaligned?
+ 	bne	1b			@ 1
+ /*
+- * we know that the pointer in r0 is aligned to a word boundary.
++ * we know that the pointer in ip is aligned to a word boundary.
+  */
+ 	orr	r1, r1, r1, lsl #8
+ 	orr	r1, r1, r1, lsl #16
+@@ -43,29 +47,28 @@ ENTRY(memset)
+ #if ! CALGN(1)+0
  
-@@ -258,6 +259,7 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 	ehci->bus_suspended = 0;
- 	ehci->owned_ports = 0;
- 	changed = 0;
-+	fs_idle_delay = false;
- 	port = HCS_N_PORTS(ehci->hcs_params);
- 	while (port--) {
- 		u32 __iomem	*reg = &ehci->regs->port_status [port];
-@@ -288,16 +290,32 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 		if (t1 != t2) {
- 			ehci_vdbg (ehci, "port %d, %08x -> %08x\n",
- 				port + 1, t1, t2);
-+			/*
-+			 * On some controllers, Wake-On-Disconnect will
-+			 * generate false wakeup signals until the bus
-+			 * switches over to full-speed idle.  For their
-+			 * sake, add a delay if we need one.
-+			 */
-+			if ((t2 & PORT_WKDISC_E) &&
-+					ehci_port_speed(ehci, t2) ==
-+						USB_PORT_STAT_HIGH_SPEED)
-+				fs_idle_delay = true;
- 			ehci_writel(ehci, t2, reg);
- 			changed = 1;
- 		}
- 	}
-+	spin_unlock_irq(&ehci->lock);
-+
-+	if ((changed && ehci->has_hostpc) || fs_idle_delay) {
-+		/*
-+		 * Wait for HCD to enter low-power mode or for the bus
-+		 * to switch to full-speed idle.
-+		 */
-+		usleep_range(5000, 5500);
-+	}
+ /*
+- * We need an extra register for this loop - save the return address and
+- * use the LR
++ * We need 2 extra registers for this loop - use r8 and the LR
+  */
+-	str	lr, [sp, #-4]!
+-	mov	ip, r1
++	stmfd	sp!, {r8, lr}
++	mov	r8, r1
+ 	mov	lr, r1
  
- 	if (changed && ehci->has_hostpc) {
--		spin_unlock_irq(&ehci->lock);
--		msleep(5);	/* 5 ms for HCD to enter low-power mode */
- 		spin_lock_irq(&ehci->lock);
--
- 		port = HCS_N_PORTS(ehci->hcs_params);
- 		while (port--) {
- 			u32 __iomem	*hostpc_reg = &ehci->regs->hostpc[port];
-@@ -310,8 +328,8 @@ static int ehci_bus_suspend (struct usb_hcd *hcd)
- 					port, (t3 & HOSTPC_PHCD) ?
- 					"succeeded" : "failed");
- 		}
-+		spin_unlock_irq(&ehci->lock);
- 	}
--	spin_unlock_irq(&ehci->lock);
+ 2:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3, ip, lr}	@ 64 bytes at a time.
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
+-	stmgeia	r0!, {r1, r3, ip, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}	@ 64 bytes at a time.
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
++	stmgeia	ip!, {r1, r3, r8, lr}
+ 	bgt	2b
+-	ldmeqfd	sp!, {pc}		@ Now <64 bytes to go.
++	ldmeqfd	sp!, {r8, pc}		@ Now <64 bytes to go.
+ /*
+  * No need to correct the count; we're only testing bits from now on
+  */
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	stmneia	r0!, {r1, r3, ip, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
++	stmneia	ip!, {r1, r3, r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r1, r3, ip, lr}
+-	ldr	lr, [sp], #4
++	stmneia	ip!, {r1, r3, r8, lr}
++	ldmfd	sp!, {r8, lr}
  
- 	/* Apparently some devices need a >= 1-uframe delay here */
- 	if (ehci->bus_suspended)
+ #else
+ 
+@@ -74,54 +77,54 @@ ENTRY(memset)
+  * whole cache lines at once.
+  */
+ 
+-	stmfd	sp!, {r4-r7, lr}
++	stmfd	sp!, {r4-r8, lr}
+ 	mov	r4, r1
+ 	mov	r5, r1
+ 	mov	r6, r1
+ 	mov	r7, r1
+-	mov	ip, r1
++	mov	r8, r1
+ 	mov	lr, r1
+ 
+ 	cmp	r2, #96
+-	tstgt	r0, #31
++	tstgt	ip, #31
+ 	ble	3f
+ 
+-	and	ip, r0, #31
+-	rsb	ip, ip, #32
+-	sub	r2, r2, ip
+-	movs	ip, ip, lsl #(32 - 4)
+-	stmcsia	r0!, {r4, r5, r6, r7}
+-	stmmiia	r0!, {r4, r5}
+-	tst	ip, #(1 << 30)
+-	mov	ip, r1
+-	strne	r1, [r0], #4
++	and	r8, ip, #31
++	rsb	r8, r8, #32
++	sub	r2, r2, r8
++	movs	r8, r8, lsl #(32 - 4)
++	stmcsia	ip!, {r4, r5, r6, r7}
++	stmmiia	ip!, {r4, r5}
++	tst	r8, #(1 << 30)
++	mov	r8, r1
++	strne	r1, [ip], #4
+ 
+ 3:	subs	r2, r2, #64
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
+-	stmgeia	r0!, {r1, r3-r7, ip, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
++	stmgeia	ip!, {r1, r3-r8, lr}
+ 	bgt	3b
+-	ldmeqfd	sp!, {r4-r7, pc}
++	ldmeqfd	sp!, {r4-r8, pc}
+ 
+ 	tst	r2, #32
+-	stmneia	r0!, {r1, r3-r7, ip, lr}
++	stmneia	ip!, {r1, r3-r8, lr}
+ 	tst	r2, #16
+-	stmneia	r0!, {r4-r7}
+-	ldmfd	sp!, {r4-r7, lr}
++	stmneia	ip!, {r4-r7}
++	ldmfd	sp!, {r4-r8, lr}
+ 
+ #endif
+ 
+ 4:	tst	r2, #8
+-	stmneia	r0!, {r1, r3}
++	stmneia	ip!, {r1, r3}
+ 	tst	r2, #4
+-	strne	r1, [r0], #4
++	strne	r1, [ip], #4
+ /*
+  * When we get here, we've got less than 4 bytes to zero.  We
+  * may have an unaligned pointer as well.
+  */
+ 5:	tst	r2, #2
+-	strneb	r1, [r0], #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
++	strneb	r1, [ip], #1
+ 	tst	r2, #1
+-	strneb	r1, [r0], #1
++	strneb	r1, [ip], #1
+ 	mov	pc, lr
+ ENDPROC(memset)
 -- 
 1.8.3.2
 
