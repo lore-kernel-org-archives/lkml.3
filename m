@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638AbaCYAeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 Mar 2014 20:34:07 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59375 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750875AbaCYAeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 Mar 2014 20:34:05 -0400
+	id S1752240AbaCYAf6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 Mar 2014 20:35:58 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44444 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751656AbaCYAf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 Mar 2014 20:35:56 -0400
 From: Murali Karicheri <m-karicheri2@ti.com>
 To: <linux-pci@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-samsung-soc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
@@ -15,12 +14,12 @@ CC: Murali Karicheri <m-karicheri2@ti.com>, Jingoo Han <jg1.han@samsung.com>,
         Kukjin Kim <kgene.kim@samsung.com>, Richard Zhu <r65037@freescale.com>,
         Shawn Guo <shawn.guo@linaro.org>, Mohit Kumar <mohit.kumar@st.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH 1/3] ARM: keystone: add pcie related options
-Date: Mon, 24 Mar 2014 20:33:22 -0400
-Message-ID: <1395707604-20377-3-git-send-email-m-karicheri2@ti.com>
+Subject: [RESEND: RFC PATCH 1/3] ARM: keystone: add pcie related options
+Date: Mon, 24 Mar 2014 20:35:25 -0400
+Message-ID: <1395707726-20437-3-git-send-email-m-karicheri2@ti.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395707604-20377-1-git-send-email-m-karicheri2@ti.com>
-References: <1395707604-20377-1-git-send-email-m-karicheri2@ti.com>
+In-Reply-To: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
+References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
