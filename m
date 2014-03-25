@@ -1,127 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752385AbaCYJUe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 05:20:34 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:3808 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751074AbaCYJU2 (ORCPT
+	id S1752704AbaCYJUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 05:20:41 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:55290 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751074AbaCYJUf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 05:20:28 -0400
-Message-ID: <53314552.4000905@huawei.com>
-Date: Tue, 25 Mar 2014 16:58:58 +0800
-From: Liu hua <sdu.liu@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 25 Mar 2014 05:20:35 -0400
+Message-ID: <53314A5A.1000709@hitachi.com>
+Date: Tue, 25 Mar 2014 18:20:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-CC: <paul.gortmaker@windriver.com>, <mingo@kernel.org>, <wangnan0@huawei.com>,
-        <linux-kernel@vger.kernel.org>, <peifeiyue@huawei.com>,
-        <lizefan@huawei.com>, <stable@vger.kernel.org>
-Subject: Re: [PATCH v2] hung_task : check the value of "sysctl_hung_task_timeout_sec"
-References: <1395561244-69173-1-git-send-email-sdu.liu@huawei.com> <87eh1s3ahp.wl%satoru.takeuchi@gmail.com>
-In-Reply-To: <87eh1s3ahp.wl%satoru.takeuchi@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.111.58.238]
-X-CFilter-Loop: Reflected
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        fche@redhat.com, mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH -tip v8 10/26] kprobes/x86: Allow probe on some kprobe
+ preparation functions
+References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140305115953.22766.53497.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140324153556.2ae6b181@gandalf.local.home>
+In-Reply-To: <20140324153556.2ae6b181@gandalf.local.home>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014/3/24 4:50, Satoru Takeuchi 写道:
-> At Sun, 23 Mar 2014 15:54:04 +0800,
-> Liu Hua wrote:
->>
->> As sysctl_hung_task_timeout_sec is unsigned long, when this value is
->> larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
->> watchdog will return immediately without sleep and with print :
->>
->> [  205.452934] schedule_timeout: wrong timeout value ffffffffffffff83
->>
->> and then the funtion watchdog will call schedule_timeout_interruptible again
->> and again. The screen will be filled with
->> 	"schedule_timeout: wrong timeout value ffffffffffffff83"
->>
->> This patch does some check and correction in timeout_jiffies, to let the
->> function schedule_timeout_interruptible allways get the valid parameter.
->>
->> Cc: <stable@vger.kernel.org>
->> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
->> ---
->>  kernel/hung_task.c | 8 ++++++--
->>  1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
->> index 6df6149..f992286 100644
->> --- a/kernel/hung_task.c
->> +++ b/kernel/hung_task.c
->> @@ -174,8 +174,12 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
->>  
->>  static unsigned long timeout_jiffies(unsigned long timeout)
->>  {
->> -	/* timeout of 0 will disable the watchdog */
->> -	return timeout ? timeout * HZ : MAX_SCHEDULE_TIMEOUT;
->> +	/* timeout of 0 or >= LONG_MAX/HZ will disable the watchdog */
->> +	if ((timeout == 0) || (timeout > MAX_SCHEDULE_TIMEOUT))
+(2014/03/25 4:35), Steven Rostedt wrote:
+> On Wed, 05 Mar 2014 20:59:53 +0900
+> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 > 
-> You should check whether sysctl_hung_task_timeout_sec > MAX_SCHEDULE_TIMEOUT/HZ
-> or not when setting this parameter instead. Then this check ins't necessary here.
+>> There is no need to prohibit probing on the functions
+>> used in preparation phase. Those are safely probed because
+>> those are not invoked from breakpoint/fault/debug handlers,
+>> there is no chance to cause recursive exceptions.
+>>
+>> Following functions are now removed from the kprobes blacklist.
+>>  can_boost
+>>  can_probe
+>>  can_optimize
+>>  is_IF_modifier
+>>  __copy_instruction
+>>  copy_optimized_instructions
+>>  arch_copy_kprobe
+>>  arch_prepare_kprobe
+>>  arch_arm_kprobe
+>>  arch_disarm_kprobe
+>>  arch_remove_kprobe
 > 
-> # Just FYI, MAX_SCHEDULE_TIMEOUT should be MAX_SCHEDULE_TIMEOUT/HZ here. 
+> Is there any possibility that the arm and disarm could cause issues if
+> we have a probe in the middle of setting it?
+
+No problem at least on x86, since we need to take a text_mutex for
+arm/disarm, those must not be called from int3/debug interrupts.
+
+> I guess not, but I just wanted to ask, as your test only tested the
+> start of function and not the middle of it.
+
+No I've not tested yet. OK, I'll test it and report.
+
+Thank you,
+
 > 
-> Thanks,
-> Satoru
+> -- Steve
+> 
+> 
+>>  arch_trampoline_kprobe
+>>  arch_prepare_kprobe_ftrace
+>>  arch_prepare_optimized_kprobe
+>>  arch_check_optimized_kprobe
+>>  arch_within_optimized_kprobe
+>>  __arch_remove_optimized_kprobe
+>>  arch_remove_optimized_kprobe
+>>  arch_optimize_kprobes
+>>  arch_unoptimize_kprobe
+>>
+> 
+> 
 
- Yes, how about this :
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 49e13e1..aae21e8 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8;
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
-
-+/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
-+#endif
-+
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
- #endif
-@@ -995,6 +1000,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dohung_task_timeout_secs,
-+		.extra2		= &hung_task_timeout_max,
- 	},
- 	{
- 		.procname	= "hung_task_warnings",
 -- 
-1.9.0
-
-Thanks
-Liu Hua
-
-
-
-> 
->> +		return MAX_SCHEDULE_TIMEOUT;
->> +
->> +	return (timeout * HZ) < MAX_SCHEDULE_TIMEOUT ?
->> +			timeout * HZ : MAX_SCHEDULE_TIMEOUT;
->>  }
->>  
->>  /*
->> -- 
->> 1.9.0
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe stable" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> .
-> 
+Masami HIRAMATSU
+IT Management Research Dept. Linux Technology Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
 
