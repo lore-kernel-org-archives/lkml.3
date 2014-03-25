@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbaCYRST (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:18:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55675 "EHLO
+	id S1754587AbaCYRS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:18:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55691 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754481AbaCYRSQ (ORCPT
+	with ESMTP id S1754526AbaCYRSZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:18:16 -0400
+	Tue, 25 Mar 2014 13:18:25 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+Cc: Joerg Dorchain <joerg@dorchain.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 80/81] powerpc/crashdump : Fix page frame number check in copy_oldmem_page
-Date: Tue, 25 Mar 2014 10:16:33 -0700
-Message-Id: <1395767794-5012-81-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 70/81] USB: ftdi_sio: add Cressi Leonardo PID
+Date: Tue, 25 Mar 2014 10:16:23 -0700
+Message-Id: <1395767794-5012-71-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,58 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit f5295bd8ea8a65dc5eac608b151386314cb978f1 upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-In copy_oldmem_page, the current check using max_pfn and min_low_pfn to
-decide if the page is backed or not, is not valid when the memory layout is
-not continuous.
+Hello,
 
-This happens when running as a QEMU/KVM guest, where RTAS is mapped higher
-in the memory. In that case max_pfn points to the end of RTAS, and a hole
-between the end of the kdump kernel and RTAS is not backed by PTEs. As a
-consequence, the kdump kernel is crashing in copy_oldmem_page when accessing
-in a direct way the pages in that hole.
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
 
-This fix relies on the memblock's service memblock_is_region_memory to
-check if the read page is part or not of the directly accessible memory.
-
-Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
-Tested-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/powerpc/kernel/crash_dump.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
-diff --git a/arch/powerpc/kernel/crash_dump.c b/arch/powerpc/kernel/crash_dump.c
-index b3ba516..9d6a4a4 100644
---- a/arch/powerpc/kernel/crash_dump.c
-+++ b/arch/powerpc/kernel/crash_dump.c
-@@ -108,17 +108,19 @@ ssize_t copy_oldmem_page(unsigned long pfn, char *buf,
- 			size_t csize, unsigned long offset, int userbuf)
- {
- 	void  *vaddr;
-+	phys_addr_t paddr;
- 
- 	if (!csize)
- 		return 0;
- 
- 	csize = min_t(size_t, csize, PAGE_SIZE);
-+	paddr = pfn << PAGE_SHIFT;
- 
--	if ((min_low_pfn < pfn) && (pfn < max_pfn)) {
--		vaddr = __va(pfn << PAGE_SHIFT);
-+	if (memblock_is_region_memory(paddr, csize)) {
-+		vaddr = __va(paddr);
- 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
- 	} else {
--		vaddr = __ioremap(pfn << PAGE_SHIFT, PAGE_SIZE, 0);
-+		vaddr = __ioremap(paddr, PAGE_SIZE, 0);
- 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
- 		iounmap(vaddr);
- 	}
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index f9bdb50..7601cf8 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -912,6 +912,8 @@ static struct usb_device_id id_table_combined [] = {
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 1e2d369..e599fbf 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
++
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 -- 
 1.8.3.2
 
