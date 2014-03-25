@@ -1,53 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753127AbaCYOZz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 10:25:55 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:50377 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaCYOZx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 10:25:53 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de
-Date: Tue, 25 Mar 2014 15:25:22 +0100
-Message-Id: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH] clocksource: efm32: use $vendor,$device scheme for compatible string
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1753272AbaCYObd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 10:31:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22358 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752581AbaCYObc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 10:31:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,728,1389772800"; 
+   d="scan'208";a="507164553"
+From: sagar.a.kamble@intel.com
+To: intel-gfx@lists.freedesktop.org
+Cc: Sagar Kamble <sagar.a.kamble@intel.com>, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/4] drm: Adding new flag to restrict bitmask drm properties as 32 bit type and 32 bit value pair
+Date: Tue, 25 Mar 2014 20:02:24 +0530
+Message-Id: <1395757947-16492-1-git-send-email-sagar.a.kamble@intel.com>
+X-Mailer: git-send-email 1.8.5
+In-Reply-To: <20140320135151.GO6912@strange.amr.corp.intel.com>
+References: <20140320135151.GO6912@strange.amr.corp.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
-common scheme and prefix device with "efm32-". The old compatible string
-is left in place until arch/arm/boot/dts/efm32* is fixed.
+From: Sagar Kamble <sagar.a.kamble@intel.com>
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+With this patch new flag DRM_MODE_PROP_32BIT_PAIR is added that will help make use
+of 64 bit value of bitmask property as two 32 bit values.
+
+Cc: airlied@linux.ie
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Sagar Kamble <sagar.a.kamble@intel.com>
 ---
- drivers/clocksource/time-efm32.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/drm_crtc.c  | 22 ++++++++++++++++------
+ include/uapi/drm/drm_mode.h |  3 +++
+ 2 files changed, 19 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
-index 1a6205b7bed3..bba62f9deefb 100644
---- a/drivers/clocksource/time-efm32.c
-+++ b/drivers/clocksource/time-efm32.c
-@@ -272,4 +272,5 @@ static void __init efm32_timer_init(struct device_node *np)
- 		}
- 	}
- }
--CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
-+CLOCKSOURCE_OF_DECLARE(efm32compat, "efm32,timer", efm32_timer_init);
-+CLOCKSOURCE_OF_DECLARE(efm32, "energymicro,efm32-timer", efm32_timer_init);
+diff --git a/drivers/gpu/drm/drm_crtc.c b/drivers/gpu/drm/drm_crtc.c
+index 4e43fc2..d0d03ec 100644
+--- a/drivers/gpu/drm/drm_crtc.c
++++ b/drivers/gpu/drm/drm_crtc.c
+@@ -2993,10 +2993,13 @@ int drm_property_add_enum(struct drm_property *property, int index,
+ 
+ 	/*
+ 	 * Bitmask enum properties have the additional constraint of values
+-	 * from 0 to 63
++	 * from 0 to 63. For properties with 32BIT_PAIR Flag set this constraint
++	 * range is 0 to 31.
+ 	 */
+-	if ((property->flags & DRM_MODE_PROP_BITMASK) && (value > 63))
+-		return -EINVAL;
++	if (property->flags & DRM_MODE_PROP_BITMASK)
++		if (((property->flags & DRM_MODE_PROP_32BIT_PAIR) && (value > 31)) ||
++		    (value > 63))
++			return -EINVAL;
+ 
+ 	if (!list_empty(&property->enum_blob_list)) {
+ 		list_for_each_entry(prop_enum, &property->enum_blob_list, head) {
+@@ -3305,9 +3308,16 @@ static bool drm_property_change_is_valid(struct drm_property *property,
+ 	} else if (property->flags & DRM_MODE_PROP_BITMASK) {
+ 		int i;
+ 		uint64_t valid_mask = 0;
+-		for (i = 0; i < property->num_values; i++)
+-			valid_mask |= (1ULL << property->values[i]);
+-		return !(value & ~valid_mask);
++		uint32_t valid_32bit_mask = 0;
++		if (property->flags & DRM_MODE_PROP_32BIT_PAIR) {
++			for (i = 0; i < property->num_values; i++)
++				valid_32bit_mask |= (1UL << property->values[i]);
++			return !((value & 0xFFFFFFFF) & ~valid_32bit_mask);
++		} else {
++			for (i = 0; i < property->num_values; i++)
++				valid_mask |= (1ULL << property->values[i]);
++			return !(value & ~valid_mask);
++		}
+ 	} else if (property->flags & DRM_MODE_PROP_BLOB) {
+ 		/* Only the driver knows */
+ 		return true;
+diff --git a/include/uapi/drm/drm_mode.h b/include/uapi/drm/drm_mode.h
+index f104c26..5e3a7d9 100644
+--- a/include/uapi/drm/drm_mode.h
++++ b/include/uapi/drm/drm_mode.h
+@@ -250,6 +250,9 @@ struct drm_mode_get_connector {
+ #define DRM_MODE_PROP_ENUM	(1<<3) /* enumerated type with text strings */
+ #define DRM_MODE_PROP_BLOB	(1<<4)
+ #define DRM_MODE_PROP_BITMASK	(1<<5) /* bitmask of enumerated types */
++#define DRM_MODE_PROP_32BIT_PAIR (1<<6) /* 32 bit bitmask of enumerated types
++					 * and 32 bit of value of the type */
++
+ 
+ struct drm_mode_property_enum {
+ 	__u64 value;
 -- 
-1.9.1
+1.8.5
 
