@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578AbaCYWfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 18:35:24 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5746 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126AbaCYWfW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 18:35:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,730,1389772800"; 
-   d="scan'208";a="507508589"
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Subject: Re: [PATCH] tools, perf: Allow the user to disable time stamps
-References: <1395780272-27106-1-git-send-email-andi@firstfloor.org>
-	<CABPqkBSpoc1LX3=hZTnwM9KAeu943kbS0UgCbupWJf1idtdWNg@mail.gmail.com>
-	<20140325210109.GH15074@tassilo.jf.intel.com>
-	<CABPqkBT48Nx0qkPgnS=JsX0Etb7Xr1rLgoOAk1bt7L+DHvugGA@mail.gmail.com>
-Date: Tue, 25 Mar 2014 15:34:52 -0700
-In-Reply-To: <CABPqkBT48Nx0qkPgnS=JsX0Etb7Xr1rLgoOAk1bt7L+DHvugGA@mail.gmail.com>
-	(Stephane Eranian's message of "Tue, 25 Mar 2014 23:15:05 +0100")
-Message-ID: <87wqfhoqk3.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1753725AbaCYWi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 18:38:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48186 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaCYWi6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 18:38:58 -0400
+Date: Tue, 25 Mar 2014 15:40:38 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Larry.Finger@lwfinger.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: rtl8188eu: remove spaces, correct counts to
+ unbreak P2P ioctls
+Message-ID: <20140325224038.GB28590@kroah.com>
+References: <20140325175939.GC17209@kaos.lebenslange-mailadresse.de>
+ <20140325181749.GE3233@kroah.com>
+ <20140325183618.GD17209@kaos.lebenslange-mailadresse.de>
+ <20140325185145.GA4509@kroah.com>
+ <20140325190434.GE17209@kaos.lebenslange-mailadresse.de>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140325190434.GE17209@kaos.lebenslange-mailadresse.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephane Eranian <eranian@google.com> writes:
->>
-> But getting the mmaps at the right moment is crucial for some apps
-> especially if address space is recycled otherwise symbolization
-> may be incorrect.
+On Tue, Mar 25, 2014 at 07:04:34PM +0000, Wilfried Klaebe wrote:
+> Am Tue, Mar 25, 2014 at 11:51:45AM -0700 schrieb Greg KH:
+> > On Tue, Mar 25, 2014 at 06:36:18PM +0000, Wilfried Klaebe wrote:
+> > > Am Tue, Mar 25, 2014 at 11:17:49AM -0700 schrieb Greg KH:
+> > > > On Tue, Mar 25, 2014 at 05:59:39PM +0000, Wilfried Klaebe wrote:
+> > > > > staging: rtl8188eu: remove spaces, correct counts to unbreak P2P ioctls
+> > > > > 
+> > > > > It looks like someone did a search-and-replace on that driver, putting
+> > > > > spaces before "=" characters, without checking this is OK everywhere.
+> > > > > Also, in some places, there's memcpm()s/strncmp()s checking for some
+> > > > > different length than the fixed string argument.
+> > > > > 
+> > > > > These things result in code not working as intended. Fix that.
+> > > > 
+> > > > What code is parsing string output from the kernel?
+> > > 
+> > > I know about some userspace apps, for example a MiraCast Sink
+> > > implementation for the Raspberry Pi, called piracast.
+> > > 
+> > > This patch though is about the rtl8188eu driver parsing strings
+> > > handed to it via "iwpriv wlanX p2p_set name=value". Which breaks,
+> > > because the driver checks for "name =" instead of "name=" in several
+> > > cases.
+> > 
+> > That's horrid on so many levels...
+> 
+> The real WTF is: why doesn't this driver use the stuff already there for
+> Wi-Fi Direct (aka P2P Wifi)?
+> 
+> But well, for now I just wanted to contribute my fixes to this obvious
+> breakage; making a sensible driver out of that mess is a longer-term
+> project.
 
-Yes that is why it is only an option and not default.
-You need to know what you're doing.
+No worries, just complaining, it's not your fault.  I'll queue it up
+after 3.15-rc1 is out, thanks.
 
-BTW I think the recycle case is not very likely on non JIT.
-
->> You're right for some special analysis it matters, that is why
->> it is only an option.
->>
->> But for the standard "only care about perf report and
->> don't care about about program startup" case it's a nice saving.
->>
-> How do you know in advance you won't need mmap ordering?
-
-When I measure a long running process and I know it doesn't
-fork/dlopen/jit. Using --initial-delay also helps to skip
-the startup phase or attaching later.
-
-I believe it's actually a good choice for most non
-forky workloads. But yes it cannot be made default.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+greg k-h
