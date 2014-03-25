@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754323AbaCYIng (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:43:36 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:54904 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaCYIVU (ORCPT
+	id S1754381AbaCYIoJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:44:09 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:47216 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753076AbaCYIVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:21:20 -0400
+	Tue, 25 Mar 2014 04:21:16 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 32/47] mtd: nand: stm_nand_bch: scan for BBMs and build memory-resident BBT
-Date: Tue, 25 Mar 2014 08:19:49 +0000
-Message-Id: <1395735604-26706-33-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 30/47] mtd: nand: stm_nand_bch: read and write raw (FLEX)
+Date: Tue, 25 Mar 2014 08:19:47 +0000
+Message-Id: <1395735604-26706-31-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,53 +22,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If at start-up time we can't find our own pre-built memory-resident BBT
-(e.g. at first run) this routine will search for factory set BBMs and
-duplicate them into our own BBT for local consumption.
+Once the correct READ/WRITE(SEQIN) commands and address locations have
+been sent to the Controller, these calls are able to read/write the
+requested information from the FLEX_DATA register.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 77 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 77 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 29eeee8..d7d97720 100644
+index baecc40..4812431 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -703,6 +703,33 @@ static int nandi_scan_bad_block_markers_block(struct nandi_controller *nandi,
- 	return 0;
+@@ -537,6 +537,83 @@ static void flex_addr(struct nandi_controller *nandi,
+ 	writel(addr, nandi->base + NANDHAM_FLEX_ADD);
  }
  
-+/* Scan for BBMs and build memory-resident BBT */
-+static int nandi_scan_build_bbt(struct nandi_controller *nandi,
-+				struct nandi_bbt_info *bbt_info)
++static int flex_read_raw(struct nandi_controller *nandi,
++			 uint32_t page_addr,
++			 uint32_t col_addr,
++			 uint8_t *buf, uint32_t len)
 +{
-+	struct mtd_info *mtd = &nandi->info.mtd;
-+	struct nand_chip *chip = mtd->priv;
-+	uint32_t page_size = mtd->writesize;
-+	uint8_t *bbt = bbt_info->bbt;
-+	uint32_t block;
++	dev_dbg(nandi->dev, "%s %u bytes at [0x%06x,0x%04x]\n",
++		__func__, len, page_addr, col_addr);
 +
-+	dev_dbg(nandi->dev,
-+		"scan device for bad-block markers [bbt options = 0x%02x]\n",
-+		chip->bbt_options);
++	BUG_ON(len & 0x3);
++	BUG_ON((unsigned long)buf & 0x3);
 +
-+	memset(bbt, 0xff, page_size);
-+	bbt_info->bbt_vers[0] = 0;
-+	bbt_info->bbt_vers[1] = 0;
-+	bbt_info->bbt_block[0] = nandi->blocks_per_device - 1;
-+	bbt_info->bbt_block[1] = nandi->blocks_per_device - 2;
++	emiss_nandi_select(STM_NANDI_HAMMING);
++	nandi_enable_interrupts(nandi, NAND_INT_RBN);
++	reinit_completion(&nandi->rbn_completed);
 +
-+	for (block = 0; block < nandi->blocks_per_device; block++)
-+		if (nandi_scan_bad_block_markers_block(nandi, block))
-+			bbt_set_block_mark(bbt, block, BBT_MARK_BAD_FACTORY);
++	writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
++	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
++
++	flex_cmd(nandi, NAND_CMD_READ0);
++	flex_addr(nandi, col_addr, 2);
++	flex_addr(nandi, page_addr, nandi->extra_addr ? 3 : 2);
++	flex_cmd(nandi, NAND_CMD_READSTART);
++
++	flex_wait_rbn(nandi);
++
++	readsl(nandi->base + NANDHAM_FLEX_DATA, buf, len / 4);
++
++	nandi_disable_interrupts(nandi, NAND_INT_RBN);
++
++	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
++	       nandi->base + NANDHAM_FLEX_DATAREAD_CONFIG);
 +
 +	return 0;
 +}
 +
- /* Populate IBBT BCH Header */
- static void bch_fill_ibbt_header(struct nandi_controller *nandi,
- 				 struct nand_ibbt_bch_header *ibbt_header,
++static int flex_write_raw(struct nandi_controller *nandi,
++			  uint32_t page_addr,
++			  uint32_t col_addr,
++			  uint8_t *buf, uint32_t len)
++{
++	uint8_t status;
++
++	dev_dbg(nandi->dev, "%s %u bytes at [0x%06x,0x%04x]\n",
++		__func__, len, page_addr, col_addr);
++
++	BUG_ON(len & 0x3);
++	BUG_ON((unsigned long)buf & 0x3);
++
++	emiss_nandi_select(STM_NANDI_HAMMING);
++	nandi_enable_interrupts(nandi, NAND_INT_RBN);
++	reinit_completion(&nandi->rbn_completed);
++
++	writel(FLEX_DATA_CFG_BEATS_4 | FLEX_DATA_CFG_CSN,
++	       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
++
++	flex_cmd(nandi, NAND_CMD_SEQIN);
++	flex_addr(nandi, col_addr, 2);
++	flex_addr(nandi, page_addr, nandi->extra_addr ? 3 : 2);
++
++	writesl(nandi->base + NANDHAM_FLEX_DATA, buf, len / 4);
++
++	flex_cmd(nandi, NAND_CMD_PAGEPROG);
++
++	flex_wait_rbn(nandi);
++
++	nandi_disable_interrupts(nandi, NAND_INT_RBN);
++
++	writel(FLEX_DATA_CFG_BEATS_1 | FLEX_DATA_CFG_CSN,
++	       nandi->base + NANDHAM_FLEX_DATAWRITE_CONFIG);
++
++	flex_cmd(nandi, NAND_CMD_STATUS);
++
++	status = (uint8_t)(readl(nandi->base + NANDHAM_FLEX_DATA) & 0xff);
++
++	return status;
++}
++
+ /*
+  * Bad Block Tables/Bad Block Markers
+  */
 -- 
 1.8.3.2
 
