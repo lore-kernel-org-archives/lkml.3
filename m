@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754415AbaCYTfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:35:15 -0400
-Received: from smtprelay0162.hostedemail.com ([216.40.44.162]:56932 "EHLO
+	id S1754842AbaCYTfb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:35:31 -0400
+Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:60124 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753770AbaCYTfN (ORCPT
+	by vger.kernel.org with ESMTP id S1754802AbaCYTf2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:35:13 -0400
+	Tue, 25 Mar 2014 15:35:28 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:988:989:1260:1345:1437:1534:1540:1711:1714:1730:1747:1777:1792:1801:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3351:3866:3867:4605:5007:6261:6642:10004:10026:10848:11026:11658:11914:12043:12517:12519:12679:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: month85_10280dc687439
-X-Filterd-Recvd-Size: 1642
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1539:1568:1711:1714:1730:1747:1777:1792:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3865:3866:3867:3871:4321:4605:5007:6261:10004:10026:10848:11026:11473:11658:11914:12296:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: team12_1276c70b95660
+X-Filterd-Recvd-Size: 1334
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: linuxppc-dev@lists.ozlabs.org, drbd-user@lists.linbit.com,
-        xen-devel@lists.xenproject.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org, linux-mm@kvack.org
-Subject: [PATCH 0/5] Convert last few uses of __FUNCTION__ to __func__
-Date: Tue, 25 Mar 2014 12:35:02 -0700
-Message-Id: <cover.1395775901.git.joe@perches.com>
+Cc: linux-mm@kvack.org
+Subject: [PATCH 5/5] slab: Convert last uses of __FUNCTION__ to __func__
+Date: Tue, 25 Mar 2014 12:35:07 -0700
+Message-Id: <41f5cfd7a40408b2aad9a7d8cbb2162c4d4688d4.1395775901.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1395775901.git.joe@perches.com>
+References: <cover.1395775901.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Outside of staging, there aren't any more uses of __FUNCTION__ now...
+Just about all of these have been converted to __func__,
+so convert the last uses.
 
-Joe Perches (5):
-  powerpc: Convert last uses of __FUNCTION__ to __func__
-  x86: Convert last uses of __FUNCTION__ to __func__
-  block: Convert last uses of __FUNCTION__ to __func__
-  i915: Convert last uses of __FUNCTION__ to __func__
-  slab: Convert last uses of __FUNCTION__ to __func__
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ mm/slab.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
- arch/powerpc/platforms/pseries/nvram.c       | 11 +++++------
- arch/x86/kernel/hpet.c                       |  2 +-
- arch/x86/kernel/rtc.c                        |  4 ++--
- arch/x86/platform/intel-mid/intel_mid_vrtc.c |  2 +-
- drivers/block/drbd/drbd_int.h                |  8 ++++----
- drivers/block/xen-blkfront.c                 |  4 ++--
- drivers/gpu/drm/i915/dvo_ns2501.c            | 15 ++++++---------
- mm/slab.h                                    |  2 +-
- 8 files changed, 22 insertions(+), 26 deletions(-)
-
+diff --git a/mm/slab.h b/mm/slab.h
+index 3045316..0d13b70 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -249,7 +249,7 @@ static inline struct kmem_cache *cache_from_obj(struct kmem_cache *s, void *x)
+ 		return cachep;
+ 
+ 	pr_err("%s: Wrong slab cache. %s but object is from %s\n",
+-		__FUNCTION__, cachep->name, s->name);
++	       __func__, cachep->name, s->name);
+ 	WARN_ON_ONCE(1);
+ 	return s;
+ }
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
