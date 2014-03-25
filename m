@@ -1,234 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaCYSxV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:53:21 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:60782 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754717AbaCYSwI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:52:08 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-1c-5331d0569ad1
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        spear-devel@list.st.com, b.zolnierkie@samsung.com
-Subject: [PATCH v4 3/4] ata: add new-style AHCI platform driver for DaVinci
- DA850 AHCI controller
-Date: Tue, 25 Mar 2014 19:51:40 +0100
-Message-id: <1395773501-6663-4-git-send-email-b.zolnierkie@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1395773501-6663-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1395773501-6663-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t9jAd3wC4bBBn/fM1tsnLGe1eLcrQZW
-	izfHpzNZ3FnBbLHp8TVWi2M7HjFZXN41h81if+8GJouG7h52izkzNrNa/Fp+lNFi5cW/zA48
-	Htdf/Wfy2DnrLrvHplWdbB5zpjWxeJy8cJLFY/OSeo/3+66yefRtWcXo8fTHXmaP4ze2M3l8
-	3iQXwB3FZZOSmpNZllqkb5fAldFz6i1bwVm9ike3TrE0MF5U62Lk4JAQMJFY0GvZxcgJZIpJ
-	XLi3nq2LkYtDSGARo8SVP4tYQRJCAl1MEndmCYHYbAJWEhPbVzGC2CICshJXpj1kBGlgFuhi
-	llgyewtYQlggWeLzhp9sIDaLgKpE+5MLYDavgLvEsdvb2SC2KUp0P5sAZnMKeEj8v7eOCWKZ
-	u8SZefPZJjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHL7PpHcwrmqwOMQowMGo
-	xMNr0WcYLMSaWFZcmXuIUYKDWUmE9+9JoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC
-	6YklqdmpqQWpRTBZJg5OqQbGgBt9YfPO3pqRErzG572eQOLV/6Lr7A5Y6O3+0yPbFK//cluw
-	6MmDb6Seh1fpeyX9iJXaFJHhu0+rSJVh146CN6zHFyilzzguaiPFzOnAanXDbWGVjFOFw0Yr
-	Me/gLU3PU2R5Ze9uapbc7vNwm/TDSYrGH24nzLljUny5fyu7+/Xw+asu2nApsRRnJBpqMRcV
-	JwIA/+d3QVsCAAA=
+	id S1754534AbaCYS4v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:56:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63719 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753009AbaCYS4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 14:56:50 -0400
+Message-ID: <1395773793.632.152.camel@ul30vt.home>
+Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
+ the device fd
+From: Alex Williamson <alex.williamson@redhat.com>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: a.motakis@virtualopensystems.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, tech@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, B08248@freescale.com,
+        kim.phillips@linaro.org, jan.kiszka@siemens.com, kvm@vger.kernel.org,
+        R65777@freescale.com, B07421@freescale.com,
+        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
+        will.deacon@arm.com
+Date: Tue, 25 Mar 2014 12:56:33 -0600
+In-Reply-To: <5331B22C.6090100@linaro.org>
+References: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
+	 <5331B22C.6090100@linaro.org>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the new ahci_da850 host driver.
+On Tue, 2014-03-25 at 17:43 +0100, Eric Auger wrote:
+> > Date: Sat,  8 Feb 2014 18:29:36 +0100
+> > VFIO returns a file descriptor which we can use to manipulate the memory
+> > regions of the device. Since some memory regions we cannot mmap due to
+> > security concerns, we also allow to read and write to this file descriptor
+> > directly.
+> > 
+> > Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> > Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
+> > ---
+> >  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
+> >  1 file changed, 125 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> > index f7db5c0..ee96078 100644
+> > --- a/drivers/vfio/platform/vfio_platform.c
+> > +++ b/drivers/vfio/platform/vfio_platform.c
+> > @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+> >  
+> >  		region.addr = res->start;
+> >  		region.size = resource_size(res);
+> > -		region.flags = 0;
+> > +		region.flags = VFIO_REGION_INFO_FLAG_READ
+> > +				| VFIO_REGION_INFO_FLAG_WRITE;
+> >  
+> >  		vdev->region[i] = region;
+> >  	}
+> > @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
+> >  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
+> >  			     size_t count, loff_t *ppos)
+> >  {
+> > -	return 0;
+> > +	struct vfio_platform_device *vdev = device_data;
+> > +	unsigned int *io;
+> > +	int i;
+> > +
+> > +	for (i = 0; i < vdev->num_regions; i++) {
+> > +		struct vfio_platform_region region = vdev->region[i];
+> > +		unsigned int done = 0;
+> > +		loff_t off;
+> > +
+> > +		if ((*ppos < region.addr)
+> > +		     || (*ppos + count - 1) >= (region.addr + region.size))
+> > +			continue;
+> > +
+> > +		io = ioremap_nocache(region.addr, region.size);
+> > +
+> > +		off = *ppos - region.addr;
+> > +
+> > +		while (count) {
+> > +			size_t filled;
+> > +
+> > +			if (count >= 4 && !(off % 4)) {
+> > +				u32 val;
+> > +
+> > +				val = ioread32(io + off);
+> 
+> Hi Antonios,
+> 
+> I suspect there is an issue with the read address. Indeed io being an
+> unsigned int* the read address is io + off x sizeof (unsigned int) ie.
+> io+ offx4  whereas we expect to read io + off. declaring io as a void*
+> corrects the issue (or void __iomem *io). Same issue on write.
 
-Platform changes needed to make DaVinci DA850 SATA AHCI support
-fully functional are in the separate "ARM: davinci: da850: update
-SATA AHCI support" commit.
+Yep, the same code for vfio/pci uses void __iomem *io.  Thanks,
 
-Please note that this driver doesn't have the superfluous clock
-control code as clock is already handled by the generic AHCI
-platform library code.
-
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-v4:
-- no changes
-v3:
-- merged changes from Sekhar
-- splitted out platform changes into separate patch
-v2:
-- dropped the experimental tag from the config option help
-- fixed SYSCFG1 memory resource handling
-- hardcoded the multiplier data and added a note about it
-- used readl()/writel() instead of __raw_readl()/__raw_writel()
-- dropped the superflous clock control
-- cleaned up da850_sata_init()
-- changed the platform device name and removed the platform ids table
-- removed the deprecated ahci_platform_data platform code
-- updated the patch description
-
- drivers/ata/Kconfig      |   9 ++++
- drivers/ata/Makefile     |   1 +
- drivers/ata/ahci_da850.c | 114 +++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 124 insertions(+)
- create mode 100644 drivers/ata/ahci_da850.c
-
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index b3b24f2..7251559 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -97,6 +97,15 @@ config SATA_AHCI_PLATFORM
- 
- 	  If unsure, say N.
- 
-+config AHCI_DA850
-+	tristate "DaVinci DA850 AHCI SATA support"
-+	depends on ARCH_DAVINCI_DA850
-+	help
-+	  This option enables support for the DaVinci DA850 SoC's
-+	  onboard AHCI SATA.
-+
-+	  If unsure, say N.
-+
- config AHCI_ST
- 	tristate "ST AHCI SATA support"
- 	depends on ARCH_STI
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index 5fa79ab..44c8016 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_SATA_INIC162X)	+= sata_inic162x.o
- obj-$(CONFIG_SATA_SIL24)	+= sata_sil24.o
- obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460ex.o
- obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
-+obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
-diff --git a/drivers/ata/ahci_da850.c b/drivers/ata/ahci_da850.c
-new file mode 100644
-index 0000000..2c83613
---- /dev/null
-+++ b/drivers/ata/ahci_da850.c
-@@ -0,0 +1,114 @@
-+/*
-+ * DaVinci DA850 AHCI SATA platform driver
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2, or (at your option)
-+ * any later version.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/pm.h>
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
-+#include <linux/libata.h>
-+#include <linux/ahci_platform.h>
-+#include "ahci.h"
-+
-+/* SATA PHY Control Register offset from AHCI base */
-+#define SATA_P0PHYCR_REG	0x178
-+
-+#define SATA_PHY_MPY(x)		((x) << 0)
-+#define SATA_PHY_LOS(x)		((x) << 6)
-+#define SATA_PHY_RXCDR(x)	((x) << 10)
-+#define SATA_PHY_RXEQ(x)	((x) << 13)
-+#define SATA_PHY_TXSWING(x)	((x) << 19)
-+#define SATA_PHY_ENPLL(x)	((x) << 31)
-+
-+/*
-+ * The multiplier needed for 1.5GHz PLL output.
-+ *
-+ * NOTE: This is currently hardcoded to be suitable for 100MHz crystal
-+ * frequency (which is used by DA850 EVM board) and may need to be changed
-+ * if you would like to use this driver on some other board.
-+ */
-+#define DA850_SATA_CLK_MULTIPLIER	7
-+
-+static void da850_sata_init(struct device *dev, void __iomem *pwrdn_reg,
-+			    void __iomem *ahci_base)
-+{
-+	unsigned int val;
-+
-+	/* Enable SATA clock receiver */
-+	val = readl(pwrdn_reg);
-+	val &= ~BIT(0);
-+	writel(val, pwrdn_reg);
-+
-+	val = SATA_PHY_MPY(DA850_SATA_CLK_MULTIPLIER + 1) | SATA_PHY_LOS(1) |
-+	      SATA_PHY_RXCDR(4) | SATA_PHY_RXEQ(1) | SATA_PHY_TXSWING(3) |
-+	      SATA_PHY_ENPLL(1);
-+
-+	writel(val, ahci_base + SATA_P0PHYCR_REG);
-+}
-+
-+static const struct ata_port_info ahci_da850_port_info = {
-+	.flags		= AHCI_FLAG_COMMON,
-+	.pio_mask	= ATA_PIO4,
-+	.udma_mask	= ATA_UDMA6,
-+	.port_ops	= &ahci_platform_ops,
-+};
-+
-+static int ahci_da850_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct ahci_host_priv *hpriv;
-+	struct resource *res;
-+	void __iomem *pwrdn_reg;
-+	int rc;
-+
-+	hpriv = ahci_platform_get_resources(pdev);
-+	if (IS_ERR(hpriv))
-+		return PTR_ERR(hpriv);
-+
-+	rc = ahci_platform_enable_resources(hpriv);
-+	if (rc)
-+		return rc;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-+	if (!res)
-+		goto disable_resources;
-+
-+	pwrdn_reg = devm_ioremap(dev, res->start, resource_size(res));
-+	if (!pwrdn_reg)
-+		goto disable_resources;
-+
-+	da850_sata_init(dev, pwrdn_reg, hpriv->mmio);
-+
-+	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info, 0, 0);
-+	if (rc)
-+		goto disable_resources;
-+
-+	return 0;
-+disable_resources:
-+	ahci_platform_disable_resources(hpriv);
-+	return rc;
-+}
-+
-+static SIMPLE_DEV_PM_OPS(ahci_da850_pm_ops, ahci_platform_suspend,
-+			 ahci_platform_resume);
-+
-+static struct platform_driver ahci_da850_driver = {
-+	.probe = ahci_da850_probe,
-+	.remove = ata_platform_remove_one,
-+	.driver = {
-+		.name = "ahci_da850",
-+		.owner = THIS_MODULE,
-+		.pm = &ahci_da850_pm_ops,
-+	},
-+};
-+module_platform_driver(ahci_da850_driver);
-+
-+MODULE_DESCRIPTION("DaVinci DA850 AHCI SATA platform driver");
-+MODULE_AUTHOR("Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>");
-+MODULE_LICENSE("GPL");
--- 
-1.8.2.3
+Alex
 
