@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282AbaCYRzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:55:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58434 "EHLO mx2.suse.de"
+	id S1756268AbaCYRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:55:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58443 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755004AbaCYRzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:55:15 -0400
+	id S1754976AbaCYRzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:55:18 -0400
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 1/8] printk: Remove outdated comment
-Date: Tue, 25 Mar 2014 18:54:54 +0100
-Message-Id: <1395770101-24534-2-git-send-email-jack@suse.cz>
+Subject: [PATCH 3/8] printk: Enable interrupts before calling console_trylock_for_printk()
+Date: Tue, 25 Mar 2014 18:54:56 +0100
+Message-Id: <1395770101-24534-4-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1395770101-24534-1-git-send-email-jack@suse.cz>
 References: <1395770101-24534-1-git-send-email-jack@suse.cz>
@@ -21,35 +21,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Comment about interesting interlocking between lockbuf_lock and
-console_sem is outdated. It was added in 2002 by commit
-a880f45a48be2956d2c78a839c472287d54435c1 during conversion of
-console_lock to console_sem + lockbuf_lock. At that time
-release_console_sem() (today's equivalent is console_unlock()) was
-indeed using lockbuf_lock to avoid races between trylock on console_sem
-in printk() and unlock of console_sem. However these days the
-interlocking is gone and the races are avoided by rechecking logbuf
-state after releasing console_sem.
+We need interrupts disabled when calling console_trylock_for_printk()
+only so that cpu id we pass to can_use_console() remains valid (for
+other things console_sem provides all the exclusion we need and
+deadlocks on console_sem due to interrupts are impossible because we use
+down_trylock()).  However if we are rescheduled, we are guaranteed to
+run on an online cpu so we can easily just get the cpu id in
+can_use_console().
+
+We can loose a bit of performance when we enable interrupts in
+vprintk_emit() and then disable them again in console_unlock() but OTOH
+it can somewhat reduce interrupt latency caused by console_unlock()
+especially since later in the patch series we will want to spin on
+console_sem in console_trylock_for_printk().
 
 Signed-off-by: Jan Kara <jack@suse.cz>
 ---
- kernel/printk/printk.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/printk/printk.c | 29 ++++++++++++++++++-----------
+ 1 file changed, 18 insertions(+), 11 deletions(-)
 
 diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 4dae9cbe9259..bd7ee2a9f960 100644
+index 7a8ffd89875c..56649edfae9c 100644
 --- a/kernel/printk/printk.c
 +++ b/kernel/printk/printk.c
-@@ -206,8 +206,7 @@ struct printk_log {
- };
- 
+@@ -1314,10 +1314,9 @@ static int have_callable_console(void)
  /*
-- * The logbuf_lock protects kmsg buffer, indices, counters. It is also
-- * used in interesting ways to provide interlocking in console_unlock();
-+ * The logbuf_lock protects kmsg buffer, indices, counters.
+  * Can we actually use the console at this time on this cpu?
+  *
+- * Console drivers may assume that per-cpu resources have
+- * been allocated. So unless they're explicitly marked as
+- * being able to cope (CON_ANYTIME) don't call them until
+- * this CPU is officially up.
++ * Console drivers may assume that per-cpu resources have been allocated. So
++ * unless they're explicitly marked as being able to cope (CON_ANYTIME) don't
++ * call them until this CPU is officially up.
   */
- static DEFINE_RAW_SPINLOCK(logbuf_lock);
+ static inline int can_use_console(unsigned int cpu)
+ {
+@@ -1330,8 +1329,10 @@ static inline int can_use_console(unsigned int cpu)
+  * console_lock held, and 'console_locked' set) if it
+  * is successful, false otherwise.
+  */
+-static int console_trylock_for_printk(unsigned int cpu)
++static int console_trylock_for_printk(void)
+ {
++	unsigned int cpu = smp_processor_id();
++
+ 	if (!console_trylock())
+ 		return 0;
+ 	/*
+@@ -1501,7 +1502,8 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 		 */
+ 		if (!oops_in_progress && !lockdep_recursing(current)) {
+ 			recursion_bug = 1;
+-			goto out_restore_irqs;
++			local_irq_restore(flags);
++			return 0;
+ 		}
+ 		zap_locks();
+ 	}
+@@ -1597,17 +1599,22 @@ asmlinkage int vprintk_emit(int facility, int level,
  
+ 	logbuf_cpu = UINT_MAX;
+ 	raw_spin_unlock(&logbuf_lock);
++	lockdep_on();
++	local_irq_restore(flags);
++
++	/*
++	 * Disable preemption to avoid being preempted while holding
++	 * console_sem which would prevent anyone from printing to console
++	 */
++	preempt_disable();
+ 	/*
+ 	 * Try to acquire and then immediately release the console semaphore.
+ 	 * The release will print out buffers and wake up /dev/kmsg and syslog()
+ 	 * users.
+ 	 */
+-	if (console_trylock_for_printk(this_cpu))
++	if (console_trylock_for_printk())
+ 		console_unlock();
+-
+-	lockdep_on();
+-out_restore_irqs:
+-	local_irq_restore(flags);
++	preempt_enable();
+ 
+ 	return printed_len;
+ }
 -- 
 1.8.1.4
 
