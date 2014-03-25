@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755383AbaCYU66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:58:58 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28505 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754954AbaCYU6x (ORCPT
+	id S1755539AbaCYVA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 17:00:59 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:59348 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755058AbaCYVAt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:58:53 -0400
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org
-Cc: boris.ostrovsky@oracle.com, david.vrabel@citrix.com, eshelton@pobox.com,
-        fenghua.yu@intel.com, hpa@zytor.com, ian.campbell@citrix.com,
-        jbeulich@suse.com, jeremy@goop.org, konrad.wilk@oracle.com,
-        matt.fleming@intel.com, mingo@redhat.com,
-        stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        tony.luck@intel.com
-Subject: [PATCH v3 0/5] xen: Add EFI support
-Date: Tue, 25 Mar 2014 21:57:51 +0100
-Message-Id: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
-X-Mailer: git-send-email 1.7.10.4
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Tue, 25 Mar 2014 17:00:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <5331EDC4.1040104@linutronix.de>
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de>
+	<1395505004-22650-3-git-send-email-bigeasy@linutronix.de>
+	<CACRpkdaD=hZGJA0r5DcJs-hFnnkKCFeQ9JwJZ4kcLq5Sb+=ZqQ@mail.gmail.com>
+	<5331EDC4.1040104@linutronix.de>
+Date: Tue, 25 Mar 2014 22:00:49 +0100
+Message-ID: <CACRpkdb-ZojPr+u5gYQZ=dWOO07QR2YzCxnmhu80_qvDXC5sPQ@mail.gmail.com>
+Subject: Re: [PATCH 2/7] gpio: dwapb: correct gpio-cells in binding document
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alan Tull <delicious.quinoa@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey,
+On Tue, Mar 25, 2014 at 9:57 PM, Sebastian Andrzej Siewior
+<bigeasy@linutronix.de> wrote:
+> On 03/25/2014 09:49 PM, Linus Walleij wrote:
 
-This patch series adds EFI support for Xen dom0 guests.
-It is based on Jan Beulich and Tang Liang work. I was
-trying to take into account all previous comments,
-however, if I missed something sorry for that.
+> Maybe but you can still blame google for loosing your emails.
+> It make it to lkml:
+>         https://lkml.org/lkml/2014/3/22/112
 
-Additionally, I attempted to leave all credits as is and
-put SOB in relevant places. If I made any mistake drop me
-a line and I will fix it in next version.
+OK that one should be applied to the ARM SoC tree anyway,
+so I need not worry so much...
 
-Feel free to play with it. I am looking forward for your comments.
-
-Daniel
-
- arch/ia64/kernel/efi.c           |   30 ++++--
- arch/x86/kernel/setup.c          |    2 +-
- arch/x86/platform/efi/efi.c      |   20 ++--
- arch/x86/xen/enlighten.c         |   10 ++
- drivers/firmware/efi/efi.c       |   26 ++++++
- drivers/xen/Kconfig              |    3 +
- drivers/xen/Makefile             |    1 +
- drivers/xen/efi.c                |  425 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h              |   10 ++
- include/xen/interface/platform.h |  123 +++++++++++++++++++++++-
- 10 files changed, 633 insertions(+), 17 deletions(-)
-
-Daniel Kiper (5):
-      efi: Add efi_init_ops variable
-      efi: Export arch_tables variable
-      x86: Call efi_memblock_x86_reserve_range() on native EFI platform only
-      xen: Define EFI related stuff
-      xen: Put EFI machinery in place
-
+Yours,
+Linus Walleij
