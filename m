@@ -1,117 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650AbaCYTqp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:46:45 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:40603 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751624AbaCYTqn (ORCPT
+	id S1754743AbaCYTr2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:47:28 -0400
+Received: from one.firstfloor.org ([193.170.194.197]:46497 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752348AbaCYTr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:46:43 -0400
-Date: Tue, 25 Mar 2014 20:46:38 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH 4/5] i915: Convert last uses of __FUNCTION__ to __func__
-Message-ID: <20140325194638.GL26878@phenom.ffwll.local>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	linux-kernel@vger.kernel.org,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <cover.1395775901.git.joe@perches.com>
- <f73fada74a8320ec33f21ed29e21ee47fb016a42.1395775901.git.joe@perches.com>
+	Tue, 25 Mar 2014 15:47:26 -0400
+Date: Tue, 25 Mar 2014 20:47:24 +0100
+From: Andi Kleen <andi@firstfloor.org>
+To: Khalid Aziz <khalid.aziz@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, peterz@infradead.org, akpm@linux-foundation.org,
+        andi.kleen@intel.com, rob@landley.net, viro@zeniv.linux.org.uk,
+        oleg@redhat.com, gnomes@lxorguk.ukuu.org.uk, riel@redhat.com,
+        snorcht@gmail.com, dhowells@redhat.com, luto@amacapital.net,
+        daeseok.youn@gmail.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2] Pre-emption control for userspace
+Message-ID: <20140325194724.GV22728@two.firstfloor.org>
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>
+ <1395767870-28053-1-git-send-email-khalid.aziz@oracle.com>
+ <871txqp2cr.fsf@tassilo.jf.intel.com>
+ <5331CF58.8000909@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <f73fada74a8320ec33f21ed29e21ee47fb016a42.1395775901.git.joe@perches.com>
-X-Operating-System: Linux phenom 3.12.0+
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5331CF58.8000909@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 12:35:06PM -0700, Joe Perches wrote:
-> Just about all of these have been converted to __func__,
-> so convert the last uses.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Tue, Mar 25, 2014 at 12:47:52PM -0600, Khalid Aziz wrote:
+> I am not sure if it would be practical and useful to integrate this
+> into any of the standard locking interfaces, but I have not looked
+> into it much either. My initial intent is to let individual apps
+> decide if they could benefit from this interface and code it in if
+> so since the interface is meant to be very simple. Do you see any of
+> the standard locking interfaces where it would make sense to
+> integrate this feature in, or are you thinking of creating a new
+> interface?
 
-Pulled into drm-intel, should land in 3.15.
+It would probably make sense to use by default with glibc adaptive mutexes.
 
-Thanks, Daniel
-> ---
->  drivers/gpu/drm/i915/dvo_ns2501.c | 15 ++++++---------
->  1 file changed, 6 insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/i915/dvo_ns2501.c b/drivers/gpu/drm/i915/dvo_ns2501.c
-> index 954acb2..e40cd26 100644
-> --- a/drivers/gpu/drm/i915/dvo_ns2501.c
-> +++ b/drivers/gpu/drm/i915/dvo_ns2501.c
-> @@ -234,7 +234,7 @@ static enum drm_mode_status ns2501_mode_valid(struct intel_dvo_device *dvo,
->  {
->  	DRM_DEBUG_KMS
->  	    ("%s: is mode valid (hdisplay=%d,htotal=%d,vdisplay=%d,vtotal=%d)\n",
-> -	     __FUNCTION__, mode->hdisplay, mode->htotal, mode->vdisplay,
-> +	     __func__, mode->hdisplay, mode->htotal, mode->vdisplay,
->  	     mode->vtotal);
->  
->  	/*
-> @@ -262,7 +262,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
->  
->  	DRM_DEBUG_KMS
->  	    ("%s: set mode (hdisplay=%d,htotal=%d,vdisplay=%d,vtotal=%d).\n",
-> -	     __FUNCTION__, mode->hdisplay, mode->htotal, mode->vdisplay,
-> +	     __func__, mode->hdisplay, mode->htotal, mode->vdisplay,
->  	     mode->vtotal);
->  
->  	/*
-> @@ -277,8 +277,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
->  		if (mode->hdisplay == 800 && mode->vdisplay == 600) {
->  			/* mode 277 */
->  			ns->reg_8_shadow &= ~NS2501_8_BPAS;
-> -			DRM_DEBUG_KMS("%s: switching to 800x600\n",
-> -				      __FUNCTION__);
-> +			DRM_DEBUG_KMS("%s: switching to 800x600\n", __func__);
->  
->  			/*
->  			 * No, I do not know where this data comes from.
-> @@ -341,8 +340,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
->  
->  		} else if (mode->hdisplay == 640 && mode->vdisplay == 480) {
->  			/* mode 274 */
-> -			DRM_DEBUG_KMS("%s: switching to 640x480\n",
-> -				      __FUNCTION__);
-> +			DRM_DEBUG_KMS("%s: switching to 640x480\n", __func__);
->  			/*
->  			 * No, I do not know where this data comes from.
->  			 * It is just what the video bios left in the DVO, so
-> @@ -406,8 +404,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
->  
->  		} else if (mode->hdisplay == 1024 && mode->vdisplay == 768) {
->  			/* mode 280 */
-> -			DRM_DEBUG_KMS("%s: switching to 1024x768\n",
-> -				      __FUNCTION__);
-> +			DRM_DEBUG_KMS("%s: switching to 1024x768\n", __func__);
->  			/*
->  			 * This might or might not work, actually. I'm silently
->  			 * assuming here that the native panel resolution is
-> @@ -459,7 +456,7 @@ static void ns2501_dpms(struct intel_dvo_device *dvo, bool enable)
->  	unsigned char ch;
->  
->  	DRM_DEBUG_KMS("%s: Trying set the dpms of the DVO to %i\n",
-> -		      __FUNCTION__, enable);
-> +		      __func__, enable);
->  
->  	ch = ns->reg_8_shadow;
->  
-> -- 
-> 1.8.1.2.459.gbcd45b4.dirty
-> 
+> I am reluctant to make it too big since reading larger quantities
+> from userspace will take longer and start to impact performance.
+> Keeping shared data limited to 32-bits allows us to move it between
+> userspace and kernel with one instruction.
 
+You don't need to read/write more. Just reserve more so that it 
+can be sensibly extended later.
+
+The feature bits would only need to be written once when it is set up.
+
+
+-Andi
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+ak@linux.intel.com -- Speaking for myself only.
