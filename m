@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbaCYPAe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 11:00:34 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:35804 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752090AbaCYPAc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 11:00:32 -0400
-Date: Tue, 25 Mar 2014 16:00:17 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@ZenIV.linux.org.uk, torvalds@linux-foundation.org,
-        mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hch@infradead.org,
-        akpm@linux-foundation.org, zab@redhat.com
-Subject: splicing pages to the same file
-Message-ID: <20140325150017.GA2336@tucsk.piliscsaba.szeredi.hu>
+	id S1753586AbaCYPFf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 11:05:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10023 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753296AbaCYPFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 11:05:33 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+ Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+ Kingdom.
+ Registered in England and Wales under Company Registration No. 3798903
+Subject: [PATCH] KEYS: Allow special keys (eg. DNS results) to be
+ invalidated by CAP_SYS_ADMIN
+From: David Howells <dhowells@redhat.com>
+To: trond.myklebust@primarydata.com
+Cc: dhowells@redhat.com, keyrings@linux-nfs.org, linux-nfs@vger.kernel.org,
+        steved@redhat.com, linux-kernel@vger.kernel.org
+Date: Tue, 25 Mar 2014 15:05:24 +0000
+Message-ID: <20140325150524.8763.8009.stgit@warthog.procyon.org.uk>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In pipe_to_file() I noticed the "if (buf->page != page)" and started thinking
-about this.  What should be the correct behavior?
+Special kernel keys, such as those used to hold DNS results for AFS, CIFS and
+NFS and those used to hold idmapper results for NFS, used to be
+'invalidateable' with key_revoke().  However, since the default permissions for
+keys were reduced:
 
-Currently we just skip pages that are equal, but the results can be pretty
-strange.  E.g. see the output of the following with attached test prog.
+	Commit: 96b5c8fea6c0861621051290d705ec2e971963f1
+	KEYS: Reduce initial permissions on keys
 
- seq -f "%07.0f" 0 1023 > /tmp/x
- ./splice_test /tmp/x 800 /tmp/x 1600 4096
+it has become impossible to do this.
 
-Adding memmove() to an "else" branch will result in even more strangeness: by
-the time splice moves onto the second page of the destination, the first buffer
-was already "corrupted".
+Add a key flag (KEY_FLAG_ROOT_CAN_INVAL) that will permit a key to be
+invalidated by root.  This should not be used for system keyrings as the
+garbage collector will try and remove any invalidate key.  For system keyrings,
+KEY_FLAG_ROOT_CAN_CLEAR can be used instead.
 
-We could clone the page in the pipe buffer in this case, but is it worth the
-effort?
+After this, from userspace, keyctl_invalidate() and "keyctl invalidate" can be
+used by any possessor of CAP_SYS_ADMIN (typically root) to invalidate DNS and
+idmapper keys.  Invalidated keys are immediately garbage collected and will be
+immediately rerequested if needed again.
 
-Or should we just return EINVAL?
+Signed-off-by: David Howells <dhowells@redhat.com>
+Tested-by: Steve Dickson <steved@redhat.com>
+---
 
-Or just leave it and document the strangeness?
+ fs/nfs/idmap.c               |    2 ++
+ include/linux/key.h          |    1 +
+ net/dns_resolver/dns_query.c |    1 +
+ security/keys/keyctl.c       |   15 ++++++++++++++-
+ 4 files changed, 18 insertions(+), 1 deletion(-)
 
-Thanks,
-Miklos
-----
+diff --git a/fs/nfs/idmap.c b/fs/nfs/idmap.c
+index 567983d2c0eb..b7458d77f511 100644
+--- a/fs/nfs/idmap.c
++++ b/fs/nfs/idmap.c
+@@ -282,6 +282,8 @@ static struct key *nfs_idmap_request_key(const char *name, size_t namelen,
+ 						desc, "", 0, idmap);
+ 		mutex_unlock(&idmap->idmap_mutex);
+ 	}
++	if (!IS_ERR(rkey))
++		set_bit(KEY_FLAG_ROOT_CAN_INVAL, &rkey->flags);
+ 
+ 	kfree(desc);
+ 	return rkey;
+diff --git a/include/linux/key.h b/include/linux/key.h
+index 80d677483e31..3993480b0ac5 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -170,6 +170,7 @@ struct key {
+ #define KEY_FLAG_INVALIDATED	7	/* set if key has been invalidated */
+ #define KEY_FLAG_TRUSTED	8	/* set if key is trusted */
+ #define KEY_FLAG_TRUSTED_ONLY	9	/* set if keyring only accepts links to trusted keys */
++#define KEY_FLAG_ROOT_CAN_INVAL	10	/* set if key can be invalidated by root without permission */
+ 
+ 	/* the key type and key description string
+ 	 * - the desc is used to match a key against search criteria
+diff --git a/net/dns_resolver/dns_query.c b/net/dns_resolver/dns_query.c
+index e7b6d53eef88..bb432b0e85d3 100644
+--- a/net/dns_resolver/dns_query.c
++++ b/net/dns_resolver/dns_query.c
+@@ -129,6 +129,7 @@ int dns_query(const char *type, const char *name, size_t namelen,
+ 	}
+ 
+ 	down_read(&rkey->sem);
++	set_bit(KEY_FLAG_ROOT_CAN_INVAL, &rkey->flags);
+ 	rkey->perm |= KEY_USR_VIEW;
+ 
+ 	ret = key_validate(rkey);
+diff --git a/security/keys/keyctl.c b/security/keys/keyctl.c
+index cee72ce64222..7e791bc12796 100644
+--- a/security/keys/keyctl.c
++++ b/security/keys/keyctl.c
+@@ -404,12 +404,25 @@ long keyctl_invalidate_key(key_serial_t id)
+ 	key_ref = lookup_user_key(id, 0, KEY_SEARCH);
+ 	if (IS_ERR(key_ref)) {
+ 		ret = PTR_ERR(key_ref);
++
++		/* Root is permitted to invalidate certain special keys */
++		if (capable(CAP_SYS_ADMIN)) {
++			key_ref = lookup_user_key(id, 0, 0);
++			if (IS_ERR(key_ref))
++				goto error;
++			if (test_bit(KEY_FLAG_ROOT_CAN_INVAL,
++				     &key_ref_to_ptr(key_ref)->flags))
++				goto invalidate;
++			goto error_put;
++		}
++
+ 		goto error;
+ 	}
+ 
++invalidate:
+ 	key_invalidate(key_ref_to_ptr(key_ref));
+ 	ret = 0;
+-
++error_put:
+ 	key_ref_put(key_ref);
+ error:
+ 	kleave(" = %ld", ret);
 
-#define _GNU_SOURCE
-
-#include <unistd.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <err.h>
-
-int main(int argc, char *argv[])
-{
-	const char *in_file, *out_file;
-	int in_fd, out_fd;
-	off_t in_off, out_off;
-	size_t size;
-	int pip[2];
-	ssize_t res;
-
-	if (argc != 6) {
-		errx(1, "usage: %s in_file in_off out_file out_off size",
-		     argv[0]);
-	}
-
-	in_file = argv[1];
-	in_off = strtoull(argv[2], NULL, 0);
-	out_file = argv[3];
-	out_off = strtoull(argv[4], NULL, 0);
-	size = strtoul(argv[5], NULL, 0);
-
-	in_fd = open(in_file, O_RDONLY);
-	if (in_fd == -1)
-		err(1, "creating %s", in_file);
-
-	out_fd = open(out_file, O_WRONLY);
-	if (out_fd == -1)
-		err(1, "creating %s", out_file);
-
-	res = pipe(pip);
-	if (res == -1)
-		err(1, "pipe");
-
-	res = splice(in_fd, &in_off, pip[1], NULL, size, 0);
-	if (res == -1)
-		err(1, "splice to pipe");
-	if ((size_t) res != size)
-		errx(1, "short splice to pipe");
-
-	res = splice(pip[0], NULL, out_fd, &out_off, size, 0);
-	if (res == -1)
-		err(1, "splice from pipe");
-	if ((size_t) res != size)
-		errx(1, "short splice from pipe");
-
-	return 0;
-}
