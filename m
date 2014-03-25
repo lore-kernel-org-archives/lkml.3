@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbaCYIVq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:21:46 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:41871 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285AbaCYIVk (ORCPT
+	id S1753392AbaCYIVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:21:51 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:40213 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365AbaCYIVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:21:40 -0400
+	Tue, 25 Mar 2014 04:21:47 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 40/47] mtd: nand: stm_nand_bch: MTD erase (BCH)
-Date: Tue, 25 Mar 2014 08:19:57 +0000
-Message-Id: <1395735604-26706-41-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 46/47] mtd: nand: mtd_nand_bch: add remaining FLEX functions
+Date: Tue, 25 Mar 2014 08:20:03 +0000
+Message-Id: <1395735604-26706-47-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,116 +22,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Carry out the normal checks, then attempt to erase a given block.
+Including a dummy function for selecting chips which isn't supported by
+our driver, the wait function as requested by the NAND sub system, a read
+Byte function also requested by NAND and finally a command function which
+provides a partial implementation of MTD/NAND Interface, based on
+Hamming-FLEX operation which allows us to make use of nand_base.c functions
+where possible (i.e.nand_scan_ident()).
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/stm_nand_bch.c | 85 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 85 insertions(+)
+ drivers/mtd/nand/stm_nand_bch.c | 101 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 101 insertions(+)
 
 diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
-index 75c5c9b..55f4a4c 100644
+index 975326e..4103d4f 100644
 --- a/drivers/mtd/nand/stm_nand_bch.c
 +++ b/drivers/mtd/nand/stm_nand_bch.c
-@@ -1218,6 +1218,89 @@ static int flex_do_write_ops(struct nandi_controller *nandi,
- 	return 0;
+@@ -686,6 +686,103 @@ static void flex_addr(struct nandi_controller *nandi,
+ 	writel(addr, nandi->base + NANDHAM_FLEX_ADD);
  }
  
-+static int bch_mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
++/*
++ * Partial implementation of MTD/NAND Interface, based on Hamming-FLEX
++ * operation.
++ *
++ * Allows us to make use of nand_base.c functions where possible
++ * (e.g. nand_scan_ident() and friends).
++ */
++static void flex_command_lp(struct mtd_info *mtd, unsigned int command,
++			    int column, int page)
 +{
 +	struct nand_chip *chip = mtd->priv;
 +	struct nandi_controller *nandi = chip->priv;
-+	uint64_t block_mask = mtd->erasesize - 1;
-+	uint64_t offs_cached;
-+	loff_t offs = instr->addr;
-+	size_t len = instr->len;
-+	uint8_t status;
-+	int ret;
 +
-+	dev_dbg(nandi->dev, "%s: 0x%012llx @ 0x%012llx\n", __func__,
-+		(unsigned long long)len, offs);
++	emiss_nandi_select(STM_NANDI_HAMMING);
 +
-+	if (offs & block_mask) {
-+		dev_err(nandi->dev,
-+			"attempt to erase from non-block-aligned offset\n");
-+		return -EINVAL;
++	switch (command) {
++	case NAND_CMD_READOOB:
++		/* Emulate NAND_CMD_READOOB */
++		column += mtd->writesize;
++		command = NAND_CMD_READ0;
++		break;
++	case NAND_CMD_READ0:
++	case NAND_CMD_ERASE1:
++	case NAND_CMD_SEQIN:
++	case NAND_CMD_RESET:
++	case NAND_CMD_PARAM:
++		/* Prime RBn wait */
++		nandi_enable_interrupts(nandi, NAND_INT_RBN);
++		reinit_completion(&nandi->rbn_completed);
++		break;
++	case NAND_CMD_READID:
++	case NAND_CMD_STATUS:
++	case NAND_CMD_ERASE2:
++		break;
++	default:
++		/* Catch unexpected commands */
++		BUG();
 +	}
 +
-+	if (len & block_mask) {
-+		dev_err(nandi->dev,
-+			"attempt to erase non-block-aligned length\n");
-+		return -EINVAL;
++	/*
++	 * Command Cycle
++	 */
++	flex_cmd(nandi, command);
++
++	/*
++	 * Address Cycles
++	 */
++	if (column != -1)
++		flex_addr(nandi, column,
++			  (command == NAND_CMD_READID) ? 1 : 2);
++
++	if (page != -1)
++		flex_addr(nandi, page, nandi->extra_addr ? 3 : 2);
++
++	/* Complete 'READ0' command */
++	if (command == NAND_CMD_READ0)
++		flex_cmd(nandi, NAND_CMD_READSTART);
++
++	/* Wait for RBn, if required                        */
++	/* (Note, other commands may handle wait elsewhere) */
++	if (command == NAND_CMD_RESET ||
++	    command == NAND_CMD_READ0 ||
++	    command == NAND_CMD_PARAM) {
++		flex_wait_rbn(nandi);
++		nandi_disable_interrupts(nandi, NAND_INT_RBN);
 +	}
-+
-+	if ((offs + len) > mtd->size) {
-+		dev_err(nandi->dev, "attempt to erase past end of device\n");
-+		return -EINVAL;
-+	}
-+
-+	nand_get_device(mtd, FL_ERASING);
-+	instr->fail_addr = MTD_FAIL_ADDR_UNKNOWN;
-+
-+	if (flex_check_wp(nandi)) {
-+		dev_dbg(nandi->dev, "device is write-protected\n");
-+		instr->state = MTD_ERASE_FAILED;
-+		goto erase_exit;
-+	}
-+
-+	/* Offset of block containing cached page */
-+	offs_cached = ((uint64_t)nandi->cached_page << nandi->page_shift) &
-+		~block_mask;
-+
-+	instr->state = MTD_ERASING;
-+	while (len) {
-+		if (mtd_block_isbad(mtd, offs)) {
-+			dev_err(nandi->dev,
-+				"attempt to erase a bad block at 0x%012llx\n",
-+				offs);
-+			instr->state = MTD_ERASE_FAILED;
-+			instr->fail_addr = offs;
-+			goto erase_exit;
-+		}
-+
-+		if (offs == offs_cached)
-+			nandi->cached_page = -1;
-+
-+		status = bch_erase_block(nandi, offs);
-+
-+		if (status & NAND_STATUS_FAIL) {
-+			dev_err(nandi->dev,
-+				"failed to erase block at 0x%012llx\n", offs);
-+			instr->state = MTD_ERASE_FAILED;
-+			instr->fail_addr = offs;
-+			goto erase_exit;
-+		}
-+
-+		len -= mtd->erasesize;
-+		offs += mtd->erasesize;
-+	}
-+	instr->state = MTD_ERASE_DONE;
-+
-+ erase_exit:
-+	nand_release_device(mtd);
-+
-+	ret = instr->state == MTD_ERASE_DONE ? 0 : -EIO;
-+	if (ret == 0)
-+		mtd_erase_callback(instr);
-+
-+	return ret;
 +}
 +
- static void nandi_dump_bad_blocks(struct nandi_controller *nandi)
- {
- 	int bad_count = 0;
-@@ -1321,6 +1404,8 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
- 	mtd->oobavail = 0;
- 	mtd->subpage_sft = 0;
- 
-+	mtd->_erase = bch_mtd_erase;
++static uint8_t flex_read_byte(struct mtd_info *mtd)
++{
++	struct nand_chip *chip = mtd->priv;
++	struct nandi_controller *nandi = chip->priv;
 +
- 	mtd->_point = NULL;
- 	mtd->_unpoint = NULL;
- 	mtd->_lock = NULL;
++	emiss_nandi_select(STM_NANDI_HAMMING);
++
++	return (uint8_t)(readl(nandi->base + NANDHAM_FLEX_DATA) & 0xff);
++}
++
++static int flex_wait_func(struct mtd_info *mtd, struct nand_chip *chip)
++{
++	struct nandi_controller *nandi = chip->priv;
++
++	emiss_nandi_select(STM_NANDI_HAMMING);
++
++	flex_wait_rbn(nandi);
++
++	flex_cmd(nandi, NAND_CMD_STATUS);
++
++	return (int)(readl(nandi->base + NANDHAM_FLEX_DATA) & 0xff);
++}
++
++/* Multi-CS devices not supported */
++static void flex_select_chip(struct mtd_info *mtd, int chipnr)
++{
++
++}
++
+ static void flex_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
+ {
+ 	struct nand_chip *chip = mtd->priv;
+@@ -1812,6 +1909,10 @@ static void nandi_set_mtd_defaults(struct nandi_controller *nandi,
+ 	chip->priv = nandi;
+ 	chip->ecc.layout = &info->ecclayout;
+ 
++	chip->cmdfunc = flex_command_lp;
++	chip->read_byte = flex_read_byte;
++	chip->select_chip = flex_select_chip;
++	chip->waitfunc = flex_wait_func;
+ 	chip->read_buf = flex_read_buf;
+ 	chip->write_buf = flex_write_buf;
+ 
 -- 
 1.8.3.2
 
