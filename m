@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064AbaCYR1A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:27:00 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10717 "EHLO
+	id S1755530AbaCYR2F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:28:05 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:10665 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413AbaCYR0z (ORCPT
+	with ESMTP id S932153AbaCYR0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:26:55 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-7f-5331bc5e3350
+	Tue, 25 Mar 2014 13:26:38 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-64-5331bc4c2de3
 From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
 To: Tejun Heo <tj@kernel.org>
 Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
@@ -17,191 +17,62 @@ Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         davinci-linux-open-source@linux.davincidsp.com,
         spear-devel@list.st.com, b.zolnierkie@samsung.com
-Subject: [PATCH v3 4/4] ARM: davinci: da850: update SATA AHCI support
-Date: Tue, 25 Mar 2014 18:26:15 +0100
-Message-id: <1395768375-21123-5-git-send-email-b.zolnierkie@samsung.com>
+Subject: [PATCH v3 0/4] ata: ahci_platform related cleanups
+Date: Tue, 25 Mar 2014 18:26:11 +0100
+Message-id: <1395768375-21123-1-git-send-email-b.zolnierkie@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-In-reply-to: <1395768375-21123-1-git-send-email-b.zolnierkie@samsung.com>
-References: <1395768375-21123-1-git-send-email-b.zolnierkie@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrJLMWRmVeSWpSXmKPExsVy+t9jAd24PYbBBlPeGlhsnLGe1eLcrQZW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jAV2fPYbBBmfniFtsnLGe1eLcrQZW
 	izfHpzNZ3FnBbLHp8TVWi2M7HjFZXN41h81if+8GJouG7h52izkzNrNa/Fp+lNFi5cW/zA48
 	Htdf/Wfy2DnrLrvHplWdbB5zpjWxeJy8cJLFY/OSeo/3+66yefRtWcXo8fTHXmaP4ze2M3l8
-	3iQXwB3FZZOSmpNZllqkb5fAlXHs4QnGgqcqFYs/LGBsYFwt18XIySEhYCJxfelfZghbTOLC
-	vfVsXYxcHEICixgltj6+yArhdDFJ/DhyhhWkik3ASmJi+ypGEFtEQFbiyrSHjCBFzAJdzBJL
-	Zm8BSwgLuEqcfXSbDcRmEVCV6H7RANTMwcEr4CGxYKM1xDZFie5nE8BKOAU8JQ5+usgOYgsB
-	laxcMJdpAiPvAkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjBAfxMagfjygaLQ4wCHIxK
-	PLwTJhgGC7EmlhVX5h5ilOBgVhLhVdgAFOJNSaysSi3Kjy8qzUktPsQozcGiJM57oNU6UEgg
-	PbEkNTs1tSC1CCbLxMEp1cAY8mRyzO208Lt7RWPaouV4DQ7qpi45uHXK51PrsvasdvZ8mTPl
-	kgpnZtznZZM6/nPf3x4l7qt0nFm6UPGk+lzH70fcs2PXWfkfiW5nCf7y/5B41uwZ8v9vvXv0
-	6NsFxf39YtcU/t8/ZKTtb3ju3fkTt+0mMuQt5SoPnz0/4OS0eyz/nj+6NUt4jxJLcUaioRZz
-	UXEiAN0PGOtcAgAA
+	3iQXwB3FZZOSmpNZllqkb5fAlbFj+TPmghNcFV233zM3MC7k6GLk5JAQMJHo+n2fHcIWk7hw
+	bz1bFyMXh5DAIkaJt483MkI4XUwSn+ZeYQKpYhOwkpjYvooRxBYRkJW4Mu0hWBGzQBezxJLZ
+	W8ASwgLWEou3fABrYBFQldjYuh8szivgIbH24XYWiHWKEt3PJrBNYORewMiwilE0tSC5oDgp
+	PddQrzgxt7g0L10vOT93EyM4JJ9J7WBc2WBxiFGAg1GJh3fCBMNgIdbEsuLK3EOMEhzMSiK8
+	ChuAQrwpiZVVqUX58UWlOanFhxilOViUxHkPtFoHCgmkJ5akZqemFqQWwWSZODilGhizjkW/
+	/8XPEnPhiXsUW7vfcjemyKCPmytnyMwI4Jd/etmkwveJDivnV7sMtrpn0ot8vK8ua/u56vK3
+	G884JzWv3uee8yKfr2jO80ff2yfsNMvZ7BLMdzJry3d2A1fXrpqj4fEefguK28qlvK6ab97/
+	nLfMrHOmy6pZhcK9Js9OW548fe2Ka6wSS3FGoqEWc1FxIgCAK9qcRQIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update SATA AHCI support to make use of the new ahci_da850 host
-driver (instead of the generic ahci_platform one) and remove
-deprecated ahci_platform_data code.
+Hi,
 
-Cc: Sekhar Nori <nsekhar@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-v3:
-- new patch
+This patch series:
+- fixes ahci_platform_data->suspend() handling
+- moves library AHCI platform code to its own file
+- adds a new-style AHCI platform driver for DaVinci DA850 AHCI controller
+- updates DaVinci DA850 platform code
 
- arch/arm/mach-davinci/da850.c         |  2 +-
- arch/arm/mach-davinci/devices-da8xx.c | 99 +++--------------------------------
- 2 files changed, 9 insertions(+), 92 deletions(-)
+Changes since v2:
+- merged changes from Sekhar
+- splitted out DaVinci DA850 platform changes into separate patch
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 2ab0043..85399c9 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -472,7 +472,7 @@ static struct clk_lookup da850_clks[] = {
- 	CLK("spi_davinci.0",	NULL,		&spi0_clk),
- 	CLK("spi_davinci.1",	NULL,		&spi1_clk),
- 	CLK("vpif",		NULL,		&vpif_clk),
--	CLK("ahci",		NULL,		&sata_clk),
-+	CLK("ahci_da850",		NULL,		&sata_clk),
- 	CLK("davinci-rproc.0",	NULL,		&dsp_clk),
- 	CLK("ehrpwm",		"fck",		&ehrpwm_clk),
- 	CLK("ehrpwm",		"tbclk",	&ehrpwm_tbclk),
-diff --git a/arch/arm/mach-davinci/devices-da8xx.c b/arch/arm/mach-davinci/devices-da8xx.c
-index 0486cdf2..56ea41d 100644
---- a/arch/arm/mach-davinci/devices-da8xx.c
-+++ b/arch/arm/mach-davinci/devices-da8xx.c
-@@ -1020,7 +1020,6 @@ int __init da8xx_register_spi_bus(int instance, unsigned num_chipselect)
- }
- 
- #ifdef CONFIG_ARCH_DAVINCI_DA850
--
- static struct resource da850_sata_resources[] = {
- 	{
- 		.start	= DA850_SATA_BASE,
-@@ -1028,103 +1027,22 @@ static struct resource da850_sata_resources[] = {
- 		.flags	= IORESOURCE_MEM,
- 	},
- 	{
-+		.start	= DA8XX_SYSCFG1_BASE + DA8XX_PWRDN_REG,
-+		.end	= DA8XX_SYSCFG1_BASE + DA8XX_PWRDN_REG + 0x3,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	{
- 		.start	= IRQ_DA850_SATAINT,
- 		.flags	= IORESOURCE_IRQ,
- 	},
- };
- 
--/* SATA PHY Control Register offset from AHCI base */
--#define SATA_P0PHYCR_REG	0x178
--
--#define SATA_PHY_MPY(x)		((x) << 0)
--#define SATA_PHY_LOS(x)		((x) << 6)
--#define SATA_PHY_RXCDR(x)	((x) << 10)
--#define SATA_PHY_RXEQ(x)	((x) << 13)
--#define SATA_PHY_TXSWING(x)	((x) << 19)
--#define SATA_PHY_ENPLL(x)	((x) << 31)
--
--static struct clk *da850_sata_clk;
--static unsigned long da850_sata_refclkpn;
--
--/* Supported DA850 SATA crystal frequencies */
--#define KHZ_TO_HZ(freq) ((freq) * 1000)
--static unsigned long da850_sata_xtal[] = {
--	KHZ_TO_HZ(300000),
--	KHZ_TO_HZ(250000),
--	0,			/* Reserved */
--	KHZ_TO_HZ(187500),
--	KHZ_TO_HZ(150000),
--	KHZ_TO_HZ(125000),
--	KHZ_TO_HZ(120000),
--	KHZ_TO_HZ(100000),
--	KHZ_TO_HZ(75000),
--	KHZ_TO_HZ(60000),
--};
--
--static int da850_sata_init(struct device *dev, void __iomem *addr)
--{
--	int i, ret;
--	unsigned int val;
--
--	da850_sata_clk = clk_get(dev, NULL);
--	if (IS_ERR(da850_sata_clk))
--		return PTR_ERR(da850_sata_clk);
--
--	ret = clk_prepare_enable(da850_sata_clk);
--	if (ret)
--		goto err0;
--
--	/* Enable SATA clock receiver */
--	val = __raw_readl(DA8XX_SYSCFG1_VIRT(DA8XX_PWRDN_REG));
--	val &= ~BIT(0);
--	__raw_writel(val, DA8XX_SYSCFG1_VIRT(DA8XX_PWRDN_REG));
--
--	/* Get the multiplier needed for 1.5GHz PLL output */
--	for (i = 0; i < ARRAY_SIZE(da850_sata_xtal); i++)
--		if (da850_sata_xtal[i] == da850_sata_refclkpn)
--			break;
--
--	if (i == ARRAY_SIZE(da850_sata_xtal)) {
--		ret = -EINVAL;
--		goto err1;
--	}
--
--	val = SATA_PHY_MPY(i + 1) |
--		SATA_PHY_LOS(1) |
--		SATA_PHY_RXCDR(4) |
--		SATA_PHY_RXEQ(1) |
--		SATA_PHY_TXSWING(3) |
--		SATA_PHY_ENPLL(1);
--
--	__raw_writel(val, addr + SATA_P0PHYCR_REG);
--
--	return 0;
--
--err1:
--	clk_disable_unprepare(da850_sata_clk);
--err0:
--	clk_put(da850_sata_clk);
--	return ret;
--}
--
--static void da850_sata_exit(struct device *dev)
--{
--	clk_disable_unprepare(da850_sata_clk);
--	clk_put(da850_sata_clk);
--}
--
--static struct ahci_platform_data da850_sata_pdata = {
--	.init	= da850_sata_init,
--	.exit	= da850_sata_exit,
--};
--
- static u64 da850_sata_dmamask = DMA_BIT_MASK(32);
- 
- static struct platform_device da850_sata_device = {
--	.name	= "ahci",
-+	.name	= "ahci_da850",
- 	.id	= -1,
- 	.dev	= {
--		.platform_data		= &da850_sata_pdata,
- 		.dma_mask		= &da850_sata_dmamask,
- 		.coherent_dma_mask	= DMA_BIT_MASK(32),
- 	},
-@@ -1134,9 +1052,8 @@ static struct platform_device da850_sata_device = {
- 
- int __init da850_register_sata(unsigned long refclkpn)
- {
--	da850_sata_refclkpn = refclkpn;
--	if (!da850_sata_refclkpn)
--		return -EINVAL;
-+	/* please see comment in drivers/ata/ahci_da850.c */
-+	BUG_ON(refclkpn != 100 * 1000 * 1000);
- 
- 	return platform_device_register(&da850_sata_device);
- }
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
+
+Bartlomiej Zolnierkiewicz (4):
+  ata: ahci_platform: fix ahci_platform_data->suspend method handling
+  ata: move library code from ahci_platform.c to libahci_platform.c
+  ata: add new-style AHCI platform driver for DaVinci DA850 AHCI
+    controller
+  ARM: davinci: da850: update SATA AHCI support
+
+ arch/arm/mach-davinci/da850.c         |   2 +-
+ arch/arm/mach-davinci/devices-da8xx.c |  99 +------
+ drivers/ata/Kconfig                   |  14 +-
+ drivers/ata/Makefile                  |   9 +-
+ drivers/ata/ahci_da850.c              | 114 +++++++
+ drivers/ata/ahci_platform.c           | 508 -------------------------------
+ drivers/ata/libahci_platform.c        | 541 ++++++++++++++++++++++++++++++++++
+ 7 files changed, 680 insertions(+), 607 deletions(-)
+ create mode 100644 drivers/ata/ahci_da850.c
+ create mode 100644 drivers/ata/libahci_platform.c
+
 -- 
 1.8.2.3
 
