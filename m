@@ -1,35 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608AbaCYPg6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 11:36:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36196 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752597AbaCYPg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 11:36:56 -0400
-Message-ID: <5331A27C.8060303@redhat.com>
-Date: Tue, 25 Mar 2014 16:36:28 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753777AbaCYPiW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 11:38:22 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:44353 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440AbaCYPiU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 11:38:20 -0400
+Message-ID: <5331B0F9.9000403@cogentembedded.com>
+Date: Tue, 25 Mar 2014 19:38:17 +0300
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 16/39] virtio_scsi: use cmd_size
-References: <20140317132733.789623766@bombadil.infradead.org> <20140317133133.814453025@bombadil.infradead.org> <20140325153104.GA25748@infradead.org>
-In-Reply-To: <20140325153104.GA25748@infradead.org>
-X-Enigmail-Version: 1.6
+To: Shuah Khan <shuah.kh@samsung.com>, gregkh@linuxfoundation.org,
+        john@jjdev.com, ced@ryick.net
+CC: linux-usb@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, shuahkhan@gmail.com
+Subject: Re: [PATCH] staging/usbip: fix store_attach() sscanf return value
+ check
+References: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
+In-Reply-To: <1395702729-3281-1-git-send-email-shuah.kh@samsung.com>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 25/03/2014 16:31, Christoph Hellwig ha scritto:
-> Paolo,
->
-> do you have a virtio_scsi tree to picks this up in?  We now have all
-> the infrastructure for it in James' tree.
+Hello.
 
-I don't, I usually just give my Acked-by and James picks it up.
+On 03/25/2014 02:12 AM, Shuah Khan wrote:
 
-Paolo
+> Fix commit - 88fa1ebfa21b5deaaad2dc88ecd9f6af91796cf7
+
+    Please also specify that commit's summary line in parens. Also, there's 
+now an established format for such things:
+
+Fixes: <12-digit SHA ID> ("<summary line>")
+
+    You can place such line before your signoff line.
+
+> This commit added return value check for sscanf() that parses the
+> input buffer for four input items. However, the return value check
+> is incorrect, as it checks for one input item instead of four which
+> is what it is expecting in the input buffer. As a result, sscanf()
+> will always fail even when the input buffer is correct.
+
+> Signed-off-by: Shuah Khan <shuah.kh@samsung.com>
+
+WBR, Sergei
 
