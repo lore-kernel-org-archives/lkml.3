@@ -1,210 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883AbaCYQnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:43:55 -0400
-Received: from mail-bk0-f42.google.com ([209.85.214.42]:45140 "EHLO
-	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751697AbaCYQnx (ORCPT
+	id S1753984AbaCYQrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:47:06 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.117]:36347 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751697AbaCYQrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:43:53 -0400
-Message-ID: <5331B22C.6090100@linaro.org>
-Date: Tue, 25 Mar 2014 17:43:24 +0100
-From: Eric Auger <eric.auger@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 25 Mar 2014 12:47:04 -0400
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-11.tower-193.messagelabs.com!1395766021!12802349!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Alessandro Zummo <a.zummo@towertech.it>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        RTC linux <rtc-linux@googlegroups.com>
+Subject: RE: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Topic: [RESEND] [PATCH V1 2/2] rtc: da9063: RTC driver
+Thread-Index: AQHPPSVKUI+aJH4Lh0O1h4CC/fc/HJryEIjA
+Date: Tue, 25 Mar 2014 16:46:59 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7A2AFD1F8@SW-EX-MBX01.diasemi.com>
+References: <cover.1394124002.git.stwiss.opensource@diasemi.com>
+ <93327cde91bcaef9a467adc6c7b34c3231d9e1e7.1394124002.git.stwiss.opensource@diasemi.com>
+ <20140311122725.GK21216@lee--X1>
+In-Reply-To: <20140311122725.GK21216@lee--X1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.61]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: a.motakis@virtualopensystems.com
-CC: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, tech@virtualopensystems.com,
-        a.rigo@virtualopensystems.com, B08248@freescale.com,
-        kim.phillips@linaro.org, jan.kiszka@siemens.com, kvm@vger.kernel.org,
-        R65777@freescale.com, B07421@freescale.com,
-        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
-        will.deacon@arm.com, a.motakis@virtualopensystems.com
-Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
- the device fd
-References: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
-In-Reply-To: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2PGlD4c022858
 
-> Date: Sat,  8 Feb 2014 18:29:36 +0100
-> VFIO returns a file descriptor which we can use to manipulate the memory
-> regions of the device. Since some memory regions we cannot mmap due to
-> security concerns, we also allow to read and write to this file descriptor
-> directly.
-> 
-> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
-> Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
-> ---
->  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
->  1 file changed, 125 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
-> index f7db5c0..ee96078 100644
-> --- a/drivers/vfio/platform/vfio_platform.c
-> +++ b/drivers/vfio/platform/vfio_platform.c
-> @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
->  
->  		region.addr = res->start;
->  		region.size = resource_size(res);
-> -		region.flags = 0;
-> +		region.flags = VFIO_REGION_INFO_FLAG_READ
-> +				| VFIO_REGION_INFO_FLAG_WRITE;
->  
->  		vdev->region[i] = region;
->  	}
-> @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
->  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
->  			     size_t count, loff_t *ppos)
->  {
-> -	return 0;
-> +	struct vfio_platform_device *vdev = device_data;
-> +	unsigned int *io;
-> +	int i;
-> +
-> +	for (i = 0; i < vdev->num_regions; i++) {
-> +		struct vfio_platform_region region = vdev->region[i];
-> +		unsigned int done = 0;
-> +		loff_t off;
-> +
-> +		if ((*ppos < region.addr)
-> +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> +			continue;
-> +
-> +		io = ioremap_nocache(region.addr, region.size);
-> +
-> +		off = *ppos - region.addr;
-> +
-> +		while (count) {
-> +			size_t filled;
-> +
-> +			if (count >= 4 && !(off % 4)) {
-> +				u32 val;
-> +
-> +				val = ioread32(io + off);
+Hi Lee,
 
-Hi Antonios,
+I realise that you and Alessandro are very busy (I have not often seen
+Alessandro do any posting in the past fortnight), but a  couple of weeks
+ago I sent an RTC patch set with register.h changes ...
 
-I suspect there is an issue with the read address. Indeed io being an
-unsigned int* the read address is io + off x sizeof (unsigned int) ie.
-io+ offx4  whereas we expect to read io + off. declaring io as a void*
-corrects the issue (or void __iomem *io). Same issue on write.
+>> From: Opensource [Steve Twiss] <stwiss.opensource@diasemi.com>
+>>
+>> Add the RTC driver for DA9063.
+<snip>
+>> The original patch is here:
+>>  - https://lkml.org/lkml/2014/3/6/346
 
-Best Regards
+I believe you applied the first half of my alterations here:
+https://lkml.org/lkml/2014/3/6/348
+https://lkml.org/lkml/2014/3/10/369
 
-Eric
+And the other half, was Acked by Alessandro Zummo here:
+https://lkml.org/lkml/2014/3/7/112
 
-> +				if (copy_to_user(buf, &val, 4))
-> +					goto err;
-> +
-> +				filled = 4;
-> +			} else if (count >= 2 && !(off % 2)) {
-> +				u16 val;
-> +
-> +				val = ioread16(io + off);
-> +				if (copy_to_user(buf, &val, 2))
-> +					goto err;
-> +
-> +				filled = 2;
-> +			} else {
-> +				u8 val;
-> +
-> +				val = ioread8(io + off);
-> +				if (copy_to_user(buf, &val, 1))
-> +					goto err;
-> +
-> +				filled = 1;
-> +			}
-> +
-> +
-> +			count -= filled;
-> +			done += filled;
-> +			off += filled;
-> +			buf += filled;
-> +		}
-> +
-> +		iounmap(io);
-> +		return done;
-> +	}
-> +
-> +	return -EFAULT;
-> +
-> +err:
-> +	iounmap(io);
-> +	return -EFAULT;
->  }
->  
->  static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
->  			      size_t count, loff_t *ppos)
->  {
-> -	return 0;
-> +	struct vfio_platform_device *vdev = device_data;
-> +	unsigned int *io;
-> +	int i;
-> +
-> +	for (i = 0; i < vdev->num_regions; i++) {
-> +		struct vfio_platform_region region = vdev->region[i];
-> +		unsigned int done = 0;
-> +		loff_t off;
-> +
-> +		if ((*ppos < region.addr)
-> +		     || (*ppos + count - 1) >= (region.addr + region.size))
-> +			continue;
-> +
-> +		io = ioremap_nocache(region.addr, region.size);
-> +
-> +		off = *ppos - region.addr;
-> +
-> +		while (count) {
-> +			size_t filled;
-> +
-> +			if (count >= 4 && !(off % 4)) {
-> +				u32 val;
-> +
-> +				if (copy_from_user(&val, buf, 4))
-> +					goto err;
-> +				iowrite32(val, io + off);
-> +
-> +				filled = 4;
-> +			} else if (count >= 2 && !(off % 2)) {
-> +				u16 val;
-> +
-> +				if (copy_from_user(&val, buf, 2))
-> +					goto err;
-> +				iowrite16(val, io + off);
-> +
-> +				filled = 2;
-> +			} else {
-> +				u8 val;
-> +
-> +				if (copy_from_user(&val, buf, 1))
-> +					goto err;
-> +				iowrite8(val, io + off);
-> +
-> +				filled = 1;
-> +			}
-> +
-> +			count -= filled;
-> +			done += filled;
-> +			off += filled;
-> +			buf += filled;
-> +		}
-> +
-> +		iounmap(io);
-> +		return done;
-> +	}
-> +
-> +	return -EINVAL;
-> +
-> +err:
-> +	iounmap(io);
-> +	return -EFAULT;
->  }
->  
->  static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
-> 
+On 11 March 2014 12:27, Lee Jones wrote:
+>
+>Alessandro,
+>  Are you happy for me to take this set through the MFD tree and send
+>  you a pull-request for an immutable branch?
+>
 
+There was a suggestion that this RTC patch could be taken through by you?
+Can I ask if this still an option please?
+
+I tried to contact Alessandro after about 1 week, but I guess that other things
+are getting in the way and I have not had a reply.
+https://lkml.org/lkml/2014/3/21/248
+
+The reason I ask -- is because I have several patches waiting to add support
+for an older variant of the silicon, but in order to send those changes I will
+need to patch the pending RTC with the updates.
+
+Regards,
+Steve
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
