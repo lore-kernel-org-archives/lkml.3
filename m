@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752318AbaCYViX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 17:38:23 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:48639 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603AbaCYViV (ORCPT
+	id S1754487AbaCYVjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 17:39:08 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46906 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751549AbaCYVjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 17:38:21 -0400
-Message-ID: <5331F716.30906@oracle.com>
-Date: Tue, 25 Mar 2014 15:37:26 -0600
-From: Khalid Aziz <khalid.aziz@oracle.com>
-Organization: Oracle Corp
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
-        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
-        viro@zeniv.linux.org.uk, oleg@redhat.com, gnomes@lxorguk.ukuu.org.uk,
-        riel@redhat.com, snorcht@gmail.com, dhowells@redhat.com,
-        luto@amacapital.net, daeseok.youn@gmail.com,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
-Subject: Re: [PATCH v2] Pre-emption control for userspace
-References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>	<1395767870-28053-1-git-send-email-khalid.aziz@oracle.com>	<8761n25ckg.fsf@x220.int.ebiederm.org> <5331D5DD.5090105@oracle.com> <87y4zyrpfb.fsf@x220.int.ebiederm.org>
-In-Reply-To: <87y4zyrpfb.fsf@x220.int.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 25 Mar 2014 17:39:05 -0400
+Message-ID: <5331F774.909@gmail.com>
+Date: Tue, 25 Mar 2014 22:39:00 +0100
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Jamie Iles <jamie@jamieiles.com>
+CC: Alan Tull <atull@altera.com>, Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Alan Tull <delicious.quinoa@gmail.com>
+Subject: Re: dwapb: a bug fix a few cleanups, v2
+References: <1395505004-22650-1-git-send-email-bigeasy@linutronix.de> <CACRpkdbFj+Msq5HjcV8N5A6TN9sic1+Y2v9aWAMa2g+0zO=D1Q@mail.gmail.com> <5331F49C.8080106@gmail.com>
+In-Reply-To: <5331F49C.8080106@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 02:31 PM, ebiederm@xmission.com wrote:
->> Yes, it is indeed limited to a cooperating set of userspace
->> tasks/threads. Tasks/threads will explicitly choose to use this feature. It is a
->> no-op for every one else.
->
-> It is absolutely not a no-op for me if my task can't be scheduled soon
-> enough because your task executed sched-prempt.
->
-> It means my latency goes up and the *random bad thing* will happen
-> because I missed my deadline because I was not scheduled fast enough.
->
-
-This patch changes only CFS, so SCHED_RR and SCHED_FIFO are not affected 
-by this change. Does CFS ever guarantee that any task will be scheduled 
-fast enough to meet its critical deadline? Shouldn't a system that 
-requires guarantees to meet deadline use SCHED_FIFO or SCHED_RR? Even if 
-a task that has an important deadline to meet and is ready to run, it 
-can be denied processor time simply based upon which other tasks are 
-ready to run, how long they have run previously and what their 
-priorities are. I don't see how CFS can guarantee temporal determinism 
-other than every task will get a chance to run in a finite time period. 
-Please do correct me if my understanding of CFS is flawed.
-
-Any task that asks for extension of its current timeslice will get 
-charged this additional time in p->se.vruntime and cause it to move to 
-the right on rbtree. This amounts to a task borrowing time from its 
-future runtime as opposed to being able to get more processor time than 
-others.
-
->>> or (b) limiting this to just a small
->>> cooperating set of threads in a single cgroup.
+On 03/25/2014 10:26 PM, Sebastian Hesselbarth wrote:
+> On 03/25/2014 09:45 PM, Linus Walleij wrote:
+>> On Sat, Mar 22, 2014 at 5:16 PM, Sebastian Andrzej Siewior
+>> <bigeasy@linutronix.de> wrote:
 >>
->> and that is almost what this patch does. It is not limited to a cgroup, rather
->> to the tasks/threads that ask to use this feature.
->
-> Except you do not appear to be considering what could be scheduled in
-> your tasks place.
->
-> You allow any task to extend it's timeslice.
+>>> Since Alan said that he had drop two patches from earlier series to make
+>>> it work I decided to spent some extra time to check if this is really the
+>>> case.
+>>> I dropped "gpio: dwapb: do not create the irq mapping upfront." until the
+>>> discussion there is over.
+>>>
+>>> This series has been tested back ported and tested on a v3.13 kernel with
+>>> the dummy test [0] here. It was tested on the Arrow board and the dev kit. I
+>>> tested edge and level interrupts. On the Arrow board releasing the button
+>>> causes a lot of interrupts so I assume debouncing is no working well
+>>> there. On the dev kit I see only one interrupt. If I realse it really
+>>> slowly, then the extra interrupts are visible there as well but way less.
+>>>
+>>> [0] http://breakpoint.cc/gpio-dwapb-test.c
+>>
+>> Okay so can we have Jamie and Sebastian H. have a look at this
+>> series?
+> 
+> I'd love to test it and have a closer look, but we are way behind on
+> gpio and especially gpio irqs on mach-berlin.
+> 
+> I will look at the patches, but I guess if it doesn't break socfpga
+> or any other user of it, it is fine.
 
-Would you recommend a policy that determines which tasks are allowed to 
-extend their timeslice?
+Except a small comment about for loop in 6/7 the dwapb related patches
+look good to me.
 
->
-> Which means I will get the question why does why does
-> really_important_job only miss it's latency guarantees when running on
-> the same box as sched_preempt_using_job?
-
-I would expect a system that requires latency guarantees to be designed 
-using SCHED_FIFO or SCHED_RR, not SCHED_OTHER.
-
-Hope this makes sense.
-
-Thanks,
-Khalid
-
-
+Sebastian
