@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaCYRyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:54:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55660 "EHLO
+	id S1756205AbaCYRzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:55:03 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55658 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255AbaCYRRV (ORCPT
+	with ESMTP id S1754245AbaCYRRU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:17:21 -0400
+	Tue, 25 Mar 2014 13:17:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Olivier Langlois <olivier@trillion01.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 20/81] rtlwifi: rtl8192ce: Fix too long disable of IRQs
-Date: Tue, 25 Mar 2014 10:15:33 -0700
-Message-Id: <1395767794-5012-21-git-send-email-kamal@canonical.com>
+Cc: "Denis V. Lunev" <den@openvz.org>, Tejun Heo <tj@kernel.org>,
+        <linux-ide@vger.kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 03/81] ata: enable quirk from jmicron JMB350 for JMB394
+Date: Tue, 25 Mar 2014 10:15:16 -0700
+Message-Id: <1395767794-5012-4-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,120 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: "Denis V. Lunev" <den@openvz.org>
 
-commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 upstream.
+commit efb9e0f4f43780f0ae0c6428d66bd03e805c7539 upstream.
 
-rtl8192ce is disabling for too long the local interrupts during hw initiatialisation when performing scans
+Without the patch the kernel generates the following error.
 
-The observable symptoms in dmesg can be:
+ ata11.15: SATA link up 1.5 Gbps (SStatus 113 SControl 310)
+ ata11.15: Port Multiplier vendor mismatch '0x197b' != '0x123'
+ ata11.15: PMP revalidation failed (errno=-19)
+ ata11.15: failed to recover PMP after 5 tries, giving up
 
-- underruns from ALSA playback
-- clock freezes (tstamps do not change for several dmesg entries until irqs are finaly reenabled):
+This patch helps to bypass this error and the device becomes
+functional.
 
-[  250.817669] rtlwifi:rtl_op_config():<0-0-0> 0x100
-[  250.817685] rtl8192ce:_rtl92ce_phy_set_rf_power_state():<0-1-0> IPS Set eRf nic enable
-[  250.817732] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817796] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817910] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818024] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818139] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818253] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818367] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:98053f15:10
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtl8192c_common:rtl92c_download_fw():<0-1-0> Firmware Version(49), Signature(0x88c1),Size(32)
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> PairwiseEncAlgorithm = 0 GroupEncAlgorithm = 0
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> The SECR-value cc
-[  250.818472] rtl8192c_common:rtl92c_dm_check_txpower_tracking_thermal_meter():<0-1-0> Schedule TxPowerTracking direct call!!
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> rtl92c_dm_txpower_tracking_callback_thermalmeter
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial pathA ele_d reg0xc80 = 0x40000000, ofdm_index=0xc
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial reg0xa24 = 0x90e1317, cck_index=0xc, ch14 0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf delta 0x1 delta_lck 0x0 delta_iqk 0x0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> <===
-[  250.818472] rtl8192c_common:rtl92c_dm_initialize_txpower_tracking_thermalmeter():<0-1-0> pMgntInfo->txpower_tracking = 1
-[  250.818472] rtl8192ce:rtl92ce_led_control():<0-1-0> ledaction 3
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtlwifi:rtl_ips_nic_on():<0-1-0> before spin_unlock_irqrestore
-[  251.154656] PCM: Lost interrupts? [Q]-0 (stream=0, delta=15903, new_hw_ptr=293408, old_hw_ptr=277505)
-
-The exact code flow that causes that is:
-
-1. wpa_supplicant send a start_scan request to the nl80211 driver
-2. mac80211 module call rtl_op_config with IEEE80211_CONF_CHANGE_IDLE
-3.   rtl_ips_nic_on is called which disable local irqs
-4.     rtl92c_phy_set_rf_power_state() is called
-5.       rtl_ps_enable_nic() is called and hw_init()is executed and then the interrupts on the device are enabled
-
-A good solution could be to refactor the code to avoid calling rtl92ce_hw_init() with the irqs disabled
-but a quick and dirty solution that has proven to work is
-to reenable the irqs during the function rtl92ce_hw_init().
-
-I think that it is safe doing so since the device interrupt will only be enabled after the init function succeed.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Denis V. Lunev <den@openvz.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: <linux-ide@vger.kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/ata/libata-pmp.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-index d1f34f6..266a46e 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -900,14 +900,26 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 	bool is92c;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
- 
- 	rtlpci->being_init_adapter = true;
-+
-+	/* Since this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl92ce_init_mac(hw);
- 	if (!rtstatus) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	err = rtl92c_download_fw(hw);
-@@ -915,7 +927,7 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	rtlhal->last_hmeboxnum = 0;
-@@ -995,6 +1007,8 @@ int rtl92ce_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
- 	}
- 	rtl92c_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpci->being_init_adapter = false;
- 	return err;
- }
+diff --git a/drivers/ata/libata-pmp.c b/drivers/ata/libata-pmp.c
+index 20fd337..7ccc084 100644
+--- a/drivers/ata/libata-pmp.c
++++ b/drivers/ata/libata-pmp.c
+@@ -447,8 +447,11 @@ static void sata_pmp_quirks(struct ata_port *ap)
+ 		 * otherwise.  Don't try hard to recover it.
+ 		 */
+ 		ap->pmp_link[ap->nr_pmp_links - 1].flags |= ATA_LFLAG_NO_RETRY;
+-	} else if (vendor == 0x197b && devid == 0x2352) {
+-		/* chip found in Thermaltake BlackX Duet, jmicron JMB350? */
++	} else if (vendor == 0x197b && (devid == 0x2352 || devid == 0x0325)) {
++		/*
++		 * 0x2352: found in Thermaltake BlackX Duet, jmicron JMB350?
++		 * 0x0325: jmicron JMB394.
++		 */
+ 		ata_for_each_link(link, ap, EDGE) {
+ 			/* SRST breaks detection and disks get misclassified
+ 			 * LPM disabled to avoid potential problems
 -- 
 1.8.3.2
 
