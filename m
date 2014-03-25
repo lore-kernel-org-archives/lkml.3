@@ -1,70 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254AbaCYRz0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:55:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58435 "EHLO mx2.suse.de"
+	id S1756224AbaCYRzW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:55:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58438 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755166AbaCYRzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755870AbaCYRzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Mar 2014 13:55:15 -0400
 From: Jan Kara <jack@suse.cz>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 0/8 v4] printk: Cleanups and softlockup avoidance
-Date: Tue, 25 Mar 2014 18:54:53 +0100
-Message-Id: <1395770101-24534-1-git-send-email-jack@suse.cz>
+Subject: [PATCH 2/8] printk: Release lockbuf_lock before calling console_trylock_for_printk()
+Date: Tue, 25 Mar 2014 18:54:55 +0100
+Message-Id: <1395770101-24534-3-git-send-email-jack@suse.cz>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1395770101-24534-1-git-send-email-jack@suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+There's no reason to hold lockbuf_lock when entering
+console_trylock_for_printk(). The first thing this function does is
+calling down_trylock(console_sem) and if that fails it immediately
+unlocks lockbuf_lock. So lockbuf_lock isn't needed for that branch.
+When down_trylock() succeeds, the rest of console_trylock() is OK
+without lockbuf_lock (it is called without it from other places), and
+the only remaining thing in console_trylock_for_printk() is
+can_use_console() call. For that call console_sem is enough (it
+iterates all consoles and checks CON_ANYTIME flag).
 
-  this is another revision of the printk softlockup series.
+So we drop logbuf_lock before entering console_trylock_for_printk()
+which simplifies the code.
 
-Changes since v3:
-Fixed bogus warning in console_try_lock_spin() in non-preemptible kernels.
-Fixed infinite loop in console_flush() when console was suspended.
-
-Changes since v2:
-I have fixed up some small problems pointed out by Andrew, added possibility to
-configure out the printk offloading logic (for small systems), and offload
-kthreads are now started only once printk.offload_chars is set to value > 0.
-
-Intro for the newcomers to the series below.
-
+Signed-off-by: Jan Kara <jack@suse.cz>
 ---
+ kernel/printk/printk.c | 49 +++++++++++++++++--------------------------------
+ 1 file changed, 17 insertions(+), 32 deletions(-)
 
-Currently, console_unlock() prints messages from kernel printk buffer to
-console while the buffer is non-empty. When serial console is attached,
-printing is slow and thus other CPUs in the system have plenty of time
-to append new messages to the buffer while one CPU is printing. Thus the
-CPU can spend unbounded amount of time doing printing in console_unlock().
-This is especially serious since vprintk_emit() calls console_unlock()
-with interrupts disabled.
-    
-In practice users have observed a CPU can spend tens of seconds printing
-in console_unlock() (usually during boot when hundreds of SCSI devices
-are discovered) resulting in RCU stalls (CPU doing printing doesn't
-reach quiescent state for a long time), softlockup reports (IPIs for the
-printing CPU don't get served and thus other CPUs are spinning waiting
-for the printing CPU to process IPIs), and eventually a machine death
-(as messages from stalls and lockups append to printk buffer faster than
-we are able to print). So these machines are unable to boot with serial
-console attached. Also during artificial stress testing SATA disk
-disappears from the system because its interrupts aren't served for too
-long.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index bd7ee2a9f960..7a8ffd89875c 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -249,9 +249,6 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
+ static char *log_buf = __log_buf;
+ static u32 log_buf_len = __LOG_BUF_LEN;
+ 
+-/* cpu currently holding logbuf_lock */
+-static volatile unsigned int logbuf_cpu = UINT_MAX;
+-
+ /* human readable text of the record */
+ static char *log_text(const struct printk_log *msg)
+ {
+@@ -1332,36 +1329,22 @@ static inline int can_use_console(unsigned int cpu)
+  * messages from a 'printk'. Return true (and with the
+  * console_lock held, and 'console_locked' set) if it
+  * is successful, false otherwise.
+- *
+- * This gets called with the 'logbuf_lock' spinlock held and
+- * interrupts disabled. It should return with 'lockbuf_lock'
+- * released but interrupts still disabled.
+  */
+ static int console_trylock_for_printk(unsigned int cpu)
+-	__releases(&logbuf_lock)
+ {
+-	int retval = 0, wake = 0;
+-
+-	if (console_trylock()) {
+-		retval = 1;
+-
+-		/*
+-		 * If we can't use the console, we need to release
+-		 * the console semaphore by hand to avoid flushing
+-		 * the buffer. We need to hold the console semaphore
+-		 * in order to do this test safely.
+-		 */
+-		if (!can_use_console(cpu)) {
+-			console_locked = 0;
+-			wake = 1;
+-			retval = 0;
+-		}
+-	}
+-	logbuf_cpu = UINT_MAX;
+-	raw_spin_unlock(&logbuf_lock);
+-	if (wake)
++	if (!console_trylock())
++		return 0;
++	/*
++	 * If we can't use the console, we need to release the console
++	 * semaphore by hand to avoid flushing the buffer. We need to hold the
++	 * console semaphore in order to do this test safely.
++	 */
++	if (!can_use_console(cpu)) {
++		console_locked = 0;
+ 		up(&console_sem);
+-	return retval;
++		return 0;
++	}
++	return 1;
+ }
+ 
+ int printk_delay_msec __read_mostly;
+@@ -1494,6 +1477,9 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	unsigned long flags;
+ 	int this_cpu;
+ 	int printed_len = 0;
++	/* cpu currently holding logbuf_lock in this function */
++	static volatile unsigned int logbuf_cpu = UINT_MAX;
++
+ 
+ 	boot_delay_msec(level);
+ 	printk_delay();
+@@ -1609,13 +1595,12 @@ asmlinkage int vprintk_emit(int facility, int level,
+ 	}
+ 	printed_len += text_len;
+ 
++	logbuf_cpu = UINT_MAX;
++	raw_spin_unlock(&logbuf_lock);
+ 	/*
+ 	 * Try to acquire and then immediately release the console semaphore.
+ 	 * The release will print out buffers and wake up /dev/kmsg and syslog()
+ 	 * users.
+-	 *
+-	 * The console_trylock_for_printk() function will release 'logbuf_lock'
+-	 * regardless of whether it actually gets the console semaphore or not.
+ 	 */
+ 	if (console_trylock_for_printk(this_cpu))
+ 		console_unlock();
+-- 
+1.8.1.4
 
-This is a revised series using my new approach to the problem which doesn't
-let CPU out of console_unlock() until there's someone else to take over the
-printing. The main difference since the last version is that instead of
-passing printing duty to different CPUs via IPIs we use dedicated kthreads.
-This method is somewhat less reliable (in a sense that there are more
-situations in which handover needn't work at all - e.g. when the currently
-printing CPU holds a spinlock and the CPU where kthread is scheduled to run is
-spinning on this spinlock) but the code is much simpler and in my practical
-testing kthread approach was good enough to avoid any problems (with one
-exception - see patch 8/8).
-
-								Honza
