@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaCYRRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:17:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55594 "EHLO
+	id S1754324AbaCYRR0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:17:26 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55613 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145AbaCYRRQ (ORCPT
+	with ESMTP id S1754162AbaCYRRQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 25 Mar 2014 13:17:16 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 04/81] sata_sil: apply MOD15WRITE quirk to TOSHIBA MK2561GSYN
-Date: Tue, 25 Mar 2014 10:15:17 -0700
-Message-Id: <1395767794-5012-5-git-send-email-kamal@canonical.com>
+Cc: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 09/81] ASoC: da9055: Fix device registration of PMIC and CODEC devices
+Date: Tue, 25 Mar 2014 10:15:22 -0700
+Message-Id: <1395767794-5012-10-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,38 +27,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
 
-commit 9f9c47f00ce99329b1a82e2ac4f70f0fe3db549c upstream.
+commit 07b0e5b10258b48e5edfb6c8ac156f05510eb775 upstream.
 
-It's a bit odd to see a newer device showing mod15write; however, the
-reported behavior is highly consistent and other factors which could
-contribute seem to have been verified well enough.  Also, both
-sata_sil itself and the drive are fairly outdated at this point making
-the risk of this change fairly low.  It is possible, probably likely,
-that other drive models in the same family have the same problem;
-however, for now, let's just add the specific model which was tested.
+Currently the I2C device Ids conflict for the MFD and CODEC so
+cannot be both instantiated on one platform. This patch updates
+the Ids and names to make them unique from each other.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: matson <lists-matsonpa@luxsci.me>
-References: http://lkml.kernel.org/g/201401211912.s0LJCk7F015058@rs103.luxsci.com
+It should be noted that the I2C addresses for both PMIC and CODEC
+are modifiable so instantiation of the two are kept as separate
+devices, rather than instantiating the CODEC from the MFD code.
+
+Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Acked-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/ata/sata_sil.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/da9055-i2c.c  | 10 +++++++++-
+ sound/soc/codecs/da9055.c | 11 +++++++++--
+ 2 files changed, 18 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/ata/sata_sil.c b/drivers/ata/sata_sil.c
-index a7b3167..3369d31 100644
---- a/drivers/ata/sata_sil.c
-+++ b/drivers/ata/sata_sil.c
-@@ -157,6 +157,7 @@ static const struct sil_drivelist {
- 	{ "ST380011ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3120022ASL",	SIL_QUIRK_MOD15WRITE },
- 	{ "ST3160021ASL",	SIL_QUIRK_MOD15WRITE },
-+	{ "TOSHIBA MK2561GSYN",	SIL_QUIRK_MOD15WRITE },
- 	{ "Maxtor 4D060H3",	SIL_QUIRK_UDMA5MAX },
+diff --git a/drivers/mfd/da9055-i2c.c b/drivers/mfd/da9055-i2c.c
+index 607387f..8103e43 100644
+--- a/drivers/mfd/da9055-i2c.c
++++ b/drivers/mfd/da9055-i2c.c
+@@ -53,17 +53,25 @@ static int da9055_i2c_remove(struct i2c_client *i2c)
+ 	return 0;
+ }
+ 
++/*
++ * DO NOT change the device Ids. The naming is intentionally specific as both
++ * the PMIC and CODEC parts of this chip are instantiated separately as I2C
++ * devices (both have configurable I2C addresses, and are to all intents and
++ * purposes separate). As a result there are specific DA9055 ids for PMIC
++ * and CODEC, which must be different to operate together.
++ */
+ static struct i2c_device_id da9055_i2c_id[] = {
+ 	{"da9055-pmic", 0},
  	{ }
  };
++MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+ 
+ static struct i2c_driver da9055_i2c_driver = {
+ 	.probe = da9055_i2c_probe,
+ 	.remove = da9055_i2c_remove,
+ 	.id_table = da9055_i2c_id,
+ 	.driver = {
+-		.name = "da9055",
++		.name = "da9055-pmic",
+ 		.owner = THIS_MODULE,
+ 	},
+ };
+diff --git a/sound/soc/codecs/da9055.c b/sound/soc/codecs/da9055.c
+index fc9802d..620f804 100644
+--- a/sound/soc/codecs/da9055.c
++++ b/sound/soc/codecs/da9055.c
+@@ -1523,8 +1523,15 @@ static int da9055_remove(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++/*
++ * DO NOT change the device Ids. The naming is intentionally specific as both
++ * the CODEC and PMIC parts of this chip are instantiated separately as I2C
++ * devices (both have configurable I2C addresses, and are to all intents and
++ * purposes separate). As a result there are specific DA9055 Ids for CODEC
++ * and PMIC, which must be different to operate together.
++ */
+ static const struct i2c_device_id da9055_i2c_id[] = {
+-	{ "da9055", 0 },
++	{ "da9055-codec", 0 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+@@ -1532,7 +1539,7 @@ MODULE_DEVICE_TABLE(i2c, da9055_i2c_id);
+ /* I2C codec control layer */
+ static struct i2c_driver da9055_i2c_driver = {
+ 	.driver = {
+-		.name = "da9055",
++		.name = "da9055-codec",
+ 		.owner = THIS_MODULE,
+ 	},
+ 	.probe		= da9055_i2c_probe,
 -- 
 1.8.3.2
 
