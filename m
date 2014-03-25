@@ -1,79 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119AbaCYQjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:39:45 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59626 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753917AbaCYQjn (ORCPT
+	id S1753883AbaCYQnz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:43:55 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:45140 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751697AbaCYQnx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:39:43 -0400
-Message-ID: <5331B14B.7040103@codeaurora.org>
-Date: Tue, 25 Mar 2014 12:39:39 -0400
-From: Christopher Covington <cov@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130106 Thunderbird/17.0.2
+	Tue, 25 Mar 2014 12:43:53 -0400
+Message-ID: <5331B22C.6090100@linaro.org>
+Date: Tue, 25 Mar 2014 17:43:24 +0100
+From: Eric Auger <eric.auger@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Austin <Jonathan.Austin@arm.com>,
-        Nicolas Pitre <nico@linaro.org>
-Subject: Re: [PATCH] ARM: Use 64-bit DMA addresses for LPAE+VirtIO-MMIO
-References: <1395250522-30031-1-git-send-email-cov@codeaurora.org> <532C96B9.4090805@codeaurora.org> <90DB5198-051A-48EC-B577-5342BD706713@arm.com> <4272242.L9VmujUH59@wuerfel>
-In-Reply-To: <4272242.L9VmujUH59@wuerfel>
+To: a.motakis@virtualopensystems.com
+CC: alex.williamson@redhat.com, kvmarm@lists.cs.columbia.edu,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        gregkh@linuxfoundation.org, tech@virtualopensystems.com,
+        a.rigo@virtualopensystems.com, B08248@freescale.com,
+        kim.phillips@linaro.org, jan.kiszka@siemens.com, kvm@vger.kernel.org,
+        R65777@freescale.com, B07421@freescale.com,
+        christoffer.dall@linaro.org, agraf@suse.de, B16395@freescale.com,
+        will.deacon@arm.com, a.motakis@virtualopensystems.com
+Subject: Re: [RFC PATCH v4 06/10] VFIO_PLATFORM: Read and write support for
+ the device fd
+References: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
+In-Reply-To: <20140325110619.52107df5d6d0cf0476b33cd4@linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
-
-On 03/21/2014 07:52 PM, Arnd Bergmann wrote:
-> On Friday 21 March 2014 23:27:24 Catalin Marinas wrote:
->> On 21 Mar 2014, at 19:44, Christopher Covington <cov@codeaurora.org> wrote:
->>> On 03/21/2014 12:27 PM, Catalin Marinas wrote:
->>>>> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
->>>>> index 1f8fed9..a62bcc9 100644
->>>>> --- a/arch/arm/mm/Kconfig
->>>>> +++ b/arch/arm/mm/Kconfig
->>>>> @@ -617,6 +617,7 @@ config ARM_LPAE
->>>>>     bool "Support for the Large Physical Address Extension"
->>>>>     depends on MMU && CPU_32v7 && !CPU_32v6 && !CPU_32v5 && \
->>>>>             !CPU_32v4 && !CPU_32v3
->>>>> +   select ARCH_DMA_ADDR_T_64BIT if VIRTIO_MMIO
->>>>
->>>> That's the wrong place to enable ARCH_DMA_ADDR_T_64BIT. Do you have a
->>>> platform with >32-bit physical address space? If yes, it should be
->>>> selected there.
->>>
->>> The platforms I'm currently using are models like the Versatile Express
->>> RTSM/FVP. I can respin with changes to ARCH_VEXPRESS and ARCH_VIRT instead.
->>
->> But do you use RAM beyond 32-bit on such models?
+> Date: Sat,  8 Feb 2014 18:29:36 +0100
+> VFIO returns a file descriptor which we can use to manipulate the memory
+> regions of the device. Since some memory regions we cannot mmap due to
+> security concerns, we also allow to read and write to this file descriptor
+> directly.
 > 
-> I think the more important question here is what the normal behavior is
-> for these platforms. I believe in most cases you don't have RAM above
-> the boundary, so we should not enable the option by default as it can
-> have noticeable overhead (we'd turn it on all the time if it didn't).
+> Signed-off-by: Antonios Motakis <a.motakis@virtualopensystems.com>
+> Tested-by: Alvise Rigo <a.rigo@virtualopensystems.com>
+> ---
+>  drivers/vfio/platform/vfio_platform.c | 128 +++++++++++++++++++++++++++++++++-
+>  1 file changed, 125 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/vfio/platform/vfio_platform.c b/drivers/vfio/platform/vfio_platform.c
+> index f7db5c0..ee96078 100644
+> --- a/drivers/vfio/platform/vfio_platform.c
+> +++ b/drivers/vfio/platform/vfio_platform.c
+> @@ -55,7 +55,8 @@ static int vfio_platform_regions_init(struct vfio_platform_device *vdev)
+>  
+>  		region.addr = res->start;
+>  		region.size = resource_size(res);
+> -		region.flags = 0;
+> +		region.flags = VFIO_REGION_INFO_FLAG_READ
+> +				| VFIO_REGION_INFO_FLAG_WRITE;
+>  
+>  		vdev->region[i] = region;
+>  	}
+> @@ -150,13 +151,134 @@ static long vfio_platform_ioctl(void *device_data,
+>  static ssize_t vfio_platform_read(void *device_data, char __user *buf,
+>  			     size_t count, loff_t *ppos)
+>  {
+> -	return 0;
+> +	struct vfio_platform_device *vdev = device_data;
+> +	unsigned int *io;
+> +	int i;
+> +
+> +	for (i = 0; i < vdev->num_regions; i++) {
+> +		struct vfio_platform_region region = vdev->region[i];
+> +		unsigned int done = 0;
+> +		loff_t off;
+> +
+> +		if ((*ppos < region.addr)
+> +		     || (*ppos + count - 1) >= (region.addr + region.size))
+> +			continue;
+> +
+> +		io = ioremap_nocache(region.addr, region.size);
+> +
+> +		off = *ppos - region.addr;
+> +
+> +		while (count) {
+> +			size_t filled;
+> +
+> +			if (count >= 4 && !(off % 4)) {
+> +				u32 val;
+> +
+> +				val = ioread32(io + off);
 
-I don't understand why people concerned with the overhead of 64-bit pointers
-to memory are turning on LPAE.
+Hi Antonios,
 
-> In either case, platforms that need this support can always
-> 'select' it, while a kernel built only for platforms that don't
-> need it can offer this as a user-selectable option.
+I suspect there is an issue with the read address. Indeed io being an
+unsigned int* the read address is io + off x sizeof (unsigned int) ie.
+io+ offx4  whereas we expect to read io + off. declaring io as a void*
+corrects the issue (or void __iomem *io). Same issue on write.
 
-I was hoping to fix the issue of things mysteriously breaking at runtime,
-regardless of what the user or randconfig selects. I'll have to investigate
-the details, but it seems like one could enforce zone DMA at run-time if the
-memory size is greater than the DMA pointers are able to address.
+Best Regards
 
-Thanks,
-Christopher
+Eric
 
--- 
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by the Linux Foundation.
+> +				if (copy_to_user(buf, &val, 4))
+> +					goto err;
+> +
+> +				filled = 4;
+> +			} else if (count >= 2 && !(off % 2)) {
+> +				u16 val;
+> +
+> +				val = ioread16(io + off);
+> +				if (copy_to_user(buf, &val, 2))
+> +					goto err;
+> +
+> +				filled = 2;
+> +			} else {
+> +				u8 val;
+> +
+> +				val = ioread8(io + off);
+> +				if (copy_to_user(buf, &val, 1))
+> +					goto err;
+> +
+> +				filled = 1;
+> +			}
+> +
+> +
+> +			count -= filled;
+> +			done += filled;
+> +			off += filled;
+> +			buf += filled;
+> +		}
+> +
+> +		iounmap(io);
+> +		return done;
+> +	}
+> +
+> +	return -EFAULT;
+> +
+> +err:
+> +	iounmap(io);
+> +	return -EFAULT;
+>  }
+>  
+>  static ssize_t vfio_platform_write(void *device_data, const char __user *buf,
+>  			      size_t count, loff_t *ppos)
+>  {
+> -	return 0;
+> +	struct vfio_platform_device *vdev = device_data;
+> +	unsigned int *io;
+> +	int i;
+> +
+> +	for (i = 0; i < vdev->num_regions; i++) {
+> +		struct vfio_platform_region region = vdev->region[i];
+> +		unsigned int done = 0;
+> +		loff_t off;
+> +
+> +		if ((*ppos < region.addr)
+> +		     || (*ppos + count - 1) >= (region.addr + region.size))
+> +			continue;
+> +
+> +		io = ioremap_nocache(region.addr, region.size);
+> +
+> +		off = *ppos - region.addr;
+> +
+> +		while (count) {
+> +			size_t filled;
+> +
+> +			if (count >= 4 && !(off % 4)) {
+> +				u32 val;
+> +
+> +				if (copy_from_user(&val, buf, 4))
+> +					goto err;
+> +				iowrite32(val, io + off);
+> +
+> +				filled = 4;
+> +			} else if (count >= 2 && !(off % 2)) {
+> +				u16 val;
+> +
+> +				if (copy_from_user(&val, buf, 2))
+> +					goto err;
+> +				iowrite16(val, io + off);
+> +
+> +				filled = 2;
+> +			} else {
+> +				u8 val;
+> +
+> +				if (copy_from_user(&val, buf, 1))
+> +					goto err;
+> +				iowrite8(val, io + off);
+> +
+> +				filled = 1;
+> +			}
+> +
+> +			count -= filled;
+> +			done += filled;
+> +			off += filled;
+> +			buf += filled;
+> +		}
+> +
+> +		iounmap(io);
+> +		return done;
+> +	}
+> +
+> +	return -EINVAL;
+> +
+> +err:
+> +	iounmap(io);
+> +	return -EFAULT;
+>  }
+>  
+>  static int vfio_platform_mmap(void *device_data, struct vm_area_struct *vma)
+> 
+
