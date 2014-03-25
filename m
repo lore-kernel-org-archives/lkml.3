@@ -1,108 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaCYLdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 07:33:10 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:38542 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751158AbaCYLdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 07:33:08 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-77-533169719aa5
-Message-id: <53316966.90600@samsung.com>
-Date: Tue, 25 Mar 2014 12:32:54 +0100
-From: Tomasz Figa <t.figa@samsung.com>
-Organization: Samsung R&D Institute Poland
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH] clocksource: exynos_mct: Fix stall after CPU hotplugging
-References: <1395744087-8655-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1395744087-8655-1-git-send-email-k.kozlowski@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBLMWRmVeSWpSXmKPExsVy+t/xq7qFmYbBBp0dlhYbZ6xntZj3Wdbi
-	9QtDi94FV9kszja9YbfY9Pgaq8XlXXPYLGac38dksfbIXXaLzZumMjtwedy5tofN4925c+we
-	m5fUe/RtWcXo8XmTXABrFJdNSmpOZllqkb5dAlfGlM9T2Qu+8Vf8XNLH3MB4haeLkZNDQsBE
-	YkfjOkYIW0ziwr31bF2MXBxCAksZJTZtfM8I4XxmlFj5YDoTSBWvgIbE9gfzmUFsFgFVic6W
-	TWDdbAJqEp8bHrGB2PwCWhJrmq6zgNiiAhES9xoPs0L0Ckr8mHyPBWSoiMA0JonlNz6AOcwC
-	UxglmictBdsgLOArsW35FrCpQgJuEivmbAbbxingLvHq4mKwDcwC1hIrJ21jhLDlJTavecs8
-	gVFwFpIls5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGx83cG49JjVIUYB
-	DkYlHt4NpgbBQqyJZcWVuYcYJTiYlUR4DcMMg4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwTrnL
-	wC3zNXmSzUdrlc5pP7ccUjs4Yw3vByXXD9evvPbt/u7dsd25vqzqyc7neXcmbGO7d0fl4d+j
-	EVdbvvYr224JEVQO+yan8dzOel3qx5NbzwYprcoIEqi/bLFf22e+mpZZROSl04Zus2Uf6KUv
-	OnmQh8MwXP3V/8C5cf/TpBJnvo+xe+nmqsRSnJFoqMVcVJwIAJKNFUtrAgAA
+	id S1752962AbaCYLg0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 07:36:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58715 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751158AbaCYLgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 07:36:24 -0400
+Message-ID: <53316A27.9030609@redhat.com>
+Date: Tue, 25 Mar 2014 07:36:07 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+MIME-Version: 1.0
+To: Igor Mammedov <imammedo@redhat.com>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, bp@suse.de, paul.gortmaker@windriver.com,
+        JBeulich@suse.com, drjones@redhat.com, toshi.kani@hp.com,
+        x86@kernel.org, riel@redhat.com, gong.chen@linux.intel.com
+Subject: Re: [PATCH 0/3] x86: fix hang when AP bringup is too slow
+References: <1394720720-8484-1-git-send-email-imammedo@redhat.com> <53283A3F.6040302@redhat.com> <20140318194951.17fd61ea@thinkpad> <532984A9.8080001@redhat.com> <20140319135456.4a74a2ea@nial.usersys.redhat.com>
+In-Reply-To: <20140319135456.4a74a2ea@nial.usersys.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Krzysztof,
 
-Two comments inline.
 
-On 25.03.2014 11:41, Krzysztof Kozlowski wrote:
+On 03/19/2014 08:54 AM, Igor Mammedov wrote:
+> On Wed, 19 Mar 2014 07:51:05 -0400
+> Prarit Bhargava <prarit@redhat.com> wrote:
+> 
+>>
+>>
+>> On 03/18/2014 02:49 PM, Igor Mammedov wrote:
+>>> On Tue, 18 Mar 2014 08:21:19 -0400
+>>> Prarit Bhargava <prarit@redhat.com> wrote:
+>>>
+>>>>
+>>>>
+>>>> On 03/13/2014 10:25 AM, Igor Mammedov wrote:
+>>>>> Hang is observed on virtual machines during CPU hotplug,
+>>>>> especially in big guests with many CPUs. (It happens more
+>>>>> often if host is over-committed).
+>>>>>
+>>>>
+>>>> Hey Igor, I like this better than the previous version.  Thanks for taking into
+>>>> account the possible races in this code.
+>>>>
+>>>> A quick question on system behaviour.  As you know I've been more concerned
+>>>> lately with error handling, etc., through the cpu hotplug code as we've seen
+>>>> several customer reports of silent failures or cascading failures in the cpu
+>>>> hotplug code when users have been attempting to perform physical hotplug.
+>>>>
+>>>> After your patches have been applied, in theory the following can happen:
+>>>>
+>>>> The master CPU is completing the AP cpu's bring up.  The AP cpu is doing (sorry
+>>>> for the cut-and-paste),
+>>>>
+>>>> void cpu_init(void)
+>>>> {
+>>>>         int cpu = smp_processor_id();
+>>>>         struct task_struct *curr = current;
+>>>>         struct tss_struct *t = &per_cpu(init_tss, cpu);
+>>>>         struct thread_struct *thread = &curr->thread;
+>>>>
+>>>>         /*
+>>>>          * wait till the master CPU completes it's STARTUP sequence,
+>>>>          * and decides to wait till this AP boots
+>>>>          */
+>>>>         while (!cpumask_test_cpu(cpu, cpu_callout_mask)) {
+>>>>                 cpu_relax();
+>>>>                 if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID)
+>>>>                         halt();
+>>>>         }
+>>>>
+>>>> and is spinning on cpu_relax().  Suppose something goes wrong and the softlockup
+>>>> watchdog fires on the AP cpu:
+>>>>
+>>>> 1.  Can it? :) ie) will the softlockup fire at this point of the AP init?  Okay,
+>>>> I'm being really lazy and not looking at the code ;)
+>>> It shouldn't, CPU is in pristine state and just came from boot trampoline at
+>>> this point without interrupts configured yet.
+>>
+>> Okay, not a big problem.
+>>
+>>>
+>>>>
+>>>> 2.  Is there anything we can do in this code to notify the user of a problem?
+>>>> Even a pr_crit() here I think would help to indicate what went wrong; it might
+>>>> be useful for future debugging in this area to have some sort of output.  I
+>>>> think a WARN() or BUG() is necessary here as there are several calls to cpu_init().
+>>> Do you mean something like this:
+>>>
+>>> +		if (per_cpu(x86_cpu_to_apicid, cpu) == BAD_APICID) {
+>>> +                       WARN(1);
+>>> +			halt();
+>>> +               }
+>>
+>> Yeah, maybe WARN_ON(1, "some comment") though.
+> printk at so early stage might be cause issues, since it is quite complex.
+> Its' disabling/enabling irqs, calls *_delay_*() functions and takes locks.
+> The last is especially dangerous because if AP is shot down by another
+> INIT/SIPI, system will hang on next printk if locks were acquired by AP
+> at that time.
 
-[snip]
+early_printk()?
 
-> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-> index 48f76bc05da0..0b49b09dd1a9 100644
-> --- a/drivers/clocksource/exynos_mct.c
-> +++ b/drivers/clocksource/exynos_mct.c
-> @@ -339,7 +339,14 @@ static void exynos4_mct_tick_start(unsigned long cycles,
->   static int exynos4_tick_set_next_event(unsigned long cycles,
->   				       struct clock_event_device *evt)
->   {
-> -	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-> +	/*
-> +	 * In case of hotplugging non-boot CPU, the set_next_event could be
-> +	 * called on CPU0 by ISR before IRQ affinity is set to proper CPU.
+> That case is possible if master CPU has got errors during wakeup_ap() and
+> failed cpu_up() then it was unplugged + plugged via ACPI and attempted
+> to be onlined again. 
+> 
+> It's much safer not to do anything complex at AP start-up so early.
+> 
+> BTW:
+> when AP reaches halt() line, failure is not silent. the master CPU might
+> print error message if debug level logging is active:
+> see arch/x86/kernel/smpboot.c:native_cpu_up()
+> ...
+>         if (err) {
+>                 pr_debug("do_boot_cpu failed %d\n", err);
+>                 return -EIO;
+>         }
+> ...
+> 
+> perhaps we should change pr_debug to pr_crit here to make it more visible.
+> something like:
+> 
+> @@ -858,7 +858,7 @@ int native_cpu_up(unsigned int cpu, struct task_struct *tidle)
+>  
+>         err = do_boot_cpu(apicid, cpu, tidle);
+>         if (err) {
+> -               pr_debug("do_boot_cpu failed %d\n", err);
+> +               pr_crit("do_boot_cpu failed(%d) to wakeup CPU#%u\n", err, cpu);
+>                 return -EIO;
+>         }
+> 
 
-Hmm, is this a desired behavior? I guess this is a question for Thomas 
-and Daniel.
+Yes, this is a good idea.
 
-> +	 * Thus for accessing proper MCT Lx timer, 'per_cpu' for cpumask
-> +	 * in event must be used instead of 'this_cpu_ptr'.
-> +	 */
-> +	struct mct_clock_event_device *mevt = &per_cpu(percpu_mct_tick,
-> +			cpumask_first(evt->cpumask));
->
->   	exynos4_mct_tick_start(cycles, mevt);
->
-> @@ -371,23 +378,13 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
->
->   static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
->   {
-> -	struct clock_event_device *evt = &mevt->evt;
-> -
-> -	/*
-> -	 * This is for supporting oneshot mode.
-> -	 * Mct would generate interrupt periodically
-> -	 * without explicit stopping.
-> -	 */
-> -	if (evt->mode != CLOCK_EVT_MODE_PERIODIC)
-> -		exynos4_mct_tick_stop(mevt);
-> -
->   	/* Clear the MCT tick interrupt */
->   	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
->   		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
->   		return 1;
-> -	} else {
-> -		return 0;
->   	}
-> +
-> +	return 0;
-
-Nobody seems to be checking return value of this function (and I don't 
-see what it could be used for anyway), so I guess it could be simply 
-made void.
-
-Best regards,
-Tomasz
+> 
+>>
+>>>
+>>>>
+>>>> 3.  Change this comment:
+>>>>
+>>>>          * wait till the master CPU completes it's STARTUP sequence,
+>>>>          * and decides to wait till this AP boots
+>>>>
+>>>> to
+>>>>
+>>>> 	/* wait for the master CPU to complete this cpu's STARTUP. */ ?
+>>> well, that is not quite the same as above, comment should underline that
+>>> AP waits for ACK from master CPU before continuing with this AP initialization.
+>>>
+>>> How about:
+>>> /* wait for ACK from master CPU before continuing with AP initialization */
+>>
+>> Awesome :)
+>>
+>> P.
+>>
+>>>
+>>>>
+>>>> Apologies for the late review,
+>>>>
+>>>> P.
+>>>
+>>>
+> 
