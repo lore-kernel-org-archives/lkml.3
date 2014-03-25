@@ -1,171 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417AbaCYStW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:49:22 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61724 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366AbaCYStR (ORCPT
+	id S1754584AbaCYStw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:49:52 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:29289 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754255AbaCYStC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:49:17 -0400
-From: Julius Werner <jwerner@chromium.org>
-To: Mathias Nyman <mathias.nyman@intel.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>, Jim Lin <jilin@nvidia.com>,
-        Julius Werner <jwerner@chromium.org>
-Subject: [PATCH] usb: xhci: Correct last context entry calculation for Configure Endpoint
-Date: Tue, 25 Mar 2014 11:42:43 -0700
-Message-Id: <1395772963-14127-1-git-send-email-jwerner@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	Tue, 25 Mar 2014 14:49:02 -0400
+Message-ID: <5331CF58.8000909@oracle.com>
+Date: Tue, 25 Mar 2014 12:47:52 -0600
+From: Khalid Aziz <khalid.aziz@oracle.com>
+Organization: Oracle Corp
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, peterz@infradead.org,
+        akpm@linux-foundation.org, andi.kleen@intel.com, rob@landley.net,
+        viro@zeniv.linux.org.uk, oleg@redhat.com, gnomes@lxorguk.ukuu.org.uk,
+        riel@redhat.com, snorcht@gmail.com, dhowells@redhat.com,
+        luto@amacapital.net, daeseok.youn@gmail.com, ebiederm@xmission.com,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: Re: [PATCH v2] Pre-emption control for userspace
+References: <1393870033-31076-1-git-send-email-khalid.aziz@oracle.com>	<1395767870-28053-1-git-send-email-khalid.aziz@oracle.com> <871txqp2cr.fsf@tassilo.jf.intel.com>
+In-Reply-To: <871txqp2cr.fsf@tassilo.jf.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current XHCI driver recalculates the Context Entries field in the
-Slot Context on every add_endpoint() and drop_endpoint() call. In the
-case of drop_endpoint(), it seems to assume that the add_flags will
-always contain every endpoint for the new configuration, which is not
-necessarily correct if you don't make assumptions about how the USB core
-uses the add_endpoint/drop_endpoint interface (add_flags only contains
-endpoints that are new additions in the new configuration).
+On 03/25/2014 12:20 PM, Andi Kleen wrote:
+> Khalid Aziz <khalid.aziz@oracle.com> writes:
+>
+> First it would be nice to have some standard reference lock library that
+> uses this. What would it take to support this in glibc?
 
-Furthermore, EP0_FLAG is not consistently set in add_flags throughout
-the lifetime of a device. This means that when all endpoints are
-dropped, the Context Entries field can be set to 0 (which is invalid and
-may cause a Parameter Error) or -1 (which is interpreted as 31 and
-causes the driver to keep using the old, incorrect value).
+I am not sure if it would be practical and useful to integrate this into 
+any of the standard locking interfaces, but I have not looked into it 
+much either. My initial intent is to let individual apps decide if they 
+could benefit from this interface and code it in if so since the 
+interface is meant to be very simple. Do you see any of the standard 
+locking interfaces where it would make sense to integrate this feature 
+in, or are you thinking of creating a new interface?
 
-The only surefire way to set this field right is to also take all
-existing endpoints into account, and to force the value to 1 (meaning
-only EP0 is active) if no other endpoint is found. This patch implements
-that as a single step in the final check_bandwidth() call and removes
-the intermediary calculations from add_endpoint() and drop_endpoint().
+>
+>> +==================================
+>> +Using the preemption delay feature
+>> +==================================
+>> +
+>> +This feature is enabled in the kernel by setting
+>> +CONFIG_SCHED_PREEMPT_DELAY in kernel configuration. Once this feature is
+>> +enabled, the userspace process communicates with the kernel using a
+>> +4-byte memory location in its address space. It first gives the kernel
+>> +address for this memory location by writing its address to
+>> +/proc/<tgid>/task/<tid>/sched_preempt_delay. This memory location is
+>> +interpreted as a sequence of 4 bytes:
+>> +
+>> +	byte[0] = flag to request preemption delay
+>> +	byte[1] = flag from kernel indicating preemption delay was granted
+>> +	byte[2] = reserved for future use
+>> +	byte[3] = reserved for future use
+>
+> Should reserve more bytes (64, 128?) and rename the proc flag
+> to a more generic name. I could well assume other things
+> using such a mechanism in the future. Also please add a flag
+> word with feature bits (similar to the perf mmap page)
 
-This patch should be backported to kernels as old as 2.6.31 that contain
-the commit f94e0186312b0fc39f41eed4e21836ed74b7efe1 "USB: xhci:
-Bandwidth allocation support".
+I am reluctant to make it too big since reading larger quantities from 
+userspace will take longer and start to impact performance. Keeping 
+shared data limited to 32-bits allows us to move it between userspace 
+and kernel with one instruction.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
----
- drivers/usb/host/xhci.c | 51 +++++++++++++++++--------------------------------
- 1 file changed, 18 insertions(+), 33 deletions(-)
+>
+> How about alignment? x86 will not care, but other architectures
+> may.
+>
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 924a6cc..e7d9dfa 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -1562,12 +1562,10 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
--	struct xhci_slot_ctx *slot_ctx;
--	unsigned int last_ctx;
- 	unsigned int ep_index;
- 	struct xhci_ep_ctx *ep_ctx;
- 	u32 drop_flag;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	int ret;
- 
- 	ret = xhci_check_args(hcd, udev, ep, 1, true, __func__);
-@@ -1614,24 +1612,13 @@ int xhci_drop_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	ctrl_ctx->add_flags &= cpu_to_le32(~drop_flag);
- 	new_add_flags = le32_to_cpu(ctrl_ctx->add_flags);
- 
--	last_ctx = xhci_last_valid_endpoint(le32_to_cpu(ctrl_ctx->add_flags));
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we deleted the last one */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) >
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	xhci_endpoint_zero(xhci, xhci->devs[udev->slot_id], ep);
- 
--	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "drop ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -1654,11 +1641,9 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	struct xhci_hcd *xhci;
- 	struct xhci_container_ctx *in_ctx, *out_ctx;
- 	unsigned int ep_index;
--	struct xhci_slot_ctx *slot_ctx;
- 	struct xhci_input_control_ctx *ctrl_ctx;
- 	u32 added_ctxs;
--	unsigned int last_ctx;
--	u32 new_add_flags, new_drop_flags, new_slot_info;
-+	u32 new_add_flags, new_drop_flags;
- 	struct xhci_virt_device *virt_dev;
- 	int ret = 0;
- 
-@@ -1673,7 +1658,6 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 		return -ENODEV;
- 
- 	added_ctxs = xhci_get_endpoint_flag(&ep->desc);
--	last_ctx = xhci_last_valid_endpoint(added_ctxs);
- 	if (added_ctxs == SLOT_FLAG || added_ctxs == EP0_FLAG) {
- 		/* FIXME when we have to issue an evaluate endpoint command to
- 		 * deal with ep0 max packet size changing once we get the
-@@ -1739,24 +1723,14 @@ int xhci_add_endpoint(struct usb_hcd *hcd, struct usb_device *udev,
- 	 */
- 	new_drop_flags = le32_to_cpu(ctrl_ctx->drop_flags);
- 
--	slot_ctx = xhci_get_slot_ctx(xhci, in_ctx);
--	/* Update the last valid endpoint context, if we just added one past */
--	if ((le32_to_cpu(slot_ctx->dev_info) & LAST_CTX_MASK) <
--	    LAST_CTX(last_ctx)) {
--		slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
--		slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(last_ctx));
--	}
--	new_slot_info = le32_to_cpu(slot_ctx->dev_info);
--
- 	/* Store the usb_device pointer for later use */
- 	ep->hcpriv = udev;
- 
--	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x, new slot info = %#x\n",
-+	xhci_dbg(xhci, "add ep 0x%x, slot id %d, new drop flags = %#x, new add flags = %#x\n",
- 			(unsigned int) ep->desc.bEndpointAddress,
- 			udev->slot_id,
- 			(unsigned int) new_drop_flags,
--			(unsigned int) new_add_flags,
--			(unsigned int) new_slot_info);
-+			(unsigned int) new_add_flags);
- 	return 0;
- }
- 
-@@ -2723,8 +2697,19 @@ int xhci_check_bandwidth(struct usb_hcd *hcd, struct usb_device *udev)
- 			ctrl_ctx->drop_flags == 0)
- 		return 0;
- 
--	xhci_dbg(xhci, "New Input Control Context:\n");
-+	/* Fix up Context Entries field. Minimum value is EP0 == BIT(1). */
- 	slot_ctx = xhci_get_slot_ctx(xhci, virt_dev->in_ctx);
-+	for (i = 31; i >= 1; i--) {
-+		u32 le32 = cpu_to_le32(BIT(i));
-+		if ((virt_dev->eps[i-1].ring && !(ctrl_ctx->drop_flags & le32))
-+				|| (ctrl_ctx->add_flags & le32) || i == 1) {
-+			slot_ctx->dev_info &= cpu_to_le32(~LAST_CTX_MASK);
-+			slot_ctx->dev_info |= cpu_to_le32(LAST_CTX(i));
-+			break;
-+		}
-+	}
-+
-+	xhci_dbg(xhci, "New Input Control Context:\n");
- 	xhci_dbg_ctx(xhci, virt_dev->in_ctx,
- 		     LAST_CTX_TO_EP_NUM(le32_to_cpu(slot_ctx->dev_info)));
- 
--- 
-1.8.3.2
+You are right. These 4-bytes need to be aligned to a 4-byte boundary. I 
+will look into adding an alignment check at the time this address is 
+passed to kernel.
+
+>>   #endif
+>> +#ifdef CONFIG_SCHED_PREEMPT_DELAY
+>> +	REG("sched_preempt_delay", S_IRUGO|S_IWUSR,
+>> proc_tid_preempt_delay_ops),
+>
+> This shouldn't be readable by group/other, as it exposes the address space,
+> so could help exploits.
+
+I like Oleg's suggestion of using prctl() instead of procfs to pass the 
+userspace address to kernel. Above problem will disappear when I switch 
+to prctl() in v3 of this patch.
+
+>
+>> @@ -2061,6 +2069,13 @@ extern u64 scheduler_tick_max_deferment(void);
+>>   static inline bool sched_can_stop_tick(void) { return false; }
+>>   #endif
+>>
+>> +#if defined(CONFIG_SCHED_PREEMPT_DELAY) && defined(CONFIG_PROC_FS)
+>> +extern void sched_preempt_delay_show(struct seq_file *m,
+>> +					struct task_struct *task);
+>> +extern void sched_preempt_delay_set(struct task_struct *task,
+>> +					unsigned char *val);
+>> +#endif
+>
+> Prototypes don't need to be ifdefed.
+>
+> -Andi
+>
+
+Ah, you are right. Thanks, Andi!
+
+--
+Khalid
 
