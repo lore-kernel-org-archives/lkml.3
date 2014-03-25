@@ -1,45 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbaCYKUt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 06:20:49 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:15763 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753090AbaCYKUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 06:20:07 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 1
-X-BigFish: VS1(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzdchd2izz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <wim@iguana.be>, <w.sang@pengutronix.de>, <linux-watchdog@vger.kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 0/2] Add big endian support
-Date: Tue, 25 Mar 2014 17:35:30 +0800
-Message-ID: <1395740132-21396-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	id S1753260AbaCYKWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 06:22:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65306 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751414AbaCYKWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 06:22:21 -0400
+Message-ID: <533158CF.9040303@redhat.com>
+Date: Tue, 25 Mar 2014 11:22:07 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>, gleb@kernel.org
+CC: avi.kivity@gmail.com, mtosatti@redhat.com, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org
+Subject: Re: [PATCH v4 0/5] KVM: x86: flush tlb out of mmu-lock after write
+ protection
+References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <5330F82D.4070601@linux.vnet.ibm.com>
+In-Reply-To: <5330F82D.4070601@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches are preparing for Vybird, LS1 and LS2. And on LS1 the IP will
-in BE mode.
+Il 25/03/2014 04:29, Xiao Guangrong ha scritto:
+> Ping......
 
-And this has been test on Vybird.
+Hi Xiao, I'll look at these patches soon.  I plan to merge them for 3.16.
 
+Paolo
 
-Xiubo Li (2):
-  watchdog: imx2_wdt: Sort the header files alphabetically
-  watchdog: imx2_wdt: Add big-endian support
-
- drivers/watchdog/imx2_wdt.c | 52 ++++++++++++++++++++++++++++++++-------------
- 1 file changed, 37 insertions(+), 15 deletions(-)
-
--- 
-1.8.4
-
+> On 03/10/2014 10:01 PM, Xiao Guangrong wrote:
+>> This patchset is splited from my previous patchset:
+>> [PATCH v3 00/15] KVM: MMU: locklessly write-protect
+>> that can be found at:
+>> https://lkml.org/lkml/2013/10/23/265
+>>
+>> Changelog v4 :
+>> - add more comments for patch 5 and thank for Marcelo's review
+>>
+>> Xiao Guangrong (5):
+>>   Revert "KVM: Simplify kvm->tlbs_dirty handling"
+>>   KVM: MMU: properly check last spte in fast_page_fault()
+>>   KVM: MMU: lazily drop large spte
+>>   KVM: MMU: flush tlb if the spte can be locklessly modified
+>>   KVM: MMU: flush tlb out of mmu lock when write-protect the sptes
+>>
+>>  arch/x86/kvm/mmu.c         | 72 ++++++++++++++++++++++++++++++----------------
+>>  arch/x86/kvm/mmu.h         | 14 +++++++++
+>>  arch/x86/kvm/paging_tmpl.h |  7 ++---
+>>  arch/x86/kvm/x86.c         | 20 ++++++++++---
+>>  include/linux/kvm_host.h   |  4 +--
+>>  virt/kvm/kvm_main.c        |  5 +++-
+>>  6 files changed, 85 insertions(+), 37 deletions(-)
+>>
+>
 
