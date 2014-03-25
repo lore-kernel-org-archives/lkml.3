@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbaCYRYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:24:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55972 "EHLO
+	id S932086AbaCYRWP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:15 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55953 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755183AbaCYRWK (ORCPT
+	with ESMTP id S1755157AbaCYRWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:10 -0400
+	Tue, 25 Mar 2014 13:22:05 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 62/81] i7core_edac: Fix PCI device reference count
-Date: Tue, 25 Mar 2014 10:16:15 -0700
-Message-Id: <1395767794-5012-63-git-send-email-kamal@canonical.com>
+Cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 42/81] cpufreq: powernow-k8: Initialize per-cpu data-structures properly
+Date: Tue, 25 Mar 2014 10:15:55 -0700
+Message-Id: <1395767794-5012-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -29,62 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <jdelvare@suse.de>
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 
-commit c0f5eeed0f4cef4f05b74883a7160e7edde58b6a upstream.
+commit c3274763bfc3bf1ececa269ed6e6c4d7ec1c3e5e upstream.
 
-The reference count changes done by pci_get_device can be a little
-misleading when the usage diverges from the most common scheme. The
-reference count of the device passed as the last parameter is always
-decreased, even if the function returns no new device. So if we are
-going to try alternative device IDs, we must manually increment the
-device reference count before each retry. If we don't, we end up
-decreasing the reference count, and after a few modprobe/rmmod cycles
-the PCI devices will vanish.
+The powernow-k8 driver maintains a per-cpu data-structure called
+powernow_data that is used to perform the frequency transitions.
+It initializes this data structure only for the policy->cpu. So,
+accesses to this data structure by other CPUs results in various
+problems because they would have been uninitialized.
 
-In other words and as Alan put it: without this fix the EDAC code
-corrupts the PCI device list.
+Specifically, if a cpu (!= policy->cpu) invokes the drivers' ->get()
+function, it returns 0 as the KHz value, since its per-cpu memory
+doesn't point to anything valid. This causes problems during
+suspend/resume since cpufreq_update_policy() tries to enforce this
+(0 KHz) as the current frequency of the CPU, and this madness gets
+propagated to adjust_jiffies() as well. Eventually, lots of things
+start breaking down, including the r8169 ethernet card, in one
+particularly interesting case reported by Pierre Ossman.
 
-This fixes kernel bug #50491:
-https://bugzilla.kernel.org/show_bug.cgi?id=50491
+Fix this by initializing the per-cpu data-structures of all the CPUs
+in the policy appropriately.
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224093927.7659dd9d@endymion.delvare
-Reviewed-by: Alan Cox <alan@linux.intel.com>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Signed-off-by: Borislav Petkov <bp@suse.de>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=70311
+Reported-by: Pierre Ossman <pierre@ossman.eu>
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/edac/i7core_edac.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+ drivers/cpufreq/powernow-k8.c | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
-index e213d03..04e7b9b 100644
---- a/drivers/edac/i7core_edac.c
-+++ b/drivers/edac/i7core_edac.c
-@@ -1334,14 +1334,19 @@ static int i7core_get_onedevice(struct pci_dev **prev,
- 	 * is at addr 8086:2c40, instead of 8086:2c41. So, we need
- 	 * to probe for the alternate address in case of failure
- 	 */
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_I7_NONCORE && !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
-+	}
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 056faf6..69bf037 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -1102,7 +1102,7 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+ {
+ 	struct powernow_k8_data *data;
+ 	struct init_on_cpu init_on_cpu;
+-	int rc;
++	int rc, cpu;
  
--	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
-+	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE &&
-+	    !pdev) {
-+		pci_dev_get(*prev);	/* pci_get_device will put it */
- 		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
- 				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
- 				      *prev);
-+	}
+ 	if (!cpu_online(pol->cpu))
+ 		return -ENODEV;
+@@ -1174,7 +1174,9 @@ static int __cpuinit powernowk8_cpu_init(struct cpufreq_policy *pol)
+ 	pr_debug("cpu_init done, current fid 0x%x, vid 0x%x\n",
+ 		 data->currfid, data->currvid);
  
- 	if (!pdev) {
- 		if (*prev) {
+-	per_cpu(powernow_data, pol->cpu) = data;
++	/* Point all the CPUs in this policy to the same data */
++	for_each_cpu(cpu, pol->cpus)
++		per_cpu(powernow_data, cpu) = data;
+ 
+ 	return 0;
+ 
+@@ -1189,6 +1191,7 @@ err_out:
+ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ {
+ 	struct powernow_k8_data *data = per_cpu(powernow_data, pol->cpu);
++	int cpu;
+ 
+ 	if (!data)
+ 		return -EINVAL;
+@@ -1199,7 +1202,8 @@ static int powernowk8_cpu_exit(struct cpufreq_policy *pol)
+ 
+ 	kfree(data->powernow_table);
+ 	kfree(data);
+-	per_cpu(powernow_data, pol->cpu) = NULL;
++	for_each_cpu(cpu, pol->cpus)
++		per_cpu(powernow_data, cpu) = NULL;
+ 
+ 	return 0;
+ }
 -- 
 1.8.3.2
 
