@@ -1,114 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718AbaCYUEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 16:04:08 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:6126 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753751AbaCYUEG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 16:04:06 -0400
-Date: Tue, 25 Mar 2014 14:03:52 -0600
-From: Linn Crosetto <linn@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu
- disable
-Message-ID: <20140325200352.GU31785@oranje.fc.hp.com>
-References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754631AbaCYUI3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 16:08:29 -0400
+Received: from mga11.intel.com ([192.55.52.93]:15293 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545AbaCYUI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 16:08:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,730,1389772800"; 
+   d="scan'208";a="506581643"
+From: Andi Kleen <andi@firstfloor.org>
+To: acme@infradead.org
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, peterz@infradead.org,
+        eranian@google.com, namhyung@kernel.org, jolsa@redhat.com,
+        wcohen@redhat.com, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] perf, tools: Fix metrics calculation with event qualifiers
+Date: Tue, 25 Mar 2014 13:07:27 -0700
+Message-Id: <1395778047-23111-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the patch.
+From: Andi Kleen <ak@linux.intel.com>
 
-On Tue, Jan 28, 2014 at 01:54:05PM -0800, Yinghai Lu wrote:
-> used_vectors is a bitmap for vectors that are not tracked in per_cpu
-> vector_irq.
+Currently in perf IPC and other metrics cannot be directly shown
+separately for both user and kernel in a single run. The problem was
+that the metrics matching code did not check event qualifiers.
 
-I feel like this comment (also in the code) could be misleading because vectors
-above first_system_vector are effectively not tracked in per_cpu vector_irq, but
-also may not have the bit set in used_vectors. For example, used_vectors from a
-system that I am looking at now:
+With this patch the following case works correctly.
 
-first_system_vector
-                239                  255
-                  |                  |
-                  10 01000 11111 11111
+% perf stat -e cycles:k,cycles:u,instructions:k,instructions:u true
 
-test_bit(240, used_vectors) does not return the correct answer to the question
-about whether the vector is tracked in per_cpu vector_irq. This leads to two
-meanings for the bitmap; for vectors less than first_system_vector whether or
-not they are tracked in per_cpu vector_irq, and for vectors above
-first_system_vector, whether or not they are in use:
+ Performance counter stats for 'true':
 
-static inline int is_per_cpu_vector(int vector) {
-	return !test_bit(vector, used_vectors) &&
-			vector < first_system_vector;
-}
+           531,718      cycles:k
+           203,895      cycles:u
+           338,151      instructions:k            #    0.64  insns per cycle
+           105,961      instructions:u            #    0.52  insns per cycle
 
-Thanks,
-Linn
+       0.002989739 seconds time elapsed
 
-> used_vectors contains information on the first 32 exceptions, the system vectors.
-> the IA32_SYSCALL_VECTOR (0x80), and the IRQ_MOVE_CLEANUP_VECTOR (0x20).
-> 
-> assign_irq_vectors() assigns vectors up to first_system_vector and
-> it will not use vectors that are set used_vectors.
-> 
-> This patch modifies the code to scan up to first_system_vector
-> and do a test on the used_vectors bitmap.
-> 
-> So count avaiable vectors correctly.
-> 
-> -v2: fix compiling problem.
-> -v3: update changelog and commets
-> 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> ---
->  arch/x86/kernel/irq.c |   18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
-> 
-> Index: linux-2.6/arch/x86/kernel/irq.c
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/kernel/irq.c
-> +++ linux-2.6/arch/x86/kernel/irq.c
-> @@ -17,6 +17,7 @@
->  #include <asm/idle.h>
->  #include <asm/mce.h>
->  #include <asm/hw_irq.h>
-> +#include <asm/desc.h>
->  
->  #define CREATE_TRACE_POINTS
->  #include <asm/trace/irq_vectors.h>
-> @@ -321,8 +322,21 @@ int check_irq_vectors_for_cpu_disable(vo
->  	for_each_online_cpu(cpu) {
->  		if (cpu == this_cpu)
->  			continue;
-> -		for (vector = FIRST_EXTERNAL_VECTOR; vector < NR_VECTORS;
-> -		     vector++) {
-> +
-> +		/*
-> +		 * assign_irq_vector() only scan per_cpu vectors from
-> +		 * FIRST_EXTERNAL_VECTOR to first_system_vector.
-> +		 * It aslo skip vectors that are set in used_vectors bitmask.
-> +		 * used_vectors could have bits set for
-> +		 *	IA32_SYSCALL_VECTOR (0x80)
-> +		 *	IRQ_MOVE_CLEANUP_VECTOR (0x20)
-> +		 * Don't count those as available vectors.
-> +		 */
-> +		for (vector = FIRST_EXTERNAL_VECTOR;
-> +		     vector < first_system_vector; vector++) {
-> +			if (test_bit(vector, used_vectors))
-> +				continue;
-> +
->  			if (per_cpu(vector_irq, cpu)[vector] < 0)
->  				count++;
->  		}
+Previously it would misreport the ratios because they were matching
+the wrong value.
+
+The patch is fairly big, but quite mechanic as it just
+adds context indexes everywhere.
+
+I didn't support Hypervisor. It's not clear it's worth it.
+
+Reported-by: William Cohen <wcohen@redhat.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ tools/perf/builtin-stat.c | 129 +++++++++++++++++++++++++++-------------------
+ 1 file changed, 77 insertions(+), 52 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index 8b0e1c9..57da752 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -239,21 +239,35 @@ out_free:
+ 	return -1;
+ }
+ 
++#define NUM_CTX 3
++
++enum { CTX_USER, CTX_KERNEL, CTX_ALL };
++
+ static struct stats runtime_nsecs_stats[MAX_NR_CPUS];
+-static struct stats runtime_cycles_stats[MAX_NR_CPUS];
+-static struct stats runtime_stalled_cycles_front_stats[MAX_NR_CPUS];
+-static struct stats runtime_stalled_cycles_back_stats[MAX_NR_CPUS];
+-static struct stats runtime_branches_stats[MAX_NR_CPUS];
+-static struct stats runtime_cacherefs_stats[MAX_NR_CPUS];
+-static struct stats runtime_l1_dcache_stats[MAX_NR_CPUS];
+-static struct stats runtime_l1_icache_stats[MAX_NR_CPUS];
+-static struct stats runtime_ll_cache_stats[MAX_NR_CPUS];
+-static struct stats runtime_itlb_cache_stats[MAX_NR_CPUS];
+-static struct stats runtime_dtlb_cache_stats[MAX_NR_CPUS];
+-static struct stats runtime_cycles_in_tx_stats[MAX_NR_CPUS];
++static struct stats runtime_cycles_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_stalled_cycles_front_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_stalled_cycles_back_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_branches_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_cacherefs_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_l1_dcache_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_l1_icache_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_ll_cache_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_itlb_cache_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_dtlb_cache_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_cycles_in_tx_stats[NUM_CTX][MAX_NR_CPUS];
+ static struct stats walltime_nsecs_stats;
+-static struct stats runtime_transaction_stats[MAX_NR_CPUS];
+-static struct stats runtime_elision_stats[MAX_NR_CPUS];
++static struct stats runtime_transaction_stats[NUM_CTX][MAX_NR_CPUS];
++static struct stats runtime_elision_stats[NUM_CTX][MAX_NR_CPUS];
++
++static int evsel_context(struct perf_evsel *evsel)
++{
++	if (evsel->attr.exclude_kernel)
++		return CTX_USER;
++	if (evsel->attr.exclude_user)
++		return CTX_KERNEL;
++	/* Handle hypervisor too? */
++	return CTX_ALL;
++}
+ 
+ static void perf_stat__reset_stats(struct perf_evlist *evlist)
+ {
+@@ -347,37 +361,39 @@ static struct perf_evsel *nth_evsel(int n)
+  */
+ static void update_shadow_stats(struct perf_evsel *counter, u64 *count)
+ {
++	int ctx = evsel_context(counter);
++
+ 	if (perf_evsel__match(counter, SOFTWARE, SW_TASK_CLOCK))
+ 		update_stats(&runtime_nsecs_stats[0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CPU_CYCLES))
+-		update_stats(&runtime_cycles_stats[0], count[0]);
++		update_stats(&runtime_cycles_stats[ctx][0], count[0]);
+ 	else if (transaction_run &&
+ 		 perf_evsel__cmp(counter, nth_evsel(T_CYCLES_IN_TX)))
+-		update_stats(&runtime_cycles_in_tx_stats[0], count[0]);
++		update_stats(&runtime_cycles_in_tx_stats[ctx][0], count[0]);
+ 	else if (transaction_run &&
+ 		 perf_evsel__cmp(counter, nth_evsel(T_TRANSACTION_START)))
+-		update_stats(&runtime_transaction_stats[0], count[0]);
++		update_stats(&runtime_transaction_stats[ctx][0], count[0]);
+ 	else if (transaction_run &&
+ 		 perf_evsel__cmp(counter, nth_evsel(T_ELISION_START)))
+-		update_stats(&runtime_elision_stats[0], count[0]);
++		update_stats(&runtime_elision_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_FRONTEND))
+-		update_stats(&runtime_stalled_cycles_front_stats[0], count[0]);
++		update_stats(&runtime_stalled_cycles_front_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_STALLED_CYCLES_BACKEND))
+-		update_stats(&runtime_stalled_cycles_back_stats[0], count[0]);
++		update_stats(&runtime_stalled_cycles_back_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_BRANCH_INSTRUCTIONS))
+-		update_stats(&runtime_branches_stats[0], count[0]);
++		update_stats(&runtime_branches_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HARDWARE, HW_CACHE_REFERENCES))
+-		update_stats(&runtime_cacherefs_stats[0], count[0]);
++		update_stats(&runtime_cacherefs_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_L1D))
+-		update_stats(&runtime_l1_dcache_stats[0], count[0]);
++		update_stats(&runtime_l1_dcache_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_L1I))
+-		update_stats(&runtime_l1_icache_stats[0], count[0]);
++		update_stats(&runtime_l1_icache_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_LL))
+-		update_stats(&runtime_ll_cache_stats[0], count[0]);
++		update_stats(&runtime_ll_cache_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_DTLB))
+-		update_stats(&runtime_dtlb_cache_stats[0], count[0]);
++		update_stats(&runtime_dtlb_cache_stats[ctx][0], count[0]);
+ 	else if (perf_evsel__match(counter, HW_CACHE, HW_CACHE_ITLB))
+-		update_stats(&runtime_itlb_cache_stats[0], count[0]);
++		update_stats(&runtime_itlb_cache_stats[ctx][0], count[0]);
+ }
+ 
+ /*
+@@ -794,8 +810,9 @@ static void print_stalled_cycles_frontend(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_cycles_stats[cpu]);
++	total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -813,8 +830,9 @@ static void print_stalled_cycles_backend(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_cycles_stats[cpu]);
++	total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -832,8 +850,9 @@ static void print_branch_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_branches_stats[cpu]);
++	total = avg_stats(&runtime_branches_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -851,8 +870,9 @@ static void print_l1_dcache_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_l1_dcache_stats[cpu]);
++	total = avg_stats(&runtime_l1_dcache_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -870,8 +890,9 @@ static void print_l1_icache_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_l1_icache_stats[cpu]);
++	total = avg_stats(&runtime_l1_icache_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -889,8 +910,9 @@ static void print_dtlb_cache_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_dtlb_cache_stats[cpu]);
++	total = avg_stats(&runtime_dtlb_cache_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -908,8 +930,9 @@ static void print_itlb_cache_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_itlb_cache_stats[cpu]);
++	total = avg_stats(&runtime_itlb_cache_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -927,8 +950,9 @@ static void print_ll_cache_misses(int cpu,
+ {
+ 	double total, ratio = 0.0;
+ 	const char *color;
++	int ctx = evsel_context(evsel);
+ 
+-	total = avg_stats(&runtime_ll_cache_stats[cpu]);
++	total = avg_stats(&runtime_ll_cache_stats[ctx][cpu]);
+ 
+ 	if (total)
+ 		ratio = avg / total * 100.0;
+@@ -945,6 +969,7 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 	double total, ratio = 0.0, total2;
+ 	double sc =  evsel->scale;
+ 	const char *fmt;
++	int ctx = evsel_context(evsel);
+ 
+ 	if (csv_output) {
+ 		fmt = sc != 1.0 ?  "%.2f%s" : "%.0f%s";
+@@ -976,13 +1001,13 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 		return;
+ 
+ 	if (perf_evsel__match(evsel, HARDWARE, HW_INSTRUCTIONS)) {
+-		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
+ 		if (total) {
+ 			ratio = avg / total;
+ 			fprintf(output, " #   %5.2f  insns per cycle        ", ratio);
+ 		}
+-		total = avg_stats(&runtime_stalled_cycles_front_stats[cpu]);
+-		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[cpu]));
++		total = avg_stats(&runtime_stalled_cycles_front_stats[ctx][cpu]);
++		total = max(total, avg_stats(&runtime_stalled_cycles_back_stats[ctx][cpu]));
+ 
+ 		if (total && avg) {
+ 			ratio = total / avg;
+@@ -993,46 +1018,46 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 		}
+ 
+ 	} else if (perf_evsel__match(evsel, HARDWARE, HW_BRANCH_MISSES) &&
+-			runtime_branches_stats[cpu].n != 0) {
++			runtime_branches_stats[ctx][cpu].n != 0) {
+ 		print_branch_misses(cpu, evsel, avg);
+ 	} else if (
+ 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_L1D |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_l1_dcache_stats[cpu].n != 0) {
++			runtime_l1_dcache_stats[ctx][cpu].n != 0) {
+ 		print_l1_dcache_misses(cpu, evsel, avg);
+ 	} else if (
+ 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_L1I |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_l1_icache_stats[cpu].n != 0) {
++			runtime_l1_icache_stats[ctx][cpu].n != 0) {
+ 		print_l1_icache_misses(cpu, evsel, avg);
+ 	} else if (
+ 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_DTLB |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_dtlb_cache_stats[cpu].n != 0) {
++			runtime_dtlb_cache_stats[ctx][cpu].n != 0) {
+ 		print_dtlb_cache_misses(cpu, evsel, avg);
+ 	} else if (
+ 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_ITLB |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_itlb_cache_stats[cpu].n != 0) {
++			runtime_itlb_cache_stats[ctx][cpu].n != 0) {
+ 		print_itlb_cache_misses(cpu, evsel, avg);
+ 	} else if (
+ 		evsel->attr.type == PERF_TYPE_HW_CACHE &&
+ 		evsel->attr.config ==  ( PERF_COUNT_HW_CACHE_LL |
+ 					((PERF_COUNT_HW_CACHE_OP_READ) << 8) |
+ 					((PERF_COUNT_HW_CACHE_RESULT_MISS) << 16)) &&
+-			runtime_ll_cache_stats[cpu].n != 0) {
++			runtime_ll_cache_stats[ctx][cpu].n != 0) {
+ 		print_ll_cache_misses(cpu, evsel, avg);
+ 	} else if (perf_evsel__match(evsel, HARDWARE, HW_CACHE_MISSES) &&
+-			runtime_cacherefs_stats[cpu].n != 0) {
+-		total = avg_stats(&runtime_cacherefs_stats[cpu]);
++			runtime_cacherefs_stats[ctx][cpu].n != 0) {
++		total = avg_stats(&runtime_cacherefs_stats[ctx][cpu]);
+ 
+ 		if (total)
+ 			ratio = avg * 100 / total;
+@@ -1052,15 +1077,15 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 		}
+ 	} else if (transaction_run &&
+ 		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX))) {
+-		total = avg_stats(&runtime_cycles_stats[cpu]);
++		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
+ 		if (total)
+ 			fprintf(output,
+ 				" #   %5.2f%% transactional cycles   ",
+ 				100.0 * (avg / total));
+ 	} else if (transaction_run &&
+ 		   perf_evsel__cmp(evsel, nth_evsel(T_CYCLES_IN_TX_CP))) {
+-		total = avg_stats(&runtime_cycles_stats[cpu]);
+-		total2 = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++		total = avg_stats(&runtime_cycles_stats[ctx][cpu]);
++		total2 = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
+ 		if (total2 < avg)
+ 			total2 = avg;
+ 		if (total)
+@@ -1070,8 +1095,8 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 	} else if (transaction_run &&
+ 		   perf_evsel__cmp(evsel, nth_evsel(T_TRANSACTION_START)) &&
+ 		   avg > 0 &&
+-		   runtime_cycles_in_tx_stats[cpu].n != 0) {
+-		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++		   runtime_cycles_in_tx_stats[ctx][cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
+ 
+ 		if (total)
+ 			ratio = total / avg;
+@@ -1080,8 +1105,8 @@ static void abs_printout(int cpu, int nr, struct perf_evsel *evsel, double avg)
+ 	} else if (transaction_run &&
+ 		   perf_evsel__cmp(evsel, nth_evsel(T_ELISION_START)) &&
+ 		   avg > 0 &&
+-		   runtime_cycles_in_tx_stats[cpu].n != 0) {
+-		total = avg_stats(&runtime_cycles_in_tx_stats[cpu]);
++		   runtime_cycles_in_tx_stats[ctx][cpu].n != 0) {
++		total = avg_stats(&runtime_cycles_in_tx_stats[ctx][cpu]);
+ 
+ 		if (total)
+ 			ratio = total / avg;
+-- 
+1.8.5.3
+
