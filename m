@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbaCYTf2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 15:35:28 -0400
-Received: from smtprelay0040.hostedemail.com ([216.40.44.40]:55223 "EHLO
+	id S1754859AbaCYTgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 15:36:07 -0400
+Received: from smtprelay0193.hostedemail.com ([216.40.44.193]:33900 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754710AbaCYTfX (ORCPT
+	by vger.kernel.org with ESMTP id S1754764AbaCYTf0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 15:35:23 -0400
+	Tue, 25 Mar 2014 15:35:26 -0400
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:3867:4321:4605:5007:6119:6261:7903:10004:10026:10848:11026:11233:11473:11658:11914:12043:12296:12438:12517:12519:12555,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: iron00_119d6bfe50352
-X-Filterd-Recvd-Size: 3597
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:857:960:973:988:989:1260:1345:1359:1437:1534:1542:1711:1730:1747:1777:1792:2198:2199:2393:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:3867:3870:3871:3872:3874:4250:4321:4605:5007:6117:6261:7903:10004:10026:10848:11026:11232:11233:11473:11657:11658:11914:12043:12517:12519:12555:12663,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: spade93_120ec21d13e56
+X-Filterd-Recvd-Size: 3553
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Lars Ellenberg <drbd-dev@lists.linbit.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, drbd-user@lists.linbit.com,
-        xen-devel@lists.xenproject.org
-Subject: [PATCH 3/5] block: Convert last uses of __FUNCTION__ to __func__
-Date: Tue, 25 Mar 2014 12:35:05 -0700
-Message-Id: <fec7be25b0bae2280231f4e7779378b93de642f9.1395775901.git.joe@perches.com>
+Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: [PATCH 4/5] i915: Convert last uses of __FUNCTION__ to __func__
+Date: Tue, 25 Mar 2014 12:35:06 -0700
+Message-Id: <f73fada74a8320ec33f21ed29e21ee47fb016a42.1395775901.git.joe@perches.com>
 X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
 In-Reply-To: <cover.1395775901.git.joe@perches.com>
 References: <cover.1395775901.git.joe@perches.com>
@@ -33,64 +32,70 @@ so convert the last uses.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/block/drbd/drbd_int.h | 8 ++++----
- drivers/block/xen-blkfront.c  | 4 ++--
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/gpu/drm/i915/dvo_ns2501.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/block/drbd/drbd_int.h b/drivers/block/drbd/drbd_int.h
-index e7093d4..e312f73 100644
---- a/drivers/block/drbd/drbd_int.h
-+++ b/drivers/block/drbd/drbd_int.h
-@@ -1781,7 +1781,7 @@ static inline void inc_ap_pending(struct drbd_device *device)
- 			func, line,					\
- 			atomic_read(&device->which))
- 
--#define dec_ap_pending(device) _dec_ap_pending(device, __FUNCTION__, __LINE__)
-+#define dec_ap_pending(device) _dec_ap_pending(device, __func__, __LINE__)
- static inline void _dec_ap_pending(struct drbd_device *device, const char *func, int line)
+diff --git a/drivers/gpu/drm/i915/dvo_ns2501.c b/drivers/gpu/drm/i915/dvo_ns2501.c
+index 954acb2..e40cd26 100644
+--- a/drivers/gpu/drm/i915/dvo_ns2501.c
++++ b/drivers/gpu/drm/i915/dvo_ns2501.c
+@@ -234,7 +234,7 @@ static enum drm_mode_status ns2501_mode_valid(struct intel_dvo_device *dvo,
  {
- 	if (atomic_dec_and_test(&device->ap_pending_cnt))
-@@ -1800,7 +1800,7 @@ static inline void inc_rs_pending(struct drbd_device *device)
- 	atomic_inc(&device->rs_pending_cnt);
- }
+ 	DRM_DEBUG_KMS
+ 	    ("%s: is mode valid (hdisplay=%d,htotal=%d,vdisplay=%d,vtotal=%d)\n",
+-	     __FUNCTION__, mode->hdisplay, mode->htotal, mode->vdisplay,
++	     __func__, mode->hdisplay, mode->htotal, mode->vdisplay,
+ 	     mode->vtotal);
  
--#define dec_rs_pending(device) _dec_rs_pending(device, __FUNCTION__, __LINE__)
-+#define dec_rs_pending(device) _dec_rs_pending(device, __func__, __LINE__)
- static inline void _dec_rs_pending(struct drbd_device *device, const char *func, int line)
- {
- 	atomic_dec(&device->rs_pending_cnt);
-@@ -1821,14 +1821,14 @@ static inline void inc_unacked(struct drbd_device *device)
- 	atomic_inc(&device->unacked_cnt);
- }
+ 	/*
+@@ -262,7 +262,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
  
--#define dec_unacked(device) _dec_unacked(device, __FUNCTION__, __LINE__)
-+#define dec_unacked(device) _dec_unacked(device, __func__, __LINE__)
- static inline void _dec_unacked(struct drbd_device *device, const char *func, int line)
- {
- 	atomic_dec(&device->unacked_cnt);
- 	ERR_IF_CNT_IS_NEGATIVE(unacked_cnt, func, line);
- }
+ 	DRM_DEBUG_KMS
+ 	    ("%s: set mode (hdisplay=%d,htotal=%d,vdisplay=%d,vtotal=%d).\n",
+-	     __FUNCTION__, mode->hdisplay, mode->htotal, mode->vdisplay,
++	     __func__, mode->hdisplay, mode->htotal, mode->vdisplay,
+ 	     mode->vtotal);
  
--#define sub_unacked(device, n) _sub_unacked(device, n, __FUNCTION__, __LINE__)
-+#define sub_unacked(device, n) _sub_unacked(device, n, __func__, __LINE__)
- static inline void _sub_unacked(struct drbd_device *device, int n, const char *func, int line)
- {
- 	atomic_sub(n, &device->unacked_cnt);
-diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
-index efe1b47..375aea5 100644
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -1366,8 +1366,8 @@ static int blkfront_probe(struct xenbus_device *dev,
+ 	/*
+@@ -277,8 +277,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
+ 		if (mode->hdisplay == 800 && mode->vdisplay == 600) {
+ 			/* mode 277 */
+ 			ns->reg_8_shadow &= ~NS2501_8_BPAS;
+-			DRM_DEBUG_KMS("%s: switching to 800x600\n",
+-				      __FUNCTION__);
++			DRM_DEBUG_KMS("%s: switching to 800x600\n", __func__);
  
- 			if (major != XENVBD_MAJOR) {
- 				printk(KERN_INFO
--						"%s: HVM does not support vbd %d as xen block device\n",
--						__FUNCTION__, vdevice);
-+				       "%s: HVM does not support vbd %d as xen block device\n",
-+				       __func__, vdevice);
- 				return -ENODEV;
- 			}
- 		}
+ 			/*
+ 			 * No, I do not know where this data comes from.
+@@ -341,8 +340,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
+ 
+ 		} else if (mode->hdisplay == 640 && mode->vdisplay == 480) {
+ 			/* mode 274 */
+-			DRM_DEBUG_KMS("%s: switching to 640x480\n",
+-				      __FUNCTION__);
++			DRM_DEBUG_KMS("%s: switching to 640x480\n", __func__);
+ 			/*
+ 			 * No, I do not know where this data comes from.
+ 			 * It is just what the video bios left in the DVO, so
+@@ -406,8 +404,7 @@ static void ns2501_mode_set(struct intel_dvo_device *dvo,
+ 
+ 		} else if (mode->hdisplay == 1024 && mode->vdisplay == 768) {
+ 			/* mode 280 */
+-			DRM_DEBUG_KMS("%s: switching to 1024x768\n",
+-				      __FUNCTION__);
++			DRM_DEBUG_KMS("%s: switching to 1024x768\n", __func__);
+ 			/*
+ 			 * This might or might not work, actually. I'm silently
+ 			 * assuming here that the native panel resolution is
+@@ -459,7 +456,7 @@ static void ns2501_dpms(struct intel_dvo_device *dvo, bool enable)
+ 	unsigned char ch;
+ 
+ 	DRM_DEBUG_KMS("%s: Trying set the dpms of the DVO to %i\n",
+-		      __FUNCTION__, enable);
++		      __func__, enable);
+ 
+ 	ch = ns->reg_8_shadow;
+ 
 -- 
 1.8.1.2.459.gbcd45b4.dirty
 
