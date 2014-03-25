@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751095AbaCYE2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 00:28:49 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:35464 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaCYE2r (ORCPT
+	id S1751842AbaCYEbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 00:31:49 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:47386 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaCYEbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 00:28:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <1395672089-19336-1-git-send-email-dirk.j.brandewie@intel.com>
-References: <1395672089-19336-1-git-send-email-dirk.j.brandewie@intel.com>
-Date: Tue, 25 Mar 2014 09:58:46 +0530
-X-Google-Sender-Auth: VKl771Gs-TIc0RBB6hQFLJr-pV8
-Message-ID: <CAOh2x=m9C77gYFbxQ1fn-ebQdL58OhY60rXq6WHyTR4Wau7_QA@mail.gmail.com>
-Subject: Re: [PATCH] intel_pstate: Use del_timer_sync in intel_pstate_cpu_stop
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Dirk Brandewie <dirk.brandewie@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dirk Brandewie <dirk.j.brandewie@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        cpufreq <cpufreq@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Mar 2014 00:31:47 -0400
+Date: Tue, 25 Mar 2014 00:31:46 -0400 (EDT)
+Message-Id: <20140325.003146.1533027544821884786.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, roy.qing.li@gmail.com,
+        ebiederm@xmission.com
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140325130447.e38f4242c03090fd48eae340@canb.auug.org.au>
+References: <20140325130447.e38f4242c03090fd48eae340@canb.auug.org.au>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 24 Mar 2014 21:31:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 8:11 PM,  <dirk.brandewie@gmail.com> wrote:
-> From: Dirk Brandewie <dirk.j.brandewie@intel.com>
->
-> Ensure that no timer callback is running since we are about to free
-> the timer structure.  We cannot guarantee that the call back is called
-> on the CPU where the timer is running.
->
-> Reported-by: Thomas Gleixner <tglx@linutronix.de>
-> Signed-off-by: Dirk Brandewie <dirk.j.brandewie@intel.com>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-> Cc: cpufreq <cpufreq@vger.kernel.org>
-> ---
->  drivers/cpufreq/intel_pstate.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/cpufreq/intel_pstate.c b/drivers/cpufreq/intel_pstate.c
-> index e9092fd..a4a9ba5 100644
-> --- a/drivers/cpufreq/intel_pstate.c
-> +++ b/drivers/cpufreq/intel_pstate.c
-> @@ -780,7 +780,7 @@ static int intel_pstate_cpu_stop(struct cpufreq_policy *policy)
->
->         pr_info("intel_pstate CPU %d exiting\n", cpu_num);
->
-> -       del_timer(&all_cpu_data[cpu_num]->timer);
-> +       del_timer_sync(&all_cpu_data[cpu_num]->timer);
->         intel_pstate_set_pstate(cpu, cpu->pstate.min_pstate);
->         kfree(all_cpu_data[cpu_num]);
->         all_cpu_data[cpu_num] = NULL;
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 25 Mar 2014 13:04:47 +1100
 
-Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Today's linux-next merge of the net-next tree got a conflict in
+> net/core/netpoll.c between commit c27f0872a344 ("netpoll: fix the skb
+> check in pkt_is_ns") from the net tree and commit 9c62a68d1311 ("netpoll:
+> Remove dead packet receive code (CONFIG_NETPOLL_TRAP)") from the net-next
+> tree.
+> 
+> I fixed it up (the latter removes the code fixed by the former, so I did
+> that) and can carry the fix as necessary (no action is required).
+
+That's a perfect resolution, thanks.
