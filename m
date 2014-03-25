@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbaCYOu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 10:50:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33063 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaCYOuz (ORCPT
+	id S1753460AbaCYOyE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 10:54:04 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:39063 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753372AbaCYOyC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 10:50:55 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, kernel@pengutronix.de,
-        Wolfram Sang <wsa@the-dreams.de>
-Date: Tue, 25 Mar 2014 15:50:44 +0100
-Message-Id: <1395759044-10700-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Tue, 25 Mar 2014 10:54:02 -0400
+Message-ID: <53319829.9040403@linux.vnet.ibm.com>
+Date: Tue, 25 Mar 2014 20:22:25 +0530
+From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-Subject: [PATCH v2] clocksource: efm32: use $vendor,$device scheme for compatible string
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on metis.ext.pengutronix.de)
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Andi Kleen <ak@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [V5 0/4] perf: New conditional branch filter
+References: <1394183185-6219-1-git-send-email-khandual@linux.vnet.ibm.com>
+In-Reply-To: <1394183185-6219-1-git-send-email-khandual@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032514-8878-0000-0000-00000B7B6ADA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wolfgang Sang pointed out that "efm32,$device" is non-standard. So use the
-common scheme and prefix device with "efm32-". The old compatible string
-is left in place until arch/arm/boot/dts/efm32* is fixed.
+On 03/07/2014 02:36 PM, Anshuman Khandual wrote:
+> Hello Arnaldo,
+> 
+> 	I had posted the V5 version of PowerPC SW branch filter enablement
+> patchset last month. Please find the patchset here at
+> 
+> 	https://lkml.org/lkml/2014/2/5/79
+> 
+> These following patches (2,4,5,6 patches from the original V5 version patchset)
+> are the ones which change code in the generic kernel, perf tool and X86 perf.
+> Basically this patchset adds one more branch filter for "conditional" branches.
+> In X86 code, this new filter has been implemented with the help of availble SW
+> filter X86_BR_JCC and LBR_JCC. We had some discussions in this regard before.
+> Please review these changes and if it's okay, please merge them. Other patches
+> in the series are powerpc specific and are being reviewed by Benjamin Herrenschmidt
+> and Michael Ellerman. Let me know if you need more information.
+> 
+> [1] https://lkml.org/lkml/2013/5/22/51
+> [2] https://lkml.org/lkml/2013/8/30/10
+> [3] https://lkml.org/lkml/2013/10/16/75
+> [4] https://lkml.org/lkml/2013/12/4/168
+> [5] https://lkml.org/lkml/2014/2/5/79
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-Changes since (implicit) v1, sent with
-Message-Id: 1395757522-6431-1-git-send-email-u.kleine-koenig@pengutronix.de:
- - fix binding doc accordingly
+Hey Arnaldo,
 
- .../bindings/timer/{efm32,timer.txt => energymicro,efm32-timer.txt}   | 4 ++--
- drivers/clocksource/time-efm32.c                                      | 3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
- rename Documentation/devicetree/bindings/timer/{efm32,timer.txt => energymicro,efm32-timer.txt} (87%)
-
-diff --git a/Documentation/devicetree/bindings/timer/efm32,timer.txt b/Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
-similarity index 87%
-rename from Documentation/devicetree/bindings/timer/efm32,timer.txt
-rename to Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
-index 97a568f696c9..e502c11b2211 100644
---- a/Documentation/devicetree/bindings/timer/efm32,timer.txt
-+++ b/Documentation/devicetree/bindings/timer/energymicro,efm32-timer.txt
-@@ -6,7 +6,7 @@ channels and can be used as PWM or Quadrature Decoder. Available clock sources
- are the cpu's HFPERCLK (with a 10-bit prescaler) or an external pin.
- 
- Required properties:
--- compatible : Should be efm32,timer
-+- compatible : Should be "energymicro,efm32-timer"
- - reg : Address and length of the register set
- - clocks : Should contain a reference to the HFPERCLK
- 
-@@ -16,7 +16,7 @@ Optional properties:
- Example:
- 
- timer@40010c00 {
--	compatible = "efm32,timer";
-+	compatible = "energymicro,efm32-timer";
- 	reg = <0x40010c00 0x400>;
- 	interrupts = <14>;
- 	clocks = <&cmu clk_HFPERCLKTIMER3>;
-diff --git a/drivers/clocksource/time-efm32.c b/drivers/clocksource/time-efm32.c
-index 1a6205b7bed3..bba62f9deefb 100644
---- a/drivers/clocksource/time-efm32.c
-+++ b/drivers/clocksource/time-efm32.c
-@@ -272,4 +272,5 @@ static void __init efm32_timer_init(struct device_node *np)
- 		}
- 	}
- }
--CLOCKSOURCE_OF_DECLARE(efm32, "efm32,timer", efm32_timer_init);
-+CLOCKSOURCE_OF_DECLARE(efm32compat, "efm32,timer", efm32_timer_init);
-+CLOCKSOURCE_OF_DECLARE(efm32, "energymicro,efm32-timer", efm32_timer_init);
--- 
-1.9.1
+Do you have any comments or suggestions on this ? Have not received any
+response on these proposed patch series yet. Thank you.
 
