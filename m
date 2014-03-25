@@ -1,71 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbaCYRXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:23:38 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:48171 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612AbaCYRXf (ORCPT
+	id S1755201AbaCYRWN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55961 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754270AbaCYRWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:23:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <5330FE66.4080908@bjorling.me>
-References: <1395383538-18019-1-git-send-email-m@bjorling.me>
-	<20140321090630.GA30044@debian>
-	<532C5930.7040107@bjorling.me>
-	<alpine.DEB.2.02.1403242004580.527@nftneq.ynat.uz>
-	<5330FE66.4080908@bjorling.me>
-Date: Tue, 25 Mar 2014 18:23:34 +0100
-Message-ID: <CAFLxGvynL7s5ZuLYCyLaa0HZhsVugGfiSpaUJHg4rkdm=6gFFw@mail.gmail.com>
-Subject: Re: [dm-devel] [PATCH RFC v1 00/01] dm-lightnvm introduction
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Matias Bjorling <m@bjorling.me>
-Cc: David Lang <david@lang.hm>,
-        device-mapper development <dm-devel@redhat.com>, snitzer@redhat.com,
-        agk@redhat.com, NeilBrown <neilb@suse.de>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 25 Mar 2014 13:22:07 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tejun Heo <tj@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 35/81] ahci: disable NCQ on Samsung pci-e SSDs on macbooks
+Date: Tue, 25 Mar 2014 10:15:48 -0700
+Message-Id: <1395767794-5012-36-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 4:56 AM, Matias Bjorling <m@bjorling.me> wrote:
-> On 03/24/2014 08:08 PM, David Lang wrote:
->> On Fri, 21 Mar 2014, Matias Bjorling wrote:
->>
->>> On 03/21/2014 02:06 AM, Joe Thornber wrote:
->>>> Hi Matias,
->>>>
->>>> This looks really interesting and I'd love to get involved.  Do you
->>>> have any recommendations for what hardware I should pick up?
->>>
->>> Hi Joe,
->>>
->>> The most easily available platform is OpenSSD
->>> (http://www.openssd-project.org). It's a little old, but still very
->>> functional. When there's a good firmware implementation, I think it will
->>> be easier for the custom SSD vendor's to jump on board with their own
->>> firmware.
->>
->> Is this something that would make sense to use for accessing the NAND
->> flash that's being used on routers nowdays? Talking with the OpenWRT
->> folks, they are having trouble supporting those devices because the
->> flash may contain defects and squashfs doesn't work in such an
->> environment. This appears to be the one remaining problem preventing a
->> lot of new routers from working.
->>
->> If this can work as a shim layer between the hardware and the filesystem
->> for OpenWRT, you would gain a very large userbase rather quickly.
->
-> It's possible and would make sense. However, I'm not sure that its the
-> best choice.
->
-> From what I can see, OpenWRT routers expose their flash through mtd.
-> Couldn't UBIFS be a better choice for this, instead of squashfs?
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-Using ubiblock you can also run squashfs ontop of UBI.
-Hopefully it will be merged in 3.15.
+------------------
 
+From: Levente Kurusa <levex@linux.com>
+
+commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
+
+Samsung's pci-e SSDs with device ID 0x1600 which are found on some
+macbooks time out on NCQ commands.  Blacklist NCQ on the device so
+that the affected machines can at least boot.
+
+Original-patch-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/ata/ahci.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
+index 67fb282..f0faa0d 100644
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
+ 
+@@ -119,6 +120,13 @@ static const struct ata_port_info ahci_port_info[] = {
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_noncq] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_nosntf] = {
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
+ 		.flags		= AHCI_FLAG_COMMON,
+@@ -446,6 +454,12 @@ static const struct pci_device_id ahci_pci_tbl[] = {
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
++	/*
++	 * Samsung SSDs found on some macbooks.  NCQ times out.
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 */
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
++
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
+ 
 -- 
-Thanks,
-//richard
+1.8.3.2
+
