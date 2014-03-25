@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527AbaCYIU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 04:20:29 -0400
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:37379 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752385AbaCYIUX (ORCPT
+	id S1753120AbaCYIyx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 04:54:53 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:59038 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752385AbaCYIUa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 04:20:23 -0400
+	Tue, 25 Mar 2014 04:20:30 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
         linux-mtd@lists.infradead.org, dwmw2@infradead.org, angus.clark@st.com,
         pekon@ti.com
-Subject: [RFC 02/47] mtd: nand: add ONFI NAND Timing Mode Specifications
-Date: Tue, 25 Mar 2014 08:19:19 +0000
-Message-Id: <1395735604-26706-3-git-send-email-lee.jones@linaro.org>
+Subject: [RFC 06/47] mtd: nand: stm_nand_bch: change between BCH and Hamming modes
+Date: Tue, 25 Mar 2014 08:19:23 +0000
+Message-Id: <1395735604-26706-7-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
 References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
@@ -22,247 +22,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new structure, 'nand_timing_spec', to capture the A/C
-timing characteristics of NAND devices.
-
-Unfortunately, there is no universally accepted standard for defining
-NAND timing parameters. Different datasheets list different sets of
-parameters. The ONFI standard gets close, but support is missing from
-some of the major NAND manufacturers (e.g. Samsung, Toshiba). Here we
-have followed broadly the ONFI timing definitions.
-
-We also provide specifications for the six standard ONFI timing modes,
-in terms of the new nand_timing_spec structure. This will allow fully
-automated configuration of the timing registers when using
-ONFI-compliant NAND.
+The EMISS is a device which, amongst other things, controls various
+flash memory modes. We make use of it here merely to flip the
+HAMMING_NOT_BCH bit dependant on whether we wish to operate in Hamming
+or BCH modes. The STM BCH driver makes good use of the helper introduced
+here.
 
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/nand/nand_ids.c | 165 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/mtd/nand.h    |  34 +++++++++
- 2 files changed, 199 insertions(+)
+ include/linux/mtd/stm_nand.h | 42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 42 insertions(+)
 
-diff --git a/drivers/mtd/nand/nand_ids.c b/drivers/mtd/nand/nand_ids.c
-index a87b0a3..12f769d 100644
---- a/drivers/mtd/nand/nand_ids.c
-+++ b/drivers/mtd/nand/nand_ids.c
-@@ -175,6 +175,171 @@ struct nand_manufacturers nand_manuf_ids[] = {
- EXPORT_SYMBOL(nand_manuf_ids);
- EXPORT_SYMBOL(nand_flash_ids);
+diff --git a/include/linux/mtd/stm_nand.h b/include/linux/mtd/stm_nand.h
+index 9210d5c..da2006c 100644
+--- a/include/linux/mtd/stm_nand.h
++++ b/include/linux/mtd/stm_nand.h
+@@ -15,6 +15,8 @@
+ #ifndef __LINUX_STM_NAND_H
+ #define __LINUX_STM_NAND_H
  
-+/*
-+ * ONFI NAND Timing Mode Specifications
-+ *
-+ * Note, 'tR' field (maximum page read time) is extracted from the ONFI
-+ * parameter page during device probe.
-+ */
-+struct nand_timing_spec nand_onfi_timing_specs[] = {
-+	/*
-+	 * ONFI Timing Mode '0' (supported on all ONFI compliant devices)
-+	 */
-+	[0] = {
-+		.tCLS	= 50,
-+		.tCS	= 70,
-+		.tALS	= 50,
-+		.tDS	= 40,
-+		.tWP	= 50,
-+		.tCLH	= 20,
-+		.tCH	= 20,
-+		.tALH	= 20,
-+		.tDH	= 20,
-+		.tWB	= 200,
-+		.tWH	= 30,
-+		.tWC	= 100,
-+		.tRP	= 50,
-+		.tREH	= 30,
-+		.tRC	= 100,
-+		.tREA	= 40,
-+		.tRHOH	= 0,
-+		.tCEA	= 100,
-+		.tCOH	= 0,
-+		.tCHZ	= 100,
-+	},
++#include <linux/io.h>
 +
-+	/*
-+	 * ONFI Timing Mode '1'
-+	 */
-+	[1] = {
-+		.tCLS	= 25,
-+		.tCS	= 35,
-+		.tALS	= 25,
-+		.tDS	= 20,
-+		.tWP	= 25,
-+		.tCLH	= 10,
-+		.tCH	= 10,
-+		.tALH	= 10,
-+		.tDH	= 10,
-+		.tWB	= 100,
-+		.tWH	= 15,
-+		.tWC	= 45,
-+		.tRP	= 25,
-+		.tREH	= 15,
-+		.tRC	= 50,
-+		.tREA	= 30,
-+		.tRHOH	= 15,
-+		.tCEA	= 45,
-+		.tCOH	= 15,
-+		.tCHZ	= 50,
-+	},
+ struct stm_plat_nand_bch_data {
+ 	struct stm_nand_bank_data *bank;
+ 	enum stm_nand_bch_ecc_config bch_ecc_cfg;
+@@ -30,4 +32,44 @@ struct stm_plat_nand_bch_data {
+ 	bool flashss;
+ };
+ 
++#define EMISS_BASE				0xfef01000
++#define EMISS_CONFIG				0x0000
++#define EMISS_CONFIG_HAMMING_NOT_BCH		(0x1 << 6)
 +
-+	/*
-+	 * ONFI Timing Mode '2'
-+	 */
-+	[2] = {
-+		.tCLS	= 15,
-+		.tCS	= 25,
-+		.tALS	= 15,
-+		.tDS	= 15,
-+		.tWP	= 17,
-+		.tCLH	= 10,
-+		.tCH	= 10,
-+		.tALH	= 10,
-+		.tDH	= 5,
-+		.tWB	= 100,
-+		.tWH	= 15,
-+		.tWC	= 35,
-+		.tRP	= 17,
-+		.tREH	= 16,
-+		.tRC	= 35,
-+		.tREA	= 25,
-+		.tRHOH	= 15,
-+		.tCEA	= 30,
-+		.tCOH	= 15,
-+		.tCHZ	= 50,
-+	},
++enum nandi_controllers {
++	STM_NANDI_UNCONFIGURED,
++	STM_NANDI_HAMMING,
++	STM_NANDI_BCH
++};
 +
-+	/*
-+	 * ONFI Timing Mode '3'
-+	 */
-+	[3] = {
-+		.tCLS	= 10,
-+		.tCS	= 25,
-+		.tALS	= 10,
-+		.tDS	= 10,
-+		.tWP	= 15,
-+		.tCLH	= 5,
-+		.tCH	= 5,
-+		.tALH	= 5,
-+		.tDH	= 5,
-+		.tWB	= 100,
-+		.tWH	= 10,
-+		.tWC	= 30,
-+		.tRP	= 15,
-+		.tREH	= 10,
-+		.tRC	= 30,
-+		.tREA	= 20,
-+		.tRHOH	= 15,
-+		.tCEA	= 25,
-+		.tCOH	= 15,
-+		.tCHZ	= 50,
-+	},
++static inline void emiss_nandi_select(enum nandi_controllers controller)
++{
++	unsigned v;
++	void __iomem *emiss_config_base;
 +
-+	/*
-+	 * ONFI Timing Mode '4' (EDO only)
-+	 */
-+	[4] = {
-+		.tCLS	= 10,
-+		.tCS	= 20,
-+		.tALS	= 10,
-+		.tDS	= 10,
-+		.tWP	= 12,
-+		.tCLH	= 5,
-+		.tCH	= 5,
-+		.tALH	= 5,
-+		.tDH	= 5,
-+		.tWB	= 100,
-+		.tWH	= 10,
-+		.tWC	= 25,
-+		.tRP	= 12,
-+		.tREH	= 10,
-+		.tRC	= 25,
-+		.tREA	= 20,
-+		.tRHOH	= 15,
-+		.tCEA	= 25,
-+		.tCOH	= 15,
-+		.tCHZ	= 30,
-+	},
-+
-+	/*
-+	 * ONFI Timing Mode '5' (EDO only)
-+	 */
-+	[5] = {
-+		.tCLS	= 10,
-+		.tCS	= 15,
-+		.tALS	= 10,
-+		.tDS	= 7,
-+		.tWP	= 10,
-+		.tCLH	= 5,
-+		.tCH	= 5,
-+		.tALH	= 5,
-+		.tDH	= 5,
-+		.tWB	= 100,
-+		.tWH	= 7,
-+		.tWC	= 20,
-+		.tRP	= 10,
-+		.tREH	= 7,
-+		.tRC	= 20,
-+		.tREA	= 16,
-+		.tRHOH	= 15,
-+		.tCEA	= 25,
-+		.tCOH	= 15,
-+		.tCHZ	= 30,
++	emiss_config_base = ioremap(EMISS_BASE, 4);
++	if (!emiss_config_base) {
++		pr_err("%s: failed to ioremap EMISS\n", __func__);
++		return;
 +	}
-+};
-+EXPORT_SYMBOL(nand_onfi_timing_specs);
 +
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Thomas Gleixner <tglx@linutronix.de>");
- MODULE_DESCRIPTION("Nand device & manufacturer IDs");
-diff --git a/include/linux/mtd/nand.h b/include/linux/mtd/nand.h
-index f7b6a53..0d456b4 100644
---- a/include/linux/mtd/nand.h
-+++ b/include/linux/mtd/nand.h
-@@ -326,6 +326,40 @@ struct onfi_ext_param_page {
- 	 */
- } __packed;
- 
-+/*
-+ * NAND Device Timing Specification
-+ *
-+ * All values in nano seconds, except where specified.
-+ */
-+struct nand_timing_spec {
-+	int	tR;		/* Max Page Read delay [us]*/
-+	int	tCLS;		/* Min CLE setup time */
-+	int	tCS;		/* Min CE setup time */
-+	int	tALS;		/* Min ALE setup time */
-+	int	tDS;		/* Min Data setup time */
-+	int	tWP;		/* Min WE pulse width */
-+	int	tCLH;		/* Min CLE hold time */
-+	int	tCH;		/* Min CE hold time */
-+	int	tALH;		/* Min ALE hold time */
-+	int	tDH;		/* Min Data hold time */
-+	int	tWB;		/* Max WE high to busy */
-+	int	tWH;		/* Min WE hold time */
-+	int	tWC;		/* Min Write cycle time */
-+	int	tRP;		/* Min RE pulse width */
-+	int	tREH;		/* Min RE high hold time */
-+	int	tRC;		/* Min Read cycle time */
-+	int	tREA;		/* Max Read access time */
-+	int	tRHOH;		/* Min RE high to output hold */
-+	int	tCEA;		/* Max CE access time */
-+	int	tCOH;		/* Min CE high to output hold */
-+	int	tCHZ;		/* Max CE high to output high Z */
-+	int	tCSD;		/* Min CE high to ALE/CLE don't care */
-+};
++	v = readl(emiss_config_base + EMISS_CONFIG);
 +
-+/* ONFI define 6 timing modes */
-+#define NAND_ONFI_TIMING_MODES		6
-+extern struct nand_timing_spec nand_onfi_timing_specs[];
++	if (controller == STM_NANDI_HAMMING) {
++		if (v & EMISS_CONFIG_HAMMING_NOT_BCH)
++			goto out;
++		v |= EMISS_CONFIG_HAMMING_NOT_BCH;
++	} else {
++		if (!(v & EMISS_CONFIG_HAMMING_NOT_BCH))
++			goto out;
++		v &= ~EMISS_CONFIG_HAMMING_NOT_BCH;
++	}
 +
- /**
-  * struct nand_hw_control - Control structure for hardware controller (e.g ECC generator) shared among independent devices
-  * @lock:               protection lock
++	writel(v, emiss_config_base + EMISS_CONFIG);
++	readl(emiss_config_base + EMISS_CONFIG);
++
++out:
++	iounmap(emiss_config_base);
++}
++
+ #endif /* __LINUX_STM_NAND_H */
 -- 
 1.8.3.2
 
