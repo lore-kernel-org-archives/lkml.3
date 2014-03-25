@@ -1,141 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756396AbaCYR7E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:59:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58447 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756202AbaCYRzT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:55:19 -0400
-From: Jan Kara <jack@suse.cz>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Jan Kara <jack@suse.cz>
-Subject: [PATCH 6/8] printk: Start printing handover kthreads on demand
-Date: Tue, 25 Mar 2014 18:54:59 +0100
-Message-Id: <1395770101-24534-7-git-send-email-jack@suse.cz>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1395770101-24534-1-git-send-email-jack@suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	id S1756447AbaCYSAL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:00:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55654 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212AbaCYRRT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 13:17:19 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Bjoern C <lkml@call-home.ch>,
+        Alexandru DAMIAN <alexandru.damian@intel.com>,
+        Enrico Tagliavini <enrico.tagliavini@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 14/81] drm/i915: Prevent MI_DISPLAY_FLIP straddling two cachelines on IVB
+Date: Tue, 25 Mar 2014 10:15:27 -0700
+Message-Id: <1395767794-5012-15-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Start kthreads for handing over printing only when printk.offload_chars
-is set to value > 0 (i.e., when print offloading gets enabled).
+3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
 
-Signed-off-by: Jan Kara <jack@suse.cz>
+------------------
+
+From: =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= <ville.syrjala@linux.intel.com>
+
+commit f66fab8e1cd6b3127ba4c5c0d11539fbe1de1e36 upstream.
+
+According to BSpec the entire MI_DISPLAY_FLIP packet must be contained
+in a single cacheline. Make sure that happens.
+
+v2: Use intel_ring_begin_cacheline_safe()
+v3: Use intel_ring_cacheline_align() (Chris)
+
+Cc: Bjoern C <lkml@call-home.ch>
+Cc: Alexandru DAMIAN <alexandru.damian@intel.com>
+Cc: Enrico Tagliavini <enrico.tagliavini@gmail.com>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=74053
+Signed-off-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/printk/printk.c | 64 +++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 50 insertions(+), 14 deletions(-)
+ drivers/gpu/drm/i915/intel_display.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index cb7e06850eb5..8d981b2b5bb1 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -109,6 +109,10 @@ static long printk_handover_state;
-  * CPUs.
-  */
- #define PRINTING_TASKS 2
-+/* Pointers to printing kthreads */
-+static struct task_struct *printing_kthread[PRINTING_TASKS];
-+/* Serialization of changes to printk_offload_chars and kthread creation */
-+static DEFINE_MUTEX(printk_kthread_mutex);
- 
- /* Wait queue printing kthreads sleep on when idle */
- static DECLARE_WAIT_QUEUE_HEAD(print_queue); 
-@@ -280,6 +284,12 @@ static char __log_buf[__LOG_BUF_LEN] __aligned(LOG_ALIGN);
- static char *log_buf = __log_buf;
- static u32 log_buf_len = __LOG_BUF_LEN;
- 
-+static int offload_chars_set(const char *val, const struct kernel_param *kp);
-+static struct kernel_param_ops offload_chars_ops = {
-+	.set = offload_chars_set,
-+	.get = param_get_uint,
-+};
-+
- /*
-  * How many characters can we print in one call of printk before asking
-  * other cpus to continue printing. 0 means infinity. Tunable via
-@@ -288,7 +298,7 @@ static u32 log_buf_len = __LOG_BUF_LEN;
-  */
- static unsigned int __read_mostly printk_offload_chars = 1000;
- 
--module_param_named(offload_chars, printk_offload_chars, uint,
-+module_param_cb(offload_chars, &offload_chars_ops, &printk_offload_chars,
- 		   S_IRUGO | S_IWUSR);
- MODULE_PARM_DESC(offload_chars, "offload printing to console to a different"
- 	" cpu after this number of characters");
-@@ -2571,30 +2581,56 @@ static int printing_task(void *arg)
- 	return 0;
- }
- 
--static int __init printk_late_init(void)
-+static void printk_start_offload_kthreads(void)
- {
--	struct console *con;
- 	int i;
- 	struct task_struct *task;
- 
--	for_each_console(con) {
--		if (!keep_bootcon && con->flags & CON_BOOT) {
--			unregister_console(con);
--		}
--	}
--	hotcpu_notifier(console_cpu_notify, 0);
--
--	/* Does any handover of printing have any sence? */
--	if (num_possible_cpus() <= 1)
--		return 0;
--
-+	/* Does handover of printing make any sense? */
-+	if (printk_offload_chars == 0 || num_possible_cpus() <= 1)
-+		return;
- 	for (i = 0; i < PRINTING_TASKS; i++) {
-+		if (printing_kthread[i])
-+			continue;
- 		task = kthread_run(printing_task, NULL, "print/%d", i);
- 		if (IS_ERR(task)) {
- 			pr_err("printk: Cannot create printing thread: %ld\n",
- 			       PTR_ERR(task));
- 		}
-+		printing_kthread[i] = task;
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 7330c58..ad2b52e 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -7387,6 +7387,20 @@ static int intel_gen7_queue_flip(struct drm_device *dev,
+ 		goto err_unpin;
  	}
-+}
-+
-+static int offload_chars_set(const char *val, const struct kernel_param *kp)
-+{
-+	int ret;
-+
-+	/* Protect against parallel change of printk_offload_chars */
-+	mutex_lock(&printk_kthread_mutex);
-+	ret = param_set_uint(val, kp);
-+	if (ret) {
-+		mutex_unlock(&printk_kthread_mutex);
-+		return ret;
-+	}
-+	printk_start_offload_kthreads();
-+	mutex_unlock(&printk_kthread_mutex);
-+	return 0;
-+}
-+
-+static int __init printk_late_init(void)
-+{
-+	struct console *con;
-+
-+	for_each_console(con) {
-+		if (!keep_bootcon && con->flags & CON_BOOT) {
-+			unregister_console(con);
-+		}
-+	}
-+	hotcpu_notifier(console_cpu_notify, 0);
-+
-+	mutex_lock(&printk_kthread_mutex);
-+	printk_start_offload_kthreads();
-+	mutex_unlock(&printk_kthread_mutex);
  
- 	return 0;
- }
++	/*
++	 * BSpec MI_DISPLAY_FLIP for IVB:
++	 * "The full packet must be contained within the same cache line."
++	 *
++	 * Currently the LRI+SRM+MI_DISPLAY_FLIP all fit within the same
++	 * cacheline, if we ever start emitting more commands before
++	 * the MI_DISPLAY_FLIP we may need to first emit everything else,
++	 * then do the cacheline alignment, and finally emit the
++	 * MI_DISPLAY_FLIP.
++	 */
++	ret = intel_ring_cacheline_align(ring);
++	if (ret)
++		goto err_unpin;
++
+ 	ret = intel_ring_begin(ring, 4);
+ 	if (ret)
+ 		goto err_unpin;
 -- 
-1.8.1.4
+1.8.3.2
 
