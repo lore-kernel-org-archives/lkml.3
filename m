@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681AbaCYRTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:19:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55718 "EHLO
+	id S1754702AbaCYRTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:19:39 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55724 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754594AbaCYRTP (ORCPT
+	with ESMTP id S1754097AbaCYRTe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:19:15 -0400
+	Tue, 25 Mar 2014 13:19:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
-        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 74/81] perf: Fix hotplug splat
-Date: Tue, 25 Mar 2014 10:16:27 -0700
-Message-Id: <1395767794-5012-75-git-send-email-kamal@canonical.com>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 65/81] PM / hibernate: Fix restore hang in freeze_processes()
+Date: Tue, 25 Mar 2014 10:16:18 -0700
+Message-Id: <1395767794-5012-66-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,68 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Sebastian Capella <sebastian.capella@linaro.org>
 
-commit e3703f8cdfcf39c25c4338c3ad8e68891cca3731 upstream.
+commit f8d5b9e9e5372f0deb7bc1ab1088a9b60b0a793d upstream.
 
-Drew Richardson reported that he could make the kernel go *boom* when hotplugging
-while having perf events active.
+During restore, pm_notifier chain are called with
+PM_RESTORE_PREPARE.  The firmware_class driver handler
+fw_pm_notify does not have a handler for this.  As a result,
+it keeps a reader on the kmod.c umhelper_sem.  During
+freeze_processes, the call to __usermodehelper_disable tries to
+take a write lock on this semaphore and hangs waiting.
 
-It turned out that when you have a group event, the code in
-__perf_event_exit_context() fails to remove the group siblings from
-the context.
-
-We then proceed with destroying and freeing the event, and when you
-re-plug the CPU and try and add another event to that CPU, things go
-*boom* because you've still got dead entries there.
-
-Reported-by: Drew Richardson <drew.richardson@arm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>
-Link: http://lkml.kernel.org/n/tip-k6v5wundvusvcseqj1si0oz0@git.kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+Acked-by: Ming Lei <ming.lei@canonical.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/events/core.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/base/firmware_class.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9c53789..108aa71 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7330,14 +7330,14 @@ static void perf_pmu_rotate_stop(struct pmu *pmu)
- static void __perf_event_exit_context(void *__info)
- {
- 	struct perf_event_context *ctx = __info;
--	struct perf_event *event, *tmp;
-+	struct perf_event *event;
+diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
+index b392b35..abb2054 100644
+--- a/drivers/base/firmware_class.c
++++ b/drivers/base/firmware_class.c
+@@ -1413,6 +1413,7 @@ static int fw_pm_notify(struct notifier_block *notify_block,
+ 	switch (mode) {
+ 	case PM_HIBERNATION_PREPARE:
+ 	case PM_SUSPEND_PREPARE:
++	case PM_RESTORE_PREPARE:
+ 		device_cache_fw_images();
+ 		break;
  
- 	perf_pmu_rotate_stop(ctx->pmu);
- 
--	list_for_each_entry_safe(event, tmp, &ctx->pinned_groups, group_entry)
--		__perf_remove_from_context(event);
--	list_for_each_entry_safe(event, tmp, &ctx->flexible_groups, group_entry)
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(event, &ctx->event_list, event_entry)
- 		__perf_remove_from_context(event);
-+	rcu_read_unlock();
- }
- 
- static void perf_event_exit_cpu_context(int cpu)
-@@ -7361,11 +7361,11 @@ static void perf_event_exit_cpu(int cpu)
- {
- 	struct swevent_htable *swhash = &per_cpu(swevent_htable, cpu);
- 
-+	perf_event_exit_cpu_context(cpu);
-+
- 	mutex_lock(&swhash->hlist_mutex);
- 	swevent_hlist_release(swhash);
- 	mutex_unlock(&swhash->hlist_mutex);
--
--	perf_event_exit_cpu_context(cpu);
- }
- #else
- static inline void perf_event_exit_cpu(int cpu) { }
 -- 
 1.8.3.2
 
