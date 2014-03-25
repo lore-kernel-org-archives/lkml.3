@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbaCYRVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:21:18 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55816 "EHLO
+	id S1755050AbaCYRVh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:21:37 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55883 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753241AbaCYRVO (ORCPT
+	with ESMTP id S1754988AbaCYRVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:21:14 -0400
+	Tue, 25 Mar 2014 13:21:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 28/81] ext4: don't leave i_crtime.tv_sec uninitialized
-Date: Tue, 25 Mar 2014 10:15:41 -0700
-Message-Id: <1395767794-5012-29-git-send-email-kamal@canonical.com>
+Cc: Max Filippov <jcmvbkbc@gmail.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 48/81] xtensa: introduce spill_registers_kernel macro
+Date: Tue, 25 Mar 2014 10:16:01 -0700
+Message-Id: <1395767794-5012-49-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -26,35 +26,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Theodore Ts'o <tytso@mit.edu>
+From: Max Filippov <jcmvbkbc@gmail.com>
 
-commit 19ea80603715d473600cd993b9987bc97d042e02 upstream.
+commit e2fd1374c705abe4661df3fb6fadb3879c7c1846 upstream.
 
-If the i_crtime field is not present in the inode, don't leave the
-field uninitialized.
+Most in-kernel users want registers spilled on the kernel stack and
+don't require PS.EXCM to be set. That means that they don't need fixup
+routine and could reuse regular window overflow mechanism for that,
+which makes spill routine very simple.
 
-Fixes: ef7f38359 ("ext4: Add nanosecond timestamps")
-Reported-by: Vegard Nossum <vegard.nossum@oracle.com>
-Tested-by: Vegard Nossum <vegard.nossum@oracle.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Suggested-by: Chris Zankel <chris@zankel.net>
+Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/ext4/ext4.h | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/xtensa/include/asm/traps.h | 44 +++++++++++++++++++-----------
+ arch/xtensa/kernel/entry.S      | 60 ++++++++++++++++++++++++++++++++---------
+ 2 files changed, 76 insertions(+), 28 deletions(-)
 
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index a4903ff..13644c4 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -776,6 +776,8 @@ do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
- 			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+	else								       \
-+		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
- 		ext4_decode_extra_time(&(einode)->xtime,		       \
- 				       raw_inode->xtime ## _extra);	       \
+diff --git a/arch/xtensa/include/asm/traps.h b/arch/xtensa/include/asm/traps.h
+index 917488a..f2faa58 100644
+--- a/arch/xtensa/include/asm/traps.h
++++ b/arch/xtensa/include/asm/traps.h
+@@ -22,25 +22,37 @@ extern void do_unhandled(struct pt_regs *regs, unsigned long exccause);
+ 
+ static inline void spill_registers(void)
+ {
+-
++#if XCHAL_NUM_AREGS > 16
+ 	__asm__ __volatile__ (
+-		"movi	a14, "__stringify((1 << PS_EXCM_BIT) | LOCKLEVEL)"\n\t"
+-		"mov	a12, a0\n\t"
+-		"rsr	a13, sar\n\t"
+-		"xsr	a14, ps\n\t"
+-		"movi	a0, _spill_registers\n\t"
+-		"rsync\n\t"
+-		"callx0 a0\n\t"
+-		"mov	a0, a12\n\t"
+-		"wsr	a13, sar\n\t"
+-		"wsr	a14, ps\n\t"
+-		: :
+-#if defined(CONFIG_FRAME_POINTER)
+-		: "a2", "a3", "a4",       "a11", "a12", "a13", "a14", "a15",
++		"	call12	1f\n"
++		"	_j	2f\n"
++		"	retw\n"
++		"	.align	4\n"
++		"1:\n"
++		"	_entry	a1, 48\n"
++		"	addi	a12, a0, 3\n"
++#if XCHAL_NUM_AREGS > 32
++		"	.rept	(" __stringify(XCHAL_NUM_AREGS) " - 32) / 12\n"
++		"	_entry	a1, 48\n"
++		"	mov	a12, a0\n"
++		"	.endr\n"
++#endif
++		"	_entry	a1, 48\n"
++#if XCHAL_NUM_AREGS % 12 == 0
++		"	mov	a8, a8\n"
++#elif XCHAL_NUM_AREGS % 12 == 4
++		"	mov	a12, a12\n"
++#elif XCHAL_NUM_AREGS % 12 == 8
++		"	mov	a4, a4\n"
++#endif
++		"	retw\n"
++		"2:\n"
++		: : : "a12", "a13", "memory");
+ #else
+-		: "a2", "a3", "a4", "a7", "a11", "a12", "a13", "a14", "a15",
++	__asm__ __volatile__ (
++		"	mov	a12, a12\n"
++		: : : "memory");
+ #endif
+-		  "memory");
+ }
+ 
+ #endif /* _XTENSA_TRAPS_H */
+diff --git a/arch/xtensa/kernel/entry.S b/arch/xtensa/kernel/entry.S
+index 3777fec..832a623 100644
+--- a/arch/xtensa/kernel/entry.S
++++ b/arch/xtensa/kernel/entry.S
+@@ -1867,6 +1867,43 @@ ENTRY(system_call)
+ 
+ ENDPROC(system_call)
+ 
++/*
++ * Spill live registers on the kernel stack macro.
++ *
++ * Entry condition: ps.woe is set, ps.excm is cleared
++ * Exit condition: windowstart has single bit set
++ * May clobber: a12, a13
++ */
++	.macro	spill_registers_kernel
++
++#if XCHAL_NUM_AREGS > 16
++	call12	1f
++	_j	2f
++	retw
++	.align	4
++1:
++	_entry	a1, 48
++	addi	a12, a0, 3
++#if XCHAL_NUM_AREGS > 32
++	.rept	(XCHAL_NUM_AREGS - 32) / 12
++	_entry	a1, 48
++	mov	a12, a0
++	.endr
++#endif
++	_entry	a1, 48
++#if XCHAL_NUM_AREGS % 12 == 0
++	mov	a8, a8
++#elif XCHAL_NUM_AREGS % 12 == 4
++	mov	a12, a12
++#elif XCHAL_NUM_AREGS % 12 == 8
++	mov	a4, a4
++#endif
++	retw
++2:
++#else
++	mov	a12, a12
++#endif
++	.endm
+ 
+ /*
+  * Task switch.
+@@ -1879,21 +1916,20 @@ ENTRY(_switch_to)
+ 
+ 	entry	a1, 16
+ 
+-	mov	a12, a2			# preserve 'prev' (a2)
+-	mov	a13, a3			# and 'next' (a3)
++	mov	a10, a2			# preserve 'prev' (a2)
++	mov	a11, a3			# and 'next' (a3)
+ 
+ 	l32i	a4, a2, TASK_THREAD_INFO
+ 	l32i	a5, a3, TASK_THREAD_INFO
+ 
+-	save_xtregs_user a4 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
++	save_xtregs_user a4 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+-	s32i	a0, a12, THREAD_RA	# save return address
+-	s32i	a1, a12, THREAD_SP	# save stack pointer
++	s32i	a0, a10, THREAD_RA	# save return address
++	s32i	a1, a10, THREAD_SP	# save stack pointer
+ 
+ 	/* Disable ints while we manipulate the stack pointer. */
+ 
+-	movi	a14, (1 << PS_EXCM_BIT) | LOCKLEVEL
+-	xsr	a14, ps
++	rsil	a14, LOCKLEVEL
+ 	rsr	a3, excsave1
+ 	rsync
+ 	s32i	a3, a3, EXC_TABLE_FIXUP	/* enter critical section */
+@@ -1908,7 +1944,7 @@ ENTRY(_switch_to)
+ 
+ 	/* Flush register file. */
+ 
+-	call0	_spill_registers	# destroys a3, a4, and SAR
++	spill_registers_kernel
+ 
+ 	/* Set kernel stack (and leave critical section)
+ 	 * Note: It's save to set it here. The stack will not be overwritten
+@@ -1924,13 +1960,13 @@ ENTRY(_switch_to)
+ 
+ 	/* restore context of the task that 'next' addresses */
+ 
+-	l32i	a0, a13, THREAD_RA	# restore return address
+-	l32i	a1, a13, THREAD_SP	# restore stack pointer
++	l32i	a0, a11, THREAD_RA	# restore return address
++	l32i	a1, a11, THREAD_SP	# restore stack pointer
+ 
+-	load_xtregs_user a5 a6 a8 a9 a10 a11 THREAD_XTREGS_USER
++	load_xtregs_user a5 a6 a8 a9 a12 a13 THREAD_XTREGS_USER
+ 
+ 	wsr	a14, ps
+-	mov	a2, a12			# return 'prev'
++	mov	a2, a10			# return 'prev'
+ 	rsync
+ 
+ 	retw
 -- 
 1.8.3.2
 
