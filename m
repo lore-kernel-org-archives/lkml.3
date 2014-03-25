@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214AbaCYRWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55978 "EHLO
+	id S1755100AbaCYRVo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:21:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55918 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270AbaCYRWO (ORCPT
+	with ESMTP id S1755076AbaCYRVl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:14 -0400
+	Tue, 25 Mar 2014 13:21:41 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kevin Cernekee <cernekee@gmail.com>, Jonas Gorski <jogo@openwrt.org>,
-        Florian Fainelli <florian@openwrt.org>, Felipe Balbi <balbi@ti.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 36/81] usb: gadget: bcm63xx_udc: fix build failure on DMA channel code
-Date: Tue, 25 Mar 2014 10:15:49 -0700
-Message-Id: <1395767794-5012-37-git-send-email-kamal@canonical.com>
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 55/81] ASoC: dapm: Add locking to snd_soc_dapm_xxxx_pin functions
+Date: Tue, 25 Mar 2014 10:16:08 -0700
+Message-Id: <1395767794-5012-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,167 +27,334 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Florian Fainelli <florian@openwrt.org>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 2d1f7af3d60dd09794e0738a915d272c6c27abc5 upstream.
+commit 113911006442a36c2b4669faf1699d9042ef80ab upstream.
 
-Commit 3dc6475 ("bcm63xx_enet: add support Broadcom BCM6345 Ethernet")
-changed the ENETDMA[CS] macros such that they are no longer macros, but
-actual register offset definitions. The bcm63xx_udc driver was not
-updated, and as a result, causes the following build error to pop up:
+The snd_soc_dapm_xxxx_pin all require the dapm_mutex to be held when
+they are called as they edit the dirty list, however very few of the
+callers do so.
 
- CC      drivers/usb/gadget/u_ether.o
-drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_write':
-drivers/usb/gadget/bcm63xx_udc.c:642:24: error: called object '0' is not
-a function
-drivers/usb/gadget/bcm63xx_udc.c: In function 'iudma_reset_channel':
-drivers/usb/gadget/bcm63xx_udc.c:698:46: error: called object '0' is not
-a function
-drivers/usb/gadget/bcm63xx_udc.c:700:49: error: called object '0' is not
-a function
+This patch adds unlocked versions of all the functions replacing the
+existing implementations with one that holds the lock internally. We
+also fix up the places where the lock was actually held on the caller
+side.
 
-Fix this by updating usb_dmac_{read,write}l and usb_dmas_{read,write}l to
-take an extra channel argument, and use the channel width
-(ENETDMA_CHAN_WIDTH) to offset the register we want to access, hence
-doing again what the macro implicitely did for us.
-
-Cc: Kevin Cernekee <cernekee@gmail.com>
-Cc: Jonas Gorski <jogo@openwrt.org>
-Signed-off-by: Florian Fainelli <florian@openwrt.org>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/gadget/bcm63xx_udc.c | 58 ++++++++++++++++++++++------------------
- 1 file changed, 32 insertions(+), 26 deletions(-)
+ drivers/input/misc/arizona-haptics.c |  16 -----
+ include/sound/soc-dapm.h             |   8 +++
+ sound/soc/soc-dapm.c                 | 133 ++++++++++++++++++++++++++++++++---
+ 3 files changed, 131 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/usb/gadget/bcm63xx_udc.c b/drivers/usb/gadget/bcm63xx_udc.c
-index 47a4993..a95fb3c 100644
---- a/drivers/usb/gadget/bcm63xx_udc.c
-+++ b/drivers/usb/gadget/bcm63xx_udc.c
-@@ -361,24 +361,30 @@ static inline void usb_dma_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
- 	bcm_writel(val, udc->iudma_regs + off);
- }
+diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
+index e7e12a5..ef2e281 100644
+--- a/drivers/input/misc/arizona-haptics.c
++++ b/drivers/input/misc/arizona-haptics.c
+@@ -37,7 +37,6 @@ static void arizona_haptics_work(struct work_struct *work)
+ 						       struct arizona_haptics,
+ 						       work);
+ 	struct arizona *arizona = haptics->arizona;
+-	struct mutex *dapm_mutex = &arizona->dapm->card->dapm_mutex;
+ 	int ret;
  
--static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off)
-+static inline u32 usb_dmac_readl(struct bcm63xx_udc *udc, u32 off, int chan)
- {
--	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
-+	return bcm_readl(udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
-+			(ENETDMA_CHAN_WIDTH * chan));
- }
- 
--static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
-+static inline void usb_dmac_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
-+					int chan)
- {
--	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off);
-+	bcm_writel(val, udc->iudma_regs + IUDMA_DMAC_OFFSET + off +
-+			(ENETDMA_CHAN_WIDTH * chan));
- }
- 
--static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off)
-+static inline u32 usb_dmas_readl(struct bcm63xx_udc *udc, u32 off, int chan)
- {
--	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
-+	return bcm_readl(udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
-+			(ENETDMA_CHAN_WIDTH * chan));
- }
- 
--static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off)
-+static inline void usb_dmas_writel(struct bcm63xx_udc *udc, u32 val, u32 off,
-+					int chan)
- {
--	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off);
-+	bcm_writel(val, udc->iudma_regs + IUDMA_DMAS_OFFSET + off +
-+			(ENETDMA_CHAN_WIDTH * chan));
- }
- 
- static inline void set_clocks(struct bcm63xx_udc *udc, bool is_enabled)
-@@ -639,7 +645,7 @@ static void iudma_write(struct bcm63xx_udc *udc, struct iudma_ch *iudma,
- 	} while (!last_bd);
- 
- 	usb_dmac_writel(udc, ENETDMAC_CHANCFG_EN_MASK,
--			ENETDMAC_CHANCFG_REG(iudma->ch_idx));
-+			ENETDMAC_CHANCFG_REG, iudma->ch_idx);
- }
- 
- /**
-@@ -695,9 +701,9 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
- 		bcm63xx_fifo_reset_ep(udc, max(0, iudma->ep_num));
- 
- 	/* stop DMA, then wait for the hardware to wrap up */
--	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG(ch_idx));
-+	usb_dmac_writel(udc, 0, ENETDMAC_CHANCFG_REG, ch_idx);
- 
--	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)) &
-+	while (usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx) &
- 				   ENETDMAC_CHANCFG_EN_MASK) {
- 		udelay(1);
- 
-@@ -714,10 +720,10 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
- 			dev_warn(udc->dev, "forcibly halting IUDMA channel %d\n",
- 				 ch_idx);
- 			usb_dmac_writel(udc, ENETDMAC_CHANCFG_BUFHALT_MASK,
--					ENETDMAC_CHANCFG_REG(ch_idx));
-+					ENETDMAC_CHANCFG_REG, ch_idx);
+ 	if (!haptics->arizona->dapm) {
+@@ -67,18 +66,13 @@ static void arizona_haptics_work(struct work_struct *work)
+ 			return;
  		}
- 	}
--	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG(ch_idx));
-+	usb_dmac_writel(udc, ~0, ENETDMAC_IR_REG, ch_idx);
  
- 	/* don't leave "live" HW-owned entries for the next guy to step on */
- 	for (d = iudma->bd_ring; d <= iudma->end_bd; d++)
-@@ -729,11 +735,11 @@ static void iudma_reset_channel(struct bcm63xx_udc *udc, struct iudma_ch *iudma)
+-		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+-
+ 		ret = snd_soc_dapm_enable_pin(arizona->dapm, "HAPTICS");
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to start HAPTICS: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
  
- 	/* set up IRQs, UBUS burst size, and BD base for this channel */
- 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
--			ENETDMAC_IRMASK_REG(ch_idx));
--	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG(ch_idx));
-+			ENETDMAC_IRMASK_REG, ch_idx);
-+	usb_dmac_writel(udc, 8, ENETDMAC_MAXBURST_REG, ch_idx);
+-		mutex_unlock(dapm_mutex);
+-
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+@@ -87,18 +81,13 @@ static void arizona_haptics_work(struct work_struct *work)
+ 		}
+ 	} else {
+ 		/* This disable sequence will be a noop if already enabled */
+-		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+-
+ 		ret = snd_soc_dapm_disable_pin(arizona->dapm, "HAPTICS");
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to disable HAPTICS: %d\n",
+ 				ret);
+-			mutex_unlock(dapm_mutex);
+ 			return;
+ 		}
  
--	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG(ch_idx));
--	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG(ch_idx));
-+	usb_dmas_writel(udc, iudma->bd_ring_dma, ENETDMAS_RSTART_REG, ch_idx);
-+	usb_dmas_writel(udc, 0, ENETDMAS_SRAM2_REG, ch_idx);
+-		mutex_unlock(dapm_mutex);
+-
+ 		ret = snd_soc_dapm_sync(arizona->dapm);
+ 		if (ret != 0) {
+ 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
+@@ -152,16 +141,11 @@ static int arizona_haptics_play(struct input_dev *input, void *data,
+ static void arizona_haptics_close(struct input_dev *input)
+ {
+ 	struct arizona_haptics *haptics = input_get_drvdata(input);
+-	struct mutex *dapm_mutex = &haptics->arizona->dapm->card->dapm_mutex;
+ 
+ 	cancel_work_sync(&haptics->work);
+ 
+-	mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+-
+ 	if (haptics->arizona->dapm)
+ 		snd_soc_dapm_disable_pin(haptics->arizona->dapm, "HAPTICS");
+-
+-	mutex_unlock(dapm_mutex);
+ }
+ 
+ static int arizona_haptics_probe(struct platform_device *pdev)
+diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+index e1ef63d..ace8d41e 100644
+--- a/include/sound/soc-dapm.h
++++ b/include/sound/soc-dapm.h
+@@ -402,14 +402,22 @@ void snd_soc_dapm_debugfs_init(struct snd_soc_dapm_context *dapm,
+ /* dapm audio pin control and status */
+ int snd_soc_dapm_enable_pin(struct snd_soc_dapm_context *dapm,
+ 			    const char *pin);
++int snd_soc_dapm_enable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++				     const char *pin);
+ int snd_soc_dapm_disable_pin(struct snd_soc_dapm_context *dapm,
+ 			     const char *pin);
++int snd_soc_dapm_disable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++				      const char *pin);
+ int snd_soc_dapm_nc_pin(struct snd_soc_dapm_context *dapm, const char *pin);
++int snd_soc_dapm_nc_pin_unlocked(struct snd_soc_dapm_context *dapm,
++				 const char *pin);
+ int snd_soc_dapm_get_pin_status(struct snd_soc_dapm_context *dapm,
+ 				const char *pin);
+ int snd_soc_dapm_sync(struct snd_soc_dapm_context *dapm);
+ int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
+ 				  const char *pin);
++int snd_soc_dapm_force_enable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++					   const char *pin);
+ int snd_soc_dapm_ignore_suspend(struct snd_soc_dapm_context *dapm,
+ 				const char *pin);
+ void snd_soc_dapm_auto_nc_codec_pins(struct snd_soc_codec *codec);
+diff --git a/sound/soc/soc-dapm.c b/sound/soc/soc-dapm.c
+index f8495ef..e12569d 100644
+--- a/sound/soc/soc-dapm.c
++++ b/sound/soc/soc-dapm.c
+@@ -3005,15 +3005,11 @@ int snd_soc_dapm_put_pin_switch(struct snd_kcontrol *kcontrol,
+ 	struct snd_soc_card *card = snd_kcontrol_chip(kcontrol);
+ 	const char *pin = (const char *)kcontrol->private_value;
+ 
+-	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
+-
+ 	if (ucontrol->value.integer.value[0])
+ 		snd_soc_dapm_enable_pin(&card->dapm, pin);
+ 	else
+ 		snd_soc_dapm_disable_pin(&card->dapm, pin);
+ 
+-	mutex_unlock(&card->dapm_mutex);
+-
+ 	snd_soc_dapm_sync(&card->dapm);
+ 	return 0;
+ }
+@@ -3507,23 +3503,52 @@ void snd_soc_dapm_stream_event(struct snd_soc_pcm_runtime *rtd, int stream,
  }
  
  /**
-@@ -2038,7 +2044,7 @@ static irqreturn_t bcm63xx_udc_data_isr(int irq, void *dev_id)
- 	spin_lock(&udc->lock);
++ * snd_soc_dapm_enable_pin_unlocked - enable pin.
++ * @dapm: DAPM context
++ * @pin: pin name
++ *
++ * Enables input/output pin and its parents or children widgets iff there is
++ * a valid audio route and active audio stream.
++ *
++ * Requires external locking.
++ *
++ * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
++ * do any widget power switching.
++ */
++int snd_soc_dapm_enable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++				   const char *pin)
++{
++	return snd_soc_dapm_set_pin(dapm, pin, 1);
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_enable_pin_unlocked);
++
++/**
+  * snd_soc_dapm_enable_pin - enable pin.
+  * @dapm: DAPM context
+  * @pin: pin name
+  *
+  * Enables input/output pin and its parents or children widgets iff there is
+  * a valid audio route and active audio stream.
++ *
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+ int snd_soc_dapm_enable_pin(struct snd_soc_dapm_context *dapm, const char *pin)
+ {
+-	return snd_soc_dapm_set_pin(dapm, pin, 1);
++	int ret;
++
++	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
++
++	ret = snd_soc_dapm_set_pin(dapm, pin, 1);
++
++	mutex_unlock(&dapm->card->dapm_mutex);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_enable_pin);
  
- 	usb_dmac_writel(udc, ENETDMAC_IR_BUFDONE_MASK,
--			ENETDMAC_IR_REG(iudma->ch_idx));
-+			ENETDMAC_IR_REG, iudma->ch_idx);
- 	bep = iudma->bep;
- 	rc = iudma_read(udc, iudma);
+ /**
+- * snd_soc_dapm_force_enable_pin - force a pin to be enabled
++ * snd_soc_dapm_force_enable_pin_unlocked - force a pin to be enabled
+  * @dapm: DAPM context
+  * @pin: pin name
+  *
+@@ -3531,11 +3556,13 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_enable_pin);
+  * intended for use with microphone bias supplies used in microphone
+  * jack detection.
+  *
++ * Requires external locking.
++ *
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+-int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
+-				  const char *pin)
++int snd_soc_dapm_force_enable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++					 const char *pin)
+ {
+ 	struct snd_soc_dapm_widget *w = dapm_find_widget(dapm, pin, true);
  
-@@ -2178,18 +2184,18 @@ static int bcm63xx_iudma_dbg_show(struct seq_file *s, void *p)
- 		seq_printf(s, " [ep%d]:\n",
- 			   max_t(int, iudma_defaults[ch_idx].ep_num, 0));
- 		seq_printf(s, "  cfg: %08x; irqstat: %08x; irqmask: %08x; maxburst: %08x\n",
--			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG(ch_idx)),
--			   usb_dmac_readl(udc, ENETDMAC_IR_REG(ch_idx)),
--			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG(ch_idx)),
--			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG(ch_idx)));
-+			   usb_dmac_readl(udc, ENETDMAC_CHANCFG_REG, ch_idx),
-+			   usb_dmac_readl(udc, ENETDMAC_IR_REG, ch_idx),
-+			   usb_dmac_readl(udc, ENETDMAC_IRMASK_REG, ch_idx),
-+			   usb_dmac_readl(udc, ENETDMAC_MAXBURST_REG, ch_idx));
+@@ -3551,25 +3578,103 @@ int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
  
--		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG(ch_idx));
--		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG(ch_idx));
-+		sram2 = usb_dmas_readl(udc, ENETDMAS_SRAM2_REG, ch_idx);
-+		sram3 = usb_dmas_readl(udc, ENETDMAS_SRAM3_REG, ch_idx);
- 		seq_printf(s, "  base: %08x; index: %04x_%04x; desc: %04x_%04x %08x\n",
--			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG(ch_idx)),
-+			   usb_dmas_readl(udc, ENETDMAS_RSTART_REG, ch_idx),
- 			   sram2 >> 16, sram2 & 0xffff,
- 			   sram3 >> 16, sram3 & 0xffff,
--			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG(ch_idx)));
-+			   usb_dmas_readl(udc, ENETDMAS_SRAM4_REG, ch_idx));
- 		seq_printf(s, "  desc: %d/%d used", iudma->n_bds_used,
- 			   iudma->n_bds);
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(snd_soc_dapm_force_enable_pin_unlocked);
++
++/**
++ * snd_soc_dapm_force_enable_pin - force a pin to be enabled
++ * @dapm: DAPM context
++ * @pin: pin name
++ *
++ * Enables input/output pin regardless of any other state.  This is
++ * intended for use with microphone bias supplies used in microphone
++ * jack detection.
++ *
++ * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
++ * do any widget power switching.
++ */
++int snd_soc_dapm_force_enable_pin(struct snd_soc_dapm_context *dapm,
++				  const char *pin)
++{
++	int ret;
++
++	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
++
++	ret = snd_soc_dapm_force_enable_pin_unlocked(dapm, pin);
++
++	mutex_unlock(&dapm->card->dapm_mutex);
++
++	return ret;
++}
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_force_enable_pin);
+ 
+ /**
++ * snd_soc_dapm_disable_pin_unlocked - disable pin.
++ * @dapm: DAPM context
++ * @pin: pin name
++ *
++ * Disables input/output pin and its parents or children widgets.
++ *
++ * Requires external locking.
++ *
++ * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
++ * do any widget power switching.
++ */
++int snd_soc_dapm_disable_pin_unlocked(struct snd_soc_dapm_context *dapm,
++				    const char *pin)
++{
++	return snd_soc_dapm_set_pin(dapm, pin, 0);
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_disable_pin_unlocked);
++
++/**
+  * snd_soc_dapm_disable_pin - disable pin.
+  * @dapm: DAPM context
+  * @pin: pin name
+  *
+  * Disables input/output pin and its parents or children widgets.
++ *
+  * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
+  * do any widget power switching.
+  */
+ int snd_soc_dapm_disable_pin(struct snd_soc_dapm_context *dapm,
+ 			     const char *pin)
+ {
+-	return snd_soc_dapm_set_pin(dapm, pin, 0);
++	int ret;
++
++	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
++
++	ret = snd_soc_dapm_set_pin(dapm, pin, 0);
++
++	mutex_unlock(&dapm->card->dapm_mutex);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_disable_pin);
+ 
+ /**
++ * snd_soc_dapm_nc_pin_unlocked - permanently disable pin.
++ * @dapm: DAPM context
++ * @pin: pin name
++ *
++ * Marks the specified pin as being not connected, disabling it along
++ * any parent or child widgets.  At present this is identical to
++ * snd_soc_dapm_disable_pin() but in future it will be extended to do
++ * additional things such as disabling controls which only affect
++ * paths through the pin.
++ *
++ * Requires external locking.
++ *
++ * NOTE: snd_soc_dapm_sync() needs to be called after this for DAPM to
++ * do any widget power switching.
++ */
++int snd_soc_dapm_nc_pin_unlocked(struct snd_soc_dapm_context *dapm,
++			       const char *pin)
++{
++	return snd_soc_dapm_set_pin(dapm, pin, 0);
++}
++EXPORT_SYMBOL_GPL(snd_soc_dapm_nc_pin_unlocked);
++
++/**
+  * snd_soc_dapm_nc_pin - permanently disable pin.
+  * @dapm: DAPM context
+  * @pin: pin name
+@@ -3585,7 +3690,15 @@ EXPORT_SYMBOL_GPL(snd_soc_dapm_disable_pin);
+  */
+ int snd_soc_dapm_nc_pin(struct snd_soc_dapm_context *dapm, const char *pin)
+ {
+-	return snd_soc_dapm_set_pin(dapm, pin, 0);
++	int ret;
++
++	mutex_lock_nested(&dapm->card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
++
++	ret = snd_soc_dapm_set_pin(dapm, pin, 0);
++
++	mutex_unlock(&dapm->card->dapm_mutex);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(snd_soc_dapm_nc_pin);
  
 -- 
 1.8.3.2
