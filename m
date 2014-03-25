@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755680AbaCYRfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:35:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55969 "EHLO
+	id S1755697AbaCYRgL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:36:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55948 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754161AbaCYRWJ (ORCPT
+	with ESMTP id S1754322AbaCYRWD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:09 -0400
+	Tue, 25 Mar 2014 13:22:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Mark Brown <broonie@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 54/81] Input - arizona-haptics: Fix double lock of dapm_mutex
-Date: Tue, 25 Mar 2014 10:16:07 -0700
-Message-Id: <1395767794-5012-55-git-send-email-kamal@canonical.com>
+Cc: Eric Paris <eparis@redhat.com>, Paul Moore <pmoore@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 56/81] SELinux: bigendian problems with filename trans rules
+Date: Tue, 25 Mar 2014 10:16:09 -0700
+Message-Id: <1395767794-5012-57-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -27,62 +27,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Eric Paris <eparis@redhat.com>
 
-commit c4204960e9d0ba99459dbf1db918f99a45e7a62a upstream.
+commit 9085a6422900092886da8c404e1c5340c4ff1cbf upstream.
 
-snd_soc_dapm_sync takes the dapm_mutex internally, but we currently take
-it externally as well. This patch fixes this.
+When writing policy via /sys/fs/selinux/policy I wrote the type and class
+of filename trans rules in CPU endian instead of little endian.  On
+x86_64 this works just fine, but it means that on big endian arch's like
+ppc64 and s390 userspace reads the policy and converts it from
+le32_to_cpu.  So the values are all screwed up.  Write the values in le
+format like it should have been to start.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Signed-off-by: Eric Paris <eparis@redhat.com>
+Acked-by:  Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/input/misc/arizona-haptics.c | 11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
+ security/selinux/ss/policydb.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
-index 7a04f54..e7e12a5 100644
---- a/drivers/input/misc/arizona-haptics.c
-+++ b/drivers/input/misc/arizona-haptics.c
-@@ -77,16 +77,14 @@ static void arizona_haptics_work(struct work_struct *work)
- 			return;
- 		}
+diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+index 142a59f..bcdca73 100644
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -3258,10 +3258,10 @@ static int filename_write_helper(void *key, void *data, void *ptr)
+ 	if (rc)
+ 		return rc;
  
-+		mutex_unlock(dapm_mutex);
-+
- 		ret = snd_soc_dapm_sync(arizona->dapm);
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
- 				ret);
--			mutex_unlock(dapm_mutex);
- 			return;
- 		}
--
--		mutex_unlock(dapm_mutex);
--
- 	} else {
- 		/* This disable sequence will be a noop if already enabled */
- 		mutex_lock_nested(dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
-@@ -99,16 +97,15 @@ static void arizona_haptics_work(struct work_struct *work)
- 			return;
- 		}
+-	buf[0] = ft->stype;
+-	buf[1] = ft->ttype;
+-	buf[2] = ft->tclass;
+-	buf[3] = otype->otype;
++	buf[0] = cpu_to_le32(ft->stype);
++	buf[1] = cpu_to_le32(ft->ttype);
++	buf[2] = cpu_to_le32(ft->tclass);
++	buf[3] = cpu_to_le32(otype->otype);
  
-+		mutex_unlock(dapm_mutex);
-+
- 		ret = snd_soc_dapm_sync(arizona->dapm);
- 		if (ret != 0) {
- 			dev_err(arizona->dev, "Failed to sync DAPM: %d\n",
- 				ret);
--			mutex_unlock(dapm_mutex);
- 			return;
- 		}
- 
--		mutex_unlock(dapm_mutex);
--
- 		ret = regmap_update_bits(arizona->regmap,
- 					 ARIZONA_HAPTICS_CONTROL_1,
- 					 ARIZONA_HAP_CTRL_MASK,
+ 	rc = put_entry(buf, sizeof(u32), 4, fp);
+ 	if (rc)
 -- 
 1.8.3.2
 
