@@ -1,35 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753256AbaCYLs7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 07:48:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12026 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753119AbaCYLs4 (ORCPT
+	id S1752985AbaCYMGG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 08:06:06 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:21898 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbaCYMGC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 07:48:56 -0400
-Date: Tue, 25 Mar 2014 11:49:36 +0000
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: "lwcheng@cs.hku.hk" <lwcheng@cs.hku.hk>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Question] Linux CFS sched_entity
-Message-ID: <20140325114936.GA29592@e103034-lin>
-References: <20140317125541.17043cxzmlnxa0ys@intranet.cs.hku.hk>
+	Tue, 25 Mar 2014 08:06:02 -0400
+Message-ID: <5331711B.9040405@huawei.com>
+Date: Tue, 25 Mar 2014 20:05:47 +0800
+From: Jianguo Wu <wujianguo@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:12.0) Gecko/20120428 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140317125541.17043cxzmlnxa0ys@intranet.cs.hku.hk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
+CC: Ben Hutchings <ben@decadent.org.uk>, <linux-kernel@vger.kernel.org>,
+        <stable@vger.kernel.org>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Andres Bertens <abertensu@yahoo.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [PATCH 3.4 93/99] iwlwifi: always copy first 16 bytes of commands
+References: <20140308010611.468206150@linuxfoundation.org> <1553572.xqrhDm938v@tux200s> <1395716117.2832.86.camel@deadeye.wl.decadent.org.uk> <3326096.NJGQSn5Qfa@tux200s>
+In-Reply-To: <3326096.NJGQSn5Qfa@tux200s>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.24.155]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 17, 2014 at 04:55:41AM +0000, lwcheng@cs.hku.hk wrote:
-> In what situations does cfs_rq->curr point to a task_group?
-> What's the sense? I thought it should always contain a "real" task.
+On 2014/3/25 17:29, Andreas Sturmlechner wrote:
 
-In nested task groups cfs_rq->curr may point to a sched_entity which is
-a nested task group (cfs_rq).
+> Original Message from: Ben Hutchings <ben@decadent.org.uk>
+>>
+>> One piece of my backport to 3.2.y went missing in the forward-port to
+>> 3.4.y.  Can you test 3.4.83 with this patch on top?
+>>
+>> Ben.
+> 
+> iwlwifi works with the additional patch, thanks :)
+> 
+> 
+> 
 
-parent_group -> child_group -> task
 
-Morten
+Sorry for the missing part, thanks, Ben.
+
