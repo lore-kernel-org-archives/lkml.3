@@ -1,111 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111AbaCYQww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:52:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57250 "EHLO mx2.suse.de"
+	id S1754173AbaCYQyh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:54:37 -0400
+Received: from quartz.orcorp.ca ([184.70.90.242]:59520 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753926AbaCYQwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:52:51 -0400
-Date: Tue, 25 Mar 2014 09:52:48 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Sasha Levin <sasha.levin@oracle.com>, Christoph Lameter <cl@gentwo.org>
-Cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: slub: gpf in deactivate_slab
-Message-ID: <20140325165247.GA7519@dhcp22.suse.cz>
-References: <53208A87.2040907@oracle.com>
- <5331A6C3.2000303@oracle.com>
+	id S1753440AbaCYQye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 12:54:34 -0400
+Date: Tue, 25 Mar 2014 10:54:21 -0600
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Richard Zhu <r65037@freescale.com>,
+        linux-samsung-soc@vger.kernel.org, linux-pci@vger.kernel.org,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Shawn Guo <shawn.guo@linaro.org>
+Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based on
+ designware core driver
+Message-ID: <20140325165421.GB30641@obsidianresearch.com>
+References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
+ <1395707726-20437-4-git-send-email-m-karicheri2@ti.com>
+ <235376049.yyfljDtinu@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5331A6C3.2000303@oracle.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <235376049.yyfljDtinu@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.161
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-03-14 11:54:43, Sasha Levin wrote:
-> On 03/12/2014 12:25 PM, Sasha Levin wrote:
-> >Hi all,
-> >
-> >While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled
-> >on the following spew:
-> >
-> >[  241.916559] BUG: unable to handle kernel paging request at ffff880029aa5e58
-> >[  241.917961] IP: [<ffffffff812c5fa3>] deactivate_slab+0x103/0x560
-> >[  241.919439] PGD 88f9067 PUD 88fa067 PMD 102fd35067 PTE 8000000029aa5060
-> >[  241.920339] Oops: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
-> >[  241.920339] Dumping ftrace buffer:
-> >[  241.920339]    (ftrace buffer empty)
-> >[  241.920339] Modules linked in:
-> >[  241.920339] CPU: 17 PID: 9910 Comm: trinity-c183 Tainted: G        W    3.14.0-rc6-next-20140311-sasha-00009-g6c028cd-dirty #146
-> >[  241.920339] task: ffff88090eb68000 ti: ffff88090eb70000 task.ti: ffff88090eb70000
-> >[  241.920339] RIP: 0010:[<ffffffff812c5fa3>]  [<ffffffff812c5fa3>] deactivate_slab+0x103/0x560
-> >[  241.920339] RSP: 0018:ffff88090eb71c18  EFLAGS: 00010082
-> >[  241.920339] RAX: 0000000000000418 RBX: ffff880229ae2010 RCX: 0000000180170017
-> >[  241.920339] RDX: 0000000000000000 RSI: ffffffff812c5f52 RDI: ffffffff812c5e29
-> >[  241.920339] RBP: ffff88090eb71d28 R08: ffff880229ae2010 R09: 0000000000000080
-> >[  241.920339] R10: ffff880229ae2ed0 R11: 0000000000000000 R12: ffffea0008a6b800
-> >[  241.920339] R13: ffff88012b4da580 R14: ffff880029aa5a40 R15: ffff880229ae2010
-> >[  241.920339] FS:  00007fb615415700(0000) GS:ffff88022ba00000(0000) knlGS:0000000000000000
-> >[  241.920339] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >[  241.920339] CR2: ffff880029aa5e58 CR3: 000000090eb4a000 CR4: 00000000000006a0
-> >[  241.920339] DR0: 0000000000005bf2 DR1: 0000000000000000 DR2: 0000000000000000
-> >[  241.920339] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000070602
-> >[  241.920339] Stack:
-> >[  241.920339]  ffffffff856e37ab ffffffff84486272 0000000000000000 000000002b405600
-> >[  241.920339]  ffff88090eb71c58 ffff88090eb70000 0000000000000011 ffff88022ba03fc0
-> >[  241.920339]  ffff88090eb71cb8 000000000000000f ffff88022b405600 ffff880029aa5a40
-> >[  241.920339] Call Trace:
-> >[  241.920339]  [<ffffffff84486272>] ? preempt_count_sub+0xe2/0x120
-> >[  241.920339]  [<ffffffff8130f151>] ? alloc_inode+0x41/0xa0
-> >[  241.954886]  [<ffffffff8130f151>] ? alloc_inode+0x41/0xa0
-> >[  241.954886]  [<ffffffff8130f151>] ? alloc_inode+0x41/0xa0
-> >[  241.954886]  [<ffffffff812c36eb>] ? set_track+0xab/0x100
-> >[  241.954886]  [<ffffffff812c731f>] __slab_alloc+0x42f/0x4d0
-> >[  241.954886]  [<ffffffff81073e6d>] ? sched_clock+0x1d/0x30
-> >[  241.954886]  [<ffffffff8130f151>] ? alloc_inode+0x41/0xa0
-> >[  241.961624]  [<ffffffff812c870f>] kmem_cache_alloc+0x12f/0x2e0
-> >[  241.961624]  [<ffffffff8130f151>] ? alloc_inode+0x41/0xa0
-> >[  241.961624]  [<ffffffff8130f151>] alloc_inode+0x41/0xa0
-> >[  241.961624]  [<ffffffff8130f1cb>] new_inode_pseudo+0x1b/0x70
-> >[  241.961624]  [<ffffffff812f985c>] get_pipe_inode+0x1c/0xf0
-> >[  241.961624]  [<ffffffff812f995c>] create_pipe_files+0x2c/0x170
-> >[  241.961624]  [<ffffffff812f9ae1>] __do_pipe_flags+0x41/0xf0
-> >[  241.961624]  [<ffffffff812f9bbb>] SyS_pipe2+0x2b/0xb0
-> >[  241.961624]  [<ffffffff8448b3b1>] ? tracesys+0x7e/0xe2
-> >[  241.961624]  [<ffffffff8448b410>] tracesys+0xdd/0xe2
-> >[  241.972975] Code: 4d 85 f6 75 8b eb 45 90 4d 85 f6 75 13 49 8b 5c 24 10 45 31 ff 0f 1f 00 eb 32 66 0f 1f 44 00 00 4c 89 b5 48 ff ff ff 49 63 45 20 <49> 8b 0c 06 48 85 c9 74 10 4d 89 f7 49 8b 54 24 10 49 89 ce e9
-> >[  241.972975] RIP  [<ffffffff812c5fa3>] deactivate_slab+0x103/0x560
-> >[  241.972975]  RSP <ffff88090eb71c18>
-> >[  241.972975] CR2: ffff880029aa5e58
-> 
-> I have a lead on this. Consider the following:
-> 
->   kmem_cache_alloc
-> 	__slab_alloc
-> 		local_irq_save()
-> 		deactivate_slab
-> 			__cmpxchg_double_slab
-> 				slab_unlock
-> 					__bit_spin_unlock
-> 						preempt_enable
-> 		[ Page Fault ]
-> 
-> With this trace, it manifests as a "BUG: sleeping function called from invalid
-> context at arch/x86/mm/fault.c" on a might_sleep() in the page fault handler
-> (which is an issue on it's own), but I suspect it's also the cause of the trace
-> above - preemption enabled and a race that removed the page.
-> 
-> Could someone confirm please?
+On Tue, Mar 25, 2014 at 08:44:36AM +0100, Arnd Bergmann wrote:
 
-You are right. The function even does VM_BUG_ON(!irqs_disabled())...
-Unfortunatelly we do not seem to have an _irq alternative of the bit
-spinlock.
-Not sure what to do about it. Christoph? 
+> I have no idea how this would work with the standard interrupt-map property,
+> since the legacy interrupt host is now the same device as the pci host.
+> 
+> Maybe it's better to move the legacy irqchip handling entirely out of
+> the driver and use a separate device node for the registers so it can
+> come with its own #interrupt-cells, and then refer to this irqchip from
+> the interrupt-map.
 
-Btw. it seems to go way back to 3.1 (1d07171c5e58e).
--- 
-Michal Hocko
-SUSE Labs
+The other DW PCI-E drivers are being fixed to use interrupt-map, so I
+think this driver should be fixed before it goes in as well.
+
+Other PCI-E hosts have handled this particular problem with a
+construction like this:
+
+       pcie@21800000 {
+               compatible = "ti,keystone2-pcie";
+               device_type = "pci";
+               #address-cells = <3>;
+               #size-cells = <2>;
+               #interrupt-cells = <1>;
+	       reg = ..
+
+               pcie_intc: interrupt-controller {
+                  interrupt-controller;
+		  #address-cells = <0>;
+                  #interrupt-cells = <1>;
+               }
+
+               interrupts =  ... enough to decode INTx;
+
+	       interrtup-map = <0 0 0 1 &pcie_intc 1>, // INT A
+	                       <0 0 0 2 &pcie_intc 2>, // INT B
+                               <0 0 0 3 &pcie_intc 3>, // INT C
+                               <0 0 0 4 &pcie_intc 4>; // INT D
+       }
+
+When the legacy irq domain is created it should be bound to the
+pcie_intc node, not to pcie node.
+
+ks_pcie_map_irq should be removed.
+
+> > +#ifdef CONFIG_PCIE_KEYSTONE
+> > +/*
+> > + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
+> > + * Force this configuration for all EP including bridges.
+> > + */
+> > +static void quirk_limit_readrequest(struct pci_dev *dev)
+> > +{
+> > +	pcie_set_readrq(dev, 256);
+> > +}
+> > +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID, quirk_limit_readrequest);
+> > +#endif /* CONFIG_TI_KEYSTONE_PCIE */
+> 
+> You can't do this:
+> 
+> A quirk for a specific hardware must not be enabled by compile-time options.
+> You have to find a different way to do this.
+
+This configuration should happen automatically by the PCI core if the
+config spaces are correct. See pcie_write_mrrs, pcie_write_mps,
+pcie_bus_configure_settings, etc.
+
+Your host will need to conform to the PCI spec and provide a root
+port bridge header for this to work.
+
+Also, even in the keystone case the MRRS should not be globally forced
+like this, there may be other bridges in the system with a 128 byte
+MPS.
+
+Jason
