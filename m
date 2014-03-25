@@ -1,106 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaCYSwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 14:52:34 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56441 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754778AbaCYSwa (ORCPT
+	id S1754831AbaCYSxV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 14:53:21 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:60782 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754717AbaCYSwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 14:52:30 -0400
-Message-ID: <1395773543.2770.93.camel@fourier>
-Subject: Re: [PATCH 3.8 23/81] PCI: Enable INTx if BIOS left them disabled
-From: Kamal Mostafa <kamal@canonical.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Date: Tue, 25 Mar 2014 11:52:23 -0700
-In-Reply-To: <CAErSpo6iSiYn0pcv86c3srAXHznYf_Xdqa+yJnhz_BezgXmeig@mail.gmail.com>
-References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
-	 <1395767794-5012-24-git-send-email-kamal@canonical.com>
-	 <CAErSpo6iSiYn0pcv86c3srAXHznYf_Xdqa+yJnhz_BezgXmeig@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 25 Mar 2014 14:52:08 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-1c-5331d0569ad1
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hans de Goede <hdegoede@redhat.com>, Sekhar Nori <nsekhar@ti.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, linux-ide@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        spear-devel@list.st.com, b.zolnierkie@samsung.com
+Subject: [PATCH v4 3/4] ata: add new-style AHCI platform driver for DaVinci
+ DA850 AHCI controller
+Date: Tue, 25 Mar 2014 19:51:40 +0100
+Message-id: <1395773501-6663-4-git-send-email-b.zolnierkie@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-reply-to: <1395773501-6663-1-git-send-email-b.zolnierkie@samsung.com>
+References: <1395773501-6663-1-git-send-email-b.zolnierkie@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBLMWRmVeSWpSXmKPExsVy+t9jAd3wC4bBBn/fM1tsnLGe1eLcrQZW
+	izfHpzNZ3FnBbLHp8TVWi2M7HjFZXN41h81if+8GJouG7h52izkzNrNa/Fp+lNFi5cW/zA48
+	Htdf/Wfy2DnrLrvHplWdbB5zpjWxeJy8cJLFY/OSeo/3+66yefRtWcXo8fTHXmaP4ze2M3l8
+	3iQXwB3FZZOSmpNZllqkb5fAldFz6i1bwVm9ike3TrE0MF5U62Lk4JAQMJFY0GvZxcgJZIpJ
+	XLi3nq2LkYtDSGARo8SVP4tYQRJCAl1MEndmCYHYbAJWEhPbVzGC2CICshJXpj1kBGlgFuhi
+	llgyewtYQlggWeLzhp9sIDaLgKpE+5MLYDavgLvEsdvb2SC2KUp0P5sAZnMKeEj8v7eOCWKZ
+	u8SZefPZJjDyLmBkWMUomlqQXFCclJ5rpFecmFtcmpeul5yfu4kRHL7PpHcwrmqwOMQowMGo
+	xMNr0WcYLMSaWFZcmXuIUYKDWUmE9+9JoBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeg63WgUIC
+	6YklqdmpqQWpRTBZJg5OqQbGgBt9YfPO3pqRErzG572eQOLV/6Lr7A5Y6O3+0yPbFK//cluw
+	6MmDb6Seh1fpeyX9iJXaFJHhu0+rSJVh146CN6zHFyilzzguaiPFzOnAanXDbWGVjFOFw0Yr
+	Me/gLU3PU2R5Ze9uapbc7vNwm/TDSYrGH24nzLljUny5fyu7+/Xw+asu2nApsRRnJBpqMRcV
+	JwIA/+d3QVsCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-25 at 12:34 -0600, Bjorn Helgaas wrote:
-> On Tue, Mar 25, 2014 at 11:15 AM, Kamal Mostafa <kamal@canonical.com> wrote:
-> > 3.8.13.20 -stable review patch.  If anyone has any objections, please let me know.
-> 
-> If you pick up this one, you need the follow-up fix as well:
-> 
-> 866d54177b4e671cd52bed1fb487d140d7b691f5 PCI: Enable INTx in
-> pci_reenable_device() only when MSI/MSI-X not enabled
-> 
+Add the new ahci_da850 host driver.
 
-Thanks very much, Bjorn.  I'll pick up that one for 3.8.13.20 also.
+Platform changes needed to make DaVinci DA850 SATA AHCI support
+fully functional are in the separate "ARM: davinci: da850: update
+SATA AHCI support" commit.
 
-For reference, the upstream commit sha of that is actually:
-3cdeb713dc66057b50682048c151eae07b186c42 PCI: Enable INTx in
-pci_reenable_device() only when MSI/MSI-X not enabled
+Please note that this driver doesn't have the superfluous clock
+control code as clock is already handled by the generic AHCI
+platform library code.
 
- -Kamal
+Cc: Sekhar Nori <nsekhar@ti.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Hans de Goede <hdegoede@redhat.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+v4:
+- no changes
+v3:
+- merged changes from Sekhar
+- splitted out platform changes into separate patch
+v2:
+- dropped the experimental tag from the config option help
+- fixed SYSCFG1 memory resource handling
+- hardcoded the multiplier data and added a note about it
+- used readl()/writel() instead of __raw_readl()/__raw_writel()
+- dropped the superflous clock control
+- cleaned up da850_sata_init()
+- changed the platform device name and removed the platform ids table
+- removed the deprecated ahci_platform_data platform code
+- updated the patch description
 
+ drivers/ata/Kconfig      |   9 ++++
+ drivers/ata/Makefile     |   1 +
+ drivers/ata/ahci_da850.c | 114 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+)
+ create mode 100644 drivers/ata/ahci_da850.c
 
-
-> > From: Bjorn Helgaas <bhelgaas@google.com>
-> >
-> > commit 1f42db786b14a31bf807fc41ee5583a00c08fcb1 upstream.
-> >
-> > Some firmware leaves the Interrupt Disable bit set even if the device uses
-> > INTx interrupts.  Clear Interrupt Disable so we get those interrupts.
-> >
-> > Based on the report mentioned below, if the user selects the "EHCI only"
-> > option in the Intel Baytrail BIOS, the EHCI device is handed off to the OS
-> > with the PCI_COMMAND_INTX_DISABLE bit set.
-> >
-> > Link: http://lkml.kernel.org/r/20140114181721.GC12126@xanatos
-> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=70601
-> > Reported-by: Chris Cheng <chris.cheng@atrustcorp.com>
-> > Reported-and-tested-by: Jamie Chen <jamie.chen@intel.com>
-> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> > CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> > ---
-> >  drivers/pci/pci.c | 10 ++++++++++
-> >  1 file changed, 10 insertions(+)
-> >
-> > diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-> > index d1b4e00..4235728 100644
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -1126,6 +1126,8 @@ EXPORT_SYMBOL_GPL(pci_load_and_free_saved_state);
-> >  static int do_pci_enable_device(struct pci_dev *dev, int bars)
-> >  {
-> >         int err;
-> > +       u16 cmd;
-> > +       u8 pin;
-> >
-> >         err = pci_set_power_state(dev, PCI_D0);
-> >         if (err < 0 && err != -EIO)
-> > @@ -1135,6 +1137,14 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
-> >                 return err;
-> >         pci_fixup_device(pci_fixup_enable, dev);
-> >
-> > +       pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
-> > +       if (pin) {
-> > +               pci_read_config_word(dev, PCI_COMMAND, &cmd);
-> > +               if (cmd & PCI_COMMAND_INTX_DISABLE)
-> > +                       pci_write_config_word(dev, PCI_COMMAND,
-> > +                                             cmd & ~PCI_COMMAND_INTX_DISABLE);
-> > +       }
-> > +
-> >         return 0;
-> >  }
-> >
-> > --
-> > 1.8.3.2
-> >
-> 
-
+diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
+index b3b24f2..7251559 100644
+--- a/drivers/ata/Kconfig
++++ b/drivers/ata/Kconfig
+@@ -97,6 +97,15 @@ config SATA_AHCI_PLATFORM
+ 
+ 	  If unsure, say N.
+ 
++config AHCI_DA850
++	tristate "DaVinci DA850 AHCI SATA support"
++	depends on ARCH_DAVINCI_DA850
++	help
++	  This option enables support for the DaVinci DA850 SoC's
++	  onboard AHCI SATA.
++
++	  If unsure, say N.
++
+ config AHCI_ST
+ 	tristate "ST AHCI SATA support"
+ 	depends on ARCH_STI
+diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
+index 5fa79ab..44c8016 100644
+--- a/drivers/ata/Makefile
++++ b/drivers/ata/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_SATA_INIC162X)	+= sata_inic162x.o
+ obj-$(CONFIG_SATA_SIL24)	+= sata_sil24.o
+ obj-$(CONFIG_SATA_DWC)		+= sata_dwc_460ex.o
+ obj-$(CONFIG_SATA_HIGHBANK)	+= sata_highbank.o libahci.o
++obj-$(CONFIG_AHCI_DA850)	+= ahci_da850.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_IMX)		+= ahci_imx.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
+ obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
+diff --git a/drivers/ata/ahci_da850.c b/drivers/ata/ahci_da850.c
+new file mode 100644
+index 0000000..2c83613
+--- /dev/null
++++ b/drivers/ata/ahci_da850.c
+@@ -0,0 +1,114 @@
++/*
++ * DaVinci DA850 AHCI SATA platform driver
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2, or (at your option)
++ * any later version.
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/pm.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/libata.h>
++#include <linux/ahci_platform.h>
++#include "ahci.h"
++
++/* SATA PHY Control Register offset from AHCI base */
++#define SATA_P0PHYCR_REG	0x178
++
++#define SATA_PHY_MPY(x)		((x) << 0)
++#define SATA_PHY_LOS(x)		((x) << 6)
++#define SATA_PHY_RXCDR(x)	((x) << 10)
++#define SATA_PHY_RXEQ(x)	((x) << 13)
++#define SATA_PHY_TXSWING(x)	((x) << 19)
++#define SATA_PHY_ENPLL(x)	((x) << 31)
++
++/*
++ * The multiplier needed for 1.5GHz PLL output.
++ *
++ * NOTE: This is currently hardcoded to be suitable for 100MHz crystal
++ * frequency (which is used by DA850 EVM board) and may need to be changed
++ * if you would like to use this driver on some other board.
++ */
++#define DA850_SATA_CLK_MULTIPLIER	7
++
++static void da850_sata_init(struct device *dev, void __iomem *pwrdn_reg,
++			    void __iomem *ahci_base)
++{
++	unsigned int val;
++
++	/* Enable SATA clock receiver */
++	val = readl(pwrdn_reg);
++	val &= ~BIT(0);
++	writel(val, pwrdn_reg);
++
++	val = SATA_PHY_MPY(DA850_SATA_CLK_MULTIPLIER + 1) | SATA_PHY_LOS(1) |
++	      SATA_PHY_RXCDR(4) | SATA_PHY_RXEQ(1) | SATA_PHY_TXSWING(3) |
++	      SATA_PHY_ENPLL(1);
++
++	writel(val, ahci_base + SATA_P0PHYCR_REG);
++}
++
++static const struct ata_port_info ahci_da850_port_info = {
++	.flags		= AHCI_FLAG_COMMON,
++	.pio_mask	= ATA_PIO4,
++	.udma_mask	= ATA_UDMA6,
++	.port_ops	= &ahci_platform_ops,
++};
++
++static int ahci_da850_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct ahci_host_priv *hpriv;
++	struct resource *res;
++	void __iomem *pwrdn_reg;
++	int rc;
++
++	hpriv = ahci_platform_get_resources(pdev);
++	if (IS_ERR(hpriv))
++		return PTR_ERR(hpriv);
++
++	rc = ahci_platform_enable_resources(hpriv);
++	if (rc)
++		return rc;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
++	if (!res)
++		goto disable_resources;
++
++	pwrdn_reg = devm_ioremap(dev, res->start, resource_size(res));
++	if (!pwrdn_reg)
++		goto disable_resources;
++
++	da850_sata_init(dev, pwrdn_reg, hpriv->mmio);
++
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info, 0, 0);
++	if (rc)
++		goto disable_resources;
++
++	return 0;
++disable_resources:
++	ahci_platform_disable_resources(hpriv);
++	return rc;
++}
++
++static SIMPLE_DEV_PM_OPS(ahci_da850_pm_ops, ahci_platform_suspend,
++			 ahci_platform_resume);
++
++static struct platform_driver ahci_da850_driver = {
++	.probe = ahci_da850_probe,
++	.remove = ata_platform_remove_one,
++	.driver = {
++		.name = "ahci_da850",
++		.owner = THIS_MODULE,
++		.pm = &ahci_da850_pm_ops,
++	},
++};
++module_platform_driver(ahci_da850_driver);
++
++MODULE_DESCRIPTION("DaVinci DA850 AHCI SATA platform driver");
++MODULE_AUTHOR("Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>");
++MODULE_LICENSE("GPL");
+-- 
+1.8.2.3
 
