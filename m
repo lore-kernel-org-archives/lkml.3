@@ -1,59 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaCYQO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 12:14:28 -0400
-Received: from www.linutronix.de ([62.245.132.108]:53775 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752700AbaCYQO0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 12:14:26 -0400
-Date: Tue, 25 Mar 2014 17:14:31 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: linux-gpio@vger.kernel.org, Alexandre Courbot <acourbot@nvidia.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] provide irqchip in gpiolib
-In-Reply-To: <1395751894-7110-1-git-send-email-linus.walleij@linaro.org>
-Message-ID: <alpine.DEB.2.02.1403251714020.4203@ionos.tec.linutronix.de>
-References: <1395751894-7110-1-git-send-email-linus.walleij@linaro.org>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753932AbaCYQQt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 12:16:49 -0400
+Received: from mga11.intel.com ([192.55.52.93]:9992 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751722AbaCYQQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 12:16:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,728,1389772800"; 
+   d="scan'208";a="499220769"
+Date: Tue, 25 Mar 2014 09:16:44 -0700
+From: Andi Kleen <ak@linux.intel.com>
+To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Subject: Re: [V5 0/4] perf: New conditional branch filter
+Message-ID: <20140325161644.GC15074@tassilo.jf.intel.com>
+References: <1394183185-6219-1-git-send-email-khandual@linux.vnet.ibm.com>
+ <53319829.9040403@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53319829.9040403@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar 2014, Linus Walleij wrote:
-
-> This series provides a central facility for registering a chained
-> (cascaded) irqchip as a sibling to a certain gpiochip. Patch one
-> adds the API, patch 2, 3, 4 convert three drivers that I can test
-> to use this facility.
-
-Very nice consolidation work!
-
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
- 
-
-> Linus Walleij (4):
->   gpio: add IRQ chip helpers in gpiolib
->   gpio: pl061: convert driver to use gpiolib irqchip
->   pinctrl: nomadik: convert driver to use gpiolib irqchip
->   pinctrl: coh901: convert driver to use gpiolib irqchip
+> Hey Arnaldo,
 > 
->  drivers/gpio/Kconfig              |   4 +
->  drivers/gpio/gpio-pl061.c         |  80 ++++-----------
->  drivers/gpio/gpiolib.c            | 188 +++++++++++++++++++++++++++++++++++
->  drivers/pinctrl/Kconfig           |   4 +
->  drivers/pinctrl/pinctrl-coh901.c  | 204 ++++++++++----------------------------
->  drivers/pinctrl/pinctrl-nomadik.c | 123 ++++++-----------------
->  include/linux/gpio/driver.h       |  29 ++++++
->  7 files changed, 329 insertions(+), 303 deletions(-)
-> 
-> -- 
-> 1.8.5.3
-> 
-> 
+> Do you have any comments or suggestions on this ? Have not received any
+> response on these proposed patch series yet. Thank you.
+
+I read it earlier and it looks good to me.
+
+-Andi
