@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755163AbaCYRWF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 13:22:05 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55943 "EHLO
+	id S1755254AbaCYRWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 13:22:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55989 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754270AbaCYRWB (ORCPT
+	with ESMTP id S1754342AbaCYRWY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 13:22:01 -0400
+	Tue, 25 Mar 2014 13:22:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@linaro.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 43/81] ACPI / video: Filter the _BCL table for duplicate brightness values
-Date: Tue, 25 Mar 2014 10:15:56 -0700
-Message-Id: <1395767794-5012-44-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 61/81] ASoC: wm8958-dsp: Fix firmware block loading
+Date: Tue, 25 Mar 2014 10:16:14 -0700
+Message-Id: <1395767794-5012-62-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395767794-5012-1-git-send-email-kamal@canonical.com>
 References: <1395767794-5012-1-git-send-email-kamal@canonical.com>
@@ -28,76 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
+commit 548da08fc1e245faf9b0d7c41ecd8e07984fc332 upstream.
 
-Some devices have duplicate entries in there brightness levels table, ie
-on my Dell Latitude E6430 the table looks like this:
+The codec->control_data contains a pointer to the device's regmap struct. But
+wm8994_bulk_write() expects a pointer to the parent wm8998 device.
 
-[    3.686060] acpi backlight index   0, val 80
-[    3.686095] acpi backlight index   1, val 50
-[    3.686122] acpi backlight index   2, val 5
-[    3.686147] acpi backlight index   3, val 5
-[    3.686172] acpi backlight index   4, val 5
-[    3.686197] acpi backlight index   5, val 5
-[    3.686223] acpi backlight index   6, val 5
-[    3.686248] acpi backlight index   7, val 5
-[    3.686273] acpi backlight index   8, val 6
-[    3.686332] acpi backlight index   9, val 7
-[    3.686356] acpi backlight index  10, val 8
-[    3.686380] acpi backlight index  11, val 9
-etc.
+The issue was introduced in commit d9a7666f ("ASoC: Remove ASoC-specific
+WM8994 I/O code").
 
-Notice that brightness values 0-5 are all mapped to 5. This means that
-if userspace writes any value between 0 and 5 to the brightness sysfs attribute
-and then reads it, it will always return 0, which is somewhat unexpected.
-
-This is a problem for ie gnome-settings-daemon, which uses read-modify-write
-logic when the users presses the brightness up or down keys. This is done
-this way to take brightness changes from other sources into account.
-
-On this specific laptop what happens once the brightness has been set to 0,
-is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
-again reads 0, so things get stuck at the lowest brightness setting.
-
-Filtering out the duplicate table entries, makes any write to brightness
-read back as the written value as one would expect, fixing this.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Fixes: d9a7666f ("ASoC: Remove ASoC-specific WM8994 I/O code")
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/acpi/video.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ sound/soc/codecs/wm8958-dsp2.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/video.c b/drivers/acpi/video.c
-index 5006c47..2f971dc 100644
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -656,6 +656,7 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 	union acpi_object *o;
- 	struct acpi_video_device_brightness *br = NULL;
- 	int result = -EINVAL;
-+	u32 value;
+diff --git a/sound/soc/codecs/wm8958-dsp2.c b/sound/soc/codecs/wm8958-dsp2.c
+index b0710d8..754f88e 100644
+--- a/sound/soc/codecs/wm8958-dsp2.c
++++ b/sound/soc/codecs/wm8958-dsp2.c
+@@ -153,7 +153,7 @@ static int wm8958_dsp2_fw(struct snd_soc_codec *codec, const char *name,
  
- 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
-@@ -686,7 +687,12 @@ acpi_video_init_brightness(struct acpi_video_device *device)
- 			printk(KERN_ERR PREFIX "Invalid data\n");
- 			continue;
- 		}
--		br->levels[count] = (u32) o->integer.value;
-+		value = (u32) o->integer.value;
-+		/* Skip duplicate entries */
-+		if (count > 2 && br->levels[count - 1] == value)
-+			continue;
-+
-+		br->levels[count] = value;
+ 			data32 &= 0xffffff;
  
- 		if (br->levels[count] > max_level)
- 			max_level = br->levels[count];
+-			wm8994_bulk_write(codec->control_data,
++			wm8994_bulk_write(wm8994->wm8994,
+ 					  data32 & 0xffffff,
+ 					  block_len / 2,
+ 					  (void *)(data + 8));
 -- 
 1.8.3.2
 
