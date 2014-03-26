@@ -1,79 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754118AbaCZPJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 11:09:50 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:36407 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaCZPJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 11:09:49 -0400
-Message-ID: <5332EDBB.7010105@mm-sol.com>
-Date: Wed, 26 Mar 2014 17:09:47 +0200
-From: Georgi Djakov <gdjakov@mm-sol.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Mike Looijmans <mike.looijmans@topic.nl>, cjb@laptop.org,
-        linux-mmc@vger.kernel.org
-CC: linux-kernel@vger.kernel.org, git@xilinx.com
-Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
-References: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
-In-Reply-To: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754803AbaCZPK7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 11:10:59 -0400
+Received: from mailout1.w2.samsung.com ([211.189.100.11]:47340 "EHLO
+	usmailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaCZPK5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 11:10:57 -0400
+X-AuditID: cbfec372-b7fa96d000006a7b-c3-5332edffe64b
+Date: Wed, 26 Mar 2014 12:10:47 -0300
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Tomasz Nowicki <tomasz.nowicki@linaro.org>, Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>, Tony <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        linux-edac@vger.kernel.org, x86@kernel.org
+Subject: Re: RFC: APEI hardware reduced profile
+Message-id: <20140326121047.65176d7e@samsung.com>
+In-reply-to: <6220935.TPfvPdvLIs@vostro.rjw.lan>
+References: <5332C32A.5070301@linaro.org> <6220935.TPfvPdvLIs@vostro.rjw.lan>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrLLMWRmVeSWpSXmKPExsVy+t/hEN3/b42CDW5uULT4vOEfm8XEfk2L
+	nQ/fslmcunOAyWL5vn5GiwunGpgsLu+aw2Zx5vQlVotFO+4yWby5cI/F4seGx6wO3B7fW/tY
+	PBbvecnksWlVJ5vHnWt72Dxu/3vM7LHlajuLx+bT1R6fN8kFcERx2aSk5mSWpRbp2yVwZfx8
+	/oi54Ahfxebr71kbGM9ydzFyckgImEjMOHuXEcIWk7hwbz0biC0ksIRR4tBK3i5GLiC7h0mi
+	5XUrC0iCRUBV4vffm+wgNpuAkcSrxhZWEFtEQFtibs8pZpAGZoFGZonXm88ATeLgEBbQl/h8
+	EKyXV8BQYnfHS7Awp4CBxJSt+RC7fCXWLO5ih7jBSeLV68lMEOWCEj8m3wNrZRbQkti8rYkV
+	wpaX2LzmLfMERoFZSMpmISmbhaRsASPzKkbR0uLkguKk9FxDveLE3OLSvHS95PzcTYyQKCna
+	wfhsg9UhRgEORiUe3p33jYKFWBPLiitzDzFKcDArifDqPgMK8aYkVlalFuXHF5XmpBYfYmTi
+	4JRqYPRbwtMRv9q91MzhhEzZJFPjDb1xYmHzf7d13pC+o93HM7GpncW+Wt1cm3fL9C27zF57
+	zI/QWerUIa7+jnn7yYK06Z9m2RhmrbOt/dbvEfe+MfDPZPvbexrq5LQ/3T1pE74wc033xAMH
+	P0dLeeaYqq+IfpQW8ixluuXB2Tt7Nkz19lY43fPOQImlOCPRUIu5qDgRAHq75elwAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/07/2014 04:18 PM, Mike Looijmans wrote:
-> If vmmc or vqmmc regulators are controlled by an I2C device, the
-> request for the regulator is likely to fail because the I2C bus has
-> not been probed yet. The sdhci then incorrectly assumes that the user
-> never wanted to use a regulator anyway and continues without ever
-> enabling or configuring the required regulator.
->
-> To solve this, when a required voltage regulator returns
-> EPROBE_DEFER, signalling that the regulator exists but is not
-> available yet, forward this error to the probe method instead
-> of simply assuming that the user never wanted to use a regulator
-> anyway.
->
-> Tested on a custom board that has an I2C regulator for one of the sdhcis
-> and no regulators at all for the other. This patch enables such a system
-> to work correctly.
-> ---
->   drivers/mmc/host/sdhci.c |    8 ++++++--
->   1 file changed, 6 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> index 34aef81..43b90c1 100644
-> --- a/drivers/mmc/host/sdhci.c
-> +++ b/drivers/mmc/host/sdhci.c
-> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
->   	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
->   	if (IS_ERR_OR_NULL(host->vqmmc)) {
->   		if (PTR_ERR(host->vqmmc) < 0) {
-> +			if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
-> +				return -EPROBE_DEFER;
->   			pr_info("%s: no vqmmc regulator found\n",
->   				mmc_hostname(mmc));
->   			host->vqmmc = NULL;
-> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
->   	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
->   	if (IS_ERR_OR_NULL(host->vmmc)) {
->   		if (PTR_ERR(host->vmmc) < 0) {
-> -			pr_info("%s: no vmmc regulator found\n",
-> -				mmc_hostname(mmc));
-> +			if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
-> +				return -EPROBE_DEFER;
-> +			pr_info("%s: no vmmc regulator found (%d)\n",
+Em Wed, 26 Mar 2014 15:55:07 +0100
+"Rafael J. Wysocki" <rjw@rjwysocki.net> escreveu:
 
-I suggest using %ld here. The rest looks fine to me! Thanks!
+> On Wednesday, March 26, 2014 01:08:10 PM Tomasz Nowicki wrote:
+> > Hi,
+> 
+> Hi,
+> 
+> This is a question for Tony, Boris and Mauro (CCed now).
+> 
+> > Currently APEI depends on x86 architecture. It is because of many x86 
+> > specific features like "IA-32 Architecture Corrected Machine Check
+> > " error source or NMI hardware error notification. However, many other 
+> > features like "PCI Express Device AER Structure" or GHES via external 
+> > interrupt can be still used perfectly by other architectures. So my idea 
+> > is to move x86 dependency away form Kconfig to APEI areas where it 
+> > really applies to.
+> > 
+> > I have started refactoring ghes.c driver in that direction. And here 
+> > comes my confusion, how should we treat x86 related parts, as fixed 
+> > profile? (which means we could use ACPI_REDUCED_HARDWARE or 
+> > CONFIG_ACPI_REDUCED_HARDWARE_ONLY define). I would like to ask for your 
+> > opinion.
 
-> +				mmc_hostname(mmc), PTR_ERR(host->vmmc));
->   			host->vmmc = NULL;
->   		}
->   	}
->
+That's a good question, and probably depends on how are you mapping the
+ACPI changes. For example, are you moving acpi out of /arch?
 
-BR,
-Georgi
+As I answered to a similar questioning, IMHO, the better would be to 
+have the hardware error report mechanisms on /drivers/ras, and have 
+there some Kconfig items that would depend on X86 to enable certain
+drivers.
 
+Also, I don't like to have something like ACPI_REDUCED_foo. IMHO, the
+better would be to do the reverse: to have Kconfig symbols enabling the
+extra X86-specific functionality, and have them mapped into separate
+files/drivers, with proper KConfig names, like ACPI_X86 or ACPI_X86_NMI.
+
+Yet, it would be better if you could be a little more specific about
+what are your plans and what are the common/not-common features that
+you're mapping.
+
+Regards,
+Mauro
