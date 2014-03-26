@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751539AbaCZFyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 01:54:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47514 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750727AbaCZFyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 01:54:04 -0400
-Date: Wed, 26 Mar 2014 01:53:50 -0400
-From: Dave Jones <davej@redhat.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: gpf in simple_setattr
-Message-ID: <20140326055350.GA21267@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
-	Sasha Levin <sasha.levin@oracle.com>,
-	Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <53189BF8.1010308@oracle.com>
- <531A7CFD.9030603@oracle.com>
- <20140310104350.GB28797@quack.suse.cz>
- <531DC89A.9010601@oracle.com>
- <53304451.7030800@oracle.com>
- <20140324214851.GB10057@quack.suse.cz>
- <5330D15E.2000702@oracle.com>
- <20140325173340.GB17292@quack.suse.cz>
- <5331C20F.5010109@oracle.com>
- <20140325211229.GA27422@quack.suse.cz>
+	id S1753164AbaCZF4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 01:56:32 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54613 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727AbaCZF4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 01:56:31 -0400
+From: SeongJae Park <sj38.park@gmail.com>
+To: gregkh@linuxfoundation.org, chad@dahc.us, viro@zeniv.linux.org.uk
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] staging: silicom: hide conditionally used function in condition
+Date: Wed, 26 Mar 2014 14:58:50 +0900
+Message-Id: <1395813530-2684-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140325211229.GA27422@quack.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 10:12:29PM +0100, Jan Kara wrote:
+bp_proc_create() be called only when BP_PROC_SUPPORT defined but its
+definition live outside of #ifdef BP_PROC_SUPPORT and cause following
+trivial build warning:
+drivers/staging/silicom/bpctl_mod.c:6786:12: warning:
+‘bp_proc_create’ defined but not used [-Wunused-function]
+ static int bp_proc_create(void)
+            ^
 
- > This fixes an oops triggered by trinity when it tried mounting
- > anon_inodefs which overwrote anon_inode_inode pointer while other CPU
- > has been in anon_inode_getfile() between ihold() and d_instantiate().
- > Thus effectively creating dentry pointing to an inode without holding a
- > reference to it.
+Fix the warning by hide the definition inside #ifdef BP_PROC_SUPPORT.
+
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ drivers/staging/silicom/bpctl_mod.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/staging/silicom/bpctl_mod.c b/drivers/staging/silicom/bpctl_mod.c
+index 6b9365b..beff280 100644
+--- a/drivers/staging/silicom/bpctl_mod.c
++++ b/drivers/staging/silicom/bpctl_mod.c
+@@ -119,7 +119,9 @@ static void if_scan_init(void);
  
-<raises eyebrows>
-
-Sasha, do you have changes to trinity's syscall/mount.c ?
-It's kind of miraculous we managed to get the type arg right
-there, because right now we're just passing a random address as an arg.
-The only way that could work is if we randomly managed to do an allocation,
-and then a seek & read from /proc/filesystems to that buffer.  If you're
-lucky enough to get all those conditions right from rand() calls, you should
-probably give up on kernel hacking and buy some powerball tickets.
-
-We should add some code to make that only return strings from /proc/filesystems,
-which makes me wonder if you already did that..
-
-	Dave
+ static int bypass_proc_create_dev_sd(struct bpctl_dev *pbp_device_block);
+ static int bypass_proc_remove_dev_sd(struct bpctl_dev *pbp_device_block);
++#ifdef BP_PROC_SUPPORT
+ static int bp_proc_create(void);
++#endif
+ 
+ static int is_bypass_fn(struct bpctl_dev *pbpctl_dev);
+ static int get_dev_idx_bsf(int bus, int slot, int func);
+@@ -6783,6 +6785,7 @@ EXPORT_SYMBOL(bp_if_scan_sd);
+ 
+ static struct proc_dir_entry *bp_procfs_dir;
+ 
++#ifdef BP_PROC_SUPPORT
+ static int bp_proc_create(void)
+ {
+ 	bp_procfs_dir = proc_mkdir(BP_PROC_DIR, init_net.proc_net);
+@@ -6794,6 +6797,7 @@ static int bp_proc_create(void)
+ 	}
+ 	return 0;
+ }
++#endif
+ 
+ static int procfs_add(char *proc_name, const struct file_operations *fops,
+ 		      struct bpctl_dev *dev)
+-- 
+1.8.3.2
 
