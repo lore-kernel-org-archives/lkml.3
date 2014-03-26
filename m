@@ -1,76 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbaCZDB5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 23:01:57 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:39956 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185AbaCZDB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 23:01:56 -0400
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: martyn.welch@ge.com, manohar.vanga@gmail.com, gregkh@linuxfoundation.org
-Cc: asierra@xes-inc.com, lisa@xenapiadmin.com, yongjun_wei@trendmicro.com.cn,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vme: fix memory leak in vme_user_probe()
-Date: Wed, 26 Mar 2014 12:01:48 +0900
-Message-ID: <3217679.sqG7Yrhs8H@daeseok-laptop.cloud.net>
-User-Agent: KMail/4.8.5 (Linux/3.2.0-58-generic; KDE/4.8.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1755450AbaCZDCd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 23:02:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755290AbaCZDCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 23:02:31 -0400
+Message-ID: <1395802940.16116.16.camel@localhost>
+Subject: Re: Linux 3.14-rc8 (LXC broken)
+From: Eric Paris <eparis@redhat.com>
+To: Andre Tomt <andre@tomt.net>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        containers@lists.linux-foundation.org
+Date: Tue, 25 Mar 2014 23:02:20 -0400
+In-Reply-To: <5331E8CB.3060708@tomt.net>
+References: <CA+55aFzFj_XMNha5gcDHfmLE_Jb-O2OpdTbZyQdarJnip1gSBQ@mail.gmail.com>
+	 <5331E8CB.3060708@tomt.net>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2014-03-25 at 21:36 +0100, Andre Tomt wrote:
+> *testing hat on*
+> 
+> PAM within namespaces (say, LXC) does not work anymore with 3.14-rc8,
+> making login, ssh etc fail in containers unless you boot with audit=0.
+> 
+> This is due to a change in return value to user space; and is
+> appearantly a known issue as evident in this earlier post from february:
+> https://www.redhat.com/archives/linux-audit/2014-February/msg00087.html
+> 
+> Judging from the post it seems they want to ship 3.14 with this IMO
+> quite serious regression? What is the namespace/container folks take on
+> this?
 
-If vme_master_request() returns NULL when it failed,
-it need to free buffers for master.
+Fair question.
 
-And also removes unreachable code in vme_user_probe().
+Pam only worked in non-initial pid (or user) namespace if it was also in
+the non-initial network namespace.  We added support for the network
+namespace in 3.14.  So now PAM in the non-initial network namespace
+functions the same as it would in the inital network namespace.  aka, it
+fails.  This is actually what the audit userspace people think is the
+right thing to happen.  You configured PAM to fail if it couldn't do the
+right audit things, and it's failing.  Needing audit=0 is not new.
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
- drivers/staging/vme/devices/vme_user.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
+BUT given we broke (already broken [remember you configured PAM to fail
+if audit didn't go well and it let you log in anyway?  aka broken?])
+functionality adding network namespace support I'll send a request to
+Linus tomorrow to rip out our network namespace support and I'll re-add
+in 3.15 when we add pid (and partial user) namespace support.
 
-diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-index 7927927..ffb4eee 100644
---- a/drivers/staging/vme/devices/vme_user.c
-+++ b/drivers/staging/vme/devices/vme_user.c
-@@ -776,7 +776,8 @@ static int vme_user_probe(struct vme_dev *vdev)
- 		image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
- 		if (image[i].kern_buf == NULL) {
- 			err = -ENOMEM;
--			goto err_master_buf;
-+			vme_master_free(image[i].resource);
-+			goto err_master;
- 		}
- 	}
- 
-@@ -819,8 +820,6 @@ static int vme_user_probe(struct vme_dev *vdev)
- 
- 	return 0;
- 
--	/* Ensure counter set correcty to destroy all sysfs devices */
--	i = VME_DEVS;
- err_sysfs:
- 	while (i > 0) {
- 		i--;
-@@ -830,12 +829,10 @@ err_sysfs:
- 
- 	/* Ensure counter set correcty to unalloc all master windows */
- 	i = MASTER_MAX + 1;
--err_master_buf:
--	for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
--		kfree(image[i].kern_buf);
- err_master:
- 	while (i > MASTER_MINOR) {
- 		i--;
-+		kfree(image[i].kern_buf);
- 		vme_master_free(image[i].resource);
- 	}
- 
--- 
-1.7.4.4
-
+-Eric
 
