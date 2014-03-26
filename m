@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246AbaCZVx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:53:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53373 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751580AbaCZVxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:53:25 -0400
-Date: Wed, 26 Mar 2014 14:53:20 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH -mm 1/4] sl[au]b: do not charge large allocations to memcg
-Message-ID: <20140326215320.GA22656@dhcp22.suse.cz>
-References: <cover.1395846845.git.vdavydov@parallels.com>
- <5a5b09d4cb9a15fc120b4bec8be168630a3b43c2.1395846845.git.vdavydov@parallels.com>
+	id S1756455AbaCZVyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 17:54:13 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:64203 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756359AbaCZVyM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 17:54:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5a5b09d4cb9a15fc120b4bec8be168630a3b43c2.1395846845.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [12.232.193.53]
+In-Reply-To: <1395868919.5365.6.camel@pippen.local.home>
+References: <1395839857.7667.9.camel@pippen.local.home>
+	<1395857987.10059.23.camel@empanada>
+	<1395868919.5365.6.camel@pippen.local.home>
+Date: Wed, 26 Mar 2014 14:54:11 -0700
+Message-ID: <CAOesGMiLOcC2KR4b9Jq=hJT=8NKK95itWx0BsX7NGsmBYYLbSw@mail.gmail.com>
+Subject: Re: [GIT PULL] tracing: Fix traceon trigger condition to actually
+ turn tracing on
+From: Olof Johansson <olof@lixom.net>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 19:28:04, Vladimir Davydov wrote:
-> We don't track any random page allocation, so we shouldn't track kmalloc
-> that falls back to the page allocator.
+On Wed, Mar 26, 2014 at 2:21 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> Bah, I forgot to Cc LKML on my pull request. Doing this from a
+> conference with very poor internet access from a laptop that I don't
+> usually develop on, means I might make mistakes.
+>
+> On Wed, 2014-03-26 at 13:19 -0500, Tom Zanussi wrote:
+>> On Wed, 2014-03-26 at 09:17 -0400, Steven Rostedt wrote:
+>> > Linus,
+>> >
+>> > While on my flight to Linux Collaboration Summit, I was working on
+>> > my slides for the event trigger tutorial. I booted a 3.14-rc7 kernel
+>> > to perform what I wanted to teach and cut and paste it into my slides.
+>> > When I tried the traceon event trigger with a condition attached to it
+>> > (turns tracing on only if a field of the trigger event matches a condition
+>> > set by the user), nothing happened. Tracing would not turn on. I stopped
+>> > working on my presentation in order to find what was wrong.
+>> >
+>>
+>> Hi Steve,
+>>
+>> Sorry you had to stop working on your presentation to dig into this -
+>> thanks for doing that though - it looks correct and fixes the problem
+>> here for me, so you can add my Tested-by:
+>>
+>> Tested-by: Tom Zanussi <tom.zanussi@linux.intel.com>
+>
+> Linus already pulled it. But Olof came to me at lunch to tell me my
+> patch broke his PA Semi PPC box.
+>
+> Olof, as you well know, I also own one of those beasts, and I just
+> booted the kernel with that patch and all works fine. Perhaps its a
+> config issue? Can you send me your config.
 
-Why did we do that in the first place? d79923fad95b (sl[au]b: allocate
-objects from memcg cache) didn't tell me much.
 
-How is memcg_kmem_skip_account removal related?
+I think it's a side effect, and something else is going on. If I build
+an boot a ppc64_defconfig on the box (I mistakenly told you that it
+was pasemi_defconfig), it hangs early during boot during PCI init,
+halfway through printing a line of stack usage warning.
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> ---
->  include/linux/slab.h |    2 +-
->  mm/memcontrol.c      |   27 +--------------------------
->  mm/slub.c            |    4 ++--
->  3 files changed, 4 insertions(+), 29 deletions(-)
-> 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 3dd389aa91c7..8a928ff71d93 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -363,7 +363,7 @@ kmalloc_order(size_t size, gfp_t flags, unsigned int order)
->  {
->  	void *ret;
->  
-> -	flags |= (__GFP_COMP | __GFP_KMEMCG);
-> +	flags |= __GFP_COMP;
->  	ret = (void *) __get_free_pages(flags, order);
->  	kmemleak_alloc(ret, size, 1, flags);
->  	return ret;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b4b6aef562fa..81a162d01d4d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3528,35 +3528,10 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
->  
->  	*_memcg = NULL;
->  
-> -	/*
-> -	 * Disabling accounting is only relevant for some specific memcg
-> -	 * internal allocations. Therefore we would initially not have such
-> -	 * check here, since direct calls to the page allocator that are marked
-> -	 * with GFP_KMEMCG only happen outside memcg core. We are mostly
-> -	 * concerned with cache allocations, and by having this test at
-> -	 * memcg_kmem_get_cache, we are already able to relay the allocation to
-> -	 * the root cache and bypass the memcg cache altogether.
-> -	 *
-> -	 * There is one exception, though: the SLUB allocator does not create
-> -	 * large order caches, but rather service large kmallocs directly from
-> -	 * the page allocator. Therefore, the following sequence when backed by
-> -	 * the SLUB allocator:
-> -	 *
-> -	 *	memcg_stop_kmem_account();
-> -	 *	kmalloc(<large_number>)
-> -	 *	memcg_resume_kmem_account();
-> -	 *
-> -	 * would effectively ignore the fact that we should skip accounting,
-> -	 * since it will drive us directly to this function without passing
-> -	 * through the cache selector memcg_kmem_get_cache. Such large
-> -	 * allocations are extremely rare but can happen, for instance, for the
-> -	 * cache arrays. We bring this test here.
-> -	 */
-> -	if (!current->mm || current->memcg_kmem_skip_account)
-> +	if (!current->mm)
->  		return true;
->  
->  	memcg = get_mem_cgroup_from_mm(current->mm);
-> -
->  	if (!memcg_can_account_kmem(memcg)) {
->  		css_put(&memcg->css);
->  		return true;
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 5e234f1f8853..c2e58a787443 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3325,7 +3325,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
->  	struct page *page;
->  	void *ptr = NULL;
->  
-> -	flags |= __GFP_COMP | __GFP_NOTRACK | __GFP_KMEMCG;
-> +	flags |= __GFP_COMP | __GFP_NOTRACK;
->  	page = alloc_pages_node(node, flags, get_order(size));
->  	if (page)
->  		ptr = page_address(page);
-> @@ -3395,7 +3395,7 @@ void kfree(const void *x)
->  	if (unlikely(!PageSlab(page))) {
->  		BUG_ON(!PageCompound(page));
->  		kfree_hook(x);
-> -		__free_memcg_kmem_pages(page, compound_order(page));
-> +		__free_pages(page, compound_order(page));
->  		return;
->  	}
->  	slab_free(page->slab_cache, page, object, _RET_IP_);
-> -- 
-> 1.7.10.4
-> 
+However, it seems fickle. If I disable the hung task detector it seems
+to go away, for example. So, I think something else is going on and it
+just happened to align the stars for it to happen.
 
--- 
-Michal Hocko
-SUSE Labs
+I'll keep trying to change variables enough to see what's going on. I
+really wish I still had JTAG access on this box, but all those tools
+are since long gone and forgotten. The conference wifi makes it harder
+to work on this too, as I'm sure you've noticed...
+
+Don't let this hold up anything at this time, unless someone else complains.
+
+
+-Olof
