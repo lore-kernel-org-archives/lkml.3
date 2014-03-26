@@ -1,71 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbaCZMI3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 08:08:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:52490 "EHLO
+	id S1754455AbaCZM0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 08:26:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52599 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754049AbaCZMI1 (ORCPT
+	with ESMTP id S1753743AbaCZM0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 08:08:27 -0400
-Date: Wed, 26 Mar 2014 05:10:11 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Jimmy Li <coder.liss@gmail.com>
-Cc: Teodora Baluta <teobaluta@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        =?utf-8?B?VMO8bGluIMSwemVy?= <tulinizer@gmail.com>,
-        Archana kumari <archanakumari959@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/staging/vt6655/iwctl.c fix a sparse warning
-Message-ID: <20140326121011.GA23018@kroah.com>
-References: <20140326074243.GA15228@gmail.com>
+	Wed, 26 Mar 2014 08:26:05 -0400
+Date: Wed, 26 Mar 2014 05:27:48 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: SeongJae Park <sj38.park@gmail.com>
+Cc: chad@dahc.us, viro@zeniv.linux.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: silicom: hide conditionally used function in
+ condition
+Message-ID: <20140326122748.GB28816@kroah.com>
+References: <1395813530-2684-1-git-send-email-sj38.park@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140326074243.GA15228@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1395813530-2684-1-git-send-email-sj38.park@gmail.com>
 User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 12:42:43AM -0700, Jimmy Li wrote:
-> fix a sparse warning.
-> drivers/staging/vt6655/iwctl.c:1846:35: warning: cast from restricted
-> gfp_t
-> drivers/staging/vt6655/iwctl.c:1846:35: warning: incorrect type in
-> argument 2 (different base types)
-> drivers/staging/vt6655/iwctl.c:1846:35:    expected restricted gfp_t
-> [usertype] flags
-> drivers/staging/vt6655/iwctl.c:1846:35:    got int [signed] <noident>
-
-In the future, please don't line-wrap error/warning messages like this.
-
+On Wed, Mar 26, 2014 at 02:58:50PM +0900, SeongJae Park wrote:
+> bp_proc_create() be called only when BP_PROC_SUPPORT defined but its
+> definition live outside of #ifdef BP_PROC_SUPPORT and cause following
+> trivial build warning:
+> drivers/staging/silicom/bpctl_mod.c:6786:12: warning:
+> ‘bp_proc_create’ defined but not used [-Wunused-function]
+>  static int bp_proc_create(void)
+>             ^
 > 
-> Signed-off-by: Jimmy Li <coder.liss@gmail.com>
-> ---
->  drivers/staging/vt6655/iwctl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-> index ac3fc16..5e25535 100644
-> --- a/drivers/staging/vt6655/iwctl.c
-> +++ b/drivers/staging/vt6655/iwctl.c
-> @@ -1843,7 +1843,7 @@ int iwctl_siwencodeext(struct net_device *dev,
->  	PRINT_K("SIOCSIWENCODEEXT...... \n");
->  
->  	blen = sizeof(*param);
-> -	buf = kmalloc((int)blen, (int)GFP_KERNEL);
-> +	buf = kmalloc((int)blen, GFP_KERNEL);
->  	if (buf == NULL)
->  		return -ENOMEM;
->  	memset(buf, 0, blen);
-> -- 
-> 1.7.10.4
+> Fix the warning by hide the definition inside #ifdef BP_PROC_SUPPORT.
 
-Thanks, I'll queue this up after 3.15-rc1 is out, as my tree is
-currently closed.
+But no one can define that value, so why add more usages, it should just
+be ripped out.  Just remove everything "hidden" by this option as no
+one is obviously using it, and no driver should be messing around in
+/proc anyway.
+
+thanks,
 
 greg k-h
