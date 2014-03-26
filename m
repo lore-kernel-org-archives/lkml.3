@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaCZNjr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:39:47 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:49048 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaCZNjp convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:3>);
-	Wed, 26 Mar 2014 09:39:45 -0400
-Message-Id: <5332E6AE02000078000025F0@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Wed, 26 Mar 2014 13:39:42 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Matt Fleming" <matt@console-pimps.org>
-Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
-        <fenghua.yu@intel.com>, <matt.fleming@intel.com>,
-        <tony.luck@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
-        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        "Daniel Kiper" <daniel.kiper@oracle.com>, <konrad.wilk@oracle.com>,
-        <eshelton@pobox.com>, <mingo@redhat.com>, <linux-efi@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range()
- on native EFI platform only
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
- <20140326130009.GB24856@console-pimps.org>
- <5332E2B9020000780000255D@nat28.tlf.novell.com>
- <20140326133119.GD24856@console-pimps.org>
-In-Reply-To: <20140326133119.GD24856@console-pimps.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753957AbaCZNoO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:44:14 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:46140 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751130AbaCZNoM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 09:44:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140325212417.GA6545@kroah.com>
+References: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
+	<20140325212417.GA6545@kroah.com>
+Date: Wed, 26 Mar 2014 09:44:11 -0400
+X-Google-Sender-Auth: QAmbM2vWrcYOy-9jcHhjLlJqXfE
+Message-ID: <CA+5PVA608SPM1r5tXwo_C+vaEff+XiLQ5AWwH7-i-MMGcXtuHw@mail.gmail.com>
+Subject: Re: Feb. Fedora Kernel Patch Report
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Greg KH <greg@kroah.com>, mhocko@suse.cz
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Kernel Fedora <kernel@lists.fedoraproject.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 26.03.14 at 14:31, <matt@console-pimps.org> wrote:
-> On Wed, 26 Mar, at 01:22:49PM, Jan Beulich wrote:
->> >>> On 26.03.14 at 14:00, <matt@console-pimps.org> wrote:
->> > 
->> > This could do with a little bit more explanation. Why is it not
->> > necessary to mark the EFI memory map that was passed to the kernel as
->> > reserved in memblock?
->> 
->> Because that's in memory Dom0 doesn't even see: The EFI memory
->> map is visible to the hypervisor only.
-> 
-> So where does boot_params.efi_info.efi_memmap point?
-> 
-> If nowhere (i.e. it's NULL) that's no problem because memblock_reserve()
-> handles zero size regions just fine.
+On Tue, Mar 25, 2014 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Feb 28, 2014 at 10:13:29AM -0500, Josh Boyer wrote:
+>> cgroup-fixes.patch (rhbz 1045755)
+>> - Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
+>> - There was a 3.12 version of this patch sent to stable list from
+>> Michal Hocko.  I don't remember why it wasn't applied, or why it
+>> wasn't applied for 3.13.y...
+>
+> It didn't apply to 3.13, and I think I was waiting for a backported
+> version, do you have one?
 
-That's a question to Daniel - in our implementation (with a separate
-Xen kernel that can't run on bare hardware) boot_params as a whole
-simply doesn't exist.
+As far as I know we're using this version:
 
-Jan
+http://thread.gmane.org/gmane.linux.kernel.cgroups/10336/focus=1646465
 
+The commentary on the thread seems to imply that Michal was going to
+send it again for some reason.  Michal, did you send the 3.12/3.13
+backport for this commit directly to stable?
+
+josh
