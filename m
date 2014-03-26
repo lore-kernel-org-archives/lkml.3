@@ -1,75 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153AbaCZTz2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 15:55:28 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57112 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755967AbaCZTz0 (ORCPT
+	id S1756194AbaCZT42 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 15:56:28 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:50570 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755902AbaCZT4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 15:55:26 -0400
-Date: Wed, 26 Mar 2014 12:55:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: mm: BUG: Bad page state in process ksmd
-Message-Id: <20140326125525.4e8090096f647f654eb7329d@linux-foundation.org>
-In-Reply-To: <5332EE97.4050604@oracle.com>
-References: <5332EE97.4050604@oracle.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 26 Mar 2014 15:56:22 -0400
+Message-ID: <533330D6.3070808@biereigel.de>
+Date: Wed, 26 Mar 2014 20:56:06 +0100
+From: Stefan Biereigel <stefan@biereigel.de>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Kieran Clancy <clancy.kieran@gmail.com>
+CC: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Stefan Biereigel <security@biereigel-wb.de>,
+        Lan Tianyu <lantianyu1986@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com> <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com> <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com> <5331E5EB.5000304@biereigel-wb.de> <5331E9E4.4050201@gmail.com> <5332099B.8090305@gmail.com> <5332AF10.90109@biereigel.de> <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com>
+In-Reply-To: <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:9J7zNy1efZu00jwzWYW0lpm3mKfGfAwqzt50EFjTJxH
+ 5CXranfbtVn7dMH1t+AtW8Vo/BdiWMBzrokau9KHZ8h8Lg6S8Z
+ b2h4PBx/Mt14bzcZ5Q091EHtJFF+y0/GE4A6H2ze3b5kI3jdW1
+ lwwLqm6HIQIFP/8Yk7P1Qw1vNiBW27wNX3Cww0fzPjIR9q1u1U
+ FoaGr6KRbeKloCcFM7VGawSkALIulDY8HzJ6iCqaQn5XtTMY3M
+ g/FTY6dqgideYNtk+X83uTLgpYfWuCFpr0oWN8FsG9Q0ixrNTQ
+ eNGRttdHg4sxsI3p8/JExTnyPnVPPNF0RrvKcLwTeZk94riVnp
+ Mx/pfAYtbTz/vyUMVkbg=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014 11:13:27 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+Hi,
 
-> Hi all,
+I tested both of your patches. The processing of events works well on my
+N150, the lid is reported open correctly after resume.
+For the second patch (the whitelisting-approach), I had to change the
+Product Name to "N150/N210/N220" instead of "N150P", because that is
+what dmidecode reports for my netbook.
+
+So, all three approaches work equally well for me (whitelisting my
+broken N150, blacklisting the broken Series 5/7/9, processing all the
+stale events). I personally would prefer a solution which needs to
+handle (best case) no custom cases, because there are always n+1 of
+them. But, as I don't know if there may be any problems with the
+approach that needs no special handling (processing all stale events) in
+the future, I'm not the one to decide the correct solution.
+
+What would you do? Do any of these patches create issues for you?
+
+Greetings
+Stefan
+
+Am 26.03.2014 15:38, schrieb Kieran Clancy:
+> On Wed, Mar 26, 2014 at 9:12 PM, Stefan Biereigel <stefan@biereigel.de> wrote:
+>>
+>> I don't know if it is a valid idea, but maybe it would be ok to process
+>> events after resume in general, and only throw away events on those
+>> platforms that continue to log events while in standby (Samsung 5/7/9)?
 > 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel I've stumbled on the following.
-
-(cc Hugh)
-
-> Out of curiosity, is there a reason not to do bad flag checks when actually
-> setting flag? Obviously it'll be slower but it'll be easier catching these
-> issues.
-
-Tricky.  Each code site must determine what are and are not valid page
-states depending upon the current context.  The one place where we've
-made that effort is at the point where a page is returned to the free
-page pool.  Any other sites would require similar amounts of effort and
-each one would be different from all the others.
-
-We do this in a small way all over the place, against individual page
-flags.  grep PageLocked */*.c.
-
-> [ 3926.683948] BUG: Bad page state in process ksmd  pfn:5a6246
-> [ 3926.689336] page:ffffea0016989180 count:0 mapcount:0 mapping:          (null) index:
-> [ 3926.696507] page flags: 0x56fffff8028001c(referenced|uptodate|dirty|swapbacked|mlock
-> [ 3926.709201] page dumped because: PAGE_FLAGS_CHECK_AT_FREE flag(s) set
-> [ 3926.711216] bad because of flags:
-> [ 3926.712136] page flags: 0x200000(mlocked)
-> [ 3926.713574] Modules linked in:
-> [ 3926.714466] CPU: 26 PID: 3864 Comm: ksmd Tainted: G        W     3.14.0-rc7-next-201
-> [ 3926.720942]  ffffffff85688060 ffff8806ec7abc38 ffffffff844bd702 0000000000002fa0
-> [ 3926.728107]  ffffea0016989180 ffff8806ec7abc68 ffffffff844b158f 000fffff80000000
-> [ 3926.730563]  0000000000000000 000fffff80000000 ffffffff85688060 ffff8806ec7abcb8
-> [ 3926.737653] Call Trace:
-> [ 3926.738347]  dump_stack (lib/dump_stack.c:52)
-> [ 3926.739841]  bad_page (arch/x86/include/asm/atomic.h:38 include/linux/mm.h:432 mm/page_alloc.c:339)
-> [ 3926.741296]  free_pages_prepare (mm/page_alloc.c:644 mm/page_alloc.c:738)
-> [ 3926.742818]  free_hot_cold_page (mm/page_alloc.c:1371)
-> [ 3926.749425]  __put_single_page (mm/swap.c:71)
-> [ 3926.751074]  put_page (mm/swap.c:237)
-> [ 3926.752398]  ksm_do_scan (mm/ksm.c:1480 mm/ksm.c:1704)
-> [ 3926.753957]  ksm_scan_thread (mm/ksm.c:1723)
-> [ 3926.755940]  ? bit_waitqueue (kernel/sched/wait.c:291)
-> [ 3926.758644]  ? ksm_do_scan (mm/ksm.c:1715)
-> [ 3926.760420]  kthread (kernel/kthread.c:219)
-> [ 3926.761605]  ? kthread_create_on_node (kernel/kthread.c:185)
-> [ 3926.763149]  ret_from_fork (arch/x86/kernel/entry_64.S:555)
-> [ 3926.764323]  ? kthread_create_on_node (kernel/kthread.c:185)
-
+> We can give it a shot!
+> 
+> It may even be that on Samsung 5/7/9 there is no harm in processing
+> the events instead of discarding them.
+> 
+> Here's a patch that we can try for that:
+> 
+> http://kieranclancy.com/tmp/2014/03/ec_clear_process.patch
+> 
+> I'm going to have to clear up some hard drive space before I can
+> compile a kernel with it (curse this tiny SSD), but if anyone else
+> wants to give it a shot please feel free.
+> 
+> One thing I am still trying to think about is that Stefan's system
+> must be about to check and process this EC event anyway, but we
+> discard it first. I wonder if there is some difference in state (e.g.
+> EC status bits) here that we might detect.
+> 
+> Failing all that, it might be easier to just whitelist this product
+> rather than try to find every series 5/7/9/?/... Samsung product name.
+> Something like this:
+> 
+> http://kieranclancy.com/tmp/2014/03/ec_clear_exclude_N150P.patch (not
+> intended for use with other patch, they are mutually exclusive
+> approaches)
+> 
+>> But after all, it would be better to find the command to tell the EC to
+>> stop recording events and issue that before going to sleep. Is there any
+>> way to find that command (for example on Windows)? Maybe that one is so
+>> generic that we can issue it to all ECs, regardless of if it would
+>> continue to log events during sleep.
+> 
+> It would be great to know what Windows does here, but even then we
+> still need to be able to clear a jammed EC. You can still find posts
+> around the internet where Windows users who've never touched Linux
+> have these same kind of problems with their Samsung laptops. My guess
+> is it only takes one blue screen of death or something where the EC
+> isn't shut down properly, the EC fills up and then it's more or less a
+> permanent state until the EC is cleared manually.
+> 
+> Thanks again for your testing, Stefan.
+> 
+> Kieran.
+> 
