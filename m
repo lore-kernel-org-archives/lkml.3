@@ -1,85 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755078AbaCZAA4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:00:56 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:55414 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482AbaCZAAy (ORCPT
+	id S1755464AbaCZABH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:01:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:34215 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253AbaCZABC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:00:54 -0400
-Message-ID: <5332188E.7050302@ahsoftware.de>
-Date: Wed, 26 Mar 2014 01:00:14 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 20:01:02 -0400
+Date: Tue, 25 Mar 2014 17:00:42 -0700
+From: tip-bot for Viresh Kumar <tipbot@zytor.com>
+Message-ID: <tip-cacb3c76c2012ade52124e8c6fdc5cb125625772@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        viresh.kumar@linaro.org, tglx@linutronix.de
+In-Reply-To: <2b29ca4230c163e44179941d7c7a16c1474385c2.1395743878.git.viresh.kumar@linaro.org>
+References: <2b29ca4230c163e44179941d7c7a16c1474385c2.1395743878.git.viresh.kumar@linaro.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/core] tick:
+  Fix spelling mistake in tick_handle_periodic()
+Git-Commit-ID: cacb3c76c2012ade52124e8c6fdc5cb125625772
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Sebastian Capella <sebastian.capella@linaro.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Len Brown <len.brown@intel.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jonathan Austin <jonathan.austin@arm.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Victor Kamensky <victor.kamensky@linaro.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Sricharan R <r.sricharan@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
-        Nicolas Pitre <nico@linaro.org>,
-        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Laura Abbott <lauraa@codeaurora.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Jiang Liu <liuj97@gmail.com>
-Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
-References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>	<20140316070917.GA3094@arch.cereza>	<CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com>	<20140317204410.GA1118@arch.cereza>	<CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com>	<20140319154434.GA3488@arch.cereza>	<CADHgK6vLB3h0zrdpve=ZyjNu2pe1VYsGxrYgv=2C-JV37vE9tQ@mail.gmail.com> <CADHgK6vkwjXyJxRcOXjJpJJaR0-YR869NpPZ+CBBS8kEdE0qCQ@mail.gmail.com> <5331CD43.1010601@ahsoftware.de> <53321311.8060604@ahsoftware.de>
-In-Reply-To: <53321311.8060604@ahsoftware.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.03.2014 00:36, schrieb Alexander Holler:
-> Am 25.03.2014 19:38, schrieb Alexander Holler:
->
->> reboot too. Another solution would be to unregister the reboot_notifier
->> in the reboot_nofifier itself. I've just seen one watchdog driver
->> (drivers/rtc/rtc-m41t80.c) which does that. But I still think such
->
-> That, btw. is broken. ;)
->
-> Right after having send the mail, I've became that intuition, had a look
-> and ... notifier.h does state the following:
->
->   * atomic_notifier_chain_unregister(),
-> blocking_notifier_chain_unregister(),
->   * and srcu_notifier_chain_unregister() _must not_ be called from within
->   * the call chain.
->
-> (The reboot-notifier chain is of type blocking_notifier_chain)
->
-> So I've picked up one user of reboot_notifier by random and had the luck
-> to choose a broken one. ;)
->
-> I will make a patch and will have a look if the same failure can be
-> found elsewhere. There aren't that much users of the reboot-notifier, so
-> it shouldn't cost me that much time.
+Commit-ID:  cacb3c76c2012ade52124e8c6fdc5cb125625772
+Gitweb:     http://git.kernel.org/tip/cacb3c76c2012ade52124e8c6fdc5cb125625772
+Author:     Viresh Kumar <viresh.kumar@linaro.org>
+AuthorDate: Tue, 25 Mar 2014 16:09:18 +0530
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Wed, 26 Mar 2014 00:56:49 +0100
 
-Hmm, and either I was confused, or have looked at some other user of the 
-reboot_notifier, but rtc-m41t80.c doesn't call unregister from it's 
-notifier. And unfortunately there are a bit more users of the 
-reboot_notifier than I first thought. :/
+tick: Fix spelling mistake in tick_handle_periodic()
 
-I will check if I can find out at least at which driver I had a look at 
-which did call unregister_notifier from the notifier itself.
+One of the comments in tick_handle_periodic() had 'when' instead of 'which' (My
+guess :)). Fix it.
 
-Regards,
+Also fix spelling mistake in 'Possible'.
 
-Alexander Holler
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: linaro-kernel@lists.linaro.org
+Cc: skarafotis@gmail.com
+Link: http://lkml.kernel.org/r/2b29ca4230c163e44179941d7c7a16c1474385c2.1395743878.git.viresh.kumar@linaro.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/time/tick-common.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 20b2fe3..0fec634 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -118,7 +118,7 @@ void tick_handle_periodic(struct clock_event_device *dev)
+ 		 * to be sure we're using a real hardware clocksource.
+ 		 * Otherwise we could get trapped in an infinite
+ 		 * loop, as the tick_periodic() increments jiffies,
+-		 * when then will increment time, posibly causing
++		 * which then will increment time, possibly causing
+ 		 * the loop to trigger again and again.
+ 		 */
+ 		if (timekeeping_valid_for_hres())
