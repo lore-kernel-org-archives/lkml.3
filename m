@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754711AbaCZLWu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 07:22:50 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:39895 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320AbaCZLWr (ORCPT
+	id S1754762AbaCZLW4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 07:22:56 -0400
+Received: from mail-we0-f171.google.com ([74.125.82.171]:47154 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320AbaCZLWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 07:22:47 -0400
+	Wed, 26 Mar 2014 07:22:53 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, linaro-networking@linaro.org,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 10/14] hrtimer: remove clock_was_set_delayed() from hrtimer.h
-Date: Wed, 26 Mar 2014 16:51:16 +0530
-Message-Id: <7f1d2271c0f37dab9e446767880b8b9759750d50.1395832156.git.viresh.kumar@linaro.org>
+Subject: [PATCH 11/14] hrtimer: remove active_bases field from struct hrtimer_cpu_base
+Date: Wed, 26 Mar 2014 16:51:17 +0530
+Message-Id: <dc479af0df0a087f24719237e7af687caa71e0d1.1395832156.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1395832156.git.viresh.kumar@linaro.org>
 References: <cover.1395832156.git.viresh.kumar@linaro.org>
@@ -24,60 +24,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clock_was_set_delayed() is called from only hrtimer.c and so should be marked
-static. Along with that its declaration and dummy definition must be removed
-from hrtimer.h.
+Active_bases field of struct hrtimer_cpu_base is used at only one place, i.e.
+hrtimer_interrupt() and at that place too we can easily use timerqueue_getnext()
+instead to achieve the same result. I don't think this will have any performance
+degradation issues and so removing this field.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/hrtimer.h | 5 -----
- kernel/hrtimer.c        | 3 ++-
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ include/linux/hrtimer.h | 2 --
+ kernel/hrtimer.c        | 8 ++------
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
 diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index 17c08ca..6f524db 100644
+index 6f524db..cb6a315 100644
 --- a/include/linux/hrtimer.h
 +++ b/include/linux/hrtimer.h
-@@ -288,8 +288,6 @@ extern void hrtimer_peek_ahead_timers(void);
- # define MONOTONIC_RES_NSEC	HIGH_RES_NSEC
- # define KTIME_MONOTONIC_RES	KTIME_HIGH_RES
- 
--extern void clock_was_set_delayed(void);
--
- #else
- 
- # define MONOTONIC_RES_NSEC	LOW_RES_NSEC
-@@ -310,9 +308,6 @@ static inline int hrtimer_is_hres_active(struct hrtimer *timer)
- {
- 	return 0;
- }
--
--static inline void clock_was_set_delayed(void) { }
--
- #endif
- 
- extern void clock_was_set(void);
+@@ -165,7 +165,6 @@ enum  hrtimer_base_type {
+  * struct hrtimer_cpu_base - the per cpu clock bases
+  * @lock:		lock protecting the base and associated clock bases
+  *			and timers
+- * @active_bases:	Bitfield to mark bases with active timers
+  * @clock_was_set:	Indicates that clock was set from irq context.
+  * @expires_next:	absolute time of the next event which was scheduled
+  *			via clock_set_next_event()
+@@ -179,7 +178,6 @@ enum  hrtimer_base_type {
+  */
+ struct hrtimer_cpu_base {
+ 	raw_spinlock_t			lock;
+-	unsigned int			active_bases;
+ 	unsigned int			clock_was_set;
+ #ifdef CONFIG_HIGH_RES_TIMERS
+ 	ktime_t				expires_next;
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index e6e1255..1e4eedb 100644
+index 1e4eedb..f14d861 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -715,7 +715,7 @@ static DECLARE_WORK(hrtimer_work, clock_was_set_work);
-  * Called from timekeeping and resume code to reprogramm the hrtimer
-  * interrupt device on all cpus.
-  */
--void clock_was_set_delayed(void)
-+static void clock_was_set_delayed(void)
- {
- 	schedule_work(&hrtimer_work);
- }
-@@ -732,6 +732,7 @@ static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
- }
- static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base) { }
- static inline void retrigger_next_event(void *arg) { }
-+static inline void clock_was_set_delayed(void) { }
+@@ -865,7 +865,6 @@ static int enqueue_hrtimer(struct hrtimer *timer,
+ 	debug_activate(timer);
  
- #endif /* CONFIG_HIGH_RES_TIMERS */
+ 	timerqueue_add(&base->active, &timer->node);
+-	base->cpu_base->active_bases |= 1 << base->index;
  
+ 	/*
+ 	 * HRTIMER_STATE_ENQUEUED is or'ed to the current state to preserve the
+@@ -909,8 +908,6 @@ static void __remove_hrtimer(struct hrtimer *timer,
+ 		}
+ #endif
+ 	}
+-	if (!timerqueue_getnext(&base->active))
+-		base->cpu_base->active_bases &= ~(1 << base->index);
+ out:
+ 	timer->state = newstate;
+ }
+@@ -1284,14 +1281,13 @@ retry:
+ 	cpu_base->expires_next.tv64 = KTIME_MAX;
+ 
+ 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+-		struct hrtimer_clock_base *base;
++		struct hrtimer_clock_base *base = cpu_base->clock_base + i;
+ 		struct timerqueue_node *node;
+ 		ktime_t basenow;
+ 
+-		if (!(cpu_base->active_bases & (1 << i)))
++		if (!timerqueue_getnext(&base->active))
+ 			continue;
+ 
+-		base = cpu_base->clock_base + i;
+ 		basenow = ktime_add(now, base->offset);
+ 
+ 		while ((node = timerqueue_getnext(&base->active))) {
 -- 
 1.7.12.rc2.18.g61b472e
 
