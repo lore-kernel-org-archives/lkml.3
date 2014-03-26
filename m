@@ -1,60 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917AbaCZNHV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:07:21 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:45196 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754693AbaCZNGT (ORCPT
+	id S1754453AbaCZNFm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:05:42 -0400
+Received: from mail-bk0-f42.google.com ([209.85.214.42]:38402 "EHLO
+	mail-bk0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbaCZNFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:06:19 -0400
-Message-ID: <5332D0C8.5040300@cogentembedded.com>
-Date: Wed, 26 Mar 2014 17:06:16 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Roger Quadros <rogerq@ti.com>, balbi@ti.com
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "3.9+" <stable@vger.kernel.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: Re: [PATCH] usb: gadget: zero: Fix SuperSpeed enumeration for alternate
- setting 1
-References: <1395826086-5097-1-git-send-email-rogerq@ti.com>
-In-Reply-To: <1395826086-5097-1-git-send-email-rogerq@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Mar 2014 09:05:40 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
+Date: Wed, 26 Mar 2014 14:05:13 +0100
+Message-Id: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi
 
-On 26-03-2014 13:28, Roger Quadros wrote:
+This is v5 of the netdev naming-policy series. You can find v4 here:
+  http://article.gmane.org/gmane.linux.kernel/1668161
+Changes since v4:
+  - none
 
-> It was impossible to enumerate on a SuperSpeed (XHCI) host
-> with alternate setting = 1 due to the wrongly set 'bMaxBurst'
-> field in the SuperSpeed Endpoint Companion descriptor.
 
-> Testcase:
-> <host> modprobe -r usbtest; modprobe usbtest alt=1
-> <device> modprobe g_zero
-> plug device to SuperSpeed port on the host.
+This series implements a new sysfs attribute for netdevs called
+"name_assign_type". It provides an integer that describes where an interface
+name comes from. See Patch #1 for a description of this attribute. It is
+modelled after the existing "addr_assign_type" attribute.
 
-> Without this patch the host always complains like so
-> "usb 12-2: Not enough bandwidth for new device state.
->   usb 12-2: Not enough bandwidth for altsetting 1"
+The main use-case is to allow udev to skip applying reliable ifnames to virtual
+devices. For instance, if wifi-P2P devices are created, wpas already provides a
+suitable naming-policy and udev shouldn't touch these devices. Same is true for
+other virtual devices.
+The idea is that if a device-name was provided by user-space, we should always
+prefer fixing this naming-policy instead of making udev rename the device. For
+kernel provided names that's hardly possible, though. Providing the
+naming-policy source via sysfs is thus a simple way to see whether renames are
+needed.
 
-> Bug was introduced by commit cf9a08ae in v3.9
+Additionally, this field allows to detect whether a netdev has been manually
+renamed, which is quite useful for debugging and during crash-recovery.
+Furthermore, it fixes real udev bugs if a netdev is already renamed in the
+initrd and udev only runs in the real root. Detecting renames avoids overwriting
+custom user provided names.
 
-    Please also specify that commit's summary in parens. Also, there's now an 
-adopted standard way of saying this:
+Thanks
+David
 
-Fixes: <12-digit SHA ID> ("<summary line>")
+David Herrmann (4):
+  net: add name_assign_type netdev attribute
+  mac80211: set NET_NAME_USER for user-space created ifs
+  ath6kl: set NET_NAME_USER for P2P ifs
+  brcmfmac: set NET_NAME_USER for P2P ifs
 
-> Cc: 3.9+ <stable@vger.kernel.org> # 3.9+
-> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Reviewed-by: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Roger Quadros <rogerq@ti.com>
+ drivers/net/wireless/ath/ath6kl/cfg80211.c    | 5 ++++-
+ drivers/net/wireless/ath/ath6kl/cfg80211.h    | 1 +
+ drivers/net/wireless/ath/ath6kl/core.c        | 4 ++--
+ drivers/net/wireless/brcm80211/brcmfmac/p2p.c | 1 +
+ include/linux/netdevice.h                     | 2 ++
+ include/uapi/linux/netdevice.h                | 4 ++++
+ net/core/dev.c                                | 7 +++++++
+ net/core/net-sysfs.c                          | 2 ++
+ net/core/rtnetlink.c                          | 2 ++
+ net/mac80211/cfg.c                            | 2 +-
+ net/mac80211/ieee80211_i.h                    | 1 +
+ net/mac80211/iface.c                          | 2 ++
+ net/mac80211/main.c                           | 2 +-
+ 13 files changed, 30 insertions(+), 5 deletions(-)
 
-WBR, Sergei
-
+-- 
+1.9.1
 
