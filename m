@@ -1,94 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566AbaCZNZl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:25:41 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48748 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaCZNZk convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:3>);
-	Wed, 26 Mar 2014 09:25:40 -0400
-Message-Id: <5332E3600200007800002597@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Wed, 26 Mar 2014 13:25:36 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
-Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
-        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
-        <fenghua.yu@intel.com>, <matt.fleming@intel.com>,
-        <tony.luck@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
-        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>, "Tang Liang" <liang.tang@oracle.com>,
-        <eshelton@pobox.com>, <mingo@redhat.com>, <linux-efi@vger.kernel.org>,
-        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <hpa@zytor.com>
-Subject: Re: [PATCH v3 4/5] xen: Define EFI related stuff
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-5-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1395781076-12000-5-git-send-email-daniel.kiper@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754752AbaCZN0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:26:13 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:56510 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753520AbaCZN0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 09:26:11 -0400
+Message-ID: <5332D47B.3010809@linux.vnet.ibm.com>
+Date: Wed, 26 Mar 2014 18:52:03 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, peterz@infradead.org, rjw@rjwysocki.net,
+        paulmck@linux.vnet.ibm.com, davem@davemloft.net
+Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
+ contains offline cpus
+References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com>
+In-Reply-To: <5332B833.2030701@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032613-0928-0000-0000-000000BF7969
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.03.14 at 21:57, <daniel.kiper@oracle.com> wrote:
-> Define EFI related stuff for Xen.
+On 03/26/2014 04:51 PM, Srivatsa S. Bhat wrote:
+> On 03/26/2014 09:26 AM, Preeti U Murthy wrote:
+>> Its possible that the tick_broadcast_force_mask contains cpus which are not
+>> in cpu_online_mask when a broadcast tick occurs. This could happen under the
+>> following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
+>>
+>> CPU0					CPU1
+>>
+>> Run CPU_DOWN_PREPARE notifiers
+>>
+>> Start stop_machine			Gets woken up by IPI to run
+>> 					stop_machine, sets itself in
+>> 					tick_broadcast_force_mask if the
+>> 					time of broadcast interrupt is around
+>> 					the same time as this IPI.
+>>
+>> 					Start stop_machine
+>> 					  set_cpu_online(cpu1, false)
+>> End stop_machine			End stop_machine
+>>
+>> Broadcast interrupt
+>>   Finds that cpu1 in
+>>   tick_broadcast_force_mask is offline
+>>   and triggers the WARN_ON in
+>>   tick_handle_oneshot_broadcast()
+>>
+>> Clears all broadcast masks
+>> in CPU_DEAD stage.
+>>
+>> This WARN_ON was added to capture scenarios where the broadcast mask, be it
+>> oneshot/pending/force_mask contain offline cpus whose tick devices have been
+>> removed. But here is a case where we trigger the warn on in a valid scenario.
+>>
+>> One could argue that the scenario is invalid and ought to be warned against
+>> because ideally the broadcast masks need to be cleared of the cpus about to
+>> go offine before clearing them in the online_mask so that we dont hit these
+>> scenarios.
+>>
+>> This would mean clearing the masks in CPU_DOWN_PREPARE stage.
 > 
-> This patch is based on Jan Beulich and Tang Liang work.
+> Not necessarily. We could clear the mask in the CPU_DYING stage. That way,
+> offline CPUs will automatically get cleared from the force_mask and hence
+> the tick-broadcast code will not need to have a special case to deal with
+> this scenario. What do you think?
 
-And with this, ...
+Hmm yeah. Let me confirm this by verifying if we could miss something by
+clearing masks in CPU_DYING stage.
 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
+Thanks!
 
-... these should be in the reverse order to reflect flow.
-
-> +struct xenpf_efi_runtime_call {
-> +	uint32_t function;
-> +    /*
-> +     * This field is generally used for per sub-function flags (defined
-> +     * below), except for the XEN_EFI_get_next_high_monotonic_count case,
-> +     * where it holds the single returned value.
-> +     */
-> +	uint32_t misc;
-> +	unsigned long status;
-> +	union {
-
-You surely would want to use consistent indentation here (i.e. a leading
-hard tab)?
-
-> @@ -143,7 +245,25 @@ struct xenpf_firmware_info {
->  			/* must refer to 128-byte buffer */
->  			GUEST_HANDLE(uchar) edid;
->  		} vbeddc_info; /* XEN_FW_VBEDDC_INFO */
-> -
-
-Please retain blank lines like this ...
-
-> +		union xenpf_efi_info {
-> +			uint32_t version;
-> +			struct {
-> +				uint64_t addr;   /* EFI_CONFIGURATION_TABLE */
-> +				uint32_t nent;
-> +			} cfg;
-> +			struct {
-> +				uint32_t revision;
-> +				uint32_t bufsz;  /* input, in bytes */
-> +				GUEST_HANDLE(void) name;
-> +				/* UCS-2/UTF-16 string */
-> +				} vendor;
-> +			struct {
-> +				uint64_t addr;
-> +				uint64_t size;
-> +				uint64_t attr;
-> +				uint32_t type;
-> +				} mem;
-> +		} efi_info; /* XEN_FW_EFI_INFO */
-
-... and add one here.
-
-Jan
+Regards
+Preeti U Murthy
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
+>> ---
+>>
+>>  kernel/time/tick-broadcast.c |    7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+>> index 63c7b2d..30b8731 100644
+>> --- a/kernel/time/tick-broadcast.c
+>> +++ b/kernel/time/tick-broadcast.c
+>> @@ -606,7 +606,12 @@ again:
+>>  	 */
+>>  	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
+>>
+>> -	/* Take care of enforced broadcast requests */
+>> +	/* Take care of enforced broadcast requests. We could have offline
+>> +	 * cpus in the tick_broadcast_force_mask. Thats ok, we got the interrupt
+>> +	 * before we could clear the mask.
+>> +	 */
+>> +	cpumask_and(tick_broadcast_force_mask,
+>> +			tick_broadcast_force_mask, cpu_online_mask);
+>>  	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
+>>  	cpumask_clear(tick_broadcast_force_mask);
+>>
+>>
+> 
 
