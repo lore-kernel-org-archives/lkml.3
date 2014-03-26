@@ -1,173 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaCZEyK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 00:54:10 -0400
-Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:59413 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751156AbaCZEyG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 00:54:06 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1431:1437:1515:1516:1518:1535:1544:1593:1594:1605:1711:1730:1747:1777:1792:1801:1981:2110:2194:2199:2393:2559:2562:2828:2896:3138:3139:3140:3141:314
-X-HE-Tag: kiss60_5d66892a33a0b
-X-Filterd-Recvd-Size: 6154
-Message-ID: <1395809640.3726.7.camel@joe-AO722>
-Subject: Re: [RFC PATCH] Remove CONFIG_DCACHE_WORD_ACCESS
-From: Joe Perches <joe@perches.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Anton Blanchard <anton@au1.ibm.com>
-Cc: linux-arch <linux-arch@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-Date: Tue, 25 Mar 2014 21:54:00 -0700
-In-Reply-To: <1394570240.4840.48.camel@pasglop>
-References: <1393964591.20435.58.camel@joe-AO722>
-	 <1394570240.4840.48.camel@pasglop>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
+	id S1752021AbaCZFBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 01:01:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17392 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750953AbaCZFBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 01:01:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,734,1389772800"; 
+   d="scan'208";a="499659205"
+Message-ID: <53325F30.4030006@linux.intel.com>
+Date: Wed, 26 Mar 2014 13:01:36 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        lejun.zhu@linux.intel.com
+Subject: [PATCH] input: misc: Add driver for Intel Bay Trail GPIO buttons
+References: <533259F7.3050908@linux.intel.com>
+In-Reply-To: <533259F7.3050908@linux.intel.com>
+X-Forwarded-Message-Id: <533259F7.3050908@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-12 at 07:37 +1100, Benjamin Herrenschmidt wrote:
-> On Tue, 2014-03-04 at 12:23 -0800, Joe Perches wrote:
-> > It seems to duplicate CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> > so use that instead.
-> > 
-> > This changes the !CPU_LITTLE_ENDIAN powerpc arch to use unaligned
-> > accesses in fs/dcache.c and fs/namei.c as
-> > CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS is enabled for that arch.
-> > 
-> > Remove the now unused DCACHE_WORD_ACCESS defines & uses.
-> 
-> Interesting.. we have word-at-a-time but we never enabled
-> DCACHE_WORD_ACCESS, I wonder why that is. In fact, we should
-> probably do it for LE as well for P8 if we can make a P8
-> only config option...
-> 
-> Anton, what do you reckon here ?
+This patch adds support for the GPIO buttons on some Intel Bay Trail
+tablets originally running Windows 8. The ACPI description of these
+buttons follows "Windows ACPI Design Guide for SoC Platforms".
 
-Anton, do you have an opinion here?
+Signed-off-by: Lejun Zhu <lejun.zhu@linux.intel.com>
+---
+ drivers/input/misc/Kconfig           |  10 ++
+ drivers/input/misc/Makefile          |   1 +
+ drivers/input/misc/baytrail_button.c | 198
++++++++++++++++++++++++++++++++++++
+ 3 files changed, 209 insertions(+)
+ create mode 100644 drivers/input/misc/baytrail_button.c
 
-> Cheers,
-> Ben.
-> 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  arch/arm/Kconfig                      | 1 -
-> >  arch/arm/include/asm/word-at-a-time.h | 4 ++--
-> >  arch/arm64/Kconfig                    | 1 -
-> >  arch/x86/Kconfig                      | 1 -
-> >  fs/Kconfig                            | 4 ----
-> >  fs/dcache.c                           | 2 +-
-> >  fs/namei.c                            | 2 +-
-> >  7 files changed, 4 insertions(+), 11 deletions(-)
-> > 
-> > diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> > index 623a272..d5a2e60 100644
-> > --- a/arch/arm/Kconfig
-> > +++ b/arch/arm/Kconfig
-> > @@ -12,7 +12,6 @@ config ARM
-> >  	select BUILDTIME_EXTABLE_SORT if MMU
-> >  	select CLONE_BACKWARDS
-> >  	select CPU_PM if (SUSPEND || CPU_IDLE)
-> > -	select DCACHE_WORD_ACCESS if HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >  	select GENERIC_ATOMIC64 if (CPU_V7M || CPU_V6 || !CPU_32v6K || !AEABI)
-> >  	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
-> >  	select GENERIC_IDLE_POLL_SETUP
-> > diff --git a/arch/arm/include/asm/word-at-a-time.h b/arch/arm/include/asm/word-at-a-time.h
-> > index a6d0a29..778b2ad 100644
-> > --- a/arch/arm/include/asm/word-at-a-time.h
-> > +++ b/arch/arm/include/asm/word-at-a-time.h
-> > @@ -54,7 +54,7 @@ static inline unsigned long find_zero(unsigned long mask)
-> >  #include <asm-generic/word-at-a-time.h>
-> >  #endif
-> >  
-> > -#ifdef CONFIG_DCACHE_WORD_ACCESS
-> > +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >  
-> >  /*
-> >   * Load an unaligned word from kernel space.
-> > @@ -94,5 +94,5 @@ static inline unsigned long load_unaligned_zeropad(const void *addr)
-> >  	return ret;
-> >  }
-> >  
-> > -#endif	/* DCACHE_WORD_ACCESS */
-> > +#endif	/* HAVE_EFFICIENT_UNALIGNED_ACCESS */
-> >  #endif /* __ASM_ARM_WORD_AT_A_TIME_H */
-> > diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> > index 764d682..2d6978c 100644
-> > --- a/arch/arm64/Kconfig
-> > +++ b/arch/arm64/Kconfig
-> > @@ -13,7 +13,6 @@ config ARM64
-> >  	select CLONE_BACKWARDS
-> >  	select COMMON_CLK
-> >  	select CPU_PM if (SUSPEND || CPU_IDLE)
-> > -	select DCACHE_WORD_ACCESS
-> >  	select GENERIC_CLOCKEVENTS
-> >  	select GENERIC_CLOCKEVENTS_BROADCAST if SMP
-> >  	select GENERIC_IOMAP
-> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> > index abb261e..60cfa073 100644
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -98,7 +98,6 @@ config X86
-> >  	select CLKEVT_I8253
-> >  	select ARCH_HAVE_NMI_SAFE_CMPXCHG
-> >  	select GENERIC_IOMAP
-> > -	select DCACHE_WORD_ACCESS
-> >  	select GENERIC_SMP_IDLE_THREAD
-> >  	select ARCH_WANT_IPC_PARSE_VERSION if X86_32
-> >  	select HAVE_ARCH_SECCOMP_FILTER
-> > diff --git a/fs/Kconfig b/fs/Kconfig
-> > index 312393f..7511271 100644
-> > --- a/fs/Kconfig
-> > +++ b/fs/Kconfig
-> > @@ -4,10 +4,6 @@
-> >  
-> >  menu "File systems"
-> >  
-> > -# Use unaligned word dcache accesses
-> > -config DCACHE_WORD_ACCESS
-> > -       bool
-> > -
-> >  if BLOCK
-> >  
-> >  source "fs/ext2/Kconfig"
-> > diff --git a/fs/dcache.c b/fs/dcache.c
-> > index 265e0ce..4e3c195 100644
-> > --- a/fs/dcache.c
-> > +++ b/fs/dcache.c
-> > @@ -163,7 +163,7 @@ int proc_nr_dentry(ctl_table *table, int write, void __user *buffer,
-> >   * Compare 2 name strings, return 0 if they match, otherwise non-zero.
-> >   * The strings are both count bytes long, and count is non-zero.
-> >   */
-> > -#ifdef CONFIG_DCACHE_WORD_ACCESS
-> > +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >  
-> >  #include <asm/word-at-a-time.h>
-> >  /*
-> > diff --git a/fs/namei.c b/fs/namei.c
-> > index 385f781..1ee33ca 100644
-> > --- a/fs/namei.c
-> > +++ b/fs/namei.c
-> > @@ -1618,7 +1618,7 @@ static inline int nested_symlink(struct path *path, struct nameidata *nd)
-> >   *   the final mask". Again, that could be replaced with a
-> >   *   efficient population count instruction or similar.
-> >   */
-> > -#ifdef CONFIG_DCACHE_WORD_ACCESS
-> > +#ifdef CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
-> >  
-> >  #include <asm/word-at-a-time.h>
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7904ab0..bb6fe2e 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -666,4 +666,14 @@ config INPUT_IDEAPAD_SLIDEBAR
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ideapad_slidebar.
+
++config INPUT_BAYTRAIL_BUTTON
++	tristate "Intel Baytrail Buttons"
++	depends on KEYBOARD_GPIO
++	help
++	  Say Y here if you have a Baytrail tablet that is compatible
++	  with Windows ACPI Design Guide.
++
++	  To compile this driver as a module, choose M here: the
++	  module will be called baytrail_button.
++
+ endif
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index cda71fc..c3d6a68 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -63,3 +63,4 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
++obj-$(CONFIG_INPUT_BAYTRAIL_BUTTON)	+= baytrail_button.o
+diff --git a/drivers/input/misc/baytrail_button.c
+b/drivers/input/misc/baytrail_button.c
+new file mode 100644
+index 0000000..e4829e1
+--- /dev/null
++++ b/drivers/input/misc/baytrail_button.c
+@@ -0,0 +1,198 @@
++/*
++ * baytrail_button.c: supports the GPIO buttons on some Baytrail
++ * tablets.
++ *
++ * (C) Copyright 2014 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
++
++#include <linux/module.h>
++#include <linux/input.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/acpi.h>
++#include <linux/gpio/consumer.h>
++#include <linux/gpio_keys.h>
++#include <linux/input.h>
++#include <linux/platform_device.h>
++#include <linux/pnp.h>
++
++static void byt_button_device_release(struct device *);
++
++/*
++ * Definition of buttons on the tablet. The ACPI index of each button
++ * is defined in "Windows ACPI Design Guide for SoC Platforms"
++ */
++#define	MAX_NBUTTONS	5
++
++struct byt_button_info {
++	const char *name;
++	int acpi_index;
++	unsigned int event_code;
++	int repeat;
++	int wakeup;
++	int gpio;
++};
++
++static struct byt_button_info byt_button_tbl[] = {
++	{"power", 0, KEY_POWER, 0, 1, -1},
++	{"home", 1, KEY_HOME, 0, 1, -1},
++	{"volume_up", 2, KEY_VOLUMEUP, 1, 0, -1},
++	{"volume_down", 3, KEY_VOLUMEDOWN, 1, 0, -1},
++	{"rotation_lock", 4, KEY_RO, 0, 0, -1},
++};
++
++/*
++ * Some of the buttons like volume up/down are auto repeat, while others
++ * are not. To support both, we register two gpio-keys device, and put
++ * buttons into them based on whether the key should be auto repeat.
++ */
++#define	BUTTON_TYPES	2
++
++static struct gpio_keys_button byt_buttons[BUTTON_TYPES][MAX_NBUTTONS];
++
++static struct gpio_keys_platform_data byt_button_data[BUTTON_TYPES] = {
++	{
++		.buttons	= byt_buttons[0],
++		.nbuttons	= 0,
++		.rep		= 0
++	},
++	{
++		.buttons	= byt_buttons[1],
++		.nbuttons	= 0,
++		.rep		= 1
++	}
++};
++
++static struct platform_device byt_button_device[BUTTON_TYPES] = {
++	{
++		.name	= "gpio-keys",
++		.id	= PLATFORM_DEVID_AUTO,
++		.dev	= {
++			.release	= byt_button_device_release,
++			.platform_data	= &byt_button_data[0],
++		}
++	},
++	{
++		.name	= "gpio-keys",
++		.id	= PLATFORM_DEVID_AUTO,
++		.dev	= {
++			.release	= byt_button_device_release,
++			.platform_data	= &byt_button_data[1],
++		}
++	}
++};
++
++/*
++ * Get the Nth GPIO number from the ACPI object.
++ */
++static int byt_button_lookup_gpio(struct device *dev, int acpi_index)
++{
++	struct gpio_desc *desc;
++	int ret;
++
++	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index);
++
++	if (IS_ERR(desc))
++		return -1;
++
++	ret = desc_to_gpio(desc);
++
++	gpiod_put(desc);
++
++	return ret;
++}
++
++static int byt_button_pnp_probe(struct pnp_dev *pdev,
++	const struct pnp_device_id *id)
++{
++	int i, j, r, ret;
++	int sz_tbl = sizeof(byt_button_tbl) / sizeof(byt_button_tbl[0]);
++	struct gpio_keys_button *gk;
++
++	/* Find GPIO number of all the buttons */
++	for (i = 0; i < sz_tbl; i++) {
++		byt_button_tbl[i].gpio = byt_button_lookup_gpio(&pdev->dev,
++						byt_button_tbl[i].acpi_index);
++	}
++
++	for (r = 0; r < BUTTON_TYPES; r++) {
++		gk = byt_buttons[r];
++		j = 0;
++
++		/* Register buttons in the correct device */
++		for (i = 0; i < sz_tbl; i++) {
++			if (byt_button_tbl[i].repeat == r &&
++			    byt_button_tbl[i].gpio > 0) {
++				gk[j].code = byt_button_tbl[i].event_code;
++				gk[j].gpio = byt_button_tbl[i].gpio;
++				gk[j].active_low = 1;
++				gk[j].desc = byt_button_tbl[i].name;
++				gk[j].type = EV_KEY;
++				gk[j].wakeup = byt_button_tbl[i].wakeup;
++				j++;
++			}
++		}
++
++		byt_button_data[r].nbuttons = j;
++
++		if (j == 0)
++			continue;
++
++		ret = platform_device_register(&byt_button_device[r]);
++		if (ret) {
++			dev_err(&pdev->dev, "failed to register %d\n", r);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static void byt_button_device_release(struct device *dev)
++{
++	/* Nothing to do */
++}
++
++static void byt_button_remove(struct pnp_dev *pdev)
++{
++	int r;
++
++	for (r = 0; r < BUTTON_TYPES; r++) {
++		if (byt_button_data[r].nbuttons)
++			platform_device_unregister(&byt_button_device[r]);
++	}
++}
++
++static const struct pnp_device_id byt_button_pnp_match[] = {
++	{.id = "INTCFD9", .driver_data = 0},
++	{.id = ""}
++};
++
++MODULE_DEVICE_TABLE(pnp, byt_button_pnp_match);
++
++static struct pnp_driver byt_button_pnp_driver = {
++	.name		= KBUILD_MODNAME,
++	.id_table	= byt_button_pnp_match,
++	.probe          = byt_button_pnp_probe,
++	.remove		= byt_button_remove,
++};
++
++static int __init byt_button_init(void)
++{
++	return pnp_register_driver(&byt_button_pnp_driver);
++}
++
++static void __exit byt_button_exit(void)
++{
++	pnp_unregister_driver(&byt_button_pnp_driver);
++}
++
++module_init(byt_button_init);
++module_exit(byt_button_exit);
++
++MODULE_LICENSE("GPL");
+-- 
+1.8.3.2
+
+
 
 
 
