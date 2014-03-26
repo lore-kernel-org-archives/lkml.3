@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253AbaCZUaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:30:11 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:42829 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755989AbaCZUaI (ORCPT
+	id S1756324AbaCZUbv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:31:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57431 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaCZUbt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:30:08 -0400
-Date: Wed, 26 Mar 2014 13:30:05 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Monam Agarwal <monamagarwal123@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/input: Use RCU_INIT_POINTER(x, NULL) in evdev.c
-Message-ID: <20140326203005.GC11013@core.coreip.homeip.net>
-References: <1395599177-6776-1-git-send-email-monamagarwal123@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395599177-6776-1-git-send-email-monamagarwal123@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Mar 2014 16:31:49 -0400
+Date: Wed, 26 Mar 2014 13:31:48 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Artem Fetishev <artem_fetishev@epam.com>
+Cc: <eranian@google.com>, <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Fix boot on uniprocessor systems
+Message-Id: <20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
+In-Reply-To: <20140324225910.GB4937@owamsq.epam.com>
+References: <20140324225910.GB4937@owamsq.epam.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Monam,
+On Tue, 25 Mar 2014 01:59:10 +0300 Artem Fetishev <artem_fetishev@epam.com> wrote:
 
-On Sun, Mar 23, 2014 at 11:56:17PM +0530, Monam Agarwal wrote:
-> This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
+> On x86 uniprocessor systems topology_physical_package_id() returns -1 which
+> causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized which leads
+> to GPF in rapl_pmu_init(). See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
 > 
-> The rcu_assign_pointer() ensures that the initialization of a structure       
-> is carried out before storing a pointer to that structure. 
-> And in the case of the NULL pointer, there is no structure to initialize. 
-> So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
-
-Logically speaking we perform assignment, not initialization there.
-Since we are not in hot path I think we should leave the code as is.
-
-Thanks.
-
+> It turns out that physical_package_id and core_id can actually be retreived for
+> uniprocessor systems too. Enabling them also fixes rapl_pmu code.
 > 
-> Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+> Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
 > ---
->  drivers/input/evdev.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-> index a06e125..fffa107 100644
-> --- a/drivers/input/evdev.c
-> +++ b/drivers/input/evdev.c
-> @@ -291,7 +291,7 @@ static int evdev_ungrab(struct evdev *evdev, struct evdev_client *client)
->  	if (grab != client)
->  		return  -EINVAL;
+> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+> index d35f24e..1306d11 100644
+> --- a/arch/x86/include/asm/topology.h
+> +++ b/arch/x86/include/asm/topology.h
+> @@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
 >  
-> -	rcu_assign_pointer(evdev->grab, NULL);
-> +	RCU_INIT_POINTER(evdev->grab, NULL);
->  	synchronize_rcu();
->  	input_release_device(&evdev->handle);
+>  extern const struct cpumask *cpu_coregroup_mask(int cpu);
 >  
-> -- 
-> 1.7.9.5
-> 
+> -#ifdef ENABLE_TOPO_DEFINES
+>  #define topology_physical_package_id(cpu)	(cpu_data(cpu).phys_proc_id)
+>  #define topology_core_id(cpu)			(cpu_data(cpu).cpu_core_id)
+> +
+> +#ifdef ENABLE_TOPO_DEFINES
+>  #define topology_core_cpumask(cpu)		(per_cpu(cpu_core_map, cpu))
+>  #define topology_thread_cpumask(cpu)		(per_cpu(cpu_sibling_map, cpu))
+>  #endif
 
--- 
-Dmitry
+The patch applies to 3.13 and perhaps earlier kernels.  Is it needed in
+those kernel versions?
