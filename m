@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542AbaCZAmD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:42:03 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:56814 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaCZAmA (ORCPT
+	id S1755374AbaCZAmm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:42:42 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24660 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896AbaCZAmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:42:00 -0400
+	Tue, 25 Mar 2014 20:42:37 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19wV9XqAC/tSeFFFaH1kXJTAo/+LRpVX9M=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 8591754C137
+Date: Tue, 25 Mar 2014 20:42:23 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 00/14] CPU idle for Armada XP
+Message-ID: <20140326004223.GL28304@titan.lakedaemon.net>
+References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140325211229.GA27422@quack.suse.cz>
-References: <20140305124536.GA32371@quack.suse.cz>
-	<53189BF8.1010308@oracle.com>
-	<531A7CFD.9030603@oracle.com>
-	<20140310104350.GB28797@quack.suse.cz>
-	<531DC89A.9010601@oracle.com>
-	<53304451.7030800@oracle.com>
-	<20140324214851.GB10057@quack.suse.cz>
-	<5330D15E.2000702@oracle.com>
-	<20140325173340.GB17292@quack.suse.cz>
-	<5331C20F.5010109@oracle.com>
-	<20140325211229.GA27422@quack.suse.cz>
-Date: Tue, 25 Mar 2014 17:41:59 -0700
-X-Google-Sender-Auth: v5RLhQdmrFuyySwICVwDA7LchSQ
-Message-ID: <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
-Subject: Re: fs: gpf in simple_setattr
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Sasha Levin <sasha.levin@oracle.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 2:12 PM, Jan Kara <jack@suse.cz> wrote:
->
->   Can you try whether the following patch fixes the issue for you?
+Gregory,
 
-Good catch, Honza.
+On Tue, Mar 25, 2014 at 11:48:11PM +0100, Gregory CLEMENT wrote:
+...
+> The first patch should go through ARM subsystem and should be taken by
+> Russell King. I made few change on it following Lorenzo advice and
+> now it will reuse the cpu v7 suspend and resume function and just do
+> specific operation before calling them.
+> 
+> The 13th patch 'cpuidle: mvebu: Add initial cpu idle support for
+> Armada 370/XP SoC' is the only one who should go to the cpuidle
+> subsystem. But of course I would like that Daniel Lezcano or Rafael
+> J. Wysocki have a look on the whole series and especially patches 10,
+> 12 and 14.
 
-I hate how fragile that code ends up being and would love to see that
-"anon_inode_inode" allocation and assignment just once in
-anon_inode_init(), but considering that it wants the superblock
-pointer, I suspect it's not cleanly doable. Oh well. Your patch looks
-like it should make the issue moot, I just dread this happening again
-due to the layout of the code.
+Ok, I'm tired.  :)  Help me out here.  Patches 1 and 13 are depended on
+by the other patches and vice-versa, right?  In that case, I'm thinking
+it's best to seek Acks from the other maintainers and keep the whole
+branch together.  Please tell me if I'm wrong.
 
-Will apply the patch,
+thx,
 
-             Linus
+Jason.
