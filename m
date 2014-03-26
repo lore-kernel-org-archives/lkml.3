@@ -1,68 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884AbaCZFav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 01:30:51 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:34786 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbaCZFat (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 01:30:49 -0400
+	id S1751458AbaCZFeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 01:34:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36185 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832AbaCZFep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 01:34:45 -0400
+Date: Wed, 26 Mar 2014 06:34:40 +0100
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: fs: gpf in simple_setattr
+Message-ID: <20140326053440.GB1292@quack.suse.cz>
+References: <531A7CFD.9030603@oracle.com>
+ <20140310104350.GB28797@quack.suse.cz>
+ <531DC89A.9010601@oracle.com>
+ <53304451.7030800@oracle.com>
+ <20140324214851.GB10057@quack.suse.cz>
+ <5330D15E.2000702@oracle.com>
+ <20140325173340.GB17292@quack.suse.cz>
+ <5331C20F.5010109@oracle.com>
+ <20140325211229.GA27422@quack.suse.cz>
+ <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <533260AC.1050001@linux.vnet.ibm.com>
-References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com>
-	<CAHqbYQuOM4CmJGR7aT7_b6XCoYtUvqHmhxYKynF5_ABW10LDVQ@mail.gmail.com>
-	<CAHqbYQskGiDtmj_OmRnYn-ueu9GAfkNZvh1VX68oV1rzBrv8wg@mail.gmail.com>
-	<533260AC.1050001@linux.vnet.ibm.com>
-Date: Wed, 26 Mar 2014 01:30:48 -0400
-Message-ID: <CAHqbYQsRUmHhJMnPBa_5QhSvJ=89U0T0633R0jcxRwZy0ZNExg@mail.gmail.com>
-Subject: Re: [PATCH v4 0/5] KVM: x86: flush tlb out of mmu-lock after write protection
-From: Hu Yaohui <loki2441@gmail.com>
-To: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
-Cc: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/mixed; boundary="AqsLC8rIMeq19msA"
+Content-Disposition: inline
+In-Reply-To: <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Guangrong,
-Thanks a lot!
-I will reopen a new discussion next time.
-Does that means once the level 1 guest page table entry is modified,
-the host should make a decision in page fault handler whether the page
-sync or unsync?
-My question is that since all level 1 guest page tables are writable,
-when the entry in the page table is modified. there is no page fault
-will happen, how can the mmu_need_write_protect to be called to make
-whether sync or unsync decision?
-Thanks for your time!
 
-Best Wishes,
-Yaohui
+--AqsLC8rIMeq19msA
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, Mar 26, 2014 at 1:07 AM, Xiao Guangrong
-<xiaoguangrong@linux.vnet.ibm.com> wrote:
-> On 03/26/2014 12:40 PM, Hu Yaohui wrote:
->> Hi all,
->> I hope you have a good day!
->> I have debugged the code myself. I have called dump_stack() in
->> function "__kvm_unsync_page"
->> and function "invlpg".  Actually every time before invlpg is called,
->> the page fault handled will call "__kvm_unsync_page" before invlpg to
->> mark the specified sp as unsynced. (correct me if I am wrong). I am
->> wondering why there is a page fault. AFAIK when calling flush_tlb_page
->> in the guest os. it will issue invlpg instruction directly, I did not
->> see any operation which could always cause the page fault.I would
->> really appreciate if if someone could shed me some lights on it.
->> Thanks for your time!
->
-> Page fault is used to map a page into guest and set the proper permission
-> on for it so this is the right place to make decision if the page need be
-> writable.
->
-> Tlb flush is used when guest wants to have a clean tlb so that host syncs the
-> unsync page tables when it is happing.
->
+On Tue 25-03-14 17:41:59, Linus Torvalds wrote:
+> On Tue, Mar 25, 2014 at 2:12 PM, Jan Kara <jack@suse.cz> wrote:
+> >
+> >   Can you try whether the following patch fixes the issue for you?
+> 
+> Good catch, Honza.
+> 
+> I hate how fragile that code ends up being and would love to see that
+> "anon_inode_inode" allocation and assignment just once in
+> anon_inode_init(), but considering that it wants the superblock
+> pointer, I suspect it's not cleanly doable. Oh well. Your patch looks
+> like it should make the issue moot, I just dread this happening again
+> due to the layout of the code.
+  Well, I think it could be done relatively cleanly... How about the
+attached patch (it boots for me)?
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
+
+--AqsLC8rIMeq19msA
+Content-Type: text/x-patch; charset=us-ascii
+Content-Disposition: attachment; filename="0001-vfs-Allocate-anon_inode_inode-in-anon_inode_init.patch"
+
+>From de87b1e6c3613d92f659c632be57461e87828e42 Mon Sep 17 00:00:00 2001
+From: Jan Kara <jack@suse.cz>
+Date: Wed, 26 Mar 2014 06:20:14 +0100
+Subject: [PATCH] vfs: Allocate anon_inode_inode in anon_inode_init()
+
+Currently we allocated anon_inode_inode in anon_inodefs_mount. This is
+somewhat fragile as if that function ever gets called again, it will
+overwrite anon_inode_inode pointer. So move the initialization of
+anon_inode_inode to anon_inode_init().
+
+Signed-off-by: Jan Kara <jack@suse.cz>
+---
+ fs/anon_inodes.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
+
+diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+index 4b4543b8b894..7f34f7702204 100644
+--- a/fs/anon_inodes.c
++++ b/fs/anon_inodes.c
+@@ -41,19 +41,8 @@ static const struct dentry_operations anon_inodefs_dentry_operations = {
+ static struct dentry *anon_inodefs_mount(struct file_system_type *fs_type,
+ 				int flags, const char *dev_name, void *data)
+ {
+-	struct dentry *root;
+-	root = mount_pseudo(fs_type, "anon_inode:", NULL,
++	return mount_pseudo(fs_type, "anon_inode:", NULL,
+ 			&anon_inodefs_dentry_operations, ANON_INODE_FS_MAGIC);
+-	if (!IS_ERR(root)) {
+-		struct super_block *s = root->d_sb;
+-		anon_inode_inode = alloc_anon_inode(s);
+-		if (IS_ERR(anon_inode_inode)) {
+-			dput(root);
+-			deactivate_locked_super(s);
+-			root = ERR_CAST(anon_inode_inode);
+-		}
+-	}
+-	return root;
+ }
+ 
+ static struct file_system_type anon_inode_fs_type = {
+@@ -180,12 +169,15 @@ static int __init anon_inode_init(void)
+ 	anon_inode_mnt = kern_mount(&anon_inode_fs_type);
+ 	if (IS_ERR(anon_inode_mnt)) {
+ 		error = PTR_ERR(anon_inode_mnt);
+-		goto err_unregister_filesystem;
++		goto err_exit;
++	}
++	anon_inode_inode = alloc_anon_inode(anon_inode_mnt->mnt_sb);
++	if (IS_ERR(anon_inode_inode)) {
++		error = PTR_ERR(anon_inode_inode);
++		goto err_exit;
+ 	}
+ 	return 0;
+ 
+-err_unregister_filesystem:
+-	unregister_filesystem(&anon_inode_fs_type);
+ err_exit:
+ 	panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
+ }
+-- 
+1.8.1.4
+
+
+--AqsLC8rIMeq19msA--
