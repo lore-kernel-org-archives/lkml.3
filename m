@@ -1,243 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929AbaCZDYT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 23:24:19 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:43107 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217AbaCZDYR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 23:24:17 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: trivial@kernel.org, linux-kernel@vger.kernel.org, arend@broadcom.com,
-        rdunlap@infradead.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH/v2] [trivial]treewide: Fix typo in printk
-Date: Wed, 26 Mar 2014 12:24:03 +0900
-Message-Id: <1395804243-3199-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.1.315.g3f09db0
+	id S1755501AbaCZDYf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 23:24:35 -0400
+Received: from na01-sn2-obe.ptr.o365filtering.com ([157.55.158.30]:43739 "EHLO
+	na01-sn2-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755307AbaCZDYX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 23:24:23 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        KY Srinivasan <kys@microsoft.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>
+Subject: RE: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Topic: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Index: AQHPRT7oyWtXlru1UE29zpPCw7NDQZrySCzQgAC7j4CAAAEMAP//tHbw
+Date: Wed, 26 Mar 2014 03:23:47 +0000
+Message-ID: <a8b374e420be42d883fb782c8f271659@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1395434633-16771-1-git-send-email-haiyangz@microsoft.com>
+	<216cd74854414cfc9b338cab41a3d1a0@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+	<20140325.204343.991901655152875043.davem@davemloft.net>
+ <20140325.204728.2281772666453524010.davem@davemloft.net>
+In-Reply-To: <20140325.204728.2281772666453524010.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?us-ascii?Q?CIP:131.107.159.100;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10?=
+ =?us-ascii?Q?009001)(377454003)(199002)(189002)(51704005)(164054003)(3774?=
+ =?us-ascii?Q?24004)(13464003)(94316002)(2009001)(97756001)(65816001)(5098?=
+ =?us-ascii?Q?6001)(46406003)(97736001)(80022001)(66066001)(90146001)(5757?=
+ =?us-ascii?Q?84001)(95416001)(74662001)(93886001)(51856001)(93516002)(949?=
+ =?us-ascii?Q?46001)(85306002)(63696002)(23726002)(15975445006)(31966008)(?=
+ =?us-ascii?Q?86612001)(95666003)(85852003)(83072002)(33646001)(80976001)(?=
+ =?us-ascii?Q?4396001)(56816005)(81686001)(81816001)(97186001)(47776003)(8?=
+ =?us-ascii?Q?4676001)(20776003)(47446002)(74502001)(15202345003)(93136001?=
+ =?us-ascii?Q?)(19580395003)(19580405001)(54356001)(83322001)(53806001)(46?=
+ =?us-ascii?Q?102001)(98676001)(76482001)(2656002)(47736001)(76796001)(767?=
+ =?us-ascii?Q?86001)(81342001)(87936001)(74706001)(59766001)(77982001)(449?=
+ =?us-ascii?Q?76005)(74366001)(79102001)(6806004)(81542001)(47976001)(6922?=
+ =?us-ascii?Q?6001)(54316002)(50466002)(49866001)(56776001)(97336001)(9256?=
+ =?us-ascii?Q?6001)(74876001)(87266001)(142933001)(24736002);DIR:OUT;SFP:1?=
+ =?us-ascii?Q?101;SCL:1;SRVR:BL2SR01MB593;H:hybrid.exchange.microsoft.com;?=
+ =?us-ascii?Q?FPR:3454F156.AF2935A.B3FF57A3.92E5C8BE.2039A;PTR:InfoDomainN?=
+ =?us-ascii?Q?onexistent;A:1;MX:1;LANG:en;?=
+X-Exchange-Organization-AntiSpam-Internal: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
+X-Forefront-PRVS: 0162ACCC24
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling typo in printk from various part of kernel source.
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-Acked-by: Arend van Spriel <arend@broadcom.com>
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
 
----
- arch/powerpc/platforms/powernv/opal.c                 | 2 +-
- drivers/i2c/busses/i2c-s3c2410.c                      | 2 +-
- drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c         | 8 ++++----
- drivers/misc/mei/hw-txe.c                             | 2 +-
- drivers/net/bonding/bond_sysfs_slave.c                | 2 +-
- drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c    | 2 +-
- drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c        | 2 +-
- drivers/net/ethernet/via/via-velocity.c               | 2 +-
- drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c | 6 +++---
- drivers/scsi/qla2xxx/qla_nx2.c                        | 2 +-
- drivers/scsi/scsi_transport_fc.c                      | 2 +-
- sound/soc/davinci/davinci-mcasp.c                     | 2 +-
- 12 files changed, 17 insertions(+), 17 deletions(-)
+> -----Original Message-----
+> From: David Miller [mailto:davem@davemloft.net]
+> Sent: Tuesday, March 25, 2014 8:47 PM
+> To: Haiyang Zhang
+> Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org
+> Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+> Side Scaling (vRSS)
+> 
+> From: David Miller <davem@davemloft.net>
+> Date: Tue, 25 Mar 2014 20:43:43 -0400 (EDT)
+> 
+> > From: Haiyang Zhang <haiyangz@microsoft.com>
+> > Date: Tue, 25 Mar 2014 20:37:43 +0000
+> >
+> >> Do we know when the dependency (commit: 8a7206a89f) will be merged
+> >> into net-next tree?
+> >
+> > You're really not very patient, to say the least.
+> >
+> > It's done now and I'm working to integrate your patch.
+> >
+> > That patch has been in under review state in patchwork, which means
+> > that I will get to it at some point, so you don't need to worry about
+> > it any more than any other patch you might submit.
+> >
+> > The whole reason patchwork exists is so that people don't have to
+> > ask.
+> 
+> And actually, this dependency "8a7206a89f" commit doesn't exist
+> in the 'net' tree at all.  I just merged Linus's tree into 'net'
+> and it doesn't exist there either.
+> 
+> So this patch still doesn't compile.
+> 
+> I'm tossing it from patchwork until you sort this out.
 
-diff --git a/arch/powerpc/platforms/powernv/opal.c b/arch/powerpc/platforms/powernv/opal.c
-index 2e269c2..7adcf62 100644
---- a/arch/powerpc/platforms/powernv/opal.c
-+++ b/arch/powerpc/platforms/powernv/opal.c
-@@ -275,7 +275,7 @@ static void opal_handle_message(void)
- 
- 	/* check for errors. */
- 	if (ret) {
--		pr_warning("%s: Failed to retrive opal message, err=%lld\n",
-+		pr_warning("%s: Failed to retrieve opal message, err=%lld\n",
- 				__func__, ret);
- 		return;
- 	}
-diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-s3c2410.c
-index ae44910..4bef480 100644
---- a/drivers/i2c/busses/i2c-s3c2410.c
-+++ b/drivers/i2c/busses/i2c-s3c2410.c
-@@ -244,7 +244,7 @@ static bool is_ack(struct s3c24xx_i2c *i2c)
- 		}
- 		usleep_range(1000, 2000);
- 	}
--	dev_err(i2c->dev, "ack was not recieved\n");
-+	dev_err(i2c->dev, "ack was not received\n");
- 	return false;
- }
- 
-diff --git a/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c b/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-index f8dfd76..f92e083 100644
---- a/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-+++ b/drivers/infiniband/hw/usnic/usnic_ib_qp_grp.c
-@@ -49,7 +49,7 @@ const char *usnic_ib_qp_grp_state_to_string(enum ib_qp_state state)
- 	case IB_QPS_ERR:
- 		return "ERR";
- 	default:
--		return "UNKOWN STATE";
-+		return "UNKNOWN STATE";
- 
- 	}
- }
-@@ -506,12 +506,12 @@ int usnic_ib_qp_grp_modify(struct usnic_ib_qp_grp *qp_grp,
- 
- 	if (!status) {
- 		qp_grp->state = new_state;
--		usnic_info("Transistioned %u from %s to %s",
-+		usnic_info("Transitioned %u from %s to %s",
- 		qp_grp->grp_id,
- 		usnic_ib_qp_grp_state_to_string(old_state),
- 		usnic_ib_qp_grp_state_to_string(new_state));
- 	} else {
--		usnic_err("Failed to transistion %u from %s to %s",
-+		usnic_err("Failed to transition %u from %s to %s",
- 		qp_grp->grp_id,
- 		usnic_ib_qp_grp_state_to_string(old_state),
- 		usnic_ib_qp_grp_state_to_string(new_state));
-@@ -672,7 +672,7 @@ usnic_ib_qp_grp_create(struct usnic_fwd_dev *ufdev, struct usnic_ib_vf *vf,
- 	err = usnic_vnic_res_spec_satisfied(&min_transport_spec[transport],
- 						res_spec);
- 	if (err) {
--		usnic_err("Spec does not meet miniumum req for transport %d\n",
-+		usnic_err("Spec does not meet minimum req for transport %d\n",
- 				transport);
- 		log_spec(res_spec);
- 		return ERR_PTR(err);
-diff --git a/drivers/misc/mei/hw-txe.c b/drivers/misc/mei/hw-txe.c
-index f60182a..00d328d 100644
---- a/drivers/misc/mei/hw-txe.c
-+++ b/drivers/misc/mei/hw-txe.c
-@@ -781,7 +781,7 @@ static int mei_txe_hw_start(struct mei_device *dev)
- 
- 	ret = mei_txe_readiness_wait(dev);
- 	if (ret < 0) {
--		dev_err(&dev->pdev->dev, "wating for readiness failed\n");
-+		dev_err(&dev->pdev->dev, "waiting for readiness failed\n");
- 		return ret;
- 	}
- 
-diff --git a/drivers/net/bonding/bond_sysfs_slave.c b/drivers/net/bonding/bond_sysfs_slave.c
-index 2e4eec5..a4de46b 100644
---- a/drivers/net/bonding/bond_sysfs_slave.c
-+++ b/drivers/net/bonding/bond_sysfs_slave.c
-@@ -36,7 +36,7 @@ static ssize_t state_show(struct slave *slave, char *buf)
- 	case BOND_STATE_BACKUP:
- 		return sprintf(buf, "backup\n");
- 	default:
--		return sprintf(buf, "UNKONWN\n");
-+		return sprintf(buf, "UNKNOWN\n");
- 	}
- }
- static SLAVE_ATTR_RO(state);
-diff --git a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-index db4280c..716fc37 100644
---- a/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-+++ b/drivers/net/ethernet/qlogic/netxen/netxen_nic_hw.c
-@@ -922,7 +922,7 @@ int netxen_config_ipaddr(struct netxen_adapter *adapter, __be32 ip, int cmd)
- 
- 	rv = netxen_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
- 	if (rv != 0) {
--		printk(KERN_ERR "%s: could not notify %s IP 0x%x reuqest\n",
-+		printk(KERN_ERR "%s: could not notify %s IP 0x%x request\n",
- 				adapter->netdev->name,
- 				(cmd == NX_IP_UP) ? "Add" : "Remove", ip);
- 	}
-diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-index 9f3adf4..a16d33f 100644
---- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-+++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_hw.c
-@@ -951,7 +951,7 @@ void qlcnic_82xx_config_ipaddr(struct qlcnic_adapter *adapter,
- 	rv = qlcnic_send_cmd_descs(adapter, (struct cmd_desc_type0 *)&req, 1);
- 	if (rv != 0)
- 		dev_err(&adapter->netdev->dev,
--				"could not notify %s IP 0x%x reuqest\n",
-+				"could not notify %s IP 0x%x request\n",
- 				(cmd == QLCNIC_IP_UP) ? "Add" : "Remove", ip);
- }
- 
-diff --git a/drivers/net/ethernet/via/via-velocity.c b/drivers/net/ethernet/via/via-velocity.c
-index ad61d26..a2dc486 100644
---- a/drivers/net/ethernet/via/via-velocity.c
-+++ b/drivers/net/ethernet/via/via-velocity.c
-@@ -2056,7 +2056,7 @@ static int velocity_receive_frame(struct velocity_info *vptr, int idx)
- 	struct sk_buff *skb;
- 
- 	if (rd->rdesc0.RSR & (RSR_STP | RSR_EDP)) {
--		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame span multple RDs.\n", vptr->netdev->name);
-+		VELOCITY_PRT(MSG_LEVEL_VERBOSE, KERN_ERR " %s : the received frame spans multiple RDs.\n", vptr->netdev->name);
- 		stats->rx_length_errors++;
- 		return -EINVAL;
- 	}
-diff --git a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-index 9f75afb..da46f1f 100644
---- a/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -3303,7 +3303,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 
- 	if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 		err = -EINVAL;
--		brcmf_err("ivalid OUI\n");
-+		brcmf_err("invalid OUI\n");
- 		goto exit;
- 	}
- 	offset += TLV_OUI_LEN;
-@@ -3342,7 +3342,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 	for (i = 0; i < count; i++) {
- 		if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 			err = -EINVAL;
--			brcmf_err("ivalid OUI\n");
-+			brcmf_err("invalid OUI\n");
- 			goto exit;
- 		}
- 		offset += TLV_OUI_LEN;
-@@ -3376,7 +3376,7 @@ brcmf_configure_wpaie(struct net_device *ndev,
- 	for (i = 0; i < count; i++) {
- 		if (!brcmf_valid_wpa_oui(&data[offset], is_rsn_ie)) {
- 			err = -EINVAL;
--			brcmf_err("ivalid OUI\n");
-+			brcmf_err("invalid OUI\n");
- 			goto exit;
- 		}
- 		offset += TLV_OUI_LEN;
-diff --git a/drivers/scsi/qla2xxx/qla_nx2.c b/drivers/scsi/qla2xxx/qla_nx2.c
-index 86cf108..36fdd01 100644
---- a/drivers/scsi/qla2xxx/qla_nx2.c
-+++ b/drivers/scsi/qla2xxx/qla_nx2.c
-@@ -307,7 +307,7 @@ qla8044_idc_lock(struct qla_hw_data *ha)
- 				 */
- 				 ql_dbg(ql_dbg_p3p, vha, 0xb08a,
- 				     "%s: IDC lock Recovery by %d "
--				     "failed, Retrying timout\n", __func__,
-+				     "failed, Retrying timeout\n", __func__,
- 				     ha->portnum);
- 				 timeout = 0;
- 			}
-diff --git a/drivers/scsi/scsi_transport_fc.c b/drivers/scsi/scsi_transport_fc.c
-index f80908f..d2adfb6 100644
---- a/drivers/scsi/scsi_transport_fc.c
-+++ b/drivers/scsi/scsi_transport_fc.c
-@@ -3064,7 +3064,7 @@ fc_remote_port_rolechg(struct fc_rport  *rport, u32 roles)
- 		ret = fc_tgt_it_nexus_create(shost, (unsigned long)rport,
- 					     (char *)&rport->node_name);
- 		if (ret)
--			printk(KERN_ERR "FC Remore Port tgt nexus failed %d\n",
-+			printk(KERN_ERR "FC Remote Port tgt nexus failed %d\n",
- 			       ret);
- 	}
- 
-diff --git a/sound/soc/davinci/davinci-mcasp.c b/sound/soc/davinci/davinci-mcasp.c
-index a01ae97..790c145 100644
---- a/sound/soc/davinci/davinci-mcasp.c
-+++ b/sound/soc/davinci/davinci-mcasp.c
-@@ -620,7 +620,7 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
- 	if (mcasp->bclk_master) {
- 		unsigned int bclk_freq = snd_soc_params_to_bclk(params);
- 		if (mcasp->sysclk_freq % bclk_freq != 0) {
--			dev_err(mcasp->dev, "Can't produce requred BCLK\n");
-+			dev_err(mcasp->dev, "Can't produce required BCLK\n");
- 			return -EINVAL;
- 		}
- 		davinci_mcasp_set_clkdiv(
--- 
-1.9.1.315.g3f09db0
+Dave,
+
+Thank you for the efforts.
+The commit is in the linux-next tree. You can see it from this link:
+http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8a7206a89f85c8439561b0eff85bb9440a2e97a9
+And, here is the commit log:
+
+author
+K. Y. Srinivasan <kys@microsoft.com> 2014-02-03 20:42:45 (GMT) 
+committer
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> 2014-02-07 23:22:40 (GMT) 
+commit
+8a7206a89f85c8439561b0eff85bb9440a2e97a9 (patch) 
+tree
+61f763919607368481ac128f56416df1f49cd187 
+parent
+011a7c3cc3aa60c7ea6bb49d847e80a299ba7b36 (diff) 
+
+Drivers: hv: vmbus: Support per-channel driver state
+As we implement Virtual Receive Side Scaling on the networking side
+(the VRSS patches are currently under review), it will be useful to have
+per-channel state that vmbus drivers can manage. Add support for
+managing per-channel state.
+
+KY:
+Do you know the original tree this patch was checked into by Greg KH? Or, 
+did Greg checked into linux-next tree directly?
+
+Thanks,
+- Haiyang
 
