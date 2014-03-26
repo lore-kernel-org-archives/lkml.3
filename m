@@ -1,139 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552AbaCZV5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:57:31 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:54896 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755940AbaCZV53 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:57:29 -0400
-Message-ID: <53334CB7.9020107@ahsoftware.de>
-Date: Wed, 26 Mar 2014 22:55:03 +0100
-From: Alexander Holler <holler@ahsoftware.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756487AbaCZV64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 17:58:56 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53456 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754185AbaCZV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 17:58:55 -0400
+Date: Wed, 26 Mar 2014 14:58:49 -0700
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH -mm 2/4] sl[au]b: charge slabs to memcg explicitly
+Message-ID: <20140326215848.GB22656@dhcp22.suse.cz>
+References: <cover.1395846845.git.vdavydov@parallels.com>
+ <1d0196602182e5284f3289eaea0219e62a51d1c4.1395846845.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-To: Levente Kurusa <levex@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] initramfs: print error and shell out for unsupported
- content
-References: <CAAsK9AEeobOG1j6NHUoqkZaZ5h8GGK_fL+gyh9MhSvguQjyU_w@mail.gmail.com>	<1395352845-7435-1-git-send-email-holler@ahsoftware.de>	<20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>	<532CC215.1000107@ahsoftware.de>	<20140321155517.51af1b28fe32656fb7506f97@linux-foundation.org>	<532CC625.7020509@ahsoftware.de>	<53334393.5050008@ahsoftware.de> <CAAsK9AG85HmHYgVL=19hYtTF+AiaZHX0hhg8V3Q-+WfVi_jzCw@mail.gmail.com>
-In-Reply-To: <CAAsK9AG85HmHYgVL=19hYtTF+AiaZHX0hhg8V3Q-+WfVi_jzCw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1d0196602182e5284f3289eaea0219e62a51d1c4.1395846845.git.vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.03.2014 22:38, schrieb Levente Kurusa:
-> Hi,
->
-> 2014-03-26 22:16 GMT+01:00 Alexander Holler <holler@ahsoftware.de>:
->> Am 22.03.2014 00:07, schrieb Alexander Holler:
->>>
->>> Am 21.03.2014 23:55, schrieb Andrew Morton:
->>>
->>>> On Fri, 21 Mar 2014 23:49:57 +0100 Alexander Holler
->>>> <holler@ahsoftware.de> wrote:
->>>>
->>>>> Am 21.03.2014 22:03, schrieb Andrew Morton:
->>>>>>
->>>>>> On Thu, 20 Mar 2014 23:00:45 +0100 Alexander Holler
->>>>>> <holler@ahsoftware.de> wrote:
->>>>>>
->>>>>>> The initramfs generation is broken for file and directory names which
->>>>>>> contain
->>>>>>> colons or spaces. Print an error and don't try to continue.
->>>>>
->>>>>
->>>>>> It would be better to fix the it-doesnt-work-with-all-filenames bug.
->>>>>> Any details on that?
->>>>>
->>>>>
->>>>> IMHO not worth the time. The whole process which is curently used is
->>>>> extremly fragile.
->>>>>
->>>>> E.g it's almost guaranteed to fail trying to include arbitrary filenames
->>>>> as dependencies in a Makefile. Besides the one problem I've discoverd
->>>>> with colons, there could be much more things happen, e.g. with filenames
->>>>> which do include other special Makefile characters you all would have to
->>>>> escape correctly.
->>
->>
->> To be a bit more verbose, (gnu)make doesn't support quoted filenames. That
->> means one has to escape all kind of characters which might have a special
->> meaning for make. Not really doable. Furthermore escaped characters are not
->> very well supported by make and are usable only by a few rules.
->>
->>
->>>>> And the problem with spaces isn't as easy to fix as it first does look
->>>>> like. I think it might be easier to write the whole stuff new instead of
->>>>> trying to escape the spaces in various ways needed to end up correctly
->>>>> in the cpio (it first goes through shell code and is then feeded as some
->>>>> list to a C program).
->>
->>
->> To be a bit more verbose here, the shell script
->> (scripts/gen_initramfs_list.sh) identifes filenames based on the position in
->> a string which is delimited by the usual (shell) whitespace. E.g. $1 =
->> filename, $2 = mode, ...
->> And this stuff is then feeded to usr/gen_init_cpio.c,which uses a similiar
->> approach like
->>
->> sscanf(line, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d", name,
->> target, ...
->>
->> which obviously fails for filenames with whitspace too.
->>
->> What I think might be reasonable is:
->>
->> - get rid of the dependency list in form of a include into the Makefile and
->> just generate the cpio-archive every time make is called. Common initramfs
->> sizes are about a few megabytes and with today machines such a cpio-archive
->> is build in about a second,
->>
->
-> I don't understand what kind of include would you want.
->
->> - get rid of gen_initramfs_list.sh and rewrite gen_init_cpio.c such that it
->> reads the filenames, modes and similiar itself (e.g. by using stat(2)).
->
-> This is walkable but probably not worth the effort. Besides, why would
-> anyone want to put spaces, colons and arbitrary characters to filenames
-> in the initramfs?
->
->>
->>
->> But I don't have any motivation to do so. Sorry.
->>
->> Maybe Levente Kurusa is interested in doing so, he seems to have an interest
->> in the topic as he was quiet fast to send an answer to my patch.
->
-> All I wonder now is why are you being so arrogant. You are not a 'remote
-> keyboard' as you had called yourself, since when you send a patch
-> you not only have to send it but communicate WHY maintainers
-> should take that patch, and if somebody has a comment
+On Wed 26-03-14 19:28:05, Vladimir Davydov wrote:
+> We have only a few places where we actually want to charge kmem so
+> instead of intruding into the general page allocation path with
+> __GFP_KMEMCG it's better to explictly charge kmem there. All kmem
+> charges will be easier to follow that way.
+> 
+> This is a step towards removing __GFP_KMEMCG. It removes __GFP_KMEMCG
+> from memcg caches' allocflags. Instead it makes slab allocation path
+> call memcg_charge_kmem directly getting memcg to charge from the cache's
+> memcg params.
 
-The patch clearly explained what's broken.
+Yes, removing __GFP_KMEMCG is definitely a good step. I am currently at
+a conference and do not have much time to review this properly (even
+worse will be on vacation for the next 2 weeks) but where did all the
+static_key optimization go? What am I missing.
 
-> spotting an obvious mistake you shouldn't become angry.
-> It was only a simple typo and a suggestion. Nobody told you
-> to blindly accept my suggestion. Everybody can have opinions.
-> It's open-source, the community suggests you new changes,
-> it's normal, get used to it. Writing up this nonsense sentence
-> (I feel the irony) probably took more time than actually resending
-> the patch did.
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Glauber Costa <glommer@gmail.com>
+> Cc: Christoph Lameter <cl@linux-foundation.org>
+> Cc: Pekka Enberg <penberg@kernel.org>
+> ---
+>  include/linux/memcontrol.h |   24 +++++++++++++-----------
+>  mm/memcontrol.c            |   15 +++++++++++++++
+>  mm/slab.c                  |    7 ++++++-
+>  mm/slab_common.c           |    6 +-----
+>  mm/slub.c                  |   24 +++++++++++++++++-------
+>  5 files changed, 52 insertions(+), 24 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index e9dfcdad24c5..b8aaecc25cbf 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -512,6 +512,9 @@ void memcg_update_array_size(int num_groups);
+>  struct kmem_cache *
+>  __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+>  
+> +int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order);
+> +void memcg_uncharge_slab(struct kmem_cache *s, int order);
+> +
+>  void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
+>  int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
+>  
+> @@ -589,17 +592,7 @@ memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
+>   * @cachep: the original global kmem cache
+>   * @gfp: allocation flags.
+>   *
+> - * This function assumes that the task allocating, which determines the memcg
+> - * in the page allocator, belongs to the same cgroup throughout the whole
+> - * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
+> - * while belonging to a cgroup, and later on changes. This is considered
+> - * acceptable, and should only happen upon task migration.
+> - *
+> - * Before the cache is created by the memcg core, there is also a possible
+> - * imbalance: the task belongs to a memcg, but the cache being allocated from
+> - * is the global cache, since the child cache is not yet guaranteed to be
+> - * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
+> - * passed and the page allocator will not attempt any cgroup accounting.
+> + * All memory allocated from a per-memcg cache is charged to the owner memcg.
+>   */
+>  static __always_inline struct kmem_cache *
+>  memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+> @@ -667,6 +660,15 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
+>  {
+>  	return cachep;
+>  }
+> +
+> +static inline int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order)
+> +{
+> +	return 0;
+> +}
+> +
+> +static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+> +{
+> +}
+>  #endif /* CONFIG_MEMCG_KMEM */
+>  #endif /* _LINUX_MEMCONTROL_H */
+>  
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 81a162d01d4d..9bbc088e3107 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -3506,6 +3506,21 @@ out:
+>  }
+>  EXPORT_SYMBOL(__memcg_kmem_get_cache);
+>  
+> +int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order)
+> +{
+> +	if (is_root_cache(s))
+> +		return 0;
+> +	return memcg_charge_kmem(s->memcg_params->memcg, gfp,
+> +				 PAGE_SIZE << order);
+> +}
+> +
+> +void memcg_uncharge_slab(struct kmem_cache *s, int order)
+> +{
+> +	if (is_root_cache(s))
+> +		return;
+> +	memcg_uncharge_kmem(s->memcg_params->memcg, PAGE_SIZE << order);
+> +}
+> +
+>  /*
+>   * We need to verify if the allocation against current->mm->owner's memcg is
+>   * possible for the given order. But the page is not allocated yet, so we'll
+> diff --git a/mm/slab.c b/mm/slab.c
+> index eebc619ae33c..af126a37dafd 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -1664,8 +1664,12 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+>  	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
+>  		flags |= __GFP_RECLAIMABLE;
+>  
+> +	if (memcg_charge_slab(cachep, flags, cachep->gfporder))
+> +		return NULL;
+> +
+>  	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
+>  	if (!page) {
+> +		memcg_uncharge_slab(cachep, cachep->gfporder);
+>  		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
+>  			slab_out_of_memory(cachep, flags, nodeid);
+>  		return NULL;
+> @@ -1724,7 +1728,8 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
+>  	memcg_release_pages(cachep, cachep->gfporder);
+>  	if (current->reclaim_state)
+>  		current->reclaim_state->reclaimed_slab += nr_freed;
+> -	__free_memcg_kmem_pages(page, cachep->gfporder);
+> +	__free_pages(page, cachep->gfporder);
+> +	memcg_uncharge_slab(cachep, cachep->gfporder);
+>  }
+>  
+>  static void kmem_rcu_free(struct rcu_head *head)
+> diff --git a/mm/slab_common.c b/mm/slab_common.c
+> index f3cfccf76dda..6673597ac967 100644
+> --- a/mm/slab_common.c
+> +++ b/mm/slab_common.c
+> @@ -290,12 +290,8 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
+>  				 root_cache->size, root_cache->align,
+>  				 root_cache->flags, root_cache->ctor,
+>  				 memcg, root_cache);
+> -	if (IS_ERR(s)) {
+> +	if (IS_ERR(s))
+>  		kfree(cache_name);
+> -		goto out_unlock;
+> -	}
+> -
+> -	s->allocflags |= __GFP_KMEMCG;
+>  
+>  out_unlock:
+>  	mutex_unlock(&slab_mutex);
+> diff --git a/mm/slub.c b/mm/slub.c
+> index c2e58a787443..6fefe3b33ce0 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -1317,17 +1317,26 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
+>  /*
+>   * Slab allocation and freeing
+>   */
+> -static inline struct page *alloc_slab_page(gfp_t flags, int node,
+> -					struct kmem_cache_order_objects oo)
+> +static inline struct page *alloc_slab_page(struct kmem_cache *s,
+> +		gfp_t flags, int node, struct kmem_cache_order_objects oo)
+>  {
+> +	struct page *page;
+>  	int order = oo_order(oo);
+>  
+>  	flags |= __GFP_NOTRACK;
+>  
+> +	if (memcg_charge_slab(s, flags, order))
+> +		return NULL;
+> +
+>  	if (node == NUMA_NO_NODE)
+> -		return alloc_pages(flags, order);
+> +		page = alloc_pages(flags, order);
+>  	else
+> -		return alloc_pages_exact_node(node, flags, order);
+> +		page = alloc_pages_exact_node(node, flags, order);
+> +
+> +	if (!page)
+> +		memcg_uncharge_slab(s, order);
+> +
+> +	return page;
+>  }
+>  
+>  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+> @@ -1349,7 +1358,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>  	 */
+>  	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
+>  
+> -	page = alloc_slab_page(alloc_gfp, node, oo);
+> +	page = alloc_slab_page(s, alloc_gfp, node, oo);
+>  	if (unlikely(!page)) {
+>  		oo = s->min;
+>  		alloc_gfp = flags;
+> @@ -1357,7 +1366,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+>  		 * Allocation may have failed due to fragmentation.
+>  		 * Try a lower order alloc if possible
+>  		 */
+> -		page = alloc_slab_page(alloc_gfp, node, oo);
+> +		page = alloc_slab_page(s, alloc_gfp, node, oo);
+>  
+>  		if (page)
+>  			stat(s, ORDER_FALLBACK);
+> @@ -1473,7 +1482,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+>  	page_mapcount_reset(page);
+>  	if (current->reclaim_state)
+>  		current->reclaim_state->reclaimed_slab += pages;
+> -	__free_memcg_kmem_pages(page, order);
+> +	__free_pages(page, order);
+> +	memcg_uncharge_slab(s, order);
+>  }
+>  
+>  #define need_reserve_slab_rcu						\
+> -- 
+> 1.7.10.4
+> 
 
-So please accept my opinion that I'm not interested in fixing silly 
-typos until I had at least some feedback with reasonable content. E.g. a 
-Tested-By would have been nice.
-
-And please forgive me that I'm unable to differentiate between feedback 
-from "someone" or by a maintainer. Maybe I was fooled by that linux.com 
-in your email, I had forgotten that this is a public available mail address.
-
-So, Thanks for supporting the Linux Foundation.
-
-Regards,
-
-Alexander Holler
+-- 
+Michal Hocko
+SUSE Labs
