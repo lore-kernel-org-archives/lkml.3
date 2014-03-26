@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431AbaCZWVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:21:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:51589 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754744AbaCZWVG (ORCPT
+	id S1756587AbaCZWW3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:22:29 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:58278 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756141AbaCZWW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:21:06 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Warren <swarren@wwwdotorg.org>
-Subject: Re: [PATCH 1/2] ARM: tegra: enable fhandle in tegra_defconfig
-Date: Wed, 26 Mar 2014 23:20:37 +0100
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Alexandre Courbot <acourbot@nvidia.com>, arm@kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-tegra@vger.kernel.org
-References: <1395800972-26483-1-git-send-email-acourbot@nvidia.com> <53333303.70709@wwwdotorg.org>
-In-Reply-To: <53333303.70709@wwwdotorg.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 26 Mar 2014 18:22:27 -0400
+Message-ID: <1395872545.12610.262.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 2/7] atm: replace del_timer by del_timer_sync
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Julia Lawall <Julia.Lawall@lip6.fr>,
+        "David S. Miller" <davem@davemloft.net>,
+        kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Mar 2014 15:22:25 -0700
+In-Reply-To: <alpine.DEB.2.02.1403262301171.31401@ionos.tec.linutronix.de>
+References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
+	  <1395869625-15209-3-git-send-email-Julia.Lawall@lip6.fr>
+	 <1395871015.12610.254.camel@edumazet-glaptop2.roam.corp.google.com>
+	 <alpine.DEB.2.02.1403262301171.31401@ionos.tec.linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201403262320.37195.arnd@arndb.de>
-X-Provags-ID: V02:K0:1F+eyu/xEBbZyGh5L2GGEmLCouuiLlubWJBbFMrDdN/
- jiFJFmXzzNPhLG8Ja6lVJAQPHNh2jEk+SrbA/WQeYNOhu95Gb5
- IuliI9dbR7m1NLJMR29hrCIDKkoLY/XTIVTttiQ+FQ2CmumdPI
- U9w3I0+hVtlkYquEech7/fEOmHK4jqXrQY/8IZU3c+KJw41oKf
- g82VY6V2vK8LPi8Sf30455Z5XQ0NBeeFmJdbRf2GPSjeT5Q7VG
- ybH1L/Vb/c+zHIlY8YOREsk0zNzbvwZ/RFXfMaY4M8ExxXSbBZ
- Cv2eO9vRzBzBbxSJauuBhBeXX+bFFg8dqOryf8n6RCqjUSAbMX
- +KnVRGl6G6ttQ3zwQtCyK6lFVbdiP7PJXspdjRn0j
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 March 2014, Stephen Warren wrote:
-> On 03/25/2014 08:29 PM, Alexandre Courbot wrote:
-> > CONFIG_FHANDLE is required by systemd >= 210 to spawn a serial TTY.
-> 
-> The series,
-> Acked-by: Stephen Warren <swarren@nvidia.com>
-> 
-> Patch 1/2,
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> (although not with the new systemd version that requires the change, but
-> rather for regressions in Ubuntu 12.04)
-> 
-> 
+On Wed, 2014-03-26 at 23:02 +0100, Thomas Gleixner wrote:
 
-Applied both to next/boards, thanks!
+> That's why you need del_timer_sync() it waits for the timer handler to
+> complete and then removes it.
 
-	Arnd
+Interesting... So maybe some comment is stale ?
+
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index accfd241b9e5..c948fa2fc065 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1011,10 +1011,10 @@ EXPORT_SYMBOL(try_to_del_timer_sync);
+  * the timer it also makes sure the handler has finished executing on other
+  * CPUs.
+  *
+- * Synchronization rules: Callers must prevent restarting of the timer,
+- * otherwise this function is meaningless. It must not be called from
+- * interrupt contexts unless the timer is an irqsafe one. The caller must
+- * not hold locks which would prevent completion of the timer's
++ * Synchronization rules:
++ * It must not be called from interrupt contexts unless the timer is an
++ * irqsafe one.
++ * The caller must not hold locks which would prevent completion of the timer's
+  * handler. The timer's handler must not call add_timer_on(). Upon exit the
+  * timer is not queued and the handler is not running on any CPU.
+  *
+
+
