@@ -1,150 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756260AbaCZUZo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:25:44 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55348 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756058AbaCZUZl (ORCPT
+	id S1754907AbaCZU2u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:28:50 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:65523 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaCZU2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:25:41 -0400
-Message-ID: <533337BD.5070901@free-electrons.com>
-Date: Wed, 26 Mar 2014 21:25:33 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Mar 2014 16:28:49 -0400
 MIME-Version: 1.0
-To: Fabio Estevam <festevam@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
-CC: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, t.figa@samsung.com,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Kevin Hilman <khilman@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] clk: register fixed-clock only if #clock-cells property
- is present
-References: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>	<CAOMZO5DJPKvha7A-foktsB2dEw9xGXL_++uBXj_3ScAPTXNOkw@mail.gmail.com>	<53333145.4080903@gmail.com> <CAOMZO5AEry8sJW_+0aJS8ush+sYPPWk9LRU0b8RUUGa-hO_G1A@mail.gmail.com>
-In-Reply-To: <CAOMZO5AEry8sJW_+0aJS8ush+sYPPWk9LRU0b8RUUGa-hO_G1A@mail.gmail.com>
-X-Enigmail-Version: 1.6
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Wed, 26 Mar 2014 16:28:27 -0400
+X-Google-Sender-Auth: mBMrYVWYeDwz2AC1e7iIlA83yyU
+Message-ID: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+Subject: Adding compression before/above swapcache
+To: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Seth Jennings <sjennings@variantweb.net>, Bob Liu <bob.liu@oracle.com>,
+        Minchan Kim <minchan@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: Linux-MM <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/03/2014 21:14, Fabio Estevam wrote:
-> On Wed, Mar 26, 2014 at 4:57 PM, Sylwester Nawrocki
-> <sylvester.nawrocki@gmail.com> wrote:
-> 
->> Perhaps a change as below helps ?
->>
->> From 85ee85e4a92b42442354f3f2454be50c173e1c59 Mon Sep 17 00:00:00 2001
->> From: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> Date: Wed, 26 Mar 2014 20:54:13 +0100
->> Subject: [PATCH] clk: reverse default clk provider initialization order in
->> of_clk_init()
->>
->>
->> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
->> ---
->>  drivers/clk/clk.c |    2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index fb3c40b..d30809c 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -2608,7 +2608,7 @@ void __init of_clk_init(const struct of_device_id
->> *matches)
->>
->>                 parent->clk_init_cb = match->data;
->>                 parent->np = np;
->> -               list_add(&parent->node, &clk_provider_list);
->> +               list_add_tail(&parent->node, &clk_provider_list);
->>         }
->>
->>         while (!list_empty(&clk_provider_list)) {
-> 
-> Thanks, Sylwester!
-> 
-> This makes my imx6q-wandboard to boot again.
-> 
-> Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-> 
-Hi Fabio, Sylwester,
+I'd like some feedback on how possible/useful, or not, it might be to
+add compression into the page handling code before pages are added to
+the swapcache.  My thought is that adding a compressed cache at that
+point may have (at least) two advantages over the existing page
+compression, zswap and zram, which are both in the swap path.
 
-I am happy there was a solution!
+1) Both zswap and zram are limited in the amount of memory that they
+can compress/store:
+-zswap is limited both in the amount of pre-compressed pages, by the
+total amount of swap configured in the system, and post-compressed
+pages, by its max_pool_percentage parameter.  These limitations aren't
+necessarily a bad thing, just requirements for the user (or distro
+setup tool, etc) to correctly configure them.  And for optimal
+operation, they need to coordinate; for example, with the default
+post-compressed 20% of memory zswap's configured to use, the amount of
+swap in the system must be at least 40% of system memory (if/when
+zswap is changed to use zsmalloc that number would need to increase).
+The point being, there is a clear possibility of misconfiguration, or
+even a simple lack of enough disk space for actual swap, that could
+artificially reduce the amount of total memory zswap is able to
+compress.  Additionally, most of that real disk swap is wasted space -
+all the pages stored compressed in zswap aren't actually written on
+the disk.
+-zram is limited only by its pre-compressed size, and of course the
+amount of actual system memory it can use for compressed storage.  If
+using without dm-cache, this could allow essentially unlimited
+compression until no more compressed pages can be stored; however that
+requires the zram device to be configured as larger than the actual
+system memory.  If using with dm-cache, it may not be obvious what the
+optimal zram size is.
 
-However, Fabio, could you apply the following patch without the patch
-"clk: reverse default clk provider initialization order in
-of_clk_init()" and then sent me the traces. I would like to be sure
-that there is not any side effect.
+Pre-swapcache compression would theoretically require no user
+configuration, and the amount of compressed pages would be unlimited
+(until there is no more room to store compressed pages).
 
-Thanks!
+2) Both zswap and zram (with dm-cache) write uncompressed pages to disk:
+-zswap rejects any pages being sent to swap that don't compress well
+enough, and they're passed on to the swap disk in uncompressed form.
+Also, once zswap is full it starts uncompressing its old compressed
+pages and writing them back to the swap disk.
+-zram, with dm-cache, can pass pages on to the swap disk, but IIUC
+those pages must be uncompressed first, and then written in compressed
+form on disk.  (Please correct me here if that is wrong).
 
----
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index fb3c40b4fbe2..0824cf38f79a 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2558,6 +2558,7 @@ static int parent_ready(struct device_node *np)
+A compressed cache that comes before the swap cache would be able to
+push pages from its compressed storage to the swap disk, that contain
+multiple compressed pages (and/or parts of compressed pages, if
+overlapping page boundries).  I think that would be able to,
+theoretically at least, improve overall read/write times from a
+pre-compressed perspective, simply because less actual data would be
+transferred.  Also, less actual swap disk space would be
+used/required, which on systems with a very large amount of system
+memory may be beneficial.
 
- 	while (true) {
- 		struct clk *clk = of_clk_get(np, i);
-+		pr_warn("%s: Testing %s \n", __func__, np->name);
 
- 		/* this parent is ready we can check the next one */
- 		if (!IS_ERR(clk)) {
-@@ -2567,8 +2568,10 @@ static int parent_ready(struct device_node *np)
- 		}
+Additionally, a couple other random possible benefits:
+-like zswap but unlike zram, a pre-swapcache compressed cache would be
+able to select which pages to store compressed, either based on poor
+compression results or some other criteria - possibly userspace could
+madvise that certain pages were or weren't likely compressible.
+-while zram and zswap are only able to compress and store pages that
+are passed to them by zswapd or direct reclaim, a pre-swap compressed
+cache wouldn't necessarily have to wait until the low watermark is
+reached.
 
- 		/* at least one parent is not ready, we exit now */
--		if (PTR_ERR(clk) == -EPROBE_DEFER)
-+		if (PTR_ERR(clk) == -EPROBE_DEFER) {
-+			pr_warn("%s: Not ready \n", __func__);
- 			return 0;
-+		}
-
- 		/*
- 		 * Here we make assumption that the device tree is
-@@ -2578,6 +2581,7 @@ static int parent_ready(struct device_node *np)
- 		 * parent, no need to wait for them, then we can
- 		 * consider their absence as being ready
- 		 */
-+		pr_warn("%s: Ready \n", __func__);
- 		return 1;
- 	}
- }
-@@ -2616,6 +2620,7 @@ void __init of_clk_init(const struct of_device_id *matches)
- 		list_for_each_entry_safe(clk_provider, next,
- 					&clk_provider_list, node) {
- 			if (force || parent_ready(clk_provider->np)) {
-+				pr_warn("%s: Initializing %s \n", __func__, clk_provider->np->name);
- 				clk_provider->clk_init_cb(clk_provider->np);
- 				list_del(&clk_provider->node);
- 				kfree(clk_provider);
-@@ -2629,8 +2634,10 @@ void __init of_clk_init(const struct of_device_id *matches)
- 		 * initialize all the remaining ones unconditionally
- 		 * in case the clock parent was not mandatory
- 		 */
--		if (!is_init_done)
-+		if (!is_init_done) {
-+			pr_warn("%s: Now force the initialization of the remaning clocks\n", __func__);
- 			force = true;
-+		}
-
- 	}
- }
--- 
-1.8.1.2
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Any feedback would be greatly appreciated!
