@@ -1,38 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755695AbaCZBGe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 21:06:34 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:33290 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755603AbaCZBGc (ORCPT
+	id S1755807AbaCZBHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 21:07:13 -0400
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:54847 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755508AbaCZBHJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 21:06:32 -0400
-Date: Tue, 25 Mar 2014 21:06:30 -0400 (EDT)
-Message-Id: <20140325.210630.2082315424643101163.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: linux-kernel@vger.kernel.org, Julia.Lawall@lip6.fr,
-        akpm@linux-foundation.org, chas@cmf.nrl.navy.mil,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [patch 08/16] atm: idt77105: Use del_timer_sync() in exit path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140323150753.433572795@linutronix.de>
-References: <20140323150557.288925975@linutronix.de>
-	<20140323150753.433572795@linutronix.de>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 25 Mar 2014 18:06:32 -0700 (PDT)
+	Tue, 25 Mar 2014 21:07:09 -0400
+Date: Tue, 25 Mar 2014 18:07:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joe Perches <joe@perches.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, tytso@mit.edu,
+        Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+In-Reply-To: <1395514595.3667.10.camel@joe-AO722>
+Message-ID: <alpine.DEB.2.02.1403251806321.21733@chino.kir.corp.google.com>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be> <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org> <20140322170322.GA23583@thunk.org> <20140322101512.eaeb542b.akpm@linux-foundation.org> <20140322172606.GB23583@thunk.org>
+ <20140322173207.GC23583@thunk.org> <20140322105524.7baec73a.akpm@linux-foundation.org> <1395514595.3667.10.camel@joe-AO722>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 23 Mar 2014 15:09:28 -0000
+On Sat, 22 Mar 2014, Joe Perches wrote:
 
-> The module is about to go away. Make sure everything is stopped safely
-> before we pull the plug.
+> How about just changing this message to something like:
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 			WARN("__GFP_NOFAIL",
+> 			     "Use of __GFP_NOFAIL may cause the OOM handler to kill a random process\n" . $herecurr);
 
-Applied.
+Because it doesn't, the GFP_NOFS allocation in question already cannot 
+invoke the oom killer.
