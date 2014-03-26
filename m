@@ -1,115 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472AbaCZHQa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:16:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:58449 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751452AbaCZHQ3 convert rfc822-to-8bit (ORCPT
+	id S1751865AbaCZHVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:21:23 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:43663 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaCZHVW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:16:29 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "kernel@stlinux.com" <kernel@stlinux.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "angus.clark@st.com" <angus.clark@st.com>,
-        "Ezequiel Garcia (ezequiel.garcia@free-electrons.com)" 
-	<ezequiel.garcia@free-electrons.com>
-Subject: RE: [RFC 08/47] mtd: nand: stm_nand_bch: supply clock support
-Thread-Topic: [RFC 08/47] mtd: nand: stm_nand_bch: supply clock support
-Thread-Index: AQHPSAMaz1eiBWBtWUe2uuNiryMQw5ry2D1g
-Date: Wed, 26 Mar 2014 07:15:55 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAB5BD9@DBDE04.ent.ti.com>
-References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
- <1395735604-26706-9-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1395735604-26706-9-git-send-email-lee.jones@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 26 Mar 2014 03:21:22 -0400
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: [PATCH] drivers:bluetooth:ath3k.c Fixed sparse warning for cast to restricted __le32
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <1395815788-24666-1-git-send-email-surendra.tux@gmail.com>
+Date: Wed, 26 Mar 2014 00:21:22 -0700
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        Johan Hedberg <johan.hedberg@gmail.com>, Joe Perches <joe@perches.com>,
+        bt <linux-bluetooth@vger.kernel.org>, linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Message-Id: <0154F030-52BE-4935-8150-1A96737E7413@holtmann.org>
+References: <1395815788-24666-1-git-send-email-surendra.tux@gmail.com>
+To: Surendra Patil <surendra.tux@gmail.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From: Lee Jones [mailto:lee.jones@linaro.org]
->
->Add support for clocks when, and only when, they are supplied. It is
->not yet compulsory to provide the BCH and EMI clocks, as Common Clk isn't
->supported Mainline yet. Until an implementation lands upstream all clocks
->located on STM boards default to always-on.
->
-Good to put this information in comments tagged with "FixMe" at relevant place in the code.
+Hi Surendra,
 
->Signed-off-by: Lee Jones <lee.jones@linaro.org>
->---
-> drivers/mtd/nand/stm_nand_bch.c | 49 +++++++++++++++++++++++++++++++++++++++++
-> 1 file changed, 49 insertions(+)
->
->diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
->index 1a93f8d..cc0159e 100644
->--- a/drivers/mtd/nand/stm_nand_bch.c
->+++ b/drivers/mtd/nand/stm_nand_bch.c
->@@ -16,6 +16,7 @@
-> #include <linux/module.h>
-> #include <linux/delay.h>
-> #include <linux/io.h>
->+#include <linux/clk.h>
-> #include <linux/interrupt.h>
-> #include <linux/device.h>
-> #include <linux/platform_device.h>
->@@ -28,6 +29,9 @@
-> struct nandi_controller {
-> 	void __iomem		*base;		/* Controller base*/
-> 	void __iomem		*dma;		/* DMA control base */
->+
->+	struct clk		*bch_clk;
->+	struct clk		*emi_clk;
-> 						/* IRQ-triggered Completions: */
-> 	struct completion	seq_completed;	/*   SEQ Over */
-> 	struct completion	rbn_completed;	/*   RBn */
->@@ -103,6 +107,44 @@ static void nandi_disable_interrupts(struct nandi_controller *nandi,
-> 	writel(val, nandi->base + NANDBCH_INT_EN);
-> }
->
->+static void nandi_clk_enable(struct nandi_controller *nandi)
->+{
->+	if (nandi->emi_clk)
->+		clk_prepare_enable(nandi->emi_clk);
->+	if (nandi->bch_clk)
->+		clk_prepare_enable(nandi->bch_clk);
->+}
->+
-You are using nandi_clk_enable() only in your PM patch.
-So better introduce above functions there ..
-	[RFC 11/47] mtd: nand: stm_nand_bch: add Power Management
+> To fix the sparse warning "cast to restricted __le32" marked
+> "rom_version"  to __le32 instead of unsigned int in "struct ath3k_version"
+> and added cpu_to_le32() for the expression assigning int value to "rom_version".
+> Successfully built the module without warnings and errors on x86 machine with sparse.
+> 
+> Signed-off-by: Surendra Patil <surendra.tux@gmail.com>
+> ---
+> drivers/bluetooth/ath3k.c | 4 ++--
+> 1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+> index be571fe..5564207 100644
+> --- a/drivers/bluetooth/ath3k.c
+> +++ b/drivers/bluetooth/ath3k.c
+> @@ -50,7 +50,7 @@
+> #define ATH3K_NAME_LEN				0xFF
+> 
+> struct ath3k_version {
+> -	unsigned int	rom_version;
+> +	__le32		rom_version;
+> 	unsigned int	build_version;
+> 	unsigned int	ram_version;
+> 	unsigned char	ref_clock;
 
-Also, you have some un-related comment changes for nandi_clk_enable()
-in below patch. All that can be merges into single one.
-	[RFC 14/47] mtd: nand: stm_nand_bch: configure BCH and FLEX by ONFI timing mode
+so I think this struct should be __packed in the first place and use strictly typed variables.
 
+Seems like all fields have an endian issue.
 
->+static void nandi_clk_disable(struct nandi_controller *nandi)
->+{
->+	if (nandi->emi_clk)
->+		clk_disable_unprepare(nandi->emi_clk);
->+	if (nandi->bch_clk)
->+		clk_disable_unprepare(nandi->bch_clk);
->+}
->+
-same, please move this to
-	[RFC 11/47] mtd: nand: stm_nand_bch: add Power Management
+> @@ -375,7 +375,7 @@ static int ath3k_load_patch(struct usb_device *udev)
+> 		return ret;
+> 	}
+> 
+> -	pt_version.rom_version = *(int *)(firmware->data + firmware->size - 8);
+> +	pt_version.rom_version = cpu_to_le32(*(int *)(firmware->data + firmware->size - 8));
+> 	pt_version.build_version = *(int *)
+> 		(firmware->data + firmware->size - 4);
 
-Also as Ezequiel suggested.
-You can trim down the number of patches by submitting only the main portion
-of driver first. PM other features can be added as separate patch-set.
+I have no idea what this code is doing since that is just crazy. The variables are unsigned int and are now casted into int and not to mention that it is unaligned access. Has this code every been run on anything other than x86 at all. Does it happen to just work by pure luck.
 
+Regards
 
-with regards, pekon
+Marcel
+
