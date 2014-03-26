@@ -1,65 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbaC0CgK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:36:10 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:41679
-	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751690AbaC0CgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:36:09 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(z579ehz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h17326ah8275dh1de097h186068hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
-Date: Thu, 27 Mar 2014 10:29:36 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: David Laight <David.Laight@ACULAB.COM>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: fsl_sai: Add isr to deal with error
- flag
-Message-ID: <20140327022934.GA16197@MrMyself>
-References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
- <063D6719AE5E284EB5DD2968C1650D6D0F6E958E@AcuExch.aculab.com>
- <20140327011424.GB30768@sirena.org.uk>
+	id S1752927AbaC0Cgr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:36:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46033 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751240AbaC0Cgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 22:36:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,739,1389772800"; 
+   d="scan'208";a="481001568"
+Date: Thu, 27 Mar 2014 02:37:21 +0800
+From: Yuyang du <yuyang.du@intel.com>
+To: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: morten.rasmussen@arm.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com
+Subject: [RFC II] Splitting scheduler into two halves
+Message-ID: <20140326183721.GC24116@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140327011424.GB30768@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 01:14:24AM +0000, Mark Brown wrote:
-> On Wed, Mar 26, 2014 at 11:59:53AM +0000, David Laight wrote:
-> > From: Nicolin Chen
-> 
-> > > +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
-> > > +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
-> 
-> > Assuming these are 'write to clear' bits, you might want
-> > to make the write (above) and all the traces (below)
-> > conditional on the value being non-zero.
-> 
-> The trace is already conditional?  I'd also expect to see the driver
-> only acknowledging sources it knows about and only reporting that the
-> interrupt was handled if it saw one of them - right now all interrupts
-> are unconditionally acknowleged.
+Hi all,
 
-Will revise it based on the comments from both of you.
+This is continued after the first RFC about splitting the scheduler. Still
+work-in-progress, and call for feedback.
 
-Thank you.
+The question addressed here is how load balance should be changed. And I think
+the question then goes to how to *reuse* common code as much as possible and
+meanwhile be able to serve various objectives.
 
+So these are the basic semantics needed in current load balance:
 
-> _______________________________________________
-> Alsa-devel mailing list
-> Alsa-devel@alsa-project.org
-> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
+1. [ At balance point ] on this_cpu push task on that_cpu to [ third_cpu ]
 
+Examples are fork/exec/wakeup. Task is determined by the balance point in
+question. And that_cpu is determined by task.
 
+2. [ At balance point ] on this_cpu pull [ task/tasks ] on [ that_cpu ] to
+this_cpu
+
+Examples are other idle/periodic/nohz balance, and active_load_balance in
+ASYM_PACKING (pull first and then a push).
+
+3. [ At balance point ] on this_cpu kick [ that_cpu/those_cpus ] to do [ what
+] balance
+
+Examples are nohz idle balance and active balance.
+
+To make the above more general, we need to abstract more:
+
+1. [ At balance point ] on this_cpu push task on that_cpu to [ third_cpu ] in
+[ cpu_mask ]
+
+2. [ At balance point ] on this_cpu [ do | skip ] pull [task/tasks ] on [
+that_cpu ] in [ cpu_mask ] to this_cpu
+
+3. [ At balance point ] on this_cpu kick [ that_cpu/those_cpus ] in [ cpu_mask
+] to do nohz idle balance
+
+So essentially, we give them choice or restrict the scope for them.
+
+Then instead of an all-in-one load_balance class, we define pull or push
+classes:
+
+struct push_class:
+int (*which_third_cpu);
+struct cpumask * (*which_cpu_mask);
+
+struct pull_class:
+int (*skip);
+int (*which_that_cpu);
+struct task_struct * (*which_task);
+struct cpumask* (*which_cpu_mask);
+
+Last but not least, currently we configure domain by flags/parameters, how
+about attaching push/pull classes directly to them as struct members? So those
+classes are responsible specially for its riding domain's "well-being".
+
+Thanks,
+Yuyang
