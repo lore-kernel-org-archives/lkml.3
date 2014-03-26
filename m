@@ -1,125 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756095AbaCZUxV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:53:21 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:33394 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755422AbaCZUxU (ORCPT
+	id S1756227AbaCZUy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:54:58 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:47496 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754664AbaCZUyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:53:20 -0400
-Message-ID: <53333E3D.6080607@gmail.com>
-Date: Wed, 26 Mar 2014 20:53:17 +0000
-From: paulmcquad <paulmcquad@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: paulmcquad <paulmcquad@gmail.com>, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Doc: email-clients.txt:added thunderbird settings
-References: <53332374.3000703@gmail.com> <53333365.6010407@infradead.org> <53333DA1.6040809@gmail.com>
-In-Reply-To: <53333DA1.6040809@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Mar 2014 16:54:55 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH v2] MAINTAINERS: add tools/lib/traceevent/ to perf subsystem
+Date: Wed, 26 Mar 2014 16:55:57 -0400
+Message-Id: <1395867357-20737-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.9.0.431.g014438b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+While at it, add Steven Rostedt to the list of maintainers.
 
-On 26/03/14 20:50, paulmcquad wrote:
-> On 26/03/14 20:07, Randy Dunlap wrote:
->> On 03/26/2014 11:59 AM, paulmcquad wrote:
->>> From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
->>> From: Paul McQuade <paulmcquad@gmail.com>
->>> Date: Tue, 25 Mar 2014 20:16:47 +0000
->>> Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
->>>
->>> Added setting to email-clients that is easier to read
->>> and is easier to setup thunderbird. Removed config settings
->>> and added GUI settings.
->>>
->>> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
->>> ---
->>>  Documentation/email-clients.txt | 15 +++++----------
->>>  1 file changed, 5 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
->>> index e9f5dac..1e7c171 100644
->>> --- a/Documentation/email-clients.txt
->>> +++ b/Documentation/email-clients.txt
->>> @@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
->>>  
->>>  - Edit your Thunderbird config settings so that it won't use format=flowed.
->>>    Go to "edit->preferences->advanced->config editor" to bring up the
->>> -  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
->>> -  "false".
->>> +  thunderbird's registry editor.
->>>  
->>> -- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
->> Did that option go away?  We don't want to compose html email.
->>
->>> +- Set "mailnews.send_plaintext_flowed" to "false"
->>>  
->>> -- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
->>> +- Set "mailnews.wraplength" from "72" to "90"
->> Can wraplength be disabled completely?  It would be better to disable
->> wrapping.  Long kernel source code lines should not get broken.
->> (or am I addressing the wrong option?)
->>
->>>  
->>> -- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
->>> +- "View" > "Message Body As" > "Plain Text"
->>>  
->>> -- Install the "toggle wordwrap" extension.  Download the file from:
->>> -    https://addons.mozilla.org/thunderbird/addon/2351/
->>> -  Then go to "tools->add ons", select "install" at the bottom of the screen,
->>> -  and browse to where you saved the .xul file.  This adds an "Enable
->>> -  Wordwrap" entry under the Options menu of the message composer.
->>> +- "View" > "Character Encoding" > "Unicode (UTF-8)"
->>>  
->>>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->>>  TkRat (GUI)
->>>
-> From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
-> From: Paul McQuade <paulmcquad@gmail.com>
-> Date: Tue, 25 Mar 2014 20:16:47 +0000
-> Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
->
-> Added setting to email-clients that is easier to read
-> and is easier to setup thunderbird. Removed config settings
-> and added GUI settings.
->
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  Documentation/email-clients.txt | 15 +++++----------
->  1 file changed, 5 insertions(+), 10 deletions(-)
->
-> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
-> index e9f5dac..1e7c171 100644
-> --- a/Documentation/email-clients.txt
-> +++ b/Documentation/email-clients.txt
-> @@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
->  
->  - Edit your Thunderbird config settings so that it won't use format=flowed.
->    Go to "edit->preferences->advanced->config editor" to bring up the
-> -  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
-> -  "false".
-> +  thunderbird's registry editor.
->  
-> -- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
-> +- Set "mailnews.send_plaintext_flowed" to "false"
->  
-> -- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
-> +- Set "mailnews.wraplength" from "72" to "0"
->  
-> -- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
-> +- "View" > "Message Body As" > "Plain Text"
->  
-> -- Install the "toggle wordwrap" extension.  Download the file from:
-> -    https://addons.mozilla.org/thunderbird/addon/2351/
-> -  Then go to "tools->add ons", select "install" at the bottom of the screen,
-> -  and browse to where you saved the .xul file.  This adds an "Enable
-> -  Wordwrap" entry under the Options menu of the message composer.
-> +- "View" > "Character Encoding" > "Unicode (UTF-8)"
->  
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->  TkRat (GUI)
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
+---
+ MAINTAINERS | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 82640e6..3e8b402 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6682,6 +6682,7 @@ M:	Peter Zijlstra <a.p.zijlstra@chello.nl>
+ M:	Paul Mackerras <paulus@samba.org>
+ M:	Ingo Molnar <mingo@redhat.com>
+ M:	Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
++M:	Steven Rostedt <rostedt@goodmis.org>
+ L:	linux-kernel@vger.kernel.org
+ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf/core
+ S:	Supported
+@@ -6694,6 +6695,7 @@ F:	arch/*/kernel/*/*/perf_event*.c
+ F:	arch/*/include/asm/perf_event.h
+ F:	arch/*/kernel/perf_callchain.c
+ F:	tools/perf/
++F:	tools/lib/traceevent/
+ 
+ PERSONALITY HANDLING
+ M:	Christoph Hellwig <hch@infradead.org>
+-- 
+1.9.0.431.g014438b
 
