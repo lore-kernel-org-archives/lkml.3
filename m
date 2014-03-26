@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035AbaCZT2V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 15:28:21 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51917 "EHLO mx2.suse.de"
+	id S1756062AbaCZTcD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 15:32:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12591 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755199AbaCZT2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 15:28:19 -0400
-Date: Wed, 26 Mar 2014 20:28:15 +0100
-From: Jan Kara <jack@suse.cz>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
- offloading
-Message-ID: <20140326192815.GC18118@quack.suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
- <1395770101-24534-9-git-send-email-jack@suse.cz>
- <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+	id S1753727AbaCZTcA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 15:32:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,737,1389772800"; 
+   d="scan'208";a="508229464"
+From: Andi Kleen <andi@firstfloor.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH] Add initcall_blacklist kernel parameter
+References: <1395842441-17923-1-git-send-email-prarit@redhat.com>
+Date: Wed, 26 Mar 2014 12:31:40 -0700
+In-Reply-To: <1395842441-17923-1-git-send-email-prarit@redhat.com> (Prarit
+	Bhargava's message of "Wed, 26 Mar 2014 10:00:41 -0400")
+Message-ID: <87ppl8oixv.fsf@tassilo.jf.intel.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 17:23:32, One Thousand Gnomes wrote:
-> On Tue, 25 Mar 2014 18:55:01 +0100
-> Jan Kara <jack@suse.cz> wrote:
-> 
-> > Necessity for offloading of printing was observed only for large
-> > systems. So add a config option (disabled by default) which removes most
-> > of the overhead added by this functionality.
-> 
-> If its an option it'll not get used. It ought to be automatic.
->
-> I still think the mindset of this patch set is wrong. Only the device
-> driver really knows what is good or bad. A large x86 connected to a
-> network fake 16x50 serial port for example typically has a giant FIFO so
-> 'bad' becomes 32K not 1000. A USB serial port already does async queueing
-> so the value is 0.
-  I'd be very happy to take a patch which would do the propagation of
-the information how fast the driver is from the driver into the printk. But
-I have no knowledge of what console drivers do and how fast devices are
-supposed to be and reading all that code just for the sake of this seems
-like a bad investment of time to me.
+Prarit Bhargava <prarit@redhat.com> writes:
+>  core_param(initcall_debug, initcall_debug, bool, 0644);
+>  
+> +static char blacklist_buf[128] = "\0";
 
-I'm happy with a solution that the feature is disabled by default so people
-don't have to pay the cost. For enterprise kernels which are supposed to
-run on large enough machines that printk offload makes sense, the overhead
-just doesn't matter IMHO.
+__initdata
 
-> It also ignores priority so you might queue and loose an oops as a box
-> goes down in preference to reporting debugging crap.
-  But that's no different to what happens now. Or am I missing something?
 
-> All the afflicted consoles are serial, all go via the uart layer as far
-> as I can see.
-> 
-> The uart layer has a queue mechanism that could be used
-  I'm sorry, I don't follow here - what can the uart queueing be used for?
+> +static int initcall_blacklist(char *str)
 
-								Honza
+__init
+
+Rest looks good. Should be quite useful to have this option
+
+-Andi
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ak@linux.intel.com -- Speaking for myself only
