@@ -1,110 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755477AbaCZAcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:32:21 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64330 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752163AbaCZAcT (ORCPT
+	id S1754542AbaCZAmD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:42:03 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:56814 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126AbaCZAmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:32:19 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 108.39.110.144
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/d0MWrYAf5VuU7u8mcENtFgVphfqpnBDw=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 447E754C0F2
-Date: Tue, 25 Mar 2014 20:32:07 -0400
-From: Jason Cooper <jason@lakedaemon.net>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v5 08/14] ARM: dts: mvebu: Introduce a new compatible
- for the PMSU node
-Message-ID: <20140326003207.GK28304@titan.lakedaemon.net>
-References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
- <1395787705-31061-9-git-send-email-gregory.clement@free-electrons.com>
+	Tue, 25 Mar 2014 20:42:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395787705-31061-9-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140325211229.GA27422@quack.suse.cz>
+References: <20140305124536.GA32371@quack.suse.cz>
+	<53189BF8.1010308@oracle.com>
+	<531A7CFD.9030603@oracle.com>
+	<20140310104350.GB28797@quack.suse.cz>
+	<531DC89A.9010601@oracle.com>
+	<53304451.7030800@oracle.com>
+	<20140324214851.GB10057@quack.suse.cz>
+	<5330D15E.2000702@oracle.com>
+	<20140325173340.GB17292@quack.suse.cz>
+	<5331C20F.5010109@oracle.com>
+	<20140325211229.GA27422@quack.suse.cz>
+Date: Tue, 25 Mar 2014 17:41:59 -0700
+X-Google-Sender-Auth: v5RLhQdmrFuyySwICVwDA7LchSQ
+Message-ID: <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
+Subject: Re: fs: gpf in simple_setattr
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Sasha Levin <sasha.levin@oracle.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 11:48:19PM +0100, Gregory CLEMENT wrote:
-> The initial binding for PMSU were wrong. It didn't take into account
-> all the registers from the PMSU and in the other hand refereed to
-> registers which are not part of PMSU. This commit introduces a new
-> compatible for the PMSU node and annotates the previous one as
-> obsolete. However we still continue to support it during a few
-> releases.
-> 
-> Cc: devicetree@vger.kernel.org
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  .../devicetree/bindings/arm/armada-370-xp-pmsu.txt         | 14 ++++++--------
->  arch/arm/boot/dts/armada-xp.dtsi                           | 11 ++++++++---
->  2 files changed, 14 insertions(+), 11 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/arm/armada-370-xp-pmsu.txt b/Documentation/devicetree/bindings/arm/armada-370-xp-pmsu.txt
-> index 926b4d6aae7e..976188770079 100644
-> --- a/Documentation/devicetree/bindings/arm/armada-370-xp-pmsu.txt
-> +++ b/Documentation/devicetree/bindings/arm/armada-370-xp-pmsu.txt
-> @@ -4,17 +4,15 @@ Available on Marvell SOCs: Armada 370 and Armada XP
->  
->  Required properties:
->  
-> -- compatible: "marvell,armada-370-xp-pmsu"
-> +- compatible: should be "marvell,armada-370-pmsu", whereas
-> +  "marvell,armada-370-xp-pmsu" is deprecated and will be removed
+On Tue, Mar 25, 2014 at 2:12 PM, Jan Kara <jack@suse.cz> wrote:
+>
+>   Can you try whether the following patch fixes the issue for you?
 
-:)  ignore my comment on the previous patch.
+Good catch, Honza.
 
-> -- reg: Should contain PMSU registers location and length. First pair
-> -  for the per-CPU SW Reset Control registers, second pair for the
-> -  Power Management Service Unit.
-> +- reg: Should contain PMSU registers location and length.
->  
->  Example:
->  
-> -armada-370-xp-pmsu@d0022000 {
-> -	compatible = "marvell,armada-370-xp-pmsu";
-> -	reg = <0xd0022100 0x430>,
-> -	      <0xd0020800 0x20>;
-> +armada-370-xp-pmsu@22000 {
-> +	compatible = "marvell,armada-370-pmsu";
-> +	reg = <0x22000 0x1000>;
->  };
->  
-> diff --git a/arch/arm/boot/dts/armada-xp.dtsi b/arch/arm/boot/dts/armada-xp.dtsi
-> index abb9f9dcc525..0c455f5458df 100644
-> --- a/arch/arm/boot/dts/armada-xp.dtsi
-> +++ b/arch/arm/boot/dts/armada-xp.dtsi
-> @@ -117,9 +117,14 @@
->  				clock-names = "nbclk", "fixed";
->  			};
->  
-> -			armada-370-xp-pmsu@22000 {
-> -				compatible = "marvell,armada-370-xp-pmsu";
-> -				reg = <0x22100 0x400>, <0x20800 0x20>;
-> +			cpurst@20800 {
-> +				compatible = "marvell,armada-xp-cpu-reset";
-> +				reg = <0x20800 0x20>;
-> +			};
-> +
-> +			armada-370-pmsu@22000 {
-> +				compatible = "marvell,armada-370-pmsu";
-> +				reg = <0x22000 0x400>;
->  			};
->  
->  			eth2: ethernet@30000 {
-> -- 
-> 1.8.1.2
-> 
+I hate how fragile that code ends up being and would love to see that
+"anon_inode_inode" allocation and assignment just once in
+anon_inode_init(), but considering that it wants the superblock
+pointer, I suspect it's not cleanly doable. Oh well. Your patch looks
+like it should make the issue moot, I just dread this happening again
+due to the layout of the code.
+
+Will apply the patch,
+
+             Linus
