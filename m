@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473AbaCZXSp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 19:18:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683AbaCZXSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 19:18:44 -0400
-Message-ID: <53336049.4060901@redhat.com>
-Date: Thu, 27 Mar 2014 00:18:33 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756532AbaCZXVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 19:21:47 -0400
+Received: from stinky.trash.net ([213.144.137.162]:38868 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910AbaCZXVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 19:21:46 -0400
+X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Mar 2014 19:21:46 EDT
+Date: Wed, 26 Mar 2014 23:13:42 +0000
+From: Patrick McHardy <kaber@trash.net>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com,
+        davem@davemloft.net
+Subject: Re: [PATCH][v6] netlink: have netlink per-protocol bind function
+ return an error code.
+Message-ID: <20140326231342.GA22381@macbook.localnet>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+ <32971f5def3bebff26650bc088c6f3f21f3c727b.1395751443.git.rgb@redhat.com>
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: davem@davemloft.net, hannes@stressinduktion.org, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH] random32: avoid attempt to late reseed if in the middle
- of seeding
-References: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
-In-Reply-To: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <32971f5def3bebff26650bc088c6f3f21f3c727b.1395751443.git.rgb@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 06:12 PM, Sasha Levin wrote:
-> Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
-> nonblocking pool becomes initialized") has added a late reseed stage
-> that happens as soon as the nonblocking pool is marked as initialized.
->
-> This fails in the case that the nonblocking pool gets initialized
-> during __prandom_reseed()'s call to get_random_bytes(). In that case
-> we'd double back into __prandom_reseed() in an attempt to do a late
-> reseed - deadlocking on 'lock' early on in the boot process.
->
-> Instead, just avoid even waiting to do a reseed if a reseed is already
-> occuring.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-
-Thanks for catching! (If you want Dave to pick it up, please also
-Cc netdev.)
-
-Why not via spin_trylock_irqsave() ? Thus, if we already hold the
-lock, we do not bother any longer with doing the same work twice
-and just return.
-
-I.e. like:
-
-static void __prandom_reseed(bool late)
-{
-     int i;
-     unsigned long flags;
-     static bool latch = false;
-     static DEFINE_SPINLOCK(lock);
-
-     /* Asking for random bytes might result in bytes getting
-      * moved into the nonblocking pool and thus marking it
-      * as initialized. In this case we would double back into
-      * this function and attempt to do a late reseed.
-      * Ignore the pointless attempt to reseed again if we're
-      * already waiting for bytes when the nonblocking pool
-      * got initialized.
-      */
-
-     /* only allow initial seeding (late == false) once */
-     if (!spin_trylock_irqsave(&lock, flags))
-         return;
-
-     if (latch && !late)
-         goto out;
-
-     latch = true;
-
-     for_each_possible_cpu(i) {
-         struct rnd_state *state = &per_cpu(net_rand_state,i);
-         u32 seeds[4];
-
-         get_random_bytes(&seeds, sizeof(seeds));
-         state->s1 = __seed(seeds[0],   2U);
-         state->s2 = __seed(seeds[1],   8U);
-         state->s3 = __seed(seeds[2],  16U);
-         state->s4 = __seed(seeds[3], 128U);
-
-         prandom_warmup(state);
-     }
-out:
-     spin_unlock_irqrestore(&lock, flags);
-}
-
-> ---
->   lib/random32.c | 16 +++++++++++++++-
->   1 file changed, 15 insertions(+), 1 deletion(-)
->
-> diff --git a/lib/random32.c b/lib/random32.c
-> index 1e5b2df..b59da12 100644
-> --- a/lib/random32.c
-> +++ b/lib/random32.c
-> @@ -241,14 +241,27 @@ static void __prandom_reseed(bool late)
->   {
->   	int i;
->   	unsigned long flags;
-> -	static bool latch = false;
-> +	static bool latch = false, reseeding = false;
->   	static DEFINE_SPINLOCK(lock);
->
-> +	/*
-> +	 * Asking for random bytes might result in bytes getting
-> +	 * moved into the nonblocking pool and thus marking it
-> +	 * as initialized. In this case we would double back into
-> +	 * this function and attempt to do a late reseed.
-> +	 * Ignore the pointless attempt to reseed again if we're
-> +	 * already waiting for bytes when the nonblocking pool
-> +	 * got initialized
-> +	 */
-> +	if (reseeding)
-> +		return;
+On Tue, Mar 25, 2014 at 08:50:56AM -0400, Richard Guy Briggs wrote:
+> +	if (nlk->netlink_bind && nladdr->nl_groups) {
+> +		int i;
 > +
->   	/* only allow initial seeding (late == false) once */
->   	spin_lock_irqsave(&lock, flags);
->   	if (latch && !late)
->   		goto out;
->   	latch = true;
-> +	reseeding = true;
->
->   	for_each_possible_cpu(i) {
->   		struct rnd_state *state = &per_cpu(net_rand_state,i);
-> @@ -263,6 +276,7 @@ static void __prandom_reseed(bool late)
->   		prandom_warmup(state);
->   	}
->   out:
-> +	reseeding = false;
->   	spin_unlock_irqrestore(&lock, flags);
->   }
->
->
+> +		for (i = 0; i < nlk->ngroups; i++)
+> +			if (test_bit(i, (long unsigned int *)&nladdr->nl_groups)) {
+> +				err = nlk->netlink_bind(i);
+> +				if (err) {
+> +					int undo;
+> +					if (!nlk->portid)
+> +						netlink_remove(sk);
+> +					for (undo = 0; undo < i; undo++)
+> +						if (nlk->netlink_unbind)
+> +							nlk->netlink_unbind(undo);
+
+Do we really need 7 levels of indentation? You could save at least
+one by using
+
+if (!test_bit(...)
+	continue;
+...
+
+Or maybe simply move this to a helper function.
+
+
+
+> +					return err;
+> +				}
+> +			}
+> +	}
+> +
+>  	netlink_table_grab();
+>  	netlink_update_subscriptions(sk, nlk->subscriptions +
+>  					 hweight32(nladdr->nl_groups) -
