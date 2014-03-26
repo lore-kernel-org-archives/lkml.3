@@ -1,56 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaCZN7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:59:20 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46609 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754997AbaCZN7O (ORCPT
+	id S1755780AbaCZOD1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:03:27 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:38730 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645AbaCZODW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:59:14 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <bhelgaas@google.com>, <mohit.kumar@st.com>, <jg1.han@samsung.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <tony@atomide.com>,
-        <rnayak@ti.com>, <paul@pwsan.com>, <kishon@ti.com>,
-        Keerthy <j-keerthy@ti.com>
-Subject: [RFC PATCH 04/12] ARM: dts: DRA7: Add divider table to optfclk_pciephy_div clock
-Date: Wed, 26 Mar 2014 19:27:44 +0530
-Message-ID: <1395842272-15267-5-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395842272-15267-1-git-send-email-kishon@ti.com>
-References: <1395842272-15267-1-git-send-email-kishon@ti.com>
+	Wed, 26 Mar 2014 10:03:22 -0400
+Date: Wed, 26 Mar 2014 15:02:17 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
+        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
+        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
+        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
+        tony.luck@intel.com, Tang Liang <liang.tang@oracle.com>
+Subject: Re: [PATCH v3 1/5] efi: Add efi_init_ops variable
+Message-ID: <20140326140217.GO3454@olila.local.net-space.pl>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
+ <20140326125623.GA24856@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326125623.GA24856@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Keerthy <j-keerthy@ti.com>
+On Wed, Mar 26, 2014 at 12:56:23PM +0000, Matt Fleming wrote:
+> On Tue, 25 Mar, at 09:57:52PM, Daniel Kiper wrote:
+> > Add efi_init_ops variable which allows us to replace
+> > EFI init functions on Xen with its specific stuff.
+> >
+> > This patch is based on Jan Beulich and Tang Liang work.
+> >
+> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> > Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> > ---
+> >  arch/ia64/kernel/efi.c      |   30 +++++++++++++++++++++---------
+> >  arch/x86/platform/efi/efi.c |   18 +++++++++++++-----
+> >  drivers/firmware/efi/efi.c  |   26 ++++++++++++++++++++++++++
+> >  include/linux/efi.h         |    8 ++++++++
+> >  4 files changed, 68 insertions(+), 14 deletions(-)
+>
+> [...]
+>
+> > @@ -1118,6 +1118,14 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+> >  	return 0;
+> >  }
+> >
+> > +struct efi_init_ops efi_init_ops = {
+> > +	.efi_init = efi_init_generic,
+> > +	.efi_reserve_boot_services = efi_reserve_boot_services_generic,
+> > +	.efi_enter_virtual_mode = efi_enter_virtual_mode_generic,
+> > +	.efi_mem_type = efi_mem_type_generic,
+> > +	.efi_mem_attributes = efi_mem_attributes_generic
+> > +};
+>
+> Please don't create another struct of EFI function pointers.
+>
+> After this we'll have 3 global efi structures defintions and 4 global
+> efi objects on x86,
+>
+>   - struct efi_early [in the boot stub]
+>   - struct efi ['efi_phys' before/'efi' after SetVirtualAddressMap()]
+>   - struct efi_init_ops [for the benefit of xen]
 
-Add divider table to optfclk_pciephy_div clock.
+What do you suggest? Should we fill all EFI related structures
+in xen_efi_probe() (called from xen_start_kernel()) and later
+they should be parsed by generic/x86 EFI initialization code?
+I suppose that many variables will have NULL (or something relevant)
+in Xen dom0 and it will require some changes in EFI initialization code.
 
-Signed-off-by: Keerthy <j-keerthy@ti.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
----
- arch/arm/boot/dts/dra7xx-clocks.dtsi |    1 +
- 1 file changed, 1 insertion(+)
+> I have a big problem with exposing .efi_reserve_boot_services as an API.
 
-diff --git a/arch/arm/boot/dts/dra7xx-clocks.dtsi b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-index e96da9a..d909484 100644
---- a/arch/arm/boot/dts/dra7xx-clocks.dtsi
-+++ b/arch/arm/boot/dts/dra7xx-clocks.dtsi
-@@ -1170,6 +1170,7 @@
- 		clocks = <&apll_pcie_ck>;
- 		#clock-cells = <0>;
- 		reg = <0x021c>;
-+		ti,dividers = <2>, <1>;
- 		ti,bit-shift = <8>;
- 		ti,max-div = <2>;
- 	};
--- 
-1.7.9.5
+Why? efi_reserve_boot_services() is public right now.
 
+Daniel
