@@ -1,286 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552AbaCZAEN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:04:13 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34258 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602AbaCZAEH (ORCPT
+	id S1754840AbaCZAHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:07:45 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:14918 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291AbaCZAHn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:04:07 -0400
-Date: Tue, 25 Mar 2014 17:03:36 -0700
-From: tip-bot for Carlo Caione <tipbot@zytor.com>
-Message-ID: <tip-6058bb362818e09990de722e983a7f2874e7f61c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        carlo@caione.org, tglx@linutronix.de, maxime.ripard@free-electrons.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, carlo@caione.org, maxime.ripard@free-electrons.com
-In-Reply-To: <1395256879-8475-2-git-send-email-carlo@caione.org>
-References: <1395256879-8475-2-git-send-email-carlo@caione.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] ARM: sun7i/sun6i: irqchip:
-  Add irqchip driver for NMI controller
-Git-Commit-ID: 6058bb362818e09990de722e983a7f2874e7f61c
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 25 Mar 2014 20:07:43 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 108.39.110.144
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19u6lspVVhWcYY+VZOgHRpZskScMFYLngs=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 98D4E54C046
+Date: Tue, 25 Mar 2014 20:07:35 -0400
+From: Jason Cooper <jason@lakedaemon.net>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Alexander Elbs <alex@segv.de>, Nicolas Pitre <nico@fluxnic.net>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        bonbons@linux-vserver.org, Andrew Lunn <andrew@lunn.ch>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Subject: Re: mvsdio: unhandled interrupt, mmc writes queuing up
+Message-ID: <20140326000735.GI28304@titan.lakedaemon.net>
+References: <20140325192759.GJ29769@segv.de>
+ <53320055.9080307@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+In-Reply-To: <53320055.9080307@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6058bb362818e09990de722e983a7f2874e7f61c
-Gitweb:     http://git.kernel.org/tip/6058bb362818e09990de722e983a7f2874e7f61c
-Author:     Carlo Caione <carlo@caione.org>
-AuthorDate: Wed, 19 Mar 2014 20:21:17 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Wed, 26 Mar 2014 01:00:50 +0100
+On Tue, Mar 25, 2014 at 11:16:53PM +0100, Sebastian Hesselbarth wrote:
+> On 03/25/2014 08:27 PM, Alexander Elbs wrote:
+> >> On Wed, 19 Mar 2014, Bruno Prémont wrote:
+> >>> Since upgrading my Sheevaplug from 3.7.2 to 3.13.6 (FDT) I'm seeing
+> >>>   mvsdio f1090000.mvsdio: unhandled interrupt status=0x8810 en=0x0000 pio=0
+> >>> at varied timings.
+> > 
+> > I have the same problem on my sheevaplug.
+> > 
+> >> It has been many years since I've looked at the code for this driver.  
+> >> I'm therefore including Thomas Petazzoni to the CC list as he appears to 
+> >> have been the most active since then.
+> >>
+> >> The reported status seems to indicate missing data in the context of a 
+> >> transfer with CMD12, and a CRC error ensued of course.
+> >>
+> >> At this point I'd suggest testing intermediate kernels between 3.7 and 
+> >> 3.13, and try bisection until you find the offending commit.
+> >>
+> >> [...]
+> >>> I get same results with 3.14-rc7.
+> >>
+> >> Excellent, that reduces the search space significantly.  You can do a 
+> >> git bisect directly.
+> > 
+> > I did a git bisect.
+> >   good: no message "unhandled interrupt"
+> >   bad: message above appears
+> >   skipped: unbootable kernel, usually stuck after the line "Uncompressing Linux". 
+> > 
+> > So far I am down to a few commits after 3.11.
+> > 
+> > $ git bisect view --oneline
+> > 2326f04 (refs/bisect/bad) ARM: kirkwood: convert to DT irqchip and clocksource
+> 
+> Can you please try the patches contained in [1]?
+> 
+> They have been Acked-by Jason Cooper, but I guess we simply lost
+> track of them.
+> 
+> Sebastian
+> 
+> [1] https://lkml.org/lkml/2013/11/15/276
 
-ARM: sun7i/sun6i: irqchip: Add irqchip driver for NMI controller
+Bruno,
 
-Allwinner A20/A31 SoCs have special registers to control / (un)mask /
-acknowledge NMI. This NMI controller is separated and independent from GIC.
-This patch adds a new irqchip to manage NMI.
+If these work for you, please send a Tested-by and I'll keep better
+track of them this time.  I think these were sent before we had a
+process for shuttling things into irqchip...
 
-Signed-off-by: Carlo Caione <carlo@caione.org>
-Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux-sunxi@googlegroups.com
-Cc: mark.rutland@arm.com
-Cc: hdegoede@redhat.com
-Link: http://lkml.kernel.org/r/1395256879-8475-2-git-send-email-carlo@caione.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- drivers/irqchip/Makefile        |   1 +
- drivers/irqchip/irq-sunxi-nmi.c | 208 ++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 209 insertions(+)
+thx,
 
-diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 5194afb..1c0c151 100644
---- a/drivers/irqchip/Makefile
-+++ b/drivers/irqchip/Makefile
-@@ -12,6 +12,7 @@ obj-$(CONFIG_METAG_PERFCOUNTER_IRQS)	+= irq-metag.o
- obj-$(CONFIG_ARCH_MOXART)		+= irq-moxart.o
- obj-$(CONFIG_ORION_IRQCHIP)		+= irq-orion.o
- obj-$(CONFIG_ARCH_SUNXI)		+= irq-sun4i.o
-+obj-$(CONFIG_ARCH_SUNXI)		+= irq-sunxi-nmi.o
- obj-$(CONFIG_ARCH_SPEAR3XX)		+= spear-shirq.o
- obj-$(CONFIG_ARM_GIC)			+= irq-gic.o
- obj-$(CONFIG_ARM_NVIC)			+= irq-nvic.o
-diff --git a/drivers/irqchip/irq-sunxi-nmi.c b/drivers/irqchip/irq-sunxi-nmi.c
-new file mode 100644
-index 0000000..1c8566c
---- /dev/null
-+++ b/drivers/irqchip/irq-sunxi-nmi.c
-@@ -0,0 +1,208 @@
-+/*
-+ * Allwinner A20/A31 SoCs NMI IRQ chip driver.
-+ *
-+ * Carlo Caione <carlo.caione@gmail.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/bitops.h>
-+#include <linux/device.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/irqdomain.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_address.h>
-+#include <linux/of_platform.h>
-+#include <linux/irqchip/chained_irq.h>
-+#include "irqchip.h"
-+
-+#define SUNXI_NMI_SRC_TYPE_MASK	0x00000003
-+
-+enum {
-+	SUNXI_SRC_TYPE_LEVEL_LOW = 0,
-+	SUNXI_SRC_TYPE_EDGE_FALLING,
-+	SUNXI_SRC_TYPE_LEVEL_HIGH,
-+	SUNXI_SRC_TYPE_EDGE_RISING,
-+};
-+
-+struct sunxi_sc_nmi_reg_offs {
-+	u32 ctrl;
-+	u32 pend;
-+	u32 enable;
-+};
-+
-+static struct sunxi_sc_nmi_reg_offs sun7i_reg_offs = {
-+	.ctrl	= 0x00,
-+	.pend	= 0x04,
-+	.enable	= 0x08,
-+};
-+
-+static struct sunxi_sc_nmi_reg_offs sun6i_reg_offs = {
-+	.ctrl	= 0x00,
-+	.pend	= 0x04,
-+	.enable	= 0x34,
-+};
-+
-+static inline void sunxi_sc_nmi_write(struct irq_chip_generic *gc, u32 off,
-+				      u32 val)
-+{
-+	irq_reg_writel(val, gc->reg_base + off);
-+}
-+
-+static inline u32 sunxi_sc_nmi_read(struct irq_chip_generic *gc, u32 off)
-+{
-+	return irq_reg_readl(gc->reg_base + off);
-+}
-+
-+static void sunxi_sc_nmi_handle_irq(unsigned int irq, struct irq_desc *desc)
-+{
-+	struct irq_domain *domain = irq_desc_get_handler_data(desc);
-+	struct irq_chip *chip = irq_get_chip(irq);
-+	unsigned int virq = irq_find_mapping(domain, 0);
-+
-+	chained_irq_enter(chip, desc);
-+	generic_handle_irq(virq);
-+	chained_irq_exit(chip, desc);
-+}
-+
-+static int sunxi_sc_nmi_set_type(struct irq_data *data, unsigned int flow_type)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(data);
-+	struct irq_chip_type *ct = gc->chip_types;
-+	u32 src_type_reg;
-+	u32 ctrl_off = ct->regs.type;
-+	unsigned int src_type;
-+	unsigned int i;
-+
-+	irq_gc_lock(gc);
-+
-+	switch (flow_type & IRQF_TRIGGER_MASK) {
-+	case IRQ_TYPE_EDGE_FALLING:
-+		src_type = SUNXI_SRC_TYPE_EDGE_FALLING;
-+		break;
-+	case IRQ_TYPE_EDGE_RISING:
-+		src_type = SUNXI_SRC_TYPE_EDGE_RISING;
-+		break;
-+	case IRQ_TYPE_LEVEL_HIGH:
-+		src_type = SUNXI_SRC_TYPE_LEVEL_HIGH;
-+		break;
-+	case IRQ_TYPE_NONE:
-+	case IRQ_TYPE_LEVEL_LOW:
-+		src_type = SUNXI_SRC_TYPE_LEVEL_LOW;
-+		break;
-+	default:
-+		irq_gc_unlock(gc);
-+		pr_err("%s: Cannot assign multiple trigger modes to IRQ %d.\n",
-+			__func__, data->irq);
-+		return -EBADR;
-+	}
-+
-+	irqd_set_trigger_type(data, flow_type);
-+	irq_setup_alt_chip(data, flow_type);
-+
-+	for (i = 0; i <= gc->num_ct; i++, ct++)
-+		if (ct->type & flow_type)
-+			ctrl_off = ct->regs.type;
-+
-+	src_type_reg = sunxi_sc_nmi_read(gc, ctrl_off);
-+	src_type_reg &= ~SUNXI_NMI_SRC_TYPE_MASK;
-+	src_type_reg |= src_type;
-+	sunxi_sc_nmi_write(gc, ctrl_off, src_type_reg);
-+
-+	irq_gc_unlock(gc);
-+
-+	return IRQ_SET_MASK_OK;
-+}
-+
-+static int __init sunxi_sc_nmi_irq_init(struct device_node *node,
-+					struct sunxi_sc_nmi_reg_offs *reg_offs)
-+{
-+	struct irq_domain *domain;
-+	struct irq_chip_generic *gc;
-+	unsigned int irq;
-+	unsigned int clr = IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
-+	int ret;
-+
-+
-+	domain = irq_domain_add_linear(node, 1, &irq_generic_chip_ops, NULL);
-+	if (!domain) {
-+		pr_err("%s: Could not register interrupt domain.\n", node->name);
-+		return -ENOMEM;
-+	}
-+
-+	ret = irq_alloc_domain_generic_chips(domain, 1, 2, node->name,
-+					     handle_fasteoi_irq, clr, 0,
-+					     IRQ_GC_INIT_MASK_CACHE);
-+	if (ret) {
-+		 pr_err("%s: Could not allocate generic interrupt chip.\n",
-+			 node->name);
-+		 goto fail_irqd_remove;
-+	}
-+
-+	irq = irq_of_parse_and_map(node, 0);
-+	if (irq <= 0) {
-+		pr_err("%s: unable to parse irq\n", node->name);
-+		ret = -EINVAL;
-+		goto fail_irqd_remove;
-+	}
-+
-+	gc = irq_get_domain_generic_chip(domain, 0);
-+	gc->reg_base = of_iomap(node, 0);
-+	if (!gc->reg_base) {
-+		pr_err("%s: unable to map resource\n", node->name);
-+		ret = -ENOMEM;
-+		goto fail_irqd_remove;
-+	}
-+
-+	gc->chip_types[0].type			= IRQ_TYPE_LEVEL_MASK;
-+	gc->chip_types[0].chip.irq_mask		= irq_gc_mask_clr_bit;
-+	gc->chip_types[0].chip.irq_unmask	= irq_gc_mask_set_bit;
-+	gc->chip_types[0].chip.irq_eoi		= irq_gc_ack_set_bit;
-+	gc->chip_types[0].chip.irq_set_type	= sunxi_sc_nmi_set_type;
-+	gc->chip_types[0].chip.flags		= IRQCHIP_EOI_THREADED | IRQCHIP_EOI_IF_HANDLED;
-+	gc->chip_types[0].regs.ack		= reg_offs->pend;
-+	gc->chip_types[0].regs.mask		= reg_offs->enable;
-+	gc->chip_types[0].regs.type		= reg_offs->ctrl;
-+
-+	gc->chip_types[1].type			= IRQ_TYPE_EDGE_BOTH;
-+	gc->chip_types[1].chip.name		= gc->chip_types[0].chip.name;
-+	gc->chip_types[1].chip.irq_ack		= irq_gc_ack_set_bit;
-+	gc->chip_types[1].chip.irq_mask		= irq_gc_mask_clr_bit;
-+	gc->chip_types[1].chip.irq_unmask	= irq_gc_mask_set_bit;
-+	gc->chip_types[1].chip.irq_set_type	= sunxi_sc_nmi_set_type;
-+	gc->chip_types[1].regs.ack		= reg_offs->pend;
-+	gc->chip_types[1].regs.mask		= reg_offs->enable;
-+	gc->chip_types[1].regs.type		= reg_offs->ctrl;
-+	gc->chip_types[1].handler		= handle_edge_irq;
-+
-+	irq_set_handler_data(irq, domain);
-+	irq_set_chained_handler(irq, sunxi_sc_nmi_handle_irq);
-+
-+	sunxi_sc_nmi_write(gc, reg_offs->enable, 0);
-+	sunxi_sc_nmi_write(gc, reg_offs->pend, 0x1);
-+
-+	return 0;
-+
-+fail_irqd_remove:
-+	irq_domain_remove(domain);
-+
-+	return ret;
-+}
-+
-+static int __init sun6i_sc_nmi_irq_init(struct device_node *node,
-+					struct device_node *parent)
-+{
-+	return sunxi_sc_nmi_irq_init(node, &sun6i_reg_offs);
-+}
-+IRQCHIP_DECLARE(sun6i_sc_nmi, "allwinner,sun6i-a31-sc-nmi", sun6i_sc_nmi_irq_init);
-+
-+static int __init sun7i_sc_nmi_irq_init(struct device_node *node,
-+					struct device_node *parent)
-+{
-+	return sunxi_sc_nmi_irq_init(node, &sun7i_reg_offs);
-+}
-+IRQCHIP_DECLARE(sun7i_sc_nmi, "allwinner,sun7i-a20-sc-nmi", sun7i_sc_nmi_irq_init);
+Jason.
