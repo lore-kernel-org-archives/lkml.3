@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351AbaCZASz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:18:55 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:53192 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754346AbaCZASx (ORCPT
+	id S1755430AbaCZATi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:19:38 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:35828 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818AbaCZATh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:18:53 -0400
+	Tue, 25 Mar 2014 20:19:37 -0400
+Message-ID: <53321D04.2040102@oracle.com>
+Date: Tue, 25 Mar 2014 20:19:16 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140325200352.GU31785@oranje.fc.hp.com>
-References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-	<20140325200352.GU31785@oranje.fc.hp.com>
-Date: Tue, 25 Mar 2014 17:18:53 -0700
-X-Google-Sender-Auth: sUwcJP8uacLJ4CMGsDxgU_e3HMk
-Message-ID: <CAE9FiQUxBWFfUBjdsakPV0B=rsB4wD-sX6Q2tVbOjNy9RJffRg@mail.gmail.com>
-Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linn Crosetto <linn@hp.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alessandro Zummo <a.zummo@towertech.it>
+CC: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
+        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
+References: <5308E3AE.3040405@oracle.com>	<20140222205217.GC16272@mtj.dyndns.org>	<20140224120427.6394d5dd@linux.lan.towertech.it>	<5331FA9E.20506@oracle.com> <20140325233936.655a798e@linux.lan.towertech.it>
+In-Reply-To: <20140325233936.655a798e@linux.lan.towertech.it>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 1:03 PM, Linn Crosetto <linn@hp.com> wrote:
-> Thanks for the patch.
+On 03/25/2014 06:39 PM, Alessandro Zummo wrote:
+> On Tue, 25 Mar 2014 17:52:30 -0400
+> Sasha Levin <sasha.levin@oracle.com> wrote:
 >
-> On Tue, Jan 28, 2014 at 01:54:05PM -0800, Yinghai Lu wrote:
->> used_vectors is a bitmap for vectors that are not tracked in per_cpu
->> vector_irq.
+>>>
+>>>    Pretty interesting indeed. One option would be to remove
+>>>    the sys files before acquiring the lock. But I wonder
+>>>    if this could lead to other issues.
+>>>
+>>
+>> Ping? Seems this thing got lost.
 >
-> I feel like this comment (also in the code) could be misleading because vectors
-> above first_system_vector are effectively not tracked in per_cpu vector_irq, but
-> also may not have the bit set in used_vectors. For example, used_vectors from a
-> system that I am looking at now:
+>   What if we move
 >
-> first_system_vector
->                 239                  255
->                   |                  |
->                   10 01000 11111 11111
+>     rtc_sysfs_del_device(rtc);
 >
-> test_bit(240, used_vectors) does not return the correct answer to the question
-> about whether the vector is tracked in per_cpu vector_irq. This leads to two
-> meanings for the bitmap; for vectors less than first_system_vector whether or
-> not they are tracked in per_cpu vector_irq, and for vectors above
-> first_system_vector, whether or not they are in use:
->
-> static inline int is_per_cpu_vector(int vector) {
->         return !test_bit(vector, used_vectors) &&
->                         vector < first_system_vector;
-> }
+>   before acquiring the lock?
 
-sorry, I can not catch what you want to say.
+Trying it now, I'll leave it going for a week and see if it reproduces.
 
-Do you mean the change log or comment in the patch is not right?
 
-Thanks
+Thanks,
+Sasha
 
-Yinghai
