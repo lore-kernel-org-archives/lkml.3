@@ -1,156 +1,634 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755830AbaCZODt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:03:49 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46615 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076AbaCZN7T (ORCPT
+	id S1754204AbaCZOHl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:07:41 -0400
+Received: from ausc60pc101.us.dell.com ([143.166.85.206]:2840 "EHLO
+	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbaCZOHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:59:19 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
-        <bhelgaas@google.com>, <mohit.kumar@st.com>, <jg1.han@samsung.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <tony@atomide.com>,
-        <rnayak@ti.com>, <paul@pwsan.com>, <kishon@ti.com>
-Subject: [RFC PATCH 06/12] arm: dra7xx: Add hwmod data for pcie1 phy and pcie2 phy
-Date: Wed, 26 Mar 2014 19:27:46 +0530
-Message-ID: <1395842272-15267-7-git-send-email-kishon@ti.com>
+	Wed, 26 Mar 2014 10:07:39 -0400
+X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Mar 2014 10:07:39 EDT
+X-LoopCount0: from 10.208.46.70
+X-IronPort-AV: E=Sophos;i="4.97,735,1389765600"; 
+   d="scan'208";a="579338558"
+From: Mario Limonciello <mario_limonciello@dell.com>
+To: matthew.garrett@nebula.com
+Cc: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org,
+        Mario Limonciello <mario_limonciello@dell.com>
+Subject: [PATCH v5 1/1] Add WMI driver for controlling AlienFX features on some Alienware products
+Date: Wed, 26 Mar 2014 08:57:28 -0500
+Message-Id: <1395842248-27868-2-git-send-email-mario_limonciello@dell.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1395842272-15267-1-git-send-email-kishon@ti.com>
-References: <1395842272-15267-1-git-send-email-kishon@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
+References: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added hwmod data for pcie1 and pcie2 phy present in DRA7xx SOC.
-Also added the missing CLKCTRL OFFSET macro and CONTEXT OFFSET macro
-for pcie1 phy and pcie2 phy.
-
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Mario Limonciello <mario_limonciello@dell.com>
 ---
- arch/arm/mach-omap2/cm2_7xx.h             |    4 ++
- arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   57 +++++++++++++++++++++++++++++
- arch/arm/mach-omap2/prm7xx.h              |    4 ++
- 3 files changed, 65 insertions(+)
+ drivers/platform/x86/Kconfig         |  12 +
+ drivers/platform/x86/Makefile        |   2 +
+ drivers/platform/x86/alienware-wmi.c | 557 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 571 insertions(+)
+ create mode 100644 drivers/platform/x86/alienware-wmi.c
 
-diff --git a/arch/arm/mach-omap2/cm2_7xx.h b/arch/arm/mach-omap2/cm2_7xx.h
-index 9ad7594..e966e3a 100644
---- a/arch/arm/mach-omap2/cm2_7xx.h
-+++ b/arch/arm/mach-omap2/cm2_7xx.h
-@@ -357,6 +357,10 @@
- #define DRA7XX_CM_L3INIT_SATA_CLKCTRL				DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x0088)
- #define DRA7XX_CM_PCIE_CLKSTCTRL_OFFSET				0x00a0
- #define DRA7XX_CM_PCIE_STATICDEP_OFFSET				0x00a4
-+#define DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL_OFFSET			0x00b0
-+#define DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL			DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x00b0)
-+#define DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL_OFFSET			0x00b8
-+#define DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL			DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x00b8)
- #define DRA7XX_CM_GMAC_CLKSTCTRL_OFFSET				0x00c0
- #define DRA7XX_CM_GMAC_STATICDEP_OFFSET				0x00c4
- #define DRA7XX_CM_GMAC_DYNAMICDEP_OFFSET			0x00c8
-diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-index befe7ce..9397265 100644
---- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-+++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-@@ -1290,6 +1290,45 @@ static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
- };
+diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
+index 5ae65c1..e27609e 100644
+--- a/drivers/platform/x86/Kconfig
++++ b/drivers/platform/x86/Kconfig
+@@ -55,6 +55,18 @@ config ACERHDF
+ 	  If you have an Acer Aspire One netbook, say Y or M
+ 	  here.
  
- /*
-+ * 'PCIE PHY' class
++config ALIENWARE_WMI
++	tristate "Alienware Special feature control"
++	depends on ACPI
++	depends on LEDS_CLASS
++	depends on NEW_LEDS
++	depends on ACPI_WMI
++	---help---
++	 This is a driver for controlling Alienware BIOS driven
++	 features.  It exposes an interface for controlling the AlienFX
++	 zones on Alienware machines that don't contain a dedicated AlienFX
++	 USB MCU such as the X51 and X51-R2.
++
+ config ASUS_LAPTOP
+ 	tristate "Asus Laptop Extras"
+ 	depends on ACPI
+diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
+index 9b87cfc..85afbbb 100644
+--- a/drivers/platform/x86/Makefile
++++ b/drivers/platform/x86/Makefile
+@@ -56,3 +56,5 @@ obj-$(CONFIG_INTEL_SMARTCONNECT)	+= intel-smartconnect.o
+ 
+ obj-$(CONFIG_PVPANIC)           += pvpanic.o
+ obj-$(CONFIG_INTEL_BAYTRAIL_MBI)	+= intel_baytrail.o
++obj-$(CONFIG_ALIENWARE_WMI)	+= alienware-wmi.o
++
+diff --git a/drivers/platform/x86/alienware-wmi.c b/drivers/platform/x86/alienware-wmi.c
+new file mode 100644
+index 0000000..3e17e99
+--- /dev/null
++++ b/drivers/platform/x86/alienware-wmi.c
+@@ -0,0 +1,557 @@
++/*
++ * Alienware AlienFX control
++ *
++ * Copyright (C) 2014 Dell Inc <mario_limonciello@dell.com>
++ *
++ *  This program is free software; you can redistribute it and/or modify
++ *  it under the terms of the GNU General Public License as published by
++ *  the Free Software Foundation; either version 2 of the License, or
++ *  (at your option) any later version.
++ *
++ *  This program is distributed in the hope that it will be useful,
++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *  GNU General Public License for more details.
 + *
 + */
 +
-+static struct omap_hwmod_class dra7xx_pcie_phy_hwmod_class = {
-+	.name	= "pcie-phy",
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
++#include <linux/acpi.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/dmi.h>
++#include <linux/acpi.h>
++#include <linux/leds.h>
++
++#define LEGACY_CONTROL_GUID		"A90597CE-A997-11DA-B012-B622A1EF5492"
++#define LEGACY_POWER_CONTROL_GUID	"A80593CE-A997-11DA-B012-B622A1EF5492"
++#define WMAX_CONTROL_GUID		"A70591CE-A997-11DA-B012-B622A1EF5492"
++
++#define WMAX_METHOD_HDMI_SOURCE		0x1
++#define WMAX_METHOD_HDMI_STATUS		0x2
++#define WMAX_METHOD_BRIGHTNESS		0x3
++#define WMAX_METHOD_ZONE_CONTROL	0x4
++
++MODULE_AUTHOR("Mario Limonciello <mario_limonciello@dell.com>");
++MODULE_DESCRIPTION("Alienware special feature control");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("wmi:" LEGACY_CONTROL_GUID);
++MODULE_ALIAS("wmi:" WMAX_CONTROL_GUID);
++
++enum INTERFACE_FLAGS {
++	LEGACY,
++	WMAX,
 +};
 +
-+/* pcie1 phy */
-+static struct omap_hwmod dra7xx_pcie1_phy_hwmod = {
-+	.name		= "pcie1-phy",
-+	.class		= &dra7xx_pcie_phy_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.main_clk	= "l4_root_clk_div",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL_OFFSET,
-+			.context_offs = DRA7XX_RM_L3INIT_PCIESS1_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_SWCTRL,
-+		},
-+	},
++enum LEGACY_CONTROL_STATES {
++	LEGACY_RUNNING = 1,
++	LEGACY_BOOTING = 0,
++	LEGACY_SUSPEND = 3,
 +};
 +
-+/* pcie2 phy */
-+static struct omap_hwmod dra7xx_pcie2_phy_hwmod = {
-+	.name		= "pcie2-phy",
-+	.class		= &dra7xx_pcie_phy_hwmod_class,
-+	.clkdm_name	= "l3init_clkdm",
-+	.main_clk	= "l4_root_clk_div",
-+	.prcm = {
-+		.omap4 = {
-+			.clkctrl_offs = DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL_OFFSET,
-+			.context_offs = DRA7XX_RM_L3INIT_PCIESS2_CONTEXT_OFFSET,
-+			.modulemode   = MODULEMODE_SWCTRL,
-+		},
-+	},
++enum WMAX_CONTROL_STATES {
++	WMAX_RUNNING = 0xFF,
++	WMAX_BOOTING = 0,
++	WMAX_SUSPEND = 3,
++};
++
++struct quirk_entry {
++	u8 num_zones;
++};
++
++static struct quirk_entry *quirks;
++
++static struct quirk_entry quirk_unknown = {
++	.num_zones = 2,
++};
++
++static struct quirk_entry quirk_x51_family = {
++	.num_zones = 3,
++};
++
++static int dmi_matched(const struct dmi_system_id *dmi)
++{
++	quirks = dmi->driver_data;
++	return 1;
++}
++
++static struct dmi_system_id alienware_quirks[] = {
++	{
++	 .callback = dmi_matched,
++	 .ident = "Alienware X51 R1",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Alienware"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "Alienware X51"),
++		     },
++	 .driver_data = &quirk_x51_family,
++	 },
++	{
++	 .callback = dmi_matched,
++	 .ident = "Alienware X51 R2",
++	 .matches = {
++		     DMI_MATCH(DMI_SYS_VENDOR, "Alienware"),
++		     DMI_MATCH(DMI_PRODUCT_NAME, "Alienware X51 R2"),
++		     },
++	 .driver_data = &quirk_x51_family,
++	 },
++	{}
++};
++
++struct color_platform {
++	u8 blue;
++	u8 green;
++	u8 red;
++} __packed;
++
++struct platform_zone {
++	u8 location;
++	struct device_attribute *attr;
++	struct color_platform colors;
++};
++
++struct wmax_brightness_args {
++	u32 led_mask;
++	u32 percentage;
++};
++
++struct hdmi_args {
++	u8 arg;
++};
++
++struct legacy_led_args {
++	struct color_platform colors;
++	u8 brightness;
++	u8 state;
++} __packed;
++
++struct wmax_led_args {
++	u32 led_mask;
++	struct color_platform colors;
++	u8 state;
++} __packed;
++
++static struct platform_device *platform_device;
++static struct device_attribute *zone_dev_attrs;
++static struct attribute **zone_attrs;
++static struct platform_zone *zone_data;
++
++static struct platform_driver platform_driver = {
++	.driver = {
++		   .name = "alienware-wmi",
++		   .owner = THIS_MODULE,
++		   }
++};
++
++static struct attribute_group zone_attribute_group = {
++	.name = "rgb_zones",
++};
++
++static u8 interface;
++static u8 lighting_control_state;
++static u8 global_brightness;
++
++/*
++ * Helpers used for zone control
++*/
++static int parse_rgb(const char *buf, struct platform_zone *zone)
++{
++	long unsigned int rgb;
++	int ret;
++	union color_union {
++		struct color_platform cp;
++		int package;
++	} repackager;
++
++	ret = kstrtoul(buf, 16, &rgb);
++	if (ret)
++		return ret;
++
++	/* RGB triplet notation is 24-bit hexadecimal */
++	if (rgb > 0xFFFFFF)
++		return -EINVAL;
++
++	repackager.package = rgb & 0x0f0f0f0f;
++	pr_debug("alienware-wmi: r: %d g:%d b: %d\n",
++		 repackager.cp.red, repackager.cp.green, repackager.cp.blue);
++	zone->colors = repackager.cp;
++	return 0;
++}
++
++static struct platform_zone *match_zone(struct device_attribute *attr)
++{
++	int i;
++	for (i = 0; i < quirks->num_zones; i++) {
++		if ((struct device_attribute *)zone_data[i].attr == attr) {
++			pr_debug("alienware-wmi: matched zone location: %d\n",
++				 zone_data[i].location);
++			return &zone_data[i];
++		}
++	}
++	return NULL;
++}
++
++/*
++ * Individual RGB zone control
++*/
++static int alienware_update_led(struct platform_zone *zone)
++{
++	int method_id;
++	acpi_status status;
++	char *guid;
++	struct acpi_buffer input;
++	struct legacy_led_args legacy_args;
++	struct wmax_led_args wmax_args;
++	if (interface == WMAX) {
++		wmax_args.led_mask = 1 << zone->location;
++		wmax_args.colors = zone->colors;
++		wmax_args.state = lighting_control_state;
++		guid = WMAX_CONTROL_GUID;
++		method_id = WMAX_METHOD_ZONE_CONTROL;
++
++		input.length = (acpi_size) sizeof(wmax_args);
++		input.pointer = &wmax_args;
++	} else {
++		legacy_args.colors = zone->colors;
++		legacy_args.brightness = global_brightness;
++		legacy_args.state = 0;
++		if (lighting_control_state == LEGACY_BOOTING ||
++		    lighting_control_state == LEGACY_SUSPEND) {
++			guid = LEGACY_POWER_CONTROL_GUID;
++			legacy_args.state = lighting_control_state;
++		} else
++			guid = LEGACY_CONTROL_GUID;
++		method_id = zone->location + 1;
++
++		input.length = (acpi_size) sizeof(legacy_args);
++		input.pointer = &legacy_args;
++	}
++	pr_debug("alienware-wmi: guid %s method %d\n", guid, method_id);
++
++	status = wmi_evaluate_method(guid, 1, method_id, &input, NULL);
++	if (ACPI_FAILURE(status))
++		pr_err("alienware-wmi: zone set failure: %u\n", status);
++	return ACPI_FAILURE(status);
++}
++
++static ssize_t zone_show(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct platform_zone *target_zone;
++	target_zone = match_zone(attr);
++	if (target_zone == NULL)
++		return sprintf(buf, "red: -1, green: -1, blue: -1\n");
++	return sprintf(buf, "red: %d, green: %d, blue: %d\n",
++		       target_zone->colors.red,
++		       target_zone->colors.green, target_zone->colors.blue);
++
++}
++
++static ssize_t zone_set(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct platform_zone *target_zone;
++	int ret;
++	target_zone = match_zone(attr);
++	if (target_zone == NULL) {
++		pr_err("alienware-wmi: invalid target zone\n");
++		return 1;
++	}
++	ret = parse_rgb(buf, target_zone);
++	if (ret)
++		return ret;
++	ret = alienware_update_led(target_zone);
++	return ret ? ret : count;
++}
++
++/*
++ * LED Brightness (Global)
++*/
++static int wmax_brightness(int brightness)
++{
++	acpi_status status;
++	struct acpi_buffer input;
++	struct wmax_brightness_args args = {
++		.led_mask = 0xFF,
++		.percentage = brightness,
++	};
++	input.length = (acpi_size) sizeof(args);
++	input.pointer = &args;
++	status = wmi_evaluate_method(WMAX_CONTROL_GUID, 1,
++				     WMAX_METHOD_BRIGHTNESS, &input, NULL);
++	if (ACPI_FAILURE(status))
++		pr_err("alienware-wmi: brightness set failure: %u\n", status);
++	return ACPI_FAILURE(status);
++}
++
++static void global_led_set(struct led_classdev *led_cdev,
++			   enum led_brightness brightness)
++{
++	int ret;
++	global_brightness = brightness;
++	if (interface == WMAX)
++		ret = wmax_brightness(brightness);
++	else
++		ret = alienware_update_led(&zone_data[0]);
++	if (ret)
++		pr_err("LED brightness update failed\n");
++}
++
++static enum led_brightness global_led_get(struct led_classdev *led_cdev)
++{
++	return global_brightness;
++}
++
++static struct led_classdev global_led = {
++	.brightness_set = global_led_set,
++	.brightness_get = global_led_get,
++	.name = "alienware::global_brightness",
 +};
 +
 +/*
-  * 'qspi' class
-  *
-  */
-@@ -2420,6 +2459,22 @@ static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp1 = {
- 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
- };
- 
-+/* l4_cfg -> pcie1 phy */
-+static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie1_phy = {
-+	.master		= &dra7xx_l4_cfg_hwmod,
-+	.slave		= &dra7xx_pcie1_phy_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
++ * Lighting control state device attribute (Global)
++*/
++static ssize_t show_control_state(struct device *dev,
++				  struct device_attribute *attr, char *buf)
++{
++	if (lighting_control_state == LEGACY_BOOTING)
++		return scnprintf(buf, PAGE_SIZE, "[booting] running suspend\n");
++	else if (lighting_control_state == LEGACY_SUSPEND)
++		return scnprintf(buf, PAGE_SIZE, "booting running [suspend]\n");
++	return scnprintf(buf, PAGE_SIZE, "booting [running] suspend\n");
++}
 +
-+/* l4_cfg -> pcie2 phy */
-+static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie2_phy = {
-+	.master		= &dra7xx_l4_cfg_hwmod,
-+	.slave		= &dra7xx_pcie2_phy_hwmod,
-+	.clk		= "l4_root_clk_div",
-+	.user		= OCP_USER_MPU | OCP_USER_SDMA,
-+};
++static ssize_t store_control_state(struct device *dev,
++				   struct device_attribute *attr,
++				   const char *buf, size_t count)
++{
++	long unsigned int val;
++	if (strcmp(buf, "booting\n") == 0)
++		val = LEGACY_BOOTING;
++	else if (strcmp(buf, "suspend\n") == 0)
++		val = LEGACY_SUSPEND;
++	else if (interface == LEGACY)
++		val = LEGACY_RUNNING;
++	else
++		val = WMAX_RUNNING;
++	lighting_control_state = val;
++	pr_debug("alienware-wmi: updated control state to %d\n",
++		 lighting_control_state);
++	return count;
++}
 +
- static struct omap_hwmod_addr_space dra7xx_qspi_addrs[] = {
- 	{
- 		.pa_start	= 0x4b300000,
-@@ -2769,6 +2824,8 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
- 	&dra7xx_l4_cfg__mpu,
- 	&dra7xx_l4_cfg__ocp2scp1,
- 	&dra7xx_l4_cfg__ocp2scp3,
-+	&dra7xx_l4_cfg__pcie1_phy,
-+	&dra7xx_l4_cfg__pcie2_phy,
- 	&dra7xx_l3_main_1__qspi,
- 	&dra7xx_l4_cfg__sata,
- 	&dra7xx_l4_cfg__smartreflex_core,
-diff --git a/arch/arm/mach-omap2/prm7xx.h b/arch/arm/mach-omap2/prm7xx.h
-index d92a840..4bb50fbf 100644
---- a/arch/arm/mach-omap2/prm7xx.h
-+++ b/arch/arm/mach-omap2/prm7xx.h
-@@ -374,6 +374,10 @@
- #define DRA7XX_RM_L3INIT_IEEE1500_2_OCP_CONTEXT_OFFSET		0x007c
- #define DRA7XX_PM_L3INIT_SATA_WKDEP_OFFSET			0x0088
- #define DRA7XX_RM_L3INIT_SATA_CONTEXT_OFFSET			0x008c
-+#define DRA7XX_PM_L3INIT_PCIESS1_WKDEP_OFFSET			0x00b0
-+#define DRA7XX_RM_L3INIT_PCIESS1_CONTEXT_OFFSET		0x00b4
-+#define DRA7XX_PM_L3INIT_PCIESS2_WKDEP_OFFSET			0x00b8
-+#define DRA7XX_RM_L3INIT_PCIESS2_CONTEXT_OFFSET		0x00bc
- #define DRA7XX_RM_GMAC_GMAC_CONTEXT_OFFSET			0x00d4
- #define DRA7XX_RM_L3INIT_OCP2SCP1_CONTEXT_OFFSET		0x00e4
- #define DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET		0x00ec
++static DEVICE_ATTR(lighting_control_state, 0644, show_control_state,
++		   store_control_state);
++
++static int alienware_zone_init(struct platform_device *dev)
++{
++	int i;
++	char buffer[10];
++	char *name;
++
++	if (interface == WMAX) {
++		global_led.max_brightness = 100;
++		lighting_control_state = WMAX_RUNNING;
++	} else if (interface == LEGACY) {
++		global_led.max_brightness = 0x0F;
++		lighting_control_state = LEGACY_RUNNING;
++	}
++	global_brightness = global_led.max_brightness;
++
++	/*
++	 *      - zone_dev_attrs num_zones + 1 is for individual zones and then
++	 *        null terminated
++	 *      - zone_attrs num_zones + 2 is for all attrs in zone_dev_attrs +
++	 *        the lighting control + null terminated
++	 *      - zone_data num_zones is for the distinct zones
++	 */
++	zone_dev_attrs =
++	    kzalloc(sizeof(struct device_attribute) * (quirks->num_zones + 1),
++		    GFP_KERNEL);
++	zone_attrs =
++	    kzalloc(sizeof(struct attribute *) * (quirks->num_zones + 2),
++		    GFP_KERNEL);
++	zone_data =
++	    kzalloc(sizeof(struct platform_zone) * (quirks->num_zones),
++		    GFP_KERNEL);
++
++	for (i = 0; i < quirks->num_zones; i++) {
++		sprintf(buffer, "zone%02X", i);
++		name = kstrdup(buffer, GFP_KERNEL);
++		if (name == NULL)
++			return 1;
++		sysfs_attr_init(&zone_dev_attrs[i].attr);
++		zone_dev_attrs[i].attr.name = name;
++		zone_dev_attrs[i].attr.mode = 0644;
++		zone_dev_attrs[i].show = zone_show;
++		zone_dev_attrs[i].store = zone_set;
++		zone_data[i].location = i;
++		zone_attrs[i] = &zone_dev_attrs[i].attr;
++		zone_data[i].attr = &zone_dev_attrs[i];
++	}
++	zone_attrs[quirks->num_zones] = &dev_attr_lighting_control_state.attr;
++	zone_attribute_group.attrs = zone_attrs;
++
++	led_classdev_register(&dev->dev, &global_led);
++
++	return sysfs_create_group(&dev->dev.kobj, &zone_attribute_group);
++}
++
++static void alienware_zone_exit(struct platform_device *dev)
++{
++	sysfs_remove_group(&dev->dev.kobj, &zone_attribute_group);
++	led_classdev_unregister(&global_led);
++	if (zone_dev_attrs) {
++		int i;
++		for (i = 0; i < quirks->num_zones; i++)
++			kfree(zone_dev_attrs[i].attr.name);
++	}
++	kfree(zone_dev_attrs);
++	kfree(zone_data);
++	kfree(zone_attrs);
++}
++
++/*
++	The HDMI mux sysfs node indicates the status of the HDMI input mux.
++	It can toggle between standard system GPU output and HDMI input.
++*/
++static ssize_t show_hdmi(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	acpi_status status;
++	struct acpi_buffer input;
++	union acpi_object *obj;
++	u32 tmp = 0;
++	struct acpi_buffer output = { ACPI_ALLOCATE_BUFFER, NULL };
++	struct hdmi_args in_args = {
++		.arg = 0,
++	};
++	input.length = (acpi_size) sizeof(in_args);
++	input.pointer = &in_args;
++	status = wmi_evaluate_method(WMAX_CONTROL_GUID, 1,
++				     WMAX_METHOD_HDMI_STATUS, &input, &output);
++
++	if (ACPI_SUCCESS(status)) {
++		obj = (union acpi_object *)output.pointer;
++		if (obj && obj->type == ACPI_TYPE_INTEGER)
++			tmp = (u32) obj->integer.value;
++		if (tmp == 1)
++			return scnprintf(buf, PAGE_SIZE,
++					 "[input] gpu unknown\n");
++		else if (tmp == 2)
++			return scnprintf(buf, PAGE_SIZE,
++					 "input [gpu] unknown\n");
++	}
++	pr_err("alienware-wmi: unknown HDMI status: %d\n", status);
++	return scnprintf(buf, PAGE_SIZE, "input gpu [unknown]\n");
++}
++
++static ssize_t toggle_hdmi(struct device *dev, struct device_attribute *attr,
++			   const char *buf, size_t count)
++{
++	struct acpi_buffer input;
++	acpi_status status;
++	struct hdmi_args args;
++	if (strcmp(buf, "gpu\n") == 0)
++		args.arg = 1;
++	else if (strcmp(buf, "input\n") == 0)
++		args.arg = 2;
++	else
++		args.arg = 3;
++	pr_debug("alienware-wmi: setting hdmi to %d : %s", args.arg, buf);
++	input.length = (acpi_size) sizeof(args);
++	input.pointer = &args;
++	status = wmi_evaluate_method(WMAX_CONTROL_GUID, 1,
++				     WMAX_METHOD_HDMI_SOURCE, &input, NULL);
++	if (ACPI_FAILURE(status))
++		pr_err("alienware-wmi: HDMI toggle failed: results: %u\n",
++		       status);
++	return count;
++}
++
++static DEVICE_ATTR(hdmi, S_IRUGO | S_IWUSR, show_hdmi, toggle_hdmi);
++
++static void remove_hdmi(struct platform_device *device)
++{
++	device_remove_file(&device->dev, &dev_attr_hdmi);
++}
++
++static int create_hdmi(void)
++{
++	int ret = -ENOMEM;
++	ret = device_create_file(&platform_device->dev, &dev_attr_hdmi);
++	if (ret)
++		goto error_create_hdmi;
++	return 0;
++
++error_create_hdmi:
++	remove_hdmi(platform_device);
++	return ret;
++}
++
++static int __init alienware_wmi_init(void)
++{
++	int ret;
++
++	if (wmi_has_guid(LEGACY_CONTROL_GUID))
++		interface = LEGACY;
++	else if (wmi_has_guid(WMAX_CONTROL_GUID))
++		interface = WMAX;
++	else {
++		pr_warn("alienware-wmi: No known WMI GUID found\n");
++		return -ENODEV;
++	}
++
++	dmi_check_system(alienware_quirks);
++	if (quirks == NULL)
++		quirks = &quirk_unknown;
++
++	ret = platform_driver_register(&platform_driver);
++	if (ret)
++		goto fail_platform_driver;
++	platform_device = platform_device_alloc("alienware-wmi", -1);
++	if (!platform_device) {
++		ret = -ENOMEM;
++		goto fail_platform_device1;
++	}
++	ret = platform_device_add(platform_device);
++	if (ret)
++		goto fail_platform_device2;
++
++	if (interface == WMAX) {
++		ret = create_hdmi();
++		if (ret)
++			goto fail_prep_hdmi;
++	}
++
++	ret = alienware_zone_init(platform_device);
++	if (ret)
++		goto fail_prep_zones;
++
++	return 0;
++
++fail_prep_zones:
++	alienware_zone_exit(platform_device);
++fail_prep_hdmi:
++	platform_device_del(platform_device);
++fail_platform_device2:
++	platform_device_put(platform_device);
++fail_platform_device1:
++	platform_driver_unregister(&platform_driver);
++fail_platform_driver:
++	return ret;
++}
++
++module_init(alienware_wmi_init);
++
++static void __exit alienware_wmi_exit(void)
++{
++	alienware_zone_exit(platform_device);
++	remove_hdmi(platform_device);
++	if (platform_device) {
++		platform_device_unregister(platform_device);
++		platform_driver_unregister(&platform_driver);
++	}
++}
++
++module_exit(alienware_wmi_exit);
 -- 
-1.7.9.5
+1.9.0
 
