@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900AbaCZK5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 06:57:07 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:14798 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896AbaCZK5F (ORCPT
+	id S1753997AbaCZLAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 07:00:05 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39244 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751147AbaCZLAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 06:57:05 -0400
-X-IronPort-AV: E=Sophos;i="4.97,734,1389744000"; 
-   d="scan'208";a="113678976"
-Message-ID: <5332B27E.4040205@citrix.com>
-Date: Wed, 26 Mar 2014 10:57:02 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 26 Mar 2014 07:00:03 -0400
+Date: Wed, 26 Mar 2014 10:59:40 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Sebastian Capella <sebastian.capella@linaro.org>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: machine_power_off should not return
+Message-ID: <20140326105940.GX7528@n2100.arm.linux.org.uk>
+References: <1395684784-12601-1-git-send-email-sebastian.capella@linaro.org> <20140325224554.GC12185@arch.cereza> <20140326005115.GW7528@n2100.arm.linux.org.uk> <20140326101227.GC941@arch.cereza>
 MIME-Version: 1.0
-To: Ian Campbell <Ian.Campbell@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Subject: Re: [PATCH net-next] Revert "xen-netback: Aggregate TX unmap operations"
-References: <1395422584-16213-1-git-send-email-zoltan.kiss@citrix.com> <1395653207.19365.1.camel@kazak.uk.xensource.com>
-In-Reply-To: <1395653207.19365.1.camel@kazak.uk.xensource.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326101227.GC941@arch.cereza>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/03/14 09:26, Ian Campbell wrote:
-> On Fri, 2014-03-21 at 17:23 +0000, Zoltan Kiss wrote:
->> This reverts commit e9275f5e2df1b2098a8cc405d87b88b9affd73e6. This commit is the
->> last in the netback grant mapping series, and it tries to do more aggressive
->> aggreagtion of unmap operations. However practical use showed almost no
->> positive effect, whilst with certain frontends it causes significant performance
->> regression.
->
-> That's a shame -- do you have any insight into why?
+On Wed, Mar 26, 2014 at 07:12:27AM -0300, Ezequiel Garcia wrote:
+> On Mar 26, Russell King - ARM Linux wrote:
+> > On Tue, Mar 25, 2014 at 07:45:55PM -0300, Ezequiel Garcia wrote:
+> > > 
+> > > Without this patch we got the heartbeat's reboot_notifier called twice while
+> > > testing the recent hibernation patches, which was unexpected and produced a
+> > > kernel panic: https://lkml.org/lkml/2014/3/19/363
+> > 
+> > I don't see why we should make this change.  kernel/reboot.c handles
+> > this function returning, so other places should do too.
+> > 
+> > Even on x86, this function can return:
+> > 
+> [..]
+> > 
+> > Therefore, I'd say... it's a bug in the hibernation code - or we probably
+> > have many buggy architectures.  I'd suggest fixing the hibernation code
+> > rather than stuffing some workaround like an endless loop into every
+> > architecture.
+> > 
+> 
+> Which is exactly what Sebastian did first:
+> 
+> https://lkml.org/lkml/2014/3/20/605
+> 
+> But Pavel asked to fix ARM's machine_power_off instead.
+> 
+> Also, looking at the other architectures, it seems this API is not well
+> defined: some of them have an infinite loop, some don't. So it's hard to
+> say the function is supposed to return or not.
 
-It cause performance regression when the guest limits itself to a small 
-amount of outstanding packets. E.g. with iperf on Win7 there are always 
-2 in flight.
-Currently batching happens in this way:
-- the callback can put up to MAX_SKB_FRAGS slots into the dealloc ring 
-before it wakes up the dealloc thread
-- the thread doesn't schedule immediately, of course, so other callbacks 
-can add to the dealloc ring in the meantime
-- and even when the dealloc thread consumes the dealloc ring, the 
-callbacks can put slots onto it
+I'm going by x86 (which I regard as definitive) and the generic power-off
+kernel code (which I've looked at all the way back to 2.6.12-rc2).
 
-And my upcoming patch will avoid TLB flush in a lot of cases. If someone 
-has more time to research a better strategy, that would be good, but I 
-think currently it is a low priority thing.
+The hibernation code path should really be fixed - the paths in
+kernel/reboot.c have coped for 9+ with all of these platform hooks
+returning, and it's only the silly switch() in the hibernation code
+that doesn't use a "default" case to handle the kernel_halt() case
+which is the real cause of the problem.
 
-Zoli
+As you've found, calling kernel_power_off() followed by kernel_halt()
+leads to bugs in drivers: this is not an architecture thing, it's partly
+a hibernation code failure for doing that, and partly a driver bug for
+trying to unregister something that it's already unregistered.
+
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
