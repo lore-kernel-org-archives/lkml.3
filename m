@@ -1,68 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702AbaCZReH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 13:34:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21942 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751906AbaCZReE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 13:34:04 -0400
-Date: Wed, 26 Mar 2014 13:33:56 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: fs: remove now stale label in anon_inode_init()
-Message-ID: <20140326173356.GA16013@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-	Linus Torvalds <torvalds@linux-foundation.org>
-References: <20140326004510.D4C236604A2@gitolite.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140326004510.D4C236604A2@gitolite.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755890AbaCZRgs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 13:36:48 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50639 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751906AbaCZRgq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 13:36:46 -0400
+Date: Wed, 26 Mar 2014 17:36:03 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Andrew Lunn <andrew@lunn.ch>, Tejun Heo <tj@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: fix Marvell SATA driver dependencies
+Message-ID: <20140326173603.50e50e34@alan.etchedpixels.co.uk>
+In-Reply-To: <4852939.9jMb8Bv2x2@amdc1032>
+References: <5138028.BSQbEP7RRB@amdc1032>
+	<20140326162302.GG25349@lunn.ch>
+	<20140326165904.70de238d@alan.etchedpixels.co.uk>
+	<4852939.9jMb8Bv2x2@amdc1032>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 12:45:10AM +0000, Linux Kernel wrote:
- > Gitweb:     http://git.kernel.org/linus/;a=commit;h=fce7fc79c8f7188dfc5eafa1b937bcc3c5a4c2f5
- > Commit:     fce7fc79c8f7188dfc5eafa1b937bcc3c5a4c2f5
- > Parent:     d6f2589ad561aa5fa39f347eca6942668b7560a1
- > Author:     Linus Torvalds <torvalds@linux-foundation.org>
- > AuthorDate: Tue Mar 25 17:43:34 2014 -0700
- > Committer:  Linus Torvalds <torvalds@linux-foundation.org>
- > CommitDate: Tue Mar 25 17:43:34 2014 -0700
- > 
- >     fs: remove now stale label in anon_inode_init()
- >     
- >     The previous commit removed the register_filesystem() call and the
- >     associated error handling, but left the label for the error path that no
- >     longer exists.  Remove that too.
- >     
- >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
- > ---
- >  fs/anon_inodes.c |    1 -
- >  1 files changed, 0 insertions(+), 1 deletions(-)
- > 
- > diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
- > index 4b4543b..42fcc46 100644
- > --- a/fs/anon_inodes.c
- > +++ b/fs/anon_inodes.c
- > @@ -186,7 +186,6 @@ static int __init anon_inode_init(void)
- >  
- >  err_unregister_filesystem:
- >  	unregister_filesystem(&anon_inode_fs_type);
- > -err_exit:
- >  	panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
- 
-If we're about to panic, is there any point in doing the unregister ?
-Looks like that function could just be..
+> shows up it is not enough to enable driver for it to make it work as
+> you also need to add a node describing your SATA MV variant to your SoC
+> device tree file (which requires updating kernel source anyway).
 
-        anon_inode_mnt = kern_mount(&anon_inode_fs_type);
-        if (IS_ERR(anon_inode_mnt)) { 
-                error = PTR_ERR(anon_inode_mnt);
-                panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
-        }       
-        return 0;
+You still have to recompile your kernel to update your device tree..
+how... quaint ;-). It's not a generic limitation but I'm not that fussed.
+It seems a fair argument that there would be other changes made when this
+was being done for a system, and probably new board stuff.
 
+Alan
