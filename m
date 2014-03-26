@@ -1,85 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755780AbaCZOD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:03:27 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:38730 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaCZODW (ORCPT
+	id S1755830AbaCZODt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:03:49 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46615 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755076AbaCZN7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:03:22 -0400
-Date: Wed, 26 Mar 2014 15:02:17 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
-        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
-        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        tony.luck@intel.com, Tang Liang <liang.tang@oracle.com>
-Subject: Re: [PATCH v3 1/5] efi: Add efi_init_ops variable
-Message-ID: <20140326140217.GO3454@olila.local.net-space.pl>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
- <20140326125623.GA24856@console-pimps.org>
+	Wed, 26 Mar 2014 09:59:19 -0400
+From: Kishon Vijay Abraham I <kishon@ti.com>
+To: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <bhelgaas@google.com>, <mohit.kumar@st.com>, <jg1.han@samsung.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>, <tony@atomide.com>,
+        <rnayak@ti.com>, <paul@pwsan.com>, <kishon@ti.com>
+Subject: [RFC PATCH 06/12] arm: dra7xx: Add hwmod data for pcie1 phy and pcie2 phy
+Date: Wed, 26 Mar 2014 19:27:46 +0530
+Message-ID: <1395842272-15267-7-git-send-email-kishon@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395842272-15267-1-git-send-email-kishon@ti.com>
+References: <1395842272-15267-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140326125623.GA24856@console-pimps.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 12:56:23PM +0000, Matt Fleming wrote:
-> On Tue, 25 Mar, at 09:57:52PM, Daniel Kiper wrote:
-> > Add efi_init_ops variable which allows us to replace
-> > EFI init functions on Xen with its specific stuff.
-> >
-> > This patch is based on Jan Beulich and Tang Liang work.
-> >
-> > Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> > Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> > ---
-> >  arch/ia64/kernel/efi.c      |   30 +++++++++++++++++++++---------
-> >  arch/x86/platform/efi/efi.c |   18 +++++++++++++-----
-> >  drivers/firmware/efi/efi.c  |   26 ++++++++++++++++++++++++++
-> >  include/linux/efi.h         |    8 ++++++++
-> >  4 files changed, 68 insertions(+), 14 deletions(-)
->
-> [...]
->
-> > @@ -1118,6 +1118,14 @@ u64 efi_mem_attributes(unsigned long phys_addr)
-> >  	return 0;
-> >  }
-> >
-> > +struct efi_init_ops efi_init_ops = {
-> > +	.efi_init = efi_init_generic,
-> > +	.efi_reserve_boot_services = efi_reserve_boot_services_generic,
-> > +	.efi_enter_virtual_mode = efi_enter_virtual_mode_generic,
-> > +	.efi_mem_type = efi_mem_type_generic,
-> > +	.efi_mem_attributes = efi_mem_attributes_generic
-> > +};
->
-> Please don't create another struct of EFI function pointers.
->
-> After this we'll have 3 global efi structures defintions and 4 global
-> efi objects on x86,
->
->   - struct efi_early [in the boot stub]
->   - struct efi ['efi_phys' before/'efi' after SetVirtualAddressMap()]
->   - struct efi_init_ops [for the benefit of xen]
+Added hwmod data for pcie1 and pcie2 phy present in DRA7xx SOC.
+Also added the missing CLKCTRL OFFSET macro and CONTEXT OFFSET macro
+for pcie1 phy and pcie2 phy.
 
-What do you suggest? Should we fill all EFI related structures
-in xen_efi_probe() (called from xen_start_kernel()) and later
-they should be parsed by generic/x86 EFI initialization code?
-I suppose that many variables will have NULL (or something relevant)
-in Xen dom0 and it will require some changes in EFI initialization code.
+Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+---
+ arch/arm/mach-omap2/cm2_7xx.h             |    4 ++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c |   57 +++++++++++++++++++++++++++++
+ arch/arm/mach-omap2/prm7xx.h              |    4 ++
+ 3 files changed, 65 insertions(+)
 
-> I have a big problem with exposing .efi_reserve_boot_services as an API.
+diff --git a/arch/arm/mach-omap2/cm2_7xx.h b/arch/arm/mach-omap2/cm2_7xx.h
+index 9ad7594..e966e3a 100644
+--- a/arch/arm/mach-omap2/cm2_7xx.h
++++ b/arch/arm/mach-omap2/cm2_7xx.h
+@@ -357,6 +357,10 @@
+ #define DRA7XX_CM_L3INIT_SATA_CLKCTRL				DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x0088)
+ #define DRA7XX_CM_PCIE_CLKSTCTRL_OFFSET				0x00a0
+ #define DRA7XX_CM_PCIE_STATICDEP_OFFSET				0x00a4
++#define DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL_OFFSET			0x00b0
++#define DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL			DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x00b0)
++#define DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL_OFFSET			0x00b8
++#define DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL			DRA7XX_CM_CORE_REGADDR(DRA7XX_CM_CORE_L3INIT_INST, 0x00b8)
+ #define DRA7XX_CM_GMAC_CLKSTCTRL_OFFSET				0x00c0
+ #define DRA7XX_CM_GMAC_STATICDEP_OFFSET				0x00c4
+ #define DRA7XX_CM_GMAC_DYNAMICDEP_OFFSET			0x00c8
+diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+index befe7ce..9397265 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+@@ -1290,6 +1290,45 @@ static struct omap_hwmod dra7xx_ocp2scp3_hwmod = {
+ };
+ 
+ /*
++ * 'PCIE PHY' class
++ *
++ */
++
++static struct omap_hwmod_class dra7xx_pcie_phy_hwmod_class = {
++	.name	= "pcie-phy",
++};
++
++/* pcie1 phy */
++static struct omap_hwmod dra7xx_pcie1_phy_hwmod = {
++	.name		= "pcie1-phy",
++	.class		= &dra7xx_pcie_phy_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.main_clk	= "l4_root_clk_div",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_L3INIT_PCIESS1_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_L3INIT_PCIESS1_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* pcie2 phy */
++static struct omap_hwmod dra7xx_pcie2_phy_hwmod = {
++	.name		= "pcie2-phy",
++	.class		= &dra7xx_pcie_phy_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.main_clk	= "l4_root_clk_div",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = DRA7XX_CM_L3INIT_PCIESS2_CLKCTRL_OFFSET,
++			.context_offs = DRA7XX_RM_L3INIT_PCIESS2_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/*
+  * 'qspi' class
+  *
+  */
+@@ -2420,6 +2459,22 @@ static struct omap_hwmod_ocp_if dra7xx_l4_cfg__ocp2scp1 = {
+ 	.user		= OCP_USER_MPU | OCP_USER_SDMA,
+ };
+ 
++/* l4_cfg -> pcie1 phy */
++static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie1_phy = {
++	.master		= &dra7xx_l4_cfg_hwmod,
++	.slave		= &dra7xx_pcie1_phy_hwmod,
++	.clk		= "l4_root_clk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++/* l4_cfg -> pcie2 phy */
++static struct omap_hwmod_ocp_if dra7xx_l4_cfg__pcie2_phy = {
++	.master		= &dra7xx_l4_cfg_hwmod,
++	.slave		= &dra7xx_pcie2_phy_hwmod,
++	.clk		= "l4_root_clk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
+ static struct omap_hwmod_addr_space dra7xx_qspi_addrs[] = {
+ 	{
+ 		.pa_start	= 0x4b300000,
+@@ -2769,6 +2824,8 @@ static struct omap_hwmod_ocp_if *dra7xx_hwmod_ocp_ifs[] __initdata = {
+ 	&dra7xx_l4_cfg__mpu,
+ 	&dra7xx_l4_cfg__ocp2scp1,
+ 	&dra7xx_l4_cfg__ocp2scp3,
++	&dra7xx_l4_cfg__pcie1_phy,
++	&dra7xx_l4_cfg__pcie2_phy,
+ 	&dra7xx_l3_main_1__qspi,
+ 	&dra7xx_l4_cfg__sata,
+ 	&dra7xx_l4_cfg__smartreflex_core,
+diff --git a/arch/arm/mach-omap2/prm7xx.h b/arch/arm/mach-omap2/prm7xx.h
+index d92a840..4bb50fbf 100644
+--- a/arch/arm/mach-omap2/prm7xx.h
++++ b/arch/arm/mach-omap2/prm7xx.h
+@@ -374,6 +374,10 @@
+ #define DRA7XX_RM_L3INIT_IEEE1500_2_OCP_CONTEXT_OFFSET		0x007c
+ #define DRA7XX_PM_L3INIT_SATA_WKDEP_OFFSET			0x0088
+ #define DRA7XX_RM_L3INIT_SATA_CONTEXT_OFFSET			0x008c
++#define DRA7XX_PM_L3INIT_PCIESS1_WKDEP_OFFSET			0x00b0
++#define DRA7XX_RM_L3INIT_PCIESS1_CONTEXT_OFFSET		0x00b4
++#define DRA7XX_PM_L3INIT_PCIESS2_WKDEP_OFFSET			0x00b8
++#define DRA7XX_RM_L3INIT_PCIESS2_CONTEXT_OFFSET		0x00bc
+ #define DRA7XX_RM_GMAC_GMAC_CONTEXT_OFFSET			0x00d4
+ #define DRA7XX_RM_L3INIT_OCP2SCP1_CONTEXT_OFFSET		0x00e4
+ #define DRA7XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET		0x00ec
+-- 
+1.7.9.5
 
-Why? efi_reserve_boot_services() is public right now.
-
-Daniel
