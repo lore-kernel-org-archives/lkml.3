@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755821AbaCZAxg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:53:36 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:13327 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbaCZAxe (ORCPT
+	id S1754843AbaCZBDz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 21:03:55 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:49439 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357AbaCZBDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:53:34 -0400
-Message-ID: <533224FA.6040307@huawei.com>
-Date: Wed, 26 Mar 2014 08:53:14 +0800
-From: Ding Tianhong <dingtianhong@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Tue, 25 Mar 2014 21:03:54 -0400
+Message-ID: <53322777.3030703@gmail.com>
+Date: Tue, 25 Mar 2014 21:03:51 -0400
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
+Reply-To: alexandre.f.demers@gmail.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "zheng.li" <zheng.x.li@oracle.com>
-CC: <netdev@vger.kernel.org>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
-        <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
-        <joe.jin@oracle.com>
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
- value to 1 in tlb and alb mode.
-References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com> <5330FB34.4090005@huawei.com> <53314017.8040104@oracle.com>
-In-Reply-To: <53314017.8040104@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.22.246]
-X-CFilter-Loop: Reflected
+To: alexandre.f.demers@gmail.com
+CC: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
+ sysfs from sysfs_init()" prevents system from booting correctly
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org> <5327AAA8.2080703@gmail.com>
+In-Reply-To: <5327AAA8.2080703@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/25 16:36, zheng.li wrote:
-> 于 2014年03月25日 11:42, Ding Tianhong 写道:
->> On 2014/3/25 11:00, Zheng Li wrote:
->>> In bond mode tlb and alb, inactive slaves should keep inactive flag to
->>> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
->>> (for example ARP requests) which will arrive inactive slaves on same host from switch,
->>> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
->>> packets to produce a wrong entry in forward table. Typical situation is domu send some
->>> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
->>> packets go back to inactive slave from switch, because the inactive slave's inactive
->>> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
->>> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
->>>
->>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->>> ---
->>>  drivers/net/bonding/bond_main.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->>> index e5628fc..8761df6 100644
->>> --- a/drivers/net/bonding/bond_main.c
->>> +++ b/drivers/net/bonding/bond_main.c
->>> @@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
->>>  				&& (slave != bond->curr_active_slave)) {
->>>  				bond_set_slave_inactive_flags(slave,
->>>  							      BOND_SLAVE_NOTIFY_NOW);
->>> -			} else {
->>> +			} else if (!bond_is_lb(bond)) {
->>>  				bond_set_slave_active_flags(slave,
->>>  							    BOND_SLAVE_NOTIFY_NOW);
->>>  			}
->>>
->> I think you did not fix the problem completely, the state monitor will change the status for the slaves
->> and the inactive slave still could receive the broadcast.
-> 
-> Had tested, it can fix the issue, verified by our QA.
-> Default set slave of bond as inactive when add a slave to bond, when
-> link UP, just set one slave as current active slave and clear its
-> inactive flag, the inactive slave's inactive flag will keep the value of 1.
-> 
-> 
-Ok, I found that in the mii monitor, it will only change the backup state, no problem,
-it looks good to me.
+So, I tried RC8 and I'm still getting the error. It start too fast to 
+be able to read whatever it is saying, but here is what I can read:
+...
+cp: error writing /run/initramfs/new_root/...
+cp: failed to extend ...
+... (and so on)
 
-Ding
+It goes on like that for a long time.
 
+Alexandre Demers
+
+On Mon 17 Mar 2014 10:08:40 PM EDT, Alexandre Demers wrote:
+> By the way, I tried to get the error message, but my display had gone
+> in standby mode before it completed and it wouldn't wake up. I'll have
+> to test with an earlier 3.14 kernel (rc1 or rc2), when it was
+> answering to my wake up signal. Even though my display doesn't wake up
+> with rc6, it is still running since I can see some activities on my
+> disk from time to time.
+>
+> I'll be back with more info ASAP.
+>
+> Alexandre Demers
+>
+> On Mon 17 Mar 2014 04:13:46 PM EDT, Tejun Heo wrote:
+>> Hello,
 >>
->> Regards
->> Ding
+>> On Fri, Mar 14, 2014 at 11:48:10AM -0400, Alexandre Demers wrote:
+>>> Since it takes a while before the system begins to display errors,
+>>> I'll have to test it and report it later today when I'll get back from
+>>> work.
 >>
->> --
->> To unsubscribe from this list: send the line "unsubscribe netdev" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Any update?
 >>
-> 
-> 
-> 
-> .
-> 
-
-
+>>> Now, about the userland part, this seems a broad question... I'm using
+>>> Arch Linux 64bit (updated mostly on a daily basis). But I suspect you
+>>> are expecting a narrower information. Is there anything in particular
+>>> you want to know?
+>>
+>> I was just wondering whether you were running something really exotic.
+>> Doesn't seem that way.  Weird that other people aren't hitting this
+>> issue.  Hmm...
+>>
+>> Thanks.
+>>
