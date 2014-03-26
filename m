@@ -1,87 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407AbaCZHXL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:23:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52655 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753224AbaCZHXJ convert rfc822-to-8bit (ORCPT
+	id S1752013AbaCZH0a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:26:30 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:33238 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaCZH03 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:23:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,734,1389772800"; 
-   d="scan'208";a="499724613"
-From: "Wu, Feng" <feng.wu@intel.com>
-To: Peter Wu <peter@lekensteyn.nl>, Gleb Natapov <gleb@kernel.org>
-CC: Venkatesh Srinivas <venkateshs@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Linux Kernel Developers List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: RE: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-Thread-Topic: GPF in intel_pmu_lbr_reset() with qemu -cpu host
-Thread-Index: AQHPRho8rj9hNwUvg0mhYaGEbZ8B5Zry+/Dw
-Date: Wed, 26 Mar 2014 07:23:04 +0000
-Message-ID: <E959C4978C3B6342920538CF579893F001E80FC4@SHSMSX104.ccr.corp.intel.com>
-References: <4055058.qLAukpngnj@al> <1558917.OgpeoK0IhF@al>
- <20140322122758.GA4292@minantech.com> <7070151.NcmQcQO4az@al>
-In-Reply-To: <7070151.NcmQcQO4az@al>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Mar 2014 03:26:29 -0400
+X-Auth-Info: brfbF5Ts5mr1sb8UiRnJbWcZJ7us6HI/3Wvbys4QSg4=
+From: Marek Vasut <marex@denx.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Subject: Re: [PATCH v3 1/2] i2c: add DMA support for freescale i2c driver
+Date: Wed, 26 Mar 2014 08:26:27 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1394675277-24913-1-git-send-email-yao.yuan@freescale.com> <201403260726.36812.marex@denx.de> <8984936f9e914442995d79039543cb58@BL2PR03MB338.namprd03.prod.outlook.com>
+In-Reply-To: <8984936f9e914442995d79039543cb58@BL2PR03MB338.namprd03.prod.outlook.com>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403260826.28114.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: kvm-owner@vger.kernel.org [mailto:kvm-owner@vger.kernel.org] On
-> Behalf Of Peter Wu
-> Sent: Sunday, March 23, 2014 6:00 AM
-> To: Gleb Natapov
-> Cc: Venkatesh Srinivas; Peter Zijlstra; Ingo Molnar; Andi Kleen; Linux Kernel
-> Developers List; H. Peter Anvin; kvm@vger.kernel.org; Paolo Bonzini
-> Subject: Re: GPF in intel_pmu_lbr_reset() with qemu -cpu host
+On Wednesday, March 26, 2014 at 08:08:28 AM, Yao Yuan wrote:
+> On Wednesday, March 26, 2014 at 02:27:46 PM, Marek Vasut wrote:
+> > On Wednesday, March 26, 2014 at 06:56:34 AM, Yao Yuan wrote:
+> > > On Wednesday, March 26, 2014 at 11:43:27 AM, Marek Vasut wrote:
+> > > > On Wednesday, March 26, 2014 at 04:08:27 AM, Yao Yuan wrote:
+> > > > 
+> > > > [...]
+> > > > 
+> > > > > > > +		i2c_imx->use_dma = false;
+> > > > > > > +	} else if (i2c_imx_dma_request(i2c_imx,
+> > > > > > > +(dma_addr_t)phy_addr))
+> > > > 
+> > > > {
+> > > > 
+> > > > > > > +		dev_info(&pdev->dev,
+> > > > > > > +				"can't request dma chan, faild use dma.
+> > 
+> > \n");
+> > 
+> > > > > > > +		i2c_imx->use_dma = false;
+> > > > > > > +	} else {
+> > > > > > > +		i2c_imx->use_dma = true;
+> > > > > > > +	}
+> > > > > > 
+> > > > > > Can you not just check if i2c_imx->dma is valid pointer or NULL
+> > > > 
+> > > > pointer ?
+> > > > 
+> > > > > > Then you won't need a separate variable, for this purpose ...
+> > 
+> > right ?
+> > 
+> > > > > Sorry and I think what I know is just to check whether it is NULL.
+> > > > > Then for the second question, maybe there are some other ways, But
+> > > > > I think it is more tidy and easier understanding for using a
+> > > > > separate variable, for this purpose.
+> > > > 
+> > > > You are just wasting space and duplicating data, unless I am wrong.
+> > > 
+> > > Well, Do you have a better idea? Although I think it's necessary.
+> > 
+> > I think we disconnected here, sorry. Why can you not use (i2c_imx->dma !=
+> > NULL) instead of (i2c_imx->use_dma == true) please ?
 > 
-> On Saturday 22 March 2014 14:27:59 Gleb Natapov wrote:
-> > > but now I have a NULL dereference (in rapl_pmu_init). Previously, when
-> > > `-cpu SandyBridge` was passed to qemu, it would show this:
-> > >
-> > >     [    0.016995] Performance Events: unsupported p6 CPU model 42
-> no PMU driver, software events only.
-> > >
-> > > The same NULL pointer deref would be visible (slightly different
-> > > addresses, but the Code lines are equal). With `-host`, the NULL deref
-> > > with `-cpu host` contains:
-> > >
-> > >     [    0.016445] Performance Events: 16-deep LBR, IvyBridge events,
-> Intel PMU driver.
-> > >
-> > > Full dmesg below.
-> > >
-> > I am confused. Do you see crash now with -cpu SandyBridge and -cpu host, or
-> -cpu host only?
+> But there are two judge conditions. But only the "i2c_imx->dma", but also
+> whether "i2c_imx_dma_request" success.
 > 
-> The RAPL crash is seen with both SandyBridge and host, I mentioned SB
-> because that environment should be more constant than "host" (which
-> depends on the CPU you have on, well, the host).
-> 
-> Peter
+> "i2c_imx->use_dma == true" be equivalent to "i2c_imx->dma != NULL &&
+> !i2c_imx_dma_request()"
 
-Is there a solution for this issue right now? I also met this GPF crash.
++       /* Init DMA config if support*/
++       i2c_imx->dma = devm_kzalloc(&pdev->dev, sizeof(struct imx_i2c_dma),
++                                       GFP_KERNEL);
++       if (!i2c_imx->dma) {
++               dev_info(&pdev->dev,
++                               "can't allocate dma struct faild use dma.\n");
++               i2c_imx->use_dma = false;
++       } else if (i2c_imx_dma_request(i2c_imx, (dma_addr_t)phy_addr)) {
++               dev_info(&pdev->dev,
++                               "can't request dma chan, faild use dma.\n");
++               i2c_imx->use_dma = false;
++       } else {
++               i2c_imx->use_dma = true;
++       }
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kvm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+OK, looking at this one more time, why don't you wrap the allocation of i2c_imx-
+>dma into i2c_imx_dma_request() ? Even better, you can allocate *dma as a local 
+variable in i2c_imx_dma_request() and then assign it into i2c_imx->dma only at 
+the end of the i2c_imx_dma_request() function , at the point where you are sure 
+nothing failed. Then you can check i2c_imx->dma != NULL throughout the code to 
+check if the DMA is available, no ?
 
-Thanks,
-Feng
+Shawn, Wolfram, am I talking nonsense or am I just not connecting ?
+
+Best regards,
+Marek Vasut
