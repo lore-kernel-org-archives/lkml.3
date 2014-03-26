@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414AbaCYX7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 19:59:13 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:53485 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbaCYX7L (ORCPT
+	id S1755078AbaCZAA4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:00:56 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:55414 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482AbaCZAAy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 19:59:11 -0400
-X-Mailer: exmh version 2.8.0 04/21/2012 with nmh-1.5+dev
-To: Feminist Software Foundation 
-	<feministsoftwarefoundation@loves.dicksinmyan.us>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] #CleanUp non-gender-neutral README
-In-Reply-To: Your message of "Mon, 24 Mar 2014 01:09:16 -0000."
-             <fadac71765a98a198953cf4f93950bf3@loves.dicksinmyan.us>
-From: Valdis.Kletnieks@vt.edu
-References: <fadac71765a98a198953cf4f93950bf3@loves.dicksinmyan.us>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1395791943_2682P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Tue, 25 Mar 2014 20:00:54 -0400
+Message-ID: <5332188E.7050302@ahsoftware.de>
+Date: Wed, 26 Mar 2014 01:00:14 +0100
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Sebastian Capella <sebastian.capella@linaro.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Len Brown <len.brown@intel.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jonathan Austin <jonathan.austin@arm.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Victor Kamensky <victor.kamensky@linaro.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Russ Dill <Russ.Dill@ti.com>,
+        Nicolas Pitre <nico@linaro.org>,
+        =?UTF-8?B?VXdlIEtsZWluZS1Lw7ZuaWc=?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Laura Abbott <lauraa@codeaurora.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Jiang Liu <liuj97@gmail.com>
+Subject: Re: [PATCH v7 2/2] ARM hibernation / suspend-to-disk
+References: <1394016605-24120-1-git-send-email-sebastian.capella@linaro.org>	<1394016605-24120-3-git-send-email-sebastian.capella@linaro.org>	<20140316070917.GA3094@arch.cereza>	<CADHgK6s58EJyJxB-47K8w26H8ZCBFQ2zu7PGAQU9O+2g7=fPwA@mail.gmail.com>	<20140317204410.GA1118@arch.cereza>	<CADHgK6tHngKVZS=jo=VYt3Nt3dhiEmiWr28iDy7q_uR9goBj=Q@mail.gmail.com>	<20140319154434.GA3488@arch.cereza>	<CADHgK6vLB3h0zrdpve=ZyjNu2pe1VYsGxrYgv=2C-JV37vE9tQ@mail.gmail.com> <CADHgK6vkwjXyJxRcOXjJpJJaR0-YR869NpPZ+CBBS8kEdE0qCQ@mail.gmail.com> <5331CD43.1010601@ahsoftware.de> <53321311.8060604@ahsoftware.de>
+In-Reply-To: <53321311.8060604@ahsoftware.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Tue, 25 Mar 2014 19:59:03 -0400
-Message-ID: <80909.1395791943@turing-police.cc.vt.edu>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1395791943_2682P
-Content-Type: text/plain; charset=us-ascii
+Am 26.03.2014 00:36, schrieb Alexander Holler:
+> Am 25.03.2014 19:38, schrieb Alexander Holler:
+>
+>> reboot too. Another solution would be to unregister the reboot_notifier
+>> in the reboot_nofifier itself. I've just seen one watchdog driver
+>> (drivers/rtc/rtc-m41t80.c) which does that. But I still think such
+>
+> That, btw. is broken. ;)
+>
+> Right after having send the mail, I've became that intuition, had a look
+> and ... notifier.h does state the following:
+>
+>   * atomic_notifier_chain_unregister(),
+> blocking_notifier_chain_unregister(),
+>   * and srcu_notifier_chain_unregister() _must not_ be called from within
+>   * the call chain.
+>
+> (The reboot-notifier chain is of type blocking_notifier_chain)
+>
+> So I've picked up one user of reboot_notifier by random and had the luck
+> to choose a broken one. ;)
+>
+> I will make a patch and will have a look if the same failure can be
+> found elsewhere. There aren't that much users of the reboot-notifier, so
+> it shouldn't cost me that much time.
 
-On Mon, 24 Mar 2014 01:09:16 -0000, Feminist Software Foundation said:
->  From: Feminist-Software-Foundation
-> <feministsoftwarefoundation@loves.dicksinmyan.us>
+Hmm, and either I was confused, or have looked at some other user of the 
+reboot_notifier, but rtc-m41t80.c doesn't call unregister from it's 
+notifier. And unfortunately there are a bit more users of the 
+reboot_notifier than I first thought. :/
 
-The merge window is expected to open *next* week, around Monday or Tuesday.
-Please resubmit then.
+I will check if I can find out at least at which driver I had a look at 
+which did call unregister_notifier from the notifier itself.
 
---==_Exmh_1395791943_2682P
-Content-Type: application/pgp-signature
+Regards,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Exmh version 2.5 07/13/2001
+Alexander Holler
 
-iQIVAwUBUzIYRwdmEQWDXROgAQJt1RAAuls2UT7xbTwTZ6Ai5vKVVN6v1C/LJBsN
-4WpaNhgeNCacGA6BWDokd0Wsa+/7/ZuMhNe9EKjaMetYs0NWMdXyqsb7uLP1u7Oj
-uz0PNmWSdbDsARw3d4ajwYTew2qxvCoIdkvKuLddmLd1qyOEWXfl0LLKpM6YSnW9
-hyiyvbKs+VB8b/tAGAP1LfABhGD3lxw/QFDcEiQ74r1tozoBbohBgnB7J04D5yi0
-OEi2fp1UJmdBLSi6hdbcfmaONj3EGNtgg636jM5uKiC4+/ansKAv80s34i5HRFCR
-/SauvhbJiN1GSvmwp0bmwNg3HuJ3C6eDMxpAqN4NzwBcWVDrf/izxT2wydWQS7PA
-lU16/bdT2e/LoFxtQpcWlbMcMIDlVYC9WRKYiOO5x45eZoTngqCMBo1+kzVkRgiG
-ltML9cV++N11HJlTxH7u+S+bB0tQGBqipGl0nG4QlAgr4N0qiLXDyn5tL74XCVaU
-4T5vyz5k6C4X8SDmQOrdpVUGFiw/p8WDGmyTbz51JWusU2COHXzrKHSs4Pu0XBbg
-6CTlvSuVNEM/Na+MVr5TIgBCerRBe/ovnL/6C42rz/ZcY7n20jwZyJKqjldesqp2
-k2WK5ly+hQ14O3xeFJAo647ZRjbBtBMUdHvls1ppNNzVn0p7gTgT7FIUzppHqWvb
-6fiinn/NMPE=
-=mp2X
------END PGP SIGNATURE-----
-
---==_Exmh_1395791943_2682P--
