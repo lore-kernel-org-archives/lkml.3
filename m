@@ -1,86 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaCZOwt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:52:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17511 "EHLO mx1.redhat.com"
+	id S1755271AbaCZOzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:55:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33344 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753573AbaCZOws (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:52:48 -0400
-Message-ID: <5332E991.5070307@redhat.com>
-Date: Wed, 26 Mar 2014 15:52:01 +0100
+	id S1754369AbaCZOzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 10:55:22 -0400
 From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Fengguang Wu <fengguang.wu@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [KVM] BUG: unable to handle kernel NULL pointer dereference at
- 00000000000002b0
-References: <20140326144053.GC26721@localhost>
-In-Reply-To: <20140326144053.GC26721@localhost>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel@vger.kernel.org
+Cc: fengguang.wu@intel.com, kvm@vger.kernel.org
+Subject: [PATCH] KVM: vmx: fix MPX detection
+Date: Wed, 26 Mar 2014 15:54:00 +0100
+Message-Id: <1395845640-1976-1-git-send-email-pbonzini@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 26/03/2014 15:40, Fengguang Wu ha scritto:
-> Hi Paolo,
->
-> We noticed the below kernel BUG on
->
-> git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue
-> commit 93c4adc7afedf9b0ec190066d45b6d67db5270da ("KVM: x86: handle missing MPX in nested virtualization")
+kvm_x86_ops is still NULL at this point.  Since kvm_init_msr_list
+cannot fail, it is safe to initialize it before the call.
 
-Ouch.  Out of curiosity is this on Skylake prototypes, or is it also 
-visible on some released silicon?
+Reported-by: Fengguang Wu <fengguang.wu@intel.com>
+Cc: kvm@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+---
+ arch/x86/kvm/x86.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-I'm sending a patch to kvm@vger.kernel.org and CCing you---would be nice 
-to have your Tested-by.
-
-Thanks,
-
-Paolo
-
-> [   17.665744] Freeing initrd memory: 213444K (ffff880072f82000 - ffff88007fff3000)
-> [   17.674933] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
-> [   17.682659] software IO TLB [mem 0xb73c7000-0xbb3c7000] (64MB) mapped at [ffff8800b73c7000-ffff8800bb3c6fff]
-> [   17.695661] BUG: unable to handle kernel NULL pointer dereference at 00000000000002b0
-> [   17.705465] IP: [<ffffffff81015a9f>] kvm_arch_init+0x12a/0x1ea
-> [   17.712577] PGD 0
-> [   17.715390] Oops: 0000 [#1] SMP
-> [   17.719654] Modules linked in:
-> [   17.723641] CPU: 10 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc7-03020-ga929a7d #1
-> [   17.733067] Hardware name: Intel Corporation LH Pass/S4600LH...., BIOS SE5C600.86B.99.02.1047.032320122259 03/23/2012
-> [   17.745821] task: ffff880429cb0000 ti: ffff880429ca4000 task.ti: ffff880429ca4000
-> [   17.755039] RIP: 0010:[<ffffffff81015a9f>]  [<ffffffff81015a9f>] kvm_arch_init+0x12a/0x1ea
-> [   17.765228] RSP: 0000:ffff880429ca5e00  EFLAGS: 00010246
-> [   17.771644] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
-> [   17.780096] RDX: 0000000000000000 RSI: ffff880429ca5e04 RDI: 0000000000000d90
-> [   17.788549] RBP: ffff880429ca5e30 R08: ffff88082fc55d00 R09: ffff88042f803e00
-> [   17.796993] R10: 0000000000000004 R11: 0000000000000003 R12: 000000000000000c
-> [   17.805449] R13: 0000000000000017 R14: ffffffff82018b10 R15: 0000000000000018
-> [   17.813907] FS:  0000000000000000(0000) GS:ffff88082fc40000(0000) knlGS:0000000000000000
-> [   17.823808] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> [   17.830693] CR2: 00000000000002b0 CR3: 000000000200f000 CR4: 00000000000407e0
-> [   17.839159] Stack:
-> [   17.841873]  0000000000000000 0000000000000040 0000000000000000 0000000000003f40
-> [   17.851328]  0000000000000000 0000000000000000 ffff880429ca5e68 ffffffff810039dc
-> [   17.860790]  00000000000164d8 0000000000000006 0000000000000000 000000000000023c
-> [   17.870256] Call Trace:
-> [   17.873468]  [<ffffffff810039dc>] kvm_init+0x1f/0x24a
-> [   17.879599]  [<ffffffff82154fa4>] vmx_init+0x1df/0x3f6
-> [   17.885825]  [<ffffffff82154dc5>] ? vmx_check_processor_compat+0x61/0x61
-> [   17.893782]  [<ffffffff810002d2>] do_one_initcall+0xa4/0x13a
-> [   17.900604]  [<ffffffff810f9aa9>] ? parse_args+0x25f/0x33d
-> [   17.907225]  [<ffffffff8214ff94>] kernel_init_freeable+0x1a9/0x22e
-> [   17.914615]  [<ffffffff8214f78f>] ? do_early_param+0x88/0x88
-> [   17.921433]  [<ffffffff819af0d5>] ? rest_init+0x89/0x89
-> [   17.927731]  [<ffffffff819af0e3>] kernel_init+0xe/0xdf
->
-> Full dmesg is attached, and more details can be provided on your request.
->
-> Thanks,
-> Fengguang
->
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 39c28f09dfd5..49b514f76b5d 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -5537,9 +5537,10 @@ int kvm_arch_init(void *opaque)
+ 		goto out_free_percpu;
+ 
+ 	kvm_set_mmio_spte_mask();
+-	kvm_init_msr_list();
+ 
+ 	kvm_x86_ops = ops;
++	kvm_init_msr_list();
++
+ 	kvm_mmu_set_mask_ptes(PT_USER_MASK, PT_ACCESSED_MASK,
+ 			PT_DIRTY_MASK, PT64_NX_MASK, 0);
+ 
+-- 
+1.8.5.3
 
