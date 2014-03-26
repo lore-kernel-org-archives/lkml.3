@@ -1,220 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927AbaCZOgt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:36:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46180 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754790AbaCZOgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:36:47 -0400
-Message-ID: <1395844604.483.12.camel@linux-fkkt.site>
-Subject: Re: [PATCH v5 1/3] mfd: Add realtek USB card reader driver
-From: Oliver Neukum <oneukum@suse.de>
-To: rogerable@realtek.com
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org, wei_wang@realsil.com.cn,
-        micky_ching@realsil.com.cn
-Date: Wed, 26 Mar 2014 15:36:44 +0100
-In-Reply-To: <1395744293-24398-2-git-send-email-rogerable@realtek.com>
-References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>
-	 <1395744293-24398-2-git-send-email-rogerable@realtek.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755135AbaCZOii (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:38:38 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:10445 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751616AbaCZOih (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 10:38:37 -0400
+X-IronPort-AV: E=Sophos;i="4.97,735,1389715200"; 
+   d="scan'208";a="9771567"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH] workqueue: use manager lock only to protect worker_idr
+Date: Wed, 26 Mar 2014 22:41:47 +0800
+Message-Id: <1395844907-24186-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/26 22:35:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/26 22:35:22,
+	Serialize complete at 2014/03/26 22:35:22
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-25 at 18:44 +0800, rogerable@realtek.com wrote:
-> From: Roger Tseng <rogerable@realtek.com>
+worker_idr is always accessed in manager lock context currently.
+worker_idr is highly related to managers, it will be unlikely
+accessed in pool->lock only in future.
 
-> +static int rtsx_usb_bulk_transfer_sglist(struct rtsx_ucr *ucr,
-> +		unsigned int pipe, struct scatterlist *sg, int num_sg,
-> +		unsigned int length, unsigned int *act_len, int timeout)
-> +{
-> +	int ret;
-> +
-> +	dev_dbg(&ucr->pusb_intf->dev, "%s: xfer %u bytes, %d entries\n",
-> +			__func__, length, num_sg);
-> +	ret = usb_sg_init(&ucr->current_sg, ucr->pusb_dev, pipe, 0,
-> +			sg, num_sg, length, GFP_NOIO);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ucr->sg_timer.expires = jiffies + msecs_to_jiffies(timeout);
-> +	add_timer(&ucr->sg_timer);
-> +	usb_sg_wait(&ucr->current_sg);
-> +	del_timer(&ucr->sg_timer);
-> +
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |   34 ++++++----------------------------
+ 1 files changed, 6 insertions(+), 28 deletions(-)
 
-A slight race. You cannot rule out that the timer handler is still
-running when you call this the next time. You'd better use
-del_timer_sync()
-
-> +static int rtsx_usb_probe(struct usb_interface *intf,
-> +			 const struct usb_device_id *id)
-> +{
-> +	struct usb_device *usb_dev = interface_to_usbdev(intf);
-> +	struct rtsx_ucr *ucr;
-> +	int ret;
-> +
-> +	dev_dbg(&intf->dev,
-> +		": Realtek USB Card Reader found at bus %03d address %03d\n",
-> +		 usb_dev->bus->busnum, usb_dev->devnum);
-> +
-> +	ucr = devm_kzalloc(&intf->dev, sizeof(*ucr), GFP_KERNEL);
-> +	if (!ucr)
-> +		return -ENOMEM;
-> +
-> +	ucr->pusb_dev = usb_dev;
-> +
-> +	ucr->iobuf = usb_alloc_coherent(ucr->pusb_dev, IOBUF_SIZE,
-> +			GFP_KERNEL, &ucr->iobuf_dma);
-> +	if (!ucr->iobuf)
-> +		return -ENOMEM;
-> +
-> +	usb_set_intfdata(intf, ucr);
-> +
-> +	ucr->vendor_id = id->idVendor;
-> +	ucr->product_id = id->idProduct;
-> +	ucr->cmd_buf = ucr->rsp_buf = ucr->iobuf;
-> +
-> +	mutex_init(&ucr->dev_mutex);
-> +
-> +	ucr->pusb_intf = intf;
-> +
-> +	/* initialize */
-> +	ret = rtsx_usb_init_chip(ucr);
-> +	if (ret)
-> +		goto out_init_fail;
-> +
-> +	ret = mfd_add_devices(&intf->dev, usb_dev->devnum, rtsx_usb_cells,
-> +			ARRAY_SIZE(rtsx_usb_cells), NULL, 0, NULL);
-
-Race condition. What prevents the mfd layer from using this device
-before you've finished the next steps of the initialisation?
-
-> +	if (ret)
-> +		goto out_init_fail;
-> +
-> +	/* initialize USB SG transfer timer */
-> +	init_timer(&ucr->sg_timer);
-> +	setup_timer(&ucr->sg_timer, rtsx_usb_sg_timed_out, (unsigned long) ucr);
-> +#ifdef CONFIG_PM
-> +	intf->needs_remote_wakeup = 1;
-
-Why?
-> +	usb_enable_autosuspend(usb_dev);
-> +#endif
-> +
-> +	return 0;
-> +
-> +out_init_fail:
-> +	usb_free_coherent(ucr->pusb_dev, IOBUF_SIZE, ucr->iobuf,
-> +			ucr->iobuf_dma);
-> +	return ret;
-> +}
-> +
-> +static void rtsx_usb_disconnect(struct usb_interface *intf)
-> +{
-> +	struct rtsx_ucr *ucr = (struct rtsx_ucr *)usb_get_intfdata(intf);
-> +
-> +	dev_dbg(&intf->dev, "%s called\n", __func__);
-> +
-> +	mfd_remove_devices(&intf->dev);
-> +
-> +	usb_set_intfdata(ucr->pusb_intf, NULL);
-> +	usb_free_coherent(ucr->pusb_dev, IOBUF_SIZE, ucr->iobuf,
-> +			ucr->iobuf_dma);
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
-> +{
-> +	struct rtsx_ucr *ucr =
-> +		(struct rtsx_ucr *)usb_get_intfdata(intf);
-> +
-> +	dev_dbg(&intf->dev, "%s called with pm message 0x%04u\n",
-> +			__func__, message.event);
-> +
-> +	mutex_lock(&ucr->dev_mutex);
-> +	rtsx_usb_turn_off_led(ucr);
-
-When is this turned on again?
-
-> +	mutex_unlock(&ucr->dev_mutex);
-> +	return 0;
-> +}
-> +
-> +static int rtsx_usb_resume(struct usb_interface *intf)
-> +{
-> +	return 0;
-> +}
-> +
-> +static int rtsx_usb_reset_resume(struct usb_interface *intf)
-> +{
-> +	struct rtsx_ucr *ucr =
-> +		(struct rtsx_ucr *)usb_get_intfdata(intf);
-> +
-> +	rtsx_usb_reset_chip(ucr);
-> +	return 0;
-> +}
-> +
-> +#else /* CONFIG_PM */
-> +
-> +#define rtsx_usb_suspend NULL
-> +#define rtsx_usb_resume NULL
-> +#define rtsx_usb_reset_resume NULL
-> +
-> +#endif /* CONFIG_PM */
-> +
-> +
-> +static int rtsx_usb_pre_reset(struct usb_interface *intf)
-> +{
-> +	struct rtsx_ucr *ucr = (struct rtsx_ucr *)usb_get_intfdata(intf);
-> +
-> +	mutex_lock(&ucr->dev_mutex);
-> +	return 0;
-> +}
-> +
-> +static int rtsx_usb_post_reset(struct usb_interface *intf)
-> +{
-> +	struct rtsx_ucr *ucr = (struct rtsx_ucr *)usb_get_intfdata(intf);
-> +
-> +	mutex_unlock(&ucr->dev_mutex);
-> +	return 0;
-> +}
-> +
-> +static struct usb_device_id rtsx_usb_usb_ids[] = {
-> +	{ USB_DEVICE(0x0BDA, 0x0129) },
-> +	{ USB_DEVICE(0x0BDA, 0x0139) },
-> +	{ USB_DEVICE(0x0BDA, 0x0140) },
-> +	{ }
-> +};
-> +
-> +static struct usb_driver rtsx_usb_driver = {
-> +	.name			= "rtsx_usb",
-> +	.probe			= rtsx_usb_probe,
-> +	.disconnect		= rtsx_usb_disconnect,
-> +	.suspend		= rtsx_usb_suspend,
-> +	.resume			= rtsx_usb_resume,
-> +	.reset_resume		= rtsx_usb_reset_resume,
-> +	.pre_reset		= rtsx_usb_pre_reset,
-> +	.post_reset		= rtsx_usb_post_reset,
-> +	.id_table		= rtsx_usb_usb_ids,
-> +	.supports_autosuspend	= 1,
-> +	.soft_unbind		= 1,
-> +};
-> +
-
-	Regards
-		Oliver
-
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0c74979..f5b68a3 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -123,8 +123,7 @@ enum {
+  *    cpu or grabbing pool->lock is enough for read access.  If
+  *    POOL_DISASSOCIATED is set, it's identical to L.
+  *
+- * MG: pool->manager_mutex and pool->lock protected.  Writes require both
+- *     locks.  Reads can happen under either lock.
++ * M: pool->manager_mutex protected.
+  *
+  * PL: wq_pool_mutex protected.
+  *
+@@ -163,7 +162,7 @@ struct worker_pool {
+ 	/* see manage_workers() for details on the two manager mutexes */
+ 	struct mutex		manager_arb;	/* manager arbitration */
+ 	struct mutex		manager_mutex;	/* manager exclusion */
+-	struct idr		worker_idr;	/* MG: worker IDs and iteration */
++	struct idr		worker_idr;	/* M: worker IDs and iteration */
+ 
+ 	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+ 	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
+@@ -339,16 +338,6 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+ 			   lockdep_is_held(&wq->mutex),			\
+ 			   "sched RCU or wq->mutex should be held")
+ 
+-#ifdef CONFIG_LOCKDEP
+-#define assert_manager_or_pool_lock(pool)				\
+-	WARN_ONCE(debug_locks &&					\
+-		  !lockdep_is_held(&(pool)->manager_mutex) &&		\
+-		  !lockdep_is_held(&(pool)->lock),			\
+-		  "pool->manager_mutex or ->lock should be held")
+-#else
+-#define assert_manager_or_pool_lock(pool)	do { } while (0)
+-#endif
+-
+ #define for_each_cpu_worker_pool(pool, cpu)				\
+ 	for ((pool) = &per_cpu(cpu_worker_pools, cpu)[0];		\
+ 	     (pool) < &per_cpu(cpu_worker_pools, cpu)[NR_STD_WORKER_POOLS]; \
+@@ -377,14 +366,14 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+  * @wi: integer used for iteration
+  * @pool: worker_pool to iterate workers of
+  *
+- * This must be called with either @pool->manager_mutex or ->lock held.
++ * This must be called with either @pool->manager_mutex.
+  *
+  * The if/else clause exists only for the lockdep assertion and can be
+  * ignored.
+  */
+ #define for_each_pool_worker(worker, wi, pool)				\
+ 	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
+-		if (({ assert_manager_or_pool_lock((pool)); false; })) { } \
++		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
+ 		else
+ 
+ /**
+@@ -1717,13 +1706,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 	 * ID is needed to determine kthread name.  Allocate ID first
+ 	 * without installing the pointer.
+ 	 */
+-	idr_preload(GFP_KERNEL);
+-	spin_lock_irq(&pool->lock);
+-
+-	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_NOWAIT);
+-
+-	spin_unlock_irq(&pool->lock);
+-	idr_preload_end();
++	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_KERNEL);
+ 	if (id < 0)
+ 		goto fail;
+ 
+@@ -1765,18 +1748,13 @@ static struct worker *create_worker(struct worker_pool *pool)
+ 		worker->flags |= WORKER_UNBOUND;
+ 
+ 	/* successful, commit the pointer to idr */
+-	spin_lock_irq(&pool->lock);
+ 	idr_replace(&pool->worker_idr, worker, worker->id);
+-	spin_unlock_irq(&pool->lock);
+ 
+ 	return worker;
+ 
+ fail:
+-	if (id >= 0) {
+-		spin_lock_irq(&pool->lock);
++	if (id >= 0)
+ 		idr_remove(&pool->worker_idr, id);
+-		spin_unlock_irq(&pool->lock);
+-	}
+ 	kfree(worker);
+ 	return NULL;
+ }
+-- 
+1.7.4.4
 
