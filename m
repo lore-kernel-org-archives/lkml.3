@@ -1,175 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576AbaCZM1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 08:27:30 -0400
-Received: from 98-159-192-160.scottsboro.org ([98.159.192.160]:60991 "EHLO
-	smtp.sboro.apirx.biz" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754140AbaCZM13 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 08:27:29 -0400
-X-Greylist: delayed 389 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Mar 2014 08:27:29 EDT
-Message-ID: <5332C664.4060503@apinetstore.apirx.biz>
-Date: Wed, 26 Mar 2014 08:21:56 -0400
-From: Bill Shirley <bshirley@apinetstore.apirx.biz>
-User-Agent: Mozilla/5.0 (Windows NT 5.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754500AbaCZMbi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 08:31:38 -0400
+Received: from na01-by1-obe.ptr.o365filtering.com ([64.4.22.89]:42474 "EHLO
+	na01-by1-obe.outbound.o365filtering.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752404AbaCZMbg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 08:31:36 -0400
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: David Miller <davem@davemloft.net>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Topic: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+Thread-Index: AQHPRT7oyWtXlru1UE29zpPCw7NDQZrySCzQgAC7j4CAAAEMAP//tHbwgAB+hICAABn2kA==
+Date: Wed, 26 Mar 2014 12:31:24 +0000
+Message-ID: <c7fe8f6655564fcf924521d01d3fa95a@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+References: <1395434633-16771-1-git-send-email-haiyangz@microsoft.com>
+ <216cd74854414cfc9b338cab41a3d1a0@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140325.204343.991901655152875043.davem@davemloft.net>
+ <20140325.204728.2281772666453524010.davem@davemloft.net>
+ <a8b374e420be42d883fb782c8f271659@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140326034955.GA10875@kroah.com>
+In-Reply-To: <20140326034955.GA10875@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: ipsec using xfrm mark on kernel 3.13.5-101.fc19.x86_64 is broken
-Content-Type: multipart/mixed;
- boundary="------------060402010203080008070907"
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: =?us-ascii?Q?CIP:131.107.159.99;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(100?=
+ =?us-ascii?Q?09001)(51704005)(24454002)(13464003)(189002)(377454003)(3774?=
+ =?us-ascii?Q?24004)(199002)(164054003)(81342001)(19580405001)(44976005)(9?=
+ =?us-ascii?Q?8676001)(80976001)(81686001)(2656002)(19580395003)(83322001)?=
+ =?us-ascii?Q?(87266001)(87936001)(81816001)(15975445006)(85306002)(474460?=
+ =?us-ascii?Q?02)(74502001)(31966008)(94946001)(50466002)(86612001)(746620?=
+ =?us-ascii?Q?01)(66066001)(80022001)(81542001)(74876001)(69226001)(925660?=
+ =?us-ascii?Q?01)(46102001)(56816005)(90146001)(33646001)(97186001)(518560?=
+ =?us-ascii?Q?01)(54316002)(93516002)(76786001)(76796001)(56776001)(477360?=
+ =?us-ascii?Q?01)(47976001)(50986001)(83072002)(85852003)(4396001)(5380600?=
+ =?us-ascii?Q?1)(65816001)(95416001)(94316002)(95666003)(59766001)(7798200?=
+ =?us-ascii?Q?1)(575784001)(93886001)(76482001)(54356001)(84676001)(977560?=
+ =?us-ascii?Q?01)(47776003)(74366001)(63696002)(79102001)(74706001)(237260?=
+ =?us-ascii?Q?02)(15202345003)(6806004)(97336001)(2009001)(49866001)(46406?=
+ =?us-ascii?Q?003)(20776003)(97736001)(93136001)(142933001)(24736002);DIR:?=
+ =?us-ascii?Q?OUT;SFP:1101;SCL:1;SRVR:BY2SR01MB595;H:hybrid.exchange.micro?=
+ =?us-ascii?Q?soft.com;FPR:3474F196.AF2931A.B3FF57A3.92E5D8D2.20471;PTR:In?=
+ =?us-ascii?Q?foDomainNonexistent;MX:1;A:1;LANG:en;?=
+X-Exchange-Organization-AntiSpam-Internal: BULK:None;ACTION:Default;RISK:Low;SCL:0;SPMLVL:NotSpam;PCL:0;RULEID:(2001)
+X-Forefront-PRVS: 0162ACCC24
+X-OriginatorOrg: msft.ccsctp.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------060402010203080008070907
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-
-I apologize in advance if I'm posting this to the wrong list.  Also, I've attempted to post in plain text; I hope 
-Thunderbird behaves.
 
 
-I have set up a ipsec tunnel between Server-A and Server-B using public IP addresses and configured the ip xfrm state 
-and ip xfrm policy database to use marks.  This works correctly if both servers are not using a newer kernel.  I have 
-this working with (1st setup) :
-Server-A kernel 3.6.9-2.fc17.x86_64 <-> Server-B kernel 3.6.3-1.fc17.x86_64 (no marks this side)
-also:
-Server-A kernel 3.6.9-2.fc17.x86_64 <-> Server-B kernel 3.4.2-1.fc16.x86_64
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Tuesday, March 25, 2014 11:50 PM
+> To: Haiyang Zhang
+> Cc: David Miller; olaf@aepfle.de; netdev@vger.kernel.org;
+> jasowang@redhat.com; driverdev-devel@linuxdriverproject.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+> Side Scaling (vRSS)
+> 
+> On Wed, Mar 26, 2014 at 03:23:47AM +0000, Haiyang Zhang wrote:
+> >
+> >
+> > > -----Original Message-----
+> > > From: David Miller [mailto:davem@davemloft.net]
+> > > Sent: Tuesday, March 25, 2014 8:47 PM
+> > > To: Haiyang Zhang
+> > > Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> > > jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> > > devel@linuxdriverproject.org
+> > > Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual
+> Receive
+> > > Side Scaling (vRSS)
+> > >
+> > > From: David Miller <davem@davemloft.net>
+> > > Date: Tue, 25 Mar 2014 20:43:43 -0400 (EDT)
+> > >
+> > > > From: Haiyang Zhang <haiyangz@microsoft.com>
+> > > > Date: Tue, 25 Mar 2014 20:37:43 +0000
+> > > >
+> > > >> Do we know when the dependency (commit: 8a7206a89f) will be
+> merged
+> > > >> into net-next tree?
+> > > >
+> > > > You're really not very patient, to say the least.
+> > > >
+> > > > It's done now and I'm working to integrate your patch.
+> > > >
+> > > > That patch has been in under review state in patchwork, which
+> means
+> > > > that I will get to it at some point, so you don't need to worry
+> about
+> > > > it any more than any other patch you might submit.
+> > > >
+> > > > The whole reason patchwork exists is so that people don't have to
+> > > > ask.
+> > >
+> > > And actually, this dependency "8a7206a89f" commit doesn't exist
+> > > in the 'net' tree at all.  I just merged Linus's tree into 'net'
+> > > and it doesn't exist there either.
+> > >
+> > > So this patch still doesn't compile.
+> > >
+> > > I'm tossing it from patchwork until you sort this out.
+> >
+> > Dave,
+> >
+> > Thank you for the efforts.
+> > The commit is in the linux-next tree. You can see it from this link:
+> > http://git.kernel.org/cgit/linux/kernel/git/next/linux-
+> next.git/commit/?id=8a7206a89f85c8439561b0eff85bb9440a2e97a9
+> > And, here is the commit log:
+> >
+> > author
+> > K. Y. Srinivasan <kys@microsoft.com> 2014-02-03 20:42:45 (GMT)
+> > committer
+> > Greg Kroah-Hartman <gregkh@linuxfoundation.org> 2014-02-07 23:22:40
+> (GMT)
+> > commit
+> > 8a7206a89f85c8439561b0eff85bb9440a2e97a9 (patch)
+> > tree
+> > 61f763919607368481ac128f56416df1f49cd187
+> > parent
+> > 011a7c3cc3aa60c7ea6bb49d847e80a299ba7b36 (diff)
+> >
+> > Drivers: hv: vmbus: Support per-channel driver state
+> > As we implement Virtual Receive Side Scaling on the networking side
+> > (the VRSS patches are currently under review), it will be useful to
+> have
+> > per-channel state that vmbus drivers can manage. Add support for
+> > managing per-channel state.
+> >
+> > KY:
+> > Do you know the original tree this patch was checked into by Greg KH?
+> Or,
+> > did Greg checked into linux-next tree directly?
+> 
+> No one "checks into the linux-next tree directly".
+> 
+> So your patch relies on a patch in my char-misc tree?  Ick, that wasn't
+> very wise.
+> 
+> It will just have to wait until the patch goes into 3.15-rc1, as my
+> trees are closed, sorry.
 
-However, this doesn't work completely with this setup (2nd setup) :
-Server-A kernel 3.4.2-1.fc16.x86_64 <-> Server-B kernel 3.13.5-101.fc19.x86_64
-nor with:
-Server-A kernel 2.6.33.7-server-2mnb (Mandriva 2010, no marks this side) <-> Server-B kernel 3.12.11-201.fc19.x86_64
+Greg,
 
-Keep in mind that this is a TUNNEL ipsec using MARKS (mark 12032/0xff00).  On the 2nd setup, all traffic flows for:
-PC-A <-> Server-A <-> Server-B <-> PC-B
-PC-A <-> Server-A <-> Server-B
-                   Server-A <-> Server-B <-> PC-B
+Thank you for the info. We will wait until KY's earlier patch is merged into
+3.15rc1.
 
-Actual values for Server-A kernel 3.4.2-1.fc16.x86_64 (192.168.64.0/23 (yes, /23) <-> Server-B kernel 
-3.13.5-101.fc19.x86_64  (10.0.0.0/8):
-192.168.65.137 = PC-A
-192.168.64.1 = Server-A
-10.96.0.9 = Server-B
-10.96.0.8 = PC-B
-
-However, SSH doesn't work for (either direction):
-Server-A <-> Server-B
-
-These do work:
-ping
-dig axfr
-telnet imap
-links http://
-
-I get incomplete response (takes a long time):
-from Server-A: smbclient -L 10.96.0.9
-
-However this works completely and swiftly:
-from Server-B: smbclient -L 192.168.64.1
-
-Something about ipsec in the OUTPUT chain on newer kernels is broken.  In the Server-B mangle table I can put a dummy 
-mark (outside the xfrm mask, of course) on outgoing SSH traffic and ESP traffic and observe that the ssh daemon on the 
-3.13.5 kernel DOES respond to all packets but not all packets are encrypted and sent out the wire.
-
-I've attached a portion of my iptables OUTPUT chain to demonstrate this.  This is from:
-Server-A kernel 2.6.33.7-server-2mnb (Mandriva 2010, no marks this side) <-> Server-B kernel 3.12.11-201.fc19.x86_64
-192.168.0.231/24 <-> 172.20.8.3/24
-mangle.ssh.txt => ssh 192.168.0.231
-mangle.imap.txt => telnet 192.168.0.231 imap
-
-I chose this pair because Server-B is idle and there is no other esp traffic.
-
-What is different about the way openssh and smbclient operate that fails vs several other programs not failing?  There 
-may be other programs failing, I just haven't though of any to test.
-
-Any help or pointers is much appreciated.
+In the future, the changes for vmbus or common header used by netvsc driver
+should be submitted into net-next tree, correct? So, it can be available quickly
+for the subsequent features?
 
 Thanks,
-Bill
+- Haiyang
 
-
---------------060402010203080008070907
-Content-Type: text/plain; charset=windows-1252;
- name="mangle.ssh.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="mangle.ssh.txt"
-
-# telnet 192.168.0.231 143
-Chain OUTPUT (policy ACCEPT 25911 packets, 2907K bytes)
- pkts bytes target     prot opt in     out     source               destination         
-25911 2907K tcout      all  --  *      *       0.0.0.0/0            0.0.0.0/0           
-
-Chain tcout (1 references)
- pkts bytes target     prot opt in     out     source               destination         
-   49 67341 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:22 /* mark ssh packet */ MARK xset 0x2f00/0xff00
-   49 67341 CONNMARK   tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:22 /* mark ssh connection */ CONNMARK xset 0x2f00/0xff00
-   49 67341 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:22 mark match 0x2f00/0xff00 /* count ssh packet with mark */ MARK or 0x400000
-   49 67341 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:22 connmark match  0x2f00/0xff00 /* count ssh packet with conn mark */ MARK or 0x400000
-    4   448 MARK       esp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* count any esp outflow */ MARK or 0x400000
-    4   448 MARK       esp  --  *      *       0.0.0.0/0            pub.lic.ip.A         /* count esp outflow to partner */ MARK or 0x400000
-
---------------060402010203080008070907
-Content-Type: text/plain; charset=windows-1252;
- name="ip.xfrm.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ip.xfrm.txt"
-
-# ip xfrm state list
-src pub.lic.ip.A dst pub.lic.ip.B
-	proto esp spi 0x00000400 reqid 0 mode tunnel
-	replay-window 0 
-	mark 12032/0xff00
-	auth-trunc hmac(sha1) 0x2ea6eefd6c7e1f41dfd047ad83d2d11f46428a4f 96
-	enc cbc(des3_ede) 0x394517be5524859ce745e158e3c7d47c033fe519bb882496
-	sel src 0.0.0.0/0 dst 0.0.0.0/0 
-src pub.lic.ip.B dst pub.lic.ip.A
-	proto esp spi 0x00000401 reqid 0 mode tunnel
-	replay-window 0 
-	mark 12032/0xff00
-	auth-trunc hmac(sha1) 0xbf11eda9dcce27e8ca2156d2a0fb3ce3d31251bf 96
-	enc cbc(des3_ede) 0x346c928bae81ed623dca2b8d2b16365c91daf629076692e0
-	sel src 0.0.0.0/0 dst 0.0.0.0/0 
-
-# ip xfrm policy list
-src 192.168.0.0/24 dst 172.20.8.0/24 
-	dir fwd priority 0 ptype main 
-	mark 12032/0xff00
-	tmpl src pub.lic.ip.A dst pub.lic.ip.B
-		proto esp reqid 0 mode tunnel
-src 192.168.0.0/24 dst 172.20.8.0/24 
-	dir in priority 0 ptype main 
-	mark 12032/0xff00
-	tmpl src pub.lic.ip.A dst pub.lic.ip.B
-		proto esp reqid 0 mode tunnel
-src 172.20.8.0/24 dst 192.168.0.0/24 
-	dir out priority 0 ptype main 
-	mark 12032/0xff00
-	tmpl src pub.lic.ip.B dst pub.lic.ip.A
-		proto esp reqid 0 mode tunnel
-
---------------060402010203080008070907
-Content-Type: text/plain; charset=windows-1252;
- name="mangle.imap.txt"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="mangle.imap.txt"
-
-# ssh 192.168.0.231
-Chain OUTPUT (policy ACCEPT 25911 packets, 2907K bytes)
- pkts bytes target     prot opt in     out     source               destination         
-25911 2907K tcout      all  --  *      *       0.0.0.0/0            0.0.0.0/0           
-
-Chain tcout (1 references)
- pkts bytes target     prot opt in     out     source               destination         
-   17   944 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:143 /* mark imap packet */ MARK xset 0x2f00/0xff00
-   17   944 CONNMARK   tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:143 /* mark imap connection */ CONNMARK xset 0x2f00/0xff00
-   17   944 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:143 mark match 0x2f00/0xff00 /* count imap packet with mark */ MARK or 0x400000
-   17   944 MARK       tcp  --  *      *       172.20.8.3           192.168.0.231        tcp dpt:143 connmark match  0x2f00/0xff00 /* count imap packet with conn mark */ MARK or 0x400000
-   17  1848 MARK       esp  --  *      *       0.0.0.0/0            0.0.0.0/0            /* count any esp outflow */ MARK or 0x400000
-   17  1848 MARK       esp  --  *      *       0.0.0.0/0            pub.lic.ip.A         /* count esp outflow to partner */ MARK or 0x400000
-
---------------060402010203080008070907--
