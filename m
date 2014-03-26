@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756572AbaCZWf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:35:58 -0400
-Received: from mail.lang.hm ([64.81.33.126]:50442 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754569AbaCZWf4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:35:56 -0400
-Date: Wed, 26 Mar 2014 15:35:42 -0700 (PDT)
-From: David Lang <david@lang.hm>
-X-X-Sender: dlang@asgard.lang.hm
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Andres Freund <andres@2ndquadrant.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lsf@lists.linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>,
-        rhaas@anarazel.de
-Subject: Re: [Lsf] Postgresql performance problems with IO latency, especially
- during fsync()
-In-Reply-To: <CALCETrVEjpFpKhY6=CEG-9Prm=uBDLS936imb=+hyWN4fXPjtg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1403261532360.2190@nftneq.ynat.uz>
-References: <20140326191113.GF9066@alap3.anarazel.de> <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com> <20140326215518.GH9066@alap3.anarazel.de> <CALCETrVEjpFpKhY6=CEG-9Prm=uBDLS936imb=+hyWN4fXPjtg@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1756626AbaCZWgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:36:53 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:63801 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755910AbaCZWgv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 18:36:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <533330D6.3070808@biereigel.de>
+References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com>
+ <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com>
+ <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
+ <5331E5EB.5000304@biereigel-wb.de> <5331E9E4.4050201@gmail.com>
+ <5332099B.8090305@gmail.com> <5332AF10.90109@biereigel.de>
+ <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com> <533330D6.3070808@biereigel.de>
+From: Kieran Clancy <clancy.kieran@gmail.com>
+Date: Thu, 27 Mar 2014 09:06:20 +1030
+Message-ID: <CAGf84Q+HG-DspQWnza+JQE-bEki0oaJMiHQR5Y-2V97KDShf2Q@mail.gmail.com>
+Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
+ suspend to RAM.
+To: Stefan Biereigel <stefan@biereigel.de>
+Cc: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
+        Stefan Biereigel <security@biereigel-wb.de>,
+        Lan Tianyu <lantianyu1986@gmail.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
+        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
+        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014, Andy Lutomirski wrote:
+On Thu, Mar 27, 2014 at 6:26 AM, Stefan Biereigel <stefan@biereigel.de> wrote:
+> I tested both of your patches. The processing of events works well on my
+> N150, the lid is reported open correctly after resume.
+> For the second patch (the whitelisting-approach), I had to change the
+> Product Name to "N150/N210/N220" instead of "N150P", because that is
+> what dmidecode reports for my netbook.
 
->>> I'm not sure I understand the request queue stuff, but here's an idea.
->>>  The block core contains this little bit of code:
->>
->> I haven't read enough of the code yet, to comment intelligently ;)
->
-> My little patch doesn't seem to help.  I'm either changing the wrong
-> piece of code entirely or I'm penalizing readers and writers too much.
->
-> Hopefully some real block layer people can comment as to whether a
-> refinement of this idea could work.  The behavior I want is for
-> writeback to be limited to using a smallish fraction of the total
-> request queue size -- I think that writeback should be able to enqueue
-> enough requests to get decent sorting performance but not enough
-> requests to prevent the io scheduler from doing a good job on
-> non-writeback I/O.
+That was quick - thanks for testing!
 
-The thing is that if there are no reads that are waiting, why not use every bit 
-of disk I/O available to write? If you can do that reliably with only using part 
-of the queue, fine, but aren't you getting fairly close to just having separate 
-queues for reading and writing with such a restriction?
+For the product name match then, it matches substrings not whole
+strings, so "N150" should be sufficient (my mistake putting P on the
+end).
 
-> As an even more radical idea, what if there was a way to submit truly
-> enormous numbers of lightweight requests, such that the queue will
-> give the requester some kind of callback when the request is nearly
-> ready for submission so the requester can finish filling in the
-> request?  This would allow things like dm-crypt to get the benefit of
-> sorting without needing to encrypt hundreds of MB of data in advance
-> of having that data actually be to the backing device.  It might also
-> allow writeback to submit multiple gigabytes of writes, in arbitrarily
-> large pieces, but not to need to pin pages or do whatever expensive
-> things are needed until the IO actually happens.
+> So, all three approaches work equally well for me (whitelisting my
+> broken N150, blacklisting the broken Series 5/7/9, processing all the
+> stale events). I personally would prefer a solution which needs to
+> handle (best case) no custom cases, because there are always n+1 of
+> them. But, as I don't know if there may be any problems with the
+> approach that needs no special handling (processing all stale events) in
+> the future, I'm not the one to decide the correct solution.
 
-the problem with a callback is that you then need to wait for that source to get 
-the CPU and finish doing it's work. What happens if that takes long enough for 
-you to run out of data to write? And is it worth the extra context switches to 
-bounce around when the writing process was finished with that block already.
+I won't be able to test ec_clear_process patch until tomorrow because
+I have a full day today.
 
-David Lang
+On my machine, _QXX events are all something like:
 
-> For reference, here's my patch that doesn't work well:
->
-> diff --git a/block/blk-core.c b/block/blk-core.c
-> index 4cd5ffc..c0dedc3 100644
-> --- a/block/blk-core.c
-> +++ b/block/blk-core.c
-> @@ -941,11 +941,11 @@ static struct request *__get_request(struct request_list *
->        }
->
->        /*
-> -        * Only allow batching queuers to allocate up to 50% over the defined
-> -        * limit of requests, otherwise we could have thousands of requests
-> -        * allocated with any setting of ->nr_requests
-> +        * Only allow batching queuers to allocate up to 50% of the
-> +        * defined limit of requests, so that non-batching queuers can
-> +        * get into the queue and thus be scheduled properly.
->         */
-> -       if (rl->count[is_sync] >= (3 * q->nr_requests / 2))
-> +       if (rl->count[is_sync] >= (q->nr_requests + 3) / 4)
->                return NULL;
->
->        q->nr_rqs[is_sync]++;
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+if (AC_PLUGGED_IN) {
+    do_something();
+}
+
+So if (for example) AC_PLUGGED_IN has changed since the event was
+produced (e.g. no longer plugged in), nothing bad should happen.
+That's not necessarily a guarantee that this wouldn't introduce new
+bugs on other machines though.
+
+I think the ideal fix would be to distinguish between events which are
+"jammed" and won't be processed (like on Series 5/7/9), and events
+which will be processed normally with GPEs (N150). I am not sure how
+to do this or if it's even possible.
+
+For example, on my machine, the EC status byte (EC_SC) seems to be
+0x29 for jammed events, which means the SCI_EVT bit is set but we
+never got/get the interrupt. On your N150, your status byte was 0x09
+which means the SCI_EVT was not set - it was not yet asking for the OS
+to attend to this.
+
+I wonder if something as simple as this would work (in acpi_ec_clear):
+
+                if (!(acpi_ec_read_status(ec) & ACPI_EC_FLAG_SCI))
+                        break;
+                status = acpi_ec_query_unlocked(ec, &value);
+                if (status || !value)
+                        break;
+
+This would make it only clear events while the SCI_EVT bit is set. I
+am not sure that it would entirely remove the race condition you are
+seeing, but it might be enough to fix it.
+
+If we cant come up with a generally applicable solution, whitelisting
+is the lesser of two evils when compared with blacklisting here. A
+jammed EC won't function _at all_, while losing one or two EC events
+on boot/resume doesn't prevent future events and is easier to work
+around (though still not ideal).
+
+Regards,
+Kieran.
