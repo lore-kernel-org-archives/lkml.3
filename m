@@ -1,248 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756487AbaCZV64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:58:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754185AbaCZV6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:58:55 -0400
-Date: Wed, 26 Mar 2014 14:58:49 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH -mm 2/4] sl[au]b: charge slabs to memcg explicitly
-Message-ID: <20140326215848.GB22656@dhcp22.suse.cz>
-References: <cover.1395846845.git.vdavydov@parallels.com>
- <1d0196602182e5284f3289eaea0219e62a51d1c4.1395846845.git.vdavydov@parallels.com>
+	id S1756518AbaCZWAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:00:49 -0400
+Received: from www.linutronix.de ([62.245.132.108]:35093 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894AbaCZWAs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 18:00:48 -0400
+Date: Wed, 26 Mar 2014 23:00:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Greg KH <greg@kroah.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+In-Reply-To: <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.02.1403262248170.31401@ionos.tec.linutronix.de>
+References: <alpine.DEB.2.10.1403031526210.11945@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1403191300540.18754@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403201056020.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201045560.21603@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.02.1403201609540.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403201724430.23339@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403210956000.18573@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403211610430.30801@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.02.1403221118060.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403221419000.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403231613230.18573@ionos.tec.linutronix.de> <alpine.DEB.2.02.1403240017430.18573@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403251702110.19541@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.02.1403252220110.4094@ionos.tec.linutronix.de> <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1d0196602182e5284f3289eaea0219e62a51d1c4.1395846845.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323329-46563982-1395871256=:31401"
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 19:28:05, Vladimir Davydov wrote:
-> We have only a few places where we actually want to charge kmem so
-> instead of intruding into the general page allocation path with
-> __GFP_KMEMCG it's better to explictly charge kmem there. All kmem
-> charges will be easier to follow that way.
-> 
-> This is a step towards removing __GFP_KMEMCG. It removes __GFP_KMEMCG
-> from memcg caches' allocflags. Instead it makes slab allocation path
-> call memcg_charge_kmem directly getting memcg to charge from the cache's
-> memcg params.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Yes, removing __GFP_KMEMCG is definitely a good step. I am currently at
-a conference and do not have much time to review this properly (even
-worse will be on vacation for the next 2 weeks) but where did all the
-static_key optimization go? What am I missing.
+--8323329-46563982-1395871256=:31401
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> ---
->  include/linux/memcontrol.h |   24 +++++++++++++-----------
->  mm/memcontrol.c            |   15 +++++++++++++++
->  mm/slab.c                  |    7 ++++++-
->  mm/slab_common.c           |    6 +-----
->  mm/slub.c                  |   24 +++++++++++++++++-------
->  5 files changed, 52 insertions(+), 24 deletions(-)
+On Wed, 26 Mar 2014, Vince Weaver wrote:
+> On Tue, 25 Mar 2014, Thomas Gleixner wrote:
+> > Do you happen to have the full bootlog up to the crash handy?
 > 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index e9dfcdad24c5..b8aaecc25cbf 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -512,6 +512,9 @@ void memcg_update_array_size(int num_groups);
->  struct kmem_cache *
->  __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
->  
-> +int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order);
-> +void memcg_uncharge_slab(struct kmem_cache *s, int order);
-> +
->  void mem_cgroup_destroy_cache(struct kmem_cache *cachep);
->  int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
->  
-> @@ -589,17 +592,7 @@ memcg_kmem_commit_charge(struct page *page, struct mem_cgroup *memcg, int order)
->   * @cachep: the original global kmem cache
->   * @gfp: allocation flags.
->   *
-> - * This function assumes that the task allocating, which determines the memcg
-> - * in the page allocator, belongs to the same cgroup throughout the whole
-> - * process.  Misacounting can happen if the task calls memcg_kmem_get_cache()
-> - * while belonging to a cgroup, and later on changes. This is considered
-> - * acceptable, and should only happen upon task migration.
-> - *
-> - * Before the cache is created by the memcg core, there is also a possible
-> - * imbalance: the task belongs to a memcg, but the cache being allocated from
-> - * is the global cache, since the child cache is not yet guaranteed to be
-> - * ready. This case is also fine, since in this case the GFP_KMEMCG will not be
-> - * passed and the page allocator will not attempt any cgroup accounting.
-> + * All memory allocated from a per-memcg cache is charged to the owner memcg.
->   */
->  static __always_inline struct kmem_cache *
->  memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
-> @@ -667,6 +660,15 @@ memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
->  {
->  	return cachep;
->  }
-> +
-> +static inline int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order)
-> +{
-> +	return 0;
-> +}
-> +
-> +static inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
-> +{
-> +}
->  #endif /* CONFIG_MEMCG_KMEM */
->  #endif /* _LINUX_MEMCONTROL_H */
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 81a162d01d4d..9bbc088e3107 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3506,6 +3506,21 @@ out:
->  }
->  EXPORT_SYMBOL(__memcg_kmem_get_cache);
->  
-> +int memcg_charge_slab(struct kmem_cache *s, gfp_t gfp, int order)
-> +{
-> +	if (is_root_cache(s))
-> +		return 0;
-> +	return memcg_charge_kmem(s->memcg_params->memcg, gfp,
-> +				 PAGE_SIZE << order);
-> +}
-> +
-> +void memcg_uncharge_slab(struct kmem_cache *s, int order)
-> +{
-> +	if (is_root_cache(s))
-> +		return;
-> +	memcg_uncharge_kmem(s->memcg_params->memcg, PAGE_SIZE << order);
-> +}
-> +
->  /*
->   * We need to verify if the allocation against current->mm->owner's memcg is
->   * possible for the given order. But the page is not allocated yet, so we'll
-> diff --git a/mm/slab.c b/mm/slab.c
-> index eebc619ae33c..af126a37dafd 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -1664,8 +1664,12 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
->  	if (cachep->flags & SLAB_RECLAIM_ACCOUNT)
->  		flags |= __GFP_RECLAIMABLE;
->  
-> +	if (memcg_charge_slab(cachep, flags, cachep->gfporder))
-> +		return NULL;
-> +
->  	page = alloc_pages_exact_node(nodeid, flags | __GFP_NOTRACK, cachep->gfporder);
->  	if (!page) {
-> +		memcg_uncharge_slab(cachep, cachep->gfporder);
->  		if (!(flags & __GFP_NOWARN) && printk_ratelimit())
->  			slab_out_of_memory(cachep, flags, nodeid);
->  		return NULL;
-> @@ -1724,7 +1728,8 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
->  	memcg_release_pages(cachep, cachep->gfporder);
->  	if (current->reclaim_state)
->  		current->reclaim_state->reclaimed_slab += nr_freed;
-> -	__free_memcg_kmem_pages(page, cachep->gfporder);
-> +	__free_pages(page, cachep->gfporder);
-> +	memcg_uncharge_slab(cachep, cachep->gfporder);
->  }
->  
->  static void kmem_rcu_free(struct rcu_head *head)
-> diff --git a/mm/slab_common.c b/mm/slab_common.c
-> index f3cfccf76dda..6673597ac967 100644
-> --- a/mm/slab_common.c
-> +++ b/mm/slab_common.c
-> @@ -290,12 +290,8 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
->  				 root_cache->size, root_cache->align,
->  				 root_cache->flags, root_cache->ctor,
->  				 memcg, root_cache);
-> -	if (IS_ERR(s)) {
-> +	if (IS_ERR(s))
->  		kfree(cache_name);
-> -		goto out_unlock;
-> -	}
-> -
-> -	s->allocflags |= __GFP_KMEMCG;
->  
->  out_unlock:
->  	mutex_unlock(&slab_mutex);
-> diff --git a/mm/slub.c b/mm/slub.c
-> index c2e58a787443..6fefe3b33ce0 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -1317,17 +1317,26 @@ static inline void slab_free_hook(struct kmem_cache *s, void *x)
->  /*
->   * Slab allocation and freeing
->   */
-> -static inline struct page *alloc_slab_page(gfp_t flags, int node,
-> -					struct kmem_cache_order_objects oo)
-> +static inline struct page *alloc_slab_page(struct kmem_cache *s,
-> +		gfp_t flags, int node, struct kmem_cache_order_objects oo)
->  {
-> +	struct page *page;
->  	int order = oo_order(oo);
->  
->  	flags |= __GFP_NOTRACK;
->  
-> +	if (memcg_charge_slab(s, flags, order))
-> +		return NULL;
-> +
->  	if (node == NUMA_NO_NODE)
-> -		return alloc_pages(flags, order);
-> +		page = alloc_pages(flags, order);
->  	else
-> -		return alloc_pages_exact_node(node, flags, order);
-> +		page = alloc_pages_exact_node(node, flags, order);
-> +
-> +	if (!page)
-> +		memcg_uncharge_slab(s, order);
-> +
-> +	return page;
->  }
->  
->  static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
-> @@ -1349,7 +1358,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  	 */
->  	alloc_gfp = (flags | __GFP_NOWARN | __GFP_NORETRY) & ~__GFP_NOFAIL;
->  
-> -	page = alloc_slab_page(alloc_gfp, node, oo);
-> +	page = alloc_slab_page(s, alloc_gfp, node, oo);
->  	if (unlikely(!page)) {
->  		oo = s->min;
->  		alloc_gfp = flags;
-> @@ -1357,7 +1366,7 @@ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
->  		 * Allocation may have failed due to fragmentation.
->  		 * Try a lower order alloc if possible
->  		 */
-> -		page = alloc_slab_page(alloc_gfp, node, oo);
-> +		page = alloc_slab_page(s, alloc_gfp, node, oo);
->  
->  		if (page)
->  			stat(s, ORDER_FALLBACK);
-> @@ -1473,7 +1482,8 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
->  	page_mapcount_reset(page);
->  	if (current->reclaim_state)
->  		current->reclaim_state->reclaimed_slab += pages;
-> -	__free_memcg_kmem_pages(page, order);
-> +	__free_pages(page, order);
-> +	memcg_uncharge_slab(s, order);
->  }
->  
->  #define need_reserve_slab_rcu						\
-> -- 
-> 1.7.10.4
-> 
+> attached is the full bootlog followed by the tracedump.
 
--- 
-Michal Hocko
-SUSE Labs
+Ok. So we know now what we are looking for.
+
+[    1.579996] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+ÿ[    1.607279] 00:09: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+[    1.615032] kobject: 'ttyS1' (ffff88011772ac10): kobject_release, parent           (null) (delayed 250)
+[    1.624534] kobject: '(null)' (ffff8801177400f0): kobject_release, parent           (null) (delayed 500)
+[    1.654213] 0000:00:16.3: ttyS1 at I/O 0xf0e0 (irq = 19, base_baud = 115200) is a 16550A
+
+[    3.294047] Invalid timer base: tmr ffff880117740150 tmr->base           (null) base ffff880118898000
+
+1634110us : obj: ffff880117740130 initialized kobject_delayed_cleanup+0x0/0x90
+
+So that happens in the context of the 8250 serial driver.
+ 
+> > Adding "initcall_debug" to the kernel command line might give us a
+> > further hint what is adding the delayed_work, but I guess once we see
+> > the function in the trace we have a good chance to find the place
+> > right away. Then we have to figure out what scribbles over it .....
+> 
+> I haven't tried the initcall_debug yet but can if needed.
+
+Below is a patch which gives us the call path of the unnamed object
+which causes the crash.
+
+Greg???
+
+Thanks,
+
+	tglx
+
+---
+ lib/kobject.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+Index: linux-2.6/lib/kobject.c
+===================================================================
+--- linux-2.6.orig/lib/kobject.c
++++ linux-2.6/lib/kobject.c
+@@ -645,6 +645,9 @@ static void kobject_release(struct kref
+ 	struct kobject *kobj = container_of(kref, struct kobject, kref);
+ #ifdef CONFIG_DEBUG_KOBJECT_RELEASE
+ 	unsigned long delay = HZ + HZ * (get_random_int() & 0x3);
++
++	WARN_ON(!kobject_name(kobj));
++
+ 	pr_info("kobject: '%s' (%p): %s, parent %p (delayed %ld)\n",
+ 		 kobject_name(kobj), kobj, __func__, kobj->parent, delay);
+ 	INIT_DELAYED_WORK(&kobj->release, kobject_delayed_cleanup);
+--8323329-46563982-1395871256=:31401--
