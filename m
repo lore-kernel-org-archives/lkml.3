@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756275AbaCZUHG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:07:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41451 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaCZUHC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:07:02 -0400
-Message-ID: <53333365.6010407@infradead.org>
-Date: Wed, 26 Mar 2014 13:07:01 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756291AbaCZUJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:09:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9706 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755967AbaCZUJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 16:09:29 -0400
+Date: Wed, 26 Mar 2014 16:09:22 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netdev@vger.kernel.org,
+        eparis@redhat.com, sgrubb@redhat.com, hadi@mojatatu.com
+Subject: v6 superceded it [was: Re: [PATCH][v5] netlink: have netlink
+ per-protocol bind function return an error code.]
+Message-ID: <20140326200922.GK28666@madcap2.tricolour.ca>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+ <5bf7c2b8ad25b31bb34ae00f5fe6ec7f5d653f4b.1395693533.git.rgb@redhat.com>
+ <20140326.155258.685120737486107362.davem@davemloft.net>
 MIME-Version: 1.0
-To: paulmcquad <paulmcquad@gmail.com>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Doc: email-clients.txt:added thunderbird settings
-References: <53332374.3000703@gmail.com>
-In-Reply-To: <53332374.3000703@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326.155258.685120737486107362.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 11:59 AM, paulmcquad wrote:
-> From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
-> From: Paul McQuade <paulmcquad@gmail.com>
-> Date: Tue, 25 Mar 2014 20:16:47 +0000
-> Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
+On 14/03/26, David Miller wrote:
+> From: Richard Guy Briggs <rgb@redhat.com>
+> Date: Mon, 24 Mar 2014 16:59:23 -0400
 > 
-> Added setting to email-clients that is easier to read
-> and is easier to setup thunderbird. Removed config settings
-> and added GUI settings.
+> > +				if (err)
+> > +					if (!nlk->portid)
+> > +						netlink_remove(sk);
+> > +					for (int undo = 0; undo < i; undo++)
+> > +						if (nlk->netlink_unbind)
+> > +							nlk->netlink_unbind(undo);
+> > +					return err;
 > 
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  Documentation/email-clients.txt | 15 +++++----------
->  1 file changed, 5 insertions(+), 10 deletions(-)
+> Take a good long stare at that code block for a while.
 > 
-> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
-> index e9f5dac..1e7c171 100644
-> --- a/Documentation/email-clients.txt
-> +++ b/Documentation/email-clients.txt
-> @@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
->  
->  - Edit your Thunderbird config settings so that it won't use format=flowed.
->    Go to "edit->preferences->advanced->config editor" to bring up the
-> -  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
-> -  "false".
-> +  thunderbird's registry editor.
->  
-> -- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
+> Looks like you forgot the braces to delineate the code block.
 
-Did that option go away?  We don't want to compose html email.
+Did you notice all the attempts to send a corrected patch?  v6 finally
+got it right (sent Monday).  Sorry for all the noise.  Serve me right
+for not sitting on my hands before sending the email for a bit while I
+checked it.
 
-> +- Set "mailnews.send_plaintext_flowed" to "false"
->  
-> -- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
-> +- Set "mailnews.wraplength" from "72" to "90"
+> This also means you really haven't tested this patch :-)
 
-Can wraplength be disabled completely?  It would be better to disable
-wrapping.  Long kernel source code lines should not get broken.
-(or am I addressing the wrong option?)
+It was tested, but the patched code wasn't actually checked in.  It was
+still in my tree.  I ran "git commit --amend" more than once, forgetting
+the "-a", and didn't carefully enough inspect the resulting patch.
 
->  
-> -- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
-> +- "View" > "Message Body As" > "Plain Text"
->  
-> -- Install the "toggle wordwrap" extension.  Download the file from:
-> -    https://addons.mozilla.org/thunderbird/addon/2351/
-> -  Then go to "tools->add ons", select "install" at the bottom of the screen,
-> -  and browse to where you saved the .xul file.  This adds an "Enable
-> -  Wordwrap" entry under the Options menu of the message composer.
-> +- "View" > "Character Encoding" > "Unicode (UTF-8)"
->  
->  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
->  TkRat (GUI)
-> 
+> Please also DO NOT declare local variables in a for() statement,
+> this is not c++.
 
+It is above the for now (also in v6).
 
--- 
-~Randy
+- RGB
+
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
