@@ -1,107 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726AbaCZXL1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 19:11:27 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:45683 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756545AbaCZXLY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 19:11:24 -0400
+	id S1756473AbaCZXSp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 19:18:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47087 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751683AbaCZXSo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 19:18:44 -0400
+Message-ID: <53336049.4060901@redhat.com>
+Date: Thu, 27 Mar 2014 00:18:33 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1403261532360.2190@nftneq.ynat.uz>
-References: <20140326191113.GF9066@alap3.anarazel.de> <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com>
- <20140326215518.GH9066@alap3.anarazel.de> <CALCETrVEjpFpKhY6=CEG-9Prm=uBDLS936imb=+hyWN4fXPjtg@mail.gmail.com>
- <alpine.DEB.2.02.1403261532360.2190@nftneq.ynat.uz>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 26 Mar 2014 16:11:02 -0700
-Message-ID: <CALCETrVoiFV29P9OfsdQgN7eon6JepCnkPGTCzaAotgUa2NexA@mail.gmail.com>
-Subject: Re: [Lsf] Postgresql performance problems with IO latency, especially
- during fsync()
-To: David Lang <david@lang.hm>
-Cc: Andres Freund <andres@2ndquadrant.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lsf@lists.linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>,
-        rhaas@anarazel.de
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: davem@davemloft.net, hannes@stressinduktion.org, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH] random32: avoid attempt to late reseed if in the middle
+ of seeding
+References: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 3:35 PM, David Lang <david@lang.hm> wrote:
-> On Wed, 26 Mar 2014, Andy Lutomirski wrote:
+On 03/26/2014 06:12 PM, Sasha Levin wrote:
+> Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
+> nonblocking pool becomes initialized") has added a late reseed stage
+> that happens as soon as the nonblocking pool is marked as initialized.
 >
->>>> I'm not sure I understand the request queue stuff, but here's an idea.
->>>>  The block core contains this little bit of code:
->>>
->>>
->>> I haven't read enough of the code yet, to comment intelligently ;)
->>
->>
->> My little patch doesn't seem to help.  I'm either changing the wrong
->> piece of code entirely or I'm penalizing readers and writers too much.
->>
->> Hopefully some real block layer people can comment as to whether a
->> refinement of this idea could work.  The behavior I want is for
->> writeback to be limited to using a smallish fraction of the total
->> request queue size -- I think that writeback should be able to enqueue
->> enough requests to get decent sorting performance but not enough
->> requests to prevent the io scheduler from doing a good job on
->> non-writeback I/O.
+> This fails in the case that the nonblocking pool gets initialized
+> during __prandom_reseed()'s call to get_random_bytes(). In that case
+> we'd double back into __prandom_reseed() in an attempt to do a late
+> reseed - deadlocking on 'lock' early on in the boot process.
+>
+> Instead, just avoid even waiting to do a reseed if a reseed is already
+> occuring.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+
+Thanks for catching! (If you want Dave to pick it up, please also
+Cc netdev.)
+
+Why not via spin_trylock_irqsave() ? Thus, if we already hold the
+lock, we do not bother any longer with doing the same work twice
+and just return.
+
+I.e. like:
+
+static void __prandom_reseed(bool late)
+{
+     int i;
+     unsigned long flags;
+     static bool latch = false;
+     static DEFINE_SPINLOCK(lock);
+
+     /* Asking for random bytes might result in bytes getting
+      * moved into the nonblocking pool and thus marking it
+      * as initialized. In this case we would double back into
+      * this function and attempt to do a late reseed.
+      * Ignore the pointless attempt to reseed again if we're
+      * already waiting for bytes when the nonblocking pool
+      * got initialized.
+      */
+
+     /* only allow initial seeding (late == false) once */
+     if (!spin_trylock_irqsave(&lock, flags))
+         return;
+
+     if (latch && !late)
+         goto out;
+
+     latch = true;
+
+     for_each_possible_cpu(i) {
+         struct rnd_state *state = &per_cpu(net_rand_state,i);
+         u32 seeds[4];
+
+         get_random_bytes(&seeds, sizeof(seeds));
+         state->s1 = __seed(seeds[0],   2U);
+         state->s2 = __seed(seeds[1],   8U);
+         state->s3 = __seed(seeds[2],  16U);
+         state->s4 = __seed(seeds[3], 128U);
+
+         prandom_warmup(state);
+     }
+out:
+     spin_unlock_irqrestore(&lock, flags);
+}
+
+> ---
+>   lib/random32.c | 16 +++++++++++++++-
+>   1 file changed, 15 insertions(+), 1 deletion(-)
+>
+> diff --git a/lib/random32.c b/lib/random32.c
+> index 1e5b2df..b59da12 100644
+> --- a/lib/random32.c
+> +++ b/lib/random32.c
+> @@ -241,14 +241,27 @@ static void __prandom_reseed(bool late)
+>   {
+>   	int i;
+>   	unsigned long flags;
+> -	static bool latch = false;
+> +	static bool latch = false, reseeding = false;
+>   	static DEFINE_SPINLOCK(lock);
+>
+> +	/*
+> +	 * Asking for random bytes might result in bytes getting
+> +	 * moved into the nonblocking pool and thus marking it
+> +	 * as initialized. In this case we would double back into
+> +	 * this function and attempt to do a late reseed.
+> +	 * Ignore the pointless attempt to reseed again if we're
+> +	 * already waiting for bytes when the nonblocking pool
+> +	 * got initialized
+> +	 */
+> +	if (reseeding)
+> +		return;
+> +
+>   	/* only allow initial seeding (late == false) once */
+>   	spin_lock_irqsave(&lock, flags);
+>   	if (latch && !late)
+>   		goto out;
+>   	latch = true;
+> +	reseeding = true;
+>
+>   	for_each_possible_cpu(i) {
+>   		struct rnd_state *state = &per_cpu(net_rand_state,i);
+> @@ -263,6 +276,7 @@ static void __prandom_reseed(bool late)
+>   		prandom_warmup(state);
+>   	}
+>   out:
+> +	reseeding = false;
+>   	spin_unlock_irqrestore(&lock, flags);
+>   }
 >
 >
-> The thing is that if there are no reads that are waiting, why not use every
-> bit of disk I/O available to write? If you can do that reliably with only
-> using part of the queue, fine, but aren't you getting fairly close to just
-> having separate queues for reading and writing with such a restriction?
->
-
-Hmm.
-
-I wonder what the actual effect of queue length is on throughput.  I
-suspect that using half the queue gives you well over half the
-throughput as long as the queue isn't tiny.
-
-I'm not so sure I'd go so far as having separate reader and writer
-queues -- I think that small synchronous writes should also not get
-stuck behind large writeback storms, but maybe that's something that
-can be a secondary goal.  That being said, separate reader and writer
-queues might solve the immediate problem.  It won't help for the case
-where a small fsync blocks behind writeback, though, and that seems to
-be a very common cause of Firefox freezing on my system.
-
-Is there an easy way to do a proof-of-concept?  It would be great if
-there was a ten-line patch that implemented something like this
-correctly enough to see if it helps.  I don't think I'm the right
-person to do it, because my knowledge of the block layer code is
-essentially nil.
-
->
->> As an even more radical idea, what if there was a way to submit truly
->> enormous numbers of lightweight requests, such that the queue will
->> give the requester some kind of callback when the request is nearly
->> ready for submission so the requester can finish filling in the
->> request?  This would allow things like dm-crypt to get the benefit of
->> sorting without needing to encrypt hundreds of MB of data in advance
->> of having that data actually be to the backing device.  It might also
->> allow writeback to submit multiple gigabytes of writes, in arbitrarily
->> large pieces, but not to need to pin pages or do whatever expensive
->> things are needed until the IO actually happens.
->
->
-> the problem with a callback is that you then need to wait for that source to
-> get the CPU and finish doing it's work. What happens if that takes long
-> enough for you to run out of data to write? And is it worth the extra
-> context switches to bounce around when the writing process was finished with
-> that block already.
-
-dm-crypt is so context-switch heavy that I doubt the context switches
-matter.  And you'd need to give the callback early enough that there's
-a very good chance that the callback will finish in time.  There might
-even need to be a way to let other non-callback-dependent IO pass by
-the callback-dependent stuff, although in the particular case of
-dm-crypt, dm-crypt is pretty much the only source of writes.  (Reads
-don't have this problem for dm-crypt, I think.)
-
---Andy
