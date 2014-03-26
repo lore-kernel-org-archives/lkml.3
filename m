@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754084AbaCZE2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 00:28:07 -0400
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:33393 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaCZE2F (ORCPT
+	id S1751602AbaCZEeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 00:34:24 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:54030 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaCZEeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 00:28:05 -0400
+	Wed, 26 Mar 2014 00:34:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <1395650554-31925-13-git-send-email-acourbot@nvidia.com>
+In-Reply-To: <20140324231014.GI17218@mithrandir>
 References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
-	<1395650554-31925-13-git-send-email-acourbot@nvidia.com>
-Date: Wed, 26 Mar 2014 14:28:04 +1000
-Message-ID: <CACAvsv561r73CmL0rf_bvM9JVMV+E7J_VT3ZDuwyCxviJBa8Cw@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH 12/12] drm/nouveau: support for probing GK20A
+	<1395650554-31925-12-git-send-email-acourbot@nvidia.com>
+	<20140324231014.GI17218@mithrandir>
+Date: Wed, 26 Mar 2014 14:27:20 +1000
+Message-ID: <CACAvsv4FHqwAF6FOaMF1sQLwAfBOd6uFgsZ+VdwCHoR4qsVbVw@mail.gmail.com>
+Subject: Re: [PATCH 11/12] drm/nouveau: support GK20A in nouveau_accel_init()
 From: Ben Skeggs <skeggsb@gmail.com>
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Ben Skeggs <bskeggs@redhat.com>,
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
         "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
         "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 6:42 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> Set the correct subdev/engine classes when GK20A (0xea) is probed.
+On Tue, Mar 25, 2014 at 9:10 AM, Thierry Reding
+<thierry.reding@gmail.com> wrote:
+> On Mon, Mar 24, 2014 at 05:42:33PM +0900, Alexandre Courbot wrote:
+>> GK20A does not embed a dedicated COPY engine and thus cannot allocate
+>> the copy channel that nouveau_accel_init() attempts to create. It also
+>> lacks any display hardware, so the creation of a software channel does
+>> not apply neither.
 >
-> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
->  drivers/gpu/drm/nouveau/core/engine/device/nve0.c | 20 ++++++++++++++++++++
->  1 file changed, 20 insertions(+)
+> Perhaps this should be two separate patches?
 >
-> diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-> index 987edbc30a09..8509dd57de1f 100644
-> --- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-> +++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-> @@ -156,6 +156,26 @@ nve0_identify(struct nouveau_device *device)
->                 device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
->                 device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
->                 break;
-> +       case 0xea:
-> +               device->cname = "GK20A";
-> +               device->oclass[NVDEV_SUBDEV_MC     ] =  nvc3_mc_oclass;
-> +               device->oclass[NVDEV_SUBDEV_BUS    ] =  nvc0_bus_oclass;
-> +               device->oclass[NVDEV_SUBDEV_TIMER  ] = &nv04_timer_oclass;
-As per note on the PTIMER patch, can just switch this to
-"gk20a_timer_oclass" on the latest code.
+>> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+> [...]
+>> +     if (device->chipset == 0xea) {
+>> +             /* gk20a does not have CE0/CE1 */
+>
+> This would be another good candidate for a feature flag.
+There are ways to query this in a chipset-independent way.  However,
+despite reporting it as an error if no copy engines are available, the
+code should continue on without the channel happily.  Perhaps we can
+just punt the relevent error messages to a debug loglevel for now?
 
-> +               device->oclass[NVDEV_SUBDEV_FB     ] =  nvea_fb_oclass;
-> +               device->oclass[NVDEV_SUBDEV_IBUS   ] = &nvea_ibus_oclass;
-> +               device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
-> +               device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
-> +               device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
-> +               device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
-> +               device->oclass[NVDEV_ENGINE_FIFO   ] =  nvea_fifo_oclass;
-> +               /* TODO will need an implementation for this at some point... */
-> +#if 0
-> +               device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
-> +#endif
-> +               device->oclass[NVDEV_ENGINE_GR     ] =  nvea_graph_oclass;
-> +               device->oclass[NVDEV_ENGINE_COPY2  ] = &nve0_copy2_oclass;
-> +               device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
-> +               break;
->         case 0xf0:
->                 device->cname = "GK110";
->                 device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
-> --
-> 1.9.1
+>
+>> +             arg0 = NVE0_CHANNEL_IND_ENGINE_GR;
+>> +             arg1 = 1;
+>> +     } else
+>>       if (device->card_type >= NV_E0) {
+>
+> The formatting here is somewhat weird. From a brief look I couldn't find
+> any indication that nouveau deviates from the standard coding style, so
+> this should be:
+>
+>         } else if (...) {
+I use the former in a few places, despite it not entirely being
+"correct".. It looks nicer though :)  I don't mind either way though.
+
+>
+>> +     /* Need to figure out how to handle sw for gk20a */
+>> +     if (device->chipset == 0xea)
+>> +             goto skip_sw_init;
+>
+> The commit message makes it sound like SW isn't needed since gk20a
+> "lacks any display hardware". In that case the comment here doesn't make
+> much sense.
+>
+> Thierry
 >
 > _______________________________________________
-> Nouveau mailing list
-> Nouveau@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/nouveau
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
