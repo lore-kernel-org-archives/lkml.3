@@ -1,74 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195AbaCZQko (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:40:44 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:40837 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932125AbaCZQki (ORCPT
+	id S1755996AbaCZQln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:41:43 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43095 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932129AbaCZQkT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:40:38 -0400
-Date: Wed, 26 Mar 2014 17:40:28 +0100
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mm: remove unused arg of set_page_dirty_balance()
-Message-ID: <20140326164028.GA10187@tucsk.piliscsaba.szeredi.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Mar 2014 12:40:19 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, angus.clark@st.com,
+        Christophe Kerello <christophe.kerello@st.com>
+Subject: [PATCH 14/15] mtd: st_spi_fsm: Provide mask to obtain correct boot device pins
+Date: Wed, 26 Mar 2014 16:39:28 +0000
+Message-Id: <1395851969-13520-15-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
+References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+From: Christophe Kerello <christophe.kerello@st.com>
 
-There's only one caller of set_page_dirty_balance() and that will call it
-with page_mkwrite == 0.
+This patch adds a mask to be able to get the right boot device selection.
 
-The page_mkwrite argument was unused since commit b827e496c893 "mm: close
-page_mkwrite races".
+For example:
+    for STiH415, value = SYSTEM_STATUS398[4:0]
+    for STiH416, value = SYSTEM_STATUS2598[4:0]
+    for STiH407, value = SYSTEM_STATUS5561[6:2]
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+Signed-off-by: Christophe Kerello <christophe.kerello@st.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/linux/writeback.h |    2 +-
- mm/memory.c               |    2 +-
- mm/page-writeback.c       |    4 ++--
- 3 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/mtd/devices/st_spi_fsm.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -178,7 +178,7 @@ int write_cache_pages(struct address_spa
- 		      struct writeback_control *wbc, writepage_t writepage,
- 		      void *data);
- int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
--void set_page_dirty_balance(struct page *page, int page_mkwrite);
-+void set_page_dirty_balance(struct page *page);
- void writeback_set_ratelimit(void);
- void tag_pages_for_writeback(struct address_space *mapping,
- 			     pgoff_t start, pgoff_t end);
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2752,7 +2752,7 @@ static int do_wp_page(struct mm_struct *
- 		 */
- 		if (!page_mkwrite) {
- 			wait_on_page_locked(dirty_page);
--			set_page_dirty_balance(dirty_page, page_mkwrite);
-+			set_page_dirty_balance(dirty_page);
- 			/* file_update_time outside page_lock */
- 			if (vma->vm_file)
- 				file_update_time(vma->vm_file);
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1562,9 +1562,9 @@ static void balance_dirty_pages(struct a
- 		bdi_start_background_writeback(bdi);
- }
+diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+index 9e00173..3ab27c8 100644
+--- a/drivers/mtd/devices/st_spi_fsm.c
++++ b/drivers/mtd/devices/st_spi_fsm.c
+@@ -2159,6 +2159,7 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+ 	struct regmap *regmap;
+ 	uint32_t boot_device_reg;
+ 	uint32_t boot_device_spi;
++	uint32_t boot_device_msk;
+ 	uint32_t boot_device;     /* Value we read from *boot_device_reg */
+ 	int ret;
  
--void set_page_dirty_balance(struct page *page, int page_mkwrite)
-+void set_page_dirty_balance(struct page *page)
- {
--	if (set_page_dirty(page) || page_mkwrite) {
-+	if (set_page_dirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
+@@ -2183,10 +2184,17 @@ static void stfsm_fetch_platform_configs(struct platform_device *pdev)
+ 	if (ret)
+ 		goto boot_device_fail;
  
- 		if (mapping)
++	/* Mask to apply on boot_device_reg */
++	ret = of_property_read_u32(np, "st,boot-device-msk", &boot_device_msk);
++	if (ret)
++		goto boot_device_fail;
++
+ 	ret = regmap_read(regmap, boot_device_reg, &boot_device);
+ 	if (ret)
+ 		goto boot_device_fail;
+ 
++	boot_device &= boot_device_msk;
++
+ 	if (boot_device != boot_device_spi)
+ 		fsm->booted_from_spi = false;
+ 
+-- 
+1.8.3.2
+
