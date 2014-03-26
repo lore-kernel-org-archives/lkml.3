@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaCZMAk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 08:00:40 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:42584 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751674AbaCZMAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 08:00:38 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Nicolin Chen'" <Guangyu.Chen@freescale.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
-Thread-Topic: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
-Thread-Index: AQHPSOkyMNLV7/nE7kymG92arvGYT5rzQwIQ
-Date: Wed, 26 Mar 2014 11:59:53 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E958E@AcuExch.aculab.com>
-References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
-In-Reply-To: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1754285AbaCZMBu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 08:01:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52702 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754083AbaCZMBt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 08:01:49 -0400
+Message-ID: <5332C1A8.8040307@free-electrons.com>
+Date: Wed, 26 Mar 2014 13:01:44 +0100
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/14] ARM: mvebu: Extend the pmsu registers
+References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com> <1395787705-31061-8-git-send-email-gregory.clement@free-electrons.com> <5332C267.3080908@gmail.com>
+In-Reply-To: <5332C267.3080908@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2QC0qWp029166
 
-From: Nicolin Chen
-> It's quite cricial to clear error flags because SAI might hang if getting
-> FIFO underrun during playback (I haven't confirmed the same issue on Rx
-> overflow though).
+On 26/03/2014 13:04, Sebastian Hesselbarth wrote:
+> On 03/25/2014 11:48 PM, Gregory CLEMENT wrote:
+>> The initial binding for PMSU were wrong. It didn't take into account
+>> all the registers from the PMSU and moreover it referred to registers
+>> which are not part of PMSU.
+>>
+>> The Power Management Unit Service block also controls the Coherency
+>> Fabric subsystem. These registers are needed for the CPU idle
+>> implementation for the Armada 370/XP, it allows to enter a deep CPU
+>> idle state where the Coherency Fabric and the L2 cache are powered
+>> down.
+>>
+>> This commit add support for a new compatible for the PMSU node
+>> including the block related to the coherency fabric. It also keeps
+>> compatibility with the old binding
+>>
+>> This patch also adds warnings if one of the base registers set can't
+>> be ioremapped.
+>>
+>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+>> ---
+>>   arch/arm/mach-mvebu/pmsu.c | 47 +++++++++++++++++++++++++++++++++++++++++-----
+>>   1 file changed, 42 insertions(+), 5 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+>> index d71ef53107c4..865bcb651e01 100644
+>> --- a/arch/arm/mach-mvebu/pmsu.c
+>> +++ b/arch/arm/mach-mvebu/pmsu.c
+> [...]
+>> +static void __init armada_370_xp_pmsu_legacy_init(struct device_node *np)
+>> +{
+>> +	u32 addr;
+>> +	pr_warn("*** Warning ***  Using an old binding which will be deprecated\n");
+>> +	/* We just need the adress, we already know the size */
+>> +	addr = be32_to_cpu(*of_get_address(np, 0, NULL, NULL));
+>> +	addr -= PMSU_BASE_OFFSET;
+>> +	pmsu_mp_base = ioremap(addr, PMSU_REG_SIZE);
+>> +	of_node_put(np);
 > 
-> So this patch enables those irq and adds isr() to clear the flags so as to
-> keep playback entirely safe.
+> When messing with OF passed resources, I suggest to use
+> of_address_to_resource() and work on the struct resource
+> instead. The be32_to_cpu pointing to an immediate just looks
+> strange.
+
+Actually it was taken from of_address_to_resource()! As I didn't need
+the size I have just took the usefull part for my need.
+
 > 
-> Signed-off-by: Nicolin Chen <Guangyu.Chen@freescale.com>
-> ---
->  sound/soc/fsl/fsl_sai.c | 69 ++++++++++++++++++++++++++++++++++++++++++++++---
->  sound/soc/fsl/fsl_sai.h |  9 +++++++
->  2 files changed, 75 insertions(+), 3 deletions(-)
+> Sebastian
 > 
-> diff --git a/sound/soc/fsl/fsl_sai.c b/sound/soc/fsl/fsl_sai.c
-> index c4a4231..5f91aff 100644
-> --- a/sound/soc/fsl/fsl_sai.c
-> +++ b/sound/soc/fsl/fsl_sai.c
-> @@ -23,6 +23,55 @@
-> 
->  #include "fsl_sai.h"
-> 
-> +#define FSL_SAI_FLAGS (FSL_SAI_CSR_SEIE |\
-> +		       FSL_SAI_CSR_FEIE |\
-> +		       FSL_SAI_CSR_FWIE)
-> +
-> +static irqreturn_t fsl_sai_isr(int irq, void *devid)
-> +{
-> +	struct fsl_sai *sai = (struct fsl_sai *)devid;
-> +	struct device *dev = &sai->pdev->dev;
-> +	u32 xcsr;
-> +
-> +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
-> +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
 
-Assuming these are 'write to clear' bits, you might want
-to make the write (above) and all the traces (below)
-conditional on the value being non-zero.
 
-> +	if (xcsr & FSL_SAI_CSR_WSF)
-> +		dev_dbg(dev, "isr: Start of Tx word detected\n");
-> +
-> +	if (xcsr & FSL_SAI_CSR_SEF)
-> +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
-> +
-> +	if (xcsr & FSL_SAI_CSR_FEF)
-> +		dev_dbg(dev, "isr: Transmit underrun detected\n");
-> +
-> +	if (xcsr & FSL_SAI_CSR_FWF)
-> +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
-> +
-> +	if (xcsr & FSL_SAI_CSR_FRF)
-> +		dev_dbg(dev, "isr: Transmit FIFO watermark has been reached\n");
-
-Some of those look like 'normal' interrupts, others are clearly
-abnormal conditions.
-Maybe the tracing should reflect this.
-
-> +
-> +	regmap_read(sai->regmap, FSL_SAI_RCSR, &xcsr);
-> +	regmap_write(sai->regmap, FSL_SAI_RCSR, xcsr);
-
-Same comments apply...
-
-	David
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Gregory Clement, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
