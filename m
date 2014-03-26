@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756591AbaCZWBG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:01:06 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53505 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756503AbaCZWBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:01:02 -0400
-Date: Wed, 26 Mar 2014 15:00:51 -0700
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, glommer@gmail.com,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, devel@openvz.org
-Subject: Re: [PATCH -mm 3/4] fork: charge threadinfo to memcg explicitly
-Message-ID: <20140326220050.GC22656@dhcp22.suse.cz>
-References: <cover.1395846845.git.vdavydov@parallels.com>
- <8f98a5160b9e17947cbb25e91944f332679b9c9c.1395846845.git.vdavydov@parallels.com>
+	id S1756616AbaCZWBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:01:12 -0400
+Received: from mail-oa0-f51.google.com ([209.85.219.51]:54698 "EHLO
+	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756503AbaCZWBI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 18:01:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8f98a5160b9e17947cbb25e91944f332679b9c9c.1395846845.git.vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
+References: <20140324225910.GB4937@owamsq.epam.com>
+	<20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
+Date: Wed, 26 Mar 2014 23:01:07 +0100
+Message-ID: <CABPqkBTk+b_+PM_YdxUYw8PDdo9PL506jCR1xzqD6=SXc+zbKg@mail.gmail.com>
+Subject: Re: [PATCH] x86: Fix boot on uniprocessor systems
+From: Stephane Eranian <eranian@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem Fetishev <artem_fetishev@epam.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 19:28:06, Vladimir Davydov wrote:
-> We have only a few places where we actually want to charge kmem so
-> instead of intruding into the general page allocation path with
-> __GFP_KMEMCG it's better to explictly charge kmem there. All kmem
-> charges will be easier to follow that way.
-> 
-> This is a step toward removing __GFP_KMEMCG. It makes fork charge task
-> threadinfo pages explicitly instead of passing __GFP_KMEMCG to
-> alloc_pages.
+On Wed, Mar 26, 2014 at 9:31 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 25 Mar 2014 01:59:10 +0300 Artem Fetishev <artem_fetishev@epam.com> wrote:
+>
+>> On x86 uniprocessor systems topology_physical_package_id() returns -1 which
+>> causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized which leads
+>> to GPF in rapl_pmu_init(). See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+>>
+>> It turns out that physical_package_id and core_id can actually be retreived for
+>> uniprocessor systems too. Enabling them also fixes rapl_pmu code.
+>>
+>> Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+>> ---
+>> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+>> index d35f24e..1306d11 100644
+>> --- a/arch/x86/include/asm/topology.h
+>> +++ b/arch/x86/include/asm/topology.h
+>> @@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
+>>
+>>  extern const struct cpumask *cpu_coregroup_mask(int cpu);
+>>
+>> -#ifdef ENABLE_TOPO_DEFINES
+>>  #define topology_physical_package_id(cpu)    (cpu_data(cpu).phys_proc_id)
+>>  #define topology_core_id(cpu)                        (cpu_data(cpu).cpu_core_id)
+>> +
+>> +#ifdef ENABLE_TOPO_DEFINES
+>>  #define topology_core_cpumask(cpu)           (per_cpu(cpu_core_map, cpu))
+>>  #define topology_thread_cpumask(cpu)         (per_cpu(cpu_sibling_map, cpu))
+>>  #endif
+>
+> The patch applies to 3.13 and perhaps earlier kernels.  Is it needed in
+> those kernel versions?
 
-Looks good from a quick glance. I would also remove
-THREADINFO_GFP_ACCOUNTED in this patch.
-
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-> ---
->  kernel/fork.c |   13 ++++++++++---
->  1 file changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index f4b09bc15f3a..8209780cf732 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -150,15 +150,22 @@ void __weak arch_release_thread_info(struct thread_info *ti)
->  static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
->  						  int node)
->  {
-> -	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
-> -					     THREAD_SIZE_ORDER);
-> +	struct page *page;
-> +	struct mem_cgroup *memcg = NULL;
->  
-> +	if (!memcg_kmem_newpage_charge(THREADINFO_GFP_ACCOUNTED, &memcg,
-> +				       THREAD_SIZE_ORDER))
-> +		return NULL;
-> +	page = alloc_pages_node(node, THREADINFO_GFP, THREAD_SIZE_ORDER);
-> +	memcg_kmem_commit_charge(page, memcg, THREAD_SIZE_ORDER);
->  	return page ? page_address(page) : NULL;
->  }
->  
->  static inline void free_thread_info(struct thread_info *ti)
->  {
-> -	free_memcg_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
-> +	if (ti)
-> +		memcg_kmem_uncharge_pages(virt_to_page(ti), THREAD_SIZE_ORDER);
-> +	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
->  }
->  # else
->  static struct kmem_cache *thread_info_cache;
-> -- 
-> 1.7.10.4
-> 
-
--- 
-Michal Hocko
-SUSE Labs
+Before 3.13 there was no RAPL support.
+But it seems the patch is still useful regardless
