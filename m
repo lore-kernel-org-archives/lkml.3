@@ -1,109 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752013AbaCZH0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:26:30 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:33238 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaCZH03 (ORCPT
+	id S1753296AbaCZH2L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:28:11 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:59828 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456AbaCZH2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:26:29 -0400
-X-Auth-Info: brfbF5Ts5mr1sb8UiRnJbWcZJ7us6HI/3Wvbys4QSg4=
-From: Marek Vasut <marex@denx.de>
-To: Yao Yuan <yao.yuan@freescale.com>
-Subject: Re: [PATCH v3 1/2] i2c: add DMA support for freescale i2c driver
-Date: Wed, 26 Mar 2014 08:26:27 +0100
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-References: <1394675277-24913-1-git-send-email-yao.yuan@freescale.com> <201403260726.36812.marex@denx.de> <8984936f9e914442995d79039543cb58@BL2PR03MB338.namprd03.prod.outlook.com>
-In-Reply-To: <8984936f9e914442995d79039543cb58@BL2PR03MB338.namprd03.prod.outlook.com>
+	Wed, 26 Mar 2014 03:28:10 -0400
+Date: Wed, 26 Mar 2014 00:28:05 -0700
+From: Brian Norris <computersforpeace@gmail.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Lee Jones <lee.jones@linaro.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, angus.clark@st.com, kernel@stlinux.com,
+        linux-mtd@lists.infradead.org, pekon@ti.com, dwmw2@infradead.org
+Subject: Re: [RFC 00/47] mtd: nand: Add new driver supporting ST's BCH h/w
+Message-ID: <20140326072805.GB31517@norris-Latitude-E6410>
+References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
+ <20140325125050.GB665@arch.cereza>
+ <20140325131139.GB24823@lee--X1>
+ <20140325220045.GA12185@arch.cereza>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201403260826.28114.marex@denx.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140325220045.GA12185@arch.cereza>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 26, 2014 at 08:08:28 AM, Yao Yuan wrote:
-> On Wednesday, March 26, 2014 at 02:27:46 PM, Marek Vasut wrote:
-> > On Wednesday, March 26, 2014 at 06:56:34 AM, Yao Yuan wrote:
-> > > On Wednesday, March 26, 2014 at 11:43:27 AM, Marek Vasut wrote:
-> > > > On Wednesday, March 26, 2014 at 04:08:27 AM, Yao Yuan wrote:
-> > > > 
-> > > > [...]
-> > > > 
-> > > > > > > +		i2c_imx->use_dma = false;
-> > > > > > > +	} else if (i2c_imx_dma_request(i2c_imx,
-> > > > > > > +(dma_addr_t)phy_addr))
-> > > > 
-> > > > {
-> > > > 
-> > > > > > > +		dev_info(&pdev->dev,
-> > > > > > > +				"can't request dma chan, faild use dma.
-> > 
-> > \n");
-> > 
-> > > > > > > +		i2c_imx->use_dma = false;
-> > > > > > > +	} else {
-> > > > > > > +		i2c_imx->use_dma = true;
-> > > > > > > +	}
-> > > > > > 
-> > > > > > Can you not just check if i2c_imx->dma is valid pointer or NULL
-> > > > 
-> > > > pointer ?
-> > > > 
-> > > > > > Then you won't need a separate variable, for this purpose ...
-> > 
-> > right ?
-> > 
-> > > > > Sorry and I think what I know is just to check whether it is NULL.
-> > > > > Then for the second question, maybe there are some other ways, But
-> > > > > I think it is more tidy and easier understanding for using a
-> > > > > separate variable, for this purpose.
-> > > > 
-> > > > You are just wasting space and duplicating data, unless I am wrong.
-> > > 
-> > > Well, Do you have a better idea? Although I think it's necessary.
-> > 
-> > I think we disconnected here, sorry. Why can you not use (i2c_imx->dma !=
-> > NULL) instead of (i2c_imx->use_dma == true) please ?
+On Tue, Mar 25, 2014 at 07:00:45PM -0300, Ezequiel Garcia wrote:
+> After taking a quick glance at the whole driver I noticed you have something
+> strange going on. AFAIK, the typical NAND driver probe() should be one of
+> these two:
 > 
-> But there are two judge conditions. But only the "i2c_imx->dma", but also
-> whether "i2c_imx_dma_request" success.
+> * Call nand_scan() which calls nand_scan_ident() + nand_scan_tail().
 > 
-> "i2c_imx->use_dma == true" be equivalent to "i2c_imx->dma != NULL &&
-> !i2c_imx_dma_request()"
+> * Call nand_scan_ident() to identify the NAND device geometry, do some
+>   driver specific initialization, fill some hooks, and finally call
+>   nand_scan_tail() to complete the initialization.
+> 
+> You driver call nand_scan_ident() and then does some bad block scan, and
+> fills some callbacks on its own, but never calls nand_scan_tail().
+> 
+> The call to nand_scan_tail() would remove the need to export those NAND
+> core functions, and remove the need to scan and print the bad blocks.
+> I don't know if you have a real reason for not doing it this way, or
+> maybe it's the way this driver was originally written.
+> 
+> Care to review this and re-spin the driver? You'll have a more nicer
+> driver, and more framework-compliant.
 
-+       /* Init DMA config if support*/
-+       i2c_imx->dma = devm_kzalloc(&pdev->dev, sizeof(struct imx_i2c_dma),
-+                                       GFP_KERNEL);
-+       if (!i2c_imx->dma) {
-+               dev_info(&pdev->dev,
-+                               "can't allocate dma struct faild use dma.\n");
-+               i2c_imx->use_dma = false;
-+       } else if (i2c_imx_dma_request(i2c_imx, (dma_addr_t)phy_addr)) {
-+               dev_info(&pdev->dev,
-+                               "can't request dma chan, faild use dma.\n");
-+               i2c_imx->use_dma = false;
-+       } else {
-+               i2c_imx->use_dma = true;
-+       }
+A hearty +1 to this. You are avoiding much of the core of the NAND
+framework by avoiding the nand_chip callbacks and nand_scan_tail(), and
+by reimplementing the BBT. I will have to NAK to some of the patches
+that EXPORT the nand_base private core (e.g., nand_get_device()), and I
+will most likely NAK the custom BBT implementation (please improve
+nand_bbt.c as needed).
 
-OK, looking at this one more time, why don't you wrap the allocation of i2c_imx-
->dma into i2c_imx_dma_request() ? Even better, you can allocate *dma as a local 
-variable in i2c_imx_dma_request() and then assign it into i2c_imx->dma only at 
-the end of the i2c_imx_dma_request() function , at the point where you are sure 
-nothing failed. Then you can check i2c_imx->dma != NULL throughout the code to 
-check if the DMA is available, no ?
+> Also, if you plan to target v3.16 on this, I'd suggest that you pick
+> some pack of features and submit those first, reducing the amount of code
+> to be reviewed. For instance, you may choose to leave some of the ECC bits
+> aside for now.
+> 
+> It's just a suggestion to get at least some of the code merged quicker,
+> don't take me too seriously on this.
 
-Shawn, Wolfram, am I talking nonsense or am I just not connecting ?
+That's a possible approach if it still leaves your driver functional.
+But I wouldn't trim the driver too much just for sake of reviewing.
 
-Best regards,
-Marek Vasut
+BTW, why do you call this driver stm_nand_bch? BCH is a particular type
+of ECC algorithm, not unique at all to ST's hardware. Can you drop the
+_bch and make it just stm_nand? Also, you might want to change the
+namespacing on some of your functions; for instance, I don't think you
+can own the name bch_write(). Possibly prefix things with stm_* or
+stm_nand_* where reasonable.
+
+Brian
