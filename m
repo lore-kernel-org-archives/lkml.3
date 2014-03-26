@@ -1,105 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaCZNMX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:12:23 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47311 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750956AbaCZNMV (ORCPT
+	id S1754263AbaCZNSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:18:18 -0400
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:37986 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545AbaCZNSF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:12:21 -0400
-Date: Wed, 26 Mar 2014 13:12:14 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
-        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
-        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        tony.luck@intel.com, Tang Liang <liang.tang@oracle.com>
-Subject: Re: [PATCH v3 5/5] xen: Put EFI machinery in place
-Message-ID: <20140326131214.GC24856@console-pimps.org>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-6-git-send-email-daniel.kiper@oracle.com>
+	Wed, 26 Mar 2014 09:18:05 -0400
+Date: Wed, 26 Mar 2014 09:18:00 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexandre Demers <alexandre.f.demers@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to
+ kern_mount() sysfs from sysfs_init()" prevents system from booting correctly
+Message-ID: <20140326131800.GA7171@htj.dyndns.org>
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com>
+ <20140314140804.GG12613@htj.dyndns.org>
+ <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com>
+ <20140317201346.GE17373@mtj.dyndns.org>
+ <5327AAA8.2080703@gmail.com>
+ <53322777.3030703@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395781076-12000-6-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <53322777.3030703@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar, at 09:57:56PM, Daniel Kiper wrote:
-> Put EFI machinery for Xen in place.
+On Tue, Mar 25, 2014 at 09:03:51PM -0400, Alexandre Demers wrote:
+> So, I tried RC8 and I'm still getting the error. It start too fast
+> to be able to read whatever it is saying, but here is what I can
+> read:
+> ...
+> cp: error writing /run/initramfs/new_root/...
+> cp: failed to extend ...
+> ... (and so on)
 > 
-> This patch is based on Jan Beulich and Tang Liang work.
-> 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> ---
->  arch/x86/xen/enlighten.c |   10 ++
->  drivers/xen/Kconfig      |    3 +
->  drivers/xen/Makefile     |    1 +
->  drivers/xen/efi.c        |  425 ++++++++++++++++++++++++++++++++++++++++++++++
->  4 files changed, 439 insertions(+)
->  create mode 100644 drivers/xen/efi.c
+> It goes on like that for a long time.
 
-[...]
+Ooh, I thought you were gonna find out what filled up the filesystem
+after rebooting into the older kernel.  Can you please do that?  Also,
+pressing "ScrLk" should stop the screen from scrolling.
 
-> +static void __init efi_init_xen(void)
-> +{
-> +	efi_char16_t vendor_c16[100];
-> +	char vendor[ARRAY_SIZE(vendor_c16)];
-> +	int ret, i;
-> +	struct xen_platform_op op;
-> +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
-> +
-> +	efi = efi_xen;
-> +	op.cmd = XENPF_firmware_info;
-> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
-> +
-> +	/*
-> +	 * Show what we know for posterity
-> +	 */
-> +	op.u.firmware_info.index = XEN_FW_EFI_VENDOR;
-> +	info->vendor.bufsz = sizeof(vendor_c16);
-> +	set_xen_guest_handle(info->vendor.name, vendor_c16);
-> +	ret = HYPERVISOR_dom0_op(&op);
-> +	if (!ret) {
-> +		for (i = 0; i < sizeof(vendor) - 1 && vendor_c16[i]; ++i)
-> +			vendor[i] = vendor_c16[i];
-> +		vendor[i] = '\0';
-> +	} else
-> +		pr_err("Could not get the firmware vendor!\n");
-> +
-
-Is there a reason that you can't just populate an efi_system_table_t
-object, which could be used by efi_init(), so that we can save you the
-trouble of duplicating all of this code?
-
-> +/*
-> + * Convenience functions to obtain memory types and attributes
-> + */
-> +static u32 efi_mem_type_xen(unsigned long phys_addr)
-> +{
-> +	struct xen_platform_op op;
-> +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
-> +
-> +	op.cmd = XENPF_firmware_info;
-> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
-> +	op.u.firmware_info.index = XEN_FW_EFI_MEM_INFO;
-> +	info->mem.addr = phys_addr;
-> +	info->mem.size = 0;
-> +	return HYPERVISOR_dom0_op(&op) ? 0 : info->mem.type;
-> +}
-
-Same idea here. Unless you expect the EFI memory map to change at runtime
-(and it's not clear to me whether that wouldn't cause other things to
-explode) you'd be better off building a struct efi_memory_map and using
-the existing generic functions.
+Thanks.
 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+tejun
