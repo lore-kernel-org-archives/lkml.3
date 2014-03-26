@@ -1,84 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789AbaCZRMy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 13:12:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28922 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750792AbaCZRMx (ORCPT
+	id S1755636AbaCZROD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 13:14:03 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:36703 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753085AbaCZRN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 13:12:53 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-To: davem@davemloft.net
-Cc: hannes@stressinduktion.org, dborkman@redhat.com, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
-        Sasha Levin <sasha.levin@oracle.com>
-Subject: [PATCH] random32: avoid attempt to late reseed if in the middle of seeding
-Date: Wed, 26 Mar 2014 13:12:38 -0400
-Message-Id: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 1.8.3.2
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 26 Mar 2014 13:13:57 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-fb-53330a959f8b
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>, Tejun Heo <tj@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: fix Marvell SATA driver dependencies
+Date: Wed, 26 Mar 2014 18:12:31 +0100
+Message-id: <4852939.9jMb8Bv2x2@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140326165904.70de238d@alan.etchedpixels.co.uk>
+References: <5138028.BSQbEP7RRB@amdc1032> <20140326162302.GG25349@lunn.ch>
+ <20140326165904.70de238d@alan.etchedpixels.co.uk>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=US-ASCII
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsVy+t9jQd2pXMbBBp9maVmcv3uI2WLSlL9s
+	Fpva3jJaNC65zGKx6fE1VotjOx4xWVzeNYfN4v1PR4tfy48yOnB6PNl0kdFj56y77B6bVnWy
+	eTQcOM/isXlJvcfOHZ+ZPFpPbmL1+LxJLoAjissmJTUnsyy1SN8ugStj50r2gkbuig3nZrI3
+	MF7m6GLk5JAQMJFYcvUeE4QtJnHh3nq2LkYuDiGB6YwSR7ufs0I4LUwS7W33WEGq2ASsJCa2
+	r2IEsUWAuptfvWYEKWIW2MEkse3FexaQhLCAncS96VPBGlgEVCXW7OoGWsHBwSugKfHgoiRI
+	WFTAU2LH9pVsIDYnUPm3aS1grUICdRK977eD2bwCghI/Jt8Ds5kF5CX27YcYySygJbF5WxPr
+	BEaBWUjKZiEpm4WkbAEj8ypG0dSC5ILipPRcQ73ixNzi0rx0veT83E2M4Jh4JrWDcWWDxSFG
+	AQ5GJR7eHfeNgoVYE8uKK3MPMUpwMCuJ8O74ChTiTUmsrEotyo8vKs1JLT7EKM3BoiTOe6DV
+	OlBIID2xJDU7NbUgtQgmy8TBKdXAuK10tquv9GNRw5DWJ67VWfvNnCvT/GJWln9N/r9ksgTb
+	VPtO6f/P2OPSez8HqizRy/mRkibYIjX11QamhNwFq+pn71lomG6Tv/xbZJK+3l2DDwlZ/2Yf
+	vth5ev6HYgO5JCuHnou96QWh59fqrfl/90Jm78Kc+z+Oa1YqbEpJtn8V7brVSu6aEktxRqKh
+	FnNRcSIAtorfBYUCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
-nonblocking pool becomes initialized") has added a late reseed stage
-that happens as soon as the nonblocking pool is marked as initialized.
 
-This fails in the case that the nonblocking pool gets initialized
-during __prandom_reseed()'s call to get_random_bytes(). In that case
-we'd double back into __prandom_reseed() in an attempt to do a late
-reseed - deadlocking on 'lock' early on in the boot process.
+Hi,
 
-Instead, just avoid even waiting to do a reseed if a reseed is already
-occuring.
+On Wednesday, March 26, 2014 04:59:04 PM One Thousand Gnomes wrote:
+> On Wed, 26 Mar 2014 17:23:02 +0100
+> Andrew Lunn <andrew@lunn.ch> wrote:
+> 
+> > On Wed, Mar 26, 2014 at 05:19:02PM +0100, Bartlomiej Zolnierkiewicz wrote:
+> > > Make sata_mv host driver depend on PCI || ARCH_KIRKWOOD || ARCH_MVEBU ||
+> > > ARCH_ORION5X config options as Marvell SATA support covers both Marvell
+> > > PCI devices and Marvell Kirkwood, Armada 370/XP and Orion5x SoCs (for
+> > > non-PCI devices the driver to work requires suitable device tree node to
+> > > be defined).  Additionally allow the driver build if COMPILE_TEST config
+> > > option is set.
+> > 
+> > Hi Bartlomiej
+> > 
+> > I _think_ there are a few powerpc platforms which can also make use of
+> > this driver
+> 
+> The hardware can show up in just about anything so I think this patch
+> should be dropped
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- lib/random32.c | 16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
+In theory maybe but in practice it for sure won't show up if the vendor
+has its own SATA solution and at least in the ARM world it seems frequent
+to have its own AHCI variant nowadays.  Moreover even if the new usage
+shows up it is not enough to enable driver for it to make it work as
+you also need to add a node describing your SATA MV variant to your SoC
+device tree file (which requires updating kernel source anyway).
 
-diff --git a/lib/random32.c b/lib/random32.c
-index 1e5b2df..b59da12 100644
---- a/lib/random32.c
-+++ b/lib/random32.c
-@@ -241,14 +241,27 @@ static void __prandom_reseed(bool late)
- {
- 	int i;
- 	unsigned long flags;
--	static bool latch = false;
-+	static bool latch = false, reseeding = false;
- 	static DEFINE_SPINLOCK(lock);
- 
-+	/*
-+	 * Asking for random bytes might result in bytes getting
-+	 * moved into the nonblocking pool and thus marking it
-+	 * as initialized. In this case we would double back into
-+	 * this function and attempt to do a late reseed.
-+	 * Ignore the pointless attempt to reseed again if we're
-+	 * already waiting for bytes when the nonblocking pool
-+	 * got initialized
-+	 */
-+	if (reseeding)
-+		return;
-+
- 	/* only allow initial seeding (late == false) once */
- 	spin_lock_irqsave(&lock, flags);
- 	if (latch && !late)
- 		goto out;
- 	latch = true;
-+	reseeding = true;
- 
- 	for_each_possible_cpu(i) {
- 		struct rnd_state *state = &per_cpu(net_rand_state,i);
-@@ -263,6 +276,7 @@ static void __prandom_reseed(bool late)
- 		prandom_warmup(state);
- 	}
- out:
-+	reseeding = false;
- 	spin_unlock_irqrestore(&lock, flags);
- }
- 
--- 
-1.8.3.2
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
