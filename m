@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbaCZOIx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:08:53 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:65248 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755195AbaCZOIv (ORCPT
+	id S1754492AbaCZORR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:17:17 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:44308 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751803AbaCZORP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:08:51 -0400
+	Wed, 26 Mar 2014 10:17:15 -0400
 MIME-Version: 1.0
-In-Reply-To: <5332BD50.1070600@linux.vnet.ibm.com>
+In-Reply-To: <5332CAA7.8000901@linux.vnet.ibm.com>
 References: <cover.1395832156.git.viresh.kumar@linaro.org>
-	<535a552cd2c05a3ae2cb61da2583646e1c649699.1395832156.git.viresh.kumar@linaro.org>
-	<5332BD50.1070600@linux.vnet.ibm.com>
-Date: Wed, 26 Mar 2014 19:38:51 +0530
-Message-ID: <CAKohpokM=VKH6EV+3R+Ec4wQO240Yr78F_kDphMOR481+4GUPw@mail.gmail.com>
-Subject: Re: [LNG] Re: [PATCH 04/14] hrtimer: use base->index instead of
- basenum in switch_hrtimer_base()
+	<7eb4d1a03031b4d873ce08e8912900d7936a3ca8.1395832156.git.viresh.kumar@linaro.org>
+	<5332CAA7.8000901@linux.vnet.ibm.com>
+Date: Wed, 26 Mar 2014 19:47:15 +0530
+Message-ID: <CAKohpomzsV+HhH9r3s0jJH_NT0bzdDEd+3k8bopPg9vtVHc5Lw@mail.gmail.com>
+Subject: Re: [LNG] Re: [PATCH 12/14] hrtimer: don't emulate notifier call to
+ initialize timer base
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>,
@@ -28,14 +28,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 March 2014 17:13, Srivatsa S. Bhat
+On 26 March 2014 18:10, Srivatsa S. Bhat
 <srivatsa.bhat@linux.vnet.ibm.com> wrote:
->> +     new_base = &new_cpu_base->clock_base[base->index];
->
-> Further down, timer->base can be altered (and set to NULL too).
-> So if we jump back to 'again', we'll end up in trouble.
-> So I think its important to cache the value in basenum and
-> use it.
+> I don't think this is such a good idea. Open-coding a part of that callback
+> in the init routine can lead to loop-holes down the road:
 
-base is a parameter to this function and never changes. So
-base->index is guaranteed to be valid and same during a functions call.
+We think that we are open-coding part of that callback here because it is
+implemented that way on the first design.
+
+Rather, we should have a common routine which should do all the work
+required when a CPU comes up. And any modification should be done
+to that code.
+
+> what if someone
+> changes or adds something to the CPU_UP_PREPARE switch-case, and forgets to
+> do the same in the init-routine?
+
+This is not a driver which only 2-3 people use. This part is so well reviewed
+by so many highly smart people that this should never happen. And if it
+happens than its nothing but a review mistake.
+
+> It is more comforting to know that there is just one single place where CPU
+> hotplug operations are handled (hrtimer_cpu_notify). That, in turn is good
+> for reliability because it makes it easier to write bug-free code.
+
+And for me that single place is: init_hrtimers_cpu() :)
