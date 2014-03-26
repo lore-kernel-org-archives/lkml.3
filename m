@@ -1,66 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaCZGVp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 02:21:45 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:47278 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751302AbaCZGVn (ORCPT
+	id S1751403AbaCZG0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 02:26:40 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:38748 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730AbaCZG0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 02:21:43 -0400
-From: SeongJae Park <sj38.park@gmail.com>
-To: scameron@beardog.cce.hp.com, JBottomley@paralles.com
-Cc: iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, SeongJae Park <sj38.park@gmail.com>
-Subject: [PATCH] [SCSI] hpsa: use trans_support after value assigned
-Date: Wed, 26 Mar 2014 15:24:02 +0900
-Message-Id: <1395815042-26917-1-git-send-email-sj38.park@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 26 Mar 2014 02:26:38 -0400
+X-Auth-Info: pwjWr1lHc1kUyjTiSyR9WnJm+qQ9KwqdT+DWQiT0UhY=
+From: Marek Vasut <marex@denx.de>
+To: Yao Yuan <yao.yuan@freescale.com>
+Subject: Re: [PATCH v3 1/2] i2c: add DMA support for freescale i2c driver
+Date: Wed, 26 Mar 2014 07:26:36 +0100
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: "wsa@the-dreams.de" <wsa@the-dreams.de>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+References: <1394675277-24913-1-git-send-email-yao.yuan@freescale.com> <201403260442.42970.marex@denx.de> <cd88de7e04734400b897c0e2bcf07eab@BL2PR03MB338.namprd03.prod.outlook.com>
+In-Reply-To: <cd88de7e04734400b897c0e2bcf07eab@BL2PR03MB338.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201403260726.36812.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Because trans_support be used when check i/o accelerator mode support
-before its value assigned, it caused following build warning:
+On Wednesday, March 26, 2014 at 06:56:34 AM, Yao Yuan wrote:
+> On Wednesday, March 26, 2014 at 11:43:27 AM, Marek Vasut wrote:
+> > On Wednesday, March 26, 2014 at 04:08:27 AM, Yao Yuan wrote:
+> > 
+> > [...]
+> > 
+> > > > > +		i2c_imx->use_dma = false;
+> > > > > +	} else if (i2c_imx_dma_request(i2c_imx, (dma_addr_t)phy_addr))
+> > 
+> > {
+> > 
+> > > > > +		dev_info(&pdev->dev,
+> > > > > +				"can't request dma chan, faild use dma.
+\n");
+> > > > > +		i2c_imx->use_dma = false;
+> > > > > +	} else {
+> > > > > +		i2c_imx->use_dma = true;
+> > > > > +	}
+> > > > 
+> > > > Can you not just check if i2c_imx->dma is valid pointer or NULL
+> > 
+> > pointer ?
+> > 
+> > > > Then you won't need a separate variable, for this purpose ... right ?
+> > > 
+> > > Sorry and I think what I know is just to check whether it is NULL.
+> > > Then for the second question, maybe there are some other ways, But I
+> > > think it is more tidy and easier understanding for using a separate
+> > > variable, for this purpose.
+> > 
+> > You are just wasting space and duplicating data, unless I am wrong.
+> 
+> Well, Do you have a better idea? Although I think it's necessary.
 
-drivers/scsi/hpsa.c: In function ‘hpsa_init_one’:
-drivers/scsi/hpsa.c:7468:20: warning: ‘trans_support’
-may be used uninitialized in this function [-Wmaybe-uninitialized]
-  if (trans_support & CFGTBL_Trans_io_accel1) {
-                    ^
-drivers/scsi/hpsa.c:7459:6: note: ‘trans_support’ was
-declared here
-  u32 trans_support;
-      ^
+I think we disconnected here, sorry. Why can you not use (i2c_imx->dma != NULL) 
+instead of (i2c_imx->use_dma == true) please ?
 
-Signed-off-by: SeongJae Park <sj38.park@gmail.com>
----
- drivers/scsi/hpsa.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
-
-diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index 8cf4a0c..a4ae873 100644
---- a/drivers/scsi/hpsa.c
-+++ b/drivers/scsi/hpsa.c
-@@ -7455,7 +7455,7 @@ clean_up:
- 
- static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- {
--	u32 trans_support;
-+	u32 trans_support = readl(&(h->cfgtable->TransportSupport));
- 	unsigned long transMethod = CFGTBL_Trans_Performant |
- 					CFGTBL_Trans_use_short_tags;
- 	int i;
-@@ -7479,7 +7479,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
- 	}
- 
- 	/* TODO, check that this next line h->nreply_queues is correct */
--	trans_support = readl(&(h->cfgtable->TransportSupport));
- 	if (!(trans_support & PERFORMANT_MODE))
- 		return;
- 
--- 
-1.8.3.2
-
+Best regards,
+Marek Vasut
