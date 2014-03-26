@@ -1,292 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755564AbaCZApb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:45:31 -0400
-Received: from smtp1.hiworks.co.kr ([121.254.168.204]:45446 "EHLO
-	smtp1.hiworks.co.kr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755042AbaCZAp2 convert rfc822-to-8bit (ORCPT
+	id S1755651AbaCZAqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:46:31 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:33115 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754880AbaCZAqa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:45:28 -0400
-From: "YongHwan Ki" <kyhw@afoi.co.kr>
-To: "'Jiri Kosina'" <jkosina@suse.cz>
-Cc: <rydberg@euromail.se>, <linux-input@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-References: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr> <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz>
-Subject: RE: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO.,  LTD.
-Date: Wed, 26 Mar 2014 09:45:21 +0900
-Message-ID: <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AQHgmKd00nK6Cd07QSZGmulK6nUVggGjAdY6msLL2PA=
-Content-Language: ko
+	Tue, 25 Mar 2014 20:46:30 -0400
+Date: Tue, 25 Mar 2014 20:46:28 -0400 (EDT)
+Message-Id: <20140325.204628.1622839093852736075.davem@davemloft.net>
+To: hpa@linux.intel.com
+Cc: dborkman@redhat.com, ast@plumgrid.com, netdev@vger.kernel.org,
+        hagen@jauu.net, keescook@chromium.org, pmoore@redhat.com,
+        mingo@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next v2 8/9] net: filter: rework/optimize internal
+ BPF interpreter's instruction set
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <53321E3B.8080709@linux.intel.com>
+References: <1395749457-16178-9-git-send-email-dborkman@redhat.com>
+	<20140325.201712.1651156258234145348.davem@davemloft.net>
+	<53321E3B.8080709@linux.intel.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 25 Mar 2014 17:46:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I woud like to add the AFO defines in the Linux Kernel.
-No afo defines exists in the current kernel tree.
-I correctly changed the log for adding the afo defines.
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Tue, 25 Mar 2014 17:24:27 -0700
 
-Kernel Version : linux-3.14.rc7
-Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
+> If you allow loops, it greatly increases the expressibility of the
+> language, but we would really need another control to limit CPU usage.
 
-diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7m/drivers/hid/hid-core.c
---- ./drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
-+++ ../linux-3.14-rc7m/drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
-@@ -1881,6 +1881,8 @@ static const struct hid_device_id hid_ha
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
- 
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
-diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-ids.h ../linux-3.14-rc7m/drivers/hid/hid-ids.h
---- ./drivers/hid/hid-ids.h	2014-03-17 10:51:24.000000000 +0900
-+++ ../linux-3.14-rc7m/drivers/hid/hid-ids.h	2014-03-21 17:30:34.478959555 +0900
-@@ -960,5 +960,9 @@
- #define USB_VENDOR_ID_PRIMAX	0x0461
- #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
- 
-+#define USB_VENDOR_ID_AFO		0x2576
-+#define USB_DEVICE_ID_AFO_TCM		0x0003
-+#define USB_DEVICE_ID_AFO_BL		0x0005
-+#define USB_DEVICE_ID_AFO_THM		0x0011
- 
- #endif
-diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-multitouch.c ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c
---- ./drivers/hid/hid-multitouch.c	2014-03-17 10:51:24.000000000 +0900
-+++ ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c	2014-03-21 17:45:25.946933088 +0900
-@@ -1395,6 +1395,15 @@ static const struct hid_device_id mt_dev
- 	{  .driver_data = MT_CLS_WIN_8,
- 		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
- 			HID_ANY_ID, HID_ANY_ID) },
-+
-+	/* AFO MultiTouch device */
-+	{  .driver_data = MT_CLS_SERIAL,
-+		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-+			USB_DEVICE_ID_AFO_TCM) },
-+	{  .driver_data = MT_CLS_SERIAL,
-+		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-+			USB_DEVICE_ID_AFO_THM) },
-+
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, mt_devices);
-Binary files ./kernel/x509_certificate_list and ../linux-3.14-rc7m/kernel/x509_certificate_list differ
-diff -uprN -X Documentation/dontdiff ./lib/oid_registry_data.c ../linux-3.14-rc7m/lib/oid_registry_data.c
---- ./lib/oid_registry_data.c	2014-03-21 18:45:37.598825862 +0900
-+++ ../linux-3.14-rc7m/lib/oid_registry_data.c	2014-03-24 21:43:59.826812763 +0900
-@@ -1,5 +1,5 @@
- /*
-- * Automatically generated by /usr/src/linux-3.14-rc7/lib/build_OID_registry.  Do not edit
-+ * Automatically generated by /usr/src/linux-3.14-rc7m/lib/build_OID_registry.  Do not edit
-  */
- 
- static const unsigned short oid_index[OID__NR + 1] = {
-diff -uprN -X Documentation/dontdiff ./signing_key.priv ../linux-3.14-rc7m/signing_key.priv
---- ./signing_key.priv	2014-03-21 17:24:11.874970914 +0900
-+++ ../linux-3.14-rc7m/signing_key.priv	2014-03-24 20:22:01.946958769 +0900
-@@ -1,52 +1,52 @@
- -----BEGIN PRIVATE KEY-----
--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
--gUBtt5vx/OQqJtWSut69esv2u9KYjmM=
-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
-+NQEgswM/gxjKwcqSioy0WoCqby9/ng==
- -----END PRIVATE KEY-----
-Binary files ./signing_key.x509 and ../linux-3.14-rc7m/signing_key.x509 differ
+We don't want super expressibility.
 
------Original Message-----
-From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Jiri Kosina
-Sent: Tuesday, March 25, 2014 8:00 PM
-To: YongHwan Ki
-Cc: rydberg@euromail.se; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO., LTD.
-
-On Tue, 25 Mar 2014, YongHwan Ki wrote:
-
-> There is no way to support the hid-type AFO multi touch modules.
-
-Could you please elaborate? What tree is this patch against? I don't have 
-AFO-related defines in my tree.
-
-> Add the VID/PID of AFO to the hid-related lists.
-> 
-> Kernel Version : linux-3.14.rc7
-> 
-> Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
-> 
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7/drivers/hid/hid-core.c
-> --- ./drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
-> +++ ../linux-3.14-rc7/drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
-> @@ -1881,8 +1881,6 @@ static const struct hid_device_id hid_ha
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
-> -	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
-> -	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
->  
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-ids.h ../linux-3.14-rc7/drivers/hid/hid-ids.h
-> --- ./drivers/hid/hid-ids.h	2014-03-21 17:30:34.478959555 +0900
-> +++ ../linux-3.14-rc7/drivers/hid/hid-ids.h	2014-03-17 10:51:24.000000000 +0900
-> @@ -960,9 +960,5 @@
->  #define USB_VENDOR_ID_PRIMAX	0x0461
->  #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
->  
-> -#define USB_VENDOR_ID_AFO		0x2576
-> -#define USB_DEVICE_ID_AFO_TCM		0x0003
-> -#define USB_DEVICE_ID_AFO_BL		0x0005
-> -#define USB_DEVICE_ID_AFO_THM		0x0011
->  
->  #endif
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-multitouch.c ../linux-3.14-rc7/drivers/hid/hid-multitouch.c
-> --- ./drivers/hid/hid-multitouch.c	2014-03-21 17:45:25.946933088 +0900
-> +++ ../linux-3.14-rc7/drivers/hid/hid-multitouch.c	2014-03-17 10:51:24.000000000 +0900
-> @@ -1395,15 +1395,6 @@ static const struct hid_device_id mt_dev
->  	{  .driver_data = MT_CLS_WIN_8,
->  		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
->  			HID_ANY_ID, HID_ANY_ID) },
-> -
-> -	/* AFO MultiTouch device */
-> -	{  .driver_data = MT_CLS_SERIAL,
-> -		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-> -			USB_DEVICE_ID_AFO_TCM) },
-> -	{  .driver_data = MT_CLS_SERIAL,
-> -		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-> -			USB_DEVICE_ID_AFO_THM) },
-> -
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(hid, mt_devices);
-> Binary files ./kernel/x509_certificate_list and ../linux-3.14-rc7/kernel/x509_certificate_list differ
-> diff -uprN -X Documentation/dontdiff ./lib/oid_registry_data.c ../linux-3.14-rc7/lib/oid_registry_data.c
-> --- ./lib/oid_registry_data.c	2014-03-24 21:43:59.826812763 +0900
-> +++ ../linux-3.14-rc7/lib/oid_registry_data.c	2014-03-21 18:45:37.598825862 +0900
-> @@ -1,5 +1,5 @@
->  /*
-> - * Automatically generated by /usr/src/linux-3.14-rc7m/lib/build_OID_registry.  Do not edit
-> + * Automatically generated by /usr/src/linux-3.14-rc7/lib/build_OID_registry.  Do not edit
->   */
->  
->  static const unsigned short oid_index[OID__NR + 1] = {
-> diff -uprN -X Documentation/dontdiff ./signing_key.priv ../linux-3.14-rc7/signing_key.priv
-> --- ./signing_key.priv	2014-03-24 20:22:01.946958769 +0900
-> +++ ../linux-3.14-rc7/signing_key.priv	2014-03-21 17:24:11.874970914 +0900
-> @@ -1,52 +1,52 @@
->  -----BEGIN PRIVATE KEY-----
-
-I doubt this was intended.
-
--- 
-Jiri Kosina
-SUSE Labs
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
-
+We want an extremely simple, trivial to validate, filtering language.
