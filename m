@@ -1,102 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626AbaCZWgx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:36:53 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:63801 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755910AbaCZWgv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:36:51 -0400
+	id S1756659AbaCZWiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:38:01 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:33593 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753816AbaCZWh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 18:37:57 -0400
+X-IronPort-AV: E=Sophos;i="4.97,738,1389744000"; 
+   d="scan'208";a="115264735"
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+To: Jesse Gross <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
+        <dev@openvswitch.org>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        Eric Dumazet <edumazet@google.com>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Tom Herbert <therbert@google.com>, Jason Wang <jasowang@redhat.com>,
+        Florian Westphal <fw@strlen.de>, Joe Perches <joe@perches.com>,
+        Simon Horman <horms@verge.net.au>, Jiri Pirko <jiri@resnulli.us>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Paul Durrant <Paul.Durrant@citrix.com>,
+        Jan Beulich <JBeulich@suse.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Miklos Szeredi <mszeredi@suse.cz>, <netfilter-devel@vger.kernel.org>,
+        <netfilter@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <kvm@vger.kernel.org>, Zoltan Kiss <zoltan.kiss@citrix.com>
+Subject: [PATCH v5] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+Date: Wed, 26 Mar 2014 22:37:45 +0000
+Message-ID: <1395873465-22282-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <533330D6.3070808@biereigel.de>
-References: <532FE3B2.9060808@biereigel-wb.de> <CAOLK0pxh4b3uzjD4jaPssD66K8g33uqahV1SzOAJAmQmnY4XqQ@mail.gmail.com>
- <533014B1.4030307@biereigel-wb.de> <CAOLK0pyOV50Vqt+bX_QpH_tjL=8eWwvu+O70EvTOZ+ixWZmr3Q@mail.gmail.com>
- <CAGf84Q+9RcQqi=YYvF8X8EJzbtk7dJYTxScaZN4347U+POQ4AQ@mail.gmail.com>
- <5331E5EB.5000304@biereigel-wb.de> <5331E9E4.4050201@gmail.com>
- <5332099B.8090305@gmail.com> <5332AF10.90109@biereigel.de>
- <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com> <533330D6.3070808@biereigel.de>
-From: Kieran Clancy <clancy.kieran@gmail.com>
-Date: Thu, 27 Mar 2014 09:06:20 +1030
-Message-ID: <CAGf84Q+HG-DspQWnza+JQE-bEki0oaJMiHQR5Y-2V97KDShf2Q@mail.gmail.com>
-Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after
- suspend to RAM.
-To: Stefan Biereigel <stefan@biereigel.de>
-Cc: Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Stefan Biereigel <security@biereigel-wb.de>,
-        Lan Tianyu <lantianyu1986@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        San Zamoyski <san@plusnet.pl>, "D. Jansen" <dennis.jansen@web.de>,
-        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 6:26 AM, Stefan Biereigel <stefan@biereigel.de> wrote:
-> I tested both of your patches. The processing of events works well on my
-> N150, the lid is reported open correctly after resume.
-> For the second patch (the whitelisting-approach), I had to change the
-> Product Name to "N150/N210/N220" instead of "N150P", because that is
-> what dmidecode reports for my netbook.
+skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+orphan them. Also, it doesn't handle errors, so this patch takes care of that
+as well, and modify the callers accordingly. skb_tx_error() is also added to
+the callers so they will signal the failed delivery towards the creator of the
+skb.
 
-That was quick - thanks for testing!
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+---
+v2: orphan the frags right before touching the frags
 
-For the product name match then, it matches substrings not whole
-strings, so "N150" should be sufficient (my mistake putting P on the
-end).
+v3:
+- orphan 'from' instead of 'to'
+- call skb_tx_error() in the callers if something went wrong
 
-> So, all three approaches work equally well for me (whitelisting my
-> broken N150, blacklisting the broken Series 5/7/9, processing all the
-> stale events). I personally would prefer a solution which needs to
-> handle (best case) no custom cases, because there are always n+1 of
-> them. But, as I don't know if there may be any problems with the
-> approach that needs no special handling (processing all stale events) in
-> the future, I'm not the one to decide the correct solution.
+v4: correctly use error path in queue_userspace_packet
 
-I won't be able to test ec_clear_process patch until tomorrow because
-I have a full day today.
+v5: remove const qualifier of "from" in skb_zerocopy parameters
 
-On my machine, _QXX events are all something like:
-
-if (AC_PLUGGED_IN) {
-    do_something();
-}
-
-So if (for example) AC_PLUGGED_IN has changed since the event was
-produced (e.g. no longer plugged in), nothing bad should happen.
-That's not necessarily a guarantee that this wouldn't introduce new
-bugs on other machines though.
-
-I think the ideal fix would be to distinguish between events which are
-"jammed" and won't be processed (like on Series 5/7/9), and events
-which will be processed normally with GPEs (N150). I am not sure how
-to do this or if it's even possible.
-
-For example, on my machine, the EC status byte (EC_SC) seems to be
-0x29 for jammed events, which means the SCI_EVT bit is set but we
-never got/get the interrupt. On your N150, your status byte was 0x09
-which means the SCI_EVT was not set - it was not yet asking for the OS
-to attend to this.
-
-I wonder if something as simple as this would work (in acpi_ec_clear):
-
-                if (!(acpi_ec_read_status(ec) & ACPI_EC_FLAG_SCI))
-                        break;
-                status = acpi_ec_query_unlocked(ec, &value);
-                if (status || !value)
-                        break;
-
-This would make it only clear events while the SCI_EVT bit is set. I
-am not sure that it would entirely remove the race condition you are
-seeing, but it might be enough to fix it.
-
-If we cant come up with a generally applicable solution, whitelisting
-is the lesser of two evils when compared with blacklisting here. A
-jammed EC won't function _at all_, while losing one or two EC events
-on boot/resume doesn't prevent future events and is easier to work
-around (though still not ideal).
-
-Regards,
-Kieran.
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 03db95a..0db91fa 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -2508,8 +2508,8 @@ int skb_splice_bits(struct sk_buff *skb, unsigned int offset,
+ 		    unsigned int flags);
+ void skb_copy_and_csum_dev(const struct sk_buff *skb, u8 *to);
+ unsigned int skb_zerocopy_headlen(const struct sk_buff *from);
+-void skb_zerocopy(struct sk_buff *to, const struct sk_buff *from,
+-		  int len, int hlen);
++int skb_zerocopy(struct sk_buff *to, struct sk_buff *from,
++		 int len, int hlen);
+ void skb_split(struct sk_buff *skb, struct sk_buff *skb1, const u32 len);
+ int skb_shift(struct sk_buff *tgt, struct sk_buff *skb, int shiftlen);
+ void skb_scrub_packet(struct sk_buff *skb, bool xnet);
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 3f14c63..908ad98 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -2127,25 +2127,31 @@ EXPORT_SYMBOL_GPL(skb_zerocopy_headlen);
+  *
+  *	The `hlen` as calculated by skb_zerocopy_headlen() specifies the
+  *	headroom in the `to` buffer.
++ *
++ *	Return value:
++ *	0: everything is OK
++ *	-ENOMEM: couldn't orphan frags of @from due to lack of memory
++ *	-EFAULT: skb_copy_bits() found some problem with skb geometry
+  */
+-void
+-skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
++int
++skb_zerocopy(struct sk_buff *to, struct sk_buff *from, int len, int hlen)
+ {
+ 	int i, j = 0;
+ 	int plen = 0; /* length of skb->head fragment */
++	int ret;
+ 	struct page *page;
+ 	unsigned int offset;
+ 
+ 	BUG_ON(!from->head_frag && !hlen);
+ 
+ 	/* dont bother with small payloads */
+-	if (len <= skb_tailroom(to)) {
+-		skb_copy_bits(from, 0, skb_put(to, len), len);
+-		return;
+-	}
++	if (len <= skb_tailroom(to))
++		return skb_copy_bits(from, 0, skb_put(to, len), len);
+ 
+ 	if (hlen) {
+-		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
++		if (unlikely(ret))
++			return ret;
+ 		len -= hlen;
+ 	} else {
+ 		plen = min_t(int, skb_headlen(from), len);
+@@ -2163,6 +2169,11 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 	to->len += len + plen;
+ 	to->data_len += len + plen;
+ 
++	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
++		skb_tx_error(from);
++		return -ENOMEM;
++	}
++
+ 	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
+ 		if (!len)
+ 			break;
+@@ -2173,6 +2184,8 @@ skb_zerocopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+ 		j++;
+ 	}
+ 	skb_shinfo(to)->nr_frags = j;
++
++	return 0;
+ }
+ EXPORT_SYMBOL_GPL(skb_zerocopy);
+ 
+diff --git a/net/netfilter/nfnetlink_queue_core.c b/net/netfilter/nfnetlink_queue_core.c
+index f072fe8..108120f 100644
+--- a/net/netfilter/nfnetlink_queue_core.c
++++ b/net/netfilter/nfnetlink_queue_core.c
+@@ -354,13 +354,16 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 
+ 	skb = nfnetlink_alloc_skb(net, size, queue->peer_portid,
+ 				  GFP_ATOMIC);
+-	if (!skb)
++	if (!skb) {
++		skb_tx_error(entskb);
+ 		return NULL;
++	}
+ 
+ 	nlh = nlmsg_put(skb, 0, 0,
+ 			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
+ 			sizeof(struct nfgenmsg), 0);
+ 	if (!nlh) {
++		skb_tx_error(entskb);
+ 		kfree_skb(skb);
+ 		return NULL;
+ 	}
+@@ -488,13 +491,15 @@ nfqnl_build_packet_message(struct net *net, struct nfqnl_instance *queue,
+ 		nla->nla_type = NFQA_PAYLOAD;
+ 		nla->nla_len = nla_attr_size(data_len);
+ 
+-		skb_zerocopy(skb, entskb, data_len, hlen);
++		if (skb_zerocopy(skb, entskb, data_len, hlen))
++			goto nla_put_failure;
+ 	}
+ 
+ 	nlh->nlmsg_len = skb->len;
+ 	return skb;
+ 
+ nla_put_failure:
++	skb_tx_error(entskb);
+ 	kfree_skb(skb);
+ 	net_err_ratelimited("nf_queue: error creating packet message\n");
+ 	return NULL;
+diff --git a/net/openvswitch/datapath.c b/net/openvswitch/datapath.c
+index c53fe0c..9230223 100644
+--- a/net/openvswitch/datapath.c
++++ b/net/openvswitch/datapath.c
+@@ -464,7 +464,9 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
+ 	}
+ 	nla->nla_len = nla_attr_size(skb->len);
+ 
+-	skb_zerocopy(user_skb, skb, skb->len, hlen);
++	err = skb_zerocopy(user_skb, skb, skb->len, hlen);
++	if (err)
++		goto out;
+ 
+ 	/* Pad OVS_PACKET_ATTR_PACKET if linear copy was performed */
+ 	if (!(dp->user_features & OVS_DP_F_UNALIGNED)) {
+@@ -478,6 +480,8 @@ static int queue_userspace_packet(struct datapath *dp, struct sk_buff *skb,
+ 
+ 	err = genlmsg_unicast(ovs_dp_get_net(dp), user_skb, upcall_info->portid);
+ out:
++	if (err)
++		skb_tx_error(skb);
+ 	kfree_skb(nskb);
+ 	return err;
+ }
