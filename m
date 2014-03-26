@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbaCZORR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:17:17 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:44308 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803AbaCZORP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:17:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <5332CAA7.8000901@linux.vnet.ibm.com>
-References: <cover.1395832156.git.viresh.kumar@linaro.org>
-	<7eb4d1a03031b4d873ce08e8912900d7936a3ca8.1395832156.git.viresh.kumar@linaro.org>
-	<5332CAA7.8000901@linux.vnet.ibm.com>
-Date: Wed, 26 Mar 2014 19:47:15 +0530
-Message-ID: <CAKohpomzsV+HhH9r3s0jJH_NT0bzdDEd+3k8bopPg9vtVHc5Lw@mail.gmail.com>
-Subject: Re: [LNG] Re: [PATCH 12/14] hrtimer: don't emulate notifier call to
- initialize timer base
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linaro Networking <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754865AbaCZOSA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:18:00 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:49761 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754556AbaCZOR6 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:3>);
+	Wed, 26 Mar 2014 10:17:58 -0400
+Message-Id: <5332EFA102000078000026CD@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Wed, 26 Mar 2014 14:17:53 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
+        <fenghua.yu@intel.com>, <matt.fleming@intel.com>,
+        <tony.luck@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
+        <linux-efi@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH v3 2/5] efi: Export arch_tables variable
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
+ <5332E25F020000780000255A@nat28.tlf.novell.com>
+ <20140326140800.GP3454@olila.local.net-space.pl>
+In-Reply-To: <20140326140800.GP3454@olila.local.net-space.pl>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26 March 2014 18:10, Srivatsa S. Bhat
-<srivatsa.bhat@linux.vnet.ibm.com> wrote:
-> I don't think this is such a good idea. Open-coding a part of that callback
-> in the init routine can lead to loop-holes down the road:
+>>> On 26.03.14 at 15:08, <daniel.kiper@oracle.com> wrote:
+> On Wed, Mar 26, 2014 at 01:21:19PM +0000, Jan Beulich wrote:
+>> >>> On 25.03.14 at 21:57, <daniel.kiper@oracle.com> wrote:
+>> > Export arch_tables variable. Xen init function calls efi_config_init()
+>> > which takes it as an argument.
+>> >
+>> > Additionally, put __initdata in place suggested by include/linux/init.h.
+>>
+>> Which isn't necessarily the most appropriate place.
+> 
+> Why? If comments in include/linux/init.h are not valid they should be 
+> changed.
 
-We think that we are open-coding part of that callback here because it is
-implemented that way on the first design.
+Because they can't go there uniformly: While on function declarations
+you can put them there, on function definitions they need to come
+before the function name. And placing attributes between type and
+name does - iirc - work consistently for everything.
 
-Rather, we should have a common routine which should do all the work
-required when a CPU comes up. And any modification should be done
-to that code.
+>> > --- a/include/linux/efi.h
+>> > +++ b/include/linux/efi.h
+>> > @@ -583,6 +583,8 @@ extern struct efi {
+>> >  	struct efi_memory_map *memmap;
+>> >  } efi;
+>> >
+>> > +extern efi_config_table_type_t arch_tables[] __initdata;
+>>
+>> And section placement annotations are bogus on declarations.
+> 
+> Hmmm... I am not sure which approach is better. I saw that
+> in many places declarations have annotations. Could you
+> point me some docs which states (and explains) that this
+> is wrong idea.
 
-> what if someone
-> changes or adds something to the CPU_UP_PREPARE switch-case, and forgets to
-> do the same in the init-routine?
+Just use common sense: Attributes that are of concern to the
+caller should go on the declaration. Attributes that only affect
+code generation for the function/object in question should go on
+the definition.
 
-This is not a driver which only 2-3 people use. This part is so well reviewed
-by so many highly smart people that this should never happen. And if it
-happens than its nothing but a review mistake.
+Jan
 
-> It is more comforting to know that there is just one single place where CPU
-> hotplug operations are handled (hrtimer_cpu_notify). That, in turn is good
-> for reliability because it makes it easier to write bug-free code.
-
-And for me that single place is: init_hrtimers_cpu() :)
