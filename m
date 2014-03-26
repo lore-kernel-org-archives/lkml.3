@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbaCZWEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:04:22 -0400
-Received: from mail.anarazel.de ([217.115.131.40]:54719 "EHLO mail.anarazel.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754490AbaCZWEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:04:20 -0400
-X-Greylist: delayed 517 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 Mar 2014 18:04:20 EDT
-Date: Wed, 26 Mar 2014 22:55:18 +0100
-From: Andres Freund <andres@2ndquadrant.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lsf@lists.linux-foundation.org, Wu Fengguang <fengguang.wu@intel.com>,
-        rhaas@anarazel.de
-Subject: Re: [Lsf] Postgresql performance problems with IO latency,
- especially during fsync()
-Message-ID: <20140326215518.GH9066@alap3.anarazel.de>
-References: <20140326191113.GF9066@alap3.anarazel.de>
- <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com>
+	id S1756192AbaCZWKN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:10:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58422 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaCZWKM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 18:10:12 -0400
+Date: Wed, 26 Mar 2014 15:10:10 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Artem Fetishev <artem_fetishev@epam.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] x86: Fix boot on uniprocessor systems
+Message-Id: <20140326151010.777e0c527243c23da4a2b1f4@linux-foundation.org>
+In-Reply-To: <CABPqkBTk+b_+PM_YdxUYw8PDdo9PL506jCR1xzqD6=SXc+zbKg@mail.gmail.com>
+References: <20140324225910.GB4937@owamsq.epam.com>
+	<20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
+	<CABPqkBTk+b_+PM_YdxUYw8PDdo9PL506jCR1xzqD6=SXc+zbKg@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-03-26 14:41:31 -0700, Andy Lutomirski wrote:
-> On Wed, Mar 26, 2014 at 12:11 PM, Andres Freund <andres@anarazel.de> wrote:
-> > Hi,
+On Wed, 26 Mar 2014 23:01:07 +0100 Stephane Eranian <eranian@google.com> wrote:
+
+> On Wed, Mar 26, 2014 at 9:31 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Tue, 25 Mar 2014 01:59:10 +0300 Artem Fetishev <artem_fetishev@epam.com> wrote:
 > >
-> > At LSF/MM there was a slot about postgres' problems with the kernel. Our
-> > top#1 concern is frequent slow read()s that happen while another process
-> > calls fsync(), even though we'd be perfectly fine if that fsync() took
-> > ages.
-> > The "conclusion" of that part was that it'd be very useful to have a
-> > demonstration of the problem without needing a full blown postgres
-> > setup. I've quickly hacked something together, that seems to show the
-> > problem nicely.
+> >> On x86 uniprocessor systems topology_physical_package_id() returns -1 which
+> >> causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized which leads
+> >> to GPF in rapl_pmu_init(). See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
+> >>
+> >> It turns out that physical_package_id and core_id can actually be retreived for
+> >> uniprocessor systems too. Enabling them also fixes rapl_pmu code.
+> >>
+> >> Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
+> >> ---
+> >> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
+> >> index d35f24e..1306d11 100644
+> >> --- a/arch/x86/include/asm/topology.h
+> >> +++ b/arch/x86/include/asm/topology.h
+> >> @@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
+> >>
+> >>  extern const struct cpumask *cpu_coregroup_mask(int cpu);
+> >>
+> >> -#ifdef ENABLE_TOPO_DEFINES
+> >>  #define topology_physical_package_id(cpu)    (cpu_data(cpu).phys_proc_id)
+> >>  #define topology_core_id(cpu)                        (cpu_data(cpu).cpu_core_id)
+> >> +
+> >> +#ifdef ENABLE_TOPO_DEFINES
+> >>  #define topology_core_cpumask(cpu)           (per_cpu(cpu_core_map, cpu))
+> >>  #define topology_thread_cpumask(cpu)         (per_cpu(cpu_sibling_map, cpu))
+> >>  #endif
 > >
-> > For a bit of context: lwn.net/SubscriberLink/591723/940134eb57fcc0b8/
-> > and the "IO Scheduling" bit in
-> > http://archives.postgresql.org/message-id/20140310101537.GC10663%40suse.de
-> >
+> > The patch applies to 3.13 and perhaps earlier kernels.  Is it needed in
+> > those kernel versions?
 > 
-> For your amusement: running this program in KVM on a 2GB disk image
-> failed, but it caused the *host* to go out to lunch for several
-> seconds while failing.  In fact, it seems to have caused the host to
-> fall over so badly that the guest decided that the disk controller was
-> timing out.  The host is btrfs, and I think that btrfs is *really* bad
-> at this kind of workload.
+> Before 3.13 there was no RAPL support.
+> But it seems the patch is still useful regardless
 
-Also, unless you changed the parameters, it's a) using a 48GB disk file,
-and writes really rather fast ;)
+Is that an ack?  If so I'll squirt it Linuswards right now for 3.14.
 
-> Even using ext4 is no good.  I think that dm-crypt is dying under the
-> load.  So I won't test your program for real :/
-
-Try to reduce data_size to RAM * 2, NUM_RANDOM_READERS to something
-smaller. If it still doesn't work consider increasing the two nsleep()s...
-
-I didn't have a good idea how to scale those to the current machine in a
-halfway automatic fashion.
-
-> > Possible solutions:
-> > * Add a fadvise(UNDIRTY), that doesn't stall on a full IO queue like
-> >   sync_file_range() does.
-> > * Make IO triggered by writeback regard IO priorities and add it to
-> >   schedulers other than CFQ
-> > * Add a tunable that allows limiting the amount of dirty memory before
-> >   writeback on a per process basis.
-> > * ...?
-> 
-> I thought the problem wasn't so much that priorities weren't respected
-> but that the fsync call fills up the queue, so everything starts
-> contending for the right to enqueue a new request.
-
-I think it's both actually. If I understand correctly there's not even a
-correct association to the originator anymore during a fsync triggered
-flush?
-
-> Since fsync blocks until all of its IO finishes anyway, what if it
-> could just limit itself to a much smaller number of outstanding
-> requests?
-
-Yea, that could already help. If you remove the fsync()s, the problem
-will periodically appear anyway, because writeback is triggered with
-vengeance. That'd need to be fixed in a similar way.
-
-> I'm not sure I understand the request queue stuff, but here's an idea.
->  The block core contains this little bit of code:
-
-I haven't read enough of the code yet, to comment intelligently ;)
-
-Greetings,
-
-Andres Freund
-
--- 
- Andres Freund	                   http://www.2ndQuadrant.com/
- PostgreSQL Development, 24x7 Support, Training & Services
