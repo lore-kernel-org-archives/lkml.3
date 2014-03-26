@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228AbaCZUqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:46:38 -0400
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:45230 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861AbaCZUqg convert rfc822-to-8bit (ORCPT
+	id S1756095AbaCZUxV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:53:21 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:33394 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755422AbaCZUxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:46:36 -0400
-Date: Wed, 26 Mar 2014 21:46:31 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: linux-kernel@vger.kernel.org,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Alexander Elbs <alex@segv.de>, Nicolas Pitre <nico@fluxnic.net>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        linux-mmc@vger.kernel.org, Andrew Lunn <andrew@lunn.ch>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Subject: Re: mvsdio: unhandled interrupt, mmc writes queuing up
-Message-ID: <20140326214631.7dccf8b6@neptune.home>
-In-Reply-To: <20140326000735.GI28304@titan.lakedaemon.net>
-References: <20140325192759.GJ29769@segv.de>
-	<53320055.9080307@gmail.com>
-	<20140326000735.GI28304@titan.lakedaemon.net>
-X-Mailer: Claws Mail 3.9.0 (GTK+ 2.24.22; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Mar 2014 16:53:20 -0400
+Message-ID: <53333E3D.6080607@gmail.com>
+Date: Wed, 26 Mar 2014 20:53:17 +0000
+From: paulmcquad <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: paulmcquad <paulmcquad@gmail.com>, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Doc: email-clients.txt:added thunderbird settings
+References: <53332374.3000703@gmail.com> <53333365.6010407@infradead.org> <53333DA1.6040809@gmail.com>
+In-Reply-To: <53333DA1.6040809@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Jason Sebastian,
 
-On Tue, 25 March 2014 Jason Cooper <jason@lakedaemon.net> wrote:
-> On Tue, Mar 25, 2014 at 11:16:53PM +0100, Sebastian Hesselbarth wrote:
-> > >> On Wed, 19 Mar 2014, Bruno Prémont wrote:
-> > >>> Since upgrading my Sheevaplug from 3.7.2 to 3.13.6 (FDT) I'm seeing
-> > >>> mvsdio f1090000.mvsdio: unhandled interrupt status=0x8810 en=0x0000 pio=0
-> > >>> at varied timings.
-> > 
-> > Can you please try the patches contained in [1]?
-> > 
-> > They have been Acked-by Jason Cooper, but I guess we simply lost
-> > track of them.
-> > 
-> > Sebastian
-> > 
-> > [1] https://lkml.org/lkml/2013/11/15/276
-> 
-> If these work for you, please send a Tested-by and I'll keep better
-> track of them this time.  I think these were sent before we had a
-> process for shuttling things into irqchip...
+On 26/03/14 20:50, paulmcquad wrote:
+> On 26/03/14 20:07, Randy Dunlap wrote:
+>> On 03/26/2014 11:59 AM, paulmcquad wrote:
+>>> From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
+>>> From: Paul McQuade <paulmcquad@gmail.com>
+>>> Date: Tue, 25 Mar 2014 20:16:47 +0000
+>>> Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
+>>>
+>>> Added setting to email-clients that is easier to read
+>>> and is easier to setup thunderbird. Removed config settings
+>>> and added GUI settings.
+>>>
+>>> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+>>> ---
+>>>  Documentation/email-clients.txt | 15 +++++----------
+>>>  1 file changed, 5 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+>>> index e9f5dac..1e7c171 100644
+>>> --- a/Documentation/email-clients.txt
+>>> +++ b/Documentation/email-clients.txt
+>>> @@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
+>>>  
+>>>  - Edit your Thunderbird config settings so that it won't use format=flowed.
+>>>    Go to "edit->preferences->advanced->config editor" to bring up the
+>>> -  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
+>>> -  "false".
+>>> +  thunderbird's registry editor.
+>>>  
+>>> -- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
+>> Did that option go away?  We don't want to compose html email.
+>>
+>>> +- Set "mailnews.send_plaintext_flowed" to "false"
+>>>  
+>>> -- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
+>>> +- Set "mailnews.wraplength" from "72" to "90"
+>> Can wraplength be disabled completely?  It would be better to disable
+>> wrapping.  Long kernel source code lines should not get broken.
+>> (or am I addressing the wrong option?)
+>>
+>>>  
+>>> -- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
+>>> +- "View" > "Message Body As" > "Plain Text"
+>>>  
+>>> -- Install the "toggle wordwrap" extension.  Download the file from:
+>>> -    https://addons.mozilla.org/thunderbird/addon/2351/
+>>> -  Then go to "tools->add ons", select "install" at the bottom of the screen,
+>>> -  and browse to where you saved the .xul file.  This adds an "Enable
+>>> -  Wordwrap" entry under the Options menu of the message composer.
+>>> +- "View" > "Character Encoding" > "Unicode (UTF-8)"
+>>>  
+>>>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>>>  TkRat (GUI)
+>>>
+> From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
+> From: Paul McQuade <paulmcquad@gmail.com>
+> Date: Tue, 25 Mar 2014 20:16:47 +0000
+> Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
+>
+> Added setting to email-clients that is easier to read
+> and is easier to setup thunderbird. Removed config settings
+> and added GUI settings.
+>
+> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+> ---
+>  Documentation/email-clients.txt | 15 +++++----------
+>  1 file changed, 5 insertions(+), 10 deletions(-)
+>
+> diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+> index e9f5dac..1e7c171 100644
+> --- a/Documentation/email-clients.txt
+> +++ b/Documentation/email-clients.txt
+> @@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
+>  
+>  - Edit your Thunderbird config settings so that it won't use format=flowed.
+>    Go to "edit->preferences->advanced->config editor" to bring up the
+> -  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
+> -  "false".
+> +  thunderbird's registry editor.
+>  
+> -- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
+> +- Set "mailnews.send_plaintext_flowed" to "false"
+>  
+> -- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
+> +- Set "mailnews.wraplength" from "72" to "0"
+>  
+> -- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
+> +- "View" > "Message Body As" > "Plain Text"
+>  
+> -- Install the "toggle wordwrap" extension.  Download the file from:
+> -    https://addons.mozilla.org/thunderbird/addon/2351/
+> -  Then go to "tools->add ons", select "install" at the bottom of the screen,
+> -  and browse to where you saved the .xul file.  This adds an "Enable
+> -  Wordwrap" entry under the Options menu of the message composer.
+> +- "View" > "Character Encoding" > "Unicode (UTF-8)"
+>  
+>  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+>  TkRat (GUI)
 
-
-Same for me as for Alexander, tested the series of 3 patches on top of
-3.14-rc7 here with no complaints about unhandled interrupts left.
-
-So for the 3 of them:
-Tested-by: Bruno Prémont <bonbons@linux-vserver.org>
-
-Thanks,
-Bruno
