@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbaCZGUz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 02:20:55 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:28447 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaCZGUx (ORCPT
+	id S1751709AbaCZGVp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 02:21:45 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:47278 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaCZGVn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 02:20:53 -0400
-Message-ID: <533271BA.5000007@atmel.com>
-Date: Wed, 26 Mar 2014 14:20:42 +0800
-From: Josh Wu <josh.wu@atmel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 26 Mar 2014 02:21:43 -0400
+From: SeongJae Park <sj38.park@gmail.com>
+To: scameron@beardog.cce.hp.com, JBottomley@paralles.com
+Cc: iss_storagedev@hp.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, SeongJae Park <sj38.park@gmail.com>
+Subject: [PATCH] [SCSI] hpsa: use trans_support after value assigned
+Date: Wed, 26 Mar 2014 15:24:02 +0900
+Message-Id: <1395815042-26917-1-git-send-email-sj38.park@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-CC: <g.liakhovetski@gmx.de>, <m.chehab@samsung.com>,
-        <linux-media@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [media] ov2640: add support for async device registration
-References: <1394791952-12941-1-git-send-email-josh.wu@atmel.com> <532371F4.9050509@gmail.com> <53296094.3060209@atmel.com> <532AFED3.5030103@samsung.com>
-In-Reply-To: <532AFED3.5030103@samsung.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Sylwester
+Because trans_support be used when check i/o accelerator mode support
+before its value assigned, it caused following build warning:
 
-On 3/20/2014 10:44 PM, Sylwester Nawrocki wrote:
-> Hi Josh,
->
-> On 19/03/14 10:17, Josh Wu wrote:
->> On 3/15/2014 5:17 AM, Sylwester Nawrocki wrote:
->>>> On 03/14/2014 11:12 AM, Josh Wu wrote:
->>>>>> +    clk = v4l2_clk_get(&client->dev, "mclk");
->>>>>> +    if (IS_ERR(clk))
->>>>>> +        return -EPROBE_DEFER;
->>>> You should instead make it:
->>>>
->>>>          return PTR_ERR(clk);
->>>>
->>>> But you will need this patch for that to work:
->>>> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/drivers/clk/clk.c?id=a34cd4666f3da84228a82f70c94b8d9b692034ea
->>>>
->>>>
->>>> With this patch there is no need to overwrite any returned error
->>>> value with EPROBE_DEFER.
->> Thanks for the information. I will use this in v2 version.
-> Oops, I missed somehow that it's v4l2_clk_get(), rather than
-> clk_get(). So it seems it will not work when you return PTR_ERR(clk),
-> since v4l2_clk_get() returns -ENODEV when clock is not found.
+drivers/scsi/hpsa.c: In function ‘hpsa_init_one’:
+drivers/scsi/hpsa.c:7468:20: warning: ‘trans_support’
+may be used uninitialized in this function [-Wmaybe-uninitialized]
+  if (trans_support & CFGTBL_Trans_io_accel1) {
+                    ^
+drivers/scsi/hpsa.c:7459:6: note: ‘trans_support’ was
+declared here
+  u32 trans_support;
+      ^
 
-right, I missed that. So this version is still valid one. The v2 that I 
-already sent should be dropped.
+Signed-off-by: SeongJae Park <sj38.park@gmail.com>
+---
+ drivers/scsi/hpsa.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> I think we should modify v4l2_clk_get() so it returns EPROBE_DEFER
-> rather than ENODEV on error. I anticipate v4l2_clk_get() might be
-> using clk_get() internally in future, and the v4l2 clk look up
-> will be used as a fallback only. So sensor drivers should just
-> do something like:
->
->   clk = v4l2_clk_get(...);
->   if (IS_ERR(clk))
-> 	return PTR_ERR(clk);
+diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
+index 8cf4a0c..a4ae873 100644
+--- a/drivers/scsi/hpsa.c
++++ b/drivers/scsi/hpsa.c
+@@ -7455,7 +7455,7 @@ clean_up:
+ 
+ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+ {
+-	u32 trans_support;
++	u32 trans_support = readl(&(h->cfgtable->TransportSupport));
+ 	unsigned long transMethod = CFGTBL_Trans_Performant |
+ 					CFGTBL_Trans_use_short_tags;
+ 	int i;
+@@ -7479,7 +7479,6 @@ static void hpsa_put_ctlr_into_performant_mode(struct ctlr_info *h)
+ 	}
+ 
+ 	/* TODO, check that this next line h->nreply_queues is correct */
+-	trans_support = readl(&(h->cfgtable->TransportSupport));
+ 	if (!(trans_support & PERFORMANT_MODE))
+ 		return;
+ 
+-- 
+1.8.3.2
 
-I noticed that there are some driver like ov772x, ov9640 and etc, are 
-not supported the async probe yet.
-If we return the EPROBE_DEFER for all v4l2_clk_get(), that will cause 
-the no-async probe function work incorrectly.
-So IMO we can do your above suggestion after all sensors support async 
-probe.
-
-Thanks.
->
-> --
-> Regards,
-> Sylwester
-
-Best Regards,
-Josh Wu
