@@ -1,132 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755597AbaCZDoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 23:44:22 -0400
-Received: from nm9-vm1.bullet.mail.gq1.yahoo.com ([98.136.218.240]:54007 "EHLO
-	nm9-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751394AbaCZDoU (ORCPT
+	id S1755365AbaCZDs2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 23:48:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49964 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbaCZDs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 23:44:20 -0400
-X-Yahoo-Newman-Id: 92353.18755.bm@smtp234.mail.gq1.yahoo.com
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 0jMtd0IVM1maCetIBetuoZMt7F.UX.ajGYx0M12mjVLTxNr
- drTyDcfm3Gdfk8vOBV8C8mYmq.NKHDz9T3Eb.pIF8c1J_JZZFTICIsYgVhxe
- 0rxPJ3E6LVYpMfdDZQu3XHSNSe5ZoCXLGiPwLLzWV_RyHDkjCRvoTEtPDrkY
- ENbIzVXI8MUWfUawhPQ5VaL0n0mZsl9E25v_VdjkqJSCHa1MvCw4FxblmW8_
- MQaL6O.IlF8OfQR7ZeD9UAvgQRMubP4BEhSGEwLKYbjGErEAEtHYsNEnWl38
- M.CyfaJ09WTYejmmbBSc448l7aChLXDlA1AXKxBBC2siPZu3bkkwCa9knzG3
- MKy6q9K4Bl5sEYAAMOIVomGmMdcdnhDYM1g._cPs7jGT5vfuV4o3EVCAvUhj
- 3Aa7YIthaGLy7inkuGxbmXNY1rcer_e.I9IMTbMOKE8oYo8xyE84phI4MMcR
- Tu.wYbe_N16oO1emj83tqcXBrkL.yqeqRe1A.qRm1m6.ukNkLsMlOL1M0w0u
- NPUoS7otZ
-X-Yahoo-SMTP: Ua.BYCGswBCLcNpMqiQEtkMTjL08M6XQy5ZdmA--
-X-Rocket-Received: from localhost.hotspot (chase.southwood@72.152.71.177 with plain [63.250.193.228])
-        by smtp234.mail.gq1.yahoo.com with SMTP; 26 Mar 2014 03:44:20 +0000 UTC
-From: Chase Southwood <chase.southwood@yahoo.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@yahoo.com>
-Subject: [PATCH v2] staging: comedi: s626: use comedi_timeout() on remaining loops
-Date: Tue, 25 Mar 2014 22:43:58 -0500
-Message-Id: <1395805438-12259-1-git-send-email-chase.southwood@yahoo.com>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <1395724172-30183-1-git-send-email-chase.southwood@yahoo.com>
-References: <1395724172-30183-1-git-send-email-chase.southwood@yahoo.com>
+	Tue, 25 Mar 2014 23:48:27 -0400
+Date: Tue, 25 Mar 2014 20:49:55 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: David Miller <davem@davemloft.net>, "olaf@aepfle.de" <olaf@aepfle.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive Side
+ Scaling (vRSS)
+Message-ID: <20140326034955.GA10875@kroah.com>
+References: <1395434633-16771-1-git-send-email-haiyangz@microsoft.com>
+ <216cd74854414cfc9b338cab41a3d1a0@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+ <20140325.204343.991901655152875043.davem@davemloft.net>
+ <20140325.204728.2281772666453524010.davem@davemloft.net>
+ <a8b374e420be42d883fb782c8f271659@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <a8b374e420be42d883fb782c8f271659@DFM-DB3MBX15-06.exchange.corp.microsoft.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were just a handful of more while loops in this file that needed
-timeouts, and this patch takes care of them.  One new callback is
-introduced, and all of the proper comedi_timeout() calls are then used.
+On Wed, Mar 26, 2014 at 03:23:47AM +0000, Haiyang Zhang wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: David Miller [mailto:davem@davemloft.net]
+> > Sent: Tuesday, March 25, 2014 8:47 PM
+> > To: Haiyang Zhang
+> > Cc: netdev@vger.kernel.org; KY Srinivasan; olaf@aepfle.de;
+> > jasowang@redhat.com; linux-kernel@vger.kernel.org; driverdev-
+> > devel@linuxdriverproject.org
+> > Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+> > Side Scaling (vRSS)
+> > 
+> > From: David Miller <davem@davemloft.net>
+> > Date: Tue, 25 Mar 2014 20:43:43 -0400 (EDT)
+> > 
+> > > From: Haiyang Zhang <haiyangz@microsoft.com>
+> > > Date: Tue, 25 Mar 2014 20:37:43 +0000
+> > >
+> > >> Do we know when the dependency (commit: 8a7206a89f) will be merged
+> > >> into net-next tree?
+> > >
+> > > You're really not very patient, to say the least.
+> > >
+> > > It's done now and I'm working to integrate your patch.
+> > >
+> > > That patch has been in under review state in patchwork, which means
+> > > that I will get to it at some point, so you don't need to worry about
+> > > it any more than any other patch you might submit.
+> > >
+> > > The whole reason patchwork exists is so that people don't have to
+> > > ask.
+> > 
+> > And actually, this dependency "8a7206a89f" commit doesn't exist
+> > in the 'net' tree at all.  I just merged Linus's tree into 'net'
+> > and it doesn't exist there either.
+> > 
+> > So this patch still doesn't compile.
+> > 
+> > I'm tossing it from patchwork until you sort this out.
+> 
+> Dave,
+> 
+> Thank you for the efforts.
+> The commit is in the linux-next tree. You can see it from this link:
+> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=8a7206a89f85c8439561b0eff85bb9440a2e97a9
+> And, here is the commit log:
+> 
+> author
+> K. Y. Srinivasan <kys@microsoft.com> 2014-02-03 20:42:45 (GMT) 
+> committer
+> Greg Kroah-Hartman <gregkh@linuxfoundation.org> 2014-02-07 23:22:40 (GMT) 
+> commit
+> 8a7206a89f85c8439561b0eff85bb9440a2e97a9 (patch) 
+> tree
+> 61f763919607368481ac128f56416df1f49cd187 
+> parent
+> 011a7c3cc3aa60c7ea6bb49d847e80a299ba7b36 (diff) 
+> 
+> Drivers: hv: vmbus: Support per-channel driver state
+> As we implement Virtual Receive Side Scaling on the networking side
+> (the VRSS patches are currently under review), it will be useful to have
+> per-channel state that vmbus drivers can manage. Add support for
+> managing per-channel state.
+> 
+> KY:
+> Do you know the original tree this patch was checked into by Greg KH? Or, 
+> did Greg checked into linux-next tree directly?
 
-Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
----
-2: s626_i2c_handshake_eoc() can be used in s626_initialize() as noted by
-Ian.  So, s626_initialize_eoc() has been removed, and its uses swapped
-for s626_i2c_handshake_eoc().
+No one "checks into the linux-next tree directly".
 
- drivers/staging/comedi/drivers/s626.c | 34 ++++++++++++++++++++++++++--------
- 1 file changed, 26 insertions(+), 8 deletions(-)
+So your patch relies on a patch in my char-misc tree?  Ick, that wasn't
+very wise.
 
-diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index 95fadf3..865cf93 100644
---- a/drivers/staging/comedi/drivers/s626.c
-+++ b/drivers/staging/comedi/drivers/s626.c
-@@ -295,10 +295,24 @@ static void s626_debi_replace(struct comedi_device *dev, unsigned int addr,
- 
- /* **************  EEPROM ACCESS FUNCTIONS  ************** */
- 
-+static int s626_i2c_handshake_eoc(struct comedi_device *dev,
-+				 struct comedi_subdevice *s,
-+				 struct comedi_insn *insn,
-+				 unsigned long context)
-+{
-+	unsigned int status;
-+
-+	status = s626_mc_test(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
-+	if (status)
-+		return 0;
-+	return -EBUSY;
-+}
-+
- static uint32_t s626_i2c_handshake(struct comedi_device *dev, uint32_t val)
- {
- 	struct s626_private *devpriv = dev->private;
- 	unsigned int ctrl;
-+	uint32_t ret;
- 
- 	/* Write I2C command to I2C Transfer Control shadow register */
- 	writel(val, devpriv->mmio + S626_P_I2CCTRL);
-@@ -308,8 +322,9 @@ static uint32_t s626_i2c_handshake(struct comedi_device *dev, uint32_t val)
- 	 * wait for upload confirmation.
- 	 */
- 	s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
--	while (!s626_mc_test(dev, S626_MC2_UPLD_IIC, S626_P_MC2))
--		;
-+	ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
-+	if (ret)
-+		return ret;
- 
- 	/* Wait until I2C bus transfer is finished or an error occurs */
- 	do {
-@@ -2029,8 +2044,9 @@ static int s626_ai_insn_read(struct comedi_device *dev,
- 	/* Wait for the data to arrive in FB BUFFER 1 register. */
- 
- 	/* Wait for ADC done */
--	while (!(readl(devpriv->mmio + S626_P_PSR) & S626_PSR_GPIO2))
--		;
-+	ret = comedi_timeout(dev, s, insn, s626_ai_eoc, 0);
-+	if (ret)
-+		return ret;
- 
- 	/* Fetch ADC data from audio interface's input shift register. */
- 
-@@ -2681,8 +2697,9 @@ static int s626_initialize(struct comedi_device *dev)
- 	writel(S626_I2C_CLKSEL | S626_I2C_ABORT,
- 	       devpriv->mmio + S626_P_I2CSTAT);
- 	s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
--	while (!(readl(devpriv->mmio + S626_P_MC2) & S626_MC2_UPLD_IIC))
--		;
-+	ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
-+	if (ret)
-+		return ret;
- 
- 	/*
- 	 * Per SAA7146 data sheet, write to STATUS
-@@ -2691,8 +2708,9 @@ static int s626_initialize(struct comedi_device *dev)
- 	for (i = 0; i < 2; i++) {
- 		writel(S626_I2C_CLKSEL, devpriv->mmio + S626_P_I2CSTAT);
- 		s626_mc_enable(dev, S626_MC2_UPLD_IIC, S626_P_MC2);
--		while (!s626_mc_test(dev, S626_MC2_UPLD_IIC, S626_P_MC2))
--			;
-+		ret = comedi_timeout(dev, NULL, NULL, s626_i2c_handshake_eoc, 0);
-+		if (ret)
-+			return ret;
- 	}
- 
- 	/*
--- 
-1.8.5.3
+It will just have to wait until the patch goes into 3.15-rc1, as my
+trees are closed, sorry.
 
+greg k-h
