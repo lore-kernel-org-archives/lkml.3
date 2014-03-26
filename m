@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbaCZM4d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 08:56:33 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34702 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753438AbaCZM4b (ORCPT
+	id S1753762AbaCZM7x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 08:59:53 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52905 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752018AbaCZM7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 08:56:31 -0400
-Date: Wed, 26 Mar 2014 12:56:23 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
-        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
-        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        tony.luck@intel.com, Tang Liang <liang.tang@oracle.com>
-Subject: Re: [PATCH v3 1/5] efi: Add efi_init_ops variable
-Message-ID: <20140326125623.GA24856@console-pimps.org>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Mar 2014 08:59:51 -0400
+Date: Wed, 26 Mar 2014 13:59:48 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 07/14] ARM: mvebu: Extend the pmsu registers
+Message-ID: <20140326135948.3f2669fc@skate>
+In-Reply-To: <5332C267.3080908@gmail.com>
+References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
+	<1395787705-31061-8-git-send-email-gregory.clement@free-electrons.com>
+	<5332C267.3080908@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar, at 09:57:52PM, Daniel Kiper wrote:
-> Add efi_init_ops variable which allows us to replace
-> EFI init functions on Xen with its specific stuff.
+Dear Sebastian Hesselbarth,
+
+On Wed, 26 Mar 2014 13:04:55 +0100, Sebastian Hesselbarth wrote:
+> On 03/25/2014 11:48 PM, Gregory CLEMENT wrote:
+> > The initial binding for PMSU were wrong. It didn't take into account
+> > all the registers from the PMSU and moreover it referred to registers
+> > which are not part of PMSU.
+> >
+> > The Power Management Unit Service block also controls the Coherency
+> > Fabric subsystem. These registers are needed for the CPU idle
+> > implementation for the Armada 370/XP, it allows to enter a deep CPU
+> > idle state where the Coherency Fabric and the L2 cache are powered
+> > down.
+> >
+> > This commit add support for a new compatible for the PMSU node
+> > including the block related to the coherency fabric. It also keeps
+> > compatibility with the old binding
+> >
+> > This patch also adds warnings if one of the base registers set can't
+> > be ioremapped.
+> >
+> > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> > ---
+> >   arch/arm/mach-mvebu/pmsu.c | 47 +++++++++++++++++++++++++++++++++++++++++-----
+> >   1 file changed, 42 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
+> > index d71ef53107c4..865bcb651e01 100644
+> > --- a/arch/arm/mach-mvebu/pmsu.c
+> > +++ b/arch/arm/mach-mvebu/pmsu.c
+> [...]
+> > +static void __init armada_370_xp_pmsu_legacy_init(struct device_node *np)
+> > +{
+> > +	u32 addr;
+> > +	pr_warn("*** Warning ***  Using an old binding which will be deprecated\n");
+> > +	/* We just need the adress, we already know the size */
+> > +	addr = be32_to_cpu(*of_get_address(np, 0, NULL, NULL));
+> > +	addr -= PMSU_BASE_OFFSET;
+> > +	pmsu_mp_base = ioremap(addr, PMSU_REG_SIZE);
+> > +	of_node_put(np);
 > 
-> This patch is based on Jan Beulich and Tang Liang work.
-> 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> ---
->  arch/ia64/kernel/efi.c      |   30 +++++++++++++++++++++---------
->  arch/x86/platform/efi/efi.c |   18 +++++++++++++-----
->  drivers/firmware/efi/efi.c  |   26 ++++++++++++++++++++++++++
->  include/linux/efi.h         |    8 ++++++++
->  4 files changed, 68 insertions(+), 14 deletions(-)
+> When messing with OF passed resources, I suggest to use
+> of_address_to_resource() and work on the struct resource
+> instead. The be32_to_cpu pointing to an immediate just looks
+> strange.
 
-[...]
+I'm working on a revised patch set for these PMSU changes, as I also
+need them as a preparation for the SMP support on Armada 375/38x. And
+my revised patch set makes the manipulations on the 'struct resource',
+as you suggest.
 
-> @@ -1118,6 +1118,14 @@ u64 efi_mem_attributes(unsigned long phys_addr)
->  	return 0;
->  }
->  
-> +struct efi_init_ops efi_init_ops = {
-> +	.efi_init = efi_init_generic,
-> +	.efi_reserve_boot_services = efi_reserve_boot_services_generic,
-> +	.efi_enter_virtual_mode = efi_enter_virtual_mode_generic,
-> +	.efi_mem_type = efi_mem_type_generic,
-> +	.efi_mem_attributes = efi_mem_attributes_generic
-> +};
-
-Please don't create another struct of EFI function pointers.
-
-After this we'll have 3 global efi structures defintions and 4 global
-efi objects on x86,
-
-  - struct efi_early [in the boot stub]
-  - struct efi ['efi_phys' before/'efi' after SetVirtualAddressMap()]
-  - struct efi_init_ops [for the benefit of xen]
-
-I have a big problem with exposing .efi_reserve_boot_services as an API.
-
-Also, the fact that in later patches you're copying chunks of the x86
-virt_*() funtions suggests to me that this has been implemented at the
-wrong layer, because it actively discourages sharing code between x86
-and Xen.
-
+Thomas
 -- 
-Matt Fleming, Intel Open Source Technology Center
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
