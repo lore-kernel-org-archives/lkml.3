@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755209AbaCZPRA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 11:17:00 -0400
-Received: from smtprelay0178.hostedemail.com ([216.40.44.178]:35768 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750956AbaCZPQ6 (ORCPT
+	id S1754730AbaCZPTm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 11:19:42 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:45428 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752009AbaCZPTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 11:16:58 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1539:1593:1594:1711:1714:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3350:3622:3865:3868:4321:5007:7652:10004:10400:10848:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:n
-X-HE-Tag: heat03_8f3858a2d4f52
-X-Filterd-Recvd-Size: 1852
-Message-ID: <1395846982.3726.18.camel@joe-AO722>
-Subject: Re: [PATCH] drivers/staging/vt6655/iwctl.c fix a sparse warning
-From: Joe Perches <joe@perches.com>
-To: Jimmy Li <coder.liss@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Teodora Baluta <teobaluta@gmail.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        Michael Gunselmann <michael.gunselmann@studium.uni-erlangen.de>,
-        Lisa Nguyen <lisa@xenapiadmin.com>,
-        Martin Hofmann <martin.hofmann@studium.uni-erlangen.de>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        =?UTF-8?Q?T=C3=BClin_=C4=B0zer?= <tulinizer@gmail.com>,
-        Archana kumari <archanakumari959@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 26 Mar 2014 08:16:22 -0700
-In-Reply-To: <20140326074243.GA15228@gmail.com>
-References: <20140326074243.GA15228@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 26 Mar 2014 11:19:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140321035233.32624.98694@quantum>
+References: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com>
+	<531068F4.3060903@free-electrons.com>
+	<20140321035233.32624.98694@quantum>
+Date: Wed, 26 Mar 2014 08:19:39 -0700
+Message-ID: <CAGa+x85XLDZqCkz9R95d2Vj9eODx4q8W=9QhmMfivdPf2GdsaQ@mail.gmail.com>
+Subject: Re: [PATCH v3] clk: respect the clock dependencies in of_clk_init
+From: Kevin Hilman <khilman@linaro.org>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-03-26 at 00:42 -0700, Jimmy Li wrote:
-> fix a sparse warning.
-[]
-> diff --git a/drivers/staging/vt6655/iwctl.c b/drivers/staging/vt6655/iwctl.c
-[]
-> @@ -1843,7 +1843,7 @@ int iwctl_siwencodeext(struct net_device *dev,
-[]
->  	blen = sizeof(*param);
-> -	buf = kmalloc((int)blen, (int)GFP_KERNEL);
-> +	buf = kmalloc((int)blen, GFP_KERNEL);
->  	if (buf == NULL)
->  		return -ENOMEM;
->  	memset(buf, 0, blen);
+[+ imx6 maintainers ]
 
-Ideally, this would be
+On Thu, Mar 20, 2014 at 8:52 PM, Mike Turquette <mturquette@linaro.org> wrote:
+> Quoting Gregory CLEMENT (2014-02-28 02:46:12)
+>> Hi Mike,
+>>
+>> On 24/02/2014 19:10, Gregory CLEMENT wrote:
+>> > Until now the clock providers were initialized in the order found in
+>> > the device tree. This led to have the dependencies between the clocks
+>> > not respected: children clocks could be initialized before their
+>> > parent clocks.
+>> >
+>> > Instead of forcing each platform to manage its own initialization order,
+>> > this patch adds this work inside the framework itself.
+>> >
+>> > Using the data of the device tree the of_clk_init function now delayed
+>> > the initialization of a clock provider if its parent provider was not
+>> > ready yet.
+>> >
+>> > The strict dependency check (all parents of a given clk must be
+>> > initialized) was added by Boris BREZILLON
+>>
+>> Are you ok with this version?
+>> Will you take it for 3.15?
+>> Or maybe you expected that it will be part of a pull request?
+>>
+>> However as it is modifying the core of the framework I thought that you
+>> would take it and apply yourself.
+>
+> Hi Gregory,
+>
+> I have taken this into clk-next. If no regressions pop up over the next
+> few days then it should go into 3.15.
 
-	buf = kzalloc(sizeof(*param), GFP_KERNEL);
-	if (!buf)
-		return -ENOMEM;
+$SUBJECT patch (as commit 1771b10d605) is in -next has been fingered
+by bisection to be the reason behind boot failures[1] on imx6 wand
+boards in the last several -next kernels.
 
-removing the now unused blen variable declaration
-and without the now unnecessary memset
+Reverting the patch on top of next/master gets these boards booting again.
 
+The boot failures result in no console output, so I haven't done any
+further debugging.
 
+Kevin
+
+[1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-March/002927.html
