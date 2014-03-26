@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090AbaCZASM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:18:12 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35448 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035AbaCZASK (ORCPT
+	id S1755351AbaCZASz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:18:55 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:53192 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754346AbaCZASx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:18:10 -0400
-Message-ID: <53321CB6.5050706@oracle.com>
-Date: Tue, 25 Mar 2014 20:17:58 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 20:18:53 -0400
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Michal Hocko <mhocko@suse.cz>, Pekka Enberg <penberg@kernel.org>,
-        Matt Mackall <mpm@selenic.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mm: slub: gpf in deactivate_slab
-References: <53208A87.2040907@oracle.com> <5331A6C3.2000303@oracle.com> <20140325165247.GA7519@dhcp22.suse.cz> <alpine.DEB.2.10.1403251205140.24534@nuc> <5331B9C8.7080106@oracle.com> <alpine.DEB.2.10.1403251308590.26471@nuc>
-In-Reply-To: <alpine.DEB.2.10.1403251308590.26471@nuc>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20140325200352.GU31785@oranje.fc.hp.com>
+References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
+	<20140325200352.GU31785@oranje.fc.hp.com>
+Date: Tue, 25 Mar 2014 17:18:53 -0700
+X-Google-Sender-Auth: sUwcJP8uacLJ4CMGsDxgU_e3HMk
+Message-ID: <CAE9FiQUxBWFfUBjdsakPV0B=rsB4wD-sX6Q2tVbOjNy9RJffRg@mail.gmail.com>
+Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
+From: Yinghai Lu <yinghai@kernel.org>
+To: Linn Crosetto <linn@hp.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 02:10 PM, Christoph Lameter wrote:
-> On Tue, 25 Mar 2014, Sasha Levin wrote:
+On Tue, Mar 25, 2014 at 1:03 PM, Linn Crosetto <linn@hp.com> wrote:
+> Thanks for the patch.
 >
->> So here's the full trace. There's obviously something wrong here since we
->> pagefault inside the section that was supposed to be running with irqs
->> disabled
->> and I don't see another cause besides this.
->>
->> The unreliable entries in the stack trace also somewhat suggest that the
->> fault is with the code I've pointed out.
+> On Tue, Jan 28, 2014 at 01:54:05PM -0800, Yinghai Lu wrote:
+>> used_vectors is a bitmap for vectors that are not tracked in per_cpu
+>> vector_irq.
 >
-> Looks like there was some invalid data fed to the function and the page
-> fault with interrupts disabled is the result of following and invalid
-> pointer.
+> I feel like this comment (also in the code) could be misleading because vectors
+> above first_system_vector are effectively not tracked in per_cpu vector_irq, but
+> also may not have the bit set in used_vectors. For example, used_vectors from a
+> system that I am looking at now:
 >
-> Is there more context information available? What are the options set for
-> the cache that the operation was performed on?
+> first_system_vector
+>                 239                  255
+>                   |                  |
+>                   10 01000 11111 11111
+>
+> test_bit(240, used_vectors) does not return the correct answer to the question
+> about whether the vector is tracked in per_cpu vector_irq. This leads to two
+> meanings for the bitmap; for vectors less than first_system_vector whether or
+> not they are tracked in per_cpu vector_irq, and for vectors above
+> first_system_vector, whether or not they are in use:
+>
+> static inline int is_per_cpu_vector(int vector) {
+>         return !test_bit(vector, used_vectors) &&
+>                         vector < first_system_vector;
+> }
 
-It seems like it's a regular allocation from the inode_cachep kmem_cache:
+sorry, I can not catch what you want to say.
 
-	inode = kmem_cache_alloc(inode_cachep, GFP_KERNEL);
+Do you mean the change log or comment in the patch is not right?
 
-I'm not sure if there's anything special about this cache, codewise it's
-created as follows:
+Thanks
 
-
-         inode_cachep = kmem_cache_create("inode_cache",
-                                          sizeof(struct inode),
-                                          0,
-                                          (SLAB_RECLAIM_ACCOUNT|SLAB_PANIC|
-                                          SLAB_MEM_SPREAD),
-                                          init_once);
-
-
-I'd be happy to dig up any other info required, I'm just not too sure
-what you mean by options for the cache?
-
-
-Thanks,
-Sasha
+Yinghai
