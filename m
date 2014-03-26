@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278AbaCZUAI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:00:08 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46529 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134AbaCZUAE (ORCPT
+	id S1756292AbaCZUBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:01:34 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41273 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755902AbaCZUBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:00:04 -0400
-Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
-Message-Id: <20140326.155958.1928261590856069753.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
-        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
-        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
-        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
-        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
-        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in
- skb_zerocopy and handle errors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
-References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 26 Mar 2014 16:01:31 -0400
+Message-ID: <53333217.7090706@infradead.org>
+Date: Wed, 26 Mar 2014 13:01:27 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, Georgi Vlaev <joe@nucleusys.com>,
+        Brian Austin <brian.austin@cirrus.com>,
+        moderated for non-subscribers <alsa-devel@alsa-project.org>
+Subject: Re: linux-next: Tree for Mar 26 (sound/soc/codecs/cs42l52.c)
+References: <20140326173539.543d4122020476c3aefc0137@canb.auug.org.au> <5332FE45.5030601@infradead.org>
+In-Reply-To: <5332FE45.5030601@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Mar 2014 13:00:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Fri, 21 Mar 2014 10:31:34 +0000
-
-> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-> orphan them. Also, it doesn't handle errors, so this patch takes care of that
-> as well, and modify the callers accordingly. skb_tx_error() is also added to
-> the callers so they will signal the failed delivery towards the creator of the
-> skb.
+On 03/26/2014 09:20 AM, Randy Dunlap wrote:
+> On 03/25/2014 11:35 PM, Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> This tree still fails (more than usual) the powerpc allyesconfig build.
+>>
+>> Changes since 20140325:
+>>
 > 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> on x86_64:
+> 
+> when CONFIG_INPUT=m and
+> SNC_SOC_CS42L42=y:
 
-Applied, thanks Zoltan.
+              L52
+
+> 
+> sound/built-in.o: In function `cs42l52_beep_set':
+> cs42l52.c:(.text+0xd4b01): undefined reference to `input_event'
+> sound/built-in.o: In function `cs42l52_probe':
+> cs42l52.c:(.text+0xd4beb): undefined reference to `devm_input_allocate_device'
+> cs42l52.c:(.text+0xd4d0c): undefined reference to `input_register_device'
+> sound/built-in.o: In function `wm8962_beep_set':
+> wm8962.c:(.text+0x116240): undefined reference to `input_event'
+> sound/built-in.o: In function `wm8962_probe':
+> wm8962.c:(.text+0x116cae): undefined reference to `devm_input_allocate_device'
+> wm8962.c:(.text+0x116e0e): undefined reference to `input_register_device'
+> 
+> 
+> Full randconfig file is attached.
+> 
+
+I think that this can be fixed by modifying the Kconfig file with:
+
+	depends on INPUT || INPUT=n
+
+This will restrict CS42L52 to =m if INPUT=m.
+
+-- 
+~Randy
