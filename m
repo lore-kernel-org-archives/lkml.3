@@ -1,57 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752348AbaCZJAG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 05:00:06 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:34150 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750953AbaCZI77 (ORCPT
+	id S1753368AbaCZJDE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 05:03:04 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:58406 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750953AbaCZJDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 04:59:59 -0400
-Date: Wed, 26 Mar 2014 08:59:53 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Roy Franz <roy.franz@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        matt.fleming@intel.com, leif.lindholm@linaro.org, hpa@zytor.com,
-        bp@alien8.de, alan@lxorguk.ukuu.org.uk, mjg59@srcf.ucam.org
-Subject: Re: [PATCH] Add efi_early_call() macro
-Message-ID: <20140326085953.GA2958@console-pimps.org>
-References: <20140322110515.GF2815@console-pimps.org>
- <1395787231-14298-1-git-send-email-roy.franz@linaro.org>
+	Wed, 26 Mar 2014 05:03:01 -0400
+Date: Wed, 26 Mar 2014 02:02:48 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Oleg Drokin <green@linuxhacker.ru>, Joe Perches <joe@perches.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 5/5] lustre: add myself to list of people to CC on lustre
+ patches
+Message-ID: <20140326090248.GA22631@infradead.org>
+References: <1390538708-4120-1-git-send-email-green@linuxhacker.ru>
+ <1390538708-4120-6-git-send-email-green@linuxhacker.ru>
+ <1390542276.32356.22.camel@joe-AO722>
+ <8ADC515E-0EB5-4891-A6C9-CEAEA5E50E34@linuxhacker.ru>
+ <CAMuHMdWXvyTpoafetr63-80GWppZGC3y72otuf89d3LJoKwXOQ@mail.gmail.com>
+ <AB57D4F6-7E01-43E6-A421-F73BE52AB74C@linuxhacker.ru>
+ <CAMuHMdVFO+6BKF6gGscwDyc2pxFXEFYKzXse6iVs15v=aipNFg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395787231-14298-1-git-send-email-roy.franz@linaro.org>
+In-Reply-To: <CAMuHMdVFO+6BKF6gGscwDyc2pxFXEFYKzXse6iVs15v=aipNFg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar, at 03:40:30PM, Roy Franz wrote:
-> Add the efi_early_call() macro to invoke functions in the efi_early
-> structure. Using a macro for these invocations allows the arm32/arm64
-> architectures to define the macro differently so that they can directly
-> invoke the boot services functions that are exposed in the efi_early
-> structure on x86. Prior to the introduction of the efi_early structure
-> the efi_call_physN macros were used on all architectures and allowed
-> for this differentiation.
+On Wed, Mar 26, 2014 at 09:44:08AM +0100, Geert Uytterhoeven wrote:
+> Ping?
 > 
-> Signed-off-by: Roy Franz <roy.franz@linaro.org>
-> ---
->  arch/x86/boot/compressed/eboot.c       |    5 +++++
->  drivers/firmware/efi/efi-stub-helper.c |   26 +++++++++++++-------------
->  2 files changed, 18 insertions(+), 13 deletions(-)
+> We got a new "fix" for this in due to https://lkml.org/lkml/2014/2/13/479
 
-Confused.
+Given that lustre maintainers aren't willing to fix even the worst crap
+like this we really should drop it from the staging tree.
 
-Why have you rewritten the patch that I sent Satuday morning?
-
-  https://lkml.org/lkml/2014/3/22/61
-
-I don't think your version goes far enough because you've left all the
-efi_early->call() stuff in eboot.c. So now there's two ways to invoke
-EFI functions in the x86 boot stub.
-
-What's wrong with the patch that I sent?
-
--- 
-Matt Fleming, Intel Open Source Technology Center
