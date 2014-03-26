@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756455AbaCZVyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:54:13 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:64203 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756359AbaCZVyM (ORCPT
+	id S1756538AbaCZV47 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 17:56:59 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:34324 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126AbaCZV45 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:54:12 -0400
-MIME-Version: 1.0
-X-Originating-IP: [12.232.193.53]
-In-Reply-To: <1395868919.5365.6.camel@pippen.local.home>
-References: <1395839857.7667.9.camel@pippen.local.home>
-	<1395857987.10059.23.camel@empanada>
-	<1395868919.5365.6.camel@pippen.local.home>
-Date: Wed, 26 Mar 2014 14:54:11 -0700
-Message-ID: <CAOesGMiLOcC2KR4b9Jq=hJT=8NKK95itWx0BsX7NGsmBYYLbSw@mail.gmail.com>
-Subject: Re: [GIT PULL] tracing: Fix traceon trigger condition to actually
- turn tracing on
-From: Olof Johansson <olof@lixom.net>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Tom Zanussi <tom.zanussi@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Mar 2014 17:56:57 -0400
+Message-ID: <1395871015.12610.254.camel@edumazet-glaptop2.roam.corp.google.com>
+Subject: Re: [PATCH 2/7] atm: replace del_timer by del_timer_sync
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+Cc: "David S. Miller" <davem@davemloft.net>, kernel-janitors@vger.kernel.org,
+        tglx@linutronix.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 26 Mar 2014 14:56:55 -0700
+In-Reply-To: <1395869625-15209-3-git-send-email-Julia.Lawall@lip6.fr>
+References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
+	 <1395869625-15209-3-git-send-email-Julia.Lawall@lip6.fr>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 2:21 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Bah, I forgot to Cc LKML on my pull request. Doing this from a
-> conference with very poor internet access from a laptop that I don't
-> usually develop on, means I might make mistakes.
->
-> On Wed, 2014-03-26 at 13:19 -0500, Tom Zanussi wrote:
->> On Wed, 2014-03-26 at 09:17 -0400, Steven Rostedt wrote:
->> > Linus,
->> >
->> > While on my flight to Linux Collaboration Summit, I was working on
->> > my slides for the event trigger tutorial. I booted a 3.14-rc7 kernel
->> > to perform what I wanted to teach and cut and paste it into my slides.
->> > When I tried the traceon event trigger with a condition attached to it
->> > (turns tracing on only if a field of the trigger event matches a condition
->> > set by the user), nothing happened. Tracing would not turn on. I stopped
->> > working on my presentation in order to find what was wrong.
->> >
->>
->> Hi Steve,
->>
->> Sorry you had to stop working on your presentation to dig into this -
->> thanks for doing that though - it looks correct and fixes the problem
->> here for me, so you can add my Tested-by:
->>
->> Tested-by: Tom Zanussi <tom.zanussi@linux.intel.com>
->
-> Linus already pulled it. But Olof came to me at lunch to tell me my
-> patch broke his PA Semi PPC box.
->
-> Olof, as you well know, I also own one of those beasts, and I just
-> booted the kernel with that patch and all works fine. Perhaps its a
-> config issue? Can you send me your config.
+On Wed, 2014-03-26 at 22:33 +0100, Julia Lawall wrote:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
+
+> 
+> diff --git a/net/atm/mpc.c b/net/atm/mpc.c
+> index b71ff6b..91dc58f 100644
+> --- a/net/atm/mpc.c
+> +++ b/net/atm/mpc.c
+> @@ -1492,7 +1492,7 @@ static void __exit atm_mpoa_cleanup(void)
+>  
+>  	mpc_proc_clean();
+>  
+> -	del_timer(&mpc_timer);
+> +	del_timer_sync(&mpc_timer);
+>  	unregister_netdevice_notifier(&mpoa_notifier);
+>  	deregister_atm_ioctl(&atm_ioctl_ops);
+>  
+
+It seems this timer rearms itself, so this patch wont be enough I fear.
 
 
-I think it's a side effect, and something else is going on. If I build
-an boot a ppc64_defconfig on the box (I mistakenly told you that it
-was pasemi_defconfig), it hangs early during boot during PCI init,
-halfway through printing a line of stack usage warning.
-
-However, it seems fickle. If I disable the hung task detector it seems
-to go away, for example. So, I think something else is going on and it
-just happened to align the stars for it to happen.
-
-I'll keep trying to change variables enough to see what's going on. I
-really wish I still had JTAG access on this box, but all those tools
-are since long gone and forgotten. The conference wifi makes it harder
-to work on this too, as I'm sure you've noticed...
-
-Don't let this hold up anything at this time, unless someone else complains.
 
 
--Olof
