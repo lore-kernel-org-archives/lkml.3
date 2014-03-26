@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009AbaCZREy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 13:04:54 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:41017 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755593AbaCZREw (ORCPT
+	id S1753789AbaCZRMy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 13:12:54 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28922 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaCZRMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 13:04:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140326165038.GD24604@oranje.fc.hp.com>
-References: <1390946045-2769-1-git-send-email-yinghai@kernel.org>
-	<20140325200352.GU31785@oranje.fc.hp.com>
-	<CAE9FiQUxBWFfUBjdsakPV0B=rsB4wD-sX6Q2tVbOjNy9RJffRg@mail.gmail.com>
-	<20140326165038.GD24604@oranje.fc.hp.com>
-Date: Wed, 26 Mar 2014 10:04:52 -0700
-X-Google-Sender-Auth: z_NlD_uGriFFBDzO8VyFHw8BE0I
-Message-ID: <CAE9FiQUidLDFunEKpVPfSppO1qOzpVPMXW5utd939RdLLei_Fg@mail.gmail.com>
-Subject: Re: [PATCH v3] x86, irq: get correct available vectors for cpu disable
-From: Yinghai Lu <yinghai@kernel.org>
-To: Linn Crosetto <linn@hp.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Mar 2014 13:12:53 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: davem@davemloft.net
+Cc: hannes@stressinduktion.org, dborkman@redhat.com, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] random32: avoid attempt to late reseed if in the middle of seeding
+Date: Wed, 26 Mar 2014 13:12:38 -0400
+Message-Id: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 9:50 AM, Linn Crosetto <linn@hp.com> wrote:
-> On Tue, Mar 25, 2014 at 05:18:53PM -0700, Yinghai Lu wrote:
->
-> Just noting that not all bits above first_system_vector are set in the bitmap,
-> so the comment in asm/desc.h and the change log could be misleading:
->
-> /* used_vectors is BITMAP for irq is not managed by percpu vector_irq */
->
+Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
+nonblocking pool becomes initialized") has added a late reseed stage
+that happens as soon as the nonblocking pool is marked as initialized.
 
-Do you mean some vector that is neither used by percpu_vector_irq nor
-system_vector
-after first_system_vector ?
+This fails in the case that the nonblocking pool gets initialized
+during __prandom_reseed()'s call to get_random_bytes(). In that case
+we'd double back into __prandom_reseed() in an attempt to do a late
+reseed - deadlocking on 'lock' early on in the boot process.
 
-Anyway if bit is set in used_vectors, that vector can not be used by
-percpu vector_irq.
+Instead, just avoid even waiting to do a reseed if a reseed is already
+occuring.
 
-so that statement looks still right.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ lib/random32.c | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-Feel free to suggest right comment or changelog.
+diff --git a/lib/random32.c b/lib/random32.c
+index 1e5b2df..b59da12 100644
+--- a/lib/random32.c
++++ b/lib/random32.c
+@@ -241,14 +241,27 @@ static void __prandom_reseed(bool late)
+ {
+ 	int i;
+ 	unsigned long flags;
+-	static bool latch = false;
++	static bool latch = false, reseeding = false;
+ 	static DEFINE_SPINLOCK(lock);
+ 
++	/*
++	 * Asking for random bytes might result in bytes getting
++	 * moved into the nonblocking pool and thus marking it
++	 * as initialized. In this case we would double back into
++	 * this function and attempt to do a late reseed.
++	 * Ignore the pointless attempt to reseed again if we're
++	 * already waiting for bytes when the nonblocking pool
++	 * got initialized
++	 */
++	if (reseeding)
++		return;
++
+ 	/* only allow initial seeding (late == false) once */
+ 	spin_lock_irqsave(&lock, flags);
+ 	if (latch && !late)
+ 		goto out;
+ 	latch = true;
++	reseeding = true;
+ 
+ 	for_each_possible_cpu(i) {
+ 		struct rnd_state *state = &per_cpu(net_rand_state,i);
+@@ -263,6 +276,7 @@ static void __prandom_reseed(bool late)
+ 		prandom_warmup(state);
+ 	}
+ out:
++	reseeding = false;
+ 	spin_unlock_irqrestore(&lock, flags);
+ }
+ 
+-- 
+1.8.3.2
 
-> I have tested and the patch itself is good.
-
-Good.
-
-Thanks
-
-Yinghai
