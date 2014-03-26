@@ -1,56 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755924AbaCZQia (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:38:30 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:38297 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076AbaCZQi1 (ORCPT
+	id S1755789AbaCZQjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:39:51 -0400
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:52565 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754906AbaCZQju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:38:27 -0400
-MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <CA+55aFxvACwdNuswQsTENWdmRnjKR_LgThtnAVTBQ91gvDpWvg@mail.gmail.com>
-References: <20140323071601.GH18016@ZenIV.linux.org.uk>
-	<CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
-	<20140323164526.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
-	<CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
-	<CA+55aFxvACwdNuswQsTENWdmRnjKR_LgThtnAVTBQ91gvDpWvg@mail.gmail.com>
-Date: Wed, 26 Mar 2014 17:36:20 +0100
-Message-ID: <CA+icZUWD7NekSyNa2Keg=+teDCGg-Ttc5Xb4wfKA-56FMwGSeg@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-From: Sedat Dilek <sedat.dilek@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Mar 2014 12:39:50 -0400
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
+        linux-mtd@lists.infradead.org, angus.clark@st.com
+Subject: [PATCH 00/15] mtd: st_spi_fsm: Align with ST's internal development
+Date: Wed, 26 Mar 2014 16:39:14 +0000
+Message-Id: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 1:46 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> Just to clarify: the current vfs tree from Al works for you, no new issues?
->
-> I was delaying the release first a day, and now I think I'll just do
-> an rc8 after all (and do the final 3.14 next weekend), but I'd like to
-> be sure what the status of Al's tree is.
->
-> Al, can you send a new pull request with fixed information (assuming I
-> understood correctly and everything in vfs-land works for Sedat).
->
+Hi Brian, all,
 
-Looking at [1] you did not pull-in the new changes.
-Are you waiting for a new pull-request?
+This patch-set updates ST's FSM SPI-NOR driver with all the internal
+goodness which has happened since the initial (now upstreamed) snapshot
+was taken. It covers just over 6 months worth of internal development
+and bug-fixes. A final whitespace clean-up is also appended to the set
+- to make it look pretty and stuff. :)
 
-- Sedat -
+ drivers/mtd/devices/st_spi_fsm.c | 903 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------------
+ 1 file changed, 579 insertions(+), 324 deletions(-)
 
-[1] http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=3e79d97828841305e3369ad1e07cfed5bf5989ef
-
->> P.S.: [Off-topic] With vanilla -66 kernel I have some OOPS in the
->> oom[1..5] tests of LTP. Whom to adress? mm-folks?
->
-> Yes, please send to -mm (and cc lkml and me).
->
->             Linus
