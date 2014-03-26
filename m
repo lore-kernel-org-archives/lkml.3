@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756662AbaCZVjG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:39:06 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:16391 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756136AbaCZVfK (ORCPT
+	id S1756666AbaCZVkE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 17:40:04 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33817 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894AbaCZVkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:35:10 -0400
-X-IronPort-AV: E=Sophos;i="4.97,737,1389740400"; 
-   d="scan'208";a="64902684"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Willy Tarreau <willy@meta-x.org>
-Cc: kernel-janitors@vger.kernel.org, tglx@linutronix.de,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] staging: panel: replace del_timer by del_timer_sync
-Date: Wed, 26 Mar 2014 22:33:41 +0100
-Message-Id: <1395869625-15209-4-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 26 Mar 2014 17:40:02 -0400
+Message-ID: <5333492D.2030300@oracle.com>
+Date: Wed, 26 Mar 2014 17:39:57 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: mm: BUG: Bad page state in process ksmd
+References: <5332EE97.4050604@oracle.com> <20140326125525.4e8090096f647f654eb7329d@linux-foundation.org>
+In-Reply-To: <20140326125525.4e8090096f647f654eb7329d@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+On 03/26/2014 03:55 PM, Andrew Morton wrote:
+> On Wed, 26 Mar 2014 11:13:27 -0400 Sasha Levin <sasha.levin@oracle.com> wrote:
+>> Out of curiosity, is there a reason not to do bad flag checks when actually
+>> setting flag? Obviously it'll be slower but it'll be easier catching these
+>> issues.
+>
+> Tricky.  Each code site must determine what are and are not valid page
+> states depending upon the current context.  The one place where we've
+> made that effort is at the point where a page is returned to the free
+> page pool.  Any other sites would require similar amounts of effort and
+> each one would be different from all the others.
+>
+> We do this in a small way all over the place, against individual page
+> flags.  grep PageLocked */*.c.
 
-Use del_timer_sync to ensure that the timer is stopped on all CPUs before
-the driver exists.
+What if we define generic page types and group page flags under them?
+It would be easier to put these checks in key sites around the code
+and no need to fully customize them to each site.
 
-This change was suggested by Thomas Gleixner.
+For exmaple, swap_readpage() is doing this:
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+         VM_BUG_ON_PAGE(!PageLocked(page), page);
+         VM_BUG_ON_PAGE(PageUptodate(page), page);
 
-// <smpl>
-@r@
-declarer name module_exit;
-identifier ex;
-@@
+But what if instead of that we'd do:
 
-module_exit(ex);
+	VM_BUG_ON_PAGE(!PageSwap(page), page);
 
-@@
-identifier r.ex;
-@@
+Where PageSwap would test "not locked", "uptodate", and in addition
+a set of "sanity" flags which it didn't make sense to test individually
+everywhere (PageError()? PageReclaim()?).
 
-ex(...) {
-  <...
-- del_timer
-+ del_timer_sync
-    (...)
-  ...>
-}
-// </smpl>
+I can add the infrastructure if that sounds good (and people promise to
+work with me on defining page types). I'd be happy to do all the testing
+involved in getting this to work right.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
 
----
-Not tested.
-
- drivers/staging/panel/panel.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 08f9a48..a53f94e 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -2298,7 +2298,7 @@ static void __exit panel_cleanup_module(void)
- 	unregister_reboot_notifier(&panel_notifier);
- 
- 	if (scan_timer.function != NULL)
--		del_timer(&scan_timer);
-+		del_timer_sync(&scan_timer);
- 
- 	if (pprt != NULL) {
- 		if (keypad_enabled) {
-
+Thanks,
+Sasha
