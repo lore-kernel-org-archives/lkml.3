@@ -1,152 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbaCZHEL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:04:11 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47209 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaCZHEJ (ORCPT
+	id S1751908AbaCZHIV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:08:21 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49118 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750991AbaCZHIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:04:09 -0400
-Message-ID: <53327BE1.906@hitachi.com>
-Date: Wed, 26 Mar 2014 16:04:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, x86@kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Arnd Bergmann <arnd@arndb.de>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "David S. Miller" <davem@davemloft.net>,
-        Chris Wright <chrisw@sous-sol.org>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>, fche@redhat.com,
-        mingo@redhat.com, Rob Landley <rob@landley.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Alok Kataria <akataria@vmware.com>, systemtap@sourceware.org
-Subject: Re: [PATCH -tip v8 04/26] kprobes: Introduce NOKPROBE_SYMBOL() macro
- for blacklist
-References: <20140305115843.22766.8355.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140305115911.22766.61140.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140321204917.636820fa@gandalf.local.home>
-In-Reply-To: <20140321204917.636820fa@gandalf.local.home>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 Mar 2014 03:08:20 -0400
+Subject: Re: [PATCH 6/7] DMA: Freescale: use spin_lock_bh instead of
+ spin_lock_irqsave
+From: Vinod Koul <vkoul@infradead.org>
+To: hongbo.zhang@freescale.com
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        scottwood@freescale.com, LeoLi@freescale.com,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1389851246-8564-7-git-send-email-hongbo.zhang@freescale.com>
+References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>
+	 <1389851246-8564-7-git-send-email-hongbo.zhang@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 Mar 2014 12:31:34 +0530
+Message-ID: <1395817294.6569.2.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/03/22 9:49), Steven Rostedt wrote:
-> On Wed, 05 Mar 2014 20:59:11 +0900
-> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+On Thu, 2014-01-16 at 13:47 +0800, hongbo.zhang@freescale.com wrote:
+> From: Hongbo Zhang <hongbo.zhang@freescale.com>
 > 
+> The usage of spin_lock_irqsave() is a stronger locking mechanism than is
+> required throughout the driver. The minimum locking required should be used
+> instead. Interrupts will be turned off and context will be saved, it is
+> unnecessary to use irqsave.
 > 
->>
->> diff --git a/Documentation/kprobes.txt b/Documentation/kprobes.txt
->> index 0cfb00f..7062631 100644
->> --- a/Documentation/kprobes.txt
->> +++ b/Documentation/kprobes.txt
->> @@ -22,8 +22,9 @@ Appendix B: The kprobes sysctl interface
->>  
->>  Kprobes enables you to dynamically break into any kernel routine and
->>  collect debugging and performance information non-disruptively. You
->> -can trap at almost any kernel code address, specifying a handler
->> +can trap at almost any kernel code address(*), specifying a handler
->>  routine to be invoked when the breakpoint is hit.
->> +(*: at some part of kernel code can not be trapped, see 1.5 Blacklist)
+> This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
+> manipulation of protected fields is done using tasklet context or weaker, which
+> makes spin_lock_bh() the correct choice.
 > 
-> "*: some parts of the kernel code can not be trapped,"
+> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+> ---
+>  drivers/dma/fsldma.c |   25 ++++++++++---------------
+>  1 file changed, 10 insertions(+), 15 deletions(-)
 > 
->>  
->>  There are currently three types of probes: kprobes, jprobes, and
->>  kretprobes (also called return probes).  A kprobe can be inserted
->> @@ -273,6 +274,19 @@ using one of the following techniques:
->>   or
->>  - Execute 'sysctl -w debug.kprobes_optimization=n'
->>  
->> +1.5 Blacklist
->> +
->> +Kprobes can probe almost of the kernel except itself. This means
-> 
-> s/almost/most/
-> 
->> +that there are some functions where kprobes cannot probe. Probing
->> +(trapping) such functions can cause recursive trap (e.g. double
-> 
->    cause a recursive trap
-> 
->> +fault) or at least the nested probe handler never be called.
-> 
->   "or the nested probe handler may never be called."
-> 
->> +Kprobes manages such functions as a blacklist.
->> +If you want to add a function into the blacklist, you just need
->> +to (1) include linux/kprobes.h and (2) use NOKPROBE_SYMBOL() macro
->> +to specify a blacklisted function.
->> +Kprobes checks given probe address with the blacklist and reject
-> 
->   "checks the given probe address against the black list and rejects"
-> 
->> +registering if the given address is in the blacklist.
-> 
->    registering it, if
+> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+> index bbace54..437794e 100644
+> --- a/drivers/dma/fsldma.c
+> +++ b/drivers/dma/fsldma.c
+> @@ -396,10 +396,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>  	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
+>  	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
+>  	struct fsl_desc_sw *child;
+> -	unsigned long flags;
+>  	dma_cookie_t cookie = -EINVAL;
+>  
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  
+>  	/*
+>  	 * assign cookies to all of the software descriptors
+> @@ -412,7 +411,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>  	/* put this transaction onto the tail of the pending queue */
+>  	append_ld_queue(chan, desc);
+>  
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+>  
+>  	return cookie;
+>  }
+> @@ -731,15 +730,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+>  static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+>  {
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> -	unsigned long flags;
+>  
+>  	chan_dbg(chan, "free all channel resources\n");
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  	fsldma_cleanup_descriptors(chan);
+>  	fsldma_free_desc_list(chan, &chan->ld_pending);
+>  	fsldma_free_desc_list(chan, &chan->ld_running);
+>  	fsldma_free_desc_list(chan, &chan->ld_completed);
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+>  
+>  	dma_pool_destroy(chan->desc_pool);
+>  	chan->desc_pool = NULL;
+> @@ -958,7 +956,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>  {
+>  	struct dma_slave_config *config;
+>  	struct fsldma_chan *chan;
+> -	unsigned long flags;
+>  	int size;
+>  
+>  	if (!dchan)
+> @@ -968,7 +965,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>  
+>  	switch (cmd) {
+>  	case DMA_TERMINATE_ALL:
+> -		spin_lock_irqsave(&chan->desc_lock, flags);
+> +		spin_lock_bh(&chan->desc_lock);
+>  
+>  		/* Halt the DMA engine */
+>  		dma_halt(chan);
+> @@ -979,7 +976,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>  		fsldma_free_desc_list(chan, &chan->ld_completed);
+>  		chan->idle = true;
+>  
+> -		spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +		spin_unlock_bh(&chan->desc_lock);
+>  		return 0;
+>  
+>  	case DMA_SLAVE_CONFIG:
+> @@ -1021,11 +1018,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>  static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
+>  {
+>  	struct fsldma_chan *chan = to_fsl_chan(dchan);
+> -	unsigned long flags;
+>  
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+>  	fsl_chan_xfer_ld_queue(chan);
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+>  }
+>  
+>  /**
+> @@ -1124,11 +1120,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+>  static void dma_do_tasklet(unsigned long data)
+>  {
+>  	struct fsldma_chan *chan = (struct fsldma_chan *)data;
+> -	unsigned long flags;
+>  
+>  	chan_dbg(chan, "tasklet entry\n");
+>  
+> -	spin_lock_irqsave(&chan->desc_lock, flags);
+> +	spin_lock_bh(&chan->desc_lock);
+okay here is the problem :(
 
-Thank you for helping ! :)
+You moved to _bh variant. So if you grab the lock in rest of the code
+and irq gets triggered then here we will be spinning to grab the lock.
+So effectively you made right locking solution into deadlock situation!
 
->> diff --git a/arch/x86/include/asm/asm.h b/arch/x86/include/asm/asm.h
->> index 4582e8e..7730c1c 100644
->> --- a/arch/x86/include/asm/asm.h
->> +++ b/arch/x86/include/asm/asm.h
->> @@ -57,6 +57,12 @@
->>  	.long (from) - . ;					\
->>  	.long (to) - . + 0x7ffffff0 ;				\
->>  	.popsection
->> +
->> +# define _ASM_NOKPROBE(entry)					\
->> +	.pushsection "_kprobe_blacklist","aw" ;			\
->> +	_ASM_ALIGN ;						\
->> +	_ASM_PTR (entry);					\
->> +	.popsection
->>  #else
->>  # define _ASM_EXTABLE(from,to)					\
->>  	" .pushsection \"__ex_table\",\"a\"\n"			\
->> @@ -71,6 +77,7 @@
->>  	" .long (" #from ") - .\n"				\
->>  	" .long (" #to ") - . + 0x7ffffff0\n"			\
->>  	" .popsection\n"
->> +/* For C file, we already have NOKPROBE_SYMBOL macro */
->>  #endif
->>  
->>  #endif /* _ASM_X86_ASM_H */
->> diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
->> index 1b10af8..4c785fd 100644
->> --- a/arch/x86/kernel/paravirt.c
->> +++ b/arch/x86/kernel/paravirt.c
->> @@ -23,6 +23,7 @@
->>  #include <linux/efi.h>
->>  #include <linux/bcd.h>
->>  #include <linux/highmem.h>
->> +#include <linux/kprobes.h>
->>  
->>  #include <asm/bug.h>
->>  #include <asm/paravirt.h>
->> @@ -389,6 +390,9 @@ __visible struct pv_cpu_ops pv_cpu_ops = {
->>  	.end_context_switch = paravirt_nop,
->>  };
->>  
->> +/* At this point, native_get_debugreg has real function entry */
-> 
->   "has a real"
+>  
+>  	/* the hardware is now idle and ready for more */
+>  	chan->idle = true;
+> @@ -1136,7 +1131,7 @@ static void dma_do_tasklet(unsigned long data)
+>  	/* Run all cleanup for descriptors which have been completed */
+>  	fsldma_cleanup_descriptors(chan);
+>  
+> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+> +	spin_unlock_bh(&chan->desc_lock);
+>  
+>  	chan_dbg(chan, "tasklet exit\n");
+>  }
 
-OK, I'll fix them all ;)
-
-Thank you,
 
 -- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+Vinod Koul
+Intel Corp.
 
