@@ -1,109 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941AbaCZSrh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 14:47:37 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51241 "EHLO mx2.suse.de"
+	id S1755550AbaCZSwT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 14:52:19 -0400
+Received: from xes-mad.com ([216.165.139.218]:33314 "EHLO xes-mad.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755886AbaCZSrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 14:47:35 -0400
-Date: Wed, 26 Mar 2014 19:47:31 +0100
-From: Jan Kara <jack@suse.cz>
-To: xypron.glpk@gmx.de
-Cc: eparis@redhat.com, jack@suse.cz, tvrtko.ursulin@onelan.co.uk,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/1] Avoid having to provide a fake/invalid fd and path
-Message-ID: <20140326184731.GA18118@quack.suse.cz>
-References: <1395847805-6714-1-git-send-email-xypron.glpk@gmx.de>
+	id S1751906AbaCZSwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 14:52:18 -0400
+Date: Wed, 26 Mar 2014 13:51:53 -0500 (CDT)
+From: Aaron Sierra <asierra@xes-inc.com>
+To: Daeseok Youn <daeseok.youn@gmail.com>
+Cc: martyn welch <martyn.welch@ge.com>,
+        manohar vanga <manohar.vanga@gmail.com>, gregkh@linuxfoundation.org,
+        lisa@xenapiadmin.com, yongjun wei <yongjun_wei@trendmicro.com.cn>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Message-ID: <1455668003.49319.1395859913516.JavaMail.zimbra@xes-inc.com>
+In-Reply-To: <3217679.sqG7Yrhs8H@daeseok-laptop.cloud.net>
+References: <3217679.sqG7Yrhs8H@daeseok-laptop.cloud.net>
+Subject: Re: [PATCH] staging: vme: fix memory leak in vme_user_probe()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395847805-6714-1-git-send-email-xypron.glpk@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.52.16.65]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - GC33 (Linux)/8.0.6_GA_5922)
+Thread-Topic: staging: vme: fix memory leak in vme_user_probe()
+Thread-Index: QnzfrNYSnTVLCXn7aQgr1aM9hsBwKg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 16:30:05, xypron.glpk@gmx.de wrote:
-> From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+----- Original Message -----
+> From: "Daeseok Youn" <daeseok.youn@gmail.com>
+> Sent: Tuesday, March 25, 2014 10:01:48 PM
+> Subject: [PATCH] staging: vme: fix memory leak in vme_user_probe()
 > 
-> https://lkml.org/lkml/2011/1/12/112
-> holds a patch by Tvrtko Ursulin
 > 
->   Avoid having to provide a fake/invalid fd and path when flushing marks
+> If vme_master_request() returns NULL when it failed,
+> it need to free buffers for master.
 > 
->   Currently for a group to flush marks it has set it needs to
->   provide a fake or invalid (but resolvable) file descriptor
->   and path when calling fanotify_mark. This patch pulls the
->   flush handling a bit up so file descriptor and path are
->   completely ignored when flushing.
+> And also removes unreachable code in vme_user_probe().
 > 
-> Eric wrote it was applied.
-> https://lkml.org/lkml/2011/1/19/321
-> 
-> Unfortunately it is still not in the main stream code and the problem remains.
-> 
-> I reworked the patch to be applicable again (the signature of fanotify_mark
-> has changed since Tvrtko's work).
-> 
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
-  The patch looks good to me. You can add:
-Reviewed-by: Jan Kara <jack@suse.cz>
-
-  Andrew, can you please add the patch to the fanotify patches you already
-carry? Thanks!
-
-								Honza
-
+> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 > ---
->  fs/notify/fanotify/fanotify_user.c |   17 ++++++++++-------
->  1 file changed, 10 insertions(+), 7 deletions(-)
+>  drivers/staging/vme/devices/vme_user.c |    9 +++------
+>  1 files changed, 3 insertions(+), 6 deletions(-)
+
+Nice catches Daeseok. I don't maintain this driver, but I have some
+suggestions below.
+
 > 
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index 287a22c..05bb38a 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -856,6 +856,15 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->  	    group->priority == FS_PRIO_0)
->  		goto fput_and_out;
->  
-> +	if (flags & FAN_MARK_FLUSH) {
-> +		ret = 0;
-> +		if (flags & FAN_MARK_MOUNT)
-> +			fsnotify_clear_vfsmount_marks_by_group(group);
-> +		else
-> +			fsnotify_clear_inode_marks_by_group(group);
-> +		goto fput_and_out;
-> +	}
-> +
->  	ret = fanotify_find_path(dfd, pathname, &path, flags);
->  	if (ret)
->  		goto fput_and_out;
-> @@ -867,7 +876,7 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->  		mnt = path.mnt;
->  
->  	/* create/update an inode mark */
-> -	switch (flags & (FAN_MARK_ADD | FAN_MARK_REMOVE | FAN_MARK_FLUSH)) {
-> +	switch (flags & (FAN_MARK_ADD | FAN_MARK_REMOVE)) {
->  	case FAN_MARK_ADD:
->  		if (flags & FAN_MARK_MOUNT)
->  			ret = fanotify_add_vfsmount_mark(group, mnt, mask, flags);
-> @@ -880,12 +889,6 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->  		else
->  			ret = fanotify_remove_inode_mark(group, inode, mask, flags);
->  		break;
-> -	case FAN_MARK_FLUSH:
-> -		if (flags & FAN_MARK_MOUNT)
-> -			fsnotify_clear_vfsmount_marks_by_group(group);
-> -		else
-> -			fsnotify_clear_inode_marks_by_group(group);
-> -		break;
->  	default:
->  		ret = -EINVAL;
+> diff --git a/drivers/staging/vme/devices/vme_user.c
+> b/drivers/staging/vme/devices/vme_user.c
+> index 7927927..ffb4eee 100644
+> --- a/drivers/staging/vme/devices/vme_user.c
+> +++ b/drivers/staging/vme/devices/vme_user.c
+> @@ -776,7 +776,8 @@ static int vme_user_probe(struct vme_dev *vdev)
+>  		image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
+>  		if (image[i].kern_buf == NULL) {
+>  			err = -ENOMEM;
+> -			goto err_master_buf;
+> +			vme_master_free(image[i].resource);
+> +			goto err_master;
+>  		}
 >  	}
-> -- 
-> 1.7.10.4
+
+I think it would be nice to keep all of the cleanup under the err_master
+label.
+
+That could be done by changing the kern_buf allocation in this part to
+a devm_kmalloc. Then devm handles the kern_buf freeing entirely.
+
+>  
+> @@ -819,8 +820,6 @@ static int vme_user_probe(struct vme_dev *vdev)
+>  
+>  	return 0;
+>  
+> -	/* Ensure counter set correcty to destroy all sysfs devices */
+> -	i = VME_DEVS;
+>  err_sysfs:
+>  	while (i > 0) {
+>  		i--;
+> @@ -830,12 +829,10 @@ err_sysfs:
+>  
+>  	/* Ensure counter set correcty to unalloc all master windows */
+>  	i = MASTER_MAX + 1;
+> -err_master_buf:
+> -	for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
+> -		kfree(image[i].kern_buf);
+>  err_master:
+>  	while (i > MASTER_MINOR) {
+>  		i--;
+> +		kfree(image[i].kern_buf);
+>  		vme_master_free(image[i].resource);
+>  	}
+
+Using devm_kmalloc as mentioned above, the while loop could be
+simplified to this:
+
+err_master:
+	while (i >= MASTER_MINOR) {
+ 		vme_master_free(image[i].resource);
+		i--;
+	}
+
+If not moving to devm, this should be safe even though the first
+kern_buf may be NULL:
+
+err_master:
+	while (i >= MASTER_MINOR) {
+		kfree(image[i].kern_buf);
+ 		vme_master_free(image[i].resource);
+		i--;
+	}
+
+-Aaron
+
+>  
+> --
+> 1.7.4.4
 > 
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 
+> 
