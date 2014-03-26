@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447AbaCZP3U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 11:29:20 -0400
-Received: from relay.parallels.com ([195.214.232.42]:41915 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaCZP2L (ORCPT
+	id S1755493AbaCZP3l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 11:29:41 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:47970 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754894AbaCZP3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 11:28:11 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <akpm@linux-foundation.org>
-CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH -mm 3/4] fork: charge threadinfo to memcg explicitly
-Date: Wed, 26 Mar 2014 19:28:06 +0400
-Message-ID: <8f98a5160b9e17947cbb25e91944f332679b9c9c.1395846845.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1395846845.git.vdavydov@parallels.com>
-References: <cover.1395846845.git.vdavydov@parallels.com>
+	Wed, 26 Mar 2014 11:29:39 -0400
+Message-ID: <5332F25E.10104@gmail.com>
+Date: Wed, 26 Mar 2014 10:29:34 -0500
+From: Dinh Nguyen <dinh.linux@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        delicious quinoa <delicious.quinoa@gmail.com>
+CC: Alan Tull <atull@altera.com>, Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 3/3] ARM: dts: socfpga: add gpio pieces
+References: <1395345324-18299-1-git-send-email-bigeasy@linutronix.de>	<1395345324-18299-4-git-send-email-bigeasy@linutronix.de>	<CANk1AXRa4V1ADNaT+T3pYF4zyxni9Y8rmU9UYRoA_7NxW8KWEg@mail.gmail.com> <CANk1AXSQVFZvRmvYt+JF+TDVpfX-_RLiUcQXotGzpHoTMUVymQ@mail.gmail.com> <532D73D1.7020408@linutronix.de>
+In-Reply-To: <532D73D1.7020408@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have only a few places where we actually want to charge kmem so
-instead of intruding into the general page allocation path with
-__GFP_KMEMCG it's better to explictly charge kmem there. All kmem
-charges will be easier to follow that way.
 
-This is a step toward removing __GFP_KMEMCG. It makes fork charge task
-threadinfo pages explicitly instead of passing __GFP_KMEMCG to
-alloc_pages.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Glauber Costa <glommer@gmail.com>
----
- kernel/fork.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+On 03/22/2014 06:28 AM, Sebastian Andrzej Siewior wrote:
+> On 03/21/2014 11:15 PM, delicious quinoa wrote:
+>> snps,nr-gpios = <27>;
+>>
+>> As noted on other thread, gpio2 is 27 wide, despite what the
+>> documentation says.  When I made that change and remove your other two
+>> patches the gpios worked for me on a cyclone5 devkit board.
+>>
+>> So if you fix the "#gpio-cells = <2>;" for all 3 gpios and fix
+>> "snps,nr-gpios = <27>;" for gpio2, then this one patch looks good to
+>> me.  With these changes,
+>
+> Okay will do. And I also add a note that  the reference manual is wrong
+> here.
+>
 
-diff --git a/kernel/fork.c b/kernel/fork.c
-index f4b09bc15f3a..8209780cf732 100644
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -150,15 +150,22 @@ void __weak arch_release_thread_info(struct thread_info *ti)
- static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
- 						  int node)
- {
--	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
--					     THREAD_SIZE_ORDER);
-+	struct page *page;
-+	struct mem_cgroup *memcg = NULL;
- 
-+	if (!memcg_kmem_newpage_charge(THREADINFO_GFP_ACCOUNTED, &memcg,
-+				       THREAD_SIZE_ORDER))
-+		return NULL;
-+	page = alloc_pages_node(node, THREADINFO_GFP, THREAD_SIZE_ORDER);
-+	memcg_kmem_commit_charge(page, memcg, THREAD_SIZE_ORDER);
- 	return page ? page_address(page) : NULL;
- }
- 
- static inline void free_thread_info(struct thread_info *ti)
- {
--	free_memcg_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
-+	if (ti)
-+		memcg_kmem_uncharge_pages(virt_to_page(ti), THREAD_SIZE_ORDER);
-+	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
- }
- # else
- static struct kmem_cache *thread_info_cache;
--- 
-1.7.10.4
+I've applied this patch to rocketboards/linux-socfpga-next/next-dt. I 
+will take through the arm-soc tree for 3.16.
 
+Dinh
+>>
+>> Acked-by: Alan Tull <atull@altera.com>
+>>
+>> Alan Tull
+>> aka
+>> delicous quinoa
+>
+> Sebastian
+> --
+> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
