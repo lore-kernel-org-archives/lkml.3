@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbaCZWip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:38:45 -0400
-Received: from h1446028.stratoserver.net ([85.214.92.142]:60062 "EHLO
-	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425AbaCZWin (ORCPT
+	id S1756695AbaCZWi6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:38:58 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:15059 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756353AbaCZWix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:38:43 -0400
-Message-ID: <533356AD.7080809@ahsoftware.de>
-Date: Wed, 26 Mar 2014 23:37:33 +0100
-From: Alexander Holler <holler@ahsoftware.de>
+	Wed, 26 Mar 2014 18:38:53 -0400
+X-IronPort-AV: E=Sophos;i="4.97,738,1389744000"; 
+   d="scan'208";a="113959114"
+Message-ID: <533356F8.7070307@citrix.com>
+Date: Wed, 26 Mar 2014 22:38:48 +0000
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Levente Kurusa <levex@linux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] initramfs: print error and shell out for unsupported
- content
-References: <CAAsK9AEeobOG1j6NHUoqkZaZ5h8GGK_fL+gyh9MhSvguQjyU_w@mail.gmail.com>	<1395352845-7435-1-git-send-email-holler@ahsoftware.de>	<20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>	<532CC215.1000107@ahsoftware.de>	<20140321155517.51af1b28fe32656fb7506f97@linux-foundation.org>	<532CC625.7020509@ahsoftware.de>	<53334393.5050008@ahsoftware.de> <CAAsK9AG85HmHYgVL=19hYtTF+AiaZHX0hhg8V3Q-+WfVi_jzCw@mail.gmail.com> <53334CB7.9020107@ahsoftware.de>
-In-Reply-To: <53334CB7.9020107@ahsoftware.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: David Miller <davem@davemloft.net>
+CC: <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
+        <dev@openvswitch.org>, <pablo@netfilter.org>,
+        <kadlec@blackhole.kfki.hu>, <edumazet@google.com>,
+        <dborkman@redhat.com>, <therbert@google.com>, <jasowang@redhat.com>,
+        <fw@strlen.de>, <joe@perches.com>, <horms@verge.net.au>,
+        <jiri@resnulli.us>, <mst@redhat.com>, <Paul.Durrant@citrix.com>,
+        <JBeulich@suse.com>, <herbert@gondor.apana.org.au>, <mszeredi@suse.cz>,
+        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>	<20140326.155958.1928261590856069753.davem@davemloft.net> <20140326.161242.576245997077162750.davem@davemloft.net>
+In-Reply-To: <20140326.161242.576245997077162750.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-7"; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 26.03.2014 22:55, schrieb Alexander Holler:
-> Am 26.03.2014 22:38, schrieb Levente Kurusa:
->>> What I think might be reasonable is:
->>>
->>> - get rid of the dependency list in form of a include into the
->>> Makefile and
->>> just generate the cpio-archive every time make is called. Common
->>> initramfs
->>> sizes are about a few megabytes and with today machines such a
->>> cpio-archive
->>> is build in about a second,
->>>
+On 26/03/14 20:12, David Miller wrote:
+> From: David Miller <davem@davemloft.net>
+> Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
+>
+>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+>> Date: Fri, 21 Mar 2014 10:31:34 +0000
 >>
->> I don't understand what kind of include would you want.
-
-Why do you try to discuss stuff you don't know about and haven't looked 
-at? You could have taken the time to try out the description of my patch 
-insgtead of just checking it for typos. Thats why I did spend the time 
-to write that description.
-
-The include is already there and is used. And that completly renders any 
-further call of make broken, including make clean, distclean and 
-mrproper. And is isn't obvious how to fix a once broken make. Even git 
-clean -df doesn't help.
-
->>> - get rid of gen_initramfs_list.sh and rewrite gen_init_cpio.c such
->>> that it
->>> reads the filenames, modes and similiar itself (e.g. by using stat(2)).
+>>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+>>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+>>> as well, and modify the callers accordingly. skb_tx_error() is also added to
+>>> the callers so they will signal the failed delivery towards the creator of the
+>>> skb.
+>>>
+>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 >>
->> This is walkable but probably not worth the effort. Besides, why would
->> anyone want to put spaces, colons and arbitrary characters to filenames
->> in the initramfs?
+>> Applied, thanks Zoltan.
+>
+> Actually, Zoltan, you have to fix this:
+>
+> net/core/skbuff.c: In function ¡skb_zerocopy¢:
+> net/core/skbuff.c:2172:2: warning: passing argument 1 of ¡skb_orphan_frags¢ discards ¡const¢ qualifi
+> er from pointer target type [enabled by default]
+> In file included from include/linux/tcp.h:21:0,
+>                   from net/core/skbuff.c:50:
+> include/linux/skbuff.h:1904:19: note: expected ¡struct sk_buff *¢ but argument is of type ¡const str
+> uct sk_buff *¢
+> net/core/skbuff.c:2173:3: warning: passing argument 1 of ¡skb_tx_error¢ discards ¡const¢ qualifier f
+> rom pointer target type [enabled by default]
+> net/core/skbuff.c:642:6: note: expected ¡struct sk_buff *¢ but argument is of type ¡const struct sk_
+> buff *¢
+>
 
-I've already suggest an example for that. If you have a machine with 
-bluetooth, look at /var/lib/bluetooth and you will discover directories 
-with colons. So, guess what happens if you want to have (preset) 
-link-keys in an initramfs to avoid an otherwise necessary pairing.
+Ok, resubmitted. 'from' is now not a const parameter, because 
+skb->pfmemalloc might change.
 
-And spaces in filenames are used by a lot of people for various reasons. 
-And you might wonder, but there exists software one might want to use in 
-an initramfs which needs some file(s) with an hardcoded name wich 
-contains spaces.
-
-
-Alexander Holler
+Zoli
