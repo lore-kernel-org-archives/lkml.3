@@ -1,75 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695AbaCZWi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:38:58 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:15059 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756353AbaCZWix (ORCPT
+	id S1756705AbaCZWlL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:41:11 -0400
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3672 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390AbaCZWlJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:38:53 -0400
-X-IronPort-AV: E=Sophos;i="4.97,738,1389744000"; 
-   d="scan'208";a="113959114"
-Message-ID: <533356F8.7070307@citrix.com>
-Date: Wed, 26 Mar 2014 22:38:48 +0000
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 26 Mar 2014 18:41:09 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 26 Mar 2014 15:35:04 -0700
+From: Songhee Baek <sbaek@nvidia.com>
+To: Lars-Peter Clausen <lars@metafoo.de>,
+        Arun Shamanna Lakshmi <aruns@nvidia.com>
+CC: "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Mar 2014 15:41:08 -0700
+Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Topic: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Index: Ac9JKuY6mnGJf6ziR4CXbeXhhCtjrgAGT60w
+Message-ID: <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
+References: <1395792156-4178-1-git-send-email-aruns@nvidia.com>
+ <53332CC7.6060800@metafoo.de>
+In-Reply-To: <53332CC7.6060800@metafoo.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: <jesse@nicira.com>, <pshelar@nicira.com>, <tgraf@redhat.com>,
-        <dev@openvswitch.org>, <pablo@netfilter.org>,
-        <kadlec@blackhole.kfki.hu>, <edumazet@google.com>,
-        <dborkman@redhat.com>, <therbert@google.com>, <jasowang@redhat.com>,
-        <fw@strlen.de>, <joe@perches.com>, <horms@verge.net.au>,
-        <jiri@resnulli.us>, <mst@redhat.com>, <Paul.Durrant@citrix.com>,
-        <JBeulich@suse.com>, <herbert@gondor.apana.org.au>, <mszeredi@suse.cz>,
-        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>
-Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
- and handle errors
-References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>	<20140326.155958.1928261590856069753.davem@davemloft.net> <20140326.161242.576245997077162750.davem@davemloft.net>
-In-Reply-To: <20140326.161242.576245997077162750.davem@davemloft.net>
-Content-Type: text/plain; charset="ISO-8859-7"; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.133]
-X-DLP: MIA2
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/03/14 20:12, David Miller wrote:
-> From: David Miller <davem@davemloft.net>
-> Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
->
->> From: Zoltan Kiss <zoltan.kiss@citrix.com>
->> Date: Fri, 21 Mar 2014 10:31:34 +0000
->>
->>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
->>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
->>> as well, and modify the callers accordingly. skb_tx_error() is also added to
->>> the callers so they will signal the failed delivery towards the creator of the
->>> skb.
->>>
->>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
->>
->> Applied, thanks Zoltan.
->
-> Actually, Zoltan, you have to fix this:
->
-> net/core/skbuff.c: In function ¡skb_zerocopy¢:
-> net/core/skbuff.c:2172:2: warning: passing argument 1 of ¡skb_orphan_frags¢ discards ¡const¢ qualifi
-> er from pointer target type [enabled by default]
-> In file included from include/linux/tcp.h:21:0,
->                   from net/core/skbuff.c:50:
-> include/linux/skbuff.h:1904:19: note: expected ¡struct sk_buff *¢ but argument is of type ¡const str
-> uct sk_buff *¢
-> net/core/skbuff.c:2173:3: warning: passing argument 1 of ¡skb_tx_error¢ discards ¡const¢ qualifier f
-> rom pointer target type [enabled by default]
-> net/core/skbuff.c:642:6: note: expected ¡struct sk_buff *¢ but argument is of type ¡const struct sk_
-> buff *¢
->
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Wednesday, March 26, 2014 12:39 PM
+> To: Arun Shamanna Lakshmi
+> Cc: lgirdwood@gmail.com; broonie@kernel.org; swarren@wwwdotorg.org;
+> Songhee Baek; alsa-devel@alsa-project.org; tiwai@suse.de; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+> 
+> On 03/26/2014 01:02 AM, Arun Shamanna Lakshmi wrote:
+> > If the mux uses 1 bit position per input, and requires to set one
+> > single bit at a time, then an N bit register can support up to N
+> > inputs. In more recent Tegra chips, we have at least greater than
+> > 64 inputs which requires at least 2 .reg fields in struct soc_enum.
+> >
+> > Signed-off-by: Arun Shamanna Lakshmi <aruns@nvidia.com>
+> > Signed-off-by: Songhee Baek <sbaek@nvidia.com>
+> 
+> The way you describe this it seems to me that a value array for this kind of
+> mux would look like.
+> 
+> 0x00000000, 0x00000000, 0x00000001
+> 0x00000000, 0x00000000, 0x00000002
+> 0x00000000, 0x00000000, 0x00000003
+> 0x00000000, 0x00000000, 0x00000004
+> 0x00000000, 0x00000000, 0x00000008
+> ...
+> 
+> That seems to be extremely tedious. If the MUX uses a one hot encoding
+> how about storing the index of the bit in the values array and use (1 << value)
+> when writing the value to the register?
 
-Ok, resubmitted. 'from' is now not a const parameter, because 
-skb->pfmemalloc might change.
+If we store the index of the bit, the value will be duplicated for each registers inputs since register has 0 to 31bits to shift, then we need to decode the index to interpret value for which registers to set. If we need to interpret the decoded value of index, it is better to have custom put/get function in our driver, isn't it?
 
-Zoli
+> 
+> [...]
+> >   /* enumerated kcontrol */
+> >   struct soc_enum {
+> 
+> There doesn't actually be any code that is shared between normal enums
+> and wide enums. This patch doubles the size of the soc_enum struct, how
+> about having a separate struct for wide enums?
+> 
+
+We are using DAPM widgets for these muxes and DAPM uses soc_enum struct inside APIs, so we couldn't use additional struct for that. If there is the way to use additional struc in dapm, please guide me.
+
+> > -	int reg;
+> > +	int reg[SOC_ENUM_MAX_REGS];
+> >   	unsigned char shift_l;
+> >   	unsigned char shift_r;
+> >   	unsigned int items;
+> > -	unsigned int mask;
+> > +	unsigned int mask[SOC_ENUM_MAX_REGS];
+> 
+> If you make mask and reg pointers instead of arrays this should be much
+> more flexible and not be limited to 3 registers.
+>
+ 
+To use pointers instead of arrays, it will be flexible but I need to update SOC_ENUM SINGLE/DOUBLE macros.
+It will changes a lot in current soc-core.c and soc-dapm.c.
+
+> >   	const char * const *texts;
+> >   	const unsigned int *values;
+> > +	unsigned int num_regs;
+> >   };
+> >
+
