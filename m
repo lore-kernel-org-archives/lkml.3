@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263AbaCZNSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:18:18 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:37986 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753545AbaCZNSF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:18:05 -0400
-Date: Wed, 26 Mar 2014 09:18:00 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Alexandre Demers <alexandre.f.demers@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to
- kern_mount() sysfs from sysfs_init()" prevents system from booting correctly
-Message-ID: <20140326131800.GA7171@htj.dyndns.org>
-References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com>
- <20140314140804.GG12613@htj.dyndns.org>
- <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com>
- <20140317201346.GE17373@mtj.dyndns.org>
- <5327AAA8.2080703@gmail.com>
- <53322777.3030703@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754434AbaCZNV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:21:26 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48618 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750956AbaCZNVY convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:3>);
+	Wed, 26 Mar 2014 09:21:24 -0400
+Message-Id: <5332E25F020000780000255A@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 14.0.0 
+Date: Wed, 26 Mar 2014 13:21:19 +0000
+From: "Jan Beulich" <JBeulich@suse.com>
+To: "Daniel Kiper" <daniel.kiper@oracle.com>
+Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
+        <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
+        <fenghua.yu@intel.com>, <matt.fleming@intel.com>,
+        <tony.luck@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
+        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
+        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
+        <linux-efi@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
+Subject: Re: [PATCH v3 2/5] efi: Export arch_tables variable
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
+In-Reply-To: <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <53322777.3030703@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 09:03:51PM -0400, Alexandre Demers wrote:
-> So, I tried RC8 and I'm still getting the error. It start too fast
-> to be able to read whatever it is saying, but here is what I can
-> read:
-> ...
-> cp: error writing /run/initramfs/new_root/...
-> cp: failed to extend ...
-> ... (and so on)
+>>> On 25.03.14 at 21:57, <daniel.kiper@oracle.com> wrote:
+> Export arch_tables variable. Xen init function calls efi_config_init()
+> which takes it as an argument.
 > 
-> It goes on like that for a long time.
+> Additionally, put __initdata in place suggested by include/linux/init.h.
 
-Ooh, I thought you were gonna find out what filled up the filesystem
-after rebooting into the older kernel.  Can you please do that?  Also,
-pressing "ScrLk" should stop the screen from scrolling.
+Which isn't necessarily the most appropriate place.
 
-Thanks.
+> --- a/arch/x86/platform/efi/efi.c
+> +++ b/arch/x86/platform/efi/efi.c
+> @@ -70,7 +70,7 @@ static efi_system_table_t efi_systab __initdata;
+>  
+>  unsigned long x86_efi_facility;
+>  
+> -static __initdata efi_config_table_type_t arch_tables[] = {
+> +efi_config_table_type_t arch_tables[] __initdata = {
 
--- 
-tejun
+efi_config_table_type_t __initdata arch_tables[] = {
+
+would be what I'd recommend.
+
+> --- a/include/linux/efi.h
+> +++ b/include/linux/efi.h
+> @@ -583,6 +583,8 @@ extern struct efi {
+>  	struct efi_memory_map *memmap;
+>  } efi;
+>  
+> +extern efi_config_table_type_t arch_tables[] __initdata;
+
+And section placement annotations are bogus on declarations.
+
+Jan
+
