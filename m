@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaCZWBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 18:01:12 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:54698 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756503AbaCZWBI (ORCPT
+	id S932095AbaCZWCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 18:02:23 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43066 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227AbaCZWCU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 18:01:08 -0400
+	Wed, 26 Mar 2014 18:02:20 -0400
+Date: Wed, 26 Mar 2014 23:01:32 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Matt Fleming <matt@console-pimps.org>
+Cc: Jan Beulich <JBeulich@suse.com>, david.vrabel@citrix.com,
+        ian.campbell@citrix.com, stefano.stabellini@eu.citrix.com,
+        jeremy@goop.org, fenghua.yu@intel.com, matt.fleming@intel.com,
+        tony.luck@intel.com, x86@kernel.org, tglx@linutronix.de,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        konrad.wilk@oracle.com, eshelton@pobox.com, mingo@redhat.com,
+        linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com
+Subject: Re: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range() on
+ native EFI platform only
+Message-ID: <20140326220132.GQ3454@olila.local.net-space.pl>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
+ <20140326130009.GB24856@console-pimps.org>
+ <5332E2B9020000780000255D@nat28.tlf.novell.com>
+ <20140326133119.GD24856@console-pimps.org>
+ <5332E6AE02000078000025F0@nat28.tlf.novell.com>
+ <20140326134845.GN3454@olila.local.net-space.pl>
+ <20140326135723.GG24856@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
-References: <20140324225910.GB4937@owamsq.epam.com>
-	<20140326133148.4a347bf956b1c5fd2ae40335@linux-foundation.org>
-Date: Wed, 26 Mar 2014 23:01:07 +0100
-Message-ID: <CABPqkBTk+b_+PM_YdxUYw8PDdo9PL506jCR1xzqD6=SXc+zbKg@mail.gmail.com>
-Subject: Re: [PATCH] x86: Fix boot on uniprocessor systems
-From: Stephane Eranian <eranian@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Artem Fetishev <artem_fetishev@epam.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326135723.GG24856@console-pimps.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 9:31 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Tue, 25 Mar 2014 01:59:10 +0300 Artem Fetishev <artem_fetishev@epam.com> wrote:
+On Wed, Mar 26, 2014 at 01:57:23PM +0000, Matt Fleming wrote:
+> On Wed, 26 Mar, at 02:48:45PM, Daniel Kiper wrote:
+> >
+> > On my machine this function crashes on Xen so that is why I have changed
+> > condition. However, if you say that this issue could be solved in
+> > another way I will investigate it further.
 >
->> On x86 uniprocessor systems topology_physical_package_id() returns -1 which
->> causes rapl_cpu_prepare() to leave rapl_pmu variable uninitialized which leads
->> to GPF in rapl_pmu_init(). See arch/x86/kernel/cpu/perf_event_intel_rapl.c.
->>
->> It turns out that physical_package_id and core_id can actually be retreived for
->> uniprocessor systems too. Enabling them also fixes rapl_pmu code.
->>
->> Signed-off-by: Artem Fetishev <artem_fetishev@epam.com>
->> ---
->> diff --git a/arch/x86/include/asm/topology.h b/arch/x86/include/asm/topology.h
->> index d35f24e..1306d11 100644
->> --- a/arch/x86/include/asm/topology.h
->> +++ b/arch/x86/include/asm/topology.h
->> @@ -119,9 +119,10 @@ static inline void setup_node_to_cpumask_map(void) { }
->>
->>  extern const struct cpumask *cpu_coregroup_mask(int cpu);
->>
->> -#ifdef ENABLE_TOPO_DEFINES
->>  #define topology_physical_package_id(cpu)    (cpu_data(cpu).phys_proc_id)
->>  #define topology_core_id(cpu)                        (cpu_data(cpu).cpu_core_id)
->> +
->> +#ifdef ENABLE_TOPO_DEFINES
->>  #define topology_core_cpumask(cpu)           (per_cpu(cpu_core_map, cpu))
->>  #define topology_thread_cpumask(cpu)         (per_cpu(cpu_sibling_map, cpu))
->>  #endif
->
-> The patch applies to 3.13 and perhaps earlier kernels.  Is it needed in
-> those kernel versions?
+> Daniel, could you paste the crash? Do you get a stack trace?
 
-Before 3.13 there was no RAPL support.
-But it seems the patch is still useful regardless
+Here it is:
+
+[...]
+
+mapping kernel into physical memory
+about to get started...
+(XEN) traps.c:458:d0v0 Unhandled divide error fault/trap [#0] on VCPU 0 [ec=0000]
+(XEN) domain_crash_sync called from entry.S: fault at ffff82d080229d30 int80_direct_trap+0x200/0x210
+(XEN) Domain 0 (vcpu#0) crashed on cpu#0:
+(XEN) ----[ Xen-4.5-unstable  x86_64  debug=y  Tainted:    C ]----
+(XEN) CPU:    0
+(XEN) RIP:    e033:[<ffffffff816987c5>]
+(XEN) RFLAGS: 0000000000000246   EM: 1   CONTEXT: pv guest
+(XEN) rax: 0000000000000000   rbx: 0000000001000000   rcx: 0000000000000000
+(XEN) rdx: 0000000000000000   rsi: ffffffff814d7e7e   rdi: 0000000000000000
+(XEN) rbp: ffffffff81601e88   rsp: ffffffff81601e48   r8:  0000000000000000
+(XEN) r9:  0000000000007ff0   r10: 00000000deadbeef   r11: ffffffff81601df8
+(XEN) r12: ffffffff816fe010   r13: ffffffff81601f00   r14: 0000000000000000
+(XEN) r15: 0000000000000000   cr0: 0000000080050033   cr4: 00000000000026f0
+(XEN) cr3: 000000007b60d000   cr2: 0000000000000000
+(XEN) ds: 0000   es: 0000   fs: 0000   gs: 0000   ss: e02b   cs: e033
+(XEN) Guest stack trace from rsp=ffffffff81601e48:
+(XEN)    0000000000000000 ffffffff81601df8 ffffffff816987c5 000000010000e030
+(XEN)    0000000000010046 ffffffff81601e88 000000000000e02b ffffffff81601f00
+(XEN)    ffffffff81601ed8 ffffffff8168a1a4 ffffffff81601ee8 ffffffff81601ea8
+(XEN)    ffff880001e16490 ffffffffffffffff ffffffff816fe010 0000000000000000
+(XEN)    0000000000000000 0000000000000000 ffffffff81601f28 ffffffff81685a3e
+(XEN)    0000000000000000 0000000000000000 0000000000000000 0000000000000000
+(XEN)    ffff880001e16000 0000000000000000 0000000000000000 0000000000000000
+(XEN)    ffffffff81601f38 ffffffff816854c8 ffffffff81601ff8 ffffffff81687442
+(XEN)    0000000100000000 0000080000000623 0789cbf580802001 0300000100000032
+(XEN)    0000000000000005 0000000000000000 0000000000000000 0000000000000000
+(XEN)    0000000000000000 0000000000000000 0000000000000000 0000000000000000
+(XEN)    0000000000000000 0000000000000000 0000000000000000 0000000000000000
+(XEN)    0000000000000000 0000000000000000 0000000000000000 0000000000000000
+(XEN)    0000000000000000 0000000000000000 0000000000000000 0f00000060c0c748
+(XEN)    ccccccccccccc305 cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN)    cccccccccccccccc cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN)    cccccccccccccccc cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN)    cccccccccccccccc cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN)    cccccccccccccccc cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN)    cccccccccccccccc cccccccccccccccc cccccccccccccccc cccccccccccccccc
+(XEN) Domain 0 crashed: rebooting machine in 5 seconds.
+
+Some addresses are solved to:
+0xffffffff816987c5: efi_memblock_x86_reserve_range at arch/x86/platform/efi/efi.c:393
+0xffffffff8168a1a4: setup_arch at arch/x86/kernel/setup.c:940
+0xffffffff81685a3e: setup_command_line at init/main.c:353
+0xffffffff816854c8: x86_64_start_reservations at arch/x86/kernel/head64.c:194
+0xffffffff81687442: xen_start_kernel at arch/x86/xen/enlighten.c:1733
+
+I am using Linus tree with latest commit b098d6726bbfb94c06d6e1097466187afddae61f
+(Linux 3.14-rc8) with my patches applied excluding patch 3.
+
+Daniel
