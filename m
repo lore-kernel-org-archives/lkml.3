@@ -1,450 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755868AbaCZQx7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:53:59 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:50909 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754779AbaCZQx5 (ORCPT
+	id S932118AbaCZQz0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:55:26 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:58990 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755721AbaCZQzX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:53:57 -0400
-Date: Wed, 26 Mar 2014 17:53:52 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <789809468.20140326175352@eikelenboom.it>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network troubles "bisected"
-In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD029B106@AMSPEX01CL01.citrite.net>
-References: <1744594108.20140318162127@eikelenboom.it> <20140318160412.GB16807@zion.uk.xensource.com> <1701035622.20140318211402@eikelenboom.it> <722971844.20140318221859@eikelenboom.it> <1688396550.20140319001104@eikelenboom.it> <20140319113532.GD16807@zion.uk.xensource.com> <246793256.20140319220752@eikelenboom.it> <20140321164958.GA31766@zion.uk.xensource.com> <1334202265.20140321182727@eikelenboom.it> <1056661597.20140322192834@eikelenboom.it> <20140325151539.GG31766@zion.uk.xensource.com> <79975567.20140325162942@eikelenboom.it> <1972209744.20140326121116@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AD94@AMSPEX01CL01.citrite.net> <1715463578.20140326162245@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net> <799579453.20140326170641@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B106@AMSPEX01CL01.citrite.net>
+	Wed, 26 Mar 2014 12:55:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1394006982-30184-1-git-send-email-jon@ringle.org>
+References: <1394006982-30184-1-git-send-email-jon@ringle.org>
+Date: Wed, 26 Mar 2014 12:55:21 -0400
+X-Google-Sender-Auth: yyhVH9cIrIYIxqZzt8bV3LusZrA
+Message-ID: <CAMwGMjyRU7UHof80sz9JEL5_NeNA-abUNdsaYRBhuVfkBn3Znw@mail.gmail.com>
+Subject: Re: [PATCH v3] touchscreen: tps6507x-ts: only poll while touch event
+ is occurring
+From: Jon Ringle <jon@ringle.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Jon Ringle <jringle@gridpoint.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I've not heard anything regarding this patch. I just want to make sure
+it doesn't get lost :)
 
-Wednesday, March 26, 2014, 5:25:21 PM, you wrote:
+Jon
 
->> -----Original Message-----
->> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> Sent: 26 March 2014 16:07
->> To: Paul Durrant
->> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
->> kernel; netdev@vger.kernel.org
->> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> troubles "bisected"
->> 
->> 
->> Wednesday, March 26, 2014, 4:50:30 PM, you wrote:
->> 
->> >> -----Original Message-----
->> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> >> Sent: 26 March 2014 15:23
->> >> To: Paul Durrant
->> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
->> linux-
->> >> kernel; netdev@vger.kernel.org
->> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> >> troubles "bisected"
->> >>
->> >>
->> >> Wednesday, March 26, 2014, 3:44:42 PM, you wrote:
->> >>
->> >> >> -----Original Message-----
->> >> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> >> >> Sent: 26 March 2014 11:11
->> >> >> To: Paul Durrant
->> >> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
->> >> linux-
->> >> >> kernel; netdev@vger.kernel.org
->> >> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> >> >> troubles "bisected"
->> >> >>
->> >> >> Paul,
->> >> >>
->> >> >> You have been awfully silent for this whole thread while this is a
->> >> regression
->> >> >> caused by a patch of you
->> >> >> (ca2f09f2b2c6c25047cfc545d057c4edfcfe561c as clearly stated much
->> earlier
->> >> in
->> >> >> this thread).
->> >> >>
->> >>
->> >> > Sorry, I've been distracted...
->> >>
->> >> >> The commit messages states:
->> >> >>     "net_rx_action() is the place where we could do with an accurate
->> >> >> predicition but,
->> >> >>     since that has proven tricky to calculate, a cheap worse-case (but not
->> >> too
->> >> >> bad)
->> >> >>     estimate is all we really need since the only thing we *must* prevent
->> is
->> >> >> xenvif_gop_skb()
->> >> >>     consuming more slots than are available."
->> >> >>
->> >> >> Your "worst-case" calculation stated in the commit message is clearly
->> not
->> >> the
->> >> >> worst case,
->> >> >> since it doesn't take calls to "get_next_rx_buffer" into account.
->> >> >>
->> >>
->> >> > It should be taking into account the behaviour of
->> start_new_rx_buffer(),
->> >> which should be true if a slot is full or a frag will overflow the current slot
->> and
->> >> doesn't require splitting.
->> >> > The code in net_rx_action() makes the assumption that each frag will
->> >> require as many slots as its size requires, i.e. it assumes no packing of
->> >> multiple frags into a single slot, so it should be a worst case.
->> >> > Did I miss something in that logic?
->> >>
->> >> Yes.
->> >> In "xenvif_gop_skb()" this loop:
->> >>
->> >>         for (i = 0; i < nr_frags; i++) {
->> >>                 xenvif_gop_frag_copy(vif, skb, npo,
->> >>                                      skb_frag_page(&skb_shinfo(skb)->frags[i]),
->> >>                                      skb_frag_size(&skb_shinfo(skb)->frags[i]),
->> >>                                      skb_shinfo(skb)->frags[i].page_offset,
->> >>                                      &head);
->> >>         }
->> >>
->> >> Is capable of using up (at least) 1 slot more than is anticipated for in
->> >> "net_rx_action()"  by this code:
->> >>
->> >>                 for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
->> >>                         unsigned int size;
->> >>                         size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
->> >>                         max_slots_needed += DIV_ROUND_UP(size, PAGE_SIZE);
->> >>                 }
->> >>
->> >> And this happens when it calls "get_next_rx_buffer()" from
->> >> "xenvif_gop_frag_copy()" where it's breaking down the frag.
->> >>
->> 
->> > The function that determines whether to consume another slot is
->> start_new_rx_buffer() and for each frag I don't see why this would return
->> true more than DIV_ROUND_UP(size, PAGE_SIZE) times.
->> > It may be called more times than that since the code in
->> xenvif_gop_frag_copy() must also allow for the offset of the frag but should
->> not return true in all cases.
->> > So, I still cannot see why a frag would ever consume more than
->> DIV_ROUND_UP(size, PAGE_SIZE) slots.
->> 
->> Well here a case were a frag is broken down in 2 pieces:
->> 
->> [ 1156.870372] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here 1  npo-
->> >meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105867
->> npo->copy_gref:760  npo->copy_off:4096  MAX_BUFFER_OFFSET:4096
->> bytes:560 size:560  offset:0 head:1273462060 i:2 vif->rx.sring-
->> >req_event:2104275 estimated_slots_needed:4 reserved_slots_left:0
->> [ 1156.871971] vif vif-7-0 vif7.0: ?!? xenvif_start_xmit stopping queue !
->> min_slots_needed:1 min_slots_needed_2:0 min_slots_needed_3:0 vif-
->> >rx.sring->req_prod:2105867 vif->rx.req_cons:2105867 vif->rx.sring-
->> >req_event:2105868 skb->len:66 skb->data_len:0
->> [ 1156.964316] vif vif-7-0 vif7.0: ?!? get_next_rx_buffer before req npo-
->> >meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105867
->> vif->rx.sring->req_event:2105868, reserved_slots_left:0
->> [ 1157.001635] vif vif-7-0 vif7.0: ?!? get_next_rx_buffer after req npo-
->> >meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868
->> req->gref:4325379 req->id:11 vif->rx.sring->req_event:2105868
->> reserved_slots_left:-1
->> [ 1157.039095] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here 2  npo-
->> >meta_prod:40 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868
->> npo->copy_gref:4325379  npo->copy_off:0  MAX_BUFFER_OFFSET:4096
->> bytes:560 size:560  offset:0 head:1273462060 i:2 vif->rx.sring-
->> >req_event:2105868 estimated_slots_needed:4 reserved_slots_left:-1
->> [ 1157.095216] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here end npo-
->> >meta_prod:40 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868
->> npo->copy_gref:4325379 npo->copy_off:560  MAX_BUFFER_OFFSET:4096
->> bytes:560 size:0  offset:560 head:1273462060 i:3 vif->rx.sring-
->> >req_event:2105868 gso_gaps:0 estimated_slots_needed:4
->> reserved_slots_left:-1
->> [ 1157.151338] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 4 after npo-
->> >meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif-
->> >rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1
->> req->gref:657 req->id:7 estimated_slots_needed:4 i(frag):0 j(data):1
->> reserved_slots_left:-1
->> [ 1157.188908] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 5 npo-
->> >meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif-
->> >rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1
->> req->gref:657 req->id:7 estimated_slots_needed:4 j(data):1
->> reserved_slots_left:-1    used in funcstart: 0 + 1 .. used_dataloop:1 ..
->> used_fragloop:3
->> [ 1157.244975] vif vif-7-0 vif7.0: ?!? xenvif_rx_action me here 2 ..  vif-
->> >rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 sco-
->> >meta_slots_used:4 max_upped_gso:1 skb_is_gso(skb):1
->> max_slots_needed:4 j:6 is_gso:1 nr_frags:1 firstpart:1 secondpart:2
->> reserved_slots_left:-1
->> 
->> - When processing an SKB we end up in "xenvif_gop_frag_copy" while prod
->> == cons ... but we still have bytes and size left ..
->> - start_new_rx_buffer() has returned true ..
->> - so we end up in get_next_rx_buffer
->> - this does a RING_GET_REQUEST and ups cons ..
->> - and we end up with a bad grant reference.
->> 
->> Sometimes we are saved by the bell .. since additional slots have become
->> free (you see cons become > prod in "get_next_rx_buffer" but shortly after
->> that prod is increased ..
->> just in time to not cause a overrun).
->> 
-
-> Ah, but hang on... There's a BUG_ON meta_slots_used > max_slots_needed, so if we are overflowing the worst-case calculation then why is that BUG_ON not firing?
-
-You mean:
-                sco = (struct skb_cb_overlay *)skb->cb;
-                sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
-                BUG_ON(sco->meta_slots_used > max_slots_needed);
-
-in "get_next_rx_buffer" ?
-
-I don't know .. at least now it doesn't crash dom0 and therefore not my complete machine and since tcp is recovering from a failed packet  :-)
-
-But probably because "npo->copy_prod++" seems to be used for the frags .. and it isn't added to  npo->meta_prod ?
-
---
-Sander
-
->   Paul
-
->> If you need additional / other info, please cook up a debug patch with what
->> you need.
->> 
->> --
->> Sander
->> 
->> 
->> 
->> 
->> 
->> 
->> >   Paul
->> 
->> >> Ultimately this results in bad grant reference warnings (and packets
->> marked
->> >> as "errors" in the interface statistics).
->> >>
->> >> In my case it always seems to be a skb with 1 frag which is broken down in
->> 5
->> >> or 6 pieces ..
->> >>
->> >> So "get_next_rx_buffer()" is called once .. and i'm overrunning the ring
->> with
->> >> 1 slot, but i'm not sure if that's not coincedence
->> >> since in the code there seem to be no explicit limitation on how often this
->> >> code path is taken. So perhaps it's implicitly limited
->> >> since packets and frags can't be arbitrarily large in comparison with the
->> >> page_size but that's not something i'm capable of figuring out :-)
->> >>
->> >>
->> >>
->> >> >   Paul
->> >>
->> >> >> Problem is that a worst case calculation would probably be reverting to
->> >> the
->> >> >> old calculation,
->> >> >> and the problems this patch was trying to solve would reappear, but
->> >> >> introducing new regressions
->> >> >> isn't very useful either. And since it seems such a tricky and fragile
->> thing to
->> >> >> determine, it would
->> >> >> probably be best to be split into a distinct function with a comment to
->> >> explain
->> >> >> the rationale used.
->> >> >>
->> >> >> Since this doesn't seem to progress very fast .. CC'ed some more folks
->> ..
->> >> you
->> >> >> never know ..
->> >> >>
->> >> >> --
->> >> >> Sander
->> >> >>
->> >> >>
->> >> >> Tuesday, March 25, 2014, 4:29:42 PM, you wrote:
->> >> >>
->> >> >>
->> >> >> > Tuesday, March 25, 2014, 4:15:39 PM, you wrote:
->> >> >>
->> >> >> >> On Sat, Mar 22, 2014 at 07:28:34PM +0100, Sander Eikelenboom
->> wrote:
->> >> >> >> [...]
->> >> >> >>> > Yes there is only one frag .. but it seems to be much larger than
->> >> >> PAGE_SIZE .. and xenvif_gop_frag_copy brakes that frag down into
->> >> smaller
->> >> >> bits .. hence the calculation in xenvif_rx_action determining the slots
->> >> needed
->> >> >> by doing:
->> >> >> >>>
->> >> >> >>> >                 for (i = 0; i < nr_frags; i++) {
->> >> >> >>> >                         unsigned int size;
->> >> >> >>> >                         size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
->> >> >> >>> >                         max_slots_needed += DIV_ROUND_UP(size,
->> >> PAGE_SIZE);
->> >> >> >>> >                 }
->> >> >> >>>
->> >> >> >>> > But the code in xenvif_gop_frag_copy .. seems to be needing
->> one
->> >> >> more slot (from the emperical test) .. and calling "get_next_rx_buffer"
->> >> >> seems involved in that ..
->> >> >> >>>
->> >> >> >>> Hmm looked again .. and it seems this is it .. when your frags are
->> large
->> >> >> enough you have the chance of running into this.
->> >> >> >>>
->> >> >>
->> >> >> >> get_next_rx_buffer is guarded by start_new_rx_buffer. Do you
->> see
->> >> any
->> >> >> >> problem with that implementation?
->> >> >> > In general no, but "get_next_rx_buffer" up's cons .. and the
->> calculations
->> >> >> done in "xenvif_rx_action" for max_slots_needed to prevent the
->> overrun
->> >> >> > don't count in this possibility. So it's not the guarding of
->> >> >> "start_new_rx_buffer" that is at fault. It's the ones early in
->> >> >> "xenvif_rx_action".
->> >> >> > The ones that were changed by Paul's patch from MAX_SKB_FRAGS
->> to a
->> >> >> calculated value that should be a "slim fit".
->> >> >>
->> >> >> > The problem is in determining upfront in "xenvif_rx_action" when
->> and
->> >> how
->> >> >> often the "get_next_rx_buffer" path will be taken.
->> >> >> > Unless there are other non direct restrictions (from a size point of
->> view)
->> >> it
->> >> >> can be called multiple times per frag per skb.
->> >> >>
->> >> >> >>> Problem is .. i don't see an easy fix, the "one more slot" of the
->> >> empirical
->> >> >> test doesn't seem to be the worst case either (i think):
->> >> >> >>>
->> >> >> >>> - In my case the packets that hit this only have 1 frag, but i could
->> have
->> >> >> had more frags.
->> >> >> >>>   I also think you can't rule out the possibility of doing the
->> >> >> "get_next_rx_buffer" for multiple subsequent frags from one packet,
->> >> >> >>>   so in the worst (and perhaps even from a single frag since it's
->> looped
->> >> >> over a split of it in what seems PAGE_SIZE pieces.)
->> >> >> >>>   - So an exact calculation of how much slots we are going to need
->> for
->> >> >> hitting this "get_next_rx_buffer"  upfront in "xenvif_rx_action" seems
->> >> >> unfeasible.
->> >> >> >>>   - A worst case gamble seems impossible either .. if you take
->> multiple
->> >> >> frags * multiple times the "get_next_rx_buffer" ... you would probably
->> be
->> >> >> back at just
->> >> >> >>>     setting the needed_slots to MAX_SKB_FRAGS.
->> >> >> >>>
->> >> >> >>> - Other thing would be checking for the available slots before
->> doing
->> >> the
->> >> >> "get_next_rx_buffer" .. how ever .. we don't account for how many
->> slots
->> >> we
->> >> >> still need to
->> >> >> >>>   just process the remaining frags.
->> >> >> >>>
->> >> >>
->> >> >> >> We've done a worst case estimation for whole SKB (linear area + all
->> >> >> >> frags) already, at the very first beginning. That's what
->> >> >> >> max_slots_needed is for.
->> >> >>
->> >> >> >>> - Just remove the whole "get_next_rx_buffer".. just tested it but
->> it
->> >> >> seems the "get_next_rx_buffer" is necessary ..  when i make
->> >> >> start_new_rx_buffer always return false
->> >> >> >>>   i hit the bug below :S
->> >> >> >>>
->> >> >> >>> So the questions are ... is the "get_next_rx_buffer" part really
->> >> necessary
->> >> >> ?
->> >> >> >>>    - if not, what is the benefit of the "get_next_rx_buffer" and
->> does
->> >> that
->> >> >> outweigh the additional cost of accounting
->> >> >> >>>      of needed_slots for the frags that have yet to be processed ?
->> >> >> >>>    - if yes, erhmmm what would be the best acceptable solution ..
->> >> >> returning to using MAX_SKB_FRAGS ?
->> >> >> >>>
->> >> >>
->> >> >> >> I think you need to answer several questions first:
->> >> >> >> 1. is max_slots_needed actually large enough to cover whole SKB?
->> >> >> >         No it's not if, you end up calling "get_next_rx_buffer" one or
->> >> multiple
->> >> >> times when processing the SKB
->> >> >> >         you have the chance of overrunning (or be saved because prod
->> gets
->> >> >> upped before you overrun).
->> >> >>
->> >> >> >> 2. is the test of ring slot availability acurate?
->> >> >> >         Seems to be.
->> >> >>
->> >> >> >> 3. is the number of ring slots consumed larger than
->> >> max_slots_needed? (I
->> >> >> >>    guess the answer is yes)
->> >> >> >         Yes that was the whole point.
->> >> >>
->> >> >> >> 4. which step in the break-down procedure causes backend to
->> overrun
->> >> >> the
->> >> >> >>    ring?
->> >> >> >         The "get_next_rx_buffer" call .. that is not accounted for (which
->> can
->> >> be
->> >> >> called
->> >> >> >         multiple times per frag (unless some other none obvious size
->> >> >> restriction limits this
->> >> >> >         to one time per frag or one time per SKB).
->> >> >> >         In my errorneous case it is called one time, but it would be nice if
->> >> there
->> >> >> would be some theoretical proof
->> >> >> >         instead of just some emperical test.
->> >> >>
->> >> >>
->> >> >> >> It doesn't matter how many frags your SKB has and how big a frag
->> is. If
->> >> >> >> every step is correct then you're fine. The code you're looking at
->> >> >> >> (start_new_rx_buffer / get_next_rx_buffer and friend) needs to
->> be
->> >> >> >> carefully examined.
->> >> >>
->> >> >> > Well it seems it only calls "get_next_rx_buffer" in some special cases
->> ..
->> >> >> (and that also what i'm seeing because it doesn't happen
->> >> >> > continously.
->> >> >>
->> >> >> > Question is shouldn't this max_needed_slots calc be reverted to
->> what it
->> >> >> was before 3.14 and take the time in 3.15 to figure out a
->> >> >> > the theoretical max (if it can be calculated upfront) .. or another way
->> to
->> >> >> guarantee the code is able to process the whole SKB  ?
->> >> >>
->> >> >> >> Wei.
->> >> >>
->> >> >>
->> >> >>
->> >> >>
->> >>
->> >>
->> 
->> 
-
-
-
+On Wed, Mar 5, 2014 at 3:09 AM,  <jon@ringle.org> wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
+>
+> (Resending without corporate dislaimer in email footer)
+>
+> We only need to poll for touch events after an interrupt occurs due to the
+> user touching the screen. We continue to poll until the user stops touching
+> the screen
+>
+> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> ---
+>  drivers/input/touchscreen/tps6507x-ts.c | 189 +++++++++++++++++++++++++-------
+>  include/linux/input/tps6507x-ts.h       |   1 +
+>  include/linux/mfd/tps6507x.h            |   1 +
+>  3 files changed, 151 insertions(+), 40 deletions(-)
+>
+> diff --git a/drivers/input/touchscreen/tps6507x-ts.c b/drivers/input/touchscreen/tps6507x-ts.c
+> index 94cde2c..c051419 100644
+> --- a/drivers/input/touchscreen/tps6507x-ts.c
+> +++ b/drivers/input/touchscreen/tps6507x-ts.c
+> @@ -17,11 +17,14 @@
+>  #include <linux/workqueue.h>
+>  #include <linux/slab.h>
+>  #include <linux/input.h>
+> -#include <linux/input-polldev.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/mfd/tps6507x.h>
+>  #include <linux/input/tps6507x-ts.h>
+>  #include <linux/delay.h>
+> +#include <linux/gpio.h>
+> +#include <linux/i2c.h>
+> +#include <linux/irq.h>
+> +#include <linux/interrupt.h>
+>
+>  #define TSC_DEFAULT_POLL_PERIOD 30 /* ms */
+>  #define TPS_DEFAULT_MIN_PRESSURE 0x30
+> @@ -39,13 +42,17 @@ struct ts_event {
+>  };
+>
+>  struct tps6507x_ts {
+> +       struct input_dev        *input_dev;
+>         struct device           *dev;
+> -       struct input_polled_dev *poll_dev;
+>         struct tps6507x_dev     *mfd;
+>         char                    phys[32];
+> +       struct delayed_work     work;
+>         struct ts_event         tc;
+> +       int                     irq;
+> +       unsigned long           poll_period;    /* ms */
+>         u16                     min_pressure;
+>         bool                    pendown;
+> +       int                     open_count;
+>  };
+>
+>  static int tps6507x_read_u8(struct tps6507x_ts *tsc, u8 reg, u8 *data)
+> @@ -155,13 +162,20 @@ static s32 tps6507x_adc_standby(struct tps6507x_ts *tsc)
+>         return ret;
+>  }
+>
+> -static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
+> +static void tps6507x_ts_handler(struct work_struct *work)
+>  {
+> -       struct tps6507x_ts *tsc = poll_dev->private;
+> -       struct input_dev *input_dev = poll_dev->input;
+> +       struct tps6507x_ts *tsc =  container_of(work, struct tps6507x_ts, work.work);
+> +       struct input_dev *input_dev = tsc->input_dev;
+>         bool pendown;
+> +       int schd;
+> +       int poll = 0;
+>         s32 ret;
+>
+> +       if (tsc->irq) {
+> +               // Disable the touch interrupt
+> +               tps6507x_write_u8(tsc, TPS6507X_REG_INT, 0);
+> +       }
+> +
+>         ret = tps6507x_adc_conversion(tsc, TPS6507X_TSCMODE_PRESSURE,
+>                                       &tsc->tc.pressure);
+>         if (ret)
+> @@ -178,10 +192,11 @@ static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
+>         }
+>
+>         if (pendown) {
+> +               int report_pendown = 0;
+>
+>                 if (!tsc->pendown) {
+>                         dev_dbg(tsc->dev, "DOWN\n");
+> -                       input_report_key(input_dev, BTN_TOUCH, 1);
+> +                       report_pendown = 1;
+>                 } else
+>                         dev_dbg(tsc->dev, "still down\n");
+>
+> @@ -195,15 +210,86 @@ static void tps6507x_ts_poll(struct input_polled_dev *poll_dev)
+>                 if (ret)
+>                         goto done;
+>
+> -               input_report_abs(input_dev, ABS_X, tsc->tc.x);
+> -               input_report_abs(input_dev, ABS_Y, tsc->tc.y);
+> -               input_report_abs(input_dev, ABS_PRESSURE, tsc->tc.pressure);
+> -               input_sync(input_dev);
+> -               tsc->pendown = true;
+> +               if (tsc->tc.x && tsc->tc.y) {
+> +                       if (report_pendown)
+> +                               input_report_key(input_dev, BTN_TOUCH, 1);
+> +
+> +                       input_report_abs(input_dev, ABS_X, tsc->tc.x);
+> +                       input_report_abs(input_dev, ABS_Y, tsc->tc.y);
+> +                       input_report_abs(input_dev, ABS_PRESSURE, tsc->tc.pressure);
+> +                       input_sync(input_dev);
+> +                       tsc->pendown = true;
+> +               } else {
+> +                       dev_dbg(tsc->dev, "discarding bogus read x=%d, y=%d, pressure=%d\n", tsc->tc.x, tsc->tc.y, tsc->tc.pressure);
+> +               }
+> +               poll = 1;
+>         }
+>
+>  done:
+>         tps6507x_adc_standby(tsc);
+> +       if (tsc->irq && !poll) {
+> +               // Re-enable the interrupt
+> +               tps6507x_write_u8(tsc, TPS6507X_REG_INT, TPS6507X_REG_MASK_TSC);
+> +       } else {
+> +               /* always poll if not using interrupts */
+> +               schd = schedule_delayed_work(&tsc->work,
+> +                                            msecs_to_jiffies(tsc->poll_period));
+> +       }
+> +}
+> +
+> +static irqreturn_t tps6507x_ts_irq(int irq, void * dev_id)
+> +{
+> +       struct tps6507x_ts * tsc = (struct tps6507x_ts *)dev_id;
+> +
+> +       schedule_delayed_work(&tsc->work, 0);
+> +
+> +       return IRQ_HANDLED;
+> +}
+> +
+> +static int tps6507x_ts_open(struct input_dev *input_dev)
+> +{
+> +       int ret;
+> +       struct tps6507x_ts *tsc = input_get_drvdata(input_dev);
+> +
+> +       tsc->open_count++;
+> +
+> +       if (tsc->irq) {
+> +
+> +               tps6507x_write_u8(tsc, TPS6507X_REG_INT, 0);
+> +               tps6507x_adc_standby(tsc);
+> +
+> +               ret = request_irq(tsc->irq,tps6507x_ts_irq, 0, "TPS6507x",tsc);
+> +
+> +               if(ret < 0) {
+> +                       tsc->open_count--;
+> +                       dev_err(tsc->dev, "cannot register irq");
+> +                       return ret;
+> +               }
+> +               // Enable the touch event interrupt
+> +               tps6507x_write_u8(tsc, TPS6507X_REG_INT, TPS6507X_REG_MASK_TSC);
+> +       } else {
+> +               ret = schedule_delayed_work(&tsc->work,
+> +                                           msecs_to_jiffies(tsc->poll_period));
+> +
+> +               if (!ret) {
+> +                       tsc->open_count--;
+> +                       dev_err(tsc->dev, "schedule failed");
+> +                       return -ENOMEM;
+> +               }
+> +       }
+> +
+> +       return 0;
+> +}
+> +
+> +static void tps6507x_ts_close(struct input_dev *input_dev)
+> +{
+> +       struct tps6507x_ts *tsc = input_get_drvdata(input_dev);
+> +
+> +       tsc->open_count--;
+> +
+> +       if(tsc->irq) {
+> +               free_irq(tsc->irq,tsc);
+> +       }
+>  }
+>
+>  static int tps6507x_ts_probe(struct platform_device *pdev)
+> @@ -212,8 +298,8 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+>         const struct tps6507x_board *tps_board;
+>         const struct touchscreen_init_data *init_data;
+>         struct tps6507x_ts *tsc;
+> -       struct input_polled_dev *poll_dev;
+>         struct input_dev *input_dev;
+> +       int schd;
+>         int error;
+>
+>         /*
+> @@ -239,29 +325,18 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+>                 return -ENOMEM;
+>         }
+>
+> +       tps6507x_dev->ts = tsc;
+>         tsc->mfd = tps6507x_dev;
+>         tsc->dev = tps6507x_dev->dev;
+> -       tsc->min_pressure = init_data ?
+> -                       init_data->min_pressure : TPS_DEFAULT_MIN_PRESSURE;
+> -
+> -       snprintf(tsc->phys, sizeof(tsc->phys),
+> -                "%s/input0", dev_name(tsc->dev));
+> -
+> -       poll_dev = input_allocate_polled_device();
+> -       if (!poll_dev) {
+> -               dev_err(tsc->dev, "Failed to allocate polled input device.\n");
+> +       input_dev = input_allocate_device();
+> +       if (!input_dev) {
+> +               dev_err(tsc->dev, "Failed to allocate input device.\n");
+>                 error = -ENOMEM;
+>                 goto err_free_mem;
+>         }
+>
+> -       tsc->poll_dev = poll_dev;
+> -
+> -       poll_dev->private = tsc;
+> -       poll_dev->poll = tps6507x_ts_poll;
+> -       poll_dev->poll_interval = init_data ?
+> -                       init_data->poll_period : TSC_DEFAULT_POLL_PERIOD;
+> -
+> -       input_dev = poll_dev->input;
+> +       input_dev->open = tps6507x_ts_open;
+> +       input_dev->close = tps6507x_ts_close;
+>         input_dev->evbit[0] = BIT_MASK(EV_KEY) | BIT_MASK(EV_ABS);
+>         input_dev->keybit[BIT_WORD(BTN_TOUCH)] = BIT_MASK(BTN_TOUCH);
+>
+> @@ -270,42 +345,76 @@ static int tps6507x_ts_probe(struct platform_device *pdev)
+>         input_set_abs_params(input_dev, ABS_PRESSURE, 0, MAX_10BIT, 0, 0);
+>
+>         input_dev->name = "TPS6507x Touchscreen";
+> -       input_dev->phys = tsc->phys;
+> -       input_dev->dev.parent = tsc->dev;
+>         input_dev->id.bustype = BUS_I2C;
+> +       input_dev->dev.parent = tsc->dev;
+> +
+> +       snprintf(tsc->phys, sizeof(tsc->phys),
+> +                "%s/input0", dev_name(tsc->dev));
+> +       input_dev->phys = tsc->phys;
+> +
+> +       dev_dbg(tsc->dev, "device: %s\n", input_dev->phys);
+> +
+> +       input_set_drvdata(input_dev, tsc);
+> +
+> +       tsc->input_dev = input_dev;
+> +
+> +       INIT_DELAYED_WORK(&tsc->work, tps6507x_ts_handler);
+>         if (init_data) {
+> +               tsc->poll_period = init_data->poll_period;
+> +               tsc->irq = gpio_to_irq(init_data->irq_pin);
+> +               tsc->min_pressure = init_data->min_pressure;
+>                 input_dev->id.vendor = init_data->vendor;
+>                 input_dev->id.product = init_data->product;
+>                 input_dev->id.version = init_data->version;
+> +       } else {
+> +               tsc->poll_period = TSC_DEFAULT_POLL_PERIOD;
+> +               tsc->min_pressure = TPS_DEFAULT_MIN_PRESSURE;
+>         }
+>
+>         error = tps6507x_adc_standby(tsc);
+>         if (error)
+> -               goto err_free_polled_dev;
+> +               goto err_free_dev;
+>
+> -       error = input_register_polled_device(poll_dev);
+> +       error = input_register_device(input_dev);
+>         if (error)
+> -               goto err_free_polled_dev;
+> +               goto err_free_dev;
+> +
+> +       if (!tsc->irq) {
+> +               schd = schedule_delayed_work(&tsc->work,
+> +                                            msecs_to_jiffies(tsc->poll_period));
+> +
+> +               if (!schd) {
+> +                       dev_err(tsc->dev, "schedule failed");
+> +                       goto err_cancel_work;
+> +               }
+> +       }
+>
+>         platform_set_drvdata(pdev, tsc);
+>
+>         return 0;
+>
+> -err_free_polled_dev:
+> -       input_free_polled_device(poll_dev);
+> +err_cancel_work:
+> +       cancel_delayed_work_sync(&tsc->work);
+> +err_free_dev:
+> +       input_free_device(input_dev);
+>  err_free_mem:
+>         kfree(tsc);
+> +       tps6507x_dev->ts = NULL;
+> +
+>         return error;
+>  }
+>
+>  static int tps6507x_ts_remove(struct platform_device *pdev)
+>  {
+> -       struct tps6507x_ts *tsc = platform_get_drvdata(pdev);
+> -       struct input_polled_dev *poll_dev = tsc->poll_dev;
+> +       struct tps6507x_dev *tps6507x_dev = platform_get_drvdata(pdev);
+> +       struct tps6507x_ts *tsc = tps6507x_dev->ts;
+> +       struct input_dev *input_dev = tsc->input_dev;
+> +
+> +       cancel_delayed_work_sync(&tsc->work);
+>
+> -       input_unregister_polled_device(poll_dev);
+> -       input_free_polled_device(poll_dev);
+> +       input_unregister_device(input_dev);
+>
+> +       tps6507x_dev->ts = NULL;
+>         kfree(tsc);
+>
+>         return 0;
+> diff --git a/include/linux/input/tps6507x-ts.h b/include/linux/input/tps6507x-ts.h
+> index b433df8..3c5aa7b 100644
+> --- a/include/linux/input/tps6507x-ts.h
+> +++ b/include/linux/input/tps6507x-ts.h
+> @@ -14,6 +14,7 @@
+>  /* Board specific touch screen initial values */
+>  struct touchscreen_init_data {
+>         int     poll_period;    /* ms */
+> +       int     irq_pin;
+>         __u16   min_pressure;   /* min reading to be treated as a touch */
+>         __u16   vendor;
+>         __u16   product;
+> diff --git a/include/linux/mfd/tps6507x.h b/include/linux/mfd/tps6507x.h
+> index c2ae569..c923e486 100644
+> --- a/include/linux/mfd/tps6507x.h
+> +++ b/include/linux/mfd/tps6507x.h
+> @@ -163,6 +163,7 @@ struct tps6507x_dev {
+>
+>         /* Client devices */
+>         struct tps6507x_pmic *pmic;
+> +       struct tps6507x_ts *ts;
+>  };
+>
+>  #endif /*  __LINUX_MFD_TPS6507X_H */
+> --
+> 1.8.5.4
+>
