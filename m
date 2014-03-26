@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930AbaCZT1l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 15:27:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:65160 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbaCZT1k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 15:27:40 -0400
-Message-ID: <53332A28.70306@gmail.com>
-Date: Wed, 26 Mar 2014 13:27:36 -0600
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756035AbaCZT2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 15:28:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51917 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755199AbaCZT2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 15:28:19 -0400
+Date: Wed, 26 Mar 2014 20:28:15 +0100
+From: Jan Kara <jack@suse.cz>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140326192815.GC18118@quack.suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+ <1395770101-24534-9-git-send-email-jack@suse.cz>
+ <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
-To: Josef Bacik <jbacik@fb.com>, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, mingo@redhat.com, acme@ghostprotocols.net
-Subject: Re: [PATCH] perf: make perf script actually spit out backtraces for
- events
-References: <1395860245-12418-1-git-send-email-jbacik@fb.com>
-In-Reply-To: <1395860245-12418-1-git-send-email-jbacik@fb.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 3/26/14, 12:57 PM, Josef Bacik wrote:
-> We are trying to debug a problem internally and noticed that if we use perf
-> record -g -e <tracepoint> and then try to use perf script to get the events and
-> their backtraces that we weren't getting the backtraces, even though they were
-> collected and would show up with perf report.  For some reason the tracepoint
-> print stuff didn't have the right things set in order to print out backtraces.
-> I have no idea why this is as adding them in there makes the backtraces come out
-> properly, and if we don't use the -g option perf script still acts properly with
-> those options set.  Hopefully this is the correct fix, it has fixed the problem
-> for us.  Thanks,
-
-You can manually request fields using the -f option.
-
-That said ...
-
+On Wed 26-03-14 17:23:32, One Thousand Gnomes wrote:
+> On Tue, 25 Mar 2014 18:55:01 +0100
+> Jan Kara <jack@suse.cz> wrote:
+> 
+> > Necessity for offloading of printing was observed only for large
+> > systems. So add a config option (disabled by default) which removes most
+> > of the overhead added by this functionality.
+> 
+> If its an option it'll not get used. It ought to be automatic.
 >
-> Signed-off-by: Josef Bacik <jbacik@fb.com>
-> ---
-> NOTE: I looked at MAINTAINERS to see if there was a perf list and it didn't look
-> like there was one, sorry if this is the wrong place to send patches to.
->
->   tools/perf/builtin-script.c | 4 +++-
->   1 file changed, 3 insertions(+), 1 deletion(-)
->
-> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-> index baf1798..6d14c06 100644
-> --- a/tools/perf/builtin-script.c
-> +++ b/tools/perf/builtin-script.c
-> @@ -99,7 +99,9 @@ static struct {
->
->   		.fields = PERF_OUTPUT_COMM | PERF_OUTPUT_TID |
->   				  PERF_OUTPUT_CPU | PERF_OUTPUT_TIME |
-> -				  PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE,
-> +				  PERF_OUTPUT_EVNAME | PERF_OUTPUT_TRACE |
-> +				  PERF_OUTPUT_IP | PERF_OUTPUT_SYM |
-> +				  PERF_OUTPUT_DSO,
+> I still think the mindset of this patch set is wrong. Only the device
+> driver really knows what is good or bad. A large x86 connected to a
+> network fake 16x50 serial port for example typically has a giant FIFO so
+> 'bad' becomes 32K not 1000. A USB serial port already does async queueing
+> so the value is 0.
+  I'd be very happy to take a patch which would do the propagation of
+the information how fast the driver is from the driver into the printk. But
+I have no knowledge of what console drivers do and how fast devices are
+supposed to be and reading all that code just for the sake of this seems
+like a bad investment of time to me.
 
-A change has been applied to upstream:
-https://lkml.org/lkml/2013/11/30/63
+I'm happy with a solution that the feature is disabled by default so people
+don't have to pay the cost. For enterprise kernels which are supposed to
+run on large enough machines that printk offload makes sense, the overhead
+just doesn't matter IMHO.
 
+> It also ignores priority so you might queue and loose an oops as a box
+> goes down in preference to reporting debugging crap.
+  But that's no different to what happens now. Or am I missing something?
 
-David
+> All the afflicted consoles are serial, all go via the uart layer as far
+> as I can see.
+> 
+> The uart layer has a queue mechanism that could be used
+  I'm sorry, I don't follow here - what can the uart queueing be used for?
 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
