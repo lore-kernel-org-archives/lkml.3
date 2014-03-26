@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753957AbaCZNoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:44:14 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:46140 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130AbaCZNoM (ORCPT
+	id S1754698AbaCZNqZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:46:25 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:45966 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754539AbaCZNqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:44:12 -0400
+	Wed, 26 Mar 2014 09:46:23 -0400
+Date: Wed, 26 Mar 2014 13:46:17 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: david.vrabel@citrix.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, jeremy@goop.org,
+        fenghua.yu@intel.com, matt.fleming@intel.com, tony.luck@intel.com,
+        x86@kernel.org, tglx@linutronix.de, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, Daniel Kiper <daniel.kiper@oracle.com>,
+        konrad.wilk@oracle.com, Tang Liang <liang.tang@oracle.com>,
+        eshelton@pobox.com, mingo@redhat.com, linux-efi@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH v3 5/5] xen: Put EFI machinery in place
+Message-ID: <20140326134617.GE24856@console-pimps.org>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-6-git-send-email-daniel.kiper@oracle.com>
+ <20140326131214.GC24856@console-pimps.org>
+ <5332E4A802000078000025B6@nat28.tlf.novell.com>
 MIME-Version: 1.0
-In-Reply-To: <20140325212417.GA6545@kroah.com>
-References: <CA+5PVA6dz2ixLfHOHytkis6XmxdLKXZp9x8rEjB=pedrg7sXJQ@mail.gmail.com>
-	<20140325212417.GA6545@kroah.com>
-Date: Wed, 26 Mar 2014 09:44:11 -0400
-X-Google-Sender-Auth: QAmbM2vWrcYOy-9jcHhjLlJqXfE
-Message-ID: <CA+5PVA608SPM1r5tXwo_C+vaEff+XiLQ5AWwH7-i-MMGcXtuHw@mail.gmail.com>
-Subject: Re: Feb. Fedora Kernel Patch Report
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Greg KH <greg@kroah.com>, mhocko@suse.cz
-Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Kernel Fedora <kernel@lists.fedoraproject.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5332E4A802000078000025B6@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 5:24 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Feb 28, 2014 at 10:13:29AM -0500, Josh Boyer wrote:
->> cgroup-fixes.patch (rhbz 1045755)
->> - Upstream commits 0ab02ca8f887908152d1a96db5130fc661d36a1e
->> - There was a 3.12 version of this patch sent to stable list from
->> Michal Hocko.  I don't remember why it wasn't applied, or why it
->> wasn't applied for 3.13.y...
->
-> It didn't apply to 3.13, and I think I was waiting for a backported
-> version, do you have one?
+On Wed, 26 Mar, at 01:31:04PM, Jan Beulich wrote:
+> >>> On 26.03.14 at 14:12, <matt@console-pimps.org> wrote:
+> > 
+> > Is there a reason that you can't just populate an efi_system_table_t
+> > object, which could be used by efi_init(), so that we can save you the
+> > trouble of duplicating all of this code?
+> 
+> Would the generic function cope with all other fields being NULL (or
+> equivalent)?
+ 
+I've no idea, but it shouldn't be difficult to make that work. And by
+making it work in the generic code
 
-As far as I know we're using this version:
+> >> +/*
+> >> + * Convenience functions to obtain memory types and attributes
+> >> + */
+> >> +static u32 efi_mem_type_xen(unsigned long phys_addr)
+> >> +{
+> >> +	struct xen_platform_op op;
+> >> +	union xenpf_efi_info *info = &op.u.firmware_info.u.efi_info;
+> >> +
+> >> +	op.cmd = XENPF_firmware_info;
+> >> +	op.u.firmware_info.type = XEN_FW_EFI_INFO;
+> >> +	op.u.firmware_info.index = XEN_FW_EFI_MEM_INFO;
+> >> +	info->mem.addr = phys_addr;
+> >> +	info->mem.size = 0;
+> >> +	return HYPERVISOR_dom0_op(&op) ? 0 : info->mem.type;
+> >> +}
+> > 
+> > Same idea here. Unless you expect the EFI memory map to change at runtime
+> > (and it's not clear to me whether that wouldn't cause other things to
+> > explode) you'd be better off building a struct efi_memory_map and using
+> > the existing generic functions.
+> 
+> As said in another reply to this series - the memory map isn't being
+> (and shouldn't be) exposed to Dom0.
+ 
+Right, so you might not necessarily expose the EFI memory map that was
+constructed by the firmware, but it's worth looking at exposing *some*
+boot memory map, e.g. the map of memory before the kernel took control
+in DomU.
 
-http://thread.gmane.org/gmane.linux.kernel.cgroups/10336/focus=1646465
+Whether the firmware or the kernel builds it doesn't really matter. My
+point is that since we've already got a means of looking in the boot
+memory map for EFI type and EFI attributes, let's use it.
 
-The commentary on the thread seems to imply that Michal was going to
-send it again for some reason.  Michal, did you send the 3.12/3.13
-backport for this commit directly to stable?
-
-josh
+-- 
+Matt Fleming, Intel Open Source Technology Center
