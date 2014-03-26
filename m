@@ -1,124 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755577AbaCZRdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 13:33:10 -0400
-Received: from vserver.eikelenboom.it ([84.200.39.61]:51244 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754582AbaCZRdI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 13:33:08 -0400
-Date: Wed, 26 Mar 2014 18:33:04 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <966386043.20140326183304@eikelenboom.it>
-To: Paul Durrant <Paul.Durrant@citrix.com>
-CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
-        Zoltan Kiss <zoltan.kiss@citrix.com>,
-        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network troubles "bisected"
-In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD029B277@AMSPEX01CL01.citrite.net>
-References: <1744594108.20140318162127@eikelenboom.it> <20140318160412.GB16807@zion.uk.xensource.com> <1701035622.20140318211402@eikelenboom.it> <722971844.20140318221859@eikelenboom.it> <1688396550.20140319001104@eikelenboom.it> <20140319113532.GD16807@zion.uk.xensource.com> <246793256.20140319220752@eikelenboom.it> <20140321164958.GA31766@zion.uk.xensource.com> <1334202265.20140321182727@eikelenboom.it> <1056661597.20140322192834@eikelenboom.it> <20140325151539.GG31766@zion.uk.xensource.com> <79975567.20140325162942@eikelenboom.it> <1972209744.20140326121116@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AD94@AMSPEX01CL01.citrite.net> <1715463578.20140326162245@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net> <799579453.20140326170641@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B106@AMSPEX01CL01.citrite.net> <789809468.20140326175352@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B277@AMSPEX01CL01.citrite.net>
+	id S1755702AbaCZReH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 13:34:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21942 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751906AbaCZReE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 13:34:04 -0400
+Date: Wed, 26 Mar 2014 13:33:56 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: fs: remove now stale label in anon_inode_init()
+Message-ID: <20140326173356.GA16013@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>
+References: <20140326004510.D4C236604A2@gitolite.kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20140326004510.D4C236604A2@gitolite.kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Mar 26, 2014 at 12:45:10AM +0000, Linux Kernel wrote:
+ > Gitweb:     http://git.kernel.org/linus/;a=commit;h=fce7fc79c8f7188dfc5eafa1b937bcc3c5a4c2f5
+ > Commit:     fce7fc79c8f7188dfc5eafa1b937bcc3c5a4c2f5
+ > Parent:     d6f2589ad561aa5fa39f347eca6942668b7560a1
+ > Author:     Linus Torvalds <torvalds@linux-foundation.org>
+ > AuthorDate: Tue Mar 25 17:43:34 2014 -0700
+ > Committer:  Linus Torvalds <torvalds@linux-foundation.org>
+ > CommitDate: Tue Mar 25 17:43:34 2014 -0700
+ > 
+ >     fs: remove now stale label in anon_inode_init()
+ >     
+ >     The previous commit removed the register_filesystem() call and the
+ >     associated error handling, but left the label for the error path that no
+ >     longer exists.  Remove that too.
+ >     
+ >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+ > ---
+ >  fs/anon_inodes.c |    1 -
+ >  1 files changed, 0 insertions(+), 1 deletions(-)
+ > 
+ > diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
+ > index 4b4543b..42fcc46 100644
+ > --- a/fs/anon_inodes.c
+ > +++ b/fs/anon_inodes.c
+ > @@ -186,7 +186,6 @@ static int __init anon_inode_init(void)
+ >  
+ >  err_unregister_filesystem:
+ >  	unregister_filesystem(&anon_inode_fs_type);
+ > -err_exit:
+ >  	panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
+ 
+If we're about to panic, is there any point in doing the unregister ?
+Looks like that function could just be..
 
-Hi Paul,
-
-Seems your last mail arrived in pretty bad shape (truncated) in my mailbox ..
-
---
-Sander
-
-Wednesday, March 26, 2014, 6:16:49 PM, you wrote:
-
->> -----Original Message-----
->> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> Sent: 26 March 2014 16:54
->> To: Paul Durrant
->> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
->> kernel; netdev@vger.kernel.org
->> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> troubles "bisected"
->> 
->> 
->> Wednesday, March 26, 2014, 5:25:21 PM, you wrote:
->> 
->> >> -----Original Message-----
->> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> >> Sent: 26 March 2014 16:07
->> >> To: Paul Durrant
->> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
->> linux-
->> >> kernel; netdev@vger.kernel.org
->> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> >> troubles "bisected"
->> >>
->> >>
->> >> Wednesday, March 26, 2014, 4:50:30 PM, you wrote:
->> >>
->> >> >> -----Original Message-----
->> >> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> >> >> Sent: 26 March 2014 15:23
->> >> >> To: Paul Durrant
->> >> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
->> >> linux-
->> >> >> kernel; netdev@vger.kernel.org
->> >> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
->> >> >> troubles "bisected"
->> >> >>
->> >> >>
->> >> >> Wednesday, March 26, 2014, 3:44:42 PM, you wrote:
->> >> >>
->> >> >> >> -----Original Message-----
->> >> >> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
->> >> >> >> Sent: 26 March 2014 11:11
->> >> >> >> To: Paul Durrant
->> >> >> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian
->> Campbell;
->> >> >> linux-
->> >> >> >> kernel; netdev@vger.kernel.org
->> >> >> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13
->> Network
->> >> >> >> troubles "bisected"
->> >> >> >>
->> >> >> >> Paul,
->> >> >> >>
->> >> >> >> You have been awfully silent for this whole thread while this is a
->> >> >> regression
->> >> >> >> caused by a patch of you
->> >> >> >> (ca2f09f2b2c6c25047cfc545d057c4edfcfe561c as clearly stated much
->> >> earlier
->> >> >> in
->> >> >> >> this thread).
->> >> >> >>
->> >> >>
->> >> >> > Sorry, I've been distracted...
->> >> >>
->> >> >> >> The commit messages states:
->> >> >> >>     "net_rx_action() is the place where we could do with an accurate
->> >> >> >> predicition but,
->> >> >> >>     since that has proven tricky to calculate, a cheap worse-case (but
->> not
->> >> >> too
->> >> >> >> bad)
->> >> >> >>     estimate is all we really need since the only thing we *must*
->> prevent
->> >> is
->> >> >> >> xenvif_gop_skb()
->> >> >> >>     consuming more slots than are available."
->> >> >> >>
->> >> >> >> Your "worst-case" calculation stated in the commit message is
->> clearly
->> >> not
->> >> >> the
->> >> >> >> worst case,
->> >> >> >> since it doesn't take calls to "get_next_rx_buffer" into account
+        anon_inode_mnt = kern_mount(&anon_inode_fs_type);
+        if (IS_ERR(anon_inode_mnt)) { 
+                error = PTR_ERR(anon_inode_mnt);
+                panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
+        }       
+        return 0;
 
