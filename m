@@ -1,147 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753444AbaCZIwm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 04:52:42 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:53919 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751217AbaCZIwi convert rfc822-to-8bit (ORCPT
+	id S1753565AbaCZIxd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 04:53:33 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:23842 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaCZIxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 04:52:38 -0400
-Date: Wed, 26 Mar 2014 09:51:56 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Rutland <mark.rutland@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140326095156.3e5585b8@ipc1.ka-ro>
-In-Reply-To: <20140324095902.GB11377@localhost>
-References: <532BCFCC.4080205@freescale.com>
-	<1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
-	<20140324095902.GB11377@localhost>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 Mar 2014 04:53:30 -0400
+Date: Wed, 26 Mar 2014 11:53:13 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: "Wang, Xiaoming" <xiaoming.wang@intel.com>
+Cc: gregkh@linuxfoundation.org, valentina.manea.m@gmail.com,
+        standby24x7@gmail.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, dongxing.zhang@intel.com,
+        chuansheng.liu@intel.com
+Subject: Re: [PATCH] [staging][r8188eu]: memory leak in rtw_free_cmd_obj if
+ command is (_Set_Drv_Extra)
+Message-ID: <20140326085313.GC7045@mwanda>
+References: <1395152727.31547.5.camel@wxm-ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395152727.31547.5.camel@wxm-ubuntu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Mar 18, 2014 at 10:25:27AM -0400, Wang, Xiaoming wrote:
+> pcmd->parmbuf->pbuf has been allocated if command is GEN_CMD_CODE(_Set_Drv_Extra),
+> and it enqueued by rtw_enqueue_cmd. rtw_cmd_thread dequeue pcmd by rtw_dequeue_cmd.
+> The memory leak happened on this branch "if( _FAIL == rtw_cmd_filter(pcmdpriv, pcmd) )"
+> which goto post_process directly against freeing pcmd->parmbuf->pbuf in
+> rtw_drvextra_cmd_hdl which is the cmd_hdl if command is (_Set_Drv_Extra).
+> This patch free pcmd->parmbuf->pbuf on the forgotten branch to avoid memory leak.
+> 
+> Signed-off-by: Zhang Dongxing <dongxing.zhang@intel.com>
+> Signed-off-by: xiaoming wang <xiaoming.wang@intel.com>
+> 
+> diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+> index c0a0a52..1c7f505 100644
+> --- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
+> +++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
+> @@ -288,7 +288,7 @@ int rtw_cmd_thread(void *context)
+>  	void (*pcmd_callback)(struct adapter *dev, struct cmd_obj *pcmd);
+>  	struct adapter *padapter = (struct adapter *)context;
+>  	struct cmd_priv *pcmdpriv = &(padapter->cmdpriv);
+> -
+> +	struct drvextra_cmd_parm *extra_parm = NULL;
 
-Huang Shijie wrote:
-> On Fri, Mar 21, 2014 at 11:50:17AM +0100, Lothar Waßmann wrote:
-> > With a flash-based BBT there is no reason to move the Factory Bad
-> > Block Marker from the data area buffer (to where it is mapped by the
-> > GPMI NAND controller) to the OOB buffer. Thus, make this feature
-> > configurable via DT. This is required for the Ka-Ro electronics
-> > platforms.
-> > 
-> > Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
-> > ---
-> >  Documentation/devicetree/bindings/mtd/gpmi-nand.txt |    3 +++
-> >  drivers/mtd/nand/gpmi-nand/gpmi-nand.c              |   10 +++++++---
-> >  2 files changed, 10 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/Documentation/devicetree/bindings/mtd/gpmi-nand.txt b/Documentation/devicetree/bindings/mtd/gpmi-nand.txt
-> > index 458d596..f28949a 100644
-> > --- a/Documentation/devicetree/bindings/mtd/gpmi-nand.txt
-> > +++ b/Documentation/devicetree/bindings/mtd/gpmi-nand.txt
-> > @@ -25,6 +25,9 @@ Optional properties:
-> >                         discoverable or this property is not enabled,
-> >                         the software may chooses an implementation-defined
-> >                         ECC scheme.
-> > +  - fsl,no-blockmark-swap: Don't swap the bad block marker from the OOB
-> > +                       area with the byte in the data area but rely on the
-> > +                       BBT for identifying bad blocks.
-> 
-> Please add the following:
->        "NOTE: This property is not supported by the imx23 and imx28"
->
-I don't see why this should not be supported on i.MX28 (i.MX23 doesn't
-do byteswapping anyway, so this wouldn't change anything for i.MX23).
-The partitions used by Linux need not necessarily be accessible for the
-Boot ROM code (and vice versa).
+Don't do this.  It disables GCC's uninitialized variable check so it can
+hide bugs.  It's just another assignment to read and remember so it
+takes reviewer time.
 
-> >  The device tree may optionally contain sub-nodes describing partitions of the
-> >  address space. See partition.txt for more detail.
-> > diff --git a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > index bb77f75..98562eb 100644
-> > --- a/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > +++ b/drivers/mtd/nand/gpmi-nand/gpmi-nand.c
-> > @@ -1632,9 +1632,6 @@ static int gpmi_init_last(struct gpmi_nand_data *this)
-> >  	struct bch_geometry *bch_geo = &this->bch_geometry;
-> >  	int ret;
-> >  
-> > -	/* Set up swap_block_mark, must be set before the gpmi_set_geometry() */
-> > -	this->swap_block_mark = !GPMI_IS_MX23(this);
-> > -
-> >  	/* Set up the medium geometry */
-> >  	ret = gpmi_set_geometry(this);
-> >  	if (ret)
-> > @@ -1701,6 +1698,13 @@ static int gpmi_nand_init(struct gpmi_nand_data *this)
-> >  	if (of_get_nand_on_flash_bbt(this->dev->of_node))
-> >  		chip->bbt_options |= NAND_BBT_USE_FLASH | NAND_BBT_NO_OOB;
-> >  
-> > +	/* Set up swap_block_mark, must be set before the gpmi_set_geometry() */
-> > +	if (!of_property_read_bool(this->dev->of_node, "fsl,no-blockmark-swap"))
-> > +		this->swap_block_mark = !GPMI_IS_MX23(this);
-> 
-> the code should like this:
-> ----------------------------------------------
-> 	this->swap_block_mark = !GPMI_IS_MX23(this);
-> 
-> 	if (!GPMI_IS_IMX23(this) && !GPMI_IS_MX28(this) &&
->
-the !GPMI_IS_MX23() is redundant here as i.MX23 will always have
-swap_block_mark == false.
-I would rather add a dependency on nand-on-flash-bbt as a
-prerequisite for not checking the BB marks in each block.
+>  
+>  	thread_enter("RTW_CMD_THREAD");
+>  
+> @@ -323,6 +323,11 @@ _next:
+>  
+>  		if (_FAIL == rtw_cmd_filter(pcmdpriv, pcmd)) {
+>  			pcmd->res = H2C_DROPPED;
+> +			if (pcmd->cmdcode == GEN_CMD_CODE(_Set_Drv_Extra)) {
+> +				extra_parm = (struct drvextra_cmd_parm *)pcmd->parmbuf;
+> +				if (extra_parm && extra_parm->pbuf && extra_parm->size > 0)
+> +					rtw_mfree(extra_parm->pbuf, extra_parm->size);
 
-> > +
-> > +	dev_dbg(this->dev, "Blockmark swapping %sabled\n",
-> > +		this->swap_block_mark ? "en" : "dis");
-> > +
-> >  	/*
-> >  	 * Allocate a temporary DMA buffer for reading ID in the
-> >  	 * nand_scan_ident().
-> 
-> There are some bugs in the gpmi driver which is caused by the assumption that
-> we always enable the swapping except the imx23. 
-> 
-> So, there are some places should be changed with this patch:
->    [1] the subpage hook,
->         Please also change the gpmi_ecc_read_subpage() too.
-> 
->    [2] the OOB hook,
->    	Please also change the gpmi_ecc_read_oob(). 
-> 
->    [3] the markbad hook,
->    	Please also change the gpmi_block_markbad() . 
-> 
-OK, I'll check that.
+Like Greg says, there isn't a rtw_mfree() anymore.  This code is so
+confusing and GEN_CMD_CODE is horrible and
+"make drivers/staging/rtl8188eu/core/rtw_cmd.i" doesn't work and I don't
+know how to even review this...  :/  But I'll try again when you
+re-submit.
 
+> +			}
+>  			goto post_process;
+>  		}
+>  
 
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+regards,
+dan carpenter
