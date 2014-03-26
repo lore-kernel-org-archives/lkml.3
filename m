@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345AbaCZUMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:12:50 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46641 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756042AbaCZUMr (ORCPT
+	id S1756362AbaCZUOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:14:32 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:48818 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756056AbaCZUO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:12:47 -0400
-Date: Wed, 26 Mar 2014 16:12:42 -0400 (EDT)
-Message-Id: <20140326.161242.576245997077162750.davem@davemloft.net>
-To: zoltan.kiss@citrix.com
-Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
-        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
-        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
-        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
-        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
-        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in
- skb_zerocopy and handle errors
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140326.155958.1928261590856069753.davem@davemloft.net>
-References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
-	<20140326.155958.1928261590856069753.davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Mar 2014 13:12:47 -0700 (PDT)
+	Wed, 26 Mar 2014 16:14:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <53333145.4080903@gmail.com>
+References: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>
+	<CAOMZO5DJPKvha7A-foktsB2dEw9xGXL_++uBXj_3ScAPTXNOkw@mail.gmail.com>
+	<53333145.4080903@gmail.com>
+Date: Wed, 26 Mar 2014 17:14:28 -0300
+Message-ID: <CAOMZO5AEry8sJW_+0aJS8ush+sYPPWk9LRU0b8RUUGa-hO_G1A@mail.gmail.com>
+Subject: Re: [PATCH] clk: register fixed-clock only if #clock-cells property
+ is present
+From: Fabio Estevam <festevam@gmail.com>
+To: Sylwester Nawrocki <sylvester.nawrocki@gmail.com>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, t.figa@samsung.com,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Boris BREZILLON <b.brezillon@overkiz.com>,
+        Kevin Hilman <khilman@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2QKD1CY001475
 
-From: David Miller <davem@davemloft.net>
-Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
+On Wed, Mar 26, 2014 at 4:57 PM, Sylwester Nawrocki
+<sylvester.nawrocki@gmail.com> wrote:
 
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Fri, 21 Mar 2014 10:31:34 +0000
-> 
->> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
->> orphan them. Also, it doesn't handle errors, so this patch takes care of that
->> as well, and modify the callers accordingly. skb_tx_error() is also added to
->> the callers so they will signal the failed delivery towards the creator of the
->> skb.
->> 
->> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> 
-> Applied, thanks Zoltan.
+> Perhaps a change as below helps ?
+>
+> From 85ee85e4a92b42442354f3f2454be50c173e1c59 Mon Sep 17 00:00:00 2001
+> From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Date: Wed, 26 Mar 2014 20:54:13 +0100
+> Subject: [PATCH] clk: reverse default clk provider initialization order in
+> of_clk_init()
+>
+>
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> ---
+>  drivers/clk/clk.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index fb3c40b..d30809c 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -2608,7 +2608,7 @@ void __init of_clk_init(const struct of_device_id
+> *matches)
+>
+>                 parent->clk_init_cb = match->data;
+>                 parent->np = np;
+> -               list_add(&parent->node, &clk_provider_list);
+> +               list_add_tail(&parent->node, &clk_provider_list);
+>         }
+>
+>         while (!list_empty(&clk_provider_list)) {
 
-Actually, Zoltan, you have to fix this:
+Thanks, Sylwester!
 
-net/core/skbuff.c: In function ¡skb_zerocopy¢:
-net/core/skbuff.c:2172:2: warning: passing argument 1 of ¡skb_orphan_frags¢ discards ¡const¢ qualifi
-er from pointer target type [enabled by default]
-In file included from include/linux/tcp.h:21:0,
-                 from net/core/skbuff.c:50:
-include/linux/skbuff.h:1904:19: note: expected ¡struct sk_buff *¢ but argument is of type ¡const str
-uct sk_buff *¢
-net/core/skbuff.c:2173:3: warning: passing argument 1 of ¡skb_tx_error¢ discards ¡const¢ qualifier f
-rom pointer target type [enabled by default]
-net/core/skbuff.c:642:6: note: expected ¡struct sk_buff *¢ but argument is of type ¡const struct sk_
-buff *¢
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+This makes my imx6q-wandboard to boot again.
+
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
