@@ -1,130 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaCZFeq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 01:34:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36185 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832AbaCZFep (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 01:34:45 -0400
-Date: Wed, 26 Mar 2014 06:34:40 +0100
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, Sasha Levin <sasha.levin@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: fs: gpf in simple_setattr
-Message-ID: <20140326053440.GB1292@quack.suse.cz>
-References: <531A7CFD.9030603@oracle.com>
- <20140310104350.GB28797@quack.suse.cz>
- <531DC89A.9010601@oracle.com>
- <53304451.7030800@oracle.com>
- <20140324214851.GB10057@quack.suse.cz>
- <5330D15E.2000702@oracle.com>
- <20140325173340.GB17292@quack.suse.cz>
- <5331C20F.5010109@oracle.com>
- <20140325211229.GA27422@quack.suse.cz>
- <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="AqsLC8rIMeq19msA"
-Content-Disposition: inline
-In-Reply-To: <CA+55aFx_ejUs5Qp7_316hF_X2vyz5Csssz7zyEiHQr2TqH_vyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751870AbaCZFjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 01:39:24 -0400
+Received: from smtprelay0051.hostedemail.com ([216.40.44.51]:34228 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750727AbaCZFjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 01:39:21 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3868:3870:3871:4250:4321:5007:6117:7652:9040:10004:10400:10848:11026:11232:11658:11914:12043:12296:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck
+X-HE-Tag: pan38_34397c25b2c09
+X-Filterd-Recvd-Size: 2332
+Message-ID: <1395812357.3726.14.camel@joe-AO722>
+Subject: Re: [PATCH v6] can: xilinx CAN controller support
+From: Joe Perches <joe@perches.com>
+To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+Cc: wg@grandegger.com, mkl@pengutronix.de, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, linux-can@vger.kernel.org,
+        netdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>
+Date: Tue, 25 Mar 2014 22:39:17 -0700
+In-Reply-To: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
+References: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2014-03-26 at 10:56 +0530, Kedareswara rao Appana wrote:
+> This patch adds xilinx CAN controller support.
+> This driver supports both ZYNQ CANPS and Soft IP
+> AXI CAN controller.
 
---AqsLC8rIMeq19msA
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Just trivial notes about dmesg logging output.
 
-On Tue 25-03-14 17:41:59, Linus Torvalds wrote:
-> On Tue, Mar 25, 2014 at 2:12 PM, Jan Kara <jack@suse.cz> wrote:
-> >
-> >   Can you try whether the following patch fixes the issue for you?
-> 
-> Good catch, Honza.
-> 
-> I hate how fragile that code ends up being and would love to see that
-> "anon_inode_inode" allocation and assignment just once in
-> anon_inode_init(), but considering that it wants the superblock
-> pointer, I suspect it's not cleanly doable. Oh well. Your patch looks
-> like it should make the issue moot, I just dread this happening again
-> due to the layout of the code.
-  Well, I think it could be done relatively cleanly... How about the
-attached patch (it boots for me)?
+> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.c
+[]
+> +static int set_reset_mode(struct net_device *ndev)
+> +{
+[]
+> +			netdev_warn(ndev, "timedout waiting for config mode\n");
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+timed out
 
---AqsLC8rIMeq19msA
-Content-Type: text/x-patch; charset=us-ascii
-Content-Disposition: attachment; filename="0001-vfs-Allocate-anon_inode_inode-in-anon_inode_init.patch"
+> +static int xcan_set_bittiming(struct net_device *ndev)
+> +{
+[]
+> +	if (!is_config_mode) {
+> +		netdev_alert(ndev,
+> +			"BUG! Cannot set bittiming can is notin config mode\n");
 
->From de87b1e6c3613d92f659c632be57461e87828e42 Mon Sep 17 00:00:00 2001
-From: Jan Kara <jack@suse.cz>
-Date: Wed, 26 Mar 2014 06:20:14 +0100
-Subject: [PATCH] vfs: Allocate anon_inode_inode in anon_inode_init()
+"Cannot set bit timing - CAN is not in config mode\n"
 
-Currently we allocated anon_inode_inode in anon_inodefs_mount. This is
-somewhat fragile as if that function ever gets called again, it will
-overwrite anon_inode_inode pointer. So move the initialization of
-anon_inode_inode to anon_inode_init().
+> +static int xcan_chip_start(struct net_device *ndev)
+> +{
 
-Signed-off-by: Jan Kara <jack@suse.cz>
----
- fs/anon_inodes.c | 22 +++++++---------------
- 1 file changed, 7 insertions(+), 15 deletions(-)
+> +			netdev_warn(ndev,
+> +				"time out waiting for correct mode\n");
 
-diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-index 4b4543b8b894..7f34f7702204 100644
---- a/fs/anon_inodes.c
-+++ b/fs/anon_inodes.c
-@@ -41,19 +41,8 @@ static const struct dentry_operations anon_inodefs_dentry_operations = {
- static struct dentry *anon_inodefs_mount(struct file_system_type *fs_type,
- 				int flags, const char *dev_name, void *data)
- {
--	struct dentry *root;
--	root = mount_pseudo(fs_type, "anon_inode:", NULL,
-+	return mount_pseudo(fs_type, "anon_inode:", NULL,
- 			&anon_inodefs_dentry_operations, ANON_INODE_FS_MAGIC);
--	if (!IS_ERR(root)) {
--		struct super_block *s = root->d_sb;
--		anon_inode_inode = alloc_anon_inode(s);
--		if (IS_ERR(anon_inode_inode)) {
--			dput(root);
--			deactivate_locked_super(s);
--			root = ERR_CAST(anon_inode_inode);
--		}
--	}
--	return root;
- }
- 
- static struct file_system_type anon_inode_fs_type = {
-@@ -180,12 +169,15 @@ static int __init anon_inode_init(void)
- 	anon_inode_mnt = kern_mount(&anon_inode_fs_type);
- 	if (IS_ERR(anon_inode_mnt)) {
- 		error = PTR_ERR(anon_inode_mnt);
--		goto err_unregister_filesystem;
-+		goto err_exit;
-+	}
-+	anon_inode_inode = alloc_anon_inode(anon_inode_mnt->mnt_sb);
-+	if (IS_ERR(anon_inode_inode)) {
-+		error = PTR_ERR(anon_inode_inode);
-+		goto err_exit;
- 	}
- 	return 0;
- 
--err_unregister_filesystem:
--	unregister_filesystem(&anon_inode_fs_type);
- err_exit:
- 	panic(KERN_ERR "anon_inode_init() failed (%d)\n", error);
- }
--- 
-1.8.1.4
+Please be consistent.  Maybe
+"timed out waiting for correct mode\n"
+
+> +static int xcan_open(struct net_device *ndev)
+> +{
+> +	struct xcan_priv *priv = netdev_priv(ndev);
+> +	int ret;
+> +
+> +	ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
+> +			ndev->name, ndev);
+> +	if (ret < 0) {
+> +		netdev_err(ndev, "Irq allocation for CAN failed\n");
+
+irq is almost always lower case.
 
 
---AqsLC8rIMeq19msA--
