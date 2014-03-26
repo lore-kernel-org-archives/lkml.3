@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754730AbaCZPTm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 11:19:42 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:45428 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009AbaCZPTk (ORCPT
+	id S1755241AbaCZPUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 11:20:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52077 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754076AbaCZPUt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 11:19:40 -0400
+	Wed, 26 Mar 2014 11:20:49 -0400
+Message-ID: <5332F01A.6090307@ti.com>
+Date: Wed, 26 Mar 2014 20:49:54 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20140321035233.32624.98694@quantum>
-References: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com>
-	<531068F4.3060903@free-electrons.com>
-	<20140321035233.32624.98694@quantum>
-Date: Wed, 26 Mar 2014 08:19:39 -0700
-Message-ID: <CAGa+x85XLDZqCkz9R95d2Vj9eODx4q8W=9QhmMfivdPf2GdsaQ@mail.gmail.com>
-Subject: Re: [PATCH v3] clk: respect the clock dependencies in of_clk_init
-From: Kevin Hilman <khilman@linaro.org>
-To: Mike Turquette <mturquette@linaro.org>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Rob Herring <robherring2@gmail.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>, <mohit.kumar@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Tony Lindgren <tony@atomide.com>, <rnayak@ti.com>,
+        "paul@pwsan.com" <paul@pwsan.com>
+Subject: Re: [RFC PATCH 02/12] pci: host: pcie-dra7xx: add support for pcie-dra7xx
+ controller
+References: <1395842272-15267-1-git-send-email-kishon@ti.com>	<1395842272-15267-3-git-send-email-kishon@ti.com> <CAL_JsqKeQvbU24V2-3KQuFoLwkL31DEcEEVDenfTA0P++Hn_fQ@mail.gmail.com>
+In-Reply-To: <CAL_JsqKeQvbU24V2-3KQuFoLwkL31DEcEEVDenfTA0P++Hn_fQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+ imx6 maintainers ]
 
-On Thu, Mar 20, 2014 at 8:52 PM, Mike Turquette <mturquette@linaro.org> wrote:
-> Quoting Gregory CLEMENT (2014-02-28 02:46:12)
->> Hi Mike,
+
+On Wednesday 26 March 2014 08:15 PM, Rob Herring wrote:
+> On Wed, Mar 26, 2014 at 8:57 AM, Kishon Vijay Abraham I <kishon@ti.com> wrote:
+>> Added support for pcie controller in dra7xx. This driver re-uses
+>> the designware core code that is already present in kernel.
 >>
->> On 24/02/2014 19:10, Gregory CLEMENT wrote:
->> > Until now the clock providers were initialized in the order found in
->> > the device tree. This led to have the dependencies between the clocks
->> > not respected: children clocks could be initialized before their
->> > parent clocks.
->> >
->> > Instead of forcing each platform to manage its own initialization order,
->> > this patch adds this work inside the framework itself.
->> >
->> > Using the data of the device tree the of_clk_init function now delayed
->> > the initialization of a clock provider if its parent provider was not
->> > ready yet.
->> >
->> > The strict dependency check (all parents of a given clk must be
->> > initialized) was added by Boris BREZILLON
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> ---
+>>  Documentation/devicetree/bindings/pci/ti-pci.txt |   35 ++
+>>  drivers/pci/host/Kconfig                         |   10 +
+>>  drivers/pci/host/Makefile                        |    1 +
+>>  drivers/pci/host/pcie-dra7xx.c                   |  411 ++++++++++++++++++++++
+>>  4 files changed, 457 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+>>  create mode 100644 drivers/pci/host/pcie-dra7xx.c
 >>
->> Are you ok with this version?
->> Will you take it for 3.15?
->> Or maybe you expected that it will be part of a pull request?
->>
->> However as it is modifying the core of the framework I thought that you
->> would take it and apply yourself.
->
-> Hi Gregory,
->
-> I have taken this into clk-next. If no regressions pop up over the next
-> few days then it should go into 3.15.
+>> diff --git a/Documentation/devicetree/bindings/pci/ti-pci.txt b/Documentation/devicetree/bindings/pci/ti-pci.txt
+>> new file mode 100644
+>> index 0000000..0528c47
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/pci/ti-pci.txt
+>> @@ -0,0 +1,35 @@
+>> +TI PCI Controllers
+>> +
+>> +PCIe Designware Controller
+>> +This node should have the properties described in "designware-pcie.txt".
+>> + - compatible: Should be "ti,dra7xx-pcie""
+>> + - reg : Address and length of the register set for the device.
+>> + - phys : the phandle for the PHY device (used by generic PHY framework)
+>> + - phy-names : the names of the PHY corresponding to the PHYs present in the
+>> +   *phy* phandle.
+>> + - resets: phandle used if reset is handled be soc
+> 
+> s/be/by/ ?
+> 
+>> + - reset-names: name given to the phandle
+>> + - ti,device-type: Should be 1 - EP TYPE, 2 - LEG EP TYPE OR 3 - RC TYPE
+> 
+> I don't think this makes sense. I'd imagine we'd need the binding to
+> look quite a bit different if endpoint mode was actually supported. I
 
-$SUBJECT patch (as commit 1771b10d605) is in -next has been fingered
-by bisection to be the reason behind boot failures[1] on imx6 wand
-boards in the last several -next kernels.
+right, it makes sense to remove the ti,device-type altogether as this driver
+only supports RC.
+> think I would start defining endpoint mode with a different compatible
+> string and go from there.
+> 
+>> +
+>> +Example:
+>> +pcie@51000000 {
+>> +       compatible = "ti,dra7xx-pcie";
+>> +       reg = <0x51002000 0x14c>, <0x51000000 0x2000>, <0x4A002540 0x1f>, <0x4A003c24 0x4>, <0x4AE07310 0x4>;
+> 
+> This is different number of entries from your actual dts. You need to
+> define how many reg entries, what they are, and the order.
 
-Reverting the patch on top of next/master gets these boards booting again.
+Ok. Will fix it.
 
-The boot failures result in no console output, so I haven't done any
-further debugging.
-
-Kevin
-
-[1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-March/002927.html
+Thanks
+Kishon
