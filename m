@@ -1,55 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350AbaCZOqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:46:19 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:61171 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754339AbaCZOqS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:46:18 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Kieran Clancy <clancy.kieran@gmail.com>
-Cc: Stefan Biereigel <stefan@biereigel.de>,
-        Juan Manuel Cabo <juanmanuel.cabo@gmail.com>,
-        Stefan Biereigel <security@biereigel-wb.de>,
-        Lan Tianyu <lantianyu1986@gmail.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger kernel org" <linux-kernel@vger.kernel.org>,
-        Len Brown <lenb@kernel.org>, San Zamoyski <san@plusnet.pl>,
-        "D. Jansen" <dennis.jansen@web.de>,
-        "Maurizio D'Addona" <mauritiusdadd@gmail.com>
-Subject: Re: [REGRESSION 3.14-rc6] Samsung N150 lid does not "open" after suspend to RAM.
-Date: Wed, 26 Mar 2014 16:01:56 +0100
-Message-ID: <4534478.UfDZjzQsar@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com>
-References: <532FE3B2.9060808@biereigel-wb.de> <5332AF10.90109@biereigel.de> <CAGf84QJU+RKXV4AyQ7QBTKjpdPm3AYLtWTFio+-r3j8wyoEokA@mail.gmail.com>
+	id S1754809AbaCZOvW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:51:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58101 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753545AbaCZOvV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 10:51:21 -0400
+Message-ID: <5332E94B.3050407@redhat.com>
+Date: Wed, 26 Mar 2014 15:50:51 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [KVM] BUG: unable to handle kernel NULL pointer dereference at
+ 00000000000002b0
+References: <20140326144053.GC26721@localhost>
+In-Reply-To: <20140326144053.GC26721@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 27, 2014 01:08:58 AM Kieran Clancy wrote:
-> On Wed, Mar 26, 2014 at 9:12 PM, Stefan Biereigel <stefan@biereigel.de> wrote:
-> >
-> > I don't know if it is a valid idea, but maybe it would be ok to process
-> > events after resume in general, and only throw away events on those
-> > platforms that continue to log events while in standby (Samsung 5/7/9)?
-> 
-> We can give it a shot!
-> 
-> It may even be that on Samsung 5/7/9 there is no harm in processing
-> the events instead of discarding them.
-> 
-> Here's a patch that we can try for that:
-> 
-> http://kieranclancy.com/tmp/2014/03/ec_clear_process.patch
+Il 26/03/2014 15:40, Fengguang Wu ha scritto:
+> Hi Paolo,
+>
+> We noticed the below kernel BUG on
+>
+> git://git.kernel.org/pub/scm/virt/kvm/kvm.git queue
+> commit 93c4adc7afedf9b0ec190066d45b6d67db5270da ("KVM: x86: handle missing MPX in nested virtualization")
 
-Can you please send patches inline so that it's more convenient to
-comment them if need be?
+Ouch.  Out of curiosity is this on Skylake prototypes, or is it also 
+visible on some released silicon?
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+Paolo
+
+> [   17.665744] Freeing initrd memory: 213444K (ffff880072f82000 - ffff88007fff3000)
+> [   17.674933] PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+> [   17.682659] software IO TLB [mem 0xb73c7000-0xbb3c7000] (64MB) mapped at [ffff8800b73c7000-ffff8800bb3c6fff]
+> [   17.695661] BUG: unable to handle kernel NULL pointer dereference at 00000000000002b0
+> [   17.705465] IP: [<ffffffff81015a9f>] kvm_arch_init+0x12a/0x1ea
+> [   17.712577] PGD 0
+> [   17.715390] Oops: 0000 [#1] SMP
+> [   17.719654] Modules linked in:
+> [   17.723641] CPU: 10 PID: 1 Comm: swapper/0 Not tainted 3.14.0-rc7-03020-ga929a7d #1
+> [   17.733067] Hardware name: Intel Corporation LH Pass/S4600LH...., BIOS SE5C600.86B.99.02.1047.032320122259 03/23/2012
+> [   17.745821] task: ffff880429cb0000 ti: ffff880429ca4000 task.ti: ffff880429ca4000
+> [   17.755039] RIP: 0010:[<ffffffff81015a9f>]  [<ffffffff81015a9f>] kvm_arch_init+0x12a/0x1ea
+> [   17.765228] RSP: 0000:ffff880429ca5e00  EFLAGS: 00010246
+> [   17.771644] RAX: 0000000000000000 RBX: 0000000000000000 RCX: 0000000000000000
+> [   17.780096] RDX: 0000000000000000 RSI: ffff880429ca5e04 RDI: 0000000000000d90
+> [   17.788549] RBP: ffff880429ca5e30 R08: ffff88082fc55d00 R09: ffff88042f803e00
+> [   17.796993] R10: 0000000000000004 R11: 0000000000000003 R12: 000000000000000c
+> [   17.805449] R13: 0000000000000017 R14: ffffffff82018b10 R15: 0000000000000018
+> [   17.813907] FS:  0000000000000000(0000) GS:ffff88082fc40000(0000) knlGS:0000000000000000
+> [   17.823808] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> [   17.830693] CR2: 00000000000002b0 CR3: 000000000200f000 CR4: 00000000000407e0
+> [   17.839159] Stack:
+> [   17.841873]  0000000000000000 0000000000000040 0000000000000000 0000000000003f40
+> [   17.851328]  0000000000000000 0000000000000000 ffff880429ca5e68 ffffffff810039dc
+> [   17.860790]  00000000000164d8 0000000000000006 0000000000000000 000000000000023c
+> [   17.870256] Call Trace:
+> [   17.873468]  [<ffffffff810039dc>] kvm_init+0x1f/0x24a
+> [   17.879599]  [<ffffffff82154fa4>] vmx_init+0x1df/0x3f6
+> [   17.885825]  [<ffffffff82154dc5>] ? vmx_check_processor_compat+0x61/0x61
+> [   17.893782]  [<ffffffff810002d2>] do_one_initcall+0xa4/0x13a
+> [   17.900604]  [<ffffffff810f9aa9>] ? parse_args+0x25f/0x33d
+> [   17.907225]  [<ffffffff8214ff94>] kernel_init_freeable+0x1a9/0x22e
+> [   17.914615]  [<ffffffff8214f78f>] ? do_early_param+0x88/0x88
+> [   17.921433]  [<ffffffff819af0d5>] ? rest_init+0x89/0x89
+> [   17.927731]  [<ffffffff819af0e3>] kernel_init+0xe/0xdf
+>
+> Full dmesg is attached, and more details can be provided on your request.
+>
+> Thanks,
+> Fengguang
+>
+
