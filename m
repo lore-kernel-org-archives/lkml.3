@@ -1,112 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231AbaCZUKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 16:10:40 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:57641 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756075AbaCZUKi (ORCPT
+	id S1756345AbaCZUMu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:12:50 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46641 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756042AbaCZUMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 16:10:38 -0400
-Message-ID: <53333438.3070107@hurleysoftware.com>
-Date: Wed, 26 Mar 2014 16:10:32 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Subject: Re: [PATCH 2/2] [RFC] serial_core: Avoid NULL pointer dereference
- in uart_close()
-References: <1395061859-15295-1-git-send-email-geert@linux-m68k.org>	<1395061859-15295-2-git-send-email-geert@linux-m68k.org>	<532CA142.8060705@hurleysoftware.com> <CAMuHMdWZw-_+RVe0RuwfR+smuiDY9HpMq7H9=rseP_XLGytU0A@mail.gmail.com>
-In-Reply-To: <CAMuHMdWZw-_+RVe0RuwfR+smuiDY9HpMq7H9=rseP_XLGytU0A@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 26 Mar 2014 16:12:47 -0400
+Date: Wed, 26 Mar 2014 16:12:42 -0400 (EDT)
+Message-Id: <20140326.161242.576245997077162750.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
+        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
+        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
+        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
+        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
+        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in
+ skb_zerocopy and handle errors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140326.155958.1928261590856069753.davem@davemloft.net>
+References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
+	<20140326.155958.1928261590856069753.davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Mar 2014 13:12:47 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2QKD1CY001475
 
-On 03/26/2014 02:58 PM, Geert Uytterhoeven wrote:
-> Hi Peter,
->
-> Thanks for your comments!
+From: David Miller <davem@davemloft.net>
+Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
 
-Not a problem; just wanted to save you some time and frustration :)
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Fri, 21 Mar 2014 10:31:34 +0000
+> 
+>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+>> as well, and modify the callers accordingly. skb_tx_error() is also added to
+>> the callers so they will signal the failed delivery towards the creator of the
+>> skb.
+>> 
+>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> 
+> Applied, thanks Zoltan.
 
-> On Fri, Mar 21, 2014 at 9:29 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> On 03/17/2014 09:10 AM, Geert Uytterhoeven wrote:
->>> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->>> When unbinding a serial driver that's being used as a serial console,
->>> the kernel may crash with a NULL pointer dereference in a uart_*()
->>> function
->>> called from uart_close () (e.g. uart_flush_buffer() or
->>> uart_chars_in_buffer()).
->>>
->>> To fix this, let uart_close() check for port->count == 0. If this is the
->>> case, bail out early. Else tty_port_close_start() will make the port
->>> counts inconsistent, printing out warnings like
->>>
->>>       tty_port_close_start: tty->count = 1 port count = 0.
->>>
->>> and
->>>
->>>       tty_port_close_start: count = -1
->>
->> As you noted in the patch comments below, the tty core always closes
->> a failed open.
->>
->> So the reason for the port->count mismatch is because tty_port_close_start()
->> only handles the tty hangup condition -- all other failed opens are assumed
->> to carry a port->count.
->>
->> A similar mismatch will occur if the mutex_lock in uart_open() is
->> interrupted.
->>
->> This means that the port->count mismatch can occur even if port->count != 0;
->> so the bug here is that uart_open() and uart_close() don't agree on
->> who does what cleanup under what error conditions.
->>
->> So with respect to the port count mismatches, the conditions need careful
->> auditing and fixing, separate from the tty console teardown problem.
->
-> Indeed. Currently uart_open() always decrements port->count again
-> in any error condition, which is clearly wrong.
+Actually, Zoltan, you have to fix this:
 
-I started looking at this problem only to realize that the
-tty_hung_up_p() condition in uart_open() can't actually happen.
-
-Which has lead me to a bunch of cleanups and fixes that I'm still
-working on. It's just slow going because tty code audit takes
-forever with legacy intentions that no longer apply and some of
-the bit-rotting tty drivers that I doubt even run.
-
->>> and once uport == NULL, it will also crash.
->>
->> Ok, but so will basically every serial core function after
->> uart_remove_one_port() assigns state->uart_port = NULL
->>
->> IOW, uart_close() is not the only serial core function that could be
->> using state->uart_port after uart_remove_one_port() finishes.
->>
->>> Also fix the related crash in pr_debug() by checking for a non-NULL uport
->>> first.
->>
->> So my point is that checking for NULL state->uart_port is simply not the
->> fix,
->> here or anywhere else.
->>
->> AFAICT, either reference-counting the uart_port structure or RCU
->> are the only viable solutions to safe ll driver uart_port removal.
->
-> I gave it a quick try, but failed. It seems the driver needs some big surgery
-> to fix this.
-
-I figured that would be true.
-What are the circumstances of device removal in your case?
-
-Regards,
-Peter Hurley
-
+net/core/skbuff.c: In function ¡skb_zerocopy¢:
+net/core/skbuff.c:2172:2: warning: passing argument 1 of ¡skb_orphan_frags¢ discards ¡const¢ qualifi
+er from pointer target type [enabled by default]
+In file included from include/linux/tcp.h:21:0,
+                 from net/core/skbuff.c:50:
+include/linux/skbuff.h:1904:19: note: expected ¡struct sk_buff *¢ but argument is of type ¡const str
+uct sk_buff *¢
+net/core/skbuff.c:2173:3: warning: passing argument 1 of ¡skb_tx_error¢ discards ¡const¢ qualifier f
+rom pointer target type [enabled by default]
+net/core/skbuff.c:642:6: note: expected ¡struct sk_buff *¢ but argument is of type ¡const struct sk_
+buff *¢
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
