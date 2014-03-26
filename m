@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754599AbaCZRxH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 13:53:07 -0400
-Received: from order.stressinduktion.org ([87.106.68.36]:33163 "EHLO
-	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820AbaCZRxF (ORCPT
+	id S1755304AbaCZRx3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 13:53:29 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:59843 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754708AbaCZRx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 13:53:05 -0400
-Date: Wed, 26 Mar 2014 18:53:02 +0100
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: davem@davemloft.net, dborkman@redhat.com, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH] random32: avoid attempt to late reseed if in the middle of seeding
-Message-ID: <20140326175302.GA30181@order.stressinduktion.org>
-Mail-Followup-To: Sasha Levin <sasha.levin@oracle.com>, davem@davemloft.net,
-	dborkman@redhat.com, tytso@mit.edu, linux-kernel@vger.kernel.org,
-	eric.dumazet@gmail.com
-References: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com>
+	Wed, 26 Mar 2014 13:53:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <1395851969-13520-2-git-send-email-lee.jones@linaro.org>
+References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
+	<1395851969-13520-2-git-send-email-lee.jones@linaro.org>
+Date: Wed, 26 Mar 2014 18:53:26 +0100
+X-Google-Sender-Auth: wF5xZPFpgRi7IsSo2Bh7rDVAakA
+Message-ID: <CAMuHMdXgPiJSrA4Txp_OxrGx7osNsprm5a+w3Qag=Yd-_nFVBw@mail.gmail.com>
+Subject: Re: [PATCH 01/15] mtd: st_spi_fsm: Add Macronix MX25L25655E device
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kernel@stlinux.com, Brian Norris <computersforpeace@gmail.com>,
+        MTD Maling List <linux-mtd@lists.infradead.org>, angus.clark@st.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 01:12:38PM -0400, Sasha Levin wrote:
-> Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
-> nonblocking pool becomes initialized") has added a late reseed stage
-> that happens as soon as the nonblocking pool is marked as initialized.
-> 
-> This fails in the case that the nonblocking pool gets initialized
-> during __prandom_reseed()'s call to get_random_bytes(). In that case
-> we'd double back into __prandom_reseed() in an attempt to do a late
-> reseed - deadlocking on 'lock' early on in the boot process.
-> 
-> Instead, just avoid even waiting to do a reseed if a reseed is already
-> occuring.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+Hi Lee,
 
-Ohh, I overlooked that. Thanks for fixing this, looks good.
+On Wed, Mar 26, 2014 at 5:39 PM, Lee Jones <lee.jones@linaro.org> wrote:
+> From: Angus Clark <angus.clark@st.com>
+>
+> Add Macronix MX25L25655E to the list of known devices.
+>
+> Signed-off-by: Angus Clark <angus.clark@st.com>
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  drivers/mtd/devices/st_spi_fsm.c | 3 +++
+>  1 file changed, 3 insertions(+)
+>
+> diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
+> index bea1416..2471061 100644
+> --- a/drivers/mtd/devices/st_spi_fsm.c
+> +++ b/drivers/mtd/devices/st_spi_fsm.c
+> @@ -380,6 +380,9 @@ static struct flash_info flash_types[] = {
+>         { "mx25l25635e", 0xc22019, 0, 64*1024, 512,
+>           (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+>           stfsm_mx25_config },
+> +       { "mx25l25655e", 0xc22619, 0, 64*1024, 512,
+> +         (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+> +         stfsm_mx25_config},
+>
+>  #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |       \
+>                    FLASH_FLAG_READ_FAST         |       \
 
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+How much of this table can be shared with the one in m25p80.c?
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
