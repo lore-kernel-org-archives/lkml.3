@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756237AbaCZT63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 15:58:29 -0400
-Received: from ms-10.1blu.de ([178.254.4.101]:57044 "EHLO ms-10.1blu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756070AbaCZT6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 15:58:19 -0400
-From: Jonas Hahnfeld <hahnjo@hahnjo.de>
-To: acho@novell.com, gregkh@linuxfoundation.org, rashika.kheria@gmail.com,
-        peter.p.waskiewicz.jr@intel.com, of82ecuq@cip.cs.fau.de,
-        laura.lawniczak@googlemail.com, amarjargal16@gmail.com,
-        himangi774@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Jonas Hahnfeld <hahnjo@hahnjo.de>
-Subject: [PATCH] staging: keucr: Fix warning about missing blank lines after declarations
-Date: Wed, 26 Mar 2014 20:56:53 +0100
-Message-Id: <1395863813-11596-1-git-send-email-hahnjo@hahnjo.de>
-X-Mailer: git-send-email 1.9.1
-X-Con-Id: 154395
-X-Con-U: 0-hahnjo
-X-Originating-IP: 79.233.135.189
+	id S1756278AbaCZUAI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 16:00:08 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46529 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134AbaCZUAE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 16:00:04 -0400
+Date: Wed, 26 Mar 2014 15:59:58 -0400 (EDT)
+Message-Id: <20140326.155958.1928261590856069753.davem@davemloft.net>
+To: zoltan.kiss@citrix.com
+Cc: jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
+        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
+        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
+        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
+        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
+        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v4] core, nfqueue, openvswitch: Orphan frags in
+ skb_zerocopy and handle errors
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1395397894-9493-1-git-send-email-zoltan.kiss@citrix.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 26 Mar 2014 13:00:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patches fixes two warnings of checkpatch.pl, both of the type
-WARNING: Missing a blank line after declarations
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Fri, 21 Mar 2014 10:31:34 +0000
 
-Signed-off-by: Jonas Hahnfeld <hahnjo@hahnjo.de>
----
- drivers/staging/keucr/smilsub.c   | 1 +
- drivers/staging/keucr/transport.c | 1 +
- 2 files changed, 2 insertions(+)
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well, and modify the callers accordingly. skb_tx_error() is also added to
+> the callers so they will signal the failed delivery towards the creator of the
+> skb.
+> 
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
 
-diff --git a/drivers/staging/keucr/smilsub.c b/drivers/staging/keucr/smilsub.c
-index 44ced82..e981f14 100644
---- a/drivers/staging/keucr/smilsub.c
-+++ b/drivers/staging/keucr/smilsub.c
-@@ -133,6 +133,7 @@ void Set_D_LogBlockAddr(u8 *redundant)
- void Set_D_FailBlock(u8 *redundant)
- {
- 	char i;
-+
- 	for (i = 0; i < REDTSIZE; i++)
- 		*redundant++ = (u8)((i == REDT_BLOCK) ? 0xF0 : 0xFF);
- }
-diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
-index ae94147..5e59525 100644
---- a/drivers/staging/keucr/transport.c
-+++ b/drivers/staging/keucr/transport.c
-@@ -669,6 +669,7 @@ int usb_stor_Bulk_transport(struct scsi_cmnd *srb, struct us_data *us)
- 	/*  R/W data */
- 	if (transfer_length) {
- 		unsigned int pipe;
-+
- 		if (srb->sc_data_direction == DMA_FROM_DEVICE)
- 			pipe = us->recv_bulk_pipe;
- 		else
--- 
-1.9.1
-
+Applied, thanks Zoltan.
