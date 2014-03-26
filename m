@@ -1,70 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaCZS7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 14:59:07 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:34713 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbaCZS7F (ORCPT
+	id S1755976AbaCZTAy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 15:00:54 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34091 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbaCZTAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 14:59:05 -0400
-Message-ID: <53332374.3000703@gmail.com>
-Date: Wed, 26 Mar 2014 18:59:00 +0000
-From: paulmcquad <paulmcquad@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Paul McQuade <paulmcquad@gmail.com>, linux-doc@vger.kernel.org,
+	Wed, 26 Mar 2014 15:00:52 -0400
+Date: Wed, 26 Mar 2014 16:53:15 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Axel Lin <axel.lin@ingics.com>
+Cc: Jin Park <jinyoungp@nvidia.com>, Liam Girdwood <lgirdwood@gmail.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Message-ID: <20140326165315.GE14287@sirena.org.uk>
+References: <1395665138.4779.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="lteA1dqeVaWQ9QQl"
+Content-Disposition: inline
+In-Reply-To: <1395665138.4779.1.camel@phoenix>
+X-Cookie: Is this really happening?
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 31.55.122.183
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: aat2870: Use regulator_map_voltage_ascend
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
-From: Paul McQuade <paulmcquad@gmail.com>
-Date: Tue, 25 Mar 2014 20:16:47 +0000
-Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
 
-Added setting to email-clients that is easier to read
-and is easier to setup thunderbird. Removed config settings
-and added GUI settings.
+--lteA1dqeVaWQ9QQl
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
----
- Documentation/email-clients.txt | 15 +++++----------
- 1 file changed, 5 insertions(+), 10 deletions(-)
+On Mon, Mar 24, 2014 at 08:45:38PM +0800, Axel Lin wrote:
+> The voltages in aat2870_ldo_voltages table are in ascendant order, so use
+> regulator_map_voltage_ascend.
 
-diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
-index e9f5dac..1e7c171 100644
---- a/Documentation/email-clients.txt
-+++ b/Documentation/email-clients.txt
-@@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
- 
- - Edit your Thunderbird config settings so that it won't use format=flowed.
-   Go to "edit->preferences->advanced->config editor" to bring up the
--  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
--  "false".
-+  thunderbird's registry editor.
- 
--- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
-+- Set "mailnews.send_plaintext_flowed" to "false"
- 
--- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
-+- Set "mailnews.wraplength" from "72" to "90"
- 
--- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
-+- "View" > "Message Body As" > "Plain Text"
- 
--- Install the "toggle wordwrap" extension.  Download the file from:
--    https://addons.mozilla.org/thunderbird/addon/2351/
--  Then go to "tools->add ons", select "install" at the bottom of the screen,
--  and browse to where you saved the .xul file.  This adds an "Enable
--  Wordwrap" entry under the Options menu of the message composer.
-+- "View" > "Character Encoding" > "Unicode (UTF-8)"
- 
- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- TkRat (GUI)
--- 
-1.8.3.2
+Applied, thanks.
 
+--lteA1dqeVaWQ9QQl
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTMwX4AAoJELSic+t+oim9SggP/17zRA7LN5XpeVJnmi0n6o4v
+tDZ2yxj3K50Fy463vFIbGP6NkLU2C6pikL654793o2pO+gBSNwdgOpV1iMXT1T8R
+EiDm/ih4uQCYuNW3w3H5t714wi8dwRtspLxClTncN/BZwUr+9CJGcKQKHLzSn6Bq
+6PUw9g6mSrpgBOLLvedu1CFuVcoESbuXVm7rwQ2TArA5pT2ZMGdgftqLKe8g/wQG
+qNTICN7MZUZAE5VGgGyjmn9lnIxCjBkq8AR/xZ7hR2s9FKMONl+E/csXIXm5klFp
+uoD39pwKt/j3fv4eNDAkfZiBvpplYOabZ4vvKu8moafE6gmPt9n3ms7BnC4iDXJl
+DjeZ1BW3CB+QRsL0D/9zNgaVOQEb41LkOqm33qdaHNxhzlSpjEX0jFI9GSM93Hly
+X7JWnJNVn8VePtIKeB7ryoPPWdwpvha72+MnG+W1Uyi/tCqvxqy38YqVr2uzno9C
+OpBspAt1bwxmPzP7uqyS4INISbSGi6E+qkYx9BAjb8DrJz9bFptoVHE2sndMIwtQ
+b4WSOgSmizdxSdaDGdy+g+Rc3QYJu2gUtlUYeX63NRjsefG1n38MSNR+YmVuKVEB
+CjyHzwbUWWczLxw++63qGrz0NewLDzvcLuzD1ATgrEhU4aRa4JX/HTCc5eH+c6/V
+B9syNC1jsVWkEXWmtHVN
+=HQe5
+-----END PGP SIGNATURE-----
+
+--lteA1dqeVaWQ9QQl--
