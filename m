@@ -1,662 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbaCZHqn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:46:43 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:45679 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaCZHql (ORCPT
+	id S1752108AbaCZHrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:47:48 -0400
+Received: from albert.telenet-ops.be ([195.130.137.90]:50600 "EHLO
+	albert.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaCZHrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:46:41 -0400
-Date: Wed, 26 Mar 2014 07:46:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: sameo@linux.intel.com, a.zummo@towertech.it, linux-kernel@vger.kernel.org,
-        rtc-linux@googlegroups.com, m.szyprowski@samsung.com,
-        k.kozlowski@samsung.com
-Subject: Re: [PATCH] mfd: max77686: handle IRQs using regmap
-Message-ID: <20140326074634.GD24823@lee--X1>
-References: <1395817840-12604-1-git-send-email-r.baldyga@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395817840-12604-1-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Mar 2014 03:47:46 -0400
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: linux-kernel@vger.kernel.org
+Subject: Build regressions/improvements in v3.14-rc8
+Date: Wed, 26 Mar 2014 08:47:44 +0100
+Message-Id: <1395820064-19148-1-git-send-email-geert@linux-m68k.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This patch modifies mfd driver to use regmap for handling interrupts.
-> It allows to simplify irq handling process. This modifications needed
-> to make small changes in function drivers, which use interrupts.
-> 
-> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
-> ---
->  drivers/mfd/Kconfig                  |    2 +-
->  drivers/mfd/Makefile                 |    2 +-
->  drivers/mfd/max77686-irq.c           |  319 ----------------------------------
->  drivers/mfd/max77686.c               |   54 +++++-
->  drivers/rtc/rtc-max77686.c           |   43 ++++-
->  include/linux/mfd/max77686-private.h |   32 +++-
->  6 files changed, 119 insertions(+), 333 deletions(-)
->  delete mode 100644 drivers/mfd/max77686-irq.c
+Below is the list of build error/warning regressions/improvements in
+v3.14-rc8[1] compared to v3.13[2].
 
-With the imminent opening of the merge-window, this patch will have to
-wait for a little while.
+Summarized:
+  - build errors: +10/-30
+  - build warnings: +93/-79
 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 9e87504..969e685 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -349,7 +349,7 @@ config MFD_MAX77686
->  	depends on I2C=y
->  	select MFD_CORE
->  	select REGMAP_I2C
-> -	select IRQ_DOMAIN
-> +	select REGMAP_IRQ
->  	help
->  	  Say yes here to add support for Maxim Semiconductor MAX77686.
->  	  This is a Power Management IC with RTC on chip.
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index b91f3e31..bcc57d7 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -115,7 +115,7 @@ da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
->  obj-$(CONFIG_MFD_DA9063)	+= da9063.o
->  
->  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
-> -obj-$(CONFIG_MFD_MAX77686)	+= max77686.o max77686-irq.o
-> +obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
->  obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
->  obj-$(CONFIG_MFD_MAX8907)	+= max8907.o
->  max8925-objs			:= max8925-core.o max8925-i2c.o
-> diff --git a/drivers/mfd/max77686-irq.c b/drivers/mfd/max77686-irq.c
-> deleted file mode 100644
-> index cdc3280..0000000
-> --- a/drivers/mfd/max77686-irq.c
-> +++ /dev/null
-> @@ -1,319 +0,0 @@
-> -/*
-> - * max77686-irq.c - Interrupt controller support for MAX77686
-> - *
-> - * Copyright (C) 2012 Samsung Electronics Co.Ltd
-> - * Chiwoong Byun <woong.byun@samsung.com>
-> - *
-> - * This program is free software; you can redistribute it and/or modify
-> - * it under the terms of the GNU General Public License as published by
-> - * the Free Software Foundation; either version 2 of the License, or
-> - * (at your option) any later version.
-> - *
-> - * This program is distributed in the hope that it will be useful,
-> - * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> - * GNU General Public License for more details.
-> - *
-> - * You should have received a copy of the GNU General Public License
-> - * along with this program; if not, write to the Free Software
-> - * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> - *
-> - * This driver is based on max8997-irq.c
-> - */
-> -
-> -#include <linux/err.h>
-> -#include <linux/irq.h>
-> -#include <linux/interrupt.h>
-> -#include <linux/gpio.h>
-> -#include <linux/mfd/max77686.h>
-> -#include <linux/mfd/max77686-private.h>
-> -#include <linux/irqdomain.h>
-> -#include <linux/regmap.h>
-> -
-> -enum {
-> -	MAX77686_DEBUG_IRQ_INFO = 1 << 0,
-> -	MAX77686_DEBUG_IRQ_MASK = 1 << 1,
-> -	MAX77686_DEBUG_IRQ_INT = 1 << 2,
-> -};
-> -
-> -static int debug_mask = 0;
-> -module_param(debug_mask, int, 0);
-> -MODULE_PARM_DESC(debug_mask, "Set debug_mask : 0x0=off 0x1=IRQ_INFO  0x2=IRQ_MASK 0x4=IRQ_INI)");
-> -
-> -static const u8 max77686_mask_reg[] = {
-> -	[PMIC_INT1] = MAX77686_REG_INT1MSK,
-> -	[PMIC_INT2] = MAX77686_REG_INT2MSK,
-> -	[RTC_INT] = MAX77686_RTC_INTM,
-> -};
-> -
-> -static struct regmap *max77686_get_regmap(struct max77686_dev *max77686,
-> -				enum max77686_irq_source src)
-> -{
-> -	switch (src) {
-> -	case PMIC_INT1 ... PMIC_INT2:
-> -		return max77686->regmap;
-> -	case RTC_INT:
-> -		return max77686->rtc_regmap;
-> -	default:
-> -		return ERR_PTR(-EINVAL);
-> -	}
-> -}
-> -
-> -struct max77686_irq_data {
-> -	int mask;
-> -	enum max77686_irq_source group;
-> -};
-> -
-> -#define DECLARE_IRQ(idx, _group, _mask)		\
-> -	[(idx)] = { .group = (_group), .mask = (_mask) }
-> -static const struct max77686_irq_data max77686_irqs[] = {
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_PWRONF,	PMIC_INT1, 1 << 0),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_PWRONR,	PMIC_INT1, 1 << 1),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_JIGONBF,	PMIC_INT1, 1 << 2),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_JIGONBR,	PMIC_INT1, 1 << 3),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_ACOKBF,	PMIC_INT1, 1 << 4),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_ACOKBR,	PMIC_INT1, 1 << 5),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_ONKEY1S,	PMIC_INT1, 1 << 6),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_MRSTB,		PMIC_INT1, 1 << 7),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_140C,		PMIC_INT2, 1 << 0),
-> -	DECLARE_IRQ(MAX77686_PMICIRQ_120C,		PMIC_INT2, 1 << 1),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_RTC60S,		RTC_INT, 1 << 0),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_RTCA1,		RTC_INT, 1 << 1),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_RTCA2,		RTC_INT, 1 << 2),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_SMPL,		RTC_INT, 1 << 3),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_RTC1S,		RTC_INT, 1 << 4),
-> -	DECLARE_IRQ(MAX77686_RTCIRQ_WTSR,		RTC_INT, 1 << 5),
-> -};
-> -
-> -static void max77686_irq_lock(struct irq_data *data)
-> -{
-> -	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
-> -
-> -	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
-> -		pr_info("%s\n", __func__);
-> -
-> -	mutex_lock(&max77686->irqlock);
-> -}
-> -
-> -static void max77686_irq_sync_unlock(struct irq_data *data)
-> -{
-> -	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
-> -	int i;
-> -
-> -	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++) {
-> -		u8 mask_reg = max77686_mask_reg[i];
-> -		struct regmap *map = max77686_get_regmap(max77686, i);
-> -
-> -		if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
-> -			pr_debug("%s: mask_reg[%d]=0x%x, cur=0x%x\n",
-> -			__func__, i, mask_reg, max77686->irq_masks_cur[i]);
-> -
-> -		if (mask_reg == MAX77686_REG_INVALID ||
-> -				IS_ERR_OR_NULL(map))
-> -			continue;
-> -
-> -		max77686->irq_masks_cache[i] = max77686->irq_masks_cur[i];
-> -
-> -		regmap_write(map, max77686_mask_reg[i],
-> -				max77686->irq_masks_cur[i]);
-> -	}
-> -
-> -	mutex_unlock(&max77686->irqlock);
-> -}
-> -
-> -static const inline struct max77686_irq_data *to_max77686_irq(int irq)
-> -{
-> -	struct irq_data *data = irq_get_irq_data(irq);
-> -	return &max77686_irqs[data->hwirq];
-> -}
-> -
-> -static void max77686_irq_mask(struct irq_data *data)
-> -{
-> -	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
-> -	const struct max77686_irq_data *irq_data = to_max77686_irq(data->irq);
-> -
-> -	max77686->irq_masks_cur[irq_data->group] |= irq_data->mask;
-> -
-> -	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
-> -		pr_info("%s: group=%d, cur=0x%x\n",
-> -			__func__, irq_data->group,
-> -			max77686->irq_masks_cur[irq_data->group]);
-> -}
-> -
-> -static void max77686_irq_unmask(struct irq_data *data)
-> -{
-> -	struct max77686_dev *max77686 = irq_get_chip_data(data->irq);
-> -	const struct max77686_irq_data *irq_data = to_max77686_irq(data->irq);
-> -
-> -	max77686->irq_masks_cur[irq_data->group] &= ~irq_data->mask;
-> -
-> -	if (debug_mask & MAX77686_DEBUG_IRQ_MASK)
-> -		pr_info("%s: group=%d, cur=0x%x\n",
-> -			__func__, irq_data->group,
-> -			max77686->irq_masks_cur[irq_data->group]);
-> -}
-> -
-> -static struct irq_chip max77686_irq_chip = {
-> -	.name			= "max77686",
-> -	.irq_bus_lock		= max77686_irq_lock,
-> -	.irq_bus_sync_unlock	= max77686_irq_sync_unlock,
-> -	.irq_mask		= max77686_irq_mask,
-> -	.irq_unmask		= max77686_irq_unmask,
-> -};
-> -
-> -static irqreturn_t max77686_irq_thread(int irq, void *data)
-> -{
-> -	struct max77686_dev *max77686 = data;
-> -	unsigned int irq_reg[MAX77686_IRQ_GROUP_NR] = {};
-> -	unsigned int irq_src;
-> -	int ret;
-> -	int i, cur_irq;
-> -
-> -	ret = regmap_read(max77686->regmap,  MAX77686_REG_INTSRC, &irq_src);
-> -	if (ret < 0) {
-> -		dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
-> -				ret);
-> -		return IRQ_NONE;
-> -	}
-> -
-> -	if (debug_mask & MAX77686_DEBUG_IRQ_INT)
-> -		pr_info("%s: irq_src=0x%x\n", __func__, irq_src);
-> -
-> -	if (irq_src == MAX77686_IRQSRC_PMIC) {
-> -		ret = regmap_bulk_read(max77686->regmap,
-> -					 MAX77686_REG_INT1, irq_reg, 2);
-> -		if (ret < 0) {
-> -			dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
-> -					ret);
-> -			return IRQ_NONE;
-> -		}
-> -
-> -		if (debug_mask & MAX77686_DEBUG_IRQ_INT)
-> -			pr_info("%s: int1=0x%x, int2=0x%x\n", __func__,
-> -				 irq_reg[PMIC_INT1], irq_reg[PMIC_INT2]);
-> -	}
-> -
-> -	if (irq_src & MAX77686_IRQSRC_RTC) {
-> -		ret = regmap_read(max77686->rtc_regmap,
-> -					MAX77686_RTC_INT, &irq_reg[RTC_INT]);
-> -		if (ret < 0) {
-> -			dev_err(max77686->dev, "Failed to read interrupt source: %d\n",
-> -					ret);
-> -			return IRQ_NONE;
-> -		}
-> -
-> -		if (debug_mask & MAX77686_DEBUG_IRQ_INT)
-> -			pr_info("%s: rtc int=0x%x\n", __func__,
-> -							 irq_reg[RTC_INT]);
-> -
-> -	}
-> -
-> -	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++)
-> -		irq_reg[i] &= ~max77686->irq_masks_cur[i];
-> -
-> -	for (i = 0; i < MAX77686_IRQ_NR; i++) {
-> -		if (irq_reg[max77686_irqs[i].group] & max77686_irqs[i].mask) {
-> -			cur_irq = irq_find_mapping(max77686->irq_domain, i);
-> -			if (cur_irq)
-> -				handle_nested_irq(cur_irq);
-> -		}
-> -	}
-> -
-> -	return IRQ_HANDLED;
-> -}
-> -
-> -static int max77686_irq_domain_map(struct irq_domain *d, unsigned int irq,
-> -					irq_hw_number_t hw)
-> -{
-> -	struct max77686_dev *max77686 = d->host_data;
-> -
-> -	irq_set_chip_data(irq, max77686);
-> -	irq_set_chip_and_handler(irq, &max77686_irq_chip, handle_edge_irq);
-> -	irq_set_nested_thread(irq, 1);
-> -#ifdef CONFIG_ARM
-> -	set_irq_flags(irq, IRQF_VALID);
-> -#else
-> -	irq_set_noprobe(irq);
-> -#endif
-> -	return 0;
-> -}
-> -
-> -static struct irq_domain_ops max77686_irq_domain_ops = {
-> -	.map = max77686_irq_domain_map,
-> -};
-> -
-> -int max77686_irq_init(struct max77686_dev *max77686)
-> -{
-> -	struct irq_domain *domain;
-> -	int i;
-> -	int ret;
-> -	int val;
-> -	struct regmap *map;
-> -
-> -	mutex_init(&max77686->irqlock);
-> -
-> -	if (max77686->irq_gpio && !max77686->irq) {
-> -		max77686->irq = gpio_to_irq(max77686->irq_gpio);
-> -
-> -		if (debug_mask & MAX77686_DEBUG_IRQ_INT) {
-> -			ret = gpio_request(max77686->irq_gpio, "pmic_irq");
-> -			if (ret < 0) {
-> -				dev_err(max77686->dev,
-> -					"Failed to request gpio %d with ret:"
-> -					"%d\n",	max77686->irq_gpio, ret);
-> -				return IRQ_NONE;
-> -			}
-> -
-> -			gpio_direction_input(max77686->irq_gpio);
-> -			val = gpio_get_value(max77686->irq_gpio);
-> -			gpio_free(max77686->irq_gpio);
-> -			pr_info("%s: gpio_irq=%x\n", __func__, val);
-> -		}
-> -	}
-> -
-> -	if (!max77686->irq) {
-> -		dev_err(max77686->dev, "irq is not specified\n");
-> -		return -ENODEV;
-> -	}
-> -
-> -	/* Mask individual interrupt sources */
-> -	for (i = 0; i < MAX77686_IRQ_GROUP_NR; i++) {
-> -		max77686->irq_masks_cur[i] = 0xff;
-> -		max77686->irq_masks_cache[i] = 0xff;
-> -		map = max77686_get_regmap(max77686, i);
-> -
-> -		if (IS_ERR_OR_NULL(map))
-> -			continue;
-> -		if (max77686_mask_reg[i] == MAX77686_REG_INVALID)
-> -			continue;
-> -
-> -		regmap_write(map, max77686_mask_reg[i], 0xff);
-> -	}
-> -	domain = irq_domain_add_linear(NULL, MAX77686_IRQ_NR,
-> -					&max77686_irq_domain_ops, max77686);
-> -	if (!domain) {
-> -		dev_err(max77686->dev, "could not create irq domain\n");
-> -		return -ENODEV;
-> -	}
-> -	max77686->irq_domain = domain;
-> -
-> -	ret = request_threaded_irq(max77686->irq, NULL, max77686_irq_thread,
-> -				   IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-> -				   "max77686-irq", max77686);
-> -
-> -	if (ret)
-> -		dev_err(max77686->dev, "Failed to request IRQ %d: %d\n",
-> -			max77686->irq, ret);
-> -
-> -
-> -	if (debug_mask & MAX77686_DEBUG_IRQ_INFO)
-> -		pr_info("%s-\n", __func__);
-> -
-> -	return 0;
-> -}
-> -
-> -void max77686_irq_exit(struct max77686_dev *max77686)
-> -{
-> -	if (max77686->irq)
-> -		free_irq(max77686->irq, max77686);
-> -}
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index e5fce76..9b4a854 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-> @@ -32,6 +32,7 @@
->  #include <linux/mfd/max77686-private.h>
->  #include <linux/err.h>
->  #include <linux/of.h>
-> +#include <linux/interrupt.h>
->  
->  #define I2C_ADDR_RTC	(0x0C >> 1)
->  
-> @@ -46,6 +47,30 @@ static struct regmap_config max77686_regmap_config = {
->  	.val_bits = 8,
->  };
->  
-> +static const struct regmap_irq max77686_irqs[] = {
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_PWRONF_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_PWRONR_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_JIGONBF_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_JIGONBR_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_ACOKBF_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_ACOKBR_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_ONKEY1S_MASK, },
-> +	{ .reg_offset = 0, .mask = PMIC_INT1_MRSTB_MASK, },
-> +
-> +	{ .reg_offset = 1, .mask = PMIC_INT2_140C_MASK, },
-> +	{ .reg_offset = 1, .mask = PMIC_INT2_120C_MASK, },
-> +};
-> +
-> +static const struct regmap_irq_chip max77686_irq_chip = {
-> +	.name                   = "max77686",
-> +	.status_base            = MAX77686_REG_INT1,
-> +	.mask_base              = MAX77686_REG_INT1MSK,
-> +	.mask_invert            = true,
-> +	.num_regs               = 2,
-> +	.irqs                   = max77686_irqs,
-> +	.num_irqs               = ARRAY_SIZE(max77686_irqs),
-> +};
-> +
->  #ifdef CONFIG_OF
->  static struct of_device_id max77686_pmic_dt_match[] = {
->  	{.compatible = "maxim,max77686", .data = NULL},
-> @@ -112,31 +137,46 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
->  		return ret;
->  	}
->  
-> +	ret = regmap_add_irq_chip(max77686->regmap, max77686->irq,
-> +			IRQF_ONESHOT | IRQF_SHARED |
-> +			IRQF_TRIGGER_FALLING, 0,
-> +			&max77686_irq_chip, &max77686->irq_data);
-> +	if (ret) {
-> +		dev_err(max77686->dev, "failed to add irq chip: %d\n", ret);
-> +		return ret;
-> +	}
-> +
->  	if (regmap_read(max77686->regmap,
->  			 MAX77686_REG_DEVICE_ID, &data) < 0) {
->  		dev_err(max77686->dev,
->  			"device not found on this channel (this is not an error)\n");
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto err_irq;
->  	} else
->  		dev_info(max77686->dev, "device found\n");
->  
->  	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
->  	if (!max77686->rtc) {
->  		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
-> -		return -ENODEV;
-> +		ret = -ENODEV;
-> +		goto err_irq;
->  	}
->  	i2c_set_clientdata(max77686->rtc, max77686);
->  
-> -	max77686_irq_init(max77686);
-> -
->  	ret = mfd_add_devices(max77686->dev, -1, max77686_devs,
->  			      ARRAY_SIZE(max77686_devs), NULL, 0, NULL);
->  	if (ret < 0) {
-> -		mfd_remove_devices(max77686->dev);
-> -		i2c_unregister_device(max77686->rtc);
-> +		goto err_mfd;
->  	}
->  
->  	return ret;
-> +
-> +err_mfd:
-> +	mfd_remove_devices(max77686->dev);
-> +	i2c_unregister_device(max77686->rtc);
-> +err_irq:
-> +	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
-> +	return ret;
->  }
->  
->  static int max77686_i2c_remove(struct i2c_client *i2c)
-> @@ -146,6 +186,8 @@ static int max77686_i2c_remove(struct i2c_client *i2c)
->  	mfd_remove_devices(max77686->dev);
->  	i2c_unregister_device(max77686->rtc);
->  
-> +	regmap_del_irq_chip(max77686->irq, max77686->irq_data);
-> +
->  	return 0;
->  }
->  
-> diff --git a/drivers/rtc/rtc-max77686.c b/drivers/rtc/rtc-max77686.c
-> index 9efe118..b8bc412 100644
-> --- a/drivers/rtc/rtc-max77686.c
-> +++ b/drivers/rtc/rtc-max77686.c
-> @@ -497,6 +497,25 @@ static struct regmap_config max77686_rtc_regmap_config = {
->  	.val_bits = 8,
->  };
->  
-> +static const struct regmap_irq max77686_irqs_rtc[] = {
-> +	{ .mask = RTC_INT_RTC60S_MASK, },
-> +	{ .mask = RTC_INT_RTCA1_MASK, },
-> +	{ .mask = RTC_INT_RTCA2_MASK, },
-> +	{ .mask = RTC_INT_SMPL_MASK, },
-> +	{ .mask = RTC_INT_RTC1S_MASK, },
-> +	{ .mask = RTC_INT_WTSR_MASK, },
-> +};
-> +
-> +static const struct regmap_irq_chip max77686_irq_chip_rtc = {
-> +	.name                   = "max77686-rtc",
-> +	.status_base            = MAX77686_RTC_INT,
-> +	.mask_base              = MAX77686_RTC_INTM,
-> +	.mask_invert            = true,
-> +	.num_regs               = 2,
-> +	.irqs                   = max77686_irqs_rtc,
-> +	.num_irqs               = ARRAY_SIZE(max77686_irqs_rtc),
-> +};
-> +
->  static int max77686_rtc_probe(struct platform_device *pdev)
->  {
->  	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
-> @@ -522,6 +541,16 @@ static int max77686_rtc_probe(struct platform_device *pdev)
->  				ret);
->  		return ret;
->  	}
-> +
-> +	ret = regmap_add_irq_chip(max77686->rtc_regmap, max77686->irq,
-> +			IRQF_ONESHOT | IRQF_SHARED |
-> +			IRQF_TRIGGER_FALLING, 0,
-> +			&max77686_irq_chip_rtc, &max77686->irq_data_rtc);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed to add irq chip: %d\n", ret);
-> +		return ret;
-> +	}
-> +
->  	platform_set_drvdata(pdev, info);
->  
->  	ret = max77686_rtc_init_reg(info);
-> @@ -550,7 +579,8 @@ static int max77686_rtc_probe(struct platform_device *pdev)
->  			ret = -EINVAL;
->  		goto err_rtc;
->  	}
-> -	virq = irq_create_mapping(max77686->irq_domain, MAX77686_RTCIRQ_RTCA1);
-> +	virq = regmap_irq_get_virq(max77686->irq_data_rtc,
-> +				   MAX77686_RTCIRQ_RTCA1);
->  	if (!virq) {
->  		ret = -ENXIO;
->  		goto err_rtc;
-> @@ -564,9 +594,19 @@ static int max77686_rtc_probe(struct platform_device *pdev)
->  			info->virq, ret);
->  
->  err_rtc:
-> +	regmap_del_irq_chip(max77686->irq, max77686->irq_data_rtc);
->  	return ret;
->  }
->  
-> +static int max77686_rtc_remove(struct platform_device *pdev)
-> +{
-> +	struct max77686_dev *max77686 = dev_get_drvdata(pdev->dev.parent);
-> +
-> +	regmap_del_irq_chip(max77686->irq, max77686->irq_data_rtc);
-> +
-> +	return 0;
-> +}
-> +
->  static void max77686_rtc_shutdown(struct platform_device *pdev)
->  {
->  #ifdef MAX77686_RTC_WTSR_SMPL
-> @@ -605,6 +645,7 @@ static struct platform_driver max77686_rtc_driver = {
->  		.owner	= THIS_MODULE,
->  	},
->  	.probe		= max77686_rtc_probe,
-> +	.remove		= max77686_rtc_remove,
->  	.shutdown	= max77686_rtc_shutdown,
->  	.id_table	= rtc_id,
->  };
-> diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
-> index 8c75a9c..efc0762 100644
-> --- a/include/linux/mfd/max77686-private.h
-> +++ b/include/linux/mfd/max77686-private.h
-> @@ -192,6 +192,25 @@ enum max77686_irq_source {
->  	MAX77686_IRQ_GROUP_NR,
->  };
->  
-> +#define PMIC_INT1_PWRONF_MASK		(0x1 << 0)
-> +#define PMIC_INT1_PWRONR_MASK		(0x1 << 1)
-> +#define PMIC_INT1_JIGONBF_MASK		(0x1 << 2)
-> +#define PMIC_INT1_JIGONBR_MASK		(0x1 << 3)
-> +#define PMIC_INT1_ACOKBF_MASK		(0x1 << 4)
-> +#define PMIC_INT1_ACOKBR_MASK		(0x1 << 5)
-> +#define PMIC_INT1_ONKEY1S_MASK		(0x1 << 6)
-> +#define PMIC_INT1_MRSTB_MASK		(0x1 << 7)
-> +
-> +#define PMIC_INT2_140C_MASK		(0x1 << 0)
-> +#define PMIC_INT2_120C_MASK		(0x1 << 1)
-> +
-> +#define RTC_INT_RTC60S_MASK		(0x1 << 0)
-> +#define RTC_INT_RTCA1_MASK		(0x1 << 1)
-> +#define RTC_INT_RTCA2_MASK		(0x1 << 2)
-> +#define RTC_INT_SMPL_MASK		(0x1 << 3)
-> +#define RTC_INT_RTC1S_MASK		(0x1 << 4)
-> +#define RTC_INT_WTSR_MASK		(0x1 << 5)
-> +
->  enum max77686_irq {
->  	MAX77686_PMICIRQ_PWRONF,
->  	MAX77686_PMICIRQ_PWRONR,
-> @@ -205,6 +224,10 @@ enum max77686_irq {
->  	MAX77686_PMICIRQ_140C,
->  	MAX77686_PMICIRQ_120C,
->  
-> +	MAX77686_PMICIRQ_NR,
-> +};
-> +
-> +enum max77686_irq_rtc {
->  	MAX77686_RTCIRQ_RTC60S,
->  	MAX77686_RTCIRQ_RTCA1,
->  	MAX77686_RTCIRQ_RTCA2,
-> @@ -212,7 +235,7 @@ enum max77686_irq {
->  	MAX77686_RTCIRQ_RTC1S,
->  	MAX77686_RTCIRQ_WTSR,
->  
-> -	MAX77686_IRQ_NR,
-> +	MAX77686_RTCIRQ_NR,
->  };
->  
->  struct max77686_dev {
-> @@ -225,6 +248,9 @@ struct max77686_dev {
->  	struct regmap *regmap;		/* regmap for mfd */
->  	struct regmap *rtc_regmap;	/* regmap for rtc */
->  
-> +	struct regmap_irq_chip_data *irq_data;
-> +	struct regmap_irq_chip_data *irq_data_rtc;
-> +
->  	struct irq_domain *irq_domain;
->  
->  	int irq;
-> @@ -239,8 +265,4 @@ enum max77686_types {
->  	TYPE_MAX77686,
->  };
->  
-> -extern int max77686_irq_init(struct max77686_dev *max77686);
-> -extern void max77686_irq_exit(struct max77686_dev *max77686);
-> -extern int max77686_irq_resume(struct max77686_dev *max77686);
-> -
->  #endif /*  __LINUX_MFD_MAX77686_PRIV_H */
+JFYI, when comparing v3.14-rc8[1]  to v3.14-rc7[3], the summaries are:
+  - build errors: +6/-1
+  - build warnings: +19/-15
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+As I haven't mastered kup yet, there's no verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.14-rc8.summary.gz
+
+Happy fixing! ;-)
+
+Thanks to the linux-next team for providing the build service.
+
+[1] http://kisskb.ellerman.id.au/kisskb/head/7303/ (all 119 configs)
+[2] http://kisskb.ellerman.id.au/kisskb/head/7082/ (all 119 configs)
+[3] http://kisskb.ellerman.id.au/kisskb/head/7277/ (all 119 configs)
+
+
+*** ERRORS ***
+
+10 regressions:
+  + /scratch/kisskb/src/arch/powerpc/include/asm/io.h: error: 'virt_phys_offset' undeclared (first use in this function):  => 814:16, 807:16, 770:9, 787:17
+  + /scratch/kisskb/src/arch/powerpc/kernel/exceptions-64s.S: Error: attempt to move .org backwards:  => 1312
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_MASK' undeclared (first use in this function):  => 98:12
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function):  => 98:34, 145:10
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_MASK' undeclared (first use in this function):  => 97:21
+  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error: 'CHCR_TS_LOW_SHIFT' undeclared (first use in this function):  => 97:42, 145:10
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: error: implicit declaration of function 'irq_of_parse_and_map' [-Werror=implicit-function-declaration]:  => 449:2
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: error: implicit declaration of function 'of_iomap' [-Werror=implicit-function-declaration]:  => 460:2
+  + /scratch/kisskb/src/include/linux/mm.h: error: 'virt_phys_offset' undeclared (first use in this function):  => 890:9, 1402:20, 494:22
+  + error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+bc8:  => (.text+0x9c2)
+
+30 improvements:
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'dmac_resource.end'): 87:2 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'dmac_resource.start'): 86:2 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'epbr_resources[0].end'): 69:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'epbr_resources[0].start'): 68:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'epbr_resources[1].end'): 74:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'epbr_resources[1].start'): 73:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'femi_resources[0].end'): 50:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'femi_resources[0].start'): 49:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'femi_resources[1].end'): 55:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'femi_resources[1].start'): 54:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'pbr_resources[0].end'): 100:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'pbr_resources[0].start'): 99:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'pbr_resources[1].end'): 105:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: (near initialization for 'pbr_resources[1].start'): 104:3 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: braced-group within expression allowed only inside a function: 30:12, 73:12, 31:10, 99:12, 68:12, 36:10, 86:11, 54:12, 74:10, 55:10, 104:12, 49:12, 69:10, 87:9, 105:10, 35:12, 50:10, 100:10 => 
+  - /scratch/kisskb/src/arch/sh/drivers/superhyway/ops-sh4-202.c: error: initializer element is not constant: 74:3, 86:2, 55:3, 105:3, 73:3, 68:3, 100:3, 104:3, 99:3, 87:2, 50:3, 69:3, 49:3, 54:3 => 
+  - /scratch/kisskb/src/arch/sh/kernel/kgdb.c: error: 'SIGTRAP' undeclared (first use in this function): 310:27 => 
+  - /scratch/kisskb/src/arch/sh/kernel/kgdb.c: error: dereferencing pointer to incomplete type: 243:22, 242:23 => 
+  - /scratch/kisskb/src/arch/sh/kernel/kgdb.c: error: implicit declaration of function 'task_stack_page' [-Werror=implicit-function-declaration]: 225:32 => 
+  - /scratch/kisskb/src/drivers/staging/comedi/drivers/das6402.c: error: implicit declaration of function 'outw_p' [-Werror=implicit-function-declaration]: 164:3 => 
+  - /scratch/kisskb/src/drivers/staging/speakup/speakup_dtlk.c: error: implicit declaration of function 'inw_p' [-Werror=implicit-function-declaration]: 362:2 => 
+  - /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: error: type defaults to 'int' in declaration of 'console_initcall' [-Werror=implicit-int]: 363:1 => 
+  - /scratch/kisskb/src/include/linux/omap-dma.h: error: expected identifier before numeric constant: 171:8 => 
+  - /scratch/kisskb/src/kernel/bounds.c: error: -mcall-aixdesc must be big endian: 1:0 => 
+  - /scratch/kisskb/src/scripts/mod/devicetable-offsets.c: error: -mcall-aixdesc must be big endian: 1:0 => 
+  - /scratch/kisskb/src/scripts/mod/empty.c: error: -mcall-aixdesc must be big endian: 1:0 => 
+  - <stdin>: error: -mcall-aixdesc must be big endian: 1:0 => 
+  - error: nsc-ircc.c: relocation truncated to fit: R_PPC64_REL24 against symbol `.printk' defined in .text.unlikely section in kernel/built-in.o: (.text+0x1ffa5f4), (.text+0x1ffa634), (.text+0x1ff8e2c), (.text+0x1ffa674), (.text+0x1ffa5b0), (.text+0x1ff8c90), (.text+0x1ff99d8), (.text+0x1ffa6b4), (.text+0x1ffa6f8) => 
+  - error: nsc-ircc.c: relocation truncated to fit: R_PPC64_REL24 against symbol `_savegpr0_25' defined in .text.save.restore section in arch/powerpc/lib/built-in.o: (.text+0x1ff997c) => 
+  - error: vsprintf.c: relocation truncated to fit: R_AVR32_9UW_PCREL against `.text'+b8c: (.text+0x986) => 
+
+
+*** WARNINGS ***
+
+93 regressions:
+  + /scratch/kisskb/src/arch/arm/kernel/return_address.c: warning: #warning "TODO: return_address should use unwind tables" [-Wcpp]:  => 63:2
+  + /scratch/kisskb/src/arch/cris/include/arch-v10/arch/system.h: warning: "nop" redefined [enabled by default]:  => 39:0
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4a/setup-sh7734.c: warning: 'i2c0_device' defined but not used [-Wunused-variable]:  => 194:31
+  + /scratch/kisskb/src/arch/sh/kernel/cpu/sh4a/setup-sh7734.c: warning: 'sh7734_devices' defined but not used [-Wunused-variable]:  => 448:32
+  + /scratch/kisskb/src/arch/x86/include/asm/string_32.h: warning: array subscript is above array bounds [-Warray-bounds]:  => 74:21
+  + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_len' may be used uninitialized in this function [-Wuninitialized]:  => 514:18
+  + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_offset' may be used uninitialized in this function [-Wuninitialized]:  => 514:18
+  + /scratch/kisskb/src/drivers/block/nvme-core.c: warning: 'bvprv.bv_page' may be used uninitialized in this function [-Wuninitialized]:  => 511:17
+  + /scratch/kisskb/src/drivers/gpio/gpio-sch311x.c: warning: ignoring return value of 'gpiochip_remove', declared with attribute warn_unused_result [-Wunused-result]:  => 286:18
+  + /scratch/kisskb/src/drivers/gpio/gpiolib.c: warning: unused variable 'gpio':  => 204
+  + /scratch/kisskb/src/drivers/gpu/drm/drm_crtc.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 697:1
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: warning: assignment makes pointer from integer without a cast [enabled by default]:  => 498:15, 460:11
+  + /scratch/kisskb/src/drivers/i2c/busses/i2c-cpm.c: warning: passing argument 3 of 'dma_alloc_attrs' from incompatible pointer type [enabled by default]:  => 549:3, 540:3
+  + /scratch/kisskb/src/drivers/md/bcache/bset.c: warning: format '%li' expects argument of type 'long int', but argument 3 has type 'int' [-Wformat]:  => 27:10
+  + /scratch/kisskb/src/drivers/md/md.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]:  => 1351:3, 1056:3
+  + /scratch/kisskb/src/drivers/media/media-entity.c: warning: 'media_entity_pipeline_start' uses dynamic stack allocation [enabled by default]:  => 322:1
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0002.c: warning: 'cfi_ppb_lock' defined but not used  CC      lib/zlib_inflate/infutil.o:  => 2283
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1532 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 420:1
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1816 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 975:1
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2164 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 654:1
+  + /scratch/kisskb/src/drivers/mtd/chips/cfi_util.c: warning: the frame size of 1448 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 89:1
+  + /scratch/kisskb/src/drivers/mtd/lpddr/lpddr_cmds.c: warning: the frame size of 1172 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 739:1
+  + /scratch/kisskb/src/drivers/mtd/nand/sh_flctl.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]:  => 164:17, 181:17
+  + /scratch/kisskb/src/drivers/net/ethernet/cadence/macb.c: warning: 'macb_resume' defined but not used [-Wunused-function]:  => 2040:12
+  + /scratch/kisskb/src/drivers/net/ethernet/cadence/macb.c: warning: 'macb_suspend' defined but not used [-Wunused-function]:  => 2023:12
+  + /scratch/kisskb/src/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]:  => 303:11, 307:11
+  + /scratch/kisskb/src/drivers/net/ethernet/mellanox/mlx5/core/debugfs.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]:  => 467:46
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/ef10.c: warning: 'efx_ef10_free_vis' uses dynamic stack allocation [enabled by default]:  => 295:1
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/mcdi.c: warning: '_efx_mcdi_rpc_finish' uses dynamic stack allocation [enabled by default]:  => 617:1
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/mcdi.c: warning: 'efx_mcdi_complete_async' uses dynamic stack allocation [enabled by default]:  => 468:1
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/mcdi.c: warning: 'efx_mcdi_read_assertion' uses dynamic stack allocation [enabled by default]:  => 1425:1
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/ptp.c: warning: 'efx_ptp_disable' uses dynamic stack allocation [enabled by default]:  => 614:1
+  + /scratch/kisskb/src/drivers/net/ethernet/sfc/ptp.c: warning: 'efx_ptp_enable' uses dynamic stack allocation [enabled by default]:  => 591:1
+  + /scratch/kisskb/src/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: warning: 'stmmac_pltfr_resume' defined but not used [-Wunused-function]:  => 300:12
+  + /scratch/kisskb/src/drivers/net/ethernet/stmicro/stmmac/stmmac_platform.c: warning: 'stmmac_pltfr_suspend' defined but not used [-Wunused-function]:  => 286:12
+  + /scratch/kisskb/src/drivers/scsi/hpsa.c: warning: 'driver_support' is used uninitialized in this function [-Wuninitialized]:  => 4375:17
+  + /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: format '%x' expects argument of type 'unsigned int', but argument 7 has type 'dma_addr_t' [-Wformat]:  => 1246:3
+  + /scratch/kisskb/src/drivers/spi/spi-atmel.c: warning: format '%x' expects argument of type 'unsigned int', but argument 9 has type 'dma_addr_t' [-Wformat]:  => 1246:3
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1032 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 961:1
+  + /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1064 bytes is larger than 1024 bytes [-Wframe-larger-than=]:  => 658:1
+  + /scratch/kisskb/src/drivers/staging/iio/adc/mxs-lradc.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 1615:6
+  + /scratch/kisskb/src/drivers/staging/iio/adc/mxs-lradc.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type [enabled by default]:  => 1615:6
+  + /scratch/kisskb/src/drivers/staging/iio/adc/mxs-lradc.c: warning: right shift count >= width of type [enabled by default]:  => 1615:6
+  + /scratch/kisskb/src/drivers/target/target_core_alua.c: warning: 'alua_ascq' may be used uninitialized in this function [-Wuninitialized]:  => 773:18
+  + /scratch/kisskb/src/drivers/tty/n_gsm.c: warning: unused variable 'buf' [-Wunused-variable]:  => 2279:7
+  + /scratch/kisskb/src/drivers/usb/gadget/f_fs.c: warning: 'data_len' may be used uninitialized in this function [-Wuninitialized]:  => 670:17
+  + /scratch/kisskb/src/drivers/video/ocfb.c: warning: passing argument 3 of 'dma_alloc_attrs' from incompatible pointer type [enabled by default]:  => 335:2
+  + /scratch/kisskb/src/fs/autofs4/inode.c: warning: 'pgrp' may be used uninitialized in this function:  => 213
+  + /scratch/kisskb/src/fs/btrfs/hash.c: warning: 'btrfs_crc32c' uses dynamic stack allocation [enabled by default]:  => 50:1
+  + /scratch/kisskb/src/fs/ceph/acl.c: warning: 'name' may be used uninitialized in this function [-Wuninitialized]:  => 75:7
+  + /scratch/kisskb/src/fs/f2fs/segment.c: warning: '__next_free_blkoff' uses dynamic stack allocation [enabled by default]:  => 683:1
+  + /scratch/kisskb/src/fs/f2fs/segment.c: warning: 'add_discard_addrs' uses dynamic stack allocation [enabled by default]:  => 318:1
+  + /scratch/kisskb/src/fs/ncpfs/dir.c: warning: unused variable 'sb' [-Wunused-variable]:  => 134:23
+  + /scratch/kisskb/src/fs/posix_acl.c: warning: control reaches end of non-void function [-Wreturn-type]:  => 34:1
+  + /scratch/kisskb/src/fs/xfs/./xfs_trace.h: warning: format '%llu' expects argument of type 'long long unsigned int', but argument 6 has type 'xfs_fsblock_t' [-Wformat]:  => 674:1
+  + /scratch/kisskb/src/include/linux/spinlock.h: warning: 'vf' may be used uninitialized in this function [-Wuninitialized]:  => 343:2
+  + /scratch/kisskb/src/kernel/trace/ftrace.c: warning: 'control_ops_free' defined but not used [-Wunused-function]:  => 240:13
+  + /scratch/kisskb/src/lib/vsprintf.c: warning: 'resource_string.isra.11' uses dynamic stack allocation [enabled by default]:  => 744:1
+  + /scratch/kisskb/src/mm/percpu.c: warning: format '%lx' expects argument of type 'long unsigned int', but argument 3 has type 'unsigned int' [-Wformat]:  => 1693:3
+  + /scratch/kisskb/src/net/ceph/osdmap.c: warning: 'crush_do_rule_ary' uses dynamic stack allocation [enabled by default]:  => 1153:1
+  + /scratch/kisskb/src/net/core/neighbour.c: warning: 'p_name' may be used uninitialized in this function [-Wuninitialized]:  => 3094:10
+  + /scratch/kisskb/src/scripts/kconfig/menu.c: warning: 'jump' may be used uninitialized in this function [-Wmaybe-uninitialized]:  => 587:18
+  + /scratch/kisskb/src/sound/soc/codecs/wm8993.c: warning: unused variable 'wm8993' [-Wunused-variable]:  => 1562:22
+  + /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: comparison of distinct pointer types lacks a cast [enabled by default]:  => 972:3
+  + /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type [enabled by default]:  => 972:3
+  + /scratch/kisskb/src/sound/soc/fsl/fsl_ssi.c: warning: right shift count >= width of type [enabled by default]:  => 972:3
+  + <stdin>: warning: #warning syscall sched_getattr not implemented [-Wcpp]:  => 1229:2
+  + <stdin>: warning: #warning syscall sched_getattr not implemented:  => 1229:2
+  + <stdin>: warning: #warning syscall sched_setattr not implemented [-Wcpp]:  => 1226:2
+  + <stdin>: warning: #warning syscall sched_setattr not implemented:  => 1226:2
+  + warning: (CRASH_DUMP) selects RELOCATABLE which has unmet direct dependencies (PPC32 && ADVANCED_OPTIONS && FLATMEM && (44x || FSL_BOOKE) || PPC64):  => N/A
+  + warning: (EP8248E && MPC85xx_MDS && NET_DSA && NETLOGIC_XLR_NET) selects PHYLIB which has unmet direct dependencies (NETDEVICES):  => N/A
+  + warning: (USB_OTG_FSM && FSL_USB2_OTG && USB_MV_OTG) selects USB_OTG which has unmet direct dependencies (USB_SUPPORT && USB && PM_RUNTIME):  => N/A
+  + warning: drivers/built-in.o(.data+0x1034): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xa68): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xb08): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xc64): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: drivers/built-in.o(.data+0xd6c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xdcc): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xe2c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: drivers/built-in.o(.data+0xe8c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: drivers/built-in.o(.text+0x2b4dc0): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/built-in.o(.text+0x54668): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/net/built-in.o(.text+0x1d8c): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: drivers/net/built-in.o(.text+0x3f6c0): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init():  => N/A
+  + warning: vmlinux.o(.data+0x40008): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe():  => N/A
+  + warning: vmlinux.o(.data+0x400a8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe():  => N/A
+  + warning: vmlinux.o(.data+0x40204): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe():  => N/A
+  + warning: vmlinux.o(.data+0x4030c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x4036c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x403cc): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip():  => N/A
+  + warning: vmlinux.o(.data+0x4042c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe():  => N/A
+  + warning: vmlinux.o(.data+0x405d4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe():  => N/A
+
+79 improvements:
+  - /scratch/kisskb/src/arch/x86/kvm/../../../virt/kvm/vfio.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 104:22 => 
+  - /scratch/kisskb/src/drivers/gpio/gpio-mcp23s08.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 643:10 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/gma500/backlight.c: warning: 'do_gma_backlight_set' defined but not used [-Wunused-function]: 29:13 => 
+  - /scratch/kisskb/src/drivers/gpu/drm/i915/i915_debugfs.c: warning: 'val' may be used uninitialized in this function [-Wuninitialized]: 2393:2 => 
+  - /scratch/kisskb/src/drivers/infiniband/hw/cxgb4/mem.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 79:25 => 
+  - /scratch/kisskb/src/drivers/leds/leds-mc13783.c: warning: 'mask' may be used uninitialized in this function [-Wuninitialized]: 121:41, 197:47 => 120:41
+  - /scratch/kisskb/src/drivers/leds/leds-mc13783.c: warning: 'reg' may be used uninitialized in this function [-Wuninitialized]: 121:17, 197:23 => 120:17
+  - /scratch/kisskb/src/drivers/leds/leds-mc13783.c: warning: 'shift' may be used uninitialized in this function [-Wuninitialized]: 198:22, 121:57 => 120:57
+  - /scratch/kisskb/src/drivers/leds/leds-pwm.c: warning: unused variable 'node' [-Wunused-variable]: 88:22 => 
+  - /scratch/kisskb/src/drivers/md/bcache/alloc.c: warning: 'r' may be used uninitialized in this function [-Wuninitialized]: 416:18 => 
+  - /scratch/kisskb/src/drivers/mfd/max8997.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 182:10 => 
+  - /scratch/kisskb/src/drivers/mfd/max8998.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 178:10 => 
+  - /scratch/kisskb/src/drivers/mfd/tps65217.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 173:13 => 
+  - /scratch/kisskb/src/drivers/mfd/wm8994-core.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 639:19 => 
+  - /scratch/kisskb/src/drivers/mtd/chips/cfi_cmdset_0002.c: warning: 'cfi_ppb_lock' defined but not used: 2283 => 
+  - /scratch/kisskb/src/drivers/mtd/devices/docg3.c: warning: unused variable 'base' [-Wunused-variable]: 2122:16 => 
+  - /scratch/kisskb/src/drivers/mtd/lpddr/lpddr_cmds.c: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]: 422:15, 130:11 => 
+  - /scratch/kisskb/src/drivers/mtd/lpddr/qinfo_probe.c: warning: 'r.x[0]' may be used uninitialized in this function [-Wuninitialized]: 147:15, 96:11, 102:2, 145:20 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/broadcom/cnic.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 1521:2, 1479:2, 1506:2, 1491:2 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/hp/hp100.c: warning: 'cleanup_dev' defined but not used [-Wunused-function]: 2825:13 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/sfc/tx.c: warning: label 'finish_packet' defined but not used [-Wunused-label]: 432:1 => 
+  - /scratch/kisskb/src/drivers/net/ethernet/smsc/smc91x.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 1898:7 => 
+  - /scratch/kisskb/src/drivers/regulator/ab3100.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 649:4 => 
+  - /scratch/kisskb/src/drivers/regulator/tps62360-regulator.c: warning: cast from pointer to integer of different size [-Wpointer-to-int-cast]: 363:13 => 
+  - /scratch/kisskb/src/drivers/rtc/rtc-s5m.c: warning: 's5m_rtc_resume' defined but not used [-Wunused-function]: 642:12 => 
+  - /scratch/kisskb/src/drivers/rtc/rtc-s5m.c: warning: 's5m_rtc_suspend' defined but not used [-Wunused-function]: 653:12 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_chip_reset' defined but not used [-Wunused-function]: 8341:1 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_configure_bugs' defined but not used [-Wunused-function]: 8895:1 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_load_seeprom' defined but not used [-Wunused-function]: 8496:1 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: case value '257' not in enumerated type 'ahc_chip' [-Wswitch]: 8517:5, 7901:5 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: case value '513' not in enumerated type 'ahc_chip' [-Wswitch]: 7898:5, 8510:5 => 
+  - /scratch/kisskb/src/drivers/scsi/aic7xxx_old.c: warning: unused variable 'sxfrctl1' [-Wunused-variable]: 8983:17 => 
+  - /scratch/kisskb/src/drivers/scsi/bnx2i/bnx2i_iscsi.c: warning: large integer implicitly truncated to unsigned type [-Woverflow]: 551:2 => 
+  - /scratch/kisskb/src/drivers/scsi/scsi_pm.c: warning: 'scsi_dev_type_resume' defined but not used [-Wunused-function]: 35:12 => 
+  - /scratch/kisskb/src/drivers/scsi/scsi_pm.c: warning: 'scsi_dev_type_suspend' defined but not used [-Wunused-function]: 19:12 => 
+  - /scratch/kisskb/src/drivers/staging/dgap/dgap_driver.c: warning: the frame size of 1036 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 975:1 => 
+  - /scratch/kisskb/src/drivers/staging/dgap/dgap_fep5.c: warning: the frame size of 1044 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 112:1 => 
+  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1056 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
+  - /scratch/kisskb/src/drivers/staging/dgap/dgap_tty.c: warning: the frame size of 1068 bytes is larger than 1024 bytes [-Wframe-larger-than=]: 658:1 => 
+  - /scratch/kisskb/src/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c: warning: 'msgsz' may be used uninitialized in this function [-Wuninitialized]: 632:54 => 
+  - /scratch/kisskb/src/drivers/staging/lustre/lustre/llite/file.c: warning: 'count' may be used uninitialized in this function [-Wuninitialized]: 987:9, 1046:9 => 
+  - /scratch/kisskb/src/drivers/staging/rtl8192e/rtllib_softmac.c: warning: value computed is not used [-Wunused-value]: 924:3 => 
+  - /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: warning: 'ehv_bc_console_init' defined but not used [-Wunused-function]: 335:19 => 
+  - /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: warning: data definition has no type or storage class [enabled by default]: 363:1 => 
+  - /scratch/kisskb/src/drivers/tty/ehv_bytechan.c: warning: parameter names (without types) in function declaration [enabled by default]: 363:1 => 
+  - /scratch/kisskb/src/drivers/tty/serial/8250/8250_dw.c: warning: 'dw8250_resume' defined but not used [-Wunused-function]: 413:12 => 
+  - /scratch/kisskb/src/drivers/tty/serial/8250/8250_dw.c: warning: 'dw8250_suspend' defined but not used [-Wunused-function]: 404:12 => 
+  - /scratch/kisskb/src/drivers/tty/serial/sh-sci.c: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]: 560:23 => 
+  - /scratch/kisskb/src/fs/compat_binfmt_elf.c: warning: 'cputime_to_compat_timeval' defined but not used [-Wunused-function]: 58:13 => 
+  - /scratch/kisskb/src/fs/sysfs/file.c: warning: unused variable 'kobj' [-Wunused-variable]: 610:18 => 
+  - /scratch/kisskb/src/include/linux/posix_acl.h: warning: control reaches end of non-void function [-Wreturn-type]: 108:1 => 
+  - /scratch/kisskb/src/lib/vsprintf.c: warning: 'resource_string.isra.10' uses dynamic stack allocation [enabled by default]: 744:1 => 
+  - /scratch/kisskb/src/net/netfilter/ipvs/ip_vs_sync.c: warning: unused variable 'ret' [-Wunused-variable]: 1640:8 => 
+  - /scratch/kisskb/src/sound/soc/dwc/designware_i2s.c: warning: "CCR" redefined [enabled by default]: 31:0 => 
+  - modpost: WARNING: modpost: Found 4 section mismatch(es).: N/A => 
+  - warning: (PPC_CELL_NATIVE && 440EPX && 440GRX && 440GX && 440SPe && 460EX && 460SX && APM821xx && 405EX) selects IBM_EMAC_EMAC4 which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (PPC_CELL_NATIVE && 440GX && 460EX && 460SX && APM821xx) selects IBM_EMAC_TAH which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (PPC_CELL_NATIVE && BLUESTONE && CANYONLANDS && GLACIER && EIGER && 440EPX && 440GRX && 440GX && 460SX && 405EX) selects IBM_EMAC_RGMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (PPC_CELL_NATIVE && CANYONLANDS && GLACIER && 440EP && 440EPX && 440GRX && 440GP && 440GX && 460SX && 405GP) selects IBM_EMAC_ZMII which has unmet direct dependencies (NETDEVICES && ETHERNET && NET_VENDOR_IBM): N/A => 
+  - warning: (SPU_FS) selects MEMORY_HOTPLUG which has unmet direct dependencies ((SPARSEMEM || X86_64_ACPI_NUMA) && ARCH_ENABLE_MEMORY_HOTPLUG && (IA64 || X86 || PPC_BOOK3S_64 || SUPERH || S390)): N/A => 
+  - warning: drivers/built-in.o(.data+0xa08): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xaa8): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xc04): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xd0c): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xd6c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xdcc): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: drivers/built-in.o(.data+0xe2c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: drivers/built-in.o(.data+0xfd4): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+  - warning: drivers/net/built-in.o(.text+0x1d78): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/net/built-in.o(.text+0x3ebdc): Section mismatch in reference from the function etrax_init_module() to the function .init.text:etrax_ethernet_init(): N/A => 
+  - warning: drivers/usb/gadget/g_audio.o(.text.unlikely+0x114): Section mismatch in reference from the function audio_bind_config() to the function .init.text:afunc_bind(): N/A => 
+  - warning: vmlinux.o(.data+0x404c8): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x40568): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x406c4): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x407cc): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x4082c): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x4088c): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
+  - warning: vmlinux.o(.data+0x408ec): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
+  - warning: vmlinux.o(.data+0x40a94): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
