@@ -1,106 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaCZQCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:02:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:54172 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750956AbaCZQCp (ORCPT
+	id S1755372AbaCZQGs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:06:48 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:50559 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752513AbaCZQGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:02:45 -0400
-Message-ID: <5332FA20.4010206@free-electrons.com>
-Date: Wed, 26 Mar 2014 17:02:40 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Mar 2014 12:06:47 -0400
+Date: Wed, 26 Mar 2014 17:06:41 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <799579453.20140326170641@eikelenboom.it>
+To: Paul Durrant <Paul.Durrant@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network troubles "bisected"
+In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net>
+References: <1744594108.20140318162127@eikelenboom.it> <20140318160412.GB16807@zion.uk.xensource.com> <1701035622.20140318211402@eikelenboom.it> <722971844.20140318221859@eikelenboom.it> <1688396550.20140319001104@eikelenboom.it> <20140319113532.GD16807@zion.uk.xensource.com> <246793256.20140319220752@eikelenboom.it> <20140321164958.GA31766@zion.uk.xensource.com> <1334202265.20140321182727@eikelenboom.it> <1056661597.20140322192834@eikelenboom.it> <20140325151539.GG31766@zion.uk.xensource.com> <79975567.20140325162942@eikelenboom.it> <1972209744.20140326121116@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AD94@AMSPEX01CL01.citrite.net> <1715463578.20140326162245@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net>
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@linaro.org>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Andrew Lunn <andrew@lunn.ch>, Shawn Guo <shawn.guo@linaro.org>,
-        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Olof Johansson <olof@lixom.net>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH v3] clk: respect the clock dependencies in of_clk_init
-References: <1393265413-16641-1-git-send-email-gregory.clement@free-electrons.com> <531068F4.3060903@free-electrons.com> <20140321035233.32624.98694@quantum> <CAGa+x85XLDZqCkz9R95d2Vj9eODx4q8W=9QhmMfivdPf2GdsaQ@mail.gmail.com>
-In-Reply-To: <CAGa+x85XLDZqCkz9R95d2Vj9eODx4q8W=9QhmMfivdPf2GdsaQ@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/03/2014 16:19, Kevin Hilman wrote:
-> [+ imx6 maintainers ]
-> 
-> On Thu, Mar 20, 2014 at 8:52 PM, Mike Turquette <mturquette@linaro.org> wrote:
->> Quoting Gregory CLEMENT (2014-02-28 02:46:12)
->>> Hi Mike,
->>>
->>> On 24/02/2014 19:10, Gregory CLEMENT wrote:
->>>> Until now the clock providers were initialized in the order found in
->>>> the device tree. This led to have the dependencies between the clocks
->>>> not respected: children clocks could be initialized before their
->>>> parent clocks.
->>>>
->>>> Instead of forcing each platform to manage its own initialization order,
->>>> this patch adds this work inside the framework itself.
->>>>
->>>> Using the data of the device tree the of_clk_init function now delayed
->>>> the initialization of a clock provider if its parent provider was not
->>>> ready yet.
->>>>
->>>> The strict dependency check (all parents of a given clk must be
->>>> initialized) was added by Boris BREZILLON
->>>
->>> Are you ok with this version?
->>> Will you take it for 3.15?
->>> Or maybe you expected that it will be part of a pull request?
->>>
->>> However as it is modifying the core of the framework I thought that you
->>> would take it and apply yourself.
->>
->> Hi Gregory,
->>
->> I have taken this into clk-next. If no regressions pop up over the next
->> few days then it should go into 3.15.
-> 
-> $SUBJECT patch (as commit 1771b10d605) is in -next has been fingered
-> by bisection to be the reason behind boot failures[1] on imx6 wand
-> boards in the last several -next kernels.
-> 
-> Reverting the patch on top of next/master gets these boards booting again.
-> 
-> The boot failures result in no console output, so I haven't done any
-> further debugging.
 
-I don't have any imx6 board, but should it be possible for you or the imx6
-maintainer to add earlyprintk to see exactly what happen here?
+Wednesday, March 26, 2014, 4:50:30 PM, you wrote:
+
+>> -----Original Message-----
+>> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+>> Sent: 26 March 2014 15:23
+>> To: Paul Durrant
+>> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
+>> kernel; netdev@vger.kernel.org
+>> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+>> troubles "bisected"
+>> 
+>> 
+>> Wednesday, March 26, 2014, 3:44:42 PM, you wrote:
+>> 
+>> >> -----Original Message-----
+>> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+>> >> Sent: 26 March 2014 11:11
+>> >> To: Paul Durrant
+>> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+>> linux-
+>> >> kernel; netdev@vger.kernel.org
+>> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+>> >> troubles "bisected"
+>> >>
+>> >> Paul,
+>> >>
+>> >> You have been awfully silent for this whole thread while this is a
+>> regression
+>> >> caused by a patch of you
+>> >> (ca2f09f2b2c6c25047cfc545d057c4edfcfe561c as clearly stated much earlier
+>> in
+>> >> this thread).
+>> >>
+>> 
+>> > Sorry, I've been distracted...
+>> 
+>> >> The commit messages states:
+>> >>     "net_rx_action() is the place where we could do with an accurate
+>> >> predicition but,
+>> >>     since that has proven tricky to calculate, a cheap worse-case (but not
+>> too
+>> >> bad)
+>> >>     estimate is all we really need since the only thing we *must* prevent is
+>> >> xenvif_gop_skb()
+>> >>     consuming more slots than are available."
+>> >>
+>> >> Your "worst-case" calculation stated in the commit message is clearly not
+>> the
+>> >> worst case,
+>> >> since it doesn't take calls to "get_next_rx_buffer" into account.
+>> >>
+>> 
+>> > It should be taking into account the behaviour of start_new_rx_buffer(),
+>> which should be true if a slot is full or a frag will overflow the current slot and
+>> doesn't require splitting.
+>> > The code in net_rx_action() makes the assumption that each frag will
+>> require as many slots as its size requires, i.e. it assumes no packing of
+>> multiple frags into a single slot, so it should be a worst case.
+>> > Did I miss something in that logic?
+>> 
+>> Yes.
+>> In "xenvif_gop_skb()" this loop:
+>> 
+>>         for (i = 0; i < nr_frags; i++) {
+>>                 xenvif_gop_frag_copy(vif, skb, npo,
+>>                                      skb_frag_page(&skb_shinfo(skb)->frags[i]),
+>>                                      skb_frag_size(&skb_shinfo(skb)->frags[i]),
+>>                                      skb_shinfo(skb)->frags[i].page_offset,
+>>                                      &head);
+>>         }
+>> 
+>> Is capable of using up (at least) 1 slot more than is anticipated for in
+>> "net_rx_action()"  by this code:
+>> 
+>>                 for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+>>                         unsigned int size;
+>>                         size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+>>                         max_slots_needed += DIV_ROUND_UP(size, PAGE_SIZE);
+>>                 }
+>> 
+>> And this happens when it calls "get_next_rx_buffer()" from
+>> "xenvif_gop_frag_copy()" where it's breaking down the frag.
+>> 
+
+> The function that determines whether to consume another slot is start_new_rx_buffer() and for each frag I don't see why this would return true more than DIV_ROUND_UP(size, PAGE_SIZE) times.
+> It may be called more times than that since the code in xenvif_gop_frag_copy() must also allow for the offset of the frag but should not return true in all cases.
+> So, I still cannot see why a frag would ever consume more than DIV_ROUND_UP(size, PAGE_SIZE) slots.
+
+Well here a case were a frag is broken down in 2 pieces:
+
+[ 1156.870372] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here 1  npo->meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105867 npo->copy_gref:760  npo->copy_off:4096  MAX_BUFFER_OFFSET:4096 bytes:560 size:560  offset:0 head:1273462060 i:2 vif->rx.sring->req_event:2104275 estimated_slots_needed:4 reserved_slots_left:0
+[ 1156.871971] vif vif-7-0 vif7.0: ?!? xenvif_start_xmit stopping queue !  min_slots_needed:1 min_slots_needed_2:0 min_slots_needed_3:0 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105867 vif->rx.sring->req_event:2105868 skb->len:66 skb->data_len:0
+[ 1156.964316] vif vif-7-0 vif7.0: ?!? get_next_rx_buffer before req npo->meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105867 vif->rx.sring->req_event:2105868, reserved_slots_left:0
+[ 1157.001635] vif vif-7-0 vif7.0: ?!? get_next_rx_buffer after req npo->meta_prod:39 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 req->gref:4325379 req->id:11 vif->rx.sring->req_event:2105868 reserved_slots_left:-1
+[ 1157.039095] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here 2  npo->meta_prod:40 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 npo->copy_gref:4325379  npo->copy_off:0  MAX_BUFFER_OFFSET:4096 bytes:560 size:560  offset:0 head:1273462060 i:2 vif->rx.sring->req_event:2105868 estimated_slots_needed:4 reserved_slots_left:-1
+[ 1157.095216] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here end npo->meta_prod:40 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 npo->copy_gref:4325379 npo->copy_off:560  MAX_BUFFER_OFFSET:4096 bytes:560 size:0  offset:560 head:1273462060 i:3 vif->rx.sring->req_event:2105868 gso_gaps:0 estimated_slots_needed:4 reserved_slots_left:-1
+[ 1157.151338] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 4 after npo->meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1 req->gref:657 req->id:7 estimated_slots_needed:4 i(frag):0 j(data):1 reserved_slots_left:-1
+[ 1157.188908] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 5 npo->meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1 req->gref:657 req->id:7 estimated_slots_needed:4 j(data):1 reserved_slots_left:-1    used in funcstart: 0 + 1 .. used_dataloop:1 .. used_fragloop:3
+[ 1157.244975] vif vif-7-0 vif7.0: ?!? xenvif_rx_action me here 2 ..  vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 sco->meta_slots_used:4 max_upped_gso:1 skb_is_gso(skb):1 max_slots_needed:4 j:6 is_gso:1 nr_frags:1 firstpart:1 secondpart:2 reserved_slots_left:-1
+
+- When processing an SKB we end up in "xenvif_gop_frag_copy" while prod == cons ... but we still have bytes and size left ..
+- start_new_rx_buffer() has returned true ..
+- so we end up in get_next_rx_buffer
+- this does a RING_GET_REQUEST and ups cons ..
+- and we end up with a bad grant reference.
+
+Sometimes we are saved by the bell .. since additional slots have become free (you see cons become > prod in "get_next_rx_buffer" but shortly after that prod is increased ..
+just in time to not cause a overrun).
+
+If you need additional / other info, please cook up a debug patch with what you need.
+
+--
+Sander
 
 
-Thanks,
-
-Gregory
 
 
-> 
-> Kevin
-> 
-> [1] http://lists.linaro.org/pipermail/kernel-build-reports/2014-March/002927.html
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
 
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+>   Paul
+
+>> Ultimately this results in bad grant reference warnings (and packets marked
+>> as "errors" in the interface statistics).
+>> 
+>> In my case it always seems to be a skb with 1 frag which is broken down in 5
+>> or 6 pieces ..
+>> 
+>> So "get_next_rx_buffer()" is called once .. and i'm overrunning the ring with
+>> 1 slot, but i'm not sure if that's not coincedence
+>> since in the code there seem to be no explicit limitation on how often this
+>> code path is taken. So perhaps it's implicitly limited
+>> since packets and frags can't be arbitrarily large in comparison with the
+>> page_size but that's not something i'm capable of figuring out :-)
+>> 
+>> 
+>> 
+>> >   Paul
+>> 
+>> >> Problem is that a worst case calculation would probably be reverting to
+>> the
+>> >> old calculation,
+>> >> and the problems this patch was trying to solve would reappear, but
+>> >> introducing new regressions
+>> >> isn't very useful either. And since it seems such a tricky and fragile thing to
+>> >> determine, it would
+>> >> probably be best to be split into a distinct function with a comment to
+>> explain
+>> >> the rationale used.
+>> >>
+>> >> Since this doesn't seem to progress very fast .. CC'ed some more folks ..
+>> you
+>> >> never know ..
+>> >>
+>> >> --
+>> >> Sander
+>> >>
+>> >>
+>> >> Tuesday, March 25, 2014, 4:29:42 PM, you wrote:
+>> >>
+>> >>
+>> >> > Tuesday, March 25, 2014, 4:15:39 PM, you wrote:
+>> >>
+>> >> >> On Sat, Mar 22, 2014 at 07:28:34PM +0100, Sander Eikelenboom wrote:
+>> >> >> [...]
+>> >> >>> > Yes there is only one frag .. but it seems to be much larger than
+>> >> PAGE_SIZE .. and xenvif_gop_frag_copy brakes that frag down into
+>> smaller
+>> >> bits .. hence the calculation in xenvif_rx_action determining the slots
+>> needed
+>> >> by doing:
+>> >> >>>
+>> >> >>> >                 for (i = 0; i < nr_frags; i++) {
+>> >> >>> >                         unsigned int size;
+>> >> >>> >                         size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+>> >> >>> >                         max_slots_needed += DIV_ROUND_UP(size,
+>> PAGE_SIZE);
+>> >> >>> >                 }
+>> >> >>>
+>> >> >>> > But the code in xenvif_gop_frag_copy .. seems to be needing one
+>> >> more slot (from the emperical test) .. and calling "get_next_rx_buffer"
+>> >> seems involved in that ..
+>> >> >>>
+>> >> >>> Hmm looked again .. and it seems this is it .. when your frags are large
+>> >> enough you have the chance of running into this.
+>> >> >>>
+>> >>
+>> >> >> get_next_rx_buffer is guarded by start_new_rx_buffer. Do you see
+>> any
+>> >> >> problem with that implementation?
+>> >> > In general no, but "get_next_rx_buffer" up's cons .. and the calculations
+>> >> done in "xenvif_rx_action" for max_slots_needed to prevent the overrun
+>> >> > don't count in this possibility. So it's not the guarding of
+>> >> "start_new_rx_buffer" that is at fault. It's the ones early in
+>> >> "xenvif_rx_action".
+>> >> > The ones that were changed by Paul's patch from MAX_SKB_FRAGS to a
+>> >> calculated value that should be a "slim fit".
+>> >>
+>> >> > The problem is in determining upfront in "xenvif_rx_action" when and
+>> how
+>> >> often the "get_next_rx_buffer" path will be taken.
+>> >> > Unless there are other non direct restrictions (from a size point of view)
+>> it
+>> >> can be called multiple times per frag per skb.
+>> >>
+>> >> >>> Problem is .. i don't see an easy fix, the "one more slot" of the
+>> empirical
+>> >> test doesn't seem to be the worst case either (i think):
+>> >> >>>
+>> >> >>> - In my case the packets that hit this only have 1 frag, but i could have
+>> >> had more frags.
+>> >> >>>   I also think you can't rule out the possibility of doing the
+>> >> "get_next_rx_buffer" for multiple subsequent frags from one packet,
+>> >> >>>   so in the worst (and perhaps even from a single frag since it's looped
+>> >> over a split of it in what seems PAGE_SIZE pieces.)
+>> >> >>>   - So an exact calculation of how much slots we are going to need for
+>> >> hitting this "get_next_rx_buffer"  upfront in "xenvif_rx_action" seems
+>> >> unfeasible.
+>> >> >>>   - A worst case gamble seems impossible either .. if you take multiple
+>> >> frags * multiple times the "get_next_rx_buffer" ... you would probably be
+>> >> back at just
+>> >> >>>     setting the needed_slots to MAX_SKB_FRAGS.
+>> >> >>>
+>> >> >>> - Other thing would be checking for the available slots before doing
+>> the
+>> >> "get_next_rx_buffer" .. how ever .. we don't account for how many slots
+>> we
+>> >> still need to
+>> >> >>>   just process the remaining frags.
+>> >> >>>
+>> >>
+>> >> >> We've done a worst case estimation for whole SKB (linear area + all
+>> >> >> frags) already, at the very first beginning. That's what
+>> >> >> max_slots_needed is for.
+>> >>
+>> >> >>> - Just remove the whole "get_next_rx_buffer".. just tested it but it
+>> >> seems the "get_next_rx_buffer" is necessary ..  when i make
+>> >> start_new_rx_buffer always return false
+>> >> >>>   i hit the bug below :S
+>> >> >>>
+>> >> >>> So the questions are ... is the "get_next_rx_buffer" part really
+>> necessary
+>> >> ?
+>> >> >>>    - if not, what is the benefit of the "get_next_rx_buffer" and does
+>> that
+>> >> outweigh the additional cost of accounting
+>> >> >>>      of needed_slots for the frags that have yet to be processed ?
+>> >> >>>    - if yes, erhmmm what would be the best acceptable solution ..
+>> >> returning to using MAX_SKB_FRAGS ?
+>> >> >>>
+>> >>
+>> >> >> I think you need to answer several questions first:
+>> >> >> 1. is max_slots_needed actually large enough to cover whole SKB?
+>> >> >         No it's not if, you end up calling "get_next_rx_buffer" one or
+>> multiple
+>> >> times when processing the SKB
+>> >> >         you have the chance of overrunning (or be saved because prod gets
+>> >> upped before you overrun).
+>> >>
+>> >> >> 2. is the test of ring slot availability acurate?
+>> >> >         Seems to be.
+>> >>
+>> >> >> 3. is the number of ring slots consumed larger than
+>> max_slots_needed? (I
+>> >> >>    guess the answer is yes)
+>> >> >         Yes that was the whole point.
+>> >>
+>> >> >> 4. which step in the break-down procedure causes backend to overrun
+>> >> the
+>> >> >>    ring?
+>> >> >         The "get_next_rx_buffer" call .. that is not accounted for (which can
+>> be
+>> >> called
+>> >> >         multiple times per frag (unless some other none obvious size
+>> >> restriction limits this
+>> >> >         to one time per frag or one time per SKB).
+>> >> >         In my errorneous case it is called one time, but it would be nice if
+>> there
+>> >> would be some theoretical proof
+>> >> >         instead of just some emperical test.
+>> >>
+>> >>
+>> >> >> It doesn't matter how many frags your SKB has and how big a frag is. If
+>> >> >> every step is correct then you're fine. The code you're looking at
+>> >> >> (start_new_rx_buffer / get_next_rx_buffer and friend) needs to be
+>> >> >> carefully examined.
+>> >>
+>> >> > Well it seems it only calls "get_next_rx_buffer" in some special cases ..
+>> >> (and that also what i'm seeing because it doesn't happen
+>> >> > continously.
+>> >>
+>> >> > Question is shouldn't this max_needed_slots calc be reverted to what it
+>> >> was before 3.14 and take the time in 3.15 to figure out a
+>> >> > the theoretical max (if it can be calculated upfront) .. or another way to
+>> >> guarantee the code is able to process the whole SKB  ?
+>> >>
+>> >> >> Wei.
+>> >>
+>> >>
+>> >>
+>> >>
+>> 
+>> 
+
+
+
