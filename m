@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751510AbaCZFBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 01:01:44 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:44633 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbaCZFBm (ORCPT
+	id S1751783AbaCZFHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 01:07:35 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:38101 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005AbaCZFHe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 01:01:42 -0400
+	Wed, 26 Mar 2014 01:07:34 -0400
+Message-ID: <533260AC.1050001@linux.vnet.ibm.com>
+Date: Wed, 26 Mar 2014 13:07:56 +0800
+From: Xiao Guangrong <xiaoguangrong@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
-References: <1393480414-19473-1-git-send-email-acourbot@nvidia.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Wed, 26 Mar 2014 14:01:21 +0900
-Message-ID: <CAAVeFuKE163O3Kcdy-WCCEesJMCQ-fcLe8Op5f=VE7ZovFptqA@mail.gmail.com>
-Subject: Re: [PATCH 0/2] pwm-backlight: switch to gpiod interface (part 1)
-To: Alexandre Courbot <acourbot@nvidia.com>
-Cc: Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>, Bryan Wu <cooloney@gmail.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        "linux-pwm@vger.kernel.org" <linux-pwm@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: Hu Yaohui <loki2441@gmail.com>
+CC: Gleb Natapov <gleb@kernel.org>, Avi Kivity <avi.kivity@gmail.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        kvm <kvm@vger.kernel.org>
+Subject: Re: [PATCH v4 0/5] KVM: x86: flush tlb out of mmu-lock after write
+ protection
+References: <1394460109-3150-1-git-send-email-xiaoguangrong@linux.vnet.ibm.com> <CAHqbYQuOM4CmJGR7aT7_b6XCoYtUvqHmhxYKynF5_ABW10LDVQ@mail.gmail.com> <CAHqbYQskGiDtmj_OmRnYn-ueu9GAfkNZvh1VX68oV1rzBrv8wg@mail.gmail.com>
+In-Reply-To: <CAHqbYQskGiDtmj_OmRnYn-ueu9GAfkNZvh1VX68oV1rzBrv8wg@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032605-5140-0000-0000-000004C81916
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Thierry, can you have a look at this series? It is quite similar
-to the same change you merged for panel-simple (although I cannot see
-it in -next neither).
+On 03/26/2014 12:40 PM, Hu Yaohui wrote:
+> Hi all,
+> I hope you have a good day!
+> I have debugged the code myself. I have called dump_stack() in
+> function "__kvm_unsync_page"
+> and function "invlpg".  Actually every time before invlpg is called,
+> the page fault handled will call "__kvm_unsync_page" before invlpg to
+> mark the specified sp as unsynced. (correct me if I am wrong). I am
+> wondering why there is a page fault. AFAIK when calling flush_tlb_page
+> in the guest os. it will issue invlpg instruction directly, I did not
+> see any operation which could always cause the page fault.I would
+> really appreciate if if someone could shed me some lights on it.
+> Thanks for your time!
 
-On Thu, Feb 27, 2014 at 2:53 PM, Alexandre Courbot <acourbot@nvidia.com> wrote:
-> These two patches initiate the switch of the pwm-backlight driver to
-> the gpiod GPIO interface, as it considerably simplifies the code.
->
-> For compatibility with current users of the driver, it is still possible
-> to pass the enable GPIO number as platform data. Two platforms are still
-> relying on this feature (pxa/palmtc and shmobile/armadillo800eva) which
-> will be removed as soon as its last users are switched to GPIO mapping
-> tables.
->
-> Alexandre Courbot (2):
->   ARM: SAMSUNG: remove gpio flags in dev-backlight
->   pwm-backlight: switch to gpiod interface
->
->  arch/arm/plat-samsung/dev-backlight.c |  2 -
->  drivers/video/backlight/pwm_bl.c      | 72 +++++++++++++++--------------------
->  include/linux/pwm_backlight.h         |  5 +--
->  3 files changed, 32 insertions(+), 47 deletions(-)
->
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Page fault is used to map a page into guest and set the proper permission
+on for it so this is the right place to make decision if the page need be
+writable.
+
+Tlb flush is used when guest wants to have a clean tlb so that host syncs the
+unsync page tables when it is happing.
+
