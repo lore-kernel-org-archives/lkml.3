@@ -1,104 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753495AbaCZJnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 05:43:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50990 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750956AbaCZJnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 05:43:13 -0400
-From: Roger Quadros <rogerq@ti.com>
-To: <balbi@ti.com>
-CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Roger Quadros <rogerq@ti.com>
-Subject: [PATCH v2] usb: dwc3: core: Fix gadget for system suspend/resume
-Date: Wed, 26 Mar 2014 11:43:09 +0200
-Message-ID: <1395826989-5405-1-git-send-email-rogerq@ti.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1753547AbaCZJnv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 05:43:51 -0400
+Received: from mx0.aculab.com ([213.249.233.131]:39251 "HELO mx0.aculab.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750956AbaCZJnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 05:43:50 -0400
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Cody P Schafer'" <cody@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>
+CC: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+        Michael Ellerman <michael@ellerman.id.au>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>,
+        "scottwood@freescale.com" <scottwood@freescale.com>,
+        Linux PPC <linuxppc-dev@lists.ozlabs.org>
+Subject: RE: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7
+ interface
+Thread-Topic: [PATCH v4 09/11] powerpc/perf: add support for the hv 24x7
+ interface
+Thread-Index: AQHPSFiWjqiJ3SqT8EmaHwjaR2yLrprzHYVg
+Date: Wed, 26 Mar 2014 09:43:02 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6E93BC@AcuExch.aculab.com>
+References: <1394064082-6242-1-git-send-email-cody@linux.vnet.ibm.com>
+ <1394064082-6242-10-git-send-email-cody@linux.vnet.ibm.com>
+ <20140325214356.4a2f7d95@kryten> <5331CBB0.8080500@linux.vnet.ibm.com>
+In-Reply-To: <5331CBB0.8080500@linux.vnet.ibm.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2Q9hx5N028231
 
-During system resume, if the event buffers are not setup before
-the gadget controller starts then we start with invalid context
-and this can lead to bus access errors. This is especially true for
-platforms that loose the controller context during system suspend.
-e.g. AM437x.
+From: Cody P Schafer
+> On 03/25/2014 03:43 AM, Anton Blanchard wrote:
+> >
+> > Hi Cody,
+> >
+> > hv-24x7: could not obtain capabilities, error 0x
+> fffffffffffffffe, not enabling
+> > hv-gpci: could not obtain capabilities, error 0x
+> fffffffffffffffe, not enabling
+> >
+> >> +		pr_info("could not obtain capabilities, error 0x%80lx, not enabling\n",
+> >
+> > That's a lot of padding :)
+> >
+> > I think this should also be a pr_debug, considering this is not relevant
+> > to most ppc64 boxes.
+> 
+> Yep, s/info/debug/ makes sense. The format should have been "%08lx" not
+> "%80lx", not sure when I screwed that up.
 
-The following backtrace was found when the system is suspended
-and resumed with g_zero loaded on AM437x-evm (USB cable connected
-to host all the while).
+Using "%#x" is an alternative - unless you really need fixed width.
 
-[  120.981506] WARNING: CPU: 0 PID: 1656 at drivers/bus/omap_l3_noc.c:137 l3_interrupt_handler+0x198/0x28c()
-[  120.981514] L3 custom error: MASTER:USB0 WR TARGET:GPMC
-[  120.981638] Modules linked in: g_mass_storage usb_f_mass_storage libcomposite configfs bufferclass_ti(O) omaplfb(O) cryptodev(O) dwc3 snd_soc_evm snd_soc_omap snd_pe
-[  120.981659] CPU: 0 PID: 1656 Comm: sh Tainted: G           O 3.12.10-gc559824 #1
-[  120.981669] Backtrace:
-[  120.981705] [<c0017880>] (dump_backtrace+0x0/0x10c) from [<c0017a1c>] (show_stack+0x18/0x1c)
-[  120.981730]  r6:c02819ac r5:00000009 r4:ec137cb8 r3:00000000
-[  120.981767] [<c0017a04>] (show_stack+0x0/0x1c) from [<c056c0b0>] (dump_stack+0x20/0x28)
-[  120.981802] [<c056c090>] (dump_stack+0x0/0x28) from [<c0046d08>] (warn_slowpath_common+0x70/0x90)
-[  120.981830] [<c0046c98>] (warn_slowpath_common+0x0/0x90) from [<c0046dcc>] (warn_slowpath_fmt+0x38/0x40)
-[  120.981856]  r8:c0855eb0 r7:00000002 r6:f1000700 r5:00000007 r4:80080003
-[  120.981886] [<c0046d94>] (warn_slowpath_fmt+0x0/0x40) from [<c02819ac>] (l3_interrupt_handler+0x198/0x28c)
-[  120.981900]  r3:c0801ab8 r2:c06cb354
-[  120.981936] [<c0281814>] (l3_interrupt_handler+0x0/0x28c) from [<c007162c>] (handle_irq_event_percpu+0x54/0x1b8)
-[  120.981962] [<c00715d8>] (handle_irq_event_percpu+0x0/0x1b8) from [<c00717c0>] (handle_irq_event+0x30/0x40)
-[  120.981993] [<c0071790>] (handle_irq_event+0x0/0x40) from [<c0074058>] (handle_fasteoi_irq+0x74/0x128)
-[  120.982006]  r4:ed0056c0 r3:00000000
-[  120.982033] [<c0073fe4>] (handle_fasteoi_irq+0x0/0x128) from [<c0070f34>] (generic_handle_irq+0x28/0x38)
-[  120.982046]  r4:0000002a r3:c0073fe4
-[  120.982085] [<c0070f0c>] (generic_handle_irq+0x0/0x38) from [<c0015560>] (handle_IRQ+0x38/0x8c)
-[  120.982098]  r4:c080137c r3:00000182
-[  120.982124] [<c0015528>] (handle_IRQ+0x0/0x8c) from [<c00087e0>] (gic_handle_irq+0x30/0x5c)
-[  120.982145]  r6:ec137dd0 r5:c07ac480 r4:fa24010c r3:00000100
-[  120.982169] [<c00087b0>] (gic_handle_irq+0x0/0x5c) from [<c056fcc0>] (__irq_svc+0x40/0x54)
-[  120.982179] Exception stack(0xec137dd0 to 0xec137e18)
-[  120.982195] 7dc0:                                     00000000 a00001d3 00000000 00000004
-[  120.982216] 7de0: a0000153 ec1d9010 c080de90 ec137e30 c080debc 00000000 ed756e44 ec137e2c
-[  120.982232] 7e00: ec137de0 ec137e18 bf1150e4 bf115474 60000153 ffffffff
-[  120.982253]  r7:ec137e04 r6:ffffffff r5:60000153 r4:bf115474
-[  120.982327] [<bf115438>] (dwc3_complete+0x0/0x40 [dwc3]) from [<c0338f50>] (dpm_complete+0xd4/0x19c)
-[  120.982341]  r5:ed756e10 r4:ed756e64
-[  120.982370] [<c0338e7c>] (dpm_complete+0x0/0x19c) from [<c0339034>] (dpm_resume_end+0x1c/0x20)
-[  120.982400] [<c0339018>] (dpm_resume_end+0x0/0x20) from [<c006d4ec>] (suspend_devices_and_enter+0x118/0x33c)
-[  120.982412]  r4:c0833da4 r3:00000000
-[  120.982436] [<c006d3d4>] (suspend_devices_and_enter+0x0/0x33c) from [<c006d928>] (pm_suspend+0x218/0x254)
-[  120.982458] [<c006d710>] (pm_suspend+0x0/0x254) from [<c006c594>] (state_store+0x70/0xc0)
-[  120.982478]  r6:c057a6cc r5:c06a8320 r4:00000003 r3:0000006d
-[  120.982515] [<c006c524>] (state_store+0x0/0xc0) from [<c0264cc0>] (kobj_attr_store+0x1c/0x28)
-[  120.982546] [<c0264ca4>] (kobj_attr_store+0x0/0x28) from [<c012ccb8>] (sysfs_write_file+0x170/0x1a4)
-[  120.982583] [<c012cb48>] (sysfs_write_file+0x0/0x1a4) from [<c00d17e4>] (vfs_write+0xb8/0x190)
-[  120.982611] [<c00d172c>] (vfs_write+0x0/0x190) from [<c00d1bf8>] (SyS_write+0x44/0x78)
-[  120.982641] [<c00d1bb4>] (SyS_write+0x0/0x78) from [<c0014660>] (ret_fast_syscall+0x0/0x30)
+However in this case "%ld" might be more appropriate!
+If the value is a -ve errno one, maybe even "errno %d" and negate the value.
 
-Signed-off-by: Roger Quadros <rogerq@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
----
- drivers/usb/dwc3/core.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	David
 
-diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
-index d001417..10aaaae 100644
---- a/drivers/usb/dwc3/core.c
-+++ b/drivers/usb/dwc3/core.c
-@@ -821,6 +821,7 @@ static void dwc3_complete(struct device *dev)
- 
- 	spin_lock_irqsave(&dwc->lock, flags);
- 
-+	dwc3_event_buffers_setup(dwc);
- 	switch (dwc->dr_mode) {
- 	case USB_DR_MODE_PERIPHERAL:
- 	case USB_DR_MODE_OTG:
-@@ -828,7 +829,6 @@ static void dwc3_complete(struct device *dev)
- 		/* FALLTHROUGH */
- 	case USB_DR_MODE_HOST:
- 	default:
--		dwc3_event_buffers_setup(dwc);
- 		break;
- 	}
- 
--- 
-1.8.3.2
-
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
