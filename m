@@ -1,78 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611AbaCZVhv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 17:37:51 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:51194 "EHLO
-	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756193AbaCZVfK (ORCPT
+	id S1756646AbaCZVi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 17:38:26 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:38427 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756161AbaCZViV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 17:35:10 -0400
-X-IronPort-AV: E=Sophos;i="4.97,737,1389740400"; 
-   d="scan'208";a="64902686"
-From: Julia Lawall <Julia.Lawall@lip6.fr>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: kernel-janitors@vger.kernel.org, tglx@linutronix.de,
-        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 5/7] MIPS: Lasat: replace del_timer by del_timer_sync
-Date: Wed, 26 Mar 2014 22:33:43 +0100
-Message-Id: <1395869625-15209-6-git-send-email-Julia.Lawall@lip6.fr>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
-References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr>
+	Wed, 26 Mar 2014 17:38:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <53334393.5050008@ahsoftware.de>
+References: <CAAsK9AEeobOG1j6NHUoqkZaZ5h8GGK_fL+gyh9MhSvguQjyU_w@mail.gmail.com>
+	<1395352845-7435-1-git-send-email-holler@ahsoftware.de>
+	<20140321140305.a3679620aa25132a3b75a404@linux-foundation.org>
+	<532CC215.1000107@ahsoftware.de>
+	<20140321155517.51af1b28fe32656fb7506f97@linux-foundation.org>
+	<532CC625.7020509@ahsoftware.de>
+	<53334393.5050008@ahsoftware.de>
+Date: Wed, 26 Mar 2014 22:38:20 +0100
+X-Google-Sender-Auth: xzIdcNbl9n0ltEJicoewe7otcoQ
+Message-ID: <CAAsK9AG85HmHYgVL=19hYtTF+AiaZHX0hhg8V3Q-+WfVi_jzCw@mail.gmail.com>
+Subject: Re: [PATCH v2] initramfs: print error and shell out for unsupported content
+From: Levente Kurusa <levex@linux.com>
+To: Alexander Holler <holler@ahsoftware.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <Julia.Lawall@lip6.fr>
+Hi,
 
-Use del_timer_sync to ensure that the timer is stopped on all CPUs before
-the driver exists.
+2014-03-26 22:16 GMT+01:00 Alexander Holler <holler@ahsoftware.de>:
+> Am 22.03.2014 00:07, schrieb Alexander Holler:
+>>
+>> Am 21.03.2014 23:55, schrieb Andrew Morton:
+>>
+>>> On Fri, 21 Mar 2014 23:49:57 +0100 Alexander Holler
+>>> <holler@ahsoftware.de> wrote:
+>>>
+>>>> Am 21.03.2014 22:03, schrieb Andrew Morton:
+>>>>>
+>>>>> On Thu, 20 Mar 2014 23:00:45 +0100 Alexander Holler
+>>>>> <holler@ahsoftware.de> wrote:
+>>>>>
+>>>>>> The initramfs generation is broken for file and directory names which
+>>>>>> contain
+>>>>>> colons or spaces. Print an error and don't try to continue.
+>>>>
+>>>>
+>>>>> It would be better to fix the it-doesnt-work-with-all-filenames bug.
+>>>>> Any details on that?
+>>>>
+>>>>
+>>>> IMHO not worth the time. The whole process which is curently used is
+>>>> extremly fragile.
+>>>>
+>>>> E.g it's almost guaranteed to fail trying to include arbitrary filenames
+>>>> as dependencies in a Makefile. Besides the one problem I've discoverd
+>>>> with colons, there could be much more things happen, e.g. with filenames
+>>>> which do include other special Makefile characters you all would have to
+>>>> escape correctly.
+>
+>
+> To be a bit more verbose, (gnu)make doesn't support quoted filenames. That
+> means one has to escape all kind of characters which might have a special
+> meaning for make. Not really doable. Furthermore escaped characters are not
+> very well supported by make and are usable only by a few rules.
+>
+>
+>>>> And the problem with spaces isn't as easy to fix as it first does look
+>>>> like. I think it might be easier to write the whole stuff new instead of
+>>>> trying to escape the spaces in various ways needed to end up correctly
+>>>> in the cpio (it first goes through shell code and is then feeded as some
+>>>> list to a C program).
+>
+>
+> To be a bit more verbose here, the shell script
+> (scripts/gen_initramfs_list.sh) identifes filenames based on the position in
+> a string which is delimited by the usual (shell) whitespace. E.g. $1 =
+> filename, $2 = mode, ...
+> And this stuff is then feeded to usr/gen_init_cpio.c,which uses a similiar
+> approach like
+>
+> sscanf(line, "%" str(PATH_MAX) "s %" str(PATH_MAX) "s %o %d %d", name,
+> target, ...
+>
+> which obviously fails for filenames with whitspace too.
+>
+> What I think might be reasonable is:
+>
+> - get rid of the dependency list in form of a include into the Makefile and
+> just generate the cpio-archive every time make is called. Common initramfs
+> sizes are about a few megabytes and with today machines such a cpio-archive
+> is build in about a second,
+>
 
-This change was suggested by Thomas Gleixner
+I don't understand what kind of include would you want.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+> - get rid of gen_initramfs_list.sh and rewrite gen_init_cpio.c such that it
+> reads the filenames, modes and similiar itself (e.g. by using stat(2)).
 
-// <smpl>
-@r@
-declarer name module_exit;
-identifier ex;
-@@
+This is walkable but probably not worth the effort. Besides, why would
+anyone want to put spaces, colons and arbitrary characters to filenames
+in the initramfs?
 
-module_exit(ex);
+>
+>
+> But I don't have any motivation to do so. Sorry.
+>
+> Maybe Levente Kurusa is interested in doing so, he seems to have an interest
+> in the topic as he was quiet fast to send an answer to my patch.
 
-@@
-identifier r.ex;
-@@
+All I wonder now is why are you being so arrogant. You are not a 'remote
+keyboard' as you had called yourself, since when you send a patch
+you not only have to send it but communicate WHY maintainers
+should take that patch, and if somebody has a comment
+spotting an obvious mistake you shouldn't become angry.
+It was only a simple typo and a suggestion. Nobody told you
+to blindly accept my suggestion. Everybody can have opinions.
+It's open-source, the community suggests you new changes,
+it's normal, get used to it. Writing up this nonsense sentence
+(I feel the irony) probably took more time than actually resending
+the patch did.
 
-ex(...) {
-  <...
-- del_timer
-+ del_timer_sync
-    (...)
-  ...>
-}
-// </smpl>
+Just my two cents.
 
-Signed-off-by: Julia Lawall <Julia.Lawall@lip6.fr>
-
----
-Not tested.
-
- arch/mips/lasat/picvue_proc.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/mips/lasat/picvue_proc.c b/arch/mips/lasat/picvue_proc.c
-index 638c5db..2bcd839 100644
---- a/arch/mips/lasat/picvue_proc.c
-+++ b/arch/mips/lasat/picvue_proc.c
-@@ -175,7 +175,7 @@ static void pvc_proc_cleanup(void)
- 	remove_proc_entry("scroll", pvc_display_dir);
- 	remove_proc_entry(DISPLAY_DIR_NAME, NULL);
- 
--	del_timer(&timer);
-+	del_timer_sync(&timer);
- }
- 
- static int __init pvc_proc_init(void)
-
+--
+Regards,
+Levente Kurusa
