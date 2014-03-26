@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934AbaCZNt7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:49:59 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:29192 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438AbaCZNt4 (ORCPT
+	id S1755049AbaCZNwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:52:24 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:51995 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545AbaCZNwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:49:56 -0400
-Date: Wed, 26 Mar 2014 14:48:45 +0100
-From: Daniel Kiper <daniel.kiper@oracle.com>
-To: Jan Beulich <JBeulich@suse.com>
-Cc: Matt Fleming <matt@console-pimps.org>, david.vrabel@citrix.com,
-        ian.campbell@citrix.com, stefano.stabellini@eu.citrix.com,
-        jeremy@goop.org, fenghua.yu@intel.com, matt.fleming@intel.com,
-        tony.luck@intel.com, x86@kernel.org, tglx@linutronix.de,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        konrad.wilk@oracle.com, eshelton@pobox.com, mingo@redhat.com,
-        linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range() on
- native EFI platform only
-Message-ID: <20140326134845.GN3454@olila.local.net-space.pl>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
- <20140326130009.GB24856@console-pimps.org>
- <5332E2B9020000780000255D@nat28.tlf.novell.com>
- <20140326133119.GD24856@console-pimps.org>
- <5332E6AE02000078000025F0@nat28.tlf.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5332E6AE02000078000025F0@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 26 Mar 2014 09:52:18 -0400
+From: jon@ringle.org
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, devicetree@vger.kernel.org
+Cc: mark.rutland@arm.com, Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH v3 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
+Date: Wed, 26 Mar 2014 09:51:52 -0400
+Message-Id: <1395841912-7373-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1395841912-7373-1-git-send-email-jon@ringle.org>
+References: <1395841912-7373-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 01:39:42PM +0000, Jan Beulich wrote:
-> >>> On 26.03.14 at 14:31, <matt@console-pimps.org> wrote:
-> > On Wed, 26 Mar, at 01:22:49PM, Jan Beulich wrote:
-> >> >>> On 26.03.14 at 14:00, <matt@console-pimps.org> wrote:
-> >> >
-> >> > This could do with a little bit more explanation. Why is it not
-> >> > necessary to mark the EFI memory map that was passed to the kernel as
-> >> > reserved in memblock?
-> >>
-> >> Because that's in memory Dom0 doesn't even see: The EFI memory
-> >> map is visible to the hypervisor only.
-> >
-> > So where does boot_params.efi_info.efi_memmap point?
-> >
-> > If nowhere (i.e. it's NULL) that's no problem because memblock_reserve()
-> > handles zero size regions just fine.
->
-> That's a question to Daniel - in our implementation (with a separate
-> Xen kernel that can't run on bare hardware) boot_params as a whole
-> simply doesn't exist.
+From: Jon Ringle <jringle@gridpoint.com>
 
-On my machine this function crashes on Xen so that is why I have changed
-condition. However, if you say that this issue could be solved in
-another way I will investigate it further.
+This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
 
-Daniel
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+---
+ .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+
+diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+new file mode 100644
+index 0000000..246c795
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+@@ -0,0 +1,33 @@
++* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
++
++Required properties:
++- compatible: Should be one of the following:
++  - "nxp,sc16is740" for NXP SC16IS740,
++  - "nxp,sc16is741" for NXP SC16IS741,
++  - "nxp,sc16is750" for NXP SC16IS750,
++  - "nxp,sc16is752" for NXP SC16IS752,
++  - "nxp,sc16is760" for NXP SC16IS760,
++  - "nxp,sc16is762" for NXP SC16IS762.
++- reg: I2C address of the SC16IS7xx device.
++- interrupt-parent: The phandle for the interrupt controller that
++  services interrupts for this IC.
++- interrupts: Should contain the UART interrupt
++- clocks: Reference to the IC source clock.
++
++Optional properties:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the GPIO number and
++  the second cell is used to specify the GPIO polarity:
++    0 = active high,
++    1 = active low.
++
++Example:
++        sc16is750: sc16is750@51 {
++                compatible = "nxp,sc16is750";
++                reg = <0x51>;
++                clocks = <&clk20m>;
++                interrupt-parent = <&gpio3>;
++                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
+-- 
+1.8.5.4
+
