@@ -1,224 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbaCZKcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 06:32:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:37975 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbaCZKb7 convert rfc822-to-8bit (ORCPT
+	id S1754007AbaCZKcH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 06:32:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:52166 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753879AbaCZKcC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 06:31:59 -0400
-From: "Gupta, Pekon" <pekon@ti.com>
-To: Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "kernel@stlinux.com" <kernel@stlinux.com>,
-        "computersforpeace@gmail.com" <computersforpeace@gmail.com>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "angus.clark@st.com" <angus.clark@st.com>,
-        "Ezequiel Garcia (ezequiel.garcia@free-electrons.com)" 
-	<ezequiel.garcia@free-electrons.com>
-Subject: RE: [RFC 43/47] mtd: nand: stm_nand_bch: read and write functions
- (BCH)
-Thread-Topic: [RFC 43/47] mtd: nand: stm_nand_bch: read and write functions
- (BCH)
-Thread-Index: AQHPSANC8jUEqMNnzUiCVLmh21QTXJrzK4kA
-Date: Wed, 26 Mar 2014 10:31:14 +0000
-Message-ID: <20980858CB6D3A4BAE95CA194937D5E73EAB5CC7@DBDE04.ent.ti.com>
-References: <1395735604-26706-1-git-send-email-lee.jones@linaro.org>
- <1395735604-26706-44-git-send-email-lee.jones@linaro.org>
-In-Reply-To: <1395735604-26706-44-git-send-email-lee.jones@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.24.170.142]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 26 Mar 2014 06:32:02 -0400
+Date: Wed, 26 Mar 2014 11:31:59 +0100
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 14/14] ARM: mvebu: register the cpuidle driver for
+ the Armada XP SoCs
+Message-ID: <20140326113159.48c3c405@skate>
+In-Reply-To: <1395787705-31061-15-git-send-email-gregory.clement@free-electrons.com>
+References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com>
+	<1395787705-31061-15-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lee,
+Dear Gregory CLEMENT,
 
->From: Lee Jones [mailto:lee.jones@linaro.org]
->
->Helper function for bch_mtd_read() and bch_mtd_write() to handle
->multi-page or non-aligned reads and writes respectively.
->
->Signed-off-by: Lee Jones <lee.jones@linaro.org>
->---
+On Tue, 25 Mar 2014 23:48:25 +0100, Gregory CLEMENT wrote:
 
-I think below code is duplicate of nand_do_read_ops() and nand_do_write_ops()
-in nand_base.c. If you could just populate chip->ecc.read_page and
-chip->ecc.write_page much of this could be avoided.
-Also, you need to break your bch_read_page() into given generic NAND
-driver interfaces chip->ecc.calculate(), chip->ecc.correct() ...
+> +int __init armada_370_xp_cpu_pm_init(void)
+> +{
+> +	if (!((of_find_compatible_node(NULL, NULL, "marvell,armada-370-xp-pmsu") ||
+> +				of_find_compatible_node(NULL, NULL, "marvell,armada-370-pmsu"))
+> +			&& of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric")
+> +			&& of_machine_is_compatible("marvell,armadaxp")))
+> +		return 0;
 
-This would make your driver much more simpler, and easy to maintain.
+Instead of this big single condition, maybe it could be split in a
+nicer way:
 
+	/*
+	 * Check that all the requirements are available to enable
+	 * cpuidle. So far, it is only supported on Armada XP, cpuidle
+	 * needs the coherency fabric and the PMSU enabled
+         */
 
-> drivers/mtd/nand/stm_nand_bch.c | 143 ++++++++++++++++++++++++++++++++++++++++
-> 1 file changed, 143 insertions(+)
->
->diff --git a/drivers/mtd/nand/stm_nand_bch.c b/drivers/mtd/nand/stm_nand_bch.c
->index 389ccee..bcaed32 100644
->--- a/drivers/mtd/nand/stm_nand_bch.c
->+++ b/drivers/mtd/nand/stm_nand_bch.c
->@@ -507,6 +507,149 @@ static uint8_t bch_write_page(struct nandi_controller *nandi,
-> 	return status;
-> }
->
->+/* Helper function for bch_mtd_read to handle multi-page or non-aligned reads */
->+static int bch_read(struct nandi_controller *nandi,
->+		    loff_t from, size_t len,
->+		    size_t *retlen, u_char *buf)
->+{
->+	struct mtd_ecc_stats stats;
->+	uint32_t page_size = nandi->info.mtd.writesize;
->+	uint32_t col_offs;
->+	loff_t page_mask;
->+	loff_t page_offs;
->+	int ecc_errs, max_ecc_errs = 0;
->+	int page_num;
->+	size_t bytes;
->+	uint8_t *p;
->+	bool bounce = false;
->+
->+	dev_dbg(nandi->dev, "%s: %llu @ 0x%012llx\n", __func__,
->+		(unsigned long long)len, from);
->+
->+	stats = nandi->info.mtd.ecc_stats;
->+	page_mask = (loff_t)page_size - 1;
->+	col_offs  = (uint32_t)(from & page_mask);
->+	page_offs = from & ~page_mask;
->+	page_num  = (int)(page_offs >> nandi->page_shift);
->+
->+	while (len > 0) {
->+		bytes = min((page_size - col_offs), len);
->+
->+		if ((bytes != page_size) ||
->+		    ((unsigned int)buf & (NANDI_BCH_DMA_ALIGNMENT - 1)) ||
->+		    (!virt_addr_valid(buf))) /* vmalloc'd buffer! */
->+			bounce = true;
->+
->+		if (page_num == nandi->cached_page) {
->+			memcpy(buf, nandi->page_buf + col_offs, bytes);
->+			goto done;
->+		}
->+
->+		p = bounce ? nandi->page_buf : buf;
->+
->+		ecc_errs = bch_read_page(nandi, page_offs, p);
->+		if (bounce)
->+			memcpy(buf, p + col_offs, bytes);
->+
->+		if (ecc_errs < 0) {
->+			dev_err(nandi->dev,
->+				"%s: uncorrectable error at 0x%012llx\n",
->+				__func__, page_offs);
->+			nandi->info.mtd.ecc_stats.failed++;
->+
->+			/* Do not cache uncorrectable pages */
->+			if (bounce)
->+				nandi->cached_page = -1;
->+
->+			goto done;
->+		}
->+
->+		if (ecc_errs) {
->+			dev_info(nandi->dev,
->+				 "%s: corrected %u error(s) at 0x%012llx\n",
->+				 __func__, ecc_errs, page_offs);
->+
->+			nandi->info.mtd.ecc_stats.corrected += ecc_errs;
->+
->+			if (ecc_errs > max_ecc_errs)
->+				max_ecc_errs = ecc_errs;
->+		}
->+
->+		if (bounce)
->+			nandi->cached_page = page_num;
->+
->+done:
->+		buf += bytes;
->+		len -= bytes;
->+
->+		if (retlen)
->+			*retlen += bytes;
->+
->+		/* We are now page-aligned */
->+		page_offs += page_size;
->+		page_num++;
->+		col_offs = 0;
->+	}
->+
->+	/* Return '-EBADMSG' on uncorrectable errors */
->+	if (nandi->info.mtd.ecc_stats.failed - stats.failed)
->+		return -EBADMSG;
->+
->+	return max_ecc_errs;
->+}
->+
->+/* Helper function for mtd_write, to handle multi-page and non-aligned writes */
->+static int bch_write(struct nandi_controller *nandi,
->+		     loff_t to, size_t len,
->+		     size_t *retlen, const uint8_t *buf)
->+{
->+	uint32_t page_size = nandi->info.mtd.writesize;
->+	int page_num;
->+	bool bounce = false;
->+	const uint8_t *p = NULL;
->+	uint8_t ret;
->+
->+	dev_dbg(nandi->dev, "%s: %llu @ 0x%012llx\n", __func__,
->+		(unsigned long long)len, to);
->+
->+	BUG_ON(len & (page_size - 1));
->+	BUG_ON(to & (page_size - 1));
->+
->+	if (((unsigned long)buf & (NANDI_BCH_DMA_ALIGNMENT - 1)) ||
->+	    !virt_addr_valid(buf)) { /* vmalloc'd buffer! */
->+		bounce = true;
->+	}
->+
->+	page_num = (int)(to >> nandi->page_shift);
->+
->+	while (len > 0) {
->+		if (bounce) {
->+			memcpy(nandi->page_buf, buf, page_size);
->+			p = nandi->page_buf;
->+			nandi->cached_page = -1;
->+		} else {
->+			p = buf;
->+		}
->+
->+		if (nandi->cached_page == page_num)
->+			nandi->cached_page = -1;
->+
->+		ret = bch_write_page(nandi, to, p);
->+		if (ret & NAND_STATUS_FAIL)
->+			return -EIO;
->+
->+		to += page_size;
->+		page_num++;
->+		buf += page_size;
->+		len -= page_size;
->+
->+		if (retlen)
->+			*retlen += page_size;
->+	}
->+
->+	return 0;
->+}
->+
-> /*
->  * Hamming-FLEX operations
->  */
->--
->1.8.3.2
+	if (!of_machine_is_compatible("marvell,armadaxp"))
+		return 0;
 
+	np = of_find_compatible_node(NULL, NULL, "marvell,coherency-fabric");
+	if (!np)
+		return 0;
+	of_node_put(np);
 
-with regards, pekon
+	np = of_find_matching_node(NULL, of_pmsu_table);
+	if (!np)
+		return 0;
+	of_node_put(np);
+
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
