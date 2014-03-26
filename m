@@ -1,103 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066AbaCZSWY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 14:22:24 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:40062 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750911AbaCZSWW (ORCPT
+	id S1755433AbaCZSXa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 14:23:30 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:47794 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaCZSX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 14:22:22 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-35-53331adc262c
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, b.brezillon@overkiz.com,
-        khilman@linaro.org, festevam@gmail.com, shawn.guo@linaro.org,
-        kernel@pengutronix.de, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] clk: register fixed-clock only if #clock-cells property is
- present
-Date: Wed, 26 Mar 2014 19:22:07 +0100
-Message-id: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrELMWRmVeSWpSXmKPExsVy+t9jQd27UsbBBvcOslhcOHeY0WL+kXOs
-	Fg+v+lusmrqTxeLr4RWMFpseX2O1uLxrDpvF7cu8Fk8nXGSz+Ha5md1i3cMXTBaH37SzWjxd
-	t4TZYv2M1ywOfB4tzT1sHgt+bWXx2DnrLrvHqwt3WDzuXNvD5rF5Sb3HpMV/2Dz6/xp49G1Z
-	xejxeZNcAFcUl01Kak5mWWqRvl0CV8aJk8dZC66KVxydN5+9gfGDcBcjJ4eEgInE2jP/2CBs
-	MYkL99YD2VwcQgLTGSUuLPgNlhAS6GCS+HwyFMRmEzCU6D3axwhiiwjYS/yY8JIFpIFZYDeT
-	RNPmiUAJDg5hgVCJ3zNFQGpYBFQlZkzZxQRi8wq4SZyav4IJpERCQEFiziSbCYzcCxgZVjGK
-	phYkFxQnpeca6RUn5haX5qXrJefnbmIEh+Qz6R2MqxosDjEKcDAq8fDuuG8ULMSaWFZcmXuI
-	UYKDWUmE94KocbAQb0piZVVqUX58UWlOavEhRmkOFiVx3oOt1oFCAumJJanZqakFqUUwWSYO
-	TqkGxmT+1QxTRPV61vOfj5jd+uhGxIUX2rHbIyPaZHQP+6ndkHph0rdY223Xfg/JdcZPz9lP
-	1t0R878snVe1Pnjdkc4q6duufxaxn6letVSkfPm8lJ8vl90IZLjmvbe69zHbj6lJiu7ek/4m
-	9TwVUP/LxbPodF7C2fCtUztC90xvPK8tu9HZNmXHXyWW4oxEQy3mouJEAARp7t1FAgAA
+	Wed, 26 Mar 2014 14:23:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <5333129E.1050108@redhat.com>
+References: <1395842441-17923-1-git-send-email-prarit@redhat.com>
+	<CA+5PVA7vt6nBWfuU9V4UahHigy7=3d40rmPhSJvPv9F5J_n0ug@mail.gmail.com>
+	<5333129E.1050108@redhat.com>
+Date: Wed, 26 Mar 2014 14:23:27 -0400
+X-Google-Sender-Auth: 8lAHY5dtvZs-ybsIVgwW9p3FKIA
+Message-ID: <CA+5PVA7wbvZ8zPx75kJ522OvY=asuE+OXSU+gdV4r8X3Af0UMQ@mail.gmail.com>
+Subject: Re: [PATCH] Add initcall_blacklist kernel parameter
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Rob Landley <rob@landley.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 1771b10d605d26ccee771a7fb4b08718c124097a
-"clk: respect the clock dependencies in of_clk_init"
-the order of registering clock providers and their corresponding
-clocks may change. This commit currently causes a regression
-on Exynos4 platforms, where fixed clocks are now being registered
-through the standard "fixed-clock" compatible device driver, rather
-than through a custom mechanism within the clk-exynos4 driver.
-Then any attempts to register the fixed clocks in clk-exynos4
-fail, since clocks named "xxti", "xusbxti" are already registered.
-This means that some clock specifiers do not work any more, i.e.
-those with phandle to the main clock controller node and fixed
-indexes. This in turn causes wrong frequency of the root clocks
-and various division by zero errors.
+On Wed, Mar 26, 2014 at 1:47 PM, Prarit Bhargava <prarit@redhat.com> wrote:
+>
+>
+> On 03/26/2014 12:34 PM, Josh Boyer wrote:
+>> On Wed, Mar 26, 2014 at 10:00 AM, Prarit Bhargava <prarit@redhat.com> wrote:
+>>> When a module is built into the kernel, the modules's module_init()
+>>> function becomes an initcall.  Debugging built in kernel modules is
+>>> typically done by changing the .config, recompiling, and booting the new
+>>> kernel in an effort to determine exactly which module caused a problem.
+>>> This is a wasteful time consuming process as it may be repeated several times
+>>> before determining precisely what caused the problem.
+>>>
+>>> This patch has been useful in identifying problems with built-in modules and
+>>> initcalls.  It allows a user to skip an initcall to see if the kernel
+>>> would continue to boot properly without requiring recompiles.
+>>>
+>>> Usage: initcall_blacklist=<initcall function>
+>>>
+>>> ex) added "initcall_blacklist=sgi_uv_sysfs_init" as a kernel parameter and
+>>> the log contains:
+>>>
+>>>         blacklisted initcall sgi_uv_sysfs_init
+>>>         ...
+>>>         ...
+>>>         function sgi_uv_sysfs_init returning without executing
+>>>
+>>
+>> Could you elaborate on cases where this would be more useful than
+>> initcall_debug?  It seems odd to have one option to debug initicalls
+>> already saying it's useful for working out where the kernel is dying
+>> during startup, and then adding another option with the same goal.
+>
+> Sure, here's an example of where this would have been useful.  The last thing
+> seen on the console was:
 
-Hence for old dtbs, where #clock-cells property is missing in the
-fixed-clock DT nodes for exynos4 this patch has a positive side
-effect that the fixed clocks will not get registered through the
-standard mechanism and the required clock names won't be taken
-at the time the main clock controller driver's init callback is
-called.
+Thanks for the quick reply!
 
-To make exynos use the standard fixed-clock registration mechanism,
-related dts files could be updated, i.e. #clock-cells property
-added together with required dependencies, that is a 'clocks'
-property with phandles to the fixed clock nodes listed in it.
-The dependencies specified in devicetree would then ensure proper
-order of clocks registration.
+<snip very well detailed example>
 
-Now the issue is that this patch affects not only exynos, but also
-imx and at91 platforms. However, those use a custom compatible
-string in addition to "fixed-clock" and I suspect registering
-fixed clocks through the drivers/clk/clk-fixed-rate.c driver has
-been  failing silently for them anyway. This patch could be
-actually fixing similar issue as for exynos, seen after commit
-"clk: respect the clock dependencies in of_clk_init".
+OK, so maybe elude to the reasons you are introducing this in both the
+commit log and the kernel-parameters description.  Something along the
+lines of:
 
-There is one board that will likely break after this patch, i.e.
-arch/arm/boot/dts/vf610-twr.dts. Nonetheless, it doesn't specify
-the #clock-cells property, which is documented as mandatory in
-Documentation/devicetree/bindings/clock/fixed-clock.txt.
-So perhaps we could add the missing property to dts as a fix.
+"This can be useful stand-alone or combined with initcall_debug.
+There are cases where some initcalls can hang the machine before the
+console can be flushed, which can make initcall_debug output
+inaccurate.  Having the ability to skip initcalls can help further
+debugging of these scenarios."
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/clk/clk-fixed-rate.c |    5 +++++
- 1 file changed, 5 insertions(+)
+> There is admittedly another use for this code and that would be to allow someone
+> with a broken system to skip over a built-in module's init call.  The end user
+> could have continued with "initcall_blacklist=init_tis" while we continued to
+> debug.  While I wouldn't recommend running this way in production with something
+> like TPM disabled, I could see myself saying this is okay to do with a driver
+> that wasn't critical for a system (floppy on a modern server).
 
-diff --git a/drivers/clk/clk-fixed-rate.c b/drivers/clk/clk-fixed-rate.c
-index 0fc56ab..cbbef2b 100644
---- a/drivers/clk/clk-fixed-rate.c
-+++ b/drivers/clk/clk-fixed-rate.c
-@@ -122,6 +122,11 @@ void of_fixed_clk_setup(struct device_node *node)
- 	if (of_property_read_u32(node, "clock-frequency", &rate))
- 		return;
+Yeah, I don't think that's unreasonable for a per-instance debugging
+situation, but I wouldn't really recommend it in the help text or
+anything ;).
 
-+	if (!of_find_property(node, "#clock-cells", NULL)) {
-+		pr_warn("clk: missing #clock-cells property at %s\n",
-+			node->full_name);
-+		return;
-+	}
- 	of_property_read_u32(node, "clock-accuracy", &accuracy);
+>>>         inport.irq=     [HW] Inport (ATI XL and Microsoft) busmouse driver
+>>> diff --git a/init/main.c b/init/main.c
+>>> index 9c7fd4c..a34677c 100644
+>>> --- a/init/main.c
+>>> +++ b/init/main.c
+>>> @@ -666,6 +666,15 @@ static void __init do_ctors(void)
+>>>  bool initcall_debug;
+>>>  core_param(initcall_debug, initcall_debug, bool, 0644);
+>>>
+>>> +static char blacklist_buf[128] = "\0";
+>>> +static int initcall_blacklist(char *str)
+>>> +{
+>>> +       snprintf(blacklist_buf, 127, "%s", str);
+>>> +       pr_debug("blacklisted initcall %s\n", blacklist_buf);
+>>> +       return 0;
+>>> +}
+>>> +__setup("initcall_blacklist=", initcall_blacklist);
+>>> +
+>>
+>> I'm not trying to bikeshed, but this isn't so much a list as it is a
+>> single initcall to skip.  Maybe call it initcall_skip ?  I can see
+>> people doing something like
+>> initcall_blacklist=sgi_uv_sysfs_init,foo_bar_init,baz_debug_init and
+>> being confused when nothing is skipped because no single initcall
+>> matches that literal string.
+>
+> Or maybe that implies that I should allow for a list of blacklist'd calls?  It
+> was something that a fellow engineer at Red Hat suggested as well, along with
+> some cleanups of the 128/127 char writing.  He pointed out that removing one
+> initcall could have an impact on another.  For example, removing the init for
+> netdev would have an impact on loading the igb driver, and then you're booting
+> into another panic/oops situation.
 
- 	of_property_read_string(node, "clock-output-names", &clk_name);
---
-1.7.9.5
+Sure, fixing it to be a list would work too.
 
+> Is dynamically allocating memory in __setup() calls acceptable?  I'm not sure if
+> there are any restrictions on doing so.  Ingo or Peter?  Do you know?
+
+That I'm unsure of myself.
+
+josh
