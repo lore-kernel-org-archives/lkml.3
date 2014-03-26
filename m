@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753667AbaCZJxd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 05:53:33 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:51920 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751130AbaCZJxa (ORCPT
+	id S1753909AbaCZJyV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 05:54:21 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:52194 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753751AbaCZJyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 05:53:30 -0400
-Message-ID: <5332A396.50802@free-electrons.com>
-Date: Wed, 26 Mar 2014 10:53:26 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Wed, 26 Mar 2014 05:54:19 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2Q9sC3b030886, This message is accepted by code: ctloc85258
+From: hayeswang <hayeswang@realtek.com>
+To: "'Grant Grundler'" <grundler@google.com>
+CC: "'netdev'" <netdev@vger.kernel.org>, <nic_swsd@realtek.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>
+References: <1393934464-23675-1-git-send-email-hayeswang@realtek.com><1393934464-23675-13-git-send-email-hayeswang@realtek.com> <CANEJEGvB7K3EQ6hyyweT3MA3kWSMcvAGXNHSTZK=6_z=dHhTfA@mail.gmail.com>
+Subject: RE: [PATCH net-next 12/12] r8152: modify the tx timeout funcfion
+Date: Wed, 26 Mar 2014 17:54:11 +0800
+Message-ID: <47E2CB72EA2845AD9B81A98B6E3BDF6B@realtek.com.tw>
 MIME-Version: 1.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 00/14] CPU idle for Armada XP
-References: <1395787705-31061-1-git-send-email-gregory.clement@free-electrons.com> <20140326004223.GL28304@titan.lakedaemon.net>
-In-Reply-To: <20140326004223.GL28304@titan.lakedaemon.net>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 11
+thread-index: Ac9IZnyFCMMRMD7gQQKeZaHoDCEfQQAaE8+g
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
+In-Reply-To: <CANEJEGvB7K3EQ6hyyweT3MA3kWSMcvAGXNHSTZK=6_z=dHhTfA@mail.gmail.com>
+X-Originating-IP: [172.21.71.143]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26/03/2014 01:42, Jason Cooper wrote:
-> Gregory,
-> 
-> On Tue, Mar 25, 2014 at 11:48:11PM +0100, Gregory CLEMENT wrote:
-> ...
->> The first patch should go through ARM subsystem and should be taken by
->> Russell King. I made few change on it following Lorenzo advice and
->> now it will reuse the cpu v7 suspend and resume function and just do
->> specific operation before calling them.
->>
->> The 13th patch 'cpuidle: mvebu: Add initial cpu idle support for
->> Armada 370/XP SoC' is the only one who should go to the cpuidle
->> subsystem. But of course I would like that Daniel Lezcano or Rafael
->> J. Wysocki have a look on the whole series and especially patches 10,
->> 12 and 14.
-> 
-> Ok, I'm tired.  :)  Help me out here.  Patches 1 and 13 are depended on
-> by the other patches and vice-versa, right?  In that case, I'm thinking
-> it's best to seek Acks from the other maintainers and keep the whole
-> branch together.  Please tell me if I'm wrong.
-> 
+ Grant Grundler [mailto:grundler@google.com] 
+> Sent: Wednesday, March 26, 2014 4:12 AM
+[...]
+> Hayes,
+> I believe this patch was dropped after the series was split.
+> Can you please repost this patch by itself?
 
-Actually for the build there is no dependencies between patch 1, 13 and the
-other ones.
+There is no problem for current behavior, and I don't get the
+issue of tx timeout, yet. I think the other patches are prior
+to this one, so I plan to deal with this one after the others.
+Besides, maybe I would have different idea for this one then.
+Although reinitialization is more safe, I don't sure if it is
+necessary.
 
-About running the kernel obviously you need the full series to have the CPU
-idle working, but if patch 13 is not applied or if it is applied alone, the
-kernel won't crash, the only consequence will be that the cpu idle driver won't
-be loaded.
+> (and fix the "function" typo in the patch header)
 
-If all patches are applied except patch 1 then we could experiment some issues.
-However, now the the amount of code is very small in this patch, I planed
-to submit it to Russell King's patch system soon.
+oops.
 
-About patch 13, I agree that if Daniel and Rafael agree to give their acked-by,
-it will be easier to handle if you can take it in a single series, but it is not
-mandatory.
+[...]
+> Nit: Could rtl_ops.up() set speed since it appears to be changing the
+> state of the link?
 
-Thanks,
+I don't plan to do it. I don't think it is a part of rtl_ops.up().
+Although it alwayes follows rtl_ops.up() now, I think they should
+be separeted because they are for different purposes. The set_speed
+is used to make sure the speed is correct, because you don't know
+what speed it is before the driver is loaded. The other OS may
+change the speed, so the device should have opportunity to change
+the speed to the default when the driver is loaded. Normally, the
+set_speed is not necessary.
 
-Gregory
+> rtl8152_open() uses a remarkably similar code sequence. Is there an
+> opportunity to refactor and  make sure this sequence is consistent?
+> (different patch, not this one)
 
+It is a good question. I would think about it.
+ 
+Best Regards,
+Hayes
 
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
