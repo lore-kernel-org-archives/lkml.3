@@ -1,29 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754434AbaCZNV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:21:26 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:48618 "EHLO
+	id S1754703AbaCZNW5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:22:57 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:48664 "EHLO
 	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbaCZNVY convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:11:3>);
-	Wed, 26 Mar 2014 09:21:24 -0400
-Message-Id: <5332E25F020000780000255A@nat28.tlf.novell.com>
+	with ESMTP id S1753545AbaCZNWy convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:12:3>);
+	Wed, 26 Mar 2014 09:22:54 -0400
+Message-Id: <5332E2B9020000780000255D@nat28.tlf.novell.com>
 X-Mailer: Novell GroupWise Internet Agent 14.0.0 
-Date: Wed, 26 Mar 2014 13:21:19 +0000
+Date: Wed, 26 Mar 2014 13:22:49 +0000
 From: "Jan Beulich" <JBeulich@suse.com>
-To: "Daniel Kiper" <daniel.kiper@oracle.com>
+To: "Matt Fleming" <matt@console-pimps.org>
 Cc: <david.vrabel@citrix.com>, <ian.campbell@citrix.com>,
         <stefano.stabellini@eu.citrix.com>, <jeremy@goop.org>,
         <fenghua.yu@intel.com>, <matt.fleming@intel.com>,
         <tony.luck@intel.com>, <x86@kernel.org>, <tglx@linutronix.de>,
         <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <konrad.wilk@oracle.com>, <eshelton@pobox.com>, <mingo@redhat.com>,
-        <linux-efi@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH v3 2/5] efi: Export arch_tables variable
+        "Daniel Kiper" <daniel.kiper@oracle.com>, <konrad.wilk@oracle.com>,
+        <eshelton@pobox.com>, <mingo@redhat.com>, <linux-efi@vger.kernel.org>,
+        <linux-ia64@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <hpa@zytor.com>
+Subject: Re: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range()
+ on native EFI platform only
 References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
-In-Reply-To: <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
+ <20140326130009.GB24856@console-pimps.org>
+In-Reply-To: <20140326130009.GB24856@console-pimps.org>
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 8BIT
@@ -32,36 +35,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 25.03.14 at 21:57, <daniel.kiper@oracle.com> wrote:
-> Export arch_tables variable. Xen init function calls efi_config_init()
-> which takes it as an argument.
+>>> On 26.03.14 at 14:00, <matt@console-pimps.org> wrote:
+> On Tue, 25 Mar, at 09:57:54PM, Daniel Kiper wrote:
+>> Call efi_memblock_x86_reserve_range() on native EFI platform only.
+>> This is not needed and even it should not be called on platforms
+>> which wraps EFI infrastructure like Xen.
+>> 
+>> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+>> ---
+>>  arch/x86/kernel/setup.c |    2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>> 
+>> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+>> index ce72964..992b67a 100644
+>> --- a/arch/x86/kernel/setup.c
+>> +++ b/arch/x86/kernel/setup.c
+>> @@ -933,7 +933,7 @@ void __init setup_arch(char **cmdline_p)
+>>  		set_bit(EFI_64BIT, &x86_efi_facility);
+>>  	}
+>>  
+>> -	if (efi_enabled(EFI_BOOT))
+>> +	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature, "EL", 2))
+>>  		efi_memblock_x86_reserve_range();
+>>  #endif
 > 
-> Additionally, put __initdata in place suggested by include/linux/init.h.
+> This could do with a little bit more explanation. Why is it not
+> necessary to mark the EFI memory map that was passed to the kernel as
+> reserved in memblock?
 
-Which isn't necessarily the most appropriate place.
-
-> --- a/arch/x86/platform/efi/efi.c
-> +++ b/arch/x86/platform/efi/efi.c
-> @@ -70,7 +70,7 @@ static efi_system_table_t efi_systab __initdata;
->  
->  unsigned long x86_efi_facility;
->  
-> -static __initdata efi_config_table_type_t arch_tables[] = {
-> +efi_config_table_type_t arch_tables[] __initdata = {
-
-efi_config_table_type_t __initdata arch_tables[] = {
-
-would be what I'd recommend.
-
-> --- a/include/linux/efi.h
-> +++ b/include/linux/efi.h
-> @@ -583,6 +583,8 @@ extern struct efi {
->  	struct efi_memory_map *memmap;
->  } efi;
->  
-> +extern efi_config_table_type_t arch_tables[] __initdata;
-
-And section placement annotations are bogus on declarations.
+Because that's in memory Dom0 doesn't even see: The EFI memory
+map is visible to the hypervisor only.
 
 Jan
 
