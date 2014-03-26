@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526AbaCZAvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:51:40 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:38986 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753126AbaCZAvi (ORCPT
+	id S1755821AbaCZAxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:53:36 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:13327 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755350AbaCZAxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:51:38 -0400
-Date: Wed, 26 Mar 2014 00:51:15 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Sebastian Capella <sebastian.capella@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: machine_power_off should not return
-Message-ID: <20140326005115.GW7528@n2100.arm.linux.org.uk>
-References: <1395684784-12601-1-git-send-email-sebastian.capella@linaro.org> <20140325224554.GC12185@arch.cereza>
+	Tue, 25 Mar 2014 20:53:34 -0400
+Message-ID: <533224FA.6040307@huawei.com>
+Date: Wed, 26 Mar 2014 08:53:14 +0800
+From: Ding Tianhong <dingtianhong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140325224554.GC12185@arch.cereza>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "zheng.li" <zheng.x.li@oracle.com>
+CC: <netdev@vger.kernel.org>, <fubar@us.ibm.com>, <andy@greyhouse.net>,
+        <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
+        <joe.jin@oracle.com>
+Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
+ value to 1 in tlb and alb mode.
+References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com> <5330FB34.4090005@huawei.com> <53314017.8040104@oracle.com>
+In-Reply-To: <53314017.8040104@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.22.246]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 07:45:55PM -0300, Ezequiel Garcia wrote:
-> Let's Cc: LAKML, and To: Russell.
+On 2014/3/25 16:36, zheng.li wrote:
+> 于 2014年03月25日 11:42, Ding Tianhong 写道:
+>> On 2014/3/25 11:00, Zheng Li wrote:
+>>> In bond mode tlb and alb, inactive slaves should keep inactive flag to
+>>> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
+>>> (for example ARP requests) which will arrive inactive slaves on same host from switch,
+>>> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
+>>> packets to produce a wrong entry in forward table. Typical situation is domu send some
+>>> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
+>>> packets go back to inactive slave from switch, because the inactive slave's inactive
+>>> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
+>>> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
+>>>
+>>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>>> ---
+>>>  drivers/net/bonding/bond_main.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>>> index e5628fc..8761df6 100644
+>>> --- a/drivers/net/bonding/bond_main.c
+>>> +++ b/drivers/net/bonding/bond_main.c
+>>> @@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
+>>>  				&& (slave != bond->curr_active_slave)) {
+>>>  				bond_set_slave_inactive_flags(slave,
+>>>  							      BOND_SLAVE_NOTIFY_NOW);
+>>> -			} else {
+>>> +			} else if (!bond_is_lb(bond)) {
+>>>  				bond_set_slave_active_flags(slave,
+>>>  							    BOND_SLAVE_NOTIFY_NOW);
+>>>  			}
+>>>
+>> I think you did not fix the problem completely, the state monitor will change the status for the slaves
+>> and the inactive slave still could receive the broadcast.
 > 
-> Russell, any comments on this?
+> Had tested, it can fix the issue, verified by our QA.
+> Default set slave of bond as inactive when add a slave to bond, when
+> link UP, just set one slave as current active slave and clear its
+> inactive flag, the inactive slave's inactive flag will keep the value of 1.
 > 
-> Without this patch we got the heartbeat's reboot_notifier called twice while
-> testing the recent hibernation patches, which was unexpected and produced a
-> kernel panic: https://lkml.org/lkml/2014/3/19/363
+> 
+Ok, I found that in the mii monitor, it will only change the backup state, no problem,
+it looks good to me.
 
-I don't see why we should make this change.  kernel/reboot.c handles
-this function returning, so other places should do too.
+Ding
 
-Even on x86, this function can return:
+>>
+>> Regards
+>> Ding
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
+> 
+> .
+> 
 
-void machine_power_off(void)
-{
-        machine_ops.power_off();
-}
 
-        .power_off = native_machine_power_off,
-
-static void native_machine_power_off(void)
-{
-        if (pm_power_off) {
-                if (!reboot_force)
-                        machine_shutdown();
-                pm_power_off();
-        }
-        /* A fallback in case there is no PM info available */
-        tboot_shutdown(TB_SHUTDOWN_HALT);
-}
-
-void tboot_shutdown(u32 shutdown_type)
-{
-        void (*shutdown)(void);
-
-        if (!tboot_enabled())
-                return;
-
-Therefore, I'd say... it's a bug in the hibernation code - or we probably
-have many buggy architectures.  I'd suggest fixing the hibernation code
-rather than stuffing some workaround like an endless loop into every
-architecture.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
