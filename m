@@ -1,63 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaCZNAW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:00:22 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:43360 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754118AbaCZNAU (ORCPT
+	id S1754741AbaCZNFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:05:52 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:51989 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754693AbaCZNFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:00:20 -0400
-Date: Wed, 26 Mar 2014 13:00:09 +0000
-From: Matt Fleming <matt@console-pimps.org>
-To: Daniel Kiper <daniel.kiper@oracle.com>
-Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
-        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
-        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
-        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
-        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
-        tony.luck@intel.com
-Subject: Re: [PATCH v3 3/5] x86: Call efi_memblock_x86_reserve_range() on
- native EFI platform only
-Message-ID: <20140326130009.GB24856@console-pimps.org>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
- <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395781076-12000-4-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 26 Mar 2014 09:05:47 -0400
+From: David Herrmann <dh.herrmann@gmail.com>
+To: netdev@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>, Tom Gundersen <teg@jklm.no>,
+        Johannes berg <johannes@sipsolutions.net>,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH v5 3/4] ath6kl: set NET_NAME_USER for P2P ifs
+Date: Wed, 26 Mar 2014 14:05:16 +0100
+Message-Id: <1395839117-20090-4-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar, at 09:57:54PM, Daniel Kiper wrote:
-> Call efi_memblock_x86_reserve_range() on native EFI platform only.
-> This is not needed and even it should not be called on platforms
-> which wraps EFI infrastructure like Xen.
-> 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> ---
->  arch/x86/kernel/setup.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-> index ce72964..992b67a 100644
-> --- a/arch/x86/kernel/setup.c
-> +++ b/arch/x86/kernel/setup.c
-> @@ -933,7 +933,7 @@ void __init setup_arch(char **cmdline_p)
->  		set_bit(EFI_64BIT, &x86_efi_facility);
->  	}
->  
-> -	if (efi_enabled(EFI_BOOT))
-> +	if (!strncmp((char *)&boot_params.efi_info.efi_loader_signature, "EL", 2))
->  		efi_memblock_x86_reserve_range();
->  #endif
+P2P netdevs and other devices that are created via nl80211 from user-space
+have a name provided by user-space. Therefore, set NET_NAME_USER so this
+is correctly shown in sysfs.
 
-This could do with a little bit more explanation. Why is it not
-necessary to mark the EFI memory map that was passed to the kernel as
-reserved in memblock?
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Acked-by: Kalle Valo <kvalo@qca.qualcomm.com>
+Acked-by: Tom Gundersen <teg@jklm.no>
+---
+ drivers/net/wireless/ath/ath6kl/cfg80211.c | 5 ++++-
+ drivers/net/wireless/ath/ath6kl/cfg80211.h | 1 +
+ drivers/net/wireless/ath/ath6kl/core.c     | 4 ++--
+ 3 files changed, 7 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.c b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+index c2c6f46..131d8ab 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.c
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.c
+@@ -1512,7 +1512,8 @@ static struct wireless_dev *ath6kl_cfg80211_add_iface(struct wiphy *wiphy,
+ 		return ERR_PTR(-EINVAL);
+ 	}
+ 
+-	wdev = ath6kl_interface_add(ar, name, type, if_idx, nw_type);
++	wdev = ath6kl_interface_add(ar, name, NET_NAME_USER, type,
++				    if_idx, nw_type);
+ 	if (!wdev)
+ 		return ERR_PTR(-ENOMEM);
+ 
+@@ -3630,6 +3631,7 @@ void ath6kl_cfg80211_vif_cleanup(struct ath6kl_vif *vif)
+ }
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type)
+ {
+@@ -3666,6 +3668,7 @@ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
+ 			ndev->dev_addr[4] ^= 0x80;
+ 	}
+ 
++	ndev->name_assign_type = name_assign_type;
+ 	init_netdev(ndev);
+ 
+ 	ath6kl_init_control_info(vif);
+diff --git a/drivers/net/wireless/ath/ath6kl/cfg80211.h b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+index b59becd..5aa57a7 100644
+--- a/drivers/net/wireless/ath/ath6kl/cfg80211.h
++++ b/drivers/net/wireless/ath/ath6kl/cfg80211.h
+@@ -25,6 +25,7 @@ enum ath6kl_cfg_suspend_mode {
+ };
+ 
+ struct wireless_dev *ath6kl_interface_add(struct ath6kl *ar, const char *name,
++					  unsigned char name_assign_type,
+ 					  enum nl80211_iftype type,
+ 					  u8 fw_vif_idx, u8 nw_type);
+ void ath6kl_cfg80211_ch_switch_notify(struct ath6kl_vif *vif, int freq,
+diff --git a/drivers/net/wireless/ath/ath6kl/core.c b/drivers/net/wireless/ath/ath6kl/core.c
+index 4b46adb..3cc8145 100644
+--- a/drivers/net/wireless/ath/ath6kl/core.c
++++ b/drivers/net/wireless/ath/ath6kl/core.c
+@@ -195,8 +195,8 @@ int ath6kl_core_init(struct ath6kl *ar, enum ath6kl_htc_type htc_type)
+ 	rtnl_lock();
+ 
+ 	/* Add an initial station interface */
+-	wdev = ath6kl_interface_add(ar, "wlan%d", NL80211_IFTYPE_STATION, 0,
+-				    INFRA_NETWORK);
++	wdev = ath6kl_interface_add(ar, "wlan%d", NET_NAME_ENUM,
++				    NL80211_IFTYPE_STATION, 0, INFRA_NETWORK);
+ 
+ 	rtnl_unlock();
+ 
 -- 
-Matt Fleming, Intel Open Source Technology Center
+1.9.1
+
