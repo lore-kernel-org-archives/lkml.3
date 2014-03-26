@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbaCZMuE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 08:50:04 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:48016 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753898AbaCZMuB (ORCPT
+	id S1754471AbaCZM4d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 08:56:33 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:34702 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753438AbaCZM4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 08:50:01 -0400
+	Wed, 26 Mar 2014 08:56:31 -0400
+Date: Wed, 26 Mar 2014 12:56:23 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Daniel Kiper <daniel.kiper@oracle.com>
+Cc: linux-efi@vger.kernel.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, boris.ostrovsky@oracle.com,
+        david.vrabel@citrix.com, eshelton@pobox.com, fenghua.yu@intel.com,
+        hpa@zytor.com, ian.campbell@citrix.com, jbeulich@suse.com,
+        jeremy@goop.org, konrad.wilk@oracle.com, matt.fleming@intel.com,
+        mingo@redhat.com, stefano.stabellini@eu.citrix.com, tglx@linutronix.de,
+        tony.luck@intel.com, Tang Liang <liang.tang@oracle.com>
+Subject: Re: [PATCH v3 1/5] efi: Add efi_init_ops variable
+Message-ID: <20140326125623.GA24856@console-pimps.org>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20140326090855.GP10341@e106331-lin.cambridge.arm.com>
-References: <1395771564-30534-1-git-send-email-jon@ringle.org>
-	<1395771564-30534-2-git-send-email-jon@ringle.org>
-	<20140326090855.GP10341@e106331-lin.cambridge.arm.com>
-Date: Wed, 26 Mar 2014 08:49:59 -0400
-X-Google-Sender-Auth: V5xmESimmNnO5NVGqJPZNrtrubs
-Message-ID: <CAMwGMjxK2C_ciW6LwdMHE5wYkOHtkP00extF1-qcZ2xYoDr=7g@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] serial: sc16is7xx: Add bindings documentation for
- the SC16IS7XX UARTs
-From: Jon Ringle <jon@ringle.org>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jon Ringle <jringle@gridpoint.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395781076-12000-2-git-send-email-daniel.kiper@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 5:08 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Tue, Mar 25, 2014 at 06:19:24PM +0000, jon@ringle.org wrote:
->> +- interrupt-parent: The phandle for the interrupt controller that
->> +  services interrupts for this IC.
->> +- interrupts: Specifies the interrupt source of the parent interrupt
->> +  controller. The format of the interrupt specifier depends on the
->> +  parent interrupt controller.
->
-> Just describe what the device-specific interrupt logically is, not what
-> the interrupts property means in general.
->
+On Tue, 25 Mar, at 09:57:52PM, Daniel Kiper wrote:
+> Add efi_init_ops variable which allows us to replace
+> EFI init functions on Xen with its specific stuff.
+> 
+> This patch is based on Jan Beulich and Tang Liang work.
+> 
+> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
+> Signed-off-by: Tang Liang <liang.tang@oracle.com>
+> ---
+>  arch/ia64/kernel/efi.c      |   30 +++++++++++++++++++++---------
+>  arch/x86/platform/efi/efi.c |   18 +++++++++++++-----
+>  drivers/firmware/efi/efi.c  |   26 ++++++++++++++++++++++++++
+>  include/linux/efi.h         |    8 ++++++++
+>  4 files changed, 68 insertions(+), 14 deletions(-)
 
-Something like this ok?:
+[...]
 
--interrupts: Should contain the UART interrupt
+> @@ -1118,6 +1118,14 @@ u64 efi_mem_attributes(unsigned long phys_addr)
+>  	return 0;
+>  }
+>  
+> +struct efi_init_ops efi_init_ops = {
+> +	.efi_init = efi_init_generic,
+> +	.efi_reserve_boot_services = efi_reserve_boot_services_generic,
+> +	.efi_enter_virtual_mode = efi_enter_virtual_mode_generic,
+> +	.efi_mem_type = efi_mem_type_generic,
+> +	.efi_mem_attributes = efi_mem_attributes_generic
+> +};
 
->> +- clocks: phandle to the IC source clock.
->
-> Nit: clocks aren't just referred to with phandles; there's a clock
-> specifier too.
->
-> Either correct the type here or don't mention the type at all, given
-> this is a common property.
->
+Please don't create another struct of EFI function pointers.
 
-I'm not sure what to do here. Many of the other
-devicetree/bindings/serial/*.txt use phandle verbage and also the
-devicetree/bindings/clock-bindings.txt documentation for clocks refers
-the type as phandle too:
+After this we'll have 3 global efi structures defintions and 4 global
+efi objects on x86,
 
-==Clock consumers==
+  - struct efi_early [in the boot stub]
+  - struct efi ['efi_phys' before/'efi' after SetVirtualAddressMap()]
+  - struct efi_init_ops [for the benefit of xen]
 
-Required properties:
-clocks:         List of phandle and clock specifier pairs, one pair
-                for each clock input to the device.  Note: if the
-                clock provider specifies '0' for #clock-cells, then
-                only the phandle portion of the pair will appear.
+I have a big problem with exposing .efi_reserve_boot_services as an API.
 
-Is something like this ok?:
+Also, the fact that in later patches you're copying chunks of the x86
+virt_*() funtions suggests to me that this has been implemented at the
+wrong layer, because it actively discourages sharing code between x86
+and Xen.
 
-clocks: reference to the source clock
-
-Jon
+-- 
+Matt Fleming, Intel Open Source Technology Center
