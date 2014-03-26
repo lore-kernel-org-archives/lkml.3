@@ -1,609 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679AbaCZSe6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 14:34:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43500 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755538AbaCZSez (ORCPT
+	id S1755445AbaCZSmb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 14:42:31 -0400
+Received: from smtp.eu.citrix.com ([185.25.65.24]:36111 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752780AbaCZSm3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 14:34:55 -0400
-Date: Wed, 26 Mar 2014 11:34:29 -0700
-From: tip-bot for Matt Fleming <tipbot@zytor.com>
-Message-ID: <tip-204b0a1a4b92612c957a042df1a3be0e9cc79391@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, hpa@linux.intel.com, roy.franz@linaro.org,
-        matt.fleming@intel.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, matt.fleming@intel.com, roy.franz@linaro.org,
-        hpa@linux.intel.com
-In-Reply-To: <20140326091011.GB2958@console-pimps.org>
-References: <20140326091011.GB2958@console-pimps.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86, efi: Abstract x86 efi_early calls
-Git-Commit-ID: 204b0a1a4b92612c957a042df1a3be0e9cc79391
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 26 Mar 2014 14:42:29 -0400
+X-IronPort-AV: E=Sophos;i="4.97,737,1389744000"; 
+   d="scan'208";a="12500099"
+From: Paul Durrant <Paul.Durrant@citrix.com>
+To: Paul Durrant <Paul.Durrant@citrix.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>
+CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: RE: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+ troubles "bisected"
+Thread-Topic: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+ troubles "bisected"
+Thread-Index: AQHPPLStn4Kkhyz980uf2acSGT8Sr5rbnK8AgAAk2gCAAAHLgIAABk6AgAAreQCAAKlwgIAApZYAgAACxACAAAVwAIAAJs0AgAAG8ACAAABfAIAAAqeAgAAAwACAAAC9gIAABFKAgAAG+oCAABF0gIAHc7MAgADIlACAAOKDgIAANyqAgAAL8QCAAEXOAIAAEiWAgAAfUQCAANABAIAAn+gAgALcmwCAAAp5gIABo2gAgASBGICAAAPtAIABSiEAgABKIvD///whgIAAEfEw///6VYCAABUwwP//9/8AAAJggWD///fwAP//68nwgAAd8AD//+0IEP//1efA
+Date: Wed, 26 Mar 2014 18:42:26 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD029B4ED@AMSPEX01CL01.citrite.net>
+References: <1744594108.20140318162127@eikelenboom.it>
+ <20140318160412.GB16807@zion.uk.xensource.com>
+ <1701035622.20140318211402@eikelenboom.it>
+ <722971844.20140318221859@eikelenboom.it>
+ <1688396550.20140319001104@eikelenboom.it>
+ <20140319113532.GD16807@zion.uk.xensource.com>
+ <246793256.20140319220752@eikelenboom.it>
+ <20140321164958.GA31766@zion.uk.xensource.com>
+ <1334202265.20140321182727@eikelenboom.it>
+ <1056661597.20140322192834@eikelenboom.it>
+ <20140325151539.GG31766@zion.uk.xensource.com>
+ <79975567.20140325162942@eikelenboom.it>
+ <1972209744.20140326121116@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029AD94@AMSPEX01CL01.citrite.net>
+ <1715463578.20140326162245@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net>
+ <799579453.20140326170641@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B106@AMSPEX01CL01.citrite.net>
+ <789809468.20140326175352@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B277@AMSPEX01CL01.citrite.net>
+ <966386043.20140326183304@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B350@AMSPEX01CL01.citrite.net>
+ <1959698732.20140326190752@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B49C@AMSPEX01CL01.citrite.net>
+In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD029B49C@AMSPEX01CL01.citrite.net>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.80.2.29]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+X-DLP: AMS1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  204b0a1a4b92612c957a042df1a3be0e9cc79391
-Gitweb:     http://git.kernel.org/tip/204b0a1a4b92612c957a042df1a3be0e9cc79391
-Author:     Matt Fleming <matt.fleming@intel.com>
-AuthorDate: Sat, 22 Mar 2014 10:09:01 +0000
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 26 Mar 2014 11:30:03 -0700
+> -----Original Message-----
+> From: netdev-owner@vger.kernel.org [mailto:netdev-
+> owner@vger.kernel.org] On Behalf Of Paul Durrant
+> Sent: 26 March 2014 18:16
+> To: Sander Eikelenboom
+> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
+> kernel; netdev@vger.kernel.org
+> Subject: RE: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+> troubles "bisected"
+> 
+> > -----Original Message-----
+> > From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+> > Sent: 26 March 2014 18:08
+> > To: Paul Durrant
+> > Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+> linux-
+> > kernel; netdev@vger.kernel.org
+> > Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+> > troubles "bisected"
+> >
+> >
+> > Wednesday, March 26, 2014, 6:46:06 PM, you wrote:
+> >
+> > > Re-send shortened version...
+> >
+> > >> -----Original Message-----
+> > >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+> > >> Sent: 26 March 2014 16:54
+> > >> To: Paul Durrant
+> > >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+> > linux-
+> > >> kernel; netdev@vger.kernel.org
+> > >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+> > >> troubles "bisected"
+> > >>
+> > > [snip]
+> > >> >>
+> > >> >> - When processing an SKB we end up in "xenvif_gop_frag_copy"
+> while
+> > >> prod
+> > >> >> == cons ... but we still have bytes and size left ..
+> > >> >> - start_new_rx_buffer() has returned true ..
+> > >> >> - so we end up in get_next_rx_buffer
+> > >> >> - this does a RING_GET_REQUEST and ups cons ..
+> > >> >> - and we end up with a bad grant reference.
+> > >> >>
+> > >> >> Sometimes we are saved by the bell .. since additional slots have
+> > become
+> > >> >> free (you see cons become > prod in "get_next_rx_buffer" but
+> shortly
+> > >> after
+> > >> >> that prod is increased ..
+> > >> >> just in time to not cause a overrun).
+> > >> >>
+> > >>
+> > >> > Ah, but hang on... There's a BUG_ON meta_slots_used >
+> > >> max_slots_needed, so if we are overflowing the worst-case calculation
+> > then
+> > >> why is that BUG_ON not firing?
+> > >>
+> > >> You mean:
+> > >>                 sco = (struct skb_cb_overlay *)skb->cb;
+> > >>                 sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
+> > >>                 BUG_ON(sco->meta_slots_used > max_slots_needed);
+> > >>
+> > >> in "get_next_rx_buffer" ?
+> > >>
+> >
+> > > That code excerpt is from net_rx_action(),isn't it?
+> >
+> > Yes
+> >
+> > >> I don't know .. at least now it doesn't crash dom0 and therefore not my
+> > >> complete machine and since tcp is recovering from a failed packet  :-)
+> > >>
+> >
+> > > Well, if the code calculating max_slots_needed were underestimating
+> then
+> > the BUG_ON() should fire. If it is not firing in your case then this suggests
+> > your problem lies elsewhere, or that meta_slots_used is not equal to the
+> > number of ring slots consumed.
+> >
+> > It's seem to be the last ..
+> >
+> > [ 1157.188908] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 5 npo-
+> > >meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif-
+> > >rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1
+> > req->gref:657 req->id:7 estimated_slots_needed:4 j(data):1
+> > reserved_slots_left:-1    used in funcstart: 0 + 1 .. used_dataloop:1 ..
+> > used_fragloop:3
+> > [ 1157.244975] vif vif-7-0 vif7.0: ?!? xenvif_rx_action me here 2 ..  vif-
+> > >rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 sco-
+> > >meta_slots_used:4 max_upped_gso:1 skb_is_gso(skb):1
+> > max_slots_needed:4 j:6 is_gso:1 nr_frags:1 firstpart:1 secondpart:2
+> > reserved_slots_left:-1
+> >
+> > net_rx_action() calculated we would need 4 slots .. and sco-
+> > >meta_slots_used == 4 when we return so it doesn't trigger you BUG_ON
+> ..
+> >
+> > The 4 slots we calculated are:
+> >   1 slot for the data part: DIV_ROUND_UP(offset_in_page(skb->data) +
+> > skb_headlen(skb), PAGE_SIZE)
+> >   2 slots for the single frag in this SKB from: DIV_ROUND_UP(size,
+> PAGE_SIZE)
+> >   1 slot since GSO
+> >
+> > In the debug code i annotated all cons++, and the code uses 1 slot to
+> process
+> > the data from the SKB as expected but uses 3 slots in the frag chopping
+> loop.
 
-x86, efi: Abstract x86 efi_early calls
+So, we must have done something like fill an existing slot, fill the next, but then had some left over requiring a third. Could you try the following additional patch?
 
-The ARM EFI boot stub doesn't need to care about the efi_early
-infrastructure that x86 requires in order to do mixed mode thunking. So
-wrap everything up in an efi_call_early() macro.
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback
+index 58e5eb4..dfd8cea 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -499,7 +499,7 @@ static void xenvif_rx_action(struct xenvif *vif)
+                for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
+                        unsigned int size;
+                        size = skb_frag_size(&skb_shinfo(skb)->frags[i]);
+-                       max_slots_needed += DIV_ROUND_UP(size, PAGE_SIZE);
++                       max_slots_needed += (size / PAGE_SIZE) + 2;
+                }
+                if (skb_is_gso(skb) &&
+                   (skb_shinfo(skb)->gso_type & SKB_GSO_TCPV4 ||
 
-This allows x86 to do the necessary indirection jumps to call whatever
-firmware interface is necessary (native or mixed mode), but also allows
-the ARM folks to mask the fact that they don't support relocation in the
-boot stub and need to pass 'sys_table_arg' to every function.
+  Paul
 
-[ hpa: there are no object code changes from this patch ]
-
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Link: http://lkml.kernel.org/r/20140326091011.GB2958@console-pimps.org
-Cc: Roy Franz <roy.franz@linaro.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/compressed/eboot.c       | 155 ++++++++++++++++-----------------
- drivers/firmware/efi/efi-stub-helper.c |  44 +++++-----
- 2 files changed, 98 insertions(+), 101 deletions(-)
-
-diff --git a/arch/x86/boot/compressed/eboot.c b/arch/x86/boot/compressed/eboot.c
-index 5e1ba4f..1e61461 100644
---- a/arch/x86/boot/compressed/eboot.c
-+++ b/arch/x86/boot/compressed/eboot.c
-@@ -21,6 +21,9 @@ static efi_system_table_t *sys_table;
- 
- static struct efi_config *efi_early;
- 
-+#define efi_call_early(f, ...)						\
-+	efi_early->call(efi_early->f, __VA_ARGS__);
-+
- #define BOOT_SERVICES(bits)						\
- static void setup_boot_services##bits(struct efi_config *c)		\
- {									\
-@@ -78,8 +81,8 @@ __file_size32(void *__fh, efi_char16_t *filename_16,
- 	}
- 
- grow:
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 info_sz, (void **)&info);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				info_sz, (void **)&info);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to alloc mem for file info\n");
- 		return status;
-@@ -88,12 +91,12 @@ grow:
- 	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
- 				 &info_sz, info);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		efi_early->call(efi_early->free_pool, info);
-+		efi_call_early(free_pool, info);
- 		goto grow;
- 	}
- 
- 	*file_sz = info->file_size;
--	efi_early->call(efi_early->free_pool, info);
-+	efi_call_early(free_pool, info);
- 
- 	if (status != EFI_SUCCESS)
- 		efi_printk(sys_table, "Failed to get initrd info\n");
-@@ -131,8 +134,8 @@ __file_size64(void *__fh, efi_char16_t *filename_16,
- 	}
- 
- grow:
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 info_sz, (void **)&info);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				info_sz, (void **)&info);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to alloc mem for file info\n");
- 		return status;
-@@ -141,12 +144,12 @@ grow:
- 	status = efi_early->call((unsigned long)h->get_info, h, &info_guid,
- 				 &info_sz, info);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		efi_early->call(efi_early->free_pool, info);
-+		efi_call_early(free_pool, info);
- 		goto grow;
- 	}
- 
- 	*file_sz = info->file_size;
--	efi_early->call(efi_early->free_pool, info);
-+	efi_call_early(free_pool, info);
- 
- 	if (status != EFI_SUCCESS)
- 		efi_printk(sys_table, "Failed to get initrd info\n");
-@@ -204,8 +207,8 @@ static inline efi_status_t __open_volume32(void *__image, void **__fh)
- 	void *handle = (void *)(unsigned long)image->device_handle;
- 	unsigned long func;
- 
--	status = efi_early->call(efi_early->handle_protocol, handle,
--				 &fs_proto, (void **)&io);
-+	status = efi_call_early(handle_protocol, handle,
-+				&fs_proto, (void **)&io);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to handle fs_proto\n");
- 		return status;
-@@ -230,8 +233,8 @@ static inline efi_status_t __open_volume64(void *__image, void **__fh)
- 	void *handle = (void *)(unsigned long)image->device_handle;
- 	unsigned long func;
- 
--	status = efi_early->call(efi_early->handle_protocol, handle,
--				 &fs_proto, (void **)&io);
-+	status = efi_call_early(handle_protocol, handle,
-+				&fs_proto, (void **)&io);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to handle fs_proto\n");
- 		return status;
-@@ -325,9 +328,7 @@ __setup_efi_pci32(efi_pci_io_protocol_32 *pci, struct pci_setup_rom **__rom)
- 
- 	size = pci->romsize + sizeof(*rom);
- 
--	status = efi_early->call(efi_early->allocate_pool,
--				 EFI_LOADER_DATA, size, &rom);
--
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA, size, &rom);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
-@@ -361,7 +362,7 @@ __setup_efi_pci32(efi_pci_io_protocol_32 *pci, struct pci_setup_rom **__rom)
- 	return status;
- 
- free_struct:
--	efi_early->call(efi_early->free_pool, rom);
-+	efi_call_early(free_pool, rom);
- 	return status;
- }
- 
-@@ -387,8 +388,8 @@ setup_efi_pci32(struct boot_params *params, void **pci_handle,
- 		struct pci_setup_rom *rom = NULL;
- 		u32 h = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 &pci_proto, (void **)&pci);
-+		status = efi_call_early(handle_protocol, h,
-+					&pci_proto, (void **)&pci);
- 
- 		if (status != EFI_SUCCESS)
- 			continue;
-@@ -431,9 +432,7 @@ __setup_efi_pci64(efi_pci_io_protocol_64 *pci, struct pci_setup_rom **__rom)
- 
- 	size = pci->romsize + sizeof(*rom);
- 
--	status = efi_early->call(efi_early->allocate_pool,
--				 EFI_LOADER_DATA, size, &rom);
--
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA, size, &rom);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
-@@ -465,7 +464,7 @@ __setup_efi_pci64(efi_pci_io_protocol_64 *pci, struct pci_setup_rom **__rom)
- 	return status;
- 
- free_struct:
--	efi_early->call(efi_early->free_pool, rom);
-+	efi_call_early(free_pool, rom);
- 	return status;
- 
- }
-@@ -492,8 +491,8 @@ setup_efi_pci64(struct boot_params *params, void **pci_handle,
- 		struct pci_setup_rom *rom = NULL;
- 		u64 h = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 &pci_proto, (void **)&pci);
-+		status = efi_call_early(handle_protocol, h,
-+					&pci_proto, (void **)&pci);
- 
- 		if (status != EFI_SUCCESS)
- 			continue;
-@@ -524,21 +523,21 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
- 	efi_guid_t pci_proto = EFI_PCI_IO_PROTOCOL_GUID;
- 	unsigned long size = 0;
- 
--	status = efi_early->call(efi_early->locate_handle,
--				 EFI_LOCATE_BY_PROTOCOL,
--				 &pci_proto, NULL, &size, pci_handle);
-+	status = efi_call_early(locate_handle,
-+				EFI_LOCATE_BY_PROTOCOL,
-+				&pci_proto, NULL, &size, pci_handle);
- 
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		status = efi_early->call(efi_early->allocate_pool,
--					 EFI_LOADER_DATA,
--					 size, (void **)&pci_handle);
-+		status = efi_call_early(allocate_pool,
-+					EFI_LOADER_DATA,
-+					size, (void **)&pci_handle);
- 
- 		if (status != EFI_SUCCESS)
- 			return status;
- 
--		status = efi_early->call(efi_early->locate_handle,
--					 EFI_LOCATE_BY_PROTOCOL, &pci_proto,
--					 NULL, &size, pci_handle);
-+		status = efi_call_early(locate_handle,
-+					EFI_LOCATE_BY_PROTOCOL, &pci_proto,
-+					NULL, &size, pci_handle);
- 	}
- 
- 	if (status != EFI_SUCCESS)
-@@ -550,7 +549,7 @@ static efi_status_t setup_efi_pci(struct boot_params *params)
- 		status = setup_efi_pci32(params, pci_handle, size);
- 
- free_handle:
--	efi_early->call(efi_early->free_pool, pci_handle);
-+	efi_call_early(free_pool, pci_handle);
- 	return status;
- }
- 
-@@ -651,13 +650,13 @@ setup_gop32(struct screen_info *si, efi_guid_t *proto,
- 		void *dummy = NULL;
- 		u32 h = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 proto, (void **)&gop32);
-+		status = efi_call_early(handle_protocol, h,
-+					proto, (void **)&gop32);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 &conout_proto, &dummy);
-+		status = efi_call_early(handle_protocol, h,
-+					&conout_proto, &dummy);
- 		if (status == EFI_SUCCESS)
- 			conout_found = true;
- 
-@@ -754,13 +753,13 @@ setup_gop64(struct screen_info *si, efi_guid_t *proto,
- 		void *dummy = NULL;
- 		u64 h = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 proto, (void **)&gop64);
-+		status = efi_call_early(handle_protocol, h,
-+					proto, (void **)&gop64);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		status = efi_early->call(efi_early->handle_protocol, h,
--					 &conout_proto, &dummy);
-+		status = efi_call_early(handle_protocol, h,
-+					&conout_proto, &dummy);
- 		if (status == EFI_SUCCESS)
- 			conout_found = true;
- 
-@@ -819,14 +818,14 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 	efi_status_t status;
- 	void **gop_handle = NULL;
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 size, (void **)&gop_handle);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				size, (void **)&gop_handle);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
--	status = efi_early->call(efi_early->locate_handle,
--				 EFI_LOCATE_BY_PROTOCOL,
--				 proto, NULL, &size, gop_handle);
-+	status = efi_call_early(locate_handle,
-+				EFI_LOCATE_BY_PROTOCOL,
-+				proto, NULL, &size, gop_handle);
- 	if (status != EFI_SUCCESS)
- 		goto free_handle;
- 
-@@ -836,7 +835,7 @@ static efi_status_t setup_gop(struct screen_info *si, efi_guid_t *proto,
- 		status = setup_gop32(si, proto, size, gop_handle);
- 
- free_handle:
--	efi_early->call(efi_early->free_pool, gop_handle);
-+	efi_call_early(free_pool, gop_handle);
- 	return status;
- }
- 
-@@ -858,13 +857,12 @@ setup_uga32(void **uga_handle, unsigned long size, u32 *width, u32 *height)
- 		void *pciio;
- 		u32 handle = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, handle,
--					 &uga_proto, (void **)&uga);
-+		status = efi_call_early(handle_protocol, handle,
-+					&uga_proto, (void **)&uga);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		efi_early->call(efi_early->handle_protocol, handle,
--				&pciio_proto, &pciio);
-+		efi_call_early(handle_protocol, handle, &pciio_proto, &pciio);
- 
- 		status = efi_early->call((unsigned long)uga->get_mode, uga,
- 					 &w, &h, &depth, &refresh);
-@@ -904,13 +902,12 @@ setup_uga64(void **uga_handle, unsigned long size, u32 *width, u32 *height)
- 		void *pciio;
- 		u64 handle = handles[i];
- 
--		status = efi_early->call(efi_early->handle_protocol, handle,
--					 &uga_proto, (void **)&uga);
-+		status = efi_call_early(handle_protocol, handle,
-+					&uga_proto, (void **)&uga);
- 		if (status != EFI_SUCCESS)
- 			continue;
- 
--		efi_early->call(efi_early->handle_protocol, handle,
--				&pciio_proto, &pciio);
-+		efi_call_early(handle_protocol, handle, &pciio_proto, &pciio);
- 
- 		status = efi_early->call((unsigned long)uga->get_mode, uga,
- 					 &w, &h, &depth, &refresh);
-@@ -942,14 +939,14 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
- 	u32 width, height;
- 	void **uga_handle = NULL;
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 size, (void **)&uga_handle);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				size, (void **)&uga_handle);
- 	if (status != EFI_SUCCESS)
- 		return status;
- 
--	status = efi_early->call(efi_early->locate_handle,
--				 EFI_LOCATE_BY_PROTOCOL,
--				 uga_proto, NULL, &size, uga_handle);
-+	status = efi_call_early(locate_handle,
-+				EFI_LOCATE_BY_PROTOCOL,
-+				uga_proto, NULL, &size, uga_handle);
- 	if (status != EFI_SUCCESS)
- 		goto free_handle;
- 
-@@ -981,7 +978,7 @@ static efi_status_t setup_uga(struct screen_info *si, efi_guid_t *uga_proto,
- 	si->rsvd_pos = 24;
- 
- free_handle:
--	efi_early->call(efi_early->free_pool, uga_handle);
-+	efi_call_early(free_pool, uga_handle);
- 	return status;
- }
- 
-@@ -999,17 +996,17 @@ void setup_graphics(struct boot_params *boot_params)
- 	memset(si, 0, sizeof(*si));
- 
- 	size = 0;
--	status = efi_early->call(efi_early->locate_handle,
--				 EFI_LOCATE_BY_PROTOCOL,
--				 &graphics_proto, NULL, &size, gop_handle);
-+	status = efi_call_early(locate_handle,
-+				EFI_LOCATE_BY_PROTOCOL,
-+				&graphics_proto, NULL, &size, gop_handle);
- 	if (status == EFI_BUFFER_TOO_SMALL)
- 		status = setup_gop(si, &graphics_proto, size);
- 
- 	if (status != EFI_SUCCESS) {
- 		size = 0;
--		status = efi_early->call(efi_early->locate_handle,
--					 EFI_LOCATE_BY_PROTOCOL,
--					 &uga_proto, NULL, &size, uga_handle);
-+		status = efi_call_early(locate_handle,
-+					EFI_LOCATE_BY_PROTOCOL,
-+					&uga_proto, NULL, &size, uga_handle);
- 		if (status == EFI_BUFFER_TOO_SMALL)
- 			setup_uga(si, &uga_proto, size);
- 	}
-@@ -1052,8 +1049,8 @@ struct boot_params *make_boot_params(struct efi_config *c)
- 	else
- 		setup_boot_services32(efi_early);
- 
--	status = efi_early->call(efi_early->handle_protocol, handle,
--				 &proto, (void *)&image);
-+	status = efi_call_early(handle_protocol, handle,
-+				&proto, (void *)&image);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to get handle for LOADED_IMAGE_PROTOCOL\n");
- 		return NULL;
-@@ -1242,13 +1239,13 @@ static efi_status_t alloc_e820ext(u32 nr_desc, struct setup_data **e820ext,
- 		sizeof(struct e820entry) * nr_desc;
- 
- 	if (*e820ext) {
--		efi_early->call(efi_early->free_pool, *e820ext);
-+		efi_call_early(free_pool, *e820ext);
- 		*e820ext = NULL;
- 		*e820ext_size = 0;
- 	}
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 size, (void **)e820ext);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				size, (void **)e820ext);
- 	if (status == EFI_SUCCESS)
- 		*e820ext_size = size;
- 
-@@ -1292,7 +1289,7 @@ get_map:
- 		if (status != EFI_SUCCESS)
- 			goto free_mem_map;
- 
--		efi_early->call(efi_early->free_pool, mem_map);
-+		efi_call_early(free_pool, mem_map);
- 		goto get_map; /* Allocated memory, get map again */
- 	}
- 
-@@ -1311,7 +1308,7 @@ get_map:
- #endif
- 
- 	/* Might as well exit boot services now */
--	status = efi_early->call(efi_early->exit_boot_services, handle, key);
-+	status = efi_call_early(exit_boot_services, handle, key);
- 	if (status != EFI_SUCCESS) {
- 		/*
- 		 * ExitBootServices() will fail if any of the event
-@@ -1324,7 +1321,7 @@ get_map:
- 			goto free_mem_map;
- 
- 		called_exit = true;
--		efi_early->call(efi_early->free_pool, mem_map);
-+		efi_call_early(free_pool, mem_map);
- 		goto get_map;
- 	}
- 
-@@ -1338,7 +1335,7 @@ get_map:
- 	return EFI_SUCCESS;
- 
- free_mem_map:
--	efi_early->call(efi_early->free_pool, mem_map);
-+	efi_call_early(free_pool, mem_map);
- 	return status;
- }
- 
-@@ -1379,8 +1376,8 @@ struct boot_params *efi_main(struct efi_config *c,
- 
- 	setup_efi_pci(boot_params);
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 sizeof(*gdt), (void **)&gdt);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				sizeof(*gdt), (void **)&gdt);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table, "Failed to alloc mem for gdt structure\n");
- 		goto fail;
-diff --git a/drivers/firmware/efi/efi-stub-helper.c b/drivers/firmware/efi/efi-stub-helper.c
-index a028287..ff50aee 100644
---- a/drivers/firmware/efi/efi-stub-helper.c
-+++ b/drivers/firmware/efi/efi-stub-helper.c
-@@ -53,22 +53,22 @@ again:
- 	 * allocation which may be in a new descriptor region.
- 	 */
- 	*map_size += sizeof(*m);
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 *map_size, (void **)&m);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				*map_size, (void **)&m);
- 	if (status != EFI_SUCCESS)
- 		goto fail;
- 
- 	*desc_size = 0;
- 	key = 0;
--	status = efi_early->call(efi_early->get_memory_map, map_size, m,
--				 &key, desc_size, &desc_version);
-+	status = efi_call_early(get_memory_map, map_size, m,
-+				&key, desc_size, &desc_version);
- 	if (status == EFI_BUFFER_TOO_SMALL) {
--		efi_early->call(efi_early->free_pool, m);
-+		efi_call_early(free_pool, m);
- 		goto again;
- 	}
- 
- 	if (status != EFI_SUCCESS)
--		efi_early->call(efi_early->free_pool, m);
-+		efi_call_early(free_pool, m);
- 
- 	if (key_ptr && status == EFI_SUCCESS)
- 		*key_ptr = key;
-@@ -149,9 +149,9 @@ again:
- 	if (!max_addr)
- 		status = EFI_NOT_FOUND;
- 	else {
--		status = efi_early->call(efi_early->allocate_pages,
--					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
--					 nr_pages, &max_addr);
-+		status = efi_call_early(allocate_pages,
-+					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
-+					nr_pages, &max_addr);
- 		if (status != EFI_SUCCESS) {
- 			max = max_addr;
- 			max_addr = 0;
-@@ -161,7 +161,7 @@ again:
- 		*addr = max_addr;
- 	}
- 
--	efi_early->call(efi_early->free_pool, map);
-+	efi_call_early(free_pool, map);
- fail:
- 	return status;
- }
-@@ -221,9 +221,9 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 		if ((start + size) > end)
- 			continue;
- 
--		status = efi_early->call(efi_early->allocate_pages,
--					 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
--					 nr_pages, &start);
-+		status = efi_call_early(allocate_pages,
-+					EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
-+					nr_pages, &start);
- 		if (status == EFI_SUCCESS) {
- 			*addr = start;
- 			break;
-@@ -233,7 +233,7 @@ static efi_status_t efi_low_alloc(efi_system_table_t *sys_table_arg,
- 	if (i == map_size / desc_size)
- 		status = EFI_NOT_FOUND;
- 
--	efi_early->call(efi_early->free_pool, map);
-+	efi_call_early(free_pool, map);
- fail:
- 	return status;
- }
-@@ -247,7 +247,7 @@ static void efi_free(efi_system_table_t *sys_table_arg, unsigned long size,
- 		return;
- 
- 	nr_pages = round_up(size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
--	efi_early->call(efi_early->free_pages, addr, nr_pages);
-+	efi_call_early(free_pages, addr, nr_pages);
- }
- 
- 
-@@ -307,8 +307,8 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 	if (!nr_files)
- 		return EFI_SUCCESS;
- 
--	status = efi_early->call(efi_early->allocate_pool, EFI_LOADER_DATA,
--				 nr_files * sizeof(*files), (void **)&files);
-+	status = efi_call_early(allocate_pool, EFI_LOADER_DATA,
-+				nr_files * sizeof(*files), (void **)&files);
- 	if (status != EFI_SUCCESS) {
- 		efi_printk(sys_table_arg, "Failed to alloc mem for file handle list\n");
- 		goto fail;
-@@ -413,7 +413,7 @@ static efi_status_t handle_cmdline_files(efi_system_table_t *sys_table_arg,
- 
- 	}
- 
--	efi_early->call(efi_early->free_pool, files);
-+	efi_call_early(free_pool, files);
- 
- 	*load_addr = file_addr;
- 	*load_size = file_size_total;
-@@ -427,7 +427,7 @@ close_handles:
- 	for (k = j; k < i; k++)
- 		efi_file_close(fh, files[k].handle);
- free_files:
--	efi_early->call(efi_early->free_pool, files);
-+	efi_call_early(free_pool, files);
- fail:
- 	*load_addr = 0;
- 	*load_size = 0;
-@@ -473,9 +473,9 @@ static efi_status_t efi_relocate_kernel(efi_system_table_t *sys_table_arg,
- 	 * as possible while respecting the required alignment.
- 	 */
- 	nr_pages = round_up(alloc_size, EFI_PAGE_SIZE) / EFI_PAGE_SIZE;
--	status = efi_early->call(efi_early->allocate_pages,
--				 EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
--				 nr_pages, &efi_addr);
-+	status = efi_call_early(allocate_pages,
-+				EFI_ALLOCATE_ADDRESS, EFI_LOADER_DATA,
-+				nr_pages, &efi_addr);
- 	new_addr = efi_addr;
- 	/*
- 	 * If preferred address allocation failed allocate as low as
+> > And when it reaches the state  were cons > prod it is always in
+> > "get_next_rx_buffer".
+> >
+> > >> But probably because "npo->copy_prod++" seems to be used for the
+> > frags ..
+> > >> and it isn't added to  npo->meta_prod ?
+> > >>
+> >
+> > > meta_slots_used is calculated as the value of meta_prod at return (from
+> > xenvif_gop_skb()) minus the value on entry ,
+> > > and if you look back up the code then you can see that meta_prod is
+> > incremented every time RING_GET_REQUEST() is evaluated.
+> > > So, we must be consuming a slot without evaluating
+> RING_GET_REQUEST()
+> > and I think that's exactly what's happening...
+> > > Right at the bottom of xenvif_gop_frag_copy() req_cons is simply
+> > incremented in the case of a GSO. So the BUG_ON() is indeed off by one.
+> >
+> > That is probably only done on first iteration / frag ?
+> 
+> Yes, the extra slot is accounted for right after the head frag is processed.
+> 
+>   Paul
+> 
+> > Because i don't see my warn there trigger .. but it could be that's because
+> at
+> > that moment we still have cons <= prod.
+> >
+> >
+> > >   Paul
+> >
+> >
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
