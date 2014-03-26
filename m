@@ -1,228 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbaCZO7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:59:12 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:54379 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753573AbaCZO7J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:59:09 -0400
-X-IronPort-AV: E=Sophos;i="4.97,735,1389744000"; 
-   d="scan'208";a="115081564"
-Date: Wed, 26 Mar 2014 14:58:36 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: Daniel Kiper <daniel.kiper@oracle.com>
-CC: <linux-efi@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <x86@kernel.org>,
-        <xen-devel@lists.xenproject.org>, <boris.ostrovsky@oracle.com>,
-        <david.vrabel@citrix.com>, <eshelton@pobox.com>,
-        <fenghua.yu@intel.com>, <hpa@zytor.com>, <ian.campbell@citrix.com>,
-        <jbeulich@suse.com>, <jeremy@goop.org>, <konrad.wilk@oracle.com>,
-        <matt.fleming@intel.com>, <mingo@redhat.com>,
-        <stefano.stabellini@eu.citrix.com>, <tglx@linutronix.de>,
-        <tony.luck@intel.com>, Tang Liang <liang.tang@oracle.com>
-Subject: Re: [PATCH v3 4/5] xen: Define EFI related stuff
-In-Reply-To: <1395781076-12000-5-git-send-email-daniel.kiper@oracle.com>
-Message-ID: <alpine.DEB.2.02.1403261452160.2747@kaball.uk.xensource.com>
-References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com> <1395781076-12000-5-git-send-email-daniel.kiper@oracle.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1754882AbaCZPBB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 11:01:01 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:43248 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754140AbaCZPA7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 11:00:59 -0400
+Message-ID: <5332EBA1.4080701@oracle.com>
+Date: Wed, 26 Mar 2014 11:00:49 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA2
+To: Dave Jones <davej@redhat.com>, Jan Kara <jack@suse.cz>,
+        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: fs: gpf in simple_setattr
+References: <53189BF8.1010308@oracle.com> <531A7CFD.9030603@oracle.com> <20140310104350.GB28797@quack.suse.cz> <531DC89A.9010601@oracle.com> <53304451.7030800@oracle.com> <20140324214851.GB10057@quack.suse.cz> <5330D15E.2000702@oracle.com> <20140325173340.GB17292@quack.suse.cz> <5331C20F.5010109@oracle.com> <20140325211229.GA27422@quack.suse.cz> <20140326055350.GA21267@redhat.com>
+In-Reply-To: <20140326055350.GA21267@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 Mar 2014, Daniel Kiper wrote:
-> Define EFI related stuff for Xen.
-> 
-> This patch is based on Jan Beulich and Tang Liang work.
-> 
-> Signed-off-by: Daniel Kiper <daniel.kiper@oracle.com>
-> Signed-off-by: Tang Liang <liang.tang@oracle.com>
-> Signed-off-by: Jan Beulich <jbeulich@suse.com>
-> ---
->  include/xen/interface/platform.h |  123 +++++++++++++++++++++++++++++++++++++-
->  1 file changed, 122 insertions(+), 1 deletion(-)
-> 
-> diff --git a/include/xen/interface/platform.h b/include/xen/interface/platform.h
-> index f1331e3..bb3dfad 100644
-> --- a/include/xen/interface/platform.h
-> +++ b/include/xen/interface/platform.h
-> @@ -108,11 +108,113 @@ struct xenpf_platform_quirk {
->  };
->  DEFINE_GUEST_HANDLE_STRUCT(xenpf_platform_quirk_t);
->  
-> +#define XENPF_efi_runtime_call    49
-> +#define XEN_EFI_get_time                      1
-> +#define XEN_EFI_set_time                      2
-> +#define XEN_EFI_get_wakeup_time               3
-> +#define XEN_EFI_set_wakeup_time               4
-> +#define XEN_EFI_get_next_high_monotonic_count 5
-> +#define XEN_EFI_get_variable                  6
-> +#define XEN_EFI_set_variable                  7
-> +#define XEN_EFI_get_next_variable_name        8
-> +#define XEN_EFI_query_variable_info           9
-> +#define XEN_EFI_query_capsule_capabilities   10
-> +#define XEN_EFI_update_capsule               11
-> +
-> +struct xenpf_efi_runtime_call {
-> +	uint32_t function;
-> +    /*
-> +     * This field is generally used for per sub-function flags (defined
-> +     * below), except for the XEN_EFI_get_next_high_monotonic_count case,
-> +     * where it holds the single returned value.
-> +     */
-> +	uint32_t misc;
-> +	unsigned long status;
+On 03/26/2014 01:53 AM, Dave Jones wrote:
+> On Tue, Mar 25, 2014 at 10:12:29PM +0100, Jan Kara wrote:
+>
+>   > This fixes an oops triggered by trinity when it tried mounting
+>   > anon_inodefs which overwrote anon_inode_inode pointer while other CPU
+>   > has been in anon_inode_getfile() between ihold() and d_instantiate().
+>   > Thus effectively creating dentry pointing to an inode without holding a
+>   > reference to it.
+>
+> <raises eyebrows>
+>
+> Sasha, do you have changes to trinity's syscall/mount.c ?
+> It's kind of miraculous we managed to get the type arg right
+> there, because right now we're just passing a random address as an arg.
+> The only way that could work is if we randomly managed to do an allocation,
+> and then a seek & read from /proc/filesystems to that buffer.  If you're
+> lucky enough to get all those conditions right from rand() calls, you should
+> probably give up on kernel hacking and buy some powerball tickets.
+>
+> We should add some code to make that only return strings from /proc/filesystems,
+> which makes me wonder if you already did that..
 
-I realize that this is just the same as xen/include/public/platform.h,
-but this field should be xen_ulong_t.
+Almost :)
+
+I'm mounting every filesystem under /prov/filesystems into trinity's victims path
+before trinity starts, so it gets to fuzz every filesystem known to the kernel.
+
+For nodev filesystems it just mounts then and for nodev ones it will try to
+mkfs.$fs a block device and mount that.
+
+So basically I'm not surprised by the explanation for that bug or that trinity
+has triggered it.
 
 
-> +	union {
-> +#define XEN_EFI_GET_TIME_SET_CLEARS_NS 0x00000001
-> +	struct {
-> +		struct xenpf_efi_time {
-> +			uint16_t year;
-> +			uint8_t month;
-> +			uint8_t day;
-> +			uint8_t hour;
-> +			uint8_t min;
-> +			uint8_t sec;
-> +			uint32_t ns;
-> +			int16_t tz;
-> +			uint8_t daylight;
-> +		} time;
-> +		uint32_t resolution;
-> +		uint32_t accuracy;
-> +	} get_time;
-> +
-> +	struct xenpf_efi_time set_time;
-> +
-> +#define XEN_EFI_GET_WAKEUP_TIME_ENABLED 0x00000001
-> +#define XEN_EFI_GET_WAKEUP_TIME_PENDING 0x00000002
-> +	struct xenpf_efi_time get_wakeup_time;
-> +
-> +#define XEN_EFI_SET_WAKEUP_TIME_ENABLE      0x00000001
-> +#define XEN_EFI_SET_WAKEUP_TIME_ENABLE_ONLY 0x00000002
-> +	struct xenpf_efi_time set_wakeup_time;
-> +
-> +#define XEN_EFI_VARIABLE_NON_VOLATILE       0x00000001
-> +#define XEN_EFI_VARIABLE_BOOTSERVICE_ACCESS 0x00000002
-> +#define XEN_EFI_VARIABLE_RUNTIME_ACCESS     0x00000004
-> +	struct {
-> +		GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
-> +		unsigned long size;
-
-Same here
+Thanks,
+Sasha
 
 
-> +		GUEST_HANDLE(void) data;
-> +		struct xenpf_efi_guid {
-> +			uint32_t data1;
-> +			uint16_t data2;
-> +			uint16_t data3;
-> +			uint8_t data4[8];
-> +			} vendor_guid;
-> +		} get_variable, set_variable;
-> +
-> +	struct {
-> +		unsigned long size;
-
-Same here
-
-
-> +		GUEST_HANDLE(void) name;  /* UCS-2/UTF-16 string */
-> +		struct xenpf_efi_guid vendor_guid;
-> +		} get_next_variable_name;
-> +
-> +	struct {
-> +		uint32_t attr;
-> +		uint64_t max_store_size;
-> +		uint64_t remain_store_size;
-> +		uint64_t max_size;
-> +		} query_variable_info;
-> +
-> +	struct {
-> +		GUEST_HANDLE(void) capsule_header_array;
-> +		unsigned long capsule_count;
-
-Same here
-
-
-> +		uint64_t max_capsule_size;
-> +		unsigned int reset_type;
-
-I would prefer this to be explicitly sized
-
-
-> +		} query_capsule_capabilities;
-> +
-> +	struct {
-> +		GUEST_HANDLE(void) capsule_header_array;
-> +		unsigned long capsule_count;
-
-Same here
-
-
-> +		uint64_t sg_list; /* machine address */
-> +		} update_capsule;
-> +	} u;
-> +};
-> +DEFINE_GUEST_HANDLE_STRUCT(xenpf_efi_runtime_call);
-> +
-> +#define  XEN_FW_EFI_VERSION        0
-> +#define  XEN_FW_EFI_CONFIG_TABLE   1
-> +#define  XEN_FW_EFI_VENDOR         2
-> +#define  XEN_FW_EFI_MEM_INFO       3
-> +#define  XEN_FW_EFI_RT_VERSION     4
-> +
->  #define XENPF_firmware_info       50
->  #define XEN_FW_DISK_INFO          1 /* from int 13 AH=08/41/48 */
->  #define XEN_FW_DISK_MBR_SIGNATURE 2 /* from MBR offset 0x1b8 */
->  #define XEN_FW_VBEDDC_INFO        3 /* from int 10 AX=4f15 */
-> +#define XEN_FW_EFI_INFO           4 /* from EFI */
->  #define XEN_FW_KBD_SHIFT_FLAGS    5 /* Int16, Fn02: Get keyboard shift flags. */
-> +
->  struct xenpf_firmware_info {
->  	/* IN variables. */
->  	uint32_t type;
-> @@ -143,7 +245,25 @@ struct xenpf_firmware_info {
->  			/* must refer to 128-byte buffer */
->  			GUEST_HANDLE(uchar) edid;
->  		} vbeddc_info; /* XEN_FW_VBEDDC_INFO */
-> -
-> +		union xenpf_efi_info {
-> +			uint32_t version;
-> +			struct {
-> +				uint64_t addr;   /* EFI_CONFIGURATION_TABLE */
-> +				uint32_t nent;
-> +			} cfg;
-> +			struct {
-> +				uint32_t revision;
-> +				uint32_t bufsz;  /* input, in bytes */
-> +				GUEST_HANDLE(void) name;
-> +				/* UCS-2/UTF-16 string */
-> +				} vendor;
-> +			struct {
-> +				uint64_t addr;
-> +				uint64_t size;
-> +				uint64_t attr;
-> +				uint32_t type;
-> +				} mem;
-> +		} efi_info; /* XEN_FW_EFI_INFO */
->  		uint8_t kbd_shift_flags; /* XEN_FW_KBD_SHIFT_FLAGS */
->  	} u;
->  };
-> @@ -362,6 +482,7 @@ struct xen_platform_op {
->  		struct xenpf_read_memtype      read_memtype;
->  		struct xenpf_microcode_update  microcode;
->  		struct xenpf_platform_quirk    platform_quirk;
-> +		struct xenpf_efi_runtime_call  efi_runtime_call;
->  		struct xenpf_firmware_info     firmware_info;
->  		struct xenpf_enter_acpi_sleep  enter_acpi_sleep;
->  		struct xenpf_change_freq       change_freq;
-> -- 
-> 1.7.10.4
-> 
