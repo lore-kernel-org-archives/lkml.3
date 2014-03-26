@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932126AbaCZQkO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:40:14 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:44367 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069AbaCZQkG (ORCPT
+	id S932160AbaCZQkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:40:22 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:45386 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125AbaCZQkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:40:06 -0400
+	Wed, 26 Mar 2014 12:40:15 -0400
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, computersforpeace@gmail.com,
-        linux-mtd@lists.infradead.org, angus.clark@st.com
-Subject: [PATCH 08/15] mtd: st_spi_fsm: Obtain and use EMI clock if provided
-Date: Wed, 26 Mar 2014 16:39:22 +0000
-Message-Id: <1395851969-13520-9-git-send-email-lee.jones@linaro.org>
+        linux-mtd@lists.infradead.org, angus.clark@st.com,
+        Carmelo Amoroso <carmelo.amoroso@st.com>
+Subject: [PATCH 11/15] mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
+Date: Wed, 26 Mar 2014 16:39:25 +0000
+Message-Id: <1395851969-13520-12-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
 References: <1395851969-13520-1-git-send-email-lee.jones@linaro.org>
@@ -21,107 +22,353 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ST's Common Clk Framework is now available. This patch ensures the FSM
-makes use of it by obtaining and enabling the EMI clock if provided. If
-system fails to provide the EMI clock FSM uses its original default
-rate.
+From: Angus Clark <angus.clark@st.com>
 
+The previous code was based on 3-byte JEDEC IDs, with a possible 2-byte
+extension.  However, devices are now emerging that return 6 or more bytes of
+READID data and the additional bytes are required to differentiate between
+variants or generations of similar devices.
+
+This patch refactors the device table and JEDEC probe code to handle arbitrary
+length READIDs, with the standard JEDEC definition now becoming a special case.
+Functionally, there should be no change in behaviour.  A subsequent patch will
+update the table with extended READIDs where applicable.
+
+Signed-off-by: Angus Clark <angus.clark@st.com>
+Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 45 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 43 insertions(+), 2 deletions(-)
+ drivers/mtd/devices/st_spi_fsm.c | 207 +++++++++++++++++++++++----------------
+ 1 file changed, 120 insertions(+), 87 deletions(-)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index 9df59e7..2443757 100644
+index 99b3435..ced7dca 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -23,6 +23,7 @@
+@@ -20,6 +20,7 @@
+ #include <linux/mtd/mtd.h>
+ #include <linux/mtd/partitions.h>
+ #include <linux/sched.h>
++#include <linux/sort.h>
  #include <linux/delay.h>
  #include <linux/io.h>
  #include <linux/of.h>
-+#include <linux/clk.h>
- 
- #include "serial_flash_cmds.h"
- 
-@@ -297,6 +298,7 @@ struct stfsm {
- 	struct mtd_info		mtd;
- 	struct mutex		lock;
- 	struct flash_info       *info;
-+	struct clk              *clk;
- 
- 	uint32_t                configuration;
- 	uint32_t                fifo_dir_delay;
-@@ -1941,8 +1943,13 @@ static void stfsm_set_freq(struct stfsm *fsm, uint32_t spi_freq)
- 	uint32_t emi_freq;
- 	uint32_t clk_div;
- 
--	/* TODO: Make this dynamic */
--	emi_freq = STFSM_DEFAULT_EMI_FREQ;
-+	if (!fsm->clk) {
-+		dev_warn(fsm->dev,
-+			 "No EMI clock available. Using default 100MHz.\n");
+@@ -256,6 +257,11 @@
+ #define FLASH_STATUS_BP2       0x10
+ #define FLASH_STATUS_SRWP0     0x80
+ #define FLASH_STATUS_TIMEOUT   0xff
 +
-+		emi_freq = STFSM_DEFAULT_EMI_FREQ;
-+	} else
-+		emi_freq = clk_get_rate(fsm->clk);
- 
++/* Maximum READID length */
++#define MAX_READID_LEN         6
++#define MAX_READID_LEN_ALIGNED ALIGN(MAX_READID_LEN, 4)
++
+ /* S25FL Error Flags */
+ #define S25FL_STATUS_E_ERR     0x20
+ #define S25FL_STATUS_P_ERR     0x40
+@@ -340,13 +346,9 @@ struct seq_rw_config {
+ /* SPI Flash Device Table */
+ struct flash_info {
+ 	char            *name;
+-	/*
+-	 * JEDEC id zero means "no ID" (most older chips); otherwise it has
+-	 * a high byte of zero plus three data bytes: the manufacturer id,
+-	 * then a two byte device id.
+-	 */
+-	u32             jedec_id;
+-	u16             ext_id;
++	/* READID data, as returned by 'FLASH_CMD_RDID' (0x9f). */
++	u8              readid[MAX_READID_LEN];
++	int             readid_len;
  	/*
- 	 * Calculate clk_div - values between 2 and 128
-@@ -2092,6 +2099,15 @@ static int stfsm_probe(struct platform_device *pdev)
- 		return PTR_ERR(fsm->base);
- 	}
+ 	 * The size listed here is what works with FLASH_CMD_SE, which isn't
+ 	 * necessarily called a "sector" by the vendor.
+@@ -362,6 +364,38 @@ struct flash_info {
+ 	int             (*config)(struct stfsm *);
+ };
  
-+	fsm->clk = devm_clk_get(&pdev->dev, "emi_clk");
-+	if (IS_ERR(fsm->clk)) {
-+		dev_warn(fsm->dev, "Couldn't find EMI clock.\n");
-+		fsm->clk = NULL;
-+	} else if (clk_prepare_enable(fsm->clk)) {
-+		dev_warn(fsm->dev, "Failed to enable EMI clock.\n");
-+		fsm->clk = NULL;
++/* Device with standard 3-byte JEDEC ID */
++#define JEDEC_INFO(_name, _jedec_id, _sector_size, _n_sectors,	\
++		   _flags, _max_freq, _config)			\
++	{							\
++		.name = (_name),				\
++		.readid[0] = ((_jedec_id) >> 16 & 0xff),	\
++		.readid[1] = ((_jedec_id) >>  8 & 0xff),	\
++		.readid[2] = ((_jedec_id) >>  0 & 0xff),	\
++		.readid_len = 3,				\
++		.sector_size = (_sector_size),			\
++		.n_sectors = (_n_sectors),			\
++		.flags = (_flags),				\
++		.max_freq = (_max_freq),			\
++		.config = (_config)				\
 +	}
 +
- 	mutex_init(&fsm->lock);
++/* Device with arbitrary-length READID */
++#define RDID(...) __VA_ARGS__  /* Dummy macro to protect array argument. */
++#define RDID_INFO(_name, _readid, _readid_len, _sector_size,	\
++		  _n_sectors, _flags, _max_freq, _config)	\
++	{							\
++		.name = (_name),				\
++		.readid = _readid,				\
++		.readid_len = _readid_len,			\
++		.flags = (_flags),				\
++		.sector_size = (_sector_size),			\
++		.n_sectors = (_n_sectors),			\
++		.flags = (_flags),				\
++		.max_freq = (_max_freq),			\
++		.config = (_config)				\
++	}
++
+ static int stfsm_n25q_config(struct stfsm *fsm);
+ static int stfsm_mx25_config(struct stfsm *fsm);
+ static int stfsm_s25fl_config(struct stfsm *fsm);
+@@ -374,19 +408,19 @@ static struct flash_info flash_types[] = {
+ 	 * (eg faster operating frequency)
+ 	 */
+ #define M25P_FLAG (FLASH_FLAG_READ_WRITE | FLASH_FLAG_READ_FAST)
+-	{ "m25p40",  0x202013, 0,  64 * 1024,   8, M25P_FLAG, 25, NULL },
+-	{ "m25p80",  0x202014, 0,  64 * 1024,  16, M25P_FLAG, 25, NULL },
+-	{ "m25p16",  0x202015, 0,  64 * 1024,  32, M25P_FLAG, 25, NULL },
+-	{ "m25p32",  0x202016, 0,  64 * 1024,  64, M25P_FLAG, 50, NULL },
+-	{ "m25p64",  0x202017, 0,  64 * 1024, 128, M25P_FLAG, 50, NULL },
+-	{ "m25p128", 0x202018, 0, 256 * 1024,  64, M25P_FLAG, 50, NULL },
++	JEDEC_INFO("m25p40",  0x202013,  64 * 1024,   8, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p80",  0x202014,  64 * 1024,  16, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p16",  0x202015,  64 * 1024,  32, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p32",  0x202016,  64 * 1024,  64, M25P_FLAG, 50, NULL),
++	JEDEC_INFO("m25p64",  0x202017,  64 * 1024, 128, M25P_FLAG, 50, NULL),
++	JEDEC_INFO("m25p128", 0x202018, 256 * 1024,  64, M25P_FLAG, 50, NULL),
  
- 	ret = stfsm_init(fsm);
-@@ -2156,6 +2172,30 @@ static int stfsm_remove(struct platform_device *pdev)
- 	return mtd_device_unregister(&fsm->mtd);
+ #define M25PX_FLAG (FLASH_FLAG_READ_WRITE      |	\
+ 		    FLASH_FLAG_READ_FAST        |	\
+ 		    FLASH_FLAG_READ_1_1_2       |	\
+ 		    FLASH_FLAG_WRITE_1_1_2)
+-	{ "m25px32", 0x207116, 0,  64 * 1024,  64, M25PX_FLAG, 75, NULL },
+-	{ "m25px64", 0x207117, 0,  64 * 1024, 128, M25PX_FLAG, 75, NULL },
++	JEDEC_INFO("m25px32", 0x207116,  64 * 1024,  64, M25PX_FLAG, 75, NULL),
++	JEDEC_INFO("m25px64", 0x207117,  64 * 1024, 128, M25PX_FLAG, 75, NULL),
+ 
+ 	/* Macronix MX25xxx
+ 	 *     - Support for 'FLASH_FLAG_WRITE_1_4_4' is omitted for devices
+@@ -399,15 +433,12 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_READ_1_1_4        |	\
+ 		   FLASH_FLAG_SE_4K             |	\
+ 		   FLASH_FLAG_SE_32K)
+-	{ "mx25l3255e",  0xc29e16, 0, 64 * 1024, 64,
+-	  (MX25_FLAG | FLASH_FLAG_WRITE_1_4_4), 86,
+-	  stfsm_mx25_config},
+-	{ "mx25l25635e", 0xc22019, 0, 64*1024, 512,
+-	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+-	  stfsm_mx25_config },
+-	{ "mx25l25655e", 0xc22619, 0, 64*1024, 512,
+-	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+-	  stfsm_mx25_config},
++	JEDEC_INFO("mx25l3255e",  0xc29e16, 64 * 1024, 64,
++		   (MX25_FLAG | FLASH_FLAG_WRITE_1_4_4), 86, stfsm_mx25_config),
++	JEDEC_INFO("mx25l25635e", 0xc22019, 64 * 1024, 512,
++		   (MX25_FLAG | FLASH_FLAG_RESET), 70, stfsm_mx25_config),
++	JEDEC_INFO("mx25l25655e", 0xc22619, 64 * 1024, 512,
++		   (MX25_FLAG | FLASH_FLAG_RESET), 70, stfsm_mx25_config),
+ 
+ 	/* Micron N25Qxxx */
+ #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
+@@ -420,8 +451,8 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_WRITE_1_2_2       |	\
+ 		   FLASH_FLAG_WRITE_1_1_4       |	\
+ 		   FLASH_FLAG_WRITE_1_4_4)
+-	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
+-	  stfsm_n25q_config },
++	JEDEC_INFO("n25q128", 0x20ba18, 64 * 1024,  256,
++		   N25Q_FLAG, 108, stfsm_n25q_config),
+ 
+        /* Micron N25Q256/N25Q512/N25Q00A (32-bit ADDR devices)
+         *
+@@ -439,12 +470,12 @@ static struct flash_info flash_types[] = {
+ 				FLASH_FLAG_32BIT_ADDR  |	\
+ 				FLASH_FLAG_RESET)      &	\
+ 			       ~FLASH_FLAG_WRITE_1_4_4)
+-	{ "n25q256", 0x20ba19,      0, 64 * 1024,   512,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
+-	{ "n25q512", 0x20ba20, 0x1000, 64 * 1024,  1024,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
+-	{ "n25q00a", 0x20ba21, 0x1000, 64 * 1024,  2048,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
++	JEDEC_INFO("n25q256", 0x20ba19, 64 * 1024,   512,
++		   N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
++	RDID_INFO("n25q512", RDID({0x20, 0xba, 0x20, 0x10, 0x00}), 5, 64 * 1024,
++		  1024, N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
++	RDID_INFO("n25q00a", RDID({0x20, 0xba, 0x21, 0x10, 0x00}), 5, 64 * 1024,
++		  2048, N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
+ 
+ 	/*
+ 	 * Spansion S25FLxxxP
+@@ -457,12 +488,12 @@ static struct flash_info flash_types[] = {
+ 			FLASH_FLAG_READ_1_4_4   |	\
+ 			FLASH_FLAG_WRITE_1_1_4  |	\
+ 			FLASH_FLAG_READ_FAST)
+-	{ "s25fl032p",  0x010215, 0x4d00,  64 * 1024,  64, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config},
+-	{ "s25fl129p0", 0x012018, 0x4d00, 256 * 1024,  64, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl129p1", 0x012018, 0x4d01,  64 * 1024, 256, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config },
++	RDID_INFO("s25fl032p", RDID({0x01, 0x02, 0x15, 0x4d, 0x00}), 5,
++		  64 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl129p0", RDID({0x01, 0x20, 0x18, 0x4d, 0x00}), 5,
++		  256 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl129p1", RDID({0x01, 0x20, 0x18, 0x4d, 0x01}), 5,
++		  64 * 1024, 256, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
+ 
+ 	/*
+ 	 * Spansion S25FLxxxS
+@@ -476,25 +507,24 @@ static struct flash_info flash_types[] = {
+ #define S25FLXXXS_FLAG (S25FLXXXP_FLAG         |	\
+ 			FLASH_FLAG_RESET        |	\
+ 			FLASH_FLAG_DYB_LOCKING)
+-	{ "s25fl128s0", 0x012018, 0x0300,  256 * 1024, 64, S25FLXXXS_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl128s1", 0x012018, 0x0301,  64 * 1024, 256, S25FLXXXS_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl256s0", 0x010219, 0x4d00, 256 * 1024, 128,
+-	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, stfsm_s25fl_config },
+-	{ "s25fl256s1", 0x010219, 0x4d01,  64 * 1024, 512,
+-	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, stfsm_s25fl_config },
+-
+-	/* Winbond -- w25x "blocks" are 64K, "sectors" are 4KiB */
++	RDID_INFO("s25fl128s0", RDID({0x01, 0x20, 0x18, 0x03, 0x00}), 5,
++		  256 * 1024, 64, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl128s1", RDID({0x01, 0x20, 0x18, 0x03, 0x01}), 5,
++		  64 * 1024, 256, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl256s0", RDID({0x01, 0x02, 0x19, 0x4d, 0x00}), 5,
++		  256 * 1024, 128, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl256s1", RDID({0x01, 0x02, 0x19, 0x4d, 0x01}), 5,
++		  64 * 1024, 512, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++
+ #define W25X_FLAG (FLASH_FLAG_READ_WRITE       |	\
+ 		   FLASH_FLAG_READ_FAST         |	\
+ 		   FLASH_FLAG_READ_1_1_2        |	\
+ 		   FLASH_FLAG_WRITE_1_1_2)
+-	{ "w25x40",  0xef3013, 0,  64 * 1024,   8, W25X_FLAG, 75, NULL },
+-	{ "w25x80",  0xef3014, 0,  64 * 1024,  16, W25X_FLAG, 75, NULL },
+-	{ "w25x16",  0xef3015, 0,  64 * 1024,  32, W25X_FLAG, 75, NULL },
+-	{ "w25x32",  0xef3016, 0,  64 * 1024,  64, W25X_FLAG, 75, NULL },
+-	{ "w25x64",  0xef3017, 0,  64 * 1024, 128, W25X_FLAG, 75, NULL },
++	JEDEC_INFO("w25x40", 0xef3013, 64 * 1024,   8, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x80", 0xef3014, 64 * 1024,  16, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x16", 0xef3015, 64 * 1024,  32, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x32", 0xef3016, 64 * 1024,  64, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x64", 0xef3017, 64 * 1024, 128, W25X_FLAG, 75, NULL),
+ 
+ 	/* Winbond -- w25q "blocks" are 64K, "sectors" are 4KiB */
+ #define W25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
+@@ -504,17 +534,16 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_READ_1_1_4        |	\
+ 		   FLASH_FLAG_READ_1_4_4        |	\
+ 		   FLASH_FLAG_WRITE_1_1_4)
+-	{ "w25q80",  0xef4014, 0,  64 * 1024,  16, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q16",  0xef4015, 0,  64 * 1024,  32, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q32",  0xef4016, 0,  64 * 1024,  64, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q64",  0xef4017, 0,  64 * 1024, 128, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-
+-	/* Sentinel */
+-	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
++	JEDEC_INFO("w25q80", 0xef4014, 64 * 1024,  16,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q16", 0xef4015, 64 * 1024,  32,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q32", 0xef4016, 64 * 1024,  64,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q64", 0xef4017, 64 * 1024, 128,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++
++	{ },
+ };
+ 
+ /*
+@@ -645,7 +674,7 @@ static struct seq_rw_config stfsm_s25fl_write4_configs[] = {
+ #define W25Q_STATUS_QE			(0x1 << 1)
+ 
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+-	.data_size = TRANSFER_SIZE(8),
++	.data_size = TRANSFER_SIZE(MAX_READID_LEN_ALIGNED),
+ 	.seq_opc[0] = (SEQ_OPC_PADS_1 |
+ 		       SEQ_OPC_CYCLES(8) |
+ 		       SEQ_OPC_OPCODE(FLASH_CMD_RDID)),
+@@ -1963,45 +1992,49 @@ out1:
+ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *const jedec)
+ {
+ 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+-	uint32_t tmp[2];
++	uint32_t tmp[MAX_READID_LEN_ALIGNED / 4];
+ 
+ 	stfsm_load_seq(fsm, seq);
+ 
+-	stfsm_read_fifo(fsm, tmp, 8);
++	stfsm_read_fifo(fsm, tmp, MAX_READID_LEN_ALIGNED);
+ 
+-	memcpy(jedec, tmp, 5);
++	memcpy(jedec, tmp, MAX_READID_LEN);
+ 
+ 	stfsm_wait_seq(fsm);
  }
  
-+#ifdef CONFIG_PM
-+static int stfsmfsm_suspend(struct device *dev)
++static int stfsm_cmp_flash_info_readid_len(const void *a, const void *b)
 +{
-+	struct stfsm *fsm = dev_get_drvdata(dev);
-+
-+	if (fsm->clk)
-+		clk_disable_unprepare(fsm->clk);
-+
-+	return 0;
++	return ((struct flash_info *)b)->readid_len -
++		((struct flash_info *)a)->readid_len;
 +}
 +
-+static int stfsmfsm_resume(struct device *dev)
-+{
-+	struct stfsm *fsm = dev_get_drvdata(dev);
+ static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
+ {
+-	struct flash_info	*info;
+-	u16                     ext_jedec;
+-	u32			jedec;
+-	u8			id[5];
++	uint8_t readid[MAX_READID_LEN];
++	char readid_str[MAX_READID_LEN * 3 + 1];
++	struct flash_info *info;
+ 
+-	stfsm_read_jedec(fsm, id);
++	stfsm_read_jedec(fsm, readid);
+ 
+-	jedec     = id[0] << 16 | id[1] << 8 | id[2];
+-	/*
+-	 * JEDEC also defines an optional "extended device information"
+-	 * string for after vendor-specific data, after the three bytes
+-	 * we use here. Supporting some chips might require using it.
+-	 */
+-	ext_jedec = id[3] << 8  | id[4];
++	hex_dump_to_buffer(readid, MAX_READID_LEN, 16, 1,
++			   readid_str, sizeof(readid_str), 0);
+ 
+-	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
+-		jedec, id[0], id[1], id[2], id[3], id[4]);
++	dev_dbg(fsm->dev, "READID = %s\n", readid_str);
 +
-+	if (fsm->clk)
-+		clk_prepare_enable(fsm->clk);
++	/* The 'readid' may match multiple entries in the table.  To ensure we
++	 * retrieve the most specific match, the table is sorted in order of
++	 * 'readid_len'.
++	 */
++	sort(flash_types, ARRAY_SIZE(flash_types) - 1,
++	     sizeof(struct flash_info), stfsm_cmp_flash_info_readid_len, NULL);
+ 
+ 	for (info = flash_types; info->name; info++) {
+-		if (info->jedec_id == jedec) {
+-			if (info->ext_id && info->ext_id != ext_jedec)
+-				continue;
++		if (memcmp(info->readid, readid, info->readid_len) == 0)
+ 			return info;
+-		}
+ 	}
+-	dev_err(fsm->dev, "Unrecognized JEDEC id %06x\n", jedec);
 +
-+	return 0;
-+}
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(stfsm_pm_ops, stfsmfsm_suspend, stfsmfsm_resume);
-+
- static struct of_device_id stfsm_match[] = {
- 	{ .compatible = "st,spi-fsm", },
- 	{},
-@@ -2169,6 +2209,7 @@ static struct platform_driver stfsm_driver = {
- 		.name	= "st-spi-fsm",
- 		.owner	= THIS_MODULE,
- 		.of_match_table = stfsm_match,
-+		.pm     = &stfsm_pm_ops,
- 	},
- };
- module_platform_driver(stfsm_driver);
++	dev_err(fsm->dev, "Unrecognized READID [%s]\n", readid_str);
+ 
+ 	return NULL;
+ }
 -- 
 1.8.3.2
 
