@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaCZATi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 20:19:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:35828 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753818AbaCZATh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 20:19:37 -0400
-Message-ID: <53321D04.2040102@oracle.com>
-Date: Tue, 25 Mar 2014 20:19:16 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
+	id S1754921AbaCZAYa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 20:24:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:56067 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752163AbaCZAY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 Mar 2014 20:24:29 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,732,1389772800"; 
+   d="scan'208";a="480016547"
+Message-ID: <53321E3B.8080709@linux.intel.com>
+Date: Tue, 25 Mar 2014 17:24:27 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Alessandro Zummo <a.zummo@towertech.it>
-CC: Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
-        rtc-linux@googlegroups.com, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: kernfs/rtc: circular dependency between kernfs and ops_lock
-References: <5308E3AE.3040405@oracle.com>	<20140222205217.GC16272@mtj.dyndns.org>	<20140224120427.6394d5dd@linux.lan.towertech.it>	<5331FA9E.20506@oracle.com> <20140325233936.655a798e@linux.lan.towertech.it>
-In-Reply-To: <20140325233936.655a798e@linux.lan.towertech.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: David Miller <davem@davemloft.net>, dborkman@redhat.com
+CC: ast@plumgrid.com, netdev@vger.kernel.org, hagen@jauu.net,
+        keescook@chromium.org, pmoore@redhat.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH net-next v2 8/9] net: filter: rework/optimize internal
+ BPF interpreter's instruction set
+References: <1395749457-16178-1-git-send-email-dborkman@redhat.com>	<1395749457-16178-9-git-send-email-dborkman@redhat.com> <20140325.201712.1651156258234145348.davem@davemloft.net>
+In-Reply-To: <20140325.201712.1651156258234145348.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/25/2014 06:39 PM, Alessandro Zummo wrote:
-> On Tue, 25 Mar 2014 17:52:30 -0400
-> Sasha Levin <sasha.levin@oracle.com> wrote:
->
->>>
->>>    Pretty interesting indeed. One option would be to remove
->>>    the sys files before acquiring the lock. But I wonder
->>>    if this could lead to other issues.
->>>
->>
->> Ping? Seems this thing got lost.
->
->   What if we move
->
->     rtc_sysfs_del_device(rtc);
->
->   before acquiring the lock?
+On 03/25/2014 05:17 PM, David Miller wrote:
+> From: Daniel Borkmann <dborkman@redhat.com>
+> Date: Tue, 25 Mar 2014 13:10:56 +0100
+> 
+>>   - Conditional jt/jf targets replaced with jt/fall-through,
+>>     and forward/backward jumps now possible as well
+> 
+> Ummm... does anyone even remember why backwards jumps were not allowed
+> in the original BPF?
+> 
+> It's to guarentee forward progress in the filter.
+> 
+> Allowing branching backward would allow endless loops.
+> 
+> Please remove this feature.
+> 
 
-Trying it now, I'll leave it going for a week and see if it reproduces.
+If you allow loops, it greatly increases the expressibility of the
+language, but we would really need another control to limit CPU usage.
 
-
-Thanks,
-Sasha
+	-hpa
 
