@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaCZQ5A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 12:57:00 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:60865 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932136AbaCZQ45 (ORCPT
+	id S932216AbaCZQ6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 12:58:14 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:26671 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932095AbaCZQ6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 12:56:57 -0400
-MIME-Version: 1.0
-In-Reply-To: <1394042711-7907-1-git-send-email-jon@ringle.org>
-References: <1394042711-7907-1-git-send-email-jon@ringle.org>
-Date: Wed, 26 Mar 2014 12:56:55 -0400
-X-Google-Sender-Auth: phCudgdi1LpoIcfT0mMzS9f5Bzc
-Message-ID: <CAMwGMjz2UGXQ4=O_uZcTfPEfH5yn9Ts-ydyx659Mh2jxA0+xJQ@mail.gmail.com>
-Subject: Re: [PATCH] video: da8xx-fb: Add support for Densitron 84-0023-001T
-From: Jon Ringle <jon@ringle.org>
-To: plagnioj@jcrosoft.com, tomi.valkeinen@ti.com
-Cc: linux-fbdev@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jon Ringle <jringle@gridpoint.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 Mar 2014 12:58:11 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-03-53330721616b
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Andrew Lunn <andrew@lunn.ch>
+Cc: Tejun Heo <tj@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ata: fix Marvell SATA driver dependencies
+Date: Wed, 26 Mar 2014 17:57:49 +0100
+Message-id: <2706133.4NFborHvE6@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <20140326162302.GG25349@lunn.ch>
+References: <5138028.BSQbEP7RRB@amdc1032> <20140326162302.GG25349@lunn.ch>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsVy+t9jQV1FduNgg93vLCzO3z3EbLGp7S2j
+	ReOSyywWmx5fY7U4tuMRk8XlXXPYLN7/dLT4tfwoowOHx5NNFxk9ds66y+6xaVUnm0fDgfMs
+	HpuX1Hvs3PGZyePzJrkA9igum5TUnMyy1CJ9uwSujIN3z7EWvOGo+HCft4Gxk72LkZNDQsBE
+	4sHbe0wQtpjEhXvr2boYuTiEBKYzSrT8uMgK4bQwSUxfMBusg03ASmJi+ypGEFtEQEFiysk/
+	YEXMAjOYJN4em8sKkhAWsJO4N30qmM0ioCqx8MZTsGZeAU2J3ZtWM4PYogKeEju2r2QDsTkF
+	dCV2PtkONlRIwEti1czVbBD1ghI/Jt9jAbGZBeQl9u2HmMksoCWxfudxpgmMArOQlM1CUjYL
+	SdkCRuZVjKKpBckFxUnpuUZ6xYm5xaV56XrJ+bmbGMER8Ex6B+OqBotDjAIcjEo8vDvuGwUL
+	sSaWFVfmHmKU4GBWEuHd8RUoxJuSWFmVWpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6Yklqdmpq
+	QWoRTJaJg1OqgVH75OScfx/a1iRN1ftxO/nvdDMVFTXlSY/l8jYrT7px+eq1+q+/HNu/FXeG
+	fYiKuH3pTXZ3jaDIliOujgJZl1a/bH7kv37XvM2ZhxpzRBZ6f6tL682d7qUTc55P5u1kJcN2
+	Lp/EU1FPvioqcwQrFgndqI3d/kd6yz+DEKdJT298ul6kb6E/xVSJpTgj0VCLuag4EQAL6Qfs
+	fAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've not heard anything regarding this patch. I just want to make sure
-it's not lost :)
 
-Jon
+Hi,
 
+On Wednesday, March 26, 2014 05:23:02 PM Andrew Lunn wrote:
+> On Wed, Mar 26, 2014 at 05:19:02PM +0100, Bartlomiej Zolnierkiewicz wrote:
+> > Make sata_mv host driver depend on PCI || ARCH_KIRKWOOD || ARCH_MVEBU ||
+> > ARCH_ORION5X config options as Marvell SATA support covers both Marvell
+> > PCI devices and Marvell Kirkwood, Armada 370/XP and Orion5x SoCs (for
+> > non-PCI devices the driver to work requires suitable device tree node to
+> > be defined).  Additionally allow the driver build if COMPILE_TEST config
+> > option is set.
+> 
+> Hi Bartlomiej
+> 
+> I _think_ there are a few powerpc platforms which can also make use of
+> this driver.
 
-On Wed, Mar 5, 2014 at 1:05 PM,  <jon@ringle.org> wrote:
-> From: Jon Ringle <jringle@gridpoint.com>
->
-> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
-> ---
->  drivers/video/da8xx-fb.c | 14 ++++++++++++++
->  1 file changed, 14 insertions(+)
->
-> diff --git a/drivers/video/da8xx-fb.c b/drivers/video/da8xx-fb.c
-> index e7f5937..83c43b2 100644
-> --- a/drivers/video/da8xx-fb.c
-> +++ b/drivers/video/da8xx-fb.c
-> @@ -243,6 +243,20 @@ static struct fb_videomode known_lcd_panels[] = {
->                 .sync           = FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
->                 .flag           = 0,
->         },
-> +       [3] = {
-> +               /* Densitron 84-0023-001T */
-> +               .name           = "Densitron_LCD",
-> +               .xres           = 320,
-> +               .yres           = 240,
-> +               .pixclock       = KHZ2PICOS(6400),
-> +               .left_margin    = 0,
-> +               .right_margin   = 0,
-> +               .upper_margin   = 0,
-> +               .lower_margin   = 0,
-> +               .hsync_len      = 30,
-> +               .vsync_len      = 3,
-> +               .sync           = 0,
-> +       },
->  };
->
->  static bool da8xx_fb_is_raster_enabled(void)
-> --
-> 1.8.5.4
->
+Currently no powerpc platform uses this driver for non-PCI devices and
+looking at commits history for powerpc dts files it seems that it also
+hasn't happened in the past.
+
+I think that the current patch is sufficient as we can always relax
+dependencies later if the need for it shows up + there is a possibility
+to (ab)use COMPILE_TEST for older kernels.
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
+
