@@ -1,113 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754752AbaCZN0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 09:26:13 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:56510 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753520AbaCZN0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 09:26:11 -0400
-Message-ID: <5332D47B.3010809@linux.vnet.ibm.com>
-Date: Wed, 26 Mar 2014 18:52:03 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1754320AbaCZN3t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 09:29:49 -0400
+Received: from imap.thunk.org ([74.207.234.97]:46119 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467AbaCZN3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 09:29:47 -0400
+Date: Wed, 26 Mar 2014 09:29:36 -0400
+From: tytso@mit.edu
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: David Rientjes <rientjes@google.com>, Dave Jones <davej@redhat.com>,
+        Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+Message-ID: <20140326132936.GB4907@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>,
+	David Rientjes <rientjes@google.com>, Dave Jones <davej@redhat.com>,
+	Fabian Frederick <fabf@skynet.be>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	reiserfs-devel@vger.kernel.org, Joe Perches <joe@perches.com>
+References: <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org>
+ <20140322170322.GA23583@thunk.org>
+ <20140322101512.eaeb542b.akpm@linux-foundation.org>
+ <20140322172606.GB23583@thunk.org>
+ <20140322173207.GC23583@thunk.org>
+ <20140322105524.7baec73a.akpm@linux-foundation.org>
+ <20140322192423.GA10176@redhat.com>
+ <alpine.DEB.2.02.1403251800320.21733@chino.kir.corp.google.com>
+ <20140326061904.GA4907@thunk.org>
+ <20140325233209.31756c92.akpm@linux-foundation.org>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, peterz@infradead.org, rjw@rjwysocki.net,
-        paulmck@linux.vnet.ibm.com, davem@davemloft.net
-Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
- contains offline cpus
-References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com>
-In-Reply-To: <5332B833.2030701@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032613-0928-0000-0000-000000BF7969
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140325233209.31756c92.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 04:51 PM, Srivatsa S. Bhat wrote:
-> On 03/26/2014 09:26 AM, Preeti U Murthy wrote:
->> Its possible that the tick_broadcast_force_mask contains cpus which are not
->> in cpu_online_mask when a broadcast tick occurs. This could happen under the
->> following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
->>
->> CPU0					CPU1
->>
->> Run CPU_DOWN_PREPARE notifiers
->>
->> Start stop_machine			Gets woken up by IPI to run
->> 					stop_machine, sets itself in
->> 					tick_broadcast_force_mask if the
->> 					time of broadcast interrupt is around
->> 					the same time as this IPI.
->>
->> 					Start stop_machine
->> 					  set_cpu_online(cpu1, false)
->> End stop_machine			End stop_machine
->>
->> Broadcast interrupt
->>   Finds that cpu1 in
->>   tick_broadcast_force_mask is offline
->>   and triggers the WARN_ON in
->>   tick_handle_oneshot_broadcast()
->>
->> Clears all broadcast masks
->> in CPU_DEAD stage.
->>
->> This WARN_ON was added to capture scenarios where the broadcast mask, be it
->> oneshot/pending/force_mask contain offline cpus whose tick devices have been
->> removed. But here is a case where we trigger the warn on in a valid scenario.
->>
->> One could argue that the scenario is invalid and ought to be warned against
->> because ideally the broadcast masks need to be cleared of the cpus about to
->> go offine before clearing them in the online_mask so that we dont hit these
->> scenarios.
->>
->> This would mean clearing the masks in CPU_DOWN_PREPARE stage.
-> 
-> Not necessarily. We could clear the mask in the CPU_DYING stage. That way,
-> offline CPUs will automatically get cleared from the force_mask and hence
-> the tick-broadcast code will not need to have a special case to deal with
-> this scenario. What do you think?
+On Tue, Mar 25, 2014 at 11:32:09PM -0700, Andrew Morton wrote:
+> Well, there are always alternatives.  For example ext3 could
+> preallocate a single transaction_t and a single IO page and fall back
+> to synchronous page-at-a-time journal writes.  But I can totally see
+> that such things are unattractive: heaps of new code which is never
+> tested in real life.  The page allocator works so damn well that it
+> doesn't make sense to implement it.
 
-Hmm yeah. Let me confirm this by verifying if we could miss something by
-clearing masks in CPU_DYING stage.
+I'm not sure that there are _always_ solutions.  For example, ext3
+still needs to use buffer cache to do the I/O, and that may require
+allocations as well.  Fortunately, this was patched around other ways
+to avoid livelock issues in the page cleaner in 2013: 84235de394d977
 
-Thanks!
+But that's another new user of GFP_NOFAIL (and one added three years
+after David tried to declare There Shalt Be No New Users of
+GFP_NOFAIL), and sure, we could probably patch around that by having
+places where there's no other alternaive to keep a preallocated batch
+of pages and/or allocated structures at each code site.  But that's as
+bad as looping at each code site; in fact, wouldn't it be better if
+the allocator wants to avoid looping, to have a separate batch of
+pages which (ala GFP_ATOMIC) which is reserved for just for GFP_NOFAIL
+allocations when all else fails?
 
-Regards
-Preeti U Murthy
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
->> ---
->>
->>  kernel/time/tick-broadcast.c |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->> index 63c7b2d..30b8731 100644
->> --- a/kernel/time/tick-broadcast.c
->> +++ b/kernel/time/tick-broadcast.c
->> @@ -606,7 +606,12 @@ again:
->>  	 */
->>  	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
->>
->> -	/* Take care of enforced broadcast requests */
->> +	/* Take care of enforced broadcast requests. We could have offline
->> +	 * cpus in the tick_broadcast_force_mask. Thats ok, we got the interrupt
->> +	 * before we could clear the mask.
->> +	 */
->> +	cpumask_and(tick_broadcast_force_mask,
->> +			tick_broadcast_force_mask, cpu_online_mask);
->>  	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
->>  	cpumask_clear(tick_broadcast_force_mask);
->>
->>
-> 
+(BTW, we have a similar issue with bio's in the block layer, but
+fortunately, those structures are relatively small, and since they are
+in their own slab cache, and are constantly being used and then
+recycled, it's in practice rare that allocations will fail when we are
+in a desparate low memory situation.  But technically there will be
+places where we should pass a gfp_t down to the block layers, and use
+GFP_NOFAIL if we really want to make sure that memory allocations
+needed to try to clean pages and/or avoid user data corruption are
+needed.)
+
+> Please use NOFAIL ;) The core page allocator will always be able to
+> implement this better than callers.
+
+I'll convert jbd2 to use NOFAIL.  :-)
+
+Cheers,
+
+						- Ted
 
