@@ -1,103 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756043AbaCZS6Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 14:58:16 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:41556 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756029AbaCZS6K (ORCPT
+	id S1756077AbaCZS7H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 14:59:07 -0400
+Received: from mail-bk0-f43.google.com ([209.85.214.43]:34713 "EHLO
+	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662AbaCZS7F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 14:58:10 -0400
+	Wed, 26 Mar 2014 14:59:05 -0400
+Message-ID: <53332374.3000703@gmail.com>
+Date: Wed, 26 Mar 2014 18:59:00 +0000
+From: paulmcquad <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <532CA142.8060705@hurleysoftware.com>
-References: <1395061859-15295-1-git-send-email-geert@linux-m68k.org>
-	<1395061859-15295-2-git-send-email-geert@linux-m68k.org>
-	<532CA142.8060705@hurleysoftware.com>
-Date: Wed, 26 Mar 2014 19:58:10 +0100
-X-Google-Sender-Auth: 2mmXYd0RsMSqaKBZ45bxfx80TP4
-Message-ID: <CAMuHMdWZw-_+RVe0RuwfR+smuiDY9HpMq7H9=rseP_XLGytU0A@mail.gmail.com>
-Subject: Re: [PATCH 2/2] [RFC] serial_core: Avoid NULL pointer dereference in uart_close()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Paul McQuade <paulmcquad@gmail.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+>From 9c385609591c5ed87989a127c95da95aa8845162 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Tue, 25 Mar 2014 20:16:47 +0000
+Subject: [PATCH] Doc: email-clients.txt:added thunderbird settings
 
-Thanks for your comments!
+Added setting to email-clients that is easier to read
+and is easier to setup thunderbird. Removed config settings
+and added GUI settings.
 
-On Fri, Mar 21, 2014 at 9:29 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
-> On 03/17/2014 09:10 AM, Geert Uytterhoeven wrote:
->> From: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->> When unbinding a serial driver that's being used as a serial console,
->> the kernel may crash with a NULL pointer dereference in a uart_*()
->> function
->> called from uart_close () (e.g. uart_flush_buffer() or
->> uart_chars_in_buffer()).
->>
->> To fix this, let uart_close() check for port->count == 0. If this is the
->> case, bail out early. Else tty_port_close_start() will make the port
->> counts inconsistent, printing out warnings like
->>
->>      tty_port_close_start: tty->count = 1 port count = 0.
->>
->> and
->>
->>      tty_port_close_start: count = -1
->
-> As you noted in the patch comments below, the tty core always closes
-> a failed open.
->
-> So the reason for the port->count mismatch is because tty_port_close_start()
-> only handles the tty hangup condition -- all other failed opens are assumed
-> to carry a port->count.
->
-> A similar mismatch will occur if the mutex_lock in uart_open() is
-> interrupted.
->
-> This means that the port->count mismatch can occur even if port->count != 0;
-> so the bug here is that uart_open() and uart_close() don't agree on
-> who does what cleanup under what error conditions.
->
-> So with respect to the port count mismatches, the conditions need careful
-> auditing and fixing, separate from the tty console teardown problem.
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+---
+ Documentation/email-clients.txt | 15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-Indeed. Currently uart_open() always decrements port->count again
-in any error condition, which is clearly wrong.
+diff --git a/Documentation/email-clients.txt b/Documentation/email-clients.txt
+index e9f5dac..1e7c171 100644
+--- a/Documentation/email-clients.txt
++++ b/Documentation/email-clients.txt
+@@ -201,20 +201,15 @@ To beat some sense out of the internal editor, do this:
+ 
+ - Edit your Thunderbird config settings so that it won't use format=flowed.
+   Go to "edit->preferences->advanced->config editor" to bring up the
+-  thunderbird's registry editor, and set "mailnews.send_plaintext_flowed" to
+-  "false".
++  thunderbird's registry editor.
+ 
+-- Disable HTML Format: Set "mail.identity.id1.compose_html" to "false".
++- Set "mailnews.send_plaintext_flowed" to "false"
+ 
+-- Enable "preformat" mode: Set "editor.quotesPreformatted" to "true".
++- Set "mailnews.wraplength" from "72" to "90"
+ 
+-- Enable UTF8: Set "prefs.converted-to-utf8" to "true".
++- "View" > "Message Body As" > "Plain Text"
+ 
+-- Install the "toggle wordwrap" extension.  Download the file from:
+-    https://addons.mozilla.org/thunderbird/addon/2351/
+-  Then go to "tools->add ons", select "install" at the bottom of the screen,
+-  and browse to where you saved the .xul file.  This adds an "Enable
+-  Wordwrap" entry under the Options menu of the message composer.
++- "View" > "Character Encoding" > "Unicode (UTF-8)"
+ 
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ TkRat (GUI)
+-- 
+1.8.3.2
 
->> and once uport == NULL, it will also crash.
->
-> Ok, but so will basically every serial core function after
-> uart_remove_one_port() assigns state->uart_port = NULL
->
-> IOW, uart_close() is not the only serial core function that could be
-> using state->uart_port after uart_remove_one_port() finishes.
->
->> Also fix the related crash in pr_debug() by checking for a non-NULL uport
->> first.
->
-> So my point is that checking for NULL state->uart_port is simply not the
-> fix,
-> here or anywhere else.
->
-> AFAICT, either reference-counting the uart_port structure or RCU
-> are the only viable solutions to safe ll driver uart_port removal.
-
-I gave it a quick try, but failed. It seems the driver needs some big surgery
-to fix this.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
