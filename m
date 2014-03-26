@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbaCZBDz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 Mar 2014 21:03:55 -0400
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:49439 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357AbaCZBDy (ORCPT
+	id S1755293AbaCZBGW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 Mar 2014 21:06:22 -0400
+Received: from mail-pb0-f54.google.com ([209.85.160.54]:34771 "EHLO
+	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752775AbaCZBGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 Mar 2014 21:03:54 -0400
-Message-ID: <53322777.3030703@gmail.com>
-Date: Tue, 25 Mar 2014 21:03:51 -0400
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
-Reply-To: alexandre.f.demers@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 25 Mar 2014 21:06:20 -0400
+Date: Tue, 25 Mar 2014 18:06:17 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Jones <davej@redhat.com>
+cc: Andrew Morton <akpm@linux-foundation.org>, tytso@mit.edu,
+        Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        reiserfs-devel@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [RFC 1/1] fs/reiserfs/journal.c: Remove obsolete  __GFP_NOFAIL
+In-Reply-To: <20140322192423.GA10176@redhat.com>
+Message-ID: <alpine.DEB.2.02.1403251800320.21733@chino.kir.corp.google.com>
+References: <20140321171830.ef47fdea1a3a2f2921c8fe86@skynet.be> <20140321130055.c0ea32946f3543cd7f6bedd6@linux-foundation.org> <20140322170322.GA23583@thunk.org> <20140322101512.eaeb542b.akpm@linux-foundation.org> <20140322172606.GB23583@thunk.org>
+ <20140322173207.GC23583@thunk.org> <20140322105524.7baec73a.akpm@linux-foundation.org> <20140322192423.GA10176@redhat.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: alexandre.f.demers@gmail.com
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
- sysfs from sysfs_init()" prevents system from booting correctly
-References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org> <5327AAA8.2080703@gmail.com>
-In-Reply-To: <5327AAA8.2080703@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So, I tried RC8 and I'm still getting the error. It start too fast to 
-be able to read whatever it is saying, but here is what I can read:
-...
-cp: error writing /run/initramfs/new_root/...
-cp: failed to extend ...
-... (and so on)
+On Sat, 22 Mar 2014, Dave Jones wrote:
 
-It goes on like that for a long time.
+> On Sat, Mar 22, 2014 at 10:55:24AM -0700, Andrew Morton wrote:
+>  > On Sat, 22 Mar 2014 13:32:07 -0400 tytso@mit.edu wrote:
+>  > 
+>  > > On Sat, Mar 22, 2014 at 01:26:06PM -0400, tytso@MIT.EDU wrote:
+>  > > > > Well.  Converting an existing retry-for-ever caller to GFP_NOFAIL is
+>  > > > > good.  Adding new retry-for-ever code is not good.
+>  > > 
+>  > > Oh, and BTW --- now that checkpatch.pl now flags an warning whenever
+>  > > GFP_NOFAIL is used
+>  > 
+>  > I don't know what the basis for this NOFAIL-is-going-away theory could
+>  > have been.  What's the point in taking a centrally implemented piece of
+>  > logic and splattering its implementation out to tens of different
+>  > callsites?
+> 
+> I wonder if some of that thinking came from this..
+> 
+> commit dab48dab37d2770824420d1e01730a107fade1aa
+> Author: Andrew Morton <akpm@linux-foundation.org>
+> Date:   Tue Jun 16 15:32:37 2009 -0700
+> 
+>     page-allocator: warn if __GFP_NOFAIL is used for a large allocation
+>     
+>     __GFP_NOFAIL is a bad fiction.  Allocations _can_ fail, and callers should
+>     detect and suitably handle this (and not by lamely moving the infinite
+>     loop up to the caller level either).
+> 
 
-Alexandre Demers
+It came from me pointing out the fact that __GFP_NOFAIL requires 
+__GFP_WAIT to actually never fail in the page allocator's implementation.  
+I wanted to fix that, Andrew said nobody is currently doing 
+GFP_NOWAIT | __GFP_NOFAIL or GFP_ATOMIC | __GFP_NOFAIL so let's warn 
+against new callers being added and hopefully eventually get rid of it.  
+In those cases, we also don't invoke the oom killer because we don't have 
+__GFP_FS so we livelock.
 
-On Mon 17 Mar 2014 10:08:40 PM EDT, Alexandre Demers wrote:
-> By the way, I tried to get the error message, but my display had gone
-> in standby mode before it completed and it wouldn't wake up. I'll have
-> to test with an earlier 3.14 kernel (rc1 or rc2), when it was
-> answering to my wake up signal. Even though my display doesn't wake up
-> with rc6, it is still running since I can see some activities on my
-> disk from time to time.
->
-> I'll be back with more info ASAP.
->
-> Alexandre Demers
->
-> On Mon 17 Mar 2014 04:13:46 PM EDT, Tejun Heo wrote:
->> Hello,
->>
->> On Fri, Mar 14, 2014 at 11:48:10AM -0400, Alexandre Demers wrote:
->>> Since it takes a while before the system begins to display errors,
->>> I'll have to test it and report it later today when I'll get back from
->>> work.
->>
->> Any update?
->>
->>> Now, about the userland part, this seems a broad question... I'm using
->>> Arch Linux 64bit (updated mostly on a daily basis). But I suspect you
->>> are expecting a narrower information. Is there anything in particular
->>> you want to know?
->>
->> I was just wondering whether you were running something really exotic.
->> Doesn't seem that way.  Weird that other people aren't hitting this
->> issue.  Hmm...
->>
->> Thanks.
->>
+The point is not to add new callers and new code should handle NULL 
+correctly, not that we should run around changing current users to just do 
+infinite retries.  Checkpatch should have nothing to do with that.
