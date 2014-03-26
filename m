@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaCZOHz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 10:07:55 -0400
-Received: from ausc60pc101.us.dell.com ([143.166.85.206]:2965 "EHLO
-	ausc60pc101.us.dell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556AbaCZOHy (ORCPT
+	id S1755155AbaCZOIh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 10:08:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:41700 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754645AbaCZOIf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 10:07:54 -0400
-X-LoopCount0: from 10.208.46.70
-X-IronPort-AV: E=Sophos;i="4.97,735,1389765600"; 
-   d="scan'208";a="579338532"
-From: Mario Limonciello <mario_limonciello@dell.com>
-To: matthew.garrett@nebula.com
-Cc: LKML <linux-kernel@vger.kernel.org>, platform-driver-x86@vger.kernel.org,
-        Mario Limonciello <mario_limonciello@dell.com>
-Subject: [PATCH v5 0/1] Add WMI driver to control AlienFX features
-Date: Wed, 26 Mar 2014 08:57:27 -0500
-Message-Id: <1395842248-27868-1-git-send-email-mario_limonciello@dell.com>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 26 Mar 2014 10:08:35 -0400
+Date: Wed, 26 Mar 2014 15:08:00 +0100
+From: Daniel Kiper <daniel.kiper@oracle.com>
+To: Jan Beulich <JBeulich@suse.com>
+Cc: david.vrabel@citrix.com, ian.campbell@citrix.com,
+        stefano.stabellini@eu.citrix.com, jeremy@goop.org,
+        fenghua.yu@intel.com, matt.fleming@intel.com, tony.luck@intel.com,
+        x86@kernel.org, tglx@linutronix.de, xen-devel@lists.xenproject.org,
+        boris.ostrovsky@oracle.com, konrad.wilk@oracle.com, eshelton@pobox.com,
+        mingo@redhat.com, linux-efi@vger.kernel.org,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hpa@zytor.com
+Subject: Re: [PATCH v3 2/5] efi: Export arch_tables variable
+Message-ID: <20140326140800.GP3454@olila.local.net-space.pl>
+References: <1395781076-12000-1-git-send-email-daniel.kiper@oracle.com>
+ <1395781076-12000-3-git-send-email-daniel.kiper@oracle.com>
+ <5332E25F020000780000255A@nat28.tlf.novell.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5332E25F020000780000255A@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a driver for the Alienware X51, X51 R2 and some future HW.
- - For the X51 / X51 R2 it allows control of the color and brightness
-   of each zone via a sysfs interface for the color and a LED interface
-   for the brightness
- - For the future HW it allows control of color and brightness as well
-   as an HDMI mux that's included in the HW.
+On Wed, Mar 26, 2014 at 01:21:19PM +0000, Jan Beulich wrote:
+> >>> On 25.03.14 at 21:57, <daniel.kiper@oracle.com> wrote:
+> > Export arch_tables variable. Xen init function calls efi_config_init()
+> > which takes it as an argument.
+> >
+> > Additionally, put __initdata in place suggested by include/linux/init.h.
+>
+> Which isn't necessarily the most appropriate place.
 
-Changes from v4 to v5:
- - Make zone control more like the thingm RGB LED in the kernel.  Brightness
-   control is independent of the RGB adjustment.  RGB adjustment takes a 24-bit
-   hexadecimal triplet.
- - Introduced a new WMAX method for platforms that use HDMI as well as a new
-   lighting control interface.  This removes the present necessity of having
-   to do a DMI match on HDMI for now.
- - Dynamically create number of sysfs zone nodes based on DMI data. Present
-   platforms have 3 nodes, but some future ones will have anywhere from 2
-   to 32 nodes.
- - Make lighting control state and HDMI more readable and usable for 
-   interacting. Rather than having to know numbers, cat'ing the nodes will
-   output the available options and the presently selected option (in a 
-   single line)
+Why? If comments in include/linux/init.h are not valid they should be changed.
 
-Mario Limonciello (1):
-  Add WMI driver for controlling AlienFX features on some Alienware
-    products
+> > --- a/arch/x86/platform/efi/efi.c
+> > +++ b/arch/x86/platform/efi/efi.c
+> > @@ -70,7 +70,7 @@ static efi_system_table_t efi_systab __initdata;
+> >
+> >  unsigned long x86_efi_facility;
+> >
+> > -static __initdata efi_config_table_type_t arch_tables[] = {
+> > +efi_config_table_type_t arch_tables[] __initdata = {
+>
+> efi_config_table_type_t __initdata arch_tables[] = {
+>
+> would be what I'd recommend.
+>
+> > --- a/include/linux/efi.h
+> > +++ b/include/linux/efi.h
+> > @@ -583,6 +583,8 @@ extern struct efi {
+> >  	struct efi_memory_map *memmap;
+> >  } efi;
+> >
+> > +extern efi_config_table_type_t arch_tables[] __initdata;
+>
+> And section placement annotations are bogus on declarations.
 
- drivers/platform/x86/Kconfig         |  12 +
- drivers/platform/x86/Makefile        |   2 +
- drivers/platform/x86/alienware-wmi.c | 557 +++++++++++++++++++++++++++++++++++
- 3 files changed, 571 insertions(+)
- create mode 100644 drivers/platform/x86/alienware-wmi.c
+Hmmm... I am not sure which approach is better. I saw that
+in many places declarations have annotations. Could you
+point me some docs which states (and explains) that this
+is wrong idea.
 
--- 
-1.9.0
-
+Daniel
