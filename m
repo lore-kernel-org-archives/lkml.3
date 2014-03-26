@@ -1,64 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907AbaCZHzj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 03:55:39 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:61524 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750832AbaCZHzh (ORCPT
+	id S1752076AbaCZH63 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 03:58:29 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:49457 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750792AbaCZH61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 03:55:37 -0400
+	Wed, 26 Mar 2014 03:58:27 -0400
+Message-ID: <5332884A.8030904@huawei.com>
+Date: Wed, 26 Mar 2014 15:56:58 +0800
+From: Liu hua <sdu.liu@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-In-Reply-To: <1395820064-19148-1-git-send-email-geert@linux-m68k.org>
-References: <1395820064-19148-1-git-send-email-geert@linux-m68k.org>
-Date: Wed, 26 Mar 2014 08:55:37 +0100
-X-Google-Sender-Auth: 7y28iHEWzypHy6JpUvbGvpopyV4
-Message-ID: <CAMuHMdWQmAmG8oebHh8SVodAp_TXHX1wLBoEZRfMz=HRxVdQmg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.14-rc8
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Linux-sh list <linux-sh@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+CC: <paul.gortmaker@windriver.com>, <mingo@kernel.org>, <wangnan0@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <peifeiyue@huawei.com>,
+        <lizefan@huawei.com>, <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] hung_task : check the value of "sysctl_hung_task_timeout_sec"
+References: <1395561244-69173-1-git-send-email-sdu.liu@huawei.com>	<87eh1s3ahp.wl%satoru.takeuchi@gmail.com>	<53314552.4000905@huawei.com> <871txqz1mg.wl%satoru.takeuchi@gmail.com>
+In-Reply-To: <871txqz1mg.wl%satoru.takeuchi@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.111.58.238]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 8:47 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.14-rc8[1]  to v3.14-rc7[3], the summaries are:
->   - build errors: +6/-1
+于 2014/3/26 0:25, Satoru Takeuchi 写道:
+> At Tue, 25 Mar 2014 16:58:58 +0800,
+> Liu hua wrote:
+>>
+>> 于 2014/3/24 4:50, Satoru Takeuchi 写道:
+>>> At Sun, 23 Mar 2014 15:54:04 +0800,
+>>> Liu Hua wrote:
+>>>>
+>>>> As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+>>>> larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+>>>> watchdog will return immediately without sleep and with print :
+>>>>
+>>>> [  205.452934] schedule_timeout: wrong timeout value ffffffffffffff83
+>>>>
+>>>> and then the funtion watchdog will call schedule_timeout_interruptible again
+>>>> and again. The screen will be filled with
+>>>> 	"schedule_timeout: wrong timeout value ffffffffffffff83"
+>>>>
+>>>> This patch does some check and correction in timeout_jiffies, to let the
+>>>> function schedule_timeout_interruptible allways get the valid parameter.
+>>>>
+>>>> Cc: <stable@vger.kernel.org>
+>>>> Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+>>>> ---
+>>>>  kernel/hung_task.c | 8 ++++++--
+>>>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>>>
+>>>> diff --git a/kernel/hung_task.c b/kernel/hung_task.c
+>>>> index 6df6149..f992286 100644
+>>>> --- a/kernel/hung_task.c
+>>>> +++ b/kernel/hung_task.c
+>>>> @@ -174,8 +174,12 @@ static void check_hung_uninterruptible_tasks(unsigned long timeout)
+>>>>  
+>>>>  static unsigned long timeout_jiffies(unsigned long timeout)
+>>>>  {
+>>>> -	/* timeout of 0 will disable the watchdog */
+>>>> -	return timeout ? timeout * HZ : MAX_SCHEDULE_TIMEOUT;
+>>>> +	/* timeout of 0 or >= LONG_MAX/HZ will disable the watchdog */
+>>>> +	if ((timeout == 0) || (timeout > MAX_SCHEDULE_TIMEOUT))
+>>>
+>>> You should check whether sysctl_hung_task_timeout_sec > MAX_SCHEDULE_TIMEOUT/HZ
+>>> or not when setting this parameter instead. Then this check ins't necessary here.
+>>>
+>>> # Just FYI, MAX_SCHEDULE_TIMEOUT should be MAX_SCHEDULE_TIMEOUT/HZ here. 
+>>>
+>>> Thanks,
+>>> Satoru
+>>
+>>  Yes, how about this :
+> 
+> I confirmed the followings.
+> 
+>  - 3.14-rc8: system hunged up with "hung_task_timeout_secs > LONG_MAX/HZ".
+>  - 3.14-rc8 with your patch: works fine. I can't set the above mentioned value any more.
+> 
+> Writing possible values (0..LONG_MAX/HZ) in Documentation/sysctl/kernel.txt
+> make this patch better.
+> 
+> Thanks,
+> Satoru
 
-  + /scratch/kisskb/src/arch/powerpc/include/asm/io.h: error:
-'virt_phys_offset' undeclared (first use in this function):  =>
-814:16, 807:16, 770:9, 787:17
-  + /scratch/kisskb/src/include/linux/mm.h: error: 'virt_phys_offset'
-undeclared (first use in this function):  => 890:9, 1402:20, 494:22
+Thanks to you attention and suggestion. I remade this patch as following.
+Is it appropriate to be reposted with tag "PATCH v3"
 
-powerpc-randconfig
+Subject: [PATCH v3] hung_task : check the value of "sysctl_hung_task_timeout_sec"
 
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error:
-'CHCR_TS_HIGH_MASK' undeclared (first use in this function):  => 98:12
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error:
-'CHCR_TS_HIGH_SHIFT' undeclared (first use in this function):  =>
-98:34, 145:10
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error:
-'CHCR_TS_LOW_MASK' undeclared (first use in this function):  => 97:21
-  + /scratch/kisskb/src/arch/sh/drivers/dma/dma-sh.c: error:
-'CHCR_TS_LOW_SHIFT' undeclared (first use in this function):  =>
-97:42, 145:10
+As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+watchdog will return immediately without sleep and with print :
 
-sh-randconfig
+[  205.452934] schedule_timeout: wrong timeout value ffffffffffffff83
 
-> [1] http://kisskb.ellerman.id.au/kisskb/head/7303/ (all 119 configs)
-> [3] http://kisskb.ellerman.id.au/kisskb/head/7277/ (all 119 configs)
+and then the funtion watchdog will call schedule_timeout_interruptible
+again and again. The screen will be filled with
+	"schedule_timeout: wrong timeout value ffffffffffffff83"
 
-Gr{oetje,eeting}s,
+This patch does some check and correction in sysctl, to let the
+function schedule_timeout_interruptible allways get the valid parameter.
 
-                        Geert
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+---
+ Documentation/sysctl/kernel.txt | 1 +
+ kernel/sysctl.c                 | 6 ++++++
+ 2 files changed, 7 insertions(+)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index e55124e..855d9b3 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -317,6 +317,7 @@ for more than this value report a warning.
+ This file shows up if CONFIG_DETECT_HUNG_TASK is enabled.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+ 0: means infinite timeout - no checking done.
++Possible values to set are in range {0..LONG_MAX/HZ}.
+
+ ==============================================================
+
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 49e13e1..aae21e8 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8;
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+
++/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
++#ifdef CONFIG_DETECT_HUNG_TASK
++static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
++#endif
++
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+ #endif
+@@ -995,6 +1000,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dohung_task_timeout_secs,
++		.extra2		= &hung_task_timeout_max,
+ 	},
+ 	{
+ 		.procname	= "hung_task_warnings",
+-- 
+1.9.0
+
+Thanks,
+Liu Hua
+
