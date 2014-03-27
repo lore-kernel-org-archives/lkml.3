@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427AbaC0JrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 05:47:09 -0400
-Received: from smtp.ctxuk.citrix.com ([185.25.65.24]:40632 "EHLO
+	id S1754687AbaC0JyO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 05:54:14 -0400
+Received: from smtp.eu.citrix.com ([185.25.65.24]:9518 "EHLO
 	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaC0JrF convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1753861AbaC0JyL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 05:47:05 -0400
+	Thu, 27 Mar 2014 05:54:11 -0400
 X-IronPort-AV: E=Sophos;i="4.97,741,1389744000"; 
-   d="scan'208";a="12552762"
+   d="scan'208";a="12553695"
 From: Paul Durrant <Paul.Durrant@citrix.com>
 To: Sander Eikelenboom <linux@eikelenboom.it>
 CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
@@ -21,9 +21,9 @@ Subject: RE: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
  troubles "bisected"
 Thread-Topic: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
  troubles "bisected"
-Thread-Index: AQHPPLStn4Kkhyz980uf2acSGT8Sr5rbnK8AgAAk2gCAAAHLgIAABk6AgAAreQCAAKlwgIAApZYAgAACxACAAAVwAIAAJs0AgAAG8ACAAABfAIAAAqeAgAAAwACAAAC9gIAABFKAgAAG+oCAABF0gIAHc7MAgADIlACAAOKDgIAANyqAgAAL8QCAAEXOAIAAEiWAgAAfUQCAANABAIAAn+gAgALcmwCAAAp5gIABo2gAgASBGICAAAPtAIABSiEAgABKIvD///whgIAAEfEw///6VYCAABUwwP//9/8AAAJggWD///fwAP//68nw///W5ICAAGWVgP//B03w
-Date: Thu, 27 Mar 2014 09:47:02 +0000
-Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD029BF42@AMSPEX01CL01.citrite.net>
+Thread-Index: AQHPPLStn4Kkhyz980uf2acSGT8Sr5rbnK8AgAAk2gCAAAHLgIAABk6AgAAreQCAAKlwgIAApZYAgAACxACAAAVwAIAAJs0AgAAG8ACAAABfAIAAAqeAgAAAwACAAAC9gIAABFKAgAAG+oCAABF0gIAHc7MAgADIlACAAOKDgIAANyqAgAAL8QCAAEXOAIAAEiWAgAAfUQCAANABAIAAn+gAgALcmwCAAAp5gIABo2gAgASBGICAAAPtAIABSiEAgABKIvD///whgIAAEfEw///6VYCAABUwwP//9/8AAAJggWD///fwAP//68nwgAAd8AD//+0IEIAAN0EA//8MycA=
+Date: Thu, 27 Mar 2014 09:54:09 +0000
+Message-ID: <9AAE0902D5BC7E449B7C8E4E778ABCD029BF83@AMSPEX01CL01.citrite.net>
 References: <1744594108.20140318162127@eikelenboom.it>
  <20140318160412.GB16807@zion.uk.xensource.com>
  <1701035622.20140318211402@eikelenboom.it>
@@ -45,9 +45,11 @@ References: <1744594108.20140318162127@eikelenboom.it>
  <789809468.20140326175352@eikelenboom.it>
  <9AAE0902D5BC7E449B7C8E4E778ABCD029B277@AMSPEX01CL01.citrite.net>
  <966386043.20140326183304@eikelenboom.it>
- <9AAE0902D5BC7E449B7C8E4E778ABCD029B375@AMSPEX01CL01.citrite.net>
- <172833073.20140326205709@eikelenboom.it>
-In-Reply-To: <172833073.20140326205709@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B350@AMSPEX01CL01.citrite.net>
+ <1959698732.20140326190752@eikelenboom.it>
+ <9AAE0902D5BC7E449B7C8E4E778ABCD029B49C@AMSPEX01CL01.citrite.net>
+ <103668635.20140326211744@eikelenboom.it>
+In-Reply-To: <103668635.20140326211744@eikelenboom.it>
 Accept-Language: en-GB, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -63,7 +65,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 > -----Original Message-----
 > From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
-> Sent: 26 March 2014 19:57
+> Sent: 26 March 2014 20:18
 > To: Paul Durrant
 > Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
 > kernel; netdev@vger.kernel.org
@@ -71,183 +73,174 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > troubles "bisected"
 > 
 > 
-> Wednesday, March 26, 2014, 6:48:15 PM, you wrote:
+> Wednesday, March 26, 2014, 7:15:30 PM, you wrote:
 > 
 > >> -----Original Message-----
-> >> From: Paul Durrant
-> >> Sent: 26 March 2014 17:47
-> >> To: 'Sander Eikelenboom'
+> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+> >> Sent: 26 March 2014 18:08
+> >> To: Paul Durrant
 > >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
 > linux-
 > >> kernel; netdev@vger.kernel.org
-> >> Subject: RE: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
 > >> troubles "bisected"
 > >>
-> >> Re-send shortened version...
 > >>
-> >> > -----Original Message-----
-> >> > From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
-> >> > Sent: 26 March 2014 16:54
-> >> > To: Paul Durrant
-> >> > Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+> >> Wednesday, March 26, 2014, 6:46:06 PM, you wrote:
+> >>
+> >> > Re-send shortened version...
+> >>
+> >> >> -----Original Message-----
+> >> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+> >> >> Sent: 26 March 2014 16:54
+> >> >> To: Paul Durrant
+> >> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
 > >> linux-
-> >> > kernel; netdev@vger.kernel.org
-> >> > Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
-> >> > troubles "bisected"
-> >> >
-> >> [snip]
-> >> > >>
-> >> > >> - When processing an SKB we end up in "xenvif_gop_frag_copy"
+> >> >> kernel; netdev@vger.kernel.org
+> >> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+> >> >> troubles "bisected"
+> >> >>
+> >> > [snip]
+> >> >> >>
+> >> >> >> - When processing an SKB we end up in "xenvif_gop_frag_copy"
 > while
-> >> > prod
-> >> > >> == cons ... but we still have bytes and size left ..
-> >> > >> - start_new_rx_buffer() has returned true ..
-> >> > >> - so we end up in get_next_rx_buffer
-> >> > >> - this does a RING_GET_REQUEST and ups cons ..
-> >> > >> - and we end up with a bad grant reference.
-> >> > >>
-> >> > >> Sometimes we are saved by the bell .. since additional slots have
+> >> >> prod
+> >> >> >> == cons ... but we still have bytes and size left ..
+> >> >> >> - start_new_rx_buffer() has returned true ..
+> >> >> >> - so we end up in get_next_rx_buffer
+> >> >> >> - this does a RING_GET_REQUEST and ups cons ..
+> >> >> >> - and we end up with a bad grant reference.
+> >> >> >>
+> >> >> >> Sometimes we are saved by the bell .. since additional slots have
 > >> become
-> >> > >> free (you see cons become > prod in "get_next_rx_buffer" but
+> >> >> >> free (you see cons become > prod in "get_next_rx_buffer" but
 > shortly
-> >> > after
-> >> > >> that prod is increased ..
-> >> > >> just in time to not cause a overrun).
-> >> > >>
-> >> >
-> >> > > Ah, but hang on... There's a BUG_ON meta_slots_used >
-> >> > max_slots_needed, so if we are overflowing the worst-case calculation
+> >> >> after
+> >> >> >> that prod is increased ..
+> >> >> >> just in time to not cause a overrun).
+> >> >> >>
+> >> >>
+> >> >> > Ah, but hang on... There's a BUG_ON meta_slots_used >
+> >> >> max_slots_needed, so if we are overflowing the worst-case calculation
 > >> then
-> >> > why is that BUG_ON not firing?
-> >> >
-> >> > You mean:
-> >> >                 sco = (struct skb_cb_overlay *)skb->cb;
-> >> >                 sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
-> >> >                 BUG_ON(sco->meta_slots_used > max_slots_needed);
-> >> >
-> >> > in "get_next_rx_buffer" ?
-> >> >
+> >> >> why is that BUG_ON not firing?
+> >> >>
+> >> >> You mean:
+> >> >>                 sco = (struct skb_cb_overlay *)skb->cb;
+> >> >>                 sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
+> >> >>                 BUG_ON(sco->meta_slots_used > max_slots_needed);
+> >> >>
+> >> >> in "get_next_rx_buffer" ?
+> >> >>
 > >>
-> >> That code excerpt is from net_rx_action(),isn't it?
+> >> > That code excerpt is from net_rx_action(),isn't it?
 > >>
-> >> > I don't know .. at least now it doesn't crash dom0 and therefore not my
-> >> > complete machine and since tcp is recovering from a failed packet  :-)
-> >> >
+> >> Yes
 > >>
-> >> Well, if the code calculating max_slots_needed were underestimating
+> >> >> I don't know .. at least now it doesn't crash dom0 and therefore not my
+> >> >> complete machine and since tcp is recovering from a failed packet  :-)
+> >> >>
+> >>
+> >> > Well, if the code calculating max_slots_needed were underestimating
 > then
 > >> the BUG_ON() should fire. If it is not firing in your case then this suggests
 > >> your problem lies elsewhere, or that meta_slots_used is not equal to the
 > >> number of ring slots consumed.
 > >>
-> >> > But probably because "npo->copy_prod++" seems to be used for the
-> frags
-> >> ..
-> >> > and it isn't added to  npo->meta_prod ?
-> >> >
+> >> It's seem to be the last ..
 > >>
-> >> meta_slots_used is calculated as the value of meta_prod at return (from
-> >> xenvif_gop_skb()) minus the value on entry , and if you look back up the
-> >> code then you can see that meta_prod is incremented every time
-> >> RING_GET_REQUEST() is evaluated. So, we must be consuming a slot
-> without
-> >> evaluating RING_GET_REQUEST() and I think that's exactly what's
-> >> happening... Right at the bottom of xenvif_gop_frag_copy() req_cons is
-> >> simply incremented in the case of a GSO. So the BUG_ON() is indeed off
-> by
-> >> one.
+> >> [ 1157.188908] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 5 npo-
+> >> >meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif-
+> >> >rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1
+> >> req->gref:657 req->id:7 estimated_slots_needed:4 j(data):1
+> >> reserved_slots_left:-1    used in funcstart: 0 + 1 .. used_dataloop:1 ..
+> >> used_fragloop:3
+> >> [ 1157.244975] vif vif-7-0 vif7.0: ?!? xenvif_rx_action me here 2 ..  vif-
+> >> >rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 sco-
+> >> >meta_slots_used:4 max_upped_gso:1 skb_is_gso(skb):1
+> >> max_slots_needed:4 j:6 is_gso:1 nr_frags:1 firstpart:1 secondpart:2
+> >> reserved_slots_left:-1
 > >>
+> >> net_rx_action() calculated we would need 4 slots .. and sco-
+> >> >meta_slots_used == 4 when we return so it doesn't trigger you BUG_ON
+> ..
+> >>
+> >> The 4 slots we calculated are:
+> >>   1 slot for the data part: DIV_ROUND_UP(offset_in_page(skb->data) +
+> >> skb_headlen(skb), PAGE_SIZE)
+> >>   2 slots for the single frag in this SKB from: DIV_ROUND_UP(size,
+> PAGE_SIZE)
+> >>   1 slot since GSO
+> >>
+> >> In the debug code i annotated all cons++, and the code uses 1 slot to
+> process
+> >> the data from the SKB as expected but uses 3 slots in the frag chopping
+> loop.
+> >> And when it reaches the state  were cons > prod it is always in
+> >> "get_next_rx_buffer".
+> >>
+> >> >> But probably because "npo->copy_prod++" seems to be used for the
+> >> frags ..
+> >> >> and it isn't added to  npo->meta_prod ?
+> >> >>
+> >>
+> >> > meta_slots_used is calculated as the value of meta_prod at return
+> (from
+> >> xenvif_gop_skb()) minus the value on entry ,
+> >> > and if you look back up the code then you can see that meta_prod is
+> >> incremented every time RING_GET_REQUEST() is evaluated.
+> >> > So, we must be consuming a slot without evaluating
+> RING_GET_REQUEST()
+> >> and I think that's exactly what's happening...
+> >> > Right at the bottom of xenvif_gop_frag_copy() req_cons is simply
+> >> incremented in the case of a GSO. So the BUG_ON() is indeed off by one.
+> >>
+> >> That is probably only done on first iteration / frag ?
 > 
-> > Can you re-test with the following patch applied?
+> > Yes, the extra slot is accounted for right after the head frag is processed
 > 
-> >   Paul
+> Ok so we are talking about:
 > 
-> > diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-
-> netback/netback
-> > index 438d0c0..4f24220 100644
-> > --- a/drivers/net/xen-netback/netback.c
-> > +++ b/drivers/net/xen-netback/netback.c
-> > @@ -482,6 +482,8 @@ static void xenvif_rx_action(struct xenvif *vif)
+> if (*head && ((1 << gso_type) & vif->gso_mask)){
+>                         vif->rx.req_cons++;
 > 
-> >         while ((skb = skb_dequeue(&vif->rx_queue)) != NULL) {
-> >                 RING_IDX max_slots_needed;
-> > +               RING_IDX old_req_cons;
-> > +               RING_IDX ring_slots_used;
-> >                 int i;
+> Well it had some debug code in place to detect if that path is taken as well:
 > 
-> >                 /* We need a cheap worse case estimate for the number of
-> > @@ -511,8 +513,12 @@ static void xenvif_rx_action(struct xenvif *vif)
-> >                         vif->rx_last_skb_slots = 0;
+> [ 1157.095216] vif vif-7-0 vif7.0: ?!? xenvif_gop_frag_copy Me here end npo-
+> >meta_prod:40 vif->rx.sring->req_prod:2105867 vif->rx.req_cons:2105868
+> npo->copy_gref:4325379 npo->copy_off:560  MAX_BUFFER_OFFSET:4096
+> bytes:560 size:0  offset:560 head:1273462060 i:3 vif->rx.sring-
+> >req_event:2105868 gso_gaps:0 estimated_slots_needed:4
+> reserved_slots_left:-1
 > 
-> >                 sco = (struct skb_cb_overlay *)skb->cb;
-> > +
-> > +               old_req_cons = vif->rx.req_cons;
-> >                 sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
-> > -               BUG_ON(sco->meta_slots_used > max_slots_needed);
-> > +               ring_slots_used = vif->rx.req_cons - old_req_cons;
-> > +
-> > +               BUG_ON(ring_slots_used > max_slots_needed);
+> Well "gso_gaps:0" indicates that in this case that path in
+> "xenvif_gop_frag_copy()" has not been taken in any iteration of that frag.
 > 
-> >                 __skb_queue_tail(&rxq, skb);
-> >         }
+> However i=3 .. so we have done 3 iterations of the loop while we expected
+> to do only 2 ...
 > 
-> That blew pretty fast .. on that BUG_ON
+> So that would mean that somehow the code in "xenvif_gop_frag_copy()"
+> needs more slots
+> to brake this frag down than the loop with DIV_ROUND_UP(size, PAGE_SIZE)
+> in net_rx_action() has accounted for.
 > 
 
-Good. That's what should have happened :-)
+Yes. The code is not assuming worst-case page-spanning and it looks like it needs to.
+
+I also notice a bogus clause in this if statement in start_new_rx_buffer():
+
+        if ((offset + size > MAX_BUFFER_OFFSET) &&
+            (size <= MAX_BUFFER_OFFSET) && offset && !head)
+                return true;
+
+MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and xenvif_gop_frag_copy() never passes a value of size > PAGE_SIZE, so that 2nd clause is completely pointless.
+I'll come up with some patches shortly.
 
   Paul
 
-> [  290.218182] ------------[ cut here ]------------
-> [  290.225425] kernel BUG at drivers/net/xen-netback/netback.c:664!
-> [  290.232717] invalid opcode: 0000 [#1] SMP
-> [  290.239875] Modules linked in:
-> [  290.246923] CPU: 0 PID: 10447 Comm: vif7.0 Not tainted 3.13.6-20140326-
-> nbdebug35+ #1
-> [  290.254040] Hardware name: MSI MS-7640/890FXA-GD70 (MS-7640)  , BIOS
-> V1.8B1 09/13/2010
-> [  290.261313] task: ffff880055d16480 ti: ffff88004cb7e000 task.ti:
-> ffff88004cb7e000
-> [  290.268713] RIP: e030:[<ffffffff81780430>]  [<ffffffff81780430>]
-> xenvif_rx_action+0x1650/0x1670
-> [  290.276193] RSP: e02b:ffff88004cb7fc28  EFLAGS: 00010202
-> [  290.283555] RAX: 0000000000000006 RBX: ffff88004c630000 RCX:
-> 3fffffffffffffff
-> [  290.290908] RDX: 00000000ffffffff RSI: ffff88004c630940 RDI:
-> 0000000000048e7b
-> [  290.298325] RBP: ffff88004cb7fde8 R08: 0000000000007bc9 R09:
-> 0000000000000005
-> [  290.305809] R10: ffff88004cb7fd28 R11: ffffc90012690600 R12:
-> 0000000000000004
-> [  290.313217] R13: ffff8800536a84e0 R14: 0000000000000001 R15:
-> ffff88004c637618
-> [  290.320521] FS:  00007f1d3030c700(0000) GS:ffff88005f600000(0000)
-> knlGS:0000000000000000
-> [  290.327839] CS:  e033 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [  290.335216] CR2: ffffffffff600400 CR3: 0000000058537000 CR4:
-> 0000000000000660
-> [  290.342732] Stack:
-> [  290.350129]  ffff88004cb7fd2c ffff880000000005 ffff88004cb7fd28
-> ffffffff810f7fc8
-> [  290.357652]  ffff880055d16b50 ffffffff00000407 ffff880000000000
-> ffffffff00000000
-> [  290.365048]  ffff880055d16b50 ffff880000000001 ffff880000000001
-> ffffffff00000000
-> [  290.372461] Call Trace:
-> [  290.379806]  [<ffffffff810f7fc8>] ? __lock_acquire+0x418/0x2220
-> [  290.387211]  [<ffffffff810df5f6>] ? finish_task_switch+0x46/0xf0
-> [  290.394552]  [<ffffffff81781400>] xenvif_kthread+0x40/0x190
-> [  290.401808]  [<ffffffff810f05e0>] ? __init_waitqueue_head+0x60/0x60
-> [  290.408993]  [<ffffffff817813c0>] ? xenvif_stop_queue+0x60/0x60
-> [  290.416238]  [<ffffffff810d4f24>] kthread+0xe4/0x100
-> [  290.423428]  [<ffffffff81b4cf30>] ? _raw_spin_unlock_irq+0x30/0x50
-> [  290.430615]  [<ffffffff810d4e40>] ? __init_kthread_worker+0x70/0x70
-> [  290.437793]  [<ffffffff81b4e13c>] ret_from_fork+0x7c/0xb0
-> [  290.444945]  [<ffffffff810d4e40>] ? __init_kthread_worker+0x70/0x70
-> [  290.452091] Code: fd ff ff 48 8b b5 f0 fe ff ff 48 c7 c2 10 98 ce 81 31 c0 48 8b
-> be c8 7c 00 00 48 c7 c6 f0 f1 fd 81 e8 35 be 24 00 e9 ba f8 ff ff <0f> 0b 0f 0b 41
-> bf 01 00 00 00 e9 55 f6 ff ff 0f 0b 66 66 66 66
-> [  290.467121] RIP  [<ffffffff81780430>] xenvif_rx_action+0x1650/0x1670
-> [  290.474436]  RSP <ffff88004cb7fc28>
-> [  290.482400] ---[ end trace 2fcf9e9ae26950b3 ]---
+> 
+> 
+> 
+> 
+> 
 
