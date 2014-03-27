@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995AbaC0Rr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:47:56 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:53518 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469AbaC0Rry (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:47:54 -0400
+	id S1757070AbaC0RsD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 13:48:03 -0400
+Received: from smtp01.online.nl ([194.134.41.31]:60431 "EHLO smtp01.online.nl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757020AbaC0Rr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 13:47:59 -0400
+Message-ID: <5334644A.3010201@topic.nl>
+Date: Thu, 27 Mar 2014 18:47:54 +0100
+From: Mike Looijmans <mike.looijmans@topic.nl>
+Organization: Topic
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-In-Reply-To: <20140326131800.GA7171@htj.dyndns.org>
-References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com>
-	<20140314140804.GG12613@htj.dyndns.org>
-	<CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com>
-	<20140317201346.GE17373@mtj.dyndns.org>
-	<5327AAA8.2080703@gmail.com>
-	<53322777.3030703@gmail.com>
-	<20140326131800.GA7171@htj.dyndns.org>
-Date: Thu, 27 Mar 2014 13:47:53 -0400
-Message-ID: <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com>
-Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to
- kern_mount() sysfs from sysfs_init()" prevents system from booting correctly
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Georgi Djakov <gdjakov@mm-sol.com>, cjb@laptop.org,
+        linux-mmc@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, git@xilinx.com
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+References: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl> <5332EDBB.7010105@mm-sol.com>
+In-Reply-To: <5332EDBB.7010105@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Online-Scanned: by Cloudmark authority (on smtp01.online.nl)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll do my best, but I just don't have enough time right now for
-everything I have to do at home and dig this bug. I may be able to
-look at it in the next couple of days though, or it may go somewhere
-next week... That being said, I tried yesterday to have a better idea
-and I thank you for the "ScrLck" trick, I didn't know that it was
-working. Nevertheless I didn't find anything.
-
-It seems as if the transition from the temporary kernel's fs to the
-hard disk's fs is not done correctly. If I boot with a working kernel
-after that, I can't find any trace of where it was trying to copy the
-files or of any partition being full. Could it be filling the RAM
-until it reaches its maximum capacity (16GB to fill before hitting the
-limit and throwing the errors)? That would explain at least why it
-takes so much time before the flood of errors begins...
-
-On Wed, Mar 26, 2014 at 9:18 AM, Tejun Heo <tj@kernel.org> wrote:
-> On Tue, Mar 25, 2014 at 09:03:51PM -0400, Alexandre Demers wrote:
->> So, I tried RC8 and I'm still getting the error. It start too fast
->> to be able to read whatever it is saying, but here is what I can
->> read:
->> ...
->> cp: error writing /run/initramfs/new_root/...
->> cp: failed to extend ...
->> ... (and so on)
+On 26-3-2014 16:09, Georgi Djakov wrote:
+> On 03/07/2014 04:18 PM, Mike Looijmans wrote:
+>> If vmmc or vqmmc regulators are controlled by an I2C device, the
+>> request for the regulator is likely to fail because the I2C bus has
+>> not been probed yet. The sdhci then incorrectly assumes that the user
+>> never wanted to use a regulator anyway and continues without ever
+>> enabling or configuring the required regulator.
 >>
->> It goes on like that for a long time.
+>> To solve this, when a required voltage regulator returns
+>> EPROBE_DEFER, signalling that the regulator exists but is not
+>> available yet, forward this error to the probe method instead
+>> of simply assuming that the user never wanted to use a regulator
+>> anyway.
+>>
+>> Tested on a custom board that has an I2C regulator for one of the sdhcis
+>> and no regulators at all for the other. This patch enables such a system
+>> to work correctly.
+>> ---
+>>   drivers/mmc/host/sdhci.c |    8 ++++++--
+>>   1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+>> index 34aef81..43b90c1 100644
+>> --- a/drivers/mmc/host/sdhci.c
+>> +++ b/drivers/mmc/host/sdhci.c
+>> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>>       host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+>>       if (IS_ERR_OR_NULL(host->vqmmc)) {
+>>           if (PTR_ERR(host->vqmmc) < 0) {
+>> +            if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
+>> +                return -EPROBE_DEFER;
+>>               pr_info("%s: no vqmmc regulator found\n",
+>>                   mmc_hostname(mmc));
+>>               host->vqmmc = NULL;
+>> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+>>       host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+>>       if (IS_ERR_OR_NULL(host->vmmc)) {
+>>           if (PTR_ERR(host->vmmc) < 0) {
+>> -            pr_info("%s: no vmmc regulator found\n",
+>> -                mmc_hostname(mmc));
+>> +            if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
+>> +                return -EPROBE_DEFER;
+>> +            pr_info("%s: no vmmc regulator found (%d)\n",
 >
-> Ooh, I thought you were gonna find out what filled up the filesystem
-> after rebooting into the older kernel.  Can you please do that?  Also,
-> pressing "ScrLk" should stop the screen from scrolling.
+> I suggest using %ld here. The rest looks fine to me! Thanks!
+
+Does this mean you're waiting for a patch v2 that I should submit?
+
 >
-> Thanks.
+>> +                mmc_hostname(mmc), PTR_ERR(host->vmmc));
+>>               host->vmmc = NULL;
+>>           }
+>>       }
+>>
 >
-> --
-> tejun
+> BR,
+> Georgi
+>
+
+
+-- 
+Mike Looijmans
