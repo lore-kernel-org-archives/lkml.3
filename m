@@ -1,94 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695AbaC0Ixy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:53:54 -0400
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:56351 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaC0Ixv (ORCPT
+	id S1754338AbaC0JAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 05:00:23 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:40193
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752049AbaC0JAT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:53:51 -0400
-Date: Thu, 27 Mar 2014 09:53:47 +0100
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Markus Armbruster <armbru@redhat.com>,
-        Alejandro Comisario <alejandro.comisario@mercadolibre.com>,
-        kvm@vger.kernel.org, ghammer@redhat.com,
-        Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
-        qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] Massive read only kvm guests when backing file was
- missing
-Message-ID: <20140327085347.GB9580@stefanha-thinkpad.redhat.com>
-References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
- <20140327064158.GA17563@redhat.com>
- <87y4zwt7mu.fsf@blackfin.pond.sub.org>
- <20140327081040.GA21756@redhat.com>
+	Thu, 27 Mar 2014 05:00:19 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH] regmap: Add REGMAP_ENDIAN_SWAP support for values.
+Date: Thu, 27 Mar 2014 16:17:39 +0800
+Message-ID: <1395908259-1832-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140327081040.GA21756@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 10:10:40AM +0200, Michael S. Tsirkin wrote:
-> On Thu, Mar 27, 2014 at 08:36:57AM +0100, Markus Armbruster wrote:
-> > "Michael S. Tsirkin" <mst@redhat.com> writes:
-> > 
-> > > On Wed, Mar 26, 2014 at 11:08:03PM -0300, Alejandro Comisario wrote:
-> > >> Hi List!
-> > >> Hope some one can help me, we had a big issue in our cloud the other
-> > >> day, a couple of our openstack regions ( +2000 kvm guests with qcow2 )
-> > >> went read only filesystem from the guest side because the backing
-> > >> files directory (the openstack _base directory) was compromised and
-> > >> the data was lost, when we realized the data was lost, it took us 5
-> > >> mins to restore the backup of the backing files, but by that time all
-> > >> the kvm guests received some kind of IO error from the hypervisor
-> > >> layer, and went read only on root filesystem.
-> > >> 
-> > >> My question would be, is there a way to hold the IO operations against
-> > >> the backing files ( i thought that would be 99% READ operations ) for
-> > >> a little longer ( im asking this because i dont quite understand what
-> > >> is the process and when it raises the error ) in a case the backing
-> > >> files are missing (no IO possible) but is recoverable within minutes ?
-> > >> 
-> > >> Any tip  on how to achieve this if possible, or information about how
-> > >> backing files works on kvm, will be amazing.
-> > >> Waiting for feedback!
-> > >> 
-> > >> kindest regards.
-> > >> Alejandro Comisario
-> > >
-> > >
-> > > I'm guessing this is what happened: guests timed out meanwhile.
-> > > You can increase the timeout within the guest:
-> > > echo 600 > /sys/block/sda/device/timeout
-> > > to timeout after 10 minutes.
-> > >
-> > > If you have installed qemu guest agent on your system, you can do this
-> > > from the host. Unfortunately by default it's memory can be pushed out to swap
-> > > and then on disk error access there might will fail :(
-> > > Maybe we should consider mlock on all its memory at least as an option.
-> > >
-> > > You could pause your guests, restart them after the issue is resolved,
-> > > and we could I guess add functionality to pause VM on disk errors
-> > > automatically.
-> > > Stefan?
-> > 
-> > Would -drive rerror=stop do?
-> 
-> I think it will. It's a pity it doesn't appear in --help output -
-> would make it easier to find.
+For the following cases of the SoCs using regmap-mmio:
 
-It is documented on the man page.  I'll send a patch to document it in
-the --help output too.
+Index   CPU mode   Device mode   Need Bytes Swap ?
+--------------------------------------------------
+1       LE         LE            No
+2       LE         BE            Yes
+3       BE         BE            No
+4       BE         LE            Yes
 
-But there's still a problem because the guest can have a shorter timeout
-or the image may be NFS mounted on the host.  In that case the guest may
-give up on the request before the host.  Then there is nothing QEMU can
-do to avoid an error being returned to the application or the guest file
-system going into read-only mode.
+And possiblly one Device will be used in all the endianness modes
+above with the same device driver, then for the 1 and 3 cases the
+REGMAP_ENDIAN_NATIVE is okey, but for the 2 and 4 cases, the
+REGMAP_ENDIAN_SWAP is needed.
 
-So make sure the timeout inside the guest is high.
+For the DT node, just one property like 'endian-swap' will be okey
+for cases 2 and 4.
 
-Stefan
+----
+
+Certainly, for the 2 case, we can just use REGMAP_ENDIAN_BIG
+instead of REGMAP_ENDIAN_SWAP, and then we should add one DT node
+property like 'big-endian'.
+
+While for the 4 case, we can just use REGMAP_ENDIAN_LITTLE instead
+of REGMAP_ENDIAN_SWAP, and then we should add one DT node property
+like 'little-endian'. Another question is that the
+REGMAP_ENDIAN_LITTLE hasn't support by regmap core yet.
+
+And using the REGMAP_ENDIAN_BIG and REGMAP_ENDIAN_LITTLE will make
+the driver a bit more complex, and also the usage of it.
+
+Thus using the REGMAP_ENDIAN_SWAP and one DT node property like
+'endian-swap' will make the driver more easy to develop and to use
+for all the above possible cases.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regmap.c | 56 ++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/regmap.h       |  1 +
+ 2 files changed, 57 insertions(+)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 6a19515..71e0a0d 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -192,6 +192,14 @@ static void regmap_format_16_be(void *buf, unsigned int val, unsigned int shift)
+ 	b[0] = cpu_to_be16(val << shift);
+ }
+ 
++static void regmap_format_16_swap(void *buf, unsigned int val,
++				  unsigned int shift)
++{
++	__u16 *b = buf;
++
++	b[0] = __swab16(val << shift);
++}
++
+ static void regmap_format_16_native(void *buf, unsigned int val,
+ 				    unsigned int shift)
+ {
+@@ -216,6 +224,14 @@ static void regmap_format_32_be(void *buf, unsigned int val, unsigned int shift)
+ 	b[0] = cpu_to_be32(val << shift);
+ }
+ 
++static void regmap_format_32_swap(void *buf, unsigned int val,
++				  unsigned int shift)
++{
++	__u32 *b = buf;
++
++	b[0] = __swab32(val << shift);
++}
++
+ static void regmap_format_32_native(void *buf, unsigned int val,
+ 				    unsigned int shift)
+ {
+@@ -240,6 +256,13 @@ static unsigned int regmap_parse_16_be(const void *buf)
+ 	return be16_to_cpu(b[0]);
+ }
+ 
++static unsigned int regmap_parse_16_swap(const void *buf)
++{
++	const __u16 *b = buf;
++
++	return __swab16(b[0]);
++}
++
+ static void regmap_parse_16_be_inplace(void *buf)
+ {
+ 	__be16 *b = buf;
+@@ -247,6 +270,13 @@ static void regmap_parse_16_be_inplace(void *buf)
+ 	b[0] = be16_to_cpu(b[0]);
+ }
+ 
++static void regmap_parse_16_swap_inplace(void *buf)
++{
++	__u16 *b = buf;
++
++	b[0] = __swab16(b[0]);
++}
++
+ static unsigned int regmap_parse_16_native(const void *buf)
+ {
+ 	return *(u16 *)buf;
+@@ -269,6 +299,13 @@ static unsigned int regmap_parse_32_be(const void *buf)
+ 	return be32_to_cpu(b[0]);
+ }
+ 
++static unsigned int regmap_parse_32_swap(const void *buf)
++{
++	const __u32 *b = buf;
++
++	return __swab32((b[0]));
++}
++
+ static void regmap_parse_32_be_inplace(void *buf)
+ {
+ 	__be32 *b = buf;
+@@ -276,6 +313,13 @@ static void regmap_parse_32_be_inplace(void *buf)
+ 	b[0] = be32_to_cpu(b[0]);
+ }
+ 
++static void regmap_parse_32_swap_inplace(void *buf)
++{
++	__u32 *b = buf;
++
++	b[0] = __swab32(b[0]);
++}
++
+ static unsigned int regmap_parse_32_native(const void *buf)
+ {
+ 	return *(u32 *)buf;
+@@ -585,6 +629,12 @@ struct regmap *regmap_init(struct device *dev,
+ 			map->format.parse_val = regmap_parse_16_be;
+ 			map->format.parse_inplace = regmap_parse_16_be_inplace;
+ 			break;
++		case REGMAP_ENDIAN_SWAP:
++			map->format.format_val = regmap_format_16_swap;
++			map->format.parse_val = regmap_parse_16_swap;
++			map->format.parse_inplace =
++					regmap_parse_16_swap_inplace;
++			break;
+ 		case REGMAP_ENDIAN_NATIVE:
+ 			map->format.format_val = regmap_format_16_native;
+ 			map->format.parse_val = regmap_parse_16_native;
+@@ -606,6 +656,12 @@ struct regmap *regmap_init(struct device *dev,
+ 			map->format.parse_val = regmap_parse_32_be;
+ 			map->format.parse_inplace = regmap_parse_32_be_inplace;
+ 			break;
++		case REGMAP_ENDIAN_SWAP:
++			map->format.format_val = regmap_format_32_swap;
++			map->format.parse_val = regmap_parse_32_swap;
++			map->format.parse_inplace =
++					regmap_parse_32_swap_inplace;
++			break;
+ 		case REGMAP_ENDIAN_NATIVE:
+ 			map->format.format_val = regmap_format_32_native;
+ 			map->format.parse_val = regmap_parse_32_native;
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4149f1a..a2e68f3 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -56,6 +56,7 @@ enum regmap_endian {
+ 	REGMAP_ENDIAN_DEFAULT = 0,
+ 	REGMAP_ENDIAN_BIG,
+ 	REGMAP_ENDIAN_LITTLE,
++	REGMAP_ENDIAN_SWAP,
+ 	REGMAP_ENDIAN_NATIVE,
+ };
+ 
+-- 
+1.8.4
+
+
