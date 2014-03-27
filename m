@@ -1,68 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442AbaC0HJb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 03:09:31 -0400
-Received: from shell.v3.sk ([195.168.3.45]:54205 "EHLO shell.v3.sk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902AbaC0HJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 03:09:29 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Lubomir Rintel <lkundrak@v3.sk>
-Subject: [PATCH RESEND] gadgetfs: Initialize CHIP to NULL before UDC probe
-Date: Thu, 27 Mar 2014 08:09:21 +0100
-Message-Id: <1395904161-6865-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.8.5.3
+	id S1753541AbaC0HZS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 03:25:18 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:51303 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaC0HZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 03:25:15 -0400
+Date: Thu, 27 Mar 2014 08:25:11 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Mike Galbraith <umgwanakikbuti@gmail.com>
+Cc: Yuyang du <yuyang.du@intel.com>, peterz@infradead.org, mingo@redhat.com,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        morten.rasmussen@arm.com, arjan.van.de.ven@intel.com,
+        len.brown@intel.com, rafael.j.wysocki@intel.com, alan.cox@intel.com
+Subject: Re: [RFC II] Splitting scheduler into two halves
+Message-ID: <20140327072511.GA2555@gmail.com>
+References: <20140326183721.GC24116@intel.com>
+ <1395896233.5512.45.camel@marge.simpson.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395896233.5512.45.camel@marge.simpson.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise the value from the last probe would be retained that possibly is
-freed since (the UDC is removed) and therefore no longer relevant. Reproducible
-with the dummy UDC:
 
-  modprobe dummy_hcd
-  mount -t gadgetfs gadgetfs /dev/gadget
-  umount /dev/gadget
-  rmmod dummy_hcd
-  mount -t gadgetfs gadgetfs /dev/gadget
+* Mike Galbraith <umgwanakikbuti@gmail.com> wrote:
 
-BUG: unable to handle kernel paging request at ffffffffa066fd9d
-Call Trace:
- [<ffffffff811d0cd2>] ? d_alloc_name+0x22/0x50
- [<ffffffff812b74dc>] ? selinux_d_instantiate+0x1c/0x20
- [<ffffffffa067d687>] gadgetfs_create_file+0x27/0xa0 [gadgetfs]
- [<ffffffffa067da70>] ? setup_req.isra.4+0x80/0x80 [gadgetfs]
- [<ffffffffa067dbac>] gadgetfs_fill_super+0x13c/0x180 [gadgetfs]
- [<ffffffff811bc832>] mount_single+0x92/0xc0
- [<ffffffffa067d0f8>] gadgetfs_mount+0x18/0x20 [gadgetfs]
- [<ffffffff811bc8f9>] mount_fs+0x39/0x1b0
- [<ffffffff8116b220>] ? __alloc_percpu+0x10/0x20
- [<ffffffff811d6da3>] vfs_kern_mount+0x63/0xf0
- [<ffffffff811d93be>] do_mount+0x23e/0xac0
- [<ffffffff811660eb>] ? strndup_user+0x4b/0xf0
- [<ffffffff811d9f63>] SyS_mount+0x83/0xc0
- [<ffffffff81695b69>] system_call_fastpath+0x16/0x1b
+> On Thu, 2014-03-27 at 02:37 +0800, Yuyang du wrote: 
+> > Hi all,
+> > 
+> > This is continued after the first RFC about splitting the scheduler. Still
+> > work-in-progress, and call for feedback.
+> > 
+> > The question addressed here is how load balance should be changed. And I think
+> > the question then goes to how to *reuse* common code as much as possible and
+> > meanwhile be able to serve various objectives.
+> > 
+> > So these are the basic semantics needed in current load balance:
+> 
+> I'll probably regret it, but I'm gonna speak my mind.  I think this 
+> two halves concept is fundamentally broken.
 
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- drivers/usb/gadget/inode.c | 1 +
- 1 file changed, 1 insertion(+)
+As PeterZ pointed it out in the previous discussion, this approach, 
+besides being fundamentally broken, also gives no valid technical 
+rationale given for the change.
 
-diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
-index b94c049..ee15628 100644
---- a/drivers/usb/gadget/inode.c
-+++ b/drivers/usb/gadget/inode.c
-@@ -2046,6 +2046,7 @@ gadgetfs_fill_super (struct super_block *sb, void *opts, int silent)
- 		return -ESRCH;
- 
- 	/* fake probe to determine $CHIP */
-+	CHIP = NULL;
- 	usb_gadget_probe_driver(&probe_driver);
- 	if (!CHIP)
- 		return -ENODEV;
--- 
-1.8.5.3
+Firstly, I'd like to stress it that we are not against abstraction and 
+interfaces within the scheduler (at all!) - we already have a 'split' 
+and use interfaces between 'scheduler classes':
 
+struct sched_class {
+	const struct sched_class *next;
+
+	void (*enqueue_task) (struct rq *rq, struct task_struct *p, int flags);
+	void (*dequeue_task) (struct rq *rq, struct task_struct *p, int flags);
+	void (*yield_task) (struct rq *rq);
+	bool (*yield_to_task) (struct rq *rq, struct task_struct *p, bool preempt);
+
+	void (*check_preempt_curr) (struct rq *rq, struct task_struct *p, int flags);
+
+	/*
+	 * It is the responsibility of the pick_next_task() method that will
+	 * return the next task to call put_prev_task() on the @prev task or
+	 * something equivalent.
+	 *
+	 * May return RETRY_TASK when it finds a higher prio class has runnable
+	 * tasks.
+	 */
+	struct task_struct * (*pick_next_task) (struct rq *rq,
+						struct task_struct *prev);
+	void (*put_prev_task) (struct rq *rq, struct task_struct *p);
+
+#ifdef CONFIG_SMP
+	int  (*select_task_rq)(struct task_struct *p, int task_cpu, int sd_flag, int flags);
+	void (*migrate_task_rq)(struct task_struct *p, int next_cpu);
+
+	void (*post_schedule) (struct rq *this_rq);
+	void (*task_waking) (struct task_struct *task);
+	void (*task_woken) (struct rq *this_rq, struct task_struct *task);
+
+	void (*set_cpus_allowed)(struct task_struct *p,
+				 const struct cpumask *newmask);
+
+	void (*rq_online)(struct rq *rq);
+	void (*rq_offline)(struct rq *rq);
+#endif
+
+	void (*set_curr_task) (struct rq *rq);
+	void (*task_tick) (struct rq *rq, struct task_struct *p, int queued);
+	void (*task_fork) (struct task_struct *p);
+	void (*task_dead) (struct task_struct *p);
+
+	void (*switched_from) (struct rq *this_rq, struct task_struct *task);
+	void (*switched_to) (struct rq *this_rq, struct task_struct *task);
+	void (*prio_changed) (struct rq *this_rq, struct task_struct *task,
+			     int oldprio);
+
+	unsigned int (*get_rr_interval) (struct rq *rq,
+					 struct task_struct *task);
+
+#ifdef CONFIG_FAIR_GROUP_SCHED
+	void (*task_move_group) (struct task_struct *p, int on_rq);
+#endif
+};
+
+So where it makes sense we make use of this programming technique, to 
+the extent it is helpful.
+
+But interfaces and abstraction has a cost, and the justification given 
+in this submission looks very weak to me. There's no justification 
+given in this specific submission, the closest I could find was in the 
+first submission:
+
+> > With the advent of more cores and heterogeneous architectures, the 
+> > scheduler is required to be more complex (power efficiency) and 
+> > diverse (big.little). For the scheduler to address that challenge 
+> > as a whole, it is costly but not necessary. This proposal argues 
+> > that the scheduler be spitted into two parts: top half (task 
+> > scheduling) and bottom half (load balance). Let the bottom half 
+> > take charge of the incoming requirements.
+
+That is just way too generic with no specific technical benefits 
+listed. No cost/benefit demonstrated.
+
+If there's any advantage to a 'split', then it must be expressable via 
+one or more of these positive attributes:
+
+ - better numbers (better performance, etc.)
+ - reduced code
+ - new features
+
+A split alone, without making active and convincing use of it, is 
+inadequate.
+
+So without a much better rationale, demonstrated via actual, real 
+working code that not only does the split but also makes real use of 
+every aspect of the proposed abstraction interfaces, which 
+demonstrates that the proposed 'split' is the most sensible way 
+forward, this specific submission earns a NAK from me.
+
+Thanks,
+
+	Ingo
