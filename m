@@ -1,239 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756789AbaC0Nq4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 09:46:56 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:48910 "EHLO kanga.kvack.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678AbaC0Nqy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 09:46:54 -0400
-Date: Thu, 27 Mar 2014 09:46:53 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org, linux-aio@kvack.org, linux-mm@kvack.org
-Subject: git pull -- [PATCH] aio: v2 ensure access to ctx->ring_pages is correctly serialised
-Message-ID: <20140327134653.GA22407@kvack.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1756797AbaC0N6F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 09:58:05 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:35191 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743AbaC0N6D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 09:58:03 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-54-53342e68a344
+Message-id: <53342E64.5060505@samsung.com>
+Date: Thu, 27 Mar 2014 14:57:56 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.3.0
+MIME-version: 1.0
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        linux-arm-kernel@lists.infradead.org
+Cc: mturquette@linaro.org, mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH RFC v3 2/2] clk: Add handling of clk parent and rate
+ assigned from DT
+References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+ <1395922579-28547-3-git-send-email-s.nawrocki@samsung.com>
+ <77553409.zvN7VkNGe7@avalon>
+In-reply-to: <77553409.zvN7VkNGe7@avalon>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrPLMWRmVeSWpSXmKPExsVy+t/xq7oZeibBBr9PMlnMP3KO1aL/zUJW
+	iwN/djBaNC9ez2ZxtukNu0XnxCXsFpseX2O1uLxrDpvF7cu8FmuP3GW3WHr9IpPF0wkX2Sxa
+	9x5ht5gx+SWbxfoZr1kc+D3WzFvD6NHS3MPmcbmvl8ljdsdMVo9NqzrZPO5c28PmsX/uGnaP
+	zUvqPfq2rGL0+LxJLoArissmJTUnsyy1SN8ugStj6r1mloJrChULN11jamC8IdHFyMkhIWAi
+	MWH+cjYIW0ziwr31QDYXh5DAUkaJRTvbGCGcT4xAVbOYQap4BbQkmk9uYgGxWQRUJVpXngKz
+	2QQMJXqP9jGC2KICERJzJ25mg6gXlPgx+R5YjYhAgsSa40uZQIYyC5xkkjh0q4sVJCEsEC2x
+	8uAXdohtixgl3i14wQ6S4BTQlDg6swOsiFlAR2J/6zQ2CFteYvOat8wTGAVmIVkyC0nZLCRl
+	CxiZVzGKppYmFxQnpeca6RUn5haX5qXrJefnbmKERNrXHYxLj1kdYhTgYFTi4d1x3yhYiDWx
+	rLgy9xCjBAezkgivr7JJsBBvSmJlVWpRfnxRaU5q8SFGJg5OqQZG7g/TXXYnvj7gOqVey7kv
+	2nVbX7vXlH3TqyZx72w06lp/uMxu7UTNe5yO36LbVA2bj/6xDt4zr8WJ1Sc1+Etkx0S/PY8F
+	9haL5BlYuBixWR893h+j/+/Ut5u37jcr55br2Av8+iPL7ysgcO7sosiEPRnuzA/2LPme0OLK
+	veAmr97ta1KaBxWVWIozEg21mIuKEwEwWi8ykgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus and everyone,
+Hi Laurent,
 
-Please pull the change below from my aio-fixes git repository at 
-git://git.kvack.org/~bcrl/aio-fixes.git which fixes a couple of issues 
-found in the aio page migration code.  This patch is applicable to the 
-3.12 and later stable trees as well.  Thanks to all the folks involved 
-in reporting & testing.
+On 27/03/14 14:24, Laurent Pinchart wrote:
+> On Thursday 27 March 2014 13:16:19 Sylwester Nawrocki wrote:
+>> This function adds a helper function to configure clock parents and rates
+>> as specified in clock-parents, clock-rates DT properties for a consumer
+>> device and a call to it before driver is bound to a device.
+>>
+>> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+>> ---
+[...]
+>> ---
+>>  .../devicetree/bindings/clock/clock-bindings.txt   |   26 ++++++
+>>  drivers/base/dd.c                                  |    7 ++
+>>  drivers/clk/Makefile                               |    1 +
+>>  drivers/clk/clk-conf.c                             |   87 +++++++++++++++++
+>>  drivers/clk/clk.c                                  |   10 ++-
+>>  include/linux/clk/clk-conf.h                       |   19 +++++
+>>  6 files changed, 149 insertions(+), 1 deletion(-)
+>>  create mode 100644 drivers/clk/clk-conf.c
+>>  create mode 100644 include/linux/clk/clk-conf.h
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> b/Documentation/devicetree/bindings/clock/clock-bindings.txt index
+>> 7c52c29..b452f80 100644
+>> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+>> @@ -115,3 +115,29 @@ clock signal, and a UART.
+>>    ("pll" and "pll-switched").
+>>  * The UART has its baud clock connected the external oscillator and its
+>>    register clock connected to the PLL clock (the "pll-switched" signal)
+>> +
+>> +==Assigned clock parents and rates==
+>> +
+>> +Some platforms require static initial configuration of parts of the clocks
+>> +controller. Such a configuration can be specified in a clock consumer node
+>> +through clock-parents and clock-rates DT properties. The former should
+>> contain
+>> +a list of parent clocks in form of phandle and clock specifier pairs, the
+>> +latter the list of assigned clock frequency values (one cell each).
+>> +
+>> +    uart@a000 {
+>> +        compatible = "fsl,imx-uart";
+>> +        reg = <0xa000 0x1000>;
+>> +        ...
+>> +        clocks = <&clkcon 0>, <&clkcon 3>;
+>> +        clock-names = "baud", "mux";
+>> +
+>> +        clock-parents = <0>, <&pll 1>;
+>> +        clock-rates = <460800>;
+>> +    };
+>> +
+>> +In this example the pll is set as parent of "mux" clock and frequency of
+>> "baud"
+>> +clock is specified as 460800 Hz.
+> 
+> I'm curious, what should happen when two devices have conflicting requirements 
+> ? If a different device required the <&clkcon 3> parent to be set to <&pll 2> 
+> for instance, who should win ? Shouldn't a warning be printed ?
 
-		-ben
-----snip----
+In general, the assumption is that the <&clkcon 3> clock would be used only
+by the uart@a000 device. If a clock is shared I'd say it shouldn't be put
+in a multiple consumer device nodes. Instead it should be put in a clock
+provider node, as I was trying to explain in the sentence below.
 
-As reported by Tang Chen, Gu Zheng and Yasuaki Isimatsu, the following issues
-exist in the aio ring page migration support.
+A warning could be useful, but it could complicate the code. We would need,
+for example, to store information about already configured clocks in a list and
+scan it before actually altering any clock parent or rate.
 
-As a result, for example, we have the following problem:
+>> +For clocks which are not directly connected to any consumer device
+>> similarly
+>> +clocks, clock-parents and/or clock-rates properties should be specified in
+>> +assigned-clocks subnode of a clock controller DT node.
+> 
+> It might be that I'm not familiar enough with the clock framework, but this 
+> sounds unclear to me. I'm not sure what you mean exactly.
 
-            thread 1                      |              thread 2
-                                          |
-aio_migratepage()                         |
- |-> take ctx->completion_lock            |
- |-> migrate_page_copy(new, old)          |
- |   *NOW*, ctx->ring_pages[idx] == old   |
-                                          |
-                                          |    *NOW*, ctx->ring_pages[idx] == old
-                                          |    aio_read_events_ring()
-                                          |     |-> ring = kmap_atomic(ctx->ring_pages[0])
-                                          |     |-> ring->head = head;          *HERE, write to the old ring page*
-                                          |     |-> kunmap_atomic(ring);
-                                          |
- |-> ctx->ring_pages[idx] = new           |
- |   *BUT NOW*, the content of            |
- |    ring_pages[idx] is old.             |
- |-> release ctx->completion_lock         |
+Sorry about not being precise here, would something like below be more
+clear ?
 
-As above, the new ring page will not be updated.
+"Configuration of common clocks, which affect multiple consumer devices
+can be specified in a dedicated 'assigned-clocks' subnode of a clock
+provider node, e.g.:
 
-Fix this issue, as well as prevent races in aio_ring_setup() by taking
-the ring_lock mutex during page migration and where otherwise applicable.
-This avoids the overhead of taking another spinlock in
-aio_read_events_ring() as Tang's and Gu's original fix did, pushing the
-overhead into the migration code.
+    clkcon {
+        ...
+        #clock-cells = <1>;
 
-Note that to handle the nesting of ring_lock inside of mmap_sem, the
-migratepage operation uses mutex_trylock().  Page migration is not a 100%
-critical operation in this case, so the ocassional failure can be
-tolerated.  This issue was reported by Sasha Levin.
+        assigned-clocks {
+            clocks = <&clkcon 16>, <&clkcon 17>;
+            clock-parents = <0>, <&clkcon 1>;
+            clock-rates = <200000>;
+        };
+    };	
+"
 
-Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-Reported-by: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Tang Chen <tangchen@cn.fujitsu.com>
-Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-Cc: stable@vger.kernel.org
----
- fs/aio.c | 55 ++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 48 insertions(+), 7 deletions(-)
+Naturally it's this just an RFC, any critics or suggestions are welcome.:)
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 062a5f6..bfe1497 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -241,8 +241,10 @@ static void put_aio_ring_file(struct kioctx *ctx)
- 
- static void aio_free_ring(struct kioctx *ctx)
- {
-+	unsigned long flags;
- 	int i;
- 
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
- 	for (i = 0; i < ctx->nr_pages; i++) {
- 		struct page *page;
- 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
-@@ -253,6 +255,7 @@ static void aio_free_ring(struct kioctx *ctx)
- 		ctx->ring_pages[i] = NULL;
- 		put_page(page);
- 	}
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
- 	put_aio_ring_file(ctx);
- 
-@@ -287,9 +290,29 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 
- 	rc = 0;
- 
--	/* Make sure the old page hasn't already been changed */
-+	/* Get a reference on the ioctx so we can take the ring_lock mutex. */
- 	spin_lock(&mapping->private_lock);
- 	ctx = mapping->private_data;
-+	if (ctx)
-+		percpu_ref_get(&ctx->users);
-+	spin_unlock(&mapping->private_lock);
-+
-+	if (!ctx)
-+		return -EINVAL;
-+
-+	/* We use mutex_trylock() here as the callers of migratepage may
-+	 * already be holding current->mm->mmap_sem, and ->ring_lock must be
-+	 * outside of mmap_sem due to its usage in aio_read_events_ring().
-+	 * Since page migration is not an absolutely critical operation, the
-+	 * occasional failure here is acceptable.
-+	 */
-+	if (!mutex_trylock(&ctx->ring_lock)) {
-+		percpu_ref_put(&ctx->users);
-+		return -EAGAIN;
-+	}
-+
-+	/* Make sure the old page hasn't already been changed */
-+	spin_lock(&mapping->private_lock);
- 	if (ctx) {
- 		pgoff_t idx;
- 		spin_lock_irqsave(&ctx->completion_lock, flags);
-@@ -305,7 +328,7 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 	spin_unlock(&mapping->private_lock);
- 
- 	if (rc != 0)
--		return rc;
-+		goto out_unlock;
- 
- 	/* Writeback must be complete */
- 	BUG_ON(PageWriteback(old));
-@@ -314,7 +337,7 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
- 	if (rc != MIGRATEPAGE_SUCCESS) {
- 		put_page(new);
--		return rc;
-+		goto out_unlock;
- 	}
- 
- 	/* We can potentially race against kioctx teardown here.  Use the
-@@ -346,6 +369,9 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 	else
- 		put_page(new);
- 
-+out_unlock:
-+	mutex_unlock(&ctx->ring_lock);
-+	percpu_ref_put(&ctx->users);
- 	return rc;
- }
- #endif
-@@ -380,7 +406,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	file = aio_private_file(ctx, nr_pages);
- 	if (IS_ERR(file)) {
- 		ctx->aio_ring_file = NULL;
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->aio_ring_file = file;
-@@ -415,7 +441,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 
- 	if (unlikely(i != nr_pages)) {
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
-@@ -429,7 +455,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	if (IS_ERR((void *)ctx->mmap_base)) {
- 		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
-@@ -556,9 +582,17 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
-+					/*
-+					 * Accessing ring pages must be done
-+					 * holding ctx->completion_lock to
-+					 * prevent aio ring page migration
-+					 * procedure from migrating ring pages.
-+					 */
-+					spin_lock_irq(&ctx->completion_lock);
- 					ring = kmap_atomic(ctx->ring_pages[0]);
- 					ring->id = ctx->id;
- 					kunmap_atomic(ring);
-+					spin_unlock_irq(&ctx->completion_lock);
- 					return 0;
- 				}
- 
-@@ -657,7 +691,13 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	if (!ctx->cpu)
- 		goto err;
- 
--	if (aio_setup_ring(ctx) < 0)
-+	/* Prevent races with page migration in aio_setup_ring() by holding
-+	 * the ring_lock mutex.
-+	 */
-+	mutex_lock(&ctx->ring_lock);
-+	err = aio_setup_ring(ctx);
-+	mutex_unlock(&ctx->ring_lock);
-+	if (err < 0)
- 		goto err;
- 
- 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
-@@ -1024,6 +1064,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 
- 	mutex_lock(&ctx->ring_lock);
- 
-+	/* Access to ->ring_pages here is protected by ctx->ring_lock. */
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	tail = ring->tail;
--- 
-1.8.2.1
-
-
--- 
-"Thought is the essence of where you are now."
+--
+Regards,
+Sylwester
