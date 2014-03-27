@@ -1,103 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbaC0FZU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 01:25:20 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:36647
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471AbaC0FZQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 01:25:16 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zzbb2dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH 2/2] regmap: mmio: Add support for 1/2/8 bytes wide register address.
-Date: Thu, 27 Mar 2014 12:42:43 +0800
-Message-ID: <1395895363-31521-2-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
-In-Reply-To: <1395895363-31521-1-git-send-email-Li.Xiubo@freescale.com>
-References: <1395895363-31521-1-git-send-email-Li.Xiubo@freescale.com>
+	id S1753411AbaC0F1M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 01:27:12 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50677 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752954AbaC0F1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 01:27:10 -0400
+Message-ID: <5333B66A.8020804@ti.com>
+Date: Thu, 27 Mar 2014 10:56:02 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+To: Jingoo Han <jg1.han@samsung.com>
+CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-pci@vger.kernel.org>,
+        <bhelgaas@google.com>, <mohit.kumar@st.com>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <linux@arm.linux.org.uk>, <tony@atomide.com>,
+        <rnayak@ti.com>, <paul@pwsan.com>
+Subject: Re: [RFC PATCH 02/12] pci: host: pcie-dra7xx: add support for pcie-dra7xx
+ controller
+References: <1395842272-15267-1-git-send-email-kishon@ti.com> <1395842272-15267-3-git-send-email-kishon@ti.com> <000c01cf496e$bf2c85b0$3d859110$%han@samsung.com>
+In-Reply-To: <000c01cf496e$bf2c85b0$3d859110$%han@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since regmap core and mmio have already support for 1/2/8 bytes wide values,
-so adds support for 1/2/8 bytes wide registers address.
-
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
- drivers/base/regmap/regmap-mmio.c | 24 +++++++++++++++++++++---
- 1 file changed, 21 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index 4f1efce..ed080a4 100644
---- a/drivers/base/regmap/regmap-mmio.c
-+++ b/drivers/base/regmap/regmap-mmio.c
-@@ -26,18 +26,30 @@
- 
- struct regmap_mmio_context {
- 	void __iomem *regs;
-+	unsigned reg_bytes;
- 	unsigned val_bytes;
-+	unsigned pad_bytes;
- 	struct clk *clk;
- };
- 
- static inline void regmap_mmio_regsize_check(size_t reg_size)
- {
--	BUG_ON(reg_size != 4);
-+	switch (reg_size) {
-+	case 1:
-+	case 2:
-+	case 4:
-+#ifdef CONFIG_64BIT
-+	case 8:
-+#endif
-+		break;
-+	default:
-+		BUG();
-+	}
- }
- 
- static inline void regmap_mmio_count_check(size_t count)
- {
--	BUG_ON(count < 4);
-+	BUG_ON(count % 2 != 0);
- }
- 
- static int regmap_mmio_gather_write(void *context,
-@@ -91,9 +103,13 @@ static int regmap_mmio_gather_write(void *context,
- 
- static int regmap_mmio_write(void *context, const void *data, size_t count)
- {
-+	struct regmap_mmio_context *ctx = context;
-+	u32 offset = ctx->reg_bytes + ctx->pad_bytes;
-+
- 	regmap_mmio_count_check(count);
- 
--	return regmap_mmio_gather_write(context, data, 4, data + 4, count - 4);
-+	return regmap_mmio_gather_write(context, data, ctx->reg_bytes,
-+					data + offset, count - offset);
- }
- 
- static int regmap_mmio_read(void *context,
-@@ -219,6 +235,8 @@ static struct regmap_mmio_context *regmap_mmio_gen_context(struct device *dev,
- 
- 	ctx->regs = regs;
- 	ctx->val_bytes = config->val_bits / 8;
-+	ctx->reg_bytes = config->reg_bits / 8;
-+	ctx->pad_bytes = config->pad_bits / 8;
- 	ctx->clk = ERR_PTR(-ENODEV);
- 
- 	if (clk_id == NULL)
--- 
-1.8.4
 
 
+On Thursday 27 March 2014 09:13 AM, Jingoo Han wrote:
+> On Wednesday, March 26, 2014 10:58 PM, Kishon Vijay Abraham I wrote:
+>>
+>> Added support for pcie controller in dra7xx. This driver re-uses
+>> the designware core code that is already present in kernel.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> 
+> Hi Kishon,
+> Long time no see! I added trivial comments.
+
+yeah, these were in my TODO for a long time. Sorry for it though.
+> 
+>> ---
+>>  Documentation/devicetree/bindings/pci/ti-pci.txt |   35 ++
+>>  drivers/pci/host/Kconfig                         |   10 +
+>>  drivers/pci/host/Makefile                        |    1 +
+>>  drivers/pci/host/pcie-dra7xx.c                   |  411 ++++++++++++++++++++++
+> 
+> How about using 'pci-' prefix?
+> As it was discussed earlier, 'pci-' prefix is more proper.
+> 
+>>  4 files changed, 457 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
+>>  create mode 100644 drivers/pci/host/pcie-dra7xx.c
+> 
+> [.....]
+> 
+>> --- /dev/null
+>> +++ b/drivers/pci/host/pcie-dra7xx.c
+> 
+> [.....]
+> 
+>> +#define	PCIECTRL_TI_CONF_IRQSTATUS_MAIN		0x0024
+>> +#define	PCIECTRL_TI_CONF_IRQENABLE_SET_MAIN	0x0028
+> 
+> I don't think that it's good to add vendor names such as TI
+> to SFR names.
+> 
+> How about adding 'DRA7XX' or just removing 'TI'?
+> 
+> 1. PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN
+
+ok.
+> 
+> 2. PCIECTRL_CONF_IRQSTATUS_MAIN
+> 
+> [.....]
+> 
+>> +enum dra7xx_pcie_device_type {
+>> +	DRA7XX_PCIE_UNKNOWN_TYPE,
+>> +	DRA7XX_PCIE_EP_TYPE,
+>> +	DRA7XX_PCIE_LEG_EP_TYPE,
+>> +	DRA7XX_PCIE_RC_TYPE,
+>> +};
+> 
+> This driver can support only RC mode, so, these enum can be removed.
+> 
+> [.....]
+> 
+>> +	of_property_read_u32(node, "ti,device-type", &device_type);
+>> +	switch (device_type) {
+>> +	case DRA7XX_PCIE_RC_TYPE:
+>> +		dra7xx_pcie_writel(dra7xx->base,
+>> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_RC);
+>> +		break;
+>> +	case DRA7XX_PCIE_EP_TYPE:
+>> +		dra7xx_pcie_writel(dra7xx->base,
+>> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_EP);
+>> +		break;
+>> +	case DRA7XX_PCIE_LEG_EP_TYPE:
+>> +		dra7xx_pcie_writel(dra7xx->base,
+>> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_LEG_EP);
+>> +		break;
+>> +	default:
+>> +		dev_dbg(dev, "UNKNOWN device type %d\n", device_type);
+>> +	}
+> 
+> Thus, this switch can be removed.
+
+sure.
+
+Thanks
+Kishon
