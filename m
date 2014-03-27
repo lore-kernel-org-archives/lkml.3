@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277AbaC0CUW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:20:22 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:39932 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751567AbaC0CUU (ORCPT
+	id S1752748AbaC0CVk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:21:40 -0400
+Received: from order.stressinduktion.org ([87.106.68.36]:34093 "EHLO
+	order.stressinduktion.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751519AbaC0CVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:20:20 -0400
-Message-ID: <53338ADF.3060803@hurleysoftware.com>
-Date: Wed, 26 Mar 2014 22:20:15 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: balbi@ti.com
-CC: Greg KH <gregkh@linuxfoundation.org>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-serial@vger.kernel.org,
-        linux-bluetooth@vger.kernel.org, m-karicheri2@ti.com,
-        b32955@freescale.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/11] bluetooth: hci_ldisc: fix deadlock condition
-References: <1395343807-21618-1-git-send-email-balbi@ti.com> <1395343807-21618-9-git-send-email-balbi@ti.com> <53337513.1010708@hurleysoftware.com> <20140327020909.GA11651@saruman.home>
-In-Reply-To: <20140327020909.GA11651@saruman.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+	Wed, 26 Mar 2014 22:21:39 -0400
+Date: Thu, 27 Mar 2014 03:21:38 +0100
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net, tytso@mit.edu,
+        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [PATCH] random32: avoid attempt to late reseed if in the middle of seeding
+Message-ID: <20140327022138.GB30181@order.stressinduktion.org>
+Mail-Followup-To: Sasha Levin <sasha.levin@oracle.com>,
+	Daniel Borkmann <dborkman@redhat.com>, davem@davemloft.net,
+	tytso@mit.edu, linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+References: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com> <53336049.4060901@redhat.com> <53336425.6030409@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53336425.6030409@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 10:09 PM, Felipe Balbi wrote:
->> I just noticed this patch wasn't addressed to Marcel;
->> seems like this should go through the bluetooth tree (but not
->> through bluetooth-next because it fixes an oops).
->
-> read the archives:
->
-> http://marc.info/?l=linux-bluetooth&m=139534449409583&w=2
+On Wed, Mar 26, 2014 at 07:35:01PM -0400, Sasha Levin wrote:
+> On 03/26/2014 07:18 PM, Daniel Borkmann wrote:
+> >On 03/26/2014 06:12 PM, Sasha Levin wrote:
+> >>Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
+> >>nonblocking pool becomes initialized") has added a late reseed stage
+> >>that happens as soon as the nonblocking pool is marked as initialized.
+> >>
+> >>This fails in the case that the nonblocking pool gets initialized
+> >>during __prandom_reseed()'s call to get_random_bytes(). In that case
+> >>we'd double back into __prandom_reseed() in an attempt to do a late
+> >>reseed - deadlocking on 'lock' early on in the boot process.
+> >>
+> >>Instead, just avoid even waiting to do a reseed if a reseed is already
+> >>occuring.
+> >>
+> >>Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> >
+> >Thanks for catching! (If you want Dave to pick it up, please also
+> >Cc netdev.)
+> >
+> >Why not via spin_trylock_irqsave() ? Thus, if we already hold the
+> >lock, we do not bother any longer with doing the same work twice
+> >and just return.
 
-Sorry. I did actually get Marcel's reply but Thunderbird
-didn't parent the reply properly in my inbox and I forgot about it.
+I totally agree with Daniel spin_trylock_irqsave seems like the best
+solution.
 
+In case we really want to make sure that even early seeding doesn't
+race with late seed and the pool is only filled by another CPU, we would
+actually need per-cpu bools to get this case correct.
 
->> Marcel,
->>
->> You may want to build on top of this patch split handling;
->> I noticed some of the protocol drivers are calling
->> hci_uart_tx_wakeup() from work functions already (so don't
->> need to schedule another work...)
->
-> I don't think that should be part of $subject, though.
+I really doubt this isn't worth the effort and wouldn't do that.
 
-I don't understand what you mean here.
+> Your code looks much better, I'll should really stop sending patches
+> too early in the morning...
+> 
+> It's also worth adding lib/random32.c to the MAINTAINERS file, as my
+> list of recipients is solely based on what get_maintainer.pl tells
+> me to do (and I'm assuming that I'm not the last person who will be
+> sending patches for this).
 
-Regards,
-Peter Hurley
+Would be a nice idea, especially because prandom_u32 changes are sensitive to
+network security and should get reviewed there, too.
+
+Greetings,
+
+  Hannes
 
