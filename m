@@ -1,131 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278AbaC0DGp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 23:06:45 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33604 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166AbaC0DGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 23:06:43 -0400
-Message-ID: <533394C7.1000702@linux.vnet.ibm.com>
-Date: Thu, 27 Mar 2014 08:32:31 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+	id S1753364AbaC0DH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 23:07:27 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:15766
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752420AbaC0DH0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 23:07:26 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
+Date: Thu, 27 Mar 2014 10:56:48 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Xiubo Li-B47053 <Li.Xiubo@freescale.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+Message-ID: <20140327025647.GC16197@MrMyself>
+References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
+ <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140327023617.GB16197@MrMyself>
+ <1e2d210764724c7e834c5307b54c37ab@BY2PR03MB505.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org, peterz@infradead.org, rjw@rjwysocki.net,
-        paulmck@linux.vnet.ibm.com, davem@davemloft.net
-Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
- contains offline cpus
-References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com>
-In-Reply-To: <5332B833.2030701@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032703-0320-0000-0000-000002C9A4F7
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1e2d210764724c7e834c5307b54c37ab@BY2PR03MB505.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 04:51 PM, Srivatsa S. Bhat wrote:
-> On 03/26/2014 09:26 AM, Preeti U Murthy wrote:
->> Its possible that the tick_broadcast_force_mask contains cpus which are not
->> in cpu_online_mask when a broadcast tick occurs. This could happen under the
->> following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
->>
->> CPU0					CPU1
->>
->> Run CPU_DOWN_PREPARE notifiers
->>
->> Start stop_machine			Gets woken up by IPI to run
->> 					stop_machine, sets itself in
->> 					tick_broadcast_force_mask if the
->> 					time of broadcast interrupt is around
->> 					the same time as this IPI.
->>
->> 					Start stop_machine
->> 					  set_cpu_online(cpu1, false)
->> End stop_machine			End stop_machine
->>
->> Broadcast interrupt
->>   Finds that cpu1 in
->>   tick_broadcast_force_mask is offline
->>   and triggers the WARN_ON in
->>   tick_handle_oneshot_broadcast()
->>
->> Clears all broadcast masks
->> in CPU_DEAD stage.
->>
->> This WARN_ON was added to capture scenarios where the broadcast mask, be it
->> oneshot/pending/force_mask contain offline cpus whose tick devices have been
->> removed. But here is a case where we trigger the warn on in a valid scenario.
->>
->> One could argue that the scenario is invalid and ought to be warned against
->> because ideally the broadcast masks need to be cleared of the cpus about to
->> go offine before clearing them in the online_mask so that we dont hit these
->> scenarios.
->>
->> This would mean clearing the masks in CPU_DOWN_PREPARE stage.
+On Thu, Mar 27, 2014 at 10:53:50AM +0800, Xiubo Li-B47053 wrote:
+> > On Thu, Mar 27, 2014 at 10:13:48AM +0800, Xiubo Li-B47053 wrote:
+> > > > +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
+> > > > +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
+> > > > +
+> > > > +	if (xcsr & FSL_SAI_CSR_WSF)
+> > > > +		dev_dbg(dev, "isr: Start of Tx word detected\n");
+> > > > +
+> > > > +	if (xcsr & FSL_SAI_CSR_SEF)
+> > > > +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
+> > > > +
+> > > > +	if (xcsr & FSL_SAI_CSR_FEF)
+> > > > +		dev_dbg(dev, "isr: Transmit underrun detected\n");
+> > > > +
+> > >
+> > > Actually, the above three isrs should to write a logic 1 to this field
+> > > to clear this flag.
+> > >
+> > >
+> > > > +	if (xcsr & FSL_SAI_CSR_FWF)
+> > > > +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
+> > > > +
+> > > > +	if (xcsr & FSL_SAI_CSR_FRF)
+> > > > +		dev_dbg(dev, "isr: Transmit FIFO watermark has been reached\n");
+> > > > +
+> > >
+> > > While are these ones really needed to clear manually ?
+> > 
+> > The reference manual doesn't mention about the requirement. So SAI should do
+> > the self-clearance.
 > 
-> Not necessarily. We could clear the mask in the CPU_DYING stage. That way,
-> offline CPUs will automatically get cleared from the force_mask and hence
-> the tick-broadcast code will not need to have a special case to deal with
-> this scenario. What do you think?
+> Yes, I do think we should let it do the self-clearance, and shouldn't interfere
+> of them...
 
-Ok I gave some thought to this. This will not work with the hrtimer mode
-of broadcast framework going in. This is the feature that was added for
-implementations of such archs which do not have an external clock device
-to wake them up in deep idle states when the local timers stop. They
-assign one of the CPUs as an agent to wake them up. When this designated
-CPU gets hotplugged out, we need to assign this duty to some other CPU.
+SAI is supposed to ignore the interference, isn't it?
 
-The way this is being done now is in
-tick_shutdown_broadcast_oneshot_control() which is also responsible for
-clearing the broadcast masks. When the hrtimer mode of broadcast is
-active, then in addition to clearing masks in this function we make the
-CPU executing this function take on the task of waking up CPUs in deep
-idle state if the hotplugged CPU was doing this earlier.
-
-Currently tick_shutdown_broadcast_oneshot_control() is being executed in
-the CPU_DEAD notification and this is guarenteed to run on a CPU *other
-than* the dying CPU. Hence we can safely do this.
-
-However if we move this function underneath CPU_DYING notifier, this
-will turn out to be a disaster since IIUC the dying CPU is running this
-notifier and will end up re-assigning the duty of waking up CPUs to itself.
-
-Does this make sense?
-
-Regards
-Preeti U Murthy
-> 
-> Regards,
-> Srivatsa S. Bhat
-> 
->> ---
->>
->>  kernel/time/tick-broadcast.c |    7 ++++++-
->>  1 file changed, 6 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
->> index 63c7b2d..30b8731 100644
->> --- a/kernel/time/tick-broadcast.c
->> +++ b/kernel/time/tick-broadcast.c
->> @@ -606,7 +606,12 @@ again:
->>  	 */
->>  	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
->>
->> -	/* Take care of enforced broadcast requests */
->> +	/* Take care of enforced broadcast requests. We could have offline
->> +	 * cpus in the tick_broadcast_force_mask. Thats ok, we got the interrupt
->> +	 * before we could clear the mask.
->> +	 */
->> +	cpumask_and(tick_broadcast_force_mask,
->> +			tick_broadcast_force_mask, cpu_online_mask);
->>  	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
->>  	cpumask_clear(tick_broadcast_force_mask);
->>
->>
-> 
 
