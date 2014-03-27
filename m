@@ -1,33 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295AbaC0Ai6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 20:38:58 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:42739
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754533AbaC0Ai5 (ORCPT
+	id S1755673AbaC0AjT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 20:39:19 -0400
+Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:45262 "EHLO
+	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754533AbaC0AjQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 20:38:57 -0400
-Date: Wed, 26 Mar 2014 19:38:54 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@nuc
-To: Mitchel Humpherys <mitchelh@codeaurora.org>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mm: convert some level-less printks to pr_*
-In-Reply-To: <1395877783-18910-2-git-send-email-mitchelh@codeaurora.org>
-Message-ID: <alpine.DEB.2.10.1403261938160.5585@nuc>
-References: <1395877783-18910-1-git-send-email-mitchelh@codeaurora.org> <1395877783-18910-2-git-send-email-mitchelh@codeaurora.org>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 26 Mar 2014 20:39:16 -0400
+Message-ID: <5333732F.6040803@hurleysoftware.com>
+Date: Wed, 26 Mar 2014 20:39:11 -0400
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        m-karicheri2@ti.com, b32955@freescale.com,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
+References: <1395343807-21618-1-git-send-email-balbi@ti.com> <1395343807-21618-10-git-send-email-balbi@ti.com> <20140325182856.GA31906@atomide.com>
+In-Reply-To: <20140325182856.GA31906@atomide.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated-User: 990527 peter@hurleysoftware.com
+X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014, Mitchel Humpherys wrote:
+On 03/25/2014 02:28 PM, Tony Lindgren wrote:
+> * Felipe Balbi <balbi@ti.com> [140320 12:39]:
+>> This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
+>>
+>> That commit tried to fix a deadlock problem when using
+>> hci_ldisc, but it turns out the bug was in hci_ldsic
+>> all along where it was calling ->write() from within
+>> ->write_wakeup() callback.
+>>
+>> The problem is that ->write_wakeup() was called with
+>> port lock held and ->write() tried to grab the same
+>> port lock.
+>
+> Should this and the next patch be earlier in the series
+> as a fix for the v3.15-rc cycle? Should they be cc: stable
+> as well?
 
-> printk is meant to be used with an associated log level. There are some
-> instances of printk scattered around the mm code where the log level is
-> missing. Add a log level and adhere to suggestions by
-> scripts/checkpatch.pl by moving to the pr_* macros.
-
-Acked-by: Christoph Lameter <cl@linux.com>
+Well, right now the other fix has had _zero_ testing
+so not really a -stable candidate just yet.
 
