@@ -1,150 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755202AbaC0KIR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:08:17 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:31545 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785AbaC0KIL (ORCPT
+	id S1754767AbaC0KSf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:18:35 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:58500 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbaC0KSd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:08:11 -0400
-X-AuditID: cbfee68e-b7f566d000002344-02-5333f88a4815
-Date: Thu, 27 Mar 2014 10:08:10 +0000 (GMT)
-From: =?euc-kr?B?x9S47cHW?= <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH 0/4] devfreq: exynos: generalize PPMU code
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        =?euc-kr?Q?=C3=D6=C2=F9=BF=EC?= <cw00.choi@samsung.com>
-Cc: =?euc-kr?Q?=B9=DA=B0=E6=B9=CE?= <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20140327100804850@myungjoo.ham
-Msgkey: 20140327100804850@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20140327100804850@myungjoo.ham
-X-ParentMTR: 
-X-ArchiveUser: 
-X-CPGSPASS: N
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <14716616.146541395914888684.JavaMail.weblogic@epml10>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42JZI2JSotv1wzjY4NVWWYvLu+awOTB6fN4k
-	F8AYxWWTkpqTWZZapG+XwJVxcNYf9oIVEhW77z1hbWC8It7FyMkhJKAusWjJSTYQW0LAROLu
-	uq0sELaYxIV764HiXEA1SxklmjrXsMMUXX91iBEiMZ9R4tbmC2AdLAKqEi82bAeyOTjYBMwl
-	7s8IAgkLC9hJzF47lxnEFhEol1j+/i8rSC+zwEsmib/HLjJBXKEksWbfK7A5vAKCEidnPoG6
-	QlXi7O1Z7BBxNYnti74zQ8QlJGZNv8AKYfNKzGh/ClUvJzHt6xqoGmmJ87M2MMJ8s/j7Y6g4
-	v8Sx2zuYQO4E6X1yPxhmzO7NX6ABISAx9cxBqFYticMbz0KN55NYs/AtC8yYXaeWM8P03t8y
-	F+wVZgFFiSndD9khbC2JLz/2saF7i1fASeLB6bXsExiVZyFJzULSPgtJO7KaBYwsqxhFUwuS
-	C4qT0ouM9IoTc4tL89L1kvNzNzECE8Ppf8/6djDePGB9iDEZGCUTmaVEk/OBiSWvJN7Q2MzI
-	wtTE1NjI3NKMNGElcd5FD5OChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTB27PZp5HE1CX/Q
-	0+/0PvDNQ0vByuzHD/2OsxyZoRW+7oAT32Tn+a++XihkOvU4/ekvsX8pO89NuhPctMJ/h8vP
-	d/aOC9Z+n3lKZ2dT8wn9fjWeA4WCtnEbDb9ryp7R5f+k5vRo/Yqfm25+utF0aWforhPbl3qn
-	J6kWKisKLuhZyL1ogd7GQhsmJZbijERDLeai4kQA9AojsSIDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgk+LIzCtJLcpLzFFi42I5/e/2TN2uH8bBBtu2iVlc3jWHzYHR4/Mm
-	uQDGqDSbjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKCh
-	SgpliTmlQKGAxOJiJX07m6L80pJUhYz84hJbpWhDcyM9IwM9UyM9Q+NYK0MDAyNToJqEtIyD
-	s/6wF6yQqNh97wlrA+MV8S5GTg4hAXWJRUtOsoHYEgImEtdfHWKEsMUkLtxbDxTnAqqZzyhx
-	a/MFFpAEi4CqxIsN24FsDg42AXOJ+zOCQMLCAnYSs9fOZQaxRQTKJZa//8sK0sss8JJJ4u+x
-	i0wQy5Qk1ux7BTaHV0BQ4uTMJywQy1Qlzt6exQ4RV5PYvug7M0RcQmLW9AusEDavxIz2p1D1
-	chLTvq6BqpGWOD9rA9zRi78/horzSxy7vYMJ5E6Q3if3g2HG7N78BepfAYmpZw5CtWpJHN54
-	Fmo8n8SahW9ZYMbsOrWcGab3/pa5YK8wCyhKTOl+yA5ha0l8+bGPDd1bvAJOEg9Or2WfwCg3
-	C0lqFpL2WUjakdUsYGRZxSiaWpBcUJyUXmGsV5yYW1yal66XnJ+7iRGcnp4t3sH4/7z1IUYB
-	DkYlHt4d942ChVgTy4orcw8xSnAwK4nwnvlmHCzEm5JYWZValB9fVJqTWnyIMRkYgROZpUST
-	84GpM68k3tDY2MTMxNTSxMLA1Jw0YSVx3vhbSUFCAumJJanZqakFqUUwW5g4OKUaGOMVbHe+
-	0Njy5GZUhsdl9qSDezMm9D4s7lxzbsIzYcG3705+iTnv+VftN8O5o86rSzRSnvJz3r6Y+CGs
-	N/PlCmmfPk5P1p+fv/H1GpddMb589ECpwS1peVOm4q9fv6kfFz7lXqBSsLvziv5/A8UnH/J3
-	ZHPps68W4vPXuap82l56w3XdL3YrGpVYijMSDbWYi4oTAZCy//iTAwAA
-DLP-Filter: Pass
-X-CFilter-Loop: Reflected
+	Thu, 27 Mar 2014 06:18:33 -0400
+Message-ID: <5333FA02.3090402@linux.vnet.ibm.com>
+Date: Thu, 27 Mar 2014 15:44:26 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
+MIME-Version: 1.0
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>, tglx@linutronix.de
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        peterz@infradead.org, rjw@rjwysocki.net, paulmck@linux.vnet.ibm.com,
+        davem@davemloft.net
+Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
+ contains offline cpus
+References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com> <533394C7.1000702@linux.vnet.ibm.com> <5333C521.10901@linux.vnet.ibm.com>
+In-Reply-To: <5333C521.10901@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032710-9332-0000-0000-0000003CBCE8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2RA8Q3o004981
+
+On 03/27/2014 11:58 AM, Srivatsa S. Bhat wrote:
+> 
+> Actually, my suggestion was to remove the dying CPU from the force_mask alone,
+> in the CPU_DYING notifier. The rest of the cleanup (removing it from the other
+> masks, moving the broadcast duty to someone else etc can still be done at
+> the CPU_DEAD stage). Also, note that the CPU which is set in force_mask is
+> definitely not the one doing the broadcast.
+> 
+> Basically, my reasoning was this:
+> 
+> If we look at how the 3 broadcast masks (oneshot, pending and force) are
+> set and cleared during idle entry/exit, we see this pattern:
+> 
+> oneshot_mask: This is set at BROADCAST_ENTER and cleared at EXIT.
+> pending_mask: This is set at tick_handle_oneshot_broadcast and cleared at
+>               EXIT.
+> force_mask:   This is set at EXIT and cleared at the next call to
+>               tick_handle_oneshot_broadcast. (Also, if the CPU is set in this
+>               mask, the CPU doesn't enter deep idle states in subsequent
+>               idle durations, and keeps polling instead, until it gets the
+>               broadcast interrupt).
+> 
+> What we can derive from this is that force_mask is the only mask that can
+> remain set across an idle ENTER/EXIT sequence. Both of the other 2 masks
+> can never remain set across a full idle ENTER/EXIT sequence. And a CPU going
+> offline certainly goes through EXIT if it had gone through ENTER, before
+> entering stop_machine().
+> 
+> That means, force_mask is the only odd one out here, which can remain set
+> when entering stop_machine() for CPU offline. So that's the only mask that
+> needs to be cleared separately. The other 2 masks take care of themselves
+> automatically. So, we can have a CPU_DYING callback which just clears the
+> dying CPU from the force_mask (and does nothing more). That should work, no?
+
+Yep I think this will work. Find the modified patch below:
+
+Thanks.
+
+Regards
+Preeti U Murthy
 
 
+tick,broadcast:Clear hotplugged cpu in broadcast masks during CPU_DYING notification
 
-On Sat, Mar 22, 2014 at 2:31 AM, Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com> wrote:
-> Hi,
->
-> This patch series generalizes PPMU support for Exynos devfreq
-> drivers.
->
-> It is based on top of "devfreq: exynos: Fix minor issue and code
-> clean to remove legacy method" patch series from Chanwoo Choi
-> (https://lkml.org/lkml/2014/3/19/713).
->
-> Please note that the patches were only compile tested because
-> Exynos devfreq drivers don't work yet in the upstream kernels
-> (FWIW these changes were briefly tested with the internal tree
-> which has working devfreq drivers).
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
-Hi Blartlomiej,
+Its possible that the tick_broadcast_force_mask contains cpus which are not
+in cpu_online_mask when a broadcast tick occurs. This could happen under the
+following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
 
+CPU0					CPU1
 
-Thank you.
+Run CPU_DOWN_PREPARE notifiers
 
-I'll merge this into devfreq's for-next.
+Start stop_machine			Gets woken up by IPI to run
+					stop_machine, sets itself in
+					tick_broadcast_force_mask if the
+					time of broadcast interrupt is around
+					the same time as this IPI.
 
+					Start stop_machine
+					  set_cpu_online(cpu1, false)
+End stop_machine			End stop_machine
 
-Anyway, days ago, I had a short discussion with Chanwoo about
-providing some common interface for PPMU-like devices
-(sort of sub device of devfreq device) that provide usage statistics. 
+Broadcast interrupt
+  Finds that cpu1 in
+  tick_broadcast_force_mask is offline
+  and triggers the WARN_ON in
+  tick_handle_oneshot_broadcast()
 
-At this stage, I roughly guess that such a device driver (or whatever
-entity it is) may be simply a helper for filling out the "get_dev_status" callback.
-It is because devfreq's PPMU usage is limited to getting get_dev_status().
-As you had done something on PPMU, I guess you may have some
-idea on this.
+Clears all broadcast masks
+in CPU_DEAD stage.
 
-Cheers,
-MyungJoo.
->
-> Best regards,
-> --
-> Bartlomiej Zolnierkiewicz
-> Samsung R&D Institute Poland
-> Samsung Electronics
->
->
-> Bartlomiej Zolnierkiewicz (3):
->   devfreq: exynos4: introduce struct busfreq_ppmu_data
->   devfreq: exynos5: introduce struct busfreq_ppmu_data
->   devfreq: exynos: make more PPMU code common
->
-> Chanwoo Choi (1):
->   devfreq: exynos4: use common PPMU code
->
->  drivers/devfreq/exynos/Makefile      |   2 +-
->  drivers/devfreq/exynos/exynos4_bus.c | 176 +++++++++--------------------------
->  drivers/devfreq/exynos/exynos5_bus.c |  94 +++++--------------
->  drivers/devfreq/exynos/exynos_ppmu.c |  60 ++++++++++++
->  drivers/devfreq/exynos/exynos_ppmu.h |   8 ++
->  5 files changed, 135 insertions(+), 205 deletions(-)
->
-> --
-> 1.8.2.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+While the hotplugged cpu clears its bit in the tick_broadcast_oneshot_mask
+and tick_broadcast_pending mask during BROADCAST_EXIT, it *sets* its bit
+in the tick_broadcast_force_mask if the broadcast interrupt is found to be
+around the same time as the present time. Today we clear all the broadcast
+masks and shutdown tick devices in the CPU_DEAD stage. But as shown above
+the broadcast interrupt could occur before this stage is reached and the
+WARN_ON() gets triggered when it is found that the tick_broadcast_force_mask
+contains an offline cpu.
 
+This WARN_ON was added to capture scenarios where the broadcast mask, be it
+oneshot/pending/force_mask contain offline cpus whose tick devices have been
+removed. But here is a case where we trigger the WARN_ON() when the tick
+device of the hotplugged cpu is still around but we are delaying the clearing
+of the broadcast masks. This has not been a problem for
+tick_broadcastoneshot_mask and tick_broadcast_pending_mask since they get
+cleared on exit from broadcast.
+   But since the force_mask gets set at the same time on certain occasions
+it is necessary to move the clearing of masks to a stage during cpu hotplug
+before the hotplugged cpu clears itself in the online_mask.
 
+Hence move the clearing of broadcast masks to the CPU_DYING notification stage
+so that they remain consistent with the cpu_online_mask at the time of
+broadcast delivery at all times.
 
--- 
-MyungJoo Ham, Ph.D.
-System S/W Lab, S/W Center, Samsung Electronics
- ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Suggested-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
+ kernel/time/clockevents.c    |    1 +
+ kernel/time/tick-broadcast.c |   20 +++++++++++++++-----
+ kernel/time/tick-internal.h  |    3 +++
+ 3 files changed, 19 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index ad362c2..d33d808 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -566,6 +566,7 @@ int clockevents_notify(unsigned long reason, void *arg)
+ 
+ 	case CLOCK_EVT_NOTIFY_CPU_DYING:
+ 		tick_handover_do_timer(arg);
++		tick_broadcast_clear_masks(arg);
+ 		break;
+ 
+ 	case CLOCK_EVT_NOTIFY_SUSPEND:
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index 63c7b2d..4e5a7a6 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -893,9 +893,10 @@ void tick_broadcast_switch_to_oneshot(void)
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+ 
+-
+ /*
+- * Remove a dead CPU from broadcasting
++ * Move the broadcasting function away from a dead CPU
++ * if it is used for broadcasting in the hrtimer mode of
++ * broadcast.
+  */
+ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
+ {
+@@ -904,6 +905,18 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
+ 
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 
++	broadcast_move_bc(cpu);
++
++	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
++}
++
++void tick_broadcast_clear_masks(unsigned int *cpup)
++{
++	unsigned long flags;
++	unsigned int cpu = *cpup;
++
++	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
++
+ 	/*
+ 	 * Clear the broadcast masks for the dead cpu, but do not stop
+ 	 * the broadcast device!
+@@ -912,11 +925,8 @@ void tick_shutdown_broadcast_oneshot(unsigned int *cpup)
+ 	cpumask_clear_cpu(cpu, tick_broadcast_pending_mask);
+ 	cpumask_clear_cpu(cpu, tick_broadcast_force_mask);
+ 
+-	broadcast_move_bc(cpu);
+-
+ 	raw_spin_unlock_irqrestore(&tick_broadcast_lock, flags);
+ }
+-
+ /*
+  * Check, whether the broadcast device is in one shot mode
+  */
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 7ab92b1..259c74d 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -49,6 +49,7 @@ extern void tick_broadcast_setup_oneshot(struct clock_event_device *bc);
+ extern int tick_broadcast_oneshot_control(unsigned long reason);
+ extern void tick_broadcast_switch_to_oneshot(void);
+ extern void tick_shutdown_broadcast_oneshot(unsigned int *cpup);
++extern void tick_broadcast_clear_masks(unsigned int *cpup);
+ extern int tick_resume_broadcast_oneshot(struct clock_event_device *bc);
+ extern int tick_broadcast_oneshot_active(void);
+ extern void tick_check_oneshot_broadcast_this_cpu(void);
+@@ -61,6 +62,7 @@ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ static inline int tick_broadcast_oneshot_control(unsigned long reason) { return 0; }
+ static inline void tick_broadcast_switch_to_oneshot(void) { }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
++static inline void tick_broadcast_clear_masks(unsigned int *cpup) { }
+ static inline int tick_broadcast_oneshot_active(void) { return 0; }
+ static inline void tick_check_oneshot_broadcast_this_cpu(void) { }
+ static inline bool tick_broadcast_oneshot_available(void) { return true; }
+@@ -89,6 +91,7 @@ static inline void tick_broadcast_setup_oneshot(struct clock_event_device *bc)
+ }
+ static inline int tick_broadcast_oneshot_control(unsigned long reason) { return 0; }
+ static inline void tick_shutdown_broadcast_oneshot(unsigned int *cpup) { }
++static inline void tick_broadcast_clear_masks(unsigned int *cpup) { }
+ static inline int tick_resume_broadcast_oneshot(struct clock_event_device *bc)
+ {
+ 	return 0;
+
