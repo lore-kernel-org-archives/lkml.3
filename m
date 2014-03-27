@@ -1,56 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974AbaC0PDf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:03:35 -0400
-Received: from verein.lst.de ([213.95.11.211]:54310 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756958AbaC0PDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:03:33 -0400
-Date: Thu, 27 Mar 2014 16:03:28 +0100
-From: Torsten Duwe <duwe@lst.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>, Greg Price <price@mit.edu>
-Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
-Message-ID: <20140327150328.GB18563@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com> <5333AD63.9030808@zytor.com>
+	id S1754932AbaC0PIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:08:24 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:63878 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaC0PIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 11:08:22 -0400
+Date: Thu, 27 Mar 2014 18:04:19 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [linux-next] scsi_attach_vpd() warning at mm/page_alloc.c:2497
+Message-ID: <20140327150419.GA372@swordfish.minsk.epam.com>
+References: <20140327101734.GA7022@swordfish.minsk.epam.com>
+ <1395930570.3718.6.camel@dabdike>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5333AD63.9030808@zytor.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1395930570.3718.6.camel@dabdike>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 09:47:31PM -0700, H. Peter Anvin wrote:
-> On 03/26/2014 06:11 PM, Andy Lutomirski wrote:
-> > Also, in the /dev/random sense,
-> > most hardware RNGs have no entropy at all, since they're likely to be
-> > FIPS-approved DRBGs that don't have a real non-deterministic source.
+On (03/27/14 07:29), James Bottomley wrote:
+> On Thu, 2014-03-27 at 13:19 +0300, Sergey Senozhatsky wrote:
+> > Hello,
+> > 
+> > [    1.971778] ------------[ cut here ]------------
+> > [    1.971960] WARNING: CPU: 1 PID: 6 at mm/page_alloc.c:2497 __alloc_pages_nodemask+0x1b9/0x693()
+> > [    1.972246] Modules linked in: sd_mod ahci
+> > [    1.972604] CPU: 1 PID: 6 Comm: kworker/u8:0 Not tainted 3.14.0-rc8-next-20140327-dbg-dirty #202
+> > [    1.972890] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+> > [    1.973182] Workqueue: events_unbound async_run_entry_fn
+> > [    1.973417]  0000000000000000 ffff8801534d5af0 ffffffff813ad822 0000000000000000
+> > [    1.973994]  ffff8801534d5b28 ffffffff8103c03c ffffffff810ad4e5 00000000001000d0
+> > [    1.974529]  ffffffff81656fc8 0000000000000000 ffffffff81656fc0 ffff8801534d5b38
+> > [    1.975125] Call Trace:
+> > [    1.975306]  [<ffffffff813ad822>] dump_stack+0x4e/0x7a
+> > [    1.975488]  [<ffffffff8103c03c>] warn_slowpath_common+0x75/0x8e
+> > [    1.975670]  [<ffffffff810ad4e5>] ? __alloc_pages_nodemask+0x1b9/0x693
+> > [    1.975853]  [<ffffffff8103c0f4>] warn_slowpath_null+0x15/0x17
+> > [    1.976035]  [<ffffffff810ad4e5>] __alloc_pages_nodemask+0x1b9/0x693
+> > [    1.976220]  [<ffffffff81074220>] ? console_unlock+0x2dd/0x2fa
+> > [    1.976404]  [<ffffffff812a08be>] ? scsi_execute_req_flags+0x9c/0xb3
+> > [    1.976587]  [<ffffffff810ad9d1>] __get_free_pages+0x12/0x3f
+> > [    1.976771]  [<ffffffff810d5c66>] __kmalloc+0x37/0x112
+> > [    1.976951]  [<ffffffff8129b5f4>] scsi_attach_vpd+0x41/0x1a8
+> > [    1.977133]  [<ffffffff812a3d81>] scsi_probe_and_add_lun+0x8ec/0xa21
+> > [    1.977317]  [<ffffffff812a40f8>] __scsi_add_device+0xce/0x10a
+> > [    1.977501]  [<ffffffff812b109a>] ata_scsi_scan_host+0x60/0x142
+> > [    1.977683]  [<ffffffff812ad6e9>] async_port_probe+0x45/0x4a
+> > [    1.977873]  [<ffffffff81057e18>] async_run_entry_fn+0x5a/0x110
+> > [    1.978061]  [<ffffffff8104ee52>] process_one_work+0x1c9/0x2e9
+> > [    1.978243]  [<ffffffff8104f3ec>] worker_thread+0x1d3/0x2bd
+> > [    1.978424]  [<ffffffff8104f219>] ? rescuer_thread+0x27d/0x27d
+> > [    1.978606]  [<ffffffff81053ab4>] kthread+0xd6/0xde
+> > [    1.978786]  [<ffffffff810539de>] ? kthread_create_on_node+0x162/0x162
+> > [    1.978970]  [<ffffffff813b2efc>] ret_from_fork+0x7c/0xb0
+> > [    1.979151]  [<ffffffff810539de>] ? kthread_create_on_node+0x162/0x162
+> > [    1.979334] ---[ end trace ca7c5bd74b0dca21 ]---
+> > 
+> > 
+> > scsi_attach_vpd() (at pg0 label) attempts to firstly allocate 255 and later 134217730 bytes.
 > 
-> Such a device has no business being a Linux hwrng device.  We already
-> have a PRNG (DRBG) in the kernel, the *only* purpose for a hwrng device
-> is to be an entropy source.
+> What device is this?  can you do a sg_inq -H -p 0 /dev/sda and email the
+> results to see if there's a code error or the device really is sending
+> data that's insane.
+> 
+> > ---
+> > 
+> > general question,
+> > 
+> > scsi_attach_vpd() is sure that scsi_vpd_inquiry() returns `ret < 0' in case of
+> > an error and `ret > 0' otherwise:
+> > 
+> > 	"Returns size of the vpd page on success or a negative error number."
+> > 
+> > while this is not exactly true.
+> > 
+> > scsi_vpd_inquiry() indeed can return -EINVAL, but usually it returns
+> > scsi_execute_req()->scsi_execute_req_flags()->scsi_execute() status, which
+> > has different error indication and can be, e.g. for failed blk_get_request()
+> > in scsi_execute() or failed sense kzalloc() in scsi_execute_req_flags(),
+> > `DRIVER_ERROR << 24'.
+> 
+> Yes, that looks to be the problem.  Can you test this patch?
+> 
 
-That's also my understanding. The shot noise from a Schottky-diode seems
-to be quite popular, for example.
+NO mm/page_alloc.c warnings observed with the patch applied.
 
-> TPMs, in particular, should almost certainly be massively derated based
-> on what little we know about TPM.
+	-ss
 
-Backdoors, anyone? :-)
-
-	Torsten
-
+> James
+> 
+> ---
+> 
+> diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+> index 3241749..c4d632c 100644
+> --- a/drivers/scsi/scsi.c
+> +++ b/drivers/scsi/scsi.c
+> @@ -952,7 +952,7 @@ static int scsi_vpd_inquiry(struct scsi_device *sdev, unsigned char *buffer,
+>  	result = scsi_execute_req(sdev, cmd, DMA_FROM_DEVICE, buffer,
+>  				  len, NULL, 30 * HZ, 3, NULL);
+>  	if (result)
+> -		return result;
+> +		return -EIO;
+>  
+>  	/* Sanity check that we got the page back that we asked for */
+>  	if (buffer[1] != page)
+> 
+> 
