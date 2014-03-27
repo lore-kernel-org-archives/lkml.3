@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaC0IpP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:45:15 -0400
-Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34994 "EHLO
-	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaC0IpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:45:06 -0400
-Message-ID: <5333E50C.9090201@de.ibm.com>
-Date: Thu, 27 Mar 2014 09:45:00 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754526AbaC0IxG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 04:53:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752864AbaC0IxD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 04:53:03 -0400
+Message-ID: <5333E6E3.3020907@redhat.com>
+Date: Thu, 27 Mar 2014 09:52:51 +0100
+From: Daniel Borkmann <dborkman@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
 MIME-Version: 1.0
-To: Alexander Yarygin <yarygin@imap.linux.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] perf/tool: Fix usage of trace events with '-' in trace
- system name.
-References: <87fvm411yi.wl%yarygin@imap.linux.ibm.com>
-In-Reply-To: <87fvm411yi.wl%yarygin@imap.linux.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sasha Levin <sasha.levin@oracle.com>
+CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@stressinduktion.org, tytso@mit.edu
+Subject: Re: [PATCH v2] random32: avoid attempt to late reseed if in the middle
+ of seeding
+References: <1395900095-15254-1-git-send-email-sasha.levin@oracle.com> <1395900095-15254-2-git-send-email-sasha.levin@oracle.com>
+In-Reply-To: <1395900095-15254-2-git-send-email-sasha.levin@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032708-4966-0000-0000-000008DE114C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/03/14 09:27, Alexander Yarygin wrote:
-> 
-> Trace events potentially can have a '-' in their trace system name,
-> e.g. kvm on s390 defines kvm-s390:* tracepoints.
-> tools/perf could not parse them, because there was no rule for this:
-> $ sudo ./perf top -e "kvm-s390:*"
-> invalid or unsupported event: 'kvm-s390:*'
-> 
-> This patch allows to '-' to be a part of PE_NAME token, so tracepoints
-> with '-' can be parsed by the event_legacy_tracepoint rule.
-> Without the patch, perf will not accept such tracepoints in the -e
-> option.
-> 
-> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+On 03/27/2014 07:01 AM, Sasha Levin wrote:
+> Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
+> nonblocking pool becomes initialized") has added a late reseed stage
+> that happens as soon as the nonblocking pool is marked as initialized.
+>
+> This fails in the case that the nonblocking pool gets initialized
+> during __prandom_reseed()'s call to get_random_bytes(). In that case
+> we'd double back into __prandom_reseed() in an attempt to do a late
+> reseed - deadlocking on 'lock' early on in the boot process.
+>
+> Instead, just avoid even waiting to do a reseed if a reseed is already
+> occuring.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-When doing a V2, you should remove my Signed-off-by. ;-)
+Looks better now, thanks!
 
-
-
-But at least we can now add my
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
-
-
-Ingo, Peter, Paul,
-
-If you agree with this solution, I would like to have this in the next merge window - maybe 
-cc stable if we consider perf stable relevant.
-
-Christian
-
-
-> ---
->  tools/perf/util/parse-events.l |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
-> index 3432995..ca20da7 100644
-> --- a/tools/perf/util/parse-events.l
-> +++ b/tools/perf/util/parse-events.l
-> @@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
->  {num_hex}		{ return value(yyscanner, 16); }
-> 
->  {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
-> -{name}			{ return str(yyscanner, PE_NAME); }
-> +{name_minus}			{ return str(yyscanner, PE_NAME); }
->  "/"			{ BEGIN(config); return '/'; }
->  -			{ return '-'; }
->  ,			{ BEGIN(event); return ','; }
-> 
-
+Fixes: 4af712e8df99 ("random32: add prandom_reseed_late() and call when nonblocking pool becomes initialized")
+Acked-by: Daniel Borkmann <dborkman@redhat.com>
