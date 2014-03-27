@@ -1,78 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417AbaC0L45 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 07:56:57 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:52649 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbaC0L44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 07:56:56 -0400
-X-AuditID: cbfee690-b7f266d00000287c-b4-53341206e296
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: dbaryshkov@gmail.com, dwmw2@infradead.org
-Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
-        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [RESEND PATCH] charger-manager: Fix checking of wrong return type
-Date: Thu, 27 Mar 2014 20:56:55 +0900
-Message-id: <1395921415-17506-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsWyRsSkQJdNyCTY4PUBHYvrX56zWkx68p7Z
-	YuLKycwWZ5vesFtc3jWHzeJ24wo2BzaPnbPusntsXqHl0bdlFaPH501yASxRXDYpqTmZZalF
-	+nYJXBkvrv5jLljPUXHlu34DYzN7FyMnh4SAicTL5vnMELaYxIV769m6GLk4hASWMko8enOB
-	qYuRA6zoe6snRHwRo8SintWMIA1CAo1MEos+c4DYbAJaEvtf3GADsUUEdCVu9lwGW8AsUCux
-	71oTK4gtLOAlMfPgJyYQm0VAVeJt+2mwel4BV4md7e/ZII6Qk/iw5xE7yDIJgc9sEqd+32SB
-	aBCQ+Db5EAvEQbISmw5AHS0pcXDFDZYJjIILGBlWMYqmFiQXFCelF5noFSfmFpfmpesl5+du
-	YgQG5+l/zybsYLx3wPoQYzLQuInMUqLJ+cDgziuJNzQ2M7IwNTE1NjK3NCNNWEmcV+1RUpCQ
-	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGRu3Q4Jc10571iZ65vGkbw8kfD+/b3pZQmV+Ys8Jk
-	vu+JC84f4mXV6oT3rutMcWbf94TrcOXM+Vcstx4KOv/Rd9kap+O5/0012xtnuv49P9V3+XSz
-	vQVTW64X/zJ567rbsEVJ4Z17jNHDzTUcurW6JzWW901XV7N0OpL3PYZVZO1O7mquvwZ5RUos
-	xRmJhlrMRcWJAIc05FFkAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHIsWRmVeSWpSXmKPExsVy+t9jAV02IZNgg7nvVSyuf3nOajHpyXtm
-	i4krJzNbnG16w25xedccNovbjSvYHNg8ds66y+6xeYWWR9+WVYwenzfJBbBENTDaZKQmpqQW
-	KaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gAtV1IoS8wpBQoFJBYX
-	K+nbYZoQGuKmawHTGKHrGxIE12NkgAYS1jBmvLj6j7lgPUfFle/6DYzN7F2MHBwSAiYS31s9
-	uxg5gUwxiQv31rN1MXJxCAksYpRY1LOaESQhJNDIJLHoMweIzSagJbH/xQ02EFtEQFfiZs9l
-	dhCbWaBWYt+1JlYQW1jAS2LmwU9MIDaLgKrE2/bTYPW8Aq4SO9vfs0Esk5P4sOcR+wRG7gWM
-	DKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgkP/mfQOxlUNFocYBTgYlXh4d9w3ChZiTSwr
-	rsw9xCjBwawkwhvMZxIsxJuSWFmVWpQfX1Sak1p8iDEZaPtEZinR5HxgXOaVxBsam5gZWRqZ
-	G1oYGZuTJqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2PI7Cd+V9yuyVfK5XWmMNyZJHH0
-	z0zbsBUVXUJWAUKzXXz2sP2ZqKxueG/e2U9HZyX0Hyw+XHLGvtW2t+2g1vm+kppG15XpSi+n
-	iruvCzTgPv5xfWFsWPLHqu169+d03PyQEtgXeCqm4sDfPvXtBd5L10bZ3PfJeXn0loDsU4P2
-	JMFFQm6T7ZRYijMSDbWYi4oTAU9PUHXBAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756223AbaC0MAM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 08:00:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:28280 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638AbaC0MAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 08:00:10 -0400
+X-IronPort-AV: E=Sophos;i="4.97,741,1389715200"; 
+   d="scan'208";a="9777803"
+Message-ID: <5334138B.4020803@cn.fujitsu.com>
+Date: Thu, 27 Mar 2014 20:03:23 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] workqueue: use manager lock only to protect worker_idr
+References: <1395844907-24186-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1395844907-24186-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/27 19:56:50,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/27 19:56:53,
+	Serialize complete at 2014/03/27 19:56:53
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix minor issue about checking wrong return type.
+please omit this patch and wait for my new patchset.
 
-The of_cm_parse_desc() return ERR_PTR(errnor number) when some error happen
-in this function. But, charger_manager_probe() has only checked whether
-desc is NULL or not. If of_cm_parse_desc() returns ERR_PTR(-ENOMEM), desc
-isn't NULL but desc is (void *)(-ENOMEM). Althouhg some error happen for parsing
-DT, charger_manager_probe() can't detect error of desc instance.
+Thanks,
+Lai
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
----
- drivers/power/charger-manager.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
-index 9e4dab4..a10fb57 100644
---- a/drivers/power/charger-manager.c
-+++ b/drivers/power/charger-manager.c
-@@ -1677,7 +1677,7 @@ static int charger_manager_probe(struct platform_device *pdev)
- 		}
- 	}
- 
--	if (!desc) {
-+	if (IS_ERR(desc)) {
- 		dev_err(&pdev->dev, "No platform data (desc) found\n");
- 		return -ENODEV;
- 	}
--- 
-1.8.0
+On 03/26/2014 10:41 PM, Lai Jiangshan wrote:
+> worker_idr is always accessed in manager lock context currently.
+> worker_idr is highly related to managers, it will be unlikely
+> accessed in pool->lock only in future.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   34 ++++++----------------------------
+>  1 files changed, 6 insertions(+), 28 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 0c74979..f5b68a3 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -123,8 +123,7 @@ enum {
+>   *    cpu or grabbing pool->lock is enough for read access.  If
+>   *    POOL_DISASSOCIATED is set, it's identical to L.
+>   *
+> - * MG: pool->manager_mutex and pool->lock protected.  Writes require both
+> - *     locks.  Reads can happen under either lock.
+> + * M: pool->manager_mutex protected.
+>   *
+>   * PL: wq_pool_mutex protected.
+>   *
+> @@ -163,7 +162,7 @@ struct worker_pool {
+>  	/* see manage_workers() for details on the two manager mutexes */
+>  	struct mutex		manager_arb;	/* manager arbitration */
+>  	struct mutex		manager_mutex;	/* manager exclusion */
+> -	struct idr		worker_idr;	/* MG: worker IDs and iteration */
+> +	struct idr		worker_idr;	/* M: worker IDs and iteration */
+>  
+>  	struct workqueue_attrs	*attrs;		/* I: worker attributes */
+>  	struct hlist_node	hash_node;	/* PL: unbound_pool_hash node */
+> @@ -339,16 +338,6 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+>  			   lockdep_is_held(&wq->mutex),			\
+>  			   "sched RCU or wq->mutex should be held")
+>  
+> -#ifdef CONFIG_LOCKDEP
+> -#define assert_manager_or_pool_lock(pool)				\
+> -	WARN_ONCE(debug_locks &&					\
+> -		  !lockdep_is_held(&(pool)->manager_mutex) &&		\
+> -		  !lockdep_is_held(&(pool)->lock),			\
+> -		  "pool->manager_mutex or ->lock should be held")
+> -#else
+> -#define assert_manager_or_pool_lock(pool)	do { } while (0)
+> -#endif
+> -
+>  #define for_each_cpu_worker_pool(pool, cpu)				\
+>  	for ((pool) = &per_cpu(cpu_worker_pools, cpu)[0];		\
+>  	     (pool) < &per_cpu(cpu_worker_pools, cpu)[NR_STD_WORKER_POOLS]; \
+> @@ -377,14 +366,14 @@ static void copy_workqueue_attrs(struct workqueue_attrs *to,
+>   * @wi: integer used for iteration
+>   * @pool: worker_pool to iterate workers of
+>   *
+> - * This must be called with either @pool->manager_mutex or ->lock held.
+> + * This must be called with either @pool->manager_mutex.
+>   *
+>   * The if/else clause exists only for the lockdep assertion and can be
+>   * ignored.
+>   */
+>  #define for_each_pool_worker(worker, wi, pool)				\
+>  	idr_for_each_entry(&(pool)->worker_idr, (worker), (wi))		\
+> -		if (({ assert_manager_or_pool_lock((pool)); false; })) { } \
+> +		if (({ lockdep_assert_held(&pool->manager_mutex); false; })) { } \
+>  		else
+>  
+>  /**
+> @@ -1717,13 +1706,7 @@ static struct worker *create_worker(struct worker_pool *pool)
+>  	 * ID is needed to determine kthread name.  Allocate ID first
+>  	 * without installing the pointer.
+>  	 */
+> -	idr_preload(GFP_KERNEL);
+> -	spin_lock_irq(&pool->lock);
+> -
+> -	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_NOWAIT);
+> -
+> -	spin_unlock_irq(&pool->lock);
+> -	idr_preload_end();
+> +	id = idr_alloc(&pool->worker_idr, NULL, 0, 0, GFP_KERNEL);
+>  	if (id < 0)
+>  		goto fail;
+>  
+> @@ -1765,18 +1748,13 @@ static struct worker *create_worker(struct worker_pool *pool)
+>  		worker->flags |= WORKER_UNBOUND;
+>  
+>  	/* successful, commit the pointer to idr */
+> -	spin_lock_irq(&pool->lock);
+>  	idr_replace(&pool->worker_idr, worker, worker->id);
+> -	spin_unlock_irq(&pool->lock);
+>  
+>  	return worker;
+>  
+>  fail:
+> -	if (id >= 0) {
+> -		spin_lock_irq(&pool->lock);
+> +	if (id >= 0)
+>  		idr_remove(&pool->worker_idr, id);
+> -		spin_unlock_irq(&pool->lock);
+> -	}
+>  	kfree(worker);
+>  	return NULL;
+>  }
 
