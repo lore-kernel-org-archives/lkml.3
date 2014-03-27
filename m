@@ -1,203 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763AbaC0MzE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 08:55:04 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:6687 "EHLO SMTP02.CITRIX.COM"
+	id S1755232AbaC0NCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 09:02:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49401 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756678AbaC0MzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 08:55:02 -0400
-X-IronPort-AV: E=Sophos;i="4.97,742,1389744000"; 
-   d="scan'208";a="114128169"
-Message-ID: <1395924899.22909.120.camel@kazak.uk.xensource.com>
-Subject: Re: [PATCH net-next] xen-netback: Grant copy the header instead of
- map and memcpy
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
-        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
-Date: Thu, 27 Mar 2014 12:54:59 +0000
-In-Reply-To: <53341DA8.9010102@citrix.com>
-References: <1395868707-22683-1-git-send-email-zoltan.kiss@citrix.com>
-	 <1395920136.22909.76.camel@kazak.uk.xensource.com>
-	 <53341DA8.9010102@citrix.com>
-Organization: Citrix Systems, Inc.
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
+	id S1752124AbaC0NCe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 09:02:34 -0400
+Date: Thu, 27 Mar 2014 06:02:24 -0700
+From: Jeff Layton <jlayton@redhat.com>
+To: Florian Weimer <fweimer@redhat.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Jim Lieb <jlieb@panasas.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bfields@redhat.com
+Subject: Re: Thoughts on credential switching
+Message-ID: <20140327060225.4f4caa5a@ipyr.poochiereds.net>
+In-Reply-To: <53341D8E.80105@redhat.com>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
+ <53341D8E.80105@redhat.com>
+Organization: Red Hat
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.80.2.80]
-X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-03-27 at 12:46 +0000, Zoltan Kiss wrote:
-> On 27/03/14 11:35, Ian Campbell wrote:
-> > On Wed, 2014-03-26 at 21:18 +0000, Zoltan Kiss wrote:
-> >> An old inefficiency of the TX path that we are grant mapping the first slot,
-> >> and then copy the header part to the linear area. Instead, doing a grant copy
-> >> for that header straight on is more reasonable. Especially because there are
-> >> ongoing efforts to make Xen avoiding TLB flush after unmap when the page were
-> >> not touched in Dom0. In the original way the memcpy ruined that.
-> >> The key changes:
-> >> - the vif has a tx_copy_ops array again
-> >> - xenvif_tx_build_gops sets up the grant copy operations
-> >> - we don't have to figure out whether the header and first frag are on the same
-> >>    grant mapped page or not
-> >>
-> >> Unrelated, but I've made a small refactoring in xenvif_get_extras as well.
-> >
-> > Just a few thoughts, not really based on close review of the code.
-> >
-> > Do you have any measurements for this series or workloads where it is
-> > particularly beneficial?
-> My manual measurements showed that if I also use the Xen patch which 
-> avoids TLB flush when the pages were not touched, I can easily get 9 - 
-> 9.3 Gbps with iperf. But I'll run some more automated tests.
+On Thu, 27 Mar 2014 13:46:06 +0100
+Florian Weimer <fweimer@redhat.com> wrote:
 
-I suppose these numbers are related because avoiding the memcpy avoids
-touching the page?
-
-> >
-> > You've added a second hypercall to tx_action, probably those can be
-> > combined into one vm exit by using a multicall.
-> Yes, good idea!
+> On 03/27/2014 01:23 AM, Andy Lutomirski wrote:
 > 
-> > Also you should omit
-> > either if their respective nr_?ops is zero (can nr_cops ever be zero?)
-> If nr_cops is zero, nr_gops should be too, but it can happen that we 
-> have only copy ops, but no grant ops (all the packets processed are < 
-> PKT_PROT_LEN).
-
-That sounds like what I would expect, good.
-
-> Actually there is a bug in tx_action, it shouldn't return when (nr_cops 
-> != 0) && (nr_gops == 0)
+> > I propose the following set of new syscalls:
+> >
+> > int credfd_create(unsigned int flags): returns a new credfd that
+> > corresponds to current's creds.
+> >
+> > int credfd_activate(int fd, unsigned int flags): Change current's
+> > creds to match the creds stored in fd.  To be clear, this changes
+> > both the "subjective" and "objective" (aka real_cred and cred)
+> > because there aren't any real semantics for what happens when
+> > userspace code runs with real_cred != cred.
 > 
-> >
-> > Adding another MAX_PENDING_REQS sized array is unfortunate. Could we
-> > perhaps get away with only ever doing copy for the first N requests (for
-> > small N) in a frame and copying up the request, N should be chosen to be
-> > large enough to cover the more common cases (which I suppose is Windows
-> > which puts the network and transport headers in separate slots). This
-> > might allow the copy array to be smaller, at the expense of still doing
-> > the map+memcpy for some corner cases.
-> N is already 1, we already copy only the first slot. But here we should 
-> be prepared for the unlikely situation that a guest sends 256 packets 
-> suddenly, all with one slot.
-
-Right, I was wondering if we could just do smaller batches in that case,
-but I expect that would be intolerably sucky.
-
-> >
-> > Or (and I confess this is a skanky hack): we overlay tx_copy_ops and
-> > tx_map_ops in a union, and insert one set of ops from the front and the
-> > other from the end, taking great care around when and where they meet.
-> Unfortunately the hypercalls expect an array of _one_ of them, so we 
-> can't put the 2 types into an union unless it's guaranteed that they 
-> have the same size. And they are expected to be
-
-(was there more of this last sentence?)
-
-I was thinking 
-	union {
-		struct gnt_map maps[NR_...];
-		struct gnt_copy copy[NR_...];
-	}
-
-Then you fill copy from 0..N and maps from M..NR_ and maintain the
-invariant that
-         (&maps[M] - &map[s0]) > &copy[N]
-
-and pass to the grant ops (&copy[0], N) and (&maps[M], NR_... - M)
-respectively.
-
-Too tricksy perhaps?
-
+> This interface does not address the long-term lack of POSIX
+> compliance in setuid and friends, which are required to be
+> process-global and not thread-specific (as they are on the kernel
+> side).
 > 
-> >
-> >
-> >>   static int xenvif_tx_check_gop(struct xenvif *vif,
-> >>   			       struct sk_buff *skb,
-> >> -			       struct gnttab_map_grant_ref **gopp)
-> >> +			       struct gnttab_map_grant_ref **gopp,
-> >> +			       struct gnttab_copy **gopp_copy)
-> >
-> > I think a precursor patch which only does s/gopp/gopp_map/ would be
-> > beneficial.
-> It's 5 renaming in 4 hunks, I think it's enough to do them in the same patch
-
-If you think it won't impact the readability of the meat of the patch
-then go for it, but it seems trivial to do it first and avoid the risk
-that I might think otherwise.
-
-
-> >
-> >>   	struct gnttab_map_grant_ref *gop = vif->tx_map_ops, *request_gop;
-> >>   	struct sk_buff *skb;
-> >> @@ -1267,24 +1252,37 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
-> >>   			}
-> >>   		}
-> >>
-> >> -		xenvif_tx_create_gop(vif, pending_idx, &txreq, gop);
-> >> -
-> >> -		gop++;
-> >> -
-> >>   		XENVIF_TX_CB(skb)->pending_idx = pending_idx;
-> >>
-> >>   		__skb_put(skb, data_len);
-> >
-> > Can't you allocate the skb with sufficient headroom? (or maybe I've
-> > forgotten again how skb payload management works and __skb_put is
-> > effectively free on an empty skb?)
-> It effectively does:
-> 
-> 	skb->tail += len;
-> 	skb->len  += len;
-> 
-> So we can copy data_len between head and tail. The skb is already 
-> allocated in xenvif_alloc_skb with a buffer size NET_SKB_PAD + 
-> NET_IP_ALIGN + data_len, and and the headroom is NET_SKB_PAD + NET_IP_ALIGN.
+> glibc works around this by reserving a signal and running set*id on 
+> every thread in a special signal handler.  This is just crass, and it
+> is likely impossible to restore the original process state in case of 
+> partial failure.  We really need kernel support to perform the 
+> process-wide switch in an all-or-nothing manner.
 > 
 
-Great.
+I disagree. We're treading new ground here with this syscall. It's
+not defined by POSIX so we're under no obligation to follow its silly
+directives in this regard. Per-process cred switching doesn't really
+make much sense in this day and age, IMO. Wasn't part of the spec was
+written before threading existed
 
-> >
-> >> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
-> >> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
-> >> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
-> >> +
-> >> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn = virt_to_mfn(skb->data);
-> >> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
-> >> +		vif->tx_copy_ops[*copy_ops].dest.offset = offset_in_page(skb->data);
-> >> +
-> >> +		vif->tx_copy_ops[*copy_ops].len = data_len;
-> >
-> > Do we want to copy the entire first frag even if it is e.g. a complete
-> > page?
-> >
-> > I'm not sure where the tradeoff lies between doing a grant copy of more
-> > than necessary and doing a map+memcpy when the map is already required
-> > for the page frag anyway.
-> I think we should only grant copy the parts which goes to the linear 
-> part, because we would memcpy it anyway. It's expected that the stack 
-> won't touch anything else while the packet passes through. data_len is 
-> the size of the linear buffer here.
-> >
-> > What about the case where the first frag is less than PKT_PROT_LEN? I
-> > think you still do map+memcpy in that case?
-> Then data_len will be txreq.size, we allocate the skb for that, and 
-> later on we call __pskb_pull_tail in xenvif_tx_submit to pull up for 
-> that (which is essentially map+memcpy). It's not optimal, but it's like 
-> that since the good old days. I agree it could be optimized, but let's 
-> change it in a different patch!
 
-OK. Can you clarify the title and/or the commit log to make it obvious
-that we only copy (some portion of) the first frag and that we still map
-+memcpy the remainder of PKT_PROT_LEN if the first frag is not large
-enough.
+The per-process credential switching is pretty universally a pain in
+the ass for anyone who wants to write something like a threaded file
+server. Jeremy Allison had to jump through some rather major hoops to
+work around it for Samba [1]. I think we want to strive to make this a
+per-task credential switch and ignore that part of the POSIX spec.
 
-Thanks,
-Ian.
+That said, I think we will need to understand and document what we
+expect to occur if someone does this new switch_creds(fd) call and then
+subsequently calls something like setuid(), if only to ensure that we
+don't get blindsided by it.
 
+[1]: http://sourceware.org/ml/libc-help/2012-07/msg00004.html
+-- 
+Jeff Layton <jlayton@redhat.com>
