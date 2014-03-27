@@ -1,37 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbaC0FqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 01:46:16 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:50586 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750949AbaC0FqP (ORCPT
+	id S1752383AbaC0FuH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 01:50:07 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:65103 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbaC0FuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 01:46:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1403270639510.10699@ionos.tec.linutronix.de>
-References: <cover.1395832156.git.viresh.kumar@linaro.org>
-	<3c77c9453e42b7a914c15ef67a8ee142d3543a48.1395897612.git.viresh.kumar@linaro.org>
-	<aa0ab84ff46cdc4a2d7aef475b2c032009f23d29.1395897612.git.viresh.kumar@linaro.org>
-	<alpine.DEB.2.02.1403270639510.10699@ionos.tec.linutronix.de>
-Date: Thu, 27 Mar 2014 11:16:14 +0530
-Message-ID: <CAKohpomG58xGMBLDCmKjXadBuX9Y8EEPcfnGZNFN8mgK_PB9zA@mail.gmail.com>
-Subject: Re: [PATCH V2 2/2] hrtimer: use __ffs() to iterate over valid bits
- from active_bases
+	Thu, 27 Mar 2014 01:50:05 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-        Linaro Networking <linaro-networking@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
+        fweisbec@gmail.com, linaro-networking@linaro.org,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V3] hrtimer: use __ffs() to iterate over valid bits from active_bases
+Date: Thu, 27 Mar 2014 11:19:55 +0530
+Message-Id: <8aa380361c07844f7b274e472f542ae2171bb39a.1395899293.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <aa0ab84ff46cdc4a2d7aef475b2c032009f23d29.1395897612.git.viresh.kumar@linaro.org>
+References: <aa0ab84ff46cdc4a2d7aef475b2c032009f23d29.1395897612.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2014 11:10, Thomas Gleixner <tglx@linutronix.de> wrote:
-> What if this is a spurious interrupt and active_bases is 0?
+Currently we are iterating over all possible (currently four) bits of
+active_bases to see if corresponding clock bases are active. This is good enough
+for cases where 3 or 4 bases are used but if only 1 or 2 are used then it makes
+more sense to use __ffs() to find the right bit directly.
 
-Hmm.. haven't thought about that actually.. I thought it would be
-guaranteed here that active_bases isn't zero.
+Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V2->V3: Use ffs() instead of __ffs() and decrement 'i' later.
 
-Will fix it as the current code would end up in a infinite loop.
+V1->V2: Instead of removing active_bases use __ffs() on it to make loop more
+efficient.
+
+ kernel/hrtimer.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index acfef5f..2aad8a7 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1265,6 +1265,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
+ {
+ 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
+ 	ktime_t expires_next, now, entry_time, delta;
++	unsigned long active_bases = cpu_base->active_bases;
+ 	int i, retries = 0;
+ 
+ 	BUG_ON(!cpu_base->hres_active);
+@@ -1284,15 +1285,11 @@ retry:
+ 	 */
+ 	cpu_base->expires_next.tv64 = KTIME_MAX;
+ 
+-	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
+-		struct hrtimer_clock_base *base;
++	while ((i = ffs(active_bases))) {
++		struct hrtimer_clock_base *base = cpu_base->clock_base + --i;
+ 		struct timerqueue_node *node;
+ 		ktime_t basenow;
+ 
+-		if (!(cpu_base->active_bases & (1 << i)))
+-			continue;
+-
+-		base = cpu_base->clock_base + i;
+ 		basenow = ktime_add(now, base->offset);
+ 
+ 		while ((node = timerqueue_getnext(&base->active))) {
+@@ -1327,6 +1324,8 @@ retry:
+ 
+ 			__run_hrtimer(timer, &basenow);
+ 		}
++
++		active_bases &= ~(1 << i);
+ 	}
+ 
+ 	/*
+-- 
+1.7.12.rc2.18.g61b472e
+
