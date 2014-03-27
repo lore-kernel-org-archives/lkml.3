@@ -1,58 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbaC0BcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 21:32:04 -0400
-Received: from void.printf.net ([89.145.121.20]:59774 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751351AbaC0BcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 21:32:01 -0400
-From: Chris Ball <chris@printf.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Georgi Djakov <gdjakov@mm-sol.com>, linux-mmc <linux-mmc@vger.kernel.org>,
-        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        linux-doc@vger.kernel.org,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v11 0/3] mmc: sdhci-msm: Add support for Qualcomm chipsets
-References: <1394465833-22581-1-git-send-email-gdjakov@mm-sol.com>
-	<53330387.7000803@mm-sol.com>
-	<CAPDyKFqjjgWnH4Lt7vOPSM09ngvY1N6ustaBU41tZCJoKWrkzw@mail.gmail.com>
-Date: Thu, 27 Mar 2014 01:31:42 +0000
-In-Reply-To: <CAPDyKFqjjgWnH4Lt7vOPSM09ngvY1N6ustaBU41tZCJoKWrkzw@mail.gmail.com>
-	(Ulf Hansson's message of "Thu, 27 Mar 2014 00:09:24 +0100")
-Message-ID: <86eh1owhoh.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751697AbaC0Bry (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 21:47:54 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:41580 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751364AbaC0Brw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 21:47:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1455668003.49319.1395859913516.JavaMail.zimbra@xes-inc.com>
+References: <3217679.sqG7Yrhs8H@daeseok-laptop.cloud.net>
+	<1455668003.49319.1395859913516.JavaMail.zimbra@xes-inc.com>
+Date: Thu, 27 Mar 2014 10:47:51 +0900
+Message-ID: <CAHb8M2AX_KA3T2--yd3_ia9cjKpoEGUacW8zph6V6e_r_6_nuw@mail.gmail.com>
+Subject: Re: [PATCH] staging: vme: fix memory leak in vme_user_probe()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Aaron Sierra <asierra@xes-inc.com>
+Cc: martyn welch <martyn.welch@ge.com>,
+        manohar vanga <manohar.vanga@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>, lisa@xenapiadmin.com,
+        yongjun wei <yongjun_wei@trendmicro.com.cn>,
+        devel <devel@driverdev.osuosl.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Mar 26 2014, Ulf Hansson wrote:
-> On 26 March 2014 17:42, Georgi Djakov <gdjakov@mm-sol.com> wrote:
->> Hello Chris, Ulf,
+2014-03-27 3:51 GMT+09:00 Aaron Sierra <asierra@xes-inc.com>:
+> ----- Original Message -----
+>> From: "Daeseok Youn" <daeseok.youn@gmail.com>
+>> Sent: Tuesday, March 25, 2014 10:01:48 PM
+>> Subject: [PATCH] staging: vme: fix memory leak in vme_user_probe()
 >>
->> Do you have any comments on the patches?
->> The arch code that will use this driver is already in mainline. The
->> regulators support seem to be still on its way, but this driver also works
->> fine with dummy regulators.
+>>
+>> If vme_master_request() returns NULL when it failed,
+>> it need to free buffers for master.
+>>
+>> And also removes unreachable code in vme_user_probe().
+>>
+>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+>> ---
+>>  drivers/staging/vme/devices/vme_user.c |    9 +++------
+>>  1 files changed, 3 insertions(+), 6 deletions(-)
 >
-> Looks good to me!
+> Nice catches Daeseok. I don't maintain this driver, but I have some
+> suggestions below.
 >
-> For the complete patchset:
+>>
+>> diff --git a/drivers/staging/vme/devices/vme_user.c
+>> b/drivers/staging/vme/devices/vme_user.c
+>> index 7927927..ffb4eee 100644
+>> --- a/drivers/staging/vme/devices/vme_user.c
+>> +++ b/drivers/staging/vme/devices/vme_user.c
+>> @@ -776,7 +776,8 @@ static int vme_user_probe(struct vme_dev *vdev)
+>>               image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
+>>               if (image[i].kern_buf == NULL) {
+>>                       err = -ENOMEM;
+>> -                     goto err_master_buf;
+>> +                     vme_master_free(image[i].resource);
+>> +                     goto err_master;
+>>               }
+>>       }
 >
-> Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+> I think it would be nice to keep all of the cleanup under the err_master
+> label.
+Actually, I changed like "err_slave" doing. When it failed to alloc
+buffer for slave,
+just called vme_slave_free(image[i].slave) and cleanup under the err_slave.
 
-Thanks Georgi and Ulf -- pushed all three patches to mmc-next for 3.15.
+>
+> That could be done by changing the kern_buf allocation in this part to
+> a devm_kmalloc. Then devm handles the kern_buf freeing entirely.
+I didn't know about devm_kmalloc(), I will check that function. Thanks!
 
-- Chris.
--- 
-Chris Ball   <chris@printf.net>   <http://printf.net/>
+>
+>>
+>> @@ -819,8 +820,6 @@ static int vme_user_probe(struct vme_dev *vdev)
+>>
+>>       return 0;
+>>
+>> -     /* Ensure counter set correcty to destroy all sysfs devices */
+>> -     i = VME_DEVS;
+>>  err_sysfs:
+>>       while (i > 0) {
+>>               i--;
+>> @@ -830,12 +829,10 @@ err_sysfs:
+>>
+>>       /* Ensure counter set correcty to unalloc all master windows */
+>>       i = MASTER_MAX + 1;
+>> -err_master_buf:
+>> -     for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
+>> -             kfree(image[i].kern_buf);
+>>  err_master:
+>>       while (i > MASTER_MINOR) {
+>>               i--;
+>> +             kfree(image[i].kern_buf);
+>>               vme_master_free(image[i].resource);
+>>       }
+>
+> Using devm_kmalloc as mentioned above, the while loop could be
+> simplified to this:
+>
+> err_master:
+>         while (i >= MASTER_MINOR) {
+>                 vme_master_free(image[i].resource);
+>                 i--;
+>         }
+It would be nice, but when it failed to vme_master_request() and than
+go to err_master,
+image[i].resource must be NULL. So a NULL exception has occurred in
+vme_master_free().
+
+I think vme_master{slave}_free() need to check NULL and it can be
+possible to change code as your comment.
+please check for me. :-)
+
+>
+> If not moving to devm, this should be safe even though the first
+> kern_buf may be NULL:
+>
+> err_master:
+>         while (i >= MASTER_MINOR) {
+>                 kfree(image[i].kern_buf);
+>                 vme_master_free(image[i].resource);
+>                 i--;
+>         }
+kfree() is ok. But vme_master_free() function has an problem as mentioned above.
+
+Thanks for review.
+Daeseok Youn.
+>
+> -Aaron
+>
+>>
+>> --
+>> 1.7.4.4
+>>
+>>
+>>
