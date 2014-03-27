@@ -1,80 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756939AbaC0PDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:03:15 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:53690 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756698AbaC0PDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:03:08 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Sudeep Holla <sudeep.holla@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+	id S1756974AbaC0PDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:03:35 -0400
+Received: from verein.lst.de ([213.95.11.211]:54310 "EHLO newverein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756958AbaC0PDd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 11:03:33 -0400
+Date: Thu, 27 Mar 2014 16:03:28 +0100
+From: Torsten Duwe <duwe@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Brown <broonie@linaro.org>
-Subject: Re: [PATCH] arm64: Fix duplicated Kconfig entries again
-Date: Thu, 27 Mar 2014 16:18:43 +0100
-Message-ID: <2765234.k5FCzWzCDz@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <53341ADF.2050904@linaro.org>
-References: <1395738060-18489-1-git-send-email-hanjun.guo@linaro.org> <5334078A.9010408@arm.com> <53341ADF.2050904@linaro.org>
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>, Greg Price <price@mit.edu>
+Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
+Message-ID: <20140327150328.GB18563@lst.de>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com> <5333AD63.9030808@zytor.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5333AD63.9030808@zytor.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, March 27, 2014 08:34:39 PM Hanjun Guo wrote:
-> On 2014-3-27 19:12, Sudeep Holla wrote:
-> > Hi Hanjun,
-> > 
-> > On 25/03/14 11:09, Hanjun Guo wrote:
-> >> Hi Sudeep,
-> >>
-> >> On 2014-3-25 18:00, Sudeep Holla wrote:
-> >>> Hi Hanjun,
-> >>>
-> >>> On 25/03/14 09:00, Hanjun Guo wrote:
-> >>>> After commit 74397174989e5 (arm64: Fix duplicated Kconfig entries),
-> >>>> I still get a duplicate Power management options section in linux-next
-> >>>> git repo, may be due to some merge conflicts, anyway, fix that in this
-> >>>> patch.
-> >>>>
-> >>> I reported this and Mark Brown posted the patch[1].
-> >>> I assumed it is already pulled, but looks like that's not the case.
-> >> [...]
-> >>> [1] http://www.spinics.net/lists/arm-kernel/msg314472.html
-> > 
-> > [...]
-> > 
-> >> here is the link:
-> >> https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/arm64/Kconfig
-> >>
-> > 
-> > Just had a look at the linux-next tree and looks like the original commit:
-> > "cpufreq: enable ARM drivers on arm64" is pulled by both Catalin and Rafael
-> > which has resulted in the fixup patch[1] not removing the duplicate entry
-> > cleanly.
-> > 
-> > If not too late it better to ask either Rafael or Catalin to drop both patches
-> > from their tree, instead of creating 4 patches in total to enable cpufreq :)
+On Wed, Mar 26, 2014 at 09:47:31PM -0700, H. Peter Anvin wrote:
+> On 03/26/2014 06:11 PM, Andy Lutomirski wrote:
+> > Also, in the /dev/random sense,
+> > most hardware RNGs have no entropy at all, since they're likely to be
+> > FIPS-approved DRBGs that don't have a real non-deterministic source.
 > 
-> Rafael is on vacation now.
-> 
-> Catalin, could you please handle this?
+> Such a device has no business being a Linux hwrng device.  We already
+> have a PRNG (DRBG) in the kernel, the *only* purpose for a hwrng device
+> is to be an entropy source.
 
-Well, not really, I'm at a conference now.
+That's also my understanding. The shot noise from a Schottky-diode seems
+to be quite popular, for example.
 
-Anyway, I'd rather not drop anything, but if you send me a revert, I can apply it.
+> TPMs, in particular, should almost certainly be massively derated based
+> on what little we know about TPM.
 
-Thanks!
+Backdoors, anyone? :-)
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+	Torsten
+
