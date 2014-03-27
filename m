@@ -1,79 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaC0IKq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:10:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33279 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753853AbaC0IKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:10:37 -0400
-Date: Thu, 27 Mar 2014 10:10:40 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Markus Armbruster <armbru@redhat.com>
-Cc: Alejandro Comisario <alejandro.comisario@mercadolibre.com>,
-        kvm@vger.kernel.org, ghammer@redhat.com,
-        Stefan Hajnoczi <stefanha@gmail.com>, Jason Wang <jasowang@redhat.com>,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] Massive read only kvm guests when backing file was
- missing
-Message-ID: <20140327081040.GA21756@redhat.com>
-References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
- <20140327064158.GA17563@redhat.com>
- <87y4zwt7mu.fsf@blackfin.pond.sub.org>
+	id S1754384AbaC0ILG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 04:11:06 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:28449 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277AbaC0ILE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 04:11:04 -0400
+From: Liu Hua <sdu.liu@huawei.com>
+To: <linux@arm.linux.org.uk>, <horms@verge.net.au>
+CC: <linux-arm-kernel@lists.infradead.org>, <kexec@lists.infradead.org>,
+        "Liu Hua" <sdu.liu@huawei.com>, Vivek Goyal <vgoyal@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/3] kexec : ARM : add LPAE support
+Date: Thu, 27 Mar 2014 16:00:40 +0800
+Message-ID: <1395907240-13308-4-git-send-email-sdu.liu@huawei.com>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1395907240-13308-1-git-send-email-sdu.liu@huawei.com>
+References: <1395907240-13308-1-git-send-email-sdu.liu@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87y4zwt7mu.fsf@blackfin.pond.sub.org>
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 08:36:57AM +0100, Markus Armbruster wrote:
-> "Michael S. Tsirkin" <mst@redhat.com> writes:
-> 
-> > On Wed, Mar 26, 2014 at 11:08:03PM -0300, Alejandro Comisario wrote:
-> >> Hi List!
-> >> Hope some one can help me, we had a big issue in our cloud the other
-> >> day, a couple of our openstack regions ( +2000 kvm guests with qcow2 )
-> >> went read only filesystem from the guest side because the backing
-> >> files directory (the openstack _base directory) was compromised and
-> >> the data was lost, when we realized the data was lost, it took us 5
-> >> mins to restore the backup of the backing files, but by that time all
-> >> the kvm guests received some kind of IO error from the hypervisor
-> >> layer, and went read only on root filesystem.
-> >> 
-> >> My question would be, is there a way to hold the IO operations against
-> >> the backing files ( i thought that would be 99% READ operations ) for
-> >> a little longer ( im asking this because i dont quite understand what
-> >> is the process and when it raises the error ) in a case the backing
-> >> files are missing (no IO possible) but is recoverable within minutes ?
-> >> 
-> >> Any tip  on how to achieve this if possible, or information about how
-> >> backing files works on kvm, will be amazing.
-> >> Waiting for feedback!
-> >> 
-> >> kindest regards.
-> >> Alejandro Comisario
-> >
-> >
-> > I'm guessing this is what happened: guests timed out meanwhile.
-> > You can increase the timeout within the guest:
-> > echo 600 > /sys/block/sda/device/timeout
-> > to timeout after 10 minutes.
-> >
-> > If you have installed qemu guest agent on your system, you can do this
-> > from the host. Unfortunately by default it's memory can be pushed out to swap
-> > and then on disk error access there might will fail :(
-> > Maybe we should consider mlock on all its memory at least as an option.
-> >
-> > You could pause your guests, restart them after the issue is resolved,
-> > and we could I guess add functionality to pause VM on disk errors
-> > automatically.
-> > Stefan?
-> 
-> Would -drive rerror=stop do?
+For 32-bit ARM systems with CONFIG_ARM_LPAE=y, when kexec utility
+loads the crash kernel. 32-bit elf header is not enough if the
+physical address exceeds 4G.
 
-I think it will. It's a pity it doesn't appear in --help output -
-would make it easier to find.
+This patch check whether the largest physical address of the system
+exceeds 4G. If so, kexec creates 64-bit elf header.Otherwise it
+creates 32-bit elf header.
 
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: <kexec@lists.infradead.org>
+Cc: <linux-kernel@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>
+---
+ kexec/arch/arm/crashdump-arm.c | 23 ++++++++++++++++++++---
+ kexec/kexec-iomem.c            |  8 ++++----
+ kexec/kexec.h                  |  4 ++--
+ 3 files changed, 26 insertions(+), 9 deletions(-)
+
+diff --git a/kexec/arch/arm/crashdump-arm.c b/kexec/arch/arm/crashdump-arm.c
+index 0cd6935..d1133cd 100644
+--- a/kexec/arch/arm/crashdump-arm.c
++++ b/kexec/arch/arm/crashdump-arm.c
+@@ -20,6 +20,7 @@
+  * along with this program; if not, write to the Free Software
+  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+  */
++#include <limits.h>
+ #include <elf.h>
+ #include <errno.h>
+ #include <stdio.h>
+@@ -75,8 +76,8 @@ unsigned long phys_offset;
+  * regions is placed in @crash_memory_nr_ranges.
+  */
+ static int crash_range_callback(void *UNUSED(data), int UNUSED(nr),
+-				char *str, unsigned long base,
+-				unsigned long length)
++				char *str, unsigned long long base,
++				unsigned long long length)
+ {
+ 	struct memory_range *range;
+ 
+@@ -276,6 +277,7 @@ int load_crashdump_segments(struct kexec_info *info, char *mod_cmdline)
+ 	unsigned long bufsz;
+ 	void *buf;
+ 	int err;
++	int last_ranges;
+ 
+ 	/*
+ 	 * First fetch all the memory (RAM) ranges that we are going to pass to
+@@ -292,10 +294,25 @@ int load_crashdump_segments(struct kexec_info *info, char *mod_cmdline)
+ 	phys_offset = usablemem_rgns.ranges->start;
+ 	dbgprintf("phys_offset: %#lx\n", phys_offset);
+ 
+-	err = crash_create_elf32_headers(info, &elf_info,
++	last_ranges = usablemem_rgns.size - 1;
++	if (last_ranges < 0)
++		last_ranges = 0;
++
++	if (crash_memory_ranges[last_ranges].end > ULONG_MAX) {
++
++		/* for support arm LPAE and arm64 */
++		elf_info.class = ELFCLASS64;
++
++		err = crash_create_elf64_headers(info, &elf_info,
+ 					 usablemem_rgns.ranges,
+ 					 usablemem_rgns.size, &buf, &bufsz,
+ 					 ELF_CORE_HEADER_ALIGN);
++	} else {
++		err = crash_create_elf32_headers(info, &elf_info,
++					 usablemem_rgns.ranges,
++					 usablemem_rgns.size, &buf, &bufsz,
++					 ELF_CORE_HEADER_ALIGN);
++	}
+ 	if (err)
+ 		return err;
+ 
+diff --git a/kexec/kexec-iomem.c b/kexec/kexec-iomem.c
+index 0396713..485a2e8 100644
+--- a/kexec/kexec-iomem.c
++++ b/kexec/kexec-iomem.c
+@@ -26,8 +26,8 @@ int kexec_iomem_for_each_line(char *match,
+ 			      int (*callback)(void *data,
+ 					      int nr,
+ 					      char *str,
+-					      unsigned long base,
+-					      unsigned long length),
++					      unsigned long long base,
++					      unsigned long long length),
+ 			      void *data)
+ {
+ 	const char *iomem = proc_iomem();
+@@ -65,8 +65,8 @@ int kexec_iomem_for_each_line(char *match,
+ 
+ static int kexec_iomem_single_callback(void *data, int nr,
+ 				       char *UNUSED(str),
+-				       unsigned long base,
+-				       unsigned long length)
++				       unsigned long long base,
++				       unsigned long long length)
+ {
+ 	struct memory_range *range = data;
+ 
+diff --git a/kexec/kexec.h b/kexec/kexec.h
+index 2bd6e96..ecc4681 100644
+--- a/kexec/kexec.h
++++ b/kexec/kexec.h
+@@ -279,8 +279,8 @@ int kexec_iomem_for_each_line(char *match,
+ 			      int (*callback)(void *data,
+ 					      int nr,
+ 					      char *str,
+-					      unsigned long base,
+-					      unsigned long length),
++					      unsigned long long base,
++					      unsigned long long length),
+ 			      void *data);
+ int parse_iomem_single(char *str, uint64_t *start, uint64_t *end);
+ const char * proc_iomem(void);
 -- 
-MST
+1.9.0
+
