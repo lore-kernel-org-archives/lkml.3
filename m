@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301AbaC0T5M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 15:57:12 -0400
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:42295 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757055AbaC0T5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 15:57:09 -0400
-X-RZG-AUTH: :P2ERcEykfu11Y98lp/T7+hdri+uKZK8QS9ij0PRv0OgBX++PB3K3G/7rbhwz
-X-RZG-CLASS-ID: mo00
+	id S1757275AbaC0UCV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 16:02:21 -0400
+Received: from mail.eperm.de ([89.247.134.16]:39362 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757056AbaC0UCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 16:02:13 -0400
+X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Mar 2014 16:02:10 EDT
+X-AuthUser: sm@eperm.de
 From: Stephan Mueller <smueller@chronox.de>
 To: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
 Cc: aquini@redhat.com, jeremy.wayne.powell@gmail.com, clemens@ladisch.de,
         pwalten@au1.ibm.com
 Subject: [PATCH v3 1/6] SP800-90A Deterministic Random Bit Generator
-Date: Thu, 27 Mar 2014 20:56:50 +0100
-Message-ID: <1952806.u8ySj6rIyr@myon.chronox.de>
+Date: Thu, 27 Mar 2014 20:53:58 +0100
+Message-ID: <116337755.PEzVYiHzKi@myon.chronox.de>
 User-Agent: KMail/4.12.3 (Linux/3.13.6-200.fc20.x86_64; KDE/4.12.3; x86_64; ; )
 In-Reply-To: <3662681.npTzbSq3ye@myon.chronox.de>
 References: <2396177.vxvG2ljJL8@myon.chronox.de> <5770301.bQ9lKffXf3@myon.chronox.de> <3662681.npTzbSq3ye@myon.chronox.de>
@@ -2038,3 +2037,4 @@ index 0000000..6c866ef
 +"CTR"
 +#endif
 +);
+
