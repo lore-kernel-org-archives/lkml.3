@@ -1,86 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752098AbaC0FX6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 01:23:58 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:58780 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695AbaC0FXy (ORCPT
+	id S1752570AbaC0FZQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 01:25:16 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:17751 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752174AbaC0FZO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 01:23:54 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, linaro-networking@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 2/2] hrtimer: use __ffs() to iterate over valid bits from active_bases
-Date: Thu, 27 Mar 2014 10:53:37 +0530
-Message-Id: <aa0ab84ff46cdc4a2d7aef475b2c032009f23d29.1395897612.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <3c77c9453e42b7a914c15ef67a8ee142d3543a48.1395897612.git.viresh.kumar@linaro.org>
-References: <cover.1395832156.git.viresh.kumar@linaro.org>
- <3c77c9453e42b7a914c15ef67a8ee142d3543a48.1395897612.git.viresh.kumar@linaro.org>
-In-Reply-To: <3c77c9453e42b7a914c15ef67a8ee142d3543a48.1395897612.git.viresh.kumar@linaro.org>
-References: <3c77c9453e42b7a914c15ef67a8ee142d3543a48.1395897612.git.viresh.kumar@linaro.org>
+	Thu, 27 Mar 2014 01:25:14 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCH 1/2] regmap: mmio: add regmap_mmio_{regsize, count}_check.
+Date: Thu, 27 Mar 2014 12:42:42 +0800
+Message-ID: <1395895363-31521-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we are iterating over all possible (currently four) bits of
-active_bases to see if corresponding clock bases are active. This is good enough
-for cases where 3 or 4 bases are used but if only 1 or 2 are used then it makes
-more sense to use __ffs() to find the right bit directly.
-
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 ---
-V1->V2: Instead of removing active_bases use __ffs() on it to make loop more
-efficient.
+ drivers/base/regmap/regmap-mmio.c | 16 +++++++++++++---
+ 1 file changed, 13 insertions(+), 3 deletions(-)
 
-I tried to use for_each_set_bit() first and then it looked overdone. And so used
-a simple form, __ffs() with some code to clear bits.
-
- kernel/hrtimer.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index acfef5f..ea90228 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1265,6 +1265,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
-+	unsigned long active_bases = cpu_base->active_bases;
- 	int i, retries = 0;
+diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
+index 81f9775..4f1efce 100644
+--- a/drivers/base/regmap/regmap-mmio.c
++++ b/drivers/base/regmap/regmap-mmio.c
+@@ -30,6 +30,16 @@ struct regmap_mmio_context {
+ 	struct clk *clk;
+ };
  
- 	BUG_ON(!cpu_base->hres_active);
-@@ -1284,15 +1285,11 @@ retry:
- 	 */
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
- 
--	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
--		struct hrtimer_clock_base *base;
-+	while ((i = __ffs(active_bases))) {
-+		struct hrtimer_clock_base *base = cpu_base->clock_base + i;
- 		struct timerqueue_node *node;
- 		ktime_t basenow;
- 
--		if (!(cpu_base->active_bases & (1 << i)))
--			continue;
--
--		base = cpu_base->clock_base + i;
- 		basenow = ktime_add(now, base->offset);
- 
- 		while ((node = timerqueue_getnext(&base->active))) {
-@@ -1327,6 +1324,8 @@ retry:
- 
- 			__run_hrtimer(timer, &basenow);
- 		}
++static inline void regmap_mmio_regsize_check(size_t reg_size)
++{
++	BUG_ON(reg_size != 4);
++}
 +
-+		active_bases &= ~(1 << i);
- 	}
++static inline void regmap_mmio_count_check(size_t count)
++{
++	BUG_ON(count < 4);
++}
++
+ static int regmap_mmio_gather_write(void *context,
+ 				    const void *reg, size_t reg_size,
+ 				    const void *val, size_t val_size)
+@@ -38,7 +48,7 @@ static int regmap_mmio_gather_write(void *context,
+ 	u32 offset;
+ 	int ret;
  
- 	/*
+-	BUG_ON(reg_size != 4);
++	regmap_mmio_regsize_check(reg_size);
+ 
+ 	if (!IS_ERR(ctx->clk)) {
+ 		ret = clk_enable(ctx->clk);
+@@ -81,7 +91,7 @@ static int regmap_mmio_gather_write(void *context,
+ 
+ static int regmap_mmio_write(void *context, const void *data, size_t count)
+ {
+-	BUG_ON(count < 4);
++	regmap_mmio_count_check(count);
+ 
+ 	return regmap_mmio_gather_write(context, data, 4, data + 4, count - 4);
+ }
+@@ -94,7 +104,7 @@ static int regmap_mmio_read(void *context,
+ 	u32 offset;
+ 	int ret;
+ 
+-	BUG_ON(reg_size != 4);
++	regmap_mmio_regsize_check(reg_size);
+ 
+ 	if (!IS_ERR(ctx->clk)) {
+ 		ret = clk_enable(ctx->clk);
 -- 
-1.7.12.rc2.18.g61b472e
+1.8.4
+
 
