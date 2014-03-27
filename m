@@ -1,224 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129AbaC0OIO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 10:08:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42175 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971AbaC0OIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 10:08:12 -0400
-Date: Thu, 27 Mar 2014 07:08:02 -0700
-From: Jeff Layton <jlayton@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jim Lieb <jlieb@panasas.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bfields@redhat.com
-Subject: Re: Thoughts on credential switching
-Message-ID: <20140327070802.124fb34c@ipyr.poochiereds.net>
-In-Reply-To: <20140326202535.7d9b6f78@ipyr.poochiereds.net>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
-	<20140326194847.0e994d0b@ipyr.poochiereds.net>
-	<CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
-	<20140326202535.7d9b6f78@ipyr.poochiereds.net>
-Organization: Red Hat
+	id S1755861AbaC0OOy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 10:14:54 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:51689 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951AbaC0OOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 10:14:50 -0400
+Message-ID: <53343256.8020802@monstr.eu>
+Date: Thu, 27 Mar 2014 15:14:46 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
+CC: wg@grandegger.com, mkl@pengutronix.de, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org,
+        devicetree@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
+        Kedareswara rao Appana <appanad@xilinx.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v6] can: xilinx CAN controller support
+References: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
+In-Reply-To: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014 20:25:35 -0700
-Jeff Layton <jlayton@redhat.com> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, 26 Mar 2014 20:05:16 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
-> 
-> > On Wed, Mar 26, 2014 at 7:48 PM, Jeff Layton <jlayton@redhat.com>
-> > wrote:
-> > > On Wed, 26 Mar 2014 17:23:24 -0700
-> > > Andy Lutomirski <luto@amacapital.net> wrote:
-> > >
-> > >> Hi various people who care about user-space NFS servers and/or
-> > >> security-relevant APIs.
-> > >>
-> > >> I propose the following set of new syscalls:
-> > >>
-> > >> int credfd_create(unsigned int flags): returns a new credfd that
-> > >> corresponds to current's creds.
-> > >>
-> > >> int credfd_activate(int fd, unsigned int flags): Change current's
-> > >> creds to match the creds stored in fd.  To be clear, this changes
-> > >> both the "subjective" and "objective" (aka real_cred and cred)
-> > >> because there aren't any real semantics for what happens when
-> > >> userspace code runs with real_cred != cred.
-> > >>
-> > >> Rules:
-> > >>
-> > >>  - credfd_activate fails (-EINVAL) if fd is not a credfd.
-> > >>  - credfd_activate fails (-EPERM) if the fd's userns doesn't
-> > >> match current's userns.  credfd_activate is not intended to be a
-> > >> substitute for setns.
-> > >>  - credfd_activate will fail (-EPERM) if LSM does not allow the
-> > >> switch.  This probably needs to be a new selinux action --
-> > >> dyntransition is too restrictive.
-> > >>
-> > >>
-> > >> Optional:
-> > >>  - credfd_create always sets cloexec, because the alternative is
-> > >> silly.
-> > >>  - credfd_activate fails (-EINVAL) if dumpable.  This is because
-> > >> we don't want a privileged daemon to be ptraced while
-> > >> impersonating someone else.
-> > >>  - optional: both credfd_create and credfd_activate fail if
-> > >> !ns_capable(CAP_SYS_ADMIN) or perhaps !capable(CAP_SETUID).
-> > >>
-> > >> The first question: does this solve Ganesha's problem?
-> > >>
-> > >> The second question: is this safe?  I can see two major concerns.
-> > >> The bigger concern is that having these syscalls available will
-> > >> allow users to exploit things that were previously secure.  For
-> > >> example, maybe some configuration assumes that a task running as
-> > >> uid==1 can't switch to uid==2, even with uid 2's consent.
-> > >> Similar issues happen with capabilities.  If CAP_SYS_ADMIN is not
-> > >> required, then this is no longer really true.
-> > >>
-> > >> Alternatively, something running as uid == 0 with heavy
-> > >> capability restrictions in a mount namespace (but not a uid
-> > >> namespace) could pass a credfd out of the namespace.  This could
-> > >> break things like Docker pretty badly.  CAP_SYS_ADMIN guards
-> > >> against this to some extent.  But I think that Docker is already
-> > >> totally screwed if a Docker root task can receive an O_DIRECTORY
-> > >> or O_PATH fd out of the container, so it's not entirely clear
-> > >> that the situation is any worse, even without requiring
-> > >> CAP_SYS_ADMIN.
-> > >>
-> > >> The second concern is that it may be difficult to use this
-> > >> correctly. There's a reason that real_cred and cred exist, but
-> > >> it's not really well set up for being used.
-> > >>
-> > >> As a simple way to stay safe, Ganesha could only use credfds that
-> > >> have real_uid == 0.
-> > >>
-> > >> --Andy
-> > >
-> > >
-> > > I still don't quite grok why having this special credfd_create
-> > > call buys you anything over simply doing what Al had originally
-> > > suggested -- switch creds using all of the different syscalls and
-> > > then simply caching that in a "normal" fd:
-> > >
-> > >     fd = open("/dev/null", O_PATH...);
-> > >
-> > > ...it seems to me that the credfd_activate call will still need to
-> > > do the same permission checking that all of the individual
-> > > set*id() calls require (and all of the other stuff like changing
-> > > selinux contexts, etc).
-> > >
-> > > IOW, this fd is just a "handle" for passing around a struct cred,
-> > > but I don't see why having access to that handle would allow you
-> > > to do something you couldn't already do anyway.
-> > >
-> > > Am I missing something obvious here?
-> > 
-> > Not really.  I think I didn't adequately explain a piece of this.
-> > 
-> > I think that what you're suggesting is for an fd to encode a set of
-> > credentials but not to grant permission to use those credentials.
-> > So switch_creds(fd) is more or less the same thing as
-> > switch_creds(ruid, euid, suid, rgid, egid, sgid, groups, mac
-> > label, ...).  switch_creds needs to verify that the caller can
-> > dyntransition to the label, set all the ids, etc., but it avoids
-> > allocating anything and running RCU callbacks.
-> > 
-> > The trouble with this is that the verification needed is complicated
-> > and expensive.  And I think that my proposal is potentially more
-> > useful.
-> > 
-> 
-> Is it really though? My understanding of the problem was that it was
-> the syscall (context switching) overhead + having to do a bunch of RCU
-> critical stuff that was the problem. If we can do all of this in the
-> context of a single RCU critical section, isn't that still a win?
-> 
-> As to the complicated part...maybe but it doesn't seem like it would
-> have to be. We could simply return -EINVAL or something if the old
-> struct cred doesn't have fields that match the ones we're replacing
-> and that we don't expect to see changed.
-> 
-> > A credfd is like a struct cred, but possession of a credfd carries
-> > the permission to use those credentials.  So, for example,
-> > credfd_activate to switch to a given uid might work even if
-> > setresuid to that uid would be disallowed.  But, for this to be
-> > secure, the act of giving someone a credfd needs to be explicit.
-> > Programs implicitly send other programs their credentials by means
-> > of f_cred all the time, and they don't expect to allow the receiver
-> > to impersonate them.
-> > 
-> 
-> Eek!
-> 
-> Passing around permission to use the credential in conjunction with
-> the credentials themselves sounds a lot more dangerous to me.
-> 
-> My preference would be that we don't add anything that potentially
-> gives you privileges to do something you couldn't do already with
-> existing syscalls. That doesn't seem to be necessary for the intended
-> use case anyway. When it comes to security, I think we need to err on
-> the side of caution than try to shortcut it for performance.
-> 
-> > credfd has other uses.  A file server, for example, could actually
-> > delegate creation of the credfds to a separate process, and that
-> > process could validate that the request is for a credfd that the
-> > file server really should be able to obtain.  This would enable that
-> > process to make sure that the user in question has actually
-> > authenticated itself, so a file server compromise could only attack
-> > users who connect instead of attacking any user on the system.  This
-> > is an argument against requiring CAP_SYS_ADMIN to use
-> > credfd_activate.
-> > 
-> > I'm less confident in whether capabilities should be needed to use
-> > credfd_create.
-> > 
-> > Is that clearer and/or more convincing?
-> > 
-> 
-> My worry would be that you could then compromise the process doing
-> this credfd creation and trick it into passing around credentials that
-> aren't what are expected.
-> 
-> Another possibility could some kernel bug allow you to frob the creds
-> that are attached to an existing fd after they've been "vetted" for
-> use.
-> 
-> So yeah, I think I better understand what you're proposing (and thanks
-> for explaining it), but I'm not convinced that it's really a safe
-> idea.
-> 
+Hi Kedar,
 
-I had some time to think about this last night...
+On 03/26/2014 06:26 AM, Kedareswara rao Appana wrote:
+> This patch adds xilinx CAN controller support.
+> This driver supports both ZYNQ CANPS and Soft IP
+> AXI CAN controller.
+>=20
+> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
+> ---
+> This patch is rebased on the 3.14 rc8 kernel
+> Chnages for v6:
+> - Updated the driver with review comments.
+> - Used the clock names specified in the IP data sheet.
+> - Updated the devicetree bindings doc as per Rob suggestion.
+> Changes for v5:
+> - Updated the driver with the review comments.
+> - Remove the check for the tx fifo full interrupt condition
+>   form Tx interrupt routine as we are checking it in the _xmit
+>   routine.
+> - Clearing the txok interrupt in the tx interrupt routine for
+>   every Tx can frame.
+> Changes for v4:
+> - Added check for the tx fifo full interrupt condition in
+>   Tx interrupt routine.
+> - Added be iohelper functions.
+> - Moved the clock enable/disable to probe/remove because of
+>   Added big endian support for AXI CAN controller case(reading
+>   a register during probe for that we need to enable clock).
+> Changes for v3:
+> - Updated the driver with the review comments.
+> - Modified the tranmit logic as per Marc suggestion.
+> - Enabling the clock when the interface is up to reduce the
+>   Power consumption.
+> Changes for v2:
+> - Updated with the review comments.
+> - Removed the unnecessary debug prints.
+> - include tx,rx fifo depths in ZYNQ CANPS case also.
+> ---
+>  .../devicetree/bindings/net/can/xilinx_can.txt     |   44 +
+>  drivers/net/can/Kconfig                            |    7 +
+>  drivers/net/can/Makefile                           |    1 +
+>  drivers/net/can/xilinx_can.c                       | 1179 ++++++++++++=
+++++++++
+>  4 files changed, 1231 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_ca=
+n.txt
+>  create mode 100644 drivers/net/can/xilinx_can.c
+>=20
+> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b=
+/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+> new file mode 100644
+> index 0000000..4646396
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
+> @@ -0,0 +1,44 @@
+> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
+> +---------------------------------------------------------
+> +
+> +Required properties:
+> +- compatible		: Should be "xlnx,zynq-can-1.00.a" for Zynq CAN
 
-While using a fd to pass around credentials is convenient, the danger
-is that it's pretty opaque. You have a fd that you know has creds
-attached to it, but it's hard to be certain what is going to change.
+We should do one more change and better now than later.
+Please use just "xlnx,zynq-can-1.0" compatible string here.
 
-Perhaps we can use the flags field for that. So, assuming we have a fd
-with the creds attached, we could do something like:
+> +			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
+> +			  controllers.
+> +- reg			: Physical base address and size of the Axi CAN/Zynq
+> +			  CANPS registers map.
+> +- interrupts		: Property with a value describing the interrupt
+> +			  number.
+> +- interrupt-parent	: Must be core interrupt controller
+> +- clock-names		: List of input clock names - "can_clk", "pclk"
+> +			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
+> +			  (See clock bindings for details).
+> +- clocks		: Clock phandles (see clock bindings for details).
+> +- tx-fifo-depth		: Can Tx fifo depth.
+> +- rx-fifo-depth		: Can Rx fifo depth.
+> +
+> +
+> +Example:
+> +
+> +For Zynq CANPS Dts file:
+> +	zynq_can_0: can@e0008000 {
+> +			compatible =3D "xlnx,zynq-can-1.00.a";
 
-    err = switch_creds(fd, SC_FSUID|SC_FSGID|SC_GROUPS);
+the same here.
 
-...then the switch_creds syscall could be set up to fail if the new
-credentials had other fields that didn't match those in the current
-task credentials. So if (for instance) the cred->euid were
-different between the two, the above could fail with -EINVAL or
-something.
+> +			clocks =3D <&clkc 19>, <&clkc 36>;
+> +			clock-names =3D "can_clk", "pclk";
+> +			reg =3D <0xe0008000 0x1000>;
+> +			interrupts =3D <0 28 4>;
+> +			interrupt-parent =3D <&intc>;
+> +			tx-fifo-depth =3D <0x40>;
+> +			rx-fifo-depth =3D <0x40>;
+> +		};
+> +For Axi CAN Dts file:
+> +	axi_can_0: axi-can@40000000 {
+> +			compatible =3D "xlnx,axi-can-1.00.a";
+> +			clocks =3D <&clkc 0>;
+> +			clock-names =3D "can_clk","s_axi_aclk" ;
+> +			reg =3D <0x40000000 0x10000>;
+> +			interrupt-parent =3D <&intc>;
+> +			interrupts =3D <0 59 1>;
+> +			tx-fifo-depth =3D <0x40>;
+> +			rx-fifo-depth =3D <0x40>;
+> +		};
 
-Yes, that means that we need to check this stuff on every switch_creds
-call, but I don't think it'll be that expensive.
+I don't know which thread I discussed this with Rob but please send this =
+binding
+separately out of this and copy devicetree@vger.kernel.org for this patch=
+=2E
+They should give us ACK on device-tree binding.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+
+> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
+> index 9e7d95d..9049884 100644
+> --- a/drivers/net/can/Kconfig
+> +++ b/drivers/net/can/Kconfig
+> @@ -125,6 +125,13 @@ config CAN_GRCAN
+>  	  endian syntheses of the cores would need some modifications on
+>  	  the hardware level to work.
+> =20
+> +config CAN_XILINXCAN
+> +	tristate "Xilinx CAN"
+> +	depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
+> +	depends on COMMON_CLK && HAS_IOMEM
+> +	---help---
+> +	  Xilinx CAN driver. This driver supports both soft AXI CAN IP and
+> +	  Zynq CANPS IP.
+>  source "drivers/net/can/mscan/Kconfig"
+> =20
+>  source "drivers/net/can/sja1000/Kconfig"
+> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
+> index c744039..0b8e11e 100644
+> --- a/drivers/net/can/Makefile
+> +++ b/drivers/net/can/Makefile
+> @@ -25,5 +25,6 @@ obj-$(CONFIG_CAN_JANZ_ICAN3)	+=3D janz-ican3.o
+>  obj-$(CONFIG_CAN_FLEXCAN)	+=3D flexcan.o
+>  obj-$(CONFIG_PCH_CAN)		+=3D pch_can.o
+>  obj-$(CONFIG_CAN_GRCAN)		+=3D grcan.o
+> +obj-$(CONFIG_CAN_XILINXCAN)	+=3D xilinx_can.o
+> =20
+>  ccflags-$(CONFIG_CAN_DEBUG_DEVICES) :=3D -DDEBUG
+> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.=
+c
+> new file mode 100644
+> index 0000000..3bb289c
+> --- /dev/null
+> +++ b/drivers/net/can/xilinx_can.c
+> @@ -0,0 +1,1179 @@
+> +/* Xilinx CAN device driver
+> + *
+> + * Copyright (C) 2012 - 2014 Xilinx, Inc.
+> + * Copyright (C) 2009 PetaLogix. All rights reserved.
+> + *
+> + * Description:
+> + * This driver is developed for Axi CAN IP and for Zynq CANPS Controll=
+er.
+> + * This program is free software: you can redistribute it and/or modif=
+y
+> + * it under the terms of the GNU General Public License as published b=
+y
+> + * the Free Software Foundation, either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program.  If not, see <http://www.gnu.org/licenses/=
+>.
+
+Please remove this paragraph. Some testing tools reports this
+as a problematic part.
+
+<snip>
+
+> +/* Match table for OF platform binding */
+> +static struct of_device_id xcan_of_match[] =3D {
+> +	{ .compatible =3D "xlnx,zynq-can-1.00.a", },
+
+And here also xlnx,zynq-can-1.0
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlM0MlYACgkQykllyylKDCH9zQCgnIsixyuI2xvQD5kaZb/os8g8
+RzoAn0pWBZzATIe2F2GLy9sl48ralZGq
+=+FL0
+-----END PGP SIGNATURE-----
+
+--1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS--
