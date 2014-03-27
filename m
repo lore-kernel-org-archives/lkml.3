@@ -1,78 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756463AbaC0NZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 09:25:12 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:43973 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753904AbaC0NZJ (ORCPT
+	id S1756802AbaC0N0r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 09:26:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:51839 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756786AbaC0N0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 09:25:09 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-f2-533426b32275
-From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4] ata: fix Marvell SATA driver dependencies
-Date: Thu, 27 Mar 2014 14:24:39 +0100
-Message-id: <13175343.U1fiIXSeHv@amdc1032>
-User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
-MIME-version: 1.0
-Content-transfer-encoding: 7Bit
-Content-type: text/plain; charset=us-ascii
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrELMWRmVeSWpSXmKPExsVy+t9jAd3NaibBBtvXaFucv3uI2WJT21tG
-	i8Yll1ksNj2+xmpxbMcjJovLu+awWbz/6Wjxa/lRRgcOjyebLjJ67Jx1l91j06pONo+GA+dZ
-	PDYvqffYueMzk8fnTXIB7FFcNimpOZllqUX6dglcGTNXz2YuOMpTMevpT7YGxgNcXYycHBIC
-	JhIz27sYIWwxiQv31rN1MXJxCAksYpRY3LKVEcJpYZJ4fWw3C0gVm4CVxMT2VWAdIgKyElem
-	PQQrYhaYzSQx+eVrsCJhAVuJL82T2UFsFgFViSO/LrKC2LwCWhIre5+zgdiiAp4SO7avZIOI
-	C0r8mHwPrJdZQF5i3/6prBC2lsT6nceZJjDyzUJSNgtJ2SwkZQsYmVcxiqYWJBcUJ6XnGukV
-	J+YWl+al6yXn525iBIf0M+kdjKsaLA4xCnAwKvHw7rhvFCzEmlhWXJl7iFGCg1lJhNdX2SRY
-	iDclsbIqtSg/vqg0J7X4EKM0B4uSOO/BVutAIYH0xJLU7NTUgtQimCwTB6dUA6OljPCR7sPV
-	l2VirGR+KJw4Ur9GWHIV/xIbBdUVh5+YF4dc9/G9Uvsx7aJf9pvb/cpvluWxqWteTLf5dMn1
-	zEH/Hza/ji9gOtdr7CTydOXCRx11TpFlDza5bmNV9Mx8ajdD933b+UXSXTb8CoX83kWzJh6o
-	Edkcm9j+tcIv48W3BuEujsiOCiWW4oxEQy3mouJEAOgDY7RlAgAA
+	Thu, 27 Mar 2014 09:26:45 -0400
+Date: Thu, 27 Mar 2014 13:26:27 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Nicolin Chen <Guangyu.Chen@freescale.com>
+Cc: Li.Xiubo@freescale.com, linux-kernel@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, alsa-devel@alsa-project.org,
+        timur@tabi.org, David.Laight@ACULAB.COM
+Message-ID: <20140327132626.GN30768@sirena.org.uk>
+References: <1395918419-20739-1-git-send-email-Guangyu.Chen@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="U6leaJ20qZQc29iB"
+Content-Disposition: inline
+In-Reply-To: <1395918419-20739-1-git-send-email-Guangyu.Chen@freescale.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.45.252.252
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2] ASoC: fsl_sai: Add isr to deal with error flag
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make sata_mv host driver depend on PCI || ARCH_DOVE || ARCH_KIRKWOOD ||
-ARCH_MV78XX0 || ARCH_MVEBU || ARCH_ORION5X config options as Marvell
-SATA support covers both Marvell PCI devices and Marvell Dove, Kirkwood,
-MV78xx0, Armada 370/XP and Orion5x SoCs (for non-PCI devices the driver
-to work requires suitable device tree node or platform device to be
-defined).  Additionally allow the driver build if COMPILE_TEST config
-option is set.
 
-Cc: Jason Cooper <jason@lakedaemon.net>
-Cc: Andrew Lunn <andrew@lunn.ch>
-Cc: Gregory Clement <gregory.clement@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
----
-v4:
-- updated patch description
-v3:
-- added dependencies for Marvel Dove and MV78xx0 
-v2:
-- resynced patch with libata/for-3.15 branch (previous patch was against
-  libata/for-next branch and SATA_MV selects GENERIC_PHY in that branch)
+--U6leaJ20qZQc29iB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
- drivers/ata/Kconfig |    2 ++
- 1 file changed, 2 insertions(+)
+On Thu, Mar 27, 2014 at 07:06:59PM +0800, Nicolin Chen wrote:
+> It's quite cricial to clear error flags because SAI might hang if getting
+> FIFO underrun during playback (I haven't confirmed the same issue on Rx
+> overflow though).
+>=20
+> So this patch enables those irq and adds isr() to clear the flags so as to
+> keep playback entirely safe.
 
-Index: b/drivers/ata/Kconfig
-===================================================================
---- a/drivers/ata/Kconfig	2014-03-26 17:59:35.000000000 +0100
-+++ b/drivers/ata/Kconfig	2014-03-27 13:14:24.097787880 +0100
-@@ -281,6 +281,8 @@ config SATA_HIGHBANK
- 
- config SATA_MV
- 	tristate "Marvell SATA support"
-+	depends on PCI || ARCH_DOVE || ARCH_KIRKWOOD || ARCH_MV78XX0 || \
-+		   ARCH_MVEBU || ARCH_ORION5X || COMPILE_TEST
- 	help
- 	  This option enables support for the Marvell Serial ATA family.
- 	  Currently supports 88SX[56]0[48][01] PCI(-X) chips,
+So, I've applied this since we're (hopefully!) very near the merge
+window opening and it seems like it should be an improvement overall.
+However a few things below:
 
+> +	/* Only handle those what we enabled */
+> +	mask =3D (FSL_SAI_FLAGS >> FSL_SAI_CSR_xIE_SHIFT) << FSL_SAI_CSR_xF_SHI=
+FT;
+
+The shifting here could use a comment.
+
+> +	regmap_update_bits(sai->regmap, FSL_SAI_RCSR,
+> +			   FSL_SAI_CSR_xF_W_MASK | FSL_SAI_CSR_FR, xcsr);
+
+Using update_bits() is going to do an extra read, better to do this as:
+
+	if (xcsr)
+		regmap_write(sai->regmap, FSL_SAI_RCSR, xcsr);
+
+otherwise we might be ignoring any of the bits that are actually clear
+on read (it seems like there are some?).
+
+> +	return IRQ_HANDLED;
+
+I'd expect to see IRQ_NONE if we didn't actually see an interrupt
+source.
+
+--U6leaJ20qZQc29iB
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTNCb/AAoJELSic+t+oim94iIQAII157fGozbgumNEgl6Gz7fz
+M1dRUCoWrUz630B1uCMuRLgdw2TW9fAdLrN7x+LXp2H+VxfufymllYT7m49P/HxT
+arHZ1/Wo3FO5VJJL1FeNfTnRn/9xk4QSQ0WOOhKDWT463tZKkFOTlEADFBmYMu/J
+vr2xPllFMLQIZENW3SLBn+ABc40zqFlMNRobnUuUpRXdtQPh8bwjIw8KKTnVPJpu
+1rPPH/Tts0m+WSwB8584X5eYtzt+C++HbsUjsFQtqVYGJE0Jh3rmLlGlcUwsKvDc
+4jqSxTDY0lByDF7tEcPimB+dveKm7LNxaAD36LGgOOhrxKpDkYkkl9YXTNLwPgSs
+TfmAXN0d1UnAIw4v01YehS+E1064amfMILmi46O3sYbxrBcqv9C1RJZCzCOwjJ6t
+KNEJVUVuEYyfQpK0gMUd5T5iU5a63p1IkSargGiuLDMw7cxe7UBsVBOOloyun/FO
+jMCnVL42UZUQFZ7iNsmZuV0CuQxWi5DqCl8pNiYZZFoSinMCthYUB2Ll4wMlVLh2
+6gx4ve0qG8xANJKDMBuHaNmRCL0bkhlqyqM4+rrIeTM9huwJ7jOuZbbiIHa2Th4G
+ANBvvlIgOSDt3qh2bkA5CxpqZ3VfiZtVY2M0trBvfVyymRVRipgg/qWYh8Zsrfjh
+oREufYGLQzoUPA/+XBSK
+=TIA3
+-----END PGP SIGNATURE-----
+
+--U6leaJ20qZQc29iB--
