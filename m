@@ -1,84 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751929AbaC0B4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 21:56:15 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47626 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469AbaC0B4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 21:56:14 -0400
-User-Agent: K-9 Mail for Android
-In-Reply-To: <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com>
+	id S1751977AbaC0CIZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:08:25 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:36886 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaC0CIY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 22:08:24 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain;
- charset=UTF-8
-Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 26 Mar 2014 18:55:17 -0700
-To: Andy Lutomirski <luto@amacapital.net>
-CC: Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>, Greg Price <price@mit.edu>
-Message-ID: <56e20125-95d3-465f-b582-fba5ba74d2f3@email.android.com>
+From: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
+Date: Wed, 26 Mar 2014 23:08:03 -0300
+Message-ID: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
+Subject: Massive read only kvm guests when backing file was missing
+To: Stefan Hajnoczi <stefanha@gmail.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Michael S. Tsirkin" <mst@redhat.com>,
+        Jason Wang <jasowang@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are a number of things wrong with this post, but I'll respond in detail when I get to a keyboard.
+Hi List!
+Hope some one can help me, we had a big issue in our cloud the other
+day, a couple of our openstack regions ( +2000 kvm guests with qcow2 )
+went read only filesystem from the guest side because the backing
+files directory (the openstack _base directory) was compromised and
+the data was lost, when we realized the data was lost, it took us 5
+mins to restore the backup of the backing files, but by that time all
+the kvm guests received some kind of IO error from the hypervisor
+layer, and went read only on root filesystem.
 
-On March 26, 2014 6:11:53 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->[cc: Greg Price, might be working on this stuff]
->
->On Wed, Mar 26, 2014 at 6:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> I'm wondering more about the default.  We default to 50% for
->arch_get_random_seed, and this is supposed to be the default for in
->effect unverified hwrngs...
->
->TBH I'm highly skeptical of this kind of entropy estimation.
->/dev/random is IMO just silly, since you need to have very
->conservative entropy estimates for the concept to really work, and
->that ends up being hideously slow.  Also, in the /dev/random sense,
->most hardware RNGs have no entropy at all, since they're likely to be
->FIPS-approved DRBGs that don't have a real non-deterministic source.
->
->For the kernel's RNG to be secure, I think it should have the property
->that it still works if you rescale all the entropy estimates by any
->constant that's decently close to 1.
->
->If entropy estimates are systematically too low, then a naive
->implementation results in an excessively long window during early
->bootup in which /dev/urandom is completely insecure.
->
->If entropy estimates are systematically too high, then a naive
->implementation fails to do a catastrophic reseed, and the RNG can be
->brute-forced.
->
->So I think that the core code should do something along the lines of
->using progressively larger reseeds.  Since I think that /dev/random is
->silly, this means that we only really care about the extent to which
->"entropy" measures entropy conditioned on whatever an attacker can
->actually compute.  Since this could vary widely between devices (e.g.
->if your TPM is malicious), I think that the best we can do is to
->collect ~256 bits from everything available, shove it all in to the
->core together, and repeat.  For all I know, the core code already does
->this.
->
->The upshot is that the actual rescaling factor should barely matter.
->50% is probably fine.  So is 100% and 25%.  10% is probably asking for
->trouble during early boot if all you have is a TPM.
->
->--Andy
+My question would be, is there a way to hold the IO operations against
+the backing files ( i thought that would be 99% READ operations ) for
+a little longer ( im asking this because i dont quite understand what
+is the process and when it raises the error ) in a case the backing
+files are missing (no IO possible) but is recoverable within minutes ?
 
--- 
-Sent from my mobile phone.  Please pardon brevity and lack of formatting.
+Any tip  on how to achieve this if possible, or information about how
+backing files works on kvm, will be amazing.
+Waiting for feedback!
+
+kindest regards.
+Alejandro Comisario
