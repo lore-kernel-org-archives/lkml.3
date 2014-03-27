@@ -1,86 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927AbaC0Cgr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:36:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:46033 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751240AbaC0Cgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:36:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,739,1389772800"; 
-   d="scan'208";a="481001568"
-Date: Thu, 27 Mar 2014 02:37:21 +0800
-From: Yuyang du <yuyang.du@intel.com>
-To: peterz@infradead.org, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linux-pm@vger.kernel.org
-Cc: morten.rasmussen@arm.com, arjan.van.de.ven@intel.com, len.brown@intel.com,
-        rafael.j.wysocki@intel.com, alan.cox@intel.com
-Subject: [RFC II] Splitting scheduler into two halves
-Message-ID: <20140326183721.GC24116@intel.com>
+	id S1752314AbaC0Cnt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:43:49 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:9987
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751690AbaC0Cns (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 22:43:48 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
+Date: Thu, 27 Mar 2014 10:36:18 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Xiubo Li-B47053 <Li.Xiubo@freescale.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+Message-ID: <20140327023617.GB16197@MrMyself>
+References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
+ <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
+In-Reply-To: <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, Mar 27, 2014 at 10:13:48AM +0800, Xiubo Li-B47053 wrote:
+> > +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
+> > +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
+> > +
+> > +	if (xcsr & FSL_SAI_CSR_WSF)
+> > +		dev_dbg(dev, "isr: Start of Tx word detected\n");
+> > +
+> > +	if (xcsr & FSL_SAI_CSR_SEF)
+> > +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
+> > +
+> > +	if (xcsr & FSL_SAI_CSR_FEF)
+> > +		dev_dbg(dev, "isr: Transmit underrun detected\n");
+> > +
+> 
+> Actually, the above three isrs should to write a logic 1 to this field
+> to clear this flag.
+> 
+> 
+> > +	if (xcsr & FSL_SAI_CSR_FWF)
+> > +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
+> > +
+> > +	if (xcsr & FSL_SAI_CSR_FRF)
+> > +		dev_dbg(dev, "isr: Transmit FIFO watermark has been reached\n");
+> > +
+> 
+> While are these ones really needed to clear manually ?
 
-This is continued after the first RFC about splitting the scheduler. Still
-work-in-progress, and call for feedback.
+The reference manual doesn't mention about the requirement. So SAI should do
+the self-clearance.
 
-The question addressed here is how load balance should be changed. And I think
-the question then goes to how to *reuse* common code as much as possible and
-meanwhile be able to serve various objectives.
-
-So these are the basic semantics needed in current load balance:
-
-1. [ At balance point ] on this_cpu push task on that_cpu to [ third_cpu ]
-
-Examples are fork/exec/wakeup. Task is determined by the balance point in
-question. And that_cpu is determined by task.
-
-2. [ At balance point ] on this_cpu pull [ task/tasks ] on [ that_cpu ] to
-this_cpu
-
-Examples are other idle/periodic/nohz balance, and active_load_balance in
-ASYM_PACKING (pull first and then a push).
-
-3. [ At balance point ] on this_cpu kick [ that_cpu/those_cpus ] to do [ what
-] balance
-
-Examples are nohz idle balance and active balance.
-
-To make the above more general, we need to abstract more:
-
-1. [ At balance point ] on this_cpu push task on that_cpu to [ third_cpu ] in
-[ cpu_mask ]
-
-2. [ At balance point ] on this_cpu [ do | skip ] pull [task/tasks ] on [
-that_cpu ] in [ cpu_mask ] to this_cpu
-
-3. [ At balance point ] on this_cpu kick [ that_cpu/those_cpus ] in [ cpu_mask
-] to do nohz idle balance
-
-So essentially, we give them choice or restrict the scope for them.
-
-Then instead of an all-in-one load_balance class, we define pull or push
-classes:
-
-struct push_class:
-int (*which_third_cpu);
-struct cpumask * (*which_cpu_mask);
-
-struct pull_class:
-int (*skip);
-int (*which_that_cpu);
-struct task_struct * (*which_task);
-struct cpumask* (*which_cpu_mask);
-
-Last but not least, currently we configure domain by flags/parameters, how
-about attaching push/pull classes directly to them as struct members? So those
-classes are responsible specially for its riding domain's "well-being".
-
-Thanks,
-Yuyang
