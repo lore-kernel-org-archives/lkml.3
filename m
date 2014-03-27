@@ -1,289 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848AbaC0OBw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 10:01:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42980 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755743AbaC0OBs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 10:01:48 -0400
-From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Richard Zhu <r65037@freescale.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>,
-        "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Shawn Guo <shawn.guo@linaro.org>
-Subject: RE: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based
- on designware core driver
-Thread-Topic: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based
- on designware core driver
-Thread-Index: AQHPR/4s4jCnM0QqnU6LeXY06vFm2Zr0+XlA
-Date: Thu, 27 Mar 2014 14:01:11 +0000
-Message-ID: <3E54258959B69E4282D79E01AB1F32B7046EF3C5@DFLE11.ent.ti.com>
-References: <1395707726-20437-1-git-send-email-m-karicheri2@ti.com>
- <1395707726-20437-4-git-send-email-m-karicheri2@ti.com>
- <235376049.yyfljDtinu@wuerfel>
-In-Reply-To: <235376049.yyfljDtinu@wuerfel>
+	id S1756863AbaC0OC1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 10:02:27 -0400
+Received: from sessmg20.ericsson.net ([193.180.251.50]:61271 "EHLO
+	sessmg20.mgmt.ericsson.se" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755743AbaC0OCZ convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 10:02:25 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 Mar 2014 10:02:24 EDT
+X-AuditID: c1b4fb32-b7f4c8e0000012f5-30-53342bea6363
+From: Celestino Martinez Lopez <celestino.martinez.lopez@ericsson.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Kernel oops without Backtrace
+Thread-Topic: Kernel oops without Backtrace
+Thread-Index: Ac9JwxM7mz47HoZfR3ee3zAHivSO/A==
+Date: Thu, 27 Mar 2014 13:47:21 +0000
+Message-ID: <79ECA39DE9A8974383B3B752D91CED3219E13C35@ESESSMB107.ericsson.se>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [157.170.170.90]
+x-originating-ip: [153.88.183.18]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLLMWRmVeSWpSXmKPExsUyM+Jvje4rbZNgg5PXxC0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAlfG5pn3GAue2lXsuLKYpYHxrlYXIweHhICJRMN/mS5GTiBTTOLC
+	vfVsXYxcHEICJxglDuxrg3KWMErMuP+QCaSBTcBNYukLfZAGEQFHiR0Hv7KB2MICahIHty1n
+	h4hrS2zY+J0NwtaTeLHvLyuIzSKgKtF58xQbyBheAV+Jm1NDQMKMQHu/n1rDBGIzC4hL3Hoy
+	nwniHgGJJXvOM0PYohIvH/9jhbAVJT6+2scIUa8jsWD3JzYIW1ti2cLXYPW8AoISJ2c+YZnA
+	KDwLydhZSFpmIWmZhaRlASPLKkbJ4tTi4tx0IwO93PTcEr3Uoszk4uL8PL3i1E2MwCA/uOW3
+	0Q7Gk3vsDzFKc7AoifNeZ60JEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBouK5l7nKx02HL
+	E1S3T2zY6GbdorBjQf2tE0aqslo9htWnfyotF2pJfRB6WmvxxS7e9BXnk4XXn9TpelhdGKq1
+	1spH6dn5pt9JSf+Dvl++quj+01kkq+XWryfrzeecLnn56maBibO62GXladoL53ioTc622r5z
+	naJ+gJL8XZ3ia3tvV09iZ1FSYinOSDTUYi4qTgQAp3/1eEACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Arnd Bergmann [mailto:arnd@arndb.de]
->Sent: Tuesday, March 25, 2014 3:45 AM
->To: linux-arm-kernel@lists.infradead.org
->Cc: Karicheri, Muralidharan; linux-pci@vger.kernel.org; linux-samsung-
->soc@vger.kernel.org; linux-kernel@vger.kernel.org; Richard Zhu; Kukjin Kim; Mohit
->Kumar; Jingoo Han; Shilimkar, Santosh; Bjorn Helgaas; Shawn Guo
->Subject: Re: [RESEND: RFC PATCH 3/3] pcie: keystone: add pcie driver based on
->designware core driver
->
->On Monday 24 March 2014 20:35:26 Murali Karicheri wrote:
->> +
->> +int k2_pcie_platform_setup(struct platform_device *pdev) {
->> +	struct resource *phy_base_r, *devstat_r;
->> +	void __iomem *phy_base, *devstat;
->> +	u32 val;
->> +	int i;
->> +
->> +	devstat_r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
->> +						 "reg_devcfg");
->> +	if (!devstat_r)
->> +		return -ENODEV;
->
->It seems you have a distinct register set for the PHY that you are driving here. Why not
->make this part generic PHY API driver?
->
->> +static int ks_pcie_establish_link(struct keystone_pcie *ks_pcie) {
->> +	struct pcie_port *pp = &ks_pcie->pp;
->> +	int count = 0;
->> +
->> +	dw_pcie_setup_rc(pp);
->> +
->> +	/* check if the link is up or not */
->> +	while (!dw_pcie_link_up(pp)) {
->> +		mdelay(100);
->> +		count++;
->> +		if (count == 10)
->> +			return -EINVAL;
->> +	}
->> +	return 0;
->> +}
->
->You are blocking the CPU for up to one second here, which is really nasty. Please find a way
->to move the code into a context where you can sleep and use msleep() instead, or better
->use an interrupt if the hardware supports that and use wait_for_completion().
->
->> +
->> +static void ks_pcie_msi_irq_handler(unsigned int irq, struct irq_desc
->> +*desc) {
->> +	struct keystone_pcie *ks_pcie = irq_desc_get_handler_data(desc);
->> +	u32 offset = irq - ks_pcie->msi_host_irqs[0], pending, vector;
->> +	struct pcie_port *pp = &ks_pcie->pp;
->> +	struct irq_chip *chip = irq_desc_get_chip(desc);
->> +	int src, virq;
->
->Did I understand this right that the MSI implementation can be used by any dw-pcie
->hardware of the same version? If so, it would be good to move it into an extra file so it can
->be shared with the next host driver that uses this version.
->
->> +/**
->> + * ks_pcie_set_outbound_trans() - Set PHYADDR <-> BUSADDR
->> + * mapping for outbound
->> + */
->> +static void ks_pcie_set_outbound_trans(struct keystone_pcie *ks_pcie)
->
->> +static void ks_pcie_set_inbound_trans(struct pcie_port *pp)
->
->Why do you need to set this up from the kernel? Please move the translation window setup
->into the boot loader if you can.
->
->> +static struct hw_pci keystone_pcie_hw = {
->> +	.nr_controllers	= 1,
->> +	.setup		= dw_pcie_setup,
->> +	.scan		= ks_pcie_scan_bus,
->> +	.swizzle        = pci_common_swizzle,
->> +	.add_bus	= dw_pcie_add_bus,
->> +	.map_irq	= ks_pcie_map_irq,
->> +};
->
->This can just be a local variable in the probe function.
->
->> +
->> +static int ks_pcie_map_irq(const struct pci_dev *dev, u8 slot, u8
->> +pin) {
->> +	struct pcie_port *pp = sys_to_pcie(dev->bus->sysdata);
->> +	struct keystone_pcie *ks_pcie = to_keystone_pcie(pp);
->> +
->> +	dev_info(pp->dev, "ks_pcie_map_irq: pin %d\n", pin);
->> +
->> +	if (!pin || pin > ks_pcie->num_legacy_host_irqs) {
->> +		dev_err(pp->dev, "pci irq pin out of range\n");
->> +		return -1;
->> +	}
->> +
->> +	/* pin has values from 1-4 */
->> +	return (ks_pcie->virqs[pin - 1] >= 0) ?
->> +		ks_pcie->virqs[pin - 1] : -1;
->> +}
->> +
->> +
->> +static void ack_irq(struct irq_data *d) { }
->> +
->> +static void mask_irq(struct irq_data *d) { }
->> +
->> +static void unmask_irq(struct irq_data *d) { }
->> +
->> +static struct irq_chip ks_pcie_legacy_irq_chip = {
->> +	.name = "PCIe-LEGACY-IRQ",
->> +	.irq_ack = ack_irq,
->> +	.irq_mask = mask_irq,
->> +	.irq_unmask = unmask_irq,
->> +};
->
->Can you use the generic irqchip code here?
->
->> +	/*
->> +	 * support upto MAX_LEGACY_HOST_IRQS host and legacy IRQs.
->> +	 * In dt from index 0 to 3
->> +	 */
->> +	for (i = 0; i < MAX_LEGACY_HOST_IRQS; i++) {
->> +		ks_pcie->legacy_host_irqs[i] = irq_of_parse_and_map(np, i);
->> +		if (ks_pcie->legacy_host_irqs[i] < 0)
->> +			break;
->> +		ks_pcie->num_legacy_host_irqs++;
->> +	}
->> +
->> +	if (ks_pcie->num_legacy_host_irqs) {
->> +		ks_pcie->legacy_irqd = irq_domain_add_linear(np,
->> +					ks_pcie->num_legacy_host_irqs,
->> +					&irq_domain_simple_ops, NULL);
->> +
->> +		if (!ks_pcie->legacy_irqd) {
->> +			dev_err(dev,
->> +				"Failed to add irq domain for legacy irqs\n");
->> +			return -EINVAL;
->> +		}
->> +	}
->> +
->> +	for (i = 0; i < ks_pcie->num_legacy_host_irqs; i++) {
->> +		ks_pcie->virqs[i] =
->> +			irq_create_mapping(ks_pcie->legacy_irqd, i);
->> +		irq_set_chip_and_handler(ks_pcie->virqs[i],
->> +			&ks_pcie_legacy_irq_chip, handle_level_irq);
->> +		irq_set_chip_data(ks_pcie->virqs[i], ks_pcie);
->> +		set_irq_flags(ks_pcie->virqs[i], IRQF_VALID);
->> +
->> +		if (ks_pcie->legacy_host_irqs[i] >= 0) {
->> +			irq_set_handler_data(ks_pcie->legacy_host_irqs[i],
->> +				ks_pcie);
->> +			irq_set_chained_handler(ks_pcie->legacy_host_irqs[i],
->> +				ks_pcie_legacy_irq_handler);
->> +		}
->> +		set_irq_flags(ks_pcie->legacy_host_irqs[i], IRQF_VALID);
->> +	}
->
->I have no idea how this would work with the standard interrupt-map property, since the
->legacy interrupt host is now the same device as the pci host.
->
->Maybe it's better to move the legacy irqchip handling entirely out of the driver and use a
->separate device node for the registers so it can come with its own #interrupt-cells, and then
->refer to this irqchip from the interrupt-map.
->
->> +	ks_pcie->clk = devm_clk_get(&pdev->dev, "pcie");
->> +	if (IS_ERR(ks_pcie->clk)) {
->> +		dev_err(&pdev->dev, "Failed to get pcie rc clock\n");
->> +		return PTR_ERR(ks_pcie->clk);
->> +	}
->> +	ret = clk_prepare_enable(ks_pcie->clk);
->> +	if (ret)
->> +		return ret;
->
->Could you move the clock handling into the generic dw-pcie code?
->
->> +
->> +/* Keystone PCIe driver does not allow module unload */ static int
->> +__init ks_pcie_init(void) {
->> +	return platform_driver_probe(&ks_pcie_driver, ks_pcie_probe); }
->> +subsys_initcall(ks_pcie_init);
->
->Why subsys_initcall?
->
->We should probably try to fix unloading soon.
->
->> diff --git a/drivers/pci/host/pcie-ks-pdata.h
->> b/drivers/pci/host/pcie-ks-pdata.h
->> new file mode 100644
->> index 0000000..a7626de
->> --- /dev/null
->> +++ b/drivers/pci/host/pcie-ks-pdata.h
->> @@ -0,0 +1,19 @@
->> +/*
->> + * Copyright (C) 2013-2014 Texas Instruments., Ltd.
->> + *		http://www.ti.com
->> + *
->> + * Author: Murali Karicheri <m-karicheri2@ti.com>
->> + *
->> + * This program is free software; you can redistribute it and/or
->> +modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +/* platform specific setup for k2 pcie */ int
->> +k2_pcie_platform_setup(struct platform_device *pdev);
->> +
->> +/* keystone pcie pdata configurations */ struct keystone_pcie_pdata {
->> +	int (*setup)(struct platform_device *pdev); };
->
->This should all go away once you have a proper PHY driver.
->
->> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index
->> 3a02717..7c3f777 100644
->> --- a/drivers/pci/quirks.c
->> +++ b/drivers/pci/quirks.c
->> @@ -3461,3 +3461,15 @@ int pci_dev_specific_acs_enabled(struct pci_dev
->> *dev, u16 acs_flags)
->>
->>  	return -ENOTTY;
->>  }
->> +
->> +#ifdef CONFIG_PCIE_KEYSTONE
->> +/*
->> + * The KeyStone PCIe controller has maximum read request size of 256 bytes.
->> + * Force this configuration for all EP including bridges.
->> + */
->> +static void quirk_limit_readrequest(struct pci_dev *dev) {
->> +	pcie_set_readrq(dev, 256);
->> +}
->> +DECLARE_PCI_FIXUP_FINAL(PCI_ANY_ID, PCI_ANY_ID,
->> +quirk_limit_readrequest); #endif /* CONFIG_TI_KEYSTONE_PCIE */
->
->You can't do this:
->
->A quirk for a specific hardware must not be enabled by compile-time options.
->You have to find a different way to do this.
->
->	Arnd
-All,
+Hi All,
 
-Thanks for the comments. I will review them when I get a chance and respond.
+I am running a SUSE linux 3.0.13-0.27 and after printing an opps the system hangs (though it only happened once).
+In the opps there is only Code: information, no stack trace or processor registers.
+Analyzing the code most of the cores are in intel_idle function, but there is also appears native_read_tsc and delay_tsc.
 
-Murali Karicheri
-Linux Kernel, Software Development
+Any help would be more than welcome.
+
+Attached the console output:
+
+[2718229.308036] Stack:
+[2718229.334021] Call Trace:
+[2718229.365203] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.592831] Stack:
+[2718229.618815] Call Trace:
+[2718229.619910] Leftover inexact backtrace:
+[2718229.619910]
+[2718229.619911]  <IRQ>
+[2718229.619913]  <EOI>
+[2718229.619914] Code: 98 45 89 ef 48 89 04 24 eb 16 66 0f 1f 44 00 00 f3 90 65 44 8b 34 25 70 c5 00 00 45 39 fe 75 2b 66 66 90 0f
+ae e8 e8 cd 9a db ff
+[2718229.620741] Stack:
+[2718229.620748] Call Trace:
+[2718229.620761] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.620825] Stack:
+[2718229.620833] Call Trace:
+[2718229.620842] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.621012] Stack:
+[2718229.621020] Call Trace:
+[2718229.621036] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.621115] Stack:
+[2718229.621122] Call Trace:
+[2718229.621132] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.621205] Stack:
+[2718229.621212] Call Trace:
+[2718229.621222] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.621422] Stack:
+[2718229.621429] Call Trace:
+[2718229.621446] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[2718229.621551] Stack:
+[2718229.621564] Call Trace:
+[2718229.621579] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194339.646298] Stack:
+[4194339.672279] Call Trace:
+[4194339.704539] Leftover inexact backtrace:
+[4194339.704539]
+[4194339.772037]  <IRQ>
+[4194339.796922]  <EOI>
+[4194339.826073] Code: 70 e4 71 c3 0f 1f 80 00 00 00 00 40 0f b6 c6 e6 70 40 0f b6 c7 e6 71 c3 0f 1f 00 0f 31 89 c1 48 89 d0 48 c1
+e0 20 89 ca 48 09 d0 <c3> 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 48 83 ec 18 48
+[4194340.054808] Stack:
+[4194340.080786] Call Trace:
+[4194340.111957] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194340.339554] Stack:
+[4194340.365534] Call Trace:
+[4194340.396700] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194340.624288] Stack:
+[4194340.650267] Call Trace:
+[4194340.681435] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194340.909073] Stack:
+[4194340.935054] Call Trace:
+[4194340.966222] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194341.193816] Stack:
+[4194341.219796] Call Trace:
+[4194341.250969] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194341.478549] Stack:
+[4194341.504530] Call Trace:
+[4194341.535696] Code: 01 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 00 48 8d 74 24 2c bf
+[4194341.763335] Stack:
+BIOS Date: 12/27/10 16:47 e8 5d 41 5c c3 0f 1f 40 00 31 c9 48 89 f0 48 89 ca 0f 01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0         621551] Stack:
+
+
+Press Ctrl+S to enter the Setup Menu..
+Press Ctrl+S to enter the Setup Menu.
+01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0
+Copyright(c) 2011 LSI Corporation
+PCI SLOT ID  LUN VENDOR    PRODUCT                       REVISION CAPACITY
+1            0   LSI       Virtual Drive                 RAID1    285148MB     01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0Initia<Ctrl><H> for WebBIOS or press <Ctrl><Y> for Preboot CLI
+PXE 2.1 Build 086 (WfM 2.0)                                                     01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0                                                          REVISION
+CAPACITY
+nd on the host adapter.
+Auto-detecting USB Mass Storage Devices ..
+s fo
+
+CPU : Intel(R) Xeon(R) CPU           X                                          01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0QPI Operational Speed
+b6 c7 e6 71 c3 0f 1f 00 0f 31 89 c1 48 89 d0 48 c1
+e0 20 89 ca 48 09 d0 <c3> 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 0                                   8.00.16
+01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1 01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e
+0f 1f 84 00 00 00 00 0
+tializing USB Controllers .. Done.
+008F
+95 Watts
+Press any key to continue.
+Press any key to continue.                          95 Watts
+Press any key to continue.         8.00.16                                      01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0Press any key to continue.
+Press any key to continue.
+Press any key to continue.
+Press any key to continue.                                                      01 c8 0f ae f0 48 8b 87 38 e0 ff ff a8 08 75 88 b1
+01 48 89 e8 0f 01 c9 <e9> 7b ff ff ff 66 2e 0f 1f 84 00 00 00 00 0Press any key to continue.
+Press any key to continue.
+Press any key to continue.
+
+GNU GRUB  version 0.97  (613K lower / 2087424K upper memory)
+
++-------------------------------------------------------------------------+
+Use the ^ and v keys to select which entry is highlighted.
+Press enter to boot the selected OS, 'e' to edit the
+|                                                                         |
+|                                                                         |
+| SUSE Linux Enterprise Server 11 SP2 - 3.0.13-0.27                       |
+Booting 'SUSE Linux Enterprise Server 11 SP2 - 3.0.13-0.27'
 
 
