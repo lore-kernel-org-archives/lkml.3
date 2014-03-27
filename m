@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752786AbaC0CM3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:12:29 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:49053 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751692AbaC0CM2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:12:28 -0400
-Message-ID: <53338C3B.5000300@oracle.com>
-Date: Thu, 27 Mar 2014 10:26:03 +0800
-From: "zheng.li" <zheng.x.li@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	id S1752957AbaC0CMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:12:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57199 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751692AbaC0CMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 22:12:42 -0400
+Date: Wed, 26 Mar 2014 21:10:43 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <m-karicheri2@ti.com>,
+        <b32955@freescale.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
+Message-ID: <20140327021043.GB11651@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+ <1395343807-21618-10-git-send-email-balbi@ti.com>
+ <20140325182856.GA31906@atomide.com>
+ <5333732F.6040803@hurleysoftware.com>
 MIME-Version: 1.0
-To: fubar@us.ibm.com
-CC: Ding Tianhong <dingtianhong@huawei.com>, netdev@vger.kernel.org,
-        andy@greyhouse.net, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
- value to 1 in tlb and alb mode.
-References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com> <5330FB34.4090005@huawei.com> <53314017.8040104@oracle.com> <533224FA.6040307@huawei.com>
-In-Reply-To: <533224FA.6040307@huawei.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
+Content-Disposition: inline
+In-Reply-To: <5333732F.6040803@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jay,
-What's your opinion about the new patch.
+--0ntfKIWw70PvrIHh
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Zheng Li
+Hi,
 
-于 2014年03月26日 08:53, Ding Tianhong 写道:
-> On 2014/3/25 16:36, zheng.li wrote:
->> 于 2014年03月25日 11:42, Ding Tianhong 写道:
->>> On 2014/3/25 11:00, Zheng Li wrote:
->>>> In bond mode tlb and alb, inactive slaves should keep inactive flag to
->>>> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
->>>> (for example ARP requests) which will arrive inactive slaves on same host from switch,
->>>> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
->>>> packets to produce a wrong entry in forward table. Typical situation is domu send some
->>>> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
->>>> packets go back to inactive slave from switch, because the inactive slave's inactive
->>>> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
->>>> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
->>>>
->>>> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->>>> ---
->>>>  drivers/net/bonding/bond_main.c |    2 +-
->>>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>>
->>>> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->>>> index e5628fc..8761df6 100644
->>>> --- a/drivers/net/bonding/bond_main.c
->>>> +++ b/drivers/net/bonding/bond_main.c
->>>> @@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
->>>>  				&& (slave != bond->curr_active_slave)) {
->>>>  				bond_set_slave_inactive_flags(slave,
->>>>  							      BOND_SLAVE_NOTIFY_NOW);
->>>> -			} else {
->>>> +			} else if (!bond_is_lb(bond)) {
->>>>  				bond_set_slave_active_flags(slave,
->>>>  							    BOND_SLAVE_NOTIFY_NOW);
->>>>  			}
->>>>
->>> I think you did not fix the problem completely, the state monitor will change the status for the slaves
->>> and the inactive slave still could receive the broadcast.
->>
->> Had tested, it can fix the issue, verified by our QA.
->> Default set slave of bond as inactive when add a slave to bond, when
->> link UP, just set one slave as current active slave and clear its
->> inactive flag, the inactive slave's inactive flag will keep the value of 1.
->>
->>
-> Ok, I found that in the mii monitor, it will only change the backup state, no problem,
-> it looks good to me.
-> 
-> Ding
-> 
->>>
->>> Regards
->>> Ding
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->>
->>
->> .
->>
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+On Wed, Mar 26, 2014 at 08:39:11PM -0400, Peter Hurley wrote:
+> On 03/25/2014 02:28 PM, Tony Lindgren wrote:
+> >* Felipe Balbi <balbi@ti.com> [140320 12:39]:
+> >>This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
+> >>
+> >>That commit tried to fix a deadlock problem when using
+> >>hci_ldisc, but it turns out the bug was in hci_ldsic
+> >>all along where it was calling ->write() from within
+> >>->write_wakeup() callback.
+> >>
+> >>The problem is that ->write_wakeup() was called with
+> >>port lock held and ->write() tried to grab the same
+> >>port lock.
+> >
+> >Should this and the next patch be earlier in the series
+> >as a fix for the v3.15-rc cycle? Should they be cc: stable
+> >as well?
+>=20
+> Well, right now the other fix has had _zero_ testing
+> so not really a -stable candidate just yet.
 
+how can you even say that ? Unless you work for some 3 letter acronym
+organizations, you have no clue about the fact that this was tested on a
+keystone 2 platform. How else would we have found the issue to start
+with ?
 
+--=20
+balbi
+
+--0ntfKIWw70PvrIHh
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTM4ijAAoJEIaOsuA1yqREul4QAKHq2HAm+dn7ySPmkYJaCYEt
+VoZ1MH1tZvn5hXqeAdYRKkJcyCWY6qbHAVPGpwQbLl+06I3e+NZFbx9QFcDbLA0s
+ON5Sh7xaye6+AQeFoy43G94dg0VE87xbJuE/w5t93uDkSEWW79zSeZ3VsjkzZiBO
+E3n4h84nLP+Ksl8+PRueEErPs7+GV7zqj6a/NBBvJ/Wxda3/8kyHdO6IKpdfgXlU
+Pg34Iggenm/4y5ZDDW+HRKAhrJh+n96R9JDiYvu9Bq84vYYT+Ft/vG5uv1OWAEXs
+Ap77qKyPuOq+NjCd/MkOvYH3jO+9RXQXJzNme0XpaqdZj0vZcUw/KQcEARvmLPPN
+viT6v2IWR4FAT44zDhHbYjj0C4K0HtBKVzmrUsRCCPvsTxyWqKhJt3NDljG8xRst
+pWju7FAVhBUDHl4xLKM2iZmRMQDEQCj/uldVQ544DwRWtd58vik+xntRM8SekYSs
+vXUb+LWDwWlzHL38RxnCnxSF7d+yfF+mQsTfBIrCXvIfILDUpiYRwr9K3KPXappD
+z4pJaJY5DYabg5SxvYVgSxNylWVl5ZqyeuATAd9YZml42odv1yPjiArO5QtOuUS/
+AGrh5OImRICYPwD/VE+EtaikqVMlPSDdvyKALl+apx9cfU8H/pushQuBeSEaZKqQ
+Riw7R1n70klzISorplNq
+=YHH1
+-----END PGP SIGNATURE-----
+
+--0ntfKIWw70PvrIHh--
