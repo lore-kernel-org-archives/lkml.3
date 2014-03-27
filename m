@@ -1,79 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638AbaC0QSr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 12:18:47 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:37720 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755258AbaC0QSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 12:18:45 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Tony Lindgren <tony@atomide.com>, Wolfram Sang <wsa@the-dreams.de>
-CC: <linux-omap@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH] i2c: omap: fix usage of IS_ERR_VALUE with pm_runtime_get_sync
-Date: Thu, 27 Mar 2014 11:18:33 -0500
-Message-ID: <1395937113-10222-1-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1756891AbaC0QVq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 12:21:46 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:39816 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185AbaC0QVo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 12:21:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <533446A7.6020003@redhat.com>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
+ <20140327004225.GA20247@sergelap> <CALCETrUtRzViEYUNev1JNFZMms56uiw47YZezak0Z0PKgFneQA@mail.gmail.com>
+ <533446A7.6020003@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Thu, 27 Mar 2014 09:21:22 -0700
+Message-ID: <CALCETrXbN1vgTNJB2UGeDvxJ+pwsqO1dOfea5Crs4As1A8dKUg@mail.gmail.com>
+Subject: Re: Thoughts on credential switching
+To: Florian Weimer <fweimer@redhat.com>
+Cc: Serge Hallyn <serge.hallyn@ubuntu.com>, Jim Lieb <jlieb@panasas.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bfields@redhat.com, Jeff Layton <jlayton@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we use IS_ERR_VALUE to check for error values of pm_runtime_get_sync,
-when the value can only be < 0 in the case of err. Replace the
-check with a simpler < 0 check.
+On Thu, Mar 27, 2014 at 8:41 AM, Florian Weimer <fweimer@redhat.com> wrote:
+> On 03/27/2014 02:01 AM, Andy Lutomirski wrote:
+>
+>> Essentially, it's a performance problem.  knfsd has override_creds,
+>> and it can cache struct cred.  But userspace doing the same thing
+>> (i.e. impersonating a user) has to do setresuid, setresgid, and
+>> setgroups, which kills performance, since it results in something like
+>> five RCU callbacks per impersonation round-trip.
+>
+>
+> Do you mean setfsuid instead of setresuid?
 
-This fixes the coccicheck warnings:
-linux-2.6/drivers/i2c/busses/i2c-omap.c:1157:5-24:
-pm_runtime_get_sync returns < 0 as error. Unecessary IS_ERR_VALUE at
-line 1158
-linux-2.6/drivers/i2c/busses/i2c-omap.c:1278:7-26:
-pm_runtime_get_sync returns < 0 as error. Unecessary IS_ERR_VALUE at
-line 1279
-drivers/i2c/busses/i2c-omap.c:638:5-24:
-pm_runtime_get_sync returns < 0 as error. Unecessary IS_ERR_VALUE at
-line 639
+No, but I should have given context.  setfsuid sucks, since its return
+value is garbage.  It's also pointless nowadays, since setresuid can
+be used to sanely change only the effective uid, and doing so should
+be secure.
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
-Patch based on: v3.14-rc8
-coccicheck report based on next-20140326 tag
+See: http://article.gmane.org/gmane.linux.kernel/1540880
 
- drivers/i2c/busses/i2c-omap.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index 90dcc2e..078a3de 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -636,7 +636,7 @@ omap_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
- 	int r;
- 
- 	r = pm_runtime_get_sync(dev->dev);
--	if (IS_ERR_VALUE(r))
-+	if (r < 0)
- 		goto out;
- 
- 	r = omap_i2c_wait_for_bb(dev);
-@@ -1155,7 +1155,7 @@ omap_i2c_probe(struct platform_device *pdev)
- 	pm_runtime_use_autosuspend(dev->dev);
- 
- 	r = pm_runtime_get_sync(dev->dev);
--	if (IS_ERR_VALUE(r))
-+	if (r < 0)
- 		goto err_free_mem;
- 
- 	/*
-@@ -1276,7 +1276,7 @@ static int omap_i2c_remove(struct platform_device *pdev)
- 
- 	i2c_del_adapter(&dev->adapter);
- 	ret = pm_runtime_get_sync(&pdev->dev);
--	if (IS_ERR_VALUE(ret))
-+	if (ret < 0)
- 		return ret;
- 
- 	omap_i2c_write_reg(dev, OMAP_I2C_CON_REG, 0);
--- 
-1.7.9.5
-
+--Andy
