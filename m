@@ -1,141 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697AbaC0Bry (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 21:47:54 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:41580 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751364AbaC0Brw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 21:47:52 -0400
+	id S1751929AbaC0B4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 21:56:15 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47626 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751469AbaC0B4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 21:56:14 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com>
+References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com> <CALCETrUa_y6nGAtHmKkMwfTttXEabXCWPsXv==RrJN0_T3imZA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1455668003.49319.1395859913516.JavaMail.zimbra@xes-inc.com>
-References: <3217679.sqG7Yrhs8H@daeseok-laptop.cloud.net>
-	<1455668003.49319.1395859913516.JavaMail.zimbra@xes-inc.com>
-Date: Thu, 27 Mar 2014 10:47:51 +0900
-Message-ID: <CAHb8M2AX_KA3T2--yd3_ia9cjKpoEGUacW8zph6V6e_r_6_nuw@mail.gmail.com>
-Subject: Re: [PATCH] staging: vme: fix memory leak in vme_user_probe()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Aaron Sierra <asierra@xes-inc.com>
-Cc: martyn welch <martyn.welch@ge.com>,
-        manohar vanga <manohar.vanga@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>, lisa@xenapiadmin.com,
-        yongjun wei <yongjun_wei@trendmicro.com.cn>,
-        devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 26 Mar 2014 18:55:17 -0700
+To: Andy Lutomirski <luto@amacapital.net>
+CC: Torsten Duwe <duwe@lst.de>, "Theodore Ts'o" <tytso@mit.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Matt Mackall <mpm@selenic.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
+        ingo.tuchscherer@de.ibm.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Hans-Georg Markgraf <MGRF@de.ibm.com>,
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Joe Perches <joe@perches.com>, Greg Price <price@mit.edu>
+Message-ID: <56e20125-95d3-465f-b582-fba5ba74d2f3@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-27 3:51 GMT+09:00 Aaron Sierra <asierra@xes-inc.com>:
-> ----- Original Message -----
->> From: "Daeseok Youn" <daeseok.youn@gmail.com>
->> Sent: Tuesday, March 25, 2014 10:01:48 PM
->> Subject: [PATCH] staging: vme: fix memory leak in vme_user_probe()
->>
->>
->> If vme_master_request() returns NULL when it failed,
->> it need to free buffers for master.
->>
->> And also removes unreachable code in vme_user_probe().
->>
->> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->> ---
->>  drivers/staging/vme/devices/vme_user.c |    9 +++------
->>  1 files changed, 3 insertions(+), 6 deletions(-)
->
-> Nice catches Daeseok. I don't maintain this driver, but I have some
-> suggestions below.
->
->>
->> diff --git a/drivers/staging/vme/devices/vme_user.c
->> b/drivers/staging/vme/devices/vme_user.c
->> index 7927927..ffb4eee 100644
->> --- a/drivers/staging/vme/devices/vme_user.c
->> +++ b/drivers/staging/vme/devices/vme_user.c
->> @@ -776,7 +776,8 @@ static int vme_user_probe(struct vme_dev *vdev)
->>               image[i].kern_buf = kmalloc(image[i].size_buf, GFP_KERNEL);
->>               if (image[i].kern_buf == NULL) {
->>                       err = -ENOMEM;
->> -                     goto err_master_buf;
->> +                     vme_master_free(image[i].resource);
->> +                     goto err_master;
->>               }
->>       }
->
-> I think it would be nice to keep all of the cleanup under the err_master
-> label.
-Actually, I changed like "err_slave" doing. When it failed to alloc
-buffer for slave,
-just called vme_slave_free(image[i].slave) and cleanup under the err_slave.
+There are a number of things wrong with this post, but I'll respond in detail when I get to a keyboard.
 
+On March 26, 2014 6:11:53 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
+>[cc: Greg Price, might be working on this stuff]
 >
-> That could be done by changing the kern_buf allocation in this part to
-> a devm_kmalloc. Then devm handles the kern_buf freeing entirely.
-I didn't know about devm_kmalloc(), I will check that function. Thanks!
+>On Wed, Mar 26, 2014 at 6:03 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> I'm wondering more about the default.  We default to 50% for
+>arch_get_random_seed, and this is supposed to be the default for in
+>effect unverified hwrngs...
+>
+>TBH I'm highly skeptical of this kind of entropy estimation.
+>/dev/random is IMO just silly, since you need to have very
+>conservative entropy estimates for the concept to really work, and
+>that ends up being hideously slow.  Also, in the /dev/random sense,
+>most hardware RNGs have no entropy at all, since they're likely to be
+>FIPS-approved DRBGs that don't have a real non-deterministic source.
+>
+>For the kernel's RNG to be secure, I think it should have the property
+>that it still works if you rescale all the entropy estimates by any
+>constant that's decently close to 1.
+>
+>If entropy estimates are systematically too low, then a naive
+>implementation results in an excessively long window during early
+>bootup in which /dev/urandom is completely insecure.
+>
+>If entropy estimates are systematically too high, then a naive
+>implementation fails to do a catastrophic reseed, and the RNG can be
+>brute-forced.
+>
+>So I think that the core code should do something along the lines of
+>using progressively larger reseeds.  Since I think that /dev/random is
+>silly, this means that we only really care about the extent to which
+>"entropy" measures entropy conditioned on whatever an attacker can
+>actually compute.  Since this could vary widely between devices (e.g.
+>if your TPM is malicious), I think that the best we can do is to
+>collect ~256 bits from everything available, shove it all in to the
+>core together, and repeat.  For all I know, the core code already does
+>this.
+>
+>The upshot is that the actual rescaling factor should barely matter.
+>50% is probably fine.  So is 100% and 25%.  10% is probably asking for
+>trouble during early boot if all you have is a TPM.
+>
+>--Andy
 
->
->>
->> @@ -819,8 +820,6 @@ static int vme_user_probe(struct vme_dev *vdev)
->>
->>       return 0;
->>
->> -     /* Ensure counter set correcty to destroy all sysfs devices */
->> -     i = VME_DEVS;
->>  err_sysfs:
->>       while (i > 0) {
->>               i--;
->> @@ -830,12 +829,10 @@ err_sysfs:
->>
->>       /* Ensure counter set correcty to unalloc all master windows */
->>       i = MASTER_MAX + 1;
->> -err_master_buf:
->> -     for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
->> -             kfree(image[i].kern_buf);
->>  err_master:
->>       while (i > MASTER_MINOR) {
->>               i--;
->> +             kfree(image[i].kern_buf);
->>               vme_master_free(image[i].resource);
->>       }
->
-> Using devm_kmalloc as mentioned above, the while loop could be
-> simplified to this:
->
-> err_master:
->         while (i >= MASTER_MINOR) {
->                 vme_master_free(image[i].resource);
->                 i--;
->         }
-It would be nice, but when it failed to vme_master_request() and than
-go to err_master,
-image[i].resource must be NULL. So a NULL exception has occurred in
-vme_master_free().
-
-I think vme_master{slave}_free() need to check NULL and it can be
-possible to change code as your comment.
-please check for me. :-)
-
->
-> If not moving to devm, this should be safe even though the first
-> kern_buf may be NULL:
->
-> err_master:
->         while (i >= MASTER_MINOR) {
->                 kfree(image[i].kern_buf);
->                 vme_master_free(image[i].resource);
->                 i--;
->         }
-kfree() is ok. But vme_master_free() function has an problem as mentioned above.
-
-Thanks for review.
-Daeseok Youn.
->
-> -Aaron
->
->>
->> --
->> 1.7.4.4
->>
->>
->>
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
