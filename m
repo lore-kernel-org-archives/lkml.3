@@ -1,67 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419AbaC0Kny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:43:54 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:37593 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaC0Knw (ORCPT
+	id S1755183AbaC0Ksx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:48:53 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:42309 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594AbaC0Ksv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:43:52 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-21-533400e2acf8
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: mturquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        b.brezillon@overkiz.com, khilman@linaro.org, festevam@gmail.com,
-        shawn.guo@linaro.org, nicolas.ferre@atmel.com,
-        sebastian.hesselbarth@gmail.com, plagnioj@jcrosoft.com,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] clk: reverse default clk provider initialization order in
- of_clk_init()
-Date: Thu, 27 Mar 2014 11:43:32 +0100
-Message-id: <1395917012-23483-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJLMWRmVeSWpSXmKPExsVy+t9jAd1HDCbBBmvO81pcOHeY0eLhVX+L
-	r4dXMFpsenyN1eLyrjlsFk8nXGSz+Ha5md1i3cMXTBaH37SzWrz/6WjxdN0SZgdujwW/trJ4
-	7Jx1l93j1YU7LB53ru1h89i8pN5j0uI/bB59W1YxenzeJBfAEcVlk5Kak1mWWqRvl8CVsXZW
-	E2vBY/aKbZ/4Gxj3sXUxcnJICJhI/Dp4EcoWk7hwbz2QzcUhJLCIUWLq053sEE4Hk0Tj0d/M
-	IFVsAoYSvUf7GEFsEQFJiQefp7OAFDELLGaSWHJrGwtIQlggSuL03h4gm4ODRUBVYtvGehCT
-	V8BNYsk8RRBTQkBBYs4kmwmM3AsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBAfYM6kd
-	jCsbLA4xCnAwKvHw7rhvFCzEmlhWXJl7iFGCg1lJhLf/r3GwEG9KYmVValF+fFFpTmrxIUZp
-	DhYlcd4DrdaBQgLpiSWp2ampBalFMFkmDk6pBsY1VYxVSQ84rpvIpz2dXH3xzPxbeZNKub3i
-	WU2SxRafeKFo2jB5n/fSZL37G+YffeTWMGNV0bqQOXJMYq/mPzOt0irx89/u+P2/9dL7/1V3
-	L1R/mXH0ZlhpbNDmwiyba9/32ecL+5w7WqY5ZeuebK11r25XH2VeEV7y+N1Xb6Zjsa+a/wtU
-	605SYinOSDTUYi4qTgQAac5jVSwCAAA=
+	Thu, 27 Mar 2014 06:48:51 -0400
+Date: Thu, 27 Mar 2014 16:18:42 +0530
+From: Gautham R Shenoy <ego@linux.vnet.ibm.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, preeti@linux.vnet.ibm.com
+Subject: Re: [PATCH] cpufreq: don't print value of .driver_data from core
+Message-ID: <20140327104842.GB27777@in.ibm.com>
+Reply-To: ego@linux.vnet.ibm.com
+References: <2490cd0aaeaaeb88131c8089d491c485f08da5da.1395914766.git.viresh.kumar@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2490cd0aaeaaeb88131c8089d491c485f08da5da.1395914766.git.viresh.kumar@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032710-0928-0000-0000-000000B74C9B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This restores the default clocks registration order as parsed from
-devicetree, i.e. as before commit 1771b10d605d26ccee771a7fb4b08718
-"clk: respect the clock dependencies in of_clk_init", for when there
-is no explicit parent clock dependencies between clock providers
-specified in the device tree.
 
-It prevents regressions (boot failure, division by 0 errors) on
-imx and exynos platforms.
+On Thu, Mar 27, 2014 at 03:37:22PM +0530, Viresh Kumar wrote:
+> CPUFreq core doesn't control value of .driver_data and this field is completely
+> driver specific. This can contain any value and not only indexes. For most of
+> the drivers, which aren't using this field, its value is zero. So, printing this
+> from core doesn't make any sense. Don't print it.
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/clk/clk.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+So after this patch, driver_data is only going to be used by drivers
+which want an "unsigned int" value to be saved along with the
+frequency in the frequency_table and for those who want to overload
+its interpretation to indicate BOOST.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index 07cba07..c859adf 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2596,7 +2596,7 @@ void __init of_clk_init(const struct of_device_id *matches)
- 
- 		parent->clk_init_cb = match->data;
- 		parent->np = np;
--		list_add(&parent->node, &clk_provider_list);
-+		list_add_tail(&parent->node, &clk_provider_list);
- 	}
- 
- 	while (!list_empty(&clk_provider_list)) {
--- 
-1.7.9.5
+>From the core's stand point, it is useful only for determining whether
+a frequency is BOOST frequency or not. 
+
+So, wouldn't it be logical to allow drivers maintain their own driver
+data since the core is anyway not interested in it, and change this
+.driver_data to "flags" or some such which can indicate boost ?
+
+--
+Thanks and Regards
+gautham.
+
+> 
+> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+> ---
+>  drivers/cpufreq/freq_table.c | 7 +++----
+>  1 file changed, 3 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+> index 8e54f97..f002272 100644
+> --- a/drivers/cpufreq/freq_table.c
+> +++ b/drivers/cpufreq/freq_table.c
+> @@ -36,8 +36,7 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+>  		    && table[i].driver_data == CPUFREQ_BOOST_FREQ)
+>  			continue;
+> 
+> -		pr_debug("table entry %u: %u kHz, %u driver_data\n",
+> -					i, freq, table[i].driver_data);
+> +		pr_debug("table entry %u: %u kHz\n", i, freq);
+>  		if (freq < min_freq)
+>  			min_freq = freq;
+>  		if (freq > max_freq)
+> @@ -175,8 +174,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+>  	} else
+>  		*index = optimal.driver_data;
+> 
+> -	pr_debug("target is %u (%u kHz, %u)\n", *index, table[*index].frequency,
+> -		table[*index].driver_data);
+> +	pr_debug("target index is %u, freq is:%u kHz\n", *index,
+> +		 table[*index].frequency);
+> 
+>  	return 0;
+>  }
+> -- 
+> 1.7.12.rc2.18.g61b472e
+> 
 
