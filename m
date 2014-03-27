@@ -1,99 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109AbaC0KBv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:01:51 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:13177 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753406AbaC0KBs (ORCPT
+	id S1754860AbaC0KFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:05:21 -0400
+Received: from vserver.eikelenboom.it ([84.200.39.61]:58606 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbaC0KFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:01:48 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-92-5333f709ea08
-Message-id: <5333F704.7020504@samsung.com>
-Date: Thu, 27 Mar 2014 11:01:40 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>,
-        Fabio Estevam <festevam@gmail.com>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>, t.figa@samsung.com,
+	Thu, 27 Mar 2014 06:05:19 -0400
+Date: Thu, 27 Mar 2014 11:05:16 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <457222418.20140327110516@eikelenboom.it>
+To: Paul Durrant <Paul.Durrant@citrix.com>
+CC: Wei Liu <wei.liu2@citrix.com>, annie li <annie.li@oracle.com>,
+        Zoltan Kiss <zoltan.kiss@citrix.com>,
+        "xen-devel@lists.xen.org" <xen-devel@lists.xen.org>,
+        Ian Campbell <Ian.Campbell@citrix.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
-        Kevin Hilman <khilman@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Olof Johansson <olof@lixom.net>, "'Arnd Bergmann'" <arnd@arndb.de>
-Subject: Re: [PATCH] clk: register fixed-clock only if #clock-cells property is
- present
-References: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>
- <CAOMZO5DJPKvha7A-foktsB2dEw9xGXL_++uBXj_3ScAPTXNOkw@mail.gmail.com>
- <53333145.4080903@gmail.com>
- <CAOMZO5AEry8sJW_+0aJS8ush+sYPPWk9LRU0b8RUUGa-hO_G1A@mail.gmail.com>
- <5333DA13.2080505@gmail.com>
-In-reply-to: <5333DA13.2080505@gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprAIsWRmVeSWpSXmKPExsVy+t/xy7qc342DDfrb5Cz+TjrGbjFzYpLF
-	/CPnWC0eXvW32NT2ltFi1dSdLBZfD69gtNj0+BqrxeVdc9gsbl/mtXg64SKbxbfLzewWp65/
-	ZrNY9/AFk8XhN+2sFk/XLWG2WD/jNYuDoEdLcw+bx+9fkxg9FvzayuLxZNNFRo+ds+6ye7y6
-	cIfF4861PWwem5fUe1w50cTq0f/XwKNvyypGj8+b5AJ4orhsUlJzMstSi/TtErgy3s5sYS14
-	wl8x4+8X5gbGLzxdjJwcEgImEl+/f2KDsMUkLtxbD2RzcQgJLGWUeLB7OQuE84lR4sKiJ8wg
-	VbwCWhJHnzwC62ARUJU4sGcOK4jNJmAo0Xu0jxHEFhWIkJg7cTMbRL2gxI/J91hAbBGBUIkl
-	3T/ZQYYyCyxmlWhYcgFsqLBApMTBBTuhtk1ikni0dRtYglNAU6Lx0UywDcwC6hKT5i1ihrDl
-	JTavecs8gVFgFpIls5CUzUJStoCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSCx+3cG4
-	9JjVIUYBDkYlHt4d942ChVgTy4orcw8xSnAwK4nwqi03DhbiTUmsrEotyo8vKs1JLT7EyMTB
-	KdXAuLYthvl2RCCvw5KI15nhdX494r367T62+pF3lMKy/7GtDYhb5JPF21X3c1OwWW3Ze3db
-	qX0qUlMuLE6Z+1Qiba+17r1T8hfMSvjWC4r6XT3GsTfz3qqE91u6ujwf7L08tytgVZpKR+GO
-	loqqM8v8LLY/u2S67NktG9muCofbunfYXCztnsspsRRnJBpqMRcVJwIAASIzRaMCAAA=
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network troubles "bisected"
+In-Reply-To: <9AAE0902D5BC7E449B7C8E4E778ABCD029BF83@AMSPEX01CL01.citrite.net>
+References: <1744594108.20140318162127@eikelenboom.it> <20140318160412.GB16807@zion.uk.xensource.com> <1701035622.20140318211402@eikelenboom.it> <722971844.20140318221859@eikelenboom.it> <1688396550.20140319001104@eikelenboom.it> <20140319113532.GD16807@zion.uk.xensource.com> <246793256.20140319220752@eikelenboom.it> <20140321164958.GA31766@zion.uk.xensource.com> <1334202265.20140321182727@eikelenboom.it> <1056661597.20140322192834@eikelenboom.it> <20140325151539.GG31766@zion.uk.xensource.com> <79975567.20140325162942@eikelenboom.it> <1972209744.20140326121116@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AD94@AMSPEX01CL01.citrite.net> <1715463578.20140326162245@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029AFC1@AMSPEX01CL01.citrite.net> <799579453.20140326170641@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B106@AMSPEX01CL01.citrite.net> <789809468.20140326175352@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B277@AMSPEX01CL01.citrite.net> <966386043.20140326183304@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B350@AMSPEX01CL01.citrite.net> <1959698732.20140326190752@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029B49C@AMSPEX01CL01.citrite.net> <103668635.20140326211744@eikelenboom.it> <9AAE0902D5BC7E449B7C8E4E778ABCD029BF83@AMSPEX01CL01.citrite.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris,
+Hrmm i don't know if it's your mailer or my mailer .. but i seem to get a lot of your mails truncated somehow :S
+though the xen-devel list archive seem to have them in complete form .. so it's probably my mailer tripping over something
 
-On 27/03/14 08:58, Boris BREZILLON wrote:
-> This solution solve the problem for this specific case because clks are
-> declared in the correct order in imx DTs.
-> But, even with your patch I think we could see similar issues by 
-> reordering DT nodes...
-> 
-> The real problem here is that imx platform does not declare the CCM clocks
-> dependencies upon ckil, ckih1 and osc fixed clocks within the DT [1], and
-> retrieve these clocks when initializing the CCM clocks ([2] and [3]).
-> 
-> We should try to a add these dependencies in the DT and see if it works.
+> I'll come up with some patches shortly.
 
-While presumably all of us agree the dependencies should be correctly
-specified in dts I think we should minimize possible regressions by
-keeping the clocks registration order as before, i.e. as parsed by the
-kernel from DT. Rather than explicitly reversing it, which does not gain
-us anything AFAICS. Instead we are seeing regressions where new kernels
-stop working with old dtbs.
+OK will test them ASAP.
 
-I'm going to resend the patch replacing list_add() with list_add_tail(),
-with this the mvebu platform would work and there should be no regression
-on imx and exynos.
 
-Please note that specifying dependencies between CCM on imx and the fixed
-clocks might not be enough. If the fixed clocks get matched on "fixed-clock"
-compatible some clock specifiers (i.e. those using phandle to the CCM) could
-get invalid, since the clocks won't get registered by the ccm driver, but by
-the regular fixed clock driver. That means a phandle to different node would
-need to be used to reference the fixed clock. I'm not sure if this is the case
-for imx, but changes may be needed all over various dts files.
-In addition, we should make sure the kernel works with current and modified
-dtbs.
+Thursday, March 27, 2014, 10:54:09 AM, you wrote:
 
-> [1] http://lxr.free-electrons.com/source/arch/arm/boot/dts/imx6sl.dtsi#L379
-> [2] http://lxr.free-electrons.com/source/arch/arm/mach-imx/clk-imx6q.c#L151
-> [3] http://lxr.free-electrons.com/source/arch/arm/mach-imx/clk.c#L30
+>> -----Original Message-----
+>> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+>> Sent: 26 March 2014 20:18
+>> To: Paul Durrant
+>> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell; linux-
+>> kernel; netdev@vger.kernel.org
+>> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+>> troubles "bisected"
+>> 
+>> 
+>> Wednesday, March 26, 2014, 7:15:30 PM, you wrote:
+>> 
+>> >> -----Original Message-----
+>> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+>> >> Sent: 26 March 2014 18:08
+>> >> To: Paul Durrant
+>> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+>> linux-
+>> >> kernel; netdev@vger.kernel.org
+>> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+>> >> troubles "bisected"
+>> >>
+>> >>
+>> >> Wednesday, March 26, 2014, 6:46:06 PM, you wrote:
+>> >>
+>> >> > Re-send shortened version...
+>> >>
+>> >> >> -----Original Message-----
+>> >> >> From: Sander Eikelenboom [mailto:linux@eikelenboom.it]
+>> >> >> Sent: 26 March 2014 16:54
+>> >> >> To: Paul Durrant
+>> >> >> Cc: Wei Liu; annie li; Zoltan Kiss; xen-devel@lists.xen.org; Ian Campbell;
+>> >> linux-
+>> >> >> kernel; netdev@vger.kernel.org
+>> >> >> Subject: Re: [Xen-devel] Xen-unstable Linux 3.14-rc3 and 3.13 Network
+>> >> >> troubles "bisected"
+>> >> >>
+>> >> > [snip]
+>> >> >> >>
+>> >> >> >> - When processing an SKB we end up in "xenvif_gop_frag_copy"
+>> while
+>> >> >> prod
+>> >> >> >> == cons ... but we still have bytes and size left ..
+>> >> >> >> - start_new_rx_buffer() has returned true ..
+>> >> >> >> - so we end up in get_next_rx_buffer
+>> >> >> >> - this does a RING_GET_REQUEST and ups cons ..
+>> >> >> >> - and we end up with a bad grant reference.
+>> >> >> >>
+>> >> >> >> Sometimes we are saved by the bell .. since additional slots have
+>> >> become
+>> >> >> >> free (you see cons become > prod in "get_next_rx_buffer" but
+>> shortly
+>> >> >> after
+>> >> >> >> that prod is increased ..
+>> >> >> >> just in time to not cause a overrun).
+>> >> >> >>
+>> >> >>
+>> >> >> > Ah, but hang on... There's a BUG_ON meta_slots_used >
+>> >> >> max_slots_needed, so if we are overflowing the worst-case calculation
+>> >> then
+>> >> >> why is that BUG_ON not firing?
+>> >> >>
+>> >> >> You mean:
+>> >> >>                 sco = (struct skb_cb_overlay *)skb->cb;
+>> >> >>                 sco->meta_slots_used = xenvif_gop_skb(skb, &npo);
+>> >> >>                 BUG_ON(sco->meta_slots_used > max_slots_needed);
+>> >> >>
+>> >> >> in "get_next_rx_buffer" ?
+>> >> >>
+>> >>
+>> >> > That code excerpt is from net_rx_action(),isn't it?
+>> >>
+>> >> Yes
+>> >>
+>> >> >> I don't know .. at least now it doesn't crash dom0 and therefore not my
+>> >> >> complete machine and since tcp is recovering from a failed packet  :-)
+>> >> >>
+>> >>
+>> >> > Well, if the code calculating max_slots_needed were underestimating
+>> then
+>> >> the BUG_ON() should fire. If it is not firing in your case then this suggests
+>> >> your problem lies elsewhere, or that meta_slots_used is not equal to the
+>> >> number of ring slots consumed.
+>> >>
+>> >> It's seem to be the last ..
+>> >>
+>> >> [ 1157.188908] vif vif-7-0 vif7.0: ?!? xenvif_gop_skb Me here 5 npo-
+>> >> >meta_prod:40 old_meta_prod:36 vif->rx.sring->req_prod:2105867 vif-
+>> >> >rx.req_cons:2105868 meta->gso_type:1 meta->gso_size:1448 nr_frags:1
+>> >> req->gref:657 req->id:7 estimated_slots_needed:4 j(data):1
+>> >> reserved_slots_left:-1    used in funcstart: 0 + 1 .. used_dataloop:1 ..
+>> >> used_fragloop:3
+>> >> [ 1157.244975] vif vif-7-0 vif7.0: ?!? xenvif_rx_action me here 2 ..  vif-
+>> >> >rx.sring->req_prod:2105867 vif->rx.req_cons:2105868 sco-
+>> >> >meta_slots_used:4 max_upped_gso:1 skb_is_gso(skb):1
+>> >> max_slots_needed:4 j:6 is_gso:1 nr_frags:1 firstpart:1 secondpart:2
+>> >> reserved_slots_left:-1
+>> >>
+>> >> net_rx_action() calculated we would need 4 slots .. and sco-
+>> >> >meta_slots_used == 4 when we return so it doesn't trigger you BUG_ON
+>> ..
+>> >>
+>> >> The 4 slots we calculated are:
+>> >>   1 slot for the data part: DIV_ROUND_UP(offset_in_page(skb->data) +
+>> >> skb_headlen(skb), PAGE_SIZE)
+>> >>   2 slots for the single frag in this SKB from: DIV_ROUND_UP(size,
+>> PAGE_SIZE)
+>> >>   1 slot since GSO
+>> >>
+>> >> In the debug code i annotated all cons++, and the code uses 1 slot to
+>> process
+>> >> the data from the SKB as expected but uses 3 slots in the frag chopping
+>> loop.
+>> >> And when it reaches the state  were cons > prod it is always in
+>> >> "get_next_rx_buffer".
+>> >>
+>> >> >> But probably because "npo->copy_prod++" seems to be used for the
+>> >> frags ..
+>> >> >> and it isn't added to  npo->meta_prod ?
+>> >> >>
+>> >>
+>> >> > meta_slots_used is calculated as the value of meta_prod at return
+>> (from
+>> >> xenvif_gop_skb()) minus the value on entry ,
+>> >> > and if you look back up the code then you can see that meta_prod is
+>> >> incremented every time RING_GET_REQUEST() is evaluated.
+>> >> > So, we must be consuming a slot without evaluating
+>> RING_GET_REQUEST()
+>> >> and I think that's exactly what's happening...
+>> >> > Right at the bottom of xenvif_gop_frag_copy() req_cons is simply
+>> >> incremented in the case of a GSO. So the BUG_ON() is indeed off by one
 
--- 
-Thanks,
-Sylwester
