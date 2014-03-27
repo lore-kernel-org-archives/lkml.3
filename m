@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977AbaC0HhK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 03:37:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22570 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752499AbaC0HhH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 03:37:07 -0400
-From: Markus Armbruster <armbru@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Alejandro Comisario <alejandro.comisario@mercadolibre.com>,
-        kvm@vger.kernel.org, ghammer@redhat.com,
-        Stefan Hajnoczi <stefanha@gmail.com>, Jason Wang <jasowang@redhat.com>,
-        linux-kernel@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] Massive read only kvm guests when backing file was missing
-References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
-	<20140327064158.GA17563@redhat.com>
-Date: Thu, 27 Mar 2014 08:36:57 +0100
-In-Reply-To: <20140327064158.GA17563@redhat.com> (Michael S. Tsirkin's message
-	of "Thu, 27 Mar 2014 08:41:58 +0200")
-Message-ID: <87y4zwt7mu.fsf@blackfin.pond.sub.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.2 (gnu/linux)
+	id S1754117AbaC0HhS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 03:37:18 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47182 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbaC0HhN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 03:37:13 -0400
+Message-ID: <5333D527.2060208@parallels.com>
+Date: Thu, 27 Mar 2014 11:37:11 +0400
+From: Vladimir Davydov <vdavydov@parallels.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Greg Thelen <gthelen@google.com>
+CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <mhocko@suse.cz>,
+        <glommer@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-mm@kvack.org>, <devel@openvz.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH -mm 1/4] sl[au]b: do not charge large allocations to memcg
+References: <cover.1395846845.git.vdavydov@parallels.com> <5a5b09d4cb9a15fc120b4bec8be168630a3b43c2.1395846845.git.vdavydov@parallels.com> <xr93fvm42rew.fsf@gthelen.mtv.corp.google.com>
+In-Reply-To: <xr93fvm42rew.fsf@gthelen.mtv.corp.google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> writes:
+Hi Greg,
 
-> On Wed, Mar 26, 2014 at 11:08:03PM -0300, Alejandro Comisario wrote:
->> Hi List!
->> Hope some one can help me, we had a big issue in our cloud the other
->> day, a couple of our openstack regions ( +2000 kvm guests with qcow2 )
->> went read only filesystem from the guest side because the backing
->> files directory (the openstack _base directory) was compromised and
->> the data was lost, when we realized the data was lost, it took us 5
->> mins to restore the backup of the backing files, but by that time all
->> the kvm guests received some kind of IO error from the hypervisor
->> layer, and went read only on root filesystem.
->> 
->> My question would be, is there a way to hold the IO operations against
->> the backing files ( i thought that would be 99% READ operations ) for
->> a little longer ( im asking this because i dont quite understand what
->> is the process and when it raises the error ) in a case the backing
->> files are missing (no IO possible) but is recoverable within minutes ?
->> 
->> Any tip  on how to achieve this if possible, or information about how
->> backing files works on kvm, will be amazing.
->> Waiting for feedback!
->> 
->> kindest regards.
->> Alejandro Comisario
+On 03/27/2014 08:31 AM, Greg Thelen wrote:
+> On Wed, Mar 26 2014, Vladimir Davydov <vdavydov@parallels.com> wrote:
 >
+>> We don't track any random page allocation, so we shouldn't track kmalloc
+>> that falls back to the page allocator.
+> This seems like a change which will leads to confusing (and arguably
+> improper) kernel behavior.  I prefer the behavior prior to this patch.
 >
-> I'm guessing this is what happened: guests timed out meanwhile.
-> You can increase the timeout within the guest:
-> echo 600 > /sys/block/sda/device/timeout
-> to timeout after 10 minutes.
+> Before this change both of the following allocations are charged to
+> memcg (assuming kmem accounting is enabled):
+>  a = kmalloc(KMALLOC_MAX_CACHE_SIZE, GFP_KERNEL)
+>  b = kmalloc(KMALLOC_MAX_CACHE_SIZE + 1, GFP_KERNEL)
 >
-> If you have installed qemu guest agent on your system, you can do this
-> from the host. Unfortunately by default it's memory can be pushed out to swap
-> and then on disk error access there might will fail :(
-> Maybe we should consider mlock on all its memory at least as an option.
->
-> You could pause your guests, restart them after the issue is resolved,
-> and we could I guess add functionality to pause VM on disk errors
-> automatically.
-> Stefan?
+> After this change only 'a' is charged; 'b' goes directly to page
+> allocator which no longer does accounting.
 
-Would -drive rerror=stop do?
+Why do we need to charge 'b' in the first place? Can the userspace
+trigger such allocations massively? If there can only be one or two such
+allocations from a cgroup, is there any point in charging them?
+
+In fact, do we actually need to charge every random kmem allocation? I
+guess not. For instance, filesystems often allocate data shared among
+all the FS users. It's wrong to charge such allocations to a particular
+memcg, IMO. That said the next step is going to be adding a per kmem
+cache flag specifying if allocations from this cache should be charged
+so that accounting will work only for those caches that are marked so
+explicitly.
+
+There is one more argument for removing kmalloc_large accounting - we
+don't have an easy way to track such allocations, which prevents us from
+reparenting kmemcg charges on css offline. Of course, we could link
+kmalloc_large pages in some sort of per-memcg list which would allow us
+to find them on css offline, but I don't think such a complication is
+justified.
+
+Thanks.
