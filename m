@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957AbaC0CMs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:12:48 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57199 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751692AbaC0CMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:12:42 -0400
-Date: Wed, 26 Mar 2014 21:10:43 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
-        <linux-bluetooth@vger.kernel.org>, <m-karicheri2@ti.com>,
-        <b32955@freescale.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
-Message-ID: <20140327021043.GB11651@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com>
- <1395343807-21618-10-git-send-email-balbi@ti.com>
- <20140325182856.GA31906@atomide.com>
- <5333732F.6040803@hurleysoftware.com>
+	id S1753104AbaC0CNx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:13:53 -0400
+Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:2010
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752432AbaC0CNw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 22:13:52 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: "guangyu.chen@freescale.com" <guangyu.chen@freescale.com>,
+        "broonie@kernel.org" <broonie@kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: RE: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+Thread-Topic: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+Thread-Index: AQHPSOk07qbuL0Yc9E6K9N8Cg7O135r0MFsA
+Date: Thu, 27 Mar 2014 02:13:48 +0000
+Message-ID: <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
+In-Reply-To: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [192.88.158.212]
+x-forefront-prvs: 01630974C0
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(164054003)(199002)(189002)(85852003)(4396001)(81342001)(92566001)(76576001)(98676001)(56816005)(90146001)(50986001)(49866001)(74502001)(47446002)(80976001)(83072002)(47736001)(47976001)(97336001)(81542001)(33646001)(80022001)(95416001)(87266001)(87936001)(20776003)(65816001)(85306002)(2656002)(95666003)(79102001)(54356001)(97186001)(93516002)(46102001)(86362001)(94316002)(54316002)(56776001)(59766001)(77982001)(53806001)(74706001)(74366001)(74876001)(93136001)(31966008)(74662001)(69226001)(76796001)(74316001)(81816001)(94946001)(63696002)(81686001)(76482001)(76786001)(66066001)(83322001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB444;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:8222C6BE.6BF2B5BF.F46915F8.90FAE473.20106;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="0ntfKIWw70PvrIHh"
-Content-Disposition: inline
-In-Reply-To: <5333732F.6040803@hurleysoftware.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0ntfKIWw70PvrIHh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
+> +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
+> +
+> +	if (xcsr & FSL_SAI_CSR_WSF)
+> +		dev_dbg(dev, "isr: Start of Tx word detected\n");
+> +
+> +	if (xcsr & FSL_SAI_CSR_SEF)
+> +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
+> +
+> +	if (xcsr & FSL_SAI_CSR_FEF)
+> +		dev_dbg(dev, "isr: Transmit underrun detected\n");
+> +
 
-Hi,
+Actually, the above three isrs should to write a logic 1 to this field
+to clear this flag.
 
-On Wed, Mar 26, 2014 at 08:39:11PM -0400, Peter Hurley wrote:
-> On 03/25/2014 02:28 PM, Tony Lindgren wrote:
-> >* Felipe Balbi <balbi@ti.com> [140320 12:39]:
-> >>This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
-> >>
-> >>That commit tried to fix a deadlock problem when using
-> >>hci_ldisc, but it turns out the bug was in hci_ldsic
-> >>all along where it was calling ->write() from within
-> >>->write_wakeup() callback.
-> >>
-> >>The problem is that ->write_wakeup() was called with
-> >>port lock held and ->write() tried to grab the same
-> >>port lock.
-> >
-> >Should this and the next patch be earlier in the series
-> >as a fix for the v3.15-rc cycle? Should they be cc: stable
-> >as well?
->=20
-> Well, right now the other fix has had _zero_ testing
-> so not really a -stable candidate just yet.
 
-how can you even say that ? Unless you work for some 3 letter acronym
-organizations, you have no clue about the fact that this was tested on a
-keystone 2 platform. How else would we have found the issue to start
-with ?
+> +	if (xcsr & FSL_SAI_CSR_FWF)
+> +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
+> +
+> +	if (xcsr & FSL_SAI_CSR_FRF)
+> +		dev_dbg(dev, "isr: Transmit FIFO watermark has been reached\n");
+> +
 
---=20
-balbi
+While are these ones really needed to clear manually ?
 
---0ntfKIWw70PvrIHh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Thanks,
+--
 
-iQIcBAEBAgAGBQJTM4ijAAoJEIaOsuA1yqREul4QAKHq2HAm+dn7ySPmkYJaCYEt
-VoZ1MH1tZvn5hXqeAdYRKkJcyCWY6qbHAVPGpwQbLl+06I3e+NZFbx9QFcDbLA0s
-ON5Sh7xaye6+AQeFoy43G94dg0VE87xbJuE/w5t93uDkSEWW79zSeZ3VsjkzZiBO
-E3n4h84nLP+Ksl8+PRueEErPs7+GV7zqj6a/NBBvJ/Wxda3/8kyHdO6IKpdfgXlU
-Pg34Iggenm/4y5ZDDW+HRKAhrJh+n96R9JDiYvu9Bq84vYYT+Ft/vG5uv1OWAEXs
-Ap77qKyPuOq+NjCd/MkOvYH3jO+9RXQXJzNme0XpaqdZj0vZcUw/KQcEARvmLPPN
-viT6v2IWR4FAT44zDhHbYjj0C4K0HtBKVzmrUsRCCPvsTxyWqKhJt3NDljG8xRst
-pWju7FAVhBUDHl4xLKM2iZmRMQDEQCj/uldVQ544DwRWtd58vik+xntRM8SekYSs
-vXUb+LWDwWlzHL38RxnCnxSF7d+yfF+mQsTfBIrCXvIfILDUpiYRwr9K3KPXappD
-z4pJaJY5DYabg5SxvYVgSxNylWVl5ZqyeuATAd9YZml42odv1yPjiArO5QtOuUS/
-AGrh5OImRICYPwD/VE+EtaikqVMlPSDdvyKALl+apx9cfU8H/pushQuBeSEaZKqQ
-Riw7R1n70klzISorplNq
-=YHH1
------END PGP SIGNATURE-----
+Best Regards,
+Xiubo
 
---0ntfKIWw70PvrIHh--
