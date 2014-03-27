@@ -1,121 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811AbaC0PuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:50:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42425 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755140AbaC0PuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:50:06 -0400
-Date: Thu, 27 Mar 2014 16:50:02 +0100
-From: Jan Kara <jack@suse.cz>
-To: Andres Freund <andres@2ndquadrant.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lsf@lists.linux-foundation.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, rhaas@anarazel.de,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [Lsf] Postgresql performance problems with IO latency,
- especially during fsync()
-Message-ID: <20140327155002.GF18118@quack.suse.cz>
-References: <20140326191113.GF9066@alap3.anarazel.de>
- <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com>
- <20140326215518.GH9066@alap3.anarazel.de>
+	id S1756907AbaC0Pum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:50:42 -0400
+Received: from Chamillionaire.breakpoint.cc ([80.244.247.6]:39920 "EHLO
+	Chamillionaire.breakpoint.cc" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756821AbaC0Puh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 11:50:37 -0400
+Date: Thu, 27 Mar 2014 16:50:33 +0100
+From: Florian Westphal <fw@strlen.de>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, vvs@parallels.com,
+        Pablo Neira Ayuso <pablo@netfilter.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] netfilter: nf_conntrack: reserve two bytes for
+ nf_ct_ext->len
+Message-ID: <20140327155033.GF21741@breakpoint.cc>
+References: <1395934354-13226-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140326215518.GH9066@alap3.anarazel.de>
+In-Reply-To: <1395934354-13226-1-git-send-email-avagin@openvz.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 26-03-14 22:55:18, Andres Freund wrote:
-> On 2014-03-26 14:41:31 -0700, Andy Lutomirski wrote:
-> > On Wed, Mar 26, 2014 at 12:11 PM, Andres Freund <andres@anarazel.de> wrote:
-> > > Hi,
-> > >
-> > > At LSF/MM there was a slot about postgres' problems with the kernel. Our
-> > > top#1 concern is frequent slow read()s that happen while another process
-> > > calls fsync(), even though we'd be perfectly fine if that fsync() took
-> > > ages.
-> > > The "conclusion" of that part was that it'd be very useful to have a
-> > > demonstration of the problem without needing a full blown postgres
-> > > setup. I've quickly hacked something together, that seems to show the
-> > > problem nicely.
-> > >
-> > > For a bit of context: lwn.net/SubscriberLink/591723/940134eb57fcc0b8/
-> > > and the "IO Scheduling" bit in
-> > > http://archives.postgresql.org/message-id/20140310101537.GC10663%40suse.de
-> > >
-> > 
-> > For your amusement: running this program in KVM on a 2GB disk image
-> > failed, but it caused the *host* to go out to lunch for several
-> > seconds while failing.  In fact, it seems to have caused the host to
-> > fall over so badly that the guest decided that the disk controller was
-> > timing out.  The host is btrfs, and I think that btrfs is *really* bad
-> > at this kind of workload.
+Andrey Vagin <avagin@openvz.org> wrote:
+> "len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
+> case it can contain all extensions. Bellow you can find sizes for all
+> types of extensions. Their sum is definitely bigger than 256.
 > 
-> Also, unless you changed the parameters, it's a) using a 48GB disk file,
-> and writes really rather fast ;)
-> 
-> > Even using ext4 is no good.  I think that dm-crypt is dying under the
-> > load.  So I won't test your program for real :/
-> 
-> Try to reduce data_size to RAM * 2, NUM_RANDOM_READERS to something
-> smaller. If it still doesn't work consider increasing the two nsleep()s...
-> 
-> I didn't have a good idea how to scale those to the current machine in a
-> halfway automatic fashion.
-  That's not necessary. If we have a guidance like above, we can figure it
-out ourselves (I hope ;).
+> nf_ct_ext_types[0]->len = 24
+> nf_ct_ext_types[1]->len = 32
+> nf_ct_ext_types[2]->len = 24
+> nf_ct_ext_types[3]->len = 32
+> nf_ct_ext_types[4]->len = 152
 
-> > > Possible solutions:
-> > > * Add a fadvise(UNDIRTY), that doesn't stall on a full IO queue like
-> > >   sync_file_range() does.
-> > > * Make IO triggered by writeback regard IO priorities and add it to
-> > >   schedulers other than CFQ
-> > > * Add a tunable that allows limiting the amount of dirty memory before
-> > >   writeback on a per process basis.
-> > > * ...?
-> > 
-> > I thought the problem wasn't so much that priorities weren't respected
-> > but that the fsync call fills up the queue, so everything starts
-> > contending for the right to enqueue a new request.
-> 
-> I think it's both actually. If I understand correctly there's not even a
-> correct association to the originator anymore during a fsync triggered
-> flush?
-  There is. The association is lost for background writeback (and sync(2)
-for that matter) but IO from fsync(2) is submitted in the context of the
-process doing fsync.
+Guess its  the timer in the ecache extension (with LOCKDEP on probably).
 
-What I think happens is the problem with 'dependent sync IO' vs
-'independent sync IO'. Reads are an example of dependent sync IO where you
-submit a read, need it to complete and then you submit another read. OTOH
-fsync is an example of independent sync IO where you fire of tons of IO to
-the drive and they wait for everything. Since we treat both these types of
-IO in the same way, it can easily happen that independent sync IO starves
-out the dependent one (you execute say 100 IO requests for fsync and 1 IO
-request for read). We've seen problems like this in the past.
+I'll submit a patch to get rid of that shortly.
 
-I'll have a look into your test program and if my feeling is indeed
-correct, I'll have a look into what we could do in the block layer to fix
-this (and poke block layer guys - they had some preliminary patches that
-tried to address this but it didn't went anywhere).
+I think your patch is fine because the 'no timer
+in ecache extension' change is quite large, needs review/stress testing
+etc and is inapropriate for stable tree anyway.
 
-> > Since fsync blocks until all of its IO finishes anyway, what if it
-> > could just limit itself to a much smaller number of outstanding
-> > requests?
-> 
-> Yea, that could already help. If you remove the fsync()s, the problem
-> will periodically appear anyway, because writeback is triggered with
-> vengeance. That'd need to be fixed in a similar way.
-  Actually, that might be triggered by a different problem because in case
-of background writeback, block layer knows the IO is asynchronous and
-treats it in a different way.
+> I have seen "len" up to 280 and my host has crashes w/o this patch.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+ecache is 24 bytes without that timer, should be < 256 in total for
+all extensions.
+
+I think BUILD_BUG_ON test would be nice.
