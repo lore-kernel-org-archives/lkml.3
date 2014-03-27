@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756367AbaC0LIw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 07:08:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46856 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843AbaC0LIv (ORCPT
+	id S1756433AbaC0LKX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 07:10:23 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:63578 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808AbaC0LKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 07:08:51 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-1e-533406c28f93
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-To: mturquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH] clk: Fix minor errors in of_clk_init() function comments
-Date: Thu, 27 Mar 2014 12:08:36 +0100
-Message-id: <1395918516-23822-1-git-send-email-s.nawrocki@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t9jQd1DbCbBBpNPCFlsenyN1eLyrjls
-	Fk8nXGSzOPymndWBxePOtT1sHpuX1Hv0bVnF6PF5k1wASxSXTUpqTmZZapG+XQJXxtYtSxkL
-	XnJUTOx9xd7A2MzexcjBISFgInHss0QXIyeQKSZx4d56NhBbSGA6o8ST/WEQdgeTROsSbhCb
-	TcBQovdoHyOILSIgKfHg83QWEJtZoFTixKmHzCC2sICnxIUJEDaLgKrEvR9vwep5BdwkWv72
-	skGsVZCYM8lmAiP3AkaGVYyiqQXJBcVJ6blGesWJucWleel6yfm5mxjBXn8mvYNxVYPFIUYB
-	DkYlHt4d942ChVgTy4orcw8xSnAwK4nw9v81DhbiTUmsrEotyo8vKs1JLT7EKM3BoiTOe7DV
-	OlBIID2xJDU7NbUgtQgmy8TBKdXAuLWK96eVvOZJ8QdHkxQ2bLGXSPScXty60WgHq9uaoslb
-	ejZNN9+YtfXfj213HHwfHNljbiYj/49lYprQ90PekZwni3VTJdzKjGKOB9VcW+K56XBif0IA
-	78/5DwRs1NiE1jsKVbg26B3Vfqbv4XNt4Wb3Q09nSa78eXK1PNP6IkfbQ1N4pH96KrEUZyQa
-	ajEXFScCAJepmx32AQAA
+	Thu, 27 Mar 2014 07:10:21 -0400
+From: Ma Haijun <mahaijuns@gmail.com>
+To: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Ma Haijun <mahaijuns@gmail.com>
+Subject: [PATCH] [media] videobuf-dma-contig: fix incorrect argument to vm_iomap_memory() call
+Date: Thu, 27 Mar 2014 19:07:06 +0800
+Message-Id: <1395918426-27787-2-git-send-email-mahaijuns@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
----
- drivers/clk/clk.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The second argument should be physical address rather than virtual address.
 
-diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-index c859adf..29dc1e7 100644
---- a/drivers/clk/clk.c
-+++ b/drivers/clk/clk.c
-@@ -2575,7 +2575,7 @@ static int parent_ready(struct device_node *np)
-  * @matches: array of compatible values and init functions for providers.
-  *
-  * This function scans the device tree for matching clock providers
-- * and calls their initialization functions. It also do it by trying
-+ * and calls their initialization functions. It also does it by trying
-  * to follow the dependencies.
-  */
- void __init of_clk_init(const struct of_device_id *matches)
-@@ -2612,7 +2612,7 @@ void __init of_clk_init(const struct of_device_id *matches)
- 		}
- 
- 		/*
--		 * We didn't managed to initialize any of the
-+		 * We didn't manage to initialize any of the
- 		 * remaining providers during the last loop, so now we
- 		 * initialize all the remaining ones unconditionally
- 		 * in case the clock parent was not mandatory
+Signed-off-by: Ma Haijun <mahaijuns@gmail.com>
+---
+ drivers/media/v4l2-core/videobuf-dma-contig.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/media/v4l2-core/videobuf-dma-contig.c b/drivers/media/v4l2-core/videobuf-dma-contig.c
+index 7e6b209..bf80f0f 100644
+--- a/drivers/media/v4l2-core/videobuf-dma-contig.c
++++ b/drivers/media/v4l2-core/videobuf-dma-contig.c
+@@ -305,7 +305,7 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 	/* Try to remap memory */
+ 	size = vma->vm_end - vma->vm_start;
+ 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-	retval = vm_iomap_memory(vma, vma->vm_start, size);
++	retval = vm_iomap_memory(vma, mem->dma_handle, size);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ",
+ 			retval);
 -- 
-1.7.9.5
+1.8.3.2
 
