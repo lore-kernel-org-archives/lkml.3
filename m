@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897AbaC0Oyo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 10:54:44 -0400
-Received: from verein.lst.de ([213.95.11.211]:54284 "EHLO newverein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755305AbaC0Oym (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 10:54:42 -0400
-Date: Thu, 27 Mar 2014 15:54:38 +0100
-From: Torsten Duwe <duwe@lst.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com, linux-kernel@vger.kernel.org,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
-Message-ID: <20140327145438.GA18563@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de> <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
+	id S1756933AbaC0OzA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 10:55:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:57692 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951AbaC0Oy5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 10:54:57 -0400
+From: "Karicheri, Muralidharan" <m-karicheri2@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>, Peter Hurley <peter@hurleysoftware.com>
+CC: Tony Lindgren <tony@atomide.com>, Greg KH <gregkh@linuxfoundation.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "b32955@freescale.com" <b32955@freescale.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
+Thread-Topic: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
+Thread-Index: AQHPSW4hDa4trLKNAUWvqoFzAiyHY5r1BOvA
+Date: Thu, 27 Mar 2014 14:54:49 +0000
+Message-ID: <3E54258959B69E4282D79E01AB1F32B7046EF530@DFLE11.ent.ti.com>
+References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+ <1395343807-21618-10-git-send-email-balbi@ti.com>
+ <20140325182856.GA31906@atomide.com> <5333732F.6040803@hurleysoftware.com>
+ <20140327021043.GB11651@saruman.home> <53338C81.3060600@hurleysoftware.com>
+ <20140327033724.GB13038@saruman.home>
+In-Reply-To: <20140327033724.GB13038@saruman.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.170.170.90]
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 06:03:37PM -0700, H. Peter Anvin wrote:
-> I'm wondering more about the default.  We default to 50% for arch_get_random_seed, and this is supposed to be the default for in effect unverified hwrngs...
+>-----Original Message-----
+>From: Balbi, Felipe
+>Sent: Wednesday, March 26, 2014 11:37 PM
+>To: Peter Hurley
+>Cc: Balbi, Felipe; Tony Lindgren; Greg KH; linux-serial@vger.kernel.org; linux-
+>bluetooth@vger.kernel.org; Karicheri, Muralidharan; b32955@freescale.com; Linux OMAP
+>Mailing List; Linux Kernel Mailing List
+>Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
+>
+>Hi,
+>
+>On Wed, Mar 26, 2014 at 10:27:13PM -0400, Peter Hurley wrote:
+>> On 03/26/2014 10:10 PM, Felipe Balbi wrote:
+>> >Hi,
+>> >
+>> >On Wed, Mar 26, 2014 at 08:39:11PM -0400, Peter Hurley wrote:
+>> >>On 03/25/2014 02:28 PM, Tony Lindgren wrote:
+>> >>>* Felipe Balbi <balbi@ti.com> [140320 12:39]:
+>> >>>>This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
+>> >>>>
+>> >>>>That commit tried to fix a deadlock problem when using hci_ldisc,
+>> >>>>but it turns out the bug was in hci_ldsic all along where it was
+>> >>>>calling ->write() from within
+>> >>>>->write_wakeup() callback.
+>> >>>>
+>> >>>>The problem is that ->write_wakeup() was called with port lock
+>> >>>>held and ->write() tried to grab the same port lock.
+>> >>>
+>> >>>Should this and the next patch be earlier in the series as a fix
+>> >>>for the v3.15-rc cycle? Should they be cc: stable as well?
+>> >>
+>> >>Well, right now the other fix has had _zero_ testing so not really a
+>> >>-stable candidate just yet.
+>> >
+>> >how can you even say that ?
+>>
+>> I misunderstood when you wrote:
+>>
+>> On 03/20/2014 02:11 PM, Felipe Balbi wrote:
+>> > here's a build-tested only patch which is waiting for testing from
+>> > other colleagues who've got a platform to reproduce the problem:
+>>
+>> and then the version I reviewed had no Tested-by: tags.
+>
+>I wouldn't add that tag myself, but Murali (in Cc) did help testing together with other
 
-If the default were 0, it would be exactly the old behaviour.
-How about that? Plus, driver authors would have to come up
-with an estimate on their own.
+Yes. One of our customer did the test as the problem was reported by the
+customer. The deadlock fix patch from Balbi (hci_ldsic) fixed the issue 
+and customer confirmed that the issue is fixed.
 
-> On March 26, 2014 5:50:09 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
-> >> +		 "current hwrng entropy estimation per mill");
-> >
-> >As an electrical engineer (sort of), I can't read this without thinking
-> >you're talking about the amount by which the current is derated.  For
-> >example, a 14-50 electrical outlet is rated to 50 Amps.  If you use it
-> >continuously for a long time, though, the current is derated to 40
-> >Amps.
-> >
-> >Shouldn't this be called credit_derating or, even better,
-> >credit_per_1000bits?
+Murali
 
-That's an awkward name for a parameter.
-
-> >Also, "per mill" is just obscure enough that someone might think it
-> >means "per million".
-
-No. I looked it up, as we have the precise term "Promille" in German.
-Also in electrical engineering, (imperial :-) PCB design, a mil
-is one 1000th of an inch. Per million would surely be named PPM.
-
-> >Why the check for derating > 0?  Paranoid users may want zero credit,
-> >but they probably still want the thing to run.
-
-[...]
-
-> >ratelimit (heavily), please.
-
-The kthread will stop once the estimated entropy is above the threshold.
-derating=0 will wind up one CPU core to 100%. So it's an elegant way
-to disable the whole mechanism.
-
-> >Also, would it make sense to round-robin all hwrngs?  Even better:
-> >collect entropy from each one and add them to the pool all at once.  If
-> >so, would it make sense for the derating to be a per-rng parameter. 
-
-Finally, the derating _is_ a per-RNG parameter. I also thought about 
-mixing already, but first I want to see a machine with more than 1 HWRNG :-)
-
-	Torsten
-
+>colleagues.
+>
+>> >How else would we have found the issue to start with ?
+>>
+>> Bug report?
+>
+>touchè :-)
+>
+>--
+>balbi
