@@ -1,93 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380AbaC0WTx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 18:19:53 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:48367 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757218AbaC0WTu (ORCPT
+	id S1757141AbaC0W0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 18:26:16 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:34736 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222AbaC0W0O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 18:19:50 -0400
-From: Ramkumar Ramachandra <artagnon@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH] perf stat: Don't print bogus data when one event is requested
-Date: Thu, 27 Mar 2014 18:20:59 -0400
-Message-Id: <1395958859-14490-1-git-send-email-artagnon@gmail.com>
-X-Mailer: git-send-email 1.9.0.431.g014438b
+	Thu, 27 Mar 2014 18:26:14 -0400
+Date: Thu, 27 Mar 2014 17:26:05 -0500
+From: Seth Jennings <sjennings@variantweb.net>
+To: Dan Streetman <ddstreet@ieee.org>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Adding compression before/above swapcache
+Message-ID: <20140327222605.GB16495@medulla.variantweb.net>
+References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When only the stalled-cycles-frontend event is requested:
+On Wed, Mar 26, 2014 at 04:28:27PM -0400, Dan Streetman wrote:
+> I'd like some feedback on how possible/useful, or not, it might be to
+> add compression into the page handling code before pages are added to
+> the swapcache.  My thought is that adding a compressed cache at that
+> point may have (at least) two advantages over the existing page
+> compression, zswap and zram, which are both in the swap path.
+> 
+> 1) Both zswap and zram are limited in the amount of memory that they
+> can compress/store:
+> -zswap is limited both in the amount of pre-compressed pages, by the
+> total amount of swap configured in the system, and post-compressed
+> pages, by its max_pool_percentage parameter.  These limitations aren't
+> necessarily a bad thing, just requirements for the user (or distro
+> setup tool, etc) to correctly configure them.  And for optimal
+> operation, they need to coordinate; for example, with the default
+> post-compressed 20% of memory zswap's configured to use, the amount of
+> swap in the system must be at least 40% of system memory (if/when
+> zswap is changed to use zsmalloc that number would need to increase).
+> The point being, there is a clear possibility of misconfiguration, or
+> even a simple lack of enough disk space for actual swap, that could
+> artificially reduce the amount of total memory zswap is able to
+> compress.  Additionally, most of that real disk swap is wasted space -
+> all the pages stored compressed in zswap aren't actually written on
+> the disk.
+> -zram is limited only by its pre-compressed size, and of course the
+> amount of actual system memory it can use for compressed storage.  If
+> using without dm-cache, this could allow essentially unlimited
+> compression until no more compressed pages can be stored; however that
+> requires the zram device to be configured as larger than the actual
+> system memory.  If using with dm-cache, it may not be obvious what the
+> optimal zram size is.
+> 
+> Pre-swapcache compression would theoretically require no user
+> configuration, and the amount of compressed pages would be unlimited
+> (until there is no more room to store compressed pages).
 
-  $ perf stat -e stalled-cycles-frontend -- git s
-  ## acme...ram/acme
+Yes, these are limitations of the current designs.
 
-   Performance counter stats for 'git s':
+> 
+> 2) Both zswap and zram (with dm-cache) write uncompressed pages to disk:
+> -zswap rejects any pages being sent to swap that don't compress well
+> enough, and they're passed on to the swap disk in uncompressed form.
+> Also, once zswap is full it starts uncompressing its old compressed
+> pages and writing them back to the swap disk.
+> -zram, with dm-cache, can pass pages on to the swap disk, but IIUC
+> those pages must be uncompressed first, and then written in compressed
+> form on disk.  (Please correct me here if that is wrong).
 
-         326,947,423      stalled-cycles-frontend   #    0.00% frontend cycles idle
+Yes, again.
 
-         0.363599976 seconds time elapsed
+> 
+> A compressed cache that comes before the swap cache would be able to
+> push pages from its compressed storage to the swap disk, that contain
+> multiple compressed pages (and/or parts of compressed pages, if
+> overlapping page boundries).  I think that would be able to,
+> theoretically at least, improve overall read/write times from a
+> pre-compressed perspective, simply because less actual data would be
+> transferred.  Also, less actual swap disk space would be
+> used/required, which on systems with a very large amount of system
+> memory may be beneficial.
 
-The 0.00% frontend cycles idle comment in the output is totally bogus
-and misleading. Omit printing it here, as well as in the
-stalled-cycles-backend case.
+In theory that could be good.
 
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
----
- tools/perf/builtin-stat.c | 26 ++++++++++++--------------
- 1 file changed, 12 insertions(+), 14 deletions(-)
+However, there are a lot of missing details about how this could
+actually be done.  Of the top of my head, the reason we choose hook
+into the swap path is because it does all the work in both the page
+selection, being reclaimed from the end of the inactive anon LRU, and
+all the work of unmapping the page from the page table and replacing
+it with a swap entry.  In order to do the unmapping, the page must
+already be in the swap cache.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index 8b0e1c9..0bd98fa 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -797,14 +797,13 @@ static void print_stalled_cycles_frontend(int cpu,
- 
- 	total = avg_stats(&runtime_cycles_stats[cpu]);
- 
--	if (total)
-+	if (total) {
- 		ratio = avg / total * 100.0;
--
--	color = get_ratio_color(GRC_STALLED_CYCLES_FE, ratio);
--
--	fprintf(output, " #  ");
--	color_fprintf(output, color, "%6.2f%%", ratio);
--	fprintf(output, " frontend cycles idle   ");
-+		color = get_ratio_color(GRC_STALLED_CYCLES_FE, ratio);
-+		fprintf(output, " #  ");
-+		color_fprintf(output, color, "%6.2f%%", ratio);
-+		fprintf(output, " frontend cycles idle   ");
-+	}
- }
- 
- static void print_stalled_cycles_backend(int cpu,
-@@ -816,14 +815,13 @@ static void print_stalled_cycles_backend(int cpu,
- 
- 	total = avg_stats(&runtime_cycles_stats[cpu]);
- 
--	if (total)
-+	if (total) {
- 		ratio = avg / total * 100.0;
--
--	color = get_ratio_color(GRC_STALLED_CYCLES_BE, ratio);
--
--	fprintf(output, " #  ");
--	color_fprintf(output, color, "%6.2f%%", ratio);
--	fprintf(output, " backend  cycles idle   ");
-+		color = get_ratio_color(GRC_STALLED_CYCLES_BE, ratio);
-+		fprintf(output, " #  ");
-+		color_fprintf(output, color, "%6.2f%%", ratio);
-+		fprintf(output, " backend  cycles idle   ");
-+	}
- }
- 
- static void print_branch_misses(int cpu,
--- 
-1.9.0.431.g014438b
+So I guess I'm not quite sure how you would do this. What did you have
+in mind?
 
+Seth
+
+> 
+> 
+> Additionally, a couple other random possible benefits:
+> -like zswap but unlike zram, a pre-swapcache compressed cache would be
+> able to select which pages to store compressed, either based on poor
+> compression results or some other criteria - possibly userspace could
+> madvise that certain pages were or weren't likely compressible.
+> -while zram and zswap are only able to compress and store pages that
+> are passed to them by zswapd or direct reclaim, a pre-swap compressed
+> cache wouldn't necessarily have to wait until the low watermark is
+> reached.
+> 
+> Any feedback would be greatly appreciated!
