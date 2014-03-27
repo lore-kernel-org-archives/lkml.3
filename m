@@ -1,78 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaC0C1U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 22:27:20 -0400
-Received: from mailout32.mail01.mtsvc.net ([216.70.64.70]:42589 "EHLO
-	n23.mail01.mtsvc.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751240AbaC0C1S (ORCPT
+	id S1752829AbaC0Cbo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 22:31:44 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:9562 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbaC0Cbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 22:27:18 -0400
-Message-ID: <53338C81.3060600@hurleysoftware.com>
-Date: Wed, 26 Mar 2014 22:27:13 -0400
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 26 Mar 2014 22:31:42 -0400
+Message-ID: <53338CFE.3060705@huawei.com>
+Date: Thu, 27 Mar 2014 10:29:18 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: Tony Lindgren <tony@atomide.com>, Greg KH <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        m-karicheri2@ti.com, b32955@freescale.com,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/11] Revert "serial: omap: unlock the port lock"
-References: <1395343807-21618-1-git-send-email-balbi@ti.com> <1395343807-21618-10-git-send-email-balbi@ti.com> <20140325182856.GA31906@atomide.com> <5333732F.6040803@hurleysoftware.com> <20140327021043.GB11651@saruman.home>
-In-Reply-To: <20140327021043.GB11651@saruman.home>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated-User: 990527 peter@hurleysoftware.com
-X-MT-ID: 8FA290C2A27252AACF65DBC4A42F3CE3735FB2A4
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v2 1/3] kmemleak: allow freeing internal objects after
+ kmemleak was disabled
+References: <5326750E.1000004@huawei.com> <F7314A69-24BE-42B9-8E99-8F9292B397C4@arm.com>
+In-Reply-To: <F7314A69-24BE-42B9-8E99-8F9292B397C4@arm.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 10:10 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Wed, Mar 26, 2014 at 08:39:11PM -0400, Peter Hurley wrote:
->> On 03/25/2014 02:28 PM, Tony Lindgren wrote:
->>> * Felipe Balbi <balbi@ti.com> [140320 12:39]:
->>>> This reverts commit 0324a821029e1f54e7a7f8fed48693cfce42dc0e.
->>>>
->>>> That commit tried to fix a deadlock problem when using
->>>> hci_ldisc, but it turns out the bug was in hci_ldsic
->>>> all along where it was calling ->write() from within
->>>> ->write_wakeup() callback.
->>>>
->>>> The problem is that ->write_wakeup() was called with
->>>> port lock held and ->write() tried to grab the same
->>>> port lock.
->>>
->>> Should this and the next patch be earlier in the series
->>> as a fix for the v3.15-rc cycle? Should they be cc: stable
->>> as well?
+(Just came back from travelling)
+
+On 2014/3/22 7:37, Catalin Marinas wrote:
+> Hi Li,
+> 
+> On 17 Mar 2014, at 04:07, Li Zefan <lizefan@huawei.com> wrote:
+>> Currently if kmemleak is disabled, the kmemleak objects can never be freed,
+>> no matter if it's disabled by a user or due to fatal errors.
 >>
->> Well, right now the other fix has had _zero_ testing
->> so not really a -stable candidate just yet.
->
-> how can you even say that ?
+>> Those objects can be a big waste of memory.
+>>
+>>  OBJS ACTIVE  USE OBJ SIZE  SLABS OBJ/SLAB CACHE SIZE NAME
+>> 1200264 1197433  99%    0.30K  46164       26    369312K kmemleak_object
+>>
+>> With this patch, internal objects will be freed immediately if kmemleak is
+>> disabled explicitly by a user. If it's disabled due to a kmemleak error,
+>> The user will be informed, and then he/she can reclaim memory with:
+>>
+>> 	# echo off > /sys/kernel/debug/kmemleak
+>>
+>> v2: use "off" handler instead of "clear" handler to do this, suggested
+>>    by Catalin.
+> 
+> I think there was a slight misunderstanding. My point was about "echo
+> scan=off¡± before ¡°echo off¡±, they can just be squashed into the
+> same action of the latter.
+> 
 
-I misunderstood when you wrote:
+I'm not sure if I understand correctly, so you want the "off" handler to
+stop the scan thread but it will never free kmemleak objects until the 
+user explicitly trigger the "clear" action, right?
 
-On 03/20/2014 02:11 PM, Felipe Balbi wrote:
- > here's a build-tested only patch which is waiting for testing from other
- > colleagues who've got a platform to reproduce the problem:
-
-and then the version I reviewed had no Tested-by: tags.
-
-> Unless you work for some 3 letter acronym
-> organizations, you have no clue about the fact that this was tested on a
-> keystone 2 platform.
-
-Ok.
-
-> How else would we have found the issue to start with ?
-
-Bug report?
-
-Regards,
-Peter Hurley
+> I would keep the ¡°clear¡± part separately as per your first patch. I
+> recall people asked in the past to still be able to analyse the reports
+> even though kmemleak failed or was disabled.
+> 
 
