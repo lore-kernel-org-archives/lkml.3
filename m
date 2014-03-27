@@ -1,146 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742AbaC0Rng (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:43:36 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:43041 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351AbaC0Rnd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:43:33 -0400
-Message-ID: <5334633E.6050708@atmel.com>
-Date: Thu, 27 Mar 2014 18:43:26 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756968AbaC0RoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 13:44:03 -0400
+Received: from sauhun.de ([89.238.76.85]:49570 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755353AbaC0Rn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 13:43:57 -0400
+Date: Thu, 27 Mar 2014 18:43:55 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] i2c for 3.14
+Message-ID: <20140327174349.GA11698@katana>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-kernel@vger.kernel.org>,
-        Hans-Christian Egtvedt <egtvedt@samfundet.no>,
-        Bryan Wu <cooloney@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Jingoo Han <jg1.han@samsung.com>
-CC: <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Haavard Skinnemoen <hskinnemoen@gmail.com>,
-        "Richard Purdie" <rpurdie@rpsys.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-leds@vger.kernel.org>, <linux-pwm@vger.kernel.org>,
-        <linux-fbdev@vger.kernel.org>
-Subject: Re: [PATCH 00/16] move at91 and avr32 to the PWM framework, remove
- obsolete drivers
-References: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1395234209-15546-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/03/2014 14:03, Alexandre Belloni :
-> Hi,
-> 
-> This patch set swtiches the at91 and avr32 SoCs and board to the generic PWM
-> framework. This allows to remove the obsolete leds-atmel-pwm, atmel-pwm-bl and
-> atmel_pwm drivers.
-> 
-> The first 6 patches take care of the AT91 boards and removes a useless function
-> in the process.
-> 
-> Patch 7 makes pwm-ateml buildable for AVR32
-> 
-> Patch 8 allows setting the pwm polarity for pwm_bl when using platform data.
-> This is required afterwards for the favr-32
-> 
-> Patches 9-13 take care of the AVR32 boards. This has only been compile tested as
-> I don't own any of those boards.
-> 
-> And the last 3 patches are removing the now obsolete drivers.
-> 
-> As a note, the atmel_pwm driver has two features not yet available through
-> pwm-atmel:
->  - it is possible to pass an IRQ handler that will get called each time one of
->    the channel period has been acheived.
->  - it was possible to set clka and clkb, two clock that divided mck before
->    feeding the pwm controller.
-> 
-> Those features are not used by anything in the mainline. I'm not sure we can
-> implement the first one. We'll get back the second one once all the boards have
-> swtiched to the common clock framework.
-> 
-> 
-> Alexandre Belloni (16):
->   ARM: at91: at91sam9g45: switch to generic PWM framework
->   ARM: at91: sam9m10g45ek: use generic leds_pwm driver
->   ARM: at91: at91sam9263: switch to generic PWM framework
->   ARM: at91: sam9263ek: use generic leds_pwm driver
->   ARM: at91: at91sam9rl: switch to generic PWM framework
->   ARM: at91: remove useless at91_pwm_leds()
->   PWM: atmel: allow building for AVR32
->   backlight: pwm_bl: set pwm polarity when using platform data
->   avr32/at32ap: switch to the generic PWM framework
->   avr32: MRMT: use generic leds_pwm driver
->   avr32: merisc: use generic leds_pwm driver
->   avr32: favr-32: use generic pwm_bl driver
->   avr32: update defconfig to use the generic PWM framework
->   backlight: atmel-pwm-bl: remove obsolete driver
->   leds: atmel-pwm: remove obsolete driver
->   misc: atmel_pwm: remove obsolete driver
 
-I am fine with the whole series. For the AT91 specific bits, you can add my:
+--ReaqsoxgOBHFXBhH
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Linus,
 
-It is a very nice cleanup and I can take the series with me in the AT91
-git tree (likely the at91-3.16-cleanup or at91-3.16-drivers branch) if
-everybody agree.
+the build fix from my last request unveiled another build problem which
+is fixed with this patch. Please pull.
 
-Bye,
+Thanks,
 
->  arch/arm/mach-at91/at91sam9263.c           |   1 +
->  arch/arm/mach-at91/at91sam9263_devices.c   |  11 +-
->  arch/arm/mach-at91/at91sam9g45.c           |   1 +
->  arch/arm/mach-at91/at91sam9g45_devices.c   |  11 +-
->  arch/arm/mach-at91/at91sam9rl.c            |   1 +
->  arch/arm/mach-at91/at91sam9rl_devices.c    |  11 +-
->  arch/arm/mach-at91/board-sam9263ek.c       |  56 +++-
->  arch/arm/mach-at91/board-sam9m10g45ek.c    |  43 ++-
->  arch/arm/mach-at91/board.h                 |   1 -
->  arch/arm/mach-at91/leds.c                  |  37 ---
->  arch/avr32/boards/atngw100/mrmt.c          |  35 ++-
->  arch/avr32/boards/favr-32/setup.c          |  49 ++--
->  arch/avr32/boards/merisc/setup.c           |  34 ++-
->  arch/avr32/configs/atngw100_mrmt_defconfig |   5 +-
->  arch/avr32/configs/atstk1002_defconfig     |   5 +-
->  arch/avr32/configs/atstk1003_defconfig     |   5 +-
->  arch/avr32/configs/atstk1004_defconfig     |   5 +-
->  arch/avr32/configs/atstk1006_defconfig     |   5 +-
->  arch/avr32/configs/favr-32_defconfig       |   6 +-
->  arch/avr32/configs/merisc_defconfig        |   5 +-
->  arch/avr32/mach-at32ap/at32ap700x.c        |   7 +-
->  drivers/leds/Kconfig                       |   8 -
->  drivers/leds/Makefile                      |   1 -
->  drivers/leds/leds-atmel-pwm.c              | 149 -----------
->  drivers/misc/Kconfig                       |   9 -
->  drivers/misc/Makefile                      |   1 -
->  drivers/misc/atmel_pwm.c                   | 402 -----------------------------
->  drivers/pwm/Kconfig                        |   2 +-
->  drivers/video/backlight/Kconfig            |  11 -
->  drivers/video/backlight/Makefile           |   1 -
->  drivers/video/backlight/atmel-pwm-bl.c     | 223 ----------------
->  drivers/video/backlight/pwm_bl.c           |   8 +
->  include/linux/atmel-pwm-bl.h               |  43 ---
->  include/linux/atmel_pwm.h                  |  70 -----
->  include/linux/pwm_backlight.h              |   1 +
->  35 files changed, 199 insertions(+), 1064 deletions(-)
->  delete mode 100644 drivers/leds/leds-atmel-pwm.c
->  delete mode 100644 drivers/misc/atmel_pwm.c
->  delete mode 100644 drivers/video/backlight/atmel-pwm-bl.c
->  delete mode 100644 include/linux/atmel-pwm-bl.h
->  delete mode 100644 include/linux/atmel_pwm.h
-> 
+   Wolfram
 
 
--- 
-Nicolas Ferre
+The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15:
+
+  Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
+
+for you to fetch changes up to 5f12c5eca6e6b7aeb4b2028d579f614b4fe7a81f:
+
+  i2c: cpm: Fix build by adding of_address.h and of_irq.h (2014-03-24 14:54:21 +0100)
+
+----------------------------------------------------------------
+Scott Wood (1):
+      i2c: cpm: Fix build by adding of_address.h and of_irq.h
+
+ drivers/i2c/busses/i2c-cpm.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+--ReaqsoxgOBHFXBhH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.15 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTNGNVAAoJEBQN5MwUoCm2OjEP/3W4bj4Ab+Uxe8knRgqVqujN
+ybK+PcnXjGtPQa2NYbg8Ei5hCMW8J7DXREJ2wJJkQUdrPDI84UkI7z1uscXQEVc+
+WvjfRhxwbpq3JnAnklcRsWX8mRc/Otkwr1vnrG2tbtytoRUwJJC9hF3XLJsfwMzf
+VvBJ1pLsFaFhAyRuBG7SA238rXTpEhyD38JNGiMzjvFfqgZQvf8g5bjO/iktmFd1
+tH6oQmdvO1A1CnvIkGggUNSiRZ1FWKwP3hbZ960S83sjT5t+MbyhCdE9G9zOfzo5
+oYdf6AgJBCZtg4qGY1LS8Wl1xlV3cuxUzC0A1LQ+aZmBdDnME8oYWKlaPhgMlwEl
+w9wynJjEqDPJEkJtSGA66xXEDspvpaNPM2j/l+/ECNCe840ot75g2qD7NR3ZzUVR
+yGyfgV2CuRVqHoj43P5Udd0cZY1tLSde5Vcmfcxw/TwMp8UxjR3xOodvPiKC0Bky
+GDLBjYXPOZMi2xhknC8bqXGvDm9rktgKrHmNHZVNpfRPVObUu1CTmgsozLvrAduh
+DSOTVWkqF0LAPis8+UyXu39YIraoOiHkYVl1xJ6veWdHtshQsjhC9YH6IV+wHzmN
+yP35xzLgpte+rrf4nkduWsSg12rzK21LbmTy7agBZLPMgJe62+iLYtlX+pj8yGHq
+1wH6GtEXehz4FJaJ0aBr
+=NJs2
+-----END PGP SIGNATURE-----
+
+--ReaqsoxgOBHFXBhH--
