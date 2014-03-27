@@ -1,119 +1,375 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305AbaC0PMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:12:36 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:36943 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaC0PMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:12:35 -0400
-Message-ID: <53343FA5.2080100@oracle.com>
-Date: Thu, 27 Mar 2014 11:11:33 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>
-CC: acme@ghostprotocols.net, paulus@samba.org,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: sched: possible deadlock between fair sched and perf
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755652AbaC0PPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:15:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22089 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753926AbaC0PPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 11:15:44 -0400
+Date: Thu, 27 Mar 2014 11:15:13 -0400
+From: Luiz Capitulino <lcapitulino@redhat.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, mtosatti@redhat.com, aarcange@redhat.com,
+        mgorman@suse.de, akpm@linux-foundation.org, andi@firstfloor.org,
+        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
+        yinghai@kernel.org, riel@redhat.com
+Subject: [PATCH RFC] hugetlb: add support for 1GB huge page allocation at
+ runtime
+Message-ID: <20140327111513.7e19e612@redhat.com>
+Organization: Red Hat
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Currently, 1GB huge page allocation is only possible at boottime, by means
+of the hugepages= command-line option. This has a number of drawbacks, the
+most important of them being:
 
-While fuzzing with trinity inside a KVM tools guest running latest -next
-kernel I've stumbled on the following:
+ 1. On a NUMA machine, the kernel will evenly distribute page allocation
+    among nodes. For example, if you have a NUMA machine with 4 nodes and
+    want to allocate four 1GB huge pages, the kernel will try to allocate
+    one page per node.
 
-[ 2248.545285] ======================================================
-[ 2248.546809] [ INFO: possible circular locking dependency detected ]
-[ 2248.548540] 3.14.0-rc8-next-20140326-sasha-00018-gffbc974-dirty #285 Not tainted
-[ 2248.550180] -------------------------------------------------------
-[ 2248.550180] trinity-c47/15728 is trying to acquire lock:
-[ 2248.550180]  (&rq->lock){-.-.-.}, at: unregister_fair_sched_group (kernel/sched/fair.c:7536)
-[ 2248.550180]
-[ 2248.550180] but task is already holding lock:
-[ 2248.550180]  (&ctx->lock){-.-...}, at: perf_event_exit_task (kernel/events/core.c:7415 kernel/events/core.c:7492)
-[ 2248.550180]
-[ 2248.550180] which lock already depends on the new lock.
-[ 2248.550180]
-[ 2248.550180]
-[ 2248.550180] the existing dependency chain (in reverse order) is:
-[ 2248.550180]
--> #1 (&ctx->lock){-.-...}:
-[ 2248.550180]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[ 2248.550180]        _raw_spin_lock (include/linux/spinlock_api_smp.h:143 kernel/locking/spinlock.c:151)
-[ 2248.550180]        __perf_event_task_sched_out (kernel/events/core.c:2340 kernel/events/core.c:2366)
-[ 2248.550180]        perf_event_task_sched_out (include/linux/perf_event.h:689)
-[ 2248.550180]        __schedule (kernel/sched/core.c:2064 kernel/sched/core.c:2102 kernel/sched/core.c:2226 kernel/sched/core.c:2713)
-[ 2248.550180]        preempt_schedule_irq (arch/x86/include/asm/paravirt.h:814 kernel/sched/core.c:2829)
-[ 2248.550180]        retint_kernel (arch/x86/kernel/entry_64.S:1111)
-[ 2248.550180]        syscall_trace_leave (arch/x86/kernel/ptrace.c:1535)
-[ 2248.550180]        int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:797)
-[ 2248.550180]
--> #0 (&rq->lock){-.-.-.}:
-[ 2248.550180]        __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-[ 2248.550180]        lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[ 2248.550180]        _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
-[ 2248.550180]        unregister_fair_sched_group (kernel/sched/fair.c:7536)
-[ 2248.550180]        sched_offline_group (include/linux/cpumask.h:173 kernel/sched/core.c:7203)
-[ 2248.550180]        sched_autogroup_exit (kernel/sched/auto_group.c:39 include/linux/kref.h:74 include/linux/kref.h:99 kernel/sched/auto_group.c:44 kernel/sched/auto_group.c:186)
-[ 2248.550180]        __put_task_struct (kernel/fork.c:228 kernel/fork.c:234 kernel/fork.c:247)
-[ 2248.550180]        put_ctx (include/linux/sched.h:1807 kernel/events/core.c:896)
-[ 2248.550180]        perf_event_exit_task (kernel/events/core.c:905 kernel/events/core.c:7422 kernel/events/core.c:7492)
-[ 2248.550180]        do_exit (kernel/exit.c:801)
-[ 2248.550180]        do_group_exit (kernel/exit.c:919)
-[ 2248.550180]        SyS_exit_group (kernel/exit.c:930)
-[ 2248.550180]        tracesys (arch/x86/kernel/entry_64.S:749)
-[ 2248.550180]
-[ 2248.550180] other info that might help us debug this:
-[ 2248.550180]
-[ 2248.550180]  Possible unsafe locking scenario:
-[ 2248.550180]
-[ 2248.550180]        CPU0                    CPU1
-[ 2248.550180]        ----                    ----
-[ 2248.550180]   lock(&ctx->lock);
-[ 2248.550180]                                lock(&rq->lock);
-[ 2248.550180]                                lock(&ctx->lock);
-[ 2248.550180]   lock(&rq->lock);
-[ 2248.550180]
-[ 2248.550180]  *** DEADLOCK ***
-[ 2248.550180]
-[ 2248.550180] 1 lock held by trinity-c47/15728:
-[ 2248.550180]  #0:  (&ctx->lock){-.-...}, at: perf_event_exit_task (kernel/events/core.c:7415 kernel/events/core.c:7492)
-[ 2248.550180]
-[ 2248.550180] stack backtrace:
-[ 2248.550180] CPU: 31 PID: 15728 Comm: trinity-c47 Not tainted 3.14.0-rc8-next-20140326-sasha-00018-gffbc974-dirty #285
-[ 2248.550180]  ffffffffb19711d0 ffff88056563bb78 ffffffffae4b5057 0000000000000000
-[ 2248.550180]  ffffffffb19711d0 ffff88056563bbc8 ffffffffae4a7b57 0000000000000001
-[ 2248.550180]  ffff88056563bc58 ffff88056563bbc8 ffff880553f20cf0 ffff880553f20d28
-[ 2248.550180] Call Trace:
-[ 2248.550180]  dump_stack (lib/dump_stack.c:52)
-[ 2248.550180]  print_circular_bug (kernel/locking/lockdep.c:1216)
-[ 2248.550180]  __lock_acquire (kernel/locking/lockdep.c:1840 kernel/locking/lockdep.c:1945 kernel/locking/lockdep.c:2131 kernel/locking/lockdep.c:3182)
-[ 2248.550180]  ? sched_clock (arch/x86/include/asm/paravirt.h:192 arch/x86/kernel/tsc.c:305)
-[ 2248.550180]  ? sched_clock_local (kernel/sched/clock.c:214)
-[ 2248.550180]  ? __slab_free (include/linux/spinlock.h:358 mm/slub.c:2632)
-[ 2248.550180]  ? debug_smp_processor_id (lib/smp_processor_id.c:57)
-[ 2248.550180]  lock_acquire (arch/x86/include/asm/current.h:14 kernel/locking/lockdep.c:3602)
-[ 2248.550180]  ? unregister_fair_sched_group (kernel/sched/fair.c:7536)
-[ 2248.550180]  ? _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:109 kernel/locking/spinlock.c:159)
-[ 2248.550180]  _raw_spin_lock_irqsave (include/linux/spinlock_api_smp.h:117 kernel/locking/spinlock.c:159)
-[ 2248.550180]  ? unregister_fair_sched_group (kernel/sched/fair.c:7536)
-[ 2248.550180]  unregister_fair_sched_group (kernel/sched/fair.c:7536)
-[ 2248.550180]  sched_offline_group (include/linux/cpumask.h:173 kernel/sched/core.c:7203)
-[ 2248.550180]  sched_autogroup_exit (kernel/sched/auto_group.c:39 include/linux/kref.h:74 include/linux/kref.h:99 kernel/sched/auto_group.c:44 kernel/sched/auto_group.c:186)
-[ 2248.550180]  __put_task_struct (kernel/fork.c:228 kernel/fork.c:234 kernel/fork.c:247)
-[ 2248.550180]  put_ctx (include/linux/sched.h:1807 kernel/events/core.c:896)
-[ 2248.550180]  perf_event_exit_task (kernel/events/core.c:905 kernel/events/core.c:7422 kernel/events/core.c:7492)
-[ 2248.550180]  do_exit (kernel/exit.c:801)
-[ 2248.550180]  do_group_exit (kernel/exit.c:919)
-[ 2248.550180]  SyS_exit_group (kernel/exit.c:930)
-[ 2248.550180]  tracesys (arch/x86/kernel/entry_64.S:749)
+    On the other hand, we have users who want to be able to specify
+    from which node an allocation should be made. For example, they
+    want to be able to allocate two 1GB huge pages from node 1 only.
+    Supporting this use-case is the main motivation for this feature.
 
+ 2. Once allocated, boottime huge pages can't be freed
 
-Thanks,
-Sasha
+This commit solves both issues by adding support for allocating 1GB huge
+pages during runtime, just like 2MB huge pages, which supports NUMA and
+has a standard use interface in sysfs.
+
+For example, to allocate two 1GB huge pages from node 1, one can do:
+
+ # echo 2 > \
+   /sys/devices/system/node/node1/hugepages/hugepages-1048576kB/nr_hugepages
+
+  (You need hugeTLB properly configured to have that sysfs entry)
+
+The one problem with 1GB huge page runtime allocation is that such gigantic
+allocation can't be serviced by the buddy allocator, which is limited to
+allocating 2048 pages on most archs. To overcome that problem, we scan all
+zones from a node looking for a 1GB contiguous region. When one is found,
+it's allocated by using CMA, that is, we call alloc_contig_range().
+
+One expected issue with 1GB huge page support is that free 1GB contiguous
+regions tend to vanish as time goes by. The best way to avoid this for now
+is to make 1GB huge pages allocations very early during boot, say from a
+init script. Other possible optimization include using compaction, which
+is already supported by CMA but is not explicitly used by this commit.
+
+This patch is quite complete and works, I'm labelling it RFC because of
+the following:
+
+1. I haven't tested surplus pages, cgroup support, allocating through
+   hugetlbfs and a few other things
+
+2. I haven't looked at adding 1GB huge page support to alloc_huge_page_node(),
+   which seems to allocate huge pages on demand. Do we need this for the
+   first merge?
+
+3. Should 1GB huge page allocation code update HTLB_BUDDY_PGALLOC and
+   HTLB_BUDDY_PGALLOC_FAIL? I think it shouldn't, as we don't allocate from
+   the buddy
+
+Signed-off-by: Luiz Capitulino <lcapitulino@redhat.com>
+---
+
+This patch is a follow up for this series:
+
+ http://marc.info/?l=linux-mm&m=139234006724423&w=2
+
+That series introduced a command-line option to allow the user to specify from
+which NUMA node a 1GB hugepage allocation should be made. In that discussion
+is was suggested that having support for runtime allocation was a better solution.
+
+ arch/x86/include/asm/hugetlb.h |  10 +++
+ include/linux/hugetlb.h        |   5 ++
+ mm/hugetlb.c                   | 176 ++++++++++++++++++++++++++++++++++++++---
+ 3 files changed, 181 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
+index a809121..2b262f7 100644
+--- a/arch/x86/include/asm/hugetlb.h
++++ b/arch/x86/include/asm/hugetlb.h
+@@ -91,6 +91,16 @@ static inline void arch_release_hugepage(struct page *page)
+ {
+ }
+ 
++static inline int arch_prepare_gigantic_page(struct page *page)
++{
++	return 0;
++}
++
++static inline void arch_release_gigantic_page(struct page *page)
++{
++}
++
++
+ static inline void arch_clear_hugepage_flags(struct page *page)
+ {
+ }
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 8c43cc4..8590134 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -333,6 +333,11 @@ static inline unsigned huge_page_shift(struct hstate *h)
+ 	return h->order + PAGE_SHIFT;
+ }
+ 
++static inline bool hstate_is_gigantic(struct hstate *h)
++{
++	return huge_page_order(h) >= MAX_ORDER;
++}
++
+ static inline unsigned int pages_per_huge_page(struct hstate *h)
+ {
+ 	return 1 << h->order;
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index c01cb9f..53b5ddc 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -570,11 +570,146 @@ err:
+ 	return NULL;
+ }
+ 
++#ifdef CONFIG_CMA
++static void destroy_compound_gigantic_page(struct page *page,
++					unsigned long order)
++{
++	int i;
++	int nr_pages = 1 << order;
++	struct page *p = page + 1;
++
++	for (i = 1; i < nr_pages; i++, p = mem_map_next(p, page, i)) {
++		__ClearPageTail(p);
++		set_page_refcounted(p);
++		p->first_page = NULL;
++	}
++
++	set_compound_order(page, 0);
++	__ClearPageHead(page);
++}
++
++static void free_gigantic_page(struct page *page, unsigned order)
++{
++	free_contig_range(page_to_pfn(page), 1 << order);
++}
++
++static int __alloc_gigantic_page(unsigned long start_pfn, unsigned long count)
++{
++	unsigned long end_pfn = start_pfn + count;
++	return alloc_contig_range(start_pfn, end_pfn, MIGRATE_MOVABLE);
++}
++
++static bool pfn_valid_gigantic(unsigned long pfn)
++{
++	struct page *page;
++
++	if (!pfn_valid(pfn))
++		return false;
++
++	page = pfn_to_page(pfn);
++
++	if (PageReserved(page))
++		return false;
++
++	if (page_count(page) > 0)
++		return false;
++
++	return true;
++}
++
++static bool pfn_aligned_gigantic(unsigned long pfn, unsigned order)
++{
++	return IS_ALIGNED((phys_addr_t) pfn << PAGE_SHIFT, PAGE_SIZE << order);
++}
++
++static struct page *alloc_gigantic_page(int nid, unsigned order)
++{
++	unsigned long ret, i, count, start_pfn, flags;
++	unsigned long nr_pages = 1 << order;
++	struct zone *z;
++
++	z = NODE_DATA(nid)->node_zones;
++	for (; z - NODE_DATA(nid)->node_zones < MAX_NR_ZONES; z++) {
++		spin_lock_irqsave(&z->lock, flags);
++		if (z->spanned_pages < nr_pages) {
++			spin_unlock_irqrestore(&z->lock, flags);
++			continue;
++		}
++
++		/* scan zone 'z' looking for a contiguous 'nr_pages' range */
++		count = 0;
++		start_pfn = z->zone_start_pfn; /* to silence gcc */
++		for (i = z->zone_start_pfn; i < zone_end_pfn(z); i++) {
++			if (!pfn_valid_gigantic(i)) {
++				count = 0;
++				continue;
++			}
++			if (!count) {
++				if (!pfn_aligned_gigantic(i, order))
++					continue;
++				start_pfn = i;
++			}
++			if (++count == nr_pages) {
++				/*
++				 * We release the zone lock here because
++				 * alloc_contig_range() will also lock the zone
++				 * at some point. If there's an allocation
++				 * spinning on this lock, it may win the race
++				 * and cause alloc_contig_range() to fail...
++				 */
++				spin_unlock_irqrestore(&z->lock, flags);
++				ret = __alloc_gigantic_page(start_pfn, count);
++				if (!ret)
++					return pfn_to_page(start_pfn);
++				count = 0;
++				spin_lock_irqsave(&z->lock, flags);
++			}
++		}
++
++		spin_unlock_irqrestore(&z->lock, flags);
++	}
++
++	return NULL;
++}
++
++static void prep_new_huge_page(struct hstate *h, struct page *page, int nid);
++static void prep_compound_gigantic_page(struct page *page, unsigned long order);
++
++static struct page *alloc_fresh_gigantic_page_node(struct hstate *h, int nid)
++{
++	struct page *page;
++
++	page = alloc_gigantic_page(nid, huge_page_order(h));
++	if (page) {
++		if (arch_prepare_gigantic_page(page)) {
++			free_gigantic_page(page, huge_page_order(h));
++			return NULL;
++		}
++		prep_compound_gigantic_page(page, huge_page_order(h));
++		prep_new_huge_page(h, page, nid);
++	}
++
++	return page;
++}
++static inline bool gigantic_page_supported(void) { return true; }
++#else /* !CONFIG_CMA */
++static inline bool gigantic_page_supported(void) { return false; }
++static inline struct page *alloc_fresh_gigantic_page_node(struct hstate *h,
++							int nid)
++{
++	return NULL;
++}
++static inline void free_gigantic_page(struct page *page, unsigned order) {}
++static inline void destroy_compound_gigantic_page(struct page *page,
++						unsigned long order) { }
++#endif /* CONFIG_CMA */
++
+ static void update_and_free_page(struct hstate *h, struct page *page)
+ {
+ 	int i;
+ 
+-	VM_BUG_ON(h->order >= MAX_ORDER);
++	if (hstate_is_gigantic(h) && !gigantic_page_supported())
++		return;
+ 
+ 	h->nr_huge_pages--;
+ 	h->nr_huge_pages_node[page_to_nid(page)]--;
+@@ -587,8 +722,14 @@ static void update_and_free_page(struct hstate *h, struct page *page)
+ 	VM_BUG_ON_PAGE(hugetlb_cgroup_from_page(page), page);
+ 	set_compound_page_dtor(page, NULL);
+ 	set_page_refcounted(page);
+-	arch_release_hugepage(page);
+-	__free_pages(page, huge_page_order(h));
++	if (huge_page_order(h) < MAX_ORDER) {
++		arch_release_hugepage(page);
++		__free_pages(page, huge_page_order(h));
++	} else {
++		arch_release_gigantic_page(page);
++		destroy_compound_gigantic_page(page, huge_page_order(h));
++		free_gigantic_page(page, huge_page_order(h));
++	}
+ }
+ 
+ struct hstate *size_to_hstate(unsigned long size)
+@@ -731,9 +872,6 @@ static struct page *alloc_fresh_huge_page_node(struct hstate *h, int nid)
+ {
+ 	struct page *page;
+ 
+-	if (h->order >= MAX_ORDER)
+-		return NULL;
+-
+ 	page = alloc_pages_exact_node(nid,
+ 		htlb_alloc_mask(h)|__GFP_COMP|__GFP_THISNODE|
+ 						__GFP_REPEAT|__GFP_NOWARN,
+@@ -822,6 +960,21 @@ static int hstate_next_node_to_free(struct hstate *h, nodemask_t *nodes_allowed)
+ 		((node = hstate_next_node_to_free(hs, mask)) || 1);	\
+ 		nr_nodes--)
+ 
++static int alloc_fresh_gigantic_page(struct hstate *h,
++				nodemask_t *nodes_allowed)
++{
++	struct page *page = NULL;
++	int nr_nodes, node;
++
++	for_each_node_mask_to_alloc(h, nr_nodes, node, nodes_allowed) {
++		page = alloc_fresh_gigantic_page_node(h, node);
++		if (page)
++			return 1;
++	}
++
++	return 0;
++}
++
+ static int alloc_fresh_huge_page(struct hstate *h, nodemask_t *nodes_allowed)
+ {
+ 	struct page *page;
+@@ -1451,7 +1604,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ {
+ 	unsigned long min_count, ret;
+ 
+-	if (h->order >= MAX_ORDER)
++	if (hstate_is_gigantic(h) && !gigantic_page_supported())
+ 		return h->max_huge_pages;
+ 
+ 	/*
+@@ -1478,7 +1631,10 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ 		 * and reducing the surplus.
+ 		 */
+ 		spin_unlock(&hugetlb_lock);
+-		ret = alloc_fresh_huge_page(h, nodes_allowed);
++		if (huge_page_order(h) < MAX_ORDER)
++			ret = alloc_fresh_huge_page(h, nodes_allowed);
++		else
++			ret = alloc_fresh_gigantic_page(h, nodes_allowed);
+ 		spin_lock(&hugetlb_lock);
+ 		if (!ret)
+ 			goto out;
+@@ -1577,7 +1733,7 @@ static ssize_t nr_hugepages_store_common(bool obey_mempolicy,
+ 		goto out;
+ 
+ 	h = kobj_to_hstate(kobj, &nid);
+-	if (h->order >= MAX_ORDER) {
++	if (hstate_is_gigantic(h) && !gigantic_page_supported()) {
+ 		err = -EINVAL;
+ 		goto out;
+ 	}
+@@ -2071,7 +2227,7 @@ static int hugetlb_sysctl_handler_common(bool obey_mempolicy,
+ 
+ 	tmp = h->max_huge_pages;
+ 
+-	if (write && h->order >= MAX_ORDER)
++	if (write && hstate_is_gigantic(h) && !gigantic_page_supported())
+ 		return -EINVAL;
+ 
+ 	table->data = &tmp;
+-- 
+1.8.1.4
+
