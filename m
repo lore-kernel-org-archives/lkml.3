@@ -1,86 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317AbaC0NU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 09:20:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26809 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753781AbaC0NUz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 09:20:55 -0400
-Message-ID: <53341E87.3030604@redhat.com>
-Date: Thu, 27 Mar 2014 13:50:15 +0100
-From: Daniel Borkmann <dborkman@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	id S1756778AbaC0NWt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 09:22:49 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:56290 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756498AbaC0NWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 09:22:47 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>, mturquette@linaro.org,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH RFC v3 2/2] clk: Add handling of clk parent and rate assigned from DT
+Date: Thu, 27 Mar 2014 14:24:44 +0100
+Message-ID: <77553409.zvN7VkNGe7@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1395922579-28547-3-git-send-email-s.nawrocki@samsung.com>
+References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com> <1395922579-28547-3-git-send-email-s.nawrocki@samsung.com>
 MIME-Version: 1.0
-To: Hannes Frederic Sowa <hannes@stressinduktion.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, davem@davemloft.net, tytso@mit.edu,
-        linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
-Subject: Re: [PATCH] random32: avoid attempt to late reseed if in the middle
- of seeding
-References: <1395853958-5083-1-git-send-email-sasha.levin@oracle.com> <53336049.4060901@redhat.com> <53336425.6030409@oracle.com> <20140327022138.GB30181@order.stressinduktion.org> <5333E983.2030509@redhat.com> <20140327091849.GC30181@order.stressinduktion.org>
-In-Reply-To: <20140327091849.GC30181@order.stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2014 10:18 AM, Hannes Frederic Sowa wrote:
-> On Thu, Mar 27, 2014 at 10:04:03AM +0100, Daniel Borkmann wrote:
->> On 03/27/2014 03:21 AM, Hannes Frederic Sowa wrote:
->>> On Wed, Mar 26, 2014 at 07:35:01PM -0400, Sasha Levin wrote:
->>>> On 03/26/2014 07:18 PM, Daniel Borkmann wrote:
->>>>> On 03/26/2014 06:12 PM, Sasha Levin wrote:
->>>>>> Commit 4af712e8df ("random32: add prandom_reseed_late() and call when
->>>>>> nonblocking pool becomes initialized") has added a late reseed stage
->>>>>> that happens as soon as the nonblocking pool is marked as initialized.
->>>>>>
->>>>>> This fails in the case that the nonblocking pool gets initialized
->>>>>> during __prandom_reseed()'s call to get_random_bytes(). In that case
->>>>>> we'd double back into __prandom_reseed() in an attempt to do a late
->>>>>> reseed - deadlocking on 'lock' early on in the boot process.
->>>>>>
->>>>>> Instead, just avoid even waiting to do a reseed if a reseed is already
->>>>>> occuring.
->>>>>>
->>>>>> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
->>>>>
->>>>> Thanks for catching! (If you want Dave to pick it up, please also
->>>>> Cc netdev.)
->>>>>
->>>>> Why not via spin_trylock_irqsave() ? Thus, if we already hold the
->>>>> lock, we do not bother any longer with doing the same work twice
->>>>> and just return.
->>>
->>> I totally agree with Daniel spin_trylock_irqsave seems like the best
->>> solution.
->>>
->>> In case we really want to make sure that even early seeding doesn't
->>> race with late seed and the pool is only filled by another CPU, we would
->>> actually need per-cpu bools to get this case correct.
->>
->> But then again, we would just exit via spin_trylock_irqsave()
->> now, no? Whenever something enters this section protected under
->> irq save spinlock we would do a reseed of the entire state (s1-s4)
->> for each cpu.
->
-> If early reseed races with late one, we would actually need to spin on
-> maybe another cpu, so the early call can leave critical section before
-> late call enters. If we don't spin we could possibly miss the late call
-> when nonblocking pool is fully seeded (entropy may be added in batches
-> and first cpus of the early reseeding might miss better entropy).
->
-> If the early call blocks the late call, maybe even on another cpu, the late
-> call should spin until the early call left the critical section. We can only
-> deadlock on same cpu.
->
-> I consider this just hypothetical.
+Hi Sylwester,
 
-I think I agree with you, it seems hypothetical. We perhaps could have
-tested e.g. if the nonblocking pool is initialized and in case not,
-would have a fallback to get_random_bytes_arch() for that short time
-to have presumably better 'entropy'. On the other hand, if the _arch()
-version would have been backdoored by the NSA, as we possibly reseed
-all states later on, or just s1 and xor it with all other states, it
-seems that eventually there's still no real gain for doing that. So
-the spin_trylock_irqsave() version seems okay ... plus prandom() API
-is not cryptographically secure anyway.
+Thank you for the patch.
+
+On Thursday 27 March 2014 13:16:19 Sylwester Nawrocki wrote:
+> This function adds a helper function to configure clock parents and rates
+> as specified in clock-parents, clock-rates DT properties for a consumer
+> device and a call to it before driver is bound to a device.
+> 
+> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> ---
+> Changes since v2:
+>  - edited in clock-bindings.txt, added note about 'assigned-clocks'
+>    subnode which may be used to specify "global" clocks configuration
+>    at a clock provider node,
+>  - moved of_clk_device_setup() function declaration from clk-provider.h
+>    to clk-conf.h so required function stubs are available when
+>    CONFIG_COMMON_CLK is not enabled,
+> 
+> Changes since v1:
+>  - the helper function to parse and set assigned clock parents and
+>    rates made public so it is available to clock providers to call
+>    directly;
+>  - dropped the platform bus notification and call of_clk_device_setup()
+>    is is now called from the driver core, rather than from the
+>    notification callback;
+>  - s/of_clk_get_list_entry/of_clk_get_by_property.
+> ---
+>  .../devicetree/bindings/clock/clock-bindings.txt   |   26 ++++++
+>  drivers/base/dd.c                                  |    7 ++
+>  drivers/clk/Makefile                               |    1 +
+>  drivers/clk/clk-conf.c                             |   87 +++++++++++++++++
+>  drivers/clk/clk.c                                  |   10 ++-
+>  include/linux/clk/clk-conf.h                       |   19 +++++
+>  6 files changed, 149 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/clk/clk-conf.c
+>  create mode 100644 include/linux/clk/clk-conf.h
+> 
+> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> b/Documentation/devicetree/bindings/clock/clock-bindings.txt index
+> 7c52c29..b452f80 100644
+> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> @@ -115,3 +115,29 @@ clock signal, and a UART.
+>    ("pll" and "pll-switched").
+>  * The UART has its baud clock connected the external oscillator and its
+>    register clock connected to the PLL clock (the "pll-switched" signal)
+> +
+> +==Assigned clock parents and rates==
+> +
+> +Some platforms require static initial configuration of parts of the clocks
+> +controller. Such a configuration can be specified in a clock consumer node
+> +through clock-parents and clock-rates DT properties. The former should
+> contain
+> +a list of parent clocks in form of phandle and clock specifier pairs, the
+> +latter the list of assigned clock frequency values (one cell each).
+> +
+> +    uart@a000 {
+> +        compatible = "fsl,imx-uart";
+> +        reg = <0xa000 0x1000>;
+> +        ...
+> +        clocks = <&clkcon 0>, <&clkcon 3>;
+> +        clock-names = "baud", "mux";
+> +
+> +        clock-parents = <0>, <&pll 1>;
+> +        clock-rates = <460800>;
+> +    };
+> +
+> +In this example the pll is set as parent of "mux" clock and frequency of
+> "baud"
+> +clock is specified as 460800 Hz.
+
+I'm curious, what should happen when two devices have conflicting requirements 
+? If a different device required the <&clkcon 3> parent to be set to <&pll 2> 
+for instance, who should win ? Shouldn't a warning be printed ?
+
+> +For clocks which are not directly connected to any consumer device
+> similarly
+> +clocks, clock-parents and/or clock-rates properties should be specified in
+> +assigned-clocks subnode of a clock controller DT node.
+
+It might be that I'm not familiar enough with the clock framework, but this 
+sounds unclear to me. I'm not sure what you mean exactly.
+
+> diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+> index 0605176..4c633e7 100644
+> --- a/drivers/base/dd.c
+> +++ b/drivers/base/dd.c
+> @@ -25,6 +25,7 @@
+>  #include <linux/async.h>
+>  #include <linux/pm_runtime.h>
+>  #include <linux/pinctrl/devinfo.h>
+> +#include <linux/clk/clk-conf.h>
+> 
+>  #include "base.h"
+>  #include "power/power.h"
+> @@ -278,6 +279,12 @@ static int really_probe(struct device *dev, struct
+> device_driver *drv) if (ret)
+>  		goto probe_failed;
+> 
+> +	if (dev->of_node) {
+> +		ret = of_clk_device_init(dev->of_node);
+> +		if (ret)
+> +			goto probe_failed;
+> +	}
+> +
+>  	if (driver_sysfs_add(dev)) {
+>  		printk(KERN_ERR "%s: driver_sysfs_add(%s) failed\n",
+>  			__func__, dev_name(dev));
+> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
+> index a367a98..c720e4b 100644
+> --- a/drivers/clk/Makefile
+> +++ b/drivers/clk/Makefile
+> @@ -8,6 +8,7 @@ obj-$(CONFIG_COMMON_CLK)	+= clk-fixed-rate.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-gate.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-mux.o
+>  obj-$(CONFIG_COMMON_CLK)	+= clk-composite.o
+> +obj-$(CONFIG_COMMON_CLK)	+= clk-conf.o
+> 
+>  # hardware specific clock types
+>  # please keep this section sorted lexicographically by file/directory path
+> name diff --git a/drivers/clk/clk-conf.c b/drivers/clk/clk-conf.c
+> new file mode 100644
+> index 0000000..a2e992e
+> --- /dev/null
+> +++ b/drivers/clk/clk-conf.c
+> @@ -0,0 +1,87 @@
+> +/*
+> + * Copyright (C) 2014 Samsung Electronics Co., Ltd.
+> + * Sylwester Nawrocki <s.nawrocki@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/clk.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/device.h>
+> +#include <linux/of.h>
+> +#include <linux/printk.h>
+> +
+> +/**
+> + * of_clk_device_init() - parse and set clk configuration assigned to a
+> device + * @node: device node to apply the configuration for
+> + *
+> + * This function parses 'clock-parents' and 'clock-rates' properties and
+> sets + * any specified clock parents and rates.
+> + */
+> +int of_clk_device_init(struct device_node *node)
+> +{
+> +	struct property	*prop;
+> +	const __be32 *cur;
+> +	int rc, index, num_parents;
+> +	struct clk *clk, *pclk;
+> +	u32 rate;
+> +
+> +	num_parents = of_count_phandle_with_args(node, "clock-parents",
+> +						 "#clock-cells");
+> +	if (num_parents == -EINVAL)
+> +		pr_err("clk: Invalid value of clock-parents property at %s\n",
+> +		       node->full_name);
+> +
+> +	for (index = 0; index < num_parents; index++) {
+> +		pclk = of_clk_get_by_property(node, "clock-parents", index);
+> +		if (IS_ERR(pclk)) {
+> +			/* skip empty (null) phandles */
+> +			if (PTR_ERR(pclk) == -ENOENT)
+> +				continue;
+> +
+> +			pr_warn("clk: couldn't get parent clock %d for %s\n",
+> +				index, node->full_name);
+> +			return PTR_ERR(pclk);
+> +		}
+> +
+> +		clk = of_clk_get(node, index);
+> +		if (IS_ERR(clk)) {
+> +			pr_warn("clk: couldn't get clock %d for %s\n",
+> +				index, node->full_name);
+> +			return PTR_ERR(clk);
+> +		}
+> +
+> +		rc = clk_set_parent(clk, pclk);
+> +		if (rc < 0)
+> +			pr_err("clk: failed to reparent %s to %s: %d\n",
+> +			       __clk_get_name(clk), __clk_get_name(pclk), rc);
+> +		else
+> +			pr_debug("clk: set %s as parent of %s\n",
+> +				 __clk_get_name(pclk), __clk_get_name(clk));
+> +	}
+> +
+> +	index = 0;
+> +	of_property_for_each_u32(node, "clock-rates", prop, cur, rate) {
+> +		if (rate) {
+> +			clk = of_clk_get(node, index);
+> +			if (IS_ERR(clk)) {
+> +				pr_warn("clk: couldn't get clock %d for %s\n",
+> +					index, node->full_name);
+> +				return PTR_ERR(clk);
+> +			}
+> +
+> +			rc = clk_set_rate(clk, rate);
+> +			if (rc < 0)
+> +				pr_err("clk: couldn't set %s clock rate: %d\n",
+> +				       __clk_get_name(clk), rc);
+> +			else
+> +				pr_debug("clk: set rate of clock %s to %lu\n",
+> +					 __clk_get_name(clk), clk_get_rate(clk));
+> +		}
+> +		index++;
+> +	}
+> +
+> +	return 0;
+> +}
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 29dc1e7..240d776 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -10,6 +10,7 @@
+>   */
+> 
+>  #include <linux/clk-private.h>
+> +#include <linux/clk/clk-conf.h>
+>  #include <linux/module.h>
+>  #include <linux/mutex.h>
+>  #include <linux/spinlock.h>
+> @@ -2604,7 +2605,15 @@ void __init of_clk_init(const struct of_device_id
+> *matches) list_for_each_entry_safe(clk_provider, next,
+>  					&clk_provider_list, node) {
+>  			if (force || parent_ready(clk_provider->np)) {
+> +
+>  				clk_provider->clk_init_cb(clk_provider->np);
+> +
+> +				/* Set any assigned clock parents and rates */
+> +				np = of_get_child_by_name(clk_provider->np,
+> +							  "assigned-clocks");
+> +				if (np)
+> +					of_clk_device_init(np);
+> +
+>  				list_del(&clk_provider->node);
+>  				kfree(clk_provider);
+>  				is_init_done = true;
+> @@ -2619,7 +2628,6 @@ void __init of_clk_init(const struct of_device_id
+> *matches) */
+>  		if (!is_init_done)
+>  			force = true;
+> -
+>  	}
+>  }
+>  #endif
+> diff --git a/include/linux/clk/clk-conf.h b/include/linux/clk/clk-conf.h
+> new file mode 100644
+> index 0000000..f06b1c2
+> --- /dev/null
+> +++ b/include/linux/clk/clk-conf.h
+> @@ -0,0 +1,19 @@
+> +/*
+> + * Copyright (C) 2014 Samsung Electronics Co., Ltd.
+> + * Sylwester Nawrocki <s.nawrocki@samsung.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +struct device_node;
+> +
+> +#if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
+> +int of_clk_device_init(struct device_node *node);
+> +#else
+> +int of_clk_device_init(struct device_node *node)
+> +{
+> +	return 0;
+> +}
+> +#endif
+
+-- 
+Regards,
+
+Laurent Pinchart
+
