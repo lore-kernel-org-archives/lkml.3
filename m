@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754661AbaC0Ijk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:39:40 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:57976 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531AbaC0IjL (ORCPT
+	id S1754601AbaC0Iji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 04:39:38 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:46530 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338AbaC0IjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:39:11 -0400
-Message-ID: <5333E3A8.3050405@gmail.com>
-Date: Thu, 27 Mar 2014 09:39:04 +0100
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 27 Mar 2014 04:39:02 -0400
 MIME-Version: 1.0
-To: Boris BREZILLON <brezillonboris@gmail.com>,
-        Fabio Estevam <festevam@gmail.com>,
-        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
-        Gregory Clement <gregory.clement@free-electrons.com>
-CC: devicetree@vger.kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: imx6/dt: add ccm dependency upon ckil, ckih1 and
- osc clocks
-References: <5333DA13.2080505@gmail.com> <1395907913-23808-1-git-send-email-b.brezillon.dev@gmail.com>
-In-Reply-To: <1395907913-23808-1-git-send-email-b.brezillon.dev@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <532C394A.3050408@hurleysoftware.com>
+References: <1395392905-29569-1-git-send-email-geert@linux-m68k.org>
+	<532C394A.3050408@hurleysoftware.com>
+Date: Thu, 27 Mar 2014 09:38:06 +0100
+X-Google-Sender-Auth: ptkldp-5JZnr4XoiijrWXVLnOM4
+Message-ID: <CAMuHMdW5R=fQLQiiz8YHwn8ZJe3znrtGExRG52haUfUkzWzsyA@mail.gmail.com>
+Subject: Re: [PATCH resend] serial_core: Fix pm imbalance on unbind
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 27/03/2014 09:11, Boris BREZILLON a écrit :
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->   arch/arm/boot/dts/imx6qdl.dtsi |    4 ++++
->   1 file changed, 4 insertions(+)
+On Fri, Mar 21, 2014 at 2:06 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
+>> When a serial port is closed, uart_close() takes care of shutting down the
+>> hardware, and powering it down.
+>>
+>> When a serial port is unbound while in use, uart_close() bypasses all of
+>> this, as this is supposed to be done through uart_hangup() (invoked via
+>> tty_vhangup() in uart_remove_one_port()).
+>>
+>> However, uart_hangup() does not set the hardware's power state, leaving it
+>> powered up.  This may also lead to unbounded nesting counts in clock and
+>> power management, depending on their internal implementation.
+>>
+>> Make sure to power down the port in uart_hangup(), except when the port is
+>> used as a serial console. For serial consoles, this must be postponed
+>> until
+>> after their deregistration in uart_remove_one_port() (symmetry with
+>> registration in uart_configure_port(), invoked from uart_add_one_port()).
+>>
+>> After this, the module clock used by the sh-sci driver is disabled on
+>> unbind while the serial port is in use.
+>>
+>> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
+>> ---
+>>   drivers/tty/serial/serial_core.c |    8 ++++++--
+>>   1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/tty/serial/serial_core.c
+>> b/drivers/tty/serial/serial_core.c
+>> index 2cf5649a6dc0..56dda84f82a5 100644
+>> --- a/drivers/tty/serial/serial_core.c
+>> +++ b/drivers/tty/serial/serial_core.c
+>> @@ -1452,6 +1452,8 @@ static void uart_hangup(struct tty_struct *tty)
+>>                 clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
+>>                 spin_unlock_irqrestore(&port->lock, flags);
+>>                 tty_port_tty_set(port, NULL);
+>> +               if (!uart_console(state->uart_port))
+>> +                       uart_change_pm(state, UART_PM_STATE_OFF);
 >
-> diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
-> index cfc85be..060e94c 100644
-> --- a/arch/arm/boot/dts/imx6qdl.dtsi
-> +++ b/arch/arm/boot/dts/imx6qdl.dtsi
-> @@ -62,16 +62,19 @@
->   
->   		ckil {
-Oops.
-You'll have to change this line into the line below in order to be able 
-to reference this clk.
+>
+> Ok.
 
-                           ckil: ckil {
->   			compatible = "fsl,imx-ckil", "fixed-clock";
-> +			#clock-cells = <0>;
->   			clock-frequency = <32768>;
->   		};
->   
->   		ckih1 {
-ditto
->   			compatible = "fsl,imx-ckih1", "fixed-clock";
-> +			#clock-cells = <0>;
->   			clock-frequency = <0>;
->   		};
->   
->   		osc {
-ditto
->   			compatible = "fsl,imx-osc", "fixed-clock";
-> +			#clock-cells = <0>;
->   			clock-frequency = <24000000>;
->   		};
->   	};
-> @@ -489,6 +492,7 @@
->   				interrupts = <0 87 IRQ_TYPE_LEVEL_HIGH>,
->   					     <0 88 IRQ_TYPE_LEVEL_HIGH>;
->   				#clock-cells = <1>;
-> +				clocks = <&ckil &ckih1 &osc>;
->   			};
->   
->   			anatop: anatop@020c8000 {
+Thanks, I'll send an updated patch handling the non-serial console case only.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
