@@ -1,68 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaC0Glp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 02:41:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58441 "EHLO mx1.redhat.com"
+	id S1753738AbaC0G5u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 02:57:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47416 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857AbaC0Gln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 02:41:43 -0400
-Date: Thu, 27 Mar 2014 08:41:58 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Alejandro Comisario <alejandro.comisario@mercadolibre.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>,
-        ghammer@redhat.com, qemu-devel@nongnu.org
-Subject: Re: Massive read only kvm guests when backing file was missing
-Message-ID: <20140327064158.GA17563@redhat.com>
-References: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMrG31z=oy-53Lfya4svhNniD_7Q1YETuHeZsotHj8U5xJNYmw@mail.gmail.com>
+	id S1752403AbaC0G5s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 02:57:48 -0400
+Message-ID: <1395903457.5569.89.camel@pasglop>
+Subject: Bad DMA from Marvell 9230
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Mar 2014 17:57:37 +1100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 11:08:03PM -0300, Alejandro Comisario wrote:
-> Hi List!
-> Hope some one can help me, we had a big issue in our cloud the other
-> day, a couple of our openstack regions ( +2000 kvm guests with qcow2 )
-> went read only filesystem from the guest side because the backing
-> files directory (the openstack _base directory) was compromised and
-> the data was lost, when we realized the data was lost, it took us 5
-> mins to restore the backup of the backing files, but by that time all
-> the kvm guests received some kind of IO error from the hypervisor
-> layer, and went read only on root filesystem.
-> 
-> My question would be, is there a way to hold the IO operations against
-> the backing files ( i thought that would be 99% READ operations ) for
-> a little longer ( im asking this because i dont quite understand what
-> is the process and when it raises the error ) in a case the backing
-> files are missing (no IO possible) but is recoverable within minutes ?
-> 
-> Any tip  on how to achieve this if possible, or information about how
-> backing files works on kvm, will be amazing.
-> Waiting for feedback!
-> 
-> kindest regards.
-> Alejandro Comisario
+Hi Folks !
+
+Do that ring any bell ?
+
+I've been trying a 9230 on a power box here (a 9235 on the same machine
+works fine) and it blows up with an IOMMU violation early during init.
+
+>From what I can tell the scenario is:
+
+- So we still haven't issued any command per-se, all our DMA command
+buffers etc... are all 0's at the point of the error.
+
+ - The core libata calls the AHCI driver's ahci_hardreset() for each
+port in a separate thread. They all call sata_link_hardreset().
+
+ - This in turns calls sata_link_resume() which write to the SCR_CONTROL
+register as follow:
+
+                scontrol = (scontrol & 0x0f0) | 0x300;
+                if ((rc = sata_scr_write(link, SCR_CONTROL, scontrol)))
+{
+                        printk(" -> sata_link_resume FAIL 2\n");
+                        return rc;
+                }
+
+                /*
+                 * Some PHYs react badly if SStatus is pounded
+                 * immediately after resuming.  Delay 200ms before
+                 * debouncing.
+                 */
+                ata_msleep(link->ap, 200);
+
+I get the interrupt from the IOMMU about 2ms after the write to
+SCR_CONTROL.
+
+Now, pending misinterpretation of some bits on my side, it looks like
+the bad DMA is a DMA *read* from address 0 (which we never map,
+typically to catch driver bugs).
+
+I went through a few theories with this one but so far none held. I
+don't think it's a D2H FIS issue since the DMA pointers for that appear
+to be setup properly, the memory mapped, etc...
+
+I though the chip might incorrectly/inadvertently try to (pre)fetch a
+command. At that point all 32 command slots are all 0's, so if it
+ignored the size it might try to fetch from command address 0.
+
+So I added a loop to fill all 32 slots with a valid command address
+in ahci_hardreset:
+
++	for (i = 0; i < 32; i++)
++		ahci_fill_cmd_slot(pp, i, 0);
+ 	rc = sata_link_hardreset(link, timing, deadline, &online,
+ 				 ahci_check_ready);
+
+But that had basically no effect.
+
+I've contacted Marvell, but I was wondering if anybody here had already
+experienced something similar or has an idea of what else the chip
+might be doing wrong so we can try to find a workaround ?
+
+Cheers,
+Ben.
 
 
-I'm guessing this is what happened: guests timed out meanwhile.
-You can increase the timeout within the guest:
-echo 600 > /sys/block/sda/device/timeout
-to timeout after 10 minutes.
-
-If you have installed qemu guest agent on your system, you can do this
-from the host. Unfortunately by default it's memory can be pushed out to swap
-and then on disk error access there might will fail :(
-Maybe we should consider mlock on all its memory at least as an option.
-
-You could pause your guests, restart them after the issue is resolved,
-and we could I guess add functionality to pause VM on disk errors
-automatically.
-Stefan?
-
-
--- 
-MST
