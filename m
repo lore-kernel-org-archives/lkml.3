@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756579AbaC0P2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:28:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:37143 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754890AbaC0P2W (ORCPT
+	id S1755581AbaC0Pbh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:31:37 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:51092 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaC0Pbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:28:22 -0400
-Message-ID: <1395934099.3718.9.camel@dabdike>
-Subject: Re: [PATCH 16/39] virtio_scsi: use cmd_size
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Thu, 27 Mar 2014 08:28:19 -0700
-In-Reply-To: <5331A27C.8060303@redhat.com>
-References: <20140317132733.789623766@bombadil.infradead.org>
-	 <20140317133133.814453025@bombadil.infradead.org>
-	 <20140325153104.GA25748@infradead.org> <5331A27C.8060303@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
+	Thu, 27 Mar 2014 11:31:36 -0400
+Message-ID: <53344452.7090107@oracle.com>
+Date: Thu, 27 Mar 2014 11:31:30 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Hugh Dickins <hughd@google.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mm: BUG: Bad page state in process ksmd
+References: <5332EE97.4050604@oracle.com> <alpine.LSU.2.11.1403270806340.4269@eggly.anvils>
+In-Reply-To: <alpine.LSU.2.11.1403270806340.4269@eggly.anvils>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-03-25 at 16:36 +0100, Paolo Bonzini wrote:
-> Il 25/03/2014 16:31, Christoph Hellwig ha scritto:
-> > Paolo,
-> >
-> > do you have a virtio_scsi tree to picks this up in?  We now have all
-> > the infrastructure for it in James' tree.
-> 
-> I don't, I usually just give my Acked-by and James picks it up.
+On 03/27/2014 11:21 AM, Hugh Dickins wrote:
+> I've thought about this some, and slept on it, but don't yet see
+> how it comes about.  I'll have to come back to it later.
+>
+> Was it a one-off, or do you find it fairly easy to reproduce?
+>
+> If the latter, it would be interesting to know if it comes from
+> recent changes or not.  mm/mlock.c does appear to have been under
+> continuous revision for several releases (but barely changed in next).
 
-OK, since we have the acked by, this can go in ... there are some other
-dependent patches as well, I think, could you resend those as a separate
-series too, please Christoph.
+I can't say it's easy to reproduce but it did happen 5-6 times at this point.
 
-James
+As far as I can tell there were no big changes in trinity for the last week
+or so while we were in lsf/mm, and this issue being reproducible makes me
+believe it has something to do with recent changes to mm code.
 
 
+Thanks,
+Sasha
