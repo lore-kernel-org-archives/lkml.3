@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaC0XbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 19:31:12 -0400
-Received: from mail-pb0-f48.google.com ([209.85.160.48]:57703 "EHLO
-	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757101AbaC0XbK (ORCPT
+	id S1757397AbaC0XtY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 19:49:24 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:58390 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757251AbaC0XtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 19:31:10 -0400
-From: John Stultz <john.stultz@linaro.org>
+	Thu, 27 Mar 2014 19:49:20 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] time: Revert to calling clock_was_set_delayed() while in irq context
-Date: Thu, 27 Mar 2014 16:30:49 -0700
-Message-Id: <1395963049-11923-1-git-send-email-john.stultz@linaro.org>
-X-Mailer: git-send-email 1.8.3.2
+Cc: Ingo Molnar <mingo@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/3] perf bench: Set more defaults in the 'numa' suite
+Date: Thu, 27 Mar 2014 19:50:17 -0400
+Message-Id: <1395964219-22173-2-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.9.0.431.g014438b
+In-Reply-To: <1395964219-22173-1-git-send-email-artagnon@gmail.com>
+References: <1395964219-22173-1-git-send-email-artagnon@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+Currently,
 
-After testing a patch queued for 3.15, I noticed there was a WARNON
-message that I realized was triggered by one of my patches that came
-in the 3.14 merge window. I'm not very happy to find this now, but
-sadly here it is. The fix is luckily fairly simple and just falls
-back to previous behavior.
+  $ perf bench numa mem
 
-For tip/timers/urgent.
+errors out with usage information. To make this more user-friendly, let
+us provide a minimum set of default values required for a test
+run. As an added bonus,
 
-thanks
--john
+  $ perf bench all
 
-In commit 47a1b796306356f35 (tick/timekeeping: Call update_wall_time
-outside the jiffies lock), we moved to calling clock_was_set() due
-to the fact that we were no longer holding the timekeeping or jiffies
-lock.
+now goes all the way to completion.
 
-However, there is still the problem that clock_was_set() triggers
-an IPI, which cannot be done from the timer's hard irq context,
-and will generate WARN_ON warnings.
-
-Apparently in my earlier testing, I'm guessing I didn't bump the dmesg
-log level, so I somehow missed the WARN_ONs.
-
-Thus we need to revert back to calling clock_was_set_delayed().
-
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- kernel/time/timekeeping.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ tools/perf/bench/numa.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index 0aa4ce8..5b40279 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -1435,7 +1435,8 @@ void update_wall_time(void)
- out:
- 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
- 	if (clock_set)
--		clock_was_set();
-+		/* Have to call _delayed version, since in irq context*/
-+		clock_was_set_delayed();
+diff --git a/tools/perf/bench/numa.c b/tools/perf/bench/numa.c
+index d4c83c6..20697fb 100644
+--- a/tools/perf/bench/numa.c
++++ b/tools/perf/bench/numa.c
+@@ -1593,6 +1593,10 @@ static void init_params(struct params *p, const char *name, int argc, const char
+ 	p->data_rand_walk		= true;
+ 	p->nr_loops			= -1;
+ 	p->init_random			= true;
++	p->mb_global_str		= "1";
++	p->nr_proc			= 1;
++	p->nr_threads			= 1;
++	p->nr_secs			= 5;
  }
  
- /**
+ static int run_bench_numa(const char *name, const char **argv)
 -- 
-1.8.3.2
+1.9.0.431.g014438b
 
