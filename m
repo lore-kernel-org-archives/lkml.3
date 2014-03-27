@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748AbaC0Kz4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:55:56 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:16641 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755363AbaC0Kzy (ORCPT
+	id S1755541AbaC0K7A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:59:00 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34202 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754594AbaC0K67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:55:54 -0400
-X-AuditID: cbfec7f4-b7f796d000005a13-1c-533403b7d816
-Message-id: <533403B3.6070602@samsung.com>
-Date: Thu, 27 Mar 2014 11:55:47 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: linux-arm-kernel@lists.infradead.org, mturquette@linaro.org
-Cc: devicetree@vger.kernel.org, linux@arm.linux.org.uk, t.figa@samsung.com,
-        linux-kernel@vger.kernel.org, b.brezillon@overkiz.com,
-        khilman@linaro.org, festevam@gmail.com, shawn.guo@linaro.org,
-        kernel@pengutronix.de, nicolas.ferre@atmel.com, plagnioj@jcrosoft.com
-Subject: Re: [PATCH] clk: register fixed-clock only if #clock-cells property is
- present
-References: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1395858127-18730-1-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t/xy7rbmU2CDc6/F7a4cO4wo8X8I+dY
-	LR5e9bdYNXUni8XXwysYLTY9vsZqcXnXHDaL25d5LZ5OuMhm8e1yM7vFuocvmCyerlvCbLF+
-	xmsWB16PluYeNo8Fv7ayeOycdZfd49WFOywed67tYfPYvKTeY9LiP2we/X8NPPq2rGL0+LxJ
-	LoArissmJTUnsyy1SN8ugSujadt09oK9zBVPOj+xNTC+Zepi5OSQEDCR+L3+FTOELSZx4d56
-	ti5GLg4hgaWMEpffz2EBSQgJfGKUeHgyvYuRg4NXQEtifm8kSJhFQFXi35s2NhCbTcBQovdo
-	HyOILSoQITF34mawOK+AoMSPyffAxogI2Ev8mPCSBWQ+s0APk8TBX9/AEsICkRIHF+xkAZkv
-	JOAm0XuoBiTMKeAucePoFrA7mQV0JPa3TmODsOUlNq95yzyBUWAWkhWzkJTNQlK2gJF5FaNo
-	amlyQXFSeq6hXnFibnFpXrpecn7uJkZIJH3Zwbj4mNUhRgEORiUe3h33jYKFWBPLiitzDzFK
-	cDArifD2/zUOFuJNSaysSi3Kjy8qzUktPsTIxMEp1cBYuO3vPa+rbqbB7/ujZDq3Bv/3rp/N
-	v1X2cvRENibPROkS46kZbVMnBXOlzK63Tftz9OHZ45/sHkqcLdnUebrmT6Fhqsi0Tfxv/Lk9
-	cieW/L47ecd27bQGDS+ZW3xSD7wN4vKvr12ZH5Jf/uqXzIQ2+9uXp+14L3Mh45STxzn2jfdl
-	l5dNiPinxFKckWioxVxUnAgAWFwV0oICAAA=
+	Thu, 27 Mar 2014 06:58:59 -0400
+Date: Thu, 27 Mar 2014 10:58:02 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Message-ID: <20140327105802.GG30768@sirena.org.uk>
+References: <1395895363-31521-1-git-send-email-Li.Xiubo@freescale.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="qoTlaiD+Y2fIM3Ll"
+Content-Disposition: inline
+In-Reply-To: <1395895363-31521-1-git-send-email-Li.Xiubo@freescale.com>
+X-Cookie: You look tired.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 82.45.252.252
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regmap: mmio: add regmap_mmio_{regsize, count}_check.
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike, please ignore this patch for now. It turns out a less intrusive
-change [1] is enough to fix the regressions on both imx and exynos.
 
-I'm going to address the issue properly for next kernel release and
-make exynos use regular fixed-clock driver, rather than registering
-the external clock generators within the SoC main clock controller
-driver.
+--qoTlaiD+Y2fIM3Ll
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Thanks,
-Sylwester
+On Thu, Mar 27, 2014 at 12:42:42PM +0800, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
 
-[1] http://permalink.gmane.org/gmane.linux.kernel/1673639
+Applied both, thanks.
+
+--qoTlaiD+Y2fIM3Ll
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTNAQ2AAoJELSic+t+oim9UDAP/2zu0jyauiBINLZAX7uiOuHY
+fnZyaiR2dalh6w7YSTiVEq93ZkDfk9QAx4leSOebddb9Sag2dRRb0bmGgN04r1r6
+FcPNTVQmCVXRDXq2FzTquju11UxKDM4FsmefyNhAvqbRbRc0QxookCkLIshUsPQl
+yPDR0fji3eHo5TExhb35zkRXNpH5YblYyUlbnwy3Y8QPo5lTljgMn0hjyONOljAu
+nWlLuGKHJaHdBx3VEZwZn8sRwcpyNQqxC40HwRm0d/3X4E2QjoRDYkz2CjDqZqyK
+9tEI8RMwKjifWtm1RKfMBH1/7ow6i+86jvgbazUFRYfrgjlwtjq/39FC/5Z3ggyu
+3tQuAbXc6ICnMxeqxOu29M9dcV5jdOu0ui7tSC3EHir8rZxZFQEAwjqYXszAV/7m
+KTIxFf+PNWBMVDtiieDI3Je1q+t2yBywRoT/TEQo0A8R9mNsyc+WY+EEbaOQiZfy
+Y8KbGcKmhjg8N/4gyb2qS2Y1xFBdrFsoN+LJtWOxc2Phf3uev7h4AEuMqdZ0w8kJ
+PP9Eg5+SZLbyD7rMbTyJpOhG3k7pcgHOKa5yhCwIoPy9VBYTAL3FZvvjHRFfE49d
+C2OCbDYbnXwYSXG8K1PhuZ0JAhRT53F1n9zdbr/J2dmk+n1k3gvp/HBcRv3iGtcN
+F/EsvBNeHUiB25wvbJ4F
+=iWbq
+-----END PGP SIGNATURE-----
+
+--qoTlaiD+Y2fIM3Ll--
