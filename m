@@ -1,149 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753226AbaC0DoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 23:44:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:59027 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658AbaC0DoK (ORCPT
+	id S1753378AbaC0Dqy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 23:46:54 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27819
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752234AbaC0Dqx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 23:44:10 -0400
-X-AuditID: cbfee68d-b7fcd6d00000315b-45-53339e6e9865
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Kishon Vijay Abraham I'" <kishon@ti.com>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-pci@vger.kernel.org,
-        bhelgaas@google.com, mohit.kumar@st.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, tony@atomide.com, rnayak@ti.com,
-        paul@pwsan.com, "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1395842272-15267-1-git-send-email-kishon@ti.com>
- <1395842272-15267-3-git-send-email-kishon@ti.com>
-In-reply-to: <1395842272-15267-3-git-send-email-kishon@ti.com>
-Subject: Re: [RFC PATCH 02/12] pci: host: pcie-dra7xx: add support for
- pcie-dra7xx controller
-Date: Thu, 27 Mar 2014 12:43:41 +0900
-Message-id: <000c01cf496e$bf2c85b0$3d859110$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9I+5TziCsFjnYJQ8SyLv8x0Jb4XQAaKfqg
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAKsWRmVeSWpSXmKPExsVy+t8zY928ecbBBqu3i1osacqweHlI02L+
-	kXOsFv1vFrJanHu1ktHi8sJLrBYXnvawWWx6fI3VYmHbEhaLy7vmsFnMXtLPYnF23nE2i9uX
-	eS2WXr/IZLFx6i9Giw87/jJbTJi+lsXiWf8eRot1L6ezWLTuPcJusf+Kl4Oox5p5axg9Wpp7
-	2Dy+fZ3E4nG5r5fJY8GmUo+Vy7+weWxa1cnm8Wr1TFaPzUvqPW787mX36NuyitHj6Y+9zB7H
-	b2xn8vi8SS6AL4rLJiU1J7MstUjfLoErY+eb2UwFUwQrrvd0sDUwnubtYuTkkBAwkZjz9j4z
-	hC0mceHeerYuRi4OIYFljBJfuu8ywxSd7jzMCJGYzijxse8cC4Tzm1Hi7fzT7CBVbAJqEl++
-	HAazRQR0JBaeXs8MUsQscItZoufkeVaQhJBAocTq22fAxnIK2Ek8b1zBCGILC8RL3Jv8iAnE
-	ZhFQlZh/4RFYDa+ArcTHd9fZIGxBiR+T77GA2MwCWhLrdx5ngrDlJTaveQtUzwF0qrrEo7+6
-	EDcYSTybsp0RokREYt+Ld2AfSAhM5pR49uEfI8QuAYlvkw+xQPTKSmw6APWxpMTBFTdYJjBK
-	zEKyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRYZ6xYm5xaV56XrJ+bmbGCGpqXcH4+0D1ocY
-	k4HWT2SWEk3OB6a2vJJ4Q2MzIwtTE1NjI3NLM9KElcR5kx4mBQkJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgfBBYnhwdv7vGw/ji44QMmZuiwVd0fXcpXLHsZrTqZ31pPONEmmqy50SuCzsO
-	JPObp56V6Gu22Je4JOKuEOv8gjfiF/7/v9/nsrpfafJj4SnHK2cYcr0wn2Z27s80LbPV+euL
-	PdR3MBzuvOfIu6ZO7/bDYze6UxuaPhS/MubP+XSkpszmww0GJZbijERDLeai4kQAl2oeD2MD	AAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLJsWRmVeSWpSXmKPExsVy+t9jQd28ecbBBpuu8lksacqweHlI02L+
-	kXOsFv1vFrJanHu1ktHi8sJLrBYXnvawWWx6fI3VYmHbEhaLy7vmsFnMXtLPYnF23nE2i9uX
-	eS2WXr/IZLFx6i9Giw87/jJbTJi+lsXiWf8eRot1L6ezWLTuPcJusf+Kl4Oox5p5axg9Wpp7
-	2Dy+fZ3E4nG5r5fJY8GmUo+Vy7+weWxa1cnm8Wr1TFaPzUvqPW787mX36NuyitHj6Y+9zB7H
-	b2xn8vi8SS6AL6qB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnF
-	J0DXLTMH6GklhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bON7OZCqYI
-	Vlzv6WBrYDzN28XIySEhYCJxuvMwI4QtJnHh3nq2LkYuDiGB6YwSH/vOsUA4vxkl3s4/zQ5S
-	xSagJvHly2EwW0RAR2Lh6fXMIEXMAreYJXpOnmcFSQgJFEqsvn2GGcTmFLCTeN64AmyFsEC8
-	xL3Jj5hAbBYBVYn5Fx6B1fAK2Ep8fHedDcIWlPgx+R4LiM0soCWxfudxJghbXmLzmrdA9RxA
-	p6pLPPqrC3GDkcSzKdsZIUpEJPa9eMc4gVFoFpJJs5BMmoVk0iwkLQsYWVYxiqYWJBcUJ6Xn
-	GuoVJ+YWl+al6yXn525iBCe+Z1I7GFc2WBxiFOBgVOLh3XHfKFiINbGsuDL3EKMEB7OSCO/p
-	LuNgId6UxMqq1KL8+KLSnNTiQ4zJQI9OZJYSTc4HJuW8knhDYxMzI0sjMwsjE3Nz0oSVxHkP
-	tFoHCgmkJ5akZqemFqQWwWxh4uCUamBU2muQe44zcM3M3U6FfqYfNeaZ9WtH/K2ZP9NlrRVL
-	8obVa+6U/zxyLWppfj2PsntJU/0B06VNlrvK3jY9nv7iqGFFxVNdv9cJVVw/YmtPtHOeuRpy
-	z7H227w7D69aXU/nc22dxsO379aaP9Lvbn1xNXhy9kXYvuK2aSLVJj2306bdvnPS5oe/Ektx
-	RqKhFnNRcSIApp9FjsADAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 26 Mar 2014 23:46:53 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -2
+X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
+Date: Thu, 27 Mar 2014 11:31:18 +0800
+From: Nicolin Chen <Guangyu.Chen@freescale.com>
+To: Xiubo Li-B47053 <Li.Xiubo@freescale.com>
+CC: "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+Message-ID: <20140327033117.GD16197@MrMyself>
+References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
+ <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140327023617.GB16197@MrMyself>
+ <1e2d210764724c7e834c5307b54c37ab@BY2PR03MB505.namprd03.prod.outlook.com>
+ <20140327025647.GC16197@MrMyself>
+ <12f887b3889a41849026965f0cf7db1f@BY2PR03MB505.namprd03.prod.outlook.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <12f887b3889a41849026965f0cf7db1f@BY2PR03MB505.namprd03.prod.outlook.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, March 26, 2014 10:58 PM, Kishon Vijay Abraham I wrote:
+On Thu, Mar 27, 2014 at 11:41:02AM +0800, Xiubo Li-B47053 wrote:
 > 
-> Added support for pcie controller in dra7xx. This driver re-uses
-> the designware core code that is already present in kernel.
+> > Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
+> > 
+> > On Thu, Mar 27, 2014 at 10:53:50AM +0800, Xiubo Li-B47053 wrote:
+> > > > On Thu, Mar 27, 2014 at 10:13:48AM +0800, Xiubo Li-B47053 wrote:
+> > > > > > +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
+> > > > > > +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
+> > > > > > +
+> > > > > > +	if (xcsr & FSL_SAI_CSR_WSF)
+> > > > > > +		dev_dbg(dev, "isr: Start of Tx word detected\n");
+> > > > > > +
+> > > > > > +	if (xcsr & FSL_SAI_CSR_SEF)
+> > > > > > +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
+> > > > > > +
+> > > > > > +	if (xcsr & FSL_SAI_CSR_FEF)
+> > > > > > +		dev_dbg(dev, "isr: Transmit underrun detected\n");
+> > > > > > +
+> > > > >
+> > > > > Actually, the above three isrs should to write a logic 1 to this field
+> > > > > to clear this flag.
+> > > > >
+> > > > >
+> > > > > > +	if (xcsr & FSL_SAI_CSR_FWF)
+> > > > > > +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
+> > > > > > +
+> > > > > > +	if (xcsr & FSL_SAI_CSR_FRF)
+> > > > > > +		dev_dbg(dev, "isr: Transmit FIFO watermark has been
+> > reached\n");
+> > > > > > +
+> > > > >
+> > > > > While are these ones really needed to clear manually ?
+> > > >
+> > > > The reference manual doesn't mention about the requirement. So SAI should
+> > do
+> > > > the self-clearance.
+> > >
+> > > Yes, I do think we should let it do the self-clearance, and shouldn't
+> > interfere
+> > > of them...
+> > 
+> > SAI is supposed to ignore the interference, isn't it?
+> > 
 > 
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Maybe, but I'm not very sure.
+> And these bits are all writable and readable.
 
-Hi Kishon,
-Long time no see! I added trivial comments.
+Double-confirmed? Because FWF and FRF should be read-only bits.
 
-> ---
->  Documentation/devicetree/bindings/pci/ti-pci.txt |   35 ++
->  drivers/pci/host/Kconfig                         |   10 +
->  drivers/pci/host/Makefile                        |    1 +
->  drivers/pci/host/pcie-dra7xx.c                   |  411 ++++++++++++++++++++++
-
-How about using 'pci-' prefix?
-As it was discussed earlier, 'pci-' prefix is more proper.
-
->  4 files changed, 457 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/pci/ti-pci.txt
->  create mode 100644 drivers/pci/host/pcie-dra7xx.c
-
-[.....]
-
-> --- /dev/null
-> +++ b/drivers/pci/host/pcie-dra7xx.c
-
-[.....]
-
-> +#define	PCIECTRL_TI_CONF_IRQSTATUS_MAIN		0x0024
-> +#define	PCIECTRL_TI_CONF_IRQENABLE_SET_MAIN	0x0028
-
-I don't think that it's good to add vendor names such as TI
-to SFR names.
-
-How about adding 'DRA7XX' or just removing 'TI'?
-
-1. PCIECTRL_DRA7XX_CONF_IRQSTATUS_MAIN
-
-2. PCIECTRL_CONF_IRQSTATUS_MAIN
-
-[.....]
-
-> +enum dra7xx_pcie_device_type {
-> +	DRA7XX_PCIE_UNKNOWN_TYPE,
-> +	DRA7XX_PCIE_EP_TYPE,
-> +	DRA7XX_PCIE_LEG_EP_TYPE,
-> +	DRA7XX_PCIE_RC_TYPE,
-> +};
-
-This driver can support only RC mode, so, these enum can be removed.
-
-[.....]
-
-> +	of_property_read_u32(node, "ti,device-type", &device_type);
-> +	switch (device_type) {
-> +	case DRA7XX_PCIE_RC_TYPE:
-> +		dra7xx_pcie_writel(dra7xx->base,
-> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_RC);
-> +		break;
-> +	case DRA7XX_PCIE_EP_TYPE:
-> +		dra7xx_pcie_writel(dra7xx->base,
-> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_EP);
-> +		break;
-> +	case DRA7XX_PCIE_LEG_EP_TYPE:
-> +		dra7xx_pcie_writel(dra7xx->base,
-> +			PCIECTRL_TI_CONF_DEVICE_TYPE, DEVICE_TYPE_LEG_EP);
-> +		break;
-> +	default:
-> +		dev_dbg(dev, "UNKNOWN device type %d\n", device_type);
-> +	}
-
-Thus, this switch can be removed.
-Others look good.
-
-Best regards,
-Jingoo Han
 
