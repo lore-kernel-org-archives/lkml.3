@@ -1,103 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807AbaC0JTK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 05:19:10 -0400
-Received: from smtp-out-246.synserver.de ([212.40.185.246]:1039 "EHLO
-	smtp-out-085.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753406AbaC0JTH (ORCPT
+	id S1754104AbaC0JeK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 05:34:10 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:62631 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751469AbaC0JeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 05:19:07 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 1058
-Message-ID: <5333ED3A.7040908@metafoo.de>
-Date: Thu, 27 Mar 2014 10:19:54 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	Thu, 27 Mar 2014 05:34:08 -0400
 MIME-Version: 1.0
-To: Songhee Baek <sbaek@nvidia.com>
-CC: Arun Shamanna Lakshmi <aruns@nvidia.com>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "tiwai@suse.de" <tiwai@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
-References: <1395792156-4178-1-git-send-email-aruns@nvidia.com> <53332CC7.6060800@metafoo.de> <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
-In-Reply-To: <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1393588140-20605-1-git-send-email-ulf.hansson@linaro.org>
+References: <1393588140-20605-1-git-send-email-ulf.hansson@linaro.org>
+Date: Thu, 27 Mar 2014 10:34:07 +0100
+Message-ID: <CAPDyKFrkHfBqGUfd5tkP55vGNZaL4Qm_TJ5Lv30eZ1re_btMcw@mail.gmail.com>
+Subject: Re: [RFC PATCH] mmc: core: Invoke sdio func driver's PM callbacks
+ from the sdio bus
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: linux-mmc <linux-mmc@vger.kernel.org>, Chris Ball <chris@printf.net>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Aaron Lu <aaron.lu@intel.com>,
+        NeilBrown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/26/2014 11:41 PM, Songhee Baek wrote:
->> -----Original Message-----
->> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
->> Sent: Wednesday, March 26, 2014 12:39 PM
->> To: Arun Shamanna Lakshmi
->> Cc: lgirdwood@gmail.com; broonie@kernel.org; swarren@wwwdotorg.org;
->> Songhee Baek; alsa-devel@alsa-project.org; tiwai@suse.de; linux-
->> kernel@vger.kernel.org
->> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
->>
->> On 03/26/2014 01:02 AM, Arun Shamanna Lakshmi wrote:
->>> If the mux uses 1 bit position per input, and requires to set one
->>> single bit at a time, then an N bit register can support up to N
->>> inputs. In more recent Tegra chips, we have at least greater than
->>> 64 inputs which requires at least 2 .reg fields in struct soc_enum.
->>>
->>> Signed-off-by: Arun Shamanna Lakshmi <aruns@nvidia.com>
->>> Signed-off-by: Songhee Baek <sbaek@nvidia.com>
->>
->> The way you describe this it seems to me that a value array for this kind of
->> mux would look like.
->>
->> 0x00000000, 0x00000000, 0x00000001
->> 0x00000000, 0x00000000, 0x00000002
->> 0x00000000, 0x00000000, 0x00000003
->> 0x00000000, 0x00000000, 0x00000004
->> 0x00000000, 0x00000000, 0x00000008
->> ...
->>
->> That seems to be extremely tedious. If the MUX uses a one hot encoding
->> how about storing the index of the bit in the values array and use (1 << value)
->> when writing the value to the register?
+On 28 February 2014 12:49, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+> The sdio func device is added to the driver model after the card
+> device.
 >
-> If we store the index of the bit, the value will be duplicated for each registers inputs since register has 0 to 31bits to shift, then we need to decode the index to interpret value for which registers to set. If we need to interpret the decoded value of index, it is better to have custom put/get function in our driver, isn't it?
+> This means the sdio func device will be suspend before the card device
+> and thus resumed after. The consequence are the mmc core don't
+> explicity need to protect itself from receiving sdio requests in
+> suspended state. Instead that can be handled from the sdio bus, which
+> is thus invokes the PM callbacks instead of old dummy function.
 >
-
-I'm not sure I understand. If you use (val / 32) to pick the register and 
-(val % 32) to pick the bit in the register this should work just fine. Maybe 
-I'm missing something. Do you have a real world code example of of the this 
-type of enum is used?
-
->>> -	int reg;
->>> +	int reg[SOC_ENUM_MAX_REGS];
->>>    	unsigned char shift_l;
->>>    	unsigned char shift_r;
->>>    	unsigned int items;
->>> -	unsigned int mask;
->>> +	unsigned int mask[SOC_ENUM_MAX_REGS];
->>
->> If you make mask and reg pointers instead of arrays this should be much
->> more flexible and not be limited to 3 registers.
->>
+> In the case were the sdio func driver don't implement the PM callbacks
+> the mmc core will in the early phase of system suspend, remove the
+> card from the driver model and thus power off it.
 >
-> To use pointers instead of arrays, it will be flexible but I need to update SOC_ENUM SINGLE/DOUBLE macros.
-> It will changes a lot in current soc-core.c and soc-dapm.c.
-
-In the existing macros you can do something like this:
-	...
-	.reg = &(unsigned int){(xreg)},
-	...
-
+> Cc: Aaron Lu <aaron.lu@intel.com>
+> Cc: NeilBrown <neilb@suse.de>
+> Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+> Signed-off-by: Ulf Hansson <ulf.hansson@linaro.org>
+> ---
 >
->>>    	const char * const *texts;
->>>    	const unsigned int *values;
->>> +	unsigned int num_regs;
->>>    };
->>>
+> Note, this patch has only been compile tested. Would appreciate if some with
+> SDIO and a sdio func driver could help out to test this. Especially the
+> libertas driver would be nice.
 >
+> ---
 
+Hi Chris,
+
+Would be nice if you could pick this up for 3.15 and possibly send it
+to "stable" as well.
+
+It has been tested and reviewed, so I am confident that we are doing
+the right thing here.
+
+Kind regards
+Uffe
+
+>  drivers/mmc/core/sdio.c     |   45 ++++---------------------------------------
+>  drivers/mmc/core/sdio_bus.c |   14 +-------------
+>  2 files changed, 5 insertions(+), 54 deletions(-)
+>
+> diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+> index 4d721c6..9933e42 100644
+> --- a/drivers/mmc/core/sdio.c
+> +++ b/drivers/mmc/core/sdio.c
+> @@ -943,40 +943,21 @@ static int mmc_sdio_pre_suspend(struct mmc_host *host)
+>   */
+>  static int mmc_sdio_suspend(struct mmc_host *host)
+>  {
+> -       int i, err = 0;
+> -
+> -       for (i = 0; i < host->card->sdio_funcs; i++) {
+> -               struct sdio_func *func = host->card->sdio_func[i];
+> -               if (func && sdio_func_present(func) && func->dev.driver) {
+> -                       const struct dev_pm_ops *pmops = func->dev.driver->pm;
+> -                       err = pmops->suspend(&func->dev);
+> -                       if (err)
+> -                               break;
+> -               }
+> -       }
+> -       while (err && --i >= 0) {
+> -               struct sdio_func *func = host->card->sdio_func[i];
+> -               if (func && sdio_func_present(func) && func->dev.driver) {
+> -                       const struct dev_pm_ops *pmops = func->dev.driver->pm;
+> -                       pmops->resume(&func->dev);
+> -               }
+> -       }
+> -
+> -       if (!err && mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
+> +       if (mmc_card_keep_power(host) && mmc_card_wake_sdio_irq(host)) {
+>                 mmc_claim_host(host);
+>                 sdio_disable_wide(host->card);
+>                 mmc_release_host(host);
+>         }
+>
+> -       if (!err && !mmc_card_keep_power(host))
+> +       if (!mmc_card_keep_power(host))
+>                 mmc_power_off(host);
+>
+> -       return err;
+> +       return 0;
+>  }
+>
+>  static int mmc_sdio_resume(struct mmc_host *host)
+>  {
+> -       int i, err = 0;
+> +       int err = 0;
+>
+>         BUG_ON(!host);
+>         BUG_ON(!host->card);
+> @@ -1019,24 +1000,6 @@ static int mmc_sdio_resume(struct mmc_host *host)
+>                 wake_up_process(host->sdio_irq_thread);
+>         mmc_release_host(host);
+>
+> -       /*
+> -        * If the card looked to be the same as before suspending, then
+> -        * we proceed to resume all card functions.  If one of them returns
+> -        * an error then we simply return that error to the core and the
+> -        * card will be redetected as new.  It is the responsibility of
+> -        * the function driver to perform further tests with the extra
+> -        * knowledge it has of the card to confirm the card is indeed the
+> -        * same as before suspending (same MAC address for network cards,
+> -        * etc.) and return an error otherwise.
+> -        */
+> -       for (i = 0; !err && i < host->card->sdio_funcs; i++) {
+> -               struct sdio_func *func = host->card->sdio_func[i];
+> -               if (func && sdio_func_present(func) && func->dev.driver) {
+> -                       const struct dev_pm_ops *pmops = func->dev.driver->pm;
+> -                       err = pmops->resume(&func->dev);
+> -               }
+> -       }
+> -
+>         host->pm_flags &= ~MMC_PM_KEEP_POWER;
+>         return err;
+>  }
+> diff --git a/drivers/mmc/core/sdio_bus.c b/drivers/mmc/core/sdio_bus.c
+> index 92d1ba8..4fa8fef9 100644
+> --- a/drivers/mmc/core/sdio_bus.c
+> +++ b/drivers/mmc/core/sdio_bus.c
+> @@ -197,20 +197,8 @@ static int sdio_bus_remove(struct device *dev)
+>
+>  #ifdef CONFIG_PM
+>
+> -#ifdef CONFIG_PM_SLEEP
+> -static int pm_no_operation(struct device *dev)
+> -{
+> -       /*
+> -        * Prevent the PM core from calling SDIO device drivers' suspend
+> -        * callback routines, which it is not supposed to do, by using this
+> -        * empty function as the bus type suspend callaback for SDIO.
+> -        */
+> -       return 0;
+> -}
+> -#endif
+> -
+>  static const struct dev_pm_ops sdio_bus_pm_ops = {
+> -       SET_SYSTEM_SLEEP_PM_OPS(pm_no_operation, pm_no_operation)
+> +       SET_SYSTEM_SLEEP_PM_OPS(pm_generic_suspend, pm_generic_resume)
+>         SET_RUNTIME_PM_OPS(
+>                 pm_generic_runtime_suspend,
+>                 pm_generic_runtime_resume,
+> --
+> 1.7.9.5
+>
