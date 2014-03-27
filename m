@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756734AbaC0PRQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:17:16 -0400
-Received: from vsp-authed02.binero.net ([195.74.38.226]:55132 "EHLO
+	id S1755302AbaC0PRN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:17:13 -0400
+Received: from vsp-authed02.binero.net ([195.74.38.226]:55133 "EHLO
 	vsp-authed-01-02.binero.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755244AbaC0PRJ (ORCPT
+	by vger.kernel.org with ESMTP id S1754638AbaC0PRI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:17:09 -0400
+	Thu, 27 Mar 2014 11:17:08 -0400
 From: Andreas Larsson <andreas@gaisler.com>
 To: Felipe Balbi <balbi@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
@@ -14,94 +14,39 @@ Cc: Mark Rutland <mark.rutland@arm.com>,
         Dan Carpenter <dan.carpenter@oracle.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
         software@gaisler.com
-Subject: [PATCH v2 1/7] usb: gadget: gr_udc: Make struct platform_device variable name clearer and use platform_set/get_drvdata
-Date: Thu, 27 Mar 2014 16:15:53 +0100
-Message-Id: <1395933359-7109-2-git-send-email-andreas@gaisler.com>
+Subject: [PATCH v2 0/7] usb: gadget: gr_udc: OF and ep.maxpacket_limit improvements and fix of GFP_KERNEL in atomic context
+Date: Thu, 27 Mar 2014 16:15:52 +0100
+Message-Id: <1395933359-7109-1-git-send-email-andreas@gaisler.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1395933359-7109-1-git-send-email-andreas@gaisler.com>
-References: <1395933359-7109-1-git-send-email-andreas@gaisler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename struct platform_device pointers from ofdev to pdev for clarity.
-Suggested by Mark Rutland.
+This patchset:
+ - Adds some OF related improvements suggested by Mark
+   Rutland.
+ - Adds ep.maxpacket_limit to the debugfs file and adds a check if
+   gr_ep_enable is called with a maxpacket value greater than
+   ep.maxpacket_limit.
+ - Fixes a bug where GFP_KERNEL was used in atomic context
 
-Signed-off-by: Andreas Larsson <andreas@gaisler.com>
----
-Differences since v1: use platform_set/get_drvdata
+Andreas Larsson (7):
+  usb: gadget: gr_udc: Make struct platform_device variable name
+    clearer and use platform_set/get_drvdata
+  usb: gadget: gr_udc: Expand devicetree documentation
+  usb: gadget: gr_udc: Use platform_get_irq instead of
+    irq_of_parse_and_map
+  usb: gadget: gr_udc: Use of_property_read_u32_index to access arrays
+  usb: gadget: gr_udc: Add ep.maxpacket_limit to debugfs information
+  usb: gadget: gr_udc: Return error code when trying to set
+    ep.maxpacket > ep.maxpacket_limit
+  usb: gadget: gr_udc: Use GFP_ATOMIC when allocating under help
+    spinlock
 
- drivers/usb/gadget/gr_udc.c |   18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ Documentation/devicetree/bindings/usb/gr-udc.txt |   22 +++++----
+ drivers/usb/gadget/gr_udc.c                      |   53 ++++++++++++----------
+ 2 files changed, 42 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/usb/gadget/gr_udc.c b/drivers/usb/gadget/gr_udc.c
-index f984ee7..ae5bebe 100644
---- a/drivers/usb/gadget/gr_udc.c
-+++ b/drivers/usb/gadget/gr_udc.c
-@@ -2065,9 +2065,9 @@ static int gr_udc_init(struct gr_udc *dev)
- 	return 0;
- }
- 
--static int gr_remove(struct platform_device *ofdev)
-+static int gr_remove(struct platform_device *pdev)
- {
--	struct gr_udc *dev = dev_get_drvdata(&ofdev->dev);
-+	struct gr_udc *dev = platform_get_drvdata(pdev);
- 
- 	if (dev->added)
- 		usb_del_gadget_udc(&dev->gadget); /* Shuts everything down */
-@@ -2077,7 +2077,7 @@ static int gr_remove(struct platform_device *ofdev)
- 	gr_dfs_delete(dev);
- 	if (dev->desc_pool)
- 		dma_pool_destroy(dev->desc_pool);
--	dev_set_drvdata(&ofdev->dev, NULL);
-+	platform_set_drvdata(pdev, NULL);
- 
- 	gr_free_request(&dev->epi[0].ep, &dev->ep0reqi->req);
- 	gr_free_request(&dev->epo[0].ep, &dev->ep0reqo->req);
-@@ -2090,7 +2090,7 @@ static int gr_request_irq(struct gr_udc *dev, int irq)
- 					 IRQF_SHARED, driver_name, dev);
- }
- 
--static int gr_probe(struct platform_device *ofdev)
-+static int gr_probe(struct platform_device *pdev)
- {
- 	struct gr_udc *dev;
- 	struct resource *res;
-@@ -2098,12 +2098,12 @@ static int gr_probe(struct platform_device *ofdev)
- 	int retval;
- 	u32 status;
- 
--	dev = devm_kzalloc(&ofdev->dev, sizeof(*dev), GFP_KERNEL);
-+	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
- 	if (!dev)
- 		return -ENOMEM;
--	dev->dev = &ofdev->dev;
-+	dev->dev = &pdev->dev;
- 
--	res = platform_get_resource(ofdev, IORESOURCE_MEM, 0);
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	regs = devm_ioremap_resource(dev->dev, res);
- 	if (IS_ERR(regs))
- 		return PTR_ERR(regs);
-@@ -2132,7 +2132,7 @@ static int gr_probe(struct platform_device *ofdev)
- 	spin_lock_init(&dev->lock);
- 	dev->regs = regs;
- 
--	dev_set_drvdata(&ofdev->dev, dev);
-+	platform_set_drvdata(pdev, dev);
- 
- 	/* Determine number of endpoints and data interface mode */
- 	status = gr_read32(&dev->regs->status);
-@@ -2204,7 +2204,7 @@ out:
- 	spin_unlock(&dev->lock);
- 
- 	if (retval)
--		gr_remove(ofdev);
-+		gr_remove(pdev);
- 
- 	return retval;
- }
 -- 
 1.7.10.4
 
