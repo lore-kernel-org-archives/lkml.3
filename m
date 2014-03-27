@@ -1,84 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaC0Fy4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 01:54:56 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:35614 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaC0Fyz (ORCPT
+	id S1753202AbaC0GCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 02:02:00 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:44949 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750949AbaC0GB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 01:54:55 -0400
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: tglx@linutronix.de
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, linaro-networking@linaro.org,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V3 Resend] hrtimer: use ffs() to iterate over valid bits from active_bases
-Date: Thu, 27 Mar 2014 11:24:47 +0530
-Message-Id: <16126ce574322be7733522e6aacab0f45ebd9db5.1395899588.git.viresh.kumar@linaro.org>
-X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
-In-Reply-To: <8aa380361c07844f7b274e472f542ae2171bb39a.1395899293.git.viresh.kumar@linaro.org>
-References: <8aa380361c07844f7b274e472f542ae2171bb39a.1395899293.git.viresh.kumar@linaro.org>
+	Thu, 27 Mar 2014 02:01:58 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        hannes@stressinduktion.org, tytso@mit.edu, dborkman@redhat.com,
+        Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] random32: assign to network folks in MAINTAINERS
+Date: Thu, 27 Mar 2014 02:01:34 -0400
+Message-Id: <1395900095-15254-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 1.8.3.2
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we are iterating over all possible (currently four) bits of
-active_bases to see if corresponding clock bases are active. This is good enough
-for cases where 3 or 4 bases are used but if only 1 or 2 are used then it makes
-more sense to use ffs() to find the right bit directly.
+lib/random32.c was split out of the network code and is de-facto
+still maintained by the almighty net/ gods.
 
-Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Make it a bit more official so that people who aren't aware of
+that know where to send their patches.
+
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 ---
-V3->Resend: s/__ffs/ffs in commit log :(
+ MAINTAINERS | 1 +
+ 1 file changed, 1 insertion(+)
 
-V2->V3: Use ffs() instead of __ffs() and decrement 'i' later.
-
-V1->V2: Instead of removing active_bases use __ffs() on it to make loop more
-efficient.
-
- kernel/hrtimer.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index acfef5f..2aad8a7 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1265,6 +1265,7 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
-+	unsigned long active_bases = cpu_base->active_bases;
- 	int i, retries = 0;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index e1724d5..47fd188 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6091,6 +6091,7 @@ F:	include/uapi/linux/net.h
+ F:	include/uapi/linux/netdevice.h
+ F:	tools/net/
+ F:	tools/testing/selftests/net/
++F:	lib/random32.c
  
- 	BUG_ON(!cpu_base->hres_active);
-@@ -1284,15 +1285,11 @@ retry:
- 	 */
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
- 
--	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
--		struct hrtimer_clock_base *base;
-+	while ((i = ffs(active_bases))) {
-+		struct hrtimer_clock_base *base = cpu_base->clock_base + --i;
- 		struct timerqueue_node *node;
- 		ktime_t basenow;
- 
--		if (!(cpu_base->active_bases & (1 << i)))
--			continue;
--
--		base = cpu_base->clock_base + i;
- 		basenow = ktime_add(now, base->offset);
- 
- 		while ((node = timerqueue_getnext(&base->active))) {
-@@ -1327,6 +1324,8 @@ retry:
- 
- 			__run_hrtimer(timer, &basenow);
- 		}
-+
-+		active_bases &= ~(1 << i);
- 	}
- 
- 	/*
+ NETWORKING [IPv4/IPv6]
+ M:	"David S. Miller" <davem@davemloft.net>
 -- 
-1.7.12.rc2.18.g61b472e
+1.8.3.2
 
