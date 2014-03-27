@@ -1,57 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaC0ILP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:11:15 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:45432 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754395AbaC0ILI (ORCPT
+	id S1754675AbaC0IMT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 04:12:19 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:47329 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754601AbaC0IMP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:11:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <cover.1395824147.git.micky_ching@realsil.com.cn>
-References: <cover.1395824147.git.micky_ching@realsil.com.cn>
-Date: Thu, 27 Mar 2014 09:11:07 +0100
-Message-ID: <CAPDyKFrdddMjtGKutx1=Czbf6GyVu+TA9cBVT6zYE=HnA3abCg@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] mmc: rtsx: add new cmd type handle and modify
- error handle
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@linuxdriverproject.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 Mar 2014 04:12:15 -0400
+From: Boris BREZILLON <brezillonboris@gmail.com>
+To: Fabio Estevam <festevam@gmail.com>,
+        Sylwester Nawrocki <sylvester.nawrocki@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Mike Turquette <mturquette@linaro.org>, devicetree@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        Kevin Hilman <khilman@linaro.org>, Shawn Guo <shawn.guo@linaro.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Boris BREZILLON <b.brezillon.dev@gmail.com>
+Subject: [PATCH] ARM: imx6/dt: add ccm dependency upon ckil, ckih1 and osc clocks
+Date: Thu, 27 Mar 2014 09:11:53 +0100
+Message-Id: <1395907913-23808-1-git-send-email-b.brezillon.dev@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <5333DA13.2080505@gmail.com>
+References: <5333DA13.2080505@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27 March 2014 06:35,  <micky_ching@realsil.com.cn> wrote:
-> From: Micky Ching <micky_ching@realsil.com.cn>
->
-> v2:
-> fix checkpatch warning.
-> WARNING: Missing a blank line after declarations
->
-> v1:
-> Add new command type(R1 without CRC) handle, without this
-> patch mmc card initialize will be failed.
->
-> Using a more careful handle in request timeout, this would
-> improve error recover capability. Debug info is printed
-> using non DMA mode, this would help print more accurately
-> for DMA command failed. Smatch warning was removed.
->
-> Micky Ching (2):
->   mmc: rtsx: add R1-no-CRC mmc command type handle
->   mmc: rtsx: modify error handle and remove smatch warnings
->
->  drivers/mmc/host/rtsx_pci_sdmmc.c |  122 +++++++++++++++++++++----------------
->  1 file changed, 68 insertions(+), 54 deletions(-)
+Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+---
+ arch/arm/boot/dts/imx6qdl.dtsi |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-Acked-by: Ulf Hansson <ulf.hansson@linaro.org>
+diff --git a/arch/arm/boot/dts/imx6qdl.dtsi b/arch/arm/boot/dts/imx6qdl.dtsi
+index cfc85be..060e94c 100644
+--- a/arch/arm/boot/dts/imx6qdl.dtsi
++++ b/arch/arm/boot/dts/imx6qdl.dtsi
+@@ -62,16 +62,19 @@
+ 
+ 		ckil {
+ 			compatible = "fsl,imx-ckil", "fixed-clock";
++			#clock-cells = <0>;
+ 			clock-frequency = <32768>;
+ 		};
+ 
+ 		ckih1 {
+ 			compatible = "fsl,imx-ckih1", "fixed-clock";
++			#clock-cells = <0>;
+ 			clock-frequency = <0>;
+ 		};
+ 
+ 		osc {
+ 			compatible = "fsl,imx-osc", "fixed-clock";
++			#clock-cells = <0>;
+ 			clock-frequency = <24000000>;
+ 		};
+ 	};
+@@ -489,6 +492,7 @@
+ 				interrupts = <0 87 IRQ_TYPE_LEVEL_HIGH>,
+ 					     <0 88 IRQ_TYPE_LEVEL_HIGH>;
+ 				#clock-cells = <1>;
++				clocks = <&ckil &ckih1 &osc>;
+ 			};
+ 
+ 			anatop: anatop@020c8000 {
+-- 
+1.7.9.5
 
->
-> --
-> 1.7.9.5
