@@ -1,88 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbaC0HjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 03:39:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:47430 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644AbaC0HjT (ORCPT
+	id S1754482AbaC0Hk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 03:40:27 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35599 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752864AbaC0HkZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 03:39:19 -0400
-Message-ID: <5333D5A6.8090409@parallels.com>
-Date: Thu, 27 Mar 2014 11:39:18 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	Thu, 27 Mar 2014 03:40:25 -0400
+Date: Thu, 27 Mar 2014 08:40:16 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        David Daney <david.daney@cavium.com>, stable@vger.kernel.org
+Subject: Re: [PATCH] MIPS: OCTEON: fix EARLY_PRINTK_8250 build failure
+Message-ID: <20140327074016.GN17197@linux-mips.org>
+References: <1395777525-28910-1-git-send-email-aaro.koskinen@iki.fi>
 MIME-Version: 1.0
-To: Michal Hocko <mhocko@suse.cz>
-CC: <akpm@linux-foundation.org>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: Re: [PATCH -mm 3/4] fork: charge threadinfo to memcg explicitly
-References: <cover.1395846845.git.vdavydov@parallels.com> <8f98a5160b9e17947cbb25e91944f332679b9c9c.1395846845.git.vdavydov@parallels.com> <20140326220050.GC22656@dhcp22.suse.cz>
-In-Reply-To: <20140326220050.GC22656@dhcp22.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1395777525-28910-1-git-send-email-aaro.koskinen@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2014 02:00 AM, Michal Hocko wrote:
-> On Wed 26-03-14 19:28:06, Vladimir Davydov wrote:
->> We have only a few places where we actually want to charge kmem so
->> instead of intruding into the general page allocation path with
->> __GFP_KMEMCG it's better to explictly charge kmem there. All kmem
->> charges will be easier to follow that way.
->>
->> This is a step toward removing __GFP_KMEMCG. It makes fork charge task
->> threadinfo pages explicitly instead of passing __GFP_KMEMCG to
->> alloc_pages.
-> Looks good from a quick glance. I would also remove
-> THREADINFO_GFP_ACCOUNTED in this patch.
+On Tue, Mar 25, 2014 at 09:58:45PM +0200, Aaro Koskinen wrote:
 
-To do so,  I'd have to remove __GFP_KMEMCG check from
-memcg_kmem_newpage_charge, which is better to do in the next patch,
-which removes __GFP_KMEMCG everywhere, IMO.
+> Enabling EARLY_PRINTK_8250 breaks OCTEON builds because of multiple
+> prom_putchar() implementations. OCTEON provides its own prom_putchar()
+> (also used by the watchdog driver), so we should prevent user from
+> selecting EARLY_PRINTK_8250 on OCTEON.
 
-Thanks.
+There shouldn't be Octeon-specific code in the 8250-driver, not even
+the Kconfig bits.  Also other systems - at least Sibyte - affected
+by the same issue so I went for a different patch.
 
->> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
->> Cc: Johannes Weiner <hannes@cmpxchg.org>
->> Cc: Michal Hocko <mhocko@suse.cz>
->> Cc: Glauber Costa <glommer@gmail.com>
->> ---
->>  kernel/fork.c |   13 ++++++++++---
->>  1 file changed, 10 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/fork.c b/kernel/fork.c
->> index f4b09bc15f3a..8209780cf732 100644
->> --- a/kernel/fork.c
->> +++ b/kernel/fork.c
->> @@ -150,15 +150,22 @@ void __weak arch_release_thread_info(struct thread_info *ti)
->>  static struct thread_info *alloc_thread_info_node(struct task_struct *tsk,
->>  						  int node)
->>  {
->> -	struct page *page = alloc_pages_node(node, THREADINFO_GFP_ACCOUNTED,
->> -					     THREAD_SIZE_ORDER);
->> +	struct page *page;
->> +	struct mem_cgroup *memcg = NULL;
->>  
->> +	if (!memcg_kmem_newpage_charge(THREADINFO_GFP_ACCOUNTED, &memcg,
->> +				       THREAD_SIZE_ORDER))
->> +		return NULL;
->> +	page = alloc_pages_node(node, THREADINFO_GFP, THREAD_SIZE_ORDER);
->> +	memcg_kmem_commit_charge(page, memcg, THREAD_SIZE_ORDER);
->>  	return page ? page_address(page) : NULL;
->>  }
->>  
->>  static inline void free_thread_info(struct thread_info *ti)
->>  {
->> -	free_memcg_kmem_pages((unsigned long)ti, THREAD_SIZE_ORDER);
->> +	if (ti)
->> +		memcg_kmem_uncharge_pages(virt_to_page(ti), THREAD_SIZE_ORDER);
->> +	free_pages((unsigned long)ti, THREAD_SIZE_ORDER);
->>  }
->>  # else
->>  static struct kmem_cache *thread_info_cache;
->> -- 
->> 1.7.10.4
->>
-
+  Ralf
