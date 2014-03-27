@@ -1,80 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755455AbaC0Ktl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:49:41 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:17117 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285AbaC0Ktk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:49:40 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-e3-533402417127
-Message-id: <5334023E.8070101@samsung.com>
-Date: Thu, 27 Mar 2014 11:49:34 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.3.0
-MIME-version: 1.0
-To: mturquette@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        b.brezillon@overkiz.com, khilman@linaro.org, festevam@gmail.com,
-        shawn.guo@linaro.org, nicolas.ferre@atmel.com,
-        sebastian.hesselbarth@gmail.com, plagnioj@jcrosoft.com
-Subject: Re: [PATCH] clk: reverse default clk provider initialization order in
- of_clk_init()
-References: <1395917012-23483-1-git-send-email-s.nawrocki@samsung.com>
-In-reply-to: <1395917012-23483-1-git-send-email-s.nawrocki@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsVy+t/xy7qOTCbBBkumWVlcOHeY0eLhVX+L
-	r4dXMFpsenyN1eLyrjlsFk8nXGSz+Ha5md1i3cMXTBbvfzpaPF23hNmBy2PBr60sHjtn3WX3
-	eHXhDovHnWt72Dw2L6n3mLT4D5vH501yAexRXDYpqTmZZalF+nYJXBmz101mKdjIWbHplWgD
-	41X2LkZODgkBE4kVy16zQthiEhfurWfrYuTiEBJYyihxtHUHC4TziVGisWk6I0gVr4CWxO35
-	e1hAbBYBVYn+5ReZQWw2AUOJ3qN9YDWiAhEScyduZoOoF5T4MfkeWL2IgKTEg8/TwYYyC3xh
-	lDj77wjYGcICcRJP+vvBzhAScJP4+eQBWAOngLvEq6urwAYxC+hI7G+dBmXLS2xe85Z5AqPA
-	LCQ7ZiEpm4WkbAEj8ypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkJj4uoNx6TGrQ4wCHIxK
-	PLw77hsFC7EmlhVX5h5ilOBgVhLh7f9rHCzEm5JYWZValB9fVJqTWnyIkYmDU6qBUVR2X+P9
-	HyYukwMt3ph94/yeayx/3DayOPXhbQ3NqbEMR6YXv922RMPncpd9vEOQXEOU5rsPk+5v0Xh2
-	OZL5id/DpxPtvB/0fvp1y+dM7Nm+lXe/K8el305f5NJd1bU6evneW5cZsvWe80x2u8L1crvm
-	SZ2pd8VyW+Vmvp5+6lqg0NtND6aFmyixFGckGmoxFxUnAgD3FkN4ZwIAAA==
+	id S1755510AbaC0KvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:51:16 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:19283
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754967AbaC0KvM convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 06:51:12 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 0
+X-BigFish: VS0(zz98dIc89bh146fI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzzz2dh2a8h839h93fhd25hd2bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h16a6h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1de2h1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+Date: Thu, 27 Mar 2014 17:59:58 +0800
+From: Huang Shijie <b32955@freescale.com>
+To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
+CC: Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Rutland <mark.rutland@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <linux-mtd@lists.infradead.org>,
+        <linux-arm-kernel@lists.infradead.org>, Rob Landley <rob@landley.net>,
+        Kumar Gala <galak@codeaurora.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Shawn Guo <shawn.guo@freescale.com>
+Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
+Message-ID: <20140327095956.GA29623@localhost>
+References: <532BCFCC.4080205@freescale.com>
+ <1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
+ <20140324095902.GB11377@localhost>
+ <20140326095156.3e5585b8@ipc1.ka-ro>
+ <5332AEE7.2040402@freescale.com>
+ <20140326125502.0e8d0657@ipc1.ka-ro>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20140326125502.0e8d0657@ipc1.ka-ro>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27/03/14 11:43, Sylwester Nawrocki wrote:
-> This restores the default clocks registration order as parsed from
-> devicetree, i.e. as before commit 1771b10d605d26ccee771a7fb4b08718
-> "clk: respect the clock dependencies in of_clk_init", for when there
-> is no explicit parent clock dependencies between clock providers
-> specified in the device tree.
+On Wed, Mar 26, 2014 at 12:55:02PM +0100, Lothar Waßmann wrote:
+> Hi,
 > 
-> It prevents regressions (boot failure, division by 0 errors) on
-> imx and exynos platforms.
+> Huang Shijie wrote:
+> > 于 2014年03月26日 16:51, Lothar Waßmann 写道:
+> > > I don't see why this should not be supported on i.MX28 (i.MX23 doesn't
+> > > do byteswapping anyway, so this wouldn't change anything for i.MX23).
+> > > The partitions used by Linux need not necessarily be accessible for the
+> > > Boot ROM code (and vice versa).
+> > But the first partition used to store the u-boot is accessible for the ROM.
+> > 
+> Whether this partition is available to Linux depends on the partition table
+> passed in the DT.
+yes, i agree.
+
+But it is strange if we do not export this partition to Linux.
+
 > 
-> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
-
-Oops, I've forgotten to add:
-
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-
-> ---
->  drivers/clk/clk.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> > Please see "Figure 12-13" in the 12.12.1.12:
+> >    "In order to preserve the BI (bad block information), flash updater 
+> > or gang programmer
+> > applications need to swap Bad Block Information (BI) data to byte 0 of 
+> > metadata area for
+> > every page before programming NAND Flash. ROM when loading firmware, 
+> > copies back
+> > the value at metadata[0] to BI offset in page data. The following figure 
+> > shows how the
+> > factory bad block marker is preserved."
+> > 
+> The inspection of the BB markers is only a fallback for the case that
+> there is no DBBT. From the same chapter that you quoted above:
+> | ROM uses DBBT to skip any bad block that falls within firmware data
+> | on NAND Flash device.
+> | If the address of DBBT Search Area in FCB is 0, ROM will rely on
+> | factory marked bad block markers to find out if a block is good or bad.
 > 
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 07cba07..c859adf 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -2596,7 +2596,7 @@ void __init of_clk_init(const struct of_device_id *matches)
->  
->  		parent->clk_init_cb = match->data;
->  		parent->np = np;
-> -		list_add(&parent->node, &clk_provider_list);
-> +		list_add_tail(&parent->node, &clk_provider_list);
->  	}
->  
->  	while (!list_empty(&clk_provider_list)) {
+> Thus, even the boot ROM of i.MX28 can well live without blockmark
+> swapping.
 
--- 
-Regards,
-Sylwester
+Assume that there is a NAND block "A",  and the A consist of 256 pages.
+the uboot is burned to the "A", can occupy 6 pages:
+
+  -----------------------------------------------------------------------------
+ | page 0 |  page 1 | page 2 | page 3 | page 4 | page 5 | ... | ... | page 255 |
+  -----------------------------------------------------------------------------
+ 
+  \-------------------------------------- ------------------------------------/
+                                         V  
+                                        "A"					 
+
+The DBBT is used to track if "A" is bad or not.
+Assume we know that "A" is a good block, ROM then need to read out the uboot.
+When the ROM needs to read out the 6 pages one by one. And each time the ROM read
+the page, it should do the swapping for this page.
+
+In this case, the ROM will do the swapping six times.
+
+Please read the sector again, you will see the "every page" in it:
+--------------------------------------------------------------------
+   "In order to preserve the BI (bad block information), flash updater 
+or gang programmer applications need to swap Bad Block Information (BI) data to byte 0 of 
+metadata area for every page before programming NAND Flash. ROM when loading firmware, 
+copies back
+--------------------------------------------------------------------
+
+thanks
+Huang Shijie
 
