@@ -1,135 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752465AbaC0Ebz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 00:31:55 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:34052 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239AbaC0Eby (ORCPT
+	id S1752816AbaC0Edz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 00:33:55 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:10821 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaC0Edx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 00:31:54 -0400
-References: <cover.1395846845.git.vdavydov@parallels.com> <5a5b09d4cb9a15fc120b4bec8be168630a3b43c2.1395846845.git.vdavydov@parallels.com>
-User-agent: mu4e 0.9.9.6pre2; emacs 24.3.1
-From: Greg Thelen <gthelen@google.com>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: akpm@linux-foundation.org, hannes@cmpxchg.org, mhocko@suse.cz,
-        glommer@gmail.com, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        devel@openvz.org, Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH -mm 1/4] sl[au]b: do not charge large allocations to memcg
-In-reply-to: <5a5b09d4cb9a15fc120b4bec8be168630a3b43c2.1395846845.git.vdavydov@parallels.com>
-Date: Wed, 26 Mar 2014 21:31:51 -0700
-Message-ID: <xr93fvm42rew.fsf@gthelen.mtv.corp.google.com>
+	Thu, 27 Mar 2014 00:33:53 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Wed, 26 Mar 2014 21:29:44 -0700
+From: Songhee Baek <sbaek@nvidia.com>
+To: Mark Brown <broonie@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+CC: Arun Shamanna Lakshmi <aruns@nvidia.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "tiwai@suse.de" <tiwai@suse.de>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Wed, 26 Mar 2014 21:33:51 -0700
+Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Topic: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Index: Ac9JWVrQGgcG2ndITtu7gRxcPofFOgAG2v2g
+Message-ID: <D6C615D3E4730340AE82D5BD856631C0A26CB31A6B@HQMAIL02.nvidia.com>
+References: <1395792156-4178-1-git-send-email-aruns@nvidia.com>
+ <53332CC7.6060800@metafoo.de> <20140327010852.GA30768@sirena.org.uk>
+In-Reply-To: <20140327010852.GA30768@sirena.org.uk>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> -----Original Message-----
+> From: alsa-devel-bounces@alsa-project.org [mailto:alsa-devel-bounces@alsa-
+> project.org] On Behalf Of Mark Brown
+> Sent: Wednesday, March 26, 2014 6:09 PM
+> To: Lars-Peter Clausen
+> Cc: Songhee Baek; Arun Shamanna Lakshmi; alsa-devel@alsa-project.org;
+> swarren@wwwdotorg.org; tiwai@suse.de; lgirdwood@gmail.com; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+> 
+> * PGP Signed by an unknown key
+> 
+> On Wed, Mar 26, 2014 at 08:38:47PM +0100, Lars-Peter Clausen wrote:
+> > On 03/26/2014 01:02 AM, Arun Shamanna Lakshmi wrote:
+> 
+> > The way you describe this it seems to me that a value array for this
+> > kind of mux would look like.
+> 
+> > 0x00000000, 0x00000000, 0x00000001
+> > 0x00000000, 0x00000000, 0x00000002
+> > 0x00000000, 0x00000000, 0x00000003
+> > 0x00000000, 0x00000000, 0x00000004
+> > 0x00000000, 0x00000000, 0x00000008
+> 
+> > That seems to be extremely tedious. If the MUX uses a one hot encoding
+> > how about storing the index of the bit in the values array and use (1
+> > << value) when writing the value to the register?
+> 
+> Or hide it behind utility macros at any rate; I've got this horrible feeling that as
+> soon as we have this people will notice that they have more standard enums
+> that are splatted over multiple registers (I think from memory I've seen them
+> but they got fudged).
+> 
+> > [...]
+> > >  /* enumerated kcontrol */
+> > >  struct soc_enum {
+> 
+> > There doesn't actually be any code that is shared between normal enums
+> > and wide enums. This patch doubles the size of the soc_enum struct,
+> > how about having a separate struct for wide enums?
+> 
+> Or if they are going to share the same struct then they shouldn't be duplicating
+> the code and instead keying off num_regs (which was my first thought earlier
+> on when I saw the separate functions).  We definitely shouldn't be sharing the
+> data without also sharing the code I think.
+> 
+> > >-	int reg;
+> > >+	int reg[SOC_ENUM_MAX_REGS];
+> > >  	unsigned char shift_l;
+> > >  	unsigned char shift_r;
+> > >  	unsigned int items;
+> > >-	unsigned int mask;
+> > >+	unsigned int mask[SOC_ENUM_MAX_REGS];
+> 
+> > If you make mask and reg pointers instead of arrays this should be
+> > much more flexible and not be limited to 3 registers.
+> 
+> Right, which pushes towards not sharing.  Though with an arrayified mask the
+> specification by shift syntax would get to be slightly obscure (is it relative to the
+> enums or the registers?) so perhaps we don't want to do that at all if we've got
+> specification by shift.  If we do that then we could get away with a variable
+> length array at the end of the struct though I think that may be painful for the
+> static declarations.  Someone would need to look to see what works
 
-On Wed, Mar 26 2014, Vladimir Davydov <vdavydov@parallels.com> wrote:
+Making a separate soc_enum_wide is a better way compared to using soc_enum for this use case. If we add a separate soc_enum_wide, we need to update the following functions : 
+	dapm_connect_mux,
+	soc_dapm_mux_update_power
+	snd_soc_dapm_mux_update_power
+These functions are using texts field in soc_enum struct, I think that we can pass texts pointer instead of soc_enum struct pointer. I want to know whether it is Ok to do this.
 
-> We don't track any random page allocation, so we shouldn't track kmalloc
-> that falls back to the page allocator.
-
-This seems like a change which will leads to confusing (and arguably
-improper) kernel behavior.  I prefer the behavior prior to this patch.
-
-Before this change both of the following allocations are charged to
-memcg (assuming kmem accounting is enabled):
- a = kmalloc(KMALLOC_MAX_CACHE_SIZE, GFP_KERNEL)
- b = kmalloc(KMALLOC_MAX_CACHE_SIZE + 1, GFP_KERNEL)
-
-After this change only 'a' is charged; 'b' goes directly to page
-allocator which no longer does accounting.
-
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Glauber Costa <glommer@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> ---
->  include/linux/slab.h |    2 +-
->  mm/memcontrol.c      |   27 +--------------------------
->  mm/slub.c            |    4 ++--
->  3 files changed, 4 insertions(+), 29 deletions(-)
->
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index 3dd389aa91c7..8a928ff71d93 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -363,7 +363,7 @@ kmalloc_order(size_t size, gfp_t flags, unsigned int order)
->  {
->  	void *ret;
->  
-> -	flags |= (__GFP_COMP | __GFP_KMEMCG);
-> +	flags |= __GFP_COMP;
->  	ret = (void *) __get_free_pages(flags, order);
->  	kmemleak_alloc(ret, size, 1, flags);
->  	return ret;
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index b4b6aef562fa..81a162d01d4d 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3528,35 +3528,10 @@ __memcg_kmem_newpage_charge(gfp_t gfp, struct mem_cgroup **_memcg, int order)
->  
->  	*_memcg = NULL;
->  
-> -	/*
-> -	 * Disabling accounting is only relevant for some specific memcg
-> -	 * internal allocations. Therefore we would initially not have such
-> -	 * check here, since direct calls to the page allocator that are marked
-> -	 * with GFP_KMEMCG only happen outside memcg core. We are mostly
-> -	 * concerned with cache allocations, and by having this test at
-> -	 * memcg_kmem_get_cache, we are already able to relay the allocation to
-> -	 * the root cache and bypass the memcg cache altogether.
-> -	 *
-> -	 * There is one exception, though: the SLUB allocator does not create
-> -	 * large order caches, but rather service large kmallocs directly from
-> -	 * the page allocator. Therefore, the following sequence when backed by
-> -	 * the SLUB allocator:
-> -	 *
-> -	 *	memcg_stop_kmem_account();
-> -	 *	kmalloc(<large_number>)
-> -	 *	memcg_resume_kmem_account();
-> -	 *
-> -	 * would effectively ignore the fact that we should skip accounting,
-> -	 * since it will drive us directly to this function without passing
-> -	 * through the cache selector memcg_kmem_get_cache. Such large
-> -	 * allocations are extremely rare but can happen, for instance, for the
-> -	 * cache arrays. We bring this test here.
-> -	 */
-> -	if (!current->mm || current->memcg_kmem_skip_account)
-> +	if (!current->mm)
->  		return true;
->  
->  	memcg = get_mem_cgroup_from_mm(current->mm);
-> -
->  	if (!memcg_can_account_kmem(memcg)) {
->  		css_put(&memcg->css);
->  		return true;
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 5e234f1f8853..c2e58a787443 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -3325,7 +3325,7 @@ static void *kmalloc_large_node(size_t size, gfp_t flags, int node)
->  	struct page *page;
->  	void *ptr = NULL;
->  
-> -	flags |= __GFP_COMP | __GFP_NOTRACK | __GFP_KMEMCG;
-> +	flags |= __GFP_COMP | __GFP_NOTRACK;
->  	page = alloc_pages_node(node, flags, get_order(size));
->  	if (page)
->  		ptr = page_address(page);
-> @@ -3395,7 +3395,7 @@ void kfree(const void *x)
->  	if (unlikely(!PageSlab(page))) {
->  		BUG_ON(!PageCompound(page));
->  		kfree_hook(x);
-> -		__free_memcg_kmem_pages(page, compound_order(page));
-> +		__free_pages(page, compound_order(page));
->  		return;
->  	}
->  	slab_free(page->slab_cache, page, object, _RET_IP_);
-> -- 
-> 1.7.10.4
-
+> 
+> * Unknown Key
+> * 0x7EA229BD
