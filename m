@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111AbaC0MRj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 08:17:39 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:55223 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaC0MRh (ORCPT
+	id S1756545AbaC0MTm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 08:19:42 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:49387 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbaC0MTk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 08:17:37 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-78-533416dfcb2e
+	Thu, 27 Mar 2014 08:19:40 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-b7-5334175a6a6b
 From: Sylwester Nawrocki <s.nawrocki@samsung.com>
 To: mturquette@linaro.org
 Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
@@ -17,96 +17,122 @@ Cc: linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
         m.szyprowski@samsung.com, t.figa@samsung.com,
         linux-kernel@vger.kernel.org,
         Sylwester Nawrocki <s.nawrocki@samsung.com>
-Subject: [PATCH RFC v3 0/2] clk: Support for DT assigned clock parents and rates
-Date: Thu, 27 Mar 2014 13:16:17 +0100
-Message-id: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+Subject: [PATCH RFC v3 1/2] clk: Add function parsing arbitrary clock list DT
+ property
+Date: Thu, 27 Mar 2014 13:16:18 +0100
+Message-id: <1395922579-28547-2-git-send-email-s.nawrocki@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrKLMWRmVeSWpSXmKPExsVy+t9jAd37YibBBnuOS1nMP3KO1aL/zUJW
-	iwN/djBaNC9ez2ZxtukNu8Wmx9dYLS7vmsNmcfsyr8XaI3fZLZZev8hk8XTCRTaL1r1H2C0O
-	v2lntZgx+SWbxfoZr1kc+D3WzFvD6NHS3MPmcbmvl8lj06pONo871/aweeyfu4bdY/OSeo++
-	LasYPT5vkgvgjOKySUnNySxLLdK3S+DKuNk1i6XglHTFu+sf2RsYn4h0MXJySAiYSNw49psN
-	whaTuHBvPZDNxSEksIhRovXKCRaQhJBAB5PEkRsJIDabgKFE79E+RhBbREBS4sHn6SwgDcwC
-	7cwSa6dsAmsQFgiQOH/0NSuIzSKgKvF76xJmEJtXwE3i7N9GoA0cQNsUJOZMspnAyL2AkWEV
-	o2hqQXJBcVJ6rqFecWJucWleul5yfu4mRnBgPpPawbiyweIQowAHoxIP7477RsFCrIllxZW5
-	hxglOJiVRHhvC5sEC/GmJFZWpRblxxeV5qQWH2KU5mBREuc90GodKCSQnliSmp2aWpBaBJNl
-	4uCUamBcd1ljq8iuLcfvdkQ5hSk+3hhb3qf98c9Ok67JmtvTnv3vVTrTHO320Sgy/Fae8B/v
-	S59aDgbLKR/SY2uXNX/4xkVvkcQuC+upswweLEwWYnmt5bjZxFJ2Adc/66CNDTeYTGTuPhDv
-	LK9rYj9subCngVODL03x+KTS2g8N+a2fV/FEXqj0sFViKc5INNRiLipOBADLnO/jSAIAAA==
+In-reply-to: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsVy+t9jAd0ocZNgg82tZhbzj5xjteh/s5DV
+	4sCfHYwWzYvXs1mcbXrDbrHp8TVWi8u75rBZ3L7Ma7H2yF12i6XXLzJZPJ1wkc2ide8RdovD
+	b9pZLWZMfslmsX7GaxYHfo8189YwerQ097B5XO7rZfLYtKqTzePOtT1sHvvnrmH32Lyk3qNv
+	yypGj8+b5AI4o7hsUlJzMstSi/TtErgy9vR0MBXMkKiY9OEfcwPjO+EuRk4OCQETiW+t/ewQ
+	tpjEhXvr2UBsIYFFjBLbGqy6GLmA7A4miQmnfrCAJNgEDCV6j/YxgtgiApISDz5PZwEpYhZo
+	Z5ZYO2UTWJGwQIRE+8InYJNYBFQlVj2dDWbzCrhJfD13H2gbB9A2BYk5k2xAwpwC7hK731xh
+	gVjsJvHk2H/GCYy8CxgZVjGKphYkFxQnpeca6RUn5haX5qXrJefnbmIEB/Iz6R2MqxosDjEK
+	cDAq8fDuuG8ULMSaWFZcmXuIUYKDWUmE97awSbAQb0piZVVqUX58UWlOavEhRmkOFiVx3oOt
+	1oFCAumJJanZqakFqUUwWSYOTqkGRrbo/S5aT1IeWtR3u096x6ZzrjfhiK3I54PVrMEbdK/I
+	df9+8tNK86RHgNY9r+cLKzuL5nPs/Lww8ITU902WihoB6pv+ZpRt7HitpHf8jNhBnWuFU3/v
+	l7/15iaf1d+q197zywW7G3js7xUa+YY0PGj7u1Qg8vCM2HsJsecvff95YMLH4o1zXiuxFGck
+	GmoxFxUnAgAK6SPHYAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set adds a DT binding documentation for new 'clock-parents'
-and 'clock-rates' DT properties and a helper function to parse them.
-The helper is now being called from within the driver core, similarly
-as it is done for the pins configuration binding to a device.
+The of_clk_get_by_property() function added by this patch is similar to
+of_clk_get(), except it allows to pass name of a DT property containing
+list of phandles and clock specifiers. For of_clk_get() this has been
+hard coded to "clocks".
 
-Patch 1/2 adds a variant of of_clk_get() function which accepts name of
-a DT property containing list of phandle + clock specifier pairs, as
-opposed to hard coded "clocks" property name in of_clk_get().
-As Mike suggested I've renamed this function to of_clk_get_by_property().
-
-Patch 2/2 actually adds the code searching for related DT properties at
-device node and performing re-parenting and/or clock frequency setting
-as specified.
-
-I didn't add sorting of clocks depending on parentship relation when
-setting the clock rates, it could be added in next iteration if it's
-decided it's required.
-
+Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+---
 Changes since v2:
- - code reordering to ensure there is no build errors, the clock
-   configuration code moved to a separate file,
- - introduced an 'assigned-clocks' DT node which is supposed to contain
-   clocks, clock-parents, clock-rates properties and be child node
-   a clock provider node, and a code parsing it called from of_clk_init();
-   It's for clocks which are not directly connected to consumer devices.
-   An alternative would be to list such assigned clocks in 'clocks'
-   property, along with "proper" parent clocks, but then there would
-   be phandles in clocks property of a node pointing to itself and it
-   would require proper handling in of_clock_init().
-   I actually tried it but it looked a bit ugly and chose this time to
-   use an extra subnode.
+ - moved the function declaration from drivers/clk/clk.h to
+   include/linux/clk.h
 
 Changes since v1:
- - updated DT binding documentation,
- - dropped the platform bus notifier, the clock setup routine is now
-   being called directly from the driver core before a driver probe() call;
-   this has an advantage such as all bus types are handled and any errors
-   are propagated, so that, for instance a driver probe() can be deferred
-   also when resources specified by clock-parents/clock-rates properties
-   are not yet available; an alternative would be to let drivers call
-   of_clk_device_setup() directly,
- - dropped the patch adding a macro definition for maximum DT property
-   name length for now.
+ - s/of_clk_get_list_entry/of_clk_get_by_property.
+---
+ drivers/clk/clkdev.c |   25 +++++++++++++++++++++----
+ include/linux/clk.h  |    7 +++++++
+ 2 files changed, 28 insertions(+), 4 deletions(-)
 
-Open issues:
- - handling of errors from of_clk_get_by_property() could be improved,
-   currently ENOENT is returned by this function not only for a null
-   entry.
-
-This series has been tested on ARM, on Exynos4412 Trats2 board, with
-patch [1] applied. RFC v2 can be found at [2].
-
-[1] https://lkml.org/lkml/2014/3/27/97
-[2] https://lkml.org/lkml/2014/3/3/324
-
-Sylwester Nawrocki (2):
-  clk: Add function parsing arbitrary clock list DT property
-  clk: Add handling of clk parent and rate assigned from DT
-
- .../devicetree/bindings/clock/clock-bindings.txt   |   26 ++++++
- drivers/base/dd.c                                  |    7 ++
- drivers/clk/Makefile                               |    1 +
- drivers/clk/clk-conf.c                             |   87 ++++++++++++++++++++
- drivers/clk/clk.c                                  |   10 ++-
- drivers/clk/clkdev.c                               |   25 +++++-
- include/linux/clk.h                                |    7 ++
- include/linux/clk/clk-conf.h                       |   19 +++++
- 8 files changed, 177 insertions(+), 5 deletions(-)
- create mode 100644 drivers/clk/clk-conf.c
- create mode 100644 include/linux/clk/clk-conf.h
-
---
+diff --git a/drivers/clk/clkdev.c b/drivers/clk/clkdev.c
+index a360b2e..1d41540 100644
+--- a/drivers/clk/clkdev.c
++++ b/drivers/clk/clkdev.c
+@@ -27,17 +27,28 @@ static LIST_HEAD(clocks);
+ static DEFINE_MUTEX(clocks_mutex);
+ 
+ #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
+-struct clk *of_clk_get(struct device_node *np, int index)
++/**
++ * of_clk_get_by_property() - Parse and lookup a clock referenced by a device node
++ * @np: pointer to clock consumer node
++ * @list_name: name of the clock list property
++ * @index: index to the clock list
++ *
++ * This function parses the @list_name property and together with @index
++ * value indicating an entry of the list uses it to look up the struct clk
++ * from the registered list of clock providers.
++ */
++struct clk *of_clk_get_by_property(struct device_node *np,
++				   const char *list_name, int index)
+ {
+ 	struct of_phandle_args clkspec;
+ 	struct clk *clk;
+ 	int rc;
+ 
+-	if (index < 0)
++	if (index < 0 || !list_name)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	rc = of_parse_phandle_with_args(np, "clocks", "#clock-cells", index,
+-					&clkspec);
++	rc = of_parse_phandle_with_args(np, list_name, "#clock-cells",
++					index, &clkspec);
+ 	if (rc)
+ 		return ERR_PTR(rc);
+ 
+@@ -51,6 +62,12 @@ struct clk *of_clk_get(struct device_node *np, int index)
+ 	of_node_put(clkspec.np);
+ 	return clk;
+ }
++EXPORT_SYMBOL(of_clk_get_by_property);
++
++struct clk *of_clk_get(struct device_node *np, int index)
++{
++	return of_clk_get_by_property(np, "clocks", index);
++}
+ EXPORT_SYMBOL(of_clk_get);
+ 
+ /**
+diff --git a/include/linux/clk.h b/include/linux/clk.h
+index 0dd9114..f71235b 100644
+--- a/include/linux/clk.h
++++ b/include/linux/clk.h
+@@ -383,6 +383,8 @@ struct of_phandle_args;
+ 
+ #if defined(CONFIG_OF) && defined(CONFIG_COMMON_CLK)
+ struct clk *of_clk_get(struct device_node *np, int index);
++struct clk *of_clk_get_by_property(struct device_node *np,
++				   const char *list_name, int index);
+ struct clk *of_clk_get_by_name(struct device_node *np, const char *name);
+ struct clk *of_clk_get_from_provider(struct of_phandle_args *clkspec);
+ #else
+@@ -395,6 +397,11 @@ static inline struct clk *of_clk_get_by_name(struct device_node *np,
+ {
+ 	return ERR_PTR(-ENOENT);
+ }
++struct clk *of_clk_get_by_property(struct device_node *np,
++				   const char *list_name, int index)
++{
++	return ERR_PTR(-ENOENT);
++}
+ #endif
+ 
+ #endif
+-- 
 1.7.9.5
 
