@@ -1,123 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757166AbaC0RXB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:23:01 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:60806 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756966AbaC0RVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:21:10 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 1/4] workqueue: Move workqueue bus attr to device attribute
-Date: Thu, 27 Mar 2014 18:20:59 +0100
-Message-Id: <1395940862-31428-2-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
-References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+	id S1757185AbaC0RXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 13:23:13 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:60063 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755244AbaC0RXJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 13:23:09 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Zheng Li <zheng.x.li@oracle.com>
+cc: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, joe.jin@oracle.com
+Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's value to 1 in tlb and alb mode.
+In-reply-to: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com>
+References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com>
+Comments: In-reply-to Zheng Li <zheng.x.li@oracle.com>
+   message dated "Tue, 25 Mar 2014 11:00:07 +0800."
+X-Mailer: MH-E 8.3.1; nmh 1.5; GNU Emacs 24.3.50
+Date: Thu, 27 Mar 2014 10:23:03 -0700
+Message-ID: <9725.1395940983@death.nxdomain>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032717-7182-0000-0000-00000A2898EC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A workqueue directory implements at least two files: max_active and
-per_cpu. Since thse are constant over WQ_SYSFS workqueues, they are
-implemented as bus attributes.
+Zheng Li <zheng.x.li@oracle.com> wrote:
 
-Then come the attributes that only belong to unbound workqueues. Those
-are implemented as device attribute.
+>In bond mode tlb and alb, inactive slaves should keep inactive flag to
+>1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
+>(for example ARP requests) which will arrive inactive slaves on same host from switch,
+>but inactive slave's inactive flag is zero that cause bridge receive the broadcast
+>packets to produce a wrong entry in forward table. Typical situation is domu send some
+>ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
+>packets go back to inactive slave from switch, because the inactive slave's inactive
+>flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
+>bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
 
-Now we are planning to implement a specific workqueue directory in order
-to control the cpu affinity of all non-ABI unbound workqueues at once.
-So far we are only interested in the cpumask file on this virtual
-workqueue directory: we can't have a single file max_active and per_cpu
-for all non ABI unbound workqueues for example. And for now it's not
-desirable to share more all-in-one property like cpu affinity.
+	It's probably worth noting that this effect is something that
+happens after the bonding master device is opened with slaves, i.e.,
+it's got a bunch of slaves, and is then set administratively down for
+whatever reason, and is now being set back up, and needs to set the
+active or inactive state of all the slaves.
 
-So we want to be able to create a directory containing only cpumask.
-Lets move the constant workqueue attrs as device attribute so that
-we can consider skipping them when we want.
+	It'd also be a little easier to read if it was formatted for 80
+columns.
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+>Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+>---
+> drivers/net/bonding/bond_main.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+>index e5628fc..8761df6 100644
+>--- a/drivers/net/bonding/bond_main.c
+>+++ b/drivers/net/bonding/bond_main.c
+>@@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
+> 				&& (slave != bond->curr_active_slave)) {
+> 				bond_set_slave_inactive_flags(slave,
+> 							      BOND_SLAVE_NOTIFY_NOW);
+>-			} else {
+>+			} else if (!bond_is_lb(bond)) {
+> 				bond_set_slave_active_flags(slave,
+> 							    BOND_SLAVE_NOTIFY_NOW);
+
+	This patch doesn't do anything for the modes that are
+bond_is_lb, i.e., the balance-tlb and -alb modes.  I believe those two
+should be set similarly to active-backup: the curr_active_slave is
+active, other slaves are inactive.  The "inactive" setting for alb is
+special, and means to not pass broadcast or multicast, but let unicast
+through.
+
+	-J
+
 ---
- kernel/workqueue.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 193e977..4d230e3 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -3133,7 +3133,6 @@ static ssize_t per_cpu_show(struct device *dev, struct device_attribute *attr,
- 
- 	return scnprintf(buf, PAGE_SIZE, "%d\n", (bool)!(wq->flags & WQ_UNBOUND));
- }
--static DEVICE_ATTR_RO(per_cpu);
- 
- static ssize_t max_active_show(struct device *dev,
- 			       struct device_attribute *attr, char *buf)
-@@ -3156,14 +3155,12 @@ static ssize_t max_active_store(struct device *dev,
- 	workqueue_set_max_active(wq, val);
- 	return count;
- }
--static DEVICE_ATTR_RW(max_active);
- 
--static struct attribute *wq_sysfs_attrs[] = {
--	&dev_attr_per_cpu.attr,
--	&dev_attr_max_active.attr,
--	NULL,
-+static struct device_attribute wq_sysfs_default_attrs[] = {
-+	__ATTR(per_cpu, 0444, per_cpu_show, NULL),
-+	__ATTR(max_active, 0644, max_active_show, max_active_store),
-+	__ATTR_NULL,
- };
--ATTRIBUTE_GROUPS(wq_sysfs);
- 
- static ssize_t wq_pool_ids_show(struct device *dev,
- 				struct device_attribute *attr, char *buf)
-@@ -3313,7 +3310,6 @@ static struct device_attribute wq_sysfs_unbound_attrs[] = {
- 
- static struct bus_type wq_subsys = {
- 	.name				= "workqueue",
--	.dev_groups			= wq_sysfs_groups,
- };
- 
- static int __init wq_sysfs_init(void)
-@@ -3346,6 +3342,7 @@ static void wq_device_release(struct device *dev)
-  */
- int workqueue_sysfs_register(struct workqueue_struct *wq)
- {
-+	struct device_attribute *attr;
- 	struct wq_device *wq_dev;
- 	int ret;
- 
-@@ -3379,8 +3376,16 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
- 		return ret;
- 	}
- 
-+	for (attr = wq_sysfs_default_attrs; attr->attr.name; attr++) {
-+		ret = device_create_file(&wq_dev->dev, attr);
-+		if (ret) {
-+			device_unregister(&wq_dev->dev);
-+			wq->wq_dev = NULL;
-+			return ret;
-+		}
-+	}
-+
- 	if (wq->flags & WQ_UNBOUND) {
--		struct device_attribute *attr;
- 
- 		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
- 			ret = device_create_file(&wq_dev->dev, attr);
--- 
-1.8.3.1
+	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
 
