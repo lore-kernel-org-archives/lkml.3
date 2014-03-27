@@ -1,250 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755861AbaC0OOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 10:14:54 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:51689 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753951AbaC0OOu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 10:14:50 -0400
-Message-ID: <53343256.8020802@monstr.eu>
-Date: Thu, 27 Mar 2014 15:14:46 +0100
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Kedareswara rao Appana <appana.durga.rao@xilinx.com>
-CC: wg@grandegger.com, mkl@pengutronix.de, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        devicetree@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-can@vger.kernel.org,
-        Kedareswara rao Appana <appanad@xilinx.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6] can: xilinx CAN controller support
+	id S1756800AbaC0OVL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 10:21:11 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:45207 "EHLO
+	tx2outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755244AbaC0OVI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 10:21:08 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -3
+X-BigFish: VPS-3(zz98dI9371I936eI542I1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h1de097hz2fh95h109h839h944hc61hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h262fh268bh906i2673i1155h)
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Joe Perches <joe@perches.com>
+CC: "wg@grandegger.com" <wg@grandegger.com>,
+        "mkl@pengutronix.de" <mkl@pengutronix.de>,
+        Michal Simek <michals@xilinx.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: RE: [PATCH v6] can: xilinx CAN controller support
+Thread-Topic: [PATCH v6] can: xilinx CAN controller support
+Thread-Index: AQHPSLW61/zn+huQD0m6uCOrbAavrJr0/cOg
+Date: Thu, 27 Mar 2014 14:20:58 +0000
 References: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
-In-Reply-To: <5ff46a21-3047-40ff-9221-f08e476f9ce6@VA3EHSMHS030.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS"
+ <1395812357.3726.14.camel@joe-AO722>
+In-Reply-To: <1395812357.3726.14.camel@joe-AO722>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.230.81]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+Message-ID: <8cbdd3af-afb3-4a2d-a4b7-38ce4e34b73d@TX2EHSMHS018.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-Hi Kedar,
-
-On 03/26/2014 06:26 AM, Kedareswara rao Appana wrote:
-> This patch adds xilinx CAN controller support.
-> This driver supports both ZYNQ CANPS and Soft IP
-> AXI CAN controller.
->=20
-> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> ---
-> This patch is rebased on the 3.14 rc8 kernel
-> Chnages for v6:
-> - Updated the driver with review comments.
-> - Used the clock names specified in the IP data sheet.
-> - Updated the devicetree bindings doc as per Rob suggestion.
-> Changes for v5:
-> - Updated the driver with the review comments.
-> - Remove the check for the tx fifo full interrupt condition
->   form Tx interrupt routine as we are checking it in the _xmit
->   routine.
-> - Clearing the txok interrupt in the tx interrupt routine for
->   every Tx can frame.
-> Changes for v4:
-> - Added check for the tx fifo full interrupt condition in
->   Tx interrupt routine.
-> - Added be iohelper functions.
-> - Moved the clock enable/disable to probe/remove because of
->   Added big endian support for AXI CAN controller case(reading
->   a register during probe for that we need to enable clock).
-> Changes for v3:
-> - Updated the driver with the review comments.
-> - Modified the tranmit logic as per Marc suggestion.
-> - Enabling the clock when the interface is up to reduce the
->   Power consumption.
-> Changes for v2:
-> - Updated with the review comments.
-> - Removed the unnecessary debug prints.
-> - include tx,rx fifo depths in ZYNQ CANPS case also.
-> ---
->  .../devicetree/bindings/net/can/xilinx_can.txt     |   44 +
->  drivers/net/can/Kconfig                            |    7 +
->  drivers/net/can/Makefile                           |    1 +
->  drivers/net/can/xilinx_can.c                       | 1179 ++++++++++++=
-++++++++
->  4 files changed, 1231 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/net/can/xilinx_ca=
-n.txt
->  create mode 100644 drivers/net/can/xilinx_can.c
->=20
-> diff --git a/Documentation/devicetree/bindings/net/can/xilinx_can.txt b=
-/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-> new file mode 100644
-> index 0000000..4646396
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/net/can/xilinx_can.txt
-> @@ -0,0 +1,44 @@
-> +Xilinx Axi CAN/Zynq CANPS controller Device Tree Bindings
-> +---------------------------------------------------------
-> +
-> +Required properties:
-> +- compatible		: Should be "xlnx,zynq-can-1.00.a" for Zynq CAN
-
-We should do one more change and better now than later.
-Please use just "xlnx,zynq-can-1.0" compatible string here.
-
-> +			  controllers and "xlnx,axi-can-1.00.a" for Axi CAN
-> +			  controllers.
-> +- reg			: Physical base address and size of the Axi CAN/Zynq
-> +			  CANPS registers map.
-> +- interrupts		: Property with a value describing the interrupt
-> +			  number.
-> +- interrupt-parent	: Must be core interrupt controller
-> +- clock-names		: List of input clock names - "can_clk", "pclk"
-> +			  (For CANPS), "can_clk" , "s_axi_aclk"(For AXI CAN)
-> +			  (See clock bindings for details).
-> +- clocks		: Clock phandles (see clock bindings for details).
-> +- tx-fifo-depth		: Can Tx fifo depth.
-> +- rx-fifo-depth		: Can Rx fifo depth.
-> +
-> +
-> +Example:
-> +
-> +For Zynq CANPS Dts file:
-> +	zynq_can_0: can@e0008000 {
-> +			compatible =3D "xlnx,zynq-can-1.00.a";
-
-the same here.
-
-> +			clocks =3D <&clkc 19>, <&clkc 36>;
-> +			clock-names =3D "can_clk", "pclk";
-> +			reg =3D <0xe0008000 0x1000>;
-> +			interrupts =3D <0 28 4>;
-> +			interrupt-parent =3D <&intc>;
-> +			tx-fifo-depth =3D <0x40>;
-> +			rx-fifo-depth =3D <0x40>;
-> +		};
-> +For Axi CAN Dts file:
-> +	axi_can_0: axi-can@40000000 {
-> +			compatible =3D "xlnx,axi-can-1.00.a";
-> +			clocks =3D <&clkc 0>;
-> +			clock-names =3D "can_clk","s_axi_aclk" ;
-> +			reg =3D <0x40000000 0x10000>;
-> +			interrupt-parent =3D <&intc>;
-> +			interrupts =3D <0 59 1>;
-> +			tx-fifo-depth =3D <0x40>;
-> +			rx-fifo-depth =3D <0x40>;
-> +		};
-
-I don't know which thread I discussed this with Rob but please send this =
-binding
-separately out of this and copy devicetree@vger.kernel.org for this patch=
-=2E
-They should give us ACK on device-tree binding.
+Hi Joe perches,
 
 
-> diff --git a/drivers/net/can/Kconfig b/drivers/net/can/Kconfig
-> index 9e7d95d..9049884 100644
-> --- a/drivers/net/can/Kconfig
-> +++ b/drivers/net/can/Kconfig
-> @@ -125,6 +125,13 @@ config CAN_GRCAN
->  	  endian syntheses of the cores would need some modifications on
->  	  the hardware level to work.
-> =20
-> +config CAN_XILINXCAN
-> +	tristate "Xilinx CAN"
-> +	depends on ARCH_ZYNQ || MICROBLAZE || COMPILE_TEST
-> +	depends on COMMON_CLK && HAS_IOMEM
-> +	---help---
-> +	  Xilinx CAN driver. This driver supports both soft AXI CAN IP and
-> +	  Zynq CANPS IP.
->  source "drivers/net/can/mscan/Kconfig"
-> =20
->  source "drivers/net/can/sja1000/Kconfig"
-> diff --git a/drivers/net/can/Makefile b/drivers/net/can/Makefile
-> index c744039..0b8e11e 100644
-> --- a/drivers/net/can/Makefile
-> +++ b/drivers/net/can/Makefile
-> @@ -25,5 +25,6 @@ obj-$(CONFIG_CAN_JANZ_ICAN3)	+=3D janz-ican3.o
->  obj-$(CONFIG_CAN_FLEXCAN)	+=3D flexcan.o
->  obj-$(CONFIG_PCH_CAN)		+=3D pch_can.o
->  obj-$(CONFIG_CAN_GRCAN)		+=3D grcan.o
-> +obj-$(CONFIG_CAN_XILINXCAN)	+=3D xilinx_can.o
-> =20
->  ccflags-$(CONFIG_CAN_DEBUG_DEVICES) :=3D -DDEBUG
-> diff --git a/drivers/net/can/xilinx_can.c b/drivers/net/can/xilinx_can.=
-c
-> new file mode 100644
-> index 0000000..3bb289c
-> --- /dev/null
-> +++ b/drivers/net/can/xilinx_can.c
-> @@ -0,0 +1,1179 @@
-> +/* Xilinx CAN device driver
-> + *
-> + * Copyright (C) 2012 - 2014 Xilinx, Inc.
-> + * Copyright (C) 2009 PetaLogix. All rights reserved.
-> + *
-> + * Description:
-> + * This driver is developed for Axi CAN IP and for Zynq CANPS Controll=
-er.
-> + * This program is free software: you can redistribute it and/or modif=
-y
-> + * it under the terms of the GNU General Public License as published b=
-y
-> + * the Free Software Foundation, either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program.  If not, see <http://www.gnu.org/licenses/=
->.
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com]
+> Sent: Wednesday, March 26, 2014 11:09 AM
+> To: Appana Durga Kedareswara Rao
+> Cc: wg@grandegger.com; mkl@pengutronix.de; Michal Simek;
+> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org;
+> netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
+> kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga
+> Kedareswara Rao
+> Subject: Re: [PATCH v6] can: xilinx CAN controller support
+>
+> On Wed, 2014-03-26 at 10:56 +0530, Kedareswara rao Appana wrote:
+> > This patch adds xilinx CAN controller support.
+> > This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
+>
+> Just trivial notes about dmesg logging output.
+>
+> > diff --git a/drivers/net/can/xilinx_can.c
+> > b/drivers/net/can/xilinx_can.c
+> []
+> > +static int set_reset_mode(struct net_device *ndev) {
+> []
+> > +                   netdev_warn(ndev, "timedout waiting for config
+> mode\n");
+>
+> timed out
+>
+OK will do
 
-Please remove this paragraph. Some testing tools reports this
-as a problematic part.
+> > +static int xcan_set_bittiming(struct net_device *ndev) {
+> []
+> > +   if (!is_config_mode) {
+> > +           netdev_alert(ndev,
+> > +                   "BUG! Cannot set bittiming can is notin config
+> mode\n");
+>
+> "Cannot set bit timing - CAN is not in config mode\n"
+>
+> > +static int xcan_chip_start(struct net_device *ndev) {
+>
+> > +                   netdev_warn(ndev,
+> > +                           "time out waiting for correct mode\n");
+>
+> Please be consistent.  Maybe
+> "timed out waiting for correct mode\n"
+>
+Ok Will change.
 
-<snip>
+> > +static int xcan_open(struct net_device *ndev) {
+> > +   struct xcan_priv *priv = netdev_priv(ndev);
+> > +   int ret;
+> > +
+> > +   ret = request_irq(ndev->irq, xcan_interrupt, priv->irq_flags,
+> > +                   ndev->name, ndev);
+> > +   if (ret < 0) {
+> > +           netdev_err(ndev, "Irq allocation for CAN failed\n");
+>
+> irq is almost always lower case.
+>
+Ok Will change.
 
-> +/* Match table for OF platform binding */
-> +static struct of_device_id xcan_of_match[] =3D {
-> +	{ .compatible =3D "xlnx,zynq-can-1.00.a", },
+Regards,
+Kedar.
 
-And here also xlnx,zynq-can-1.0
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+>
 
 
 
---1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-iEYEARECAAYFAlM0MlYACgkQykllyylKDCH9zQCgnIsixyuI2xvQD5kaZb/os8g8
-RzoAn0pWBZzATIe2F2GLy9sl48ralZGq
-=+FL0
------END PGP SIGNATURE-----
-
---1O1wFkfqdC5vAbhH64RkQeBFEONTGuAPS--
