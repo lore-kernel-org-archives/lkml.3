@@ -1,75 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536AbaC0Lci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 07:32:38 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:51128 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbaC0Lar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 07:30:47 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: kvm@vger.kernel.org
-Subject: [RFC PATCH 1/5] KVM: vmx: speed up emulation of invalid guest state
-Date: Thu, 27 Mar 2014 12:30:34 +0100
-Message-Id: <1395919838-18466-2-git-send-email-pbonzini@redhat.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1395919838-18466-1-git-send-email-pbonzini@redhat.com>
-References: <1395919838-18466-1-git-send-email-pbonzini@redhat.com>
+	id S1755910AbaC0Lfl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 07:35:41 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:3822 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751242AbaC0Lfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 07:35:40 -0400
+X-IronPort-AV: E=Sophos;i="4.97,742,1389744000"; 
+   d="scan'208";a="114107920"
+Message-ID: <1395920136.22909.76.camel@kazak.uk.xensource.com>
+Subject: Re: [PATCH net-next] xen-netback: Grant copy the header instead of
+ map and memcpy
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+CC: <wei.liu2@citrix.com>, <xen-devel@lists.xenproject.org>,
+        <paul.durrant@citrix.com>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <jonathan.davies@citrix.com>
+Date: Thu, 27 Mar 2014 11:35:36 +0000
+In-Reply-To: <1395868707-22683-1-git-send-email-zoltan.kiss@citrix.com>
+References: <1395868707-22683-1-git-send-email-zoltan.kiss@citrix.com>
+Organization: Citrix Systems, Inc.
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.80]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-About 25% of the time spent in emulation of invalid guest state
-is wasted in checking whether emulation is required for the next
-instruction.  However, this almost never changes except when a
-segment register (or TR or LDTR) changes, or when there is a mode
-transition (i.e. CR0 changes).
+On Wed, 2014-03-26 at 21:18 +0000, Zoltan Kiss wrote:
+> An old inefficiency of the TX path that we are grant mapping the first slot,
+> and then copy the header part to the linear area. Instead, doing a grant copy
+> for that header straight on is more reasonable. Especially because there are
+> ongoing efforts to make Xen avoiding TLB flush after unmap when the page were
+> not touched in Dom0. In the original way the memcpy ruined that.
+> The key changes:
+> - the vif has a tx_copy_ops array again
+> - xenvif_tx_build_gops sets up the grant copy operations
+> - we don't have to figure out whether the header and first frag are on the same
+>   grant mapped page or not
+> 
+> Unrelated, but I've made a small refactoring in xenvif_get_extras as well.
 
-In fact, vmx_set_segment and vmx_set_cr0 already modify
-vmx->emulation_required (except that the former for some reason
-uses |= instead of just an assignment).  So there is no need to
-call guest_state_valid in the emulation loop.
+Just a few thoughts, not really based on close review of the code.
 
-Emulation performance test results indicate 530-870 cycles
-for common instructions, versus 740-1110 before this patch.
+Do you have any measurements for this series or workloads where it is
+particularly beneficial?
 
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
----
- arch/x86/kvm/vmx.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+You've added a second hypercall to tx_action, probably those can be
+combined into one vm exit by using a multicall. Also you should omit
+either if their respective nr_?ops is zero (can nr_cops ever be zero?)
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 1320e0f8e611..73aa522db47b 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -3629,7 +3629,7 @@ static void vmx_set_segment(struct kvm_vcpu *vcpu,
- 	vmcs_write32(sf->ar_bytes, vmx_segment_access_rights(var));
- 
- out:
--	vmx->emulation_required |= emulation_required(vcpu);
-+	vmx->emulation_required = emulation_required(vcpu);
- }
- 
- static void vmx_get_cs_db_l_bits(struct kvm_vcpu *vcpu, int *db, int *l)
-@@ -5580,7 +5580,7 @@ static int handle_invalid_guest_state(struct kvm_vcpu *vcpu)
- 	cpu_exec_ctrl = vmcs_read32(CPU_BASED_VM_EXEC_CONTROL);
- 	intr_window_requested = cpu_exec_ctrl & CPU_BASED_VIRTUAL_INTR_PENDING;
- 
--	while (!guest_state_valid(vcpu) && count-- != 0) {
-+	while (vmx->emulation_required && count-- != 0) {
- 		if (intr_window_requested && vmx_interrupt_allowed(vcpu))
- 			return handle_interrupt_window(&vmx->vcpu);
- 
-@@ -5614,7 +5614,6 @@ static int handle_invalid_guest_state(struct kvm_vcpu *vcpu)
- 			schedule();
- 	}
- 
--	vmx->emulation_required = emulation_required(vcpu);
- out:
- 	return ret;
- }
--- 
-1.8.3.1
+Adding another MAX_PENDING_REQS sized array is unfortunate. Could we
+perhaps get away with only ever doing copy for the first N requests (for
+small N) in a frame and copying up the request, N should be chosen to be
+large enough to cover the more common cases (which I suppose is Windows
+which puts the network and transport headers in separate slots). This
+might allow the copy array to be smaller, at the expense of still doing
+the map+memcpy for some corner cases.
 
+Or (and I confess this is a skanky hack): we overlay tx_copy_ops and
+tx_map_ops in a union, and insert one set of ops from the front and the
+other from the end, taking great care around when and where they meet.
+
+
+>  static int xenvif_tx_check_gop(struct xenvif *vif,
+>  			       struct sk_buff *skb,
+> -			       struct gnttab_map_grant_ref **gopp)
+> +			       struct gnttab_map_grant_ref **gopp,
+> +			       struct gnttab_copy **gopp_copy)
+
+I think a precursor patch which only does s/gopp/gopp_map/ would be
+beneficial.
+> @@ -1164,7 +1147,9 @@ static bool tx_credit_exceeded(struct xenvif *vif, unsigned size)
+>  	return false;
+>  }
+>  
+> -static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+> +static unsigned xenvif_tx_build_gops(struct xenvif *vif,
+> +				     int budget,
+> +				     unsigned *copy_ops)
+
+I think you should turn the nr map ops into an explicit pointer return
+too, having one thing go via the formal return code and another via a
+pointer is a bit odd.
+
+>  	struct gnttab_map_grant_ref *gop = vif->tx_map_ops, *request_gop;
+>  	struct sk_buff *skb;
+> @@ -1267,24 +1252,37 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif, int budget)
+>  			}
+>  		}
+>  
+> -		xenvif_tx_create_gop(vif, pending_idx, &txreq, gop);
+> -
+> -		gop++;
+> -
+>  		XENVIF_TX_CB(skb)->pending_idx = pending_idx;
+>  
+>  		__skb_put(skb, data_len);
+
+Can't you allocate the skb with sufficient headroom? (or maybe I've
+forgotten again how skb payload management works and __skb_put is
+effectively free on an empty skb?)
+
+> +		vif->tx_copy_ops[*copy_ops].source.u.ref = txreq.gref;
+> +		vif->tx_copy_ops[*copy_ops].source.domid = vif->domid;
+> +		vif->tx_copy_ops[*copy_ops].source.offset = txreq.offset;
+> +
+> +		vif->tx_copy_ops[*copy_ops].dest.u.gmfn = virt_to_mfn(skb->data);
+> +		vif->tx_copy_ops[*copy_ops].dest.domid = DOMID_SELF;
+> +		vif->tx_copy_ops[*copy_ops].dest.offset = offset_in_page(skb->data);
+> +
+> +		vif->tx_copy_ops[*copy_ops].len = data_len;
+
+Do we want to copy the entire first frag even if it is e.g. a complete
+page?
+
+I'm not sure where the tradeoff lies between doing a grant copy of more
+than necessary and doing a map+memcpy when the map is already required
+for the page frag anyway.
+
+What about the case where the first frag is less than PKT_PROT_LEN? I
+think you still do map+memcpy in that case?
+
+> @@ -1375,6 +1374,7 @@ static int xenvif_handle_frag_list(struct xenvif *vif, struct sk_buff *skb)
+>  static int xenvif_tx_submit(struct xenvif *vif)
+>  {
+>  	struct gnttab_map_grant_ref *gop = vif->tx_map_ops;
+
+Another candidate for a precursor patch renaming for clarity.
+
+Ian.
 
