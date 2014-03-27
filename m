@@ -1,153 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752989AbaC0DFl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 23:05:41 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:50832 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752136AbaC0DFh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 23:05:37 -0400
+	id S1753278AbaC0DGp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 23:06:45 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33604 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166AbaC0DGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 23:06:43 -0400
+Message-ID: <533394C7.1000702@linux.vnet.ibm.com>
+Date: Thu, 27 Mar 2014 08:32:31 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20140326194847.0e994d0b@ipyr.poochiereds.net>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
- <20140326194847.0e994d0b@ipyr.poochiereds.net>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 26 Mar 2014 20:05:16 -0700
-Message-ID: <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
-Subject: Re: Thoughts on credential switching
-To: Jeff Layton <jlayton@redhat.com>
-Cc: Jim Lieb <jlieb@panasas.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bfields@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+CC: tglx@linutronix.de, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, peterz@infradead.org, rjw@rjwysocki.net,
+        paulmck@linux.vnet.ibm.com, davem@davemloft.net
+Subject: Re: [PATCH] tick, broadcast: Prevent false alarm when force mask
+ contains offline cpus
+References: <20140326035648.21736.85740.stgit@preeti.in.ibm.com> <5332B833.2030701@linux.vnet.ibm.com>
+In-Reply-To: <5332B833.2030701@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032703-0320-0000-0000-000002C9A4F7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 7:48 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> On Wed, 26 Mar 2014 17:23:24 -0700
-> Andy Lutomirski <luto@amacapital.net> wrote:
->
->> Hi various people who care about user-space NFS servers and/or
->> security-relevant APIs.
+On 03/26/2014 04:51 PM, Srivatsa S. Bhat wrote:
+> On 03/26/2014 09:26 AM, Preeti U Murthy wrote:
+>> Its possible that the tick_broadcast_force_mask contains cpus which are not
+>> in cpu_online_mask when a broadcast tick occurs. This could happen under the
+>> following circumstance assuming CPU1 is among the CPUs waiting for broadcast.
 >>
->> I propose the following set of new syscalls:
+>> CPU0					CPU1
 >>
->> int credfd_create(unsigned int flags): returns a new credfd that
->> corresponds to current's creds.
+>> Run CPU_DOWN_PREPARE notifiers
 >>
->> int credfd_activate(int fd, unsigned int flags): Change current's
->> creds to match the creds stored in fd.  To be clear, this changes both
->> the "subjective" and "objective" (aka real_cred and cred) because
->> there aren't any real semantics for what happens when userspace code
->> runs with real_cred != cred.
+>> Start stop_machine			Gets woken up by IPI to run
+>> 					stop_machine, sets itself in
+>> 					tick_broadcast_force_mask if the
+>> 					time of broadcast interrupt is around
+>> 					the same time as this IPI.
 >>
->> Rules:
+>> 					Start stop_machine
+>> 					  set_cpu_online(cpu1, false)
+>> End stop_machine			End stop_machine
 >>
->>  - credfd_activate fails (-EINVAL) if fd is not a credfd.
->>  - credfd_activate fails (-EPERM) if the fd's userns doesn't match
->> current's userns.  credfd_activate is not intended to be a substitute
->> for setns.
->>  - credfd_activate will fail (-EPERM) if LSM does not allow the
->> switch.  This probably needs to be a new selinux action --
->> dyntransition is too restrictive.
+>> Broadcast interrupt
+>>   Finds that cpu1 in
+>>   tick_broadcast_force_mask is offline
+>>   and triggers the WARN_ON in
+>>   tick_handle_oneshot_broadcast()
 >>
+>> Clears all broadcast masks
+>> in CPU_DEAD stage.
 >>
->> Optional:
->>  - credfd_create always sets cloexec, because the alternative is
->> silly.
->>  - credfd_activate fails (-EINVAL) if dumpable.  This is because we
->> don't want a privileged daemon to be ptraced while impersonating
->> someone else.
->>  - optional: both credfd_create and credfd_activate fail if
->> !ns_capable(CAP_SYS_ADMIN) or perhaps !capable(CAP_SETUID).
+>> This WARN_ON was added to capture scenarios where the broadcast mask, be it
+>> oneshot/pending/force_mask contain offline cpus whose tick devices have been
+>> removed. But here is a case where we trigger the warn on in a valid scenario.
 >>
->> The first question: does this solve Ganesha's problem?
+>> One could argue that the scenario is invalid and ought to be warned against
+>> because ideally the broadcast masks need to be cleared of the cpus about to
+>> go offine before clearing them in the online_mask so that we dont hit these
+>> scenarios.
 >>
->> The second question: is this safe?  I can see two major concerns.  The
->> bigger concern is that having these syscalls available will allow
->> users to exploit things that were previously secure.  For example,
->> maybe some configuration assumes that a task running as uid==1 can't
->> switch to uid==2, even with uid 2's consent.  Similar issues happen
->> with capabilities.  If CAP_SYS_ADMIN is not required, then this is no
->> longer really true.
->>
->> Alternatively, something running as uid == 0 with heavy capability
->> restrictions in a mount namespace (but not a uid namespace) could pass
->> a credfd out of the namespace.  This could break things like Docker
->> pretty badly.  CAP_SYS_ADMIN guards against this to some extent.  But
->> I think that Docker is already totally screwed if a Docker root task
->> can receive an O_DIRECTORY or O_PATH fd out of the container, so it's
->> not entirely clear that the situation is any worse, even without
->> requiring CAP_SYS_ADMIN.
->>
->> The second concern is that it may be difficult to use this correctly.
->> There's a reason that real_cred and cred exist, but it's not really
->> well set up for being used.
->>
->> As a simple way to stay safe, Ganesha could only use credfds that have
->> real_uid == 0.
->>
->> --Andy
->
->
-> I still don't quite grok why having this special credfd_create call
-> buys you anything over simply doing what Al had originally suggested --
-> switch creds using all of the different syscalls and then simply caching
-> that in a "normal" fd:
->
->     fd = open("/dev/null", O_PATH...);
->
-> ...it seems to me that the credfd_activate call will still need to do
-> the same permission checking that all of the individual set*id() calls
-> require (and all of the other stuff like changing selinux contexts,
-> etc).
->
-> IOW, this fd is just a "handle" for passing around a struct cred, but I
-> don't see why having access to that handle would allow you to do
-> something you couldn't already do anyway.
->
-> Am I missing something obvious here?
+>> This would mean clearing the masks in CPU_DOWN_PREPARE stage.
+> 
+> Not necessarily. We could clear the mask in the CPU_DYING stage. That way,
+> offline CPUs will automatically get cleared from the force_mask and hence
+> the tick-broadcast code will not need to have a special case to deal with
+> this scenario. What do you think?
 
-Not really.  I think I didn't adequately explain a piece of this.
+Ok I gave some thought to this. This will not work with the hrtimer mode
+of broadcast framework going in. This is the feature that was added for
+implementations of such archs which do not have an external clock device
+to wake them up in deep idle states when the local timers stop. They
+assign one of the CPUs as an agent to wake them up. When this designated
+CPU gets hotplugged out, we need to assign this duty to some other CPU.
 
-I think that what you're suggesting is for an fd to encode a set of
-credentials but not to grant permission to use those credentials.  So
-switch_creds(fd) is more or less the same thing as switch_creds(ruid,
-euid, suid, rgid, egid, sgid, groups, mac label, ...).  switch_creds
-needs to verify that the caller can dyntransition to the label, set
-all the ids, etc., but it avoids allocating anything and running RCU
-callbacks.
+The way this is being done now is in
+tick_shutdown_broadcast_oneshot_control() which is also responsible for
+clearing the broadcast masks. When the hrtimer mode of broadcast is
+active, then in addition to clearing masks in this function we make the
+CPU executing this function take on the task of waking up CPUs in deep
+idle state if the hotplugged CPU was doing this earlier.
 
-The trouble with this is that the verification needed is complicated
-and expensive.  And I think that my proposal is potentially more
-useful.
+Currently tick_shutdown_broadcast_oneshot_control() is being executed in
+the CPU_DEAD notification and this is guarenteed to run on a CPU *other
+than* the dying CPU. Hence we can safely do this.
 
-A credfd is like a struct cred, but possession of a credfd carries the
-permission to use those credentials.  So, for example, credfd_activate
-to switch to a given uid might work even if setresuid to that uid
-would be disallowed.  But, for this to be secure, the act of giving
-someone a credfd needs to be explicit.  Programs implicitly send other
-programs their credentials by means of f_cred all the time, and they
-don't expect to allow the receiver to impersonate them.
+However if we move this function underneath CPU_DYING notifier, this
+will turn out to be a disaster since IIUC the dying CPU is running this
+notifier and will end up re-assigning the duty of waking up CPUs to itself.
 
-credfd has other uses.  A file server, for example, could actually
-delegate creation of the credfds to a separate process, and that
-process could validate that the request is for a credfd that the file
-server really should be able to obtain.  This would enable that
-process to make sure that the user in question has actually
-authenticated itself, so a file server compromise could only attack
-users who connect instead of attacking any user on the system.  This
-is an argument against requiring CAP_SYS_ADMIN to use credfd_activate.
+Does this make sense?
 
-I'm less confident in whether capabilities should be needed to use
-credfd_create.
+Regards
+Preeti U Murthy
+> 
+> Regards,
+> Srivatsa S. Bhat
+> 
+>> ---
+>>
+>>  kernel/time/tick-broadcast.c |    7 ++++++-
+>>  1 file changed, 6 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+>> index 63c7b2d..30b8731 100644
+>> --- a/kernel/time/tick-broadcast.c
+>> +++ b/kernel/time/tick-broadcast.c
+>> @@ -606,7 +606,12 @@ again:
+>>  	 */
+>>  	cpumask_clear_cpu(smp_processor_id(), tick_broadcast_pending_mask);
+>>
+>> -	/* Take care of enforced broadcast requests */
+>> +	/* Take care of enforced broadcast requests. We could have offline
+>> +	 * cpus in the tick_broadcast_force_mask. Thats ok, we got the interrupt
+>> +	 * before we could clear the mask.
+>> +	 */
+>> +	cpumask_and(tick_broadcast_force_mask,
+>> +			tick_broadcast_force_mask, cpu_online_mask);
+>>  	cpumask_or(tmpmask, tmpmask, tick_broadcast_force_mask);
+>>  	cpumask_clear(tick_broadcast_force_mask);
+>>
+>>
+> 
 
-Is that clearer and/or more convincing?
-
---Andy
