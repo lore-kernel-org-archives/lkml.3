@@ -1,75 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974AbaC0KT4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 06:19:56 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:35454 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754802AbaC0KTx (ORCPT
+	id S1755150AbaC0KX3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 06:23:29 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:60746 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166AbaC0KX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 06:19:53 -0400
-Message-ID: <5333FB31.7080602@linux.vnet.ibm.com>
-Date: Thu, 27 Mar 2014 15:49:29 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Thu, 27 Mar 2014 06:23:27 -0400
+Date: Thu, 27 Mar 2014 13:19:31 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: "James E.J. Bottomley" <JBottomley@parallels.com>
+Cc: Hannes Reinecke <hare@suse.de>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [linux-next] scsi_attach_vpd() warning at mm/page_alloc.c:2497
+Message-ID: <20140327101734.GA7022@swordfish.minsk.epam.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@rjwysocki.net, linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ego@linux.vnet.ibm.com, svaidy@linux.vnet.ibm.com,
-        preeti@linux.vnet.ibm.com
-Subject: Re: [PATCH] cpufreq: don't print value of .driver_data from core
-References: <2490cd0aaeaaeb88131c8089d491c485f08da5da.1395914766.git.viresh.kumar@linaro.org>
-In-Reply-To: <2490cd0aaeaaeb88131c8089d491c485f08da5da.1395914766.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032710-3864-0000-0000-00000D303F2A
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/27/2014 03:37 PM, Viresh Kumar wrote:
-> CPUFreq core doesn't control value of .driver_data and this field is completely
-> driver specific. This can contain any value and not only indexes. For most of
-> the drivers, which aren't using this field, its value is zero. So, printing this
-> from core doesn't make any sense. Don't print it.
-> 
-> Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Hello,
 
-Reviewed-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+[    1.971778] ------------[ cut here ]------------
+[    1.971960] WARNING: CPU: 1 PID: 6 at mm/page_alloc.c:2497 __alloc_pages_nodemask+0x1b9/0x693()
+[    1.972246] Modules linked in: sd_mod ahci
+[    1.972604] CPU: 1 PID: 6 Comm: kworker/u8:0 Not tainted 3.14.0-rc8-next-20140327-dbg-dirty #202
+[    1.972890] Hardware name: Acer             Aspire 5741G    /Aspire 5741G    , BIOS V1.20 02/08/2011
+[    1.973182] Workqueue: events_unbound async_run_entry_fn
+[    1.973417]  0000000000000000 ffff8801534d5af0 ffffffff813ad822 0000000000000000
+[    1.973994]  ffff8801534d5b28 ffffffff8103c03c ffffffff810ad4e5 00000000001000d0
+[    1.974529]  ffffffff81656fc8 0000000000000000 ffffffff81656fc0 ffff8801534d5b38
+[    1.975125] Call Trace:
+[    1.975306]  [<ffffffff813ad822>] dump_stack+0x4e/0x7a
+[    1.975488]  [<ffffffff8103c03c>] warn_slowpath_common+0x75/0x8e
+[    1.975670]  [<ffffffff810ad4e5>] ? __alloc_pages_nodemask+0x1b9/0x693
+[    1.975853]  [<ffffffff8103c0f4>] warn_slowpath_null+0x15/0x17
+[    1.976035]  [<ffffffff810ad4e5>] __alloc_pages_nodemask+0x1b9/0x693
+[    1.976220]  [<ffffffff81074220>] ? console_unlock+0x2dd/0x2fa
+[    1.976404]  [<ffffffff812a08be>] ? scsi_execute_req_flags+0x9c/0xb3
+[    1.976587]  [<ffffffff810ad9d1>] __get_free_pages+0x12/0x3f
+[    1.976771]  [<ffffffff810d5c66>] __kmalloc+0x37/0x112
+[    1.976951]  [<ffffffff8129b5f4>] scsi_attach_vpd+0x41/0x1a8
+[    1.977133]  [<ffffffff812a3d81>] scsi_probe_and_add_lun+0x8ec/0xa21
+[    1.977317]  [<ffffffff812a40f8>] __scsi_add_device+0xce/0x10a
+[    1.977501]  [<ffffffff812b109a>] ata_scsi_scan_host+0x60/0x142
+[    1.977683]  [<ffffffff812ad6e9>] async_port_probe+0x45/0x4a
+[    1.977873]  [<ffffffff81057e18>] async_run_entry_fn+0x5a/0x110
+[    1.978061]  [<ffffffff8104ee52>] process_one_work+0x1c9/0x2e9
+[    1.978243]  [<ffffffff8104f3ec>] worker_thread+0x1d3/0x2bd
+[    1.978424]  [<ffffffff8104f219>] ? rescuer_thread+0x27d/0x27d
+[    1.978606]  [<ffffffff81053ab4>] kthread+0xd6/0xde
+[    1.978786]  [<ffffffff810539de>] ? kthread_create_on_node+0x162/0x162
+[    1.978970]  [<ffffffff813b2efc>] ret_from_fork+0x7c/0xb0
+[    1.979151]  [<ffffffff810539de>] ? kthread_create_on_node+0x162/0x162
+[    1.979334] ---[ end trace ca7c5bd74b0dca21 ]---
 
-Regards,
-Srivatsa S. Bhat
 
-> ---
->  drivers/cpufreq/freq_table.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
-> index 8e54f97..f002272 100644
-> --- a/drivers/cpufreq/freq_table.c
-> +++ b/drivers/cpufreq/freq_table.c
-> @@ -36,8 +36,7 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
->  		    && table[i].driver_data == CPUFREQ_BOOST_FREQ)
->  			continue;
-> 
-> -		pr_debug("table entry %u: %u kHz, %u driver_data\n",
-> -					i, freq, table[i].driver_data);
-> +		pr_debug("table entry %u: %u kHz\n", i, freq);
->  		if (freq < min_freq)
->  			min_freq = freq;
->  		if (freq > max_freq)
-> @@ -175,8 +174,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
->  	} else
->  		*index = optimal.driver_data;
-> 
-> -	pr_debug("target is %u (%u kHz, %u)\n", *index, table[*index].frequency,
-> -		table[*index].driver_data);
-> +	pr_debug("target index is %u, freq is:%u kHz\n", *index,
-> +		 table[*index].frequency);
-> 
->  	return 0;
->  }
-> 
+scsi_attach_vpd() (at pg0 label) attempts to firstly allocate 255 and later 134217730 bytes.
 
+
+
+---
+
+general question,
+
+scsi_attach_vpd() is sure that scsi_vpd_inquiry() returns `ret < 0' in case of
+an error and `ret > 0' otherwise:
+
+	"Returns size of the vpd page on success or a negative error number."
+
+while this is not exactly true.
+
+scsi_vpd_inquiry() indeed can return -EINVAL, but usually it returns
+scsi_execute_req()->scsi_execute_req_flags()->scsi_execute() status, which
+has different error indication and can be, e.g. for failed blk_get_request()
+in scsi_execute() or failed sense kzalloc() in scsi_execute_req_flags(),
+`DRIVER_ERROR << 24'.
+
+
+	-ss
