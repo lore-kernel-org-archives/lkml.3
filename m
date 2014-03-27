@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756968AbaC0RoD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:44:03 -0400
-Received: from sauhun.de ([89.238.76.85]:49570 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755353AbaC0Rn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:43:57 -0400
-Date: Thu, 27 Mar 2014 18:43:55 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PULL REQUEST] i2c for 3.14
-Message-ID: <20140327174349.GA11698@katana>
+	id S1756995AbaC0Rr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 13:47:56 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:53518 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755469AbaC0Rry (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 13:47:54 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ReaqsoxgOBHFXBhH"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140326131800.GA7171@htj.dyndns.org>
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com>
+	<20140314140804.GG12613@htj.dyndns.org>
+	<CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com>
+	<20140317201346.GE17373@mtj.dyndns.org>
+	<5327AAA8.2080703@gmail.com>
+	<53322777.3030703@gmail.com>
+	<20140326131800.GA7171@htj.dyndns.org>
+Date: Thu, 27 Mar 2014 13:47:53 -0400
+Message-ID: <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to
+ kern_mount() sysfs from sysfs_init()" prevents system from booting correctly
+From: Alexandre Demers <alexandre.f.demers@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'll do my best, but I just don't have enough time right now for
+everything I have to do at home and dig this bug. I may be able to
+look at it in the next couple of days though, or it may go somewhere
+next week... That being said, I tried yesterday to have a better idea
+and I thank you for the "ScrLck" trick, I didn't know that it was
+working. Nevertheless I didn't find anything.
 
---ReaqsoxgOBHFXBhH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+It seems as if the transition from the temporary kernel's fs to the
+hard disk's fs is not done correctly. If I boot with a working kernel
+after that, I can't find any trace of where it was trying to copy the
+files or of any partition being full. Could it be filling the RAM
+until it reaches its maximum capacity (16GB to fill before hitting the
+limit and throwing the errors)? That would explain at least why it
+takes so much time before the flood of errors begins...
 
-Linus,
-
-the build fix from my last request unveiled another build problem which
-is fixed with this patch. Please pull.
-
-Thanks,
-
-   Wolfram
-
-
-The following changes since commit dcb99fd9b08cfe1afe426af4d8d3cbc429190f15:
-
-  Linux 3.14-rc7 (2014-03-16 18:51:24 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/wsa/linux.git i2c/for-current
-
-for you to fetch changes up to 5f12c5eca6e6b7aeb4b2028d579f614b4fe7a81f:
-
-  i2c: cpm: Fix build by adding of_address.h and of_irq.h (2014-03-24 14:54:21 +0100)
-
-----------------------------------------------------------------
-Scott Wood (1):
-      i2c: cpm: Fix build by adding of_address.h and of_irq.h
-
- drivers/i2c/busses/i2c-cpm.c | 2 ++
- 1 file changed, 2 insertions(+)
-
---ReaqsoxgOBHFXBhH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.15 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTNGNVAAoJEBQN5MwUoCm2OjEP/3W4bj4Ab+Uxe8knRgqVqujN
-ybK+PcnXjGtPQa2NYbg8Ei5hCMW8J7DXREJ2wJJkQUdrPDI84UkI7z1uscXQEVc+
-WvjfRhxwbpq3JnAnklcRsWX8mRc/Otkwr1vnrG2tbtytoRUwJJC9hF3XLJsfwMzf
-VvBJ1pLsFaFhAyRuBG7SA238rXTpEhyD38JNGiMzjvFfqgZQvf8g5bjO/iktmFd1
-tH6oQmdvO1A1CnvIkGggUNSiRZ1FWKwP3hbZ960S83sjT5t+MbyhCdE9G9zOfzo5
-oYdf6AgJBCZtg4qGY1LS8Wl1xlV3cuxUzC0A1LQ+aZmBdDnME8oYWKlaPhgMlwEl
-w9wynJjEqDPJEkJtSGA66xXEDspvpaNPM2j/l+/ECNCe840ot75g2qD7NR3ZzUVR
-yGyfgV2CuRVqHoj43P5Udd0cZY1tLSde5Vcmfcxw/TwMp8UxjR3xOodvPiKC0Bky
-GDLBjYXPOZMi2xhknC8bqXGvDm9rktgKrHmNHZVNpfRPVObUu1CTmgsozLvrAduh
-DSOTVWkqF0LAPis8+UyXu39YIraoOiHkYVl1xJ6veWdHtshQsjhC9YH6IV+wHzmN
-yP35xzLgpte+rrf4nkduWsSg12rzK21LbmTy7agBZLPMgJe62+iLYtlX+pj8yGHq
-1wH6GtEXehz4FJaJ0aBr
-=NJs2
------END PGP SIGNATURE-----
-
---ReaqsoxgOBHFXBhH--
+On Wed, Mar 26, 2014 at 9:18 AM, Tejun Heo <tj@kernel.org> wrote:
+> On Tue, Mar 25, 2014 at 09:03:51PM -0400, Alexandre Demers wrote:
+>> So, I tried RC8 and I'm still getting the error. It start too fast
+>> to be able to read whatever it is saying, but here is what I can
+>> read:
+>> ...
+>> cp: error writing /run/initramfs/new_root/...
+>> cp: failed to extend ...
+>> ... (and so on)
+>>
+>> It goes on like that for a long time.
+>
+> Ooh, I thought you were gonna find out what filled up the filesystem
+> after rebooting into the older kernel.  Can you please do that?  Also,
+> pressing "ScrLk" should stop the screen from scrolling.
+>
+> Thanks.
+>
+> --
+> tejun
