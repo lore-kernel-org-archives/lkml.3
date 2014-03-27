@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757454AbaC1DDF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 23:03:05 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:9065
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757030AbaC1DDD (ORCPT
+	id S1757170AbaC1DFN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 23:05:13 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42114 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757211AbaC1DFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 23:03:03 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
-Date: Fri, 28 Mar 2014 10:41:00 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <Li.Xiubo@freescale.com>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>, <alsa-devel@alsa-project.org>,
-        <timur@tabi.org>, <David.Laight@ACULAB.COM>
-Subject: Re: [PATCH v2] ASoC: fsl_sai: Add isr to deal with error flag
-Message-ID: <20140328024059.GA18417@MrMyself>
-References: <1395918419-20739-1-git-send-email-Guangyu.Chen@freescale.com>
- <20140327132626.GN30768@sirena.org.uk>
+	Thu, 27 Mar 2014 23:05:11 -0400
+Date: Thu, 27 Mar 2014 14:28:31 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: Monam Agarwal <monamagarwal123@gmail.com>, davem@davemloft.net,
+        ebiederm@xmission.com, cwang@twopensource.com, kaber@trash.net,
+        antonio@meshcoding.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] net/core: Use RCU_INIT_POINTER(x, NULL) in netpoll.c
+Message-ID: <20140327212831.GA4284@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1395601966-12490-1-git-send-email-monamagarwal123@gmail.com>
+ <20140324111144.GA19368@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140327132626.GN30768@sirena.org.uk>
+In-Reply-To: <20140324111144.GA19368@hmsreliant.think-freely.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032803-3532-0000-0000-0000009F3B26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 01:26:27PM +0000, Mark Brown wrote:
-> On Thu, Mar 27, 2014 at 07:06:59PM +0800, Nicolin Chen wrote:
-> > It's quite cricial to clear error flags because SAI might hang if getting
-> > FIFO underrun during playback (I haven't confirmed the same issue on Rx
-> > overflow though).
+On Mon, Mar 24, 2014 at 07:11:44AM -0400, Neil Horman wrote:
+> On Mon, Mar 24, 2014 at 12:42:46AM +0530, Monam Agarwal wrote:
+> > This patch replaces rcu_assign_pointer(x, NULL) with RCU_INIT_POINTER(x, NULL)
 > > 
-> > So this patch enables those irq and adds isr() to clear the flags so as to
-> > keep playback entirely safe.
+> > The rcu_assign_pointer() ensures that the initialization of a structure       
+> > is carried out before storing a pointer to that structure. 
+> > And in the case of the NULL pointer, there is no structure to initialize. 
+> > So, rcu_assign_pointer(p, NULL) can be safely converted to RCU_INIT_POINTER(p, NULL)
+> > 
+> > Signed-off-by: Monam Agarwal <monamagarwal123@gmail.com>
+> No, I don't think this is right. __netpoll_cleanup can be called in parallel
+> with bottom half access to dev->npinfo.  rcu_assign pointer is safe against
+> those accesses, but RCU_INIT_POINTER is not.
+
+Hello, Neil,
+
+But in this case, NULL is being assigned, so there should be no problem.
+If this was a non-NULL pointer to a structure that had not already been
+exposed to readers, then yes, this would be a problem.  But NULL pointers
+are OK to assign using RCU_INIT_POINTER().
+
+							Thanx, Paul
+
+> Neil
 > 
-> So, I've applied this since we're (hopefully!) very near the merge
-> window opening and it seems like it should be an improvement overall.
-> However a few things below:
+> > ---
+> >  net/core/netpoll.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+> > index 7291dde..41c4e9c 100644
+> > --- a/net/core/netpoll.c
+> > +++ b/net/core/netpoll.c
+> > @@ -809,7 +809,7 @@ void __netpoll_cleanup(struct netpoll *np)
+> >  		if (ops->ndo_netpoll_cleanup)
+> >  			ops->ndo_netpoll_cleanup(np->dev);
+> >  
+> > -		rcu_assign_pointer(np->dev->npinfo, NULL);
+> > +		RCU_INIT_POINTER(np->dev->npinfo, NULL);
+> >  		call_rcu_bh(&npinfo->rcu, rcu_cleanup_netpoll_info);
+> >  	}
+> >  }
+> > -- 
+> > 1.7.9.5
+> > 
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 > 
-> > +	/* Only handle those what we enabled */
-> > +	mask = (FSL_SAI_FLAGS >> FSL_SAI_CSR_xIE_SHIFT) << FSL_SAI_CSR_xF_SHIFT;
-> 
-> The shifting here could use a comment.
-
-Will send an extra patch to cover it.
-
-> > +	regmap_update_bits(sai->regmap, FSL_SAI_RCSR,
-> > +			   FSL_SAI_CSR_xF_W_MASK | FSL_SAI_CSR_FR, xcsr);
-> 
-> Using update_bits() is going to do an extra read, better to do this as:
-> 
-> 	if (xcsr)
-> 		regmap_write(sai->regmap, FSL_SAI_RCSR, xcsr);
-
-T/RCSR register stands for T/Rx Control (Status -- I guess) Register.
-It actually contains control bits, IRQ mask bits and IRQ status bits.
-Thus we can't regard it as a entire status register. That's why I try
-to update it partially for status bits only at this point.
-
-But if it's just for saving this extra read instance, I may save those
-non-status bits from upper regmap_read() and then merge them into this
-regmap_write() over here.
-
-> otherwise we might be ignoring any of the bits that are actually clear
-> on read (it seems like there are some?).
-
-For all status flags bits, actually five for each, three of them are
-write-1-clear and the other two are self-clearance by SAI self -- so
-none of them are clear-on-read type.
-
-> > +	return IRQ_HANDLED;
-> 
-> I'd expect to see IRQ_NONE if we didn't actually see an interrupt
-> source.
-
-Will add this.
-
-Thank you,
-Nicolin
-
 
