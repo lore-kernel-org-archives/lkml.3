@@ -1,158 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290AbaC0TnS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 15:43:18 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:48059 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757260AbaC0TnP (ORCPT
+	id S1757323AbaC0Tnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 15:43:51 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:54330 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757054AbaC0TmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 15:43:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+55aFzFgY4-26SO-MsFagzaj9JevkeeT1OJ3pjj-tcjuNCEeQ@mail.gmail.com>
-References: <20140327134653.GA22407@kvack.org>
-	<CA+55aFzFgY4-26SO-MsFagzaj9JevkeeT1OJ3pjj-tcjuNCEeQ@mail.gmail.com>
-Date: Thu, 27 Mar 2014 12:43:13 -0700
-X-Google-Sender-Auth: NyOOVntQzSjVD-fZMSBmOrlR5Sg
-Message-ID: <CA+55aFx7vg2rvOu6Bu_e8+BB=ymoUMp0AM9JmAuUuSgo0LVEwg@mail.gmail.com>
-Subject: Re: git pull -- [PATCH] aio: v2 ensure access to ctx->ring_pages is
- correctly serialised
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, linux-aio@kvack.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: multipart/mixed; boundary=20cf30334739bac69104f59bcb07
+	Thu, 27 Mar 2014 15:42:13 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>
+Subject: [RFC PATCH 3/4] vmlinuz.lds: define OF table sections with macros
+Date: Thu, 27 Mar 2014 14:41:56 -0500
+Message-Id: <1395949317-8738-4-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
+References: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---20cf30334739bac69104f59bcb07
-Content-Type: text/plain; charset=UTF-8
+From: Rob Herring <robh@kernel.org>
 
-On Thu, Mar 27, 2014 at 11:16 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> It would all be cleaner if all the setup was done with the
-> ctx->ring_lock held (you can even *initialize* it to the locked state,
-> since this is the function that allocates it!) and then it would just
-> be unlocked when done.
+OF table sections all have the same pattern, so create a macro to define
+them and insure consistency.
 
-Attached is a TOTALLY UNTESTED patch based on Ben's one that does at
-least this minimal cleanup, in addition to dropping the
-completion_lock in aio_free_ring() in favor of instead just doing the
-"put_aio_ring_file()" first.
+Signed-off-by: Rob Herring <robh@kernel.org>
+Cc: Arnd Bergmann <arnd@arndb.de>
+---
+ include/asm-generic/vmlinux.lds.h | 58 ++++++++++-----------------------------
+ 1 file changed, 14 insertions(+), 44 deletions(-)
 
-I do want to stress that "untested" part. I'm not going to commit
-this, because I don't have any real test-cases even if it were to boot
-and work for me otherwise.
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index d09e670..000a0f30 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -139,52 +139,22 @@
+ #define TRACE_SYSCALLS()
+ #endif
+ 
+-#ifdef CONFIG_CLKSRC_OF
+-#define CLKSRC_OF_TABLES() . = ALIGN(8);				\
+-			   VMLINUX_SYMBOL(__clksrc_of_table) = .;	\
+-			   *(__clksrc_of_table)				\
+-			   *(__clksrc_of_table_end)
+-#else
+-#define CLKSRC_OF_TABLES()
+-#endif
+ 
+-#ifdef CONFIG_IRQCHIP
+-#define IRQCHIP_OF_MATCH_TABLE()					\
++#define ___OF_TABLE(cfg, name)	_OF_TABLE_##cfg(name)
++#define __OF_TABLE(cfg, name)	___OF_TABLE(cfg, name)
++#define OF_TABLE(cfg, name)	__OF_TABLE(config_enabled(cfg), name)
++#define _OF_TABLE_0(name)
++#define _OF_TABLE_1(name)						\
+ 	. = ALIGN(8);							\
+-	VMLINUX_SYMBOL(__irqchip_of_table) = .;				\
+-	*(__irqchip_of_table)		  				\
+-	*(__irqchip_of_table_end)
+-#else
+-#define IRQCHIP_OF_MATCH_TABLE()
+-#endif
+-
+-#ifdef CONFIG_COMMON_CLK
+-#define CLK_OF_TABLES() . = ALIGN(8);				\
+-			VMLINUX_SYMBOL(__clk_of_table) = .;	\
+-			*(__clk_of_table)			\
+-			*(__clk_of_table_end)
+-#else
+-#define CLK_OF_TABLES()
+-#endif
+-
+-#ifdef CONFIG_SMP
+-#define CPU_METHOD_OF_TABLES() . = ALIGN(8);				    \
+-			   VMLINUX_SYMBOL(__cpu_method_of_table) = .; \
+-			   *(__cpu_method_of_table)			    \
+-			   *(__cpu_method_of_table_end)
+-#else
+-#define CPU_METHOD_OF_TABLES()
+-#endif
+-
+-#ifdef CONFIG_OF_RESERVED_MEM
+-#define RESERVEDMEM_OF_TABLES()				\
+-	. = ALIGN(8);					\
+-	VMLINUX_SYMBOL(__reservedmem_of_table) = .;	\
+-	*(__reservedmem_of_table)			\
+-	*(__reservedmem_of_table_end)
+-#else
+-#define RESERVEDMEM_OF_TABLES()
+-#endif
++	VMLINUX_SYMBOL(__##name##_of_table) = .;			\
++	*(__##name##_of_table)						\
++	*(__##name##_of_table_end)
++
++#define CLKSRC_OF_TABLES()	OF_TABLE(CONFIG_CLKSRC_OF, clksrc)
++#define IRQCHIP_OF_MATCH_TABLE() OF_TABLE(CONFIG_IRQCHIP, irqchip)
++#define CLK_OF_TABLES()		OF_TABLE(CONFIG_COMMON_CLK, clk)
++#define CPU_METHOD_OF_TABLES()	OF_TABLE(CONFIG_SMP, cpu_method)
++#define RESERVEDMEM_OF_TABLES()	OF_TABLE(CONFIG_OF_RESERVED_MEM, reservedmem)
+ 
+ #define KERNEL_DTB()							\
+ 	STRUCT_ALIGN();							\
+-- 
+1.8.3.2
 
-I can't say that I like the locking. It really seems totally
-mis-designed to me. For example, the first completion_lock in
-aio_migratepage() seems to be total BS - it's locking against other
-migrations, but that's what "mapping->private_lock" (and now
-"ctx->ring_lock") protect against.
-
-The *second* completion_lock use in aio_migratepage() is actually
-valid: we can't copy the page contents to a new one when a completion
-might change the ring tail data, because then the change might be done
-to the old page but not the new page. But there the "check if things
-haven't changed" is bogus, since we've held the ring_lock.
-
-I did *not* clean up that part. But it's an example of how the locking
-here seems to be more "voodoo programming" than actually thought about
-and designed.
-
-Please, somebody who has test-cases look at this, ok?
-
-                  Linus
-
---20cf30334739bac69104f59bcb07
-Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_htag82nk0
-
-IGZzL2Fpby5jIHwgNTMgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
-Ky0tLS0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCA0MyBpbnNlcnRpb25zKCspLCAxMCBkZWxldGlv
-bnMoLSkKCmRpZmYgLS1naXQgYS9mcy9haW8uYyBiL2ZzL2Fpby5jCmluZGV4IDA2MmE1ZjZhMTQ0
-OC4uNzU4NDMwNjY1YjNhIDEwMDY0NAotLS0gYS9mcy9haW8uYworKysgYi9mcy9haW8uYwpAQCAt
-MjQzLDYgKzI0Myw5IEBAIHN0YXRpYyB2b2lkIGFpb19mcmVlX3Jpbmcoc3RydWN0IGtpb2N0eCAq
-Y3R4KQogewogCWludCBpOwogCisJLyogVGhpcyBtYWtlcyB0aGUgY3R4IHVucmVhY2hhYmxlICov
-CisJcHV0X2Fpb19yaW5nX2ZpbGUoY3R4KTsKKwogCWZvciAoaSA9IDA7IGkgPCBjdHgtPm5yX3Bh
-Z2VzOyBpKyspIHsKIAkJc3RydWN0IHBhZ2UgKnBhZ2U7CiAJCXByX2RlYnVnKCJwaWQoJWQpIFsl
-ZF0gcGFnZS0+Y291bnQ9JWRcbiIsIGN1cnJlbnQtPnBpZCwgaSwKQEAgLTI1NCw4ICsyNTcsNiBA
-QCBzdGF0aWMgdm9pZCBhaW9fZnJlZV9yaW5nKHN0cnVjdCBraW9jdHggKmN0eCkKIAkJcHV0X3Bh
-Z2UocGFnZSk7CiAJfQogCi0JcHV0X2Fpb19yaW5nX2ZpbGUoY3R4KTsKLQogCWlmIChjdHgtPnJp
-bmdfcGFnZXMgJiYgY3R4LT5yaW5nX3BhZ2VzICE9IGN0eC0+aW50ZXJuYWxfcGFnZXMpIHsKIAkJ
-a2ZyZWUoY3R4LT5yaW5nX3BhZ2VzKTsKIAkJY3R4LT5yaW5nX3BhZ2VzID0gTlVMTDsKQEAgLTI4
-Nyw5ICsyODgsMjkgQEAgc3RhdGljIGludCBhaW9fbWlncmF0ZXBhZ2Uoc3RydWN0IGFkZHJlc3Nf
-c3BhY2UgKm1hcHBpbmcsIHN0cnVjdCBwYWdlICpuZXcsCiAKIAlyYyA9IDA7CiAKLQkvKiBNYWtl
-IHN1cmUgdGhlIG9sZCBwYWdlIGhhc24ndCBhbHJlYWR5IGJlZW4gY2hhbmdlZCAqLworCS8qIEdl
-dCBhIHJlZmVyZW5jZSBvbiB0aGUgaW9jdHggc28gd2UgY2FuIHRha2UgdGhlIHJpbmdfbG9jayBt
-dXRleC4gKi8KIAlzcGluX2xvY2soJm1hcHBpbmctPnByaXZhdGVfbG9jayk7CiAJY3R4ID0gbWFw
-cGluZy0+cHJpdmF0ZV9kYXRhOworCWlmIChjdHgpCisJCXBlcmNwdV9yZWZfZ2V0KCZjdHgtPnVz
-ZXJzKTsKKwlzcGluX3VubG9jaygmbWFwcGluZy0+cHJpdmF0ZV9sb2NrKTsKKworCWlmICghY3R4
-KQorCQlyZXR1cm4gLUVJTlZBTDsKKworCS8qIFdlIHVzZSBtdXRleF90cnlsb2NrKCkgaGVyZSBh
-cyB0aGUgY2FsbGVycyBvZiBtaWdyYXRlcGFnZSBtYXkKKwkgKiBhbHJlYWR5IGJlIGhvbGRpbmcg
-Y3VycmVudC0+bW0tPm1tYXBfc2VtLCBhbmQgLT5yaW5nX2xvY2sgbXVzdCBiZQorCSAqIG91dHNp
-ZGUgb2YgbW1hcF9zZW0gZHVlIHRvIGl0cyB1c2FnZSBpbiBhaW9fcmVhZF9ldmVudHNfcmluZygp
-LgorCSAqIFNpbmNlIHBhZ2UgbWlncmF0aW9uIGlzIG5vdCBhbiBhYnNvbHV0ZWx5IGNyaXRpY2Fs
-IG9wZXJhdGlvbiwgdGhlCisJICogb2NjYXNpb25hbCBmYWlsdXJlIGhlcmUgaXMgYWNjZXB0YWJs
-ZS4KKwkgKi8KKwlpZiAoIW11dGV4X3RyeWxvY2soJmN0eC0+cmluZ19sb2NrKSkgeworCQlwZXJj
-cHVfcmVmX3B1dCgmY3R4LT51c2Vycyk7CisJCXJldHVybiAtRUFHQUlOOworCX0KKworCS8qIE1h
-a2Ugc3VyZSB0aGUgb2xkIHBhZ2UgaGFzbid0IGFscmVhZHkgYmVlbiBjaGFuZ2VkICovCisJc3Bp
-bl9sb2NrKCZtYXBwaW5nLT5wcml2YXRlX2xvY2spOwogCWlmIChjdHgpIHsKIAkJcGdvZmZfdCBp
-ZHg7CiAJCXNwaW5fbG9ja19pcnFzYXZlKCZjdHgtPmNvbXBsZXRpb25fbG9jaywgZmxhZ3MpOwpA
-QCAtMzA1LDcgKzMyNiw3IEBAIHN0YXRpYyBpbnQgYWlvX21pZ3JhdGVwYWdlKHN0cnVjdCBhZGRy
-ZXNzX3NwYWNlICptYXBwaW5nLCBzdHJ1Y3QgcGFnZSAqbmV3LAogCXNwaW5fdW5sb2NrKCZtYXBw
-aW5nLT5wcml2YXRlX2xvY2spOwogCiAJaWYgKHJjICE9IDApCi0JCXJldHVybiByYzsKKwkJZ290
-byBvdXRfdW5sb2NrOwogCiAJLyogV3JpdGViYWNrIG11c3QgYmUgY29tcGxldGUgKi8KIAlCVUdf
-T04oUGFnZVdyaXRlYmFjayhvbGQpKTsKQEAgLTMxNCw3ICszMzUsNyBAQCBzdGF0aWMgaW50IGFp
-b19taWdyYXRlcGFnZShzdHJ1Y3QgYWRkcmVzc19zcGFjZSAqbWFwcGluZywgc3RydWN0IHBhZ2Ug
-Km5ldywKIAlyYyA9IG1pZ3JhdGVfcGFnZV9tb3ZlX21hcHBpbmcobWFwcGluZywgbmV3LCBvbGQs
-IE5VTEwsIG1vZGUsIDEpOwogCWlmIChyYyAhPSBNSUdSQVRFUEFHRV9TVUNDRVNTKSB7CiAJCXB1
-dF9wYWdlKG5ldyk7Ci0JCXJldHVybiByYzsKKwkJZ290byBvdXRfdW5sb2NrOwogCX0KIAogCS8q
-IFdlIGNhbiBwb3RlbnRpYWxseSByYWNlIGFnYWluc3Qga2lvY3R4IHRlYXJkb3duIGhlcmUuICBV
-c2UgdGhlCkBAIC0zNDYsNiArMzY3LDkgQEAgc3RhdGljIGludCBhaW9fbWlncmF0ZXBhZ2Uoc3Ry
-dWN0IGFkZHJlc3Nfc3BhY2UgKm1hcHBpbmcsIHN0cnVjdCBwYWdlICpuZXcsCiAJZWxzZQogCQlw
-dXRfcGFnZShuZXcpOwogCitvdXRfdW5sb2NrOgorCW11dGV4X3VubG9jaygmY3R4LT5yaW5nX2xv
-Y2spOworCXBlcmNwdV9yZWZfcHV0KCZjdHgtPnVzZXJzKTsKIAlyZXR1cm4gcmM7CiB9CiAjZW5k
-aWYKQEAgLTM4MCw3ICs0MDQsNyBAQCBzdGF0aWMgaW50IGFpb19zZXR1cF9yaW5nKHN0cnVjdCBr
-aW9jdHggKmN0eCkKIAlmaWxlID0gYWlvX3ByaXZhdGVfZmlsZShjdHgsIG5yX3BhZ2VzKTsKIAlp
-ZiAoSVNfRVJSKGZpbGUpKSB7CiAJCWN0eC0+YWlvX3JpbmdfZmlsZSA9IE5VTEw7Ci0JCXJldHVy
-biAtRUFHQUlOOworCQlyZXR1cm4gLUVOT01FTTsKIAl9CiAKIAljdHgtPmFpb19yaW5nX2ZpbGUg
-PSBmaWxlOwpAQCAtNDE1LDcgKzQzOSw3IEBAIHN0YXRpYyBpbnQgYWlvX3NldHVwX3Jpbmcoc3Ry
-dWN0IGtpb2N0eCAqY3R4KQogCiAJaWYgKHVubGlrZWx5KGkgIT0gbnJfcGFnZXMpKSB7CiAJCWFp
-b19mcmVlX3JpbmcoY3R4KTsKLQkJcmV0dXJuIC1FQUdBSU47CisJCXJldHVybiAtRU5PTUVNOwog
-CX0KIAogCWN0eC0+bW1hcF9zaXplID0gbnJfcGFnZXMgKiBQQUdFX1NJWkU7CkBAIC00MjksNyAr
-NDUzLDcgQEAgc3RhdGljIGludCBhaW9fc2V0dXBfcmluZyhzdHJ1Y3Qga2lvY3R4ICpjdHgpCiAJ
-aWYgKElTX0VSUigodm9pZCAqKWN0eC0+bW1hcF9iYXNlKSkgewogCQljdHgtPm1tYXBfc2l6ZSA9
-IDA7CiAJCWFpb19mcmVlX3JpbmcoY3R4KTsKLQkJcmV0dXJuIC1FQUdBSU47CisJCXJldHVybiAt
-RU5PTUVNOwogCX0KIAogCXByX2RlYnVnKCJtbWFwIGFkZHJlc3M6IDB4JTA4bHhcbiIsIGN0eC0+
-bW1hcF9iYXNlKTsKQEAgLTY1Nyw4ICs2ODEsMTMgQEAgc3RhdGljIHN0cnVjdCBraW9jdHggKmlv
-Y3R4X2FsbG9jKHVuc2lnbmVkIG5yX2V2ZW50cykKIAlpZiAoIWN0eC0+Y3B1KQogCQlnb3RvIGVy
-cjsKIAotCWlmIChhaW9fc2V0dXBfcmluZyhjdHgpIDwgMCkKLQkJZ290byBlcnI7CisJLyogUHJl
-dmVudCByYWNlcyB3aXRoIHBhZ2UgbWlncmF0aW9uIGR1cmluZyBzZXR1cCBieSBob2xkaW5nCisJ
-ICogdGhlIHJpbmdfbG9jayBtdXRleC4KKwkgKi8KKwltdXRleF9sb2NrKCZjdHgtPnJpbmdfbG9j
-ayk7CisJZXJyID0gYWlvX3NldHVwX3JpbmcoY3R4KTsKKwlpZiAoZXJyIDwgMCkKKwkJZ290byBl
-cnJfdW5sb2NrOwogCiAJYXRvbWljX3NldCgmY3R4LT5yZXFzX2F2YWlsYWJsZSwgY3R4LT5ucl9l
-dmVudHMgLSAxKTsKIAljdHgtPnJlcV9iYXRjaCA9IChjdHgtPm5yX2V2ZW50cyAtIDEpIC8gKG51
-bV9wb3NzaWJsZV9jcHVzKCkgKiA0KTsKQEAgLTY4Myw2ICs3MTIsNyBAQCBzdGF0aWMgc3RydWN0
-IGtpb2N0eCAqaW9jdHhfYWxsb2ModW5zaWduZWQgbnJfZXZlbnRzKQogCWlmIChlcnIpCiAJCWdv
-dG8gZXJyX2NsZWFudXA7CiAKKwltdXRleF91bmxvY2soJmN0eC0+cmluZ19sb2NrKTsKIAlwcl9k
-ZWJ1ZygiYWxsb2NhdGVkIGlvY3R4ICVwWyVsZF06IG1tPSVwIG1hc2s9MHgleFxuIiwKIAkJIGN0
-eCwgY3R4LT51c2VyX2lkLCBtbSwgY3R4LT5ucl9ldmVudHMpOwogCXJldHVybiBjdHg7CkBAIC02
-OTEsNiArNzIxLDggQEAgZXJyX2NsZWFudXA6CiAJYWlvX25yX3N1YihjdHgtPm1heF9yZXFzKTsK
-IGVycl9jdHg6CiAJYWlvX2ZyZWVfcmluZyhjdHgpOworZXJyX3VubG9jazoKKwltdXRleF91bmxv
-Y2soJmN0eC0+cmluZ19sb2NrKTsKIGVycjoKIAlmcmVlX3BlcmNwdShjdHgtPmNwdSk7CiAJZnJl
-ZV9wZXJjcHUoY3R4LT5yZXFzLnBjcHVfY291bnQpOwpAQCAtMTAyNCw2ICsxMDU2LDcgQEAgc3Rh
-dGljIGxvbmcgYWlvX3JlYWRfZXZlbnRzX3Jpbmcoc3RydWN0IGtpb2N0eCAqY3R4LAogCiAJbXV0
-ZXhfbG9jaygmY3R4LT5yaW5nX2xvY2spOwogCisJLyogQWNjZXNzIHRvIC0+cmluZ19wYWdlcyBo
-ZXJlIGlzIHByb3RlY3RlZCBieSBjdHgtPnJpbmdfbG9jay4gKi8KIAlyaW5nID0ga21hcF9hdG9t
-aWMoY3R4LT5yaW5nX3BhZ2VzWzBdKTsKIAloZWFkID0gcmluZy0+aGVhZDsKIAl0YWlsID0gcmlu
-Zy0+dGFpbDsK
---20cf30334739bac69104f59bcb07--
