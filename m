@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704AbaC0BJA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 21:09:00 -0400
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:36608 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578AbaC0BI6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 21:08:58 -0400
+	id S1756755AbaC0BJG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 21:09:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:49181 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756719AbaC0BJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 21:09:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,738,1389772800"; 
+   d="scan'208";a="507743084"
+Message-ID: <53337A2C.9020805@linux.intel.com>
+Date: Thu, 27 Mar 2014 09:09:00 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-In-Reply-To: <20140316101946.GJ6436@type.youpi.perso.aquilenet.fr>
-References: <20110102103210.GA25662@core.coreip.homeip.net>
- <20110102225741.GX5480@const.famille.thibault.fr> <20110112182702.GA9168@core.coreip.homeip.net>
- <20111114040613.GA4992@type.famille.thibault.fr> <20121221003449.GA6999@type.youpi.perso.aquilenet.fr>
- <20130713093552.GU8252@type> <20130715091230.GA8786@amd.pavel.ucw.cz>
- <CAHYPw2H94ej=FdqHAxXpyZt+34TwK1Qj7LWP_bMro-v3JREisg@mail.gmail.com> <20140316101946.GJ6436@type.youpi.perso.aquilenet.fr>
-From: =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>
-Date: Thu, 27 Mar 2014 02:08:17 +0100
-Message-ID: <CAHYPw2EAgjdcNATy0d6DhbT9qHAHJLda7gsLrnSJ7F4Cj=a-JQ@mail.gmail.com>
-Subject: Re: [PATCH] Route kbd LEDs through the generic LEDs layer
-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        Pavel Machek <pavel@ucw.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
-        Richard Purdie <rpurdie@rpsys.net>,
-        LKML <linux-kernel@vger.kernel.org>, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH] input: misc: Add driver for Intel Bay Trail GPIO buttons
+References: <533259F7.3050908@linux.intel.com> <53325F30.4030006@linux.intel.com> <20140326170404.47a6380a@alan.etchedpixels.co.uk> <20140326202029.GB11013@core.coreip.homeip.net>
+In-Reply-To: <20140326202029.GB11013@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-03-16 11:19 GMT+01:00 Samuel Thibault <samuel.thibault@ens-lyon.org>:
-> Pali Rohár, le Sun 16 Mar 2014 11:16:25 +0100, a écrit :
->> Hello, what happened with this patch? Is there any problem with accepting it?
->
-> Dmitry finding time to review it, I guess.
->
-> Samuel
+On 3/27/2014 4:20 AM, Dmitry Torokhov wrote:
+> On Wed, Mar 26, 2014 at 05:04:04PM +0000, One Thousand Gnomes wrote:
+>> On Wed, 26 Mar 2014 13:01:36 +0800
+>> "Zhu, Lejun" <lejun.zhu@linux.intel.com> wrote:
+>>
+>>> This patch adds support for the GPIO buttons on some Intel Bay Trail
+>>> tablets originally running Windows 8. The ACPI description of these
+>>> buttons follows "Windows ACPI Design Guide for SoC Platforms".
+>>
+>> I'm not sure calling it "Baytrail" is right here - it's in theory a
+>> generic interface so probably should be named accordingly
+>>
+>> Otherwise looks good to me.
+> 
+> It uses static devices in non-board code - if I unbind and rebind PNP
+> device that produces gpio-keys platform devices driver core will not be
+> happy.
+> 
+> Thanks.
+> 
 
-Dmitry, can you look and review this patch?
+Alan, I will think of a better name for it. This is supposed to work for
+other "win8 ready" tablets as well, just all I have today are Baytrail
+tablets.
 
--- 
-Pali Rohár
-pali.rohar@gmail.com
+Dmitry, thank you for pointing out the bug. I'll fix it and submit again.
+
+Thanks.
+Lejun
