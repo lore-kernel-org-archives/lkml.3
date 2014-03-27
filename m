@@ -1,297 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129AbaC0Ryf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:54:35 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59359 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757114AbaC0Ryc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:54:32 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Joe Perches <joe@perches.com>, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH v2] mm: convert some level-less printks to pr_*
-Date: Thu, 27 Mar 2014 10:54:19 -0700
-Message-Id: <1395942859-11611-2-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395942859-11611-1-git-send-email-mitchelh@codeaurora.org>
-References: <1395942859-11611-1-git-send-email-mitchelh@codeaurora.org>
+	id S1756240AbaC0SDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 14:03:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53990 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756701AbaC0SDQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 14:03:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,744,1389772800"; 
+   d="scan'208";a="509131304"
+Message-ID: <533467C3.4030503@linux.intel.com>
+Date: Fri, 28 Mar 2014 02:02:43 +0800
+From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+        lejun.zhu@linux.intel.com
+Subject: [PATCH v2] input: misc: Add driver for Intel Bay Trail GPIO buttons
+References: <53345085.6020300@linux.intel.com>
+In-Reply-To: <53345085.6020300@linux.intel.com>
+X-Forwarded-Message-Id: <53345085.6020300@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk is meant to be used with an associated log level. There are some
-instances of printk scattered around the mm code where the log level is
-missing. Add a log level and adhere to suggestions by
-scripts/checkpatch.pl by moving to the pr_* macros.
+This patch adds support for the GPIO buttons on some Intel Bay Trail
+tablets originally running Windows 8. The ACPI description of these
+buttons follows "Windows ACPI Design Guide for SoC Platforms".
+v2:
+- Change the driver name to "SoC button array".
+- Use platform_device_alloc() instead of static devices. Unbind then
+rebind works fine now.
 
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+Signed-off-by: Lejun Zhu <lejun.zhu@linux.intel.com>
 ---
- mm/bounce.c    |  7 +++++--
- mm/mempolicy.c |  5 ++++-
- mm/mmap.c      | 21 ++++++++++++---------
- mm/nommu.c     |  5 ++++-
- mm/slub.c      |  9 ++++++---
- mm/vmscan.c    |  5 ++++-
- 6 files changed, 35 insertions(+), 17 deletions(-)
+ drivers/input/misc/Kconfig            |  10 ++
+ drivers/input/misc/Makefile           |   1 +
+ drivers/input/misc/soc_button_array.c | 209
+++++++++++++++++++++++++++++++++++
+ 3 files changed, 220 insertions(+)
+ create mode 100644 drivers/input/misc/soc_button_array.c
 
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 523918b8c6..d35850895b 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -3,6 +3,8 @@
-  * - Split from highmem.c
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 7904ab0..c1298af 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -666,4 +666,14 @@ config INPUT_IDEAPAD_SLIDEBAR
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called ideapad_slidebar.
+
++config INPUT_SOC_BUTTON_ARRAY
++	tristate "Windows-compatible SoC Button Array"
++	depends on KEYBOARD_GPIO
++	help
++	  Say Y here if you have a SoC-based tablet that originally
++	  runs Windows 8.
 +
- #include <linux/mm.h>
- #include <linux/export.h>
- #include <linux/swap.h>
-@@ -15,6 +17,7 @@
- #include <linux/hash.h>
- #include <linux/highmem.h>
- #include <linux/bootmem.h>
-+#include <linux/printk.h>
- #include <asm/tlbflush.h>
- 
- #include <trace/events/block.h>
-@@ -34,7 +37,7 @@ static __init int init_emergency_pool(void)
- 
- 	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
- 	BUG_ON(!page_pool);
--	printk("bounce pool size: %d pages\n", POOL_SIZE);
-+	pr_info("bounce pool size: %d pages\n", POOL_SIZE);
- 
- 	return 0;
- }
-@@ -86,7 +89,7 @@ int init_emergency_isa_pool(void)
- 				       mempool_free_pages, (void *) 0);
- 	BUG_ON(!isa_page_pool);
- 
--	printk("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
-+	pr_info("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
- 	return 0;
- }
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index ae3c8f3595..aec6220485 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -65,6 +65,8 @@
-    kernel is not always grateful with that.
- */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++	  To compile this driver as a module, choose M here: the
++	  module will be called soc_button_array.
 +
- #include <linux/mempolicy.h>
- #include <linux/mm.h>
- #include <linux/highmem.h>
-@@ -91,6 +93,7 @@
- #include <linux/ctype.h>
- #include <linux/mm_inline.h>
- #include <linux/mmu_notifier.h>
-+#include <linux/printk.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-@@ -2751,7 +2754,7 @@ void __init numa_policy_init(void)
- 		node_set(prefer, interleave_nodes);
- 
- 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
--		printk("numa_policy_init: interleaving failed\n");
-+		pr_err("%s: interleaving failed\n", __func__);
- 
- 	check_numabalancing_enable();
- }
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3327..c7023516da 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -6,6 +6,8 @@
-  * Address space accounting code	<alan@lxorguk.ukuu.org.uk>
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ endif
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index cda71fc..850a6cd 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -63,3 +63,4 @@ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_XEN_KBDDEV_FRONTEND)	+= xen-kbdfront.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
+ obj-$(CONFIG_INPUT_IDEAPAD_SLIDEBAR)	+= ideapad_slidebar.o
++obj-$(CONFIG_INPUT_SOC_BUTTON_ARRAY)	+= soc_button_array.o
+diff --git a/drivers/input/misc/soc_button_array.c
+b/drivers/input/misc/soc_button_array.c
+new file mode 100644
+index 0000000..e8f19e0
+--- /dev/null
++++ b/drivers/input/misc/soc_button_array.c
+@@ -0,0 +1,209 @@
++/*
++ * soc_button_array.c: supports the button array on SoC tablets originally
++ * running Windows 8.
++ *
++ * (C) Copyright 2014 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ */
 +
- #include <linux/kernel.h>
- #include <linux/slab.h>
- #include <linux/backing-dev.h>
-@@ -36,6 +38,7 @@
- #include <linux/sched/sysctl.h>
- #include <linux/notifier.h>
- #include <linux/memory.h>
-+#include <linux/printk.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -360,20 +363,20 @@ static int browse_rb(struct rb_root *root)
- 		struct vm_area_struct *vma;
- 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
- 		if (vma->vm_start < prev) {
--			printk("vm_start %lx prev %lx\n", vma->vm_start, prev);
-+			pr_info("vm_start %lx prev %lx\n", vma->vm_start, prev);
- 			bug = 1;
- 		}
- 		if (vma->vm_start < pend) {
--			printk("vm_start %lx pend %lx\n", vma->vm_start, pend);
-+			pr_info("vm_start %lx pend %lx\n", vma->vm_start, pend);
- 			bug = 1;
- 		}
- 		if (vma->vm_start > vma->vm_end) {
--			printk("vm_end %lx < vm_start %lx\n",
-+			pr_info("vm_end %lx < vm_start %lx\n",
- 				vma->vm_end, vma->vm_start);
- 			bug = 1;
- 		}
- 		if (vma->rb_subtree_gap != vma_compute_subtree_gap(vma)) {
--			printk("free gap %lx, correct %lx\n",
-+			pr_info("free gap %lx, correct %lx\n",
- 			       vma->rb_subtree_gap,
- 			       vma_compute_subtree_gap(vma));
- 			bug = 1;
-@@ -387,7 +390,7 @@ static int browse_rb(struct rb_root *root)
- 	for (nd = pn; nd; nd = rb_prev(nd))
- 		j++;
- 	if (i != j) {
--		printk("backwards %d, forwards %d\n", j, i);
-+		pr_info("backwards %d, forwards %d\n", j, i);
- 		bug = 1;
- 	}
- 	return bug ? -1 : i;
-@@ -422,17 +425,17 @@ void validate_mm(struct mm_struct *mm)
- 		i++;
- 	}
- 	if (i != mm->map_count) {
--		printk("map_count %d vm_next %d\n", mm->map_count, i);
-+		pr_info("map_count %d vm_next %d\n", mm->map_count, i);
- 		bug = 1;
- 	}
- 	if (highest_address != mm->highest_vm_end) {
--		printk("mm->highest_vm_end %lx, found %lx\n",
-+		pr_info("mm->highest_vm_end %lx, found %lx\n",
- 		       mm->highest_vm_end, highest_address);
- 		bug = 1;
- 	}
- 	i = browse_rb(&mm->mm_rb);
- 	if (i != mm->map_count) {
--		printk("map_count %d rb %d\n", mm->map_count, i);
-+		pr_info("map_count %d rb %d\n", mm->map_count, i);
- 		bug = 1;
- 	}
- 	BUG_ON(bug);
-@@ -3237,7 +3240,7 @@ static struct notifier_block reserve_mem_nb = {
- static int __meminit init_reserve_notifier(void)
- {
- 	if (register_hotmemory_notifier(&reserve_mem_nb))
--		printk("Failed registering memory add/remove notifier for admin reserve");
-+		pr_err("Failed registering memory add/remove notifier for admin reserve\n");
- 
- 	return 0;
- }
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 8740213b16..1ff42f87dd 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -13,6 +13,8 @@
-  *  Copyright (c) 2007-2010 Paul Mundt <lethal@linux-sh.org>
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++#include <linux/module.h>
++#include <linux/input.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/acpi.h>
++#include <linux/gpio/consumer.h>
++#include <linux/gpio_keys.h>
++#include <linux/input.h>
++#include <linux/platform_device.h>
++#include <linux/pnp.h>
 +
- #include <linux/export.h>
- #include <linux/mm.h>
- #include <linux/mman.h>
-@@ -30,6 +32,7 @@
- #include <linux/syscalls.h>
- #include <linux/audit.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/printk.h>
- 
- #include <asm/uaccess.h>
- #include <asm/tlb.h>
-@@ -1241,7 +1244,7 @@ error_free:
- 	return ret;
- 
- enomem:
--	printk("Allocation of length %lu from process %d (%s) failed\n",
-+	pr_err("Allocation of length %lu from process %d (%s) failed\n",
- 	       len, current->pid, current->comm);
- 	show_free_areas(0);
- 	return -ENOMEM;
-diff --git a/mm/slub.c b/mm/slub.c
-index 25f14ad8f8..9f109e6756 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -9,6 +9,8 @@
-  * (C) 2011 Linux Foundation, Christoph Lameter
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++/*
++ * Definition of buttons on the tablet. The ACPI index of each button
++ * is defined in section 2.8.7.2 of "Windows ACPI Design Guide for SoC
++ * Platforms"
++ */
++#define	MAX_NBUTTONS	5
 +
- #include <linux/mm.h>
- #include <linux/swap.h> /* struct reclaim_state */
- #include <linux/module.h>
-@@ -33,6 +35,7 @@
- #include <linux/stacktrace.h>
- #include <linux/prefetch.h>
- #include <linux/memcontrol.h>
-+#include <linux/printk.h>
- 
- #include <trace/events/kmem.h>
- 
-@@ -1774,15 +1777,15 @@ static inline void note_cmpxchg_failure(const char *n,
- 
- #ifdef CONFIG_PREEMPT
- 	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
--		printk("due to cpu change %d -> %d\n",
-+		pr_cont("due to cpu change %d -> %d\n",
- 			tid_to_cpu(tid), tid_to_cpu(actual_tid));
- 	else
- #endif
- 	if (tid_to_event(tid) != tid_to_event(actual_tid))
--		printk("due to cpu running other code. Event %ld->%ld\n",
-+		pr_cont("due to cpu running other code. Event %ld->%ld\n",
- 			tid_to_event(tid), tid_to_event(actual_tid));
- 	else
--		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
-+		pr_cont("for unknown reason: actual=%lx was=%lx target=%lx\n",
- 			actual_tid, tid, next_tid(tid));
- #endif
- 	stat(s, CMPXCHG_DOUBLE_CPU_FAIL);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a9c74b4096..394dd2b644 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -11,6 +11,8 @@
-  *  Multiqueue VM started 5.8.00, Rik van Riel.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++struct soc_button_info {
++	const char *name;
++	int acpi_index;
++	unsigned int event_code;
++	int repeat;
++	int wakeup;
++	int gpio;
++};
 +
- #include <linux/mm.h>
- #include <linux/module.h>
- #include <linux/gfp.h>
-@@ -43,6 +45,7 @@
- #include <linux/sysctl.h>
- #include <linux/oom.h>
- #include <linux/prefetch.h>
-+#include <linux/printk.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -477,7 +480,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- 		if (page_has_private(page)) {
- 			if (try_to_free_buffers(page)) {
- 				ClearPageDirty(page);
--				printk("%s: orphaned page\n", __func__);
-+				pr_info("%s: orphaned page\n", __func__);
- 				return PAGE_CLEAN;
- 			}
- 		}
++static struct soc_button_info soc_button_tbl[] = {
++	{"power", 0, KEY_POWER, 0, 1, -1},
++	{"home", 1, KEY_HOME, 0, 1, -1},
++	{"volume_up", 2, KEY_VOLUMEUP, 1, 0, -1},
++	{"volume_down", 3, KEY_VOLUMEDOWN, 1, 0, -1},
++	{"rotation_lock", 4, KEY_RO, 0, 0, -1},
++};
++
++/*
++ * Some of the buttons like volume up/down are auto repeat, while others
++ * are not. To support both, we register two platform devices, and put
++ * buttons into them based on whether the key should be auto repeat.
++ */
++#define	BUTTON_TYPES	2
++
++static struct gpio_keys_button soc_buttons[BUTTON_TYPES][MAX_NBUTTONS];
++
++static struct gpio_keys_platform_data soc_button_data[BUTTON_TYPES] = {
++	{
++		.buttons	= soc_buttons[0],
++		.nbuttons	= 0,
++		.rep		= 0
++	},
++	{
++		.buttons	= soc_buttons[1],
++		.nbuttons	= 0,
++		.rep		= 1
++	}
++};
++
++static struct platform_device *soc_button_device[BUTTON_TYPES];
++
++/*
++ * Get the Nth GPIO number from the ACPI object.
++ */
++static int soc_button_lookup_gpio(struct device *dev, int acpi_index)
++{
++	struct gpio_desc *desc;
++	int ret;
++
++	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index);
++
++	if (IS_ERR(desc))
++		return -1;
++
++	ret = desc_to_gpio(desc);
++
++	gpiod_put(desc);
++
++	return ret;
++}
++
++/*
++ * Register platform device for a set of buttons.
++ */
++static int soc_button_register(int r)
++{
++	struct platform_device *pd;
++	int err;
++
++	pd = platform_device_alloc("gpio-keys", PLATFORM_DEVID_AUTO);
++	if (!pd) {
++		err = -ENOMEM;
++		goto err0;
++	}
++
++	err = platform_device_add_data(pd, &soc_button_data[r],
++					sizeof(soc_button_data[r]));
++	if (err)
++		goto err1;
++
++	err = platform_device_add(pd);
++	if (err)
++		goto err1;
++
++	soc_button_device[r] = pd;
++
++	return 0;
++
++err1:
++	platform_device_put(pd);
++err0:
++	return err;
++}
++
++static int soc_button_pnp_probe(struct pnp_dev *pdev,
++	const struct pnp_device_id *id)
++{
++	int i, j, r, ret;
++	int sz_tbl = sizeof(soc_button_tbl) / sizeof(soc_button_tbl[0]);
++	struct gpio_keys_button *gk;
++
++	/* Find GPIO number of all the buttons */
++	for (i = 0; i < sz_tbl; i++) {
++		soc_button_tbl[i].gpio = soc_button_lookup_gpio(&pdev->dev,
++						soc_button_tbl[i].acpi_index);
++	}
++
++	for (r = 0; r < BUTTON_TYPES; r++) {
++		gk = soc_buttons[r];
++		j = 0;
++
++		/* Register buttons in the correct device */
++		for (i = 0; i < sz_tbl; i++) {
++			if (soc_button_tbl[i].repeat == r &&
++			    soc_button_tbl[i].gpio > 0) {
++				gk[j].code = soc_button_tbl[i].event_code;
++				gk[j].gpio = soc_button_tbl[i].gpio;
++				gk[j].active_low = 1;
++				gk[j].desc = soc_button_tbl[i].name;
++				gk[j].type = EV_KEY;
++				gk[j].wakeup = soc_button_tbl[i].wakeup;
++				j++;
++			}
++		}
++
++		soc_button_data[r].nbuttons = j;
++
++		if (j == 0)
++			continue;
++
++		if (soc_button_register(r)) {
++			dev_err(&pdev->dev, "failed to register %d\n", r);
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static void soc_button_remove(struct pnp_dev *pdev)
++{
++	int r;
++
++	for (r = 0; r < BUTTON_TYPES; r++) {
++		if (soc_button_device[r]) {
++			platform_device_unregister(soc_button_device[r]);
++			soc_button_device[r] = NULL;
++		}
++	}
++}
++
++static const struct pnp_device_id soc_button_pnp_match[] = {
++	{.id = "INTCFD9", .driver_data = 0},
++	{.id = ""}
++};
++
++MODULE_DEVICE_TABLE(pnp, soc_button_pnp_match);
++
++static struct pnp_driver soc_button_pnp_driver = {
++	.name		= KBUILD_MODNAME,
++	.id_table	= soc_button_pnp_match,
++	.probe          = soc_button_pnp_probe,
++	.remove		= soc_button_remove,
++};
++
++static int __init soc_button_init(void)
++{
++	return pnp_register_driver(&soc_button_pnp_driver);
++}
++
++static void __exit soc_button_exit(void)
++{
++	pnp_unregister_driver(&soc_button_pnp_driver);
++}
++
++module_init(soc_button_init);
++module_exit(soc_button_exit);
++
++MODULE_LICENSE("GPL");
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.3.2
+
+
+
+
+
+
 
