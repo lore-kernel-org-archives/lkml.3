@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601AbaC0Iji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 04:39:38 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46530 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754338AbaC0IjC (ORCPT
+	id S1754531AbaC0IpP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 04:45:15 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34994 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406AbaC0IpG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 04:39:02 -0400
+	Thu, 27 Mar 2014 04:45:06 -0400
+Message-ID: <5333E50C.9090201@de.ibm.com>
+Date: Thu, 27 Mar 2014 09:45:00 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <532C394A.3050408@hurleysoftware.com>
-References: <1395392905-29569-1-git-send-email-geert@linux-m68k.org>
-	<532C394A.3050408@hurleysoftware.com>
-Date: Thu, 27 Mar 2014 09:38:06 +0100
-X-Google-Sender-Auth: ptkldp-5JZnr4XoiijrWXVLnOM4
-Message-ID: <CAMuHMdW5R=fQLQiiz8YHwn8ZJe3znrtGExRG52haUfUkzWzsyA@mail.gmail.com>
-Subject: Re: [PATCH resend] serial_core: Fix pm imbalance on unbind
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Peter Hurley <peter@hurleysoftware.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        Linux-sh list <linux-sh@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Yarygin <yarygin@imap.linux.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Subject: Re: [PATCH v2] perf/tool: Fix usage of trace events with '-' in trace
+ system name.
+References: <87fvm411yi.wl%yarygin@imap.linux.ibm.com>
+In-Reply-To: <87fvm411yi.wl%yarygin@imap.linux.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032708-4966-0000-0000-000008DE114C
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 21, 2014 at 2:06 PM, Peter Hurley <peter@hurleysoftware.com> wrote:
->> When a serial port is closed, uart_close() takes care of shutting down the
->> hardware, and powering it down.
->>
->> When a serial port is unbound while in use, uart_close() bypasses all of
->> this, as this is supposed to be done through uart_hangup() (invoked via
->> tty_vhangup() in uart_remove_one_port()).
->>
->> However, uart_hangup() does not set the hardware's power state, leaving it
->> powered up.  This may also lead to unbounded nesting counts in clock and
->> power management, depending on their internal implementation.
->>
->> Make sure to power down the port in uart_hangup(), except when the port is
->> used as a serial console. For serial consoles, this must be postponed
->> until
->> after their deregistration in uart_remove_one_port() (symmetry with
->> registration in uart_configure_port(), invoked from uart_add_one_port()).
->>
->> After this, the module clock used by the sh-sci driver is disabled on
->> unbind while the serial port is in use.
->>
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@linux-m68k.org>
->> ---
->>   drivers/tty/serial/serial_core.c |    8 ++++++--
->>   1 file changed, 6 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/tty/serial/serial_core.c
->> b/drivers/tty/serial/serial_core.c
->> index 2cf5649a6dc0..56dda84f82a5 100644
->> --- a/drivers/tty/serial/serial_core.c
->> +++ b/drivers/tty/serial/serial_core.c
->> @@ -1452,6 +1452,8 @@ static void uart_hangup(struct tty_struct *tty)
->>                 clear_bit(ASYNCB_NORMAL_ACTIVE, &port->flags);
->>                 spin_unlock_irqrestore(&port->lock, flags);
->>                 tty_port_tty_set(port, NULL);
->> +               if (!uart_console(state->uart_port))
->> +                       uart_change_pm(state, UART_PM_STATE_OFF);
->
->
-> Ok.
+On 27/03/14 09:27, Alexander Yarygin wrote:
+> 
+> Trace events potentially can have a '-' in their trace system name,
+> e.g. kvm on s390 defines kvm-s390:* tracepoints.
+> tools/perf could not parse them, because there was no rule for this:
+> $ sudo ./perf top -e "kvm-s390:*"
+> invalid or unsupported event: 'kvm-s390:*'
+> 
+> This patch allows to '-' to be a part of PE_NAME token, so tracepoints
+> with '-' can be parsed by the event_legacy_tracepoint rule.
+> Without the patch, perf will not accept such tracepoints in the -e
+> option.
+> 
+> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Thanks, I'll send an updated patch handling the non-serial console case only.
+When doing a V2, you should remove my Signed-off-by. ;-)
 
-Gr{oetje,eeting}s,
 
-                        Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+But at least we can now add my
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+
+Ingo, Peter, Paul,
+
+If you agree with this solution, I would like to have this in the next merge window - maybe 
+cc stable if we consider perf stable relevant.
+
+Christian
+
+
+> ---
+>  tools/perf/util/parse-events.l |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/util/parse-events.l b/tools/perf/util/parse-events.l
+> index 3432995..ca20da7 100644
+> --- a/tools/perf/util/parse-events.l
+> +++ b/tools/perf/util/parse-events.l
+> @@ -199,7 +199,7 @@ r{num_raw_hex}		{ return raw(yyscanner); }
+>  {num_hex}		{ return value(yyscanner, 16); }
+> 
+>  {modifier_event}	{ return str(yyscanner, PE_MODIFIER_EVENT); }
+> -{name}			{ return str(yyscanner, PE_NAME); }
+> +{name_minus}			{ return str(yyscanner, PE_NAME); }
+>  "/"			{ BEGIN(config); return '/'; }
+>  -			{ return '-'; }
+>  ,			{ BEGIN(event); return ','; }
+> 
+
