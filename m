@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312AbaC0UWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 16:22:15 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:61800 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757242AbaC0UWM (ORCPT
+	id S1757328AbaC0Uat (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 16:30:49 -0400
+Received: from mail-yk0-f169.google.com ([209.85.160.169]:46907 "EHLO
+	mail-yk0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755086AbaC0Uar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 16:22:12 -0400
+	Thu, 27 Mar 2014 16:30:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140327200851.GL17679@kvack.org>
-References: <20140327134653.GA22407@kvack.org>
-	<CA+55aFzFgY4-26SO-MsFagzaj9JevkeeT1OJ3pjj-tcjuNCEeQ@mail.gmail.com>
-	<CA+55aFx7vg2rvOu6Bu_e8+BB=ymoUMp0AM9JmAuUuSgo0LVEwg@mail.gmail.com>
-	<20140327200851.GL17679@kvack.org>
-Date: Thu, 27 Mar 2014 13:22:11 -0700
-X-Google-Sender-Auth: 3B7UNir0lUjzaEiFeBylbqVpwic
-Message-ID: <CA+55aFy_sRnFu7KguAUAN5kbHk3Qa_0ZuATPU5i8LOyMMWZ_5g@mail.gmail.com>
-Subject: Re: git pull -- [PATCH] aio: v2 ensure access to ctx->ring_pages is
- correctly serialised
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benjamin LaHaise <bcrl@kvack.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, linux-aio@kvack.org,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20140327.152319.1469721259196062415.davem@davemloft.net>
+References: <1395867970-1338-1-git-send-email-dborkman@redhat.com>
+	<1395867970-1338-9-git-send-email-dborkman@redhat.com>
+	<20140327.152319.1469721259196062415.davem@davemloft.net>
+Date: Thu, 27 Mar 2014 13:30:47 -0700
+Message-ID: <CAMEtUuz0SxSoSeJk7_C7Qt1t_27wqkp__Hk1CT13TgzhJGUUcg@mail.gmail.com>
+Subject: Re: [PATCH net-next v3 8/9] net: filter: rework/optimize internal BPF
+ interpreter's instruction set
+From: Alexei Starovoitov <ast@plumgrid.com>
+To: David Miller <davem@davemloft.net>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        Network Development <netdev@vger.kernel.org>,
+        Hagen Paul Pfeifer <hagen@jauu.net>, Kees Cook <keescook@chromium.org>,
+        pmoore@redhat.com, Ingo Molnar <mingo@kernel.org>, hpa@linux.intel.com,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 1:08 PM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+On Thu, Mar 27, 2014 at 12:23 PM, David Miller <davem@davemloft.net> wrote:
+> From: Daniel Borkmann <dborkman@redhat.com>
+> Date: Wed, 26 Mar 2014 22:06:09 +0100
 >
-> The patch below is lightly tested -- my migration test case is able to
-> successfully move the aio ring around multiple times.  It still needs to
-> be run through some more thorough tests (like Trinity).  See below for
-> the differences relative to your patch.
-
-Ok, from a quick glance-through this fixes my big complaints (not
-unrurprisingly, similarly to my patch), and seems to fix  few of the
-smaller ones that I didn't bother with.
-
-However, I think you missed the mutex_unlock() in the error paths of
-ioctx_alloc().
-
-> What I did instead is to just hold mapping->private_lock over the entire
-> operation of aio_migratepage.  That gets rid of the probably broken attempt
-> to take a reference count on the kioctx within aio_migratepage(), and makes
-> it completely clear that migration won't touch a kioctx after
-> put_aio_ring_file() returns.  It also cleans up much of the error handling
-> in aio_migratepage() since things cannot change unexpectedly.
-
-Yes, that looks simpler. I don't know what the latency implications
-are, but the expensive part (the actual page migration) was and
-continues to be under the completion lock with interrupts disabled, so
-I guess it's not worse.
-
-It would be good to try to get rid of the completion lock irq thing,
-but that looks complex. It would likely require a two-phase migration
-model, where phase one is "unmap page from user space and copy it to
-new page", and phase two would be "insert new page into mapping". Then
-we could have just a "update the tail pointer and the kernel mapping
-under the completion lock" thing with interrupts disabled in between.
-
-But that's a much bigger change and requires help from the migration
-people. Maybe we don't care about latency here.
-
-> I also added a few comments to help explain the locking.
+>>   - Adds swab insns for 32/64-bit
 >
-> How does this version look?
+> I don't like this.
+>
+> You don't want a swab instruction, you want "endian X to endian Y".  Just
+> like we have "cpu_to_le32()", "le32_to_cpu()" et al. in the kernel.
+>
+> That way the user can be completely oblivious as to the endianness of
+> the cpu it's running on.
 
-Looks ok, except for the error handling wrt mutex_unlock. Did I miss it?
+Agreed.
+If we want to expose ebpf instruction set to the userspace as-is then
+it completely makes sense.
 
-                 Linus
+The reason we picked swab style is two fold:
+1. swab32/64 maps as-is to native cpu instructions during jit.
+2. assumption was that new_socket_filters/tracing_filters/ovs_filters
+   will be written in C and will use standard macro ntohl() that
+   will be expanded to __builtin_swap or nop by gcc/llvm,
+  so users don't need to worry about underlying endianness while
+  writing filters in C.
+
+> So if you ask for a "to little endian" swab, if the chip is
+> little-endian then no code needs to be emitted at all, it's a nop.
+>
+> There is zero reason for the BPF program emitted by userspace to be
+> dependant upon the cpu endianness.
+
+Agree.
+with cpu_to_le and cpu_to_be instructions the programs written in C
+and written directly in ebpf won't need to worry about endianness.
+Best of both.
+
+We'll fix and resend.
+
+Thanks
+Alexei
