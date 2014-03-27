@@ -1,115 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638AbaC0GUT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 02:20:19 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:59337 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777AbaC0GUQ (ORCPT
+	id S1753813AbaC0GVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 02:21:17 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:43988
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750949AbaC0GVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 02:20:16 -0400
-Message-ID: <5333C315.3000405@linux.vnet.ibm.com>
-Date: Thu, 27 Mar 2014 11:50:05 +0530
-From: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 27 Mar 2014 02:21:15 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: 3
+X-BigFish: VS3(zze0eahzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h1082kzdchz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+From: Zhao Qiang <B45475@freescale.com>
+To: <linuxppc-dev@lists.ozlabs.org>, <netdev@vger.kernel.org>,
+        <B07421@freescale.com>
+CC: <linux-kernel@vger.kernel.org>, <davem@davemloft.net>,
+        <mugunthanvnm@ti.com>, <zonque@gmail.com>,
+        <helmut.schaa@googlemail.com>, <R63061@freescale.com>,
+        Zhao Qiang <B45475@freescale.com>
+Subject: [PATCH] phy/at8031: enable at8031 to work on interrupt mode
+Date: Thu, 27 Mar 2014 14:18:36 +0800
+Message-ID: <1395901116-16034-1-git-send-email-B45475@freescale.com>
+X-Mailer: git-send-email 1.8.5
 MIME-Version: 1.0
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-mm@kvack.org, linux-arch@vger.kernel.org, x86@kernel.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        kirill.shutemov@linux.intel.com, rusty@rustcorp.com.au,
-        akpm@linux-foundation.org, riel@redhat.com, mgorman@suse.de,
-        ak@linux.intel.com, peterz@infradead.org, mingo@kernel.org
-Subject: Re: [PATCH 1/1] mm: move FAULT_AROUND_ORDER to arch/
-References: <1395730215-11604-1-git-send-email-maddy@linux.vnet.ibm.com> <1395730215-11604-2-git-send-email-maddy@linux.vnet.ibm.com> <20140325173605.GA21411@node.dhcp.inet.fi>
-In-Reply-To: <20140325173605.GA21411@node.dhcp.inet.fi>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032706-8256-0000-0000-00000C26530F
+Content-Type: text/plain
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 March 2014 11:06 PM, Kirill A. Shutemov wrote:
-> On Tue, Mar 25, 2014 at 12:20:15PM +0530, Madhavan Srinivasan wrote:
->> Kirill A. Shutemov with the commit 96bacfe542 introduced
->> vm_ops->map_pages() for mapping easy accessible pages around
->> fault address in hope to reduce number of minor page faults.
->> Based on his workload runs, suggested FAULT_AROUND_ORDER
->> (knob to control the numbers of pages to map) is 4.
->>
->> This patch moves the FAULT_AROUND_ORDER macro to arch/ for
->> architecture maintainers to decide on suitable FAULT_AROUND_ORDER
->> value based on performance data for that architecture.
->>
->> Signed-off-by: Madhavan Srinivasan <maddy@linux.vnet.ibm.com>
->> ---
->>  arch/powerpc/include/asm/pgtable.h |    6 ++++++
->>  arch/x86/include/asm/pgtable.h     |    5 +++++
->>  include/asm-generic/pgtable.h      |   10 ++++++++++
->>  mm/memory.c                        |    2 --
->>  4 files changed, 21 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/powerpc/include/asm/pgtable.h b/arch/powerpc/include/asm/pgtable.h
->> index 3ebb188..9fcbd48 100644
->> --- a/arch/powerpc/include/asm/pgtable.h
->> +++ b/arch/powerpc/include/asm/pgtable.h
->> @@ -19,6 +19,12 @@ struct mm_struct;
->>  #endif
->>  
->>  /*
->> + * With a few real world workloads that were run,
->> + * the performance data showed that a value of 3 is more advantageous.
->> + */
->> +#define FAULT_AROUND_ORDER	3
->> +
->> +/*
->>   * We save the slot number & secondary bit in the second half of the
->>   * PTE page. We use the 8 bytes per each pte entry.
->>   */
->> diff --git a/arch/x86/include/asm/pgtable.h b/arch/x86/include/asm/pgtable.h
->> index 938ef1d..8387a65 100644
->> --- a/arch/x86/include/asm/pgtable.h
->> +++ b/arch/x86/include/asm/pgtable.h
->> @@ -7,6 +7,11 @@
->>  #include <asm/pgtable_types.h>
->>  
->>  /*
->> + * Based on Kirill's test results, fault around order is set to 4
->> + */
->> +#define FAULT_AROUND_ORDER 4
->> +
->> +/*
->>   * Macro to mark a page protection value as UC-
->>   */
->>  #define pgprot_noncached(prot)					\
->> diff --git a/include/asm-generic/pgtable.h b/include/asm-generic/pgtable.h
->> index 1ec08c1..62f7f07 100644
->> --- a/include/asm-generic/pgtable.h
->> +++ b/include/asm-generic/pgtable.h
->> @@ -7,6 +7,16 @@
->>  #include <linux/mm_types.h>
->>  #include <linux/bug.h>
->>  
->> +
->> +/*
->> + * Fault around order is a control knob to decide the fault around pages.
->> + * Default value is set to 0UL (disabled), but the arch can override it as
->> + * desired.
->> + */
->> +#ifndef FAULT_AROUND_ORDER
->> +#define FAULT_AROUND_ORDER	0UL
->> +#endif
-> 
-> FAULT_AROUND_ORDER == 0 case should be handled separately in
-> do_read_fault(): no reason to go to do_fault_around() if we are going to
-> fault in only one page.
-> 
+The at8031 can work on polling mode and interrupt mode.
+Add ack_interrupt and config intr funcs to enable
+interrupt mode for it.
 
-ok agreed. I am thinking of adding FAULT_AROUND_ORDER check with
-map_pages check in the do_read_fault. Kindly share your thoughts.
+Signed-off-by: Zhao Qiang <B45475@freescale.com>
+---
+ drivers/net/phy/at803x.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-With regards
-Maddy
+diff --git a/drivers/net/phy/at803x.c b/drivers/net/phy/at803x.c
+index bc71947..d034ef5 100644
+--- a/drivers/net/phy/at803x.c
++++ b/drivers/net/phy/at803x.c
+@@ -27,6 +27,9 @@
+ #define AT803X_MMD_ACCESS_CONTROL		0x0D
+ #define AT803X_MMD_ACCESS_CONTROL_DATA		0x0E
+ #define AT803X_FUNC_DATA			0x4003
++#define AT803X_INER				0x0012
++#define AT803X_INER_INIT			0xec00
++#define AT803X_INSR				0x0013
+ #define AT803X_DEBUG_ADDR			0x1D
+ #define AT803X_DEBUG_DATA			0x1E
+ #define AT803X_DEBUG_SYSTEM_MODE_CTRL		0x05
+@@ -191,6 +194,31 @@ static int at803x_config_init(struct phy_device *phydev)
+ 	return 0;
+ }
+ 
++static int at803x_ack_interrupt(struct phy_device *phydev)
++{
++	int err;
++
++	err = phy_read(phydev, AT803X_INSR);
++
++	return (err < 0) ? err : 0;
++}
++
++static int at803x_config_intr(struct phy_device *phydev)
++{
++	int err;
++	int value;
++
++	value = phy_read(phydev, AT803X_INER);
++
++	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
++		err = phy_write(phydev, AT803X_INER,
++				(value | AT803X_INER_INIT));
++	else
++		err = phy_write(phydev, AT803X_INER, value);
++
++	return err;
++}
++
+ static struct phy_driver at803x_driver[] = {
+ {
+ 	/* ATHEROS 8035 */
+@@ -240,6 +268,8 @@ static struct phy_driver at803x_driver[] = {
+ 	.flags		= PHY_HAS_INTERRUPT,
+ 	.config_aneg	= genphy_config_aneg,
+ 	.read_status	= genphy_read_status,
++	.ack_interrupt  = &at803x_ack_interrupt,
++	.config_intr    = &at803x_config_intr,
+ 	.driver		= {
+ 		.owner = THIS_MODULE,
+ 	},
+-- 
+1.8.5
+
 
