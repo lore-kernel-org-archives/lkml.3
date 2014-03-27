@@ -1,91 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844AbaC0OrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 10:47:09 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:64860 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756698AbaC0OrI (ORCPT
+	id S1756903AbaC0Orp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 10:47:45 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44214 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756869AbaC0Orn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 10:47:08 -0400
+	Thu, 27 Mar 2014 10:47:43 -0400
+Date: Thu, 27 Mar 2014 15:47:12 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        linux-arm-kernel@lists.infradead.org, mturquette@linaro.org,
+        mark.rutland@arm.com, devicetree@vger.kernel.org,
+        linux@arm.linux.org.uk, gregkh@linuxfoundation.org, t.figa@samsung.com,
+        sw0312.kim@samsung.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com, robh+dt@kernel.org, galak@codeaurora.org,
+        grant.likely@linaro.org, m.szyprowski@samsung.com
+Subject: Re: [PATCH RFC v3 2/2] clk: Add handling of clk parent and rate
+ assigned from DT
+Message-ID: <20140327144712.GW17250@pengutronix.de>
+References: <1395922579-28547-1-git-send-email-s.nawrocki@samsung.com>
+ <77553409.zvN7VkNGe7@avalon>
+ <53342E64.5060505@samsung.com>
+ <46532903.ghnH4Us8Zz@avalon>
 MIME-Version: 1.0
-Date: Thu, 27 Mar 2014 17:47:06 +0300
-Message-ID: <CACVxJT-d=Sm1-N9wvojgXj0voBABwxrgV728fAyZuPX2BK-3vg@mail.gmail.com>
-Subject: 3.14-rc6: BUG: Bad page map in process objdump pte:483d2025 pmd:daa04067
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <46532903.ghnH4Us8Zz@avalon>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 15:35:04 up 215 days, 5 min, 49 users,  load average: 0.01, 0.08,
+ 0.12
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:5054:ff:fec0:8e10
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hell knows what happened, I did nothing unusual...
-This is the first time I see this message on this box.
+On Thu, Mar 27, 2014 at 03:08:10PM +0100, Laurent Pinchart wrote:
+> Hi Sylwester,
+> 
+> On Thursday 27 March 2014 14:57:56 Sylwester Nawrocki wrote:
+> > On 27/03/14 14:24, Laurent Pinchart wrote:
+> > > On Thursday 27 March 2014 13:16:19 Sylwester Nawrocki wrote:
+> > >> This function adds a helper function to configure clock parents and rates
+> > >> as specified in clock-parents, clock-rates DT properties for a consumer
+> > >> device and a call to it before driver is bound to a device.
+> > >> 
+> > >> Signed-off-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> > >> ---
+> > 
+> > [...]
+> > 
+> > >> ---
+> > >> 
+> > >>  .../devicetree/bindings/clock/clock-bindings.txt   |   26 ++++++
+> > >>  drivers/base/dd.c                                  |    7 ++
+> > >>  drivers/clk/Makefile                               |    1 +
+> > >>  drivers/clk/clk-conf.c                             |   87 ++++++++++++++
+> > >>  drivers/clk/clk.c                                  |   10 ++-
+> > >>  include/linux/clk/clk-conf.h                       |   19 +++++
+> > >>  6 files changed, 149 insertions(+), 1 deletion(-)
+> > >>  create mode 100644 drivers/clk/clk-conf.c
+> > >>  create mode 100644 include/linux/clk/clk-conf.h
+> > >> 
+> > >> diff --git a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > >> b/Documentation/devicetree/bindings/clock/clock-bindings.txt index
+> > >> 7c52c29..b452f80 100644
+> > >> --- a/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > >> +++ b/Documentation/devicetree/bindings/clock/clock-bindings.txt
+> > >> @@ -115,3 +115,29 @@ clock signal, and a UART.
+> > >>    ("pll" and "pll-switched").
+> > >>  * The UART has its baud clock connected the external oscillator and its
+> > >>    register clock connected to the PLL clock (the "pll-switched" signal)
+> > >> +
+> > >> +==Assigned clock parents and rates==
+> > >> +
+> > >> +Some platforms require static initial configuration of parts of the
+> > >> clocks
+> > >> +controller. Such a configuration can be specified in a clock consumer
+> > >> node
+> > >> +through clock-parents and clock-rates DT properties. The former should
+> > >> contain
+> > >> +a list of parent clocks in form of phandle and clock specifier pairs,
+> > >> the
+> > >> +latter the list of assigned clock frequency values (one cell each).
+> > >> +
+> > >> +    uart@a000 {
+> > >> +        compatible = "fsl,imx-uart";
+> > >> +        reg = <0xa000 0x1000>;
+> > >> +        ...
+> > >> +        clocks = <&clkcon 0>, <&clkcon 3>;
+> > >> +        clock-names = "baud", "mux";
+> > >> +
+> > >> +        clock-parents = <0>, <&pll 1>;
+> > >> +        clock-rates = <460800>;
+> > >> +    };
+> > >> +
+> > >> +In this example the pll is set as parent of "mux" clock and frequency of
+> > >> "baud"
+> > >> +clock is specified as 460800 Hz.
+> > > 
+> > > I'm curious, what should happen when two devices have conflicting
+> > > requirements ? If a different device required the <&clkcon 3> parent to
+> > > be set to <&pll 2> for instance, who should win ? Shouldn't a warning be
+> > > printed ?
+> > 
+> > In general, the assumption is that the <&clkcon 3> clock would be used only
+> > by the uart@a000 device.
+> 
+> OK. Removing the problem is a simple way to fix it :-) What about stating this 
+> explicitly in the documentation then ? Maybe by prefixing your proposed 
+> explanation below with something like
+> 
+> "Configuring a clock parent and rate through the device node that uses the 
+> clock is only supported for clocks that have a single user."
+> 
+> > If a clock is shared I'd say it shouldn't be put in a multiple consumer
+> > device nodes. Instead it should be put in a clock provider node, as I was
+> > trying to explain in the sentence below.
+> >
+> > A warning could be useful, but it could complicate the code. We would need,
+> > for example, to store information about already configured clocks in a list
+> > and scan it before actually altering any clock parent or rate.
+> 
+> I'm fine with implementing that later if needed, we can keep the initial 
+> implementation simple.
+> 
+> > >> +For clocks which are not directly connected to any consumer device
+> > >> similarly
+> > >> +clocks, clock-parents and/or clock-rates properties should be specified
+> > >> in
+> > >> +assigned-clocks subnode of a clock controller DT node.
+> > > 
+> > > It might be that I'm not familiar enough with the clock framework, but
+> > > this sounds unclear to me. I'm not sure what you mean exactly.
+> > 
+> > Sorry about not being precise here, would something like below be more
+> > clear ?
+> > 
+> > "Configuration of common clocks, which affect multiple consumer devices
+> > can be specified in a dedicated 'assigned-clocks' subnode of a clock
+> > provider node, e.g.:
+> > 
+> >     clkcon {
+> >         ...
+> >         #clock-cells = <1>;
+> > 
+> >         assigned-clocks {
+> >             clocks = <&clkcon 16>, <&clkcon 17>;
+> >             clock-parents = <0>, <&clkcon 1>;
+> >             clock-rates = <200000>;
+> >         };
+> >     };
+> > "
+> 
+> That's clearer indeed. Can the parents and rates depend on the board, or on 
+> the SoC only ? We might be getting dangerously close to specifying platform 
+> configuration instead of describing the hardware. A real example might be nice 
+> to support the discussion.
 
-[15173.408570] BUG: Bad page map in process objdump  pte:483d2025 pmd:daa04067
-[15173.408578] page:ffffea000120f480 count:1 mapcount:-1
-mapping:ffff88005316bb10 index:0x9a22
-[15173.408580] page flags:
-0x400000000002002c(referenced|uptodate|lru|mappedtodisk)
-[15173.408585] page dumped because: bad pte
-[15173.408588] addr:00007fe290749000 vm_flags:00000075 anon_vma:
-   (null) mapping:ffff88007fe518c0 index:24
-[15173.408593] vma->vm_ops->fault: filemap_fault+0x0/0x420
-[15173.408597] vma->vm_file->f_op->mmap: ext4_file_mmap+0x0/0x60
-[15173.408601] CPU: 1 PID: 10326 Comm: objdump Not tainted 3.14.0-rc6 #13
-[15173.408603] Hardware name: Hewlett-Packard HP Compaq dc7800
-Convertible Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
-[15173.408605]  ffff8800bb77faa8 ffff880047899c78 ffffffff814649d0
-0000000000000007
-[15173.408608]  00007fe290749000 ffff880047899cc8 ffffffff810f7ece
-ffffea0002edf840
-[15173.408611]  ffff88007fe518c0 ffff880047899ca8 00007fe29075e000
-ffff8800daa04a48
-[15173.408614] Call Trace:
-[15173.408620]  [<ffffffff814649d0>] dump_stack+0x4e/0x71
-[15173.408624]  [<ffffffff810f7ece>] print_bad_pte+0x18e/0x240
-[15173.408627]  [<ffffffff810f94eb>] unmap_single_vma+0x5cb/0x5f0
-[15173.408630]  [<ffffffff810f9c09>] unmap_vmas+0x49/0x90
-[15173.408633]  [<ffffffff8110144d>] exit_mmap+0xbd/0x170
-[15173.408637]  [<ffffffff81072cbc>] mmput+0x3c/0xb0
-[15173.408640]  [<ffffffff81076db6>] do_exit+0x1f6/0x900
-[15173.408644]  [<ffffffff8109e1cb>] ? local_clock+0x1b/0x30
-[15173.408647]  [<ffffffff8109eb28>] ? vtime_account_user+0x58/0x70
-[15173.408650]  [<ffffffff810775da>] do_group_exit+0x3a/0xa0
-[15173.408652]  [<ffffffff81077652>] SyS_exit_group+0x12/0x20
-[15173.408656]  [<ffffffff8146a459>] tracesys+0xd0/0xd5
-[15173.408658] Disabling lock debugging due to kernel taint
-[15173.408741] BUG: Bad page state in process objdump  pfn:483d2
-[15173.408743] page:ffffea000120f480 count:0 mapcount:-1
-mapping:ffff88005316bb10 index:0x9a22
-[15173.408745] page flags: 0x400000000002000c(referenced|uptodate|mappedtodisk)
-[15173.408748] page dumped because: non-NULL mapping
-[15173.408750] Modules linked in: usbhid uhci_hcd
-[15173.408755] CPU: 1 PID: 10326 Comm: objdump Tainted: G    B
-3.14.0-rc6 #13
-[15173.408756] Hardware name: Hewlett-Packard HP Compaq dc7800
-Convertible Minitower/0AACh, BIOS 786F1 v01.28 02/26/2009
-[15173.408758]  ffffffff816f248a ffff880047899bd8 ffffffff814649d0
-0000000000000007
-[15173.408761]  ffffea000120f480 ffff880047899c08 ffffffff810e2761
-ffffea00034d2400
-[15173.408764]  ffffea000120f480 0000000000000000 ffffffff816f248a
-ffff880047899c58
-[15173.408767] Call Trace:
-[15173.408770]  [<ffffffff814649d0>] dump_stack+0x4e/0x71
-[15173.408773]  [<ffffffff810e2761>] bad_page+0xc1/0x110
-[15173.408776]  [<ffffffff810e2885>] free_pages_prepare+0xd5/0x100
-[15173.408778]  [<ffffffff810e3e3c>] free_hot_cold_page+0x2c/0x120
-[15173.408781]  [<ffffffff810e43a8>] free_hot_cold_page_list+0x38/0x60
-[15173.408784]  [<ffffffff810e78da>] release_pages+0x7a/0x1a0
-[15173.408788]  [<ffffffff81109cc5>] free_pages_and_swap_cache+0x95/0xb0
-[15173.408791]  [<ffffffff810f8024>] tlb_flush_mmu+0x54/0x90
-[15173.408794]  [<ffffffff810f806f>] tlb_finish_mmu+0xf/0x40
-[15173.408796]  [<ffffffff8110147c>] exit_mmap+0xec/0x170
-[15173.408799]  [<ffffffff81072cbc>] mmput+0x3c/0xb0
-[15173.408802]  [<ffffffff81076db6>] do_exit+0x1f6/0x900
-[15173.408804]  [<ffffffff8109e1cb>] ? local_clock+0x1b/0x30
-[15173.408807]  [<ffffffff8109eb28>] ? vtime_account_user+0x58/0x70
-[15173.408810]  [<ffffffff810775da>] do_group_exit+0x3a/0xa0
-[15173.408813]  [<ffffffff81077652>] SyS_exit_group+0x12/0x20
-[15173.408816]  [<ffffffff8146a459>] tracesys+0xd0/0xd5
+This patch comes just at the right time. This is what I do with it:
+
+#define cko1_sel 57
+#define pll4_audio_div 203
+#define pll4_audio 173
+#define ssi3_sel 47
+
+&clks {
+	assigned-clocks {
+		clocks = <&clks cko1_sel>, <&clks ssi3_sel>, <&clks pll4_audio>;
+		clock-parents = <&clks pll4_audio_div>, <&clks pll4_audio_div>, <0>;
+		clock-rates = <0>, <0>, <786432000>;
+	};
+};
+
+cko1_sel is a clock that can be routed out of the SoC. In my case it is
+connected the sysclk of an external Audio Codec. ssi3_sel drives my SoC
+internal I2S unit which I use in master mode. The above makes sure that
+the I2S unit and the the external codec both get their clock from the
+audio PLL. The audio PLL is configured to a rate of 786432000Hz which
+is an exact multiple of the desired audio clock.
+
+Sascha
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
