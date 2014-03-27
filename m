@@ -1,57 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288AbaC0PYr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:24:47 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:43396 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271AbaC0PYq (ORCPT
+	id S1756636AbaC0PZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:25:27 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:36517 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271AbaC0PZW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:24:46 -0400
-Message-ID: <533442B9.80900@gmail.com>
-Date: Thu, 27 Mar 2014 16:24:41 +0100
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-To: Jason Cooper <jason@lakedaemon.net>
-CC: Andrew Lunn <andrew@lunn.ch>, linux-kernel@vger.kernel.org,
-        Chris Ball <chris@printf.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 4/5] mmc: dove: prepare new Dove DT Kconfig variable
-References: <1393536486-3827-3-git-send-email-sebastian.hesselbarth@gmail.com> <1393662801-17950-4-git-send-email-sebastian.hesselbarth@gmail.com> <20140304040357.GH1872@titan.lakedaemon.net>
-In-Reply-To: <20140304040357.GH1872@titan.lakedaemon.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Mar 2014 11:25:22 -0400
+From: Harini Katakam <harinik@xilinx.com>
+To: linus.walleij@linaro.org, gnurou@gmail.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rob@landley.net
+Cc: linux-gpio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, michals@xilinx.com,
+        Harini Katakam <harinik@xilinx.com>
+Subject: [PATCH 2/2] Devicetree: Add Zynq GPIO devicetree bindings documentation
+Date: Thu, 27 Mar 2014 20:55:06 +0530
+Message-Id: <1395933906-2268-2-git-send-email-harinik@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
+References: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/04/2014 05:03 AM, Jason Cooper wrote:
-> On Sat, Mar 01, 2014 at 09:33:20AM +0100, Sebastian Hesselbarth wrote:
->> DT-enabled Dove will move over from ARCH_DOVE in mach-dove to MACH_DOVE in
->> mach-mvebu. As non-DT ARCH_DOVE will stay to rot for a while, add a new
->> DT-only MACH_DOVE Kconfig.
->>
->> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
->> ---
->> Chris,
->>
->> Mark Brown requested to take the corresponding ASoC patch through
->> his tree. Therefore, I have split the former patch into individual subsystem
->> patches.
->>
->> Cc: Chris Ball <chris@printf.net>
->> Cc: Jason Cooper <jason@lakedaemon.net>
->> Cc: Andrew Lunn <andrew@lunn.ch>
->> Cc: Gregory Clement <gregory.clement@free-electrons.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: linux-kernel@vger.kernel.org
->> ---
->>   drivers/mmc/host/Kconfig | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Acked-by: Jason Cooper <jason@lakedaemon.net>
+Add gpio-zynq bindings documentation.
 
-Ping. Chris, can you please take it in for v3.15-rc1?
+Signed-off-by: Harini Katakam <harinik@xilinx.com>
+---
+ .../devicetree/bindings/gpio/gpio-zynq.txt         |   24 ++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-zynq.txt
 
-Sebastian
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-zynq.txt b/Documentation/devicetree/bindings/gpio/gpio-zynq.txt
+new file mode 100644
+index 0000000..1b6e83f
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-zynq.txt
+@@ -0,0 +1,24 @@
++Xilinx Zynq GPIO controller Device Tree Bindings
++-------------------------------------------
++
++Required properties:
++- #gpio-cells 		: Should be two. First cell is used to mention
++			  pin number.
++- compatible		: Should be "xlnx,zynq-gpio-1.0"
++- clocks		: Clock phandles (see clock bindings for details)
++- gpio-controller	: Marks the device node as a GPIO controller.
++- interrupts		: Property with a value describing the interrupt
++			  number.
++- interrupt-parent	: Must be core interrupt controller
++- reg			: Address and length of the register set for the device
++
++Example:
++		gpio@e000a000 {
++			#gpio-cells = <2>;
++			compatible = "xlnx,zynq-gpio-1.0";
++			clocks = <&clkc 42>;
++			gpio-controller ;
++			interrupt-parent = <&intc>;
++			interrupts = <0 20 4>;
++			reg = <0xe000a000 0x1000>;
++		} ;
+-- 
+1.7.9.5
 
