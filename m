@@ -1,194 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753147AbaC0DZr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 23:25:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10662 "EHLO mx1.redhat.com"
+	id S1753083AbaC0DiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 23:38:06 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60806 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751658AbaC0DZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 23:25:45 -0400
-Date: Wed, 26 Mar 2014 20:25:35 -0700
-From: Jeff Layton <jlayton@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Jim Lieb <jlieb@panasas.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bfields@redhat.com
-Subject: Re: Thoughts on credential switching
-Message-ID: <20140326202535.7d9b6f78@ipyr.poochiereds.net>
-In-Reply-To: <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
-	<20140326194847.0e994d0b@ipyr.poochiereds.net>
-	<CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
-Organization: Red Hat
+	id S1751658AbaC0DiD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 Mar 2014 23:38:03 -0400
+Date: Wed, 26 Mar 2014 22:36:01 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+CC: <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>, <linux-serial@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <m-karicheri2@ti.com>,
+        <b32955@freescale.com>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/11] bluetooth: hci_ldisc: fix deadlock condition
+Message-ID: <20140327033601.GA13038@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+ <1395343807-21618-9-git-send-email-balbi@ti.com>
+ <53337513.1010708@hurleysoftware.com>
+ <20140327020909.GA11651@saruman.home>
+ <53338ADF.3060803@hurleysoftware.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="TB36FDmn/VVEgNH/"
+Content-Disposition: inline
+In-Reply-To: <53338ADF.3060803@hurleysoftware.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014 20:05:16 -0700
-Andy Lutomirski <luto@amacapital.net> wrote:
+--TB36FDmn/VVEgNH/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Wed, Mar 26, 2014 at 7:48 PM, Jeff Layton <jlayton@redhat.com>
-> wrote:
-> > On Wed, 26 Mar 2014 17:23:24 -0700
-> > Andy Lutomirski <luto@amacapital.net> wrote:
+Hi,
+
+On Wed, Mar 26, 2014 at 10:20:15PM -0400, Peter Hurley wrote:
+> >>You may want to build on top of this patch split handling;
+> >>I noticed some of the protocol drivers are calling
+> >>hci_uart_tx_wakeup() from work functions already (so don't
+> >>need to schedule another work...)
 > >
-> >> Hi various people who care about user-space NFS servers and/or
-> >> security-relevant APIs.
-> >>
-> >> I propose the following set of new syscalls:
-> >>
-> >> int credfd_create(unsigned int flags): returns a new credfd that
-> >> corresponds to current's creds.
-> >>
-> >> int credfd_activate(int fd, unsigned int flags): Change current's
-> >> creds to match the creds stored in fd.  To be clear, this changes
-> >> both the "subjective" and "objective" (aka real_cred and cred)
-> >> because there aren't any real semantics for what happens when
-> >> userspace code runs with real_cred != cred.
-> >>
-> >> Rules:
-> >>
-> >>  - credfd_activate fails (-EINVAL) if fd is not a credfd.
-> >>  - credfd_activate fails (-EPERM) if the fd's userns doesn't match
-> >> current's userns.  credfd_activate is not intended to be a
-> >> substitute for setns.
-> >>  - credfd_activate will fail (-EPERM) if LSM does not allow the
-> >> switch.  This probably needs to be a new selinux action --
-> >> dyntransition is too restrictive.
-> >>
-> >>
-> >> Optional:
-> >>  - credfd_create always sets cloexec, because the alternative is
-> >> silly.
-> >>  - credfd_activate fails (-EINVAL) if dumpable.  This is because we
-> >> don't want a privileged daemon to be ptraced while impersonating
-> >> someone else.
-> >>  - optional: both credfd_create and credfd_activate fail if
-> >> !ns_capable(CAP_SYS_ADMIN) or perhaps !capable(CAP_SETUID).
-> >>
-> >> The first question: does this solve Ganesha's problem?
-> >>
-> >> The second question: is this safe?  I can see two major concerns.
-> >> The bigger concern is that having these syscalls available will
-> >> allow users to exploit things that were previously secure.  For
-> >> example, maybe some configuration assumes that a task running as
-> >> uid==1 can't switch to uid==2, even with uid 2's consent.  Similar
-> >> issues happen with capabilities.  If CAP_SYS_ADMIN is not
-> >> required, then this is no longer really true.
-> >>
-> >> Alternatively, something running as uid == 0 with heavy capability
-> >> restrictions in a mount namespace (but not a uid namespace) could
-> >> pass a credfd out of the namespace.  This could break things like
-> >> Docker pretty badly.  CAP_SYS_ADMIN guards against this to some
-> >> extent.  But I think that Docker is already totally screwed if a
-> >> Docker root task can receive an O_DIRECTORY or O_PATH fd out of
-> >> the container, so it's not entirely clear that the situation is
-> >> any worse, even without requiring CAP_SYS_ADMIN.
-> >>
-> >> The second concern is that it may be difficult to use this
-> >> correctly. There's a reason that real_cred and cred exist, but
-> >> it's not really well set up for being used.
-> >>
-> >> As a simple way to stay safe, Ganesha could only use credfds that
-> >> have real_uid == 0.
-> >>
-> >> --Andy
-> >
-> >
-> > I still don't quite grok why having this special credfd_create call
-> > buys you anything over simply doing what Al had originally
-> > suggested -- switch creds using all of the different syscalls and
-> > then simply caching that in a "normal" fd:
-> >
-> >     fd = open("/dev/null", O_PATH...);
-> >
-> > ...it seems to me that the credfd_activate call will still need to
-> > do the same permission checking that all of the individual set*id()
-> > calls require (and all of the other stuff like changing selinux
-> > contexts, etc).
-> >
-> > IOW, this fd is just a "handle" for passing around a struct cred,
-> > but I don't see why having access to that handle would allow you to
-> > do something you couldn't already do anyway.
-> >
-> > Am I missing something obvious here?
-> 
-> Not really.  I think I didn't adequately explain a piece of this.
-> 
-> I think that what you're suggesting is for an fd to encode a set of
-> credentials but not to grant permission to use those credentials.  So
-> switch_creds(fd) is more or less the same thing as switch_creds(ruid,
-> euid, suid, rgid, egid, sgid, groups, mac label, ...).  switch_creds
-> needs to verify that the caller can dyntransition to the label, set
-> all the ids, etc., but it avoids allocating anything and running RCU
-> callbacks.
-> 
-> The trouble with this is that the verification needed is complicated
-> and expensive.  And I think that my proposal is potentially more
-> useful.
-> 
+> >I don't think that should be part of $subject, though.
+>=20
+> I don't understand what you mean here.
 
-Is it really though? My understanding of the problem was that it was
-the syscall (context switching) overhead + having to do a bunch of RCU
-critical stuff that was the problem. If we can do all of this in the
-context of a single RCU critical section, isn't that still a win?
+it seemed, at first, like you suggested to redo this patch modifying the
+protocol drivers to avoid two workqueues. But now that I read it again
+you _did_ write "on top of this patch".
 
-As to the complicated part...maybe but it doesn't seem like it would
-have to be. We could simply return -EINVAL or something if the old
-struct cred doesn't have fields that match the ones we're replacing and
-that we don't expect to see changed.
+--=20
+balbi
 
-> A credfd is like a struct cred, but possession of a credfd carries the
-> permission to use those credentials.  So, for example, credfd_activate
-> to switch to a given uid might work even if setresuid to that uid
-> would be disallowed.  But, for this to be secure, the act of giving
-> someone a credfd needs to be explicit.  Programs implicitly send other
-> programs their credentials by means of f_cred all the time, and they
-> don't expect to allow the receiver to impersonate them.
-> 
+--TB36FDmn/VVEgNH/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Eek!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Passing around permission to use the credential in conjunction with
-the credentials themselves sounds a lot more dangerous to me.
+iQIcBAEBAgAGBQJTM5yhAAoJEIaOsuA1yqREJmwP/RCH5cxTPO9r3kfm72rgeDPY
+ofFEK3bLEQ+fmVQloQAGbgE+8/ZodxydZb/8m8i8D/CHASG/hN/94DOaOw3Vf1wg
+njdjW2LcdErJ0TAHcoaxbjosJwmyOWU5L6SM7/lj2/DDqXaRnCURA7QoneIQhfnM
+QTlePNjLxSpB5meg0j+KI4IrbJeQe/gMAhfcvnVL6P1r2f1LN8lGyH20t9u5+zTd
+mQ9qz+rBs7wH+cEm8C2hJ/0blyznGFT1mMClcxAS3Zswn50JiNiPuT75gxZgTgLh
+xWO1UlUfj611xT/RjQhPWbsuFAJ6HvAjZSefAC+TdG62m9GhoXJ9KeLBnaGnryhV
+pBlXI+jvDX8diyt+c6Gavc4tK964nGsPmNIgfsrg4J3/FIABzt/U7KthB9Xs9kth
+WnoAIHhYlzeaf1Hp0TcgyNhHQFov1xu/1rMLnJvrdWouT6PS4jw2yvJPjOTZDdOn
+hs8N6/9UQVUqbaQepmb49PbWyf1idwjXBCtg4Xawc5N3phsBWqn4LF2Cjka0PbWA
+anTmYKNAk2uCe6AGAZY9EsD2xUxnrZMsbU8zWsCLfTMnh9Ryn573oJF9D5OOoZa/
+lrLo4zfe+1SWEClsuuBIFmab+TN6pfsVDTNHXWGioovFMYnbTq5anNTeAOWu52xw
+n8xKzNNluPIGtevpX4u9
+=n1X3
+-----END PGP SIGNATURE-----
 
-My preference would be that we don't add anything that potentially
-gives you privileges to do something you couldn't do already with
-existing syscalls. That doesn't seem to be necessary for the intended
-use case anyway. When it comes to security, I think we need to err on
-the side of caution than try to shortcut it for performance.
-
-> credfd has other uses.  A file server, for example, could actually
-> delegate creation of the credfds to a separate process, and that
-> process could validate that the request is for a credfd that the file
-> server really should be able to obtain.  This would enable that
-> process to make sure that the user in question has actually
-> authenticated itself, so a file server compromise could only attack
-> users who connect instead of attacking any user on the system.  This
-> is an argument against requiring CAP_SYS_ADMIN to use credfd_activate.
-> 
-> I'm less confident in whether capabilities should be needed to use
-> credfd_create.
-> 
-> Is that clearer and/or more convincing?
-> 
-
-My worry would be that you could then compromise the process doing this
-credfd creation and trick it into passing around credentials that
-aren't what are expected.
-
-Another possibility could some kernel bug allow you to frob the creds
-that are attached to an existing fd after they've been "vetted" for use.
-
-So yeah, I think I better understand what you're proposing (and thanks
-for explaining it), but I'm not convinced that it's really a safe idea.
-
--- 
-Jeff Layton <jlayton@redhat.com>
+--TB36FDmn/VVEgNH/--
