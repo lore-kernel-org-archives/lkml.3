@@ -1,100 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795AbaC0Prr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 11:47:47 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:64402 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124AbaC0Prp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 11:47:45 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140327145438.GA18563@lst.de>
-References: <20140321142950.GI1763@lst.de> <20140321143342.GK1763@lst.de>
- <533375C1.5060904@mit.edu> <158d2776-1ea4-4f32-a9e9-0488047e6b70@email.android.com>
- <20140327145438.GA18563@lst.de>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Thu, 27 Mar 2014 08:47:24 -0700
-Message-ID: <CALCETrV7vZUeCmyAmnBiOdyXgu88E7CHGAQ4y4huxXN_7FR13g@mail.gmail.com>
-Subject: Re: [PATCH v2 02/03]: hwrng: create filler thread
-To: Torsten Duwe <duwe@lst.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Matt Mackall <mpm@selenic.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
-        Satoru Takeuchi <satoru.takeuchi@gmail.com>,
-        ingo.tuchscherer@de.ibm.com,
+	id S1756811AbaC0PuJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 11:50:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42425 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755140AbaC0PuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 11:50:06 -0400
+Date: Thu, 27 Mar 2014 16:50:02 +0100
+From: Jan Kara <jack@suse.cz>
+To: Andres Freund <andres@2ndquadrant.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hans-Georg Markgraf <MGRF@de.ibm.com>,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-1
+        lsf@lists.linux-foundation.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, rhaas@anarazel.de,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [Lsf] Postgresql performance problems with IO latency,
+ especially during fsync()
+Message-ID: <20140327155002.GF18118@quack.suse.cz>
+References: <20140326191113.GF9066@alap3.anarazel.de>
+ <CALCETrUc1YvNc3EKb4ex579rCqBfF=84_h5bvbq49o62k2KpmA@mail.gmail.com>
+ <20140326215518.GH9066@alap3.anarazel.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140326215518.GH9066@alap3.anarazel.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 7:54 AM, Torsten Duwe <duwe@lst.de> wrote:
-> On Wed, Mar 26, 2014 at 06:03:37PM -0700, H. Peter Anvin wrote:
->> I'm wondering more about the default.  We default to 50% for arch_get_random_seed, and this is supposed to be the default for in effect unverified hwrngs...
->
-> If the default were 0, it would be exactly the old behaviour.
-> How about that? Plus, driver authors would have to come up
-> with an estimate on their own.
->
->> On March 26, 2014 5:50:09 PM PDT, Andy Lutomirski <luto@amacapital.net> wrote:
->> >> +           "current hwrng entropy estimation per mill");
->> >
->> >As an electrical engineer (sort of), I can't read this without thinking
->> >you're talking about the amount by which the current is derated.  For
->> >example, a 14-50 electrical outlet is rated to 50 Amps.  If you use it
->> >continuously for a long time, though, the current is derated to 40
->> >Amps.
->> >
->> >Shouldn't this be called credit_derating or, even better,
->> >credit_per_1000bits?
->
-> That's an awkward name for a parameter.
+On Wed 26-03-14 22:55:18, Andres Freund wrote:
+> On 2014-03-26 14:41:31 -0700, Andy Lutomirski wrote:
+> > On Wed, Mar 26, 2014 at 12:11 PM, Andres Freund <andres@anarazel.de> wrote:
+> > > Hi,
+> > >
+> > > At LSF/MM there was a slot about postgres' problems with the kernel. Our
+> > > top#1 concern is frequent slow read()s that happen while another process
+> > > calls fsync(), even though we'd be perfectly fine if that fsync() took
+> > > ages.
+> > > The "conclusion" of that part was that it'd be very useful to have a
+> > > demonstration of the problem without needing a full blown postgres
+> > > setup. I've quickly hacked something together, that seems to show the
+> > > problem nicely.
+> > >
+> > > For a bit of context: lwn.net/SubscriberLink/591723/940134eb57fcc0b8/
+> > > and the "IO Scheduling" bit in
+> > > http://archives.postgresql.org/message-id/20140310101537.GC10663%40suse.de
+> > >
+> > 
+> > For your amusement: running this program in KVM on a 2GB disk image
+> > failed, but it caused the *host* to go out to lunch for several
+> > seconds while failing.  In fact, it seems to have caused the host to
+> > fall over so badly that the guest decided that the disk controller was
+> > timing out.  The host is btrfs, and I think that btrfs is *really* bad
+> > at this kind of workload.
+> 
+> Also, unless you changed the parameters, it's a) using a 48GB disk file,
+> and writes really rather fast ;)
+> 
+> > Even using ext4 is no good.  I think that dm-crypt is dying under the
+> > load.  So I won't test your program for real :/
+> 
+> Try to reduce data_size to RAM * 2, NUM_RANDOM_READERS to something
+> smaller. If it still doesn't work consider increasing the two nsleep()s...
+> 
+> I didn't have a good idea how to scale those to the current machine in a
+> halfway automatic fashion.
+  That's not necessary. If we have a guidance like above, we can figure it
+out ourselves (I hope ;).
 
-I don't think it's worse than credit_derating.
+> > > Possible solutions:
+> > > * Add a fadvise(UNDIRTY), that doesn't stall on a full IO queue like
+> > >   sync_file_range() does.
+> > > * Make IO triggered by writeback regard IO priorities and add it to
+> > >   schedulers other than CFQ
+> > > * Add a tunable that allows limiting the amount of dirty memory before
+> > >   writeback on a per process basis.
+> > > * ...?
+> > 
+> > I thought the problem wasn't so much that priorities weren't respected
+> > but that the fsync call fills up the queue, so everything starts
+> > contending for the right to enqueue a new request.
+> 
+> I think it's both actually. If I understand correctly there's not even a
+> correct association to the originator anymore during a fsync triggered
+> flush?
+  There is. The association is lost for background writeback (and sync(2)
+for that matter) but IO from fsync(2) is submitted in the context of the
+process doing fsync.
 
->
->> >Also, "per mill" is just obscure enough that someone might think it
->> >means "per million".
->
-> No. I looked it up, as we have the precise term "Promille" in German.
-> Also in electrical engineering, (imperial :-) PCB design, a mil
-> is one 1000th of an inch. Per million would surely be named PPM.
->
+What I think happens is the problem with 'dependent sync IO' vs
+'independent sync IO'. Reads are an example of dependent sync IO where you
+submit a read, need it to complete and then you submit another read. OTOH
+fsync is an example of independent sync IO where you fire of tons of IO to
+the drive and they wait for everything. Since we treat both these types of
+IO in the same way, it can easily happen that independent sync IO starves
+out the dependent one (you execute say 100 IO requests for fsync and 1 IO
+request for read). We've seen problems like this in the past.
 
-I'm not saying that "per mill" is wrong -- I'm just saying it's
-obscure and may confuse people.
+I'll have a look into your test program and if my feeling is indeed
+correct, I'll have a look into what we could do in the block layer to fix
+this (and poke block layer guys - they had some preliminary patches that
+tried to address this but it didn't went anywhere).
 
->> >Why the check for derating > 0?  Paranoid users may want zero credit,
->> >but they probably still want the thing to run.
->
-> [...]
->
->> >ratelimit (heavily), please.
->
-> The kthread will stop once the estimated entropy is above the threshold.
-> derating=0 will wind up one CPU core to 100%. So it's an elegant way
-> to disable the whole mechanism.
->
+> > Since fsync blocks until all of its IO finishes anyway, what if it
+> > could just limit itself to a much smaller number of outstanding
+> > requests?
+> 
+> Yea, that could already help. If you remove the fsync()s, the problem
+> will periodically appear anyway, because writeback is triggered with
+> vengeance. That'd need to be fixed in a similar way.
+  Actually, that might be triggered by a different problem because in case
+of background writeback, block layer knows the IO is asynchronous and
+treats it in a different way.
 
-Sorry, I didn't mean ratelimit the loop.  I meant ratelimit the printk.
-
->> >Also, would it make sense to round-robin all hwrngs?  Even better:
->> >collect entropy from each one and add them to the pool all at once.  If
->> >so, would it make sense for the derating to be a per-rng parameter.
->
-> Finally, the derating _is_ a per-RNG parameter. I also thought about
-> mixing already, but first I want to see a machine with more than 1 HWRNG :-)
->
-
-Any Haswell machine with another hwrng will have two of them.  (I'm
-not sure that the rdrand/rdseed thing registers as an hwrng, but
-still...)
-
---Andy
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
