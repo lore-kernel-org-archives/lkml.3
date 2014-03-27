@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323AbaC0Tnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 15:43:51 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:54330 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757054AbaC0TmN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757125AbaC0TmN (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 27 Mar 2014 15:42:13 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:55959 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754761AbaC0TmH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 15:42:07 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
         Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>
-Subject: [RFC PATCH 3/4] vmlinuz.lds: define OF table sections with macros
-Date: Thu, 27 Mar 2014 14:41:56 -0500
-Message-Id: <1395949317-8738-4-git-send-email-robherring2@gmail.com>
+Subject: [RFC PATCH 0/4] vmlinux.lds.h clean-ups
+Date: Thu, 27 Mar 2014 14:41:53 -0500
+Message-Id: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
-References: <1395949317-8738-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-OF table sections all have the same pattern, so create a macro to define
-them and insure consistency.
+Several DeviceTree related sections have been added recently to enable
+early DT initialization calls. I have the need to add yet another one
+in order to do a DT based earlycon. Since each section follows the same
+pattern, this seemed like a good opportunity for some clean-up. So
+this series creates a common macro to define these sections. with this
+adding any new OF table section is a 2 line change.
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
----
- include/asm-generic/vmlinux.lds.h | 58 ++++++++++-----------------------------
- 1 file changed, 14 insertions(+), 44 deletions(-)
+Each section ends with a zeroed struct of_device_id (except cpu_method).
+Right now there is an end section and a dummy variable to create the end
+marker. Really, we just need padding here, but I haven't come up with a
+way for the linker script to get the struct size. 
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index d09e670..000a0f30 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -139,52 +139,22 @@
- #define TRACE_SYSCALLS()
- #endif
- 
--#ifdef CONFIG_CLKSRC_OF
--#define CLKSRC_OF_TABLES() . = ALIGN(8);				\
--			   VMLINUX_SYMBOL(__clksrc_of_table) = .;	\
--			   *(__clksrc_of_table)				\
--			   *(__clksrc_of_table_end)
--#else
--#define CLKSRC_OF_TABLES()
--#endif
- 
--#ifdef CONFIG_IRQCHIP
--#define IRQCHIP_OF_MATCH_TABLE()					\
-+#define ___OF_TABLE(cfg, name)	_OF_TABLE_##cfg(name)
-+#define __OF_TABLE(cfg, name)	___OF_TABLE(cfg, name)
-+#define OF_TABLE(cfg, name)	__OF_TABLE(config_enabled(cfg), name)
-+#define _OF_TABLE_0(name)
-+#define _OF_TABLE_1(name)						\
- 	. = ALIGN(8);							\
--	VMLINUX_SYMBOL(__irqchip_of_table) = .;				\
--	*(__irqchip_of_table)		  				\
--	*(__irqchip_of_table_end)
--#else
--#define IRQCHIP_OF_MATCH_TABLE()
--#endif
--
--#ifdef CONFIG_COMMON_CLK
--#define CLK_OF_TABLES() . = ALIGN(8);				\
--			VMLINUX_SYMBOL(__clk_of_table) = .;	\
--			*(__clk_of_table)			\
--			*(__clk_of_table_end)
--#else
--#define CLK_OF_TABLES()
--#endif
--
--#ifdef CONFIG_SMP
--#define CPU_METHOD_OF_TABLES() . = ALIGN(8);				    \
--			   VMLINUX_SYMBOL(__cpu_method_of_table) = .; \
--			   *(__cpu_method_of_table)			    \
--			   *(__cpu_method_of_table_end)
--#else
--#define CPU_METHOD_OF_TABLES()
--#endif
--
--#ifdef CONFIG_OF_RESERVED_MEM
--#define RESERVEDMEM_OF_TABLES()				\
--	. = ALIGN(8);					\
--	VMLINUX_SYMBOL(__reservedmem_of_table) = .;	\
--	*(__reservedmem_of_table)			\
--	*(__reservedmem_of_table_end)
--#else
--#define RESERVEDMEM_OF_TABLES()
--#endif
-+	VMLINUX_SYMBOL(__##name##_of_table) = .;			\
-+	*(__##name##_of_table)						\
-+	*(__##name##_of_table_end)
-+
-+#define CLKSRC_OF_TABLES()	OF_TABLE(CONFIG_CLKSRC_OF, clksrc)
-+#define IRQCHIP_OF_MATCH_TABLE() OF_TABLE(CONFIG_IRQCHIP, irqchip)
-+#define CLK_OF_TABLES()		OF_TABLE(CONFIG_COMMON_CLK, clk)
-+#define CPU_METHOD_OF_TABLES()	OF_TABLE(CONFIG_SMP, cpu_method)
-+#define RESERVEDMEM_OF_TABLES()	OF_TABLE(CONFIG_OF_RESERVED_MEM, reservedmem)
- 
- #define KERNEL_DTB()							\
- 	STRUCT_ALIGN();							\
+The last patch extends the same concept to another common pattern for
+section definitons. There's still others which could be easily converted
+also, but I'm looking for feedback on this approach before proceeding
+any further.
+
+Rob
+
+Rob Herring (4):
+  irqchip: align irqchip OF match table section naming
+  ARM: align cpu_method_of_table naming
+  vmlinuz.lds: define OF table sections with macros
+  vmlinux.lds: define conditional sections with macros
+
+ arch/arm/kernel/devtree.c         |  11 +--
+ drivers/irqchip/irqchip.c         |   6 +-
+ include/asm-generic/vmlinux.lds.h | 142 +++++++++++---------------------------
+ 3 files changed, 52 insertions(+), 107 deletions(-)
+
 -- 
 1.8.3.2
 
