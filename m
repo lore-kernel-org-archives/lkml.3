@@ -1,77 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932099AbaC0RWU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 13:22:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2642 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757088AbaC0RWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 13:22:15 -0400
-Date: Thu, 27 Mar 2014 13:20:54 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: James Morris <jmorris@namei.org>, Steve Grubb <sgrubb@redhat.com>,
-        Eric Paris <eparis@redhat.com>
-Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, laijs@cn.fujitsu.com,
-        akpm@linux-foundation.org, joe@perches.com, keescook@chromium.org,
-        geert@linux-m68k.org, jkosina@suse.cz, viro@zeniv.linux.org.uk,
-        davem@davemloft.net, linux-kernel@vger.kernel.org, mingo@elte.hu,
-        rostedt@goodmis.org, tglx@linutronix.de,
-        linux-security-module@vger.kernel.org
-Subject: [PATCH] LSM: Pass comm name via get_task_comm() [was: Re: [PATCH]
- Change task_struct->comm to use RCU.]
-Message-ID: <20140327172054.GD14198@madcap2.tricolour.ca>
-References: <201403072120.BJB73489.OFMSOFHQFtOJLV@I-love.SAKURA.ne.jp>
- <20140307155415.GB16640@madcap2.tricolour.ca>
- <201403082143.BIH86903.QtVMHJFFOOSFOL@I-love.SAKURA.ne.jp>
- <20140310202155.GR16640@madcap2.tricolour.ca>
- <201403112102.HCC48418.LSOQFJOFOtFVHM@I-love.SAKURA.ne.jp>
- <201403112116.HIJ21362.OFVQJFtHOSOFLM@I-love.SAKURA.ne.jp>
- <alpine.LRH.2.02.1403120052040.23883@tundra.namei.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LRH.2.02.1403120052040.23883@tundra.namei.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757166AbaC0RXB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 13:23:01 -0400
+Received: from mail-we0-f181.google.com ([74.125.82.181]:60806 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756966AbaC0RVK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 13:21:10 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 1/4] workqueue: Move workqueue bus attr to device attribute
+Date: Thu, 27 Mar 2014 18:20:59 +0100
+Message-Id: <1395940862-31428-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
+In-Reply-To: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/03/12, James Morris wrote:
-> On Tue, 11 Mar 2014, Tetsuo Handa wrote:
-> 
-> > And the same phrase goes to James Morris...
-> > 
-> > If you are sure that it is safe to use get_task_comm() from
-> > dump_common_audit_data() and you prefer locked version, please pick up below
-> > patch via your git tree.
-> > 
-> > If you are unsure or prefer lockless version, I'll make a lockless version
-> > using do_get_task_comm() proposed in this thread.
-> 
-> If you can't understand whether your patch is correct or not, don't ask me 
-> to apply it to my tree.
-> 
-> If you're unsure, get it reviewed first.
+A workqueue directory implements at least two files: max_active and
+per_cpu. Since thse are constant over WQ_SYSFS workqueues, they are
+implemented as bus attributes.
 
-Steve (see https://lkml.org/lkml/2014/3/11/218 ) and James,
+Then come the attributes that only belong to unbound workqueues. Those
+are implemented as device attribute.
 
-Are the labels on data output in LSM_AUDIT_DATA_TASK even right?  The
-general case gives pid and comm of current.  Then the
-LSM_AUDIT_DATA_TASK case gives pid and comm from the task handed in in
-the struct common_audit_data pointer.  They are a duplicate of the
-general case without generating a new message.  I expect this will cause
-ausearch to ignore those latter two fields.  Should the latter two be
-renamed to something like ad_pid= and ad_comm= ?
+Now we are planning to implement a specific workqueue directory in order
+to control the cpu affinity of all non-ABI unbound workqueues at once.
+So far we are only interested in the cpumask file on this virtual
+workqueue directory: we can't have a single file max_active and per_cpu
+for all non ABI unbound workqueues for example. And for now it's not
+desirable to share more all-in-one property like cpu affinity.
 
-Tetsuo, this conversation should have been on the linux-audit@redhat.com
-list the whole time...
+So we want to be able to create a directory containing only cpumask.
+Lets move the constant workqueue attrs as device attribute so that
+we can consider skipping them when we want.
 
-> - James
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Kevin Hilman <khilman@linaro.org>
+Cc: Mike Galbraith <bitbucket@online.de>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/workqueue.c | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
 
-- RGB
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 193e977..4d230e3 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -3133,7 +3133,6 @@ static ssize_t per_cpu_show(struct device *dev, struct device_attribute *attr,
+ 
+ 	return scnprintf(buf, PAGE_SIZE, "%d\n", (bool)!(wq->flags & WQ_UNBOUND));
+ }
+-static DEVICE_ATTR_RO(per_cpu);
+ 
+ static ssize_t max_active_show(struct device *dev,
+ 			       struct device_attribute *attr, char *buf)
+@@ -3156,14 +3155,12 @@ static ssize_t max_active_store(struct device *dev,
+ 	workqueue_set_max_active(wq, val);
+ 	return count;
+ }
+-static DEVICE_ATTR_RW(max_active);
+ 
+-static struct attribute *wq_sysfs_attrs[] = {
+-	&dev_attr_per_cpu.attr,
+-	&dev_attr_max_active.attr,
+-	NULL,
++static struct device_attribute wq_sysfs_default_attrs[] = {
++	__ATTR(per_cpu, 0444, per_cpu_show, NULL),
++	__ATTR(max_active, 0644, max_active_show, max_active_store),
++	__ATTR_NULL,
+ };
+-ATTRIBUTE_GROUPS(wq_sysfs);
+ 
+ static ssize_t wq_pool_ids_show(struct device *dev,
+ 				struct device_attribute *attr, char *buf)
+@@ -3313,7 +3310,6 @@ static struct device_attribute wq_sysfs_unbound_attrs[] = {
+ 
+ static struct bus_type wq_subsys = {
+ 	.name				= "workqueue",
+-	.dev_groups			= wq_sysfs_groups,
+ };
+ 
+ static int __init wq_sysfs_init(void)
+@@ -3346,6 +3342,7 @@ static void wq_device_release(struct device *dev)
+  */
+ int workqueue_sysfs_register(struct workqueue_struct *wq)
+ {
++	struct device_attribute *attr;
+ 	struct wq_device *wq_dev;
+ 	int ret;
+ 
+@@ -3379,8 +3376,16 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
+ 		return ret;
+ 	}
+ 
++	for (attr = wq_sysfs_default_attrs; attr->attr.name; attr++) {
++		ret = device_create_file(&wq_dev->dev, attr);
++		if (ret) {
++			device_unregister(&wq_dev->dev);
++			wq->wq_dev = NULL;
++			return ret;
++		}
++	}
++
+ 	if (wq->flags & WQ_UNBOUND) {
+-		struct device_attribute *attr;
+ 
+ 		for (attr = wq_sysfs_unbound_attrs; attr->attr.name; attr++) {
+ 			ret = device_create_file(&wq_dev->dev, attr);
+-- 
+1.8.3.1
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
