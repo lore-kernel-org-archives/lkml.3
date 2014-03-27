@@ -1,243 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088AbaCZXuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 19:50:20 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:40931 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460AbaCZXtv (ORCPT
+	id S1756193AbaC0ADn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 20:03:43 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:50816 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695AbaC0ADl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 19:49:51 -0400
-From: Mitchel Humpherys <mitchelh@codeaurora.org>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Mitchel Humpherys <mitchelh@codeaurora.org>
-Subject: [PATCH] mm: convert some level-less printks to pr_*
-Date: Wed, 26 Mar 2014 16:49:43 -0700
-Message-Id: <1395877783-18910-2-git-send-email-mitchelh@codeaurora.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1395877783-18910-1-git-send-email-mitchelh@codeaurora.org>
-References: <1395877783-18910-1-git-send-email-mitchelh@codeaurora.org>
+	Wed, 26 Mar 2014 20:03:41 -0400
+From: Ramkumar Ramachandra <artagnon@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, David Ahern <dsahern@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH] perf list: Replace --raw-dump with parse_options_subcommand()
+Date: Wed, 26 Mar 2014 20:04:49 -0400
+Message-Id: <1395878689-6981-1-git-send-email-artagnon@gmail.com>
+X-Mailer: git-send-email 1.9.0.431.g014438b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-printk is meant to be used with an associated log level. There are some
-instances of printk scattered around the mm code where the log level is
-missing. Add a log level and adhere to suggestions by
-scripts/checkpatch.pl by moving to the pr_* macros.
+While adding usage information, 44d742e (perf list: Add usage,
+2013-10-30) broke
 
-Signed-off-by: Mitchel Humpherys <mitchelh@codeaurora.org>
+  $ perf list --raw-dump
+
+Remove this option, and use parse_options_subcommand() to provide a
+'--list-cmds'. The argument to 'perf list' is now treated like a
+subcommand. Update the completion script to reflect this change.
+
+Fixes: 44d742e01e6d (perf list: Add usage)
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Ramkumar Ramachandra <artagnon@gmail.com>
 ---
- mm/bounce.c    |  5 +++--
- mm/mempolicy.c |  3 ++-
- mm/mmap.c      | 19 ++++++++++---------
- mm/nommu.c     |  3 ++-
- mm/slub.c      |  7 ++++---
- mm/vmscan.c    |  3 ++-
- 6 files changed, 23 insertions(+), 17 deletions(-)
+ tools/perf/builtin-list.c     | 13 +++++++------
+ tools/perf/perf-completion.sh |  6 +++---
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 523918b8c6..7fca8ef660 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -15,6 +15,7 @@
- #include <linux/hash.h>
- #include <linux/highmem.h>
- #include <linux/bootmem.h>
-+#include <linux/printk.h>
- #include <asm/tlbflush.h>
+diff --git a/tools/perf/builtin-list.c b/tools/perf/builtin-list.c
+index 011195e..4e9e4e3 100644
+--- a/tools/perf/builtin-list.c
++++ b/tools/perf/builtin-list.c
+@@ -22,13 +22,16 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 	const struct option list_options[] = {
+ 		OPT_END()
+ 	};
+-	const char * const list_usage[] = {
+-		"perf list [hw|sw|cache|tracepoint|pmu|event_glob]",
++	const char *const list_subcommands[] = { "hw", "sw", "cache", "tracepoint",
++						 "pmu", NULL };
++
++	const char *list_usage[] = {
++		"perf list {hw|sw|cache|tracepoint|pmu|event_glob}",
+ 		NULL
+ 	};
  
- #include <trace/events/block.h>
-@@ -34,7 +35,7 @@ static __init int init_emergency_pool(void)
+-	argc = parse_options(argc, argv, list_options, list_usage,
+-			     PARSE_OPT_STOP_AT_NON_OPTION);
++	argc = parse_options_subcommand(argc, argv, list_options, list_subcommands,
++					list_usage, PARSE_OPT_STOP_AT_NON_OPTION);
  
- 	page_pool = mempool_create_page_pool(POOL_SIZE, 0);
- 	BUG_ON(!page_pool);
--	printk("bounce pool size: %d pages\n", POOL_SIZE);
-+	pr_info("bounce pool size: %d pages\n", POOL_SIZE);
+ 	setup_pager();
  
- 	return 0;
- }
-@@ -86,7 +87,7 @@ int init_emergency_isa_pool(void)
- 				       mempool_free_pages, (void *) 0);
- 	BUG_ON(!isa_page_pool);
- 
--	printk("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
-+	pr_info("isa bounce pool size: %d pages\n", ISA_POOL_SIZE);
- 	return 0;
- }
- 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index ae3c8f3595..81ae17cf92 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -91,6 +91,7 @@
- #include <linux/ctype.h>
- #include <linux/mm_inline.h>
- #include <linux/mmu_notifier.h>
-+#include <linux/printk.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/uaccess.h>
-@@ -2751,7 +2752,7 @@ void __init numa_policy_init(void)
- 		node_set(prefer, interleave_nodes);
- 
- 	if (do_set_mempolicy(MPOL_INTERLEAVE, 0, &interleave_nodes))
--		printk("numa_policy_init: interleaving failed\n");
-+		pr_warn("numa_policy_init: interleaving failed\n");
- 
- 	check_numabalancing_enable();
- }
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 20ff0c3327..52f85997e0 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -36,6 +36,7 @@
- #include <linux/sched/sysctl.h>
- #include <linux/notifier.h>
- #include <linux/memory.h>
-+#include <linux/printk.h>
- 
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
-@@ -360,20 +361,20 @@ static int browse_rb(struct rb_root *root)
- 		struct vm_area_struct *vma;
- 		vma = rb_entry(nd, struct vm_area_struct, vm_rb);
- 		if (vma->vm_start < prev) {
--			printk("vm_start %lx prev %lx\n", vma->vm_start, prev);
-+			pr_info("vm_start %lx prev %lx\n", vma->vm_start, prev);
- 			bug = 1;
- 		}
- 		if (vma->vm_start < pend) {
--			printk("vm_start %lx pend %lx\n", vma->vm_start, pend);
-+			pr_info("vm_start %lx pend %lx\n", vma->vm_start, pend);
- 			bug = 1;
- 		}
- 		if (vma->vm_start > vma->vm_end) {
--			printk("vm_end %lx < vm_start %lx\n",
-+			pr_info("vm_end %lx < vm_start %lx\n",
- 				vma->vm_end, vma->vm_start);
- 			bug = 1;
- 		}
- 		if (vma->rb_subtree_gap != vma_compute_subtree_gap(vma)) {
--			printk("free gap %lx, correct %lx\n",
-+			pr_info("free gap %lx, correct %lx\n",
- 			       vma->rb_subtree_gap,
- 			       vma_compute_subtree_gap(vma));
- 			bug = 1;
-@@ -387,7 +388,7 @@ static int browse_rb(struct rb_root *root)
- 	for (nd = pn; nd; nd = rb_prev(nd))
- 		j++;
- 	if (i != j) {
--		printk("backwards %d, forwards %d\n", j, i);
-+		pr_info("backwards %d, forwards %d\n", j, i);
- 		bug = 1;
- 	}
- 	return bug ? -1 : i;
-@@ -422,17 +423,17 @@ void validate_mm(struct mm_struct *mm)
- 		i++;
- 	}
- 	if (i != mm->map_count) {
--		printk("map_count %d vm_next %d\n", mm->map_count, i);
-+		pr_info("map_count %d vm_next %d\n", mm->map_count, i);
- 		bug = 1;
- 	}
- 	if (highest_address != mm->highest_vm_end) {
--		printk("mm->highest_vm_end %lx, found %lx\n",
-+		pr_info("mm->highest_vm_end %lx, found %lx\n",
- 		       mm->highest_vm_end, highest_address);
- 		bug = 1;
- 	}
- 	i = browse_rb(&mm->mm_rb);
- 	if (i != mm->map_count) {
--		printk("map_count %d rb %d\n", mm->map_count, i);
-+		pr_info("map_count %d rb %d\n", mm->map_count, i);
- 		bug = 1;
- 	}
- 	BUG_ON(bug);
-@@ -3237,7 +3238,7 @@ static struct notifier_block reserve_mem_nb = {
- static int __meminit init_reserve_notifier(void)
- {
- 	if (register_hotmemory_notifier(&reserve_mem_nb))
--		printk("Failed registering memory add/remove notifier for admin reserve");
-+		pr_info("Failed registering memory add/remove notifier for admin reserve");
- 
- 	return 0;
- }
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 8740213b16..331dede25f 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -30,6 +30,7 @@
- #include <linux/syscalls.h>
- #include <linux/audit.h>
- #include <linux/sched/sysctl.h>
-+#include <linux/printk.h>
- 
- #include <asm/uaccess.h>
- #include <asm/tlb.h>
-@@ -1241,7 +1242,7 @@ error_free:
- 	return ret;
- 
- enomem:
--	printk("Allocation of length %lu from process %d (%s) failed\n",
-+	pr_warn("Allocation of length %lu from process %d (%s) failed\n",
- 	       len, current->pid, current->comm);
- 	show_free_areas(0);
- 	return -ENOMEM;
-diff --git a/mm/slub.c b/mm/slub.c
-index 25f14ad8f8..58d98d6c7c 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -33,6 +33,7 @@
- #include <linux/stacktrace.h>
- #include <linux/prefetch.h>
- #include <linux/memcontrol.h>
-+#include <linux/printk.h>
- 
- #include <trace/events/kmem.h>
- 
-@@ -1774,15 +1775,15 @@ static inline void note_cmpxchg_failure(const char *n,
- 
- #ifdef CONFIG_PREEMPT
- 	if (tid_to_cpu(tid) != tid_to_cpu(actual_tid))
--		printk("due to cpu change %d -> %d\n",
-+		pr_info("due to cpu change %d -> %d\n",
- 			tid_to_cpu(tid), tid_to_cpu(actual_tid));
- 	else
- #endif
- 	if (tid_to_event(tid) != tid_to_event(actual_tid))
--		printk("due to cpu running other code. Event %ld->%ld\n",
-+		pr_info("due to cpu running other code. Event %ld->%ld\n",
- 			tid_to_event(tid), tid_to_event(actual_tid));
- 	else
--		printk("for unknown reason: actual=%lx was=%lx target=%lx\n",
-+		pr_info("for unknown reason: actual=%lx was=%lx target=%lx\n",
- 			actual_tid, tid, next_tid(tid));
- #endif
- 	stat(s, CMPXCHG_DOUBLE_CPU_FAIL);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a9c74b4096..67c3db4735 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -43,6 +43,7 @@
- #include <linux/sysctl.h>
- #include <linux/oom.h>
- #include <linux/prefetch.h>
-+#include <linux/printk.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/div64.h>
-@@ -477,7 +478,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- 		if (page_has_private(page)) {
- 			if (try_to_free_buffers(page)) {
- 				ClearPageDirty(page);
--				printk("%s: orphaned page\n", __func__);
-+				pr_info("%s: orphaned page\n", __func__);
- 				return PAGE_CLEAN;
- 			}
- 		}
+@@ -53,8 +56,6 @@ int cmd_list(int argc, const char **argv, const char *prefix __maybe_unused)
+ 			print_hwcache_events(NULL, false);
+ 		else if (strcmp(argv[i], "pmu") == 0)
+ 			print_pmu_events(NULL, false);
+-		else if (strcmp(argv[i], "--raw-dump") == 0)
+-			print_events(NULL, true);
+ 		else {
+ 			char *sep = strchr(argv[i], ':'), *s;
+ 			int sep_idx;
+diff --git a/tools/perf/perf-completion.sh b/tools/perf/perf-completion.sh
+index ae3a576..a1f867b 100644
+--- a/tools/perf/perf-completion.sh
++++ b/tools/perf/perf-completion.sh
+@@ -119,10 +119,10 @@ __perf_main ()
+ 		fi
+ 	# List possible events for -e option
+ 	elif [[ $prev == "-e" && "${words[1]}" == @(record|stat|top) ]]; then
+-		evts=$($cmd list --raw-dump)
++		evts=$($cmd list --list-cmds)
+ 		__perfcomp_colon "$evts" "$cur"
+-	# List subcommands for 'perf kvm'
+-	elif [[ $prev == "kvm" ]]; then
++	# List subcommands for perf commands
++	elif [[ $prev == @(kvm|list) ]]; then
+ 		subcmds=$($cmd $prev --list-cmds)
+ 		__perfcomp_colon "$subcmds" "$cur"
+ 	# List long option names
 -- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+1.9.0.431.g014438b
 
