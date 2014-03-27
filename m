@@ -1,112 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759AbaC0MWZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 08:22:25 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:54351 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753222AbaC0MWW convert rfc822-to-8bit (ORCPT
+	id S1751683AbaC0MYI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 08:24:08 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42804 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753263AbaC0MYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 08:22:22 -0400
-Date: Thu, 27 Mar 2014 13:21:09 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Rutland <mark.rutland@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140327132109.06258526@ipc1.ka-ro>
-In-Reply-To: <20140327095956.GA29623@localhost>
-References: <532BCFCC.4080205@freescale.com>
-	<1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
-	<20140324095902.GB11377@localhost>
-	<20140326095156.3e5585b8@ipc1.ka-ro>
-	<5332AEE7.2040402@freescale.com>
-	<20140326125502.0e8d0657@ipc1.ka-ro>
-	<20140327095956.GA29623@localhost>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 27 Mar 2014 08:24:01 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-04-53341860148f
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-ide@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v3] ata: fix Marvell SATA driver dependencies
+Date: Thu, 27 Mar 2014 13:23:39 +0100
+Message-id: <1668037.2oe7J2B7N4@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=us-ascii
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAd0ECZNgg+VnhSzO3z3EbLGp7S2j
+	ReOSyywWmx5fY7U4tuMRk8XlXXPYLN7/dLT4tfwoowOHx5NNFxk9ds66y+6xaVUnm0fDgfMs
+	HpuX1Hvs3PGZyePzJrkA9igum5TUnMyy1CJ9uwSujHf9N1kK+nkqGrYLNTBO5epi5OCQEDCR
+	WL5IvouRE8gUk7hwbz1bFyMXh5DAIkaJp3snskA4LUwST19+ZwWpYhOwkpjYvooRxBYRkJW4
+	Mu0hI0gRs8BsJonJL1+zgCSEBWwlpvb+YQKxWQRUJR5862UG2cYroCnRdjEMJCwq4CmxY/tK
+	NhCbV0BQ4sfke2CtzALyEvv2T2WFsLUk1u88zjSBkW8WkrJZSMpmISlbwMi8ilE0tSC5oDgp
+	PddIrzgxt7g0L10vOT93EyM4mJ9J72Bc1WBxiFGAg1GJh3fHfaNgIdbEsuLK3EOMEhzMSiK8
+	t4VNgoV4UxIrq1KL8uOLSnNSiw8xSnOwKInzHmy1DhQSSE8sSc1OTS1ILYLJMnFwSjUwytX5
+	Gwf4zC607tv8rKFPaKpec+mBL1tmqHy+P/XlhluZbyt+Rig020ksWJd0XLDzwEu5cxNn9Wi8
+	/XFc4oLF4uh+7zzT6EUap6cnX90kG35xT6LzwpwNda9+fXDXttsyg/+dtZPv3P6HW03ZQz/P
+	26i5g3vWu8X8e3auMFJw6Zw9XXCG+XzGOUosxRmJhlrMRcWJAKfQvLtiAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Make sata_mv host driver depend on PCI || ARCH_DOVE || ARCH_KIRKWOOD ||
+ARCH_MV78XX0 || ARCH_MVEBU || ARCH_ORION5X config options as Marvell
+SATA support covers both Marvell PCI devices and Marvell Dove, Kirkwood,
+MV78xx0, Armada 370/XP and Orion5x SoCs (for non-PCI devices the driver
+to work requires suitable device tree node to be defined).  Additionally
+allow the driver build if COMPILE_TEST config option is set.
 
-Huang Shijie wrote:
-> > > Please see "Figure 12-13" in the 12.12.1.12:
-> > >    "In order to preserve the BI (bad block information), flash updater 
-> > > or gang programmer
-> > > applications need to swap Bad Block Information (BI) data to byte 0 of 
-> > > metadata area for
-> > > every page before programming NAND Flash. ROM when loading firmware, 
-> > > copies back
-> > > the value at metadata[0] to BI offset in page data. The following figure 
-> > > shows how the
-> > > factory bad block marker is preserved."
-> > > 
-> > The inspection of the BB markers is only a fallback for the case that
-> > there is no DBBT. From the same chapter that you quoted above:
-> > | ROM uses DBBT to skip any bad block that falls within firmware data
-> > | on NAND Flash device.
-> > | If the address of DBBT Search Area in FCB is 0, ROM will rely on
-> > | factory marked bad block markers to find out if a block is good or bad.
-> > 
-> > Thus, even the boot ROM of i.MX28 can well live without blockmark
-> > swapping.
-> 
-> Assume that there is a NAND block "A",  and the A consist of 256 pages.
-> the uboot is burned to the "A", can occupy 6 pages:
-> 
->   -----------------------------------------------------------------------------
->  | page 0 |  page 1 | page 2 | page 3 | page 4 | page 5 | ... | ... | page 255 |
->   -----------------------------------------------------------------------------
->  
->   \-------------------------------------- ------------------------------------/
->                                          V  
->                                         "A"					 
-> 
-> The DBBT is used to track if "A" is bad or not.
-> Assume we know that "A" is a good block, ROM then need to read out the uboot.
-> When the ROM needs to read out the 6 pages one by one. And each time the ROM read
-> the page, it should do the swapping for this page.
-> 
-> In this case, the ROM will do the swapping six times.
-> 
-> Please read the sector again, you will see the "every page" in it:
-> --------------------------------------------------------------------
->    "In order to preserve the BI (bad block information), flash updater 
-> or gang programmer applications need to swap Bad Block Information (BI) data to byte 0 of 
-> metadata area for every page before programming NAND Flash. ROM when loading firmware, 
-> copies back
-> --------------------------------------------------------------------
->
-I can assure you that the >100.000 i.MX28 based modules, that we sold
-up to now boot from NAND just fine without any block mark swapping in
-the U-Boot pages.
+Cc: Jason Cooper <jason@lakedaemon.net>
+Cc: Andrew Lunn <andrew@lunn.ch>
+Cc: Gregory Clement <gregory.clement@free-electrons.com>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Signed-off-by: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+---
+v3:
+- added dependencies for Marvel Dove and MV78xx0 
+v2:
+- resynced patch with libata/for-3.15 branch (previous patch was against
+  libata/for-next branch and SATA_MV selects GENERIC_PHY in that branch)
 
+ drivers/ata/Kconfig |    2 ++
+ 1 file changed, 2 insertions(+)
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Index: b/drivers/ata/Kconfig
+===================================================================
+--- a/drivers/ata/Kconfig	2014-03-26 17:59:35.000000000 +0100
++++ b/drivers/ata/Kconfig	2014-03-27 13:14:24.097787880 +0100
+@@ -281,6 +281,8 @@ config SATA_HIGHBANK
+ 
+ config SATA_MV
+ 	tristate "Marvell SATA support"
++	depends on PCI || ARCH_DOVE || ARCH_KIRKWOOD || ARCH_MV78XX0 || \
++		   ARCH_MVEBU || ARCH_ORION5X || COMPILE_TEST
+ 	help
+ 	  This option enables support for the Marvell Serial ATA family.
+ 	  Currently supports 88SX[56]0[48][01] PCI(-X) chips,
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
