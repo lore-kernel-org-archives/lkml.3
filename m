@@ -1,89 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753378AbaC0Dqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 Mar 2014 23:46:54 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:27819
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752234AbaC0Dqx (ORCPT
+	id S1753596AbaC0Duj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 Mar 2014 23:50:39 -0400
+Received: from mail-vc0-f177.google.com ([209.85.220.177]:54024 "EHLO
+	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751821AbaC0Dug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 Mar 2014 23:46:53 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -2
-X-BigFish: VS-2(zz98dI1432Izz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzzz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25cch25f6h2605h262fh268bh1155h)
-Date: Thu, 27 Mar 2014 11:31:18 +0800
-From: Nicolin Chen <Guangyu.Chen@freescale.com>
-To: Xiubo Li-B47053 <Li.Xiubo@freescale.com>
-CC: "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
-Message-ID: <20140327033117.GD16197@MrMyself>
-References: <1395834517-16426-1-git-send-email-Guangyu.Chen@freescale.com>
- <11a8271c31044515bd2657a93aefdaec@BY2PR03MB505.namprd03.prod.outlook.com>
- <20140327023617.GB16197@MrMyself>
- <1e2d210764724c7e834c5307b54c37ab@BY2PR03MB505.namprd03.prod.outlook.com>
- <20140327025647.GC16197@MrMyself>
- <12f887b3889a41849026965f0cf7db1f@BY2PR03MB505.namprd03.prod.outlook.com>
+	Wed, 26 Mar 2014 23:50:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <12f887b3889a41849026965f0cf7db1f@BY2PR03MB505.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <1395830031.7930.8.camel@weser.hi.pengutronix.de>
+References: <1395650554-31925-1-git-send-email-acourbot@nvidia.com>
+ <1395667191.5062.18.camel@weser.hi.pengutronix.de> <CAAVeFu+s+hrKdiHqxvxAOSnq-Jm_g3PY1wT3TgwpX1OGP-Niog@mail.gmail.com>
+ <1395830031.7930.8.camel@weser.hi.pengutronix.de>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Thu, 27 Mar 2014 12:50:16 +0900
+Message-ID: <CAAVeFu+2u-x-jw3DQtY1uztFbF_sqkGeRociAD0zELrdNectkQ@mail.gmail.com>
+Subject: Re: [PATCH 00/12] drm/nouveau: support for GK20A, cont'd
+To: Lucas Stach <l.stach@pengutronix.de>
+Cc: Alexandre Courbot <acourbot@nvidia.com>, Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 11:41:02AM +0800, Xiubo Li-B47053 wrote:
-> 
-> > Subject: Re: [PATCH] ASoC: fsl_sai: Add isr to deal with error flag
-> > 
-> > On Thu, Mar 27, 2014 at 10:53:50AM +0800, Xiubo Li-B47053 wrote:
-> > > > On Thu, Mar 27, 2014 at 10:13:48AM +0800, Xiubo Li-B47053 wrote:
-> > > > > > +	regmap_read(sai->regmap, FSL_SAI_TCSR, &xcsr);
-> > > > > > +	regmap_write(sai->regmap, FSL_SAI_TCSR, xcsr);
-> > > > > > +
-> > > > > > +	if (xcsr & FSL_SAI_CSR_WSF)
-> > > > > > +		dev_dbg(dev, "isr: Start of Tx word detected\n");
-> > > > > > +
-> > > > > > +	if (xcsr & FSL_SAI_CSR_SEF)
-> > > > > > +		dev_dbg(dev, "isr: Tx Frame sync error detected\n");
-> > > > > > +
-> > > > > > +	if (xcsr & FSL_SAI_CSR_FEF)
-> > > > > > +		dev_dbg(dev, "isr: Transmit underrun detected\n");
-> > > > > > +
-> > > > >
-> > > > > Actually, the above three isrs should to write a logic 1 to this field
-> > > > > to clear this flag.
-> > > > >
-> > > > >
-> > > > > > +	if (xcsr & FSL_SAI_CSR_FWF)
-> > > > > > +		dev_dbg(dev, "isr: Enabled transmit FIFO is empty\n");
-> > > > > > +
-> > > > > > +	if (xcsr & FSL_SAI_CSR_FRF)
-> > > > > > +		dev_dbg(dev, "isr: Transmit FIFO watermark has been
-> > reached\n");
-> > > > > > +
-> > > > >
-> > > > > While are these ones really needed to clear manually ?
-> > > >
-> > > > The reference manual doesn't mention about the requirement. So SAI should
-> > do
-> > > > the self-clearance.
-> > >
-> > > Yes, I do think we should let it do the self-clearance, and shouldn't
-> > interfere
-> > > of them...
-> > 
-> > SAI is supposed to ignore the interference, isn't it?
-> > 
-> 
-> Maybe, but I'm not very sure.
-> And these bits are all writable and readable.
+On Wed, Mar 26, 2014 at 7:33 PM, Lucas Stach <l.stach@pengutronix.de> wrote:
+>> > It does so by doing the necessary manual cache flushes/invalidates on
+>> > buffer access, so costs some performance. To avoid this you really want
+>> > to get writecombined mappings into the kernel<->userspace interface.
+>> > Simply mapping the pushbuf as WC/US has brought a 7% performance
+>> > increase in OpenArena when I last tested this. This test was done with
+>> > only one PCIe lane, so the perf increase may be even better with a more
+>> > adequate interconnect.
+>>
+>> Interestingly if I allow writecombined mappings in the kernel I get
+>> faults when attempting the read the mapped area:
+>>
+> This is most likely because your handling of those buffers produces
+> conflicting mappings (if my understanding of what you are doing is
+> right).
+>
+> At first you allocate memory from CMA without changing the pgprot flags.
+> This yields pages which are mapped uncached or cached (when moveable
+> pages are purged from CMA to make space for your buffer) into the
+> kernels linear space.
+>
+> Later you regard this memory as iomem (it isn't!) and let TTM remap
+> those pages into the vmalloc area with pgprot set to writecombined.
+>
+> I don't know exactly why this is causing havoc, but having two
+> conflicting virtual mappings of the same physical memory is documented
+> to at least produce undefined behavior on ARMv7.
 
-Double-confirmed? Because FWF and FRF should be read-only bits.
+IIUC this is not exactly what happens with GK20A, so let me explain
+how VRAM is currently accessed to make sure we are in sync.
 
+VRAM pages are allocated by nvea_ram_get(), which allocates chunks of
+contiguous memory using dma_alloc_from_contiguous(). At that time I
+don't think the pages are mapped anywhere for the CPU to see (contrary
+to dma_alloc_coherent() for instance). Nouveau will then map the
+memory into the GPU context's address space, but it is only when
+nouveau_ttm_io_mem_reserve() is called that a BAR mapping is created,
+making the memory accessible to the CPU through the BAR window (which
+I consider as I/O memory).
 
+The area of the BAR window pointing to the VRAM is then mapped to the
+kernel (using ioremap_wc() or ioremap_nocache()) or user-space (where
+ttm_io_prot() is called to get the pgprot_t to use). It is when this
+mapping is writecombined that I get the faults.
+
+So as far as I can tell, only at most one CPU mapping exists at any
+time for VRAM memory, which goes through the BAR to access the actual
+physical memory. It would probably be faster and more logical to map
+the RAM directly so the CPU can address it, but going through the BAR
+reduces CPU/GPU synchronization issues and there are a few cases where
+we would need to map through the BAR anyway (e.g. tiled memory to be
+made linear for the CPU).
+
+I don't know if that help understanding what the issue might be - I
+just wanted to make sure we are talking about the same thing. :)
+
+Thanks,
+Alex.
