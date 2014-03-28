@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753757AbaC1Rka (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:40:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51396 "EHLO
+	id S1753851AbaC1Rl2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:41:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51386 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207AbaC1RbM (ORCPT
+	with ESMTP id S1753198AbaC1RbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:12 -0400
+	Fri, 28 Mar 2014 13:31:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.13 26/46] deb-pkg: Fix cross-building linux-headers package
-Date: Fri, 28 Mar 2014 10:32:10 -0700
-Message-Id: <20140328173138.182755692@linuxfoundation.org>
+        Will Deacon <will.deacon@arm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 3.13 24/46] perf tools: Fix AAAAARGH64 memory barriers
+Date: Fri, 28 Mar 2014 10:32:08 -0700
+Message-Id: <20140328173137.934898595@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,58 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
+commit f428ebd184c82a7914b2aa7e9f868918aaf7ea78 upstream.
 
-builddeb generates a control file that says the linux-headers package
-can only be built for the build system primary architecture.  This
-breaks cross-building configurations.  We should use $debarch for this
-instead.
+Someone got the load and store barriers mixed up for AAAAARGH64.  Turn
+them the right side up.
 
-Since $debarch is not yet set when generating the control file, set
-Architecture: any and use control file variables to fill in the
-description.
-
-Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
-Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Reported-by: Will Deacon <will.deacon@arm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Fixes: a94d342b9cb0 ("tools/perf: Add required memory barriers")
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Will Deacon <will.deacon@arm.com>
+Link: http://lkml.kernel.org/r/20140124154002.GF31570@twins.programming.kicks-ass.net
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ tools/perf/perf.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -62,7 +62,7 @@ create_package() {
- 	fi
+--- a/tools/perf/perf.h
++++ b/tools/perf/perf.h
+@@ -100,8 +100,8 @@
  
- 	# Create the package
--	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
-+	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
+ #ifdef __aarch64__
+ #define mb()		asm volatile("dmb ish" ::: "memory")
+-#define wmb()		asm volatile("dmb ishld" ::: "memory")
+-#define rmb()		asm volatile("dmb ishst" ::: "memory")
++#define wmb()		asm volatile("dmb ishst" ::: "memory")
++#define rmb()		asm volatile("dmb ishld" ::: "memory")
+ #define cpu_relax()	asm volatile("yield" ::: "memory")
+ #endif
  
-@@ -288,15 +288,14 @@ mkdir -p "$destdir"
- (cd $objtree; cp $KCONFIG_CONFIG $destdir/.config) # copy .config manually to be where it's expected to be
- ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
- rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
--arch=$(dpkg --print-architecture)
- 
- cat <<EOF >> debian/control
- 
- Package: $kernel_headers_packagename
- Provides: linux-headers, linux-headers-2.6
--Architecture: $arch
--Description: Linux kernel headers for $KERNELRELEASE on $arch
-- This package provides kernel header files for $KERNELRELEASE on $arch
-+Architecture: any
-+Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
-+ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
-  .
-  This is useful for people who need to build external modules
- EOF
 
 
