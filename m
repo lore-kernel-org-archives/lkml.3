@@ -1,196 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbaC1NGO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:06:14 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17811 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227AbaC1NGL (ORCPT
+	id S1752093AbaC1NIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:08:39 -0400
+Received: from smtprelay0037.hostedemail.com ([216.40.44.37]:48621 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751664AbaC1NIi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:06:11 -0400
-X-AuditID: cbfec7f5-b7fc96d000004885-2c-533573c063bb
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>, stable@vger.kernel.org
-Subject: [PATCH 1/3] clocksource: exynos_mct: Fix stall after CPU hotplugging
-Date: Fri, 28 Mar 2014 14:06:00 +0100
-Message-id: <1396011962-4467-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKJMWRmVeSWpSXmKPExsVy+t/xK7oHik2DDWZu4rTYOGM9q8W8z7IW
-	r18YWvQuuMpmcbbpDbvFpsfXWC0u75rDZjHj/D4mi7VH7rJbLNj4iNFi/YzXLBabN01lduDx
-	uHNtD5vHu3Pn2D02L6n36NuyitHj8ya5ANYoLpuU1JzMstQifbsErox1W9uZC7YYVtx8sZmp
-	gfGFehcjJ4eEgInE1eYpTBC2mMSFe+vZuhi5OIQEljJK/Pk+nwnC6WOSOHLhACNIFZuAscTm
-	5UvAqkQEnjJK/G54xAjiMAs0Mkks3v4TrEpYwFfi6IUnYHNZBFQlTlzuAYvzCrhJHP+1gLmL
-	kQNon4LEnEk2Exi5FzAyrGIUTS1NLihOSs810itOzC0uzUvXS87P3cQICaqvOxiXHrM6xCjA
-	wajEwzvDyiRYiDWxrLgy9xCjBAezkgjvElvTYCHelMTKqtSi/Pii0pzU4kOMTBycUg2MgW8Z
-	5gYKqpa85YyzFqstWXdF/9lzxWsLl2mnb93ImvuOpTpdyuTpYbbLvu9Mz7qfvFXFtav3Nf/y
-	9M2rb3utfbpZWzpdNOsuT7jelIDvO1bwi105Of9OK2uP/Kw34p9r1RTf7L9n8eatxRzzMx4H
-	H74onSUk5DTx6N3vYSZLvkkaRl7ZU5Q5VYmlOCPRUIu5qDgRAP0GEjcIAgAA
+	Fri, 28 Mar 2014 09:08:38 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 57,3.5,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:967:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2525:2553:2560:2563:2682:2685:2693:2828:2859:2901:2903:2909:2917:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3354:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6117:6119:7652:8527:9010:9025:10013:10400:10848:11026:11232:11658:11914:12043:12438:12517:12519:12555:12663:12740:13071:13095:13160:13161:13229:13894:21060,0,RBL:none,CacheI
+X-HE-Tag: crate92_ff00bce25850
+X-Filterd-Recvd-Size: 3759
+Message-ID: <1396012107.31134.21.camel@joe-AO722>
+Subject: Re: [PATCH 3/3] staging/ozwpan: coding style ether_addr_copy
+From: Joe Perches <joe@perches.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: =?ISO-8859-1?Q?J=E9r=F4me?= Pinot <ngc891@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, Chris Kelly <ckelly@ozmodevices.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 28 Mar 2014 06:08:27 -0700
+In-Reply-To: <20140328111801.GD6991@mwanda>
+References: <20140312100132.GA18954@star> <20140312144533.GA3410@kroah.com>
+	 <20140313012144.GD30138@star> <20140313022821.GA9084@kroah.com>
+	 <20140313153911.GA17881@star> <20140328111801.GD6991@mwanda>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix stall after hotplugging CPU1. Affected are SoCs where Multi Core Timer
-interrupts are shared (SPI), e.g. Exynos 4210. The stall was a result of
-starting the CPU1 local timer not in L1 timer but in L0 (which is used
-by CPU0).
+(adding Andrew Morton, David Miller and LKML to cc's)
 
-Trigger:
-$ echo 0 > /sys/bus/cpu/devices/cpu1/online && echo 1 > /sys/bus/cpu/devices/cpu1/online
+On Fri, 2014-03-28 at 14:18 +0300, Dan Carpenter wrote:
+> On Fri, Mar 14, 2014 at 12:39:11AM +0900, Jérôme Pinot wrote:
+> > On 03/13/14 02:28, Greg Kroah-Hartman wrote:
+> > > On Thu, Mar 13, 2014 at 10:21:44AM +0900, Jérôme Pinot wrote:
+> > [...]
+> > > > diff --git a/drivers/staging/ozwpan/ozcdev.c b/drivers/staging/ozwpan/ozcdev.c
+> > > > index 5de5981..10c0a96 100644
+> > > > --- a/drivers/staging/ozwpan/ozcdev.c
+> > > > +++ b/drivers/staging/ozwpan/ozcdev.c
+> > > > @@ -217,7 +217,7 @@ static int oz_set_active_pd(const u8 *addr)
+> > > >  	pd = oz_pd_find(addr);
+> > > >  	if (pd) {
+> > > >  		spin_lock_bh(&g_cdev.lock);
+> > > > -		memcpy(g_cdev.active_addr, addr, ETH_ALEN);
+> > > > +		ether_addr_copy(g_cdev.active_addr, addr);
+> > > 
+> > > Are you sure this will work?
+> > 
+> > No. But the ozwpan driver uses already ether_addr_equal which is not
+> > alignment-safe. As
+> > https://www.kernel.org/doc/Documentation/unaligned-memory-access.txt 
+> > said:
+> > 
+> > "This alignment-unsafe function is still useful as it is a decent
+> > optimization for the cases when you can ensure alignment, which is
+> > true almost all of the time in ethernet networking context."
+> > 
+> > I expected the maintainer to confirm/infirm this. I'm just seeing that's
+> > actually Chris Kelly who did write this part of code, so I'm CC'ing him
+> > too.
+> > 
+> 
+> It is aligned ok, but don't rely on the maintainer to fix your bugs.
+> Don't send patches which you are not sure about.
+> 
+> Joe, this seems like a very bad warning message from checkpatch.pl
+> because people will constantly send us patches over and over which
+> introduce bugs and they rely on the maintainer to catch it every time.
+> Can we get rid of the warning or move it under --strict or something?
 
-Stall information:
-[  530.045259] INFO: rcu_preempt detected stalls on CPUs/tasks:
-[  530.045618]  1: (6 GPs behind) idle=6d0/0/0 softirq=369/369
-[  530.050987]  (detected by 0, t=6589 jiffies, g=33, c=32, q=0)
-[  530.056721] Task dump for CPU 1:
-[  530.059928] swapper/1       R running      0     0      1 0x00001000
-[  530.066377] [<c0524e14>] (__schedule+0x414/0x9b4) from [<c00b6610>] (rcu_idle_enter+0x18/0x38)
-[  530.074955] [<c00b6610>] (rcu_idle_enter+0x18/0x38) from [<c0079a18>] (cpu_startup_entry+0x60/0x3bc)
-[  530.084069] [<c0079a18>] (cpu_startup_entry+0x60/0x3bc) from [<c0517d34>] (secondary_start_kernel+0x164/0x1a0)
-[  530.094029] [<c0517d34>] (secondary_start_kernel+0x164/0x1a0) from [<40517244>] (0x40517244)
+Hi Dan.
 
-The timers for CPU1 were missed:
-[  591.668436] cpu: 1
-[  591.670430]  clock 0:
-[  591.672691]   .base:       c0ab7750
-[  591.676160]   .index:      0
-[  591.679025]   .resolution: 1 nsecs
-[  591.682404]   .get_time:   ktime_get
-[  591.685970]   .offset:     0 nsecs
-[  591.689349] active timers:
-[  591.692045]  #0: <dfb51f40>, hrtimer_wakeup, S:01
-[  591.696759]  # expires at 454687834257-454687884257 nsecs [in -136770537232 to -136770487232 nsecs]
+Maybe.
 
-And the event_handler for next event was wrong:
-[  591.917120] Tick Device: mode:     1
-[  591.920676] Per CPU device: 0
-[  591.923621] Clock Event Device: mct_tick0
-[  591.927623]  max_delta_ns:   178956969027
-[  591.931613]  min_delta_ns:   1249
-[  591.934913]  mult:           51539608
-[  591.938557]  shift:          32
-[  591.941681]  mode:           3
-[  591.944724]  next_event:     595025000000 nsecs
-[  591.949227]  set_next_event: exynos4_tick_set_next_event
-[  591.954522]  set_mode:       exynos4_tick_set_mode
-[  591.959296]  event_handler:  hrtimer_interrupt
-[  591.963730]  retries:        0
-[  591.966761]
-[  591.968245] Tick Device: mode:     0
-[  591.971801] Per CPU device: 1
-[  591.974746] Clock Event Device: mct_tick1
-[  591.978750]  max_delta_ns:   178956969027
-[  591.982739]  min_delta_ns:   1249
-[  591.986037]  mult:           51539608
-[  591.989681]  shift:          32
-[  591.992806]  mode:           3
-[  591.995848]  next_event:     453685000000 nsecs
-[  592.000353]  set_next_event: exynos4_tick_set_next_event
-[  592.005648]  set_mode:       exynos4_tick_set_mode
-[  592.010421]  event_handler:  tick_handle_periodic
-[  592.015115]  retries:        0
-[  592.018145]
+The checkpatch message is:
 
-After turning off the CPU1, the MCT L1 local timer was disabled but the
-interrupt was not cleared. Turning on the CPU1 enabled the IRQ
-with setup_irq() but, before setting affinity to CPU1, the pending L1 timer
-interrupt was processed by CPU0 in exynos4_mct_tick_isr().
+"Prefer ether_addr_copy() over memcpy() if the Ethernet addresses are __aligned(2)"
 
-The ISR then called event handler which set up the next timer event for
-current CPU (CPU0). Therefore the MCT L1 timer wasn't actually started.
+My personal preference would be to add YA inline function
+for unaligned copies ether_addr_copy_unaligned for symmetry
+to ether_addr_equal_unaligned to etherdevice.h though.
 
-Fix the stall by:
-1. Setting next timer event not on current CPU but on the CPU indicated
-   by cpumask in 'clock_event_device'.
-2. Clearing the timer interrupt upon stopping the local timer.
+Then the message could be changed to something like
+"Prefer ether_addr_copy[_unaligned] to memcpy(foo, bar, ETH_ALEN)"
 
-The patch also moves around the call to exynos4_mct_tick_stop() but this
-is done only for the code readability as it is not essential for the fix.
+> Do we have a mailing list yet for checkpatch issues?
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: <stable@vger.kernel.org>
----
- drivers/clocksource/exynos_mct.c |   33 ++++++++++++++++++++-------------
- 1 file changed, 20 insertions(+), 13 deletions(-)
+No and I'm not going to advocate for one. I think the
+subscriber count would be about 4 people total.
 
-diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
-index 48f76bc05da0..0b49b09dd1a9 100644
---- a/drivers/clocksource/exynos_mct.c
-+++ b/drivers/clocksource/exynos_mct.c
-@@ -339,7 +339,14 @@ static void exynos4_mct_tick_start(unsigned long cycles,
- static int exynos4_tick_set_next_event(unsigned long cycles,
- 				       struct clock_event_device *evt)
- {
--	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-+	/*
-+	 * In case of hotplugging non-boot CPU, the set_next_event could be
-+	 * called on CPU0 by ISR before IRQ affinity is set to proper CPU.
-+	 * Thus for accessing proper MCT Lx timer, 'per_cpu' for cpumask
-+	 * in event must be used instead of 'this_cpu_ptr'.
-+	 */
-+	struct mct_clock_event_device *mevt = &per_cpu(percpu_mct_tick,
-+			cpumask_first(evt->cpumask));
- 
- 	exynos4_mct_tick_start(cycles, mevt);
- 
-@@ -371,23 +378,13 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
- 
- static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
- {
--	struct clock_event_device *evt = &mevt->evt;
--
--	/*
--	 * This is for supporting oneshot mode.
--	 * Mct would generate interrupt periodically
--	 * without explicit stopping.
--	 */
--	if (evt->mode != CLOCK_EVT_MODE_PERIODIC)
--		exynos4_mct_tick_stop(mevt);
--
- 	/* Clear the MCT tick interrupt */
- 	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
- 		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
- 		return 1;
--	} else {
--		return 0;
- 	}
-+
-+	return 0;
- }
- 
- static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
-@@ -395,6 +392,13 @@ static irqreturn_t exynos4_mct_tick_isr(int irq, void *dev_id)
- 	struct mct_clock_event_device *mevt = dev_id;
- 	struct clock_event_device *evt = &mevt->evt;
- 
-+	/*
-+	 * This is for supporting oneshot mode.
-+	 * Mct would generate interrupt periodically
-+	 * without explicit stopping.
-+	 */
-+	if (evt->mode != CLOCK_EVT_MODE_PERIODIC)
-+		exynos4_mct_tick_stop(mevt);
- 	exynos4_mct_tick_clear(mevt);
- 
- 	evt->event_handler(evt);
-@@ -441,7 +445,10 @@ static int exynos4_local_timer_setup(struct clock_event_device *evt)
- 
- static void exynos4_local_timer_stop(struct clock_event_device *evt)
- {
-+	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-+
- 	evt->set_mode(CLOCK_EVT_MODE_UNUSED, evt);
-+	exynos4_mct_tick_clear(mevt);
- 	if (mct_int_type == MCT_INT_SPI)
- 		free_irq(evt->irq, this_cpu_ptr(&percpu_mct_tick));
- 	else
--- 
-1.7.9.5
+You could add yourself to the checkpatch MAINTAINERS entry
+if you want to see more of the patches and discussions.
+
+They are pretty rare.
 
