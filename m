@@ -1,63 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757642AbaC1Coo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 22:44:44 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7473 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757627AbaC1Col (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 22:44:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,747,1389772800"; 
-   d="scan'208";a="508700811"
-Date: Fri, 28 Mar 2014 10:43:48 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: hpet: Don't default CONFIG_HPET_TIMER to be y for
- X86_64
-Message-ID: <20140328024348.GA31111@feng-snb>
-References: <1395906309-7519-1-git-send-email-feng.tang@intel.com>
- <53340561.4050708@ladisch.de>
- <53348199.7070207@mit.edu>
- <CANcMJZD7PNf-toZ3FyT-NEUs=YnW5ZZ54cCOkziKDb-wZrOoyA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANcMJZD7PNf-toZ3FyT-NEUs=YnW5ZZ54cCOkziKDb-wZrOoyA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757677AbaC1CpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 22:45:16 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:56095 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757249AbaC1ClI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 22:41:08 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 01/12] cgroup: update cgroup->subsys_mask to ->child_subsys_mask and restore cgroup_root->subsys_mask
+Date: Thu, 27 Mar 2014 22:40:50 -0400
+Message-Id: <1395974461-12735-2-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.8.5.3
+In-Reply-To: <1395974461-12735-1-git-send-email-tj@kernel.org>
+References: <1395974461-12735-1-git-send-email-tj@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 02:27:26PM -0700, John Stultz wrote:
-> On Thu, Mar 27, 2014 at 12:52 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > On 03/27/2014 04:02 AM, Clemens Ladisch wrote:
-> >> Feng Tang wrote:
-> >> The help text still says:
-> >> | You can safely choose Y here.  [...]
-> >> | Choose N to continue using the legacy 8254 timer.
-> >>
-> >> Are these statements still true for those platforms?
-> >
-> > They aren't true for modern desktop and server platforms -- the TSC is
-> > used regardless of hpet availability.
-> 
-> While I suspect the comment above is in relation to the non-apic
-> timer. But with respect to timekeeping, our point is true assuming the
-> TSC isn't mucked up by the BIOS.  My 1yr old i7-3930k single socket
-> system still has some wonky BIOS bug that offsets the boot core's TSC.
-> And that's intel's bios, so I can only imagine other vendors have
-> found other ways to cause trouble.
-> 
-> So yea, the hpet availability for timekeeping is still important, as
-> the TSC can still be problematic.
+944196278d3d ("cgroup: move ->subsys_mask from cgroupfs_root to
+cgroup") moved ->subsys_mask from cgroup_root to cgroup to prepare for
+the unified hierarhcy; however, it turns out that carrying the
+subsys_mask of the children in the parent, instead of itself, is a lot
+more natural.  This patch restores cgroup_root->subsys_mask and morphs
+cgroup->subsys_mask into cgroup->child_subsys_mask.
 
-Yes, agreed. My patch only provides a way to disable HPET for some specific
-platforms :)
+* Uses of root->cgrp.subsys_mask are restored to root->subsys_mask.
 
-Thanks,
-Feng
+* Remove automatic setting and clearing of cgrp->subsys_mask and
+  instead just inherit ->child_subsys_mask from the parent during
+  cgroup creation.  Note that this doesn't affect any current
+  behaviors.
+
+* Undo __kill_css() separation.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ include/linux/cgroup.h |  7 ++++--
+ kernel/cgroup.c        | 64 +++++++++++++++++++++-----------------------------
+ 2 files changed, 32 insertions(+), 39 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 43d1ed3..e351a18 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -173,8 +173,8 @@ struct cgroup {
+ 	 */
+ 	u64 serial_nr;
+ 
+-	/* The bitmask of subsystems attached to this cgroup */
+-	unsigned long subsys_mask;
++	/* the bitmask of subsystems enabled on the child cgroups */
++	unsigned long child_subsys_mask;
+ 
+ 	/* Private pointers for each registered subsystem */
+ 	struct cgroup_subsys_state __rcu *subsys[CGROUP_SUBSYS_COUNT];
+@@ -282,6 +282,9 @@ enum {
+ struct cgroup_root {
+ 	struct kernfs_root *kf_root;
+ 
++	/* The bitmask of subsystems attached to this hierarchy */
++	unsigned long subsys_mask;
++
+ 	/* Unique id for this hierarchy. */
+ 	int hierarchy_id;
+ 
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index e378cb2..3c9c623 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -529,7 +529,7 @@ static struct css_set *find_existing_css_set(struct css_set *old_cset,
+ 	 * won't change, so no need for locking.
+ 	 */
+ 	for_each_subsys(ss, i) {
+-		if (root->cgrp.subsys_mask & (1UL << i)) {
++		if (root->subsys_mask & (1UL << i)) {
+ 			/* Subsystem is in this hierarchy. So we want
+ 			 * the subsystem state from the new
+ 			 * cgroup */
+@@ -742,7 +742,7 @@ static void cgroup_destroy_root(struct cgroup_root *root)
+ 	BUG_ON(!list_empty(&cgrp->children));
+ 
+ 	/* Rebind all subsystems back to the default hierarchy */
+-	rebind_subsystems(&cgrp_dfl_root, cgrp->subsys_mask);
++	rebind_subsystems(&cgrp_dfl_root, root->subsys_mask);
+ 
+ 	/*
+ 	 * Release all the links from cset_links to this hierarchy's
+@@ -1050,8 +1050,11 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 		ss->root = dst_root;
+ 		css->cgroup = &dst_root->cgrp;
+ 
+-		src_root->cgrp.subsys_mask &= ~(1 << ssid);
+-		dst_root->cgrp.subsys_mask |= 1 << ssid;
++		src_root->subsys_mask &= ~(1 << ssid);
++		src_root->cgrp.child_subsys_mask &= ~(1 << ssid);
++
++		dst_root->subsys_mask |= 1 << ssid;
++		dst_root->cgrp.child_subsys_mask |= 1 << ssid;
+ 
+ 		if (ss->bind)
+ 			ss->bind(css);
+@@ -1069,7 +1072,7 @@ static int cgroup_show_options(struct seq_file *seq,
+ 	int ssid;
+ 
+ 	for_each_subsys(ss, ssid)
+-		if (root->cgrp.subsys_mask & (1 << ssid))
++		if (root->subsys_mask & (1 << ssid))
+ 			seq_printf(seq, ",%s", ss->name);
+ 	if (root->flags & CGRP_ROOT_SANE_BEHAVIOR)
+ 		seq_puts(seq, ",sane_behavior");
+@@ -1273,12 +1276,12 @@ static int cgroup_remount(struct kernfs_root *kf_root, int *flags, char *data)
+ 	if (ret)
+ 		goto out_unlock;
+ 
+-	if (opts.subsys_mask != root->cgrp.subsys_mask || opts.release_agent)
++	if (opts.subsys_mask != root->subsys_mask || opts.release_agent)
+ 		pr_warning("cgroup: option changes via remount are deprecated (pid=%d comm=%s)\n",
+ 			   task_tgid_nr(current), current->comm);
+ 
+-	added_mask = opts.subsys_mask & ~root->cgrp.subsys_mask;
+-	removed_mask = root->cgrp.subsys_mask & ~opts.subsys_mask;
++	added_mask = opts.subsys_mask & ~root->subsys_mask;
++	removed_mask = root->subsys_mask & ~opts.subsys_mask;
+ 
+ 	/* Don't allow flags or name to change at remount */
+ 	if (((opts.flags ^ root->flags) & CGRP_ROOT_OPTION_MASK) ||
+@@ -1534,7 +1537,7 @@ retry:
+ 		 * subsystems) then they must match.
+ 		 */
+ 		if ((opts.subsys_mask || opts.none) &&
+-		    (opts.subsys_mask != root->cgrp.subsys_mask)) {
++		    (opts.subsys_mask != root->subsys_mask)) {
+ 			if (!name_match)
+ 				continue;
+ 			ret = -EBUSY;
+@@ -3640,8 +3643,6 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	cgroup_get(cgrp);
+ 	css_get(css->parent);
+ 
+-	cgrp->subsys_mask |= 1 << ss->id;
+-
+ 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+ 	    parent->parent) {
+ 		pr_warning("cgroup: %s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
+@@ -3755,13 +3756,15 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 
+ 	/* let's create and online css's */
+ 	for_each_subsys(ss, ssid) {
+-		if (root->cgrp.subsys_mask & (1 << ssid)) {
++		if (parent->child_subsys_mask & (1 << ssid)) {
+ 			err = create_css(cgrp, ss);
+ 			if (err)
+ 				goto err_destroy;
+ 		}
+ 	}
+ 
++	cgrp->child_subsys_mask = parent->child_subsys_mask;
++
+ 	kernfs_activate(kn);
+ 
+ 	mutex_unlock(&cgroup_mutex);
+@@ -3857,7 +3860,16 @@ static void css_killed_ref_fn(struct percpu_ref *ref)
+ 	queue_work(cgroup_destroy_wq, &css->destroy_work);
+ }
+ 
+-static void __kill_css(struct cgroup_subsys_state *css)
++/**
++ * kill_css - destroy a css
++ * @css: css to destroy
++ *
++ * This function initiates destruction of @css by removing cgroup interface
++ * files and putting its base reference.  ->css_offline() will be invoked
++ * asynchronously once css_tryget() is guaranteed to fail and when the
++ * reference count reaches zero, @css will be released.
++ */
++static void kill_css(struct cgroup_subsys_state *css)
+ {
+ 	lockdep_assert_held(&cgroup_tree_mutex);
+ 
+@@ -3887,28 +3899,6 @@ static void __kill_css(struct cgroup_subsys_state *css)
+ }
+ 
+ /**
+- * kill_css - destroy a css
+- * @css: css to destroy
+- *
+- * This function initiates destruction of @css by removing cgroup interface
+- * files and putting its base reference.  ->css_offline() will be invoked
+- * asynchronously once css_tryget() is guaranteed to fail and when the
+- * reference count reaches zero, @css will be released.
+- */
+-static void kill_css(struct cgroup_subsys_state *css)
+-{
+-	struct cgroup *cgrp = css->cgroup;
+-
+-	lockdep_assert_held(&cgroup_tree_mutex);
+-
+-	/* if already killed, noop */
+-	if (cgrp->subsys_mask & (1 << css->ss->id)) {
+-		cgrp->subsys_mask &= ~(1 << css->ss->id);
+-		__kill_css(css);
+-	}
+-}
+-
+-/**
+  * cgroup_destroy_locked - the first stage of cgroup destruction
+  * @cgrp: cgroup to be destroyed
+  *
+@@ -4120,7 +4110,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 
+ 	BUG_ON(online_css(css));
+ 
+-	cgrp_dfl_root.cgrp.subsys_mask |= 1 << ss->id;
++	cgrp_dfl_root.subsys_mask |= 1 << ss->id;
+ 
+ 	mutex_unlock(&cgroup_mutex);
+ 	mutex_unlock(&cgroup_tree_mutex);
+@@ -4277,7 +4267,7 @@ int proc_cgroup_show(struct seq_file *m, void *v)
+ 
+ 		seq_printf(m, "%d:", root->hierarchy_id);
+ 		for_each_subsys(ss, ssid)
+-			if (root->cgrp.subsys_mask & (1 << ssid))
++			if (root->subsys_mask & (1 << ssid))
+ 				seq_printf(m, "%s%s", count++ ? "," : "", ss->name);
+ 		if (strlen(root->name))
+ 			seq_printf(m, "%sname=%s", count ? "," : "",
+-- 
+1.8.5.3
+
