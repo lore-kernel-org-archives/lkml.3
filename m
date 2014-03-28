@@ -1,69 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752767AbaC1Rak (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51154 "EHLO
+	id S1753725AbaC1Rzv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:55:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51194 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaC1Rad (ORCPT
+	with ESMTP id S1752752AbaC1Rak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:33 -0400
+	Fri, 28 Mar 2014 13:30:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3.4 12/13] xhci: Fix resume issues on Renesas chips in Samsung laptops
-Date: Fri, 28 Mar 2014 10:32:02 -0700
-Message-Id: <20140328173054.688323809@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.10 07/22] libceph: resend all writes after the osdmap loses the full flag
+Date: Fri, 28 Mar 2014 10:31:59 -0700
+Message-Id: <20140328173110.411299850@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
-References: <20140328173053.049244535@linuxfoundation.org>
+In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
+References: <20140328173109.378288825@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d upstream.
+commit 9a1ea2dbff11547a8e664f143c1ffefc586a577a upstream.
 
-Don Zickus <dzickus@redhat.com> writes:
+With the current full handling, there is a race between osds and
+clients getting the first map marked full. If the osd wins, it will
+return -ENOSPC to any writes, but the client may already have writes
+in flight. This results in the client getting the error and
+propagating it up the stack. For rbd, the block layer turns this into
+EIO, which can cause corruption in filesystems above it.
 
-Some co-workers of mine bought Samsung laptops that had mostly usb3 ports.
-Those ports did not resume correctly (the driver would timeout communicating
-and fail).  This led to frustration as suspend/resume is a common use for
-laptops.
+To avoid this race, osds are being changed to drop writes that came
+from clients with an osdmap older than the last osdmap marked full.
+In order for this to work, clients must resend all writes after they
+encounter a full -> not full transition in the osdmap. osds will wait
+for an updated map instead of processing a request from a client with
+a newer map, so resent writes will not be dropped by the osd unless
+there is another not full -> full transition.
 
-Poking around, I applied the reset on resume quirk to this chipset and the
-resume started working.  Reloading the xhci_hcd module had been the temporary
-workaround.
+This approach requires both osds and clients to be fixed to avoid the
+race. Old clients talking to osds with this fix may hang instead of
+returning EIO and potentially corrupting an fs. New clients talking to
+old osds have the same behavior as before if they encounter this race.
 
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Prarit Bhargava <prarit@redhat.com>
+Fixes: http://tracker.ceph.com/issues/6938
+
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ceph/osd_client.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -109,6 +109,11 @@ static void xhci_pci_quirks(struct devic
- 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
-+			pdev->device == 0x0015 &&
-+			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
-+			pdev->subsystem_device == 0xc0cd)
-+		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- }
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1629,14 +1629,17 @@ static void reset_changed_osds(struct ce
+  *
+  * Caller should hold map_sem for read.
+  */
+-static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
++static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
++			  bool force_resend_writes)
+ {
+ 	struct ceph_osd_request *req, *nreq;
+ 	struct rb_node *p;
+ 	int needmap = 0;
+ 	int err;
++	bool force_resend_req;
+ 
+-	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
++	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
++		force_resend_writes ? " (force resend writes)" : "");
+ 	mutex_lock(&osdc->request_mutex);
+ 	for (p = rb_first(&osdc->requests); p; ) {
+ 		req = rb_entry(p, struct ceph_osd_request, r_node);
+@@ -1661,7 +1664,10 @@ static void kick_requests(struct ceph_os
+ 			continue;
+ 		}
+ 
+-		err = __map_request(osdc, req, force_resend);
++		force_resend_req = force_resend ||
++			(force_resend_writes &&
++				req->r_flags & CEPH_OSD_FLAG_WRITE);
++		err = __map_request(osdc, req, force_resend_req);
+ 		if (err < 0)
+ 			continue;  /* error */
+ 		if (req->r_osd == NULL) {
+@@ -1681,7 +1687,8 @@ static void kick_requests(struct ceph_os
+ 				 r_linger_item) {
+ 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
+ 
+-		err = __map_request(osdc, req, force_resend);
++		err = __map_request(osdc, req,
++				    force_resend || force_resend_writes);
+ 		dout("__map_request returned %d\n", err);
+ 		if (err == 0)
+ 			continue;  /* no change and no osd was specified */
+@@ -1723,6 +1730,7 @@ void ceph_osdc_handle_map(struct ceph_os
+ 	struct ceph_osdmap *newmap = NULL, *oldmap;
+ 	int err;
+ 	struct ceph_fsid fsid;
++	bool was_full;
+ 
+ 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
+ 	p = msg->front.iov_base;
+@@ -1736,6 +1744,8 @@ void ceph_osdc_handle_map(struct ceph_os
+ 
+ 	down_write(&osdc->map_sem);
+ 
++	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
++
+ 	/* incremental maps */
+ 	ceph_decode_32_safe(&p, end, nr_maps, bad);
+ 	dout(" %d inc maps\n", nr_maps);
+@@ -1760,7 +1770,10 @@ void ceph_osdc_handle_map(struct ceph_os
+ 				ceph_osdmap_destroy(osdc->osdmap);
+ 				osdc->osdmap = newmap;
+ 			}
+-			kick_requests(osdc, 0);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, 0, was_full);
+ 		} else {
+ 			dout("ignoring incremental map %u len %d\n",
+ 			     epoch, maplen);
+@@ -1803,7 +1816,10 @@ void ceph_osdc_handle_map(struct ceph_os
+ 					skipped_map = 1;
+ 				ceph_osdmap_destroy(oldmap);
+ 			}
+-			kick_requests(osdc, skipped_map);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, skipped_map, was_full);
+ 		}
+ 		p += maplen;
+ 		nr_maps--;
 
 
