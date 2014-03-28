@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753345AbaC1VVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:21:14 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41031 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaC1VVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:21:10 -0400
-Date: Fri, 28 Mar 2014 17:21:07 -0400 (EDT)
-Message-Id: <20140328.172107.16072208664321602.davem@davemloft.net>
-To: teg@jklm.no
-Cc: dh.herrmann@gmail.com, netdev@vger.kernel.org, johannes@sipsolutions.net,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
-References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
-	<20140328.145410.1817326821928803131.davem@davemloft.net>
-	<CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753161AbaC1V1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:27:20 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53238 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752051AbaC1V1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 17:27:19 -0400
+Message-ID: <1396041923.11529.23.camel@pasglop>
+Subject: Re: [PATCH] powerpc/irq: Remove HAVE_IRQ_EXIT_ON_IRQ_STACK feature
+ at powerpc platform
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Dongsheng Wang <dongsheng.wang@freescale.com>
+Cc: fweisbec@gmail.com, scottwood@freescale.com, leoli@freescale.com,
+        jason.jin@freescale.com, tie-fei.zang@freescale.com,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Paul Mackerras <paulus@au1.ibm.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        "James E.J. Bottomley" <jejb@parisc-linux.org>,
+        Helge Deller <deller@gmx.de>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Date: Sat, 29 Mar 2014 08:25:23 +1100
+In-Reply-To: <1395992312-23035-1-git-send-email-dongsheng.wang@freescale.com>
+References: <1395992312-23035-1-git-send-email-dongsheng.wang@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 14:21:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Gundersen <teg@jklm.no>
-Date: Fri, 28 Mar 2014 21:51:53 +0100
-
-> On Fri, Mar 28, 2014 at 7:54 PM, David Miller <davem@davemloft.net> wrote:
->> From: David Herrmann <dh.herrmann@gmail.com>
->> Date: Wed, 26 Mar 2014 14:05:13 +0100
->>
->>> The main use-case is to allow udev to skip applying reliable ifnames to virtual
->>> devices. For instance, if wifi-P2P devices are created, wpas already provides a
->>> suitable naming-policy and udev shouldn't touch these devices. Same is true for
->>> other virtual devices.
->>
->> This makes no sense at all.
->>
->> If udev should avoid applying names to wifi-P2P devices, that policy can
->> be instituted completely inside of udev.  There is no need whatsoever
->> for kernel support.
->>
->> udev can look at the device type, and policies can be defined that key
->> off of that device type, entirely in userspace.
+On Fri, 2014-03-28 at 15:38 +0800, Dongsheng Wang wrote:
+> From: Wang Dongsheng <dongsheng.wang@freescale.com>
 > 
-> Doing this in userspace sounds really wrong and fragile.
-> 
-> In the case of wifi-P2P we could make it work, but for every type of
-> device that is added to the kernel which is named from userspace, we
-> would have to play catch-up in udev (and even after we do, new kernels
-> on old userspace will never work in the expected way).
+> If softirq use hardirq stack, we will get kernel painc when a hard irq coming again
+> during __do_softirq enable local irq to deal with softirq action. So we need to switch
+> satck into softirq stack when invoke soft irq.
 
-Chronically we are finding hackish ways for seperate components in
-userspace to coordinate their actions.
+Yes, an interrupt can potentially nest but we should be near the top of
+the stack at that point, as the comment says in softirq.c, it should
+be fine. And your backtrace doesn't seem to indicate a major overflow.
 
-You're right, doing this for every device type for every single attribute
-that might better.... sucks.
+The code in do_IRQ() will make sure we don't switch stack again if
+we were already on either hard or softirq stack.
 
-What's really needed is generic ways for seperate userspace components
-to coordinate with eachother on issues like this.
+I need a better analysis of your problem. Is that really a stack
+overflow ? Or is it a false positive due to a bug in the overflow
+detection ?
+
+I moved around the code that updates KSP_LIMIT in 32-bit to asm in
+misc_32.S a while ago since we don't do that on 64-bit, maybe we are
+getting it wrong...
+
+Cheers,
+Ben.
+
+
