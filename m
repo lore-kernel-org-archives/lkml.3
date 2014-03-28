@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993AbaC1Kga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:36:30 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:51325 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751797AbaC1KgW (ORCPT
+	id S1751427AbaC1KnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:43:20 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61585 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaC1KnT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:36:22 -0400
-From: Harini Katakam <harinik@xilinx.com>
-To: wim@iguana.be, grant.likely@linaro.org, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net
-Cc: michals@xilinx.com, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, Harini Katakam <harinik@xilinx.com>
-Subject: [PATCH 2/2] devicetree: Add Cadence WDT devicetree bindings documentation
-Date: Fri, 28 Mar 2014 16:06:08 +0530
-Message-Id: <1396002968-7158-2-git-send-email-harinik@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396002968-7158-1-git-send-email-harinik@xilinx.com>
-References: <1396002968-7158-1-git-send-email-harinik@xilinx.com>
+	Fri, 28 Mar 2014 06:43:19 -0400
+MIME-Version: 1.0
+Date: Fri, 28 Mar 2014 16:13:18 +0530
+Message-ID: <CAKohpo=L8ZiR67OR0Sz0LeGdRxn92rfbJbsHd-ybt==MwfQJ3Q@mail.gmail.com>
+Subject: [Query]: hrtimer: Does switch_hrtimer_base() need to check hrtimer_check_target()?
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linaro Networking <linaro-networking@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add cadence-wdt bindings documentation.
+Hi Thomas,
 
-Signed-off-by: Harini Katakam <harinik@xilinx.com>
----
- .../devicetree/bindings/watchdog/cadence-wdt.txt   |   26 ++++++++++++++++++++
- 1 file changed, 26 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
+I couldn't understand one part of hrtimer (obviously there are
+others as well, but here I am sure I couldn't understood it :)).
 
-diff --git a/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-new file mode 100644
-index 0000000..1f7a732
---- /dev/null
-+++ b/Documentation/devicetree/bindings/watchdog/cadence-wdt.txt
-@@ -0,0 +1,26 @@
-+Zynq Watchdog Device Tree Bindings
-+-------------------------------------------
-+
-+Required properties:
-+- compatible		: Should be "xlnx,zynq-wdt-r1p2" or "cdns,wdt-r1p2".
-+- clocks		: Clock phandles (see clock bindings for details).
-+- reg			: Physical base address and size of WDT registers map.
-+- interrupts		: Property with a value describing the interrupt
-+			  number.
-+- interrupt-parent	: Must be core interrupt controller.
-+
-+Optional properties
-+- reset			: Reset interrupt.
-+- timeout-sec		: Watchdog timeout value (in seconds).
-+
-+Example:
-+
-+		wdt@f8005000 {
-+			compatible = "xlnx,zynq-wdt-r1p2";
-+			clocks = <&clkc 45>;
-+			interrupt-parent = <&intc>;
-+			interrupts = <0 9 1>;
-+			reg = <0xf8005000 0x1000>;
-+			reset = <0>;
-+			timeout-sec = <10>;
-+		} ;
--- 
-1.7.9.5
+In switch_hrtimer_base() we are calling hrtimer_check_target()
+which guarantees this:
 
+/*
+ * With HIGHRES=y we do not migrate the timer when it is expiring
+ * before the next event on the target cpu because we cannot reprogram
+ * the target cpu hardware and we would cause it to fire late.
+ *
+ * Called with cpu_base->lock of target cpu held.
+ */
+
+But switch_hrtimer_base() is only called from one place, i.e.
+__hrtimer_start_range_ns() and at the point (where we call
+switch_hrtimer_base()) expiration time is not yet known as
+we call this routine later:
+
+hrtimer_set_expires_range_ns()
+
+So, do we really need to call hrtimer_check_target() at all
+in switch_hrtimer_base()? Or do we need to move
+hrtimer_set_expires_range_ns() before calling
+switch_hrtimer_base() ??
+
+--
+viresh
