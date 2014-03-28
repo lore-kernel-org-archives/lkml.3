@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaC1TT0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 15:19:26 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:61748 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaC1TTY (ORCPT
+	id S1752568AbaC1Teu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 15:34:50 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:51912 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbaC1Tes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 15:19:24 -0400
+	Fri, 28 Mar 2014 15:34:48 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140328185653.GB26433@quad.lixom.net>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
-	<20140328185653.GB26433@quad.lixom.net>
-Date: Fri, 28 Mar 2014 14:19:23 -0500
-Message-ID: <CAL_JsqKFO+OSz83f=XdyKgCqByUvHe7qLzgn5QLU1x1V1A5Fng@mail.gmail.com>
-Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
-From: Rob Herring <robherring2@gmail.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@linaro.org>
+In-Reply-To: <20140328.145410.1817326821928803131.davem@davemloft.net>
+References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+	<20140328.145410.1817326821928803131.davem@davemloft.net>
+Date: Fri, 28 Mar 2014 20:34:47 +0100
+Message-ID: <CANq1E4TxaNnZoqfw5DiifAhk28hVq5HJJMd07ZDFAjdc68nKKg@mail.gmail.com>
+Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
+From: David Herrmann <dh.herrmann@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev <netdev@vger.kernel.org>, Tom Gundersen <teg@jklm.no>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 1:56 PM, Olof Johansson <olof@lixom.net> wrote:
-> On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
->> Hi all,
->>
->> This is a series that I've been playing with over the last few days to
->> clean up the selection of default console devices when using the device
->> tree. The device tree defines a way of specifying the console by using a
->> "stdout-path" property in the /chosen node, but very few drivers
->> actually attempt to use that data, and so for most platforms there needs
->> to be a "console=" line in the command line if a serial port is intended
->> to be used as the console.
->>
->> With this series, if there is a /chosen/stdout-path property, and if
->> that property points to a serial port node, then when the serial driver
->> registers the port, the core uart_add_one_port() function will notice
->> and if no console= argument was provided then add it as a preferred
->> console.
->>
->> I've not tested this very extensively yet, but I want to get some
->> feedback before I go further.
->>
->> The one downside with this approach is that it doesn't do anything for
->> early console setup. That still needs to be added on a per-driver basis,
->> but at least it shouldn't conflict with this approach.
+Hi
 
-I'm working on the early aspect. I've got things working with either
-command line (which I sent out recently) and with parsing the FDT
-(which I haven't sent out yet).
+On Fri, Mar 28, 2014 at 7:54 PM, David Miller <davem@davemloft.net> wrote:
+> udev can look at the device type, and policies can be defined that key
+> off of that device type, entirely in userspace.
 
-> Looks sane to me (as discussed in person). I gave it a run on PWRficient with
-> and without console= line (8250-based uart), and it behaved as expected.
->
-> A couple of nits on the series, replied to two of the patches.
->
-> I'll give it a run through the board farm here too, but I'll keep console=
-> bootargs there for those boots at this time, too much to change to take it out
-> everywhere. :-)
+Regarding wifi-P2P devices, udev can indeed use nl80211 to get the
+exact IF-type. An attribute would be much easier to read out, but I'm
+ok if we don't want to replicate that information.
 
-It would be good to know if removing console= causes userspace any
-issues. For example, if getty's were setup based on console params. I
-know ubuntu does some detection of serial ports, but I don't recall
-what it looks at. Hopefully it's just checking /dev nodes.
+However, as mentioned in the discussions on v1, there're more
+use-cases than that. Imagine a 3rd party initrd renames a
+network-device early, if udev runs in the main system, we would rename
+the device again. If we could detect the rename via NET_NAME_RENAMED,
+we wouldn't break such setups. The only reason to rename devices in
+udev is to get reliable names. If someone else already renamed a
+device, we always expect them to provide better names than we do, so
+udev should only touch devices that have kernel-enumerated names.
+Of course, this can be fixed by requiring all the initrd developers to
+somehow tag devices as already renamed. But this would replicate
+information that the kernel already has.
 
-Rob
+Another example are dynamically created devices via RTM_NEWLINK. The
+if-names are provided by user-space and udev should never try to do
+any magic renaming on them (why would we? you can just easily fix the
+code that created the device).
+
+So it turns out, all we want to know is whether an interface-name was
+chosen by the kernel via plain, simple enumeration, or whether it has
+a user-space origin. Only in the former case we want to rename the
+device. The name_assign_type attribute tells us exactly where a name
+comes from and thus avoids maintaining blacklists in user-space that
+skip renaming on such devices. I'm sorry, but I cannot see why such
+blacklists (or whitelists) are preferred over a sysfs attribute.
+
+Thanks
+David
