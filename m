@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583AbaC1QJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 12:09:30 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:37202 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752079AbaC1QJ2 (ORCPT
+	id S1752628AbaC1QKB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 12:10:01 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:36661 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167AbaC1QIQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 12:09:28 -0400
-Date: Fri, 28 Mar 2014 09:09:24 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Christopher Heiny <cheiny@synaptics.com>,
-        Andrew Duggan <aduggan@synaptics.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Stephen Chandler Paul <thatslyude@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH] Input: synaptics add manual min/max quirk
-Message-ID: <20140328160924.GB22658@core.coreip.homeip.net>
-References: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
- <20140328082949.GJ22093@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140328082949.GJ22093@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 28 Mar 2014 12:08:16 -0400
+From: Grant Likely <grant.likely@linaro.org>
+To: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
+        linux-kernel@vger.kernel.org, olof@lixom.net, benh@kernel.crashing.org,
+        rob.herring@linaro.org
+Cc: Grant Likely <grant.likely@linaro.org>
+Subject: [RFC 3/5] of: Enable console on serial ports specified by /chosen/stdout-path
+Date: Fri, 28 Mar 2014 09:08:03 -0700
+Message-Id: <1396022885-6102-4-git-send-email-grant.likely@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
+References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 01:29:50AM -0700, Dmitry Torokhov wrote:
-> On Fri, Mar 07, 2014 at 10:49:24AM -0500, Benjamin Tissoires wrote:
-> > The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
-> > However, these new Synaptics devices report bad axis ranges.
-> > Under Windows, it is not a problem because the Windows driver uses RMI4
-> > over SMBus to talk to the device. Under Linux, we are using the PS/2
-> > fallback interface and it occurs the reported ranges are wrong.
-> > 
-> > Of course, it would be too easy to have only one range for the whole
-> > series, each touchpad seems to be calibrated in a different way.
-> > 
-> > We can not use SMBus to get the actual range because I suspect the firmware
-> > will switch into the SMBus mode and stop talking through PS/2 (this is the
-> > case for hybrid HID over I2C / PS/2 Synaptics touchpads).
-> > 
-> > So as a temporary solution (until RMI4 land into upstream), start a new
-> > list of quirks with the min/max manually set.
-> > 
-> > Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> > CC: stable@vger.kernel.org
-> 
-> 
-> Applied, thank you.
+If the devicetree specifies a serial port as a stdout device, then the
+kernel can use it as the default console if nothing else was selected on
+the command line. For any serial port that uses the uart_add_one_port()
+feature, the uart_add_one_port() has all the information needed to
+automatically enable the console device, which is what this patch does.
 
-That was giving compiler errors when configured without synaptics
-support so I had fiddle with the patch a bit. I'll take full
-responsibility for any breakage ;)
+With this change applied, a device tree platform can be booted without
+any console= parameters on the command line and the kernel will still be
+able to determine its console.
 
-Thanks.
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
+---
+ drivers/tty/serial/serial_core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
+diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
+index ece2049bd270..2fac7593d7b2 100644
+--- a/drivers/tty/serial/serial_core.c
++++ b/drivers/tty/serial/serial_core.c
+@@ -26,6 +26,7 @@
+ #include <linux/slab.h>
+ #include <linux/init.h>
+ #include <linux/console.h>
++#include <linux/of.h>
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+ #include <linux/device.h>
+@@ -2604,6 +2605,8 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
+ 		spin_lock_init(&uport->lock);
+ 		lockdep_set_class(&uport->lock, &port_lock_key);
+ 	}
++	if (uport->cons && uport->dev)
++		of_console_check(uport->dev->of_node, uport->cons->name, uport->line);
+ 
+ 	uart_configure_port(drv, state, uport);
+ 
 -- 
-Dmitry
+1.8.3.2
+
