@@ -1,111 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751284AbaC1WP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 18:15:26 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:59790
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751125AbaC1WPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 18:15:24 -0400
-X-Greylist: delayed 948 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Mar 2014 18:15:23 EDT
-Message-ID: <1396043847.27583.3.camel@linux-builds1>
-Subject: Re: [PATCH 1/2] dt/bindings: add binding for ARM Versatile
- character LCD
-From: Dinh Nguyen <dinguyen@altera.com>
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kumar Gala <galak@codeaurora.org>
-Date: Fri, 28 Mar 2014 16:57:27 -0500
-In-Reply-To: <CAL_JsqLKti+1WCvt2kAMpic0u1zRtVJ-ZBvp2BasPx847ZDKLQ@mail.gmail.com>
-References: <1396041629-28820-1-git-send-email-robherring2@gmail.com>
-	 <1396042524.27583.0.camel@linux-builds1>
-	 <CAL_JsqLKti+1WCvt2kAMpic0u1zRtVJ-ZBvp2BasPx847ZDKLQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: =?utf-8?B?Q0lQOjY2LjM1LjIzNi4yMzI7Q1RSWTpVUztJUFY6TkxJO0VGVjpOTEk7U0ZW?=
- =?utf-8?B?Ok5TUE07U0ZTOigxMDAxOTAwMSkoNjAwOTAwMSkoNDU4MDAxKSg1MTcwNDAw?=
- =?utf-8?B?NSkoMzc3NDI0MDA0KSgxOTkwMDIpKDE4OTAwMikoMzc3NDU0MDAzKSgyNDQ1?=
- =?utf-8?B?NDAwMikoOTg2NzYwMDEpKDYyOTY2MDAyKSg4NTg1MjAwMykoODcyODYwMDEp?=
- =?utf-8?B?KDU2ODE2MDA1KSg5MzEzNjAwMSkoODE1NDIwMDEpKDYzNjk2MDAyKSgyMDc3?=
- =?utf-8?B?NjAwMykoNTA0NjYwMDIpKDg1MzA2MDAyKSg4NDY3NjAwMSkoNzQ3MDYwMDEp?=
- =?utf-8?B?KDkyNzI2MDAxKSg4NzI2NjAwMSkoNDk4NjYwMDEpKDQzOTYwMDEpKDc0NTAy?=
- =?utf-8?B?MDAxKSg3NDM2NjAwMSkoNjkyMjYwMDEpKDUwOTg2MDAxKSg5MjU2NjAwMSko?=
- =?utf-8?B?NDc3MzYwMDEpKDgxODE2MDAxKSg0NDk3NjAwNSkoNjU4MTYwMDEpKDg3OTM2?=
- =?utf-8?B?MDAxKSg3OTEwMjAwMSkoNzcwOTYwMDEpKDc2Nzg2MDAxKSg4MzMyMjAwMSko?=
- =?utf-8?B?NDYxMDIwMDEpKDc2Nzk2MDAxKSg4MTY4NjAwMSkoNDc5NzYwMDEpKDk1NDE2?=
- =?utf-8?B?MDAxKSg4MTM0MjAwMSkoODAwMjIwMDEpKDk3NzM2MDAxKSg5NzMzNjAwMSko?=
- =?utf-8?B?OTcxODYwMDEpKDk0MzE2MDAyKSg3NzE1NjAwMSkoMzE5NjYwMDgpKDkzOTE2?=
- =?utf-8?B?MDAyKSgzMzcxNjAwMSkoOTU2NjYwMDMpKDE0MTEwMDEpKDMzNjQ2MDAxKSg1?=
- =?utf-8?B?NDMxNjAwMikoNTM4MDYwMDEpKDgwOTc2MDAxKSg1MDIyNjAwMSkoODk5OTYw?=
- =?utf-8?B?MDEpKDQ3Nzc2MDAzKSg3NDY2MjAwMSkoNTk3NjYwMDEpKDkwMTQ2MDAxKSg4?=
- =?utf-8?B?MzA3MjAwMikoNzQ4NzYwMDEpKDIzNjc2MDAyKSg2ODA2MDA0KSgyMDA5MDAx?=
- =?utf-8?B?KSg4NjM2MjAwMSkoNzY0ODIwMDEpKDU2Nzc2MDAxKSg3Nzk4MjAwMSkoNDc0?=
- =?utf-8?B?NDYwMDIpKDg4MTM2MDAyKSg1MTg1NjAwMSkoOTM1MTYwMDIpKDE5NTgwNDA1?=
- =?utf-8?B?MDAxKSg5NDk0NjAwMSkoMTk1ODAzOTUwMDMpO0RJUjpPVVQ7U0ZQOjExMDI7?=
- =?utf-8?B?U0NMOjE7U1JWUjpCTDJGRk8xMUhVQjAzMztIOlNKLUlURVhFREdFMDIuYWx0?=
- =?utf-8?B?ZXJhLnByaXYuYWx0ZXJhLmNvbTtGUFI6QUU0N0U2QjAuQjRENkRDMjkuMzRE?=
- =?utf-8?B?QUIzMC40NDg0MUU3MS4yMDI1MDtNTFY6c2Z2O1BUUjpJbmZvRG9tYWluTm9u?=
- =?utf-8?Q?existent;A:1;MX:1;LANG:en;?=
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 01644DCF4A
+	id S1751324AbaC1WVn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 18:21:43 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:32793 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095AbaC1WVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 18:21:42 -0400
+From: Conrad Meyer <cemeyer@uw.edu>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: linux-kernel@vger.kernel.org, Mark <markk@clara.co.uk>,
+        Conrad Meyer <cse.cem@gmail.com>
+Subject: [PATCH] fs: FAT: Add support for DOS 1.x formatted volumes
+Date: Fri, 28 Mar 2014 15:21:30 -0700
+Message-Id: <1396045290-9795-1-git-send-email-cse.cem@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 16:48 -0500, Rob Herring wrote:
-> On Fri, Mar 28, 2014 at 4:35 PM, Dinh Nguyen <dinguyen@altera.com> wrote:
-> > On Fri, 2014-03-28 at 16:20 -0500, Rob Herring wrote:
-> >> From: Rob Herring <robh@kernel.org>
-> >>
-> >> Add binding doc for Versatile platforms character LCD controller
-> >> interface.
-> >>
-> >> Signed-off-by: Rob Herring <robh@kernel.org>
-> >> Cc: Pawel Moll <pawel.moll@arm.com>
-> >> Cc: Mark Rutland <mark.rutland@arm.com>
-> >> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> >> Cc: Kumar Gala <galak@codeaurora.org>
-> >> ---
-> >>  Documentation/devicetree/bindings/misc/arm-charlcd.txt | 18 ++++++++++++++++++
-> >>  1 file changed, 18 insertions(+)
-> >>  create mode 100644 Documentation/devicetree/bindings/misc/arm-charlcd.txt
-> >>
-> >> diff --git a/Documentation/devicetree/bindings/misc/arm-charlcd.txt b/Documentation/devicetree/bindings/misc/arm-charlcd.txt
-> >> new file mode 100644
-> >> index 0000000..e28e2aa
-> >> --- /dev/null
-> >> +++ b/Documentation/devicetree/bindings/misc/arm-charlcd.txt
-> >> @@ -0,0 +1,18 @@
-> >> +ARM Versatile Character LCD
-> >> +-----------------------------------------------------
-> >> +This binding defines the character LCD interface found on ARM Versatile AB
-> >> +and PB reference platforms.
-> >> +
-> >> +Required properties:
-> >> +- compatible : "arm,versatile-clcd"
-> >
-> > Should this be "arm,versatile-lcd"?
-> 
-> Make up your mind. ;) -lcd is what is already used in the dts, but
-> since there was no driver support it should be okay to change the dts.
-> If we're changing, I think I'll change it to "arm,versatile-char-lcd".
-> 'c' alone could just mean color.
+When possible, infer DOS 2.x BIOS Parameter Block from block device
+geometry (for floppies and floppy images). Update in-memory only. We
+only perform this update when the entire BPB region is zeroed, like
+produced by DOS 1.x-era FORMAT (and other OEM variations on DOS).
 
-Sorry...what I meant was that in your patch, the examples was using
-"lcd", and here's its "clcd". Then your 2/2 patch is using "lcd".
+Fixes kernel.org bug #42617.
 
-Dinh
-> 
-> Rob
+BPB default values are inferred from media size and a table.[0] Media
+size is assumed to be static for archaic FAT volumes. See also [1].
 
+[0]: https://en.wikipedia.org/wiki/File_Allocation_Table#Exceptions
+[1]: http://www.win.tue.nl/~aeb/linux/fs/fat/fat-1.html
+
+Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
+---
+Diff is from Linus' v3.14-rc8.
+
+I am a kernel newbie, apologies in advance for newbie mistakes. Let me know
+what is wrong and I will fix it and learn.
+
+Thanks!
+---
+ fs/fat/inode.c | 62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 62 insertions(+)
+
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 854b578..f3686d6 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -35,6 +35,8 @@
+ #define CONFIG_FAT_DEFAULT_IOCHARSET	""
+ #endif
+ 
++#define KB_IN_SECTORS 2
++
+ static int fat_default_codepage = CONFIG_FAT_DEFAULT_CODEPAGE;
+ static char fat_default_iocharset[] = CONFIG_FAT_DEFAULT_IOCHARSET;
+ 
+@@ -1246,6 +1248,63 @@ static unsigned long calc_fat_clusters(struct super_block *sb)
+ }
+ 
+ /*
++ * If this FAT filesystem is archaic (lacking a BIOS Parameter Block, ca. DOS
++ * 1.x), fix it up in-place by creating a DOS 2.x BIOS Parameter Block from
++ * defaults for the media size.
++ */
++static void fat_update_archaic_boot_sector(struct super_block *sb,
++	struct fat_boot_sector *b)
++{
++	sector_t bd_sects;
++
++	if (get_unaligned_le16(&b->sector_size) != 0 || b->sec_per_clus != 0 ||
++		b->reserved != 0 || b->fats != 0 ||
++		get_unaligned_le16(&b->dir_entries) != 0 ||
++		get_unaligned_le16(&b->sectors) != 0 || b->media != 0 ||
++		b->fat_length != 0 || b->secs_track != 0 || b->heads != 0 ||
++		b->secs_track != 0 || b->heads != 0)
++		return;
++
++	bd_sects = part_nr_sects_read(sb->s_bdev->bd_part);
++	switch (bd_sects) {
++	case 160 * KB_IN_SECTORS:
++		b->sec_per_clus = 1;
++		put_unaligned_le16(64, &b->dir_entries);
++		b->media = 0xFE;
++		b->fat_length = cpu_to_le16(1);
++		break;
++	case 180 * KB_IN_SECTORS:
++		b->sec_per_clus = 1;
++		put_unaligned_le16(64, &b->dir_entries);
++		b->media = 0xFC;
++		b->fat_length = cpu_to_le16(2);
++		break;
++	case 320 * KB_IN_SECTORS:
++		b->sec_per_clus = 2;
++		put_unaligned_le16(112, &b->dir_entries);
++		b->media = 0xFF;
++		b->fat_length = cpu_to_le16(1);
++		break;
++	case 360 * KB_IN_SECTORS:
++		b->sec_per_clus = 2;
++		put_unaligned_le16(112, &b->dir_entries);
++		b->media = 0xFD;
++		b->fat_length = cpu_to_le16(2);
++		break;
++	default:
++		fat_msg(sb, KERN_WARNING,
++			"DOS volume lacks BPB and isn't a recognized floppy size (%ld sectors)",
++			(long)bd_sects);
++		return;
++	}
++
++	put_unaligned_le16(SECTOR_SIZE, &b->sector_size);
++	b->reserved = cpu_to_le16(1);
++	b->fats = 2;
++	put_unaligned_le16(bd_sects, &b->sectors);
++}
++
++/*
+  * Read the super block of an MS-DOS FS.
+  */
+ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+@@ -1297,6 +1356,8 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 	}
+ 
+ 	b = (struct fat_boot_sector *) bh->b_data;
++	fat_update_archaic_boot_sector(sb, b);
++
+ 	if (!b->reserved) {
+ 		if (!silent)
+ 			fat_msg(sb, KERN_ERR, "bogus number of reserved sectors");
+@@ -1364,6 +1425,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
+ 			goto out_fail;
+ 		}
+ 		b = (struct fat_boot_sector *) bh->b_data;
++		fat_update_archaic_boot_sector(sb, b);
+ 	}
+ 
+ 	mutex_init(&sbi->s_lock);
+-- 
+1.9.0
 
