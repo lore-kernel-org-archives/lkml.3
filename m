@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196AbaC1RbK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51343 "EHLO
+	id S1753390AbaC1Rb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:31:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51483 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119AbaC1RbD (ORCPT
+	with ESMTP id S1753337AbaC1Rb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:03 -0400
+	Fri, 28 Mar 2014 13:31:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.13 15/46] libceph: resend all writes after the osdmap loses the full flag
-Date: Fri, 28 Mar 2014 10:31:59 -0700
-Message-Id: <20140328173136.713645652@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.13 44/46] libceph: rename ceph_msg::front_max to front_alloc_len
+Date: Fri, 28 Mar 2014 10:32:28 -0700
+Message-Id: <20140328173140.664166392@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,124 +26,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josh Durgin <josh.durgin@inktank.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 9a1ea2dbff11547a8e664f143c1ffefc586a577a upstream.
+commit 3cea4c3071d4e55e9d7356efe9d0ebf92f0c2204 upstream.
 
-With the current full handling, there is a race between osds and
-clients getting the first map marked full. If the osd wins, it will
-return -ENOSPC to any writes, but the client may already have writes
-in flight. This results in the client getting the error and
-propagating it up the stack. For rbd, the block layer turns this into
-EIO, which can cause corruption in filesystems above it.
+Rename front_max field of struct ceph_msg to front_alloc_len to make
+its purpose more clear.
 
-To avoid this race, osds are being changed to drop writes that came
-from clients with an osdmap older than the last osdmap marked full.
-In order for this to work, clients must resend all writes after they
-encounter a full -> not full transition in the osdmap. osds will wait
-for an updated map instead of processing a request from a client with
-a newer map, so resent writes will not be dropped by the osd unless
-there is another not full -> full transition.
-
-This approach requires both osds and clients to be fixed to avoid the
-race. Old clients talking to osds with this fix may hang instead of
-returning EIO and potentially corrupting an fs. New clients talking to
-old osds have the same behavior as before if they encounter this race.
-
-Fixes: http://tracker.ceph.com/issues/6938
-
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
 Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ include/linux/ceph/messenger.h |    2 +-
+ net/ceph/messenger.c           |    6 +++---
+ net/ceph/mon_client.c          |    8 ++++----
+ 3 files changed, 8 insertions(+), 8 deletions(-)
 
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1636,14 +1636,17 @@ static void reset_changed_osds(struct ce
-  *
-  * Caller should hold map_sem for read.
-  */
--static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
-+static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
-+			  bool force_resend_writes)
+--- a/include/linux/ceph/messenger.h
++++ b/include/linux/ceph/messenger.h
+@@ -157,7 +157,7 @@ struct ceph_msg {
+ 	bool front_is_vmalloc;
+ 	bool more_to_follow;
+ 	bool needs_out_seq;
+-	int front_max;
++	int front_alloc_len;
+ 	unsigned long ack_stamp;        /* tx: when we were acked */
+ 
+ 	struct ceph_msgpool *pool;
+--- a/net/ceph/messenger.c
++++ b/net/ceph/messenger.c
+@@ -3126,7 +3126,7 @@ struct ceph_msg *ceph_msg_new(int type,
+ 	INIT_LIST_HEAD(&m->data);
+ 
+ 	/* front */
+-	m->front_max = front_len;
++	m->front_alloc_len = front_len;
+ 	if (front_len) {
+ 		if (front_len > PAGE_CACHE_SIZE) {
+ 			m->front.iov_base = __vmalloc(front_len, flags,
+@@ -3301,8 +3301,8 @@ EXPORT_SYMBOL(ceph_msg_last_put);
+ 
+ void ceph_msg_dump(struct ceph_msg *msg)
  {
- 	struct ceph_osd_request *req, *nreq;
- 	struct rb_node *p;
- 	int needmap = 0;
- 	int err;
-+	bool force_resend_req;
+-	pr_debug("msg_dump %p (front_max %d length %zd)\n", msg,
+-		 msg->front_max, msg->data_length);
++	pr_debug("msg_dump %p (front_alloc_len %d length %zd)\n", msg,
++		 msg->front_alloc_len, msg->data_length);
+ 	print_hex_dump(KERN_DEBUG, "header: ",
+ 		       DUMP_PREFIX_OFFSET, 16, 1,
+ 		       &msg->hdr, sizeof(msg->hdr), true);
+--- a/net/ceph/mon_client.c
++++ b/net/ceph/mon_client.c
+@@ -152,7 +152,7 @@ static int __open_session(struct ceph_mo
+ 		/* initiatiate authentication handshake */
+ 		ret = ceph_auth_build_hello(monc->auth,
+ 					    monc->m_auth->front.iov_base,
+-					    monc->m_auth->front_max);
++					    monc->m_auth->front_alloc_len);
+ 		__send_prepared_auth_request(monc, ret);
+ 	} else {
+ 		dout("open_session mon%d already open\n", monc->cur_mon);
+@@ -196,7 +196,7 @@ static void __send_subscribe(struct ceph
+ 		int num;
  
--	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
-+	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
-+		force_resend_writes ? " (force resend writes)" : "");
- 	mutex_lock(&osdc->request_mutex);
- 	for (p = rb_first(&osdc->requests); p; ) {
- 		req = rb_entry(p, struct ceph_osd_request, r_node);
-@@ -1668,7 +1671,10 @@ static void kick_requests(struct ceph_os
- 			continue;
- 		}
+ 		p = msg->front.iov_base;
+-		end = p + msg->front_max;
++		end = p + msg->front_alloc_len;
  
--		err = __map_request(osdc, req, force_resend);
-+		force_resend_req = force_resend ||
-+			(force_resend_writes &&
-+				req->r_flags & CEPH_OSD_FLAG_WRITE);
-+		err = __map_request(osdc, req, force_resend_req);
- 		if (err < 0)
- 			continue;  /* error */
- 		if (req->r_osd == NULL) {
-@@ -1688,7 +1694,8 @@ static void kick_requests(struct ceph_os
- 				 r_linger_item) {
- 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
+ 		num = 1 + !!monc->want_next_osdmap + !!monc->want_mdsmap;
+ 		ceph_encode_32(&p, num);
+@@ -897,7 +897,7 @@ static void handle_auth_reply(struct cep
+ 	ret = ceph_handle_auth_reply(monc->auth, msg->front.iov_base,
+ 				     msg->front.iov_len,
+ 				     monc->m_auth->front.iov_base,
+-				     monc->m_auth->front_max);
++				     monc->m_auth->front_alloc_len);
+ 	if (ret < 0) {
+ 		monc->client->auth_err = ret;
+ 		wake_up_all(&monc->client->auth_wq);
+@@ -939,7 +939,7 @@ static int __validate_auth(struct ceph_m
+ 		return 0;
  
--		err = __map_request(osdc, req, force_resend);
-+		err = __map_request(osdc, req,
-+				    force_resend || force_resend_writes);
- 		dout("__map_request returned %d\n", err);
- 		if (err == 0)
- 			continue;  /* no change and no osd was specified */
-@@ -1730,6 +1737,7 @@ void ceph_osdc_handle_map(struct ceph_os
- 	struct ceph_osdmap *newmap = NULL, *oldmap;
- 	int err;
- 	struct ceph_fsid fsid;
-+	bool was_full;
- 
- 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
- 	p = msg->front.iov_base;
-@@ -1743,6 +1751,8 @@ void ceph_osdc_handle_map(struct ceph_os
- 
- 	down_write(&osdc->map_sem);
- 
-+	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
-+
- 	/* incremental maps */
- 	ceph_decode_32_safe(&p, end, nr_maps, bad);
- 	dout(" %d inc maps\n", nr_maps);
-@@ -1767,7 +1777,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 				ceph_osdmap_destroy(osdc->osdmap);
- 				osdc->osdmap = newmap;
- 			}
--			kick_requests(osdc, 0);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, 0, was_full);
- 		} else {
- 			dout("ignoring incremental map %u len %d\n",
- 			     epoch, maplen);
-@@ -1810,7 +1823,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 					skipped_map = 1;
- 				ceph_osdmap_destroy(oldmap);
- 			}
--			kick_requests(osdc, skipped_map);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, skipped_map, was_full);
- 		}
- 		p += maplen;
- 		nr_maps--;
+ 	ret = ceph_build_auth(monc->auth, monc->m_auth->front.iov_base,
+-			      monc->m_auth->front_max);
++			      monc->m_auth->front_alloc_len);
+ 	if (ret <= 0)
+ 		return ret; /* either an error, or no need to authenticate */
+ 	__send_prepared_auth_request(monc, ret);
 
 
