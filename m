@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaC2PXX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:23:23 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:35193 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaC2PXV (ORCPT
+	id S1752089AbaC2PYO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:24:14 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:54119 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaC2PYA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:23:21 -0400
+	Sat, 29 Mar 2014 11:24:00 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,393 +15,458 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [RFC PATCH v2 00/29] ktap: A lightweight dynamic tracing tool for Linux
-Date: Fri, 28 Mar 2014 10:44:55 -0400
-Message-Id: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 05/29] ktap: add bytecode definition(include/uapi/ktap/ktap_bc.h)
+Date: Fri, 28 Mar 2014 10:45:00 -0400
+Message-Id: <1396017924-7754-6-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
+ktap bytecode is based on luajit, a fast JIT for lua language.
 
-The following set of patches add ktap tracing tool.
+There have a good detail introduction about luajit bytecode in
+http://wiki.luajit.org/Bytecode-2.0
 
-v2:
-- move kernel module into kernel/trace/ktap/, reviewed by GregKH.
-- move include ktap into include/uapi/ktap/
-- Some minor cleanup on ktap.c, reviewed by Andi Kleen.
+A single bytecode instruction is 32 bit wide and has an 8 bit
+opcode field and several operand fields of 8 or 16 bit.
+Instructions come in one of two formats:
 
-ktap is a new script-based dynamic tracing tool for Linux.
-It uses a scripting language and lets the user trace system dynamically.
+ +----+----+----+----+
+ | B  | C  | A  | OP | Format ABC
+ +----+----+----+----+
+ |    D    | A  | OP | Format AD
+ +--------------------
+ MSB               LSB
 
-Highlights features:
-* a simple but powerful scripting language
-* register-based interpreter (heavily optimized) in Linux kernel
-* small and lightweight
-* not depend on the GCC toolchain for each script run
-* easy to use in embedded environments without debugging info
-* support for tracepoint, kprobe, uprobe, function trace, timer, and more
-* supported in x86, ARM, PowerPC, MIPS
-* safety in sandbox
+In-memory instructions are always stored in host byte order.
 
-Simple examples:
-1). simplest one-liner command to enable all tracepoints
-        ktap -e "trace *:* { print(argstr) }"
+E.g. 0xbbccaa1e is the instruction with opcode 0x1e (ADDVV),
+with operands A = 0xaa, B = 0xbb and C = 0xcc.
 
-2). syscall tracing on target process
-        ktap -e "trace syscalls:* { print(argstr) }" -- ls
+Bytecods:
 
-3). simple syscall tracing
-        ktap -e "trace syscalls:* { print(cpu, pid, execname, argstr) }"
+1). Comparison ops
+ISLT, ISGE, ISLE, ISGT, ISEQV, ISNEV, ISEQS, ISNES, ISEQN,
+ISNEN, ISEQP, ISNEP
 
-4). ftrace
-        ktap -e "trace ftrace:function /ip==mutex*/ { print(argstr) }"
+2). Unary Test and Copy ops
+ISTC, ISFC, IST, ISF
 
-5). syscall tracing in histogram style
-        var s = {}
+3). Unary ops
+MOV, NOT, UNM, LEN
 
-        trace syscalls:sys_enter_* {
-                s[probename] += 1
-        }
+4). Binary ops
+ADDVN, SUBVN, MULVN, DIVVN, MODVN, ADDNV, SUBNV, MULNV, DIVNV, MODNV,
+ADDVV, SUBVV, SUBVV, MULVV, DIVVV, MODVV, POW, CAT
 
-        trace_end {
-                print_hist(s)
-        }
+5). Constant ops
+KSTR, KCDATA, KSHORT, KNUM, KPRI, KNIL
 
-6). kprobe tracing
-        trace probe:do_sys_open dfd=%di fname=%dx flags=%cx mode=+4($stack) {
-                print("entry:", execname, argstr)
-        }
+6). Upvalue and Function ops
+UGET, USETV, USETS, USETN, USETP, UCLO, FNEW
 
-        trace probe:do_sys_open%return fd=$retval {
-                print("exit:", execname, argstr)
-        }
+7). Table ops
+TNEW, TDUP, GGET, GSET, TGETV, TGETS, TGETB, TSETV, TSETS, TSETB, TSETM
 
-7). uprobe tracing
-        trace probe:/lib/libc.so.6:malloc {
-                print("entry:", execname, argstr)
-        }
+8). Calls and Vararg Handling (ktap do not support variable argument now)
+CALLM, CALL, CALLMT, CALLT, ITERC, ITERN, VARG, ISNEXT
 
-        trace probe:/lib/libc.so.6:malloc%return {
-                print("exit:", execname, argstr)
-        }
+9). Returns (ktap don't support RETM now)
+RETM, RET, RET0, RET1
 
-8). stapsdt tracing (userspace static marker)
-        trace sdt:/lib64/libc.so.6:lll_futex_wake {
-                print("lll_futex_wake", execname, argstr)
-        }
+10). Loops and branches (loop bytecode J* is not used in ktap)
+FORI, JFORI, FORL, IFORL, JFORL, ITERL, IITERL, JITERL, LOOP, ILOOP, JLOOP, JMP
 
-        or:
+11). Function headers (All is not used in ktap)
+FUNCF, IFUNCF, JFUNCF, FUNCV, JFUNCV, FUNCC, FUNCCW
 
-        #trace all static mark in libc
-        trace sdt:/lib64/libc.so.6:* {
-                print(execname, argstr)
-        }
-
-9). timer
-        tick-1ms {
-                printf("time fired on one cpu\n");
-        }
-
-        profile-2s {
-                printf("time fired on every cpu\n");
-        }
-
-
-This patchset contains:
-
-1. README and Tutorial
-2. ktap kernel module and userspace binary
-3. sample scripts
-4. test suite
-
-The code can be pull from:
-        http://github.com/ktap/linux.git upstream
-
-The merit of putting this software in kernel tree is
-to make it more possible to get feedback from users
-and thus polish the code.
-
-Thank you.
+12). ktap specific bytecodes
+VARGN, VARGSTR, VPROBENAME, VPID, VTID, VUID, VCPU, VEXECNAME, GFUNC
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-
-Jovi Zhangwei (29):
-  ktap: add tools/ktap/README.md file
-  ktap: add ktap tutorial(tools/ktap/doc/tutorial.md)
-  ktap: add sample scripts(tools/ktap/samples/*)
-  ktap: add basic ktap types definition(include/uapi/ktap/ktap_types.h)
-  ktap: add bytecode definition(include/uapi/ktap/ktap_bc.h)
-  ktap: add ktap_arch.h and error header file(include/uapi/ktap/)
-  ktap: add kernel module main entry(kernel/trace/ktap/ktap.[c|h])
-  ktap: add bytecode reader(kernel/trace/ktap/kp_bcread.[c|h])
-  ktap: add bytecode execution engine(kernel/trace/ktap/kp_vm.[c|h])
-  ktap: add string handling
-    code(kernel/trace/ktap/kp_[str|mempool].[c|h])
-  ktap: add table handling code(kernel/trace/ktap/kp_tab.[c|h])
-  ktap: add generic object handling code(kernel/trace/ktap/kp_obj.[c|h])
-  ktap: add ring buffer handling
-    code(kernel/trace/ktap/kp_transport.[c|h])
-  ktap: add events management(kernel/trace/ktap/kp_events.[c|h])
-  ktap: add built-in functions and library(kernel/trace/ktap/lib_*.c)
-  ktap: add amalgamation build(kernel/trace/ktap/amalg.c)
-  ktap: add Makefile for kernel module(kernel/trace/ktap/Makefile)
-  ktap: add Kconfig(kernel/trace/ktap/Kconfig)
-  ktap: add main file for ktap binary(tools/ktap/kp_main.c)
-  ktap: add compiler(tools/ktap/kp_[lex|parse].[c|h])
-  ktap: add symbol handling code(tools/ktap/symbol.[c|h])
-  ktap: add events parse code(tools/ktap/kp_parse_events.c)
-  ktap: add ring buffer reader(tools/ktap/kp_reader.c)
-  ktap: add bytecode writer(tools/ktap/kp_bcwrite.c)
-  ktap: add userspace util(tools/ktap/kp_util.c)
-  ktap: add userspace binary Makefile(tools/ktap/Makefile)
-  ktap: add testsuite and benchmark(tools/ktap/test/*)
-  ktap: add vim syntax file(tools/ktap/vim/*)
-  ktap: add COPYRIGHT file(tools/ktap/COPYRIGHT)
-
- include/uapi/ktap/ktap_arch.h                      |   33 +
- include/uapi/ktap/ktap_bc.h                        |  369 +++
- include/uapi/ktap/ktap_err.h                       |   11 +
- include/uapi/ktap/ktap_errmsg.h                    |  135 +
- include/uapi/ktap/ktap_types.h                     |  462 +++
- kernel/trace/ktap/Kconfig                          |   21 +
- kernel/trace/ktap/Makefile                         |   50 +
- kernel/trace/ktap/amalg.c                          |   37 +
- kernel/trace/ktap/kp_bcread.c                      |  429 +++
- kernel/trace/ktap/kp_bcread.h                      |    6 +
- kernel/trace/ktap/kp_events.c                      |  832 ++++++
- kernel/trace/ktap/kp_events.h                      |   71 +
- kernel/trace/ktap/kp_mempool.c                     |   94 +
- kernel/trace/ktap/kp_mempool.h                     |    8 +
- kernel/trace/ktap/kp_obj.c                         |  281 ++
- kernel/trace/ktap/kp_obj.h                         |   19 +
- kernel/trace/ktap/kp_str.c                         |  360 +++
- kernel/trace/ktap/kp_str.h                         |   13 +
- kernel/trace/ktap/kp_tab.c                         |  842 ++++++
- kernel/trace/ktap/kp_tab.h                         |   59 +
- kernel/trace/ktap/kp_transport.c                   |  649 ++++
- kernel/trace/ktap/kp_transport.h                   |   13 +
- kernel/trace/ktap/kp_vm.c                          | 1754 +++++++++++
- kernel/trace/ktap/kp_vm.h                          |   43 +
- kernel/trace/ktap/ktap.c                           |  255 ++
- kernel/trace/ktap/ktap.h                           |  176 ++
- kernel/trace/ktap/lib_ansi.c                       |  142 +
- kernel/trace/ktap/lib_base.c                       |  407 +++
- kernel/trace/ktap/lib_kdebug.c                     |  195 ++
- kernel/trace/ktap/lib_net.c                        |  107 +
- kernel/trace/ktap/lib_table.c                      |   58 +
- kernel/trace/ktap/lib_timer.c                      |  210 ++
- tools/ktap/COPYRIGHT                               |   63 +
- tools/ktap/Makefile                                |  130 +
- tools/ktap/README.md                               |  149 +
- tools/ktap/doc/tutorial.md                         |  666 +++++
- tools/ktap/kp_bcwrite.c                            |  375 +++
- tools/ktap/kp_lex.c                                |  552 ++++
- tools/ktap/kp_lex.h                                |   94 +
- tools/ktap/kp_main.c                               |  443 +++
- tools/ktap/kp_parse.c                              | 3139 ++++++++++++++++++++
- tools/ktap/kp_parse.h                              |    4 +
- tools/ktap/kp_parse_events.c                       |  798 +++++
- tools/ktap/kp_reader.c                             |  106 +
- tools/ktap/kp_symbol.c                             |  360 +++
- tools/ktap/kp_symbol.h                             |   50 +
- tools/ktap/kp_util.c                               |  646 ++++
- tools/ktap/kp_util.h                               |  120 +
- tools/ktap/samples/ansi/ansi_color_demo.kp         |   22 +
- tools/ktap/samples/basic/backtrace.kp              |    6 +
- tools/ktap/samples/basic/event_trigger.kp          |   27 +
- tools/ktap/samples/basic/event_trigger_ftrace.kp   |   27 +
- tools/ktap/samples/basic/ftrace.kp                 |    8 +
- tools/ktap/samples/basic/function_time.kp          |   62 +
- tools/ktap/samples/basic/kretprobe.kp              |    6 +
- tools/ktap/samples/basic/memcpy_memset.kp          |   23 +
- tools/ktap/samples/game/tetris.kp                  |  297 ++
- tools/ktap/samples/helloworld.kp                   |    3 +
- tools/ktap/samples/interrupt/hardirq_time.kp       |   25 +
- tools/ktap/samples/interrupt/softirq_time.kp       |   24 +
- tools/ktap/samples/io/kprobes-do-sys-open.kp       |   20 +
- tools/ktap/samples/io/traceio.kp                   |   61 +
- tools/ktap/samples/mem/kmalloc-stack.kp            |   12 +
- tools/ktap/samples/mem/kmem_count.kp               |   29 +
- tools/ktap/samples/network/tcp_ipaddr.kp           |   20 +
- tools/ktap/samples/profiling/function_profiler.kp  |   41 +
- .../profiling/kprobe_all_kernel_functions.kp       |   13 +
- tools/ktap/samples/profiling/stack_profile.kp      |   27 +
- tools/ktap/samples/schedule/sched_transition.kp    |    5 +
- tools/ktap/samples/schedule/schedtimes.kp          |  131 +
- tools/ktap/samples/syscalls/errinfo.kp             |  145 +
- tools/ktap/samples/syscalls/execve.kp              |    9 +
- tools/ktap/samples/syscalls/opensnoop.kp           |   31 +
- tools/ktap/samples/syscalls/sctop.kp               |   13 +
- tools/ktap/samples/syscalls/syscalls.kp            |    6 +
- tools/ktap/samples/syscalls/syscalls_count.kp      |   54 +
- .../samples/syscalls/syscalls_count_by_proc.kp     |   22 +
- tools/ktap/samples/syscalls/syslatl.kp             |   33 +
- tools/ktap/samples/syscalls/syslist.kp             |   31 +
- tools/ktap/samples/tracepoints/eventcount.kp       |  210 ++
- .../ktap/samples/tracepoints/eventcount_by_proc.kp |   57 +
- tools/ktap/samples/tracepoints/raw_tracepoint.kp   |   15 +
- tools/ktap/samples/tracepoints/tracepoints.kp      |    6 +
- tools/ktap/samples/userspace/gcc_unwind.kp         |    9 +
- tools/ktap/samples/userspace/glibc_func_hist.kp    |   44 +
- tools/ktap/samples/userspace/glibc_sdt.kp          |   11 +
- tools/ktap/samples/userspace/glibc_trace.kp        |   11 +
- tools/ktap/samples/userspace/malloc_free.kp        |   20 +
- tools/ktap/samples/userspace/malloc_size_hist.kp   |   22 +
- tools/ktap/samples/userspace/pthread.kp            |    8 +
- tools/ktap/test/README                             |   69 +
- tools/ktap/test/arithmetic.t                       |  109 +
- tools/ktap/test/benchmark/cmp_neq.sh               |  158 +
- tools/ktap/test/benchmark/cmp_profile.sh           |   54 +
- tools/ktap/test/benchmark/cmp_table.sh             |  112 +
- tools/ktap/test/benchmark/sembench.c               |  556 ++++
- tools/ktap/test/cli-arg.t                          |   25 +
- tools/ktap/test/concat.t                           |   21 +
- tools/ktap/test/count.t                            |   25 +
- tools/ktap/test/deadloop.t                         |   37 +
- tools/ktap/test/fibonacci.t                        |   42 +
- tools/ktap/test/function.t                         |   78 +
- tools/ktap/test/if.t                               |   32 +
- tools/ktap/test/kprobe.t                           |   82 +
- tools/ktap/test/kretprobe.t                        |   35 +
- tools/ktap/test/len.t                              |   27 +
- tools/ktap/test/lib/Test/ktap.pm                   |  128 +
- tools/ktap/test/looping.t                          |   46 +
- tools/ktap/test/one-liner.t                        |   48 +
- tools/ktap/test/pairs.t                            |   52 +
- tools/ktap/test/stack_overflow.t                   |   22 +
- tools/ktap/test/syntax-err.t                       |   19 +
- tools/ktap/test/table.t                            |   81 +
- tools/ktap/test/time.t                             |   59 +
- tools/ktap/test/timer.t                            |   65 +
- tools/ktap/test/tracepoint.t                       |   53 +
- tools/ktap/test/util/reindex                       |   61 +
- tools/ktap/test/zerodivide.t                       |   21 +
- tools/ktap/vim/ftdetect/ktap.vim                   |    3 +
- tools/ktap/vim/syntax/ktap.vim                     |  106 +
- 120 files changed, 19708 insertions(+)
- create mode 100644 include/uapi/ktap/ktap_arch.h
+---
+ include/uapi/ktap/ktap_bc.h | 369 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 369 insertions(+)
  create mode 100644 include/uapi/ktap/ktap_bc.h
- create mode 100644 include/uapi/ktap/ktap_err.h
- create mode 100644 include/uapi/ktap/ktap_errmsg.h
- create mode 100644 include/uapi/ktap/ktap_types.h
- create mode 100644 kernel/trace/ktap/Kconfig
- create mode 100644 kernel/trace/ktap/Makefile
- create mode 100644 kernel/trace/ktap/amalg.c
- create mode 100644 kernel/trace/ktap/kp_bcread.c
- create mode 100644 kernel/trace/ktap/kp_bcread.h
- create mode 100644 kernel/trace/ktap/kp_events.c
- create mode 100644 kernel/trace/ktap/kp_events.h
- create mode 100644 kernel/trace/ktap/kp_mempool.c
- create mode 100644 kernel/trace/ktap/kp_mempool.h
- create mode 100644 kernel/trace/ktap/kp_obj.c
- create mode 100644 kernel/trace/ktap/kp_obj.h
- create mode 100644 kernel/trace/ktap/kp_str.c
- create mode 100644 kernel/trace/ktap/kp_str.h
- create mode 100644 kernel/trace/ktap/kp_tab.c
- create mode 100644 kernel/trace/ktap/kp_tab.h
- create mode 100644 kernel/trace/ktap/kp_transport.c
- create mode 100644 kernel/trace/ktap/kp_transport.h
- create mode 100644 kernel/trace/ktap/kp_vm.c
- create mode 100644 kernel/trace/ktap/kp_vm.h
- create mode 100644 kernel/trace/ktap/ktap.c
- create mode 100644 kernel/trace/ktap/ktap.h
- create mode 100644 kernel/trace/ktap/lib_ansi.c
- create mode 100644 kernel/trace/ktap/lib_base.c
- create mode 100644 kernel/trace/ktap/lib_kdebug.c
- create mode 100644 kernel/trace/ktap/lib_net.c
- create mode 100644 kernel/trace/ktap/lib_table.c
- create mode 100644 kernel/trace/ktap/lib_timer.c
- create mode 100644 tools/ktap/COPYRIGHT
- create mode 100644 tools/ktap/Makefile
- create mode 100644 tools/ktap/README.md
- create mode 100644 tools/ktap/doc/tutorial.md
- create mode 100644 tools/ktap/kp_bcwrite.c
- create mode 100644 tools/ktap/kp_lex.c
- create mode 100644 tools/ktap/kp_lex.h
- create mode 100644 tools/ktap/kp_main.c
- create mode 100644 tools/ktap/kp_parse.c
- create mode 100644 tools/ktap/kp_parse.h
- create mode 100644 tools/ktap/kp_parse_events.c
- create mode 100644 tools/ktap/kp_reader.c
- create mode 100644 tools/ktap/kp_symbol.c
- create mode 100644 tools/ktap/kp_symbol.h
- create mode 100644 tools/ktap/kp_util.c
- create mode 100644 tools/ktap/kp_util.h
- create mode 100644 tools/ktap/samples/ansi/ansi_color_demo.kp
- create mode 100644 tools/ktap/samples/basic/backtrace.kp
- create mode 100644 tools/ktap/samples/basic/event_trigger.kp
- create mode 100644 tools/ktap/samples/basic/event_trigger_ftrace.kp
- create mode 100644 tools/ktap/samples/basic/ftrace.kp
- create mode 100644 tools/ktap/samples/basic/function_time.kp
- create mode 100644 tools/ktap/samples/basic/kretprobe.kp
- create mode 100644 tools/ktap/samples/basic/memcpy_memset.kp
- create mode 100644 tools/ktap/samples/game/tetris.kp
- create mode 100644 tools/ktap/samples/helloworld.kp
- create mode 100644 tools/ktap/samples/interrupt/hardirq_time.kp
- create mode 100644 tools/ktap/samples/interrupt/softirq_time.kp
- create mode 100644 tools/ktap/samples/io/kprobes-do-sys-open.kp
- create mode 100644 tools/ktap/samples/io/traceio.kp
- create mode 100644 tools/ktap/samples/mem/kmalloc-stack.kp
- create mode 100644 tools/ktap/samples/mem/kmem_count.kp
- create mode 100644 tools/ktap/samples/network/tcp_ipaddr.kp
- create mode 100644 tools/ktap/samples/profiling/function_profiler.kp
- create mode 100644 tools/ktap/samples/profiling/kprobe_all_kernel_functions.kp
- create mode 100644 tools/ktap/samples/profiling/stack_profile.kp
- create mode 100644 tools/ktap/samples/schedule/sched_transition.kp
- create mode 100644 tools/ktap/samples/schedule/schedtimes.kp
- create mode 100644 tools/ktap/samples/syscalls/errinfo.kp
- create mode 100644 tools/ktap/samples/syscalls/execve.kp
- create mode 100644 tools/ktap/samples/syscalls/opensnoop.kp
- create mode 100644 tools/ktap/samples/syscalls/sctop.kp
- create mode 100644 tools/ktap/samples/syscalls/syscalls.kp
- create mode 100644 tools/ktap/samples/syscalls/syscalls_count.kp
- create mode 100644 tools/ktap/samples/syscalls/syscalls_count_by_proc.kp
- create mode 100644 tools/ktap/samples/syscalls/syslatl.kp
- create mode 100644 tools/ktap/samples/syscalls/syslist.kp
- create mode 100644 tools/ktap/samples/tracepoints/eventcount.kp
- create mode 100644 tools/ktap/samples/tracepoints/eventcount_by_proc.kp
- create mode 100644 tools/ktap/samples/tracepoints/raw_tracepoint.kp
- create mode 100644 tools/ktap/samples/tracepoints/tracepoints.kp
- create mode 100644 tools/ktap/samples/userspace/gcc_unwind.kp
- create mode 100644 tools/ktap/samples/userspace/glibc_func_hist.kp
- create mode 100644 tools/ktap/samples/userspace/glibc_sdt.kp
- create mode 100644 tools/ktap/samples/userspace/glibc_trace.kp
- create mode 100644 tools/ktap/samples/userspace/malloc_free.kp
- create mode 100644 tools/ktap/samples/userspace/malloc_size_hist.kp
- create mode 100644 tools/ktap/samples/userspace/pthread.kp
- create mode 100644 tools/ktap/test/README
- create mode 100644 tools/ktap/test/arithmetic.t
- create mode 100644 tools/ktap/test/benchmark/cmp_neq.sh
- create mode 100644 tools/ktap/test/benchmark/cmp_profile.sh
- create mode 100644 tools/ktap/test/benchmark/cmp_table.sh
- create mode 100644 tools/ktap/test/benchmark/sembench.c
- create mode 100644 tools/ktap/test/cli-arg.t
- create mode 100644 tools/ktap/test/concat.t
- create mode 100644 tools/ktap/test/count.t
- create mode 100644 tools/ktap/test/deadloop.t
- create mode 100644 tools/ktap/test/fibonacci.t
- create mode 100644 tools/ktap/test/function.t
- create mode 100644 tools/ktap/test/if.t
- create mode 100644 tools/ktap/test/kprobe.t
- create mode 100644 tools/ktap/test/kretprobe.t
- create mode 100644 tools/ktap/test/len.t
- create mode 100644 tools/ktap/test/lib/Test/ktap.pm
- create mode 100644 tools/ktap/test/looping.t
- create mode 100644 tools/ktap/test/one-liner.t
- create mode 100644 tools/ktap/test/pairs.t
- create mode 100644 tools/ktap/test/stack_overflow.t
- create mode 100644 tools/ktap/test/syntax-err.t
- create mode 100644 tools/ktap/test/table.t
- create mode 100644 tools/ktap/test/time.t
- create mode 100644 tools/ktap/test/timer.t
- create mode 100644 tools/ktap/test/tracepoint.t
- create mode 100755 tools/ktap/test/util/reindex
- create mode 100644 tools/ktap/test/zerodivide.t
- create mode 100644 tools/ktap/vim/ftdetect/ktap.vim
- create mode 100644 tools/ktap/vim/syntax/ktap.vim
 
+diff --git a/include/uapi/ktap/ktap_bc.h b/include/uapi/ktap/ktap_bc.h
+new file mode 100644
+index 0000000..aac286a
+--- /dev/null
++++ b/include/uapi/ktap/ktap_bc.h
+@@ -0,0 +1,369 @@
++/*
++ * Bytecode instruction format.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ * Copyright (C) 2005-2014 Mike Pall.
++ */
++
++#ifndef __KTAP_BC_H__
++#define __KTAP_BC_H__
++
++#include "ktap_arch.h"
++
++/*TODO*/
++#define KP_STATIC_ASSERT(cond)
++#define kp_assert(cond)
++
++/* Types for handling bytecodes. */
++typedef uint32_t BCIns;  /* Bytecode instruction. */
++typedef uint32_t BCPos;  /* Bytecode position. */
++typedef uint32_t BCReg;  /* Bytecode register. */
++typedef int32_t BCLine;  /* Bytecode line number. */
++
++/*
++ * Bytecode instruction format, 32 bit wide, fields of 8 or 16 bit:
++ *
++ * +----+----+----+----+
++ * | B  | C  | A  | OP | Format ABC
++ * +----+----+----+----+
++ * |    D    | A  | OP | Format AD
++ * +--------------------
++ * MSB               LSB
++ *
++ * In-memory instructions are always stored in host byte order.
++ */
++
++/* Operand ranges and related constants. */
++#define BCMAX_A		0xff
++#define BCMAX_B		0xff
++#define BCMAX_C		0xff
++#define BCMAX_D		0xffff
++#define BCBIAS_J	0x8000
++#define NO_REG		BCMAX_A
++#define NO_JMP		(~(BCPos)0)
++
++/* Macros to get instruction fields. */
++#define bc_op(i)	((BCOp)((i)&0xff))
++#define bc_a(i)		((BCReg)(((i)>>8)&0xff))
++#define bc_b(i)		((BCReg)((i)>>24))
++#define bc_c(i)		((BCReg)(((i)>>16)&0xff))
++#define bc_d(i)		((BCReg)((i)>>16))
++#define bc_j(i)		((ptrdiff_t)bc_d(i)-BCBIAS_J)
++
++/* Macros to set instruction fields. */
++#define setbc_byte(p, x, ofs) \
++	((uint8_t *)(p))[KP_ENDIAN_SELECT(ofs, 3 - ofs)] = (uint8_t)(x)
++#define setbc_op(p, x)	setbc_byte(p, (x), 0)
++#define setbc_a(p, x)	setbc_byte(p, (x), 1)
++#define setbc_b(p, x)	setbc_byte(p, (x), 3)
++#define setbc_c(p, x)	setbc_byte(p, (x), 2)
++#define setbc_d(p, x) \
++	((uint16_t *)(p))[KP_ENDIAN_SELECT(1, 0)] = (uint16_t)(x)
++#define setbc_j(p, x)	setbc_d(p, (BCPos)((int32_t)(x)+BCBIAS_J))
++
++/* Macros to compose instructions. */
++#define BCINS_ABC(o, a, b, c) \
++	(((BCIns)(o))|((BCIns)(a)<<8)|((BCIns)(b)<<24)|((BCIns)(c)<<16))
++#define BCINS_AD(o, a, d) \
++	(((BCIns)(o))|((BCIns)(a)<<8)|((BCIns)(d)<<16))
++#define BCINS_AJ(o, a, j)	BCINS_AD(o, a, (BCPos)((int32_t)(j)+BCBIAS_J))
++
++/*
++ * Bytecode instruction definition. Order matters, see below.
++ *
++ * (name, filler, Amode, Bmode, Cmode or Dmode, metamethod)
++ *
++ * The opcode name suffixes specify the type for RB/RC or RD:
++ * V = variable slot
++ * S = string const
++ * N = number const
++ * P = primitive type (~itype)
++ * B = unsigned byte literal
++ * M = multiple args/results
++ */
++#define BCDEF(_) \
++	/* Comparison ops. ORDER OPR. */ \
++	_(ISLT,	var,	___,	var,	lt) \
++	_(ISGE,	var,	___,	var,	lt) \
++	_(ISLE,	var,	___,	var,	le) \
++	_(ISGT,	var,	___,	var,	le) \
++	\
++	_(ISEQV,	var,	___,	var,	eq) \
++	_(ISNEV,	var,	___,	var,	eq) \
++	_(ISEQS,	var,	___,	str,	eq) \
++	_(ISNES,	var,	___,	str,	eq) \
++	_(ISEQN,	var,	___,	num,	eq) \
++	_(ISNEN,	var,	___,	num,	eq) \
++	_(ISEQP,	var,	___,	pri,	eq) \
++	_(ISNEP,	var,	___,	pri,	eq) \
++	\
++	/* Unary test and copy ops. */ \
++	_(ISTC,	dst,	___,	var,	___) \
++	_(ISFC,	dst,	___,	var,	___) \
++	_(IST,	___,	___,	var,	___) \
++	_(ISF,	___,	___,	var,	___) \
++	_(ISTYPE,	var,	___,	lit,	___) \
++	_(ISNUM,	var,	___,	lit,	___) \
++	\
++	/* Unary ops. */ \
++	_(MOV,	dst,	___,	var,	___) \
++	_(NOT,	dst,	___,	var,	___) \
++	_(UNM,	dst,	___,	var,	unm) \
++	\
++	/* Binary ops. ORDER OPR. VV last, POW must be next. */ \
++	_(ADDVN,	dst,	var,	num,	add) \
++	_(SUBVN,	dst,	var,	num,	sub) \
++	_(MULVN,	dst,	var,	num,	mul) \
++	_(DIVVN,	dst,	var,	num,	div) \
++	_(MODVN,	dst,	var,	num,	mod) \
++	\
++	_(ADDNV,	dst,	var,	num,	add) \
++	_(SUBNV,	dst,	var,	num,	sub) \
++	_(MULNV,	dst,	var,	num,	mul) \
++	_(DIVNV,	dst,	var,	num,	div) \
++	_(MODNV,	dst,	var,	num,	mod) \
++	\
++	_(ADDVV,	dst,	var,	var,	add) \
++	_(SUBVV,	dst,	var,	var,	sub) \
++	_(MULVV,	dst,	var,	var,	mul) \
++	_(DIVVV,	dst,	var,	var,	div) \
++	_(MODVV,	dst,	var,	var,	mod) \
++	\
++	_(POW,	dst,	var,	var,	pow) \
++	_(CAT,	dst,	rbase,	rbase,	concat) \
++	\
++	/* Constant ops. */ \
++	_(KSTR,	dst,	___,	str,	___) \
++	_(KCDATA,	dst,	___,	cdata,	___) \
++	_(KSHORT,	dst,	___,	lits,	___) \
++	_(KNUM,	dst,	___,	num,	___) \
++	_(KPRI,	dst,	___,	pri,	___) \
++	_(KNIL,	base,	___,	base,	___) \
++	\
++	/* Upvalue and function ops. */ \
++	_(UGET,	dst,	___,	uv,	___) \
++	_(USETV,	uv,	___,	var,	___) \
++	_(UINCV,	uv,	___,	var,	___) \
++	_(USETS,	uv,	___,	str,	___) \
++	_(USETN,	uv,	___,	num,	___) \
++	_(UINCN,	uv,	___,	num,	___) \
++	_(USETP,	uv,	___,	pri,	___) \
++	_(UCLO,	rbase,	___,	jump,	___) \
++	_(FNEW,	dst,	___,	func,	gc) \
++	\
++	/* Table ops. */ \
++	_(TNEW,	dst,	___,	lit,	gc) \
++	_(TDUP,	dst,	___,	tab,	gc) \
++	_(GGET,	dst,	___,	str,	index) \
++	_(GSET,	var,	___,	str,	newindex) \
++	_(GINC,	var,	___,	str,	newindex) \
++	_(TGETV,	dst,	var,	var,	index) \
++	_(TGETS,	dst,	var,	str,	index) \
++	_(TGETB,	dst,	var,	lit,	index) \
++	_(TGETR,	dst,	var,	var,	index) \
++	_(TSETV,	var,	var,	var,	newindex) \
++	_(TINCV,	var,	var,	var,	newindex) \
++	_(TSETS,	var,	var,	str,	newindex) \
++	_(TINCS,	var,	var,	str,	newindex) \
++	_(TSETB,	var,	var,	lit,	newindex) \
++	_(TINCB,	var,	var,	lit,	newindex) \
++	_(TSETM,	base,	___,	num,	newindex) \
++	_(TSETR,	var,	var,	var,	newindex) \
++	\
++	/* Calls and vararg handling. T = tail call. */ \
++	_(CALLM,	base,	lit,	lit,	call) \
++	_(CALL,	base,	lit,	lit,	call) \
++	_(CALLMT,	base,	___,	lit,	call) \
++	_(CALLT,	base,	___,	lit,	call) \
++	_(ITERC,	base,	lit,	lit,	call) \
++	_(ITERN,	base,	lit,	lit,	call) \
++	_(VARG,	base,	lit,	lit,	___) \
++	_(ISNEXT,	base,	___,	jump,	___) \
++	\
++	/* Returns. */ \
++	_(RETM,	base,	___,	lit,	___) \
++	_(RET,	rbase,	___,	lit,	___) \
++	_(RET0,	rbase,	___,	lit,	___) \
++	_(RET1,	rbase,	___,	lit,	___) \
++	\
++	/* Loops and branches. I/J = interp/JIT, I/C/L = init/call/loop. */ \
++	_(FORI,	base,	___,	jump,	___) \
++	_(JFORI,	base,	___,	jump,	___) \
++	\
++	_(FORL,	base,	___,	jump,	___) \
++	_(IFORL,	base,	___,	jump,	___) \
++	_(JFORL,	base,	___,	lit,	___) \
++	\
++	_(ITERL,	base,	___,	jump,	___) \
++	_(IITERL,	base,	___,	jump,	___) \
++	_(JITERL,	base,	___,	lit,	___) \
++	\
++	_(LOOP,	rbase,	___,	jump,	___) \
++	_(ILOOP,	rbase,	___,	jump,	___) \
++	_(JLOOP,	rbase,	___,	lit,	___) \
++	\
++	_(JMP,	rbase,	___,	jump,	___) \
++	\
++	/*Function headers. I/J = interp/JIT, F/V/C = fixarg/vararg/C func.*/ \
++	_(FUNCF,	rbase,	___,	___,	___) \
++	_(IFUNCF,	rbase,	___,	___,	___) \
++	_(JFUNCF,	rbase,	___,	lit,	___) \
++	_(FUNCV,	rbase,	___,	___,	___) \
++	_(IFUNCV,	rbase,	___,	___,	___) \
++	_(JFUNCV,	rbase,	___,	lit,	___) \
++	_(FUNCC,	rbase,	___,	___,	___) \
++	_(FUNCCW,	rbase,	___,	___,	___) \
++	\
++	/* specific purpose bc. */	\
++	_(VARGN,	dst, ___,	lit,	___) \
++	_(VARGSTR,	dst, ___,	lit,	___) \
++	_(VPROBENAME,	dst, ___,	lit,	___) \
++	_(VPID,		dst, ___,	lit,	___) \
++	_(VTID,		dst, ___,	lit,	___) \
++	_(VUID,		dst, ___,	lit,	___) \
++	_(VCPU,		dst, ___,	lit,	___) \
++	_(VEXECNAME,	dst, ___,	lit,	___) \
++	\
++	_(GFUNC,	dst, ___,	___,	___) /*load global C function*/
++
++/* Bytecode opcode numbers. */
++typedef enum {
++#define BCENUM(name, ma, mb, mc, mt)	BC_##name,
++	BCDEF(BCENUM)
++#undef BCENUM
++	BC__MAX
++} BCOp;
++
++KP_STATIC_ASSERT((int)BC_ISEQV+1 == (int)BC_ISNEV);
++KP_STATIC_ASSERT(((int)BC_ISEQV^1) == (int)BC_ISNEV);
++KP_STATIC_ASSERT(((int)BC_ISEQS^1) == (int)BC_ISNES);
++KP_STATIC_ASSERT(((int)BC_ISEQN^1) == (int)BC_ISNEN);
++KP_STATIC_ASSERT(((int)BC_ISEQP^1) == (int)BC_ISNEP);
++KP_STATIC_ASSERT(((int)BC_ISLT^1) == (int)BC_ISGE);
++KP_STATIC_ASSERT(((int)BC_ISLE^1) == (int)BC_ISGT);
++KP_STATIC_ASSERT(((int)BC_ISLT^3) == (int)BC_ISGT);
++KP_STATIC_ASSERT((int)BC_IST-(int)BC_ISTC == (int)BC_ISF-(int)BC_ISFC);
++KP_STATIC_ASSERT((int)BC_CALLT-(int)BC_CALL == (int)BC_CALLMT-(int)BC_CALLM);
++KP_STATIC_ASSERT((int)BC_CALLMT + 1 == (int)BC_CALLT);
++KP_STATIC_ASSERT((int)BC_RETM + 1 == (int)BC_RET);
++KP_STATIC_ASSERT((int)BC_FORL + 1 == (int)BC_IFORL);
++KP_STATIC_ASSERT((int)BC_FORL + 2 == (int)BC_JFORL);
++KP_STATIC_ASSERT((int)BC_ITERL + 1 == (int)BC_IITERL);
++KP_STATIC_ASSERT((int)BC_ITERL + 2 == (int)BC_JITERL);
++KP_STATIC_ASSERT((int)BC_LOOP + 1 == (int)BC_ILOOP);
++KP_STATIC_ASSERT((int)BC_LOOP + 2 == (int)BC_JLOOP);
++KP_STATIC_ASSERT((int)BC_FUNCF + 1 == (int)BC_IFUNCF);
++KP_STATIC_ASSERT((int)BC_FUNCF + 2 == (int)BC_JFUNCF);
++KP_STATIC_ASSERT((int)BC_FUNCV + 1 == (int)BC_IFUNCV);
++KP_STATIC_ASSERT((int)BC_FUNCV + 2 == (int)BC_JFUNCV);
++
++/* This solves a circular dependency problem, change as needed. */
++#define FF_next_N	4
++
++/* Stack slots used by FORI/FORL, relative to operand A. */
++enum {
++	FORL_IDX, FORL_STOP, FORL_STEP, FORL_EXT
++};
++
++/* Bytecode operand modes. ORDER BCMode */
++typedef enum {
++	/* Mode A must be <= 7 */
++	BCMnone, BCMdst, BCMbase, BCMvar, BCMrbase, BCMuv,
++	BCMlit, BCMlits, BCMpri, BCMnum, BCMstr, BCMtab, BCMfunc,
++	BCMjump, BCMcdata,
++	BCM_max
++} BCMode;
++
++#define BCM___	BCMnone
++
++#define bcmode_a(op)	((BCMode)(bc_mode[op] & 7))
++#define bcmode_b(op)	((BCMode)((bc_mode[op] >> 3) & 15))
++#define bcmode_c(op)	((BCMode)((bc_mode[op] >> 7) & 15))
++#define bcmode_d(op)	bcmode_c(op)
++#define bcmode_hasd(op)	((bc_mode[op] & (15 << 3)) == (BCMnone << 3))
++#define bcmode_mm(op)	((MMS)(bc_mode[op] >> 11))
++
++#define BCMODE(name, ma, mb, mc, mm) \
++	(BCM##ma | (BCM##mb << 3) | (BCM##mc << 7)|(MM_##mm << 11)),
++#define BCMODE_FF	0
++
++static inline int bc_isret(BCOp op)
++{
++	return (op == BC_RETM || op == BC_RET || op == BC_RET0 ||
++		op == BC_RET1);
++}
++
++/* 
++ * Metamethod definition
++ * Note ktap don't use any lua methmethod currently.
++ */
++typedef enum {
++	MM_lt,
++	MM_le,
++	MM_eq,
++	MM_unm,
++	MM_add,
++	MM_sub,
++	MM_mul,
++	MM_div,
++	MM_mod,
++	MM_pow,
++	MM_concat,
++	MM_gc,
++	MM_index,
++	MM_newindex,
++	MM_call,
++	MM__MAX,
++	MM____ = MM__MAX
++} MMS;
++
++
++/* -- Bytecode dump format ------------------------------------------------ */
++
++/*
++** dump   = header proto+ 0U
++** header = ESC 'L' 'J' versionB flagsU [namelenU nameB*]
++** proto  = lengthU pdata
++** pdata  = phead bcinsW* uvdataH* kgc* knum* [debugB*]
++** phead  = flagsB numparamsB framesizeB numuvB numkgcU numknU numbcU
++**          [debuglenU [firstlineU numlineU]]
++** kgc    = kgctypeU { ktab | (loU hiU) | (rloU rhiU iloU ihiU) | strB* }
++** knum   = intU0 | (loU1 hiU)
++** ktab   = narrayU nhashU karray* khash*
++** karray = ktabk
++** khash  = ktabk ktabk
++** ktabk  = ktabtypeU { intU | (loU hiU) | strB* }
++**
++** B = 8 bit, H = 16 bit, W = 32 bit, U = ULEB128 of W, U0/U1 = ULEB128 of W+1
++*/
++
++/* Bytecode dump header. */
++#define BCDUMP_HEAD1		0x15
++#define BCDUMP_HEAD2		0x22
++#define BCDUMP_HEAD3		0x06
++
++/* If you perform *any* kind of private modifications to the bytecode itself
++** or to the dump format, you *must* set BCDUMP_VERSION to 0x80 or higher.
++*/
++#define BCDUMP_VERSION		1
++
++/* Compatibility flags. */
++#define BCDUMP_F_BE		0x01
++#define BCDUMP_F_STRIP		0x02
++#define BCDUMP_F_FFI		0x04
++
++#define BCDUMP_F_KNOWN		(BCDUMP_F_FFI*2-1)
++
++/* Type codes for the GC constants of a prototype. Plus length for strings. */
++enum {
++	BCDUMP_KGC_CHILD, BCDUMP_KGC_TAB, BCDUMP_KGC_I64, BCDUMP_KGC_U64,
++	BCDUMP_KGC_COMPLEX, BCDUMP_KGC_STR
++};
++
++/* Type codes for the keys/values of a constant table. */
++enum {
++	BCDUMP_KTAB_NIL, BCDUMP_KTAB_FALSE, BCDUMP_KTAB_TRUE,
++	BCDUMP_KTAB_INT, BCDUMP_KTAB_NUM, BCDUMP_KTAB_STR
++};
++
++#endif /* __KTAP_BC_H__ */
 -- 
-1.8.3.1
+1.8.1.4
 
