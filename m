@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365AbaC1VNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:13:06 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:52973 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753192AbaC1VMv (ORCPT
+	id S1753339AbaC1VNE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:13:04 -0400
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:62534 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152AbaC1VMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:12:51 -0400
+	Fri, 28 Mar 2014 17:12:49 -0400
 From: Alex Elder <elder@linaro.org>
 To: linux@arm.linux.org.uk, linus.walleij@linaro.org, viresh.linux@gmail.com,
         shiraz.hashim@gmail.com, catalin.marinas@arm.com
 Cc: spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 7/7] ARM: spear: use central SMP spin-table routines
-Date: Fri, 28 Mar 2014 16:13:00 -0500
-Message-Id: <1396041180-29897-8-git-send-email-elder@linaro.org>
+Subject: [RFC PATCH 5/7] ARM: versatile: kill off SMP support code
+Date: Fri, 28 Mar 2014 16:12:58 -0500
+Message-Id: <1396041180-29897-6-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1396041180-29897-1-git-send-email-elder@linaro.org>
 References: <1396041180-29897-1-git-send-email-elder@linaro.org>
@@ -22,81 +22,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get rid of the spear-specific code that implements the "holding pen"
-for secondary CPUs.  Use the code defined in "arch/arm/kernel/smp.c"
-instead.
-
-Note:
-The original "holding pen" code for this machine used only the
-bottom 4 bits of the MPIDR to identify the processor id.  The
-common code looks at the bottom 24 bits.  The validity of this
-change needs to be verified.
+The two users of the SMP support code under arch/arm/mach-versatile
+are now using common code.  So a bunch of stuff under mach-versatile
+can just go away.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- arch/arm/mach-spear/Makefile  |    2 +-
- arch/arm/mach-spear/generic.h |    1 -
- arch/arm/mach-spear/headsmp.S |   47 --------------------------
- arch/arm/mach-spear/platsmp.c |   75 ++---------------------------------------
- 4 files changed, 4 insertions(+), 121 deletions(-)
- delete mode 100644 arch/arm/mach-spear/headsmp.S
+ arch/arm/mach-vexpress/v2m.c                   |    1 -
+ arch/arm/plat-versatile/Makefile               |    1 -
+ arch/arm/plat-versatile/headsmp.S              |   41 -----------
+ arch/arm/plat-versatile/include/plat/platsmp.h |   14 ----
+ arch/arm/plat-versatile/platsmp.c              |   91 ------------------------
+ 5 files changed, 148 deletions(-)
+ delete mode 100644 arch/arm/plat-versatile/headsmp.S
+ delete mode 100644 arch/arm/plat-versatile/include/plat/platsmp.h
+ delete mode 100644 arch/arm/plat-versatile/platsmp.c
 
-diff --git a/arch/arm/mach-spear/Makefile b/arch/arm/mach-spear/Makefile
-index a946c19..974a417 100644
---- a/arch/arm/mach-spear/Makefile
-+++ b/arch/arm/mach-spear/Makefile
-@@ -7,7 +7,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include
- # Common support
- obj-y	:= restart.o time.o
+diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
+index 4f8b8cb..c2dc99b 100644
+--- a/arch/arm/mach-vexpress/v2m.c
++++ b/arch/arm/mach-vexpress/v2m.c
+@@ -35,7 +35,6 @@
+ #include <mach/motherboard.h>
  
--smp-$(CONFIG_SMP)		+= headsmp.o platsmp.o
-+smp-$(CONFIG_SMP)		+= platsmp.o
- smp-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
+ #include <plat/sched_clock.h>
+-#include <plat/platsmp.h>
  
- obj-$(CONFIG_ARCH_SPEAR13XX)	+= spear13xx.o $(smp-y)
-diff --git a/arch/arm/mach-spear/generic.h b/arch/arm/mach-spear/generic.h
-index a99d90a..86189ec 100644
---- a/arch/arm/mach-spear/generic.h
-+++ b/arch/arm/mach-spear/generic.h
-@@ -36,7 +36,6 @@ void __init spear13xx_l2x0_init(void);
+ #include "core.h"
  
- void spear_restart(enum reboot_mode, const char *);
- 
--void spear13xx_secondary_startup(void);
- void spear13xx_cpu_die(unsigned int cpu);
- 
- extern struct smp_operations spear13xx_smp_ops;
-diff --git a/arch/arm/mach-spear/headsmp.S b/arch/arm/mach-spear/headsmp.S
+diff --git a/arch/arm/plat-versatile/Makefile b/arch/arm/plat-versatile/Makefile
+index f88d448..d71d1b4 100644
+--- a/arch/arm/plat-versatile/Makefile
++++ b/arch/arm/plat-versatile/Makefile
+@@ -4,4 +4,3 @@ obj-$(CONFIG_PLAT_VERSATILE_CLOCK) += clock.o
+ obj-$(CONFIG_PLAT_VERSATILE_CLCD) += clcd.o
+ obj-$(CONFIG_PLAT_VERSATILE_LEDS) += leds.o
+ obj-$(CONFIG_PLAT_VERSATILE_SCHED_CLOCK) += sched-clock.o
+-obj-$(CONFIG_SMP) += headsmp.o platsmp.o
+diff --git a/arch/arm/plat-versatile/headsmp.S b/arch/arm/plat-versatile/headsmp.S
 deleted file mode 100644
-index ed85473..0000000
---- a/arch/arm/mach-spear/headsmp.S
+index 40f27e5..0000000
+--- a/arch/arm/plat-versatile/headsmp.S
 +++ /dev/null
-@@ -1,47 +0,0 @@
+@@ -1,41 +0,0 @@
 -/*
-- * arch/arm/mach-spear13XX/headsmp.S
+- *  linux/arch/arm/plat-versatile/headsmp.S
 - *
-- * Picked from realview
-- * Copyright (c) 2012 ST Microelectronics Limited
-- * Shiraz Hashim <shiraz.hashim@st.com>
+- *  Copyright (c) 2003 ARM Limited
+- *  All Rights Reserved
 - *
 - * This program is free software; you can redistribute it and/or modify
 - * it under the terms of the GNU General Public License version 2 as
 - * published by the Free Software Foundation.
 - */
--
 -#include <linux/linkage.h>
 -#include <linux/init.h>
--
--	__INIT
+-#include <asm/assembler.h>
 -
 -/*
-- * spear13xx specific entry point for secondary CPUs. This provides
-- * a "holding pen" into which all secondary cores are held until we're
-- * ready for them to initialise.
+- * Realview/Versatile Express specific entry point for secondary CPUs.
+- * This provides a "holding pen" into which all secondary cores are held
+- * until we're ready for them to initialise.
 - */
--ENTRY(spear13xx_secondary_startup)
+-ENTRY(versatile_secondary_startup)
+- ARM_BE8(setend	be)
 -	mrc	p15, 0, r0, c0, c0, 5
--	and	r0, r0, #15
+-	bic	r0, #0xff000000
 -	adr	r4, 1f
 -	ldmia	r4, {r5, r6}
 -	sub	r4, r4, r5
@@ -105,10 +96,6 @@ index ed85473..0000000
 -	cmp	r7, r0
 -	bne	pen
 -
--	/* re-enable coherency */
--	mrc	p15, 0, r0, c1, c0, 1
--	orr	r0, r0, #(1 << 6) | (1 << 0)
--	mcr	p15, 0, r0, c1, c0, 1
 -	/*
 -	 * we've been released from the holding pen: secondary_stack
 -	 * should now contain the SVC stack for this core
@@ -118,15 +105,53 @@ index ed85473..0000000
 -	.align
 -1:	.long	.
 -	.long	pen_release
--ENDPROC(spear13xx_secondary_startup)
-diff --git a/arch/arm/mach-spear/platsmp.c b/arch/arm/mach-spear/platsmp.c
-index e16f779..e97af7d 100644
---- a/arch/arm/mach-spear/platsmp.c
-+++ b/arch/arm/mach-spear/platsmp.c
-@@ -20,77 +20,8 @@
- #include <mach/spear.h>
- #include "generic.h"
- 
+-ENDPROC(versatile_secondary_startup)
+diff --git a/arch/arm/plat-versatile/include/plat/platsmp.h b/arch/arm/plat-versatile/include/plat/platsmp.h
+deleted file mode 100644
+index 50fb830..0000000
+--- a/arch/arm/plat-versatile/include/plat/platsmp.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-/*
+- *  linux/arch/arm/plat-versatile/include/plat/platsmp.h
+- *
+- *  Copyright (C) 2011 ARM Ltd.
+- *  All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-
+-extern void versatile_secondary_startup(void);
+-extern void versatile_secondary_init(unsigned int cpu);
+-extern int  versatile_boot_secondary(unsigned int cpu, struct task_struct *idle);
+diff --git a/arch/arm/plat-versatile/platsmp.c b/arch/arm/plat-versatile/platsmp.c
+deleted file mode 100644
+index 53feb90..0000000
+--- a/arch/arm/plat-versatile/platsmp.c
++++ /dev/null
+@@ -1,91 +0,0 @@
+-/*
+- *  linux/arch/arm/plat-versatile/platsmp.c
+- *
+- *  Copyright (C) 2002 ARM Ltd.
+- *  All Rights Reserved
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- */
+-#include <linux/init.h>
+-#include <linux/errno.h>
+-#include <linux/delay.h>
+-#include <linux/device.h>
+-#include <linux/jiffies.h>
+-#include <linux/smp.h>
+-
+-#include <asm/cacheflush.h>
+-#include <asm/smp_plat.h>
+-
 -/*
 - * Write pen_release in a way that is guaranteed to be visible to all
 - * observers, irrespective of whether they're taking part in coherency
@@ -141,9 +166,7 @@ index e16f779..e97af7d 100644
 -
 -static DEFINE_SPINLOCK(boot_lock);
 -
- static void __iomem *scu_base = IOMEM(VA_SCU_BASE);
- 
--static void spear13xx_secondary_init(unsigned int cpu)
+-void versatile_secondary_init(unsigned int cpu)
 -{
 -	/*
 -	 * let the primary processor know we're out of the
@@ -158,26 +181,29 @@ index e16f779..e97af7d 100644
 -	spin_unlock(&boot_lock);
 -}
 -
--static int spear13xx_boot_secondary(unsigned int cpu, struct task_struct *idle)
+-int versatile_boot_secondary(unsigned int cpu, struct task_struct *idle)
 -{
 -	unsigned long timeout;
 -
 -	/*
--	 * set synchronisation state between this boot processor
+-	 * Set synchronisation state between this boot processor
 -	 * and the secondary one
 -	 */
 -	spin_lock(&boot_lock);
 -
 -	/*
--	 * The secondary processor is waiting to be released from
--	 * the holding pen - release it, then wait for it to flag
--	 * that it has been released by resetting pen_release.
--	 *
--	 * Note that "pen_release" is the hardware CPU ID, whereas
--	 * "cpu" is Linux's internal ID.
+-	 * This is really belt and braces; we hold unintended secondary
+-	 * CPUs in the holding pen until we're ready for them.  However,
+-	 * since we haven't sent them a soft interrupt, they shouldn't
+-	 * be there.
 -	 */
--	write_pen_release(cpu);
+-	write_pen_release(cpu_logical_map(cpu));
 -
+-	/*
+-	 * Send the secondary CPU a soft interrupt, thereby causing
+-	 * the boot monitor to read the system wide flags register,
+-	 * and branch to the address found there.
+-	 */
 -	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
 -
 -	timeout = jiffies + (1 * HZ);
@@ -197,28 +223,6 @@ index e16f779..e97af7d 100644
 -
 -	return pen_release != -1 ? -ENOSYS : 0;
 -}
--
- /*
-  * Initialise the CPU possible map early - this describes the CPUs
-  * which may be present or become present in the system.
-@@ -119,14 +50,14 @@ static void __init spear13xx_smp_prepare_cpus(unsigned int max_cpus)
- 	 * (presently it is in SRAM). The BootMonitor waits until it receives a
- 	 * soft interrupt, and then the secondary CPU branches to this address.
- 	 */
--	__raw_writel(virt_to_phys(spear13xx_secondary_startup), SYS_LOCATION);
-+	__raw_writel(virt_to_phys(secondary_holding_pen), SYS_LOCATION);
- }
- 
- struct smp_operations spear13xx_smp_ops __initdata = {
-        .smp_init_cpus		= spear13xx_smp_init_cpus,
-        .smp_prepare_cpus	= spear13xx_smp_prepare_cpus,
--       .smp_secondary_init	= spear13xx_secondary_init,
--       .smp_boot_secondary	= spear13xx_boot_secondary,
-+       .smp_secondary_init	= smp_secondary_init,
-+       .smp_boot_secondary	= smp_boot_secondary,
- #ifdef CONFIG_HOTPLUG_CPU
-        .cpu_die			= spear13xx_cpu_die,
- #endif
 -- 
 1.7.9.5
 
