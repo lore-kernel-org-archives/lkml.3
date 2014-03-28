@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbaC1Ras (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51203 "EHLO
+	id S1754080AbaC1RwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:52:06 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51257 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752677AbaC1Ral (ORCPT
+	with ESMTP id S1752888AbaC1Ras (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:41 -0400
+	Fri, 28 Mar 2014 13:30:48 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
-        Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 01/22] ALSA: compress: Pass through return value of open ops callback
-Date: Fri, 28 Mar 2014 10:31:53 -0700
-Message-Id: <20140328173109.589260466@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 3.10 20/22] xhci: Fix resume issues on Renesas chips in Samsung laptops
+Date: Fri, 28 Mar 2014 10:32:12 -0700
+Message-Id: <20140328173112.142157710@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -27,38 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 749d32237bf39e6576dd95bfdf24e4378e51716c upstream.
+commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d upstream.
 
-The snd_compr_open function would always return 0 even if the compressed
-ops open function failed, obviously this is incorrect. Looks like this
-was introduced by a small typo in:
+Don Zickus <dzickus@redhat.com> writes:
 
-commit a0830dbd4e42b38aefdf3fb61ba5019a1a99ea85
-ALSA: Add a reference counter to card instance
+Some co-workers of mine bought Samsung laptops that had mostly usb3 ports.
+Those ports did not resume correctly (the driver would timeout communicating
+and fail).  This led to frustration as suspend/resume is a common use for
+laptops.
 
-This patch returns the value from the compressed op as it should.
+Poking around, I applied the reset on resume quirk to this chipset and the
+resume started working.  Reloading the xhci_hcd module had been the temporary
+workaround.
 
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Acked-by: Vinod Koul <vinod.koul@intel.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Tested-by: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/core/compress_offload.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/core/compress_offload.c
-+++ b/sound/core/compress_offload.c
-@@ -133,7 +133,7 @@ static int snd_compr_open(struct inode *
- 		kfree(data);
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -113,6 +113,11 @@ static void xhci_pci_quirks(struct devic
+ 		xhci_dbg(xhci, "QUIRK: Resetting on resume\n");
+ 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
  	}
- 	snd_card_unref(compr->card);
--	return 0;
-+	return ret;
++	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
++			pdev->device == 0x0015 &&
++			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
++			pdev->subsystem_device == 0xc0cd)
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
  }
- 
- static int snd_compr_free(struct inode *inode, struct file *f)
 
 
