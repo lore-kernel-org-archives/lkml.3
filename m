@@ -1,132 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752120AbaC1IAl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 04:00:41 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:38057 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaC1IAi (ORCPT
+	id S1751417AbaC1IGr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 04:06:47 -0400
+Received: from [207.46.163.210] ([207.46.163.210]:4510 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751173AbaC1IGk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 04:00:38 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-ec-53352c259596
-Date: Fri, 28 Mar 2014 09:00:31 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: ego@linux.vnet.ibm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cpufreq: don't print value of .driver_data from core
-Message-id: <20140328090031.5bb9a01f@amdc2363>
-In-reply-to: <20140327112602.GD27777@in.ibm.com>
-References: <2490cd0aaeaaeb88131c8089d491c485f08da5da.1395914766.git.viresh.kumar@linaro.org>
- <20140327104842.GB27777@in.ibm.com>
- <CAKohpombz9jzAs-_mpBNJyTJrrvvXVQ1L0V8fyKmB1vXpSPjmQ@mail.gmail.com>
- <20140327112602.GD27777@in.ibm.com>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t9jQV1VHdNggw+fBS2eNv1gt/ix6gOr
-	xftDz5gtLu+aw2bxufcIo8XJW5OZLM6cvsRqcfnrdWaLlo/rmSw2fvVw4PK4c20Pm8eDQ5tZ
-	PG7/e8zsseVqO4vH501yAaxRXDYpqTmZZalF+nYJXBlXJp5lKVgnWdHys5+9gfG7cBcjB4eE
-	gInEoknlXYycQKaYxIV769m6GLk4hASmM0qseHaCCcL5xShxdtNDRpAqFgFViT+Hz7KA2GwC
-	ehKf7z5lArFFBJwkbnz+wwrSwCywjlni6YXPYEXCAp4SP+c2gRXxAjW8PLaVFcTmFDCQuPZ2
-	P9SGT4wS5ya9YgdJ8AtISrT/+8EMcZOdxLlPG9ghmgUlfky+BzaUWUBLYvO2JlYIW15i85q3
-	zBMYBWchKZuFpGwWkrIFjMyrGEVTC5ILipPSc430ihNzi0vz0vWS83M3MYKj45n0DsZVDRaH
-	GAU4GJV4eGdYmQQLsSaWFVfmHmKU4GBWEuF9qmwaLMSbklhZlVqUH19UmpNafIhRmoNFSZz3
-	YKt1oJBAemJJanZqakFqEUyWiYNTqoExZm0Rh6Wz9oTW6KOTIs5PKPQ9fJDxntqGimCf1FMs
-	Snd71qwu5gg5vKAtqbxix7Wzopc/6u1mvpBiu1i2bW71i+97ODb1PZs1ZfmmB2zN4SVhu5vs
-	9q+TvjTbrGbV8Xpvo25n/71Hp9arXbm8St3i+UTmvqrVYrEND7I+XTw9reThofkGLK18SizF
-	GYmGWsxFxYkAd+KIJIoCAAA=
+	Fri, 28 Mar 2014 04:06:40 -0400
+From: Insop Song <Insop.Song@gainspeed.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "insop.song@gmail.com" <insop.song@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: RE: [PATCH] Remove warning printk
+Thread-Topic: [PATCH] Remove warning printk
+Thread-Index: AQHPSjmFMn1Otz1SPUCBG7+7zlX2mpr2D0QAgAAUAuI=
+Date: Fri, 28 Mar 2014 08:05:23 +0000
+Message-ID: <e575184bc64e46b9b5e229cec5338030@BY2PR07MB011.namprd07.prod.outlook.com>
+References: <1395978883-18723-1-git-send-email-insop.song@gainspeed.com>
+ <1395978883-18723-2-git-send-email-insop.song@gainspeed.com>,<20140328064926.GB13510@kroah.com>
+In-Reply-To: <20140328064926.GB13510@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [76.218.13.253]
+x-forefront-prvs: 01644DCF4A
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(199002)(189002)(377454003)(24454002)(87266001)(93516002)(56816005)(87936001)(93136001)(85306002)(90146001)(98676001)(81542001)(2656002)(74502001)(63696002)(47446002)(74662001)(77982001)(94316002)(59766001)(94946001)(85852003)(86362001)(69226001)(65816001)(66066001)(97186001)(20776003)(31966008)(80022001)(19580405001)(81686001)(83322001)(74366001)(54316002)(56776001)(19580395003)(51856001)(97336001)(95666003)(54356001)(76576001)(81342001)(76796001)(76786001)(53806001)(74876001)(74316001)(49866001)(92566001)(47976001)(81816001)(77096001)(95416001)(74706001)(33646001)(79102001)(47736001)(50986001)(83072002)(80976001)(4396001)(46102001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR07MB010;H:BY2PR07MB011.namprd07.prod.outlook.com;FPR:88C4F929.9CE39D9A.B4DDB5F3.4458DAA3.202EB;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: gainspeed.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Gautham,
+Hi Greg,
 
-> On Thu, Mar 27, 2014 at 04:29:37PM +0530, Viresh Kumar wrote:
-> > On 27 March 2014 16:18, Gautham R Shenoy <ego@linux.vnet.ibm.com>
-> > wrote:
-> > > So after this patch, driver_data is only going to be used by
-> > > drivers which want an "unsigned int" value to be saved along with
-> > > the frequency in the frequency_table and for those who want to
-> > > overload its interpretation to indicate BOOST.
-> > >
-> > > From the core's stand point, it is useful only for determining
-> > > whether a frequency is BOOST frequency or not.
-> > 
-> > Yes.
-> > 
-> > > So, wouldn't it be logical to allow drivers maintain their own
-> > > driver data since the core is anyway not interested in it, and
-> > > change this .driver_data to "flags" or some such which can
-> > > indicate boost ?
-> > 
-> > We can add another field .flags in case Rafael doesn't accept the
-> > other proposal I sent for fixing BOOST issue.
-> 
-> Even with that patch, the .driver_data won't be opaque. And that's not
-> good. Because, while some driver might not be explicitly setting the
-> value of .driver_data to 0xABABABAB, it might want to store the value
-> obtained at runtime into this field. And it could so happen
-> that at runtime this value is 0xABABABAB.
+Will send out a new patch mail with single patch shortly.
 
-The .driver_data initially stored the index of the freq_table. Even the
-name was ".index" not .driver_data. The "index" name was informative
-and reflected the purpose of the field. For this reason the BOOST
-marker was fitted there, since BOOST is somewhat extra state.
+I have not yet find a good way to reply mail and add patch yet with my mailing server/client.
 
-Then the name was chaged to .drviver_data. This name indicates that
-driver specific information can be stored there (in the uint32 format).
+That's why I send out a separate email instead of replying to Arnd.
 
-It would work if we stored there only flags (like it is now). However
-Gutham proposed idea to store there the voltage value - preferably
-stored as int.
+Below is his email and it has his signed-off, that's why I put that in my patch you got.
 
-For me it seems, like we are trying to mix arbitrary values and
-predefined flags in one variable. In my opinion we should
-split .driver_data field to two separate ones - namely .flags and
-.driver_data.
+I took that out from a new patch to make it clear on your end.
 
-Another solution, but NOT recommended by me, would be to split this
-field to have 16 bits for flags (upper) and lower 16 bits for values.
+Regards,
 
+ISS
 
-> 
-> > 
-> > But the point behind keeping .driver_data field here was: many
-> > drivers have some information attached to each frequency and they
-> > are closely bound to each other. And so it made more sense to keep
-> > them together. This is still used by many drivers and I wouldn't
-> > like them to maintain separate arrays for keeping this information.
-> > They are so much bound to the frequencies at the same index, that
-> > keeping them separately wouldn't be a good idea.
-> 
-> I understand this part. However there might be more data than an
-> "unsigned int" that the drivers would like to be bound at the same
-> index. Voltage information, for instance.
-> 
-> > 
-> --
-> Thanks and Regards
-> gautham.
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Here is Arnd's original email 
+________________________________________
+From: Arnd Bergmann <arnd@arndb.de>
+Sent: Tuesday, March 25, 2014 8:48 AM
+To: gregkh@linuxfoundation.org
+Cc: linux-kernel@vger.kernel.org; Insop Song
+Subject: [PATCH] staging: gs_fpgaboot: remove __TIMESTAMP__ macro
+
+We specifically build the kernel with -Werror=date-time to detect
+such macros, which gives us this error:
+
+gs_fpgaboot/gs_fpgaboot.c:376:44: error: macro "__TIMESTAMP__" might prevent reproducible builds [-Werror=date-time]
+  pr_info("built at %s UTC\n", __TIMESTAMP__);
+
+The obvious fix is to remove the printk output line.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+index 89bc84d..7506900 100644
+--- a/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
++++ b/drivers/staging/gs_fpgaboot/gs_fpgaboot.c
+@@ -373,7 +373,6 @@ static int __init gs_fpgaboot_init(void)
+        r = -1;
+
+        pr_info("FPGA DOWNLOAD --->\n");
+-       pr_info("built at %s UTC\n", __TIMESTAMP__);
+
+        pr_info("FPGA image file name: %s\n", file);
 
 
 
--- 
-Best regards,
+________________________________________
+From: Greg KH <gregkh@linuxfoundation.org>
+Sent: Thursday, March 27, 2014 11:49 PM
+To: Insop Song
+Cc: insop.song@gmail.com; linux-kernel@vger.kernel.org; Arnd Bergmann
+Subject: Re: [PATCH] Remove warning printk
 
-Lukasz Majewski
+On Thu, Mar 27, 2014 at 08:54:43PM -0700, Insop Song wrote:
+> Found from build with option -Werror=date-time
+>
+> Signed-off-by: Insop Song <insop.song@gainspeed.com>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+Did Arnd really sign off on this?
+
+And what is with the "odd" subject, your first email should have been
+the subject of this one.  We don't need a "cover letter" for a one-patch
+email sequence.
+
+Care to fix this up and resend?
+
+thanks,
+
+greg k-h
