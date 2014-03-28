@@ -1,348 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406AbaC1O63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:58:29 -0400
-Received: from kanga.kvack.org ([205.233.56.17]:56508 "EHLO kanga.kvack.org"
+	id S1751974AbaC1PGR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 11:06:17 -0400
+Received: from mail.dev.rtsoft.ru ([213.79.90.226]:36719 "EHLO dev.rtsoft.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773AbaC1O61 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:58:27 -0400
-Date: Fri, 28 Mar 2014 10:58:26 -0400
-From: Benjamin LaHaise <bcrl@kvack.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        Gu Zheng <guz.fnst@cn.fujitsu.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>, linux-aio@kvack.org,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: git pull -- [PATCH] aio: v2 ensure access to ctx->ring_pages is correctly serialised
-Message-ID: <20140328145826.GE29656@kvack.org>
-References: <20140327134653.GA22407@kvack.org> <CA+55aFzFgY4-26SO-MsFagzaj9JevkeeT1OJ3pjj-tcjuNCEeQ@mail.gmail.com> <CA+55aFx7vg2rvOu6Bu_e8+BB=ymoUMp0AM9JmAuUuSgo0LVEwg@mail.gmail.com> <20140327200851.GL17679@kvack.org> <CA+55aFy_sRnFu7KguAUAN5kbHk3Qa_0ZuATPU5i8LOyMMWZ_5g@mail.gmail.com> <20140327205749.GM17679@kvack.org> <CA+55aFyj2XFMkT1T=EPPw1CANt6atyFNmMaeaDm-p-NWfRNA+w@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFyj2XFMkT1T=EPPw1CANt6atyFNmMaeaDm-p-NWfRNA+w@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+	id S1751358AbaC1PGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 11:06:16 -0400
+Message-ID: <53358FE0.2060105@dev.rtsoft.ru>
+Date: Fri, 28 Mar 2014 19:06:08 +0400
+From: Nikita Yushchenko <nyushchenko@dev.rtsoft.ru>
+Organization: RTSoft Software Development Center
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:17.0) Gecko/20131104 Icedove/17.0.10
+MIME-Version: 1.0
+To: Xianghua Xiao <x.xiao@freescale.com>, Jason Jin <Jason.jin@freescale.com>,
+        Jon Loelier <jdl@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+CC: "Vadim V. Vlasov" <vvlasov@dev.rtsoft.ru>,
+        "'Alexey Lugovskoy'" <lugovskoy@dev.rtsoft.ru>,
+        linux-kernel@vger.kernel.org
+Subject: ULI M1575 question
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 02:34:08PM -0700, Linus Torvalds wrote:
-> On Thu, Mar 27, 2014 at 1:57 PM, Benjamin LaHaise <bcrl@kvack.org> wrote:
-> >
-> > *nod* -- I added that to the below variant.
-> 
-> You still have "goto err" for cases that have the ctx locked. Which
-> means that the thing gets free'd while still locked, which causes
-> problems for lockdep etc, so don't do it.
-> 
-> Do what I did: add a "err_unlock" label, and make anybody after the
-> mutex_lock() call it. No broken shortcuts.
+Hello people
 
-Here's a respin of that part.  I just moved the mutex initialization up so 
-that it's always valid in the err path.  I have also run this version of 
-the patch through xfstests and my migration test programs and it looks 
-okay.
+I'm writing you since your addresses are in Signed-Of-By lines of commit
+0e65bfe34c1 ("[POWERPC] Add initial MPC8610 HPCD Platform files") in
+linux kernel git tree.
 
-		-ben
--- 
-"Thought is the essence of where you are now."
+This commit has quirk_uli1575() routine, that has followinf lines:
 
-commit fa8a53c39f3fdde98c9eace6a9b412143f0f6ed6
-Author: Benjamin LaHaise <bcrl@kvack.org>
-Date:   Fri Mar 28 10:14:45 2014 -0400
+    /* Disable INTx */
+    pci_read_config_dword(dev, 0x48, &temp32);
+    pci_write_config_dword(dev, 0x48, (temp32 | 1<<26));
 
-    aio: v4 ensure access to ctx->ring_pages is correctly serialised for migration
-    
-    As reported by Tang Chen, Gu Zheng and Yasuaki Isimatsu, the following issues
-    exist in the aio ring page migration support.
-    
-    As a result, for example, we have the following problem:
-    
-                thread 1                      |              thread 2
-                                              |
-    aio_migratepage()                         |
-     |-> take ctx->completion_lock            |
-     |-> migrate_page_copy(new, old)          |
-     |   *NOW*, ctx->ring_pages[idx] == old   |
-                                              |
-                                              |    *NOW*, ctx->ring_pages[idx] == old
-                                              |    aio_read_events_ring()
-                                              |     |-> ring = kmap_atomic(ctx->ring_pages[0])
-                                              |     |-> ring->head = head;          *HERE, write to the old ring page*
-                                              |     |-> kunmap_atomic(ring);
-                                              |
-     |-> ctx->ring_pages[idx] = new           |
-     |   *BUT NOW*, the content of            |
-     |    ring_pages[idx] is old.             |
-     |-> release ctx->completion_lock         |
-    
-    As above, the new ring page will not be updated.
-    
-    Fix this issue, as well as prevent races in aio_ring_setup() by holding
-    the ring_lock mutex during kioctx setup and page migration.  This avoids
-    the overhead of taking another spinlock in aio_read_events_ring() as Tang's
-    and Gu's original fix did, pushing the overhead into the migration code.
-    
-    Note that to handle the nesting of ring_lock inside of mmap_sem, the
-    migratepage operation uses mutex_trylock().  Page migration is not a 100%
-    critical operation in this case, so the ocassional failure can be
-    tolerated.  This issue was reported by Sasha Levin.
-    
-    Based on feedback from Linus, avoid the extra taking of ctx->completion_lock.
-    Instead, make page migration fully serialised by mapping->private_lock, and
-    have aio_free_ring() simply disconnect the kioctx from the mapping by calling
-    put_aio_ring_file() before touching ctx->ring_pages[].  This simplifies the
-    error handling logic in aio_migratepage(), and should improve robustness.
-    
-    v4: always do mutex_unlock() in cases when kioctx setup fails.
-    
-    Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
-    Reported-by: Sasha Levin <sasha.levin@oracle.com>
-    Signed-off-by: Benjamin LaHaise <bcrl@kvack.org>
-    Cc: Tang Chen <tangchen@cn.fujitsu.com>
-    Cc: Gu Zheng <guz.fnst@cn.fujitsu.com>
-    Cc: stable@vger.kernel.org
+This code is still in kernel, just moved to
+  arch/powerpc/platforms/fsl_uli1575.c
+at some point.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 062a5f6..12a3de0e 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -52,7 +52,8 @@
- struct aio_ring {
- 	unsigned	id;	/* kernel internal index number */
- 	unsigned	nr;	/* number of io_events */
--	unsigned	head;
-+	unsigned	head;	/* Written to by userland or under ring_lock
-+				 * mutex by aio_read_events_ring(). */
- 	unsigned	tail;
- 
- 	unsigned	magic;
-@@ -243,6 +244,11 @@ static void aio_free_ring(struct kioctx *ctx)
- {
- 	int i;
- 
-+	/* Disconnect the kiotx from the ring file.  This prevents future
-+	 * accesses to the kioctx from page migration.
-+	 */
-+	put_aio_ring_file(ctx);
-+
- 	for (i = 0; i < ctx->nr_pages; i++) {
- 		struct page *page;
- 		pr_debug("pid(%d) [%d] page->count=%d\n", current->pid, i,
-@@ -254,8 +260,6 @@ static void aio_free_ring(struct kioctx *ctx)
- 		put_page(page);
- 	}
- 
--	put_aio_ring_file(ctx);
--
- 	if (ctx->ring_pages && ctx->ring_pages != ctx->internal_pages) {
- 		kfree(ctx->ring_pages);
- 		ctx->ring_pages = NULL;
-@@ -283,29 +287,38 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- {
- 	struct kioctx *ctx;
- 	unsigned long flags;
-+	pgoff_t idx;
- 	int rc;
- 
- 	rc = 0;
- 
--	/* Make sure the old page hasn't already been changed */
-+	/* mapping->private_lock here protects against the kioctx teardown.  */
- 	spin_lock(&mapping->private_lock);
- 	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			if (ctx->ring_pages[idx] != old)
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
-+	if (!ctx) {
-+		rc = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* The ring_lock mutex.  The prevents aio_read_events() from writing
-+	 * to the ring's head, and prevents page migration from mucking in
-+	 * a partially initialized kiotx.
-+	 */
-+	if (!mutex_trylock(&ctx->ring_lock)) {
-+		rc = -EAGAIN;
-+		goto out;
-+	}
-+
-+	idx = old->index;
-+	if (idx < (pgoff_t)ctx->nr_pages) {
-+		/* Make sure the old page hasn't already been changed */
-+		if (ctx->ring_pages[idx] != old)
-+			rc = -EAGAIN;
- 	} else
- 		rc = -EINVAL;
--	spin_unlock(&mapping->private_lock);
- 
- 	if (rc != 0)
--		return rc;
-+		goto out_unlock;
- 
- 	/* Writeback must be complete */
- 	BUG_ON(PageWriteback(old));
-@@ -314,38 +327,26 @@ static int aio_migratepage(struct address_space *mapping, struct page *new,
- 	rc = migrate_page_move_mapping(mapping, new, old, NULL, mode, 1);
- 	if (rc != MIGRATEPAGE_SUCCESS) {
- 		put_page(new);
--		return rc;
-+		goto out_unlock;
- 	}
- 
--	/* We can potentially race against kioctx teardown here.  Use the
--	 * address_space's private data lock to protect the mapping's
--	 * private_data.
-+	/* Take completion_lock to prevent other writes to the ring buffer
-+	 * while the old page is copied to the new.  This prevents new
-+	 * events from being lost.
- 	 */
--	spin_lock(&mapping->private_lock);
--	ctx = mapping->private_data;
--	if (ctx) {
--		pgoff_t idx;
--		spin_lock_irqsave(&ctx->completion_lock, flags);
--		migrate_page_copy(new, old);
--		idx = old->index;
--		if (idx < (pgoff_t)ctx->nr_pages) {
--			/* And only do the move if things haven't changed */
--			if (ctx->ring_pages[idx] == old)
--				ctx->ring_pages[idx] = new;
--			else
--				rc = -EAGAIN;
--		} else
--			rc = -EINVAL;
--		spin_unlock_irqrestore(&ctx->completion_lock, flags);
--	} else
--		rc = -EBUSY;
--	spin_unlock(&mapping->private_lock);
-+	spin_lock_irqsave(&ctx->completion_lock, flags);
-+	migrate_page_copy(new, old);
-+	BUG_ON(ctx->ring_pages[idx] != old);
-+	ctx->ring_pages[idx] = new;
-+	spin_unlock_irqrestore(&ctx->completion_lock, flags);
- 
--	if (rc == MIGRATEPAGE_SUCCESS)
--		put_page(old);
--	else
--		put_page(new);
-+	/* The old page is no longer accessible. */
-+	put_page(old);
- 
-+out_unlock:
-+	mutex_unlock(&ctx->ring_lock);
-+out:
-+	spin_unlock(&mapping->private_lock);
- 	return rc;
- }
- #endif
-@@ -380,7 +381,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	file = aio_private_file(ctx, nr_pages);
- 	if (IS_ERR(file)) {
- 		ctx->aio_ring_file = NULL;
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->aio_ring_file = file;
-@@ -415,7 +416,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 
- 	if (unlikely(i != nr_pages)) {
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	ctx->mmap_size = nr_pages * PAGE_SIZE;
-@@ -429,7 +430,7 @@ static int aio_setup_ring(struct kioctx *ctx)
- 	if (IS_ERR((void *)ctx->mmap_base)) {
- 		ctx->mmap_size = 0;
- 		aio_free_ring(ctx);
--		return -EAGAIN;
-+		return -ENOMEM;
- 	}
- 
- 	pr_debug("mmap address: 0x%08lx\n", ctx->mmap_base);
-@@ -556,6 +557,10 @@ static int ioctx_add_table(struct kioctx *ctx, struct mm_struct *mm)
- 					rcu_read_unlock();
- 					spin_unlock(&mm->ioctx_lock);
- 
-+					/* While kioctx setup is in progress,
-+					 * we are protected from page migration
-+					 * changes ring_pages by ->ring_lock.
-+					 */
- 					ring = kmap_atomic(ctx->ring_pages[0]);
- 					ring->id = ctx->id;
- 					kunmap_atomic(ring);
-@@ -640,24 +645,28 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 
- 	ctx->max_reqs = nr_events;
- 
--	if (percpu_ref_init(&ctx->users, free_ioctx_users))
--		goto err;
--
--	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
--		goto err;
--
- 	spin_lock_init(&ctx->ctx_lock);
- 	spin_lock_init(&ctx->completion_lock);
- 	mutex_init(&ctx->ring_lock);
-+	/* Protect against page migration throughout kiotx setup by keeping
-+	 * the ring_lock mutex held until setup is complete. */
-+	mutex_lock(&ctx->ring_lock);
- 	init_waitqueue_head(&ctx->wait);
- 
- 	INIT_LIST_HEAD(&ctx->active_reqs);
- 
-+	if (percpu_ref_init(&ctx->users, free_ioctx_users))
-+		goto err;
-+
-+	if (percpu_ref_init(&ctx->reqs, free_ioctx_reqs))
-+		goto err;
-+
- 	ctx->cpu = alloc_percpu(struct kioctx_cpu);
- 	if (!ctx->cpu)
- 		goto err;
- 
--	if (aio_setup_ring(ctx) < 0)
-+	err = aio_setup_ring(ctx);
-+	if (err < 0)
- 		goto err;
- 
- 	atomic_set(&ctx->reqs_available, ctx->nr_events - 1);
-@@ -683,6 +692,9 @@ static struct kioctx *ioctx_alloc(unsigned nr_events)
- 	if (err)
- 		goto err_cleanup;
- 
-+	/* Release the ring_lock mutex now that all setup is complete. */
-+	mutex_unlock(&ctx->ring_lock);
-+
- 	pr_debug("allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
- 		 ctx, ctx->user_id, mm, ctx->nr_events);
- 	return ctx;
-@@ -692,6 +704,7 @@ err_cleanup:
- err_ctx:
- 	aio_free_ring(ctx);
- err:
-+	mutex_unlock(&ctx->ring_lock);
- 	free_percpu(ctx->cpu);
- 	free_percpu(ctx->reqs.pcpu_count);
- 	free_percpu(ctx->users.pcpu_count);
-@@ -1024,6 +1037,7 @@ static long aio_read_events_ring(struct kioctx *ctx,
- 
- 	mutex_lock(&ctx->ring_lock);
- 
-+	/* Access to ->ring_pages here is protected by ctx->ring_lock. */
- 	ring = kmap_atomic(ctx->ring_pages[0]);
- 	head = ring->head;
- 	tail = ring->tail;
+Could you please explain what "Disable INTx" comment means, and why
+setting bit 2 of PCI configuration byte with offset 0x4b does that?
+
+Per ULI1575 datasheet that we've been able to find in the net, this bit
+is part of 4-bit field "PIRQG# routing table", thus setting it alone
+looks very strange.
+
+
+The reason for asking is the following.
+
+We are trying to overcome a very unpleasant problem with ULI M1575 on
+Freescale P2020DS and MPC8572DS boards. On both boards, when running
+CONFIG_PREEMPT_RT_FULL kernel and trying to use PCI ethernet adapter in
+PCI slot, we are getting irq storm on MPIC IRQ that is used by i8259,
+while i8259 reports no irq.
+
+Looks like same MPIC input is triggered by something else. Which, per
+CPU reference guide, could be caused by "Assert INTx" message received
+from ULI1575 over PCIe bus. However, ULI1575 document we have does not
+say anything about usage of "Assert INTx" on upstream bus. Instead, it
+documents how to route IRQs via built-in i8259-compatible interrupt
+controller.
+
+Mention of "Disable INTx" in your code raises some ideas that perhaps
+ULI *does* use INTx, and that could be somehow disabled...
+
+
+Thanks in advance.
+Nikita Yushchenko
+RTsoft Sortware Development Center.
+
