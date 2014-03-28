@@ -1,69 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaC1VU5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:20:57 -0400
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:35149 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014AbaC1VUj (ORCPT
+	id S1753345AbaC1VVO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:21:14 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41031 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaC1VVK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:20:39 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rob Herring <robh@kernel.org>
-Subject: [PATCH 2/2] misc: arm-charlcd: add DT probe support
-Date: Fri, 28 Mar 2014 16:20:29 -0500
-Message-Id: <1396041629-28820-2-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396041629-28820-1-git-send-email-robherring2@gmail.com>
-References: <1396041629-28820-1-git-send-email-robherring2@gmail.com>
+	Fri, 28 Mar 2014 17:21:10 -0400
+Date: Fri, 28 Mar 2014 17:21:07 -0400 (EDT)
+Message-Id: <20140328.172107.16072208664321602.davem@davemloft.net>
+To: teg@jklm.no
+Cc: dh.herrmann@gmail.com, netdev@vger.kernel.org, johannes@sipsolutions.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
+References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+	<20140328.145410.1817326821928803131.davem@davemloft.net>
+	<CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 14:21:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+From: Tom Gundersen <teg@jklm.no>
+Date: Fri, 28 Mar 2014 21:51:53 +0100
 
-Add the DT match table to enable DT based probe matching.
+> On Fri, Mar 28, 2014 at 7:54 PM, David Miller <davem@davemloft.net> wrote:
+>> From: David Herrmann <dh.herrmann@gmail.com>
+>> Date: Wed, 26 Mar 2014 14:05:13 +0100
+>>
+>>> The main use-case is to allow udev to skip applying reliable ifnames to virtual
+>>> devices. For instance, if wifi-P2P devices are created, wpas already provides a
+>>> suitable naming-policy and udev shouldn't touch these devices. Same is true for
+>>> other virtual devices.
+>>
+>> This makes no sense at all.
+>>
+>> If udev should avoid applying names to wifi-P2P devices, that policy can
+>> be instituted completely inside of udev.  There is no need whatsoever
+>> for kernel support.
+>>
+>> udev can look at the device type, and policies can be defined that key
+>> off of that device type, entirely in userspace.
+> 
+> Doing this in userspace sounds really wrong and fragile.
+> 
+> In the case of wifi-P2P we could make it work, but for every type of
+> device that is added to the kernel which is named from userspace, we
+> would have to play catch-up in udev (and even after we do, new kernels
+> on old userspace will never work in the expected way).
 
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/misc/arm-charlcd.c | 7 +++++++
- 1 file changed, 7 insertions(+)
+Chronically we are finding hackish ways for seperate components in
+userspace to coordinate their actions.
 
-diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-index b7ebf80..c72e96b 100644
---- a/drivers/misc/arm-charlcd.c
-+++ b/drivers/misc/arm-charlcd.c
-@@ -11,6 +11,7 @@
- #include <linux/module.h>
- #include <linux/interrupt.h>
- #include <linux/platform_device.h>
-+#include <linux/of.h>
- #include <linux/completion.h>
- #include <linux/delay.h>
- #include <linux/io.h>
-@@ -366,11 +367,17 @@ static const struct dev_pm_ops charlcd_pm_ops = {
- 	.resume = charlcd_resume,
- };
- 
-+static const struct of_device_id charlcd_match[] = {
-+	{ .compatible = "arm,versatile-lcd", },
-+	{}
-+};
-+
- static struct platform_driver charlcd_driver = {
- 	.driver = {
- 		.name = DRIVERNAME,
- 		.owner = THIS_MODULE,
- 		.pm = &charlcd_pm_ops,
-+		.of_match_table = of_match_ptr(charlcd_match),
- 	},
- 	.remove = __exit_p(charlcd_remove),
- };
--- 
-1.8.3.2
+You're right, doing this for every device type for every single attribute
+that might better.... sucks.
 
+What's really needed is generic ways for seperate userspace components
+to coordinate with eachother on issues like this.
