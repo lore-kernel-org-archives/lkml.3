@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699AbaC1RjS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:39:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51425 "EHLO
+	id S1753228AbaC1RbN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:31:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234AbaC1RbR (ORCPT
+	with ESMTP id S1751759AbaC1RbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:17 -0400
+	Fri, 28 Mar 2014 13:31:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 32/46] powerpc/powernv: Dump PHB diag-data immediately
-Date: Fri, 28 Mar 2014 10:32:16 -0700
-Message-Id: <20140328173139.045806269@linuxfoundation.org>
+        Jon Ringle <jon@ringle.org>,
+        Christian Riesch <christian.riesch@omicron.at>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 09/46] net: davinci_emac: Replace devm_request_irq with request_irq
+Date: Fri, 28 Mar 2014 10:31:53 -0700
+Message-Id: <20140328173135.902968993@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,184 +29,97 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Christian Riesch <christian.riesch@omicron.at>
 
-commit 947166043732b69878123bf31f51933ad0316080 upstream.
+commit 33b7107f59a61236d94ecd6b45e20283cd5abcc8 upstream.
 
-The PHB diag-data is important to help locating the root cause for
-EEH errors such as frozen PE or fenced PHB. However, the EEH core
-enables IO path by clearing part of HW registers before collecting
-this data causing it to be corrupted.
+In commit 6892b41d9701283085b655c6086fb57a5d63fa47
 
-This patch fixes this by dumping the PHB diag-data immediately when
-frozen/fenced state on PE or PHB is detected for the first time in
-eeh_ops::get_state() or next_error() backend.
+Author: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Date:   Tue Jun 25 21:24:51 2013 +0530
+net: davinci: emac: Convert to devm_* api
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-CC: <stable@vger.kernel.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+the call of request_irq is replaced by devm_request_irq and the call
+of free_irq is removed. But since interrupts are requested in
+emac_dev_open, doing ifconfig up/down on the board requests the
+interrupts again each time, causing devm_request_irq to fail. The
+interface is dead until the device is rebooted.
+
+This patch reverts said commit partially: It changes the driver back
+to use request_irq instead of devm_request_irq, puts free_irq back in
+place, but keeps the remaining changes of the original patch.
+
+Reported-by: Jon Ringle <jon@ringle.org>
+Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
+Cc: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/eeh-ioda.c |   99 +++++++++++++-----------------
- 1 file changed, 43 insertions(+), 56 deletions(-)
+ drivers/net/ethernet/ti/davinci_emac.c |   25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/eeh-ioda.c
-+++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
-@@ -114,6 +114,7 @@ DEFINE_SIMPLE_ATTRIBUTE(ioda_eeh_inbB_db
- 			ioda_eeh_inbB_dbgfs_set, "0x%llx\n");
- #endif /* CONFIG_DEBUG_FS */
+--- a/drivers/net/ethernet/ti/davinci_emac.c
++++ b/drivers/net/ethernet/ti/davinci_emac.c
+@@ -1532,7 +1532,7 @@ static int emac_dev_open(struct net_devi
+ 	struct device *emac_dev = &ndev->dev;
+ 	u32 cnt;
+ 	struct resource *res;
+-	int ret;
++	int q, m, ret;
+ 	int i = 0;
+ 	int k = 0;
+ 	struct emac_priv *priv = netdev_priv(ndev);
+@@ -1567,8 +1567,7 @@ static int emac_dev_open(struct net_devi
  
-+
- /**
-  * ioda_eeh_post_init - Chip dependent post initialization
-  * @hose: PCI controller
-@@ -221,6 +222,22 @@ static int ioda_eeh_set_option(struct ee
- 	return ret;
- }
- 
-+static void ioda_eeh_phb_diag(struct pci_controller *hose)
-+{
-+	struct pnv_phb *phb = hose->private_data;
-+	long rc;
-+
-+	rc = opal_pci_get_phb_diag_data2(phb->opal_id, phb->diag.blob,
-+					 PNV_PCI_DIAG_BUF_SIZE);
-+	if (rc != OPAL_SUCCESS) {
-+		pr_warning("%s: Failed to get diag-data for PHB#%x (%ld)\n",
-+			    __func__, hose->global_number, rc);
-+		return;
-+	}
-+
-+	pnv_pci_dump_phb_diag_data(hose, phb->diag.blob);
-+}
-+
- /**
-  * ioda_eeh_get_state - Retrieve the state of PE
-  * @pe: EEH PE
-@@ -272,6 +289,9 @@ static int ioda_eeh_get_state(struct eeh
- 			result |= EEH_STATE_DMA_ACTIVE;
- 			result |= EEH_STATE_MMIO_ENABLED;
- 			result |= EEH_STATE_DMA_ENABLED;
-+		} else if (!(pe->state & EEH_PE_ISOLATED)) {
-+			eeh_pe_state_mark(pe, EEH_PE_ISOLATED);
-+			ioda_eeh_phb_diag(hose);
+ 	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k))) {
+ 		for (i = res->start; i <= res->end; i++) {
+-			if (devm_request_irq(&priv->pdev->dev, i, emac_irq,
+-					     0, ndev->name, ndev))
++			if (request_irq(i, emac_irq, 0, ndev->name, ndev))
+ 				goto rollback;
  		}
+ 		k++;
+@@ -1641,7 +1640,15 @@ static int emac_dev_open(struct net_devi
  
- 		return result;
-@@ -315,6 +335,15 @@ static int ioda_eeh_get_state(struct eeh
- 			   __func__, fstate, hose->global_number, pe_no);
- 	}
+ rollback:
  
-+	/* Dump PHB diag-data for frozen PE */
-+	if (result != EEH_STATE_NOT_SUPPORT &&
-+	    (result & (EEH_STATE_MMIO_ACTIVE | EEH_STATE_DMA_ACTIVE)) !=
-+	    (EEH_STATE_MMIO_ACTIVE | EEH_STATE_DMA_ACTIVE) &&
-+	    !(pe->state & EEH_PE_ISOLATED)) {
-+		eeh_pe_state_mark(pe, EEH_PE_ISOLATED);
-+		ioda_eeh_phb_diag(hose);
+-	dev_err(emac_dev, "DaVinci EMAC: devm_request_irq() failed");
++	dev_err(emac_dev, "DaVinci EMAC: request_irq() failed");
++
++	for (q = k; k >= 0; k--) {
++		for (m = i; m >= res->start; m--)
++			free_irq(m, ndev);
++		res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k-1);
++		m = res->end;
 +	}
 +
- 	return result;
- }
- 
-@@ -530,45 +559,6 @@ static int ioda_eeh_reset(struct eeh_pe
- }
- 
- /**
-- * ioda_eeh_get_log - Retrieve error log
-- * @pe: EEH PE
-- * @severity: Severity level of the log
-- * @drv_log: buffer to store the log
-- * @len: space of the log buffer
-- *
-- * The function is used to retrieve error log from P7IOC.
-- */
--static int ioda_eeh_get_log(struct eeh_pe *pe, int severity,
--			    char *drv_log, unsigned long len)
--{
--	s64 ret;
--	unsigned long flags;
--	struct pci_controller *hose = pe->phb;
--	struct pnv_phb *phb = hose->private_data;
--
--	spin_lock_irqsave(&phb->lock, flags);
--
--	ret = opal_pci_get_phb_diag_data2(phb->opal_id,
--			phb->diag.blob, PNV_PCI_DIAG_BUF_SIZE);
--	if (ret) {
--		spin_unlock_irqrestore(&phb->lock, flags);
--		pr_warning("%s: Can't get log for PHB#%x-PE#%x (%lld)\n",
--			   __func__, hose->global_number, pe->addr, ret);
--		return -EIO;
--	}
--
--	/*
--	 * FIXME: We probably need log the error in somewhere.
--	 * Lets make it up in future.
--	 */
--	/* pr_info("%s", phb->diag.blob); */
--
--	spin_unlock_irqrestore(&phb->lock, flags);
--
--	return 0;
--}
--
--/**
-  * ioda_eeh_configure_bridge - Configure the PCI bridges for the indicated PE
-  * @pe: EEH PE
-  *
-@@ -649,22 +639,6 @@ static void ioda_eeh_hub_diag(struct pci
- 	}
- }
- 
--static void ioda_eeh_phb_diag(struct pci_controller *hose)
--{
--	struct pnv_phb *phb = hose->private_data;
--	long rc;
--
--	rc = opal_pci_get_phb_diag_data2(phb->opal_id, phb->diag.blob,
--					 PNV_PCI_DIAG_BUF_SIZE);
--	if (rc != OPAL_SUCCESS) {
--		pr_warning("%s: Failed to get diag-data for PHB#%x (%ld)\n",
--			    __func__, hose->global_number, rc);
--		return;
--	}
--
--	pnv_pci_dump_phb_diag_data(hose, phb->diag.blob);
--}
--
- static int ioda_eeh_get_phb_pe(struct pci_controller *hose,
- 			       struct eeh_pe **pe)
+ 	ret = -EBUSY;
+ err:
+ 	pm_runtime_put(&priv->pdev->dev);
+@@ -1659,6 +1666,9 @@ err:
+  */
+ static int emac_dev_stop(struct net_device *ndev)
  {
-@@ -827,6 +801,20 @@ static int ioda_eeh_next_error(struct ee
- 		}
++	struct resource *res;
++	int i = 0;
++	int irq_num;
+ 	struct emac_priv *priv = netdev_priv(ndev);
+ 	struct device *emac_dev = &ndev->dev;
  
- 		/*
-+		 * EEH core will try recover from fenced PHB or
-+		 * frozen PE. In the time for frozen PE, EEH core
-+		 * enable IO path for that before collecting logs,
-+		 * but it ruins the site. So we have to dump the
-+		 * log in advance here.
-+		 */
-+		if ((ret == EEH_NEXT_ERR_FROZEN_PE  ||
-+		    ret == EEH_NEXT_ERR_FENCED_PHB) &&
-+		    !((*pe)->state & EEH_PE_ISOLATED)) {
-+			eeh_pe_state_mark(*pe, EEH_PE_ISOLATED);
-+			ioda_eeh_phb_diag(hose);
-+		}
+@@ -1674,6 +1684,13 @@ static int emac_dev_stop(struct net_devi
+ 	if (priv->phydev)
+ 		phy_disconnect(priv->phydev);
+ 
++	/* Free IRQ */
++	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, i))) {
++		for (irq_num = res->start; irq_num <= res->end; irq_num++)
++			free_irq(irq_num, priv->ndev);
++		i++;
++	}
 +
-+		/*
- 		 * If we have no errors on the specific PHB or only
- 		 * informative error there, we continue poking it.
- 		 * Otherwise, we need actions to be taken by upper
-@@ -844,7 +832,6 @@ struct pnv_eeh_ops ioda_eeh_ops = {
- 	.set_option		= ioda_eeh_set_option,
- 	.get_state		= ioda_eeh_get_state,
- 	.reset			= ioda_eeh_reset,
--	.get_log		= ioda_eeh_get_log,
- 	.configure_bridge	= ioda_eeh_configure_bridge,
- 	.next_error		= ioda_eeh_next_error
- };
+ 	if (netif_msg_drv(priv))
+ 		dev_notice(emac_dev, "DaVinci EMAC: %s stopped\n", ndev->name);
+ 
 
 
