@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753339AbaC1VNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:13:04 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:62534 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152AbaC1VMt (ORCPT
+	id S1753293AbaC1VNB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:13:01 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:60543 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753190AbaC1VMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:12:49 -0400
+	Fri, 28 Mar 2014 17:12:50 -0400
 From: Alex Elder <elder@linaro.org>
 To: linux@arm.linux.org.uk, linus.walleij@linaro.org, viresh.linux@gmail.com,
         shiraz.hashim@gmail.com, catalin.marinas@arm.com
 Cc: spear-devel@list.st.com, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 5/7] ARM: versatile: kill off SMP support code
-Date: Fri, 28 Mar 2014 16:12:58 -0500
-Message-Id: <1396041180-29897-6-git-send-email-elder@linaro.org>
+Subject: [RFC PATCH 6/7] ARM: ux500: use generic SMP spin-table routines
+Date: Fri, 28 Mar 2014 16:12:59 -0500
+Message-Id: <1396041180-29897-7-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1396041180-29897-1-git-send-email-elder@linaro.org>
 References: <1396041180-29897-1-git-send-email-elder@linaro.org>
@@ -22,52 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The two users of the SMP support code under arch/arm/mach-versatile
-are now using common code.  So a bunch of stuff under mach-versatile
-can just go away.
+Get rid of the ux500-specific code that implements the "holding pen"
+for secondary CPUs.  Use the code defined in "arch/arm/kernel/smp.c"
+instead.
+
+Note:
+The original "holding pen" code for this machine used only the
+bottom 4 bits of the MPIDR to identify the processor id.  The
+common code looks at the bottom 24 bits.  The validity of this
+change needs to be verified.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 ---
- arch/arm/mach-vexpress/v2m.c                   |    1 -
- arch/arm/plat-versatile/Makefile               |    1 -
- arch/arm/plat-versatile/headsmp.S              |   41 -----------
- arch/arm/plat-versatile/include/plat/platsmp.h |   14 ----
- arch/arm/plat-versatile/platsmp.c              |   91 ------------------------
- 5 files changed, 148 deletions(-)
- delete mode 100644 arch/arm/plat-versatile/headsmp.S
- delete mode 100644 arch/arm/plat-versatile/include/plat/platsmp.h
- delete mode 100644 arch/arm/plat-versatile/platsmp.c
+ arch/arm/mach-ux500/Makefile  |    2 +-
+ arch/arm/mach-ux500/headsmp.S |   37 ---------------------
+ arch/arm/mach-ux500/platsmp.c |   72 ++---------------------------------------
+ 3 files changed, 4 insertions(+), 107 deletions(-)
+ delete mode 100644 arch/arm/mach-ux500/headsmp.S
 
-diff --git a/arch/arm/mach-vexpress/v2m.c b/arch/arm/mach-vexpress/v2m.c
-index 4f8b8cb..c2dc99b 100644
---- a/arch/arm/mach-vexpress/v2m.c
-+++ b/arch/arm/mach-vexpress/v2m.c
-@@ -35,7 +35,6 @@
- #include <mach/motherboard.h>
+diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
+index d05ba75..0308fe1 100644
+--- a/arch/arm/mach-ux500/Makefile
++++ b/arch/arm/mach-ux500/Makefile
+@@ -9,7 +9,7 @@ obj-$(CONFIG_MACH_MOP500)	+= board-mop500-sdi.o \
+ 				board-mop500-regulators.o \
+ 				board-mop500-pins.o \
+ 				board-mop500-audio.o
+-obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
++obj-$(CONFIG_SMP)		+= platsmp.o
+ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
  
- #include <plat/sched_clock.h>
--#include <plat/platsmp.h>
- 
- #include "core.h"
- 
-diff --git a/arch/arm/plat-versatile/Makefile b/arch/arm/plat-versatile/Makefile
-index f88d448..d71d1b4 100644
---- a/arch/arm/plat-versatile/Makefile
-+++ b/arch/arm/plat-versatile/Makefile
-@@ -4,4 +4,3 @@ obj-$(CONFIG_PLAT_VERSATILE_CLOCK) += clock.o
- obj-$(CONFIG_PLAT_VERSATILE_CLCD) += clcd.o
- obj-$(CONFIG_PLAT_VERSATILE_LEDS) += leds.o
- obj-$(CONFIG_PLAT_VERSATILE_SCHED_CLOCK) += sched-clock.o
--obj-$(CONFIG_SMP) += headsmp.o platsmp.o
-diff --git a/arch/arm/plat-versatile/headsmp.S b/arch/arm/plat-versatile/headsmp.S
+ CFLAGS_hotplug.o		+= -march=armv7-a
+diff --git a/arch/arm/mach-ux500/headsmp.S b/arch/arm/mach-ux500/headsmp.S
 deleted file mode 100644
-index 40f27e5..0000000
---- a/arch/arm/plat-versatile/headsmp.S
+index 9cdea04..0000000
+--- a/arch/arm/mach-ux500/headsmp.S
 +++ /dev/null
-@@ -1,41 +0,0 @@
+@@ -1,37 +0,0 @@
 -/*
-- *  linux/arch/arm/plat-versatile/headsmp.S
-- *
+- *  Copyright (c) 2009 ST-Ericsson
+- *	This file is based  ARM Realview platform
 - *  Copyright (c) 2003 ARM Limited
 - *  All Rights Reserved
 - *
@@ -77,17 +71,13 @@ index 40f27e5..0000000
 - */
 -#include <linux/linkage.h>
 -#include <linux/init.h>
--#include <asm/assembler.h>
 -
 -/*
-- * Realview/Versatile Express specific entry point for secondary CPUs.
-- * This provides a "holding pen" into which all secondary cores are held
-- * until we're ready for them to initialise.
+- * U8500 specific entry point for secondary CPUs.
 - */
--ENTRY(versatile_secondary_startup)
-- ARM_BE8(setend	be)
+-ENTRY(u8500_secondary_startup)
 -	mrc	p15, 0, r0, c0, c0, 5
--	bic	r0, #0xff000000
+-	and	r0, r0, #15
 -	adr	r4, 1f
 -	ldmia	r4, {r5, r6}
 -	sub	r4, r4, r5
@@ -101,56 +91,21 @@ index 40f27e5..0000000
 -	 * should now contain the SVC stack for this core
 -	 */
 -	b	secondary_startup
+-ENDPROC(u8500_secondary_startup)
 -
--	.align
+-	.align 2
 -1:	.long	.
 -	.long	pen_release
--ENDPROC(versatile_secondary_startup)
-diff --git a/arch/arm/plat-versatile/include/plat/platsmp.h b/arch/arm/plat-versatile/include/plat/platsmp.h
-deleted file mode 100644
-index 50fb830..0000000
---- a/arch/arm/plat-versatile/include/plat/platsmp.h
-+++ /dev/null
-@@ -1,14 +0,0 @@
--/*
-- *  linux/arch/arm/plat-versatile/include/plat/platsmp.h
-- *
-- *  Copyright (C) 2011 ARM Ltd.
-- *  All Rights Reserved
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--extern void versatile_secondary_startup(void);
--extern void versatile_secondary_init(unsigned int cpu);
--extern int  versatile_boot_secondary(unsigned int cpu, struct task_struct *idle);
-diff --git a/arch/arm/plat-versatile/platsmp.c b/arch/arm/plat-versatile/platsmp.c
-deleted file mode 100644
-index 53feb90..0000000
---- a/arch/arm/plat-versatile/platsmp.c
-+++ /dev/null
-@@ -1,91 +0,0 @@
--/*
-- *  linux/arch/arm/plat-versatile/platsmp.c
-- *
-- *  Copyright (C) 2002 ARM Ltd.
-- *  All Rights Reserved
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--#include <linux/init.h>
--#include <linux/errno.h>
--#include <linux/delay.h>
--#include <linux/device.h>
--#include <linux/jiffies.h>
--#include <linux/smp.h>
--
--#include <asm/cacheflush.h>
--#include <asm/smp_plat.h>
+diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
+index a44967f..6812aac 100644
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -26,21 +26,6 @@
+ #include "db8500-regs.h"
+ #include "id.h"
+ 
+-/* This is called from headsmp.S to wakeup the secondary core */
+-extern void u8500_secondary_startup(void);
 -
 -/*
 - * Write pen_release in a way that is guaranteed to be visible to all
@@ -164,9 +119,16 @@ index 53feb90..0000000
 -	sync_cache_w(&pen_release);
 -}
 -
+ static void __iomem *scu_base_addr(void)
+ {
+ 	if (cpu_is_u8500_family() || cpu_is_ux540_family())
+@@ -51,57 +36,6 @@ static void __iomem *scu_base_addr(void)
+ 	return NULL;
+ }
+ 
 -static DEFINE_SPINLOCK(boot_lock);
 -
--void versatile_secondary_init(unsigned int cpu)
+-static void ux500_secondary_init(unsigned int cpu)
 -{
 -	/*
 -	 * let the primary processor know we're out of the
@@ -181,38 +143,29 @@ index 53feb90..0000000
 -	spin_unlock(&boot_lock);
 -}
 -
--int versatile_boot_secondary(unsigned int cpu, struct task_struct *idle)
+-static int ux500_boot_secondary(unsigned int cpu, struct task_struct *idle)
 -{
 -	unsigned long timeout;
 -
 -	/*
--	 * Set synchronisation state between this boot processor
+-	 * set synchronisation state between this boot processor
 -	 * and the secondary one
 -	 */
 -	spin_lock(&boot_lock);
 -
 -	/*
--	 * This is really belt and braces; we hold unintended secondary
--	 * CPUs in the holding pen until we're ready for them.  However,
--	 * since we haven't sent them a soft interrupt, they shouldn't
--	 * be there.
+-	 * The secondary processor is waiting to be released from
+-	 * the holding pen - release it, then wait for it to flag
+-	 * that it has been released by resetting pen_release.
 -	 */
 -	write_pen_release(cpu_logical_map(cpu));
 -
--	/*
--	 * Send the secondary CPU a soft interrupt, thereby causing
--	 * the boot monitor to read the system wide flags register,
--	 * and branch to the address found there.
--	 */
 -	arch_send_wakeup_ipi_mask(cpumask_of(cpu));
 -
 -	timeout = jiffies + (1 * HZ);
 -	while (time_before(jiffies, timeout)) {
--		smp_rmb();
 -		if (pen_release == -1)
 -			break;
--
--		udelay(10);
 -	}
 -
 -	/*
@@ -223,6 +176,30 @@ index 53feb90..0000000
 -
 -	return pen_release != -1 ? -ENOSYS : 0;
 -}
+-
+ static void __init wakeup_secondary(void)
+ {
+ 	void __iomem *backupram;
+@@ -118,7 +52,7 @@ static void __init wakeup_secondary(void)
+ 	 * is waiting for. This would wake up the secondary core from WFE
+ 	 */
+ #define UX500_CPU1_JUMPADDR_OFFSET 0x1FF4
+-	__raw_writel(virt_to_phys(u8500_secondary_startup),
++	__raw_writel(virt_to_phys(secondary_holding_pen),
+ 		     backupram + UX500_CPU1_JUMPADDR_OFFSET);
+ 
+ #define UX500_CPU1_WAKEMAGIC_OFFSET 0x1FF0
+@@ -161,8 +95,8 @@ static void __init ux500_smp_prepare_cpus(unsigned int max_cpus)
+ struct smp_operations ux500_smp_ops __initdata = {
+ 	.smp_init_cpus		= ux500_smp_init_cpus,
+ 	.smp_prepare_cpus	= ux500_smp_prepare_cpus,
+-	.smp_secondary_init	= ux500_secondary_init,
+-	.smp_boot_secondary	= ux500_boot_secondary,
++	.smp_boot_secondary	= smp_boot_secondary,
++	.smp_secondary_init	= smp_secondary_init,
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	.cpu_die		= ux500_cpu_die,
+ #endif
 -- 
 1.7.9.5
 
