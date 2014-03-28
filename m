@@ -1,153 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929AbaC1Rq5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:46:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51322 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaC1Ra7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753079AbaC1Ra7 (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Mar 2014 13:30:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51279 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaC1Raw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 13:30:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chuck Lever <chuck.lever@oracle.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 10/46] NFSv4: Use the correct net namespace in nfs4_update_server
-Date: Fri, 28 Mar 2014 10:31:54 -0700
-Message-Id: <20140328173136.031047461@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.13 00/46] 3.13.8-stable review
+Date: Fri, 28 Mar 2014 10:31:44 -0700
+Message-Id: <20140328173134.630198216@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
-References: <20140328173134.630198216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.13.8 release.
+There are 46 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Mar 30 17:31:14 UTC 2014.
+Anything received after that time might be too late.
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.8-rc1.gz
+and the diffstat can be found below.
 
-commit 292f503cade2b1d966239ef56a851e6897d1ba92 upstream.
+thanks,
 
-We need to use the same net namespace that was used to resolve
-the hostname and sockaddr arguments.
+greg k-h
 
-Fixes: 32e62b7c3ef09 (NFS: Add nfs4_update_server)
-Cc: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+-------------
+Pseudo-Shortlog of commits:
 
----
- fs/nfs/internal.h      |    3 ++-
- fs/nfs/nfs4client.c    |    7 ++++---
- fs/nfs/nfs4namespace.c |   12 ++++++------
- 3 files changed, 12 insertions(+), 10 deletions(-)
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.13.8-rc1
 
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -176,7 +176,8 @@ extern struct nfs_server *nfs4_create_se
- extern struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *,
- 						      struct nfs_fh *);
- extern int nfs4_update_server(struct nfs_server *server, const char *hostname,
--					struct sockaddr *sap, size_t salen);
-+					struct sockaddr *sap, size_t salen,
-+					struct net *net);
- extern void nfs_free_server(struct nfs_server *server);
- extern struct nfs_server *nfs_clone_server(struct nfs_server *,
- 					   struct nfs_fh *,
---- a/fs/nfs/nfs4client.c
-+++ b/fs/nfs/nfs4client.c
-@@ -1133,6 +1133,7 @@ static int nfs_probe_destination(struct
-  * @hostname: new end-point's hostname
-  * @sap: new end-point's socket address
-  * @salen: size of "sap"
-+ * @net: net namespace
-  *
-  * The nfs_server must be quiescent before this function is invoked.
-  * Either its session is drained (NFSv4.1+), or its transport is
-@@ -1141,13 +1142,13 @@ static int nfs_probe_destination(struct
-  * Returns zero on success, or a negative errno value.
-  */
- int nfs4_update_server(struct nfs_server *server, const char *hostname,
--		       struct sockaddr *sap, size_t salen)
-+		       struct sockaddr *sap, size_t salen, struct net *net)
- {
- 	struct nfs_client *clp = server->nfs_client;
- 	struct rpc_clnt *clnt = server->client;
- 	struct xprt_create xargs = {
- 		.ident		= clp->cl_proto,
--		.net		= &init_net,
-+		.net		= net,
- 		.dstaddr	= sap,
- 		.addrlen	= salen,
- 		.servername	= hostname,
-@@ -1187,7 +1188,7 @@ int nfs4_update_server(struct nfs_server
- 	error = nfs4_set_client(server, hostname, sap, salen, buf,
- 				clp->cl_rpcclient->cl_auth->au_flavor,
- 				clp->cl_proto, clnt->cl_timeout,
--				clp->cl_minorversion, clp->cl_net);
-+				clp->cl_minorversion, net);
- 	nfs_put_client(clp);
- 	if (error != 0) {
- 		nfs_server_insert_lists(server);
---- a/fs/nfs/nfs4namespace.c
-+++ b/fs/nfs/nfs4namespace.c
-@@ -121,9 +121,8 @@ static int nfs4_validate_fspath(struct d
- }
- 
- static size_t nfs_parse_server_name(char *string, size_t len,
--		struct sockaddr *sa, size_t salen, struct nfs_server *server)
-+		struct sockaddr *sa, size_t salen, struct net *net)
- {
--	struct net *net = rpc_net_ns(server->client);
- 	ssize_t ret;
- 
- 	ret = rpc_pton(net, string, len, sa, salen);
-@@ -223,6 +222,7 @@ static struct vfsmount *try_location(str
- 				     const struct nfs4_fs_location *location)
- {
- 	const size_t addr_bufsize = sizeof(struct sockaddr_storage);
-+	struct net *net = rpc_net_ns(NFS_SB(mountdata->sb)->client);
- 	struct vfsmount *mnt = ERR_PTR(-ENOENT);
- 	char *mnt_path;
- 	unsigned int maxbuflen;
-@@ -248,8 +248,7 @@ static struct vfsmount *try_location(str
- 			continue;
- 
- 		mountdata->addrlen = nfs_parse_server_name(buf->data, buf->len,
--				mountdata->addr, addr_bufsize,
--				NFS_SB(mountdata->sb));
-+				mountdata->addr, addr_bufsize, net);
- 		if (mountdata->addrlen == 0)
- 			continue;
- 
-@@ -419,6 +418,7 @@ static int nfs4_try_replacing_one_locati
- 		const struct nfs4_fs_location *location)
- {
- 	const size_t addr_bufsize = sizeof(struct sockaddr_storage);
-+	struct net *net = rpc_net_ns(server->client);
- 	struct sockaddr *sap;
- 	unsigned int s;
- 	size_t salen;
-@@ -440,7 +440,7 @@ static int nfs4_try_replacing_one_locati
- 			continue;
- 
- 		salen = nfs_parse_server_name(buf->data, buf->len,
--						sap, addr_bufsize, server);
-+						sap, addr_bufsize, net);
- 		if (salen == 0)
- 			continue;
- 		rpc_set_port(sap, NFS_PORT);
-@@ -450,7 +450,7 @@ static int nfs4_try_replacing_one_locati
- 		if (hostname == NULL)
- 			break;
- 
--		error = nfs4_update_server(server, hostname, sap, salen);
-+		error = nfs4_update_server(server, hostname, sap, salen, net);
- 		kfree(hostname);
- 		if (error == 0)
- 			break;
+Ilya Dryomov <ilya.dryomov@inktank.com>
+    libceph: fix preallocation check in get_reply()
+
+Ilya Dryomov <ilya.dryomov@inktank.com>
+    libceph: rename front to front_len in get_reply()
+
+Ilya Dryomov <ilya.dryomov@inktank.com>
+    libceph: rename ceph_msg::front_max to front_alloc_len
+
+Michele Baldessari <michele@acksyn.org>
+    e100: Fix "disabling already-disabled device" warning
+
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    xhci: Fix resume issues on Renesas chips in Samsung laptops
+
+Ping Cheng <pinglinux@gmail.com>
+    Input: wacom - add reporting of SW_MUTE_DEVICE events
+
+Ping Cheng <pinglinux@gmail.com>
+    Input: wacom - add support for three new Intuos devices
+
+Ping Cheng <pinglinux@gmail.com>
+    Input: wacom - make sure touch_max is set for touch devices
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: VMX: fix use after free of vmx->loaded_vmcs
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: x86: handle invalid root_hpa everywhere
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: MMU: handle invalid root_hpa at __direct_map
+
+Hans de Goede <hdegoede@redhat.com>
+    Input: elantech - improve clickpad detection
+
+Dave Jones <davej@redhat.com>
+    fs/proc/proc_devtree.c: remove empty /proc/device-tree when no openfirmware exists.
+
+Gavin Shan <shangw@linux.vnet.ibm.com>
+    powerpc/powernv: Refactor PHB diag-data dump
+
+Gavin Shan <shangw@linux.vnet.ibm.com>
+    powerpc/powernv: Dump PHB diag-data immediately
+
+Gavin Shan <shangw@linux.vnet.ibm.com>
+    powerpc/eeh: Handle multiple EEH errors
+
+Gavin Shan <shangw@linux.vnet.ibm.com>
+    powerpc/powernv: Move PHB-diag dump functions around
+
+Markus Pargmann <mpa@pengutronix.de>
+    regulator: core: Replace direct ops->disable usage
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    p54: clamp properly instead of just truncating
+
+Guenter Roeck <linux@roeck-us.net>
+    MIPS: Fix build error seen in some configurations
+
+Ben Hutchings <ben@decadent.org.uk>
+    deb-pkg: Fix cross-building linux-headers package
+
+Ben Hutchings <ben@decadent.org.uk>
+    deb-pkg: Fix building for MIPS big-endian or ARM OABI
+
+Peter Zijlstra <peterz@infradead.org>
+    perf tools: Fix AAAAARGH64 memory barriers
+
+Russell King <rmk+kernel@arm.linux.org.uk>
+    Fix uses of dma_max_pfn() when converting to a limiting address
+
+Linus Torvalds <torvalds@linux-foundation.org>
+    printk: fix syslog() overflowing user buffer
+
+Alexei Starovoitov <ast@plumgrid.com>
+    x86: bpf_jit: support negative offsets
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    SUNRPC: Fix a pipe_version reference leak
+
+Ben Peddell <klightspeed@killerwolves.net>
+    ARM: 7941/2: Fix incorrect FDT initrd parameter override
+
+Ben Hutchings <bhutchings@solarflare.com>
+    sfc: Use the correct maximum TX DMA ring size for SFC9100
+
+Peter Zijlstra <peterz@infradead.org>
+    stop_machine: Fix^2 race between stop_two_cpus() and stop_cpus()
+
+Stephen Warren <swarren@nvidia.com>
+    ASoC: max98090: make REVISION_ID readable
+
+Josh Durgin <josh.durgin@inktank.com>
+    libceph: resend all writes after the osdmap loses the full flag
+
+Josh Durgin <josh.durgin@inktank.com>
+    libceph: block I/O when PAUSE or FULL osd map flags are set
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: cx18: check for allocation failure in cx18_read_eeprom()
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: dw2102: some missing unlocks on error
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: cxusb: unlock on error in cxusb_i2c_xfer()
+
+Trond Myklebust <trond.myklebust@primarydata.com>
+    NFSv4: Use the correct net namespace in nfs4_update_server
+
+Christian Riesch <christian.riesch@omicron.at>
+    net: davinci_emac: Replace devm_request_irq with request_irq
+
+Helge Deller <deller@gmx.de>
+    partly revert commit 8a10bc9: parisc/sti_console: prefer Linux fonts over built-in ROM fonts
+
+Vaibhav Nagarnaik <vnagarnaik@google.com>
+    tracing: Fix array size mismatch in format string
+
+Chris Wilson <chris@chris-wilson.co.uk>
+    drm/i915: Disable stolen memory when DMAR is active
+
+Daniel Vetter <daniel.vetter@ffwll.ch>
+    drm/i915: Don't enable display error interrupts from the start
+
+Ben Widawsky <benjamin.widawsky@intel.com>
+    drm/i915: Fix PSR programming
+
+Stefan Agner <stefan@agner.ch>
+    clocksource: vf_pit_timer: use complement for sched_clock reading
+
+Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+    ALSA: compress: Pass through return value of open ops callback
+
+Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+    HID: hidraw: fix warning destroying hidraw device files after parent
+
+
+-------------
+
+Diffstat:
+
+ Makefile                                  |   4 +-
+ arch/arm/mm/init.c                        |   3 +-
+ arch/mips/include/asm/syscall.h           |   2 +-
+ arch/powerpc/include/asm/eeh.h            |  10 ++
+ arch/powerpc/kernel/eeh_driver.c          | 150 ++++++++--------
+ arch/powerpc/platforms/powernv/eeh-ioda.c | 283 +++++++-----------------------
+ arch/powerpc/platforms/powernv/pci.c      | 226 ++++++++++++++++++------
+ arch/powerpc/platforms/powernv/pci.h      |   3 +
+ arch/x86/kvm/mmu.c                        |  12 ++
+ arch/x86/kvm/paging_tmpl.h                |   8 +
+ arch/x86/kvm/vmx.c                        |   2 +-
+ arch/x86/net/bpf_jit.S                    |   2 +-
+ drivers/clocksource/vf_pit_timer.c        |   2 +-
+ drivers/gpu/drm/i915/i915_gem_stolen.c    |   7 +
+ drivers/gpu/drm/i915/i915_irq.c           |  18 +-
+ drivers/gpu/drm/i915/intel_dp.c           |   2 +-
+ drivers/hid/hidraw.c                      |   4 +-
+ drivers/input/mouse/elantech.c            |  45 ++++-
+ drivers/input/tablet/wacom_sys.c          |  23 ++-
+ drivers/input/tablet/wacom_wac.c          |  89 ++++++++--
+ drivers/input/tablet/wacom_wac.h          |   7 +
+ drivers/media/pci/cx18/cx18-driver.c      |   5 +-
+ drivers/media/usb/dvb-usb/cxusb.c         |  21 ++-
+ drivers/media/usb/dvb-usb/dw2102.c        |  52 ++++--
+ drivers/mmc/card/queue.c                  |   2 +-
+ drivers/net/ethernet/intel/e100.c         |   2 +-
+ drivers/net/ethernet/sfc/efx.h            |   3 +
+ drivers/net/ethernet/sfc/ethtool.c        |   4 +-
+ drivers/net/ethernet/ti/davinci_emac.c    |  25 ++-
+ drivers/net/wireless/p54/txrx.c           |   2 +-
+ drivers/regulator/core.c                  |  34 ++--
+ drivers/scsi/scsi_lib.c                   |   2 +-
+ drivers/usb/host/xhci-pci.c               |   5 +
+ fs/nfs/internal.h                         |   3 +-
+ fs/nfs/nfs4client.c                       |   7 +-
+ fs/nfs/nfs4namespace.c                    |  12 +-
+ fs/proc/proc_devtree.c                    |   1 +
+ include/linux/ceph/messenger.h            |   2 +-
+ include/linux/ceph/osd_client.h           |   1 +
+ include/linux/ftrace_event.h              |   4 -
+ include/trace/ftrace.h                    |   7 +-
+ kernel/printk/printk.c                    |   2 -
+ kernel/stop_machine.c                     |   2 +-
+ kernel/trace/trace_events.c               |   6 -
+ kernel/trace/trace_export.c               |   7 +-
+ lib/fonts/Kconfig                         |   6 +-
+ net/ceph/messenger.c                      |   7 +-
+ net/ceph/mon_client.c                     |   8 +-
+ net/ceph/osd_client.c                     |  66 +++++--
+ net/sunrpc/auth_gss/auth_gss.c            |   4 +-
+ scripts/package/builddeb                  |  13 +-
+ sound/core/compress_offload.c             |   2 +-
+ sound/soc/codecs/max98090.c               |   1 +
+ tools/perf/perf.h                         |   4 +-
+ 54 files changed, 713 insertions(+), 511 deletions(-)
 
 
