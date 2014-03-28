@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaC2P1e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:27:34 -0400
-Received: from mail-pb0-f49.google.com ([209.85.160.49]:61982 "EHLO
-	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbaC2P1a (ORCPT
+	id S1752720AbaC2P1m (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:27:42 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:45688 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648AbaC2P1h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:27:30 -0400
+	Sat, 29 Mar 2014 11:27:37 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 22/29] ktap: add events parse code(tools/ktap/kp_parse_events.c)
-Date: Fri, 28 Mar 2014 10:45:17 -0400
-Message-Id: <1396017924-7754-23-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 23/29] ktap: add ring buffer reader(tools/ktap/kp_reader.c)
+Date: Fri, 28 Mar 2014 10:45:18 -0400
+Message-Id: <1396017924-7754-24-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -25,41 +25,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Function 'kp_parse_events' parse event string passed by user,
-and return events description structure, it covers:
-
-1). tracepoint
-        Search tracepoint name through '/sys/kernel/debug/tracing/events/',
-        and get event id.
-
-2). kprobe
-        Search symbol name through '/proc/kallsyms', then write event to
-        '/sys/kernel/debug/tracing/kprobe_events', and read events id.
-
-3). uprobe
-        Search symbol name through libelf, then write event to
-        '/sys/kernel/debug/tracing/uprobe_events', then read events id.
-
-4). SDT
-        Same as uprobe.
-
-All events id will assembly ktap_eventdesc_t structure, and finially
-pass to 'kdebug.trace_by_id' function.
+This is ktap ring buffer consumer, a thread poll content from
+'/sys/kernel/debug/ktap/trace_pipe_%pid' debugfs file.
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- tools/ktap/kp_parse_events.c | 798 +++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 798 insertions(+)
- create mode 100644 tools/ktap/kp_parse_events.c
+ tools/ktap/kp_reader.c | 106 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 106 insertions(+)
+ create mode 100644 tools/ktap/kp_reader.c
 
-diff --git a/tools/ktap/kp_parse_events.c b/tools/ktap/kp_parse_events.c
+diff --git a/tools/ktap/kp_reader.c b/tools/ktap/kp_reader.c
 new file mode 100644
-index 0000000..50fea2f
+index 0000000..103940e
 --- /dev/null
-+++ b/tools/ktap/kp_parse_events.c
-@@ -0,0 +1,798 @@
++++ b/tools/ktap/kp_reader.c
+@@ -0,0 +1,106 @@
 +/*
-+ * parse_events.c - ktap events parser
++ * reader.c - ring buffer reader in userspace
 + *
 + * This file is part of ktap by Jovi Zhangwei.
 + *
@@ -79,781 +61,89 @@ index 0000000..50fea2f
 + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
 +
-+#include <unistd.h>
 +#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
-+#include <dirent.h>
++#include <unistd.h>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <sys/poll.h>
++#include <sys/signal.h>
 +#include <fcntl.h>
-+#include <ctype.h>
++#include <pthread.h>
 +
-+#include "../../include/uapi/ktap/ktap_types.h"
-+#include "../../include/uapi/ktap/ktap_bc.h"
-+#include "kp_symbol.h"
-+#include "kp_util.h"
++#define MAX_BUFLEN  131072
++#define PATH_MAX 128
 +
-+#define TRACING_EVENTS_DIR "/sys/kernel/debug/tracing/events"
++#define handle_error(str) do { perror(str); exit(-1); } while(0)
 +
-+static u8 *idmap;
-+static int idmap_size = 1024; /* set init size */
-+static int id_nr;
-+
-+static int idmap_init(void)
++void sigfunc(int signo)
 +{
-+	idmap = malloc(idmap_size);
-+	if (!idmap)
-+		return -1;
-+
-+	memset(idmap, 0, idmap_size);
-+	return 0;
++	/* should not not reach here */
 +}
 +
-+static void idmap_free(void)
++static void block_sigint()
 +{
-+	id_nr = 0;
-+	free(idmap);
++	sigset_t mask;
++
++	sigemptyset(&mask);
++	sigaddset(&mask, SIGINT);
++
++	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 +}
 +
-+static inline int idmap_is_set(int id)
++static void *reader_thread(void *data)
 +{
-+	return idmap[id / 8] & (1 << (id % 8));
-+}
++	char buf[MAX_BUFLEN];
++	char filename[PATH_MAX];
++	const char *output = data; 
++	int failed = 0, fd, out_fd, len;
 +
-+static void idmap_set(int id)
-+{
-+	if (id >= idmap_size * 8) {
-+		int newsize = id + 100; /* allocate extra 800 id */
-+		idmap = realloc(idmap, newsize);
-+		memset(idmap + idmap_size, 0, newsize - idmap_size);
-+		idmap_size = newsize;
-+	}
++	block_sigint();
 +
-+	if (!idmap_is_set(id))
-+		id_nr++;
-+
-+	idmap[id / 8] = idmap[id / 8] | (1 << (id % 8));
-+}
-+
-+static void idmap_clear(int id)
-+{
-+	if (!idmap_is_set(id))
-+		return;
-+
-+	id_nr--;
-+	idmap[id / 8] = idmap[id / 8] & ~ (1 << (id % 8));
-+}
-+
-+static int idmap_get_max_id(void)
-+{
-+	return idmap_size * 8;
-+}
-+
-+static int *get_id_array()
-+{
-+	int *id_array;
-+	int i, j = 0;
-+
-+	id_array = malloc(sizeof(int) * id_nr);
-+	if (!id_array)
-+		return NULL;
-+
-+	for (i = 0; i < idmap_get_max_id(); i++) {
-+		if (idmap_is_set(i))
-+			id_array[j++] = i;
-+	}
-+
-+	return id_array;
-+}
-+
-+static int add_event(char *evtid_path)
-+{
-+	char id_buf[24];
-+	int id, fd;
-+
-+	fd = open(evtid_path, O_RDONLY);
-+	if (fd < 0) {
-+		/*
-+		 * some tracepoint doesn't have id file, like ftrace,
-+		 * return success in here, and don't print error.
-+		 */
-+		verbose_printf("warning: cannot open file %s\n", evtid_path);
-+		return 0;
-+	}
-+
-+	if (read(fd, id_buf, sizeof(id_buf)) < 0) {
-+		fprintf(stderr, "read file error %s\n", evtid_path);
-+		close(fd);
-+		return -1;
-+	}
-+
-+	id = atoll(id_buf);
-+
-+	idmap_set(id);
-+
-+	close(fd);
-+	return 0;
-+}
-+
-+static int add_tracepoint(const char *sys_name, const char *evt_name)
-+{
-+	char evtid_path[PATH_MAX] = {0};
-+
-+	snprintf(evtid_path, PATH_MAX, "%s/%s/%s/id", TRACING_EVENTS_DIR,
-+					sys_name, evt_name);
-+	return add_event(evtid_path);
-+}
-+
-+static int parse_events_add_tracepoint(char *sys, char *event)
-+{
-+	process_available_tracepoints(sys, event, add_tracepoint);
-+	return 0;
-+}
-+
-+enum {
-+	KPROBE_EVENT,
-+	UPROBE_EVENT,
-+};
-+
-+struct probe_list {
-+	struct probe_list *next;
-+	int type;
-+	char event[64];
-+};
-+
-+static struct probe_list *probe_list_head; /* for cleanup resources */
-+
-+/*
-+ * Some symbol format cannot write to uprobe_events in debugfs, like:
-+ * symbol "check_one_fd.part.0" in glibc.
-+ * For those symbols, we change the format to:
-+ * "check_one_fd.part.0" -> "check_one_fd_part_0"
-+ */
-+static char *format_symbol_name(const char *old_symbol)
-+{
-+	char *new_name = strdup(old_symbol);
-+	char *name = new_name;
-+	int changed = 0;
-+
-+        if (!isalpha(*name) && *name != '_') {
-+		*name = '_';
-+		changed = 1;
-+	}
-+
-+        while (*++name != '\0') {
-+                if (!isalpha(*name) && !isdigit(*name) && *name != '_') {
-+			*name = '_';
-+			changed = 1;
-+			continue;
++	if (output) {
++		out_fd = open(output, O_CREAT | O_WRONLY | O_TRUNC,
++					S_IRUSR|S_IWUSR);
++		if (out_fd < 0) {
++			fprintf(stderr, "Cannot open output file %s\n", output);
++			return NULL;
 +		}
-+        }
-+
-+	if (changed)
-+		fprintf(stderr,
-+			"Warning: symbol \"%s\" transformed to event \"%s\"\n",
-+			old_symbol, new_name);
-+
-+	/* this is a good name */
-+        return new_name;
-+}
-+
-+
-+#define KPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/kprobe_events"
-+
-+/**
-+ * @return 0 on success, otherwise -1
-+ */
-+static int
-+write_kprobe_event(int fd, int ret_probe, const char *symbol,
-+		   unsigned long start, char *fetch_args)
-+{
-+	char probe_event[128] = {0};
-+	char event[64] = {0};
-+	struct probe_list *pl;
-+	char event_id_path[128] = {0};
-+	char *symbol_name;
-+	int id_fd, ret;
-+
-+	/* In case some symbols cannot write to uprobe_events debugfs file */
-+	symbol_name = format_symbol_name(symbol);
-+
-+	if (!fetch_args)
-+		fetch_args = " ";
-+
-+	if (ret_probe) {
-+		snprintf(event, 64, "ktap_kprobes_%d/ret_%s",
-+			 getpid(), symbol_name);
-+		/* Return probe point must be a symbol */
-+		snprintf(probe_event, 128, "r:%s %s %s",
-+			 event, symbol, fetch_args);
-+	} else {
-+		snprintf(event, 64, "ktap_kprobes_%d/%s",
-+			 getpid(), symbol_name);
-+		snprintf(probe_event, 128, "p:%s 0x%lx %s",
-+			 event, start, fetch_args);
-+	}
-+
-+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
-+	/* if event id already exist, then don't write to kprobes_event again */
-+	id_fd = open(event_id_path, O_RDONLY);
-+	if (id_fd > 0) {
-+		close(id_fd);
-+
-+		/* remember add event id to ids_array */
-+		ret = add_event(event_id_path);
-+		if (ret)
-+			goto error;
-+
-+		goto out;
-+	}
-+
-+	verbose_printf("write kprobe event %s\n", probe_event);
-+
-+	if (write(fd, probe_event, strlen(probe_event)) <= 0) {
-+		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
-+				KPROBE_EVENTS_PATH);
-+		goto error;
-+	}
-+
-+	/* add to cleanup list */
-+	pl = malloc(sizeof(struct probe_list));
-+	if (!pl)
-+		goto error;
-+
-+	pl->type = KPROBE_EVENT;
-+	pl->next = probe_list_head;
-+	memcpy(pl->event, event, 64);
-+	probe_list_head = pl;
-+
-+	ret = add_event(event_id_path);
-+	if (ret < 0)
-+		goto error;
-+
-+ out:
-+	free(symbol_name);
-+	return 0;
-+
-+ error:
-+	free(symbol_name);
-+	return -1;
-+}
-+
-+static unsigned long kprobes_text_start;
-+static unsigned long kprobes_text_end;
-+
-+static void init_kprobe_prohibited_area(void)
-+{
-+	static int once = 0;
-+
-+	if (once > 0)
-+		return;
-+
-+	once = 1;
-+	kprobes_text_start     = find_kernel_symbol("__kprobes_text_start");
-+	kprobes_text_end       = find_kernel_symbol("__kprobes_text_end");
-+}
-+
-+static int check_kprobe_addr_prohibited(unsigned long addr)
-+{
-+	if (addr >= kprobes_text_start && addr <= kprobes_text_end)
-+		return -1;
-+
-+	return 0;
-+}
-+
-+struct probe_cb_base {
-+	int fd;
-+	int ret_probe;
-+	const char *event;
-+	char *binary;
-+	char *symbol;
-+	char *fetch_args;
-+};
-+
-+static int kprobe_symbol_actor(void *arg, const char *name, char type,
-+			       unsigned long start)
-+{
-+	struct probe_cb_base *base = (struct probe_cb_base *)arg;
-+
-+	/* only can probe text function */
-+	if (type != 't' && type != 'T')
-+		return -1;
-+
-+	if (!strglobmatch(name, base->symbol))
-+		return -1;
-+
-+	if (check_kprobe_addr_prohibited(start))
-+		return -1;
-+
-+	/* ignore reture code of write debugfs */
-+	write_kprobe_event(base->fd, base->ret_probe, name, start,
-+			   base->fetch_args);
-+
-+	return 0; /* success */
-+}
-+
-+static int parse_events_add_kprobe(char *event)
-+{
-+	char *symbol, *end;
-+	struct probe_cb_base base;
-+	int fd, ret;
-+
-+	fd = open(KPROBE_EVENTS_PATH, O_WRONLY);
-+	if (fd < 0) {
-+		fprintf(stderr, "Cannot open %s\n", KPROBE_EVENTS_PATH);
-+		return -1;
-+	}
-+
-+	end = strpbrk(event, "% ");
-+	if (end)
-+		symbol = strndup(event, end - event);
-+	else
-+		symbol = strdup(event);
-+
-+	base.fd = fd;
-+	base.ret_probe = !!strstr(event, "%return");
-+	base.symbol = symbol;
-+	base.fetch_args = strchr(event, ' ');
-+
-+	init_kprobe_prohibited_area();
-+
-+	ret = kallsyms_parse(&base, kprobe_symbol_actor);
-+	if (ret <= 0) {
-+		fprintf(stderr, "cannot parse symbol \"%s\"\n", symbol);
-+		ret = -1;
-+	} else {
-+		ret = 0;
-+	}
-+
-+	free(symbol);
-+	close(fd);
-+
-+	return ret;
-+}
-+
-+#define UPROBE_EVENTS_PATH "/sys/kernel/debug/tracing/uprobe_events"
-+
-+/**
-+ * @return 0 on success, otherwise -1
-+ */
-+static int
-+write_uprobe_event(int fd, int ret_probe, const char *binary,
-+		   const char *symbol, unsigned long addr,
-+		   char *fetch_args)
-+{
-+	char probe_event[128] = {0};
-+	char event[64] = {0};
-+	struct probe_list *pl;
-+	char event_id_path[128] = {0};
-+	char *symbol_name;
-+	int id_fd, ret;
-+
-+	/* In case some symbols cannot write to uprobe_events debugfs file */
-+	symbol_name = format_symbol_name(symbol);
-+
-+	if (!fetch_args)
-+		fetch_args = " ";
-+
-+	if (ret_probe) {
-+		snprintf(event, 64, "ktap_uprobes_%d/ret_%s",
-+			 getpid(), symbol_name);
-+		snprintf(probe_event, 128, "r:%s %s:0x%lx %s",
-+			 event, binary, addr, fetch_args);
-+	} else {
-+		snprintf(event, 64, "ktap_uprobes_%d/%s",
-+			 getpid(), symbol_name);
-+		snprintf(probe_event, 128, "p:%s %s:0x%lx %s",
-+			 event, binary, addr, fetch_args);
-+	}
-+
-+	sprintf(event_id_path, "/sys/kernel/debug/tracing/events/%s/id", event);
-+	/* if event id already exist, then don't write to uprobes_event again */
-+	id_fd = open(event_id_path, O_RDONLY);
-+	if (id_fd > 0) {
-+		close(id_fd);
-+
-+		/* remember add event id to ids_array */
-+		ret = add_event(event_id_path);
-+		if (ret)
-+			goto error;
-+
-+		goto out;
-+	}
-+
-+	verbose_printf("write uprobe event %s\n", probe_event);
-+
-+	if (write(fd, probe_event, strlen(probe_event)) <= 0) {
-+		fprintf(stderr, "Cannot write %s to %s\n", probe_event,
-+				UPROBE_EVENTS_PATH);
-+		goto error;
-+	}
-+
-+	/* add to cleanup list */
-+	pl = malloc(sizeof(struct probe_list));
-+	if (!pl)
-+		goto error;
-+
-+	pl->type = UPROBE_EVENT;
-+	pl->next = probe_list_head;
-+	memcpy(pl->event, event, 64);
-+	probe_list_head = pl;
-+
-+	ret = add_event(event_id_path);
-+	if (ret < 0)
-+		goto error;
-+
-+ out:
-+	free(symbol_name);
-+	return 0;
-+
-+ error:
-+	free(symbol_name);
-+	return -1;
-+}
-+
-+/**
-+ * TODO: avoid copy-paste stuff
-+ *
-+ * @return 1 on success, otherwise 0
-+ */
-+#ifdef NO_LIBELF
-+static int parse_events_resolve_symbol(int fd, char *event, int type)
-+{
-+	char *colon, *binary, *fetch_args;
-+	unsigned long symbol_address;
-+
-+	colon = strchr(event, ':');
-+	if (!colon)
-+		return -1;
-+
-+	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
-+
-+	fetch_args = strchr(event, ' ');
-+
-+	/**
-+	 * We already have address, no need in resolving.
-+	 */
-+	if (symbol_address) {
-+		int ret;
-+
-+		binary = strndup(event, colon - event);
-+		ret = write_uprobe_event(fd, !!strstr(event, "%return"), binary,
-+					 "NULL", symbol_address, fetch_args);
-+		free(binary);
-+		return ret;
-+	}
-+
-+	fprintf(stderr, "error: cannot resolve event \"%s\" without libelf, "
-+			"please recompile ktap with NO_LIBELF disabled\n",
-+			event);
-+	exit(EXIT_FAILURE);
-+	return -1;
-+}
-+
-+#else
-+static int uprobe_symbol_actor(const char *name, vaddr_t addr, void *arg)
-+{
-+	struct probe_cb_base *base = (struct probe_cb_base *)arg;
-+	int ret;
-+
-+	if (!strglobmatch(name, base->symbol))
-+		return 0;
-+
-+	verbose_printf("uprobe: binary: \"%s\" symbol \"%s\" "
-+			"resolved to 0x%lx\n",
-+			base->binary, base->symbol, (unsigned long)addr);
-+
-+	ret = write_uprobe_event(base->fd, base->ret_probe, base->binary,
-+				 name, addr, base->fetch_args);
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int parse_events_resolve_symbol(int fd, char *event, int type)
-+{
-+	char *colon, *end;
-+	vaddr_t symbol_address;
-+	int ret;
-+	struct probe_cb_base base = {
-+		.fd = fd,
-+		.event = event
-+	};
-+
-+	colon = strchr(event, ':');
-+	if (!colon)
-+		return 0;
-+
-+	base.ret_probe = !!strstr(event, "%return");
-+	symbol_address = strtol(colon + 1 /* skip ":" */, NULL, 0);
-+	base.binary = strndup(event, colon - event);
-+
-+	base.fetch_args = strchr(event, ' ');
-+
-+	/*
-+	 * We already have address, no need in resolving.
-+	 */
-+	if (symbol_address) {
-+		int ret;
-+		ret = write_uprobe_event(fd, base.ret_probe, base.binary,
-+					 "NULL", symbol_address,
-+					 base.fetch_args);
-+		free(base.binary);
-+		return ret;
-+	}
-+
-+	end = strpbrk(event, "% ");
-+	if (end)
-+		base.symbol = strndup(colon + 1, end - 1 - colon);
-+	else
-+		base.symbol = strdup(colon + 1);
-+
-+	ret = parse_dso_symbols(base.binary, type, uprobe_symbol_actor,
-+				(void *)&base);
-+	if (!ret) {
-+		fprintf(stderr, "error: cannot find symbol %s in binary %s\n",
-+			base.symbol, base.binary);
-+		ret = -1;
-+	} else if(ret > 0) {
-+		/* no error found when parse symbols */
-+		ret = 0;
-+	}
-+
-+	free(base.binary);
-+	free(base.symbol);
-+
-+	return ret;
-+}
-+#endif
-+
-+static int parse_events_add_uprobe(char *old_event, int type)
-+{
-+	int ret;
-+	int fd;
-+
-+	fd = open(UPROBE_EVENTS_PATH, O_WRONLY);
-+	if (fd < 0) {
-+		fprintf(stderr, "Cannot open %s\n", UPROBE_EVENTS_PATH);
-+		return -1;
-+	}
-+
-+	ret = parse_events_resolve_symbol(fd, old_event, type);
-+
-+	close(fd);
-+	return ret;
-+}
-+
-+static int parse_events_add_probe(char *old_event)
-+{
-+	char *separator;
-+
-+	separator = strchr(old_event, ':');
-+	if (!separator || (separator == old_event))
-+		return parse_events_add_kprobe(old_event);
-+	else
-+		return parse_events_add_uprobe(old_event, FIND_SYMBOL);
-+}
-+
-+static int parse_events_add_sdt(char *old_event)
-+{
-+	return parse_events_add_uprobe(old_event, FIND_STAPSDT_NOTE);
-+}
-+
-+static void strim(char *s)
-+{
-+	size_t size;
-+	char *end;
-+
-+	size = strlen(s);
-+	if (!size)
-+		return;
-+
-+	end = s + size -1;
-+	while (end >= s && isspace(*end))
-+		end--;
-+
-+	*(end + 1) = '\0';
-+}
-+
-+static int get_sys_event_filter_str(char *start,
-+				    char **sys, char **event, char **filter)
-+{
-+	char *separator, *separator2, *ptr, *end;
-+
-+	while (*start == ' ')
-+		start++;
-+
-+	/* find sys */
-+	separator = strchr(start, ':');
-+	if (!separator || (separator == start)) {
-+		return -1;
-+	}
-+
-+	ptr = malloc(separator - start + 1);
-+	if (!ptr)
-+		return -1;
-+
-+	strncpy(ptr, start, separator - start);
-+	ptr[separator - start] = '\0';
-+
-+	strim(ptr);
-+	*sys = ptr;
-+
-+	if (!strcmp(*sys, "probe") && (*(separator + 1) == '/')) {
-+		/* it's uprobe event */
-+		separator2 = strchr(separator + 1, ':');
-+		if (!separator2)
-+			return -1;
 +	} else
-+		separator2 = separator;
++		out_fd = 1;
 +
-+	/* find filter */
-+	end = start + strlen(start);
-+	while (*--end == ' ') {
++	sprintf(filename, "/sys/kernel/debug/ktap/trace_pipe_%d", getpid());
++
++ open_again:
++	fd = open(filename, O_RDONLY);
++	if (fd < 0) {
++		usleep(10000);
++
++		if (failed++ == 10) {
++			fprintf(stderr, "Cannot open file %s\n", filename);
++			return NULL;
++		}
++		goto open_again;
 +	}
 +
-+	if (*end == '/') {
-+		char *filter_start;
++	while ((len = read(fd, buf, sizeof(buf))) > 0)
++		write(out_fd, buf, len);
 +
-+		filter_start = strchr(separator2, '/');
-+		if (filter_start == end)
-+			return -1;
++	close(fd);
++	close(out_fd);
 +
-+		ptr = malloc(end - filter_start);
-+		if (!ptr)
-+			return -1;
-+
-+		memcpy(ptr, filter_start + 1, end - filter_start - 1);
-+		ptr[end - filter_start - 1] = '\0';
-+
-+		*filter = ptr;
-+
-+		end = filter_start;
-+	} else {
-+		*filter = NULL;
-+		end++;
-+	}
-+
-+	/* find event */
-+	ptr = malloc(end - separator);
-+	if (!ptr)
-+		return -1;
-+
-+	memcpy(ptr, separator + 1, end - separator - 1);
-+	ptr[end - separator - 1] = '\0';
-+
-+	strim(ptr);
-+	*event = ptr;
-+
-+	return 0;
-+}
-+
-+static char *get_next_eventdef(char *str)
-+{
-+	char *separator;
-+
-+	separator = strchr(str, ',');
-+	if (!separator)
-+		return str + strlen(str);
-+
-+	*separator = '\0';
-+	return separator + 1;
-+}
-+
-+ktap_eventdesc_t *kp_parse_events(const char *eventdef)
-+{
-+	char *str = strdup(eventdef);
-+	char *sys, *event, *filter, *next;
-+	ktap_eventdesc_t *evdef_info;
-+	int ret;
-+
-+	idmap_init();
-+
-+ parse_next_eventdef:
-+	next = get_next_eventdef(str);
-+
-+	if (get_sys_event_filter_str(str, &sys, &event, &filter))
-+		goto error;
-+
-+	verbose_printf("parse_eventdef: sys[%s], event[%s], filter[%s]\n",
-+		       sys, event, filter);
-+
-+	if (!strcmp(sys, "probe"))
-+		ret = parse_events_add_probe(event);
-+	else if (!strcmp(sys, "sdt"))
-+		ret = parse_events_add_sdt(event);
-+	else
-+		ret = parse_events_add_tracepoint(sys, event);
-+
-+	if (ret)
-+		goto error;
-+
-+	/* don't trace ftrace:function when all tracepoints enabled */
-+	if (!strcmp(sys, "*"))
-+		idmap_clear(1);
-+
-+
-+	if (filter && *next != '\0') {
-+		fprintf(stderr, "Error: eventdef only can append one filter\n");
-+		goto error;
-+	}
-+
-+	str = next;
-+	if (*next != '\0')
-+		goto parse_next_eventdef;
-+
-+	evdef_info = malloc(sizeof(*evdef_info));
-+	if (!evdef_info)
-+		goto error;
-+
-+	evdef_info->nr = id_nr;
-+	evdef_info->id_arr = get_id_array();
-+	evdef_info->filter = filter;
-+
-+	idmap_free();
-+	return evdef_info;
-+ error:
-+	idmap_free();
-+	cleanup_event_resources();
 +	return NULL;
 +}
 +
-+void cleanup_event_resources(void)
++int kp_create_reader(const char *output)
 +{
-+	struct probe_list *pl;
-+	const char *path;
-+	char probe_event[128] = {0};
-+	int fd, ret;
++	pthread_t reader;
 +
-+	for (pl = probe_list_head; pl; pl = pl->next) {
-+		if (pl->type == KPROBE_EVENT)
-+			path = KPROBE_EVENTS_PATH;
-+		else if (pl->type == UPROBE_EVENT)
-+			path = UPROBE_EVENTS_PATH;
-+		else {
-+			fprintf(stderr, "Cannot cleanup event type %d\n",
-+					pl->type);
-+			continue;
-+		}
++	signal(SIGINT, sigfunc);
 +
-+		snprintf(probe_event, 128, "-:%s", pl->event);
++	if (pthread_create(&reader, NULL, reader_thread, (void *)output) < 0)
++		handle_error("pthread_create reader_thread failed\n");
 +
-+		fd = open(path, O_WRONLY);
-+		if (fd < 0) {
-+			fprintf(stderr, "Cannot open %s\n", UPROBE_EVENTS_PATH);
-+			continue;
-+		}
-+
-+		ret = write(fd, probe_event, strlen(probe_event));
-+		if (ret <= 0) {
-+			fprintf(stderr, "Cannot write %s to %s\n", probe_event,
-+					path);
-+			close(fd);
-+			continue;
-+		}
-+
-+		close(fd);
-+	}
++	return 0;
 +}
 +
 -- 
