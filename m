@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752568AbaC1Teu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 15:34:50 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:51912 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750925AbaC1Tes (ORCPT
+	id S1752754AbaC1Tg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 15:36:56 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:48988 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751026AbaC1Tgz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 15:34:48 -0400
+	Fri, 28 Mar 2014 15:36:55 -0400
+Date: Fri, 28 Mar 2014 12:36:50 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 3.14-rc8
+Message-ID: <20140328193650.GB20950@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <20140328.145410.1817326821928803131.davem@davemloft.net>
-References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
-	<20140328.145410.1817326821928803131.davem@davemloft.net>
-Date: Fri, 28 Mar 2014 20:34:47 +0100
-Message-ID: <CANq1E4TxaNnZoqfw5DiifAhk28hVq5HJJMd07ZDFAjdc68nKKg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
-From: David Herrmann <dh.herrmann@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev <netdev@vger.kernel.org>, Tom Gundersen <teg@jklm.no>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
 
-On Fri, Mar 28, 2014 at 7:54 PM, David Miller <davem@davemloft.net> wrote:
-> udev can look at the device type, and policies can be defined that key
-> off of that device type, entirely in userspace.
+--zhXaljGHf11kAtnf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regarding wifi-P2P devices, udev can indeed use nl80211 to get the
-exact IF-type. An attribute would be much easier to read out, but I'm
-ok if we don't want to replicate that information.
+Hi Linus,
 
-However, as mentioned in the discussions on v1, there're more
-use-cases than that. Imagine a 3rd party initrd renames a
-network-device early, if udev runs in the main system, we would rename
-the device again. If we could detect the rename via NET_NAME_RENAMED,
-we wouldn't break such setups. The only reason to rename devices in
-udev is to get reliable names. If someone else already renamed a
-device, we always expect them to provide better names than we do, so
-udev should only touch devices that have kernel-enumerated names.
-Of course, this can be fixed by requiring all the initrd developers to
-somehow tag devices as already renamed. But this would replicate
-information that the kernel already has.
+Please pull from:
 
-Another example are dynamically created devices via RTM_NEWLINK. The
-if-names are provided by user-space and udev should never try to do
-any magic renaming on them (why would we? you can just easily fix the
-code that created the device).
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-So it turns out, all we want to know is whether an interface-name was
-chosen by the kernel via plain, simple enumeration, or whether it has
-a user-space origin. Only in the former case we want to rename the
-device. The name_assign_type attribute tells us exactly where a name
-comes from and thus avoids maintaining blacklists in user-space that
-skip renaming on such devices. I'm sorry, but I cannot see why such
-blacklists (or whitelists) are preferred over a sysfs attribute.
+to receive updates for the input subsystem. You will get updates to
+Synaptics touchpad to better cope with devices in Lenovo laptops, and a
+couple more fixes.
 
-Thanks
-David
+Changelog:
+---------
+
+Anthony Olech (1):
+      Input: da9052_onkey - use correct register bit for key status
+
+Benjamin Tissoires (1):
+      Input: synaptics - add manual min/max quirk
+
+Hans de Goede (2):
+      Input: cypress_ps2 - don't report as a button pads
+      Input: synaptics - add manual min/max quirk for ThinkPad X240
+
+Jean-Francois Dagenais (1):
+      Input: adp5588-keys - get value from data out when dir is out
+
+
+Diffstat:
+--------
+
+ drivers/input/keyboard/adp5588-keys.c | 12 +++++++-
+ drivers/input/misc/da9052_onkey.c     | 29 +++++++++---------
+ drivers/input/mouse/cypress_ps2.c     |  1 -
+ drivers/input/mouse/synaptics.c       | 55 +++++++++++++++++++++++++++++++=
+++++
+ 4 files changed, 82 insertions(+), 15 deletions(-)
+
+--=20
+Dmitry
+
+
+--zhXaljGHf11kAtnf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTNc9SAAoJEH70+W8r6ZYqMRIQAJNS9uBQks83bojkmwLrF/aC
+hcKTHgviP85qy9yVOCnE79UT7RHV/9VQIcIX2nq/pZDnXGnSlX0KylPfd3gEd41f
+iilJYJ45wQdlxjItGusvQJApvEfdksdcu3De6uGdUXpkS6aAMTku2ULVCxga332T
+sIbn0SsHyKqpDrNPPrtddppI31KIYjW+lxvEeBlS3ticJ5S3SS6VFgPrh1F44NrV
+ik6ZeF/wBj9vpV5CH703luCAxktL6freTwvwiIy3u6RAXmDN5i4h073sUHHgAPX4
+IgOAeitHqdf/dEtt2J6s6EGejbVip+feYCHVZ/yh9Pbv2TdBJu/P6CMoV2z8ZLI8
+wKKPnHO1jmPSJ7LedJ2WYsImyIvzGDDeXsP+dNgyg/udLsCBGCxWhltyGRLSiLW9
+hzxmUzrUA5Sezfli5Y3d7Sm1u37gtyCgRAh1FnjPNUQbl10CIuhL/GMhSfOvgOaf
+/5q8jXfHB9l/Y7spVXydxTC0Bjr/v/0Tw6gNmyik80zMUOM/luJ0wXA7izQlkY2D
+peEKTRW5/149/upKkx1n0AbJcBBRpOjPLEtHP+CJi7NO892hWwNAfka8M4T9jUfL
+ZvRLiAkGP6z1Gb1SSsrfGC+4QNtwV7UJqT5FDyPfTv6Iug7TLxv/iqoKaDwDPsAi
+9FX6hfohOkf99rILgCsb
+=mGgL
+-----END PGP SIGNATURE-----
+
+--zhXaljGHf11kAtnf--
