@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751461AbaC1HRW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 03:17:22 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:57345 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaC1HRV (ORCPT
+	id S1751579AbaC1HTf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 03:19:35 -0400
+Received: from szxga01-in.huawei.com ([119.145.14.64]:16046 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaC1HTd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 03:17:21 -0400
-Date: Fri, 28 Mar 2014 08:17:16 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Feng Tang <feng.tang@intel.com>
-Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
-        Clemens Ladisch <clemens@ladisch.de>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
- for X86_64
-Message-ID: <20140328071716.GC30107@gmail.com>
-References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+	Fri, 28 Mar 2014 03:19:33 -0400
+Message-ID: <53352243.80805@huawei.com>
+Date: Fri, 28 Mar 2014 15:18:27 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 1/2] cgroup: fix spurious lockdep warning in cgroup_exit()
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+cgroup_exit() is called in fork and exit path. If it's called in the
+failure path during fork, PF_EXITING isn't set, and then lockdep will
+complain.
 
-* Feng Tang <feng.tang@intel.com> wrote:
+Fix this by removing cgroup_exit() in that failure path. cgroup_fork()
+does nothing that needs cleanup.
 
-> On many new phone/tablet platforms like Baytrail/Merrifield etc, the 
-> HPET are either defeatured or has some problem to be used as a 
-> reliable timer. As these platforms also have X86_64, we should not 
-> make HPET_TIMER default y for all X86_64.
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ kernel/cgroup.c | 3 +--
+ kernel/fork.c   | 5 ++---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-NAK!
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index 8f4ddbe..a53dbc6 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4339,8 +4339,7 @@ void cgroup_post_fork(struct task_struct *child)
+  * notify_on_release(), then leave the task attached to the root cgroup in
+  * each hierarchy for the remainder of its exit.  No need to bother with
+  * init_css_set refcnting.  init_css_set never goes away and we can't race
+- * with migration path - either PF_EXITING is visible to migration path or
+- * @tsk never got on the tasklist.
++ * with migration path - PF_EXITING is visible to migration path.
+  */
+ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ {
+diff --git a/kernel/fork.c b/kernel/fork.c
+index 3e02737..0477657 100644
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1274,7 +1274,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
+ 	if (IS_ERR(p->mempolicy)) {
+ 		retval = PTR_ERR(p->mempolicy);
+ 		p->mempolicy = NULL;
+-		goto bad_fork_cleanup_cgroup;
++		goto bad_fork_cleanup_threadgroup_lock;
+ 	}
+ #endif
+ #ifdef CONFIG_CPUSETS
+@@ -1526,11 +1526,10 @@ bad_fork_cleanup_policy:
+ 	perf_event_free_task(p);
+ #ifdef CONFIG_NUMA
+ 	mpol_put(p->mempolicy);
+-bad_fork_cleanup_cgroup:
++bad_fork_cleanup_threadgroup_lock:
+ #endif
+ 	if (clone_flags & CLONE_THREAD)
+ 		threadgroup_change_end(current);
+-	cgroup_exit(p, 0);
+ 	delayacct_tsk_free(p);
+ 	module_put(task_thread_info(p)->exec_domain->module);
+ bad_fork_cleanup_count:
+-- 
+1.8.0.2
 
-If the HPET is unreliable on a specific platform then any of the 
-following solutions would address the problem (in order of 
-preference):
-
- - the hardware should not expose it. Why waste silicon on something 
-   that does not work?
-
- - or the firmware should not expose it. Why expose something that 
-   does not work?
-
- - or the kernel should have a quirk to reliably disable it. Why 
-   should we crash or misbehave if a driver is built into the
-   kernel?
-
-tweaking a default is _NOT_ a solution for an unreliable hpet.
-
-Thanks,
-
-	Ingo
