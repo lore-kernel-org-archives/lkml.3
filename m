@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752536AbaC1Nwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:52:36 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:45102 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169AbaC1Nwd (ORCPT
+	id S1752545AbaC1NxI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:53:08 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:39995 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773AbaC1NxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:52:33 -0400
+	Fri, 28 Mar 2014 09:53:06 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH 06/28] ktap: add include/ktap_arch.h and error header file
-Date: Fri, 28 Mar 2014 09:47:27 -0400
-Message-Id: <1396014469-5937-7-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH 07/28] ktap: add runtime/ktap.[c|h]
+Date: Fri, 28 Mar 2014 09:47:28 -0400
+Message-Id: <1396014469-5937-8-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -24,214 +24,495 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple arch related definition and error msg definition.
+runtime/ktap.c is ktapvm kernel module main entry,
+it init ktap kernel module, create 'ktap' debugfs directory.
+
+Userspace tool send ioctl command to '/sys/kernel/debug/ktap/ktapvm' file,
+to control ktap runtime.
+
+It will read bytecode trunk, validate and execute bytecode.
+
+kp_vm_new_state
+    kp_bcread
+        kp_vm_validate_code
+            kp_vm_call_proto
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- tools/ktap/include/ktap_arch.h   |  33 ++++++++++
- tools/ktap/include/ktap_err.h    |  11 ++++
- tools/ktap/include/ktap_errmsg.h | 135 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 179 insertions(+)
- create mode 100644 tools/ktap/include/ktap_arch.h
- create mode 100644 tools/ktap/include/ktap_err.h
- create mode 100644 tools/ktap/include/ktap_errmsg.h
+ tools/ktap/runtime/ktap.c | 276 ++++++++++++++++++++++++++++++++++++++++++++++
+ tools/ktap/runtime/ktap.h | 181 ++++++++++++++++++++++++++++++
+ 2 files changed, 457 insertions(+)
+ create mode 100644 tools/ktap/runtime/ktap.c
+ create mode 100644 tools/ktap/runtime/ktap.h
 
-diff --git a/tools/ktap/include/ktap_arch.h b/tools/ktap/include/ktap_arch.h
+diff --git a/tools/ktap/runtime/ktap.c b/tools/ktap/runtime/ktap.c
 new file mode 100644
-index 0000000..aeb7036
+index 0000000..f43ddab
 --- /dev/null
-+++ b/tools/ktap/include/ktap_arch.h
-@@ -0,0 +1,33 @@
-+#ifndef __KTAP_ARCH__
-+#define __KTAP_ARCH__
-+
-+#ifdef __KERNEL__
-+#include <linux/types.h>
-+#include <asm/byteorder.h>
-+
-+#if defined(__LITTLE_ENDIAN)
-+#define KP_LE				1
-+#define KP_BE				0
-+#define KP_ENDIAN_SELECT(le, be)        le
-+#elif defined(__BIG_ENDIAN)
-+#define KP_LE				0
-+#define KP_BE				1
-+#define KP_ENDIAN_SELECT(le, be)        be
-+#endif
-+
-+#else /* __KERNEL__ */
-+
-+#if __BYTE_ORDER == __LITTLE_ENDIAN
-+#define KP_LE				1
-+#define KP_BE				0
-+#define KP_ENDIAN_SELECT(le, be)        le
-+#elif __BYTE_ORDER == __BIG_ENDIAN
-+#define KP_LE				0
-+#define KP_BE				1
-+#define KP_ENDIAN_SELECT(le, be)        be
-+#else
-+#error "could not determine byte order"
-+#endif
-+
-+#endif
-+#endif
-diff --git a/tools/ktap/include/ktap_err.h b/tools/ktap/include/ktap_err.h
-new file mode 100644
-index 0000000..b7e1a31
---- /dev/null
-+++ b/tools/ktap/include/ktap_err.h
-@@ -0,0 +1,11 @@
-+#ifndef __KTAP_ERR_H__
-+#define __KTAP_ERR_H__
-+
-+typedef enum {
-+#define ERRDEF(name, msg) \
-+	KP_ERR_##name, KP_ERR_##name##_ = KP_ERR_##name + sizeof(msg)-1,
-+#include "ktap_errmsg.h"
-+	KP_ERR__MAX
-+} ErrMsg;
-+
-+#endif
-diff --git a/tools/ktap/include/ktap_errmsg.h b/tools/ktap/include/ktap_errmsg.h
-new file mode 100644
-index 0000000..fd7a081
---- /dev/null
-+++ b/tools/ktap/include/ktap_errmsg.h
-@@ -0,0 +1,135 @@
++++ b/tools/ktap/runtime/ktap.c
+@@ -0,0 +1,276 @@
 +/*
-+ * VM error messages.
++ * ktap.c - ktapvm kernel module main entry
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
 + * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
-+ * Copyright (C) 2005-2014 Mike Pall.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
 +
-+/* Basic error handling. */
-+ERRDEF(ERRMEM,	"not enough memory")
-+ERRDEF(ERRERR,	"error in error handling")
++/*
++ * this file is the first file to be compile, add CONFIG_ checking in here.
++ * See Requirements in doc/tutorial.md
++ */
 +
-+/* Allocations. */
-+ERRDEF(STROV,	"string length overflow")
-+ERRDEF(UDATAOV,	"userdata length overflow")
-+ERRDEF(STKOV,	"stack overflow")
-+ERRDEF(STKOVM,	"stack overflow (%s)")
-+ERRDEF(TABOV,	"table overflow")
++#include <linux/version.h>
++#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
++#error "Currently ktap don't support kernel older than 3.1"
++#endif
 +
-+/* Table indexing. */
-+ERRDEF(NANIDX,	"table index is NaN")
-+ERRDEF(NILIDX,	"table index is nil")
-+ERRDEF(NEXTIDX,	"invalid key to " KTAP_QL("next"))
++#if !CONFIG_EVENT_TRACING
++#error "Please enable CONFIG_EVENT_TRACING before compile ktap"
++#endif
 +
-+/* Metamethod resolving. */
-+ERRDEF(BADCALL,	"attempt to call a %s value")
-+ERRDEF(BADOPRT,	"attempt to %s %s " KTAP_QS " (a %s value)")
-+ERRDEF(BADOPRV,	"attempt to %s a %s value")
-+ERRDEF(BADCMPT,	"attempt to compare %s with %s")
-+ERRDEF(BADCMPV,	"attempt to compare two %s values")
-+ERRDEF(GETLOOP,	"loop in gettable")
-+ERRDEF(SETLOOP,	"loop in settable")
-+ERRDEF(OPCALL,	"call")
-+ERRDEF(OPINDEX,	"index")
-+ERRDEF(OPARITH,	"perform arithmetic on")
-+ERRDEF(OPCAT,	"concatenate")
-+ERRDEF(OPLEN,	"get length of")
++#if !CONFIG_PERF_EVENTS
++#error "Please enable CONFIG_PERF_EVENTS before compile ktap"
++#endif
 +
-+/* Type checks. */
-+ERRDEF(BADSELF,	"calling " KTAP_QS " on bad self (%s)")
-+ERRDEF(BADARG,	"bad argument #%d to " KTAP_QS " (%s)")
-+ERRDEF(BADTYPE,	"%s expected, got %s")
-+ERRDEF(BADVAL,	"invalid value")
-+ERRDEF(NOVAL,	"value expected")
-+ERRDEF(NOCORO,	"coroutine expected")
-+ERRDEF(NOTABN,	"nil or table expected")
-+ERRDEF(NOLFUNC,	"ktap function expected")
-+ERRDEF(NOFUNCL,	"function or level expected")
-+ERRDEF(NOSFT,	"string/function/table expected")
-+ERRDEF(NOPROXY,	"boolean or proxy expected")
-+ERRDEF(FORINIT,	KTAP_QL("for") " initial value must be a number")
-+ERRDEF(FORLIM,	KTAP_QL("for") " limit must be a number")
-+ERRDEF(FORSTEP,	KTAP_QL("for") " step must be a number")
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/file.h>
++#include <linux/slab.h>
++#include <linux/fcntl.h>
++#include <linux/sched.h>
++#include <linux/poll.h>
++#include <linux/anon_inodes.h>
++#include <linux/debugfs.h>
++#include <linux/vmalloc.h>
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_bcread.h"
++#include "kp_vm.h"
 +
-+/* C API checks. */
-+ERRDEF(NOENV,	"no calling environment")
-+ERRDEF(CYIELD,	"attempt to yield across C-call boundary")
-+ERRDEF(BADLU,	"bad light userdata pointer")
++/* common helper function */
++long gettimeofday_ns(void)
++{
++	struct timespec now;
 +
-+/* Standard library function errors. */
-+ERRDEF(ASSERT,	"assertion failed!")
-+ERRDEF(PROTMT,	"cannot change a protected metatable")
-+ERRDEF(UNPACK,	"too many results to unpack")
-+ERRDEF(RDRSTR,	"reader function must return a string")
-+ERRDEF(PRTOSTR,	KTAP_QL("tostring") " must return a string to " KTAP_QL("print"))
-+ERRDEF(IDXRNG,	"index out of range")
-+ERRDEF(BASERNG,	"base out of range")
-+ERRDEF(LVLRNG,	"level out of range")
-+ERRDEF(INVLVL,	"invalid level")
-+ERRDEF(INVOPT,	"invalid option")
-+ERRDEF(INVOPTM,	"invalid option " KTAP_QS)
-+ERRDEF(INVFMT,	"invalid format")
-+ERRDEF(SETFENV,	KTAP_QL("setfenv") " cannot change environment of given object")
-+ERRDEF(CORUN,	"cannot resume running coroutine")
-+ERRDEF(CODEAD,	"cannot resume dead coroutine")
-+ERRDEF(COSUSP,	"cannot resume non-suspended coroutine")
-+ERRDEF(TABINS,	"wrong number of arguments to " KTAP_QL("insert"))
-+ERRDEF(TABCAT,	"invalid value (%s) at index %d in table for " KTAP_QL("concat"))
-+ERRDEF(TABSORT,	"invalid order function for sorting")
-+ERRDEF(IOCLFL,	"attempt to use a closed file")
-+ERRDEF(IOSTDCL,	"standard file is closed")
-+ERRDEF(OSUNIQF,	"unable to generate a unique filename")
-+ERRDEF(OSDATEF,	"field " KTAP_QS " missing in date table")
-+ERRDEF(STRDUMP,	"unable to dump given function")
-+ERRDEF(STRSLC,	"string slice too long")
-+ERRDEF(STRPATB,	"missing " KTAP_QL("[") " after " KTAP_QL("%f") " in pattern")
-+ERRDEF(STRPATC,	"invalid pattern capture")
-+ERRDEF(STRPATE,	"malformed pattern (ends with " KTAP_QL("%") ")")
-+ERRDEF(STRPATM,	"malformed pattern (missing " KTAP_QL("]") ")")
-+ERRDEF(STRPATU,	"unbalanced pattern")
-+ERRDEF(STRPATX,	"pattern too complex")
-+ERRDEF(STRCAPI,	"invalid capture index")
-+ERRDEF(STRCAPN,	"too many captures")
-+ERRDEF(STRCAPU,	"unfinished capture")
-+ERRDEF(STRFMT,	"invalid option " KTAP_QS " to " KTAP_QL("format"))
-+ERRDEF(STRGSRV,	"invalid replacement value (a %s)")
-+ERRDEF(BADMODN,	"name conflict for module " KTAP_QS)
-+ERRDEF(JITOPT,	"unknown or malformed optimization flag " KTAP_QS)
++	getnstimeofday(&now);
++	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
++}
 +
-+/* Lexer/parser errors. */
-+ERRDEF(XMODE,	"attempt to load chunk with wrong mode")
-+ERRDEF(XNEAR,	"%s near " KTAP_QS)
-+ERRDEF(XLINES,	"chunk has too many lines")
-+ERRDEF(XLEVELS,	"chunk has too many syntax levels")
-+ERRDEF(XNUMBER,	"malformed number")
-+ERRDEF(XLSTR,	"unfinished long string")
-+ERRDEF(XLCOM,	"unfinished long comment")
-+ERRDEF(XSTR,	"unfinished string")
-+ERRDEF(XESC,	"invalid escape sequence")
-+ERRDEF(XLDELIM,	"invalid long string delimiter")
-+ERRDEF(XTOKEN,	KTAP_QS " expected")
-+ERRDEF(XJUMP,	"control structure too long")
-+ERRDEF(XSLOTS,	"function or expression too complex")
-+ERRDEF(XLIMC,	"chunk has more than %d local variables")
-+ERRDEF(XLIMM,	"main function has more than %d %s")
-+ERRDEF(XLIMF,	"function at line %d has more than %d %s")
-+ERRDEF(XMATCH,	KTAP_QS " expected (to close " KTAP_QS " at line %d)")
-+ERRDEF(XFIXUP,	"function too long for return fixup")
-+ERRDEF(XPARAM,	"<name> or " KTAP_QL("...") " expected")
-+ERRDEF(XAMBIG,	"ambiguous syntax (function call x new statement)")
-+ERRDEF(XFUNARG,	"function arguments expected")
-+ERRDEF(XSYMBOL,	"unexpected symbol")
-+ERRDEF(XDOTS,	"cannot use " KTAP_QL("...") " outside a vararg function")
-+ERRDEF(XSYNTAX,	"syntax error")
-+ERRDEF(XFOR,	KTAP_QL("=") " or " KTAP_QL("in") " expected")
-+ERRDEF(XBREAK,	"no loop to break")
-+ERRDEF(XLUNDEF,	"undefined label " KTAP_QS)
-+ERRDEF(XLDUP,	"duplicate label " KTAP_QS)
-+ERRDEF(XGSCOPE,	"<goto %s> jumps into the scope of local " KTAP_QS)
-+ERRDEF(XEVENTDEF,"cannot parse eventdef " KTAP_QS)
++static int load_trunk(ktap_option_t *parm, unsigned long **buff)
++{
++	int ret;
++	unsigned long *vmstart;
 +
-+/* Bytecode reader errors. */
-+ERRDEF(BCFMT,	"cannot load incompatible bytecode")
-+ERRDEF(BCBAD,	"cannot load malformed bytecode")
++	vmstart = vmalloc(parm->trunk_len);
++	if (!vmstart)
++		return -ENOMEM;
 +
-+#undef ERRDEF
++	ret = copy_from_user(vmstart, (void __user *)parm->trunk,
++			     parm->trunk_len);
++	if (ret < 0) {
++		vfree(vmstart);
++		return -EFAULT;
++	}
++
++	*buff = vmstart;
++	return 0;
++}
++
++static struct dentry *kp_dir_dentry;
++
++/* Ktap Main Entry */
++static int ktap_main(struct file *file, ktap_option_t *parm)
++{
++	unsigned long *buff = NULL;
++	ktap_state_t *ks;
++	ktap_proto_t *pt;
++	long start_time, delta_time;
++	int ret;
++
++	start_time = gettimeofday_ns();
++
++	ks = kp_vm_new_state(parm, kp_dir_dentry);
++	if (unlikely(!ks))
++		return -ENOEXEC;
++
++	file->private_data = ks;
++
++	ret = load_trunk(parm, &buff);
++	if (ret) {
++		kp_error(ks, "cannot load file\n");
++		goto out;
++	}
++
++	pt = kp_bcread(ks, (unsigned char *)buff, parm->trunk_len);
++
++	vfree(buff);
++
++	if (pt) {
++		/* validate byte code */
++		if (kp_vm_validate_code(ks, pt, ks->stack))
++			goto out;
++
++		delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
++		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
++
++		/* enter vm */
++		kp_vm_call_proto(ks, pt);
++	}
++
++ out:
++	kp_vm_exit(ks);
++	return ret;
++}
++
++
++static void print_version(void)
++{
++}
++
++static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	ktap_option_t parm;
++	int ret;
++
++	switch (cmd) {
++	case KTAP_CMD_IOC_VERSION:
++		print_version();
++		return 0;
++	case KTAP_CMD_IOC_RUN:
++		/*
++		 * must be root to run ktap script (at least for now)
++		 *
++		 * TODO: check perf_paranoid sysctl and allow non-root user
++		 * to use ktap for tracing process(like uprobe) ?
++		 */
++		if (!capable(CAP_SYS_ADMIN))
++			return -EACCES;
++
++		ret = copy_from_user(&parm, (void __user *)arg,
++				     sizeof(ktap_option_t));
++		if (ret < 0)
++			return -EFAULT;
++
++		return ktap_main(file, &parm);
++	default:
++		return -EINVAL;
++	};
++
++        return 0;
++}
++
++static const struct file_operations ktap_fops = {
++	.llseek                 = no_llseek,
++	.unlocked_ioctl         = ktap_ioctl,
++};
++
++static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int new_fd, err;
++	struct file *new_file;
++
++	new_fd = get_unused_fd();
++	if (new_fd < 0)
++		return new_fd;
++
++	new_file = anon_inode_getfile("[ktap]", &ktap_fops, NULL, O_RDWR);
++	if (IS_ERR(new_file)) {
++		err = PTR_ERR(new_file);
++		put_unused_fd(new_fd);
++		return err;
++	}
++
++	file->private_data = NULL;
++	fd_install(new_fd, new_file);
++	return new_fd;
++}
++
++static const struct file_operations ktapvm_fops = {
++	.owner  = THIS_MODULE,
++	.unlocked_ioctl         = ktapvm_ioctl,
++};
++
++int (*kp_ftrace_profile_set_filter)(struct perf_event *event, int event_id,
++				    const char *filter_str);
++
++struct syscall_metadata **syscalls_metadata;
++
++/*TODO: kill this function in future */
++static int __init init_dummy_kernel_functions(void)
++{
++	unsigned long *addr;
++
++	/*
++	 * ktap need symbol ftrace_profile_set_filter to set event filter, 
++	 * export it in future. 
++	 */
++#ifdef CONFIG_PPC64
++	kp_ftrace_profile_set_filter =
++		(void *)kallsyms_lookup_name(".ftrace_profile_set_filter");
++#else
++	kp_ftrace_profile_set_filter =
++		(void *)kallsyms_lookup_name("ftrace_profile_set_filter");
++#endif
++	if (!kp_ftrace_profile_set_filter) {
++		pr_err("ktap: cannot lookup ftrace_profile_set_filter "
++			"in kallsyms\n");
++		return -1;
++	}
++
++	/* use syscalls_metadata for syscall event handling */
++	addr = (void *)kallsyms_lookup_name("syscalls_metadata");
++	if (!addr) {
++		pr_err("ktap: cannot lookup syscalls_metadata in kallsyms\n");
++		return -1;
++	}
++
++	syscalls_metadata = (struct syscall_metadata **)*addr;
++	return 0;
++}
++
++static int __init init_ktap(void)
++{
++	struct dentry *ktapvm_dentry;
++
++	if (init_dummy_kernel_functions())
++		return -1;
++
++	kp_dir_dentry = debugfs_create_dir("ktap", NULL);
++	if (!kp_dir_dentry) {
++		pr_err("ktap: debugfs_create_dir failed\n");
++		return -1;
++	}
++
++	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, kp_dir_dentry, NULL,
++					    &ktapvm_fops);
++
++	if (!ktapvm_dentry) {
++		pr_err("ktapvm: cannot create ktapvm file\n");
++		debugfs_remove_recursive(kp_dir_dentry);
++		return -1;
++	}
++
++	return 0;
++}
++
++static void __exit exit_ktap(void)
++{
++	debugfs_remove_recursive(kp_dir_dentry);
++}
++
++module_init(init_ktap);
++module_exit(exit_ktap);
++
++MODULE_AUTHOR("Jovi Zhangwei <jovi.zhangwei@gmail.com>");
++MODULE_DESCRIPTION("ktap");
++MODULE_LICENSE("GPL");
++
++int kp_max_loop_count = 100000;
++module_param_named(max_loop_count, kp_max_loop_count, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(max_loop_count, "max loop execution count");
++
+diff --git a/tools/ktap/runtime/ktap.h b/tools/ktap/runtime/ktap.h
+new file mode 100644
+index 0000000..6e1c951
+--- /dev/null
++++ b/tools/ktap/runtime/ktap.h
+@@ -0,0 +1,181 @@
++#ifndef __KTAP_H__
++#define __KTAP_H__
++
++#include <linux/version.h>
++#include <linux/hardirq.h>
++#include <linux/trace_seq.h>
++
++/* for built-in library C function register */
++typedef struct ktap_libfunc {
++        const char *name; /* function name */
++        ktap_cfunction func; /* function pointer */
++} ktap_libfunc_t;
++
++long gettimeofday_ns(void); /* common helper function */
++int kp_lib_init_base(ktap_state_t *ks);
++int kp_lib_init_kdebug(ktap_state_t *ks);
++int kp_lib_init_timer(ktap_state_t *ks);
++int kp_lib_init_table(ktap_state_t *ks);
++int kp_lib_init_ansi(ktap_state_t *ks);
++int kp_lib_init_net(ktap_state_t *ks);
++
++void kp_exit_timers(ktap_state_t *ks);
++void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv);
++
++extern int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
++					   int event_id,
++					   const char *filter_str);
++
++extern struct syscall_metadata **syscalls_metadata;
++
++/* get from kernel/trace/trace.h */
++static __always_inline int trace_get_context_bit(void)
++{
++	int bit;
++
++	if (in_interrupt()) {
++		if (in_nmi())
++			bit = 0;
++		else if (in_irq())
++			bit = 1;
++		else
++			bit = 2;
++	} else
++		bit = 3;
++
++	return bit;
++}
++
++static __always_inline int get_recursion_context(ktap_state_t *ks)
++{
++	int rctx = trace_get_context_bit();
++	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
++
++	if (*val)
++		return -1;
++
++	*val = true;
++	return rctx;
++}
++
++static inline void put_recursion_context(ktap_state_t *ks, int rctx)
++{
++	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
++	*val = false;
++}
++
++static inline void *kp_this_cpu_state(ktap_state_t *ks, int rctx)
++{
++	return this_cpu_ptr(G(ks)->percpu_state[rctx]);
++}
++
++static inline void *kp_this_cpu_print_buffer(ktap_state_t *ks)
++{
++	return this_cpu_ptr(G(ks)->percpu_print_buffer[trace_get_context_bit()]);
++}
++
++static inline void *kp_this_cpu_temp_buffer(ktap_state_t *ks)
++{
++	return this_cpu_ptr(G(ks)->percpu_temp_buffer[trace_get_context_bit()]);
++}
++
++#define kp_verbose_printf(ks, ...) \
++	if (G(ks)->parm->verbose)	\
++		kp_printf(ks, "[verbose] "__VA_ARGS__);
++
++/* argument operation macro */
++#define kp_arg(ks, idx)	((ks)->func + (idx))
++#define kp_arg_nr(ks)	((int)(ks->top - (ks->func + 1)))
++
++#define kp_arg_check(ks, idx, type)				\
++	do {							\
++		if (unlikely(itype(kp_arg(ks, idx)) != type)) {	\
++			kp_error(ks, "wrong type of argument %d\n", idx);\
++			return -1;				\
++		}						\
++	} while (0)
++
++#define kp_arg_checkstring(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_string(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		svalue(o);					\
++	})
++
++#define kp_arg_checkfunction(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_function(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		clvalue(o);					\
++	})
++
++#define kp_arg_checknumber(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_number(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		nvalue(o);					\
++	})
++
++#define kp_arg_checkoptnumber(ks, idx, def)			\
++	({							\
++		ktap_number n;					\
++		if (idx > kp_arg_nr(ks)) {				\
++			n = def;				\
++		} else {					\
++			ktap_val_t *o = kp_arg(ks, idx);	\
++			if (unlikely(!is_number(o))) {		\
++				kp_error(ks, "wrong type of argument %d\n", \
++					     idx);		\
++				return -1;			\
++			}					\
++			n = nvalue(o);				\
++		}						\
++		n;						\
++	})
++
++#define kp_error(ks, args...)			\
++	do {					\
++		kp_printf(ks, "error: "args);	\
++		kp_vm_try_to_exit(ks);		\
++		G(ks)->state = KTAP_ERROR;	\
++	} while(0)
++
++
++/* TODO: this code need to cleanup */
++#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 5, 0)
++#define SPRINT_SYMBOL	sprint_symbol_no_offset
++#else
++#define SPRINT_SYMBOL	sprint_symbol
++#endif
++
++extern int kp_max_loop_count;
++
++void kp_printf(ktap_state_t *ks, const char *fmt, ...);
++void __kp_puts(ktap_state_t *ks, const char *str);
++void __kp_bputs(ktap_state_t *ks, const char *str);
++
++#define kp_puts(ks, str) ({						\
++	static const char *trace_printk_fmt				\
++		__attribute__((section("__trace_printk_fmt"))) =	\
++		__builtin_constant_p(str) ? str : NULL;			\
++									\
++	if (__builtin_constant_p(str))					\
++		__kp_bputs(ks, trace_printk_fmt);		\
++	else								\
++		__kp_puts(ks, str);		\
++})
++
++#define err2msg(em)     (kp_err_allmsg+(int)(em))
++extern const char *kp_err_allmsg;
++
++#endif /* __KTAP_H__ */
 +
 -- 
 1.8.1.4
