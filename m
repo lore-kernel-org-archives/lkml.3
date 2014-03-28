@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaC1Rmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:42:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51374 "EHLO
+	id S1753633AbaC1RnW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:43:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51366 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171AbaC1RbJ (ORCPT
+	with ESMTP id S1753146AbaC1RbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:09 -0400
+	Fri, 28 Mar 2014 13:31:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kay Sievers <kay@vrfy.org>, Jeff Mahoney <jeffm@suse.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Hunt <joshhunt00@gmail.com>
-Subject: [PATCH 3.13 22/46] printk: fix syslog() overflowing user buffer
-Date: Fri, 28 Mar 2014 10:32:06 -0700
-Message-Id: <20140328173137.660282781@linuxfoundation.org>
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 20/46] SUNRPC: Fix a pipe_version reference leak
+Date: Fri, 28 Mar 2014 10:32:04 -0700
+Message-Id: <20140328173137.402111439@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -28,62 +26,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit e4178d809fdaee32a56833fff1f5056c99e90a1a upstream.
+commit e9776d0f4adee8877145672f6416b06b57f2dc27 upstream.
 
-This is not a buffer overflow in the traditional sense: we don't
-overflow any *kernel* buffers, but we do mis-count the amount of data we
-copy back to user space for the SYSLOG_ACTION_READ_ALL case.
+In gss_alloc_msg(), if the call to gss_encode_v1_msg() fails, we
+want to release the reference to the pipe_version that was obtained
+earlier in the function.
 
-In particular, if the user buffer is too small to hold everything, and
-*if* there is a continuation line at just the right place, we can end up
-giving the user more data than he asked for.
-
-The reason is that we first count up the number of bytes all the log
-records contains, then we walk the records again until we've skipped the
-records at the beginning that won't fit, and then we walk the rest of
-the records and copy them to the user space buffer.
-
-And in between that "skip the initial records that won't fit" and the
-"copy the records that *will* fit to user space", we reset the 'prev'
-variable that contained the record information for the last record not
-copied.  That meant that when we started copying to user space, we now
-had a different character count than what we had originally calculated
-in the first record walk-through.
-
-The fix is to simply not clear the 'prev' flags value (in both cases
-where we had the same logic: syslog_print_all and kmsg_dump_get_buffer:
-the latter is used for pstore-like dumping)
-
-Reported-and-tested-by: Debabrata Banerjee <dbanerje@akamai.com>
-Acked-by: Kay Sievers <kay@vrfy.org>
-Cc: Jeff Mahoney <jeffm@suse.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Josh Hunt <joshhunt00@gmail.com>
+Fixes: 9d3a2260f0f4b (SUNRPC: Fix buffer overflow checking in...)
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/printk/printk.c |    2 --
- 1 file changed, 2 deletions(-)
+ net/sunrpc/auth_gss/auth_gss.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -1080,7 +1080,6 @@ static int syslog_print_all(char __user
- 		next_seq = log_next_seq;
- 
- 		len = 0;
--		prev = 0;
- 		while (len >= 0 && seq < next_seq) {
- 			struct printk_log *msg = log_from_idx(idx);
- 			int textlen;
-@@ -2789,7 +2788,6 @@ bool kmsg_dump_get_buffer(struct kmsg_du
- 	next_idx = idx;
- 
- 	l = 0;
--	prev = 0;
- 	while (seq < dumper->next_seq) {
- 		struct printk_log *msg = log_from_idx(idx);
- 
+--- a/net/sunrpc/auth_gss/auth_gss.c
++++ b/net/sunrpc/auth_gss/auth_gss.c
+@@ -500,10 +500,12 @@ gss_alloc_msg(struct gss_auth *gss_auth,
+ 	default:
+ 		err = gss_encode_v1_msg(gss_msg, service_name, gss_auth->target_name);
+ 		if (err)
+-			goto err_free_msg;
++			goto err_put_pipe_version;
+ 	};
+ 	kref_get(&gss_auth->kref);
+ 	return gss_msg;
++err_put_pipe_version:
++	put_pipe_version(gss_auth->net);
+ err_free_msg:
+ 	kfree(gss_msg);
+ err:
 
 
