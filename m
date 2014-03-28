@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757494AbaC1CvC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 22:51:02 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:4584 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794AbaC1CvA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 22:51:00 -0400
-Message-ID: <5334E2F1.3040809@huawei.com>
-Date: Fri, 28 Mar 2014 10:48:17 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>
-CC: Tejun Heo <tj@kernel.org>, <containers@lists.linux-foundation.org>,
-        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cgroup: missing rcu read lock around task_css_set
-References: <1393729211-937-1-git-send-email-sasha.levin@oracle.com> <20140303223327.GB26523@mtj.dyndns.org> <5315057F.3030602@oracle.com> <20140303224505.GE26523@mtj.dyndns.org> <53150989.70307@oracle.com> <53160B6D.8020501@oracle.com> <20140304194741.GA2204@htj.dyndns.org> <53167662.5000801@huawei.com> <5334452D.4080200@oracle.com>
-In-Reply-To: <5334452D.4080200@oracle.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	id S1757411AbaC1C4K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 22:56:10 -0400
+Received: from mga09.intel.com ([134.134.136.24]:7094 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756993AbaC1C4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 Mar 2014 22:56:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,747,1389772800"; 
+   d="scan'208";a="481861248"
+From: Feng Tang <feng.tang@intel.com>
+To: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>
+Cc: Clemens Ladisch <clemens@ladisch.de>,
+        Andy Lutomirski <luto@amacapital.net>, Feng Tang <feng.tang@intel.com>
+Subject: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y for X86_64
+Date: Fri, 28 Mar 2014 10:55:16 +0800
+Message-Id: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/3/27 23:35, Sasha Levin wrote:
-> On 03/04/2014 07:57 PM, Li Zefan wrote:
->> On 2014/3/5 3:47, Tejun Heo wrote:
->>> On Tue, Mar 04, 2014 at 12:20:45PM -0500, Sasha Levin wrote:
->>>>> Hrm... there is a PF_EXITING check there already:
->>>>>
->>>>>      #define task_css_set_check(task, __c)            \
->>>>>          rcu_dereference_check((task)->cgroups,        \
->>>>>          lockdep_is_held(&cgroup_mutex) ||        \
->>>>>          lockdep_is_held(&css_set_rwsem) ||        \
->>>>>          ((task)->flags & PF_EXITING) || (__c))
->>>>>
->>>>> I see it's not happening on Linus's master so I'll run a bisection to figure out what broke it.
->>>>
->>>> Hi Tejun,
->>>>
->>>> It bisects down to your patch: "cgroup: drop task_lock() protection
->>>> around task->cgroups". I'll look into it later unless it's obvious
->>>> to you.
->>>
->>> Hmmm... maybe I'm confused and PF_EXITING is not set there and
->>> task_lock was what held off the lockdep warning.  Confused....
->>>
->>
->> Because this cgroup_exit() is called in a failure path in copy_process().
-> 
-> It seems there was no conclusion here and it still happens in -next, anything
-> we can do about it?
-> 
+On many new phone/tablet platforms like Baytrail/Merrifield etc,
+the HPET are either defeatured or has some problem to be used
+as a reliable timer. As these platforms also have X86_64, we
+should not make HPET_TIMER default y for all X86_64.
 
-I'll send a patch to fix it. Thanks!
+Signed-off-by: Feng Tang <feng.tang@intel.com>
+---
+ arch/x86/Kconfig |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0af5250..7f2fb4b 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -695,8 +695,7 @@ config X86_CYCLONE_TIMER
+ source "arch/x86/Kconfig.cpu"
+ 
+ config HPET_TIMER
+-	def_bool X86_64
+-	prompt "HPET Timer Support" if X86_32
++	prompt "HPET Timer Support"
+ 	---help---
+ 	  Use the IA-PC HPET (High Precision Event Timer) to manage
+ 	  time in preference to the PIT and RTC, if a HPET is
+@@ -709,9 +708,9 @@ config HPET_TIMER
+ 
+ 	  You can safely choose Y here.  However, HPET will only be
+ 	  activated if the platform and the BIOS support this feature.
+-	  Otherwise the 8254 will be used for timing services.
+ 
+-	  Choose N to continue using the legacy 8254 timer.
++	  Choose N to use the legacy 8254 timer or the latest
++	  lapic_timer+tsc solution.
+ 
+ config HPET_EMULATE_RTC
+ 	def_bool y
+-- 
+1.7.0.4
 
