@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757308AbaC1BNy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 21:13:54 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:24231 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756172AbaC1BNw (ORCPT
+	id S1757222AbaC1BpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 21:45:19 -0400
+Received: from mail-lb0-f173.google.com ([209.85.217.173]:43484 "EHLO
+	mail-lb0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819AbaC1BpR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 21:13:52 -0400
-From: Neil Zhang <zhangwm@marvell.com>
-To: John Stultz <john.stultz@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 27 Mar 2014 18:13:43 -0700
-Subject: RE: [PATCH] timekeeping: check params before use them
-Thread-Topic: [PATCH] timekeeping: check params before use them
-Thread-Index: Ac9J4bBpH7HQS594S5CkSzb8R/2JeQAQRRGw
-Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE550559A223@SC-VEXCH4.marvell.com>
-References: <1395907978-6202-1-git-send-email-zhangwm@marvell.com>
- <53345F40.70608@linaro.org>
-In-Reply-To: <53345F40.70608@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="gb2312"
+	Thu, 27 Mar 2014 21:45:17 -0400
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
- definitions=2014-03-27_07:2014-03-27,2014-03-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1403270144
+In-Reply-To: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+References: <1395967502-71219-1-git-send-email-chrisfriedt@gmail.com>
+Date: Fri, 28 Mar 2014 11:45:15 +1000
+Message-ID: <CAPM=9tx4hdU0PZqdZcCd-x3HMu+6ZsGibeOHZPLe3OpW9Wsa0g@mail.gmail.com>
+Subject: Re: [PATCH 1/1] drm/vmwgfx: correct fb_fix_screeninfo.line_length
+From: Dave Airlie <airlied@gmail.com>
+To: Christopher Friedt <chrisfriedt@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Thomas Hellstrom <thellstrom@vmware.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2S1E2Rq009295
 
+On Fri, Mar 28, 2014 at 10:45 AM, Christopher Friedt
+<chrisfriedt@gmail.com> wrote:
+> Previously, the vmwgfx_fb driver would allow users to call FBIOSET_VINFO, but it would not adjust
+> the FINFO properly, resulting in distorted screen rendering. The patch corrects that behaviour.
+>
+> See https://bugs.gentoo.org/show_bug.cgi?id=494794 for examples.
+>
 
+Just adding cc's of maintainer list.
 
-
-> -----Original Message-----
-> From: John Stultz [mailto:john.stultz@linaro.org]
-> Sent: 2014Äê3ÔÂ28ÈÕ 1:26
-> To: Neil Zhang; tglx@linutronix.de
-> Cc: linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] timekeeping: check params before use them
-> 
-> On 03/27/2014 01:12 AM, Neil Zhang wrote:
-> > Sometimes we won't need all the information from
-> > get_xtime_and_monotonic_and_sleep_offset(),
-> > so let's check the params before assign the value to them.
-> 
-> So I think the single in-kernel user of this function does use all of the
-> information.
-> 
-> Can you expand on how your using this and why the extra conditionals are
-> worth while?
-> 
-
-Please refer to my another patch.
-printk: add sleep time into timestamp
-
-I want to add sleep time into printk's timestamp.
-
-> thanks
-> -john
-
-Best Regards,
-Neil Zhang
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Signed-off-by: Christopher Friedt <chrisfriedt@gmail.com>
+> ---
+>  drivers/gpu/drm/vmwgfx/vmwgfx_fb.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
+> index ed5ce2a..021b522 100644
+> --- a/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
+> +++ b/drivers/gpu/drm/vmwgfx/vmwgfx_fb.c
+> @@ -147,7 +147,7 @@ static int vmw_fb_check_var(struct fb_var_screeninfo *var,
+>         }
+>
+>         if (!vmw_kms_validate_mode_vram(vmw_priv,
+> -                                       info->fix.line_length,
+> +                                       var->xres * var->bits_per_pixel/8,
+>                                         var->yoffset + var->yres)) {
+>                 DRM_ERROR("Requested geom can not fit in framebuffer\n");
+>                 return -EINVAL;
+> @@ -162,6 +162,8 @@ static int vmw_fb_set_par(struct fb_info *info)
+>         struct vmw_private *vmw_priv = par->vmw_priv;
+>         int ret;
+>
+> +       info->fix.line_length = info->var.xres * info->var.bits_per_pixel/8;
+> +
+>         ret = vmw_kms_write_svga(vmw_priv, info->var.xres, info->var.yres,
+>                                  info->fix.line_length,
+>                                  par->bpp, par->depth);
+> @@ -177,6 +179,7 @@ static int vmw_fb_set_par(struct fb_info *info)
+>                 vmw_write(vmw_priv, SVGA_REG_DISPLAY_POSITION_Y, info->var.yoffset);
+>                 vmw_write(vmw_priv, SVGA_REG_DISPLAY_WIDTH, info->var.xres);
+>                 vmw_write(vmw_priv, SVGA_REG_DISPLAY_HEIGHT, info->var.yres);
+> +               vmw_write(vmw_priv, SVGA_REG_BYTES_PER_LINE, info->fix.line_length);
+>                 vmw_write(vmw_priv, SVGA_REG_DISPLAY_ID, SVGA_ID_INVALID);
+>         }
+>
+> --
+> 1.8.3.2
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
