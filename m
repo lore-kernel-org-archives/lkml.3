@@ -1,135 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751583AbaC1HVg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 03:21:36 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:42258 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751077AbaC1HVe (ORCPT
+	id S1751636AbaC1HYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 03:24:34 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:9840 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaC1HYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 03:21:34 -0400
-X-Sasl-enc: jIEQZJCV9URN2O/AyRwmH63+Go5cD1S6T63mdHQpMnjy 1395991293
-Message-ID: <1395991272.2704.16.camel@perseus.fritz.box>
-Subject: [ANNOUNCE] autofs 5.0.9 release
-From: Ian Kent <raven@themaw.net>
-To: autofs@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 28 Mar 2014 15:21:12 +0800
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-LDsRlOBtqTRj6+DRClSC"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Fri, 28 Mar 2014 03:24:32 -0400
+Message-ID: <5335232B.70401@huawei.com>
+Date: Fri, 28 Mar 2014 15:22:19 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: [PATCH 2/2] cgroup: remove useless argument from cgroup_exit()
+References: <53352243.80805@huawei.com>
+In-Reply-To: <53352243.80805@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-LDsRlOBtqTRj6+DRClSC
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ include/linux/cgroup.h | 4 ++--
+ kernel/cgroup.c        | 5 ++---
+ kernel/exit.c          | 2 +-
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-Hi all,
-
-Here is a bug fix release for autofs.
-
-For those that have clones of the git repository the master branch
-will progress to autofs-5.1.0 and autofs-5.0 will continue to be
-updated with bug fixes (and periodic releases) on the new branch
-autofs-5.0-stable.
-
-For those that have git clones that include the branch autofs-5.0
-you probably want to prune your remote as that branch has been
-deleted.
-
-autofs
-=3D=3D=3D=3D=3D=3D
-
-The package can be found at:
-
-ftp://ftp.kernel.org/pub/linux/daemons/autofs/v5
-
-It is autofs-5.0.9.tar.[gz|bz2|xz]
-
-No source rpm is there as it can be produced by using:
-
-rpmbuild -ts autofs-5.0.9.tar.gz
-
-and the binary rpm by using:
-
-rpmbuild -tb autofs-5.0.9.tar.gz
-
-See the INSTALL file for information about configure options and
-kernel requirements.
-
-Here are the entries from the CHANGELOG which outline the updates:
-- fix undefined authtype_requires_creds err if ldap enabled but without sas=
-l.
-- fix master map type check.
-- fix task manager not getting signaled.
-- allow --with-systemd to take a path arg.
-- fix WITH_LIBTIRPC function name.
-- fix ipv6 libtirpc getport.
-- fix ipv6 link local address handling.
-- fix fix ipv6 libtirpc getport.
-- get_nfs_info() should query portmapper if port is not given.
-- fix rpc_portmap_getport() proto not set.
-- fix protmap not trying proto v2.
-- fix rpc_getport() when libtirpc is disabled.
-- fix rpc_getrpcbport() when libtirpc is disabled.
-- don't reset errno.
-- extend fix for crash due to thread unsafe use of libldap.
-- fix deadlock in init_ldap_connection.
-- fix options compare.
-- fix negative status being reset on map read.
-- check for existing offset mount before mounting.
-- fix max() declaration.
-- fix symlink fail message in mount_bind.c.
-- fix cache readlock not taken on lookup.
-- pass map_source as function paramter where possible.
-- check for bind onto self in mount_bind.c.
-- fix symlink expire.
-- dont clobber mapent for negative cache.
-- fix macro_addvar() and move init to main thread.
-- change walk_tree() to take ap.
-- add negative cache lookup to hesiod lookup.
-- fix external env configure.
-- make autofs(5) consistent with auto.master(5).
-- fix map source with type lookup.
-- fix lookup_nss_mount() map lookup.
-- dont ignore null cache entries on multi mount umount.
-- fix inconsistent error returns in handle_packet_missing_direct().
-- simple coverity fixes.
-- fix fix options compare.
-- use open(2) instead of access(2) to trigger dependent mounts.
-- fix fix map source with type lookup.
-- fixes for samples/auto.master.
-- fix variable substitution description.
-- fix incorrect append options description in README.v5-release.
-
-Ian
-
-
---=-LDsRlOBtqTRj6+DRClSC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAABAgAGBQJTNSLoAAoJEOdnc4D1T9ipjxcP+gLSHyPYAaKEoVO5VniQzWrD
-0x/hPNCSFnkBBQKstliuJalZJNSijZMEm9yLpPU+/+sNom/2SuwobR27w4vo9ZMw
-ubEFiRUIADFa4PugCStmeYYEF1Kn0Dmoy+7ZhT6gZGlGd+UO5hiMzzCGRM+M5OFG
-driOV5z/1QtXk7sUAlHxutTr49AYTX1Q93kpaDHNWMgmqDJP5aJlpiJVFj1q9+yi
-fzzZuH7hFdb0rGba78hSprnazS0FRggGiHE+DSLsvQl/OiWDGo+TTGz2P+6eJjYC
-Y55fKMVLg7sseVpcwbi/4luEccXH+sPFtuHw2IrwtUKLZoZNplbrSkIp5QlhIKah
-pLkmSsWSvxyW+n6Us9LdyMDCmyjhyd1ZngKuRVOMKKZIcI8h4tCnCqtCRQsf4wB6
-Nk0u3ldCM2wNdXVmcouKviKb1dC/o0HxiqvZ8CfrPjbjc6uyQUT8BvS6M9ndju6a
-s6L/uaB7vyNqF3Zi6lGq2db7E1qd0qDyzaGVvp/zGbuLrDtiVQBfcuYTbu8SSjK9
-vQ0qBAJ+r4A85F6ATWaMKIFSTo6wfF4iJBqaXw9V63rYFMi1I6Cwn3NAaTnYOzV8
-vMKXeG6yxMyhcDfIrWxWOUidHQAfqdWuQ/8xUczJ2jNaCAPJogcLZVyQgoS7d2/I
-m77UzzTmemV8Xw8q1E3d
-=Xflv
------END PGP SIGNATURE-----
-
---=-LDsRlOBtqTRj6+DRClSC--
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index acbb9a4..13ffb06 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -33,7 +33,7 @@ extern int cgroup_init_early(void);
+ extern int cgroup_init(void);
+ extern void cgroup_fork(struct task_struct *p);
+ extern void cgroup_post_fork(struct task_struct *p);
+-extern void cgroup_exit(struct task_struct *p, int run_callbacks);
++extern void cgroup_exit(struct task_struct *p);
+ extern int cgroupstats_build(struct cgroupstats *stats,
+ 				struct dentry *dentry);
+ 
+@@ -848,7 +848,7 @@ static inline int cgroup_init_early(void) { return 0; }
+ static inline int cgroup_init(void) { return 0; }
+ static inline void cgroup_fork(struct task_struct *p) {}
+ static inline void cgroup_post_fork(struct task_struct *p) {}
+-static inline void cgroup_exit(struct task_struct *p, int callbacks) {}
++static inline void cgroup_exit(struct task_struct *p) {}
+ 
+ static inline int cgroupstats_build(struct cgroupstats *stats,
+ 					struct dentry *dentry)
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index a53dbc6..775a90d 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -4324,7 +4324,6 @@ void cgroup_post_fork(struct task_struct *child)
+ /**
+  * cgroup_exit - detach cgroup from exiting task
+  * @tsk: pointer to task_struct of exiting process
+- * @run_callback: run exit callbacks?
+  *
+  * Description: Detach cgroup from @tsk and release it.
+  *
+@@ -4341,7 +4340,7 @@ void cgroup_post_fork(struct task_struct *child)
+  * init_css_set refcnting.  init_css_set never goes away and we can't race
+  * with migration path - PF_EXITING is visible to migration path.
+  */
+-void cgroup_exit(struct task_struct *tsk, int run_callbacks)
++void cgroup_exit(struct task_struct *tsk)
+ {
+ 	struct cgroup_subsys *ss;
+ 	struct css_set *cset;
+@@ -4363,7 +4362,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
+ 	cset = task_css_set(tsk);
+ 	RCU_INIT_POINTER(tsk->cgroups, &init_css_set);
+ 
+-	if (run_callbacks && need_forkexit_callback) {
++	if (need_forkexit_callback) {
+ 		/* see cgroup_post_fork() for details */
+ 		for_each_subsys(ss, i) {
+ 			if (ss->exit) {
+diff --git a/kernel/exit.c b/kernel/exit.c
+index c3af836..c2ae892 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -797,7 +797,7 @@ void do_exit(long code)
+ 	 */
+ 	perf_event_exit_task(tsk);
+ 
+-	cgroup_exit(tsk, 1);
++	cgroup_exit(tsk);
+ 
+ 	if (group_dead)
+ 		disassociate_ctty(1);
+-- 
+1.8.0.2
 
