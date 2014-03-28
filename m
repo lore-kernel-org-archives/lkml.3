@@ -1,188 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbaC1Syh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 14:54:37 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:46724 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752789AbaC1Syc (ORCPT
+	id S1752865AbaC1Syw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:54:52 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:53280 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbaC1Syg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 14:54:32 -0400
-Date: Fri, 28 Mar 2014 11:54:43 -0700
-From: Olof Johansson <olof@lixom.net>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: devicetree@vger.kernel.org, christoffer.dall@linaro.org,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        rob.herring@linaro.org
-Subject: Re: [RFC 5/5] tty: Update hypervisor tty drivers to use core stdout
- parsing code.
-Message-ID: <20140328185443.GA26433@quad.lixom.net>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
- <1396022885-6102-6-git-send-email-grant.likely@linaro.org>
+	Fri, 28 Mar 2014 14:54:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396022885-6102-6-git-send-email-grant.likely@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1395179766-31575-3-git-send-email-pantelis.antoniou@konsulko.com>
+References: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<1395179766-31575-3-git-send-email-pantelis.antoniou@konsulko.com>
+Date: Fri, 28 Mar 2014 13:54:35 -0500
+Message-ID: <CANk1AXSUr03wqSFqB_cmPHS88GkmMB-ierAxmrc+v5hKFVT01g@mail.gmail.com>
+Subject: Re: [PATCH v3 2/7] OF: Introduce DT overlay support.
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Fri, Mar 28, 2014 at 09:08:05AM -0700, Grant Likely wrote:
-> The evh_bytechan, hvc_opal and hvc_vio drivers all open code the parsing
-> of the stdout node in the device tree. This patch simplifies the driver
-> by removing the duplicated functionality.
-> 
-> Signed-off-by: Grant Likely <grant.likely@linaro.org>
+On Tue, Mar 18, 2014 at 4:56 PM, Pantelis Antoniou
+<pantelis.antoniou@konsulko.com> wrote:
+> Introduce DT overlay support.
+> Using this functionality it is possible to dynamically overlay a part of
+> the kernel's tree with another tree that's been dynamically loaded.
+> It is also possible to remove node and properties.
+>
+> The creation/destruction of the devices is handled by calling in to
+> bus specific handlers which can deal with the peculiarities of each
+> device.
+>
+> Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
 > ---
->  drivers/of/base.c          |  5 ++++-
->  drivers/tty/ehv_bytechan.c | 43 ++++---------------------------------------
->  drivers/tty/hvc/hvc_opal.c | 14 +++-----------
->  drivers/tty/hvc/hvc_vio.c  | 29 ++++++++++-------------------
->  include/linux/of.h         |  1 +
->  5 files changed, 22 insertions(+), 70 deletions(-)
-> 
-> diff --git a/drivers/of/base.c b/drivers/of/base.c
-> index a5643badeb1d..f845fd05d750 100644
-> --- a/drivers/of/base.c
-> +++ b/drivers/of/base.c
-> @@ -35,7 +35,7 @@ struct device_node *of_allnodes;
->  EXPORT_SYMBOL(of_allnodes);
->  struct device_node *of_chosen;
->  struct device_node *of_aliases;
-> -static struct device_node *of_stdout;
-> +struct device_node *of_stdout;
->  
->  static struct kset *of_kset;
->  
-> @@ -1956,9 +1956,12 @@ void of_alias_scan(void * (*dt_alloc)(u64 size, u64 align))
->  		of_chosen = of_find_node_by_path("/chosen@0");
->  
->  	if (of_chosen) {
-> +		/* linux,stdout-path and /aliases/stdout are for legacy compatibility */
->  		const char *name = of_get_property(of_chosen, "stdout-path", NULL);
->  		if (!name)
->  			name = of_get_property(of_chosen, "linux,stdout-path", NULL);
-> +		if (!name)
-> +			name = of_get_property(of_aliases, "stdout", NULL);
->  		if (name)
->  			of_stdout = of_find_node_by_path(name);
->  	}
-> diff --git a/drivers/tty/ehv_bytechan.c b/drivers/tty/ehv_bytechan.c
-> index 0419b69e270f..4f485e88f60c 100644
-> --- a/drivers/tty/ehv_bytechan.c
-> +++ b/drivers/tty/ehv_bytechan.c
-> @@ -108,55 +108,23 @@ static void disable_tx_interrupt(struct ehv_bc_data *bc)
->   *
->   * The byte channel to be used for the console is specified via a "stdout"
->   * property in the /chosen node.
-> - *
-> - * For compatible with legacy device trees, we also look for a "stdout" alias.
->   */
+>  Documentation/devicetree/overlay-notes.txt | 187 ++++++
+>  drivers/of/Kconfig                         |  10 +
+>  drivers/of/Makefile                        |   1 +
+>  drivers/of/overlay.c                       | 895 +++++++++++++++++++++++++++++
+>  include/linux/of.h                         | 153 +++++
+>  5 files changed, 1246 insertions(+)
+>  create mode 100644 Documentation/devicetree/overlay-notes.txt
+>  create mode 100644 drivers/of/overlay.c
+>
+> diff --git a/Documentation/devicetree/overlay-notes.txt b/Documentation/devicetree/overlay-notes.txt
+> new file mode 100644
+> index 0000000..882d512
+> --- /dev/null
+> +++ b/Documentation/devicetree/overlay-notes.txt
+> @@ -0,0 +1,187 @@
+> +Device Tree Overlay Notes
+> +-------------------------
+> +
+> +This document describes the implementation of the in-kernel
+> +device tree overlay functionality residing in drivers/of/overlay.c and is a
+> +companion document to Documentation/devicetree/dt-object-internal.txt[1] &
+> +Documentation/devicetree/dynamic-resolution-notes.txt[2]
+> +
+> +How overlays work
+> +-----------------
+> +
+> +A Device Tree's overlay purpose is to modify the kernel's live tree, and
+> +have the modification affecting the state of the the kernel in a way that
+> +is reflecting the changes.
+> +Since the kernel mainly deals with devices, any new device node that result
+> +in an active device should have it created while if the device node is either
+> +disabled or removed all together, the affected device should be deregistered.
 
-Did you mean to remove this /aliases/stdout checking? Based on the comment it
-seems that some older device trees / platforms might rely on it?
+Suggestion for readability:
 
->  static int find_console_handle(void)
->  {
-> -	struct device_node *np, *np2;
-> +	struct device_node *np = of_stdout;
->  	const char *sprop = NULL;
->  	const uint32_t *iprop;
->  
-> -	np = of_find_node_by_path("/chosen");
-> -	if (np)
-> -		sprop = of_get_property(np, "stdout-path", NULL);
-> -
-> -	if (!np || !sprop) {
-> -		of_node_put(np);
-> -		np = of_find_node_by_name(NULL, "aliases");
-> -		if (np)
-> -			sprop = of_get_property(np, "stdout", NULL);
-> -	}
-> -
-> -	if (!sprop) {
-> -		of_node_put(np);
-> -		return 0;
-> -	}
-> -
->  	/* We don't care what the aliased node is actually called.  We only
->  	 * care if it's compatible with "epapr,hv-byte-channel", because that
-> -	 * indicates that it's a byte channel node.  We use a temporary
-> -	 * variable, 'np2', because we can't release 'np' until we're done with
-> -	 * 'sprop'.
-> +	 * indicates that it's a byte channel node.
->  	 */
-> -	np2 = of_find_node_by_path(sprop);
-> -	of_node_put(np);
-> -	np = np2;
-> -	if (!np) {
-> -		pr_warning("ehv-bc: stdout node '%s' does not exist\n", sprop);
-> -		return 0;
-> -	}
-> -
-> -	/* Is it a byte channel? */
-> -	if (!of_device_is_compatible(np, "epapr,hv-byte-channel")) {
-> -		of_node_put(np);
-> +	if (!np || !of_device_is_compatible(np, "epapr,hv-byte-channel"))
->  		return 0;
-> -	}
->  
->  	stdout_irq = irq_of_parse_and_map(np, 0);
->  	if (stdout_irq == NO_IRQ) {
-> -		pr_err("ehv-bc: no 'interrupts' property in %s node\n", sprop);
-> -		of_node_put(np);
-> +		pr_err("ehv-bc: no 'interrupts' property in %s node\n", np->full_name);
->  		return 0;
->  	}
->  
-> @@ -167,12 +135,9 @@ static int find_console_handle(void)
->  	if (!iprop) {
->  		pr_err("ehv-bc: no 'hv-handle' property in %s node\n",
->  		       np->name);
-> -		of_node_put(np);
->  		return 0;
->  	}
->  	stdout_bc = be32_to_cpu(*iprop);
-> -
-> -	of_node_put(np);
->  	return 1;
->  }
->  
-> diff --git a/drivers/tty/hvc/hvc_opal.c b/drivers/tty/hvc/hvc_opal.c
-> index b01659bd4f7c..0ec1a80dd6a2 100644
-> --- a/drivers/tty/hvc/hvc_opal.c
-> +++ b/drivers/tty/hvc/hvc_opal.c
-> @@ -322,22 +322,14 @@ static void udbg_init_opal_common(void)
->  
->  void __init hvc_opal_init_early(void)
->  {
-> -	struct device_node *stdout_node = NULL;
-> +	struct device_node *stdout_node = of_node_get(of_stdout);
->  	const __be32 *termno;
->  	const char *name = NULL;
+Since the kernel mainly deals with devices, any new device node that results
+in an active device should have that device created. If the device node is
+either disabled or removed altogether, the affected device should be
+deregistered.
 
-Name is no longer used, should be removed.
+> +/**
+> + * of_overlay  - Apply @count overlays pointed at by @ovinfo_tab
+> + * @count:     Number of of_overlay_info's
+> + * @ovinfo_tab:        Array of overlay_info's to apply
+> + *
+> + * Applies the overlays given, while handling all error conditions
+> + * appropriately. Either the operation succeeds, or if it fails the
+> + * live tree is reverted to the state before the attempt.
+> + * Returns 0, or an error if the overlay attempt failed.
+> + */
+> +int of_overlay(int count, struct of_overlay_info *ovinfo_tab);
 
->  	const struct hv_ops *ops;
->  	u32 index;
->  
-> -	/* find the boot console from /chosen/stdout */
-> -	if (of_chosen)
-> -		name = of_get_property(of_chosen, "linux,stdout-path", NULL);
-> -	if (name) {
-> -		stdout_node = of_find_node_by_path(name);
-> -		if (!stdout_node) {
-> -			pr_err("hvc_opal: Failed to locate default console!\n");
-> -			return;
-> -		}
-> -	} else {
-> +	/* If the console wasn't in /chosen, try /ibm,opal */
-> +	if (!stdout_node) {
->  		struct device_node *opal, *np;
->  
->  		/* Current OPAL takeover doesn't provide the stdout
+Suggest renaming this function of_overlay_apply() for grep-ability
 
+Alan Tull
+aka
+delicious quinoa
 
--Olof
+> +
+> +/**
+> + * of_overlay_revert   - Revert a previously applied overlay
+> + * @count:     Number of of_overlay_info's
+> + * @ovinfo_tab:        Array of overlay_info's to apply
+> + *
+> + * Revert a previous overlay. The state of the live tree
+> + * is reverted to the one before the overlay.
+> + * Returns 0, or an error if the overlay table is not given.
+> + */
+> +int of_overlay_revert(int count, struct of_overlay_info *ovinfo_tab);
