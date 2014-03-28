@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753269AbaC1RmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:42:14 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51381 "EHLO
+	id S1753540AbaC1Rmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:42:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51374 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753180AbaC1RbJ (ORCPT
+	with ESMTP id S1753171AbaC1RbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:31:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: [PATCH 3.13 23/46] Fix uses of dma_max_pfn() when converting to a limiting address
-Date: Fri, 28 Mar 2014 10:32:07 -0700
-Message-Id: <20140328173137.797981871@linuxfoundation.org>
+        Kay Sievers <kay@vrfy.org>, Jeff Mahoney <jeffm@suse.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Hunt <joshhunt00@gmail.com>
+Subject: [PATCH 3.13 22/46] printk: fix syslog() overflowing user buffer
+Date: Fri, 28 Mar 2014 10:32:06 -0700
+Message-Id: <20140328173137.660282781@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,46 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Russell King <rmk+kernel@arm.linux.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit e83b366487b5582274374f8226e489cb214ae5a6 upstream.
+commit e4178d809fdaee32a56833fff1f5056c99e90a1a upstream.
 
-We must use a 64-bit for this, otherwise overflowed bits get lost, and
-that can result in a lower than intended value set.
+This is not a buffer overflow in the traditional sense: we don't
+overflow any *kernel* buffers, but we do mis-count the amount of data we
+copy back to user space for the SYSLOG_ACTION_READ_ALL case.
 
-Fixes: 8e0cb8a1f6ac ("ARM: 7797/1: mmc: Use dma_max_pfn(dev) helper for bounce_limit calculations")
-Fixes: 7d35496dd982 ("ARM: 7796/1: scsi: Use dma_max_pfn(dev) helper for bounce_limit calculations")
-Tested-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+In particular, if the user buffer is too small to hold everything, and
+*if* there is a continuation line at just the right place, we can end up
+giving the user more data than he asked for.
+
+The reason is that we first count up the number of bytes all the log
+records contains, then we walk the records again until we've skipped the
+records at the beginning that won't fit, and then we walk the rest of
+the records and copy them to the user space buffer.
+
+And in between that "skip the initial records that won't fit" and the
+"copy the records that *will* fit to user space", we reset the 'prev'
+variable that contained the record information for the last record not
+copied.  That meant that when we started copying to user space, we now
+had a different character count than what we had originally calculated
+in the first record walk-through.
+
+The fix is to simply not clear the 'prev' flags value (in both cases
+where we had the same logic: syslog_print_all and kmsg_dump_get_buffer:
+the latter is used for pstore-like dumping)
+
+Reported-and-tested-by: Debabrata Banerjee <dbanerje@akamai.com>
+Acked-by: Kay Sievers <kay@vrfy.org>
+Cc: Jeff Mahoney <jeffm@suse.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Josh Hunt <joshhunt00@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mmc/card/queue.c |    2 +-
- drivers/scsi/scsi_lib.c  |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/printk/printk.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -197,7 +197,7 @@ int mmc_init_queue(struct mmc_queue *mq,
- 	struct mmc_queue_req *mqrq_prev = &mq->mqrq[1];
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -1080,7 +1080,6 @@ static int syslog_print_all(char __user
+ 		next_seq = log_next_seq;
  
- 	if (mmc_dev(host)->dma_mask && *mmc_dev(host)->dma_mask)
--		limit = dma_max_pfn(mmc_dev(host)) << PAGE_SHIFT;
-+		limit = (u64)dma_max_pfn(mmc_dev(host)) << PAGE_SHIFT;
+ 		len = 0;
+-		prev = 0;
+ 		while (len >= 0 && seq < next_seq) {
+ 			struct printk_log *msg = log_from_idx(idx);
+ 			int textlen;
+@@ -2789,7 +2788,6 @@ bool kmsg_dump_get_buffer(struct kmsg_du
+ 	next_idx = idx;
  
- 	mq->card = card;
- 	mq->queue = blk_init_queue(mmc_request_fn, lock);
---- a/drivers/scsi/scsi_lib.c
-+++ b/drivers/scsi/scsi_lib.c
-@@ -1684,7 +1684,7 @@ u64 scsi_calculate_bounce_limit(struct S
+ 	l = 0;
+-	prev = 0;
+ 	while (seq < dumper->next_seq) {
+ 		struct printk_log *msg = log_from_idx(idx);
  
- 	host_dev = scsi_get_device(shost);
- 	if (host_dev && host_dev->dma_mask)
--		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
-+		bounce_limit = (u64)dma_max_pfn(host_dev) << PAGE_SHIFT;
- 
- 	return bounce_limit;
- }
 
 
