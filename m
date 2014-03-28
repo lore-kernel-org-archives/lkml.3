@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687AbaC1Rxc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:53:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51239 "EHLO
+	id S1754131AbaC1Rxv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:53:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51236 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842AbaC1Raq (ORCPT
+	with ESMTP id S1751602AbaC1Raq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:30:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Jan Seiffert <kaffeemonster@googlemail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.10 09/22] x86: bpf_jit: support negative offsets
-Date: Fri, 28 Mar 2014 10:32:01 -0700
-Message-Id: <20140328173110.675888408@linuxfoundation.org>
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.10 16/22] KVM: MMU: handle invalid root_hpa at __direct_map
+Date: Fri, 28 Mar 2014 10:32:08 -0700
+Message-Id: <20140328173111.609776203@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -29,40 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
+commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9 upstream.
 
-Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
-but it couldn't be working, since at the time of the execution
-of LD+ABS or LD+IND instructions via call into
-bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
-had junk value instead of access size in bytes (1 or 2 or 4).
+It is possible for __direct_map to be called on invalid root_hpa
+(-1), two examples:
 
-Store size into %edx instead of %ecx (what original commit intended to do)
+1) try_async_pf -> can_do_async_pf
+    -> vmx_interrupt_allowed -> nested_vmx_vmexit
+2) vmx_handle_exit -> vmx_interrupt_allowed -> nested_vmx_vmexit
 
-Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Jan Seiffert <kaffeemonster@googlemail.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Then to load_vmcs12_host_state and kvm_mmu_reset_context.
+
+Check for this possibility, let fault exception be regenerated.
+
+BZ: https://bugzilla.redhat.com/show_bug.cgi?id=924916
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/net/bpf_jit.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/x86/kvm/mmu.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/x86/net/bpf_jit.S
-+++ b/arch/x86/net/bpf_jit.S
-@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
- 	push	%r9;						\
- 	push	SKBDATA;					\
- /* rsi already has offset */					\
--	mov	$SIZE,%ecx;	/* size */			\
-+	mov	$SIZE,%edx;	/* size */			\
- 	call	bpf_internal_load_pointer_neg_helper;		\
- 	test	%rax,%rax;					\
- 	pop	SKBDATA;					\
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2585,6 +2585,9 @@ static int __direct_map(struct kvm_vcpu
+ 	int emulate = 0;
+ 	gfn_t pseudo_gfn;
+ 
++	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
++		return 0;
++
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+ 			mmu_set_spte(vcpu, iterator.sptep, ACC_ALL,
 
 
