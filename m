@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaC1Rc6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:32:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51473 "EHLO
+	id S1753453AbaC1Rc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:32:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51486 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753328AbaC1RbY (ORCPT
+	with ESMTP id S1753339AbaC1Rb0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:24 -0400
+	Fri, 28 Mar 2014 13:31:26 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 3.13 42/46] xhci: Fix resume issues on Renesas chips in Samsung laptops
-Date: Fri, 28 Mar 2014 10:32:26 -0700
-Message-Id: <20140328173140.388062099@linuxfoundation.org>
+        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>
+Subject: [PATCH 3.13 45/46] libceph: rename front to front_len in get_reply()
+Date: Fri, 28 Mar 2014 10:32:29 -0700
+Message-Id: <20140328173140.793798991@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,43 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Ilya Dryomov <ilya.dryomov@inktank.com>
 
-commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d upstream.
+commit 3f0a4ac55fe036902e3666be740da63528ad8639 upstream.
 
-Don Zickus <dzickus@redhat.com> writes:
+Rename front local variable to front_len in get_reply() to make its
+purpose more clear.
 
-Some co-workers of mine bought Samsung laptops that had mostly usb3 ports.
-Those ports did not resume correctly (the driver would timeout communicating
-and fail).  This led to frustration as suspend/resume is a common use for
-laptops.
-
-Poking around, I applied the reset on resume quirk to this chipset and the
-resume started working.  Reloading the xhci_hcd module had been the temporary
-workaround.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Reported-by: Don Zickus <dzickus@redhat.com>
-Tested-by: Prarit Bhargava <prarit@redhat.com>
+Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
+Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/host/xhci-pci.c |    5 +++++
- 1 file changed, 5 insertions(+)
+ net/ceph/osd_client.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/drivers/usb/host/xhci-pci.c
-+++ b/drivers/usb/host/xhci-pci.c
-@@ -142,6 +142,11 @@ static void xhci_pci_quirks(struct devic
- 				"QUIRK: Resetting on resume");
- 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
- 	}
-+	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
-+			pdev->device == 0x0015 &&
-+			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
-+			pdev->subsystem_device == 0xc0cd)
-+		xhci->quirks |= XHCI_RESET_ON_RESUME;
- 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
- 		xhci->quirks |= XHCI_RESET_ON_RESUME;
- }
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -2495,7 +2495,7 @@ static struct ceph_msg *get_reply(struct
+ 	struct ceph_osd_client *osdc = osd->o_osdc;
+ 	struct ceph_msg *m;
+ 	struct ceph_osd_request *req;
+-	int front = le32_to_cpu(hdr->front_len);
++	int front_len = le32_to_cpu(hdr->front_len);
+ 	int data_len = le32_to_cpu(hdr->data_len);
+ 	u64 tid;
+ 
+@@ -2515,12 +2515,13 @@ static struct ceph_msg *get_reply(struct
+ 		     req->r_reply, req->r_reply->con);
+ 	ceph_msg_revoke_incoming(req->r_reply);
+ 
+-	if (front > req->r_reply->front.iov_len) {
++	if (front_len > req->r_reply->front.iov_len) {
+ 		pr_warning("get_reply front %d > preallocated %d (%u#%llu)\n",
+-			   front, (int)req->r_reply->front.iov_len,
++			   front_len, (int)req->r_reply->front.iov_len,
+ 			   (unsigned int)con->peer_name.type,
+ 			   le64_to_cpu(con->peer_name.num));
+-		m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front, GFP_NOFS, false);
++		m = ceph_msg_new(CEPH_MSG_OSD_OPREPLY, front_len, GFP_NOFS,
++				 false);
+ 		if (!m)
+ 			goto out;
+ 		ceph_msg_put(req->r_reply);
 
 
