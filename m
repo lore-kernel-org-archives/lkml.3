@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaC1Nl5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:41:57 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:36456 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751290AbaC1Nlz (ORCPT
+	id S1752132AbaC1NmH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:42:07 -0400
+Received: from mail-pb0-f50.google.com ([209.85.160.50]:40630 "EHLO
+	mail-pb0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaC1NmD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:41:55 -0400
+	Fri, 28 Mar 2014 09:42:03 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: rjw@rjwysocki.net
 Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
@@ -14,42 +14,55 @@ Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
         srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
         svaidy@linux.vnet.ibm.com, l.majewski@samsung.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 1/4] cpufreq: ia64: don't set .driver_data to index
-Date: Fri, 28 Mar 2014 19:11:44 +0530
-Message-Id: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 2/4] cpufreq: don't print value of .driver_data from core
+Date: Fri, 28 Mar 2014 19:11:45 +0530
+Message-Id: <d2fd1c69770fb33ee8b282a1d9e35efe9742d66b.1396013927.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+References: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+In-Reply-To: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+References: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-.driver_data field is only required to be filled if drivers want to preserve
-some data in there which they can use according to the value of .frequency
-field. But this driver isn't using this field at all, but just setting it equal
-to the index value. Which isn't required. Fix it.
+CPUFreq core doesn't control value of .driver_data and this field is completely
+driver specific. This can contain any value and not only indexes. For most of
+the drivers, which aren't using this field, its value is zero. So, printing this
+from core doesn't make any sense. Don't print it.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
 V1->V2: No Change
 
-Hi Rafael,
+ drivers/cpufreq/freq_table.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-To avoid confusion I am sending all related cpufreq patches again.
-
- drivers/cpufreq/ia64-acpi-cpufreq.c | 1 -
- 1 file changed, 1 deletion(-)
-
-diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
-index a22b5d1..beb191b 100644
---- a/drivers/cpufreq/ia64-acpi-cpufreq.c
-+++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
-@@ -275,7 +275,6 @@ acpi_cpufreq_cpu_init (
- 	/* table init */
- 	for (i = 0; i <= data->acpi_data.state_count; i++)
- 	{
--		data->freq_table[i].driver_data = i;
- 		if (i < data->acpi_data.state_count) {
- 			data->freq_table[i].frequency =
- 			      data->acpi_data.states[i].core_frequency * 1000;
+diff --git a/drivers/cpufreq/freq_table.c b/drivers/cpufreq/freq_table.c
+index 65a4770..53ff3c2 100644
+--- a/drivers/cpufreq/freq_table.c
++++ b/drivers/cpufreq/freq_table.c
+@@ -36,8 +36,7 @@ int cpufreq_frequency_table_cpuinfo(struct cpufreq_policy *policy,
+ 		    && table[i].driver_data == CPUFREQ_BOOST_FREQ)
+ 			continue;
+ 
+-		pr_debug("table entry %u: %u kHz, %u driver_data\n",
+-					i, freq, table[i].driver_data);
++		pr_debug("table entry %u: %u kHz\n", i, freq);
+ 		if (freq < min_freq)
+ 			min_freq = freq;
+ 		if (freq > max_freq)
+@@ -175,8 +174,8 @@ int cpufreq_frequency_table_target(struct cpufreq_policy *policy,
+ 	} else
+ 		*index = optimal.driver_data;
+ 
+-	pr_debug("target is %u (%u kHz, %u)\n", *index, table[*index].frequency,
+-		table[*index].driver_data);
++	pr_debug("target index is %u, freq is:%u kHz\n", *index,
++		 table[*index].frequency);
+ 
+ 	return 0;
+ }
 -- 
 1.7.12.rc2.18.g61b472e
 
