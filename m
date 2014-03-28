@@ -1,46 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081AbaC1Qzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 12:55:41 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1750 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751526AbaC1Qzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 12:55:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,751,1389772800"; 
-   d="scan'208";a="482238823"
-From: Andi Kleen <andi@firstfloor.org>
-To: Tom Zanussi <tom.zanussi@linux.intel.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/5] tracing: Add 'hash' event trigger command
-References: <cover.1395894625.git.tom.zanussi@linux.intel.com>
-	<b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
-Date: Fri, 28 Mar 2014 09:54:55 -0700
-In-Reply-To: <b81b0860d2915c0b562863fce889249dad080922.1395894625.git.tom.zanussi@linux.intel.com>
-	(Tom Zanussi's message of "Wed, 26 Mar 2014 23:54:07 -0500")
-Message-ID: <87lhvunu00.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1752165AbaC1Q7B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 12:59:01 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:51607 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751647AbaC1Q67 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 12:58:59 -0400
+From: "Ma Haijun" <mahaijuns@gmail.com>
+To: "'Hans Verkuil'" <hverkuil@xs4all.nl>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: "'Mauro Carvalho Chehab'" <m.chehab@samsung.com>,
+        "'Al Viro'" <viro@ZenIV.linux.org.uk>
+References: <1395918426-27787-1-git-send-email-mahaijuns@gmail.com> <533540CE.8070703@xs4all.nl>
+In-Reply-To: <533540CE.8070703@xs4all.nl>
+Subject: RE: [media] videobuf-dma-contig: fix vm_iomap_memory() call
+Date: Sat, 29 Mar 2014 00:58:58 +0800
+Message-ID: <01a501cf4aa7$08664e30$1932ea90$@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Outlook 15.0
+Thread-Index: AQINlLVqLzb/E0QPrytXccCT8QBymwMIUK9kmmHPKwA=
+Content-Language: zh-cn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tom Zanussi <tom.zanussi@linux.intel.com> writes:
+Hi,
 
-> Hash triggers allow users to continually hash events which can then be
-> dumped later by simply reading the trigger file.  This is done
-> strictly via one-liners and without any kind of programming language.
+> -----Original Message-----
+> 
+> On 03/27/2014 12:07 PM, Ma Haijun wrote:
+> > Hi all,
+> >
+> > This is a trivial fix, but I think the patch itself has problem too.
+> > The function requires a phys_addr_t, but we feed it with a dma_handle_t.
+> > AFAIK, this implicit conversion does not always work.
+> > Can I use virt_to_phys(mem->vaddr) to get the physical address instead?
+> > (mem->vaddr and mem->dma_handle are from dma_alloc_coherent)
+> 
+> Does this actually fail? With what driver and on what hardware?
 
-I read through the whole thing. I think I got it somewhere near the end,
-but it was quite difficult. What really confuses me is your
-use of the "hash" term. I believe the established term for these
-kind of data operations is "histogram". How about calling it that.
+I notice it when I am reading the code,
+so I do not know if any driver is broken.
 
-Overall it seems useful, but it's not fully clear to me why it needs
-to be done in the kernel and not an analysis tool?
+> 
+> I ask because I am very reluctant to make any changes to videobuf. It is
+> slowly being replaced by the vastly superior videobuf2 framework. Existing
+> drivers in the kernel still using the old videobuf seem to work just fine
+> (or at least as fine as videobuf allows you to be).
 
--Andi
+Sorry that the cover letter is a bit misleading, hope you does not skip the
+patch due to this.
 
--- 
-ak@linux.intel.com -- Speaking for myself only
+The actual problem is that userland virtual address is erroneously passed to
+vm_iomap_memory, while it expects physical address.
+And that is what the patch try to address.
+
+Seems this bug can be exploited to map and access physical address.
+So it is also a security problem, I think we should ether fix it
+or remove the code if not used any more.
+
+Regards,
+
+	Haijun
+
+
+> 
+> Regards,
+> 
+> 	Hans
+> 
+> >
+> > Regards
+> >
+> > Ma Haijun
+> >
+> > Ma Haijun (1):
+> >   [media] videobuf-dma-contig: fix incorrect argument to
+> >     vm_iomap_memory() call
+> >
+> >  drivers/media/v4l2-core/videobuf-dma-contig.c | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+
