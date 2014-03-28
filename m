@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757594AbaC1Cnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 22:43:49 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:49608 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757212AbaC1ClR (ORCPT
+	id S1757611AbaC1CoS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 22:44:18 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:52276 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757439AbaC1ClN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 22:41:17 -0400
+	Thu, 27 Mar 2014 22:41:13 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
         linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 05/12] cgroup: reorganize css_task_iter
-Date: Thu, 27 Mar 2014 22:40:54 -0400
-Message-Id: <1395974461-12735-6-git-send-email-tj@kernel.org>
+Subject: [PATCH 03/12] cgroup: implement cgroup->e_csets[]
+Date: Thu, 27 Mar 2014 22:40:52 -0400
+Message-Id: <1395974461-12735-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.8.5.3
 In-Reply-To: <1395974461-12735-1-git-send-email-tj@kernel.org>
 References: <1395974461-12735-1-git-send-email-tj@kernel.org>
@@ -21,138 +21,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch reorganizes css_task_iter so that adding effective css
-support is easier.
+On the default unified hierarchy, a cgroup may be associated with
+csses of its ancestors, which means that a css of a given cgroup may
+be associated with css_sets of descendant cgroups.  This means that we
+can't walk all tasks associated with a css by iterating the css_sets
+associated with the cgroup as there are css_sets which are pointing to
+the css but linked on the descendants.
 
-* s/->cset_link/->cset_pos/ and s/->task/->task_pos/ for consistency
-
-* ->origin_css is used to determine whether the iteration reached the
-  last css_set.  Replace it with explicit ->cset_head so that
-  css_advance_task_iter() doesn't have to know the termination
-  condition directly.
-
-* css_task_iter_next() currently assumes that it's walking list of
-  cgrp_cset_link and reaches into the current cset through the current
-  link to determine the termination conditions for task walking.  As
-  this won't always be true for effective css walking, add
-  ->tasks_head and ->mg_tasks_head and use them to control task
-  walking so that css_task_iter_next() doesn't have to know how
-  css_sets are being walked.
-
-This patch doesn't make any behavior changes.  The iteration logic
-stays unchanged after the patch.
+This patch adds per-subsystem list heads cgroup->e_csets[].  Any
+css_set which is pointing to a css is linked to
+css->cgroup->e_csets[$SUBSYS_ID] through
+css_set->e_cset_node[$SUBSYS_ID].  The lists are protected by
+css_set_rwsem and will allow us to walk all css_sets associated with a
+given css so that we can find out all associated tasks.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 ---
- include/linux/cgroup.h |  9 ++++++---
- kernel/cgroup.c        | 33 +++++++++++++++++----------------
- 2 files changed, 23 insertions(+), 19 deletions(-)
+ include/linux/cgroup.h | 18 ++++++++++++++++++
+ kernel/cgroup.c        | 30 ++++++++++++++++++++++++++++--
+ 2 files changed, 46 insertions(+), 2 deletions(-)
 
 diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index e902eee..6bbe143 100644
+index e351a18..e902eee 100644
 --- a/include/linux/cgroup.h
 +++ b/include/linux/cgroup.h
-@@ -842,9 +842,12 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
+@@ -188,6 +188,15 @@ struct cgroup {
+ 	struct list_head cset_links;
  
- /* A css_task_iter should be treated as an opaque object */
- struct css_task_iter {
--	struct cgroup_subsys_state	*origin_css;
--	struct list_head		*cset_link;
--	struct list_head		*task;
-+	struct list_head		*cset_pos;
-+	struct list_head		*cset_head;
+ 	/*
++	 * On the default hierarchy, a css_set for a cgroup with some
++	 * susbsys disabled will point to css's which are associated with
++	 * the closest ancestor which has the subsys enabled.  The
++	 * following lists all css_sets which point to this cgroup's css
++	 * for the given subsystem.
++	 */
++	struct list_head e_csets[CGROUP_SUBSYS_COUNT];
 +
-+	struct list_head		*task_pos;
-+	struct list_head		*tasks_head;
-+	struct list_head		*mg_tasks_head;
- };
++	/*
+ 	 * Linked list running through all cgroups that can
+ 	 * potentially be reaped by the release agent. Protected by
+ 	 * release_list_lock
+@@ -369,6 +378,15 @@ struct css_set {
+ 	struct cgroup *mg_src_cgrp;
+ 	struct css_set *mg_dst_cset;
  
- void css_task_iter_start(struct cgroup_subsys_state *css,
++	/*
++	 * On the default hierarhcy, ->subsys[ssid] may point to a css
++	 * attached to an ancestor instead of the cgroup this css_set is
++	 * associated with.  The following node is anchored at
++	 * ->subsys[ssid]->cgroup->e_csets[ssid] and provides a way to
++	 * iterate through all css's attached to a given cgroup.
++	 */
++	struct list_head e_cset_node[CGROUP_SUBSYS_COUNT];
++
+ 	/* For RCU-protected deletion */
+ 	struct rcu_head rcu_head;
+ };
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 9d2d6ef..318b6a2 100644
+index ae1fe5a..2899a6f 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -2839,27 +2839,30 @@ css_next_descendant_post(struct cgroup_subsys_state *pos,
-  */
- static void css_advance_task_iter(struct css_task_iter *it)
+@@ -425,6 +425,8 @@ static unsigned long css_set_hash(struct cgroup_subsys_state *css[])
+ static void put_css_set_locked(struct css_set *cset, bool taskexit)
  {
--	struct list_head *l = it->cset_link;
-+	struct list_head *l = it->cset_pos;
- 	struct cgrp_cset_link *link;
+ 	struct cgrp_cset_link *link, *tmp_link;
++	struct cgroup_subsys *ss;
++	int ssid;
+ 
+ 	lockdep_assert_held(&css_set_rwsem);
+ 
+@@ -432,6 +434,8 @@ static void put_css_set_locked(struct css_set *cset, bool taskexit)
+ 		return;
+ 
+ 	/* This css_set is dead. unlink it and release cgroup refcounts */
++	for_each_subsys(ss, ssid)
++		list_del(&cset->e_cset_node[ssid]);
+ 	hash_del(&cset->hlist);
+ 	css_set_count--;
+ 
+@@ -673,7 +677,9 @@ static struct css_set *find_css_set(struct css_set *old_cset,
  	struct css_set *cset;
+ 	struct list_head tmp_links;
+ 	struct cgrp_cset_link *link;
++	struct cgroup_subsys *ss;
+ 	unsigned long key;
++	int ssid;
  
- 	/* Advance to the next non-empty css_set */
- 	do {
- 		l = l->next;
--		if (l == &it->origin_css->cgroup->cset_links) {
--			it->cset_link = NULL;
-+		if (l == it->cset_head) {
-+			it->cset_pos = NULL;
- 			return;
- 		}
- 		link = list_entry(l, struct cgrp_cset_link, cset_link);
- 		cset = link->cset;
- 	} while (list_empty(&cset->tasks) && list_empty(&cset->mg_tasks));
+ 	lockdep_assert_held(&cgroup_mutex);
  
--	it->cset_link = l;
-+	it->cset_pos = l;
+@@ -724,10 +730,14 @@ static struct css_set *find_css_set(struct css_set *old_cset,
  
- 	if (!list_empty(&cset->tasks))
--		it->task = cset->tasks.next;
-+		it->task_pos = cset->tasks.next;
- 	else
--		it->task = cset->mg_tasks.next;
-+		it->task_pos = cset->mg_tasks.next;
+ 	css_set_count++;
+ 
+-	/* Add this cgroup group to the hash table */
++	/* Add @cset to the hash table */
+ 	key = css_set_hash(cset->subsys);
+ 	hash_add(css_set_table, &cset->hlist, key);
+ 
++	for_each_subsys(ss, ssid)
++		list_add_tail(&cset->e_cset_node[ssid],
++			      &cset->subsys[ssid]->cgroup->e_csets[ssid]);
 +
-+	it->tasks_head = &cset->tasks;
-+	it->mg_tasks_head = &cset->mg_tasks;
- }
+ 	up_write(&css_set_rwsem);
  
- /**
-@@ -2885,8 +2888,8 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
- 
- 	down_read(&css_set_rwsem);
- 
--	it->origin_css = css;
--	it->cset_link = &css->cgroup->cset_links;
-+	it->cset_pos = &css->cgroup->cset_links;
-+	it->cset_head = it->cset_pos;
- 
- 	css_advance_task_iter(it);
- }
-@@ -2902,12 +2905,10 @@ void css_task_iter_start(struct cgroup_subsys_state *css,
- struct task_struct *css_task_iter_next(struct css_task_iter *it)
+ 	return cset;
+@@ -1028,7 +1038,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 			     unsigned long ss_mask)
  {
- 	struct task_struct *res;
--	struct list_head *l = it->task;
--	struct cgrp_cset_link *link = list_entry(it->cset_link,
--					struct cgrp_cset_link, cset_link);
-+	struct list_head *l = it->task_pos;
+ 	struct cgroup_subsys *ss;
+-	int ssid, ret;
++	int ssid, i, ret;
  
- 	/* If the iterator cg is NULL, we have no tasks */
--	if (!it->cset_link)
-+	if (!it->cset_pos)
- 		return NULL;
- 	res = list_entry(l, struct task_struct, cg_list);
+ 	lockdep_assert_held(&cgroup_tree_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+@@ -1081,6 +1091,7 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 	for_each_subsys(ss, ssid) {
+ 		struct cgroup_root *src_root;
+ 		struct cgroup_subsys_state *css;
++		struct css_set *cset;
  
-@@ -2918,13 +2919,13 @@ struct task_struct *css_task_iter_next(struct css_task_iter *it)
- 	 */
- 	l = l->next;
+ 		if (!(ss_mask & (1 << ssid)))
+ 			continue;
+@@ -1095,6 +1106,12 @@ static int rebind_subsystems(struct cgroup_root *dst_root,
+ 		ss->root = dst_root;
+ 		css->cgroup = &dst_root->cgrp;
  
--	if (l == &link->cset->tasks)
--		l = link->cset->mg_tasks.next;
-+	if (l == it->tasks_head)
-+		l = it->mg_tasks_head->next;
++		down_write(&css_set_rwsem);
++		hash_for_each(css_set_table, i, cset, hlist)
++			list_move_tail(&cset->e_cset_node[ss->id],
++				       &dst_root->cgrp.e_csets[ss->id]);
++		up_write(&css_set_rwsem);
++
+ 		src_root->subsys_mask &= ~(1 << ssid);
+ 		src_root->cgrp.child_subsys_mask &= ~(1 << ssid);
  
--	if (l == &link->cset->mg_tasks)
-+	if (l == it->mg_tasks_head)
- 		css_advance_task_iter(it);
- 	else
--		it->task = l;
-+		it->task_pos = l;
+@@ -1417,6 +1434,9 @@ out_unlock:
  
- 	return res;
+ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ {
++	struct cgroup_subsys *ss;
++	int ssid;
++
+ 	atomic_set(&cgrp->refcnt, 1);
+ 	INIT_LIST_HEAD(&cgrp->sibling);
+ 	INIT_LIST_HEAD(&cgrp->children);
+@@ -1425,6 +1445,9 @@ static void init_cgroup_housekeeping(struct cgroup *cgrp)
+ 	INIT_LIST_HEAD(&cgrp->pidlists);
+ 	mutex_init(&cgrp->pidlist_mutex);
+ 	cgrp->dummy_css.cgroup = cgrp;
++
++	for_each_subsys(ss, ssid)
++		INIT_LIST_HEAD(&cgrp->e_csets[ssid]);
  }
+ 
+ static void init_cgroup_root(struct cgroup_root *root,
+@@ -4224,6 +4247,9 @@ int __init cgroup_init(void)
+ 		if (!ss->early_init)
+ 			cgroup_init_subsys(ss);
+ 
++		list_add_tail(&init_css_set.e_cset_node[ssid],
++			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
++
+ 		/*
+ 		 * cftype registration needs kmalloc and can't be done
+ 		 * during early_init.  Register base cftypes separately.
 -- 
 1.8.5.3
 
