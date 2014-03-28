@@ -1,131 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754000AbaC1Rte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:49:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51301 "EHLO
+	id S1752965AbaC1Rav (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:30:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51214 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752984AbaC1Raz (ORCPT
+	with ESMTP id S1751697AbaC1Ran (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:55 -0400
+	Fri, 28 Mar 2014 13:30:43 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Clark <robdclark@gmail.com>,
-        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
-	<ville.syrjala@linux.intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.13 05/46] drm/i915: Dont enable display error interrupts from the start
-Date: Fri, 28 Mar 2014 10:31:49 -0700
-Message-Id: <20140328173135.372574737@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 12/22] regulator: core: Replace direct ops->disable usage
+Date: Fri, 28 Mar 2014 10:32:04 -0700
+Message-Id: <20140328173111.077349941@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
-References: <20140328173134.630198216@linuxfoundation.org>
+In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
+References: <20140328173109.378288825@linuxfoundation.org>
 User-Agent: quilt/0.60-1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit 5c673b60a9b3b23486f4eda75c72e91d31d26a2b upstream.
+commit 66fda75f47dc583f1c187556e9a2c082dd64f8c6 upstream.
 
-We need to enable interrupt processing before all the modeset
-state is set up. But that means we can fall over when we get a pipe
-underrun. This shouldn't happen as long as the bios works correctly
-but as usual this turns out to be wishful thinking.
+There are many places where ops->disable is called directly. Instead we
+should use _regulator_do_disable() which also handles gpio regulators.
 
-So disable error interrupts at irq install time and rely on the
-re-enabling code in the modeset functions to take care of this.
+To be able to use the wrapper function from _regulator_force_disable(),
+I moved the _notifier_call_chain() call from _regulator_do_disable() to
+_regulator_disable(). This way, _regulator_force_disable() can use
+different flags for _notifier_call_chain() without calling it twice.
 
-Note that due to the SDE interrupt handling race we must
-uncondtionally enable all interrupt sources in SDEIER, hence no need
-to enable the SERR bit specifically.
-
-On gmch platforms we don't have an explicit enable/mask bit for fifo
-underruns. Fixing this up would require a bit of software tracking,
-hence is material for a separate patch. To make this possible we need
-to switch all gmch platforms to the new pipestat interrupt handling
-scheme Imre implemented for vlv, and then also add a safe form of sw
-state checking to __cpu_fifo_underrun_reporting_enabled a bit.
-
-v2: Also handle the ilk/snb cpu fifo underrun bits accordingly.
-Spotted by Ville.
-
-v3: Also handle the south interrupt underrun bits on ibx. Again
-spotted by Ville.
-
-Reported-by: Rob Clark <robdclark@gmail.com>
-Cc: Rob Clark <robdclark@gmail.com>
-Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_irq.c |   18 ++++++++----------
- 1 file changed, 8 insertions(+), 10 deletions(-)
+ drivers/regulator/core.c |   34 +++++++++++++---------------------
+ 1 file changed, 13 insertions(+), 21 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -2760,10 +2760,9 @@ static void ibx_irq_postinstall(struct d
- 		return;
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1712,8 +1712,6 @@ static int _regulator_do_disable(struct
  
- 	if (HAS_PCH_IBX(dev)) {
--		mask = SDE_GMBUS | SDE_AUX_MASK | SDE_TRANSB_FIFO_UNDER |
--		       SDE_TRANSA_FIFO_UNDER | SDE_POISON;
-+		mask = SDE_GMBUS | SDE_AUX_MASK | SDE_POISON;
- 	} else {
--		mask = SDE_GMBUS_CPT | SDE_AUX_MASK_CPT | SDE_ERROR_CPT;
-+		mask = SDE_GMBUS_CPT | SDE_AUX_MASK_CPT;
+ 	trace_regulator_disable_complete(rdev_get_name(rdev));
  
- 		I915_WRITE(SERR_INT, I915_READ(SERR_INT));
+-	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
+-			     NULL);
+ 	return 0;
+ }
+ 
+@@ -1737,6 +1735,8 @@ static int _regulator_disable(struct reg
+ 				rdev_err(rdev, "failed to disable\n");
+ 				return ret;
+ 			}
++			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
++					NULL);
+ 		}
+ 
+ 		rdev->use_count = 0;
+@@ -1789,20 +1789,16 @@ static int _regulator_force_disable(stru
+ {
+ 	int ret = 0;
+ 
+-	/* force disable */
+-	if (rdev->desc->ops->disable) {
+-		/* ah well, who wants to live forever... */
+-		ret = rdev->desc->ops->disable(rdev);
+-		if (ret < 0) {
+-			rdev_err(rdev, "failed to force disable\n");
+-			return ret;
+-		}
+-		/* notify other consumers that power has been forced off */
+-		_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
+-			REGULATOR_EVENT_DISABLE, NULL);
++	ret = _regulator_do_disable(rdev);
++	if (ret < 0) {
++		rdev_err(rdev, "failed to force disable\n");
++		return ret;
  	}
-@@ -2823,20 +2822,19 @@ static int ironlake_irq_postinstall(stru
- 		display_mask = (DE_MASTER_IRQ_CONTROL | DE_GSE_IVB |
- 				DE_PCH_EVENT_IVB | DE_PLANEC_FLIP_DONE_IVB |
- 				DE_PLANEB_FLIP_DONE_IVB |
--				DE_PLANEA_FLIP_DONE_IVB | DE_AUX_CHANNEL_A_IVB |
--				DE_ERR_INT_IVB);
-+				DE_PLANEA_FLIP_DONE_IVB | DE_AUX_CHANNEL_A_IVB);
- 		extra_mask = (DE_PIPEC_VBLANK_IVB | DE_PIPEB_VBLANK_IVB |
--			      DE_PIPEA_VBLANK_IVB);
-+			      DE_PIPEA_VBLANK_IVB | DE_ERR_INT_IVB);
  
- 		I915_WRITE(GEN7_ERR_INT, I915_READ(GEN7_ERR_INT));
- 	} else {
- 		display_mask = (DE_MASTER_IRQ_CONTROL | DE_GSE | DE_PCH_EVENT |
- 				DE_PLANEA_FLIP_DONE | DE_PLANEB_FLIP_DONE |
- 				DE_AUX_CHANNEL_A |
--				DE_PIPEB_FIFO_UNDERRUN | DE_PIPEA_FIFO_UNDERRUN |
- 				DE_PIPEB_CRC_DONE | DE_PIPEA_CRC_DONE |
- 				DE_POISON);
--		extra_mask = DE_PIPEA_VBLANK | DE_PIPEB_VBLANK | DE_PCU_EVENT;
-+		extra_mask = DE_PIPEA_VBLANK | DE_PIPEB_VBLANK | DE_PCU_EVENT |
-+				DE_PIPEB_FIFO_UNDERRUN | DE_PIPEA_FIFO_UNDERRUN;
- 	}
+-	return ret;
++	_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
++			REGULATOR_EVENT_DISABLE, NULL);
++
++	return 0;
+ }
  
- 	dev_priv->irq_mask = ~display_mask;
-@@ -2952,9 +2950,9 @@ static void gen8_de_irq_postinstall(stru
- 	struct drm_device *dev = dev_priv->dev;
- 	uint32_t de_pipe_masked = GEN8_PIPE_FLIP_DONE |
- 		GEN8_PIPE_CDCLK_CRC_DONE |
--		GEN8_PIPE_FIFO_UNDERRUN |
- 		GEN8_DE_PIPE_IRQ_FAULT_ERRORS;
--	uint32_t de_pipe_enables = de_pipe_masked | GEN8_PIPE_VBLANK;
-+	uint32_t de_pipe_enables = de_pipe_masked | GEN8_PIPE_VBLANK |
-+		GEN8_PIPE_FIFO_UNDERRUN;
- 	int pipe;
- 	dev_priv->de_irq_mask[PIPE_A] = ~de_pipe_masked;
- 	dev_priv->de_irq_mask[PIPE_B] = ~de_pipe_masked;
+ /**
+@@ -3788,8 +3784,6 @@ int regulator_suspend_finish(void)
+ 
+ 	mutex_lock(&regulator_list_mutex);
+ 	list_for_each_entry(rdev, &regulator_list, list) {
+-		struct regulator_ops *ops = rdev->desc->ops;
+-
+ 		mutex_lock(&rdev->mutex);
+ 		if (rdev->use_count > 0  || rdev->constraints->always_on) {
+ 			error = _regulator_do_enable(rdev);
+@@ -3798,12 +3792,10 @@ int regulator_suspend_finish(void)
+ 		} else {
+ 			if (!has_full_constraints)
+ 				goto unlock;
+-			if (!ops->disable)
+-				goto unlock;
+ 			if (!_regulator_is_enabled(rdev))
+ 				goto unlock;
+ 
+-			error = ops->disable(rdev);
++			error = _regulator_do_disable(rdev);
+ 			if (error)
+ 				ret = error;
+ 		}
+@@ -3993,7 +3985,7 @@ static int __init regulator_init_complet
+ 		ops = rdev->desc->ops;
+ 		c = rdev->constraints;
+ 
+-		if (!ops->disable || (c && c->always_on))
++		if (c && c->always_on)
+ 			continue;
+ 
+ 		mutex_lock(&rdev->mutex);
+@@ -4014,7 +4006,7 @@ static int __init regulator_init_complet
+ 			/* We log since this may kill the system if it
+ 			 * goes wrong. */
+ 			rdev_info(rdev, "disabling\n");
+-			ret = ops->disable(rdev);
++			ret = _regulator_do_disable(rdev);
+ 			if (ret != 0) {
+ 				rdev_err(rdev, "couldn't disable: %d\n", ret);
+ 			}
 
 
