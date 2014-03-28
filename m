@@ -1,61 +1,272 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751755AbaC1Kxx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:53:53 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:39944 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750761AbaC1Kxv (ORCPT
+	id S1752062AbaC1K5G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:57:06 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47869 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751121AbaC1K5D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:53:51 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: linux-serial@vger.kernel.org
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH] serial: st-asc: Fix SysRq char handling
-Date: Fri, 28 Mar 2014 10:53:10 +0000
-Message-Id: <1396003990-30228-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
+	Fri, 28 Mar 2014 06:57:03 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: linux-rt-users@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH RT 1/2] net: gianfar: do not disable interrupts
+Date: Fri, 28 Mar 2014 11:56:59 +0100
+Message-Id: <1396004220-5711-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.9.1
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver, like several others, uses the upper bits of the character
-to track both real and dummy state. Unfortunately it neglects to mask
-these bits properly when passing the character data around. This means
-neither break detection nor sysrq character handling work correctly.
+each per-queue lock is taken with spin_lock_irqsave() except in the case
+where all of them are taken for some kind of serialisation. As an
+optimisation local_irq_save() is used so that lock_tx_qs() and
+lock_rx_qs() can use just the spin_lock() variant instead.
+On RT local_irq_save() behaves differently so we use the nort()
+variant.
+Lockdep screems easily by "ethtool -K eth0 rx off tx off"
 
-This patch adds the requires masking and has been tested to confirm
-that it correctly handles magic sysrq sequences on ST's B2020 board.
+What remains is missing lockdep annotation that makes lockdep think
+lock_tx_qs() may cause a dead lock.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: stable-rt@vger.kernel.org
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 ---
- drivers/tty/serial/st-asc.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/ethernet/freescale/gianfar.c         | 16 ++++++++--------
+ drivers/net/ethernet/freescale/gianfar_ethtool.c |  8 ++++----
+ drivers/net/ethernet/freescale/gianfar_sysfs.c   | 24 ++++++++++++------------
+ 3 files changed, 24 insertions(+), 24 deletions(-)
 
-diff --git a/drivers/tty/serial/st-asc.c b/drivers/tty/serial/st-asc.c
-index 21e6e84..dd3a96e 100644
---- a/drivers/tty/serial/st-asc.c
-+++ b/drivers/tty/serial/st-asc.c
-@@ -295,7 +295,7 @@ static void asc_receive_chars(struct uart_port *port)
- 			status & ASC_STA_OE) {
+diff --git a/drivers/net/ethernet/freescale/gianfar.c b/drivers/net/ethernet/freescale/gianfar.c
+index de10ff3..8f1afda 100644
+--- a/drivers/net/ethernet/freescale/gianfar.c
++++ b/drivers/net/ethernet/freescale/gianfar.c
+@@ -1301,7 +1301,7 @@ static int gfar_suspend(struct device *dev)
  
- 			if (c & ASC_RXBUF_FE) {
--				if (c == ASC_RXBUF_FE) {
-+				if (c == (ASC_RXBUF_FE | ASC_RXBUF_DUMMY_RX)) {
- 					port->icount.brk++;
- 					if (uart_handle_break(port))
- 						continue;
-@@ -325,7 +325,7 @@ static void asc_receive_chars(struct uart_port *port)
- 				flag = TTY_FRAME;
+ 	if (netif_running(ndev)) {
+ 
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
+ 
+@@ -1319,7 +1319,7 @@ static int gfar_suspend(struct device *dev)
+ 
+ 		unlock_rx_qs(priv);
+ 		unlock_tx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		disable_napi(priv);
+ 
+@@ -1361,7 +1361,7 @@ static int gfar_resume(struct device *dev)
+ 	/* Disable Magic Packet mode, in case something
+ 	 * else woke us up.
+ 	 */
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 	lock_rx_qs(priv);
+ 
+@@ -1373,7 +1373,7 @@ static int gfar_resume(struct device *dev)
+ 
+ 	unlock_rx_qs(priv);
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	netif_device_attach(ndev);
+ 
+@@ -2387,7 +2387,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+ 	u32 tempval;
+ 
+ 	regs = priv->gfargrp[0].regs;
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (features & NETIF_F_HW_VLAN_CTAG_TX) {
+@@ -2420,7 +2420,7 @@ void gfar_vlan_mode(struct net_device *dev, netdev_features_t features)
+ 	gfar_change_mtu(dev, dev->mtu);
+ 
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ }
+ 
+ static int gfar_change_mtu(struct net_device *dev, int new_mtu)
+@@ -3381,14 +3381,14 @@ static irqreturn_t gfar_error(int irq, void *grp_id)
+ 			dev->stats.tx_dropped++;
+ 			atomic64_inc(&priv->extra_stats.tx_underrun);
+ 
+-			local_irq_save(flags);
++			local_irq_save_nort(flags);
+ 			lock_tx_qs(priv);
+ 
+ 			/* Reactivate the Tx Queues */
+ 			gfar_write(&regs->tstat, gfargrp->tstat);
+ 
+ 			unlock_tx_qs(priv);
+-			local_irq_restore(flags);
++			local_irq_restore_nort(flags);
  		}
+ 		netif_dbg(priv, tx_err, dev, "Transmit Error\n");
+ 	}
+diff --git a/drivers/net/ethernet/freescale/gianfar_ethtool.c b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+index d3d7ede..95a1f62 100644
+--- a/drivers/net/ethernet/freescale/gianfar_ethtool.c
++++ b/drivers/net/ethernet/freescale/gianfar_ethtool.c
+@@ -501,7 +501,7 @@ static int gfar_sringparam(struct net_device *dev,
+ 		/* Halt TX and RX, and process the frames which
+ 		 * have already been received
+ 		 */
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
  
--		if (uart_handle_sysrq_char(port, c))
-+		if (uart_handle_sysrq_char(port, c & 0xff))
- 			continue;
+@@ -509,7 +509,7 @@ static int gfar_sringparam(struct net_device *dev,
  
- 		uart_insert_char(port, c, ASC_RXBUF_DUMMY_OE, c & 0xff, flag);
+ 		unlock_rx_qs(priv);
+ 		unlock_tx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		for (i = 0; i < priv->num_rx_queues; i++)
+ 			gfar_clean_rx_ring(priv->rx_queue[i],
+@@ -624,7 +624,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+ 		/* Halt TX and RX, and process the frames which
+ 		 * have already been received
+ 		 */
+-		local_irq_save(flags);
++		local_irq_save_nort(flags);
+ 		lock_tx_qs(priv);
+ 		lock_rx_qs(priv);
+ 
+@@ -632,7 +632,7 @@ int gfar_set_features(struct net_device *dev, netdev_features_t features)
+ 
+ 		unlock_tx_qs(priv);
+ 		unlock_rx_qs(priv);
+-		local_irq_restore(flags);
++		local_irq_restore_nort(flags);
+ 
+ 		for (i = 0; i < priv->num_rx_queues; i++)
+ 			gfar_clean_rx_ring(priv->rx_queue[i],
+diff --git a/drivers/net/ethernet/freescale/gianfar_sysfs.c b/drivers/net/ethernet/freescale/gianfar_sysfs.c
+index acb55af..f0160e67 100644
+--- a/drivers/net/ethernet/freescale/gianfar_sysfs.c
++++ b/drivers/net/ethernet/freescale/gianfar_sysfs.c
+@@ -68,7 +68,7 @@ static ssize_t gfar_set_bd_stash(struct device *dev,
+ 		return count;
+ 
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	/* Set the new stashing value */
+@@ -84,7 +84,7 @@ static ssize_t gfar_set_bd_stash(struct device *dev,
+ 	gfar_write(&regs->attr, temp);
+ 
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -112,7 +112,7 @@ static ssize_t gfar_set_rx_stash_size(struct device *dev,
+ 	if (!(priv->device_flags & FSL_GIANFAR_DEV_HAS_BUF_STASHING))
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (length > priv->rx_buffer_size)
+@@ -140,7 +140,7 @@ static ssize_t gfar_set_rx_stash_size(struct device *dev,
+ 
+ out:
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -171,7 +171,7 @@ static ssize_t gfar_set_rx_stash_index(struct device *dev,
+ 	if (!(priv->device_flags & FSL_GIANFAR_DEV_HAS_BUF_STASHING))
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_rx_qs(priv);
+ 
+ 	if (index > priv->rx_stash_size)
+@@ -189,7 +189,7 @@ static ssize_t gfar_set_rx_stash_index(struct device *dev,
+ 
+ out:
+ 	unlock_rx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -219,7 +219,7 @@ static ssize_t gfar_set_fifo_threshold(struct device *dev,
+ 	if (length > GFAR_MAX_FIFO_THRESHOLD)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_threshold = length;
+@@ -230,7 +230,7 @@ static ssize_t gfar_set_fifo_threshold(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_thr, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -259,7 +259,7 @@ static ssize_t gfar_set_fifo_starve(struct device *dev,
+ 	if (num > GFAR_MAX_FIFO_STARVE)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_starve = num;
+@@ -270,7 +270,7 @@ static ssize_t gfar_set_fifo_starve(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_starve, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
+@@ -300,7 +300,7 @@ static ssize_t gfar_set_fifo_starve_off(struct device *dev,
+ 	if (num > GFAR_MAX_FIFO_STARVE_OFF)
+ 		return count;
+ 
+-	local_irq_save(flags);
++	local_irq_save_nort(flags);
+ 	lock_tx_qs(priv);
+ 
+ 	priv->fifo_starve_off = num;
+@@ -311,7 +311,7 @@ static ssize_t gfar_set_fifo_starve_off(struct device *dev,
+ 	gfar_write(&regs->fifo_tx_starve_shutoff, temp);
+ 
+ 	unlock_tx_qs(priv);
+-	local_irq_restore(flags);
++	local_irq_restore_nort(flags);
+ 
+ 	return count;
+ }
 -- 
-1.9.0
+1.9.1
 
