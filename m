@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811AbaC1Rl0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:41:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51394 "EHLO
+	id S1753269AbaC1RmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:42:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51381 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119AbaC1RbL (ORCPT
+	with ESMTP id S1753180AbaC1RbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:11 -0400
+	Fri, 28 Mar 2014 13:31:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Prarit Bhargava <prarit@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.13 17/46] stop_machine: Fix^2 race between stop_two_cpus() and stop_cpus()
-Date: Fri, 28 Mar 2014 10:32:01 -0700
-Message-Id: <20140328173136.990894110@linuxfoundation.org>
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.13 23/46] Fix uses of dma_max_pfn() when converting to a limiting address
+Date: Fri, 28 Mar 2014 10:32:07 -0700
+Message-Id: <20140328173137.797981871@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -30,41 +27,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Zijlstra <peterz@infradead.org>
+From: Russell King <rmk+kernel@arm.linux.org.uk>
 
-commit 177c53d943368fc97644ebc0a250dc8e2d124250 upstream.
+commit e83b366487b5582274374f8226e489cb214ae5a6 upstream.
 
-We must use smp_call_function_single(.wait=1) for the
-irq_cpu_stop_queue_work() to ensure the queueing is actually done under
-stop_cpus_lock. Without this we could have dropped the lock by the time
-we do the queueing and get the race we tried to fix.
+We must use a 64-bit for this, otherwise overflowed bits get lost, and
+that can result in a lower than intended value set.
 
-Fixes: 7053ea1a34fa ("stop_machine: Fix race between stop_two_cpus() and stop_cpus()")
-
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Cc: Prarit Bhargava <prarit@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20140228123905.GK3104@twins.programming.kicks-ass.net
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Fixes: 8e0cb8a1f6ac ("ARM: 7797/1: mmc: Use dma_max_pfn(dev) helper for bounce_limit calculations")
+Fixes: 7d35496dd982 ("ARM: 7796/1: scsi: Use dma_max_pfn(dev) helper for bounce_limit calculations")
+Tested-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@linaro.org>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/stop_machine.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mmc/card/queue.c |    2 +-
+ drivers/scsi/scsi_lib.c  |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -293,7 +293,7 @@ int stop_two_cpus(unsigned int cpu1, uns
- 	 */
- 	smp_call_function_single(min(cpu1, cpu2),
- 				 &irq_cpu_stop_queue_work,
--				 &call_args, 0);
-+				 &call_args, 1);
- 	lg_local_unlock(&stop_cpus_lock);
- 	preempt_enable();
+--- a/drivers/mmc/card/queue.c
++++ b/drivers/mmc/card/queue.c
+@@ -197,7 +197,7 @@ int mmc_init_queue(struct mmc_queue *mq,
+ 	struct mmc_queue_req *mqrq_prev = &mq->mqrq[1];
  
+ 	if (mmc_dev(host)->dma_mask && *mmc_dev(host)->dma_mask)
+-		limit = dma_max_pfn(mmc_dev(host)) << PAGE_SHIFT;
++		limit = (u64)dma_max_pfn(mmc_dev(host)) << PAGE_SHIFT;
+ 
+ 	mq->card = card;
+ 	mq->queue = blk_init_queue(mmc_request_fn, lock);
+--- a/drivers/scsi/scsi_lib.c
++++ b/drivers/scsi/scsi_lib.c
+@@ -1684,7 +1684,7 @@ u64 scsi_calculate_bounce_limit(struct S
+ 
+ 	host_dev = scsi_get_device(shost);
+ 	if (host_dev && host_dev->dma_mask)
+-		bounce_limit = dma_max_pfn(host_dev) << PAGE_SHIFT;
++		bounce_limit = (u64)dma_max_pfn(host_dev) << PAGE_SHIFT;
+ 
+ 	return bounce_limit;
+ }
 
 
