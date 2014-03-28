@@ -1,126 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaC1GZm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 02:25:42 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:57047 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125AbaC1GZl (ORCPT
+	id S1751185AbaC1GeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 02:34:04 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:34576
+	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751006AbaC1GeC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 02:25:41 -0400
-Date: Fri, 28 Mar 2014 07:25:37 +0100
-From: Jiri Pirko <jiri@resnulli.us>
-To: David Decotigny <decot@googlers.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Weilong Chen <chenweilong@huawei.com>, Amir Vadai <amirv@mellanox.com>,
-        Michael Dalton <mwdalton@google.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
-Message-ID: <20140328062537.GA2805@minipsycho.orion>
-References: <cover.1395980768.git.decot@googlers.com>
- <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
+	Fri, 28 Mar 2014 02:34:02 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -5
+X-BigFish: VS-5(zzbb2dI98dI9371I936eI1432Id799hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
+Message-ID: <533517C1.8080208@freescale.com>
+Date: Fri, 28 Mar 2014 14:33:37 +0800
+From: Hongbo Zhang <hongbo.zhang@freescale.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Vinod Koul <vkoul@infradead.org>
+CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>, <scottwood@freescale.com>,
+        <LeoLi@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/7] DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
+References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>	 <1389851246-8564-7-git-send-email-hongbo.zhang@freescale.com> <1395817294.6569.2.camel@vkoul-udesk3>
+In-Reply-To: <1395817294.6569.2.camel@vkoul-udesk3>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fri, Mar 28, 2014 at 05:35:00AM CET, decot@googlers.com wrote:
->Tested:
->  grep . /sys/class/net/*/count_link_*
->  + ip link set dev X down/up
+
+On 03/26/2014 03:01 PM, Vinod Koul wrote:
+> On Thu, 2014-01-16 at 13:47 +0800, hongbo.zhang@freescale.com wrote:
+>> From: Hongbo Zhang <hongbo.zhang@freescale.com>
+>>
+>> The usage of spin_lock_irqsave() is a stronger locking mechanism than is
+>> required throughout the driver. The minimum locking required should be used
+>> instead. Interrupts will be turned off and context will be saved, it is
+>> unnecessary to use irqsave.
+>>
+>> This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
+>> manipulation of protected fields is done using tasklet context or weaker, which
+>> makes spin_lock_bh() the correct choice.
+>>
+>> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
+>> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
+>> ---
+>>   drivers/dma/fsldma.c |   25 ++++++++++---------------
+>>   1 file changed, 10 insertions(+), 15 deletions(-)
+>>
+>> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
+>> index bbace54..437794e 100644
+>> --- a/drivers/dma/fsldma.c
+>> +++ b/drivers/dma/fsldma.c
+>> @@ -396,10 +396,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>>   	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
+>>   	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
+>>   	struct fsl_desc_sw *child;
+>> -	unsigned long flags;
+>>   	dma_cookie_t cookie = -EINVAL;
+>>   
+>> -	spin_lock_irqsave(&chan->desc_lock, flags);
+>> +	spin_lock_bh(&chan->desc_lock);
+>>   
+>>   	/*
+>>   	 * assign cookies to all of the software descriptors
+>> @@ -412,7 +411,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
+>>   	/* put this transaction onto the tail of the pending queue */
+>>   	append_ld_queue(chan, desc);
+>>   
+>> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> +	spin_unlock_bh(&chan->desc_lock);
+>>   
+>>   	return cookie;
+>>   }
+>> @@ -731,15 +730,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
+>>   static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+>>   {
+>>   	struct fsldma_chan *chan = to_fsl_chan(dchan);
+>> -	unsigned long flags;
+>>   
+>>   	chan_dbg(chan, "free all channel resources\n");
+>> -	spin_lock_irqsave(&chan->desc_lock, flags);
+>> +	spin_lock_bh(&chan->desc_lock);
+>>   	fsldma_cleanup_descriptors(chan);
+>>   	fsldma_free_desc_list(chan, &chan->ld_pending);
+>>   	fsldma_free_desc_list(chan, &chan->ld_running);
+>>   	fsldma_free_desc_list(chan, &chan->ld_completed);
+>> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> +	spin_unlock_bh(&chan->desc_lock);
+>>   
+>>   	dma_pool_destroy(chan->desc_pool);
+>>   	chan->desc_pool = NULL;
+>> @@ -958,7 +956,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>>   {
+>>   	struct dma_slave_config *config;
+>>   	struct fsldma_chan *chan;
+>> -	unsigned long flags;
+>>   	int size;
+>>   
+>>   	if (!dchan)
+>> @@ -968,7 +965,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>>   
+>>   	switch (cmd) {
+>>   	case DMA_TERMINATE_ALL:
+>> -		spin_lock_irqsave(&chan->desc_lock, flags);
+>> +		spin_lock_bh(&chan->desc_lock);
+>>   
+>>   		/* Halt the DMA engine */
+>>   		dma_halt(chan);
+>> @@ -979,7 +976,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>>   		fsldma_free_desc_list(chan, &chan->ld_completed);
+>>   		chan->idle = true;
+>>   
+>> -		spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> +		spin_unlock_bh(&chan->desc_lock);
+>>   		return 0;
+>>   
+>>   	case DMA_SLAVE_CONFIG:
+>> @@ -1021,11 +1018,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
+>>   static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
+>>   {
+>>   	struct fsldma_chan *chan = to_fsl_chan(dchan);
+>> -	unsigned long flags;
+>>   
+>> -	spin_lock_irqsave(&chan->desc_lock, flags);
+>> +	spin_lock_bh(&chan->desc_lock);
+>>   	fsl_chan_xfer_ld_queue(chan);
+>> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> +	spin_unlock_bh(&chan->desc_lock);
+>>   }
+>>   
+>>   /**
+>> @@ -1124,11 +1120,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
+>>   static void dma_do_tasklet(unsigned long data)
+>>   {
+>>   	struct fsldma_chan *chan = (struct fsldma_chan *)data;
+>> -	unsigned long flags;
+>>   
+>>   	chan_dbg(chan, "tasklet entry\n");
+>>   
+>> -	spin_lock_irqsave(&chan->desc_lock, flags);
+>> +	spin_lock_bh(&chan->desc_lock);
+> okay here is the problem :(
 >
->Signed-off-by: David Decotigny <decot@googlers.com>
->---
-> include/linux/netdevice.h |  4 ++++
-> net/core/net-sysfs.c      | 18 ++++++++++++++++++
-> net/sched/sch_generic.c   |  2 ++
-> 3 files changed, 24 insertions(+)
+> You moved to _bh variant. So if you grab the lock in rest of the code
+> and irq gets triggered then here we will be spinning to grab the lock.
+> So effectively you made right locking solution into deadlock situation!
+
+If the rest code grabs lock by spin_lock_bh(), and if irq raised, the 
+tasklet could not be executed because it has been disabled by the _bh 
+variant function.
+Right?
+
+>>   
+>>   	/* the hardware is now idle and ready for more */
+>>   	chan->idle = true;
+>> @@ -1136,7 +1131,7 @@ static void dma_do_tasklet(unsigned long data)
+>>   	/* Run all cleanup for descriptors which have been completed */
+>>   	fsldma_cleanup_descriptors(chan);
+>>   
+>> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
+>> +	spin_unlock_bh(&chan->desc_lock);
+>>   
+>>   	chan_dbg(chan, "tasklet exit\n");
+>>   }
 >
->diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
->index 4b6d12c..cf52869 100644
->--- a/include/linux/netdevice.h
->+++ b/include/linux/netdevice.h
->@@ -1315,6 +1315,10 @@ struct net_device {
-> 					     * Do not use this in drivers.
-> 					     */
-> 
->+	/* Stats to monitor link on/off, flapping */
->+	atomic_t		count_link_up;
->+	atomic_t		count_link_down;
->+
-> #ifdef CONFIG_WIRELESS_EXT
-> 	/* List of functions to handle Wireless Extensions (instead of ioctl).
-> 	 * See <net/iw_handler.h> for details. Jean II */
->diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
->index daed9a6..a65ac54 100644
->--- a/net/core/net-sysfs.c
->+++ b/net/core/net-sysfs.c
->@@ -253,6 +253,22 @@ static ssize_t operstate_show(struct device *dev,
-> }
-> static DEVICE_ATTR_RO(operstate);
-> 
->+static ssize_t count_link_up_show(struct device *dev,
->+				  struct device_attribute *attr, char *buf)
->+{
->+	struct net_device *netdev = to_net_dev(dev);
->+	return sprintf(buf, fmt_dec, atomic_read(&netdev->count_link_up));
->+}
->+
->+static ssize_t count_link_down_show(struct device *dev,
->+				    struct device_attribute *attr, char *buf)
->+{
->+	struct net_device *netdev = to_net_dev(dev);
->+	return sprintf(buf, fmt_dec, atomic_read(&netdev->count_link_down));
->+}
->+static DEVICE_ATTR_RO(count_link_up);
->+static DEVICE_ATTR_RO(count_link_down);
->+
 
 
-If this is exposed in sysfs, this needs to be exposed via RT netlink as
-well.
 
-
-> /* read-write attributes */
-> 
-> static int change_mtu(struct net_device *net, unsigned long new_mtu)
->@@ -386,6 +402,8 @@ static struct attribute *net_class_attrs[] = {
-> 	&dev_attr_duplex.attr,
-> 	&dev_attr_dormant.attr,
-> 	&dev_attr_operstate.attr,
->+	&dev_attr_count_link_up.attr,
->+	&dev_attr_count_link_down.attr,
-> 	&dev_attr_ifalias.attr,
-> 	&dev_attr_carrier.attr,
-> 	&dev_attr_mtu.attr,
->diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
->index e82e43b..2d06943 100644
->--- a/net/sched/sch_generic.c
->+++ b/net/sched/sch_generic.c
->@@ -310,6 +310,7 @@ void netif_carrier_on(struct net_device *dev)
-> 	if (test_and_clear_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
-> 		if (dev->reg_state == NETREG_UNINITIALIZED)
-> 			return;
->+		atomic_inc(&dev->count_link_up);
-> 		linkwatch_fire_event(dev);
-> 		if (netif_running(dev))
-> 			__netdev_watchdog_up(dev);
->@@ -328,6 +329,7 @@ void netif_carrier_off(struct net_device *dev)
-> 	if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
-> 		if (dev->reg_state == NETREG_UNINITIALIZED)
-> 			return;
->+		atomic_inc(&dev->count_link_down);
-> 		linkwatch_fire_event(dev);
-> 	}
-> }
->-- 
->1.9.1.423.g4596e3a
->
