@@ -1,87 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaC1KPu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:15:50 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:51377 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751330AbaC1KPr (ORCPT
+	id S1751443AbaC1KSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:18:33 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:54822 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751055AbaC1KSa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:15:47 -0400
-Date: Fri, 28 Mar 2014 11:15:17 +0100
-From: Johan Hovold <jhovold@gmail.com>
-To: Michele Baldessari <michele@acksyn.org>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes VX-001
- ExpressCard
-Message-ID: <20140328101517.GC22587@localhost>
-References: <1395774051-22470-1-git-send-email-michele@acksyn.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1395774051-22470-1-git-send-email-michele@acksyn.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+	Fri, 28 Mar 2014 06:18:30 -0400
+Date: Fri, 28 Mar 2014 11:18:05 +0100
+From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
+To: Huang Shijie <b32955@freescale.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        <linux-mtd@lists.infradead.org>, Shawn Guo <shawn.guo@freescale.com>,
+        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
+Message-ID: <20140328111805.76b6513d@ipc1.ka-ro>
+In-Reply-To: <53354A46.9040807@freescale.com>
+References: <1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
+	<20140324095902.GB11377@localhost>
+	<20140326095156.3e5585b8@ipc1.ka-ro>
+	<5332AEE7.2040402@freescale.com>
+	<20140326125502.0e8d0657@ipc1.ka-ro>
+	<20140327095956.GA29623@localhost>
+	<20140327132109.06258526@ipc1.ka-ro>
+	<5334D9F7.2030001@freescale.com>
+	<20140328091646.1ce03f90@ipc1.ka-ro>
+	<53353524.9020605@freescale.com>
+	<20140328090023.GB17250@pengutronix.de>
+	<53354057.6030004@freescale.com>
+	<20140328103147.3fdadfd7@ipc1.ka-ro>
+	<53354A46.9040807@freescale.com>
+Organization: Ka-Ro electronics GmbH
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 25, 2014 at 07:00:51PM +0000, Michele Baldessari wrote:
-> Custom VID/PID for Brainboxes VX-001 ExpressCard RS232 as reported in
-> https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+Hi,
 
-Thanks for the patch. 
-
-How about including the other PIDs listed in the report (in the attached
-udev-rule) as well?
- 
-> Signed-off-by: Michele Baldessari <michele@acksyn.org>
-> ---
->  drivers/usb/serial/ftdi_sio.c     | 2 ++
->  drivers/usb/serial/ftdi_sio_ids.h | 7 +++++++
->  2 files changed, 9 insertions(+)
+Huang Shijie wrote:
+> 于 2014年03月28日 17:31, Lothar Waßmann 写道:
+> > Hi,
+> >
+> > Huang Shijie wrote:
+> >> 于 2014年03月28日 17:00, Sascha Hauer 写道:
+> >>> - disables swapping of BB marks in the FCB the ROM won't swap bytes.
+> >> We can not disable the swapping in the FCB in the imx28.
+> >> The DISBBM bit in the FCB does _NOT_ exit in the imx28's FCB.
+> >>
+> > The Linux kernel does not have any business with the FCB, so it is
+> > completely irrelevant for Linux whether byte swapping can be disabled
+> > in the FCB or not.
+> >
+> But the gpmi is relevant to the ROM.
+> the gpmi driver should keep consistency with the ROM.
 > 
-> diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-> index 44ab12986805..bf72063d6f48 100644
-> --- a/drivers/usb/serial/ftdi_sio.c
-> +++ b/drivers/usb/serial/ftdi_sio.c
-> @@ -909,6 +909,8 @@ static const struct usb_device_id id_table_combined[] = {
->  	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
->  	/* Cressi Devices */
->  	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-> +	/* Brainbox Devices */
-> +	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
->  	{ }					/* Terminating entry */
->  };
->  
-> diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-> index e599fbfcde5f..ae842a203371 100644
-> --- a/drivers/usb/serial/ftdi_sio_ids.h
-> +++ b/drivers/usb/serial/ftdi_sio_ids.h
-> @@ -1326,3 +1326,10 @@
->   * Manufacturer: Cressi
->   */
->  #define FTDI_CRESSI_PID		0x87d0
-> +
-> +/*
-> + * Product: ExpressCard 1 Port RS2323
-> + * Manufacturer: Brainboxes
-> + */
+> I do not object you add the swapping optional the gpmi driver(since it's 
+> ok for imx50/imx6q/imx6sx),
+> i just object that you enable this feature for imx28.
+> 
+We are talking about a Linux Kernel Driver here, not about a flashtool
+for i.MX28.
+It is a valid usecase for Linux not being able to write the bootloader,
+so there is no reason to disallow this feature in the driver code.
+Since it is a DT option it can be trivially switched on and off without
+having to change anything in the kernel.
 
-Could you just make this a "Brainboxes devices"-header and then list any
-product in a comment following the PID instead? That would "scale"
-better when adding more Brainboxes PIDs.
 
-> +#define BRAINBOXES_VID		0x05d1
-> +#define BRAINBOXES_VX_001_PID	0x1001
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-That is, something like:
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-/*
- * Brainboxes devices
- */
-#define BRAINBOXES_VID		0x05d1
-#define BRAINBOXES_VX_001_PID	0x1001	/* ExpressCard 1 Port RS2323 */
-
-Thanks,
-Johan
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
