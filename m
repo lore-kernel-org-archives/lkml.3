@@ -1,169 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaC1Vik (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:38:40 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:41131 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751680AbaC1Vii (ORCPT
+	id S1753255AbaC1VqI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:46:08 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37869 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751768AbaC1VqG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:38:38 -0400
-Date: Fri, 28 Mar 2014 17:38:35 -0400 (EDT)
-Message-Id: <20140328.173835.768770272285036750.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 14:38:37 -0700 (PDT)
+	Fri, 28 Mar 2014 17:46:06 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Olivier Langlois <olivier@trillion01.com>
+Cc: m.chehab@samsung.com, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Stable <stable@vger.kernel.org>
+Subject: Re: [PATCH] [media] uvcvideo: Fix clock param realtime setting
+Date: Fri, 28 Mar 2014 22:48:03 +0100
+Message-ID: <2051908.tTlcvVaa3D@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1396042028.3383.34.camel@Wailaba2>
+References: <1395985358-17047-1-git-send-email-olivier@trillion01.com> <16236471.uFSjvbT2di@avalon> <1396042028.3383.34.camel@Wailaba2>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Olivier,
 
-1) We've discovered a common error in several networking drivers, they
-   put VLAN offload features into ->vlan_features, which would suggest
-   that they support offloading 2 or more levels of VLAN encapsulation.
-   Not only do these devices not do that, but we don't have the
-   infrastructure yet to handle that at all.
+On Friday 28 March 2014 17:27:08 Olivier Langlois wrote:
+> On Fri, 2014-03-28 at 17:20 +0100, Laurent Pinchart wrote:
+> > On Friday 28 March 2014 01:42:38 Olivier Langlois wrote:
+> > > timestamps in v4l2 buffers returned to userspace are updated in
+> > > uvc_video_clock_update() which uses timestamps fetched from
+> > > uvc_video_clock_decode() by calling unconditionally ktime_get_ts().
+> > > 
+> > > Hence setting the module clock param to realtime have no effect
+> > > before this patch.
+> > > 
+> > > This has been tested with ffmpeg:
+> > > 
+> > > ffmpeg -y -f v4l2 -input_format yuyv422 -video_size 640x480 -framerate
+> > > 30 -i /dev/video0 \ -f alsa -acodec pcm_s16le -ar 16000 -ac 1 -i
+> > > default \
+> > > -c:v libx264 -preset ultrafast \
+> > > -c:a libfdk_aac \
+> > > out.mkv
+> > > 
+> > > and inspecting the v4l2 input starting timestamp.
+> > > 
+> > > Signed-off-by: Olivier Langlois <olivier@trillion01.com>
+> > > Cc: Stable <stable@vger.kernel.org>
+> > 
+> > Before applying this, I'm curious, do you have a use case for realtime
+> > time stamps ?
+> 
+> Yes. ffmpeg uses wall clock time to create timestamps for audio packets from
+> ALSA device.
 
-   Fixes from Vlad Yasevich.
+OK. I suppose I shouldn't drop support for the realtime clock like I wanted to 
+then :-)
+ 
+> There is a bug in ffmpeg describing problems to synchronize audio and
+> the video from a v4l2 webcam.
+> 
+> https://trac.ffmpeg.org/ticket/692
+> 
+> To workaround this issue, ffmpeg devs added a switch to convert back
+> monotonic to realtime. From ffmpeg/libavdevice/v4l2.c:
+> 
+>   -ts                <int>        .D.... set type of timestamps for
+> grabbed frames (from 0 to 2) (default 0)
+>      default                      .D.... use timestamps from the kernel
+>      abs                          .D.... use absolute timestamps (wall
+> clock)
+>      mono2abs                     .D.... force conversion from monotonic
+> to absolute timestamps
+> 
+> If the v4l2 driver is able to send realtime ts, it is easier synchronize
+> in userspace if all inputs use the same clock.
 
-2) Fix tcpdump crash with bridging and vlans, also from Vlad.
+That might be a stupid question, but shouldn't ALSA use the monotonic clock 
+instead ?
 
-3) Some MAINTAINERS updates for random32 and bonding.
+-- 
+Regards,
 
-4) Fix late reseeds of prandom generator, from Sasha Levin.
+Laurent Pinchart
 
-5) Bridge doesn't handle stacked vlans properly, fix from Toshiaki
-   Makita.
-
-6) Fix deadlock in openvswitch, from Flavio Leitner.
-
-7) get_timewait4_sock() doesn't report delay times correctly, fix
-   from Eric Dumazet.
-
-8) Duplicate address detection and addrconf verification need to
-   run in contexts where RTNL can be obtained.  Move them to run
-   from a workqueue.  From Hannes Frederic Sowa.
-
-9) Fix route refcount leaking in ip tunnels, from Pravin B Shelar.
-
-10) Don't return -EINTR from non-blocking recvmsg() on AF_UNIX
-    sockets, from Eric Dumazet.
-
-Please pull, thanks a lot!
-
-The following changes since commit 632b06aa2842b12c6d6a510ec080fb6ebdb38ea5:
-
-  Merge branch 'nfsd-next' of git://linux-nfs.org/~bfields/linux (2014-03-25 15:24:11 -0700)
-
-are available in the git repository at:
-
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
-
-for you to fetch changes up to 5f2feca20e0f4878fa16787bd50fcd82fb365be7:
-
-  Merge branch 'vlan_offloads' (2014-03-28 17:17:16 -0400)
-
-----------------------------------------------------------------
-
-David S. Miller (2):
-      Merge branch 'mvneta'
-      Merge branch 'vlan_offloads'
-
-Eric Dumazet (2):
-      net: unix: non blocking recvmsg() should not return -EINTR
-      tcp: fix get_timewait4_sock() delay computation on 64bit
-
-Flavio Leitner (1):
-      openvswitch: fix a possible deadlock and lockdep warning
-
-Hannes Frederic Sowa (1):
-      ipv6: move DAD and addrconf_verify processing to workqueue
-
-Jason Wang (1):
-      virtio-net: correct error handling of virtqueue_kick()
-
-Jay Vosburgh (1):
-      MAINTAINERS: bonding: change email address
-
-Michael S. Tsirkin (2):
-      vhost: fix total length when packets are too short
-      vhost: validate vhost_get_vq_desc return value
-
-Oliver Neukum (1):
-      usbnet: include wait queue head in device structure
-
-Pravin B Shelar (1):
-      ip_tunnel: Fix dst ref-count.
-
-Sasha Levin (2):
-      random32: assign to network folks in MAINTAINERS
-      random32: avoid attempt to late reseed if in the middle of seeding
-
-Thomas Petazzoni (3):
-      net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
-      net: mvneta: fix usage as a module on RGMII configurations
-      net: mvneta: use devm_ioremap_resource() instead of of_iomap()
-
-Toshiaki Makita (2):
-      bridge: Fix inabillity to retrieve vlan tags when tx offload is disabled
-      bridge: Fix handling stacked vlan tags
-
-Veaceslav Falico (1):
-      MAINTAINERS: bonding: change email address
-
-Vlad Yasevich (8):
-      tg3: Do not include vlan acceleration features in vlan_features
-      vlan: Set hard_header_len according to available acceleration
-      net: Account for all vlan headers in skb_mac_gso_segment
-      bridge: Fix crash with vlan filtering and tcpdump
-      qlge: Do not propaged vlan tag offloads to vlans
-      ifb: Remove vlan acceleration from vlan_features
-      veth: Turn off vlan rx acceleration in vlan_features
-      vlan: Warn the user if lowerdev has bad vlan features.
-
-Wei Yang (1):
-      net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset
-
-Zoltan Kiss (1):
-      core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
-
- MAINTAINERS                                  |   5 ++-
- drivers/net/ethernet/broadcom/tg3.c          |   5 +--
- drivers/net/ethernet/marvell/mvneta.c        |  60 +++++++++-----------------
- drivers/net/ethernet/mellanox/mlx4/main.c    |   6 ++-
- drivers/net/ethernet/qlogic/qlge/qlge_main.c |   4 +-
- drivers/net/ifb.c                            |   3 +-
- drivers/net/usb/usbnet.c                     |  33 ++++++++------
- drivers/net/veth.c                           |   5 ++-
- drivers/net/virtio_net.c                     |   6 +--
- drivers/vhost/net.c                          |  20 ++++++++-
- include/linux/netdev_features.h              |   7 +++
- include/linux/netdevice.h                    |   2 +-
- include/linux/skbuff.h                       |   4 +-
- include/linux/usb/usbnet.h                   |   2 +-
- include/net/if_inet6.h                       |   4 +-
- lib/random32.c                               |  13 +++++-
- net/8021q/vlan.c                             |   4 +-
- net/8021q/vlan_dev.c                         |   6 ++-
- net/bridge/br_device.c                       |   6 +--
- net/bridge/br_input.c                        |  11 ++---
- net/bridge/br_vlan.c                         |  44 +++++++++++--------
- net/core/dev.c                               |  13 ++++--
- net/core/skbuff.c                            |  30 +++++++++----
- net/ipv4/gre_demux.c                         |   8 ++++
- net/ipv4/ip_tunnel.c                         |   3 --
- net/ipv4/ip_tunnel_core.c                    |   1 +
- net/ipv4/tcp_ipv4.c                          |   2 +-
- net/ipv6/addrconf.c                          | 193 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------
- net/netfilter/nfnetlink_queue_core.c         |   9 +++-
- net/openvswitch/datapath.c                   |   6 ++-
- net/openvswitch/flow.c                       |  26 +++--------
- net/unix/af_unix.c                           |  17 +++++---
- 32 files changed, 363 insertions(+), 195 deletions(-)
