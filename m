@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbaC1Rau (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51197 "EHLO
+	id S1754057AbaC1RvB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:51:01 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51271 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765AbaC1Rak (ORCPT
+	with ESMTP id S1752924AbaC1Rau (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:40 -0400
+	Fri, 28 Mar 2014 13:30:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.10 08/22] ASoC: max98090: make REVISION_ID readable
-Date: Fri, 28 Mar 2014 10:32:00 -0700
-Message-Id: <20140328173110.545201214@linuxfoundation.org>
+        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH 3.10 22/22] sched/autogroup: Fix race with task_groups list
+Date: Fri, 28 Mar 2014 10:32:14 -0700
+Message-Id: <20140328173112.401929561@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -26,34 +28,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephen Warren <swarren@nvidia.com>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit e126a646f77fdd66978785cb0a3a5e46b07aee2e upstream.
+commit 41261b6a832ea0e788627f6a8707854423f9ff49 upstream.
 
-The REVISION_ID register is not currently marked readable. snd_soc_read()
-refuses to read the register, and hence probe() fails.
+In autogroup_create(), a tg is allocated and added to the task_groups
+list. If CONFIG_RT_GROUP_SCHED is set, this tg is then modified while on
+the list, without locking. This can race with someone walking the list,
+like __enable_runtime() during CPU unplug, and result in a use-after-free
+bug.
 
-Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
-[exposed the bug, by checking for readability]
-Fixes: 685e42154dcf ("ASoC: Replace max98090 Device Driver")
-[left out this register from the readable list]
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+To fix this, move sched_online_group(), which adds the tg to the list,
+to the end of the autogroup_create() function after the modification.
+
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1369411669-46971-2-git-send-email-gerald.schaefer@de.ibm.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    1 +
- 1 file changed, 1 insertion(+)
+ kernel/sched/auto_group.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -336,6 +336,7 @@ static bool max98090_readable_register(s
- 	case M98090_REG_RECORD_TDM_SLOT:
- 	case M98090_REG_SAMPLE_RATE:
- 	case M98090_REG_DMIC34_BIQUAD_BASE ... M98090_REG_DMIC34_BIQUAD_BASE + 0x0E:
-+	case M98090_REG_REVISION_ID:
- 		return true;
- 	default:
- 		return false;
+--- a/kernel/sched/auto_group.c
++++ b/kernel/sched/auto_group.c
+@@ -77,8 +77,6 @@ static inline struct autogroup *autogrou
+ 	if (IS_ERR(tg))
+ 		goto out_free;
+ 
+-	sched_online_group(tg, &root_task_group);
+-
+ 	kref_init(&ag->kref);
+ 	init_rwsem(&ag->lock);
+ 	ag->id = atomic_inc_return(&autogroup_seq_nr);
+@@ -98,6 +96,7 @@ static inline struct autogroup *autogrou
+ #endif
+ 	tg->autogroup = ag;
+ 
++	sched_online_group(tg, &root_task_group);
+ 	return ag;
+ 
+ out_free:
 
 
