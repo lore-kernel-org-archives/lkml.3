@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbaC1Rw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:52:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51245 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752869AbaC1Rar (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752868AbaC1Rar (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Mar 2014 13:30:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51206 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782AbaC1Ral (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 13:30:41 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jan Kiszka <jan.kiszka@siemens.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.10 18/22] KVM: VMX: fix use after free of vmx->loaded_vmcs
-Date: Fri, 28 Mar 2014 10:32:10 -0700
-Message-Id: <20140328173111.866258634@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 3.10 10/22] deb-pkg: Fix cross-building linux-headers package
+Date: Fri, 28 Mar 2014 10:32:02 -0700
+Message-Id: <20140328173110.815823059@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -28,39 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56 upstream.
+commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
 
-After free_loaded_vmcs executes, the "loaded_vmcs" structure
-is kfreed, and now vmx->loaded_vmcs points to a kfreed area.
-Subsequent free_loaded_vmcs then attempts to manipulate
-vmx->loaded_vmcs.
+builddeb generates a control file that says the linux-headers package
+can only be built for the build system primary architecture.  This
+breaks cross-building configurations.  We should use $debarch for this
+instead.
 
-Switch the order to avoid the problem.
+Since $debarch is not yet set when generating the control file, set
+Architecture: any and use control file variables to fill in the
+description.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=1047892
-
-Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
+Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/vmx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/package/builddeb |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7133,8 +7133,8 @@ static void vmx_free_vcpu(struct kvm_vcp
- 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -62,7 +62,7 @@ create_package() {
+ 	fi
  
- 	free_vpid(vmx);
--	free_nested(vmx);
- 	free_loaded_vmcs(vmx->loaded_vmcs);
-+	free_nested(vmx);
- 	kfree(vmx->guest_msrs);
- 	kvm_vcpu_uninit(vcpu);
- 	kmem_cache_free(kvm_vcpu_cache, vmx);
+ 	# Create the package
+-	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
+ 
+@@ -252,15 +252,14 @@ mkdir -p "$destdir"
+ (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-arch=$(dpkg --print-architecture)
+ 
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+ Provides: linux-headers, linux-headers-2.6
+-Architecture: $arch
+-Description: Linux kernel headers for $KERNELRELEASE on $arch
+- This package provides kernel header files for $KERNELRELEASE on $arch
++Architecture: any
++Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
++ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
+  .
+  This is useful for people who need to build external modules
+ EOF
 
 
