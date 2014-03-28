@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbaC1LOc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 07:14:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35396 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751968AbaC1LO0 (ORCPT
+	id S1752217AbaC1LQR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 07:16:17 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:34682 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071AbaC1LQO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 07:14:26 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v6 07/11] ARM: mvebu: Allow to power down L2 cache controller in idle mode
-Date: Fri, 28 Mar 2014 12:13:27 +0100
-Message-Id: <1396005211-15573-8-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1396005211-15573-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1396005211-15573-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 28 Mar 2014 07:16:14 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: linux-media@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Fengguang Wu <fengguang.wu@intel.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Roland Scheidegger <rscheidegger_lists@hispeed.ch>
+Subject: Re: [PATCH 1/2] usb: gadget: uvc: Switch to monotonic clock for buffer timestamps
+Date: Fri, 28 Mar 2014 12:18:12 +0100
+Message-ID: <1650089.1kJ4DQOsm3@avalon>
+User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <533537E2.9020904@xs4all.nl>
+References: <20140323001018.GA11963@localhost> <1395588754-20587-2-git-send-email-laurent.pinchart@ideasonboard.com> <533537E2.9020904@xs4all.nl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit adds a function which adjusts the PMSU configuration to
-automatically power down the L2 and coherency fabric when we enter a
-certain idle state.
+Hi Hans,
 
-This feature is part of the Power Management Service Unit of the
-Armada 370 and Armada XP SoCs.
+On Friday 28 March 2014 09:50:42 Hans Verkuil wrote:
+> On 03/23/2014 04:32 PM, Laurent Pinchart wrote:
+> > The wall time clock isn't useful for applications as it can jump around
+> > due to time adjustement. Switch to the monotonic clock.
+> > 
+> > Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> > ---
+> > 
+> >  drivers/usb/gadget/uvc_queue.c | 12 +++++-------
+> >  1 file changed, 5 insertions(+), 7 deletions(-)
+> > 
+> > diff --git a/drivers/usb/gadget/uvc_queue.c
+> > b/drivers/usb/gadget/uvc_queue.c index 0bb5d50..d4561ba 100644
+> > --- a/drivers/usb/gadget/uvc_queue.c
+> > +++ b/drivers/usb/gadget/uvc_queue.c
+> > @@ -364,6 +364,7 @@ static struct uvc_buffer *uvc_queue_next_buffer(struct
+> > uvc_video_queue *queue,
+> >  						struct uvc_buffer *buf)
+> >  {
+> >  	struct uvc_buffer *nextbuf;
+> > +	struct timespec ts;
+> > 
+> >  	if ((queue->flags & UVC_QUEUE_DROP_INCOMPLETE) &&
+> >  	     buf->length != buf->bytesused) {
+> > @@ -379,14 +380,11 @@ static struct uvc_buffer
+> > *uvc_queue_next_buffer(struct uvc_video_queue *queue,> 
+> >  	else
+> >  		nextbuf = NULL;
+> > 
+> > -	/*
+> > -	 * FIXME: with videobuf2, the sequence number or timestamp fields
+> > -	 * are valid only for video capture devices and the UVC gadget
+> > usually
+> > -	 * is a video output device. Keeping these until the specs are clear
+> > on
+> > -	 * this aspect.
+> > -	 */
+> > +	ktime_get_ts(&ts);
+> 
+> Why not use the v4l2-common.c helper v4l2_get_timestamp()?
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- arch/arm/mach-mvebu/pmsu.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+No reason at all. I'll fix that.
 
-diff --git a/arch/arm/mach-mvebu/pmsu.c b/arch/arm/mach-mvebu/pmsu.c
-index 8361281f9180..db5011f98df3 100644
---- a/arch/arm/mach-mvebu/pmsu.c
-+++ b/arch/arm/mach-mvebu/pmsu.c
-@@ -33,7 +33,12 @@ static void __iomem *pmsu_mp_base;
- #define PMSU_BASE_OFFSET    0x100
- #define PMSU_REG_SIZE	    0x1000
- 
--#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu)	((cpu * 0x100) + 0x124)
-+/* PMSU MP registers */
-+#define PMSU_BOOT_ADDR_REDIRECT_OFFSET(cpu) ((cpu * 0x100) + 0x124)
-+
-+/* PMSU fabric registers */
-+#define L2C_NFABRIC_PM_CTL		    0x4
-+#define L2C_NFABRIC_PM_CTL_PWR_DOWN		BIT(20)
- 
- static struct of_device_id of_pmsu_table[] = {
- 	{ .compatible = "marvell,armada-370-pmsu", },
-@@ -115,4 +120,17 @@ static int __init armada_370_xp_pmsu_init(void)
- 	return ret;
- }
- 
-+static void armada_370_xp_pmsu_enable_l2_powerdown_onidle(void)
-+{
-+	u32 reg;
-+
-+	if (pmsu_mp_base == NULL)
-+		return;
-+
-+	/* Enable L2 & Fabric powerdown in Deep-Idle mode - Fabric */
-+	reg = readl(pmsu_mp_base + L2C_NFABRIC_PM_CTL);
-+	reg |= L2C_NFABRIC_PM_CTL_PWR_DOWN;
-+	writel(reg, pmsu_mp_base + L2C_NFABRIC_PM_CTL);
-+}
-+
- early_initcall(armada_370_xp_pmsu_init);
+> > +
+> >  	buf->buf.v4l2_buf.sequence = queue->sequence++;
+> > 
+> > -	do_gettimeofday(&buf->buf.v4l2_buf.timestamp);
+> > +	buf->buf.v4l2_buf.timestamp.tv_sec = ts.tv_sec;
+> > +	buf->buf.v4l2_buf.timestamp.tv_usec = ts.tv_nsec / NSEC_PER_USEC;
+> 
+> You should also add:
+> 
+> 	buf->buf.v4l2_buf.field = V4L2_FIELD_NONE;
+> 
+> I noticed that that was never set, which is wrong.
+
+Good point. Will be fixed in v2.
+
+> >  	vb2_set_plane_payload(&buf->buf, 0, buf->bytesused);
+> >  	vb2_buffer_done(&buf->buf, VB2_BUF_STATE_DONE);
+
 -- 
-1.8.1.2
+Regards,
+
+Laurent Pinchart
 
