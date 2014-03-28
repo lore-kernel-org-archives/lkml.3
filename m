@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbaC1Rjv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:39:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51401 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753221AbaC1RbN (ORCPT
+	id S1753285AbaC1Rkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:40:33 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:38892 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753201AbaC1RbM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>,
-        David Daney <david.daney@cavium.com>,
-        John Crispin <blogic@openwrt.org>
-Subject: [PATCH 3.13 27/46] MIPS: Fix build error seen in some configurations
-Date: Fri, 28 Mar 2014 10:32:11 -0700
-Message-Id: <20140328173138.320067821@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
-References: <20140328173134.630198216@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 28 Mar 2014 13:31:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140328172229.GH29656@kvack.org>
+References: <20140327134653.GA22407@kvack.org>
+	<CA+55aFzFgY4-26SO-MsFagzaj9JevkeeT1OJ3pjj-tcjuNCEeQ@mail.gmail.com>
+	<CA+55aFx7vg2rvOu6Bu_e8+BB=ymoUMp0AM9JmAuUuSgo0LVEwg@mail.gmail.com>
+	<20140327200851.GL17679@kvack.org>
+	<CA+55aFy_sRnFu7KguAUAN5kbHk3Qa_0ZuATPU5i8LOyMMWZ_5g@mail.gmail.com>
+	<20140327205749.GM17679@kvack.org>
+	<CA+55aFyj2XFMkT1T=EPPw1CANt6atyFNmMaeaDm-p-NWfRNA+w@mail.gmail.com>
+	<20140328145826.GE29656@kvack.org>
+	<CA+55aFyye6K4ifJ778uZ_pNFKa7=R0KsKREmJkimEQxW3nDhDA@mail.gmail.com>
+	<20140328172229.GH29656@kvack.org>
+Date: Fri, 28 Mar 2014 10:31:11 -0700
+X-Google-Sender-Auth: AyPaT2fk0cEJ2PfPfB3Gl-E2G08
+Message-ID: <CA+55aFyAOja7MhQTfXqXkVREAY4p93PssCdGACag1me=gXEdrg@mail.gmail.com>
+Subject: Re: git pull -- [PATCH] aio: v2 ensure access to ctx->ring_pages is
+ correctly serialised
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Benjamin LaHaise <bcrl@kvack.org>
+Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Tang Chen <tangchen@cn.fujitsu.com>,
+        Gu Zheng <guz.fnst@cn.fujitsu.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        stable <stable@vger.kernel.org>, linux-aio@kvack.org,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Mar 28, 2014 at 10:22 AM, Benjamin LaHaise <bcrl@kvack.org> wrote:
+>
+> I believe it was found by analysis.  I'd be okay with it baking for another
+> week or two before pushing it to stable, as that gives the folks running
+> various regression tests some more time to chime in.  Better to get it
+> right than to have to push another fix.
 
-------------------
+Ok. If we have no actual user problem reports due to this, I'll just
+expect to get a pull request later, and ignore it for 3.14 since the
+risk (even though small) seems unnecessary.
 
-From: Guenter Roeck <linux@roeck-us.net>
-
-commit 63238f2cc5518e1c45a3418fc0ac0f560dafe7ef upstream.
-
-The following build error is seen if CONFIG_32BIT is undefined,
-CONFIG_64BIT is defined, and CONFIG_MIPS32_O32 is undefined.
-
-asm/syscall.h: In function 'mips_get_syscall_arg':
-arch/mips/include/asm/syscall.h:32:16: error: unused variable 'usp' [-Werror=unused-variable]
-cc1: all warnings being treated as errors
-
-Fixes: c0ff3c53d4f9 ('MIPS: Enable HAVE_ARCH_TRACEHOOK')
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
-Acked-by: David Daney <david.daney@cavium.com>
-Signed-off-by: John Crispin <blogic@openwrt.org>
-Patchwork: http://patchwork.linux-mips.org/patch/6160/
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- arch/mips/include/asm/syscall.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/arch/mips/include/asm/syscall.h
-+++ b/arch/mips/include/asm/syscall.h
-@@ -29,7 +29,7 @@ static inline long syscall_get_nr(struct
- static inline unsigned long mips_get_syscall_arg(unsigned long *arg,
- 	struct task_struct *task, struct pt_regs *regs, unsigned int n)
- {
--	unsigned long usp = regs->regs[29];
-+	unsigned long usp __maybe_unused = regs->regs[29];
- 
- 	switch (n) {
- 	case 0: case 1: case 2: case 3:
-
-
+                Linus
