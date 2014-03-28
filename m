@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaC1RbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:24 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51405 "EHLO
+	id S1753473AbaC1Rc6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:32:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51473 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753230AbaC1RbN (ORCPT
+	with ESMTP id S1753328AbaC1RbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:13 -0400
+	Fri, 28 Mar 2014 13:31:24 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.13 28/46] p54: clamp properly instead of just truncating
-Date: Fri, 28 Mar 2014 10:32:12 -0700
-Message-Id: <20140328173138.478066854@linuxfoundation.org>
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Don Zickus <dzickus@redhat.com>, Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH 3.13 42/46] xhci: Fix resume issues on Renesas chips in Samsung laptops
+Date: Fri, 28 Mar 2014 10:32:26 -0700
+Message-Id: <20140328173140.388062099@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,32 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 
-commit 608cfbe4abaf76e9d732efd7ed1cfa3998163d91 upstream.
+commit 1aa9578c1a9450fb21501c4f549f5b1edb557e6d upstream.
 
-The call to clamp_t() first truncates the variable signed 8 bit and as a
-result, the actual clamp is a no-op.
+Don Zickus <dzickus@redhat.com> writes:
 
-Fixes: 0d78156eef1d ('p54: improve site survey')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Some co-workers of mine bought Samsung laptops that had mostly usb3 ports.
+Those ports did not resume correctly (the driver would timeout communicating
+and fail).  This led to frustration as suspend/resume is a common use for
+laptops.
+
+Poking around, I applied the reset on resume quirk to this chipset and the
+resume started working.  Reloading the xhci_hcd module had been the temporary
+workaround.
+
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Reported-by: Don Zickus <dzickus@redhat.com>
+Tested-by: Prarit Bhargava <prarit@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/txrx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/usb/host/xhci-pci.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/drivers/net/wireless/p54/txrx.c
-+++ b/drivers/net/wireless/p54/txrx.c
-@@ -587,7 +587,7 @@ static void p54_rx_stats(struct p54_comm
- 	chan = priv->curchan;
- 	if (chan) {
- 		struct survey_info *survey = &priv->survey[chan->hw_value];
--		survey->noise = clamp_t(s8, priv->noise, -128, 127);
-+		survey->noise = clamp(priv->noise, -128, 127);
- 		survey->channel_time = priv->survey_raw.active;
- 		survey->channel_time_tx = priv->survey_raw.tx;
- 		survey->channel_time_busy = priv->survey_raw.tx +
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -142,6 +142,11 @@ static void xhci_pci_quirks(struct devic
+ 				"QUIRK: Resetting on resume");
+ 		xhci->quirks |= XHCI_TRUST_TX_LENGTH;
+ 	}
++	if (pdev->vendor == PCI_VENDOR_ID_RENESAS &&
++			pdev->device == 0x0015 &&
++			pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG &&
++			pdev->subsystem_device == 0xc0cd)
++		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ 	if (pdev->vendor == PCI_VENDOR_ID_VIA)
+ 		xhci->quirks |= XHCI_RESET_ON_RESUME;
+ }
 
 
