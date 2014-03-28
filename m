@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494AbaC1ReW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:34:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51463 "EHLO
+	id S1753299AbaC1RbW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:31:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51409 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaC1RbX (ORCPT
+	with ESMTP id S1751759AbaC1RbO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:23 -0400
+	Fri, 28 Mar 2014 13:31:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 33/46] powerpc/powernv: Refactor PHB diag-data dump
-Date: Fri, 28 Mar 2014 10:32:17 -0700
-Message-Id: <20140328173139.162706602@linuxfoundation.org>
+        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.13 29/46] regulator: core: Replace direct ops->disable usage
+Date: Fri, 28 Mar 2014 10:32:13 -0700
+Message-Id: <20140328173138.614802884@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,286 +26,115 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+From: Markus Pargmann <mpa@pengutronix.de>
 
-commit af87d2fe95444d107e0c0cf0ba7e20e6716a7bfd upstream.
+commit 66fda75f47dc583f1c187556e9a2c082dd64f8c6 upstream.
 
-As Ben suggested, the patch prints PHB diag-data with multiple
-fields in one line and omits the line if the fields of that
-line are all zero.
+There are many places where ops->disable is called directly. Instead we
+should use _regulator_do_disable() which also handles gpio regulators.
 
-With the patch applied, the PHB3 diag-data dump looks like:
+To be able to use the wrapper function from _regulator_force_disable(),
+I moved the _notifier_call_chain() call from _regulator_do_disable() to
+_regulator_disable(). This way, _regulator_force_disable() can use
+different flags for _notifier_call_chain() without calling it twice.
 
-PHB3 PHB#3 Diag-data (Version: 1)
-
-  brdgCtl:     00000002
-  RootSts:     0000000f 00400000 b0830008 00100147 00002000
-  nFir:        0000000000000000 0030006e00000000 0000000000000000
-  PhbSts:      0000001c00000000 0000000000000000
-  Lem:         0000000000100000 42498e327f502eae 0000000000000000
-  InAErr:      8000000000000000 8000000000000000 0402030000000000 0000000000000000
-  PE[  8] A/B: 8480002b00000000 8000000000000000
-
-[ The current diag data is so big that it overflows the printk
-  buffer pretty quickly in cases when we get a handful of errors
-  at once which can happen. --BenH
-]
-
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/platforms/powernv/pci.c |  220 +++++++++++++++++++----------------
- 1 file changed, 125 insertions(+), 95 deletions(-)
+ drivers/regulator/core.c |   34 +++++++++++++---------------------
+ 1 file changed, 13 insertions(+), 21 deletions(-)
 
---- a/arch/powerpc/platforms/powernv/pci.c
-+++ b/arch/powerpc/platforms/powernv/pci.c
-@@ -134,57 +134,72 @@ static void pnv_pci_dump_p7ioc_diag_data
- 	pr_info("P7IOC PHB#%d Diag-data (Version: %d)\n\n",
- 		hose->global_number, common->version);
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1908,8 +1908,6 @@ static int _regulator_do_disable(struct
  
--	pr_info("  brdgCtl:              %08x\n", data->brdgCtl);
--
--	pr_info("  portStatusReg:        %08x\n", data->portStatusReg);
--	pr_info("  rootCmplxStatus:      %08x\n", data->rootCmplxStatus);
--	pr_info("  busAgentStatus:       %08x\n", data->busAgentStatus);
--
--	pr_info("  deviceStatus:         %08x\n", data->deviceStatus);
--	pr_info("  slotStatus:           %08x\n", data->slotStatus);
--	pr_info("  linkStatus:           %08x\n", data->linkStatus);
--	pr_info("  devCmdStatus:         %08x\n", data->devCmdStatus);
--	pr_info("  devSecStatus:         %08x\n", data->devSecStatus);
--
--	pr_info("  rootErrorStatus:      %08x\n", data->rootErrorStatus);
--	pr_info("  uncorrErrorStatus:    %08x\n", data->uncorrErrorStatus);
--	pr_info("  corrErrorStatus:      %08x\n", data->corrErrorStatus);
--	pr_info("  tlpHdr1:              %08x\n", data->tlpHdr1);
--	pr_info("  tlpHdr2:              %08x\n", data->tlpHdr2);
--	pr_info("  tlpHdr3:              %08x\n", data->tlpHdr3);
--	pr_info("  tlpHdr4:              %08x\n", data->tlpHdr4);
--	pr_info("  sourceId:             %08x\n", data->sourceId);
--	pr_info("  errorClass:           %016llx\n", data->errorClass);
--	pr_info("  correlator:           %016llx\n", data->correlator);
--	pr_info("  p7iocPlssr:           %016llx\n", data->p7iocPlssr);
--	pr_info("  p7iocCsr:             %016llx\n", data->p7iocCsr);
--	pr_info("  lemFir:               %016llx\n", data->lemFir);
--	pr_info("  lemErrorMask:         %016llx\n", data->lemErrorMask);
--	pr_info("  lemWOF:               %016llx\n", data->lemWOF);
--	pr_info("  phbErrorStatus:       %016llx\n", data->phbErrorStatus);
--	pr_info("  phbFirstErrorStatus:  %016llx\n", data->phbFirstErrorStatus);
--	pr_info("  phbErrorLog0:         %016llx\n", data->phbErrorLog0);
--	pr_info("  phbErrorLog1:         %016llx\n", data->phbErrorLog1);
--	pr_info("  mmioErrorStatus:      %016llx\n", data->mmioErrorStatus);
--	pr_info("  mmioFirstErrorStatus: %016llx\n", data->mmioFirstErrorStatus);
--	pr_info("  mmioErrorLog0:        %016llx\n", data->mmioErrorLog0);
--	pr_info("  mmioErrorLog1:        %016llx\n", data->mmioErrorLog1);
--	pr_info("  dma0ErrorStatus:      %016llx\n", data->dma0ErrorStatus);
--	pr_info("  dma0FirstErrorStatus: %016llx\n", data->dma0FirstErrorStatus);
--	pr_info("  dma0ErrorLog0:        %016llx\n", data->dma0ErrorLog0);
--	pr_info("  dma0ErrorLog1:        %016llx\n", data->dma0ErrorLog1);
--	pr_info("  dma1ErrorStatus:      %016llx\n", data->dma1ErrorStatus);
--	pr_info("  dma1FirstErrorStatus: %016llx\n", data->dma1FirstErrorStatus);
--	pr_info("  dma1ErrorLog0:        %016llx\n", data->dma1ErrorLog0);
--	pr_info("  dma1ErrorLog1:        %016llx\n", data->dma1ErrorLog1);
-+	if (data->brdgCtl)
-+		pr_info("  brdgCtl:     %08x\n",
-+			data->brdgCtl);
-+	if (data->portStatusReg || data->rootCmplxStatus ||
-+	    data->busAgentStatus)
-+		pr_info("  UtlSts:      %08x %08x %08x\n",
-+			data->portStatusReg, data->rootCmplxStatus,
-+			data->busAgentStatus);
-+	if (data->deviceStatus || data->slotStatus   ||
-+	    data->linkStatus   || data->devCmdStatus ||
-+	    data->devSecStatus)
-+		pr_info("  RootSts:     %08x %08x %08x %08x %08x\n",
-+			data->deviceStatus, data->slotStatus,
-+			data->linkStatus, data->devCmdStatus,
-+			data->devSecStatus);
-+	if (data->rootErrorStatus   || data->uncorrErrorStatus ||
-+	    data->corrErrorStatus)
-+		pr_info("  RootErrSts:  %08x %08x %08x\n",
-+			data->rootErrorStatus, data->uncorrErrorStatus,
-+			data->corrErrorStatus);
-+	if (data->tlpHdr1 || data->tlpHdr2 ||
-+	    data->tlpHdr3 || data->tlpHdr4)
-+		pr_info("  RootErrLog:  %08x %08x %08x %08x\n",
-+			data->tlpHdr1, data->tlpHdr2,
-+			data->tlpHdr3, data->tlpHdr4);
-+	if (data->sourceId || data->errorClass ||
-+	    data->correlator)
-+		pr_info("  RootErrLog1: %08x %016llx %016llx\n",
-+			data->sourceId, data->errorClass,
-+			data->correlator);
-+	if (data->p7iocPlssr || data->p7iocCsr)
-+		pr_info("  PhbSts:      %016llx %016llx\n",
-+			data->p7iocPlssr, data->p7iocCsr);
-+	if (data->lemFir || data->lemErrorMask ||
-+	    data->lemWOF)
-+		pr_info("  Lem:         %016llx %016llx %016llx\n",
-+			data->lemFir, data->lemErrorMask,
-+			data->lemWOF);
-+	if (data->phbErrorStatus || data->phbFirstErrorStatus ||
-+	    data->phbErrorLog0   || data->phbErrorLog1)
-+		pr_info("  PhbErr:      %016llx %016llx %016llx %016llx\n",
-+			data->phbErrorStatus, data->phbFirstErrorStatus,
-+			data->phbErrorLog0, data->phbErrorLog1);
-+	if (data->mmioErrorStatus || data->mmioFirstErrorStatus ||
-+	    data->mmioErrorLog0   || data->mmioErrorLog1)
-+		pr_info("  OutErr:      %016llx %016llx %016llx %016llx\n",
-+			data->mmioErrorStatus, data->mmioFirstErrorStatus,
-+			data->mmioErrorLog0, data->mmioErrorLog1);
-+	if (data->dma0ErrorStatus || data->dma0FirstErrorStatus ||
-+	    data->dma0ErrorLog0   || data->dma0ErrorLog1)
-+		pr_info("  InAErr:      %016llx %016llx %016llx %016llx\n",
-+			data->dma0ErrorStatus, data->dma0FirstErrorStatus,
-+			data->dma0ErrorLog0, data->dma0ErrorLog1);
-+	if (data->dma1ErrorStatus || data->dma1FirstErrorStatus ||
-+	    data->dma1ErrorLog0   || data->dma1ErrorLog1)
-+		pr_info("  InBErr:      %016llx %016llx %016llx %016llx\n",
-+			data->dma1ErrorStatus, data->dma1FirstErrorStatus,
-+			data->dma1ErrorLog0, data->dma1ErrorLog1);
+ 	trace_regulator_disable_complete(rdev_get_name(rdev));
  
- 	for (i = 0; i < OPAL_P7IOC_NUM_PEST_REGS; i++) {
- 		if ((data->pestA[i] >> 63) == 0 &&
- 		    (data->pestB[i] >> 63) == 0)
- 			continue;
- 
--		pr_info("  PE[%3d] PESTA:        %016llx\n", i, data->pestA[i]);
--		pr_info("          PESTB:        %016llx\n", data->pestB[i]);
-+		pr_info("  PE[%3d] A/B: %016llx %016llx\n",
-+			i, data->pestA[i], data->pestB[i]);
- 	}
+-	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
+-			     NULL);
+ 	return 0;
  }
  
-@@ -197,62 +212,77 @@ static void pnv_pci_dump_phb3_diag_data(
- 	data = (struct OpalIoPhb3ErrorData*)common;
- 	pr_info("PHB3 PHB#%d Diag-data (Version: %d)\n\n",
- 		hose->global_number, common->version);
--
--	pr_info("  brdgCtl:              %08x\n", data->brdgCtl);
--
--	pr_info("  portStatusReg:        %08x\n", data->portStatusReg);
--	pr_info("  rootCmplxStatus:      %08x\n", data->rootCmplxStatus);
--	pr_info("  busAgentStatus:       %08x\n", data->busAgentStatus);
--
--	pr_info("  deviceStatus:         %08x\n", data->deviceStatus);
--	pr_info("  slotStatus:           %08x\n", data->slotStatus);
--	pr_info("  linkStatus:           %08x\n", data->linkStatus);
--	pr_info("  devCmdStatus:         %08x\n", data->devCmdStatus);
--	pr_info("  devSecStatus:         %08x\n", data->devSecStatus);
--
--	pr_info("  rootErrorStatus:      %08x\n", data->rootErrorStatus);
--	pr_info("  uncorrErrorStatus:    %08x\n", data->uncorrErrorStatus);
--	pr_info("  corrErrorStatus:      %08x\n", data->corrErrorStatus);
--	pr_info("  tlpHdr1:              %08x\n", data->tlpHdr1);
--	pr_info("  tlpHdr2:              %08x\n", data->tlpHdr2);
--	pr_info("  tlpHdr3:              %08x\n", data->tlpHdr3);
--	pr_info("  tlpHdr4:              %08x\n", data->tlpHdr4);
--	pr_info("  sourceId:             %08x\n", data->sourceId);
--	pr_info("  errorClass:           %016llx\n", data->errorClass);
--	pr_info("  correlator:           %016llx\n", data->correlator);
--
--	pr_info("  nFir:                 %016llx\n", data->nFir);
--	pr_info("  nFirMask:             %016llx\n", data->nFirMask);
--	pr_info("  nFirWOF:              %016llx\n", data->nFirWOF);
--	pr_info("  PhbPlssr:             %016llx\n", data->phbPlssr);
--	pr_info("  PhbCsr:               %016llx\n", data->phbCsr);
--	pr_info("  lemFir:               %016llx\n", data->lemFir);
--	pr_info("  lemErrorMask:         %016llx\n", data->lemErrorMask);
--	pr_info("  lemWOF:               %016llx\n", data->lemWOF);
--	pr_info("  phbErrorStatus:       %016llx\n", data->phbErrorStatus);
--	pr_info("  phbFirstErrorStatus:  %016llx\n", data->phbFirstErrorStatus);
--	pr_info("  phbErrorLog0:         %016llx\n", data->phbErrorLog0);
--	pr_info("  phbErrorLog1:         %016llx\n", data->phbErrorLog1);
--	pr_info("  mmioErrorStatus:      %016llx\n", data->mmioErrorStatus);
--	pr_info("  mmioFirstErrorStatus: %016llx\n", data->mmioFirstErrorStatus);
--	pr_info("  mmioErrorLog0:        %016llx\n", data->mmioErrorLog0);
--	pr_info("  mmioErrorLog1:        %016llx\n", data->mmioErrorLog1);
--	pr_info("  dma0ErrorStatus:      %016llx\n", data->dma0ErrorStatus);
--	pr_info("  dma0FirstErrorStatus: %016llx\n", data->dma0FirstErrorStatus);
--	pr_info("  dma0ErrorLog0:        %016llx\n", data->dma0ErrorLog0);
--	pr_info("  dma0ErrorLog1:        %016llx\n", data->dma0ErrorLog1);
--	pr_info("  dma1ErrorStatus:      %016llx\n", data->dma1ErrorStatus);
--	pr_info("  dma1FirstErrorStatus: %016llx\n", data->dma1FirstErrorStatus);
--	pr_info("  dma1ErrorLog0:        %016llx\n", data->dma1ErrorLog0);
--	pr_info("  dma1ErrorLog1:        %016llx\n", data->dma1ErrorLog1);
-+	if (data->brdgCtl)
-+		pr_info("  brdgCtl:     %08x\n",
-+			data->brdgCtl);
-+	if (data->portStatusReg || data->rootCmplxStatus ||
-+	    data->busAgentStatus)
-+		pr_info("  UtlSts:      %08x %08x %08x\n",
-+			data->portStatusReg, data->rootCmplxStatus,
-+			data->busAgentStatus);
-+	if (data->deviceStatus || data->slotStatus   ||
-+	    data->linkStatus   || data->devCmdStatus ||
-+	    data->devSecStatus)
-+		pr_info("  RootSts:     %08x %08x %08x %08x %08x\n",
-+			data->deviceStatus, data->slotStatus,
-+			data->linkStatus, data->devCmdStatus,
-+			data->devSecStatus);
-+	if (data->rootErrorStatus || data->uncorrErrorStatus ||
-+	    data->corrErrorStatus)
-+		pr_info("  RootErrSts:  %08x %08x %08x\n",
-+			data->rootErrorStatus, data->uncorrErrorStatus,
-+			data->corrErrorStatus);
-+	if (data->tlpHdr1 || data->tlpHdr2 ||
-+	    data->tlpHdr3 || data->tlpHdr4)
-+		pr_info("  RootErrLog:  %08x %08x %08x %08x\n",
-+			data->tlpHdr1, data->tlpHdr2,
-+			data->tlpHdr3, data->tlpHdr4);
-+	if (data->sourceId || data->errorClass ||
-+	    data->correlator)
-+		pr_info("  RootErrLog1: %08x %016llx %016llx\n",
-+			data->sourceId, data->errorClass,
-+			data->correlator);
-+	if (data->nFir || data->nFirMask ||
-+	    data->nFirWOF)
-+		pr_info("  nFir:        %016llx %016llx %016llx\n",
-+			data->nFir, data->nFirMask,
-+			data->nFirWOF);
-+	if (data->phbPlssr || data->phbCsr)
-+		pr_info("  PhbSts:      %016llx %016llx\n",
-+			data->phbPlssr, data->phbCsr);
-+	if (data->lemFir || data->lemErrorMask ||
-+	    data->lemWOF)
-+		pr_info("  Lem:         %016llx %016llx %016llx\n",
-+			data->lemFir, data->lemErrorMask,
-+			data->lemWOF);
-+	if (data->phbErrorStatus || data->phbFirstErrorStatus ||
-+	    data->phbErrorLog0   || data->phbErrorLog1)
-+		pr_info("  PhbErr:      %016llx %016llx %016llx %016llx\n",
-+			data->phbErrorStatus, data->phbFirstErrorStatus,
-+			data->phbErrorLog0, data->phbErrorLog1);
-+	if (data->mmioErrorStatus || data->mmioFirstErrorStatus ||
-+	    data->mmioErrorLog0   || data->mmioErrorLog1)
-+		pr_info("  OutErr:      %016llx %016llx %016llx %016llx\n",
-+			data->mmioErrorStatus, data->mmioFirstErrorStatus,
-+			data->mmioErrorLog0, data->mmioErrorLog1);
-+	if (data->dma0ErrorStatus || data->dma0FirstErrorStatus ||
-+	    data->dma0ErrorLog0   || data->dma0ErrorLog1)
-+		pr_info("  InAErr:      %016llx %016llx %016llx %016llx\n",
-+			data->dma0ErrorStatus, data->dma0FirstErrorStatus,
-+			data->dma0ErrorLog0, data->dma0ErrorLog1);
-+	if (data->dma1ErrorStatus || data->dma1FirstErrorStatus ||
-+	    data->dma1ErrorLog0   || data->dma1ErrorLog1)
-+		pr_info("  InBErr:      %016llx %016llx %016llx %016llx\n",
-+			data->dma1ErrorStatus, data->dma1FirstErrorStatus,
-+			data->dma1ErrorLog0, data->dma1ErrorLog1);
+@@ -1933,6 +1931,8 @@ static int _regulator_disable(struct reg
+ 				rdev_err(rdev, "failed to disable\n");
+ 				return ret;
+ 			}
++			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
++					NULL);
+ 		}
  
- 	for (i = 0; i < OPAL_PHB3_NUM_PEST_REGS; i++) {
- 		if ((data->pestA[i] >> 63) == 0 &&
- 		    (data->pestB[i] >> 63) == 0)
- 			continue;
+ 		rdev->use_count = 0;
+@@ -1985,20 +1985,16 @@ static int _regulator_force_disable(stru
+ {
+ 	int ret = 0;
  
--		pr_info("  PE[%3d] PESTA:        %016llx\n", i, data->pestA[i]);
--		pr_info("          PESTB:        %016llx\n", data->pestB[i]);
-+		pr_info("  PE[%3d] A/B: %016llx %016llx\n",
-+			i, data->pestA[i], data->pestB[i]);
+-	/* force disable */
+-	if (rdev->desc->ops->disable) {
+-		/* ah well, who wants to live forever... */
+-		ret = rdev->desc->ops->disable(rdev);
+-		if (ret < 0) {
+-			rdev_err(rdev, "failed to force disable\n");
+-			return ret;
+-		}
+-		/* notify other consumers that power has been forced off */
+-		_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
+-			REGULATOR_EVENT_DISABLE, NULL);
++	ret = _regulator_do_disable(rdev);
++	if (ret < 0) {
++		rdev_err(rdev, "failed to force disable\n");
++		return ret;
  	}
+ 
+-	return ret;
++	_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
++			REGULATOR_EVENT_DISABLE, NULL);
++
++	return 0;
  }
  
+ /**
+@@ -3631,8 +3627,6 @@ int regulator_suspend_finish(void)
+ 
+ 	mutex_lock(&regulator_list_mutex);
+ 	list_for_each_entry(rdev, &regulator_list, list) {
+-		struct regulator_ops *ops = rdev->desc->ops;
+-
+ 		mutex_lock(&rdev->mutex);
+ 		if (rdev->use_count > 0  || rdev->constraints->always_on) {
+ 			error = _regulator_do_enable(rdev);
+@@ -3641,12 +3635,10 @@ int regulator_suspend_finish(void)
+ 		} else {
+ 			if (!have_full_constraints())
+ 				goto unlock;
+-			if (!ops->disable)
+-				goto unlock;
+ 			if (!_regulator_is_enabled(rdev))
+ 				goto unlock;
+ 
+-			error = ops->disable(rdev);
++			error = _regulator_do_disable(rdev);
+ 			if (error)
+ 				ret = error;
+ 		}
+@@ -3820,7 +3812,7 @@ static int __init regulator_init_complet
+ 		ops = rdev->desc->ops;
+ 		c = rdev->constraints;
+ 
+-		if (!ops->disable || (c && c->always_on))
++		if (c && c->always_on)
+ 			continue;
+ 
+ 		mutex_lock(&rdev->mutex);
+@@ -3841,7 +3833,7 @@ static int __init regulator_init_complet
+ 			/* We log since this may kill the system if it
+ 			 * goes wrong. */
+ 			rdev_info(rdev, "disabling\n");
+-			ret = ops->disable(rdev);
++			ret = _regulator_do_disable(rdev);
+ 			if (ret != 0) {
+ 				rdev_err(rdev, "couldn't disable: %d\n", ret);
+ 			}
 
 
