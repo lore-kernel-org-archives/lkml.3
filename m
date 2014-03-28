@@ -1,87 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751305AbaC1Rai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51162 "EHLO
+	id S1753486AbaC1R5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:57:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51181 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaC1Rae (ORCPT
+	with ESMTP id S1752722AbaC1Rai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:34 -0400
+	Fri, 28 Mar 2014 13:30:38 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>
-Subject: [PATCH 3.4 13/13] ipc/msg: fix race around refcount
-Date: Fri, 28 Mar 2014 10:32:03 -0700
-Message-Id: <20140328173054.817466312@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.10 04/22] media: dw2102: some missing unlocks on error
+Date: Fri, 28 Mar 2014 10:31:56 -0700
+Message-Id: <20140328173109.999346607@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
-References: <20140328173053.049244535@linuxfoundation.org>
+In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
+References: <20140328173109.378288825@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-[fixed differently in 6062a8dc0517bce23e3c2f7d2fea5e22411269a3 upstream.]
+commit 324ed533bf0b23c309b805272c4ffcc5d51493a6 upstream.
 
-In older kernels (before v3.10) ipc_rcu_hdr->refcount was non-atomic int.
-There was possuble double-free bug: do_msgsnd() calls ipc_rcu_putref() under
-msq->q_perm->lock and RCU, while freequeue() calls it while it holds only
-'rw_mutex', so there is no sinchronization between them. Two function
-decrements '2' non-atomically, they both can get '0' as result.
+We recently introduced some new error paths but the unlocks are missing.
+Fixes: 0065a79a8698 ('[media] dw2102: Don't use dynamic static allocation')
 
-do_msgsnd()					freequeue()
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-msq = msg_lock_check(ns, msqid);
-...
-ipc_rcu_getref(msq);
-msg_unlock(msq);
-schedule();
-						(caller locks spinlock)
-						expunge_all(msq, -EIDRM);
-						ss_wakeup(&msq->q_senders, 1);
-						msg_rmid(ns, msq);
-						msg_unlock(msq);
-ipc_lock_by_ptr(&msq->q_perm);
-ipc_rcu_putref(msq);				ipc_rcu_putref(msq);
-< both may get get --(...)->refcount == 0 >
-
-This patch locks ipc_lock and RCU around ipc_rcu_putref in freequeue.
-( RCU protects memory for spin_unlock() )
-
-Similar bugs might be in other users of ipc_rcu_putref().
-
-In the mainline this has been fixed in v3.10 indirectly in commmit
-6062a8dc0517bce23e3c2f7d2fea5e22411269a3
-("ipc,sem: fine grained locking for semtimedop") by Rik van Riel.
-That commit optimized locking and converted refcount into atomic.
-
-I'm not sure that anybody should care about this bug: it's very-very unlikely
-and no longer exists in actual mainline. I've found this just by looking into
-the code, probably this never happens in real life.
-
-Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 ---
- ipc/msg.c |    2 ++
- 1 file changed, 2 insertions(+)
+ drivers/media/usb/dvb-usb/dw2102.c |   52 +++++++++++++++++++++++++------------
+ 1 file changed, 36 insertions(+), 16 deletions(-)
 
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -301,6 +301,7 @@ static int dw2102_serit_i2c_transfer(str
+ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
++	int ret;
+ 
+ 	if (!d)
+ 		return -ENODEV;
+@@ -316,7 +317,8 @@ static int dw2102_earda_i2c_transfer(str
+ 		if (2 + msg[1].len > sizeof(ibuf)) {
+ 			warn("i2c rd: len=%d is too big!\n",
+ 			     msg[1].len);
+-			return -EOPNOTSUPP;
++			ret = -EOPNOTSUPP;
++			goto unlock;
+ 		}
+ 
+ 		obuf[0] = msg[0].addr << 1;
+@@ -340,7 +342,8 @@ static int dw2102_earda_i2c_transfer(str
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[1].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 
+ 			obuf[0] = msg[0].addr << 1;
+@@ -357,7 +360,8 @@ static int dw2102_earda_i2c_transfer(str
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[1].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 
+ 			obuf[0] = msg[0].addr << 1;
+@@ -386,15 +390,17 @@ static int dw2102_earda_i2c_transfer(str
+ 
+ 		break;
  	}
- 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
- 	security_msg_queue_free(msq);
-+	ipc_lock_by_ptr(&msq->q_perm);
- 	ipc_rcu_putref(msq);
-+	ipc_unlock(&msq->q_perm);
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
  }
  
- /*
+ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
+-	int len, i, j;
++	int len, i, j, ret;
+ 
+ 	if (!d)
+ 		return -ENODEV;
+@@ -430,7 +436,8 @@ static int dw2104_i2c_transfer(struct i2
+ 				if (2 + msg[j].len > sizeof(ibuf)) {
+ 					warn("i2c rd: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				dw210x_op_rw(d->udev, 0xc3,
+@@ -466,7 +473,8 @@ static int dw2104_i2c_transfer(struct i2
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				obuf[0] = msg[j].addr << 1;
+@@ -481,15 +489,18 @@ static int dw2104_i2c_transfer(struct i2
+ 		}
+ 
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 								int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
++	int ret;
+ 	int i;
+ 
+ 	if (!d)
+@@ -506,7 +517,8 @@ static int dw3101_i2c_transfer(struct i2
+ 		if (2 + msg[1].len > sizeof(ibuf)) {
+ 			warn("i2c rd: len=%d is too big!\n",
+ 			     msg[1].len);
+-			return -EOPNOTSUPP;
++			ret = -EOPNOTSUPP;
++			goto unlock;
+ 		}
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+@@ -530,7 +542,8 @@ static int dw3101_i2c_transfer(struct i2
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+@@ -556,9 +569,11 @@ static int dw3101_i2c_transfer(struct i2
+ 				msg[i].flags == 0 ? ">>>" : "<<<");
+ 		debug_dump(msg[i].buf, msg[i].len, deb_xfer);
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+@@ -566,7 +581,7 @@ static int s6x0_i2c_transfer(struct i2c_
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
+ 	struct usb_device *udev;
+-	int len, i, j;
++	int len, i, j, ret;
+ 
+ 	if (!d)
+ 		return -ENODEV;
+@@ -618,7 +633,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (msg[j].len > sizeof(ibuf)) {
+ 					warn("i2c rd: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				dw210x_op_rw(d->udev, 0x91, 0, 0,
+@@ -652,7 +668,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				obuf[0] = msg[j + 1].len;
+@@ -671,7 +688,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 				obuf[0] = msg[j].len + 1;
+ 				obuf[1] = (msg[j].addr << 1);
+@@ -685,9 +703,11 @@ static int s6x0_i2c_transfer(struct i2c_
+ 		}
+ 		}
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 
 
