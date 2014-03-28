@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbaC1RvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:51:01 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51271 "EHLO
+	id S1753745AbaC1Rve (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:51:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51264 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924AbaC1Rau (ORCPT
+	with ESMTP id S1752677AbaC1Rat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:50 -0400
+	Fri, 28 Mar 2014 13:30:49 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Subject: [PATCH 3.10 22/22] sched/autogroup: Fix race with task_groups list
-Date: Fri, 28 Mar 2014 10:32:14 -0700
-Message-Id: <20140328173112.401929561@linuxfoundation.org>
+        Michele Baldessari <michele@acksyn.org>,
+        Mark Harig <idirectscm@aim.com>, Aaron Brown <aaron.f.brown@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.10 21/22] e100: Fix "disabling already-disabled device" warning
+Date: Fri, 28 Mar 2014 10:32:13 -0700
+Message-Id: <20140328173112.272962044@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -28,48 +29,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Michele Baldessari <michele@acksyn.org>
 
-commit 41261b6a832ea0e788627f6a8707854423f9ff49 upstream.
+commit 2b6e0ca175fe4a20f21ba82b1e7ccc71029c4dd4 upstream.
 
-In autogroup_create(), a tg is allocated and added to the task_groups
-list. If CONFIG_RT_GROUP_SCHED is set, this tg is then modified while on
-the list, without locking. This can race with someone walking the list,
-like __enable_runtime() during CPU unplug, and result in a use-after-free
-bug.
+In https://bugzilla.redhat.com/show_bug.cgi?id=994438 and
+https://bugzilla.redhat.com/show_bug.cgi?id=970480  we
+received different reports of e100 throwing the following
+warning:
 
-To fix this, move sched_online_group(), which adds the tg to the list,
-to the end of the autogroup_create() function after the modification.
+ [<c06a0ba5>] ? pci_disable_device+0x85/0x90
+ [<c044a153>] warn_slowpath_fmt+0x33/0x40
+ [<c06a0ba5>] pci_disable_device+0x85/0x90
+ [<f7fdf7e0>] __e100_shutdown+0x80/0x120 [e100]
+ [<c0476ca5>] ? check_preempt_curr+0x65/0x90
+ [<f7fdf8d6>] e100_suspend+0x16/0x30 [e100]
+ [<c06a1ebb>] pci_legacy_suspend+0x2b/0xb0
+ [<c098fc0f>] ? wait_for_completion+0x1f/0xd0
+ [<c06a2d50>] ? pci_pm_poweroff+0xb0/0xb0
+ [<c06a2de4>] pci_pm_freeze+0x94/0xa0
+ [<c0767bb7>] dpm_run_callback+0x37/0x80
+ [<c076a204>] ? pm_wakeup_pending+0xc4/0x140
+ [<c0767f12>] __device_suspend+0xb2/0x1f0
+ [<c076806f>] async_suspend+0x1f/0x90
+ [<c04706e5>] async_run_entry_fn+0x35/0x140
+ [<c0478aef>] ? wake_up_process+0x1f/0x40
+ [<c0464495>] process_one_work+0x115/0x370
+ [<c0462645>] ? start_worker+0x25/0x30
+ [<c0464dc5>] ? manage_workers.isra.27+0x1a5/0x250
+ [<c0464f6e>] worker_thread+0xfe/0x330
+ [<c0464e70>] ? manage_workers.isra.27+0x250/0x250
+ [<c046a224>] kthread+0x94/0xa0
+ [<c0997f37>] ret_from_kernel_thread+0x1b/0x28
+ [<c046a190>] ? insert_kthread_work+0x30/0x30
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1369411669-46971-2-git-send-email-gerald.schaefer@de.ibm.com
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+This patch removes pci_disable_device() from __e100_shutdown().
+pci_clear_master() is enough.
+
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+Tested-by: Mark Harig <idirectscm@aim.com>
+Signed-off-by: Aaron Brown <aaron.f.brown@intel.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/auto_group.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/ethernet/intel/e100.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/kernel/sched/auto_group.c
-+++ b/kernel/sched/auto_group.c
-@@ -77,8 +77,6 @@ static inline struct autogroup *autogrou
- 	if (IS_ERR(tg))
- 		goto out_free;
+--- a/drivers/net/ethernet/intel/e100.c
++++ b/drivers/net/ethernet/intel/e100.c
+@@ -3039,7 +3039,7 @@ static void __e100_shutdown(struct pci_d
+ 		*enable_wake = false;
+ 	}
  
--	sched_online_group(tg, &root_task_group);
--
- 	kref_init(&ag->kref);
- 	init_rwsem(&ag->lock);
- 	ag->id = atomic_inc_return(&autogroup_seq_nr);
-@@ -98,6 +96,7 @@ static inline struct autogroup *autogrou
- #endif
- 	tg->autogroup = ag;
+-	pci_disable_device(pdev);
++	pci_clear_master(pdev);
+ }
  
-+	sched_online_group(tg, &root_task_group);
- 	return ag;
- 
- out_free:
+ static int __e100_power_off(struct pci_dev *pdev, bool wake)
 
 
