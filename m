@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228AbaC1RbN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51351 "EHLO
+	id S1753735AbaC1Rjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:39:51 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51401 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaC1RbE (ORCPT
+	with ESMTP id S1753221AbaC1RbN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:04 -0400
+	Fri, 28 Mar 2014 13:31:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jon Ringle <jon@ringle.org>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 09/46] net: davinci_emac: Replace devm_request_irq with request_irq
-Date: Fri, 28 Mar 2014 10:31:53 -0700
-Message-Id: <20140328173135.902968993@linuxfoundation.org>
+        Guenter Roeck <linux@roeck-us.net>,
+        David Daney <david.daney@cavium.com>,
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH 3.13 27/46] MIPS: Fix build error seen in some configurations
+Date: Fri, 28 Mar 2014 10:32:11 -0700
+Message-Id: <20140328173138.320067821@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -29,97 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Riesch <christian.riesch@omicron.at>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 33b7107f59a61236d94ecd6b45e20283cd5abcc8 upstream.
+commit 63238f2cc5518e1c45a3418fc0ac0f560dafe7ef upstream.
 
-In commit 6892b41d9701283085b655c6086fb57a5d63fa47
+The following build error is seen if CONFIG_32BIT is undefined,
+CONFIG_64BIT is defined, and CONFIG_MIPS32_O32 is undefined.
 
-Author: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Date:   Tue Jun 25 21:24:51 2013 +0530
-net: davinci: emac: Convert to devm_* api
+asm/syscall.h: In function 'mips_get_syscall_arg':
+arch/mips/include/asm/syscall.h:32:16: error: unused variable 'usp' [-Werror=unused-variable]
+cc1: all warnings being treated as errors
 
-the call of request_irq is replaced by devm_request_irq and the call
-of free_irq is removed. But since interrupts are requested in
-emac_dev_open, doing ifconfig up/down on the board requests the
-interrupts again each time, causing devm_request_irq to fail. The
-interface is dead until the device is rebooted.
-
-This patch reverts said commit partially: It changes the driver back
-to use request_irq instead of devm_request_irq, puts free_irq back in
-place, but keeps the remaining changes of the original patch.
-
-Reported-by: Jon Ringle <jon@ringle.org>
-Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
-Cc: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Fixes: c0ff3c53d4f9 ('MIPS: Enable HAVE_ARCH_TRACEHOOK')
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Acked-by: David Daney <david.daney@cavium.com>
+Signed-off-by: John Crispin <blogic@openwrt.org>
+Patchwork: http://patchwork.linux-mips.org/patch/6160/
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/ethernet/ti/davinci_emac.c |   25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ arch/mips/include/asm/syscall.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/ethernet/ti/davinci_emac.c
-+++ b/drivers/net/ethernet/ti/davinci_emac.c
-@@ -1532,7 +1532,7 @@ static int emac_dev_open(struct net_devi
- 	struct device *emac_dev = &ndev->dev;
- 	u32 cnt;
- 	struct resource *res;
--	int ret;
-+	int q, m, ret;
- 	int i = 0;
- 	int k = 0;
- 	struct emac_priv *priv = netdev_priv(ndev);
-@@ -1567,8 +1567,7 @@ static int emac_dev_open(struct net_devi
- 
- 	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k))) {
- 		for (i = res->start; i <= res->end; i++) {
--			if (devm_request_irq(&priv->pdev->dev, i, emac_irq,
--					     0, ndev->name, ndev))
-+			if (request_irq(i, emac_irq, 0, ndev->name, ndev))
- 				goto rollback;
- 		}
- 		k++;
-@@ -1641,7 +1640,15 @@ static int emac_dev_open(struct net_devi
- 
- rollback:
- 
--	dev_err(emac_dev, "DaVinci EMAC: devm_request_irq() failed");
-+	dev_err(emac_dev, "DaVinci EMAC: request_irq() failed");
-+
-+	for (q = k; k >= 0; k--) {
-+		for (m = i; m >= res->start; m--)
-+			free_irq(m, ndev);
-+		res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, k-1);
-+		m = res->end;
-+	}
-+
- 	ret = -EBUSY;
- err:
- 	pm_runtime_put(&priv->pdev->dev);
-@@ -1659,6 +1666,9 @@ err:
-  */
- static int emac_dev_stop(struct net_device *ndev)
+--- a/arch/mips/include/asm/syscall.h
++++ b/arch/mips/include/asm/syscall.h
+@@ -29,7 +29,7 @@ static inline long syscall_get_nr(struct
+ static inline unsigned long mips_get_syscall_arg(unsigned long *arg,
+ 	struct task_struct *task, struct pt_regs *regs, unsigned int n)
  {
-+	struct resource *res;
-+	int i = 0;
-+	int irq_num;
- 	struct emac_priv *priv = netdev_priv(ndev);
- 	struct device *emac_dev = &ndev->dev;
+-	unsigned long usp = regs->regs[29];
++	unsigned long usp __maybe_unused = regs->regs[29];
  
-@@ -1674,6 +1684,13 @@ static int emac_dev_stop(struct net_devi
- 	if (priv->phydev)
- 		phy_disconnect(priv->phydev);
- 
-+	/* Free IRQ */
-+	while ((res = platform_get_resource(priv->pdev, IORESOURCE_IRQ, i))) {
-+		for (irq_num = res->start; irq_num <= res->end; irq_num++)
-+			free_irq(irq_num, priv->ndev);
-+		i++;
-+	}
-+
- 	if (netif_msg_drv(priv))
- 		dev_notice(emac_dev, "DaVinci EMAC: %s stopped\n", ndev->name);
- 
+ 	switch (n) {
+ 	case 0: case 1: case 2: case 3:
 
 
