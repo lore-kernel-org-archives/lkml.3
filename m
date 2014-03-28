@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbaC1Rua (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:50:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51275 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752765AbaC1Rau (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752940AbaC1Rau (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Mar 2014 13:30:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51197 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752765AbaC1Rak (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 13:30:40 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.10 17/22] KVM: x86: handle invalid root_hpa everywhere
-Date: Fri, 28 Mar 2014 10:32:09 -0700
-Message-Id: <20140328173111.740839045@linuxfoundation.org>
+        Stephen Warren <swarren@nvidia.com>, Mark Brown <broonie@linaro.org>
+Subject: [PATCH 3.10 08/22] ASoC: max98090: make REVISION_ID readable
+Date: Fri, 28 Mar 2014 10:32:00 -0700
+Message-Id: <20140328173110.545201214@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -27,77 +26,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Stephen Warren <swarren@nvidia.com>
 
-commit 37f6a4e237303549c8676dfe1fd1991ceab512eb upstream.
+commit e126a646f77fdd66978785cb0a3a5e46b07aee2e upstream.
 
-Rom Freiman <rom@stratoscale.com> notes other code paths vulnerable to
-bug fixed by 989c6b34f6a9480e397b.
+The REVISION_ID register is not currently marked readable. snd_soc_read()
+refuses to read the register, and hence probe() fails.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Fixes: d4807ad2c4c0 ("regmap: Check readable regs in _regmap_read")
+[exposed the bug, by checking for readability]
+Fixes: 685e42154dcf ("ASoC: Replace max98090 Device Driver")
+[left out this register from the readable list]
+Signed-off-by: Stephen Warren <swarren@nvidia.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/mmu.c         |    9 +++++++++
- arch/x86/kvm/paging_tmpl.h |    8 ++++++++
- 2 files changed, 17 insertions(+)
+ sound/soc/codecs/max98090.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2751,6 +2751,9 @@ static bool fast_page_fault(struct kvm_v
- 	bool ret = false;
- 	u64 spte = 0ull;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return false;
-+
- 	if (!page_fault_can_be_fast(vcpu, error_code))
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -336,6 +336,7 @@ static bool max98090_readable_register(s
+ 	case M98090_REG_RECORD_TDM_SLOT:
+ 	case M98090_REG_SAMPLE_RATE:
+ 	case M98090_REG_DMIC34_BIQUAD_BASE ... M98090_REG_DMIC34_BIQUAD_BASE + 0x0E:
++	case M98090_REG_REVISION_ID:
+ 		return true;
+ 	default:
  		return false;
- 
-@@ -3142,6 +3145,9 @@ static u64 walk_shadow_page_get_mmio_spt
- 	struct kvm_shadow_walk_iterator iterator;
- 	u64 spte = 0ull;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return spte;
-+
- 	walk_shadow_page_lockless_begin(vcpu);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte)
- 		if (!is_shadow_present_pte(spte))
-@@ -4332,6 +4338,9 @@ int kvm_mmu_get_spte_hierarchy(struct kv
- 	u64 spte;
- 	int nr_sptes = 0;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return nr_sptes;
-+
- 	walk_shadow_page_lockless_begin(vcpu);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte) {
- 		sptes[iterator.level-1] = spte;
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -423,6 +423,9 @@ static int FNAME(fetch)(struct kvm_vcpu
- 	if (FNAME(gpte_changed)(vcpu, gw, top_level))
- 		goto out_gpte_changed;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		goto out_gpte_changed;
-+
- 	for (shadow_walk_init(&it, vcpu, addr);
- 	     shadow_walk_okay(&it) && it.level > gw->level;
- 	     shadow_walk_next(&it)) {
-@@ -671,6 +674,11 @@ static void FNAME(invlpg)(struct kvm_vcp
- 	 */
- 	mmu_topup_memory_caches(vcpu);
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa)) {
-+		WARN_ON(1);
-+		return;
-+	}
-+
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	for_each_shadow_entry(vcpu, gva, iterator) {
- 		level = iterator.level;
 
 
