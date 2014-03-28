@@ -1,68 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215AbaC1OsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:48:01 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:64214 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313AbaC1OsA (ORCPT
+	id S1752051AbaC1Ovg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:51:36 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35639 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751342AbaC1Ovf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:48:00 -0400
+	Fri, 28 Mar 2014 10:51:35 -0400
+Date: Fri, 28 Mar 2014 09:49:36 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
+        <balbi@ti.com>
+Subject: Re: [PATCH] extcon: palmas: explicitly set edev name as node name
+Message-ID: <20140328144936.GF17820@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395989462-14613-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
-In-Reply-To: <533587FD.7000006@redhat.com>
-References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
- <20140327222605.GB16495@medulla.variantweb.net> <CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
- <533587FD.7000006@redhat.com>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 28 Mar 2014 10:47:38 -0400
-X-Google-Sender-Auth: ljsKhRks4F9RSYXIZtpt5d14yPo
-Message-ID: <CALZtONA=v+3_+6qEvyY0SruT=aGxAfV_N5fsHvLMJKFp4Stnww@mail.gmail.com>
-Subject: Re: Adding compression before/above swapcache
-To: Rik van Riel <riel@redhat.com>
-Cc: Seth Jennings <sjennings@variantweb.net>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="rWhLK7VZz0iBluhq"
+Content-Disposition: inline
+In-Reply-To: <1395989462-14613-1-git-send-email-kishon@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 10:32 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 03/28/2014 08:36 AM, Dan Streetman wrote:
->
->> Well my general idea was to modify shrink_page_list() so that instead
->> of calling add_to_swap() and then pageout(), anonymous pages would be
->> added to a compressed cache.  I haven't worked out all the specific
->> details, but I am initially thinking that the compressed cache could
->> simply repurpose incoming pages to use as the compressed cache storage
->> (using its own page mapping, similar to swap page mapping), and then
->> add_to_swap() the storage pages when the compressed cache gets to a
->> certain size.  Pages that don't compress well could just bypass the
->> compressed cache, and get sent the current route directly to
->> add_to_swap().
->
->
-> That sounds a lot like what zswap does. How is your
-> proposal different?
+--rWhLK7VZz0iBluhq
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Two main ways:
-1) it's above swap, so it would still work without any real swap.
-2) compressed pages could be written to swap disk.
+On Fri, Mar 28, 2014 at 12:21:02PM +0530, Kishon Vijay Abraham I wrote:
+> commit ca488 (extcon: of: Remove unnecessary function call by using the
+> name of device_node) started using node name instead of device name
+> to get the extcon device. This breaks dwc3-omap since it's not able to
+> get the extcon device anymore. Fixed it by setting edev name of
+> palmas to be the same as its node name.
+>=20
+> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+> Reported-by: Felipe Balbi <balbi@ti.com>
 
-Essentially, the two existing memory compression approaches are both
-tied to swap.  But, AFAIK there's no reason that memory compression
-has to be tied to swap.  So my approach uncouples it.
+Thanks Kishon, I tested something similar yesterday and I saw that it
+helped a lot. I'm still missing something (maybe DTS) because dwc3 still
+didn't probe even after fixing this.
 
->
-> And, is there an easier way to implement that difference? :)
+Reviewed-by: Felipe Balbi <balbi@ti.com>
 
-I'm hoping that it wouldn't actually be too complex.  But that's part
-of why I emailed for feedback before digging into a prototype... :-)
+> ---
+>  drivers/extcon/extcon-palmas.c |    5 +++++
+>  1 file changed, 5 insertions(+)
+>=20
+> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palma=
+s.c
+> index 2aea4bc..51dee21 100644
+> --- a/drivers/extcon/extcon-palmas.c
+> +++ b/drivers/extcon/extcon-palmas.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/module.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/slab.h>
+>  #include <linux/err.h>
+>  #include <linux/mfd/palmas.h>
+>  #include <linux/of.h>
+> @@ -188,11 +189,13 @@ static int palmas_usb_probe(struct platform_device =
+*pdev)
+> =20
+>  	palmas_usb->edev.supported_cable =3D palmas_extcon_cable;
+>  	palmas_usb->edev.dev.parent =3D palmas_usb->dev;
+> +	palmas_usb->edev.name =3D kstrdup(node->name, GFP_KERNEL);
+>  	palmas_usb->edev.mutually_exclusive =3D mutually_exclusive;
+> =20
+>  	status =3D extcon_dev_register(&palmas_usb->edev);
+>  	if (status) {
+>  		dev_err(&pdev->dev, "failed to register extcon device\n");
+> +		kfree(palmas_usb->edev.name);
+>  		return status;
+>  	}
+> =20
+> @@ -230,6 +233,7 @@ static int palmas_usb_probe(struct platform_device *p=
+dev)
+> =20
+>  fail_extcon:
+>  	extcon_dev_unregister(&palmas_usb->edev);
+> +	kfree(palmas_usb->edev.name);
+> =20
+>  	return status;
+>  }
+> @@ -239,6 +243,7 @@ static int palmas_usb_remove(struct platform_device *=
+pdev)
+>  	struct palmas_usb *palmas_usb =3D platform_get_drvdata(pdev);
+> =20
+>  	extcon_dev_unregister(&palmas_usb->edev);
+> +	kfree(palmas_usb->edev.name);
+> =20
+>  	return 0;
+>  }
+> --=20
+> 1.7.9.5
+>=20
 
+--=20
+balbi
 
->
->
+--rWhLK7VZz0iBluhq
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTNYwAAAoJEIaOsuA1yqRExLcP/1K4PhSFmwoQM2XV+YC+B1LM
+NAOhRUx+d8okwlXDGZFamlSa6uYrsY9msaB9jISvr9FUOOw79fTBR5LYqkolH60A
+6JMe0M0OkiXi+OW2pEfVBKQg/ai79gW6FYCbTt3KOc4HIczHRji01TkZdCy1DLaV
+nus9FDLTQYDinfW/2xElzN2yPkbsLy6lA6OzhBu7MgIlciKyM/qVE8heZrPqI4fb
+9LBVtqL1DB1X/9fg154fin/WNNnTAjvfdlKCD6JofX67ADBF2tKf9UNHBucxT4wx
+2Zd6McVvn0s4gWzLpS2/H/H/eslaeSgwTas4GmcI6kGuwfSjGGkJMByKIDR1F4/L
+aaPM/i/kXMdP3hJ1F/18hew3KlWmGC/bh/7GAoEX3j6XG5cWHu2H9Exa+2git14n
+hIfgBELJnXuGk57WM23lw3ImJg59LMzea/KswMLXx9s2mnhlQ6Q+1u45hGXPo9Ah
+OIMWO7sreIwErru10ydoRy788v7ZsNd6PpvWxZgq1WadN19sTF6B5tNhs06karuD
+jTJeC4MJy6vYR+qb9wLJEKHemhbFfiBiQRLQdd78L6dKcS8NTVKiPUrtfaE6fGya
+8UPw7pbKgpRcRYVXxsABlZHc6CfwwXay5uriPSsSY9fpBMdRG6RDej4rjXsxSxXA
+WWJm/KH73DIefF9Md935
+=lj7y
+-----END PGP SIGNATURE-----
+
+--rWhLK7VZz0iBluhq--
