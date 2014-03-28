@@ -1,137 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaC1IZr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 04:25:47 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:31641 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaC1IZo (ORCPT
+	id S1751788AbaC1I3c (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 04:29:32 -0400
+Received: from e06smtp10.uk.ibm.com ([195.75.94.106]:34930 "EHLO
+	e06smtp10.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099AbaC1I32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 04:25:44 -0400
-Message-ID: <5335353C.1050409@oracle.com>
-Date: Fri, 28 Mar 2014 16:39:24 +0800
-From: "zheng.li" <zheng.x.li@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:13.0) Gecko/20120605 Thunderbird/13.0
+	Fri, 28 Mar 2014 04:29:28 -0400
+Message-ID: <533532E2.4020505@fr.ibm.com>
+Date: Fri, 28 Mar 2014 09:29:22 +0100
+From: Laurent Dufour <laurent.dufour@fr.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: netdev@vger.kernel.org, andy@greyhouse.net, linux-kernel@vger.kernel.org,
-        davem@davemloft.net, joe.jin@oracle.com
-Subject: Re: [PATCH] bonding: Inactive slaves should keep inactive flag's
- value to 1 in tlb and alb mode.
-References: <1395716407-31601-1-git-send-email-zheng.x.li@oracle.com> <9725.1395940983@death.nxdomain>
-In-Reply-To: <9725.1395940983@death.nxdomain>
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 8bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+To: Greg Kurz <gkurz@linux.vnet.ibm.com>, benh@kernel.crashing.org
+CC: linux-kernel@vger.kernel.org, paulus@samba.org, anton@samba.org,
+        nfont@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc/le: enable RTAS events support
+References: <20140328073344.26823.32931.stgit@bahia.local>
+In-Reply-To: <20140328073344.26823.32931.stgit@bahia.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032808-4966-0000-0000-000008E118BB
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2014年03月28日 01:23, Jay Vosburgh 写道:
-> Zheng Li <zheng.x.li@oracle.com> wrote:
+On 28/03/2014 08:33, Greg Kurz wrote:
+> The current kernel code assumes big endian and parses RTAS events all
+> wrong. The most visible effect is that we cannot honor EPOW events,
+> meaning, for example, we cannot shut down a guest properly from the
+> hypervisor.
 > 
->> In bond mode tlb and alb, inactive slaves should keep inactive flag to
->> 1 to refuse to receive broadcast packets. Now, active slave send broadcast packets
->> (for example ARP requests) which will arrive inactive slaves on same host from switch,
->> but inactive slave's inactive flag is zero that cause bridge receive the broadcast
->> packets to produce a wrong entry in forward table. Typical situation is domu send some
->> ARP request which go out from dom0 bond's active slave, then the ARP broadcast request
->> packets go back to inactive slave from switch, because the inactive slave's inactive
->> flag is zero, kernel will receive the packets and pass them to bridge, that cause dom0's
->> bridge map domu's MAC address to port of bond, bridge should map domu's MAC to port of vif.
+> This patch fixes that.
 > 
-> 	It's probably worth noting that this effect is something that
-> happens after the bonding master device is opened with slaves, i.e.,
-> it's got a bunch of slaves, and is then set administratively down for
-> whatever reason, and is now being set back up, and needs to set the
-> active or inactive state of all the slaves.
+> Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
 
-I think bond_miimon_commit() funciotn will process this situation,
-case BOND_LINK_UP:
-   if (!bond->curr_active_slave ||
-			    (slave == bond->primary_slave))
-				goto do_failover;
+Reviewed-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-do_failover:
-		bond_select_active_slave(bond);
-
-> 
-> 	It'd also be a little easier to read if it was formatted for 80
-> columns.
-> 
->> Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
->> ---
->> drivers/net/bonding/bond_main.c |    2 +-
->> 1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->> index e5628fc..8761df6 100644
->> --- a/drivers/net/bonding/bond_main.c
->> +++ b/drivers/net/bonding/bond_main.c
->> @@ -3062,7 +3062,7 @@ static int bond_open(struct net_device *bond_dev)
->> 				&& (slave != bond->curr_active_slave)) {
->> 				bond_set_slave_inactive_flags(slave,
->> 							      BOND_SLAVE_NOTIFY_NOW);
->> -			} else {
->> +			} else if (!bond_is_lb(bond)) {
->> 				bond_set_slave_active_flags(slave,
->> 							    BOND_SLAVE_NOTIFY_NOW);
-> 
-> 	This patch doesn't do anything for the modes that are
-> bond_is_lb, i.e., the balance-tlb and -alb modes.  I believe those two
-> should be set similarly to active-backup: the curr_active_slave is
-> active, other slaves are inactive.  The "inactive" setting for alb is
-> special, and means to not pass broadcast or multicast, but let unicast
-> through.
-
->From dmesg and the source code in kernel, every slave of bond default been set to inactive 1 when slave be added in the bond, and then "Link UP" will comes that let bond choose one as cur_active_salve and change it's inactive value to 0 and other slaves will keep their value of inactive to 1, so it doesn't need set inactive again in bong_open by default all salves inactive is 1 when bond add salves.
-
-You can add printk in kernel, will find the flow, my print show the flow:
-1 step ) bonding: bond1 is being created...
-
-2 step ) bonding: bond1: Adding slave eth2. // in this stage, every slave will be set to inactive 1;
-          zheng debug set inactive eth2 bond bond1 
-          zheng debug set inactive flag eth2 
-
-   bonding: bond1: Adding slave eth3.
-            zheng2 set slave inactive eth3
-            zheng debug set inactive eth3 bond bond1 
-   
-3 step ) zheng bonding open 
-   //in bond_open function, we just need keep the inactive to 1 for alb and tlb, .i.e don't 
-   clear the inactive is ok, my patch did that.
-
-4 setp)  "LINK UP" will make one slave to cur_active_slave and change it's inactive to 0, other slaves will keep their original inactive value to 1;
-
-e1000e: eth2 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: None
-
-bonding: bond1: link status up for interface eth2, enabling it in 0 ms.
-
-bonding: bond1: link status definitely up for interface eth2, 1000 Mbps full duplex.
-
-bonding: bond1: making interface eth2 the new active one.
-
-device eth2 entered promiscuous mode
-
-zheng1 set new slave active eth2
-
-zheng debug set active flag eth2 
-
-bonding: bond1: first active interface up!
-
-Thanks,
-Zheng Li
-
-
-> 	-J
-> 
 > ---
-> 	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
+>  arch/powerpc/include/asm/rtas.h      |   46 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/kernel/rtas.c           |   11 ++++----
+>  arch/powerpc/kernel/rtasd.c          |    8 ++++--
+>  arch/powerpc/platforms/pseries/ras.c |    3 +-
+>  4 files changed, 59 insertions(+), 9 deletions(-)
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
+> diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
+> index 9bd52c6..8bb99d0 100644
+> --- a/arch/powerpc/include/asm/rtas.h
+> +++ b/arch/powerpc/include/asm/rtas.h
+> @@ -150,15 +150,37 @@ struct rtas_suspend_me_data {
+>  #define RTAS_VECTOR_EXTERNAL_INTERRUPT	0x500
+>  
+>  struct rtas_error_log {
+> +#ifdef __BIG_ENDIAN__
+> +	/* Byte 0 */
+>  	unsigned long version:8;		/* Architectural version */
+> +	/* Byte 1 */
+>  	unsigned long severity:3;		/* Severity level of error */
+>  	unsigned long disposition:2;		/* Degree of recovery */
+>  	unsigned long extended:1;		/* extended log present? */
+>  	unsigned long /* reserved */ :2;	/* Reserved for future use */
+> +	/* Byte 2 */
+>  	unsigned long initiator:4;		/* Initiator of event */
+>  	unsigned long target:4;			/* Target of failed operation */
+> +	/* Byte 3 */
+>  	unsigned long type:8;			/* General event or error*/
+> +	/* Byte 4 */
+>  	unsigned long extended_log_length:32;	/* length in bytes */
+> +#else
+> +	/* Byte 0 */
+> +	unsigned long version:8;
+> +	/* Byte 1 */
+> +	unsigned long :2;
+> +	unsigned long extended:1;
+> +	unsigned long disposition:2;
+> +	unsigned long severity:3;
+> +	unsigned long target:4;
 
+Hi Greg,
+
+A cosmetic detail: 'target' is in the 'Byte 2'.
+
+Laurent.
+
+> +	/* Byte 2 */
+> +	unsigned long initiator:4;
+> +	/* Byte 3 */
+> +	unsigned long type:8;
+> +	/* Byte 4 */
+> +	unsigned long extended_log_length:32;
+> +#endif
+>  	unsigned char buffer[1];		/* Start of extended log */
+>  						/* Variable length.      */
+>  };
+> @@ -171,6 +193,7 @@ struct rtas_error_log {
+>   * from "buffer" field of struct rtas_error_log defined above.
+>   */
+>  struct rtas_ext_event_log_v6 {
+> +#ifdef __BIG_ENDIAN__
+>  	/* Byte 0 */
+>  	uint32_t log_valid:1;		/* 1:Log valid */
+>  	uint32_t unrecoverable_error:1;	/* 1:Unrecoverable error */
+> @@ -200,6 +223,29 @@ struct rtas_ext_event_log_v6 {
+>  	uint32_t company_id;		/* Company ID of the company	*/
+>  					/* that defines the format for	*/
+>  					/* the vendor specific log type	*/
+> +#else
+> +	/* Byte 0 */
+> +	uint32_t :1;
+> +	uint32_t big_endian:1;
+> +	uint32_t new_log:1;
+> +	uint32_t predictive_error:1;
+> +	uint32_t degraded_operation:1;
+> +	uint32_t recoverable_error:1;
+> +	uint32_t unrecoverable_error:1;
+> +	uint32_t log_valid:1;
+> +	/* Byte 1 */
+> +	uint32_t :8;
+> +	/* Byte 2 */
+> +	uint32_t log_format:4;
+> +	uint32_t :3;
+> +	uint32_t powerpc_format:1;
+> +	/* Byte 3 */
+> +	uint32_t :8;
+> +	/* Byte 4-11 */
+> +	uint8_t reserved[8];
+> +	/* Byte 12-15 */
+> +	uint32_t company_id;
+> +#endif
+>  	/* Byte 16-end of log */
+>  	uint8_t vendor_log[1];		/* Start of vendor specific log	*/
+>  					/* Variable length.		*/
+> diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
+> index f386296..e18ab12 100644
+> --- a/arch/powerpc/kernel/rtas.c
+> +++ b/arch/powerpc/kernel/rtas.c
+> @@ -993,21 +993,22 @@ struct pseries_errorlog *get_pseries_errorlog(struct rtas_error_log *log,
+>  		(struct rtas_ext_event_log_v6 *)log->buffer;
+>  	struct pseries_errorlog *sect;
+>  	unsigned char *p, *log_end;
+> +	uint32_t extended_log_length = be32_to_cpu(log->extended_log_length);
+>  
+>  	/* Check that we understand the format */
+> -	if (log->extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
+> +	if (extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
+>  	    ext_log->log_format != RTAS_V6EXT_LOG_FORMAT_EVENT_LOG ||
+> -	    ext_log->company_id != RTAS_V6EXT_COMPANY_ID_IBM)
+> +	    be32_to_cpu(ext_log->company_id) != RTAS_V6EXT_COMPANY_ID_IBM)
+>  		return NULL;
+>  
+> -	log_end = log->buffer + log->extended_log_length;
+> +	log_end = log->buffer + extended_log_length;
+>  	p = ext_log->vendor_log;
+>  
+>  	while (p < log_end) {
+>  		sect = (struct pseries_errorlog *)p;
+> -		if (sect->id == section_id)
+> +		if (be16_to_cpu(sect->id) == section_id)
+>  			return sect;
+> -		p += sect->length;
+> +		p += be16_to_cpu(sect->length);
+>  	}
+>  
+>  	return NULL;
+> diff --git a/arch/powerpc/kernel/rtasd.c b/arch/powerpc/kernel/rtasd.c
+> index 1130c53..1987825 100644
+> --- a/arch/powerpc/kernel/rtasd.c
+> +++ b/arch/powerpc/kernel/rtasd.c
+> @@ -159,14 +159,16 @@ static int log_rtas_len(char * buf)
+>  {
+>  	int len;
+>  	struct rtas_error_log *err;
+> +	uint32_t extended_log_length;
+>  
+>  	/* rtas fixed header */
+>  	len = 8;
+>  	err = (struct rtas_error_log *)buf;
+> -	if (err->extended && err->extended_log_length) {
+> +	extended_log_length = be32_to_cpu(err->extended_log_length);
+> +	if (err->extended && extended_log_length) {
+>  
+>  		/* extended header */
+> -		len += err->extended_log_length;
+> +		len += extended_log_length;
+>  	}
+>  
+>  	if (rtas_error_log_max == 0)
+> @@ -298,7 +300,7 @@ static void handle_rtas_event(const struct rtas_error_log *log)
+>  		 * the scope for calling rtas update-nodes.
+>  		 */
+>  		if (prrn_is_enabled())
+> -			prrn_schedule_update(log->extended_log_length);
+> +			prrn_schedule_update(be32_to_cpu(log->extended_log_length));
+>  	}
+>  
+>  	return;
+> diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
+> index 721c058..39e7557 100644
+> --- a/arch/powerpc/platforms/pseries/ras.c
+> +++ b/arch/powerpc/platforms/pseries/ras.c
+> @@ -306,7 +306,8 @@ static struct rtas_error_log *fwnmi_get_errinfo(struct pt_regs *regs)
+>  	} else {
+>  		int len;
+>  
+> -		len = max_t(int, 8+h->extended_log_length, RTAS_ERROR_LOG_MAX);
+> +		len = max_t(int, 8+be32_to_cpu(h->extended_log_length),
+> +			    RTAS_ERROR_LOG_MAX);
+>  		memset(global_mce_data_buf, 0, RTAS_ERROR_LOG_MAX);
+>  		memcpy(global_mce_data_buf, h, len);
+>  		errhdr = (struct rtas_error_log *)global_mce_data_buf;
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
