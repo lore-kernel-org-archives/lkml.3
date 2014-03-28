@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753018AbaC1Ra4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51289 "EHLO
+	id S1753500AbaC1RtC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:49:02 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51306 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792AbaC1Rax (ORCPT
+	with ESMTP id S1753010AbaC1Ra4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:53 -0400
+	Fri, 28 Mar 2014 13:30:56 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefan Agner <stefan@agner.ch>, Shawn Guo <shawn.guo@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>, daniel.lezcano@linaro.org,
-        linux-arm-kernel@lists.infradead.org, linux@arm.linux.org.uk
-Subject: [PATCH 3.13 03/46] clocksource: vf_pit_timer: use complement for sched_clock reading
-Date: Fri, 28 Mar 2014 10:31:47 -0700
-Message-Id: <20140328173135.096192258@linuxfoundation.org>
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 3.13 06/46] drm/i915: Disable stolen memory when DMAR is active
+Date: Fri, 28 Mar 2014 10:31:50 -0700
+Message-Id: <20140328173135.501262276@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -28,39 +28,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stefan Agner <stefan@agner.ch>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
-commit 224aa3ed45c8735ae02bb2ecca002409fa6aa772 upstream.
+commit 0f4706d2740f2a221cd502922b22e522009041d9 upstream.
 
-Vybrids PIT register is monitonic decreasing. However, sched_clock
-reading needs to be monitonic increasing. Use bitwise not to get
-the complement of the clock register. This fixes the clock going
-backward. Also, the clock now starts at 0 since we load the
-register with the maximum value at start.
+We have reports of heavy screen corruption if we try to use the stolen
+memory reserved by the BIOS whilst the DMA-Remapper is active. This
+quirk may be only specific to a few machines or BIOSes, but first lets
+apply the big hammer and always disable use of stolen memory when DMAR
+is active.
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
-Acked-by: Shawn Guo <shawn.guo@linaro.org>
-Cc: daniel.lezcano@linaro.org
-Cc: linux-arm-kernel@lists.infradead.org
-Cc: linux@arm.linux.org.uk
-Link: http://lkml.kernel.org/r/d25af915993aec1b486be653eb86f748ddef54fe.1394057313.git.stefan@agner.ch
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+v2 by Jani: Rebase on -fixes, only look at intel_iommu_gfx_mapped.
+
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=68535
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/clocksource/vf_pit_timer.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/gpu/drm/i915/i915_gem_stolen.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/clocksource/vf_pit_timer.c
-+++ b/drivers/clocksource/vf_pit_timer.c
-@@ -54,7 +54,7 @@ static inline void pit_irq_acknowledge(v
+--- a/drivers/gpu/drm/i915/i915_gem_stolen.c
++++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
+@@ -201,6 +201,13 @@ int i915_gem_init_stolen(struct drm_devi
+ 	struct drm_i915_private *dev_priv = dev->dev_private;
+ 	int bios_reserved = 0;
  
- static u64 pit_read_sched_clock(void)
- {
--	return __raw_readl(clksrc_base + PITCVAL);
-+	return ~__raw_readl(clksrc_base + PITCVAL);
- }
++#ifdef CONFIG_INTEL_IOMMU
++	if (intel_iommu_gfx_mapped) {
++		DRM_INFO("DMAR active, disabling use of stolen memory\n");
++		return 0;
++	}
++#endif
++
+ 	if (dev_priv->gtt.stolen_size == 0)
+ 		return 0;
  
- static int __init pit_clocksource_init(unsigned long rate)
 
 
