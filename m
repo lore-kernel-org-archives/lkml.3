@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299AbaC1RbW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51409 "EHLO
+	id S1753508AbaC1Ret (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:34:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51456 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaC1RbO (ORCPT
+	with ESMTP id S1753294AbaC1RbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:14 -0400
+	Fri, 28 Mar 2014 13:31:22 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Markus Pargmann <mpa@pengutronix.de>, Mark Brown <broonie@linaro.org>
-Subject: [PATCH 3.13 29/46] regulator: core: Replace direct ops->disable usage
-Date: Fri, 28 Mar 2014 10:32:13 -0700
-Message-Id: <20140328173138.614802884@linuxfoundation.org>
+        Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.13 39/46] Input: wacom - make sure touch_max is set for touch devices
+Date: Fri, 28 Mar 2014 10:32:23 -0700
+Message-Id: <20140328173139.979034981@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,115 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Markus Pargmann <mpa@pengutronix.de>
+From: Ping Cheng <pinglinux@gmail.com>
 
-commit 66fda75f47dc583f1c187556e9a2c082dd64f8c6 upstream.
+commit 1d0d6df02750b4a6f466768cbfbf860e24f4c8d4 upstream.
 
-There are many places where ops->disable is called directly. Instead we
-should use _regulator_do_disable() which also handles gpio regulators.
+Old single touch Tablet PCs do not have touch_max set at
+wacom_features. Since touch device at lease supports one
+finger, assign touch_max to 1 when touch usage is defined
+in its HID Descriptor and touch_max is not pre-defined.
 
-To be able to use the wrapper function from _regulator_force_disable(),
-I moved the _notifier_call_chain() call from _regulator_do_disable() to
-_regulator_disable(). This way, _regulator_force_disable() can use
-different flags for _notifier_call_chain() without calling it twice.
-
-Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Tested-by: Jason Gerecke <killertofu@gmail.com>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/core.c |   34 +++++++++++++---------------------
- 1 file changed, 13 insertions(+), 21 deletions(-)
+ drivers/input/tablet/wacom_sys.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1908,8 +1908,6 @@ static int _regulator_do_disable(struct
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -304,7 +304,7 @@ static int wacom_parse_hid(struct usb_in
+ 	struct usb_device *dev = interface_to_usbdev(intf);
+ 	char limit = 0;
+ 	/* result has to be defined as int for some devices */
+-	int result = 0;
++	int result = 0, touch_max = 0;
+ 	int i = 0, usage = WCM_UNDEFINED, finger = 0, pen = 0;
+ 	unsigned char *report;
  
- 	trace_regulator_disable_complete(rdev_get_name(rdev));
- 
--	_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
--			     NULL);
- 	return 0;
- }
- 
-@@ -1933,6 +1931,8 @@ static int _regulator_disable(struct reg
- 				rdev_err(rdev, "failed to disable\n");
- 				return ret;
- 			}
-+			_notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
-+					NULL);
- 		}
- 
- 		rdev->use_count = 0;
-@@ -1985,20 +1985,16 @@ static int _regulator_force_disable(stru
- {
- 	int ret = 0;
- 
--	/* force disable */
--	if (rdev->desc->ops->disable) {
--		/* ah well, who wants to live forever... */
--		ret = rdev->desc->ops->disable(rdev);
--		if (ret < 0) {
--			rdev_err(rdev, "failed to force disable\n");
--			return ret;
--		}
--		/* notify other consumers that power has been forced off */
--		_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
--			REGULATOR_EVENT_DISABLE, NULL);
-+	ret = _regulator_do_disable(rdev);
-+	if (ret < 0) {
-+		rdev_err(rdev, "failed to force disable\n");
-+		return ret;
+@@ -351,7 +351,8 @@ static int wacom_parse_hid(struct usb_in
+ 				if (usage == WCM_DESKTOP) {
+ 					if (finger) {
+ 						features->device_type = BTN_TOOL_FINGER;
+-
++						/* touch device at least supports one touch point */
++						touch_max = 1;
+ 						switch (features->type) {
+ 						case TABLETPC2FG:
+ 							features->pktlen = WACOM_PKGLEN_TPC2FG;
+@@ -504,6 +505,8 @@ static int wacom_parse_hid(struct usb_in
  	}
  
--	return ret;
-+	_notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
-+			REGULATOR_EVENT_DISABLE, NULL);
-+
-+	return 0;
- }
- 
- /**
-@@ -3631,8 +3627,6 @@ int regulator_suspend_finish(void)
- 
- 	mutex_lock(&regulator_list_mutex);
- 	list_for_each_entry(rdev, &regulator_list, list) {
--		struct regulator_ops *ops = rdev->desc->ops;
--
- 		mutex_lock(&rdev->mutex);
- 		if (rdev->use_count > 0  || rdev->constraints->always_on) {
- 			error = _regulator_do_enable(rdev);
-@@ -3641,12 +3635,10 @@ int regulator_suspend_finish(void)
- 		} else {
- 			if (!have_full_constraints())
- 				goto unlock;
--			if (!ops->disable)
--				goto unlock;
- 			if (!_regulator_is_enabled(rdev))
- 				goto unlock;
- 
--			error = ops->disable(rdev);
-+			error = _regulator_do_disable(rdev);
- 			if (error)
- 				ret = error;
- 		}
-@@ -3820,7 +3812,7 @@ static int __init regulator_init_complet
- 		ops = rdev->desc->ops;
- 		c = rdev->constraints;
- 
--		if (!ops->disable || (c && c->always_on))
-+		if (c && c->always_on)
- 			continue;
- 
- 		mutex_lock(&rdev->mutex);
-@@ -3841,7 +3833,7 @@ static int __init regulator_init_complet
- 			/* We log since this may kill the system if it
- 			 * goes wrong. */
- 			rdev_info(rdev, "disabling\n");
--			ret = ops->disable(rdev);
-+			ret = _regulator_do_disable(rdev);
- 			if (ret != 0) {
- 				rdev_err(rdev, "couldn't disable: %d\n", ret);
- 			}
+  out:
++	if (!features->touch_max && touch_max)
++		features->touch_max = touch_max;
+ 	result = 0;
+ 	kfree(report);
+ 	return result;
 
 
