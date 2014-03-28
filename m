@@ -1,82 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaC1KOJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:14:09 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:54806 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaC1KOG convert rfc822-to-8bit (ORCPT
+	id S1751855AbaC1KOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:14:38 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:48920 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751814AbaC1KOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:14:06 -0400
-Date: Fri, 28 Mar 2014 11:13:50 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Rutland <mark.rutland@arm.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <linux-mtd@lists.infradead.org>,
-        <linux-arm-kernel@lists.infradead.org>, Rob Landley <rob@landley.net>,
-        Kumar Gala <galak@codeaurora.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Shawn Guo <shawn.guo@freescale.com>
-Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140328111350.003b9fce@ipc1.ka-ro>
-In-Reply-To: <53354329.2020909@freescale.com>
-References: <532BCFCC.4080205@freescale.com>
-	<1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
-	<20140324095902.GB11377@localhost>
-	<20140326095156.3e5585b8@ipc1.ka-ro>
-	<5332AEE7.2040402@freescale.com>
-	<20140326125502.0e8d0657@ipc1.ka-ro>
-	<20140327095956.GA29623@localhost>
-	<20140327132109.06258526@ipc1.ka-ro>
-	<5334D9F7.2030001@freescale.com>
-	<20140328091646.1ce03f90@ipc1.ka-ro>
-	<53353524.9020605@freescale.com>
-	<20140328100158.042a3d68@ipc1.ka-ro>
-	<533541DE.7020606@freescale.com>
-	<53354329.2020909@freescale.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Mar 2014 06:14:36 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] cpufreq: use kzalloc() to allocate memory for cpufreq_frequency_table
+Date: Fri, 28 Mar 2014 15:44:24 +0530
+Message-Id: <f6aa622dc5acfd3ab9b1360973c0d15b3972c6b6.1396001532.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <b5bc276cdd34b039de2aa640ec0bb5dff195f832.1395996386.git.viresh.kumar@linaro.org>
+References: <b5bc276cdd34b039de2aa640ec0bb5dff195f832.1395996386.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Few drivers are using kmalloc() to allocate memory for frequency tables and once
+we have an additional field '.flags' in 'struct cpufreq_frequency_table', these
+might become unstable. Better get these fixed by replacing kmalloc() by
+kzalloc() instead.
 
-Huang Shijie wrote:
-> 于 2014年03月28日 17:33, Huang Shijie 写道:
-> > 于 2014年03月28日 17:01, Lothar Waßmann 写道:
-> >> There is no need for the ROM code to access any other partition than
-> >> the bootloader itself. Thus Linux can perfectly well be booted from
-> > Assume the ROM only access the partition which contains the 
-> > bootloader, and
-> > the ROM does the swapping for the pages(but we do not do the swapping 
-> > to these pages),
-> I mean the kernel do not do the swapping when we burn the uboot to the NAND.
-> 
-The kernel need not be able to write the bootloader to NAND. 
-If you want a kernel that can do it, you just need to boot it with one
-line in the DTB removed.
+Along with that we also remove use of .driver_data from SPEAr driver as it
+doesn't use it at all. Also, writing zero to .driver_data is not required for
+powernow-k8 as it is already zero.
 
+Reported-by: Gautham R. Shenoy <ego@linux.vnet.ibm.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+@Rafael: Please apply this one before:
 
-Lothar Waßmann
+http://permalink.gmane.org/gmane.linux.kernel/1673994
+
+so that git bisect doesn't break. Though the chances of this field getting
+initialized to a value equal to BOOST, i.e. 0x1 are very rare.
+
+ drivers/cpufreq/acpi-cpufreq.c      | 2 +-
+ drivers/cpufreq/ia64-acpi-cpufreq.c | 2 +-
+ drivers/cpufreq/longhaul.c          | 2 +-
+ drivers/cpufreq/powernow-k8.c       | 5 ++---
+ drivers/cpufreq/s3c24xx-cpufreq.c   | 4 ++--
+ drivers/cpufreq/spear-cpufreq.c     | 7 ++-----
+ 6 files changed, 9 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/cpufreq/acpi-cpufreq.c b/drivers/cpufreq/acpi-cpufreq.c
+index d5eaedb..000e4e0 100644
+--- a/drivers/cpufreq/acpi-cpufreq.c
++++ b/drivers/cpufreq/acpi-cpufreq.c
+@@ -754,7 +754,7 @@ static int acpi_cpufreq_cpu_init(struct cpufreq_policy *policy)
+ 		goto err_unreg;
+ 	}
+ 
+-	data->freq_table = kmalloc(sizeof(*data->freq_table) *
++	data->freq_table = kzalloc(sizeof(*data->freq_table) *
+ 		    (perf->state_count+1), GFP_KERNEL);
+ 	if (!data->freq_table) {
+ 		result = -ENOMEM;
+diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
+index beb191b..c30aaa6 100644
+--- a/drivers/cpufreq/ia64-acpi-cpufreq.c
++++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
+@@ -254,7 +254,7 @@ acpi_cpufreq_cpu_init (
+ 	}
+ 
+ 	/* alloc freq_table */
+-	data->freq_table = kmalloc(sizeof(*data->freq_table) *
++	data->freq_table = kzalloc(sizeof(*data->freq_table) *
+ 	                           (data->acpi_data.state_count + 1),
+ 	                           GFP_KERNEL);
+ 	if (!data->freq_table) {
+diff --git a/drivers/cpufreq/longhaul.c b/drivers/cpufreq/longhaul.c
+index 5c440f8..d00e5d1 100644
+--- a/drivers/cpufreq/longhaul.c
++++ b/drivers/cpufreq/longhaul.c
+@@ -475,7 +475,7 @@ static int longhaul_get_ranges(void)
+ 		return -EINVAL;
+ 	}
+ 
+-	longhaul_table = kmalloc((numscales + 1) * sizeof(*longhaul_table),
++	longhaul_table = kzalloc((numscales + 1) * sizeof(*longhaul_table),
+ 			GFP_KERNEL);
+ 	if (!longhaul_table)
+ 		return -ENOMEM;
+diff --git a/drivers/cpufreq/powernow-k8.c b/drivers/cpufreq/powernow-k8.c
+index 770a9e1..1b6ae6b 100644
+--- a/drivers/cpufreq/powernow-k8.c
++++ b/drivers/cpufreq/powernow-k8.c
+@@ -623,7 +623,7 @@ static int fill_powernow_table(struct powernow_k8_data *data,
+ 	if (check_pst_table(data, pst, maxvid))
+ 		return -EINVAL;
+ 
+-	powernow_table = kmalloc((sizeof(*powernow_table)
++	powernow_table = kzalloc((sizeof(*powernow_table)
+ 		* (data->numps + 1)), GFP_KERNEL);
+ 	if (!powernow_table) {
+ 		printk(KERN_ERR PFX "powernow_table memory alloc failure\n");
+@@ -793,7 +793,7 @@ static int powernow_k8_cpu_init_acpi(struct powernow_k8_data *data)
+ 	}
+ 
+ 	/* fill in data->powernow_table */
+-	powernow_table = kmalloc((sizeof(*powernow_table)
++	powernow_table = kzalloc((sizeof(*powernow_table)
+ 		* (data->acpi_data.state_count + 1)), GFP_KERNEL);
+ 	if (!powernow_table) {
+ 		pr_debug("powernow_table memory alloc failure\n");
+@@ -810,7 +810,6 @@ static int powernow_k8_cpu_init_acpi(struct powernow_k8_data *data)
+ 
+ 	powernow_table[data->acpi_data.state_count].frequency =
+ 		CPUFREQ_TABLE_END;
+-	powernow_table[data->acpi_data.state_count].driver_data = 0;
+ 	data->powernow_table = powernow_table;
+ 
+ 	if (cpumask_first(cpu_core_mask(data->cpu)) == data->cpu)
+diff --git a/drivers/cpufreq/s3c24xx-cpufreq.c b/drivers/cpufreq/s3c24xx-cpufreq.c
+index a3dc192..be1b2b5 100644
+--- a/drivers/cpufreq/s3c24xx-cpufreq.c
++++ b/drivers/cpufreq/s3c24xx-cpufreq.c
+@@ -586,7 +586,7 @@ static int s3c_cpufreq_build_freq(void)
+ 	size = cpu_cur.info->calc_freqtable(&cpu_cur, NULL, 0);
+ 	size++;
+ 
+-	ftab = kmalloc(sizeof(*ftab) * size, GFP_KERNEL);
++	ftab = kzalloc(sizeof(*ftab) * size, GFP_KERNEL);
+ 	if (!ftab) {
+ 		printk(KERN_ERR "%s: no memory for tables\n", __func__);
+ 		return -ENOMEM;
+@@ -664,7 +664,7 @@ int __init s3c_plltab_register(struct cpufreq_frequency_table *plls,
+ 
+ 	size = sizeof(*vals) * (plls_no + 1);
+ 
+-	vals = kmalloc(size, GFP_KERNEL);
++	vals = kzalloc(size, GFP_KERNEL);
+ 	if (vals) {
+ 		memcpy(vals, plls, size);
+ 		pll_reg = vals;
+diff --git a/drivers/cpufreq/spear-cpufreq.c b/drivers/cpufreq/spear-cpufreq.c
+index 4cfdcff..3867839 100644
+--- a/drivers/cpufreq/spear-cpufreq.c
++++ b/drivers/cpufreq/spear-cpufreq.c
+@@ -195,18 +195,15 @@ static int spear_cpufreq_probe(struct platform_device *pdev)
+ 	cnt = prop->length / sizeof(u32);
+ 	val = prop->value;
+ 
+-	freq_tbl = kmalloc(sizeof(*freq_tbl) * (cnt + 1), GFP_KERNEL);
++	freq_tbl = kzalloc(sizeof(*freq_tbl) * (cnt + 1), GFP_KERNEL);
+ 	if (!freq_tbl) {
+ 		ret = -ENOMEM;
+ 		goto out_put_node;
+ 	}
+ 
+-	for (i = 0; i < cnt; i++) {
+-		freq_tbl[i].driver_data = i;
++	for (i = 0; i < cnt; i++)
+ 		freq_tbl[i].frequency = be32_to_cpup(val++);
+-	}
+ 
+-	freq_tbl[i].driver_data = i;
+ 	freq_tbl[i].frequency = CPUFREQ_TABLE_END;
+ 
+ 	spear_cpufreq.freq_tbl = freq_tbl;
 -- 
-___________________________________________________________
+1.7.12.rc2.18.g61b472e
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
