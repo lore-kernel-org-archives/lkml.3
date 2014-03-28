@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaC1KWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:22:38 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:58729 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaC1KWg (ORCPT
+	id S1751554AbaC1K3A (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:29:00 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:50867 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358AbaC1K27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:22:36 -0400
-Date: Fri, 28 Mar 2014 10:22:20 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org, rob@landley.net,
-        olof@lixom.net
-Message-ID: <20140328102220.GU30768@sirena.org.uk>
-References: <1395984022-8284-1-git-send-email-tushar.behera@linaro.org>
- <1395984022-8284-3-git-send-email-tushar.behera@linaro.org>
+	Fri, 28 Mar 2014 06:28:59 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kSOhxpxUsM1s2qz/"
-Content-Disposition: inline
-In-Reply-To: <1395984022-8284-3-git-send-email-tushar.behera@linaro.org>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.45.252.252
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] regulator: core: Add reg_ignore_unused to keep boot
- time regulators enabled
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
+References: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
+	<1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
+Date: Fri, 28 Mar 2014 11:20:47 +0100
+Message-ID: <CAPDyKFpi9fAx6Ofebumbiw_gCG=jcaq_CV91xGjzrgB7NLdQdg@mail.gmail.com>
+Subject: Re: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Mike Looijmans <mike.looijmans@topic.nl>
+Cc: Chris Ball <cjb@laptop.org>, linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Georgi Djakov <gdjakov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 28 March 2014 08:30, Mike Looijmans <mike.looijmans@topic.nl> wrote:
+> If vmmc or vqmmc regulators are controlled by an I2C device, the
+> request for the regulator is likely to fail because the I2C bus has
+> not been probed yet. The sdhci then incorrectly assumes that the user
+> never wanted to use a regulator anyway and continues without ever
+> enabling or configuring the required regulator.
+>
+> To solve this, when a required voltage regulator returns
+> EPROBE_DEFER, signalling that the regulator exists but is not
+> available yet, forward this error to the probe method instead
+> of simply assuming that the user never wanted to use a regulator
+> anyway.
+>
+> Tested on a custom board that has an I2C regulator for one of the sdhcis
+> and no regulators at all for the other. This patch enables such a system
+> to work correctly.
 
---kSOhxpxUsM1s2qz/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Missing Signed-off-by, could you resend?
 
-On Fri, Mar 28, 2014 at 10:50:22AM +0530, Tushar Behera wrote:
-> Keep all regulators already enabled by bootloader on, even if no
-> driver has claimed them. This is useful for debug and development, but
-> should not be needed on a platform with proper driver support.
+Otherwise looks good, you may have my ack.
 
-That's already the default on non-DT systems so I'd expect that if we
-were doing this the code would be joined up with the code for that.  I'm
-not sure this is a terribly good idea though - we already display a
-message just before we power off the regulator and having an option like
-this feels like it's going to encourage people to write bad DTs and tell
-people to add this to their command line.
+Kind regards
+Ulf Hansson
 
---kSOhxpxUsM1s2qz/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTNU1SAAoJELSic+t+oim9t1sP/0JVSZnIBmg+yC9AW3jnDywD
-YZ2+e4aTsnyzNZoDCX1nf6OEzLTr3k5eJkDw8HDnqDjRTGsyVcH/IQxpvKUSd6ux
-DpDwYHGQ9od+zfhxdgZ54pjOEAUvfS3HmX7i8XN+JoN635SDNfCti7jfnkKbWWUU
-xfE9Im0usX5ynwuxx+Kz7HYC/km8yKMil80L1NY2w/kQUc3m1Z1W0RbvA02Tr+lY
-n+JRKuQCUz0zuTVVrQMg9o4MRvijQX9FRHqpzZ1CrkxIqKiAji0kOgBzmUxts0Hv
-BiKH0E2Bo7S1dGzCvZv79F7cNuYSffw6LVHRhqdiiTHg02rn+7L/eIsipTSWbEYV
-PQXqSDAg15Dfm+GVWc/YR8OSXU4X5gUmPle5LwnryQP5A17Uhhi3qXl6QVPy+N9Z
-Et28Mx7CXckK0NpHqNPvxnPHu7xnkL0Mi25s1Xsji5faxUbOqqblIZbfp1VqTMvL
-5zC7H+KvQ3Bi/CuSygG6JvdyuBVKgsc5dL589nTOamJ7Ac9lEDvWMSdlJqZydRyB
-HnjO+Hhf4egeNYZCMA9Z91Oawh69rI9+51le+LXuW3l7E0Cs40e3aaQ4p8uMK0Lk
-tIKoVidMGm1PphPyNwfLDfMrikV0FkzGyn4FwzCpgXcBTNnr0TogTXT0wmE7YN4D
-byfueDe7njl6BhE/i2jI
-=lXPp
------END PGP SIGNATURE-----
-
---kSOhxpxUsM1s2qz/--
+>
+> v2: Changed "%d" into "%ld" for PTR_ERR value.
+> ---
+>  drivers/mmc/host/sdhci.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> index 34aef81..de601f5 100644
+> --- a/drivers/mmc/host/sdhci.c
+> +++ b/drivers/mmc/host/sdhci.c
+> @@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+>         host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+>         if (IS_ERR_OR_NULL(host->vqmmc)) {
+>                 if (PTR_ERR(host->vqmmc) < 0) {
+> +                       if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
+> +                               return -EPROBE_DEFER;
+>                         pr_info("%s: no vqmmc regulator found\n",
+>                                 mmc_hostname(mmc));
+>                         host->vqmmc = NULL;
+> @@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+>         host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+>         if (IS_ERR_OR_NULL(host->vmmc)) {
+>                 if (PTR_ERR(host->vmmc) < 0) {
+> -                       pr_info("%s: no vmmc regulator found\n",
+> -                               mmc_hostname(mmc));
+> +                       if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
+> +                               return -EPROBE_DEFER;
+> +                       pr_info("%s: no vmmc regulator found (%ld)\n",
+> +                               mmc_hostname(mmc), PTR_ERR(host->vmmc));
+>                         host->vmmc = NULL;
+>                 }
+>         }
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
