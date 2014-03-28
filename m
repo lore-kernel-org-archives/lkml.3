@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbaC2Pba (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:31:30 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:43871 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878AbaC2P1T (ORCPT
+	id S1751783AbaC2PYN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:24:13 -0400
+Received: from mail-pb0-f47.google.com ([209.85.160.47]:58685 "EHLO
+	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaC2PXv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:27:19 -0400
+	Sat, 29 Mar 2014 11:23:51 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 21/29] ktap: add symbol handling code(tools/ktap/symbol.[c|h])
-Date: Fri, 28 Mar 2014 10:45:16 -0400
-Message-Id: <1396017924-7754-22-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 04/29] ktap: add basic ktap types definition(include/uapi/ktap/ktap_types.h)
+Date: Fri, 28 Mar 2014 10:44:59 -0400
+Message-Id: <1396017924-7754-5-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -25,449 +25,540 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is use for uprobe(include SDT) symbol lookup,
-for example:
+File 'include/ktap_types.h' is the basestone for ktap runtime
+and userspace tool, it contains key structure definition for ktap.
 
-trace probe:/lib64/libc.so.6:malloc {
-        print("malloc entry:", execname)
-}
+1. ktap_val_t
+   ktap_val_t is ktap value representaion in stack, and for object
+   reference. Each value have a type, the type could be:
+        nil, false, true, number, string, upval, proto, func,
+        table, eventstr, kstrace, kip, uip.
 
-trace sdt:/lib64/libc.so.6:* {
-        print(execname, argstr)
-}
+   ktap_val_t structure occupy 16 bytes in x86_64.
 
-It need libelf library support.
+2. ktap_number
+   number type in ktap, it is 'long'.
+
+3. ktap_str_t
+   String type. All string in ktap is interned, it means ktap keeps
+   a single copy for any string. Whenever a new string appears, ktap
+   checks whether it already has a copy of that string and, if so,
+   reuses that copy. Internalization makes operations like string
+   comparison and table indexing very fast, but it slows down string creation.
+
+   String is allocated from mempool(runtime/kp_mempool.c), not allocated
+   by kmalloc, because we don't want dynamic allocate string in probe
+   context.
+
+   Real string buffer is appended after ktap_str_t.
+
+4. ktap_proto_t
+   prototype structure for ktap function.
+
+5. ktap_upval_t
+   The concept of upval is get from lua.
+        var a = 1
+        function f() {
+                print(a)   <--- 'a' is upval in 'f'.
+        }
+
+6. ktap_func_t
+   Instance of ktap_proto_t, also can be called as 'closure', it's
+   created for each function prototype in runtime.
+   ktap_func_t contains upvals array for access variables in upper
+   scope layer.
+
+7. ktap_tab_t
+   ktap table(associative array) structure, it contains array part
+   and hash part.
+   Table is pre-allocated by vmalloc, table is not allowed to resize,
+   it will report overflow when entries full.
+
+8. ktap_state_t
+   ktap context structure.
+   There have many context in ktap runtime:
+   1). mainthread conetxt
+      mainthread context is the context in ktap thread.
+   2). probe context
+      ktap runtime pre-allocated percpu probe context.
+
+9. ktap_global_state_t
+   global state of ktap runtime, it's access by G(ks).
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- tools/ktap/kp_symbol.c | 360 +++++++++++++++++++++++++++++++++++++++++++++++++
- tools/ktap/kp_symbol.h |  50 +++++++
- 2 files changed, 410 insertions(+)
- create mode 100644 tools/ktap/kp_symbol.c
- create mode 100644 tools/ktap/kp_symbol.h
+ include/uapi/ktap/ktap_types.h | 462 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 462 insertions(+)
+ create mode 100644 include/uapi/ktap/ktap_types.h
 
-diff --git a/tools/ktap/kp_symbol.c b/tools/ktap/kp_symbol.c
+diff --git a/include/uapi/ktap/ktap_types.h b/include/uapi/ktap/ktap_types.h
 new file mode 100644
-index 0000000..1d5b73e
+index 0000000..4509397
 --- /dev/null
-+++ b/tools/ktap/kp_symbol.c
-@@ -0,0 +1,360 @@
++++ b/include/uapi/ktap/ktap_types.h
+@@ -0,0 +1,462 @@
 +/*
-+ * symbol.c
++ * ktap types definition.
 + *
-+ * This file is part of ktap by Jovi Zhangwei.
-+ *
-+ * Copyright (C) 2013 Azat Khuzhin <a3at.mail@gmail.com>.
-+ *
-+ * ktap is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * ktap is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ * Copyright (C) 2005-2014 Mike Pall.
++ * Copyright (C) 1994-2008 Lua.org, PUC-Rio.
 + */
 +
-+#include <stdio.h>
++#ifndef __KTAP_TYPES_H__
++#define __KTAP_TYPES_H__
++
++#ifdef __KERNEL__
++#include <linux/perf_event.h>
++#else
++typedef char u8;
 +#include <stdlib.h>
-+
-+#include <sys/types.h>
-+#include <sys/stat.h>
-+#include <unistd.h>
-+#include <fcntl.h>
++#include <stdio.h>
 +#include <string.h>
-+#include <linux/limits.h>
-+
-+#include <libelf.h>
-+
-+#include "../../include/uapi/ktap/ktap_types.h"
-+#include "kp_symbol.h"
-+
-+const char *dbg_link_name = ".gnu_debuglink";
-+const char *dbg_bin_dir = "/usr/lib/debug";
-+
-+static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
-+				    GElf_Shdr *shp, const char *name)
-+{
-+	Elf_Scn *scn = NULL;
-+
-+	/* Elf is corrupted/truncated, avoid calling elf_strptr. */
-+	if (!elf_rawdata(elf_getscn(elf, ep->e_shstrndx), NULL))
-+		return NULL;
-+
-+	while ((scn = elf_nextscn(elf, scn)) != NULL) {
-+		char *str;
-+
-+		gelf_getshdr(scn, shp);
-+		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
-+		if (!strcmp(name, str))
-+			break;
-+	}
-+
-+	return scn;
-+}
-+
-+/**
-+ * @return v_addr of "LOAD" program header, that have zero offset.
-+ */
-+static int find_load_address(Elf *elf, vaddr_t *load_address)
-+{
-+	GElf_Phdr phdr;
-+	size_t i, phdrnum;
-+
-+	if (elf_getphdrnum(elf, &phdrnum))
-+		return -1;
-+
-+	for (i = 0; i < phdrnum; i++) {
-+		if (gelf_getphdr(elf, i, &phdr) == NULL)
-+			return -1;
-+
-+		if (phdr.p_type != PT_LOAD || phdr.p_offset != 0)
-+			continue;
-+
-+		*load_address = phdr.p_vaddr;
-+		return 0;
-+	}
-+
-+	/* cannot found load address */
-+	return -1;
-+}
-+
-+static size_t elf_symbols(GElf_Shdr shdr)
-+{
-+	return shdr.sh_size / shdr.sh_entsize;
-+}
-+
-+static int dso_symbols(Elf *elf, symbol_actor actor, void *arg)
-+{
-+	Elf_Data *elf_data = NULL;
-+	Elf_Scn *scn = NULL;
-+	GElf_Sym sym;
-+	GElf_Shdr shdr;
-+	int symbols_count = 0;
-+	vaddr_t load_address;
-+
-+	if (find_load_address(elf, &load_address))
-+		return -1;
-+
-+	while ((scn = elf_nextscn(elf, scn))) {
-+		int i;
-+
-+		gelf_getshdr(scn, &shdr);
-+
-+		if (shdr.sh_type != SHT_SYMTAB)
-+			continue;
-+
-+		elf_data = elf_getdata(scn, elf_data);
-+
-+		for (i = 0; i < elf_symbols(shdr); i++) {
-+			char *name;
-+			vaddr_t addr;
-+			int ret;
-+
-+			gelf_getsym(elf_data, i, &sym);
-+
-+			if (GELF_ST_TYPE(sym.st_info) != STT_FUNC)
-+				continue;
-+
-+			name = elf_strptr(elf, shdr.sh_link, sym.st_name);
-+			addr = sym.st_value - load_address;
-+
-+			ret = actor(name, addr, arg);
-+			if (ret)
-+				return ret;
-+
-+			++symbols_count;
-+		}
-+	}
-+
-+	return symbols_count;
-+}
-+
-+#define SDT_NOTE_TYPE 3
-+#define SDT_NOTE_COUNT 3
-+#define SDT_NOTE_SCN ".note.stapsdt"
-+#define SDT_NOTE_NAME "stapsdt"
-+
-+static vaddr_t sdt_note_addr(Elf *elf, const char *data, size_t len, int type)
-+{
-+	vaddr_t vaddr;
-+
-+	/*
-+	 * Three addresses need to be obtained :
-+	 * Marker location, address of base section and semaphore location
-+	 */
-+	union {
-+		Elf64_Addr a64[3];
-+		Elf32_Addr a32[3];
-+	} buf;
-+
-+	/*
-+	 * dst and src are required for translation from file to memory
-+	 * representation
-+	 */
-+	Elf_Data dst = {
-+		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
-+		.d_size = gelf_fsize(elf, ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT),
-+		.d_off = 0, .d_align = 0
-+	};
-+
-+	Elf_Data src = {
-+		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
-+		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
-+		.d_align = 0
-+	};
-+
-+	/* Check the type of each of the notes */
-+	if (type != SDT_NOTE_TYPE)
-+		return 0;
-+
-+	if (len < dst.d_size + SDT_NOTE_COUNT)
-+		return 0;
-+
-+	/* Translation from file representation to memory representation */
-+	if (gelf_xlatetom(elf, &dst, &src,
-+			  elf_getident(elf, NULL)[EI_DATA]) == NULL)
-+		return 0; /* TODO */
-+
-+	memcpy(&vaddr, &buf, sizeof(vaddr));
-+
-+	return vaddr;
-+}
-+
-+static const char *sdt_note_name(Elf *elf, GElf_Nhdr *nhdr, const char *data)
-+{
-+	const char *provider = data + gelf_fsize(elf,
-+		ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT);
-+	const char *name = (const char *)memchr(provider, '\0',
-+		data + nhdr->n_descsz - provider);
-+
-+	if (name++ == NULL)
-+		return NULL;
-+
-+	return name;
-+}
-+
-+static const char *sdt_note_data(const Elf_Data *data, size_t off)
-+{
-+	return ((data->d_buf) + off);
-+}
-+
-+static int dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
-+{
-+	GElf_Ehdr ehdr;
-+	Elf_Scn *scn = NULL;
-+	Elf_Data *data;
-+	GElf_Shdr shdr;
-+	size_t shstrndx;
-+	size_t next;
-+	GElf_Nhdr nhdr;
-+	size_t name_off, desc_off, offset;
-+	vaddr_t vaddr = 0;
-+	int symbols_count = 0;
-+
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		return 0;
-+	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
-+		return 0;
-+
-+	/*
-+	 * Look for section type = SHT_NOTE, flags = no SHF_ALLOC
-+	 * and name = .note.stapsdt
-+	 */
-+	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN);
-+	if (!scn)
-+		return 0;
-+	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC))
-+		return 0;
-+
-+	data = elf_getdata(scn, NULL);
-+
-+	for (offset = 0;
-+		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
-+		offset = next) {
-+		const char *name;
-+		int ret;
-+
-+		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
-+		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
-+			    sizeof(SDT_NOTE_NAME)))
-+			continue;
-+
-+		name = sdt_note_name(elf, &nhdr, sdt_note_data(data, desc_off));
-+		if (!name)
-+			continue;
-+
-+		vaddr = sdt_note_addr(elf, sdt_note_data(data, desc_off),
-+					nhdr.n_descsz, nhdr.n_type);
-+		if (!vaddr)
-+			continue;
-+
-+		ret = actor(name, vaddr, arg);
-+		if (ret)
-+			return ret;
-+
-+		++symbols_count;
-+	}
-+
-+	return symbols_count;
-+}
-+
-+int dso_follow_debuglink(Elf *elf,
-+			 const char *orig_exec,
-+			 int type,
-+			 symbol_actor actor,
-+			 void *arg)
-+{
-+	GElf_Ehdr ehdr;
-+	size_t shstrndx, orig_exec_dir_len;
-+	GElf_Shdr shdr;
-+	Elf_Scn *dbg_link_scn;
-+	Elf_Data *dbg_link_scn_data;
-+	char *dbg_link, *dbg_bin, *last_slash;
-+	int symbols_count;
-+
-+	/* First try to find the .gnu_debuglink section in the binary. */
-+	if (gelf_getehdr(elf, &ehdr) == NULL)
-+		return 0;
-+	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
-+		return 0;
-+
-+	dbg_link_scn = elf_section_by_name(elf, &ehdr, &shdr, dbg_link_name);
-+	if (dbg_link_scn == NULL)
-+		return 0;
-+
-+	/* Debug link section found, read of the content (only get the first
-+	   string, no checksum checking atm). This is debug binary file name. */
-+	dbg_link_scn_data = elf_getdata(dbg_link_scn, NULL);
-+	if (dbg_link_scn_data == NULL ||
-+	    dbg_link_scn_data->d_size <= 0 ||
-+	    dbg_link_scn_data->d_buf == NULL)
-+		return 0;
-+
-+	/* Now compose debug executable name */
-+	dbg_link = (char *)(dbg_link_scn_data->d_buf);
-+	dbg_bin = malloc(strlen(dbg_bin_dir) + 1 +
-+			 strlen(orig_exec) + 1 +
-+			 strlen(dbg_link) + 1);
-+	if (!dbg_bin)
-+		return 0;
-+
-+	orig_exec_dir_len = PATH_MAX;
-+	last_slash = strrchr(orig_exec, '/');
-+	if (last_slash != NULL)
-+		orig_exec_dir_len = last_slash - orig_exec;
-+
-+	sprintf(dbg_bin, "%s/%.*s/%s",
-+		dbg_bin_dir, (int)orig_exec_dir_len, orig_exec, dbg_link);
-+
-+	/* Retry symbol seach with the debug binary */
-+	symbols_count = parse_dso_symbols(dbg_bin, type, actor, arg);
-+
-+	free(dbg_bin);
-+
-+	return symbols_count;
-+}
-+
-+int parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
-+{
-+	int symbols_count = 0;
-+	Elf *elf;
-+	int fd;
-+
-+	if (elf_version(EV_CURRENT) == EV_NONE)
-+		return -1;
-+
-+	fd = open(exec, O_RDONLY);
-+	if (fd < 0)
-+		return -1;
-+
-+	elf = elf_begin(fd, ELF_C_READ, NULL);
-+	if (elf) {
-+		switch (type) {
-+		case FIND_SYMBOL:
-+			symbols_count = dso_symbols(elf, actor, arg);
-+			if (symbols_count != 0)
-+				break;
-+			/* If no symbols found, try in the debuglink binary. */
-+			symbols_count = dso_follow_debuglink(elf,
-+							     exec,
-+							     type,
-+							     actor,
-+							     arg);
-+			break;
-+		case FIND_STAPSDT_NOTE:
-+			symbols_count = dso_sdt_notes(elf, actor, arg);
-+			break;
-+		}
-+
-+		elf_end(elf);
-+	}
-+
-+	close(fd);
-+	return symbols_count;
-+}
-diff --git a/tools/ktap/kp_symbol.h b/tools/ktap/kp_symbol.h
-new file mode 100644
-index 0000000..650e785
---- /dev/null
-+++ b/tools/ktap/kp_symbol.h
-@@ -0,0 +1,50 @@
-+/*
-+ * symbol.h - extract symbols from DSO.
-+ *
-+ * This file is part of ktap by Jovi Zhangwei.
-+ *
-+ * Copyright (C) 2013 Azat Khuzhin <a3at.mail@gmail.com>.
-+ *
-+ * ktap is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * ktap is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+
-+#define FIND_SYMBOL 1
-+#define FIND_STAPSDT_NOTE 2
-+
-+#ifndef NO_LIBELF
-+
-+#include <gelf.h>
-+#include <sys/queue.h>
-+
-+typedef GElf_Addr vaddr_t;
-+typedef int (*symbol_actor)(const char *name, vaddr_t addr, void *arg);
-+
-+/**
-+ * Parse all DSO symbols/sdt notes and all for every of them
-+ * an actor.
-+ *
-+ * @exec - path to DSO
-+ * @type - see FIND_*
-+ * @symbol_actor - actor to call (callback)
-+ * @arg - argument for @actor
-+ *
-+ * @return
-+ * If there have errors, return negative value;
-+ * No symbols found, return 0;
-+ * Otherwise return number of dso symbols found
-+ */
-+int
-+parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg);
++#include <stdint.h>
++typedef int ptrdiff_t;
 +#endif
++
++#include "ktap_bc.h"
++
++/* Various VM limits. */
++#define KP_MAX_MEMPOOL_SIZE	10000	/* Max. mempool size(Kbytes). */
++#define KP_MAX_STR	512		/* Max. string length. */
++#define KP_MAX_STRNUM	9999		/* Max. string number. */
++
++#define KP_MAX_STRTAB	(1<<26)		/* Max. string table size. */
++#define KP_MAX_HBITS	26		/* Max. hash bits. */
++#define KP_MAX_ABITS	28		/* Max. bits of array key. */
++#define KP_MAX_ASIZE	((1<<(KP_MAX_ABITS-1))+1)  /* Max. array part size. */
++#define KP_MAX_COLOSIZE	16		/* Max. elems for colocated array. */
++
++#define KP_MAX_LINE	1000		/* Max. source code line number. */
++#define KP_MAX_XLEVEL	200		/* Max. syntactic nesting level. */
++#define KP_MAX_BCINS	(1<<26)		/* Max. # of bytecode instructions. */
++#define KP_MAX_SLOTS	250		/* Max. # of slots in a ktap func. */
++#define KP_MAX_LOCVAR	200		/* Max. # of local variables. */
++#define KP_MAX_UPVAL	60		/* Max. # of upvalues. */
++
++#define KP_MAX_CACHED_CFUNCTION	128	/* Max. cached global cfunction */
++
++#define KP_MAX_STACK_DEPTH	50	/* Max. stack depth */
++
++/*
++ * The first argument type of kdebug.trace_by_id()
++ * The value is a userspace memory pointer.
++ * Maybe embed it into the trunk file in future.
++ */
++typedef struct ktap_eventdesc {
++	int nr;  /* the number of events id */
++	int *id_arr; /* events id array */
++	char *filter;
++} ktap_eventdesc_t;
++
++
++/* ktap option for each script */
++typedef struct ktap_option {
++	char *trunk; /* __user */
++	int trunk_len;
++	int argc;
++	char **argv; /* __user */
++	int verbose;
++	int trace_pid;
++	int workload;
++	int trace_cpu;
++	int print_timestamp;
++	int quiet;
++	int dry_run;
++} ktap_option_t;
++
++/*
++ * Ioctls that can be done on a ktap fd:
++ * todo: use _IO macro in include/uapi/asm-generic/ioctl.h
++ */
++#define KTAP_CMD_IOC_RUN		('$' + 1)
++#define KTAP_CMD_IOC_EXIT		('$' + 3)
++
++#define KTAP_VERSION_MAJOR       "0"
++#define KTAP_VERSION_MINOR       "4"
++
++#define KTAP_VERSION    "ktap " KTAP_VERSION_MAJOR "." KTAP_VERSION_MINOR
++#define KTAP_AUTHOR    "Jovi Zhangwei <jovi.zhangwei@gmail.com>"
++#define KTAP_COPYRIGHT  KTAP_VERSION "  Copyright (C) 2012-2014, " KTAP_AUTHOR
++
++#define MYINT(s)        (s[0] - '0')
++#define VERSION         (MYINT(KTAP_VERSION_MAJOR) * 16 + MYINT(KTAP_VERSION_MINOR))
++
++typedef long ktap_number;
++typedef int ktap_instr_t;
++typedef union ktap_obj ktap_obj_t;
++
++struct ktap_state;
++typedef int (*ktap_cfunction) (struct ktap_state *ks);
++
++/* ktap_val_t is basic value type in ktap stack, for reference all objects */
++typedef struct ktap_val {
++	union {
++		ktap_obj_t *gc;		/* collectable objects, str/tab/... */
++		void *p;		/* light userdata */
++		ktap_cfunction f;	/* light C functions */
++		ktap_number n;		/* numbers */
++		struct {
++			uint16_t depth;	/* stack depth */
++			uint16_t skip;	/* skip stack entries */
++		} stack;
++	} val;
++	union {
++		int type;		/* type for above val */
++		const unsigned int *pcr;/* Overlaps PC for ktap frames.*/
++	};
++} ktap_val_t;
++
++typedef ktap_val_t *StkId;
++
++#define GCHeader ktap_obj_t *nextgc; u8 gct;
++
++typedef struct ktap_str {
++	GCHeader;
++	u8 reserved;  /* Used by lexer for fast lookup of reserved words. */
++	u8 extra;
++	unsigned int hash;
++	int len;  /* number of characters in string */
++} ktap_str_t;
++
++typedef struct ktap_upval {
++	GCHeader;
++	uint8_t closed;	/* Set if closed (i.e. uv->v == &uv->u.value). */
++	uint8_t immutable;	/* Immutable value. */
++	union {
++		ktap_val_t tv; /* If closed: the value itself. */
++		struct { /* If open: double linked list, anchored at thread. */
++			struct ktap_upval *prev;
++			struct ktap_upval *next;
++		};
++	};
++	ktap_val_t *v;  /* Points to stack slot (open) or above (closed). */
++} ktap_upval_t;
++
++
++typedef struct ktap_func {
++	GCHeader;
++	u8 nupvalues;
++	BCIns *pc;
++	struct ktap_proto *p;
++	struct ktap_upval *upvals[1];  /* list of upvalues */
++} ktap_func_t;
++
++typedef struct ktap_proto {
++	GCHeader;
++	uint8_t numparams;	/* Number of parameters. */
++	uint8_t framesize;	/* Fixed frame size. */
++	int sizebc;		/* Number of bytecode instructions. */
++	ktap_obj_t *gclist;
++	void *k;	/* Split constant array (points to the middle). */
++	void *uv;	/* Upvalue list. local slot|0x8000 or parent uv idx. */
++	int sizekgc;	/* Number of collectable constants. */
++	int sizekn;	/* Number of lua_Number constants. */
++	int sizept;	/* Total size including colocated arrays. */
++	uint8_t sizeuv;	/* Number of upvalues. */
++	uint8_t flags;	/* Miscellaneous flags (see below). */
++
++	/* --- The following fields are for debugging/tracebacks only --- */
++	ktap_str_t *chunkname;	/* Chunk name this function was defined in. */
++	BCLine firstline;	/* First line of the function definition. */
++	BCLine numline;	/* Number of lines for the function definition. */
++	void *lineinfo;	/* Compressed map from bytecode ins. to source line. */
++	void *uvinfo;	/* Upvalue names. */
++	void *varinfo;	/* Names and compressed extents of local variables. */
++} ktap_proto_t;
++
++/* Flags for prototype. */
++#define PROTO_CHILD		0x01	/* Has child prototypes. */
++#define PROTO_VARARG		0x02	/* Vararg function. */
++#define PROTO_FFI		0x04	/* Uses BC_KCDATA for FFI datatypes. */
++#define PROTO_NOJIT		0x08	/* JIT disabled for this function. */
++#define PROTO_ILOOP		0x10	/* Patched bytecode with ILOOP etc. */
++/* Only used during parsing. */
++#define PROTO_HAS_RETURN	0x20	/* Already emitted a return. */
++#define PROTO_FIXUP_RETURN	0x40	/* Need to fixup emitted returns. */
++/* Top bits used for counting created closures. */
++#define PROTO_CLCOUNT		0x20	/* Base of saturating 3 bit counter. */
++#define PROTO_CLC_BITS		3
++#define PROTO_CLC_POLY		(3*PROTO_CLCOUNT)  /* Polymorphic threshold. */
++
++#define PROTO_UV_LOCAL		0x8000	/* Upvalue for local slot. */
++#define PROTO_UV_IMMUTABLE	0x4000	/* Immutable upvalue. */
++
++#define proto_kgc(pt, idx)	(((ktap_obj_t *)(pt)->k)[idx])
++#define proto_bc(pt)		((BCIns *)((char *)(pt) + sizeof(ktap_proto_t)))
++#define proto_bcpos(pt, pc)	((BCPos)((pc) - proto_bc(pt)))
++#define proto_uv(pt)		((uint16_t *)(pt)->uv)
++
++#define proto_chunkname(pt)	((pt)->chunkname)
++#define proto_lineinfo(pt)	((const void *)(pt)->lineinfo)
++#define proto_uvinfo(pt)	((const uint8_t *)(pt)->uvinfo)
++#define proto_varinfo(pt)	((const uint8_t *)(pt)->varinfo)
++
++
++typedef struct ktap_node_t {
++	ktap_val_t val; /* Value object. Must be first field. */
++	ktap_val_t key; /* Key object. */
++	struct ktap_node_t *next;  /* hash chain */
++} ktap_node_t;
++
++/* ktap_tab */
++typedef struct ktap_tab {
++	GCHeader;
++#ifdef __KERNEL__
++	arch_spinlock_t lock;
++#endif
++	ktap_val_t *array;    /* Array part. */
++	ktap_node_t *node;    /* Hash part. */
++	ktap_node_t *freetop; /* any free position is before this position */
++
++	uint32_t asize;		/* Size of array part (keys [0, asize-1]). */
++	uint32_t hmask;		/* log2 of size of `node' array */
++
++	uint32_t hnum;		/* number of all nodes */
++} ktap_tab_t;
++
++typedef struct ktap_stats {
++	int mem_allocated;
++	int nr_mem_allocate;
++	int events_hits;
++	int events_missed;
++} ktap_stats_t;
++
++#define KTAP_STATS(ks)	this_cpu_ptr(G(ks)->stats)
++
++
++#define KTAP_RUNNING	0 /* normal running state */
++#define KTAP_TRACE_END	1 /* running in trace_end function */
++#define KTAP_EXIT	2 /* normal exit, set when call exit() */
++#define KTAP_ERROR	3 /* error state, called by kp_error */
++
++typedef struct ktap_global_state {
++	void *mempool;		/* string memory pool */
++	void *mp_freepos;	/* free position in memory pool */
++	int mp_size;		/* memory pool size */
++#ifdef __KERNEL__
++	arch_spinlock_t mp_lock;/* mempool lock */
++#endif
++
++	ktap_str_t **strhash;	/* String hash table (hash chain anchors). */
++	int strmask;		/* String hash mask (size of hash table-1). */
++	int strnum;		/* Number of strings in hash table. */
++#ifdef __KERNEL__
++	arch_spinlock_t str_lock; /* string operation lock */
++#endif
++
++	ktap_val_t registry;
++	ktap_tab_t *gtab;	/* global table contains cfunction and args */
++	ktap_obj_t *allgc; /* list of all collectable objects */
++	ktap_upval_t uvhead; /* head of list of all open upvalues */
++
++	struct ktap_state *mainthread; /*main state */
++	int state; /* status of ktapvm, KTAP_RUNNING, KTAP_TRACE_END, etc */
++#ifdef __KERNEL__
++	/* reserved global percpu data */
++	void __percpu *percpu_state[PERF_NR_CONTEXTS];
++	void __percpu *percpu_print_buffer[PERF_NR_CONTEXTS];
++	void __percpu *percpu_temp_buffer[PERF_NR_CONTEXTS];
++
++	/* for recursion tracing check */
++	int __percpu *recursion_context[PERF_NR_CONTEXTS];
++
++	ktap_option_t *parm; /* ktap options */
++	pid_t trace_pid;
++	struct task_struct *trace_task;
++	cpumask_var_t cpumask;
++	struct ring_buffer *buffer;
++	struct dentry *trace_pipe_dentry;
++	struct task_struct *task;
++	int trace_enabled;
++	int wait_user; /* flag to indicat waiting user consume content */
++
++	struct list_head timers; /* timer list */
++	struct ktap_stats __percpu *stats; /* memory allocation stats */
++	struct list_head events_head; /* probe event list */
++
++	ktap_func_t *trace_end_closure; /* trace_end closure */
++
++	/* C function table for fast call */
++	int nr_builtin_cfunction;
++	ktap_cfunction gfunc_tbl[KP_MAX_CACHED_CFUNCTION];
++#endif
++} ktap_global_state_t;
++
++
++typedef struct ktap_state {
++	ktap_global_state_t *g;	/* global state */
++	int stop;		/* don't enter tracing handler if stop is 1 */
++	StkId top;		/* stack top */
++	StkId func;		/* execute light C function */
++	StkId stack_last;	/* last stack pointer */
++	StkId stack;		/* ktap stack, percpu pre-reserved */
++	ktap_upval_t *openupval;/* opened upvals list */
++
++#ifdef __KERNEL__
++	/* current fired event which allocated on stack */
++	struct ktap_event_data *current_event;
++#endif
++} ktap_state_t;
++
++#define G(ks)   (ks->g)
++
++/*
++ * Union of all collectable objects
++ */
++union ktap_obj {
++	struct { GCHeader } gch;
++	struct ktap_str ts;
++	struct ktap_func fn;
++	struct ktap_tab h;
++	struct ktap_proto pt;
++	struct ktap_upval uv;
++	struct ktap_state th;  /* thread */
++};
++
++#define gch(o)			(&(o)->gch)
++
++/* macros to convert a ktap_obj_t into a specific value */
++#define gco2ts(o)		(&((o)->ts))
++#define gco2uv(o)		(&((o)->uv))
++#define obj2gco(v)		((ktap_obj_t *)(v))
++
++/* predefined values in the registry */
++#define KTAP_RIDX_GLOBALS	1
++#define KTAP_RIDX_LAST		KTAP_RIDX_GLOBALS
++
++/* ktap object types */
++#define KTAP_TNIL		(~0u)
++#define KTAP_TFALSE		(~1u)
++#define KTAP_TTRUE		(~2u)
++#define KTAP_TNUM		(~3u)
++#define KTAP_TLIGHTUD		(~4u)
++#define KTAP_TSTR		(~5u)
++#define KTAP_TUPVAL		(~6u)
++#define KTAP_TPROTO		(~7u)
++#define KTAP_TFUNC		(~8u)
++#define KTAP_TCFUNC		(~9u)
++#define KTAP_TCDATA		(~10u)
++#define KTAP_TTAB		(~11u)
++#define KTAP_TUDATA		(~12u)
++
++/* Specfic types */
++#define KTAP_TEVENTSTR		(~13u) /* argstr */
++#define KTAP_TKSTACK		(~14u) /* stack(), not intern to string yet */
++#define KTAP_TKIP		(~15u) /* kernel function ip addres */
++#define KTAP_TUIP		(~16u) /* userspace function ip addres */
++
++/* This is just the canonical number type used in some places. */
++#define KTAP_TNUMX		(~17u)
++
++
++#define itype(o)		((o)->type)
++#define setitype(o, t)		((o)->type = (t))
++
++#define val_(o)			((o)->val)
++#define gcvalue(o)		(val_(o).gc)
++
++#define nvalue(o)		(val_(o).n)
++#define boolvalue(o)		(KTAP_TFALSE - (o)->type)
++#define hvalue(o)		(&val_(o).gc->h)
++#define phvalue(o)		(&val_(o).gc->ph)
++#define clvalue(o)		(&val_(o).gc->fn)
++#define ptvalue(o)		(&val_(o).gc->pt)
++
++#define getstr(ts)		(const char *)((ts) + 1)
++#define rawtsvalue(o)		(&val_(o).gc->ts)
++#define svalue(o)		getstr(rawtsvalue(o))
++
++#define pvalue(o)		(&val_(o).p)
++#define fvalue(o)		(val_(o).f)
++
++#define is_nil(o)		(itype(o) == KTAP_TNIL)
++#define is_false(o)		(itype(o) == KTAP_TFALSE)
++#define is_true(o)		(itype(o) == KTAP_TTRUE)
++#define is_bool(o)		(is_false(o) || is_true(o))
++#define is_string(o)		(itype(o) == KTAP_TSTR)
++#define is_number(o)		(itype(o) == KTAP_TNUM)
++#define is_table(o)		(itype(o) == KTAP_TTAB)
++#define is_proto(o)		(itype(o) == KTAP_TPROTO)
++#define is_function(o)		(itype(o) == KTAP_TFUNC)
++#define is_cfunc(o)		(itype(o) == KTAP_TCFUNC)
++#define is_eventstr(o)		(itype(o) == KTAP_TEVENTSTR)
++#define is_kip(o)		(itype(o) == KTAP_TKIP)
++
++#define set_nil(o)		((o)->type = KTAP_TNIL)
++#define set_bool(o, x)		((o)->type = KTAP_TFALSE-(uint32_t)(x))
++
++static inline void set_number(ktap_val_t *o, ktap_number n)
++{
++	setitype(o, KTAP_TNUM);
++	o->val.n = n;
++}
++
++static inline void set_string(ktap_val_t *o, const ktap_str_t *str)
++{
++	setitype(o, KTAP_TSTR);
++	o->val.gc = (ktap_obj_t *)str;
++}
++
++static inline void set_table(ktap_val_t *o, ktap_tab_t *tab)
++{
++	setitype(o, KTAP_TTAB);
++	o->val.gc = (ktap_obj_t *)tab;
++}
++
++static inline void set_proto(ktap_val_t *o, ktap_proto_t *pt)
++{
++	setitype(o, KTAP_TPROTO);
++	o->val.gc = (ktap_obj_t *)pt;
++}
++
++static inline void set_kstack(ktap_val_t *o, uint16_t depth, uint16_t skip)
++{
++	setitype(o, KTAP_TKSTACK);
++	o->val.stack.depth = depth;
++	o->val.stack.skip = skip;
++}
++
++static inline void set_func(ktap_val_t *o, ktap_func_t *fn)
++{
++	setitype(o, KTAP_TFUNC);
++	o->val.gc = (ktap_obj_t *)fn;
++}
++
++static inline void set_cfunc(ktap_val_t *o, ktap_cfunction fn)
++{
++	setitype(o, KTAP_TCFUNC);
++	o->val.f = fn;
++}
++
++static inline void set_eventstr(ktap_val_t *o)
++{
++	setitype(o, KTAP_TEVENTSTR);
++}
++
++static inline void set_ip(ktap_val_t *o, unsigned long addr)
++{
++	setitype(o, KTAP_TKIP);
++	o->val.n = addr;
++}
++
++
++#define set_obj(o1, o2)		{ *(o1) = *(o2); }
++
++#define incr_top(ks)		{ks->top++;}
++
++/*
++ * KTAP_QL describes how error messages quote program elements.
++ * CHANGE it if you want a different appearance.
++ */
++#define KTAP_QL(x)      "'" x "'"
++#define KTAP_QS         KTAP_QL("%s")
++
++#endif /* __KTAP_TYPES_H__ */
++
 -- 
 1.8.1.4
 
