@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaC1LvT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 07:51:19 -0400
-Received: from mail1.ethionet.et ([213.55.96.134]:54101 "EHLO mx2.ironport.et"
+	id S1751910AbaC1LwM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 07:52:12 -0400
+Received: from mail1.ethionet.et ([213.55.96.134]:56152 "EHLO mx2.ironport.et"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751095AbaC1LvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 07:51:18 -0400
+	id S1751045AbaC1LwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 07:52:11 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AvMIADJhNVMKmgkG/2dsb2JhbAA8HQYKgmIBAYEkgwq/WQEJJYEOdIIYAQEDBAEBSAlUBQ8NBAEBAQwIHlKFSwEBASo0FIEaAQEFBgEBF5JplASIDQiCQyk1gQYRgR8YlR4fQoZ+F4EljHQBCgQBAgEGDAlFCAEFB4FoZBOBOgEDgSyGRIFchg+PZ4hDghaCRQsBgUk+A1UBTwEBAwICHRx3
 X-IronPort-AV: E=Sophos;i="4.97,750,1389733200"; 
-   d="scan'208";a="28441782"
-Date: Fri, 28 Mar 2014 15:02:18 +0300 (EAT)
+   d="scan'208";a="28441879"
+Date: Fri, 28 Mar 2014 15:03:17 +0300 (EAT)
 From: Admin <sorenie@ethionet.et>
 Reply-To: Admin <Adim.offices@webname.com>
-Message-ID: <25247886.1740351396008138901.JavaMail.root@lgh-mail-b-3.etcmailserver.com.et>
+Message-ID: <32405656.1740381396008197317.JavaMail.root@lgh-mail-b-3.etcmailserver.com.et>
 Subject: Helpdesk Support Center
 MIME-Version: 1.0
 Content-Type: text/plain; charset=GBK
