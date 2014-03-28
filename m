@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaC1R4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:56:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51185 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaC1Rai (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1751305AbaC1Rai (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 28 Mar 2014 13:30:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51162 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaC1Rae (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 13:30:34 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.10 05/22] media: cx18: check for allocation failure in cx18_read_eeprom()
-Date: Fri, 28 Mar 2014 10:31:57 -0700
-Message-Id: <20140328173110.137188670@linuxfoundation.org>
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>
+Subject: [PATCH 3.4 13/13] ipc/msg: fix race around refcount
+Date: Fri, 28 Mar 2014 10:32:03 -0700
+Message-Id: <20140328173054.817466312@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
-References: <20140328173109.378288825@linuxfoundation.org>
+In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
+References: <20140328173053.049244535@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 
-commit e351bf25fa373a3de0be2141b962c5c3c27006a2 upstream.
+[fixed differently in 6062a8dc0517bce23e3c2f7d2fea5e22411269a3 upstream.]
 
-It upsets static checkers when we don't check for allocation failure.  I
-moved the memset() of "tv" earlier so we don't use uninitialized data on
-error.
-Fixes: 1d212cf0c2d8 ('[media] cx18: struct i2c_client is too big for stack')
+In older kernels (before v3.10) ipc_rcu_hdr->refcount was non-atomic int.
+There was possuble double-free bug: do_msgsnd() calls ipc_rcu_putref() under
+msq->q_perm->lock and RCU, while freequeue() calls it while it holds only
+'rw_mutex', so there is no sinchronization between them. Two function
+decrements '2' non-atomically, they both can get '0' as result.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+do_msgsnd()					freequeue()
 
+msq = msg_lock_check(ns, msqid);
+...
+ipc_rcu_getref(msq);
+msg_unlock(msq);
+schedule();
+						(caller locks spinlock)
+						expunge_all(msq, -EIDRM);
+						ss_wakeup(&msq->q_senders, 1);
+						msg_rmid(ns, msq);
+						msg_unlock(msq);
+ipc_lock_by_ptr(&msq->q_perm);
+ipc_rcu_putref(msq);				ipc_rcu_putref(msq);
+< both may get get --(...)->refcount == 0 >
+
+This patch locks ipc_lock and RCU around ipc_rcu_putref in freequeue.
+( RCU protects memory for spin_unlock() )
+
+Similar bugs might be in other users of ipc_rcu_putref().
+
+In the mainline this has been fixed in v3.10 indirectly in commmit
+6062a8dc0517bce23e3c2f7d2fea5e22411269a3
+("ipc,sem: fine grained locking for semtimedop") by Rik van Riel.
+That commit optimized locking and converted refcount into atomic.
+
+I'm not sure that anybody should care about this bug: it's very-very unlikely
+and no longer exists in actual mainline. I've found this just by looking into
+the code, probably this never happens in real life.
+
+Signed-off-by: Konstantin Khlebnikov <k.khlebnikov@samsung.com>
 ---
- drivers/media/pci/cx18/cx18-driver.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ ipc/msg.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/drivers/media/pci/cx18/cx18-driver.c
-+++ b/drivers/media/pci/cx18/cx18-driver.c
-@@ -327,13 +327,16 @@ void cx18_read_eeprom(struct cx18 *cx, s
- 	struct i2c_client *c;
- 	u8 eedata[256];
+--- a/ipc/msg.c
++++ b/ipc/msg.c
+@@ -296,7 +296,9 @@ static void freeque(struct ipc_namespace
+ 	}
+ 	atomic_sub(msq->q_cbytes, &ns->msg_bytes);
+ 	security_msg_queue_free(msq);
++	ipc_lock_by_ptr(&msq->q_perm);
+ 	ipc_rcu_putref(msq);
++	ipc_unlock(&msq->q_perm);
+ }
  
-+	memset(tv, 0, sizeof(*tv));
-+
- 	c = kzalloc(sizeof(*c), GFP_KERNEL);
-+	if (!c)
-+		return;
- 
- 	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
- 	c->adapter = &cx->i2c_adap[0];
- 	c->addr = 0xa0 >> 1;
- 
--	memset(tv, 0, sizeof(*tv));
- 	if (tveeprom_read(c, eedata, sizeof(eedata)))
- 		goto ret;
- 
+ /*
 
 
