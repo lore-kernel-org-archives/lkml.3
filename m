@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051AbaC1Ovg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:51:36 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35639 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751342AbaC1Ovf (ORCPT
+	id S1752159AbaC1OyN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:54:13 -0400
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:65210 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751948AbaC1OyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:51:35 -0400
-Date: Fri, 28 Mar 2014 09:49:36 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-CC: <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <linux-kernel@vger.kernel.org>, <gregkh@linuxfoundation.org>,
-        <balbi@ti.com>
-Subject: Re: [PATCH] extcon: palmas: explicitly set edev name as node name
-Message-ID: <20140328144936.GF17820@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395989462-14613-1-git-send-email-kishon@ti.com>
+	Fri, 28 Mar 2014 10:54:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rWhLK7VZz0iBluhq"
-Content-Disposition: inline
-In-Reply-To: <1395989462-14613-1-git-send-email-kishon@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20130827123827.GB5855@x1.alien8.de>
+References: <1377180807-12758-1-git-send-email-rric@kernel.org>
+	<20130824093826.GB28383@pd.tnic>
+	<20130827122721.GF15884@rric.localhost>
+	<20130827123827.GB5855@x1.alien8.de>
+Date: Fri, 28 Mar 2014 15:54:11 +0100
+Message-ID: <CAFrcx1kdVQmNETtUoLJNdtMbzZ4bPSxHq8R-PwOdd=vEu6L9Zw@mail.gmail.com>
+Subject: Re: [PATCH v3 00/12] perf, persistent: Add persistent events
+From: Jean Pihet <jean.pihet@linaro.org>
+To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tomasz Nowicki <tomasz.nowicki@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---rWhLK7VZz0iBluhq
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Fri, Mar 28, 2014 at 12:21:02PM +0530, Kishon Vijay Abraham I wrote:
-> commit ca488 (extcon: of: Remove unnecessary function call by using the
-> name of device_node) started using node name instead of device name
-> to get the extcon device. This breaks dwc3-omap since it's not able to
-> get the extcon device anymore. Fixed it by setting edev name of
-> palmas to be the same as its node name.
->=20
-> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
-> Reported-by: Felipe Balbi <balbi@ti.com>
+Now that the feature is resurfacing, I would like to take over the
+task for persistent events.
+What is the status of the series, is it close to acceptance?
 
-Thanks Kishon, I tested something similar yesterday and I saw that it
-helped a lot. I'm still missing something (maybe DTS) because dwc3 still
-didn't probe even after fixing this.
+AFAICS the patch RFC 12/12 was under discussion, mainly about the
+naming of the ioctls (latest e-mail is in favor of CLAIM/UNCLAIM).
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+Any thoughts?
 
-> ---
->  drivers/extcon/extcon-palmas.c |    5 +++++
->  1 file changed, 5 insertions(+)
->=20
-> diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palma=
-s.c
-> index 2aea4bc..51dee21 100644
-> --- a/drivers/extcon/extcon-palmas.c
-> +++ b/drivers/extcon/extcon-palmas.c
-> @@ -23,6 +23,7 @@
->  #include <linux/module.h>
->  #include <linux/interrupt.h>
->  #include <linux/platform_device.h>
-> +#include <linux/slab.h>
->  #include <linux/err.h>
->  #include <linux/mfd/palmas.h>
->  #include <linux/of.h>
-> @@ -188,11 +189,13 @@ static int palmas_usb_probe(struct platform_device =
-*pdev)
-> =20
->  	palmas_usb->edev.supported_cable =3D palmas_extcon_cable;
->  	palmas_usb->edev.dev.parent =3D palmas_usb->dev;
-> +	palmas_usb->edev.name =3D kstrdup(node->name, GFP_KERNEL);
->  	palmas_usb->edev.mutually_exclusive =3D mutually_exclusive;
-> =20
->  	status =3D extcon_dev_register(&palmas_usb->edev);
->  	if (status) {
->  		dev_err(&pdev->dev, "failed to register extcon device\n");
-> +		kfree(palmas_usb->edev.name);
->  		return status;
->  	}
-> =20
-> @@ -230,6 +233,7 @@ static int palmas_usb_probe(struct platform_device *p=
-dev)
-> =20
->  fail_extcon:
->  	extcon_dev_unregister(&palmas_usb->edev);
-> +	kfree(palmas_usb->edev.name);
-> =20
->  	return status;
->  }
-> @@ -239,6 +243,7 @@ static int palmas_usb_remove(struct platform_device *=
-pdev)
->  	struct palmas_usb *palmas_usb =3D platform_get_drvdata(pdev);
-> =20
->  	extcon_dev_unregister(&palmas_usb->edev);
-> +	kfree(palmas_usb->edev.name);
-> =20
->  	return 0;
->  }
-> --=20
-> 1.7.9.5
->=20
+Let me rebase the code against the latest mainline and re-start the discussion.
 
---=20
-balbi
+Thread: https://lkml.org/lkml/2013/8/22/306
+RFC 12/12: https://lkml.org/lkml/2013/8/27/264
 
---rWhLK7VZz0iBluhq
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Regards,
+Jean
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTNYwAAAoJEIaOsuA1yqRExLcP/1K4PhSFmwoQM2XV+YC+B1LM
-NAOhRUx+d8okwlXDGZFamlSa6uYrsY9msaB9jISvr9FUOOw79fTBR5LYqkolH60A
-6JMe0M0OkiXi+OW2pEfVBKQg/ai79gW6FYCbTt3KOc4HIczHRji01TkZdCy1DLaV
-nus9FDLTQYDinfW/2xElzN2yPkbsLy6lA6OzhBu7MgIlciKyM/qVE8heZrPqI4fb
-9LBVtqL1DB1X/9fg154fin/WNNnTAjvfdlKCD6JofX67ADBF2tKf9UNHBucxT4wx
-2Zd6McVvn0s4gWzLpS2/H/H/eslaeSgwTas4GmcI6kGuwfSjGGkJMByKIDR1F4/L
-aaPM/i/kXMdP3hJ1F/18hew3KlWmGC/bh/7GAoEX3j6XG5cWHu2H9Exa+2git14n
-hIfgBELJnXuGk57WM23lw3ImJg59LMzea/KswMLXx9s2mnhlQ6Q+1u45hGXPo9Ah
-OIMWO7sreIwErru10ydoRy788v7ZsNd6PpvWxZgq1WadN19sTF6B5tNhs06karuD
-jTJeC4MJy6vYR+qb9wLJEKHemhbFfiBiQRLQdd78L6dKcS8NTVKiPUrtfaE6fGya
-8UPw7pbKgpRcRYVXxsABlZHc6CfwwXay5uriPSsSY9fpBMdRG6RDej4rjXsxSxXA
-WWJm/KH73DIefF9Md935
-=lj7y
------END PGP SIGNATURE-----
-
---rWhLK7VZz0iBluhq--
+On 27 August 2013 14:38, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Aug 27, 2013 at 02:27:21PM +0200, Robert Richter wrote:
+>> > > There are ioctl functions to control persistent events that can be
+>> > > used to detach or attach an event to or from a process. The
+>> > > PERF_EVENT_IOC_DETACH ioctl call makes an event persistent.
+>> >
+>> > Yeah, we probably want to abstract this a step further by allowing
+>> > to attach/detach fds to/from events. Then "persistent" is only one
+>> > incarnation of us always detaching from the event during its lifetime.
+>> >
+>> > If we close an event while it is attached, it gets destroyed - i.e.,
+>> > current functionality, etc. See the other thread.
+>>
+>> I don't know what you mean here exactly, please explain.
+>
+> Basically that detaching an event shouldn't make it persistent
+> explicitly - it simply continues running in the background. When we
+> reattach to it and die with the event attached, then it gets destroyed
+> too.
+>
+> Which means, we can have arbitrary life periods of events, persistency
+> being only a special case of it.
+>
+> IOW, as long as an event is detached in the background, it counts.
+> When something attaches to it and that something exits, the event gets
+> destroyed too, as part of the process teardown.
+>
+> And this is probably the most generic way to look at it.
+>
+> --
+> Regards/Gruss,
+> Boris.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
