@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbaC1RbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51337 "EHLO
+	id S1753196AbaC1RbK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:31:10 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51343 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbaC1RbB (ORCPT
+	with ESMTP id S1753119AbaC1RbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:01 -0400
+	Fri, 28 Mar 2014 13:31:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Subject: [PATCH 3.13 13/46] media: cx18: check for allocation failure in cx18_read_eeprom()
-Date: Fri, 28 Mar 2014 10:31:57 -0700
-Message-Id: <20140328173136.438091183@linuxfoundation.org>
+        Sage Weil <sage@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
+Subject: [PATCH 3.13 15/46] libceph: resend all writes after the osdmap loses the full flag
+Date: Fri, 28 Mar 2014 10:31:59 -0700
+Message-Id: <20140328173136.713645652@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -28,43 +26,124 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Josh Durgin <josh.durgin@inktank.com>
 
-commit e351bf25fa373a3de0be2141b962c5c3c27006a2 upstream.
+commit 9a1ea2dbff11547a8e664f143c1ffefc586a577a upstream.
 
-It upsets static checkers when we don't check for allocation failure.  I
-moved the memset() of "tv" earlier so we don't use uninitialized data on
-error.
-Fixes: 1d212cf0c2d8 ('[media] cx18: struct i2c_client is too big for stack')
+With the current full handling, there is a race between osds and
+clients getting the first map marked full. If the osd wins, it will
+return -ENOSPC to any writes, but the client may already have writes
+in flight. This results in the client getting the error and
+propagating it up the stack. For rbd, the block layer turns this into
+EIO, which can cause corruption in filesystems above it.
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Acked-by: Andy Walls <awalls@md.metrocast.net>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+To avoid this race, osds are being changed to drop writes that came
+from clients with an osdmap older than the last osdmap marked full.
+In order for this to work, clients must resend all writes after they
+encounter a full -> not full transition in the osdmap. osds will wait
+for an updated map instead of processing a request from a client with
+a newer map, so resent writes will not be dropped by the osd unless
+there is another not full -> full transition.
+
+This approach requires both osds and clients to be fixed to avoid the
+race. Old clients talking to osds with this fix may hang instead of
+returning EIO and potentially corrupting an fs. New clients talking to
+old osds have the same behavior as before if they encounter this race.
+
+Fixes: http://tracker.ceph.com/issues/6938
+
+Reviewed-by: Sage Weil <sage@inktank.com>
+Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/media/pci/cx18/cx18-driver.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ net/ceph/osd_client.c |   28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
 
---- a/drivers/media/pci/cx18/cx18-driver.c
-+++ b/drivers/media/pci/cx18/cx18-driver.c
-@@ -327,13 +327,16 @@ void cx18_read_eeprom(struct cx18 *cx, s
- 	struct i2c_client *c;
- 	u8 eedata[256];
+--- a/net/ceph/osd_client.c
++++ b/net/ceph/osd_client.c
+@@ -1636,14 +1636,17 @@ static void reset_changed_osds(struct ce
+  *
+  * Caller should hold map_sem for read.
+  */
+-static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
++static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
++			  bool force_resend_writes)
+ {
+ 	struct ceph_osd_request *req, *nreq;
+ 	struct rb_node *p;
+ 	int needmap = 0;
+ 	int err;
++	bool force_resend_req;
  
-+	memset(tv, 0, sizeof(*tv));
+-	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
++	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
++		force_resend_writes ? " (force resend writes)" : "");
+ 	mutex_lock(&osdc->request_mutex);
+ 	for (p = rb_first(&osdc->requests); p; ) {
+ 		req = rb_entry(p, struct ceph_osd_request, r_node);
+@@ -1668,7 +1671,10 @@ static void kick_requests(struct ceph_os
+ 			continue;
+ 		}
+ 
+-		err = __map_request(osdc, req, force_resend);
++		force_resend_req = force_resend ||
++			(force_resend_writes &&
++				req->r_flags & CEPH_OSD_FLAG_WRITE);
++		err = __map_request(osdc, req, force_resend_req);
+ 		if (err < 0)
+ 			continue;  /* error */
+ 		if (req->r_osd == NULL) {
+@@ -1688,7 +1694,8 @@ static void kick_requests(struct ceph_os
+ 				 r_linger_item) {
+ 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
+ 
+-		err = __map_request(osdc, req, force_resend);
++		err = __map_request(osdc, req,
++				    force_resend || force_resend_writes);
+ 		dout("__map_request returned %d\n", err);
+ 		if (err == 0)
+ 			continue;  /* no change and no osd was specified */
+@@ -1730,6 +1737,7 @@ void ceph_osdc_handle_map(struct ceph_os
+ 	struct ceph_osdmap *newmap = NULL, *oldmap;
+ 	int err;
+ 	struct ceph_fsid fsid;
++	bool was_full;
+ 
+ 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
+ 	p = msg->front.iov_base;
+@@ -1743,6 +1751,8 @@ void ceph_osdc_handle_map(struct ceph_os
+ 
+ 	down_write(&osdc->map_sem);
+ 
++	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
 +
- 	c = kzalloc(sizeof(*c), GFP_KERNEL);
-+	if (!c)
-+		return;
- 
- 	strlcpy(c->name, "cx18 tveeprom tmp", sizeof(c->name));
- 	c->adapter = &cx->i2c_adap[0];
- 	c->addr = 0xa0 >> 1;
- 
--	memset(tv, 0, sizeof(*tv));
- 	if (tveeprom_read(c, eedata, sizeof(eedata)))
- 		goto ret;
- 
+ 	/* incremental maps */
+ 	ceph_decode_32_safe(&p, end, nr_maps, bad);
+ 	dout(" %d inc maps\n", nr_maps);
+@@ -1767,7 +1777,10 @@ void ceph_osdc_handle_map(struct ceph_os
+ 				ceph_osdmap_destroy(osdc->osdmap);
+ 				osdc->osdmap = newmap;
+ 			}
+-			kick_requests(osdc, 0);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, 0, was_full);
+ 		} else {
+ 			dout("ignoring incremental map %u len %d\n",
+ 			     epoch, maplen);
+@@ -1810,7 +1823,10 @@ void ceph_osdc_handle_map(struct ceph_os
+ 					skipped_map = 1;
+ 				ceph_osdmap_destroy(oldmap);
+ 			}
+-			kick_requests(osdc, skipped_map);
++			was_full = was_full ||
++				ceph_osdmap_flag(osdc->osdmap,
++						 CEPH_OSDMAP_FULL);
++			kick_requests(osdc, skipped_map, was_full);
+ 		}
+ 		p += maplen;
+ 		nr_maps--;
 
 
