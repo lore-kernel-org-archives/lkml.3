@@ -1,66 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753911AbaC1RqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:46:24 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:48241 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753740AbaC1RqT (ORCPT
+	id S1753929AbaC1Rq5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:46:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51322 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaC1Ra7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:46:19 -0400
-Message-ID: <1396028776.12610.341.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Jiri Pirko <jiri@resnulli.us>, David Decotigny <decot@googlers.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Weilong Chen <chenweilong@huawei.com>, Amir Vadai <amirv@mellanox.com>,
-        Michael Dalton <mwdalton@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>
-Date: Fri, 28 Mar 2014 10:46:16 -0700
-In-Reply-To: <CAGVrzcZEuTCN0gtQ6pOSgT_3cd3Z8Z4OP2jn0QOD-QHbyPsAiA@mail.gmail.com>
-References: <cover.1395980768.git.decot@googlers.com>
-	 <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
-	 <20140328062537.GA2805@minipsycho.orion>
-	 <CAGVrzcZEuTCN0gtQ6pOSgT_3cd3Z8Z4OP2jn0QOD-QHbyPsAiA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 28 Mar 2014 13:30:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Chuck Lever <chuck.lever@oracle.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>
+Subject: [PATCH 3.13 10/46] NFSv4: Use the correct net namespace in nfs4_update_server
+Date: Fri, 28 Mar 2014 10:31:54 -0700
+Message-Id: <20140328173136.031047461@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
+References: <20140328173134.630198216@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 09:51 -0700, Florian Fainelli wrote:
-> 2014-03-27 23:25 GMT-07:00 Jiri Pirko <jiri@resnulli.us>:
-> >
-> > If this is exposed in sysfs, this needs to be exposed via RT netlink as
-> > well.
-> 
-> This makes me wonder if this really needs to be a kernel-maintained
-> pair of counters. Since this seems to be useful for monitoring e.g:
-> servers for link flapping, I would assume that some user-space
-> script/program does read these sysfs entries periodically to report a
-> healthy link. If that's the case, what prevents the same
-> script/program from listening to netlink events and count the link
-> UP/DOWN events from there and report that?
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-The same would be true for any counter in networking stack...
+------------------
 
-I do not feel we need to have a daemon running to 'count' events.
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-I like being able to run "ip -s link" , "ifconfig -a" or "nstat -a"
-without having to connect to a daemon. This daemon will likely have
-different api / constraints from distro to distro.
+commit 292f503cade2b1d966239ef56a851e6897d1ba92 upstream.
 
-To me, first thing is a counter, then eventually events for daemons.
+We need to use the same net namespace that was used to resolve
+the hostname and sockaddr arguments.
 
-drop_monitor could eventually disappear if we had counters everywhere we
-need them.
+Fixes: 32e62b7c3ef09 (NFS: Add nfs4_update_server)
+Cc: Chuck Lever <chuck.lever@oracle.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
+---
+ fs/nfs/internal.h      |    3 ++-
+ fs/nfs/nfs4client.c    |    7 ++++---
+ fs/nfs/nfs4namespace.c |   12 ++++++------
+ 3 files changed, 12 insertions(+), 10 deletions(-)
+
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -176,7 +176,8 @@ extern struct nfs_server *nfs4_create_se
+ extern struct nfs_server *nfs4_create_referral_server(struct nfs_clone_mount *,
+ 						      struct nfs_fh *);
+ extern int nfs4_update_server(struct nfs_server *server, const char *hostname,
+-					struct sockaddr *sap, size_t salen);
++					struct sockaddr *sap, size_t salen,
++					struct net *net);
+ extern void nfs_free_server(struct nfs_server *server);
+ extern struct nfs_server *nfs_clone_server(struct nfs_server *,
+ 					   struct nfs_fh *,
+--- a/fs/nfs/nfs4client.c
++++ b/fs/nfs/nfs4client.c
+@@ -1133,6 +1133,7 @@ static int nfs_probe_destination(struct
+  * @hostname: new end-point's hostname
+  * @sap: new end-point's socket address
+  * @salen: size of "sap"
++ * @net: net namespace
+  *
+  * The nfs_server must be quiescent before this function is invoked.
+  * Either its session is drained (NFSv4.1+), or its transport is
+@@ -1141,13 +1142,13 @@ static int nfs_probe_destination(struct
+  * Returns zero on success, or a negative errno value.
+  */
+ int nfs4_update_server(struct nfs_server *server, const char *hostname,
+-		       struct sockaddr *sap, size_t salen)
++		       struct sockaddr *sap, size_t salen, struct net *net)
+ {
+ 	struct nfs_client *clp = server->nfs_client;
+ 	struct rpc_clnt *clnt = server->client;
+ 	struct xprt_create xargs = {
+ 		.ident		= clp->cl_proto,
+-		.net		= &init_net,
++		.net		= net,
+ 		.dstaddr	= sap,
+ 		.addrlen	= salen,
+ 		.servername	= hostname,
+@@ -1187,7 +1188,7 @@ int nfs4_update_server(struct nfs_server
+ 	error = nfs4_set_client(server, hostname, sap, salen, buf,
+ 				clp->cl_rpcclient->cl_auth->au_flavor,
+ 				clp->cl_proto, clnt->cl_timeout,
+-				clp->cl_minorversion, clp->cl_net);
++				clp->cl_minorversion, net);
+ 	nfs_put_client(clp);
+ 	if (error != 0) {
+ 		nfs_server_insert_lists(server);
+--- a/fs/nfs/nfs4namespace.c
++++ b/fs/nfs/nfs4namespace.c
+@@ -121,9 +121,8 @@ static int nfs4_validate_fspath(struct d
+ }
+ 
+ static size_t nfs_parse_server_name(char *string, size_t len,
+-		struct sockaddr *sa, size_t salen, struct nfs_server *server)
++		struct sockaddr *sa, size_t salen, struct net *net)
+ {
+-	struct net *net = rpc_net_ns(server->client);
+ 	ssize_t ret;
+ 
+ 	ret = rpc_pton(net, string, len, sa, salen);
+@@ -223,6 +222,7 @@ static struct vfsmount *try_location(str
+ 				     const struct nfs4_fs_location *location)
+ {
+ 	const size_t addr_bufsize = sizeof(struct sockaddr_storage);
++	struct net *net = rpc_net_ns(NFS_SB(mountdata->sb)->client);
+ 	struct vfsmount *mnt = ERR_PTR(-ENOENT);
+ 	char *mnt_path;
+ 	unsigned int maxbuflen;
+@@ -248,8 +248,7 @@ static struct vfsmount *try_location(str
+ 			continue;
+ 
+ 		mountdata->addrlen = nfs_parse_server_name(buf->data, buf->len,
+-				mountdata->addr, addr_bufsize,
+-				NFS_SB(mountdata->sb));
++				mountdata->addr, addr_bufsize, net);
+ 		if (mountdata->addrlen == 0)
+ 			continue;
+ 
+@@ -419,6 +418,7 @@ static int nfs4_try_replacing_one_locati
+ 		const struct nfs4_fs_location *location)
+ {
+ 	const size_t addr_bufsize = sizeof(struct sockaddr_storage);
++	struct net *net = rpc_net_ns(server->client);
+ 	struct sockaddr *sap;
+ 	unsigned int s;
+ 	size_t salen;
+@@ -440,7 +440,7 @@ static int nfs4_try_replacing_one_locati
+ 			continue;
+ 
+ 		salen = nfs_parse_server_name(buf->data, buf->len,
+-						sap, addr_bufsize, server);
++						sap, addr_bufsize, net);
+ 		if (salen == 0)
+ 			continue;
+ 		rpc_set_port(sap, NFS_PORT);
+@@ -450,7 +450,7 @@ static int nfs4_try_replacing_one_locati
+ 		if (hostname == NULL)
+ 			break;
+ 
+-		error = nfs4_update_server(server, hostname, sap, salen);
++		error = nfs4_update_server(server, hostname, sap, salen, net);
+ 		kfree(hostname);
+ 		if (error == 0)
+ 			break;
 
 
