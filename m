@@ -1,155 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754359AbaC1R7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:59:55 -0400
-Received: from mail-we0-f171.google.com ([74.125.82.171]:62490 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927AbaC1R7o (ORCPT
+	id S1754384AbaC1SAR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:00:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:40978 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692AbaC1SAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:59:44 -0400
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-To: Rob Landley <rob@landley.net>, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <b.brezillon.dev@gmail.com>
-Subject: [RFC PATCH v2 09/10] ARM: at91/dt: add new AIC irq mux definitions for sam9x5 SoCs
-Date: Fri, 28 Mar 2014 18:59:07 +0100
-Message-Id: <1396029548-10928-10-git-send-email-b.brezillon.dev@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396029548-10928-1-git-send-email-b.brezillon.dev@gmail.com>
-References: <1396029548-10928-1-git-send-email-b.brezillon.dev@gmail.com>
+	Fri, 28 Mar 2014 14:00:11 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396028776.12610.341.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <cover.1395980768.git.decot@googlers.com> <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
+ <20140328062537.GA2805@minipsycho.orion> <CAGVrzcZEuTCN0gtQ6pOSgT_3cd3Z8Z4OP2jn0QOD-QHbyPsAiA@mail.gmail.com>
+ <1396028776.12610.341.camel@edumazet-glaptop2.roam.corp.google.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Fri, 28 Mar 2014 10:59:31 -0700
+Message-ID: <CAGVrzcbVwaEiSn6irSeBwJCk8QsVizNfWO2ZhMxJN8chymo_LQ@mail.gmail.com>
+Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jiri Pirko <jiri@resnulli.us>, David Decotigny <decot@googlers.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Weilong Chen <chenweilong@huawei.com>, Amir Vadai <amirv@mellanox.com>,
+        Michael Dalton <mwdalton@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add irq line muxing definition for sam9x5 SoCs.
+2014-03-28 10:46 GMT-07:00 Eric Dumazet <eric.dumazet@gmail.com>:
+> On Fri, 2014-03-28 at 09:51 -0700, Florian Fainelli wrote:
+>> 2014-03-27 23:25 GMT-07:00 Jiri Pirko <jiri@resnulli.us>:
+>> >
+>> > If this is exposed in sysfs, this needs to be exposed via RT netlink as
+>> > well.
+>>
+>> This makes me wonder if this really needs to be a kernel-maintained
+>> pair of counters. Since this seems to be useful for monitoring e.g:
+>> servers for link flapping, I would assume that some user-space
+>> script/program does read these sysfs entries periodically to report a
+>> healthy link. If that's the case, what prevents the same
+>> script/program from listening to netlink events and count the link
+>> UP/DOWN events from there and report that?
+>
+> The same would be true for any counter in networking stack...
+>
+> I do not feel we need to have a daemon running to 'count' events.
+>
+> I like being able to run "ip -s link" , "ifconfig -a" or "nstat -a"
+> without having to connect to a daemon. This daemon will likely have
+> different api / constraints from distro to distro.
+>
+> To me, first thing is a counter, then eventually events for daemons.
 
-Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
----
- arch/arm/boot/dts/at91sam9x5.dtsi |  108 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 108 insertions(+)
+What I meant is that this sort of information most likely is already
+part of some sort of machine health check that runs periodically,
+which probably collects gazillions of other metrics. Whether the link
+flapping information comes from sysfs or was maintained by a small
+script which counts link UP/DOWN events from 'ip monitor link' and
+outputs this into a file boils down to the same thing: the information
+is available to some degree.
 
-diff --git a/arch/arm/boot/dts/at91sam9x5.dtsi b/arch/arm/boot/dts/at91sam9x5.dtsi
-index 174219d..ccdfdf3 100644
---- a/arch/arm/boot/dts/at91sam9x5.dtsi
-+++ b/arch/arm/boot/dts/at91sam9x5.dtsi
-@@ -69,6 +69,114 @@
- 				interrupt-controller;
- 				reg = <0xfffff000 0x200>;
- 				atmel,external-irqs = <31>;
-+				#address-cells = <2>;
-+				#size-cells = <1>;
-+				ranges = <1 0x0 0xffffc000 0x4000>,
-+					 <2 0x0 0xfffff400 0x400>,
-+					 <3 0x0 0xfffff800 0x400>,
-+					 <17 0x0 0xf8008000 0x8000>;
-+
-+				dbgu_irq: irq-mux@1,2e0c {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <1 0x2e0c 0x4>;
-+					atmel,aic-mux-reg-mask = <0xc00002e3>;
-+				};
-+
-+				pmc_irq: irq-mux@1,3c64 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <1 0x3c64 0x4>;
-+					atmel,aic-mux-reg-mask = <0x7034b>;
-+				};
-+
-+				pmecc_irq: irq-mux@1,2020 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <1 0x2020 0x4>;
-+					atmel,aic-mux-reg-mask = <0x1>;
-+				};
-+
-+				pmerrloc_irq: irq-mux@1,2618 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <1 0x2618 0x4>;
-+					atmel,aic-mux-reg-mask = <0x1>;
-+				};
-+
-+				pit_irq: irq-mux@1,3e30 {
-+					compatible = "atmel,aic-mux-1reg-irq";
-+					reg = <1 0x3e30 0x4>;
-+					atmel,aic-mux-reg-mask = <0x2000000>;
-+				};
-+
-+				wdt_irq: irq-mux@1,3e40 {
-+					compatible = "atmel,aic-mux-1reg-irq";
-+					reg = <1 0x3e40 0x4>;
-+					atmel,aic-mux-reg-mask = <0x1000>;
-+				};
-+
-+				rtc_irq: irq-mux@1,3ed4 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <1 0x3ed4 0x4>;
-+					atmel,aic-mux-reg-mask = <0x1f>;
-+				};
-+
-+				pioA_irq: irq-mux@2,44 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <2 0x44 0x4>;
-+					atmel,aic-mux-reg-mask = <0xffffffff>;
-+				};
-+
-+				pioB_irq: irq-mux@2,244 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <2 0x244 0x4>;
-+					atmel,aic-mux-reg-mask = <0xffffffff>;
-+				};
-+
-+				pioC_irq: irq-mux@3,44 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <3 0x44 0x4>;
-+					atmel,aic-mux-reg-mask = <0xffffffff>;
-+				};
-+
-+				pioD_irq: irq-mux@3,244 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <3 0x244 0x4>;
-+					atmel,aic-mux-reg-mask = <0xffffffff>;
-+				};
-+
-+				tc0_irq: irq-mux@17,28 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0x28 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
-+
-+				tc1_irq: irq-mux@17,68 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0x68 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
-+
-+				tc2_irq: irq-mux@17,a8 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0xa8 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
-+
-+				tc3_irq: irq-mux@17,4028 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0x4028 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
-+
-+				tc4_irq: irq-mux@17,4068 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0x4068 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
-+
-+				tc5_irq: irq-mux@17,40a8 {
-+					compatible = "atmel,aic-mux-3reg-irq";
-+					reg = <17 0x40a8 0x4>;
-+					atmel,aic-mux-reg-mask = <0xff>;
-+				};
- 			};
- 
- 			ramc0: ramc@ffffe800 {
+That said, this is a cheap pair of a counter in a slow path, so maybe
+it is fine to have it without requiring any user-space dependency to
+be read...
+
+>
+> drop_monitor could eventually disappear if we had counters everywhere we
+> need them.
+>
+>
+>
+
+
+
 -- 
-1.7.9.5
-
+Florian
