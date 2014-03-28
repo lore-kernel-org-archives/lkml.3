@@ -1,149 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084AbaC1SLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 14:11:55 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51107 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752508AbaC1RaL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sage Weil <sage@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.4 02/13] libceph: resend all writes after the osdmap loses the full flag
-Date: Fri, 28 Mar 2014 10:31:52 -0700
-Message-Id: <20140328173053.390128975@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
-References: <20140328173053.049244535@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	id S1752452AbaC1SOx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:14:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19412 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691AbaC1SOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 14:14:51 -0400
+Date: Fri, 28 Mar 2014 15:10:20 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>,
+        Suleiman Souhlal <suleiman@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        Michal Hocko <mhocko@suse.cz>,
+        Yuanhan Liu <yuanhan.liu@linux.intel.com>,
+        Seth Jennings <sjennings@variantweb.net>, Bob Liu <bob.liu@oracle.com>,
+        Minchan Kim <minchan@kernel.org>,
+        Luigi Semenzato <semenzato@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: Only force scan in reclaim when none of the LRUs are
+ big enough.
+Message-ID: <20140328181020.GB10709@localhost.localdomain>
+References: <alpine.LSU.2.11.1403151957160.21388@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1403151957160.21388@eggly.anvils>
+X-PGP-Key: http://people.redhat.com/~raquini/gpg-pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Sat, Mar 15, 2014 at 08:36:02PM -0700, Hugh Dickins wrote:
+> From: Suleiman Souhlal <suleiman@google.com>
+> 
+> Prior to this change, we would decide whether to force scan a LRU
+> during reclaim if that LRU itself was too small for the current
+> priority. However, this can lead to the file LRU getting force
+> scanned even if there are a lot of anonymous pages we can reclaim,
+> leading to hot file pages getting needlessly reclaimed.
+> 
+> To address this, we instead only force scan when none of the
+> reclaimable LRUs are big enough.
+> 
+> Gives huge improvements with zswap. For example, when doing -j20
+> kernel build in a 500MB container with zswap enabled, runtime (in
+> seconds) is greatly reduced:
+> 
+> x without this change
+> + with this change
+>     N           Min           Max        Median           Avg        Stddev
+> x   5       700.997       790.076       763.928        754.05      39.59493
+> +   5       141.634       197.899       155.706         161.9     21.270224
+> Difference at 95.0% confidence
+>         -592.15 +/- 46.3521
+>         -78.5293% +/- 6.14709%
+>         (Student's t, pooled s = 31.7819)
+> 
+> Should also give some improvements in regular (non-zswap) swap cases.
+> 
+> Yes, hughd found significant speedup using regular swap, with several
+> memcgs under pressure; and it should also be effective in the non-memcg
+> case, whenever one or another zone LRU is forced too small.
+> 
+> Signed-off-by: Suleiman Souhlal <suleiman@google.com>
+> Signed-off-by: Hugh Dickins <hughd@google.com>
+> ---
+> 
 
-------------------
+Acked-by: Rafael Aquini <aquini@redhat.com>
 
-From: Josh Durgin <josh.durgin@inktank.com>
-
-commit 9a1ea2dbff11547a8e664f143c1ffefc586a577a upstream.
-
-With the current full handling, there is a race between osds and
-clients getting the first map marked full. If the osd wins, it will
-return -ENOSPC to any writes, but the client may already have writes
-in flight. This results in the client getting the error and
-propagating it up the stack. For rbd, the block layer turns this into
-EIO, which can cause corruption in filesystems above it.
-
-To avoid this race, osds are being changed to drop writes that came
-from clients with an osdmap older than the last osdmap marked full.
-In order for this to work, clients must resend all writes after they
-encounter a full -> not full transition in the osdmap. osds will wait
-for an updated map instead of processing a request from a client with
-a newer map, so resent writes will not be dropped by the osd unless
-there is another not full -> full transition.
-
-This approach requires both osds and clients to be fixed to avoid the
-race. Old clients talking to osds with this fix may hang instead of
-returning EIO and potentially corrupting an fs. New clients talking to
-old osds have the same behavior as before if they encounter this race.
-
-Fixes: http://tracker.ceph.com/issues/6938
-
-Reviewed-by: Sage Weil <sage@inktank.com>
-Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/ceph/osd_client.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
-
---- a/net/ceph/osd_client.c
-+++ b/net/ceph/osd_client.c
-@@ -1269,14 +1269,17 @@ static void reset_changed_osds(struct ce
-  *
-  * Caller should hold map_sem for read.
-  */
--static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
-+static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
-+			  bool force_resend_writes)
- {
- 	struct ceph_osd_request *req, *nreq;
- 	struct rb_node *p;
- 	int needmap = 0;
- 	int err;
-+	bool force_resend_req;
- 
--	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
-+	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
-+		force_resend_writes ? " (force resend writes)" : "");
- 	mutex_lock(&osdc->request_mutex);
- 	for (p = rb_first(&osdc->requests); p; ) {
- 		req = rb_entry(p, struct ceph_osd_request, r_node);
-@@ -1299,7 +1302,10 @@ static void kick_requests(struct ceph_os
- 			continue;
- 		}
- 
--		err = __map_request(osdc, req, force_resend);
-+		force_resend_req = force_resend ||
-+			(force_resend_writes &&
-+				req->r_flags & CEPH_OSD_FLAG_WRITE);
-+		err = __map_request(osdc, req, force_resend_req);
- 		if (err < 0)
- 			continue;  /* error */
- 		if (req->r_osd == NULL) {
-@@ -1319,7 +1325,8 @@ static void kick_requests(struct ceph_os
- 				 r_linger_item) {
- 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
- 
--		err = __map_request(osdc, req, force_resend);
-+		err = __map_request(osdc, req,
-+				    force_resend || force_resend_writes);
- 		dout("__map_request returned %d\n", err);
- 		if (err == 0)
- 			continue;  /* no change and no osd was specified */
-@@ -1361,6 +1368,7 @@ void ceph_osdc_handle_map(struct ceph_os
- 	struct ceph_osdmap *newmap = NULL, *oldmap;
- 	int err;
- 	struct ceph_fsid fsid;
-+	bool was_full;
- 
- 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
- 	p = msg->front.iov_base;
-@@ -1374,6 +1382,8 @@ void ceph_osdc_handle_map(struct ceph_os
- 
- 	down_write(&osdc->map_sem);
- 
-+	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
-+
- 	/* incremental maps */
- 	ceph_decode_32_safe(&p, end, nr_maps, bad);
- 	dout(" %d inc maps\n", nr_maps);
-@@ -1398,7 +1408,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 				ceph_osdmap_destroy(osdc->osdmap);
- 				osdc->osdmap = newmap;
- 			}
--			kick_requests(osdc, 0);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, 0, was_full);
- 		} else {
- 			dout("ignoring incremental map %u len %d\n",
- 			     epoch, maplen);
-@@ -1441,7 +1454,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 					skipped_map = 1;
- 				ceph_osdmap_destroy(oldmap);
- 			}
--			kick_requests(osdc, skipped_map);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, skipped_map, was_full);
- 		}
- 		p += maplen;
- 		nr_maps--;
-
-
+> I apologize to everyone for holding on to this so long: I think it's
+> a very helpful patch (which we've been using in Google for months now).
+> Been sitting on my TODO list, now prompted to send by related patches
+> 
+> https://lkml.org/lkml/2014/3/13/217
+> https://lkml.org/lkml/2014/3/14/277
+> 
+> Certainly worth considering all three together, but my understanding
+> is that they're actually three independent attacks on different ways
+> in which we currently squeeze an LRU too small; and this patch from
+> Suleiman seems to be the most valuable of the three, at least for
+> the workloads I've tried it on.  But I'm not much of a page reclaim
+> performance tester: please try it out to see if it's good for you.
+> Thanks!
+> 
+>  mm/vmscan.c |   72 +++++++++++++++++++++++++++++---------------------
+>  1 file changed, 42 insertions(+), 30 deletions(-)
+> 
+> We did experiment with different ways of writing the patch, I'm afraid
+> the way it came out best indents deeper, making it look more than it is.
+> 
+> --- 3.14-rc6/mm/vmscan.c	2014-02-02 18:49:07.949302116 -0800
+> +++ linux/mm/vmscan.c	2014-03-15 19:31:44.948977032 -0700
+> @@ -1852,6 +1852,8 @@ static void get_scan_count(struct lruvec
+>  	bool force_scan = false;
+>  	unsigned long ap, fp;
+>  	enum lru_list lru;
+> +	bool some_scanned;
+> +	int pass;
+>  
+>  	/*
+>  	 * If the zone or memcg is small, nr[l] can be 0.  This
+> @@ -1971,39 +1973,49 @@ static void get_scan_count(struct lruvec
+>  	fraction[1] = fp;
+>  	denominator = ap + fp + 1;
+>  out:
+> -	for_each_evictable_lru(lru) {
+> -		int file = is_file_lru(lru);
+> -		unsigned long size;
+> -		unsigned long scan;
+> -
+> -		size = get_lru_size(lruvec, lru);
+> -		scan = size >> sc->priority;
+> -
+> -		if (!scan && force_scan)
+> -			scan = min(size, SWAP_CLUSTER_MAX);
+> -
+> -		switch (scan_balance) {
+> -		case SCAN_EQUAL:
+> -			/* Scan lists relative to size */
+> -			break;
+> -		case SCAN_FRACT:
+> +	some_scanned = false;
+> +	/* Only use force_scan on second pass. */
+> +	for (pass = 0; !some_scanned && pass < 2; pass++) {
+> +		for_each_evictable_lru(lru) {
+> +			int file = is_file_lru(lru);
+> +			unsigned long size;
+> +			unsigned long scan;
+> +
+> +			size = get_lru_size(lruvec, lru);
+> +			scan = size >> sc->priority;
+> +
+> +			if (!scan && pass && force_scan)
+> +				scan = min(size, SWAP_CLUSTER_MAX);
+> +
+> +			switch (scan_balance) {
+> +			case SCAN_EQUAL:
+> +				/* Scan lists relative to size */
+> +				break;
+> +			case SCAN_FRACT:
+> +				/*
+> +				 * Scan types proportional to swappiness and
+> +				 * their relative recent reclaim efficiency.
+> +				 */
+> +				scan = div64_u64(scan * fraction[file],
+> +							denominator);
+> +				break;
+> +			case SCAN_FILE:
+> +			case SCAN_ANON:
+> +				/* Scan one type exclusively */
+> +				if ((scan_balance == SCAN_FILE) != file)
+> +					scan = 0;
+> +				break;
+> +			default:
+> +				/* Look ma, no brain */
+> +				BUG();
+> +			}
+> +			nr[lru] = scan;
+>  			/*
+> -			 * Scan types proportional to swappiness and
+> -			 * their relative recent reclaim efficiency.
+> +			 * Skip the second pass and don't force_scan,
+> +			 * if we found something to scan.
+>  			 */
+> -			scan = div64_u64(scan * fraction[file], denominator);
+> -			break;
+> -		case SCAN_FILE:
+> -		case SCAN_ANON:
+> -			/* Scan one type exclusively */
+> -			if ((scan_balance == SCAN_FILE) != file)
+> -				scan = 0;
+> -			break;
+> -		default:
+> -			/* Look ma, no brain */
+> -			BUG();
+> +			some_scanned |= !!scan;
+>  		}
+> -		nr[lru] = scan;
+>  	}
+>  }
+>  
