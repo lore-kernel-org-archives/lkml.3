@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751153AbaC1F4Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 01:56:24 -0400
-Received: from [65.55.88.11] ([65.55.88.11]:56775 "EHLO
-	tx2outboundpool.messaging.microsoft.com" rhost-flags-FAIL-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1750918AbaC1F4X (ORCPT
+	id S1751349AbaC1F4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 01:56:52 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:38315 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751061AbaC1F4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 01:56:23 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -1
-X-BigFish: VS-1(zzbb2dIzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dc1h1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-From: Xiubo Li <Li.Xiubo@freescale.com>
-To: <broonie@kernel.org>, <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>, Xiubo Li <Li.Xiubo@freescale.com>
-Subject: [PATCH] regmap: mmio: Add regmap_mmio_regbits_check.
-Date: Fri, 28 Mar 2014 13:12:56 +0800
-Message-ID: <1395983576-4258-1-git-send-email-Li.Xiubo@freescale.com>
-X-Mailer: git-send-email 1.8.0
+	Fri, 28 Mar 2014 01:56:51 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+In-Reply-To: <20140328161725.e044dd9417cae3020068f350@canb.auug.org.au>
+References: <cover.1395980768.git.decot@googlers.com> <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
+ <20140328161725.e044dd9417cae3020068f350@canb.auug.org.au>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Thu, 27 Mar 2014 22:56:10 -0700
+Message-ID: <CAGVrzcbW3A5RPibKO=i92dj0815eYV6aFRWhOfXA-KgNAgk9kg@mail.gmail.com>
+Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Decotigny <decot@googlers.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Weilong Chen <chenweilong@huawei.com>, Jiri Pirko <jiri@resnulli.us>,
+        Amir Vadai <amirv@mellanox.com>, Michael Dalton <mwdalton@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the support for 1/2/8 bytes wide register address checking.
+2014-03-27 22:17 GMT-07:00 Stephen Rothwell <sfr@canb.auug.org.au>:
+> Hi David,
+>
+> On Thu, 27 Mar 2014 21:35:00 -0700 David Decotigny <decot@googlers.com> wrote:
+>>
+>> Tested:
+>>   grep . /sys/class/net/*/count_link_*
+>>   + ip link set dev X down/up
+>>
+>> Signed-off-by: David Decotigny <decot@googlers.com>
+>
+> It is not a very enlightening commit message.  You should tell us why we
+> should add this to the kernel.
 
-Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
----
+This might be useful to detect unstable links for instance, by
+measuring how many link transitions you get, which could indicate that
+either your NIC or your link partner is at fault.
 
-
-Sorry, this patch has been missed yesterday.
-
-
-
- drivers/base/regmap/regmap-mmio.c | 20 ++++++++++++++++++--
- 1 file changed, 18 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/base/regmap/regmap-mmio.c b/drivers/base/regmap/regmap-mmio.c
-index ed080a4..de45a1e 100644
---- a/drivers/base/regmap/regmap-mmio.c
-+++ b/drivers/base/regmap/regmap-mmio.c
-@@ -47,6 +47,21 @@ static inline void regmap_mmio_regsize_check(size_t reg_size)
- 	}
- }
- 
-+static int regmap_mmio_regbits_check(size_t reg_bits)
-+{
-+	switch (reg_bits) {
-+	case 8:
-+	case 16:
-+	case 32:
-+#ifdef CONFIG_64BIT
-+	case 64:
-+#endif
-+		return 0;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
- static inline void regmap_mmio_count_check(size_t count)
- {
- 	BUG_ON(count % 2 != 0);
-@@ -191,8 +206,9 @@ static struct regmap_mmio_context *regmap_mmio_gen_context(struct device *dev,
- 	int min_stride;
- 	int ret;
- 
--	if (config->reg_bits != 32)
--		return ERR_PTR(-EINVAL);
-+	ret = regmap_mmio_regbits_check(config->reg_bits);
-+	if (ret)
-+		return ERR_PTR(ret);
- 
- 	if (config->pad_bits)
- 		return ERR_PTR(-EINVAL);
--- 
-1.8.4
-
-
+If possible this should come with a Documentation/ABI/testing/ entry,
+quite a lot of network sysfs attributes are lacking one at the moment,
+but there is no reason why this should continue.
+--
+Florian
