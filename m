@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751573AbaC1Jz2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 05:55:28 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:17034 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751384AbaC1JzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 05:55:21 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org, vvs@parallels.com,
-        Andrey Vagin <avagin@openvz.org>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH] netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len (v3)
-Date: Fri, 28 Mar 2014 13:54:32 +0400
-Message-Id: <1396000472-6130-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.8.5.3
-In-Reply-To: <20140328092449.GA20844@paralelels.com>
-References: <20140328092449.GA20844@paralelels.com>
+	id S1751398AbaC1KEe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:04:34 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:34279 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751098AbaC1KEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 06:04:33 -0400
+Date: Fri, 28 Mar 2014 10:04:06 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 1/4] kmemleak: free internal objects only if there're
+ no leaks to be reported
+Message-ID: <20140328100403.GA21330@arm.com>
+References: <5335384A.2000000@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5335384A.2000000@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"len" contains sizeof(nf_ct_ext) and size of extensions. In a worst
-case it can contain all extensions. Bellow you can find sizes for all
-types of extensions. Their sum is definitely bigger than 256.
+On Fri, Mar 28, 2014 at 08:52:26AM +0000, Li Zefan wrote:
+> Currently if you disabling kmemleak after stopping kmemleak thread,
+> kmemleak objects will be freed and so you won't be able to check
+> previously reported leaks.
+> 
+> With this patch, kmemleak objects won't be freed if there're leaks
+> that can be reported.
+> 
+> Signed-off-by: Li Zefan <lizefan@huawei.com>
 
-nf_ct_ext_types[0]->len = 24
-nf_ct_ext_types[1]->len = 32
-nf_ct_ext_types[2]->len = 24
-nf_ct_ext_types[3]->len = 32
-nf_ct_ext_types[4]->len = 152
-nf_ct_ext_types[5]->len = 2
-nf_ct_ext_types[6]->len = 16
-nf_ct_ext_types[7]->len = 8
+Some nitpicks below:
 
-I have seen "len" up to 280 and my host has crashes w/o this patch.
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index 31f01c5..be7ecc0 100644
+> --- a/mm/kmemleak.c
+> +++ b/mm/kmemleak.c
+> @@ -218,7 +218,8 @@ static int kmemleak_stack_scan = 1;
+>  static DEFINE_MUTEX(scan_mutex);
+>  /* setting kmemleak=on, will set this var, skipping the disable */
+>  static int kmemleak_skip_disable;
+> -
+> +/* If there're leaks that can be reported */
 
-The right way to fix this problem is reducing the size of the ecache
-extension (4) and Florian is going to do this, but these changes will
-be quite large to be appropriate for a stable tree.
+"If there are ..." (easier to read ;)).
 
-v2: rearrange the extension so ECACHE comes last. This is required to
-prevent overflow of nf_ct_ext->offset.
-v3: The previous attempt of rearranging constants doesn't work here,
-because extensions may be added in a random order.
+> +static bool kmemleak_has_leaks;
 
-Fixes: 5b423f6a40a0 (netfilter: nf_conntrack: fix racy timer handling with reliable)
-Cc: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: Jozsef Kadlecsik <kadlec@blackhole.kfki.hu>
-Cc: "David S. Miller" <davem@davemloft.net>
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/net/netfilter/nf_conntrack_extend.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Better "kmemleak_found_leaks" to avoid confusion.
 
-diff --git a/include/net/netfilter/nf_conntrack_extend.h b/include/net/netfilter/nf_conntrack_extend.h
-index 956b175..55d1504 100644
---- a/include/net/netfilter/nf_conntrack_extend.h
-+++ b/include/net/netfilter/nf_conntrack_extend.h
-@@ -47,8 +47,8 @@ enum nf_ct_ext_id {
- /* Extensions: optional stuff which isn't permanently in struct. */
- struct nf_ct_ext {
- 	struct rcu_head rcu;
--	u8 offset[NF_CT_EXT_NUM];
--	u8 len;
-+	u16 offset[NF_CT_EXT_NUM];
-+	u16 len;
- 	char data[0];
- };
- 
--- 
-1.8.5.3
+Otherwise:
 
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
