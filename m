@@ -1,344 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543AbaC1Rga (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:36:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51420 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753260AbaC1RbU (ORCPT
+	id S1753587AbaC1Rg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:36:59 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:62554 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753257AbaC1Rg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:20 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Gavin Shan <shangw@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 3.13 31/46] powerpc/eeh: Handle multiple EEH errors
-Date: Fri, 28 Mar 2014 10:32:15 -0700
-Message-Id: <20140328173138.889267879@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
-References: <20140328173134.630198216@linuxfoundation.org>
-User-Agent: quilt/0.60-1
+	Fri, 28 Mar 2014 13:36:57 -0400
+Message-ID: <5335B336.9020602@linaro.org>
+Date: Fri, 28 Mar 2014 10:36:54 -0700
+From: John Stultz <john.stultz@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Neil Zhang <zhangwm@marvell.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] printk: add sleep time into timestamp
+References: <1395908241-6392-1-git-send-email-zhangwm@marvell.com> <CANcMJZCG7CT_rOShK7jGo3xVZ0MiRD-jUJE=FCTW68tv88g-Bw@mail.gmail.com> <175CCF5F49938B4D99B2E3EF7F558EBE550559A27C@SC-VEXCH4.marvell.com>
+In-Reply-To: <175CCF5F49938B4D99B2E3EF7F558EBE550559A27C@SC-VEXCH4.marvell.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13-stable review patch.  If anyone has any objections, please let me know.
+On 03/27/2014 11:45 PM, Neil Zhang wrote:
+> John,
+>  
+>> -----Original Message-----
+>> From: johnstul.lkml@gmail.com [mailto:johnstul.lkml@gmail.com] On Behalf
+>> Of John Stultz
+>> Sent: 2014Äê3ÔÂ28ÈÕ 11:18
+>> To: Neil Zhang
+>> Cc: Andrew Morton; Linux Kernel Mailing List
+>> Subject: Re: [PATCH] printk: add sleep time into timestamp
+>>
+>> On Thu, Mar 27, 2014 at 1:17 AM, Neil Zhang <zhangwm@marvell.com>
+>> wrote:
+>>> Add sleep time into timestamp to reflect the actual time since
+>>> sched_clock will be stopped during suspend.
+>> So why is this change necessary?
+>>
+>> Further, since the sleep time may be updated a bit late in the resume cycle (in
+>> many cases we cannot access the RTC until irqs are enabled back on), you may
+>> see messages that show pre-suspend times when really they occur after we
+>> resume (but before the sleep time is incremented).
+>>
+> Thanks for the comments.
+> Yes, the sleep time will be update in RTC and the print in the resume procedure still w/o the sleep time.
+> But I think the messages are not too much at this stage. 
 
-------------------
+Not sure I understand what you mean by "the messages are not too much",
+could you expand that a bit?
 
-From: Gavin Shan <shangw@linux.vnet.ibm.com>
+>> More comments below....
+>>
+>>> This patch depends on the following patch.
+>>> timekeeping: check params before use them
+>>>
+>>> Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+>>> ---
+>>>  kernel/printk/printk.c |   15 +++++++++++++--
+>>>  1 file changed, 13 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c index
+>>> 4dae9cb..2dc6145 100644
+>>> --- a/kernel/printk/printk.c
+>>> +++ b/kernel/printk/printk.c
+>>> @@ -250,6 +250,17 @@ static char __log_buf[__LOG_BUF_LEN]
+>>> __aligned(LOG_ALIGN);  static char *log_buf = __log_buf;  static u32
+>>> log_buf_len = __LOG_BUF_LEN;
+>>>
+>>> +static u64 print_clock(void)
+>>> +{
+>>> +       struct timespec ts;
+>>> +       u64 ts_nsec = local_clock();
+>>> +
+>>> +       get_xtime_and_monotonic_and_sleep_offset(NULL, NULL, &ts);
+>> So this will cause deadlocks anytime we print from the timekeeping core, since
+>> we may hold a write on the timekeeper lock, and this patch makes every printk
+>> try to take a read-lock on the timekeeper lock.
+>>
+> Sorry, I don't quite understand why it will cause deadlock.
+> Yes, it will take a read-lock, but it should not be expensive.
 
-commit 7e4e7867b1e551b7b8f326da3604c47332972bc6 upstream.
+If we call or trigger a printk while holding a write on the timekeeping
+lock, the printk code will then try to aquire a read-lock on the
+timekeeping lock and this will deadlock the machine.
 
-For one PCI error relevant OPAL event, we possibly have multiple
-EEH errors for that. For example, multiple frozen PEs detected on
-different PHBs. Unfortunately, we didn't cover the case. The patch
-enumarates the return value from eeh_ops::next_error() and change
-eeh_handle_special_event() and eeh_ops::next_error() to handle all
-existing EEH errors.
+The printk code already has trouble with the timekeeping code, but this
+would make it worse.
 
-As Ben pointed out, we needn't list_for_each_entry_safe() since we
-are not deleting any PHB from the hose_list and the EEH serialized
-lock should be held while purging EEH events. The patch covers those
-suggestions as well.
 
-Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>> I'd suggest you use monotonic_to_bootbased() here instead of hacking up this
+>> hrtimer specific interface, but even so, right now that call doesn't take the
+>> timekeeper lock, but probably should, so its not a good long term plan.
+> It maybe doable, or whether we can add another function to only return sleep time.
+> Then no read-lock is needed.
 
----
- arch/powerpc/include/asm/eeh.h            |   10 ++
- arch/powerpc/kernel/eeh_driver.c          |  150 +++++++++++++++---------------
- arch/powerpc/platforms/powernv/eeh-ioda.c |   39 ++++---
- 3 files changed, 112 insertions(+), 87 deletions(-)
+Well, you're returning a timespec, which cannot be read atomically, so
+it would need to take the lock (that's why I was saying
+monotonic_to_bootbased() should probably take the lock, and seems broken).
 
---- a/arch/powerpc/include/asm/eeh.h
-+++ b/arch/powerpc/include/asm/eeh.h
-@@ -117,6 +117,16 @@ static inline struct pci_dev *eeh_dev_to
- 	return edev ? edev->pdev : NULL;
- }
- 
-+/* Return values from eeh_ops::next_error */
-+enum {
-+	EEH_NEXT_ERR_NONE = 0,
-+	EEH_NEXT_ERR_INF,
-+	EEH_NEXT_ERR_FROZEN_PE,
-+	EEH_NEXT_ERR_FENCED_PHB,
-+	EEH_NEXT_ERR_DEAD_PHB,
-+	EEH_NEXT_ERR_DEAD_IOC
-+};
-+
- /*
-  * The struct is used to trace the registered EEH operation
-  * callback functions. Actually, those operation callback
---- a/arch/powerpc/kernel/eeh_driver.c
-+++ b/arch/powerpc/kernel/eeh_driver.c
-@@ -626,84 +626,90 @@ static void eeh_handle_special_event(voi
- {
- 	struct eeh_pe *pe, *phb_pe;
- 	struct pci_bus *bus;
--	struct pci_controller *hose, *tmp;
-+	struct pci_controller *hose;
- 	unsigned long flags;
--	int rc = 0;
-+	int rc;
- 
--	/*
--	 * The return value from next_error() has been classified as follows.
--	 * It might be good to enumerate them. However, next_error() is only
--	 * supported by PowerNV platform for now. So it would be fine to use
--	 * integer directly:
--	 *
--	 * 4 - Dead IOC           3 - Dead PHB
--	 * 2 - Fenced PHB         1 - Frozen PE
--	 * 0 - No error found
--	 *
--	 */
--	rc = eeh_ops->next_error(&pe);
--	if (rc <= 0)
--		return;
--
--	switch (rc) {
--	case 4:
--		/* Mark all PHBs in dead state */
--		eeh_serialize_lock(&flags);
--		list_for_each_entry_safe(hose, tmp,
--				&hose_list, list_node) {
--			phb_pe = eeh_phb_pe_get(hose);
--			if (!phb_pe) continue;
- 
--			eeh_pe_state_mark(phb_pe,
--				EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
-+	do {
-+		rc = eeh_ops->next_error(&pe);
-+
-+		switch (rc) {
-+		case EEH_NEXT_ERR_DEAD_IOC:
-+			/* Mark all PHBs in dead state */
-+			eeh_serialize_lock(&flags);
-+
-+			/* Purge all events */
-+			eeh_remove_event(NULL);
-+
-+			list_for_each_entry(hose, &hose_list, list_node) {
-+				phb_pe = eeh_phb_pe_get(hose);
-+				if (!phb_pe) continue;
-+
-+				eeh_pe_state_mark(phb_pe,
-+					EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
-+			}
-+
-+			eeh_serialize_unlock(flags);
-+
-+			break;
-+		case EEH_NEXT_ERR_FROZEN_PE:
-+		case EEH_NEXT_ERR_FENCED_PHB:
-+		case EEH_NEXT_ERR_DEAD_PHB:
-+			/* Mark the PE in fenced state */
-+			eeh_serialize_lock(&flags);
-+
-+			/* Purge all events of the PHB */
-+			eeh_remove_event(pe);
-+
-+			if (rc == EEH_NEXT_ERR_DEAD_PHB)
-+				eeh_pe_state_mark(pe,
-+					EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
-+			else
-+				eeh_pe_state_mark(pe,
-+					EEH_PE_ISOLATED | EEH_PE_RECOVERING);
-+
-+			eeh_serialize_unlock(flags);
-+
-+			break;
-+		case EEH_NEXT_ERR_NONE:
-+			return;
-+		default:
-+			pr_warn("%s: Invalid value %d from next_error()\n",
-+				__func__, rc);
-+			return;
- 		}
--		eeh_serialize_unlock(flags);
- 
--		/* Purge all events */
--		eeh_remove_event(NULL);
--		break;
--	case 3:
--	case 2:
--	case 1:
--		/* Mark the PE in fenced state */
--		eeh_serialize_lock(&flags);
--		if (rc == 3)
--			eeh_pe_state_mark(pe,
--				EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
--		else
--			eeh_pe_state_mark(pe,
--				EEH_PE_ISOLATED | EEH_PE_RECOVERING);
--		eeh_serialize_unlock(flags);
--
--		/* Purge all events of the PHB */
--		eeh_remove_event(pe);
--		break;
--	default:
--		pr_err("%s: Invalid value %d from next_error()\n",
--		       __func__, rc);
--		return;
--	}
--
--	/*
--	 * For fenced PHB and frozen PE, it's handled as normal
--	 * event. We have to remove the affected PHBs for dead
--	 * PHB and IOC
--	 */
--	if (rc == 2 || rc == 1)
--		eeh_handle_normal_event(pe);
--	else {
--		list_for_each_entry_safe(hose, tmp,
--			&hose_list, list_node) {
--			phb_pe = eeh_phb_pe_get(hose);
--			if (!phb_pe || !(phb_pe->state & EEH_PE_PHB_DEAD))
--				continue;
--
--			bus = eeh_pe_bus_get(phb_pe);
--			/* Notify all devices that they're about to go down. */
--			eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
--			pcibios_remove_pci_devices(bus);
-+		/*
-+		 * For fenced PHB and frozen PE, it's handled as normal
-+		 * event. We have to remove the affected PHBs for dead
-+		 * PHB and IOC
-+		 */
-+		if (rc == EEH_NEXT_ERR_FROZEN_PE ||
-+		    rc == EEH_NEXT_ERR_FENCED_PHB) {
-+			eeh_handle_normal_event(pe);
-+		} else {
-+			list_for_each_entry(hose, &hose_list, list_node) {
-+				phb_pe = eeh_phb_pe_get(hose);
-+				if (!phb_pe ||
-+				    !(phb_pe->state & EEH_PE_PHB_DEAD))
-+					continue;
-+
-+				/* Notify all devices to be down */
-+				bus = eeh_pe_bus_get(phb_pe);
-+				eeh_pe_dev_traverse(pe,
-+					eeh_report_failure, NULL);
-+				pcibios_remove_pci_devices(bus);
-+			}
- 		}
--	}
-+
-+		/*
-+		 * If we have detected dead IOC, we needn't proceed
-+		 * any more since all PHBs would have been removed
-+		 */
-+		if (rc == EEH_NEXT_ERR_DEAD_IOC)
-+			break;
-+	} while (rc != EEH_NEXT_ERR_NONE);
- }
- 
- /**
---- a/arch/powerpc/platforms/powernv/eeh-ioda.c
-+++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
-@@ -718,12 +718,12 @@ static int ioda_eeh_get_pe(struct pci_co
-  */
- static int ioda_eeh_next_error(struct eeh_pe **pe)
- {
--	struct pci_controller *hose, *tmp;
-+	struct pci_controller *hose;
- 	struct pnv_phb *phb;
- 	u64 frozen_pe_no;
- 	u16 err_type, severity;
- 	long rc;
--	int ret = 1;
-+	int ret = EEH_NEXT_ERR_NONE;
- 
- 	/*
- 	 * While running here, it's safe to purge the event queue.
-@@ -733,7 +733,7 @@ static int ioda_eeh_next_error(struct ee
- 	eeh_remove_event(NULL);
- 	opal_notifier_update_evt(OPAL_EVENT_PCI_ERROR, 0x0ul);
- 
--	list_for_each_entry_safe(hose, tmp, &hose_list, list_node) {
-+	list_for_each_entry(hose, &hose_list, list_node) {
- 		/*
- 		 * If the subordinate PCI buses of the PHB has been
- 		 * removed, we needn't take care of it any more.
-@@ -772,19 +772,19 @@ static int ioda_eeh_next_error(struct ee
- 		switch (err_type) {
- 		case OPAL_EEH_IOC_ERROR:
- 			if (severity == OPAL_EEH_SEV_IOC_DEAD) {
--				list_for_each_entry_safe(hose, tmp,
--						&hose_list, list_node) {
-+				list_for_each_entry(hose, &hose_list,
-+						    list_node) {
- 					phb = hose->private_data;
- 					phb->eeh_state |= PNV_EEH_STATE_REMOVED;
- 				}
- 
- 				pr_err("EEH: dead IOC detected\n");
--				ret = 4;
--				goto out;
-+				ret = EEH_NEXT_ERR_DEAD_IOC;
- 			} else if (severity == OPAL_EEH_SEV_INF) {
- 				pr_info("EEH: IOC informative error "
- 					"detected\n");
- 				ioda_eeh_hub_diag(hose);
-+				ret = EEH_NEXT_ERR_NONE;
- 			}
- 
- 			break;
-@@ -796,21 +796,20 @@ static int ioda_eeh_next_error(struct ee
- 				pr_err("EEH: dead PHB#%x detected\n",
- 					hose->global_number);
- 				phb->eeh_state |= PNV_EEH_STATE_REMOVED;
--				ret = 3;
--				goto out;
-+				ret = EEH_NEXT_ERR_DEAD_PHB;
- 			} else if (severity == OPAL_EEH_SEV_PHB_FENCED) {
- 				if (ioda_eeh_get_phb_pe(hose, pe))
- 					break;
- 
- 				pr_err("EEH: fenced PHB#%x detected\n",
- 					hose->global_number);
--				ret = 2;
--				goto out;
-+				ret = EEH_NEXT_ERR_FENCED_PHB;
- 			} else if (severity == OPAL_EEH_SEV_INF) {
- 				pr_info("EEH: PHB#%x informative error "
- 					"detected\n",
- 					hose->global_number);
- 				ioda_eeh_phb_diag(hose);
-+				ret = EEH_NEXT_ERR_NONE;
- 			}
- 
- 			break;
-@@ -820,13 +819,23 @@ static int ioda_eeh_next_error(struct ee
- 
- 			pr_err("EEH: Frozen PE#%x on PHB#%x detected\n",
- 				(*pe)->addr, (*pe)->phb->global_number);
--			ret = 1;
--			goto out;
-+			ret = EEH_NEXT_ERR_FROZEN_PE;
-+			break;
-+		default:
-+			pr_warn("%s: Unexpected error type %d\n",
-+				__func__, err_type);
- 		}
-+
-+		/*
-+		 * If we have no errors on the specific PHB or only
-+		 * informative error there, we continue poking it.
-+		 * Otherwise, we need actions to be taken by upper
-+		 * layer.
-+		 */
-+		if (ret > EEH_NEXT_ERR_INF)
-+			break;
- 	}
- 
--	ret = 0;
--out:
- 	return ret;
- }
- 
+But using monotonic_to_bootbased would give you the same functionality
+without having to modify get_xtime_and_monotonic_and_sleep_offset().
+
+>> I'm still not convinced this change needs to be done, but a  better solution
+>> here would be to add infrastructure that when the sleep time is updated we
+>> update an offset that the is adding to the local_clock() however, you probably
+>> want to be careful since you don't want sleep time in normal
+>> local_clock/sched_clock calls since it would mess up scheduling.
+>>
+> Sometimes we need to compare the kernel log with user space log, 
+> so it would be convenient to add the sleep time into kernel timestamp.
+
+Which userspace log? You can have the syslog capture the kernel messages
+and timestamp them properly. Also, if you are using your own logging,
+you can use CLOCK_MONOTONIC which will provide the closest approximation
+to the sched_clock based printk clock.
+
+thanks
+-john
+
 
 
