@@ -1,107 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753025AbaC1N63 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:58:29 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:65512 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752996AbaC1N6Z (ORCPT
+	id S1752517AbaC1OLQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:11:16 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:48801 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaC1OLP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:58:25 -0400
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+	Fri, 28 Mar 2014 10:11:15 -0400
+Date: Fri, 28 Mar 2014 17:11:05 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Neil Armstrong <superna9999@gmail.com>
+Cc: devel@driverdev.osuosl.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH 28/28] ktap: add COPYRIGHT file
-Date: Fri, 28 Mar 2014 09:47:49 -0400
-Message-Id: <1396014469-5937-29-git-send-email-jovi.zhangwei@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
-References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+        Archana kumari <archanakumari959@gmail.com>,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] Staging: netlogic: long lines in xlr_net.c
+Message-ID: <20140328141105.GI6991@mwanda>
+References: <53357C65.8050400@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53357C65.8050400@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ktap is based on laujit and lua, so carry they copyright notices
-and MIT license in ktap tree.
+On Fri, Mar 28, 2014 at 02:43:01PM +0100, Neil Armstrong wrote:
+> checkpatch script returns the following warning:
+> WARNING: line over 80 characters
+> 310: FILE: drivers/staging/netlogic/xlr_net.c:310:
+> +               void *accel_priv, select_queue_fallback_t fallback)
+> 
+> This patch fixes the coding style issue.
+> 
+> Signed-off-by: Neil Armstrong <superna9999@gmail.com>
 
-Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
----
- tools/ktap/COPYRIGHT | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 63 insertions(+)
- create mode 100644 tools/ktap/COPYRIGHT
+Heh.  Looks ok this time but it doesn't apply to linux-next.  Someone
+already sent this patch.  Sorry about that.
 
-diff --git a/tools/ktap/COPYRIGHT b/tools/ktap/COPYRIGHT
-new file mode 100644
-index 0000000..9552521
---- /dev/null
-+++ b/tools/ktap/COPYRIGHT
-@@ -0,0 +1,63 @@
-+
-+Copyright (C) 2012-2014, Jovi Zhangwei <jovi.zhangwei@gmail.com>.
-+All rights reserved.
-+
-+Licensed under the GPL License, Version 2.0
-+
-+===============================================================================
-+
-+* ktap code is based on luajit(compiler & bytecode), so carry luajit
-+  copyright notices in below. 
-+
-+LuaJIT -- a Just-In-Time Compiler for Lua. http://luajit.org/
-+
-+Copyright (C) 2005-2014 Mike Pall.
-+
-+Permission is hereby granted, free of charge, to any person obtaining a copy
-+of this software and associated documentation files (the "Software"), to deal
-+in the Software without restriction, including without limitation the rights
-+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+copies of the Software, and to permit persons to whom the Software is
-+furnished to do so, subject to the following conditions:
-+
-+The above copyright notice and this permission notice shall be included in
-+all copies or substantial portions of the Software.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-+THE SOFTWARE.
-+
-+[ MIT license: http://www.opensource.org/licenses/mit-license.php ]
-+
-+===============================================================================
-+
-+* Some ktap code is based on lua programming language initially,
-+  so carry lua own copyright notices and license terms:
-+  (lua's MIT license is compatible with GPL.
-+   ktap can redistribute as GPL v2, without violate with lua license,
-+   this was confirmed with official lua team)
-+
-+Copyright (C) 1994~2013 Lua.org, PUC-Rio.
-+ 
-+Permissiossion is hereby granted, free of charge, to any person obtaining a copy
-+of this software and associated documentation files (the "Software"), to deal
-+in the Software without restriction, including without limitation the rights
-+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-+copies of the Software, and to permit persons to whom the Software is
-+furnished to do so, subject to the following conditions:
-+
-+The above copyright notice and this permission notice shall be included in all
-+copies or substantial portions of the Software.
-+
-+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-+SOFTWARE.
-+
--- 
-1.8.1.4
+regards,
+dan carpenter
 
