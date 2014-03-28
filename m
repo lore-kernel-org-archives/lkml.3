@@ -1,58 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458AbaC1Atg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 Mar 2014 20:49:36 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50172 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756794AbaC1Ate (ORCPT
+	id S1757471AbaC1Av3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 Mar 2014 20:51:29 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:55334 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819AbaC1Av2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 Mar 2014 20:49:34 -0400
-Message-ID: <5334C71B.1090506@linaro.org>
-Date: Thu, 27 Mar 2014 17:49:31 -0700
-From: John Stultz <john.stultz@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jiri Bohac <jbohac@suse.cz>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: is printk() safe within a timekeeper_seq write section?
-References: <20140306174531.GA30634@midget.suse.cz> <531F6429.8050008@linaro.org> <alpine.DEB.2.02.1403112040100.18573@ionos.tec.linutronix.de> <531F8605.10003@linaro.org> <20140312092125.GA30305@midget.suse.cz>
-In-Reply-To: <20140312092125.GA30305@midget.suse.cz>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 27 Mar 2014 20:51:28 -0400
+X-AuditID: cbfee68f-b7f156d00000276c-93-5334c78efd72
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: dbaryshkov@gmail.com, dwmw2@infradead.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        linux-kernel@vger.kernel.org, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [RESEND PATCHv2] charger-manager: Fix checking of wrong return type
+Date: Fri, 28 Mar 2014 09:51:27 +0900
+Message-id: <1395967887-30866-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrCLMWRmVeSWpSXmKPExsWyRsSkULfvuEmwweGtghbXvzxntZj05D2z
+	xcSVk5ktzja9Ybe4vGsOm8XtxhVsDmweO2fdZffYvELLo2/LKkaPz5vkAliiuGxSUnMyy1KL
+	9O0SuDL+L1zNWrCds+LjutOMDYzv2bsYOTkkBEwkrjTsYIOwxSQu3FsPZHNxCAksZZRY+amH
+	Fabo6L637BCJRYwSy0/8YIVwGpkkzrS3g41iE9CS2P/iBtgoEQFdiZs9l8HizAK1EvuuNYFN
+	EhbwkZg5fyUziM0ioCrx/s97sHpeAVeJ05sWMkJsk5P4sOcR2DYJgfdsEj1HL7FCNAhIfJt8
+	iKWLkQMoISux6QAzRL2kxMEVN1gmMAouYGRYxSiaWpBcUJyUXmSsV5yYW1yal66XnJ+7iREY
+	oqf/PevfwXj3gPUhxmSgcROZpUST84EhnlcSb2hsZmRhamJqbGRuaUaasJI47/2HSUFCAumJ
+	JanZqakFqUXxRaU5qcWHGJk4OKUaGEMSvndrZDt86rj7JINN7nNF4rVZ1ZkcrGF2M4XrjdiP
+	tH+cy79z0hLpnPnZtvL8oQF6Szvv3nuglllde+P24/gJKULrVx1aEOaYpeBeM+u+zK1fk5NL
+	K38ydKkv/LLqzItvrbz7Hy9n4DmbvfjBwcbd31c+uPwk7OD9Ly/KcwISWe5F96+SmKPEUpyR
+	aKjFXFScCADQTkyuZwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIIsWRmVeSWpSXmKPExsVy+t9jAd2+4ybBBj/XcVlc//Kc1WLSk/fM
+	FhNXTma2ONv0ht3i8q45bBa3G1ewObB57Jx1l91j8wotj74tqxg9Pm+SC2CJamC0yUhNTEkt
+	UkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAFarqRQlphTChQKSCwu
+	VtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM+L9wNWvBds6Kj+tOMzYwvmfvYuTkkBAwkTi6
+	7y2ULSZx4d56ti5GLg4hgUWMEstP/GCFcBqZJM60t4NVsQloSex/cYMNxBYR0JW42XMZLM4s
+	UCux71oTK4gtLOAjMXP+SmYQm0VAVeL9n/dg9bwCrhKnNy1khNgmJ/FhzyP2CYzcCxgZVjGK
+	phYkFxQnpeca6hUn5haX5qXrJefnbmIER8AzqR2MKxssDjEKcDAq8fA6WJgEC7EmlhVX5h5i
+	lOBgVhLhTZgGFOJNSaysSi3Kjy8qzUktPsSYDLR9IrOUaHI+MDrzSuINjU3MjCyNzA0tjIzN
+	SRNWEuc90GodKCSQnliSmp2aWpBaBLOFiYNTqoFRvOZ2NferGzKGDAqst619zp9kY3vZr3Lu
+	j/1LFZd7J3r+cCle+HLg3ZPmPhP3d2+mGf9ULVa2mbhSScJlXYSt0e+Jcy1tb8xbXTzzhFKB
+	cOSrjOy7rzKZL+cV+X5V2JIc/FA6IEgs8LnwLMb0lxL/H/zZE6v4aLPFlxCVNWLT3lspv4h8
+	eyNAiaU4I9FQi7moOBEA/EV9gsQCAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/12/2014 02:21 AM, Jiri Bohac wrote:
-> On Tue, Mar 11, 2014 at 02:54:13PM -0700, John Stultz wrote:
->> Ok, so a generic solution is probably not going to be worth it then. My
->> thought was that since we do a very limited amount of informational
->> printks in the timekeeping code, we can be fairly safe delaying the
->> print-out until we drop the locks.
->>
->> For timekeeping, its really 4 call sites:
->> * invalid inject_sleep_time deltas
->> * > 11% clocksource freq adjustments
->> * insert leap second
->> * delete leap second
-> I believe these last two were made safe by 
-> commit ca4523cd (timekeeping: Shorten seq_count region). 
->
-> write_seqcount_begin(&timekeeper_seq) is now done after the
-> accumulate_nsecs_to_secs(tk) from where the printks are called.
+This patch fix minor issue about checking wrong return type.
 
-So I started looking into deferring the printk with a small local
-buffer, but I suddenly realized there are all these WARN_ON's around
-which would likely have the same problem, no?
+The of_cm_parse_desc() return ERR_PTR(errnor number) when some error happen
+in this function. But, charger_manager_probe() has only checked whether
+desc is NULL or not. If of_cm_parse_desc() returns ERR_PTR(-ENOMEM), desc
+isn't NULL but desc is (void *)(-ENOMEM). Althouhg some error happen for parsing
+DT, charger_manager_probe() can't detect error of desc instance.
 
-So I'm starting to doubt we can safely get away with a timekeeping
-specific hack to defer the printk. :(
+Changes from v1:
+- Fix return value from -ENODEV to PTR_ERR(desc)
 
-thanks
--john
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Myungjoo Ham <myungjoo.ham@samsung.com>
+---
+ drivers/power/charger-manager.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-
-
+diff --git a/drivers/power/charger-manager.c b/drivers/power/charger-manager.c
+index 9e4dab4..cf40fa1 100644
+--- a/drivers/power/charger-manager.c
++++ b/drivers/power/charger-manager.c
+@@ -1677,9 +1677,9 @@ static int charger_manager_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	if (!desc) {
++	if (IS_ERR(desc)) {
+ 		dev_err(&pdev->dev, "No platform data (desc) found\n");
+-		return -ENODEV;
++		return PTR_ERR(desc);
+ 	}
+ 
+ 	cm = devm_kzalloc(&pdev->dev,
+-- 
+1.8.0
 
