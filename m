@@ -1,1348 +1,473 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752426AbaC2Pak (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:30:40 -0400
-Received: from mail-ie0-f171.google.com ([209.85.223.171]:48250 "EHLO
-	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaC2Pac (ORCPT
+	id S1752913AbaC2Pba (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:31:30 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:43871 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751878AbaC2P1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:30:32 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: lars@metafoo.de, andriy.shevchenko@linux.intel.com,
-        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH 2/2] dma: Add Xilinx AXI Direct Memory Access Engine driver support
-Date: Sat, 29 Mar 2014 20:58:40 +0530
-Message-Id: <1396106920-19015-2-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396106920-19015-1-git-send-email-sthokal@xilinx.com>
-References: <1396106920-19015-1-git-send-email-sthokal@xilinx.com>
+	Sat, 29 Mar 2014 11:27:19 -0400
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 21/29] ktap: add symbol handling code(tools/ktap/symbol.[c|h])
+Date: Fri, 28 Mar 2014 10:45:16 -0400
+Message-Id: <1396017924-7754-22-git-send-email-jovi.zhangwei@gmail.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the driver for the AXI Direct Memory Access (AXI DMA)
-core, which is a soft Xilinx IP core that provides high-
-bandwidth direct memory access between memory and AXI4-Stream
-type target peripherals.
+This file is use for uprobe(include SDT) symbol lookup,
+for example:
 
-This module works on Zynq (ARM Based SoC) and Microblaze platforms.
+trace probe:/lib64/libc.so.6:malloc {
+        print("malloc entry:", execname)
+}
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+trace sdt:/lib64/libc.so.6:* {
+        print(execname, argstr)
+}
+
+It need libelf library support.
+
+Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
-- This driver patch is created on top of earlier series,
-  1/2 - "dma: Add Xilinx Video DMA DT Binding Documentation"
-  2/2 - "dma: Add Xilinx AXI Video Direct Memory Access Engine driver support"
-- Rebased on v3.14.0-rc8
----
- drivers/dma/Kconfig             |   13 +
- drivers/dma/xilinx/Makefile     |    1 +
- drivers/dma/xilinx/xilinx_dma.c | 1225 +++++++++++++++++++++++++++++++++++++++
- include/linux/amba/xilinx_dma.h |   17 +
- 4 files changed, 1256 insertions(+)
- create mode 100644 drivers/dma/xilinx/xilinx_dma.c
+ tools/ktap/kp_symbol.c | 360 +++++++++++++++++++++++++++++++++++++++++++++++++
+ tools/ktap/kp_symbol.h |  50 +++++++
+ 2 files changed, 410 insertions(+)
+ create mode 100644 tools/ktap/kp_symbol.c
+ create mode 100644 tools/ktap/kp_symbol.h
 
-diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index 44b312e..8cfcc74 100644
---- a/drivers/dma/Kconfig
-+++ b/drivers/dma/Kconfig
-@@ -365,6 +365,19 @@ config XILINX_VDMA
- 	  channels, Memory Mapped to Stream (MM2S) and Stream to
- 	  Memory Mapped (S2MM) for the data transfers.
- 
-+config XILINX_DMA
-+	tristate "Xilinx AXI DMA Engine"
-+	depends on (ARCH_ZYNQ || MICROBLAZE)
-+	select DMA_ENGINE
-+	help
-+	  Enable support for Xilinx AXI DMA Soft IP.
-+
-+	  This engine provides high-bandwidth direct memory access
-+	  between memory and AXI4-Stream type target peripherals.
-+	  It has two stream interfaces/channels, Memory Mapped to
-+	  Stream (MM2S) and Stream to Memory Mapped (S2MM) for the
-+	  data transfers.
-+
- config DMA_ENGINE
- 	bool
- 
-diff --git a/drivers/dma/xilinx/Makefile b/drivers/dma/xilinx/Makefile
-index 3c4e9f2..6224a49 100644
---- a/drivers/dma/xilinx/Makefile
-+++ b/drivers/dma/xilinx/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_XILINX_VDMA) += xilinx_vdma.o
-+obj-$(CONFIG_XILINX_DMA) += xilinx_dma.o
-diff --git a/drivers/dma/xilinx/xilinx_dma.c b/drivers/dma/xilinx/xilinx_dma.c
+diff --git a/tools/ktap/kp_symbol.c b/tools/ktap/kp_symbol.c
 new file mode 100644
-index 0000000..9f1a4f2
+index 0000000..1d5b73e
 --- /dev/null
-+++ b/drivers/dma/xilinx/xilinx_dma.c
-@@ -0,0 +1,1225 @@
++++ b/tools/ktap/kp_symbol.c
+@@ -0,0 +1,360 @@
 +/*
-+ * DMA driver for Xilinx DMA Engine
++ * symbol.c
 + *
-+ * Copyright (C) 2010 - 2014 Xilinx, Inc. All rights reserved.
++ * This file is part of ktap by Jovi Zhangwei.
 + *
-+ * Based on the Freescale DMA driver.
++ * Copyright (C) 2013 Azat Khuzhin <a3at.mail@gmail.com>.
 + *
-+ * Description:
-+ *  The AXI DMA, is a soft IP, which provides high-bandwidth Direct Memory
-+ *  Access between memory and AXI4-Stream-type target peripherals. It can be
-+ *  configured to have one channel or two channels and if configured as two
-+ *  channels, one is to transmit data from memory to a device and another is
-+ *  to receive from a device.
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
 + *
-+ * This program is free software: you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation, either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
-+
-+#include <linux/amba/xilinx_dma.h>
-+#include <linux/bitops.h>
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/of_dma.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <linux/slab.h>
-+
-+#include "../dmaengine.h"
-+
-+/* Register Offsets */
-+#define XILINX_DMA_REG_CONTROL		0x00
-+#define XILINX_DMA_REG_STATUS		0x04
-+#define XILINX_DMA_REG_CURDESC		0x08
-+#define XILINX_DMA_REG_TAILDESC		0x10
-+#define XILINX_DMA_REG_SRCADDR		0x18
-+#define XILINX_DMA_REG_DSTADDR		0x20
-+#define XILINX_DMA_REG_BTT		0x28
-+
-+/* Channel/Descriptor Offsets */
-+#define XILINX_DMA_MM2S_CTRL_OFFSET	0x00
-+#define XILINX_DMA_S2MM_CTRL_OFFSET	0x30
-+
-+/* General register bits definitions */
-+#define XILINX_DMA_CR_RUNSTOP_MASK	BIT(0)
-+#define XILINX_DMA_CR_RESET_MASK	BIT(2)
-+
-+#define XILINX_DMA_CR_DELAY_SHIFT	24
-+#define XILINX_DMA_CR_COALESCE_SHIFT	16
-+
-+#define XILINX_DMA_CR_DELAY_MAX		GENMASK(7, 0)
-+#define XILINX_DMA_CR_COALESCE_MAX	GENMASK(7, 0)
-+
-+#define XILINX_DMA_SR_HALTED_MASK	BIT(0)
-+#define XILINX_DMA_SR_IDLE_MASK		BIT(1)
-+
-+#define XILINX_DMA_XR_IRQ_IOC_MASK	BIT(12)
-+#define XILINX_DMA_XR_IRQ_DELAY_MASK	BIT(13)
-+#define XILINX_DMA_XR_IRQ_ERROR_MASK	BIT(14)
-+#define XILINX_DMA_XR_IRQ_ALL_MASK	GENMASK(14, 12)
-+
-+/* BD definitions */
-+#define XILINX_DMA_BD_STS_ALL_MASK	GENMASK(31, 28)
-+#define XILINX_DMA_BD_SOP		BIT(27)
-+#define XILINX_DMA_BD_EOP		BIT(26)
-+
-+/* Hw specific definitions */
-+#define XILINX_DMA_MAX_CHANS_PER_DEVICE	0x2
-+#define XILINX_DMA_MAX_TRANS_LEN	GENMASK(22, 0)
-+
-+/* Delay loop counter to prevent hardware failure */
-+#define XILINX_DMA_LOOP_COUNT		1000000
-+
-+/* Maximum number of Descriptors */
-+#define XILINX_DMA_NUM_DESCS		64
-+
-+/**
-+ * struct xilinx_dma_desc_hw - Hardware Descriptor
-+ * @next_desc: Next Descriptor Pointer @0x00
-+ * @pad1: Reserved @0x04
-+ * @buf_addr: Buffer address @0x08
-+ * @pad2: Reserved @0x0C
-+ * @pad3: Reserved @0x10
-+ * @pad4: Reserved @0x14
-+ * @control: Control field @0x18
-+ * @status: Status field @0x1C
-+ * @app: APP Fields @0x20 - 0x30
-+ */
-+struct xilinx_dma_desc_hw {
-+	u32 next_desc;
-+	u32 pad1;
-+	u32 buf_addr;
-+	u32 pad2;
-+	u32 pad3;
-+	u32 pad4;
-+	u32 control;
-+	u32 status;
-+	u32 app[XILINX_DMA_NUM_APP_WORDS];
-+} __aligned(64);
-+
-+/**
-+ * struct xilinx_dma_tx_segment - Descriptor segment
-+ * @hw: Hardware descriptor
-+ * @node: Node in the descriptor segments list
-+ * @phys: Physical address of segment
-+ */
-+struct xilinx_dma_tx_segment {
-+	struct xilinx_dma_desc_hw hw;
-+	struct list_head node;
-+	dma_addr_t phys;
-+} __aligned(64);
-+
-+/**
-+ * struct xilinx_dma_tx_descriptor - Per Transaction structure
-+ * @async_tx: Async transaction descriptor
-+ * @segments: TX segments list
-+ * @node: Node in the channel descriptors list
-+ */
-+struct xilinx_dma_tx_descriptor {
-+	struct dma_async_tx_descriptor async_tx;
-+	struct list_head segments;
-+	struct list_head node;
-+};
-+
-+/**
-+ * struct xilinx_dma_chan - Driver specific DMA channel structure
-+ * @xdev: Driver specific device structure
-+ * @ctrl_offset: Control registers offset
-+ * @lock: Descriptor operation lock
-+ * @pending_list: Descriptors waiting
-+ * @active_desc: Active descriptor
-+ * @allocated_desc: Allocated descriptor
-+ * @done_list: Complete descriptors
-+ * @free_seg_list: Free descriptors
-+ * @common: DMA common channel
-+ * @seg_v: Statically allocated segments base
-+ * @seg_p: Physical allocated segments base
-+ * @dev: The dma device
-+ * @irq: Channel IRQ
-+ * @id: Channel ID
-+ * @direction: Transfer direction
-+ * @has_sg: Support scatter transfers
-+ * @err: Channel has errors
-+ * @tasklet: Cleanup work after irq
-+ * @residue: Residue
-+ */
-+struct xilinx_dma_chan {
-+	struct xilinx_dma_device *xdev;
-+	u32 ctrl_offset;
-+	spinlock_t lock;
-+	struct list_head pending_list;
-+	struct xilinx_dma_tx_descriptor *active_desc;
-+	struct xilinx_dma_tx_descriptor *allocated_desc;
-+	struct list_head done_list;
-+	struct list_head free_seg_list;
-+	struct dma_chan common;
-+	struct xilinx_dma_tx_segment *seg_v;
-+	dma_addr_t seg_p;
-+	struct device *dev;
-+	int irq;
-+	int id;
-+	enum dma_transfer_direction direction;
-+	bool has_sg;
-+	int err;
-+	struct tasklet_struct tasklet;
-+	u32 residue;
-+};
-+
-+/**
-+ * struct xilinx_dma_device - DMA device structure
-+ * @regs: I/O mapped base address
-+ * @dev: Device Structure
-+ * @common: DMA device structure
-+ * @chan: Driver specific DMA channel
-+ * @has_sg: Specifies whether Scatter-Gather is present or not
-+ */
-+struct xilinx_dma_device {
-+	void __iomem *regs;
-+	struct device *dev;
-+	struct dma_device common;
-+	struct xilinx_dma_chan *chan[XILINX_DMA_MAX_CHANS_PER_DEVICE];
-+	bool has_sg;
-+};
-+
-+/* Macros */
-+#define to_xilinx_chan(chan) \
-+	container_of(chan, struct xilinx_dma_chan, common)
-+#define to_dma_tx_descriptor(tx) \
-+	container_of(tx, struct xilinx_dma_tx_descriptor, async_tx)
-+
-+/* IO accessors */
-+static inline u32 dma_read(struct xilinx_dma_chan *chan, u32 reg)
-+{
-+	return ioread32(chan->xdev->regs + reg);
-+}
-+
-+static inline void dma_write(struct xilinx_dma_chan *chan, u32 reg, u32 value)
-+{
-+	iowrite32(value, chan->xdev->regs + reg);
-+}
-+
-+static inline u32 dma_ctrl_read(struct xilinx_dma_chan *chan, u32 reg)
-+{
-+	return dma_read(chan, chan->ctrl_offset + reg);
-+}
-+
-+static inline void dma_ctrl_write(struct xilinx_dma_chan *chan, u32 reg,
-+					u32 value)
-+{
-+	dma_write(chan, chan->ctrl_offset + reg, value);
-+}
-+
-+static inline void dma_ctrl_clr(struct xilinx_dma_chan *chan, u32 reg, u32 clr)
-+{
-+	dma_ctrl_write(chan, reg, dma_ctrl_read(chan, reg) & ~clr);
-+}
-+
-+static inline void dma_ctrl_set(struct xilinx_dma_chan *chan, u32 reg, u32 set)
-+{
-+	dma_ctrl_write(chan, reg, dma_ctrl_read(chan, reg) | set);
-+}
-+
-+/* -----------------------------------------------------------------------------
-+ * Descriptors and segments alloc and free
-+ */
-+
-+/**
-+ * xilinx_dma_alloc_tx_segment - Allocate transaction segment
-+ * @chan: Driver specific dma channel
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
 + *
-+ * Return: The allocated segment on success and NULL on failure.
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
-+static struct xilinx_dma_tx_segment *
-+xilinx_dma_alloc_tx_segment(struct xilinx_dma_chan *chan)
++
++#include <stdio.h>
++#include <stdlib.h>
++
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <unistd.h>
++#include <fcntl.h>
++#include <string.h>
++#include <linux/limits.h>
++
++#include <libelf.h>
++
++#include "../../include/uapi/ktap/ktap_types.h"
++#include "kp_symbol.h"
++
++const char *dbg_link_name = ".gnu_debuglink";
++const char *dbg_bin_dir = "/usr/lib/debug";
++
++static Elf_Scn *elf_section_by_name(Elf *elf, GElf_Ehdr *ep,
++				    GElf_Shdr *shp, const char *name)
 +{
-+	struct xilinx_dma_tx_segment *segment = NULL;
-+	unsigned long flags;
++	Elf_Scn *scn = NULL;
 +
-+	spin_lock_irqsave(&chan->lock, flags);
-+	if (!list_empty(&chan->free_seg_list)) {
-+		segment = list_first_entry(&chan->free_seg_list,
-+						struct xilinx_dma_tx_segment,
-+						node);
-+		list_del(&segment->node);
-+	}
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return segment;
-+}
-+
-+/**
-+ * xilinx_dma_clean_hw_desc - Clean hardware descriptor
-+ * @hw: HW descriptor to clean
-+ */
-+static void xilinx_dma_clean_hw_desc(struct xilinx_dma_desc_hw *hw)
-+{
-+	u32 next_desc = hw->next_desc;
-+
-+	memset(hw, 0, sizeof(struct xilinx_dma_desc_hw));
-+
-+	hw->next_desc = next_desc;
-+}
-+
-+/**
-+ * xilinx_dma_free_tx_segment - Free transaction segment
-+ * @chan: Driver specific dma channel
-+ * @segment: dma transaction segment
-+ */
-+static void xilinx_dma_free_tx_segment(struct xilinx_dma_chan *chan,
-+					struct xilinx_dma_tx_segment *segment)
-+{
-+	xilinx_dma_clean_hw_desc(&segment->hw);
-+
-+	list_add_tail(&segment->node, &chan->free_seg_list);
-+}
-+
-+/**
-+ * xilinx_dma_tx_descriptor - Allocate transaction descriptor
-+ * @chan: Driver specific dma channel
-+ *
-+ * Return: The allocated descriptor on success and NULL on failure.
-+ */
-+static struct xilinx_dma_tx_descriptor *
-+xilinx_dma_alloc_tx_descriptor(struct xilinx_dma_chan *chan)
-+{
-+	struct xilinx_dma_tx_descriptor *desc;
-+	unsigned long flags;
-+
-+	if (chan->allocated_desc)
-+		return chan->allocated_desc;
-+
-+	desc = kzalloc(sizeof(*desc), GFP_KERNEL);
-+	if (!desc)
++	/* Elf is corrupted/truncated, avoid calling elf_strptr. */
++	if (!elf_rawdata(elf_getscn(elf, ep->e_shstrndx), NULL))
 +		return NULL;
 +
-+	spin_lock_irqsave(&chan->lock, flags);
-+	chan->allocated_desc = desc;
-+	spin_unlock_irqrestore(&chan->lock, flags);
++	while ((scn = elf_nextscn(elf, scn)) != NULL) {
++		char *str;
 +
-+	INIT_LIST_HEAD(&desc->segments);
-+
-+	return desc;
-+}
-+
-+/**
-+ * xilinx_dma_free_tx_descriptor - Free transaction descriptor
-+ * @chan: Driver specific dma channel
-+ * @desc: dma transaction descriptor
-+ */
-+static void
-+xilinx_dma_free_tx_descriptor(struct xilinx_dma_chan *chan,
-+			       struct xilinx_dma_tx_descriptor *desc)
-+{
-+	struct xilinx_dma_tx_segment *segment, *next;
-+
-+	if (!desc)
-+		return;
-+
-+	list_for_each_entry_safe(segment, next, &desc->segments, node) {
-+		list_del(&segment->node);
-+		xilinx_dma_free_tx_segment(chan, segment);
-+	}
-+
-+	kfree(desc);
-+}
-+
-+/**
-+ * xilinx_dma_free_desc_list - Free descriptors list
-+ * @chan: Driver specific dma channel
-+ * @list: List to parse and delete the descriptor
-+ */
-+static void xilinx_dma_free_desc_list(struct xilinx_dma_chan *chan,
-+					struct list_head *list)
-+{
-+	struct xilinx_dma_tx_descriptor *desc, *next;
-+
-+	list_for_each_entry_safe(desc, next, list, node) {
-+		list_del(&desc->node);
-+		xilinx_dma_free_tx_descriptor(chan, desc);
-+	}
-+}
-+
-+/**
-+ * xilinx_dma_free_descriptors - Free channel descriptors
-+ * @chan: Driver specific dma channel
-+ */
-+static void xilinx_dma_free_descriptors(struct xilinx_dma_chan *chan)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	xilinx_dma_free_desc_list(chan, &chan->pending_list);
-+	xilinx_dma_free_desc_list(chan, &chan->done_list);
-+
-+	xilinx_dma_free_tx_descriptor(chan, chan->active_desc);
-+	chan->active_desc = NULL;
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/**
-+ * xilinx_dma_free_chan_resources - Free channel resources
-+ * @dchan: DMA channel
-+ */
-+static void xilinx_dma_free_chan_resources(struct dma_chan *dchan)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+
-+	xilinx_dma_free_descriptors(chan);
-+
-+	dma_free_coherent(chan->dev,
-+				sizeof(*chan->seg_v) * XILINX_DMA_NUM_DESCS,
-+				chan->seg_v, chan->seg_p);
-+}
-+
-+/**
-+ * xilinx_dma_chan_desc_cleanup - Clean channel descriptors
-+ * @chan: Driver specific dma channel
-+ */
-+static void xilinx_dma_chan_desc_cleanup(struct xilinx_dma_chan *chan)
-+{
-+	struct xilinx_dma_tx_descriptor *desc, *next;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	list_for_each_entry_safe(desc, next, &chan->done_list, node) {
-+		dma_async_tx_callback callback;
-+		void *callback_param;
-+
-+		/* Remove from the list of running transactions */
-+		list_del(&desc->node);
-+
-+		/* Run the link descriptor callback function */
-+		callback = desc->async_tx.callback;
-+		callback_param = desc->async_tx.callback_param;
-+		if (callback) {
-+			spin_unlock_irqrestore(&chan->lock, flags);
-+			callback(callback_param);
-+			spin_lock_irqsave(&chan->lock, flags);
-+		}
-+
-+		/* Run any dependencies, then free the descriptor */
-+		dma_run_dependencies(&desc->async_tx);
-+		xilinx_dma_free_tx_descriptor(chan, desc);
-+	}
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+}
-+
-+/**
-+ * xilinx_dma_do_tasklet - Schedule completion tasklet
-+ * @data: Pointer to the Xilinx dma channel structure
-+ */
-+static void xilinx_dma_do_tasklet(unsigned long data)
-+{
-+	struct xilinx_dma_chan *chan = (struct xilinx_dma_chan *)data;
-+
-+	xilinx_dma_chan_desc_cleanup(chan);
-+}
-+
-+/**
-+ * xilinx_dma_alloc_chan_resources - Allocate channel resources
-+ * @dchan: DMA channel
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_dma_alloc_chan_resources(struct dma_chan *dchan)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+	int i;
-+
-+	/* Allocate the buffer descriptors. */
-+	chan->seg_v = dma_zalloc_coherent(chan->dev,
-+						sizeof(*chan->seg_v) *
-+						XILINX_DMA_NUM_DESCS,
-+						&chan->seg_p, GFP_KERNEL);
-+	if (!chan->seg_v) {
-+		dev_err(chan->dev,
-+			"unable to allocate channel %d descriptors\n",
-+			chan->id);
-+		return -ENOMEM;
-+	}
-+
-+	for (i = 0; i < XILINX_DMA_NUM_DESCS; i++) {
-+		chan->seg_v[i].hw.next_desc =
-+				chan->seg_p + sizeof(*chan->seg_v) *
-+				((i + 1) % XILINX_DMA_NUM_DESCS);
-+		chan->seg_v[i].phys =
-+				chan->seg_p + sizeof(*chan->seg_v) *
-+				(i % XILINX_DMA_NUM_DESCS);
-+		list_add_tail(&chan->seg_v[i].node, &chan->free_seg_list);
-+	}
-+
-+	dma_cookie_init(dchan);
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_dma_tx_status - Get dma transaction status
-+ * @dchan: DMA channel
-+ * @cookie: Transaction identifier
-+ * @txstate: Transaction state
-+ *
-+ * Return: DMA transaction status
-+ */
-+static enum dma_status xilinx_dma_tx_status(struct dma_chan *dchan,
-+					dma_cookie_t cookie,
-+					struct dma_tx_state *txstate)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+	enum dma_status ret;
-+	unsigned long flags;
-+
-+	ret = dma_cookie_status(dchan, cookie, txstate);
-+	if (ret != DMA_COMPLETE) {
-+		spin_lock_irqsave(&chan->lock, flags);
-+		dma_set_residue(txstate, chan->residue);
-+		spin_unlock_irqrestore(&chan->lock, flags);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * xilinx_dma_is_running - Check if DMA channel is running
-+ * @chan: Driver specific DMA channel
-+ *
-+ * Return: '1' if running, '0' if not.
-+ */
-+static bool xilinx_dma_is_running(struct xilinx_dma_chan *chan)
-+{
-+	return !(dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-+		 XILINX_DMA_SR_HALTED_MASK) &&
-+		(dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-+		 XILINX_DMA_CR_RUNSTOP_MASK);
-+}
-+
-+/**
-+ * xilinx_dma_is_idle - Check if DMA channel is idle
-+ * @chan: Driver specific DMA channel
-+ *
-+ * Return: '1' if idle, '0' if not.
-+ */
-+static bool xilinx_dma_is_idle(struct xilinx_dma_chan *chan)
-+{
-+	return dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-+		XILINX_DMA_SR_IDLE_MASK;
-+}
-+
-+/**
-+ * xilinx_dma_halt - Halt DMA channel
-+ * @chan: Driver specific DMA channel
-+ */
-+static void xilinx_dma_halt(struct xilinx_dma_chan *chan)
-+{
-+	int loop = XILINX_DMA_LOOP_COUNT;
-+
-+	dma_ctrl_clr(chan, XILINX_DMA_REG_CONTROL,
-+			XILINX_DMA_CR_RUNSTOP_MASK);
-+
-+	/* Wait for the hardware to halt */
-+	do {
-+		if (dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-+			XILINX_DMA_SR_HALTED_MASK)
++		gelf_getshdr(scn, shp);
++		str = elf_strptr(elf, ep->e_shstrndx, shp->sh_name);
++		if (!strcmp(name, str))
 +			break;
-+	} while (loop--);
-+
-+	if (!loop) {
-+		pr_debug("Cannot stop channel %p: %x\n",
-+			 chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-+		chan->err = true;
 +	}
++
++	return scn;
 +}
 +
 +/**
-+ * xilinx_dma_start - Start DMA channel
-+ * @chan: Driver specific DMA channel
++ * @return v_addr of "LOAD" program header, that have zero offset.
 + */
-+static void xilinx_dma_start(struct xilinx_dma_chan *chan)
++static int find_load_address(Elf *elf, vaddr_t *load_address)
 +{
-+	int loop = XILINX_DMA_LOOP_COUNT;
++	GElf_Phdr phdr;
++	size_t i, phdrnum;
 +
-+	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-+			XILINX_DMA_CR_RUNSTOP_MASK);
++	if (elf_getphdrnum(elf, &phdrnum))
++		return -1;
 +
-+	/* Wait for the hardware to start */
-+	do {
-+		if (!dma_ctrl_read(chan, XILINX_DMA_REG_STATUS) &
-+			XILINX_DMA_SR_HALTED_MASK)
-+			break;
-+	} while (loop--);
++	for (i = 0; i < phdrnum; i++) {
++		if (gelf_getphdr(elf, i, &phdr) == NULL)
++			return -1;
 +
-+	if (!loop) {
-+		pr_debug("Cannot start channel %p: %x\n",
-+			 chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-+		chan->err = true;
++		if (phdr.p_type != PT_LOAD || phdr.p_offset != 0)
++			continue;
++
++		*load_address = phdr.p_vaddr;
++		return 0;
 +	}
++
++	/* cannot found load address */
++	return -1;
 +}
 +
-+/**
-+ * xilinx_dma_start_transfer - Starts DMA transfer
-+ * @chan: Driver specific channel struct pointer
-+ */
-+static void xilinx_dma_start_transfer(struct xilinx_dma_chan *chan)
++static size_t elf_symbols(GElf_Shdr shdr)
 +{
-+	struct xilinx_dma_tx_descriptor *desc;
-+	struct xilinx_dma_tx_segment *head, *tail = NULL;
-+	unsigned long flags;
-+
-+	if (chan->err)
-+		return;
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	/* There's already an active descriptor, bail out. */
-+	if (chan->active_desc)
-+		goto out_unlock;
-+
-+	if (list_empty(&chan->pending_list))
-+		goto out_unlock;
-+
-+	desc = list_first_entry(&chan->pending_list,
-+				struct xilinx_dma_tx_descriptor, node);
-+
-+	if (chan->has_sg && xilinx_dma_is_running(chan) &&
-+	    !xilinx_dma_is_idle(chan)) {
-+		tail = list_entry(desc->segments.prev,
-+				  struct xilinx_dma_tx_segment, node);
-+		dma_ctrl_write(chan, XILINX_DMA_REG_TAILDESC, tail->phys);
-+		goto out_free_desc;
-+	}
-+
-+	if (chan->has_sg) {
-+		head = list_first_entry(&desc->segments,
-+					struct xilinx_dma_tx_segment, node);
-+		tail = list_entry(desc->segments.prev,
-+					struct xilinx_dma_tx_segment, node);
-+		dma_ctrl_write(chan, XILINX_DMA_REG_CURDESC, head->phys);
-+	}
-+
-+	xilinx_dma_start(chan);
-+	if (chan->err)
-+		goto out_unlock;
-+
-+	/* Enable interrupts */
-+	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-+			XILINX_DMA_XR_IRQ_ALL_MASK);
-+
-+	/* Start the transfer */
-+	if (chan->has_sg) {
-+		dma_ctrl_write(chan, XILINX_DMA_REG_TAILDESC, tail->phys);
-+	} else {
-+		struct xilinx_dma_tx_segment *segment;
-+		struct xilinx_dma_desc_hw *hw;
-+
-+		segment = list_first_entry(&desc->segments,
-+					struct xilinx_dma_tx_segment, node);
-+		hw = &segment->hw;
-+
-+		if (chan->direction == DMA_MEM_TO_DEV)
-+			dma_ctrl_write(chan, XILINX_DMA_REG_SRCADDR,
-+					hw->buf_addr);
-+		else
-+			dma_ctrl_write(chan, XILINX_DMA_REG_DSTADDR,
-+					hw->buf_addr);
-+
-+		/* Start the transfer */
-+		dma_ctrl_write(chan, XILINX_DMA_REG_BTT,
-+				hw->control & XILINX_DMA_MAX_TRANS_LEN);
-+	}
-+
-+out_free_desc:
-+	list_del(&desc->node);
-+	chan->active_desc = desc;
-+
-+out_unlock:
-+	spin_unlock_irqrestore(&chan->lock, flags);
++	return shdr.sh_size / shdr.sh_entsize;
 +}
 +
-+/**
-+ * xilinx_dma_issue_pending - Issue pending transactions
-+ * @dchan: DMA channel
-+ */
-+static void xilinx_dma_issue_pending(struct dma_chan *dchan)
++static int dso_symbols(Elf *elf, symbol_actor actor, void *arg)
 +{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
++	Elf_Data *elf_data = NULL;
++	Elf_Scn *scn = NULL;
++	GElf_Sym sym;
++	GElf_Shdr shdr;
++	int symbols_count = 0;
++	vaddr_t load_address;
 +
-+	xilinx_dma_start_transfer(chan);
-+}
++	if (find_load_address(elf, &load_address))
++		return -1;
 +
-+/**
-+ * xilinx_dma_complete_descriptor - Mark the active descriptor as complete
-+ * @chan : xilinx DMA channel
-+ */
-+static void xilinx_dma_complete_descriptor(struct xilinx_dma_chan *chan)
-+{
-+	struct xilinx_dma_tx_descriptor *desc;
-+	struct xilinx_dma_tx_segment *segment, *next;
-+	struct xilinx_dma_desc_hw *hw;
-+	unsigned long flags;
-+	u32 residue = 0;
++	while ((scn = elf_nextscn(elf, scn))) {
++		int i;
 +
-+	spin_lock_irqsave(&chan->lock, flags);
++		gelf_getshdr(scn, &shdr);
 +
-+	desc = chan->active_desc;
-+	if (!desc) {
-+		dev_dbg(chan->dev, "no running descriptors\n");
-+		goto out_unlock;
-+	}
++		if (shdr.sh_type != SHT_SYMTAB)
++			continue;
 +
-+	if (chan->has_sg) {
-+		list_for_each_entry_safe(segment, next, &desc->segments, node) {
-+			hw = &segment->hw;
-+			residue += (hw->control - hw->status) &
-+					XILINX_DMA_MAX_TRANS_LEN;
++		elf_data = elf_getdata(scn, elf_data);
++
++		for (i = 0; i < elf_symbols(shdr); i++) {
++			char *name;
++			vaddr_t addr;
++			int ret;
++
++			gelf_getsym(elf_data, i, &sym);
++
++			if (GELF_ST_TYPE(sym.st_info) != STT_FUNC)
++				continue;
++
++			name = elf_strptr(elf, shdr.sh_link, sym.st_name);
++			addr = sym.st_value - load_address;
++
++			ret = actor(name, addr, arg);
++			if (ret)
++				return ret;
++
++			++symbols_count;
 +		}
 +	}
 +
-+	chan->residue = residue;
-+	dma_cookie_complete(&desc->async_tx);
-+	list_add_tail(&desc->node, &chan->done_list);
-+
-+	chan->active_desc = NULL;
-+
-+out_unlock:
-+	spin_unlock_irqrestore(&chan->lock, flags);
++	return symbols_count;
 +}
 +
-+/**
-+ * xilinx_dma_reset - Reset DMA channel
-+ * @chan: Driver specific DMA channel
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_dma_reset(struct xilinx_dma_chan *chan)
++#define SDT_NOTE_TYPE 3
++#define SDT_NOTE_COUNT 3
++#define SDT_NOTE_SCN ".note.stapsdt"
++#define SDT_NOTE_NAME "stapsdt"
++
++static vaddr_t sdt_note_addr(Elf *elf, const char *data, size_t len, int type)
 +{
-+	int loop = XILINX_DMA_LOOP_COUNT;
-+	u32 tmp;
-+
-+	dma_ctrl_set(chan, XILINX_DMA_REG_CONTROL,
-+			XILINX_DMA_CR_RESET_MASK);
-+
-+	tmp = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-+		XILINX_DMA_CR_RESET_MASK;
-+
-+	/* Wait for the hardware to finish reset */
-+	do {
-+		tmp = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL) &
-+			XILINX_DMA_CR_RESET_MASK;
-+	} while (loop-- && tmp);
-+
-+	if (!loop) {
-+		dev_err(chan->dev, "reset timeout, cr %x, sr %x\n",
-+			dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL),
-+			dma_ctrl_read(chan, XILINX_DMA_REG_STATUS));
-+		return -EBUSY;
-+	}
-+
-+	chan->err = false;
-+
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_dma_irq_handler - DMA Interrupt handler
-+ * @irq: IRQ number
-+ * @data: Pointer to the Xilinx DMA channel structure
-+ *
-+ * Return: IRQ_HANDLED/IRQ_NONE
-+ */
-+static irqreturn_t xilinx_dma_irq_handler(int irq, void *data)
-+{
-+	struct xilinx_dma_chan *chan = data;
-+	u32 status;
-+
-+	/* Read the status and ack the interrupts. */
-+	status = dma_ctrl_read(chan, XILINX_DMA_REG_STATUS);
-+	if (!(status & XILINX_DMA_XR_IRQ_ALL_MASK))
-+		return IRQ_NONE;
-+
-+	dma_ctrl_write(chan, XILINX_DMA_REG_STATUS,
-+			status & XILINX_DMA_XR_IRQ_ALL_MASK);
-+
-+	if (status & XILINX_DMA_XR_IRQ_ERROR_MASK) {
-+		dev_err(chan->dev,
-+			"Channel %p has errors %x, cdr %x tdr %x\n",
-+			chan, dma_ctrl_read(chan, XILINX_DMA_REG_STATUS),
-+			dma_ctrl_read(chan, XILINX_DMA_REG_CURDESC),
-+			dma_ctrl_read(chan, XILINX_DMA_REG_TAILDESC));
-+		chan->err = true;
-+	}
++	vaddr_t vaddr;
 +
 +	/*
-+	 * Device takes too long to do the transfer when user requires
-+	 * responsiveness
++	 * Three addresses need to be obtained :
++	 * Marker location, address of base section and semaphore location
 +	 */
-+	if (status & XILINX_DMA_XR_IRQ_DELAY_MASK)
-+		dev_dbg(chan->dev, "Inter-packet latency too long\n");
-+
-+	if (status & XILINX_DMA_XR_IRQ_IOC_MASK) {
-+		xilinx_dma_complete_descriptor(chan);
-+		xilinx_dma_start_transfer(chan);
-+	}
-+
-+	tasklet_schedule(&chan->tasklet);
-+	return IRQ_HANDLED;
-+}
-+
-+/**
-+ * xilinx_dma_tx_submit - Submit DMA transaction
-+ * @tx: Async transaction descriptor
-+ *
-+ * Return: cookie value on success and failure value on error
-+ */
-+static dma_cookie_t xilinx_dma_tx_submit(struct dma_async_tx_descriptor *tx)
-+{
-+	struct xilinx_dma_tx_descriptor *desc = to_dma_tx_descriptor(tx);
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(tx->chan);
-+	dma_cookie_t cookie;
-+	unsigned long flags;
-+	int err;
-+
-+	if (chan->err) {
-+		/*
-+		 * If reset fails, need to hard reset the system.
-+		 * Channel is no longer functional
-+		 */
-+		err = xilinx_dma_reset(chan);
-+		if (err < 0)
-+			return err;
-+	}
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	cookie = dma_cookie_assign(tx);
-+
-+	/* Append the transaction to the pending transactions queue. */
-+	list_add_tail(&desc->node, &chan->pending_list);
-+
-+	/* Free the allocated desc */
-+	chan->allocated_desc = NULL;
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return cookie;
-+}
-+
-+/**
-+ * xilinx_dma_prep_slave_sg - prepare descriptors for a DMA_SLAVE transaction
-+ * @dchan: DMA channel
-+ * @sgl: scatterlist to transfer to/from
-+ * @sg_len: number of entries in @scatterlist
-+ * @direction: DMA direction
-+ * @flags: transfer ack flags
-+ * @context: APP words of the descriptor
-+ *
-+ * Return: Async transaction descriptor on success and NULL on failure
-+ */
-+static struct dma_async_tx_descriptor *xilinx_dma_prep_slave_sg(
-+	struct dma_chan *dchan, struct scatterlist *sgl, unsigned int sg_len,
-+	enum dma_transfer_direction direction, unsigned long flags,
-+	void *context)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+	struct xilinx_dma_tx_descriptor *desc;
-+	struct xilinx_dma_tx_segment *segment;
-+	struct xilinx_dma_desc_hw *hw;
-+	u32 *app_w = (u32 *)context;
-+	struct scatterlist *sg;
-+	size_t copy, sg_used;
-+	int i;
-+
-+	if (!is_slave_direction(direction))
-+		return NULL;
-+
-+	if (chan->direction != direction)
-+		return NULL;
-+
-+	/* Allocate a transaction descriptor. */
-+	desc = xilinx_dma_alloc_tx_descriptor(chan);
-+	if (!desc)
-+		return NULL;
-+
-+	dma_async_tx_descriptor_init(&desc->async_tx, &chan->common);
-+	desc->async_tx.tx_submit = xilinx_dma_tx_submit;
-+	desc->async_tx.cookie = 0;
-+	async_tx_ack(&desc->async_tx);
-+
-+	/* Build transactions using information in the scatter gather list */
-+	for_each_sg(sgl, sg, sg_len, i) {
-+		sg_used = 0;
-+
-+		/* Loop until the entire scatterlist entry is used */
-+		while (sg_used < sg_dma_len(sg)) {
-+
-+			/* Get a free segment */
-+			segment = xilinx_dma_alloc_tx_segment(chan);
-+			if (!segment)
-+				goto error;
-+
-+			/*
-+			 * Calculate the maximum number of bytes to transfer,
-+			 * making sure it is less than the hw limit
-+			 */
-+			copy = min((size_t)(sg_dma_len(sg) - sg_used),
-+					(size_t)XILINX_DMA_MAX_TRANS_LEN);
-+			hw = &(segment->hw);
-+
-+			/* Fill in the descriptor */
-+			hw->buf_addr = sg_dma_address(sg) + sg_used;
-+
-+			hw->control = copy;
-+
-+			if ((direction == DMA_MEM_TO_DEV) && app_w)
-+				memcpy(hw->app, app_w,
-+					sizeof(u32) * XILINX_DMA_NUM_APP_WORDS);
-+
-+			/* For the first DMA_MEM_TO_DEV transfer, set SOP */
-+			if (!i)
-+				if (direction == DMA_MEM_TO_DEV)
-+					hw->control |= XILINX_DMA_BD_SOP;
-+
-+			sg_used += copy;
-+
-+			/*
-+			 * Insert the segment into the descriptor segments
-+			 * list.
-+			 */
-+			list_add_tail(&segment->node, &desc->segments);
-+		}
-+	}
-+
-+	/* For the last DMA_MEM_TO_DEV transfer, set EOP */
-+	if (direction == DMA_MEM_TO_DEV) {
-+		segment = list_last_entry(&desc->segments,
-+						struct xilinx_dma_tx_segment,
-+						node);
-+		segment->hw.control |= XILINX_DMA_BD_EOP;
-+	}
-+
-+	return &desc->async_tx;
-+
-+error:
-+	xilinx_dma_free_tx_descriptor(chan, desc);
-+	return NULL;
-+}
-+
-+/**
-+ * xilinx_dma_device_control - Configure DMA channel of the device
-+ * @dchan: DMA Channel pointer
-+ * @cmd: DMA control command
-+ * @arg: Channel configuration
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_dma_device_control(struct dma_chan *dchan,
-+				     enum dma_ctrl_cmd cmd, unsigned long arg)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+	unsigned long flags;
-+
-+	if (cmd != DMA_TERMINATE_ALL)
-+		return -ENXIO;
-+
-+	/* Halt the DMA engine */
-+	xilinx_dma_halt(chan);
-+
-+	spin_lock_irqsave(&chan->lock, flags);
-+
-+	/* Remove and free all of the descriptors in the lists */
-+	xilinx_dma_free_desc_list(chan, &chan->pending_list);
-+	xilinx_dma_free_desc_list(chan, &chan->done_list);
-+
-+	spin_unlock_irqrestore(&chan->lock, flags);
-+
-+	return 0;
-+}
-+
-+/**
-+ * xilinx_dma_channel_set_config - Configure DMA channel
-+ * @dchan: DMA channel
-+ * @cfg: DMA device configuration pointer
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+int xilinx_dma_channel_set_config(struct dma_chan *dchan,
-+					struct xilinx_dma_config *cfg)
-+{
-+	struct xilinx_dma_chan *chan = to_xilinx_chan(dchan);
-+	u32 reg = dma_ctrl_read(chan, XILINX_DMA_REG_CONTROL);
-+
-+	if (cfg->reset)
-+		return xilinx_dma_reset(chan);
-+
-+	if (cfg->coalesc <= XILINX_DMA_CR_COALESCE_MAX)
-+		reg |= cfg->coalesc << XILINX_DMA_CR_COALESCE_SHIFT;
-+
-+	if (cfg->delay <= XILINX_DMA_CR_DELAY_MAX)
-+		reg |= cfg->delay << XILINX_DMA_CR_DELAY_SHIFT;
-+
-+	dma_ctrl_write(chan, XILINX_DMA_REG_CONTROL, reg);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(xilinx_dma_channel_set_config);
-+
-+/**
-+ * xilinx_dma_chan_remove - Per Channel remove function
-+ * @chan: Driver specific DMA channel
-+ */
-+static void xilinx_dma_chan_remove(struct xilinx_dma_chan *chan)
-+{
-+	/* Disable interrupts */
-+	dma_ctrl_clr(chan, XILINX_DMA_REG_CONTROL,
-+			XILINX_DMA_XR_IRQ_ALL_MASK);
-+
-+	if (chan->irq > 0)
-+		free_irq(chan->irq, chan);
-+
-+	tasklet_kill(&chan->tasklet);
-+
-+	list_del(&chan->common.device_node);
-+}
-+
-+/**
-+ * xilinx_dma_chan_probe - Per Channel Probing
-+ * It get channel features from the device tree entry and
-+ * initialize special channel handling routines
-+ *
-+ * @xdev: Driver specific device structure
-+ * @node: Device node
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_dma_chan_probe(struct xilinx_dma_device *xdev,
-+				 struct device_node *node)
-+{
-+	struct xilinx_dma_chan *chan;
-+	int err;
-+	bool has_dre;
-+	u32 value, width = 0;
-+
-+	/* alloc channel */
-+	chan = devm_kzalloc(xdev->dev, sizeof(*chan), GFP_KERNEL);
-+	if (!chan)
-+		return -ENOMEM;
-+
-+	chan->dev = xdev->dev;
-+	chan->xdev = xdev;
-+	chan->has_sg = xdev->has_sg;
-+
-+	spin_lock_init(&chan->lock);
-+	INIT_LIST_HEAD(&chan->pending_list);
-+	INIT_LIST_HEAD(&chan->done_list);
-+	INIT_LIST_HEAD(&chan->free_seg_list);
-+
-+	/* Get the DT properties */
-+	has_dre = of_property_read_bool(node, "xlnx,include-dre");
-+
-+	err = of_property_read_u32(node, "xlnx,datawidth", &value);
-+	if (err) {
-+		dev_err(xdev->dev, "unable to read datawidth property");
-+		return err;
-+	}
-+
-+	width = value >> 3; /* convert bits to bytes */
-+
-+	/* If data width is greater than 8 bytes, DRE is not in hw */
-+	if (width > 8)
-+		has_dre = false;
-+
-+	if (!has_dre)
-+		xdev->common.copy_align = fls(width - 1);
-+
-+	if (of_device_is_compatible(node, "xlnx,axi-dma-mm2s-channel")) {
-+		chan->direction = DMA_MEM_TO_DEV;
-+		chan->id = 0;
-+
-+		chan->ctrl_offset = XILINX_DMA_MM2S_CTRL_OFFSET;
-+	} else if (of_device_is_compatible(node,
-+						"xlnx,axi-dma-s2mm-channel")) {
-+		chan->direction = DMA_DEV_TO_MEM;
-+		chan->id = 1;
-+
-+		chan->ctrl_offset = XILINX_DMA_S2MM_CTRL_OFFSET;
-+	} else {
-+		dev_err(xdev->dev, "Invalid channel compatible node\n");
-+		return -EINVAL;
-+	}
-+
-+	/* find the IRQ line, if it exists in the device tree */
-+	chan->irq = irq_of_parse_and_map(node, 0);
-+	err = request_irq(chan->irq, xilinx_dma_irq_handler,
-+			       IRQF_SHARED,
-+			       "xilinx-dma-controller", chan);
-+	if (err) {
-+		dev_err(xdev->dev, "unable to request IRQ %d\n", chan->irq);
-+		return err;
-+	}
-+
-+	/* Initialize the tasklet */
-+	tasklet_init(&chan->tasklet, xilinx_dma_do_tasklet,
-+			(unsigned long)chan);
++	union {
++		Elf64_Addr a64[3];
++		Elf32_Addr a32[3];
++	} buf;
 +
 +	/*
-+	 * Initialize the DMA channel and add it to the DMA engine channels
-+	 * list.
++	 * dst and src are required for translation from file to memory
++	 * representation
 +	 */
-+	chan->common.device = &xdev->common;
++	Elf_Data dst = {
++		.d_buf = &buf, .d_type = ELF_T_ADDR, .d_version = EV_CURRENT,
++		.d_size = gelf_fsize(elf, ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT),
++		.d_off = 0, .d_align = 0
++	};
 +
-+	list_add_tail(&chan->common.device_node, &xdev->common.channels);
-+	xdev->chan[chan->id] = chan;
++	Elf_Data src = {
++		.d_buf = (void *) data, .d_type = ELF_T_ADDR,
++		.d_version = EV_CURRENT, .d_size = dst.d_size, .d_off = 0,
++		.d_align = 0
++	};
 +
-+	/* Reset the channel */
-+	err = xilinx_dma_reset(chan);
-+	if (err) {
-+		dev_err(xdev->dev, "Reset channel failed\n");
-+		return err;
-+	}
++	/* Check the type of each of the notes */
++	if (type != SDT_NOTE_TYPE)
++		return 0;
 +
-+	return 0;
++	if (len < dst.d_size + SDT_NOTE_COUNT)
++		return 0;
++
++	/* Translation from file representation to memory representation */
++	if (gelf_xlatetom(elf, &dst, &src,
++			  elf_getident(elf, NULL)[EI_DATA]) == NULL)
++		return 0; /* TODO */
++
++	memcpy(&vaddr, &buf, sizeof(vaddr));
++
++	return vaddr;
 +}
 +
-+/**
-+ * of_dma_xilinx_xlate - Translation function
-+ * @dma_spec: Pointer to DMA specifier as found in the device tree
-+ * @ofdma: Pointer to DMA controller data
-+ *
-+ * Return: DMA channel pointer on success and NULL on error
-+ */
-+static struct dma_chan *of_dma_xilinx_xlate(struct of_phandle_args *dma_spec,
-+						struct of_dma *ofdma)
++static const char *sdt_note_name(Elf *elf, GElf_Nhdr *nhdr, const char *data)
 +{
-+	struct xilinx_dma_device *xdev = ofdma->of_dma_data;
-+	int chan_id = dma_spec->args[0];
++	const char *provider = data + gelf_fsize(elf,
++		ELF_T_ADDR, SDT_NOTE_COUNT, EV_CURRENT);
++	const char *name = (const char *)memchr(provider, '\0',
++		data + nhdr->n_descsz - provider);
 +
-+	if (chan_id >= XILINX_DMA_MAX_CHANS_PER_DEVICE)
++	if (name++ == NULL)
 +		return NULL;
 +
-+	return dma_get_slave_channel(&xdev->chan[chan_id]->common);
++	return name;
 +}
 +
-+/**
-+ * xilinx_dma_probe - Driver probe function
-+ * @pdev: Pointer to the platform_device structure
-+ *
-+ * Return: '0' on success and failure value on error
-+ */
-+static int xilinx_dma_probe(struct platform_device *pdev)
++static const char *sdt_note_data(const Elf_Data *data, size_t off)
 +{
-+	struct xilinx_dma_device *xdev;
-+	struct device_node *child, *node;
-+	struct resource *res;
-+	int i, ret;
++	return ((data->d_buf) + off);
++}
 +
-+	xdev = devm_kzalloc(&pdev->dev, sizeof(*xdev), GFP_KERNEL);
-+	if (!xdev)
-+		return -ENOMEM;
++static int dso_sdt_notes(Elf *elf, symbol_actor actor, void *arg)
++{
++	GElf_Ehdr ehdr;
++	Elf_Scn *scn = NULL;
++	Elf_Data *data;
++	GElf_Shdr shdr;
++	size_t shstrndx;
++	size_t next;
++	GElf_Nhdr nhdr;
++	size_t name_off, desc_off, offset;
++	vaddr_t vaddr = 0;
++	int symbols_count = 0;
 +
-+	xdev->dev = &(pdev->dev);
-+	INIT_LIST_HEAD(&xdev->common.channels);
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		return 0;
++	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
++		return 0;
 +
-+	node = pdev->dev.of_node;
++	/*
++	 * Look for section type = SHT_NOTE, flags = no SHF_ALLOC
++	 * and name = .note.stapsdt
++	 */
++	scn = elf_section_by_name(elf, &ehdr, &shdr, SDT_NOTE_SCN);
++	if (!scn)
++		return 0;
++	if (!(shdr.sh_type == SHT_NOTE) || (shdr.sh_flags & SHF_ALLOC))
++		return 0;
 +
-+	/* iomap registers */
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	xdev->regs = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(xdev->regs))
-+		return PTR_ERR(xdev->regs);
++	data = elf_getdata(scn, NULL);
 +
-+	/* Check if SG is enabled */
-+	xdev->has_sg = of_property_read_bool(node, "xlnx,include-sg");
++	for (offset = 0;
++		(next = gelf_getnote(data, offset, &nhdr, &name_off, &desc_off)) > 0;
++		offset = next) {
++		const char *name;
++		int ret;
 +
-+	/* Axi DMA only do slave transfers */
-+	dma_cap_set(DMA_SLAVE, xdev->common.cap_mask);
-+	dma_cap_set(DMA_PRIVATE, xdev->common.cap_mask);
-+	xdev->common.device_prep_slave_sg = xilinx_dma_prep_slave_sg;
-+	xdev->common.device_control = xilinx_dma_device_control;
-+	xdev->common.device_issue_pending = xilinx_dma_issue_pending;
-+	xdev->common.device_alloc_chan_resources =
-+		xilinx_dma_alloc_chan_resources;
-+	xdev->common.device_free_chan_resources =
-+		xilinx_dma_free_chan_resources;
-+	xdev->common.device_tx_status = xilinx_dma_tx_status;
-+	xdev->common.dev = &pdev->dev;
++		if (nhdr.n_namesz != sizeof(SDT_NOTE_NAME) ||
++		    memcmp(data->d_buf + name_off, SDT_NOTE_NAME,
++			    sizeof(SDT_NOTE_NAME)))
++			continue;
 +
-+	platform_set_drvdata(pdev, xdev);
++		name = sdt_note_name(elf, &nhdr, sdt_note_data(data, desc_off));
++		if (!name)
++			continue;
 +
-+	for_each_child_of_node(node, child) {
-+		ret = xilinx_dma_chan_probe(xdev, child);
-+		if (ret) {
-+			dev_err(&pdev->dev, "Probing channels failed\n");
-+			goto free_chan_resources;
++		vaddr = sdt_note_addr(elf, sdt_note_data(data, desc_off),
++					nhdr.n_descsz, nhdr.n_type);
++		if (!vaddr)
++			continue;
++
++		ret = actor(name, vaddr, arg);
++		if (ret)
++			return ret;
++
++		++symbols_count;
++	}
++
++	return symbols_count;
++}
++
++int dso_follow_debuglink(Elf *elf,
++			 const char *orig_exec,
++			 int type,
++			 symbol_actor actor,
++			 void *arg)
++{
++	GElf_Ehdr ehdr;
++	size_t shstrndx, orig_exec_dir_len;
++	GElf_Shdr shdr;
++	Elf_Scn *dbg_link_scn;
++	Elf_Data *dbg_link_scn_data;
++	char *dbg_link, *dbg_bin, *last_slash;
++	int symbols_count;
++
++	/* First try to find the .gnu_debuglink section in the binary. */
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		return 0;
++	if (elf_getshdrstrndx(elf, &shstrndx) != 0)
++		return 0;
++
++	dbg_link_scn = elf_section_by_name(elf, &ehdr, &shdr, dbg_link_name);
++	if (dbg_link_scn == NULL)
++		return 0;
++
++	/* Debug link section found, read of the content (only get the first
++	   string, no checksum checking atm). This is debug binary file name. */
++	dbg_link_scn_data = elf_getdata(dbg_link_scn, NULL);
++	if (dbg_link_scn_data == NULL ||
++	    dbg_link_scn_data->d_size <= 0 ||
++	    dbg_link_scn_data->d_buf == NULL)
++		return 0;
++
++	/* Now compose debug executable name */
++	dbg_link = (char *)(dbg_link_scn_data->d_buf);
++	dbg_bin = malloc(strlen(dbg_bin_dir) + 1 +
++			 strlen(orig_exec) + 1 +
++			 strlen(dbg_link) + 1);
++	if (!dbg_bin)
++		return 0;
++
++	orig_exec_dir_len = PATH_MAX;
++	last_slash = strrchr(orig_exec, '/');
++	if (last_slash != NULL)
++		orig_exec_dir_len = last_slash - orig_exec;
++
++	sprintf(dbg_bin, "%s/%.*s/%s",
++		dbg_bin_dir, (int)orig_exec_dir_len, orig_exec, dbg_link);
++
++	/* Retry symbol seach with the debug binary */
++	symbols_count = parse_dso_symbols(dbg_bin, type, actor, arg);
++
++	free(dbg_bin);
++
++	return symbols_count;
++}
++
++int parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg)
++{
++	int symbols_count = 0;
++	Elf *elf;
++	int fd;
++
++	if (elf_version(EV_CURRENT) == EV_NONE)
++		return -1;
++
++	fd = open(exec, O_RDONLY);
++	if (fd < 0)
++		return -1;
++
++	elf = elf_begin(fd, ELF_C_READ, NULL);
++	if (elf) {
++		switch (type) {
++		case FIND_SYMBOL:
++			symbols_count = dso_symbols(elf, actor, arg);
++			if (symbols_count != 0)
++				break;
++			/* If no symbols found, try in the debuglink binary. */
++			symbols_count = dso_follow_debuglink(elf,
++							     exec,
++							     type,
++							     actor,
++							     arg);
++			break;
++		case FIND_STAPSDT_NOTE:
++			symbols_count = dso_sdt_notes(elf, actor, arg);
++			break;
 +		}
++
++		elf_end(elf);
 +	}
 +
-+	dma_async_device_register(&xdev->common);
-+
-+	ret = of_dma_controller_register(node, of_dma_xilinx_xlate, xdev);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Unable to register DMA to DT\n");
-+		dma_async_device_unregister(&xdev->common);
-+		goto free_chan_resources;
-+	}
-+
-+	dev_info(&pdev->dev, "Xilinx AXI DMA Engine driver Probed!!\n");
-+
-+	return 0;
-+
-+free_chan_resources:
-+	for (i = 0; i < XILINX_DMA_MAX_CHANS_PER_DEVICE; i++)
-+		if (xdev->chan[i])
-+			xilinx_dma_chan_remove(xdev->chan[i]);
-+
-+	return ret;
++	close(fd);
++	return symbols_count;
 +}
-+
-+/**
-+ * xilinx_dma_remove - Driver remove function
-+ * @pdev: Pointer to the platform_device structure
+diff --git a/tools/ktap/kp_symbol.h b/tools/ktap/kp_symbol.h
+new file mode 100644
+index 0000000..650e785
+--- /dev/null
++++ b/tools/ktap/kp_symbol.h
+@@ -0,0 +1,50 @@
++/*
++ * symbol.h - extract symbols from DSO.
 + *
-+ * Return: Always '0'
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2013 Azat Khuzhin <a3at.mail@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
-+static int xilinx_dma_remove(struct platform_device *pdev)
-+{
-+	struct xilinx_dma_device *xdev = platform_get_drvdata(pdev);
-+	int i;
 +
-+	of_dma_controller_free(pdev->dev.of_node);
-+	dma_async_device_unregister(&xdev->common);
 +
-+	for (i = 0; i < XILINX_DMA_MAX_CHANS_PER_DEVICE; i++)
-+		if (xdev->chan[i])
-+			xilinx_dma_chan_remove(xdev->chan[i]);
++#define FIND_SYMBOL 1
++#define FIND_STAPSDT_NOTE 2
 +
-+	return 0;
-+}
++#ifndef NO_LIBELF
 +
-+static const struct of_device_id xilinx_dma_of_match[] = {
-+	{ .compatible = "xlnx,axi-dma-1.00.a",},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, xilinx_dma_of_match);
++#include <gelf.h>
++#include <sys/queue.h>
 +
-+static struct platform_driver xilinx_dma_driver = {
-+	.driver = {
-+		.name = "xilinx-dma",
-+		.owner = THIS_MODULE,
-+		.of_match_table = xilinx_dma_of_match,
-+	},
-+	.probe = xilinx_dma_probe,
-+	.remove = xilinx_dma_remove,
-+};
++typedef GElf_Addr vaddr_t;
++typedef int (*symbol_actor)(const char *name, vaddr_t addr, void *arg);
 +
-+module_platform_driver(xilinx_dma_driver);
-+
-+MODULE_AUTHOR("Xilinx, Inc.");
-+MODULE_DESCRIPTION("Xilinx DMA driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/amba/xilinx_dma.h b/include/linux/amba/xilinx_dma.h
-index 34b98f2..25272d1 100644
---- a/include/linux/amba/xilinx_dma.h
-+++ b/include/linux/amba/xilinx_dma.h
-@@ -15,6 +15,9 @@
- #include <linux/dma-mapping.h>
- #include <linux/dmaengine.h>
- 
-+/* Number of AXI DMA APP Words */
-+#define XILINX_DMA_NUM_APP_WORDS	5
-+
- /**
-  * struct xilinx_vdma_config - VDMA Configuration structure
-  * @frm_dly: Frame delay
-@@ -41,7 +44,21 @@ struct xilinx_vdma_config {
- 	int ext_fsync;
- };
- 
 +/**
-+ * struct xilinx_dma_config - DMA Configuration structure
-+ * @coalesc: Interrupt coalescing threshold
-+ * @delay: Delay counter
-+ * @reset: Reset Channel
++ * Parse all DSO symbols/sdt notes and all for every of them
++ * an actor.
++ *
++ * @exec - path to DSO
++ * @type - see FIND_*
++ * @symbol_actor - actor to call (callback)
++ * @arg - argument for @actor
++ *
++ * @return
++ * If there have errors, return negative value;
++ * No symbols found, return 0;
++ * Otherwise return number of dso symbols found
 + */
-+struct xilinx_dma_config {
-+	int coalesc;
-+	int delay;
-+	int reset;
-+};
-+
- int xilinx_vdma_channel_set_config(struct dma_chan *dchan,
- 					struct xilinx_vdma_config *cfg);
-+int xilinx_dma_channel_set_config(struct dma_chan *dchan,
-+					struct xilinx_dma_config *cfg);
- 
- #endif
++int
++parse_dso_symbols(const char *exec, int type, symbol_actor actor, void *arg);
++#endif
 -- 
-1.7.9.5
+1.8.1.4
 
