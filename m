@@ -1,71 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751709AbaC1MbM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 08:31:12 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45868 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858AbaC1MbJ (ORCPT
+	id S1751458AbaC1Mg2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 08:36:28 -0400
+Received: from mail-we0-f174.google.com ([74.125.82.174]:59817 "EHLO
+	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaC1Mg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 08:31:09 -0400
-Date: Fri, 28 Mar 2014 12:30:54 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: Li.Xiubo@freescale.com, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, alsa-devel@alsa-project.org,
-        timur@tabi.org
-Message-ID: <20140328123054.GG30768@sirena.org.uk>
-References: <1396006765-4527-1-git-send-email-Guangyu.Chen@freescale.com>
+	Fri, 28 Mar 2014 08:36:26 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="rvXnmSEQm80JaX+R"
-Content-Disposition: inline
-In-Reply-To: <1396006765-4527-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: You look tired.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 82.45.252.252
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: fsl_sai: Improve fsl_sai_isr()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140327222605.GB16495@medulla.variantweb.net>
+References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+ <20140327222605.GB16495@medulla.variantweb.net>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 28 Mar 2014 08:36:04 -0400
+X-Google-Sender-Auth: m2_83uinr6ohOpnUz0c8pHH2f7Q
+Message-ID: <CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
+Subject: Re: Adding compression before/above swapcache
+To: Seth Jennings <sjennings@variantweb.net>
+Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Mar 27, 2014 at 6:26 PM, Seth Jennings <sjennings@variantweb.net> wrote:
+> On Wed, Mar 26, 2014 at 04:28:27PM -0400, Dan Streetman wrote:
+>> I'd like some feedback on how possible/useful, or not, it might be to
+>> add compression into the page handling code before pages are added to
+>> the swapcache.  My thought is that adding a compressed cache at that
+>> point may have (at least) two advantages over the existing page
+>> compression, zswap and zram, which are both in the swap path.
+>>
+>> 1) Both zswap and zram are limited in the amount of memory that they
+>> can compress/store:
+>> -zswap is limited both in the amount of pre-compressed pages, by the
+>> total amount of swap configured in the system, and post-compressed
+>> pages, by its max_pool_percentage parameter.  These limitations aren't
+>> necessarily a bad thing, just requirements for the user (or distro
+>> setup tool, etc) to correctly configure them.  And for optimal
+>> operation, they need to coordinate; for example, with the default
+>> post-compressed 20% of memory zswap's configured to use, the amount of
+>> swap in the system must be at least 40% of system memory (if/when
+>> zswap is changed to use zsmalloc that number would need to increase).
+>> The point being, there is a clear possibility of misconfiguration, or
+>> even a simple lack of enough disk space for actual swap, that could
+>> artificially reduce the amount of total memory zswap is able to
+>> compress.  Additionally, most of that real disk swap is wasted space -
+>> all the pages stored compressed in zswap aren't actually written on
+>> the disk.
+>> -zram is limited only by its pre-compressed size, and of course the
+>> amount of actual system memory it can use for compressed storage.  If
+>> using without dm-cache, this could allow essentially unlimited
+>> compression until no more compressed pages can be stored; however that
+>> requires the zram device to be configured as larger than the actual
+>> system memory.  If using with dm-cache, it may not be obvious what the
+>> optimal zram size is.
+>>
+>> Pre-swapcache compression would theoretically require no user
+>> configuration, and the amount of compressed pages would be unlimited
+>> (until there is no more room to store compressed pages).
+>
+> Yes, these are limitations of the current designs.
+>
+>>
+>> 2) Both zswap and zram (with dm-cache) write uncompressed pages to disk:
+>> -zswap rejects any pages being sent to swap that don't compress well
+>> enough, and they're passed on to the swap disk in uncompressed form.
+>> Also, once zswap is full it starts uncompressing its old compressed
+>> pages and writing them back to the swap disk.
+>> -zram, with dm-cache, can pass pages on to the swap disk, but IIUC
+>> those pages must be uncompressed first, and then written in compressed
+>> form on disk.  (Please correct me here if that is wrong).
+>
+> Yes, again.
+>
+>>
+>> A compressed cache that comes before the swap cache would be able to
+>> push pages from its compressed storage to the swap disk, that contain
+>> multiple compressed pages (and/or parts of compressed pages, if
+>> overlapping page boundries).  I think that would be able to,
+>> theoretically at least, improve overall read/write times from a
+>> pre-compressed perspective, simply because less actual data would be
+>> transferred.  Also, less actual swap disk space would be
+>> used/required, which on systems with a very large amount of system
+>> memory may be beneficial.
+>
+> In theory that could be good.
+>
+> However, there are a lot of missing details about how this could
+> actually be done.  Of the top of my head, the reason we choose hook
+> into the swap path is because it does all the work in both the page
+> selection, being reclaimed from the end of the inactive anon LRU, and
+> all the work of unmapping the page from the page table and replacing
+> it with a swap entry.  In order to do the unmapping, the page must
+> already be in the swap cache.
+>
+> So I guess I'm not quite sure how you would do this. What did you have
+> in mind?
 
---rvXnmSEQm80JaX+R
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well my general idea was to modify shrink_page_list() so that instead
+of calling add_to_swap() and then pageout(), anonymous pages would be
+added to a compressed cache.  I haven't worked out all the specific
+details, but I am initially thinking that the compressed cache could
+simply repurpose incoming pages to use as the compressed cache storage
+(using its own page mapping, similar to swap page mapping), and then
+add_to_swap() the storage pages when the compressed cache gets to a
+certain size.  Pages that don't compress well could just bypass the
+compressed cache, and get sent the current route directly to
+add_to_swap().
 
-On Fri, Mar 28, 2014 at 07:39:25PM +0800, Nicolin Chen wrote:
-> This patch improves fsl_sai_isr() in these ways:
-> 1, Add comment for mask fetching code.
-> 2, Return IRQ_NONE if the IRQ is not for the device.
-> 3, Use regmap_write() instead of regmap_update_bits().
 
-Applied, thanks.  It would have been better to do separate patches here
-- actually with your explanation the update_bits() made sense so you
-could've left that but equally it doesn't do any harm to skip the read.
-
---rvXnmSEQm80JaX+R
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTNWt6AAoJELSic+t+oim9zjwP/RxH3GkRKFmMyKOUYdB11055
-0dO6yRgzWA5kRclpq6aP7Zf6YOlFOlGNxDz/uk89ZEv5QtlcnphkaKwPRNW6LB72
-s6sJ0U9cxPDY499IV1FidR7ke5ebwigsGhkBJ76UZFMjT3TCFrDHTue47xSBkDka
-L/Ib/yhqDHI/jksJITpduKzwjj742cAdnt4xGIhvzadMxZqe0lOOp3ocAKF4CBPs
-nSgh+8rWJ0j9+M6InYFjfBi6iA8WTvwKUjGuaxi4LAp2SAgMhSe7YcJAn1FWt7sl
-7ETx2asKi55bx/8deTOKKWwFhmROwc4c9FYUm/gXpAejCbg0/fSFmU3oPMOkRCng
-b+b1x9XXBJi/SnAK9y04z6TeHQO/bvg1DSOu5TT/ItGqf2vzv3AiJU2vpg3XD1wn
-elCN4d2XlAzziU/72Sc3S20okHt8L9MF8ylb1ygTWCkcTv4aYsHmPrasEVtirDyK
-bBnvZwQ8xOkbpnJ2gtS3ooxCcTFfuJkvmZYO6K64IvIBgGcL+m58DDSsgomx6XXo
-ihPEWv0WIuHT3iC53UxO5G7EqY1Ik9I3MSq9Y55qj33Okle35vscDdaFhJAC2eL2
-fYsy5sLcZ77sTvwGBDDhgFb3rq7kzy96S5olcfrreI7Dfx0CyP2EKERlxiVUEwX/
-nT8fof4NLcyDoCIJNezE
-=Nnf5
------END PGP SIGNATURE-----
-
---rvXnmSEQm80JaX+R--
+>
+> Seth
+>
+>>
+>>
+>> Additionally, a couple other random possible benefits:
+>> -like zswap but unlike zram, a pre-swapcache compressed cache would be
+>> able to select which pages to store compressed, either based on poor
+>> compression results or some other criteria - possibly userspace could
+>> madvise that certain pages were or weren't likely compressible.
+>> -while zram and zswap are only able to compress and store pages that
+>> are passed to them by zswapd or direct reclaim, a pre-swap compressed
+>> cache wouldn't necessarily have to wait until the low watermark is
+>> reached.
+>>
+>> Any feedback would be greatly appreciated!
