@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbaC2PYO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:24:14 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:54119 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751947AbaC2PYA (ORCPT
+	id S1752108AbaC2PY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:24:27 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44125 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaC2PYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:24:00 -0400
+	Sat, 29 Mar 2014 11:24:20 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 05/29] ktap: add bytecode definition(include/uapi/ktap/ktap_bc.h)
-Date: Fri, 28 Mar 2014 10:45:00 -0400
-Message-Id: <1396017924-7754-6-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 07/29] ktap: add kernel module main entry(kernel/trace/ktap/ktap.[c|h])
+Date: Fri, 28 Mar 2014 10:45:02 -0400
+Message-Id: <1396017924-7754-8-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -25,448 +25,470 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ktap bytecode is based on luajit, a fast JIT for lua language.
+ktap.c is ktapvm kernel module main entry,
+it init ktap kernel module, create 'ktap' debugfs directory.
 
-There have a good detail introduction about luajit bytecode in
-http://wiki.luajit.org/Bytecode-2.0
+Userspace tool send ioctl command to '/sys/kernel/debug/ktap/ktapvm' file,
+to control ktap runtime.
 
-A single bytecode instruction is 32 bit wide and has an 8 bit
-opcode field and several operand fields of 8 or 16 bit.
-Instructions come in one of two formats:
+It will read bytecode trunk, validate and execute bytecode.
 
- +----+----+----+----+
- | B  | C  | A  | OP | Format ABC
- +----+----+----+----+
- |    D    | A  | OP | Format AD
- +--------------------
- MSB               LSB
-
-In-memory instructions are always stored in host byte order.
-
-E.g. 0xbbccaa1e is the instruction with opcode 0x1e (ADDVV),
-with operands A = 0xaa, B = 0xbb and C = 0xcc.
-
-Bytecods:
-
-1). Comparison ops
-ISLT, ISGE, ISLE, ISGT, ISEQV, ISNEV, ISEQS, ISNES, ISEQN,
-ISNEN, ISEQP, ISNEP
-
-2). Unary Test and Copy ops
-ISTC, ISFC, IST, ISF
-
-3). Unary ops
-MOV, NOT, UNM, LEN
-
-4). Binary ops
-ADDVN, SUBVN, MULVN, DIVVN, MODVN, ADDNV, SUBNV, MULNV, DIVNV, MODNV,
-ADDVV, SUBVV, SUBVV, MULVV, DIVVV, MODVV, POW, CAT
-
-5). Constant ops
-KSTR, KCDATA, KSHORT, KNUM, KPRI, KNIL
-
-6). Upvalue and Function ops
-UGET, USETV, USETS, USETN, USETP, UCLO, FNEW
-
-7). Table ops
-TNEW, TDUP, GGET, GSET, TGETV, TGETS, TGETB, TSETV, TSETS, TSETB, TSETM
-
-8). Calls and Vararg Handling (ktap do not support variable argument now)
-CALLM, CALL, CALLMT, CALLT, ITERC, ITERN, VARG, ISNEXT
-
-9). Returns (ktap don't support RETM now)
-RETM, RET, RET0, RET1
-
-10). Loops and branches (loop bytecode J* is not used in ktap)
-FORI, JFORI, FORL, IFORL, JFORL, ITERL, IITERL, JITERL, LOOP, ILOOP, JLOOP, JMP
-
-11). Function headers (All is not used in ktap)
-FUNCF, IFUNCF, JFUNCF, FUNCV, JFUNCV, FUNCC, FUNCCW
-
-12). ktap specific bytecodes
-VARGN, VARGSTR, VPROBENAME, VPID, VTID, VUID, VCPU, VEXECNAME, GFUNC
+kp_vm_new_state
+    kp_bcread
+        kp_vm_validate_code
+            kp_vm_call_proto
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- include/uapi/ktap/ktap_bc.h | 369 ++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 369 insertions(+)
- create mode 100644 include/uapi/ktap/ktap_bc.h
+ kernel/trace/ktap/ktap.c | 255 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/ktap/ktap.h | 176 ++++++++++++++++++++++++++++++++
+ 2 files changed, 431 insertions(+)
+ create mode 100644 kernel/trace/ktap/ktap.c
+ create mode 100644 kernel/trace/ktap/ktap.h
 
-diff --git a/include/uapi/ktap/ktap_bc.h b/include/uapi/ktap/ktap_bc.h
+diff --git a/kernel/trace/ktap/ktap.c b/kernel/trace/ktap/ktap.c
 new file mode 100644
-index 0000000..aac286a
+index 0000000..855af09
 --- /dev/null
-+++ b/include/uapi/ktap/ktap_bc.h
-@@ -0,0 +1,369 @@
++++ b/kernel/trace/ktap/ktap.c
+@@ -0,0 +1,255 @@
 +/*
-+ * Bytecode instruction format.
++ * ktap.c - ktapvm kernel module main entry
++ *
++ * This file is part of ktap by Jovi Zhangwei.
 + *
 + * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
-+ * Copyright (C) 2005-2014 Mike Pall.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
-+
-+#ifndef __KTAP_BC_H__
-+#define __KTAP_BC_H__
-+
-+#include "ktap_arch.h"
-+
-+/*TODO*/
-+#define KP_STATIC_ASSERT(cond)
-+#define kp_assert(cond)
-+
-+/* Types for handling bytecodes. */
-+typedef uint32_t BCIns;  /* Bytecode instruction. */
-+typedef uint32_t BCPos;  /* Bytecode position. */
-+typedef uint32_t BCReg;  /* Bytecode register. */
-+typedef int32_t BCLine;  /* Bytecode line number. */
 +
 +/*
-+ * Bytecode instruction format, 32 bit wide, fields of 8 or 16 bit:
-+ *
-+ * +----+----+----+----+
-+ * | B  | C  | A  | OP | Format ABC
-+ * +----+----+----+----+
-+ * |    D    | A  | OP | Format AD
-+ * +--------------------
-+ * MSB               LSB
-+ *
-+ * In-memory instructions are always stored in host byte order.
++ * this file is the first file to be compile, add CONFIG_ checking in here.
++ * See Requirements in doc/tutorial.md
 + */
 +
-+/* Operand ranges and related constants. */
-+#define BCMAX_A		0xff
-+#define BCMAX_B		0xff
-+#define BCMAX_C		0xff
-+#define BCMAX_D		0xffff
-+#define BCBIAS_J	0x8000
-+#define NO_REG		BCMAX_A
-+#define NO_JMP		(~(BCPos)0)
-+
-+/* Macros to get instruction fields. */
-+#define bc_op(i)	((BCOp)((i)&0xff))
-+#define bc_a(i)		((BCReg)(((i)>>8)&0xff))
-+#define bc_b(i)		((BCReg)((i)>>24))
-+#define bc_c(i)		((BCReg)(((i)>>16)&0xff))
-+#define bc_d(i)		((BCReg)((i)>>16))
-+#define bc_j(i)		((ptrdiff_t)bc_d(i)-BCBIAS_J)
-+
-+/* Macros to set instruction fields. */
-+#define setbc_byte(p, x, ofs) \
-+	((uint8_t *)(p))[KP_ENDIAN_SELECT(ofs, 3 - ofs)] = (uint8_t)(x)
-+#define setbc_op(p, x)	setbc_byte(p, (x), 0)
-+#define setbc_a(p, x)	setbc_byte(p, (x), 1)
-+#define setbc_b(p, x)	setbc_byte(p, (x), 3)
-+#define setbc_c(p, x)	setbc_byte(p, (x), 2)
-+#define setbc_d(p, x) \
-+	((uint16_t *)(p))[KP_ENDIAN_SELECT(1, 0)] = (uint16_t)(x)
-+#define setbc_j(p, x)	setbc_d(p, (BCPos)((int32_t)(x)+BCBIAS_J))
-+
-+/* Macros to compose instructions. */
-+#define BCINS_ABC(o, a, b, c) \
-+	(((BCIns)(o))|((BCIns)(a)<<8)|((BCIns)(b)<<24)|((BCIns)(c)<<16))
-+#define BCINS_AD(o, a, d) \
-+	(((BCIns)(o))|((BCIns)(a)<<8)|((BCIns)(d)<<16))
-+#define BCINS_AJ(o, a, j)	BCINS_AD(o, a, (BCPos)((int32_t)(j)+BCBIAS_J))
-+
-+/*
-+ * Bytecode instruction definition. Order matters, see below.
-+ *
-+ * (name, filler, Amode, Bmode, Cmode or Dmode, metamethod)
-+ *
-+ * The opcode name suffixes specify the type for RB/RC or RD:
-+ * V = variable slot
-+ * S = string const
-+ * N = number const
-+ * P = primitive type (~itype)
-+ * B = unsigned byte literal
-+ * M = multiple args/results
-+ */
-+#define BCDEF(_) \
-+	/* Comparison ops. ORDER OPR. */ \
-+	_(ISLT,	var,	___,	var,	lt) \
-+	_(ISGE,	var,	___,	var,	lt) \
-+	_(ISLE,	var,	___,	var,	le) \
-+	_(ISGT,	var,	___,	var,	le) \
-+	\
-+	_(ISEQV,	var,	___,	var,	eq) \
-+	_(ISNEV,	var,	___,	var,	eq) \
-+	_(ISEQS,	var,	___,	str,	eq) \
-+	_(ISNES,	var,	___,	str,	eq) \
-+	_(ISEQN,	var,	___,	num,	eq) \
-+	_(ISNEN,	var,	___,	num,	eq) \
-+	_(ISEQP,	var,	___,	pri,	eq) \
-+	_(ISNEP,	var,	___,	pri,	eq) \
-+	\
-+	/* Unary test and copy ops. */ \
-+	_(ISTC,	dst,	___,	var,	___) \
-+	_(ISFC,	dst,	___,	var,	___) \
-+	_(IST,	___,	___,	var,	___) \
-+	_(ISF,	___,	___,	var,	___) \
-+	_(ISTYPE,	var,	___,	lit,	___) \
-+	_(ISNUM,	var,	___,	lit,	___) \
-+	\
-+	/* Unary ops. */ \
-+	_(MOV,	dst,	___,	var,	___) \
-+	_(NOT,	dst,	___,	var,	___) \
-+	_(UNM,	dst,	___,	var,	unm) \
-+	\
-+	/* Binary ops. ORDER OPR. VV last, POW must be next. */ \
-+	_(ADDVN,	dst,	var,	num,	add) \
-+	_(SUBVN,	dst,	var,	num,	sub) \
-+	_(MULVN,	dst,	var,	num,	mul) \
-+	_(DIVVN,	dst,	var,	num,	div) \
-+	_(MODVN,	dst,	var,	num,	mod) \
-+	\
-+	_(ADDNV,	dst,	var,	num,	add) \
-+	_(SUBNV,	dst,	var,	num,	sub) \
-+	_(MULNV,	dst,	var,	num,	mul) \
-+	_(DIVNV,	dst,	var,	num,	div) \
-+	_(MODNV,	dst,	var,	num,	mod) \
-+	\
-+	_(ADDVV,	dst,	var,	var,	add) \
-+	_(SUBVV,	dst,	var,	var,	sub) \
-+	_(MULVV,	dst,	var,	var,	mul) \
-+	_(DIVVV,	dst,	var,	var,	div) \
-+	_(MODVV,	dst,	var,	var,	mod) \
-+	\
-+	_(POW,	dst,	var,	var,	pow) \
-+	_(CAT,	dst,	rbase,	rbase,	concat) \
-+	\
-+	/* Constant ops. */ \
-+	_(KSTR,	dst,	___,	str,	___) \
-+	_(KCDATA,	dst,	___,	cdata,	___) \
-+	_(KSHORT,	dst,	___,	lits,	___) \
-+	_(KNUM,	dst,	___,	num,	___) \
-+	_(KPRI,	dst,	___,	pri,	___) \
-+	_(KNIL,	base,	___,	base,	___) \
-+	\
-+	/* Upvalue and function ops. */ \
-+	_(UGET,	dst,	___,	uv,	___) \
-+	_(USETV,	uv,	___,	var,	___) \
-+	_(UINCV,	uv,	___,	var,	___) \
-+	_(USETS,	uv,	___,	str,	___) \
-+	_(USETN,	uv,	___,	num,	___) \
-+	_(UINCN,	uv,	___,	num,	___) \
-+	_(USETP,	uv,	___,	pri,	___) \
-+	_(UCLO,	rbase,	___,	jump,	___) \
-+	_(FNEW,	dst,	___,	func,	gc) \
-+	\
-+	/* Table ops. */ \
-+	_(TNEW,	dst,	___,	lit,	gc) \
-+	_(TDUP,	dst,	___,	tab,	gc) \
-+	_(GGET,	dst,	___,	str,	index) \
-+	_(GSET,	var,	___,	str,	newindex) \
-+	_(GINC,	var,	___,	str,	newindex) \
-+	_(TGETV,	dst,	var,	var,	index) \
-+	_(TGETS,	dst,	var,	str,	index) \
-+	_(TGETB,	dst,	var,	lit,	index) \
-+	_(TGETR,	dst,	var,	var,	index) \
-+	_(TSETV,	var,	var,	var,	newindex) \
-+	_(TINCV,	var,	var,	var,	newindex) \
-+	_(TSETS,	var,	var,	str,	newindex) \
-+	_(TINCS,	var,	var,	str,	newindex) \
-+	_(TSETB,	var,	var,	lit,	newindex) \
-+	_(TINCB,	var,	var,	lit,	newindex) \
-+	_(TSETM,	base,	___,	num,	newindex) \
-+	_(TSETR,	var,	var,	var,	newindex) \
-+	\
-+	/* Calls and vararg handling. T = tail call. */ \
-+	_(CALLM,	base,	lit,	lit,	call) \
-+	_(CALL,	base,	lit,	lit,	call) \
-+	_(CALLMT,	base,	___,	lit,	call) \
-+	_(CALLT,	base,	___,	lit,	call) \
-+	_(ITERC,	base,	lit,	lit,	call) \
-+	_(ITERN,	base,	lit,	lit,	call) \
-+	_(VARG,	base,	lit,	lit,	___) \
-+	_(ISNEXT,	base,	___,	jump,	___) \
-+	\
-+	/* Returns. */ \
-+	_(RETM,	base,	___,	lit,	___) \
-+	_(RET,	rbase,	___,	lit,	___) \
-+	_(RET0,	rbase,	___,	lit,	___) \
-+	_(RET1,	rbase,	___,	lit,	___) \
-+	\
-+	/* Loops and branches. I/J = interp/JIT, I/C/L = init/call/loop. */ \
-+	_(FORI,	base,	___,	jump,	___) \
-+	_(JFORI,	base,	___,	jump,	___) \
-+	\
-+	_(FORL,	base,	___,	jump,	___) \
-+	_(IFORL,	base,	___,	jump,	___) \
-+	_(JFORL,	base,	___,	lit,	___) \
-+	\
-+	_(ITERL,	base,	___,	jump,	___) \
-+	_(IITERL,	base,	___,	jump,	___) \
-+	_(JITERL,	base,	___,	lit,	___) \
-+	\
-+	_(LOOP,	rbase,	___,	jump,	___) \
-+	_(ILOOP,	rbase,	___,	jump,	___) \
-+	_(JLOOP,	rbase,	___,	lit,	___) \
-+	\
-+	_(JMP,	rbase,	___,	jump,	___) \
-+	\
-+	/*Function headers. I/J = interp/JIT, F/V/C = fixarg/vararg/C func.*/ \
-+	_(FUNCF,	rbase,	___,	___,	___) \
-+	_(IFUNCF,	rbase,	___,	___,	___) \
-+	_(JFUNCF,	rbase,	___,	lit,	___) \
-+	_(FUNCV,	rbase,	___,	___,	___) \
-+	_(IFUNCV,	rbase,	___,	___,	___) \
-+	_(JFUNCV,	rbase,	___,	lit,	___) \
-+	_(FUNCC,	rbase,	___,	___,	___) \
-+	_(FUNCCW,	rbase,	___,	___,	___) \
-+	\
-+	/* specific purpose bc. */	\
-+	_(VARGN,	dst, ___,	lit,	___) \
-+	_(VARGSTR,	dst, ___,	lit,	___) \
-+	_(VPROBENAME,	dst, ___,	lit,	___) \
-+	_(VPID,		dst, ___,	lit,	___) \
-+	_(VTID,		dst, ___,	lit,	___) \
-+	_(VUID,		dst, ___,	lit,	___) \
-+	_(VCPU,		dst, ___,	lit,	___) \
-+	_(VEXECNAME,	dst, ___,	lit,	___) \
-+	\
-+	_(GFUNC,	dst, ___,	___,	___) /*load global C function*/
-+
-+/* Bytecode opcode numbers. */
-+typedef enum {
-+#define BCENUM(name, ma, mb, mc, mt)	BC_##name,
-+	BCDEF(BCENUM)
-+#undef BCENUM
-+	BC__MAX
-+} BCOp;
-+
-+KP_STATIC_ASSERT((int)BC_ISEQV+1 == (int)BC_ISNEV);
-+KP_STATIC_ASSERT(((int)BC_ISEQV^1) == (int)BC_ISNEV);
-+KP_STATIC_ASSERT(((int)BC_ISEQS^1) == (int)BC_ISNES);
-+KP_STATIC_ASSERT(((int)BC_ISEQN^1) == (int)BC_ISNEN);
-+KP_STATIC_ASSERT(((int)BC_ISEQP^1) == (int)BC_ISNEP);
-+KP_STATIC_ASSERT(((int)BC_ISLT^1) == (int)BC_ISGE);
-+KP_STATIC_ASSERT(((int)BC_ISLE^1) == (int)BC_ISGT);
-+KP_STATIC_ASSERT(((int)BC_ISLT^3) == (int)BC_ISGT);
-+KP_STATIC_ASSERT((int)BC_IST-(int)BC_ISTC == (int)BC_ISF-(int)BC_ISFC);
-+KP_STATIC_ASSERT((int)BC_CALLT-(int)BC_CALL == (int)BC_CALLMT-(int)BC_CALLM);
-+KP_STATIC_ASSERT((int)BC_CALLMT + 1 == (int)BC_CALLT);
-+KP_STATIC_ASSERT((int)BC_RETM + 1 == (int)BC_RET);
-+KP_STATIC_ASSERT((int)BC_FORL + 1 == (int)BC_IFORL);
-+KP_STATIC_ASSERT((int)BC_FORL + 2 == (int)BC_JFORL);
-+KP_STATIC_ASSERT((int)BC_ITERL + 1 == (int)BC_IITERL);
-+KP_STATIC_ASSERT((int)BC_ITERL + 2 == (int)BC_JITERL);
-+KP_STATIC_ASSERT((int)BC_LOOP + 1 == (int)BC_ILOOP);
-+KP_STATIC_ASSERT((int)BC_LOOP + 2 == (int)BC_JLOOP);
-+KP_STATIC_ASSERT((int)BC_FUNCF + 1 == (int)BC_IFUNCF);
-+KP_STATIC_ASSERT((int)BC_FUNCF + 2 == (int)BC_JFUNCF);
-+KP_STATIC_ASSERT((int)BC_FUNCV + 1 == (int)BC_IFUNCV);
-+KP_STATIC_ASSERT((int)BC_FUNCV + 2 == (int)BC_JFUNCV);
-+
-+/* This solves a circular dependency problem, change as needed. */
-+#define FF_next_N	4
-+
-+/* Stack slots used by FORI/FORL, relative to operand A. */
-+enum {
-+	FORL_IDX, FORL_STOP, FORL_STEP, FORL_EXT
-+};
-+
-+/* Bytecode operand modes. ORDER BCMode */
-+typedef enum {
-+	/* Mode A must be <= 7 */
-+	BCMnone, BCMdst, BCMbase, BCMvar, BCMrbase, BCMuv,
-+	BCMlit, BCMlits, BCMpri, BCMnum, BCMstr, BCMtab, BCMfunc,
-+	BCMjump, BCMcdata,
-+	BCM_max
-+} BCMode;
-+
-+#define BCM___	BCMnone
-+
-+#define bcmode_a(op)	((BCMode)(bc_mode[op] & 7))
-+#define bcmode_b(op)	((BCMode)((bc_mode[op] >> 3) & 15))
-+#define bcmode_c(op)	((BCMode)((bc_mode[op] >> 7) & 15))
-+#define bcmode_d(op)	bcmode_c(op)
-+#define bcmode_hasd(op)	((bc_mode[op] & (15 << 3)) == (BCMnone << 3))
-+#define bcmode_mm(op)	((MMS)(bc_mode[op] >> 11))
-+
-+#define BCMODE(name, ma, mb, mc, mm) \
-+	(BCM##ma | (BCM##mb << 3) | (BCM##mc << 7)|(MM_##mm << 11)),
-+#define BCMODE_FF	0
-+
-+static inline int bc_isret(BCOp op)
-+{
-+	return (op == BC_RETM || op == BC_RET || op == BC_RET0 ||
-+		op == BC_RET1);
-+}
++#include <linux/version.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/file.h>
++#include <linux/slab.h>
++#include <linux/fcntl.h>
++#include <linux/sched.h>
++#include <linux/poll.h>
++#include <linux/anon_inodes.h>
++#include <linux/debugfs.h>
++#include <linux/vmalloc.h>
++#include <uapi/ktap/ktap_types.h>
++#include "ktap.h"
++#include "kp_bcread.h"
++#include "kp_vm.h"
 +
 +/* 
-+ * Metamethod definition
-+ * Note ktap don't use any lua methmethod currently.
++ * gettimeofday_ns: common helper function
++ * TODO: make getnstimeofday safe called in probe context, there have
++ * seq lock in getnstimeofday.
++ * (Systemtap fix this by introduce its own timekeeping code)
 + */
-+typedef enum {
-+	MM_lt,
-+	MM_le,
-+	MM_eq,
-+	MM_unm,
-+	MM_add,
-+	MM_sub,
-+	MM_mul,
-+	MM_div,
-+	MM_mod,
-+	MM_pow,
-+	MM_concat,
-+	MM_gc,
-+	MM_index,
-+	MM_newindex,
-+	MM_call,
-+	MM__MAX,
-+	MM____ = MM__MAX
-+} MMS;
++long gettimeofday_ns(void)
++{
++	struct timespec now;
 +
++	getnstimeofday(&now);
++	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
++}
 +
-+/* -- Bytecode dump format ------------------------------------------------ */
++static int load_trunk(ktap_option_t *parm, unsigned long **buff)
++{
++	unsigned long *vmstart;
 +
-+/*
-+** dump   = header proto+ 0U
-+** header = ESC 'L' 'J' versionB flagsU [namelenU nameB*]
-+** proto  = lengthU pdata
-+** pdata  = phead bcinsW* uvdataH* kgc* knum* [debugB*]
-+** phead  = flagsB numparamsB framesizeB numuvB numkgcU numknU numbcU
-+**          [debuglenU [firstlineU numlineU]]
-+** kgc    = kgctypeU { ktab | (loU hiU) | (rloU rhiU iloU ihiU) | strB* }
-+** knum   = intU0 | (loU1 hiU)
-+** ktab   = narrayU nhashU karray* khash*
-+** karray = ktabk
-+** khash  = ktabk ktabk
-+** ktabk  = ktabtypeU { intU | (loU hiU) | strB* }
-+**
-+** B = 8 bit, H = 16 bit, W = 32 bit, U = ULEB128 of W, U0/U1 = ULEB128 of W+1
-+*/
++	if (parm->trunk_len > 4096)
++		return -EINVAL;
 +
-+/* Bytecode dump header. */
-+#define BCDUMP_HEAD1		0x15
-+#define BCDUMP_HEAD2		0x22
-+#define BCDUMP_HEAD3		0x06
++	vmstart = vmalloc(parm->trunk_len);
++	if (!vmstart)
++		return -ENOMEM;
 +
-+/* If you perform *any* kind of private modifications to the bytecode itself
-+** or to the dump format, you *must* set BCDUMP_VERSION to 0x80 or higher.
-+*/
-+#define BCDUMP_VERSION		1
++	if (copy_from_user(vmstart, (void __user *)parm->trunk,
++			   parm->trunk_len)) {
++		vfree(vmstart);
++		return -EFAULT;
++	}
 +
-+/* Compatibility flags. */
-+#define BCDUMP_F_BE		0x01
-+#define BCDUMP_F_STRIP		0x02
-+#define BCDUMP_F_FFI		0x04
++	*buff = vmstart;
++	return 0;
++}
 +
-+#define BCDUMP_F_KNOWN		(BCDUMP_F_FFI*2-1)
++static struct dentry *kp_dir_dentry;
 +
-+/* Type codes for the GC constants of a prototype. Plus length for strings. */
-+enum {
-+	BCDUMP_KGC_CHILD, BCDUMP_KGC_TAB, BCDUMP_KGC_I64, BCDUMP_KGC_U64,
-+	BCDUMP_KGC_COMPLEX, BCDUMP_KGC_STR
++/* Ktap Main Entry */
++static int ktap_main(struct file *file, ktap_option_t *parm)
++{
++	unsigned long *buff = NULL;
++	ktap_state_t *ks;
++	ktap_proto_t *pt;
++	long start_time, delta_time;
++	int ret;
++
++	start_time = gettimeofday_ns();
++
++	ks = kp_vm_new_state(parm, kp_dir_dentry);
++	if (unlikely(!ks))
++		return -ENOEXEC;
++
++	file->private_data = ks;
++
++	ret = load_trunk(parm, &buff);
++	if (ret) {
++		kp_error(ks, "cannot load file\n");
++		goto out;
++	}
++
++	pt = kp_bcread(ks, (unsigned char *)buff, parm->trunk_len);
++
++	vfree(buff);
++
++	if (pt) {
++		/* validate byte code */
++		if (kp_vm_validate_code(ks, pt, ks->stack))
++			goto out;
++
++		delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
++		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
++
++		/* enter vm */
++		kp_vm_call_proto(ks, pt);
++	}
++
++ out:
++	kp_vm_exit(ks);
++	return ret;
++}
++
++static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	ktap_option_t parm;
++
++	switch (cmd) {
++	case KTAP_CMD_IOC_RUN:
++		/* must be root to run ktap script (at least for now) */
++		if (!capable(CAP_SYS_ADMIN))
++			return -EACCES;
++
++		if (copy_from_user(&parm, (void __user *)arg,
++				   sizeof(ktap_option_t)))
++			return -EFAULT;
++
++		return ktap_main(file, &parm);
++	default:
++		return -EINVAL;
++	};
++
++        return 0;
++}
++
++static const struct file_operations ktap_fops = {
++	.llseek                 = no_llseek,
++	.unlocked_ioctl         = ktap_ioctl,
 +};
 +
-+/* Type codes for the keys/values of a constant table. */
-+enum {
-+	BCDUMP_KTAB_NIL, BCDUMP_KTAB_FALSE, BCDUMP_KTAB_TRUE,
-+	BCDUMP_KTAB_INT, BCDUMP_KTAB_NUM, BCDUMP_KTAB_STR
++static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++{
++	int new_fd, err;
++	struct file *new_file;
++
++	new_fd = get_unused_fd();
++	if (new_fd < 0)
++		return new_fd;
++
++	new_file = anon_inode_getfile("[ktap]", &ktap_fops, NULL, O_RDWR);
++	if (IS_ERR(new_file)) {
++		err = PTR_ERR(new_file);
++		put_unused_fd(new_fd);
++		return err;
++	}
++
++	file->private_data = NULL;
++	fd_install(new_fd, new_file);
++	return new_fd;
++}
++
++static const struct file_operations ktapvm_fops = {
++	.owner  = THIS_MODULE,
++	.unlocked_ioctl         = ktapvm_ioctl,
 +};
 +
-+#endif /* __KTAP_BC_H__ */
++int (*kp_ftrace_profile_set_filter)(struct perf_event *event, int event_id,
++				    const char *filter_str);
++
++struct syscall_metadata **syscalls_metadata;
++
++/*TODO: kill this function in future */
++static int __init init_dummy_kernel_functions(void)
++{
++	unsigned long *addr;
++
++	/*
++	 * ktap need symbol ftrace_profile_set_filter to set event filter, 
++	 * export it in future. 
++	 */
++#ifdef CONFIG_PPC64
++	kp_ftrace_profile_set_filter =
++		(void *)kallsyms_lookup_name(".ftrace_profile_set_filter");
++#else
++	kp_ftrace_profile_set_filter =
++		(void *)kallsyms_lookup_name("ftrace_profile_set_filter");
++#endif
++	if (!kp_ftrace_profile_set_filter) {
++		pr_err("ktap: cannot lookup ftrace_profile_set_filter "
++			"in kallsyms\n");
++		return -1;
++	}
++
++	/* use syscalls_metadata for syscall event handling */
++	addr = (void *)kallsyms_lookup_name("syscalls_metadata");
++	if (!addr) {
++		pr_err("ktap: cannot lookup syscalls_metadata in kallsyms\n");
++		return -1;
++	}
++
++	syscalls_metadata = (struct syscall_metadata **)*addr;
++	return 0;
++}
++
++static int __init init_ktap(void)
++{
++	struct dentry *ktapvm_dentry;
++
++	if (init_dummy_kernel_functions())
++		return -1;
++
++	kp_dir_dentry = debugfs_create_dir("ktap", NULL);
++	if (!kp_dir_dentry) {
++		pr_err("ktap: debugfs_create_dir failed\n");
++		return -1;
++	}
++
++	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, kp_dir_dentry, NULL,
++					    &ktapvm_fops);
++
++	if (!ktapvm_dentry) {
++		pr_err("ktapvm: cannot create ktapvm file\n");
++		debugfs_remove_recursive(kp_dir_dentry);
++		return -1;
++	}
++
++	return 0;
++}
++
++static void __exit exit_ktap(void)
++{
++	debugfs_remove_recursive(kp_dir_dentry);
++}
++
++module_init(init_ktap);
++module_exit(exit_ktap);
++
++MODULE_AUTHOR("Jovi Zhangwei <jovi.zhangwei@gmail.com>");
++MODULE_DESCRIPTION("ktap");
++MODULE_LICENSE("GPL");
++
++int kp_max_loop_count = 100000;
++module_param_named(max_loop_count, kp_max_loop_count, int, S_IRUGO | S_IWUSR);
++MODULE_PARM_DESC(max_loop_count, "max loop execution count");
++
+diff --git a/kernel/trace/ktap/ktap.h b/kernel/trace/ktap/ktap.h
+new file mode 100644
+index 0000000..90d1468
+--- /dev/null
++++ b/kernel/trace/ktap/ktap.h
+@@ -0,0 +1,176 @@
++#ifndef __KTAP_H__
++#define __KTAP_H__
++
++#include <linux/version.h>
++#include <linux/hardirq.h>
++#include <linux/trace_seq.h>
++
++/* for built-in library C function register */
++typedef struct ktap_libfunc {
++        const char *name; /* function name */
++        ktap_cfunction func; /* function pointer */
++} ktap_libfunc_t;
++
++long gettimeofday_ns(void); /* common helper function */
++int kp_lib_init_base(ktap_state_t *ks);
++int kp_lib_init_kdebug(ktap_state_t *ks);
++int kp_lib_init_timer(ktap_state_t *ks);
++int kp_lib_init_table(ktap_state_t *ks);
++int kp_lib_init_ansi(ktap_state_t *ks);
++int kp_lib_init_net(ktap_state_t *ks);
++
++void kp_exit_timers(ktap_state_t *ks);
++void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv);
++
++extern int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
++					   int event_id,
++					   const char *filter_str);
++
++extern struct syscall_metadata **syscalls_metadata;
++
++/* get from kernel/trace/trace.h */
++static __always_inline int trace_get_context_bit(void)
++{
++	int bit;
++
++	if (in_interrupt()) {
++		if (in_nmi())
++			bit = 0;
++		else if (in_irq())
++			bit = 1;
++		else
++			bit = 2;
++	} else
++		bit = 3;
++
++	return bit;
++}
++
++static __always_inline int get_recursion_context(ktap_state_t *ks)
++{
++	int rctx = trace_get_context_bit();
++	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
++
++	if (*val)
++		return -1;
++
++	*val = true;
++	return rctx;
++}
++
++static inline void put_recursion_context(ktap_state_t *ks, int rctx)
++{
++	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
++	*val = false;
++}
++
++static inline void *kp_this_cpu_state(ktap_state_t *ks, int rctx)
++{
++	return this_cpu_ptr(G(ks)->percpu_state[rctx]);
++}
++
++static inline void *kp_this_cpu_print_buffer(ktap_state_t *ks)
++{
++	return this_cpu_ptr(G(ks)->percpu_print_buffer[trace_get_context_bit()]);
++}
++
++static inline void *kp_this_cpu_temp_buffer(ktap_state_t *ks)
++{
++	return this_cpu_ptr(G(ks)->percpu_temp_buffer[trace_get_context_bit()]);
++}
++
++#define kp_verbose_printf(ks, ...) \
++	if (G(ks)->parm->verbose)	\
++		kp_printf(ks, "[verbose] "__VA_ARGS__);
++
++/* argument operation macro */
++#define kp_arg(ks, idx)	((ks)->func + (idx))
++#define kp_arg_nr(ks)	((int)(ks->top - (ks->func + 1)))
++
++#define kp_arg_check(ks, idx, type)				\
++	do {							\
++		if (unlikely(itype(kp_arg(ks, idx)) != type)) {	\
++			kp_error(ks, "wrong type of argument %d\n", idx);\
++			return -1;				\
++		}						\
++	} while (0)
++
++#define kp_arg_checkstring(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_string(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		svalue(o);					\
++	})
++
++#define kp_arg_checkfunction(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_function(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		clvalue(o);					\
++	})
++
++#define kp_arg_checknumber(ks, idx)				\
++	({							\
++		ktap_val_t *o = kp_arg(ks, idx);		\
++		if (unlikely(!is_number(o))) {			\
++			kp_error(ks, "wrong type of argument %d\n", idx); \
++			return -1;				\
++		}						\
++		nvalue(o);					\
++	})
++
++#define kp_arg_checkoptnumber(ks, idx, def)			\
++	({							\
++		ktap_number n;					\
++		if (idx > kp_arg_nr(ks)) {				\
++			n = def;				\
++		} else {					\
++			ktap_val_t *o = kp_arg(ks, idx);	\
++			if (unlikely(!is_number(o))) {		\
++				kp_error(ks, "wrong type of argument %d\n", \
++					     idx);		\
++				return -1;			\
++			}					\
++			n = nvalue(o);				\
++		}						\
++		n;						\
++	})
++
++#define kp_error(ks, args...)			\
++	do {					\
++		kp_printf(ks, "error: "args);	\
++		kp_vm_try_to_exit(ks);		\
++		G(ks)->state = KTAP_ERROR;	\
++	} while(0)
++
++
++#define SPRINT_SYMBOL	sprint_symbol_no_offset
++
++extern int kp_max_loop_count;
++
++void kp_printf(ktap_state_t *ks, const char *fmt, ...);
++void __kp_puts(ktap_state_t *ks, const char *str);
++void __kp_bputs(ktap_state_t *ks, const char *str);
++
++#define kp_puts(ks, str) ({						\
++	static const char *trace_printk_fmt				\
++		__attribute__((section("__trace_printk_fmt"))) =	\
++		__builtin_constant_p(str) ? str : NULL;			\
++									\
++	if (__builtin_constant_p(str))					\
++		__kp_bputs(ks, trace_printk_fmt);		\
++	else								\
++		__kp_puts(ks, str);		\
++})
++
++#define err2msg(em)     (kp_err_allmsg+(int)(em))
++extern const char *kp_err_allmsg;
++
++#endif /* __KTAP_H__ */
++
 -- 
 1.8.1.4
 
