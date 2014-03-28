@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaC1Lnf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 07:43:35 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:58718 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752406AbaC1Lna (ORCPT
+	id S1752470AbaC1Lnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 07:43:42 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:49966 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaC1Lni (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 07:43:30 -0400
+	Fri, 28 Mar 2014 07:43:38 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, linaro-networking@linaro.org,
-        Arvind.Chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: [PATCH 14/16] hrtimer: replace base by new_base to get resolution: __hrtimer_start_range_ns()
-Date: Fri, 28 Mar 2014 17:11:33 +0530
-Message-Id: <d4a6c586832d4def039882fb98751ae6327980a2.1396006658.git.viresh.kumar@linaro.org>
+        Arvind.Chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH 15/16] hrtimer: create base_on_this_cpu()
+Date: Fri, 28 Mar 2014 17:11:34 +0530
+Message-Id: <24bf5c053d9b39412b0f2d56d980bf9d85149ae2.1396006658.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1396006658.git.viresh.kumar@linaro.org>
 References: <cover.1396006658.git.viresh.kumar@linaro.org>
@@ -25,54 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code was added long back by following commit:
+We had this code at two places to find if a clock base belongs to current CPU:
+	base->cpu_base == &__get_cpu_var(hrtimer_bases)
 
-	commit 06027bdd278a32a84b273e41db68a5db8ffd2bb6
-	Author: Ingo Molnar <mingo@elte.hu>
-	Date:   Tue Feb 14 13:53:15 2006 -0800
+Better to get a inlined routine for that.
 
-	    [PATCH] hrtimer: round up relative start time on low-res arches
-
-Don't know if it was a mistake or was intentional. But probably we must use
-new_base instead of base here to get resolution. Things might be working
-smoothly as resolution might be same for both the bases in most of the cases.
-
-Cc: Ingo Molnar <mingo@redhat.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
-Also commit log of above commit has this: "This will go away with the GTOD
-framework". So, should we get this removed?
-
- kernel/hrtimer.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ kernel/hrtimer.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 0ae0fbf..5d77f36 100644
+index 5d77f36..83e5f2d 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -925,12 +925,11 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 		unsigned long delta_ns, const enum hrtimer_mode mode,
- 		int wakeup)
- {
--	struct hrtimer_clock_base *base, *new_base;
-+	struct hrtimer_clock_base *new_base;
- 	unsigned long flags;
- 	int ret;
+@@ -107,6 +107,10 @@ static inline int hrtimer_clockid_to_base(clockid_t clock_id)
+ 	return hrtimer_clock_to_base_table[clock_id];
+ }
  
- 	lock_hrtimer_base(timer, &flags);
--	base = timer->base;
++static inline bool base_on_this_cpu(struct hrtimer_clock_base *base)
++{
++	return base->cpu_base == &__get_cpu_var(hrtimer_bases);
++}
  
- 	/* Remove an active timer from the queue: */
- 	ret = remove_hrtimer(timer);
-@@ -949,7 +948,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 		 * timeouts. This will go away with the GTOD framework.
- 		 */
- #ifdef CONFIG_TIME_LOW_RES
--		tim = ktime_add_safe(tim, base->resolution);
-+		tim = ktime_add_safe(tim, new_base->resolution);
- #endif
- 	}
+ /*
+  * Get the coarse grained time at the softirq based on xtime and
+@@ -916,8 +920,7 @@ static inline int remove_hrtimer(struct hrtimer *timer)
+ 	 * move the timer base in switch_hrtimer_base.
+ 	 */
+ 	state = timer->state & HRTIMER_STATE_CALLBACK;
+-	__remove_hrtimer(timer, state,
+-			timer->base->cpu_base == &__get_cpu_var(hrtimer_bases));
++	__remove_hrtimer(timer, state, base_on_this_cpu(timer->base));
+ 	return 1;
+ }
  
+@@ -964,9 +967,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	 *
+ 	 * XXX send_remote_softirq() ?
+ 	 */
+-	if (hrtimer_is_leftmost(timer) &&
+-	    new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
+-		&& hrtimer_enqueue_reprogram(timer)) {
++	if (hrtimer_is_leftmost(timer) && base_on_this_cpu(new_base) &&
++	    hrtimer_enqueue_reprogram(timer)) {
+ 		if (wakeup) {
+ 			/*
+ 			 * We need to drop cpu_base->lock to avoid a
 -- 
 1.7.12.rc2.18.g61b472e
 
