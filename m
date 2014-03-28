@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaC1RtC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:49:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51306 "EHLO
+	id S1754000AbaC1Rte (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:49:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753010AbaC1Ra4 (ORCPT
+	with ESMTP id S1752984AbaC1Raz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:56 -0400
+	Fri, 28 Mar 2014 13:30:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+        Rob Clark <robdclark@gmail.com>,
+        =?UTF-8?q?Ville=20Syrj=C3=A4l=C3=A4?= 
+	<ville.syrjala@linux.intel.com>,
         Daniel Vetter <daniel.vetter@ffwll.ch>,
         Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.13 06/46] drm/i915: Disable stolen memory when DMAR is active
-Date: Fri, 28 Mar 2014 10:31:50 -0700
-Message-Id: <20140328173135.501262276@linuxfoundation.org>
+Subject: [PATCH 3.13 05/46] drm/i915: Dont enable display error interrupts from the start
+Date: Fri, 28 Mar 2014 10:31:49 -0700
+Message-Id: <20140328173135.372574737@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -28,43 +33,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
 
-commit 0f4706d2740f2a221cd502922b22e522009041d9 upstream.
+commit 5c673b60a9b3b23486f4eda75c72e91d31d26a2b upstream.
 
-We have reports of heavy screen corruption if we try to use the stolen
-memory reserved by the BIOS whilst the DMA-Remapper is active. This
-quirk may be only specific to a few machines or BIOSes, but first lets
-apply the big hammer and always disable use of stolen memory when DMAR
-is active.
+We need to enable interrupt processing before all the modeset
+state is set up. But that means we can fall over when we get a pipe
+underrun. This shouldn't happen as long as the bios works correctly
+but as usual this turns out to be wishful thinking.
 
-v2 by Jani: Rebase on -fixes, only look at intel_iommu_gfx_mapped.
+So disable error interrupts at irq install time and rely on the
+re-enabling code in the modeset functions to take care of this.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=68535
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Note that due to the SDE interrupt handling race we must
+uncondtionally enable all interrupt sources in SDEIER, hence no need
+to enable the SERR bit specifically.
+
+On gmch platforms we don't have an explicit enable/mask bit for fifo
+underruns. Fixing this up would require a bit of software tracking,
+hence is material for a separate patch. To make this possible we need
+to switch all gmch platforms to the new pipestat interrupt handling
+scheme Imre implemented for vlv, and then also add a safe form of sw
+state checking to __cpu_fifo_underrun_reporting_enabled a bit.
+
+v2: Also handle the ilk/snb cpu fifo underrun bits accordingly.
+Spotted by Ville.
+
+v3: Also handle the south interrupt underrun bits on ibx. Again
+spotted by Ville.
+
+Reported-by: Rob Clark <robdclark@gmail.com>
+Cc: Rob Clark <robdclark@gmail.com>
+Cc: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Tested-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
 Signed-off-by: Jani Nikula <jani.nikula@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/i915_gem_stolen.c |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/gpu/drm/i915/i915_irq.c |   18 ++++++++----------
+ 1 file changed, 8 insertions(+), 10 deletions(-)
 
---- a/drivers/gpu/drm/i915/i915_gem_stolen.c
-+++ b/drivers/gpu/drm/i915/i915_gem_stolen.c
-@@ -201,6 +201,13 @@ int i915_gem_init_stolen(struct drm_devi
- 	struct drm_i915_private *dev_priv = dev->dev_private;
- 	int bios_reserved = 0;
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -2760,10 +2760,9 @@ static void ibx_irq_postinstall(struct d
+ 		return;
  
-+#ifdef CONFIG_INTEL_IOMMU
-+	if (intel_iommu_gfx_mapped) {
-+		DRM_INFO("DMAR active, disabling use of stolen memory\n");
-+		return 0;
-+	}
-+#endif
-+
- 	if (dev_priv->gtt.stolen_size == 0)
- 		return 0;
+ 	if (HAS_PCH_IBX(dev)) {
+-		mask = SDE_GMBUS | SDE_AUX_MASK | SDE_TRANSB_FIFO_UNDER |
+-		       SDE_TRANSA_FIFO_UNDER | SDE_POISON;
++		mask = SDE_GMBUS | SDE_AUX_MASK | SDE_POISON;
+ 	} else {
+-		mask = SDE_GMBUS_CPT | SDE_AUX_MASK_CPT | SDE_ERROR_CPT;
++		mask = SDE_GMBUS_CPT | SDE_AUX_MASK_CPT;
  
+ 		I915_WRITE(SERR_INT, I915_READ(SERR_INT));
+ 	}
+@@ -2823,20 +2822,19 @@ static int ironlake_irq_postinstall(stru
+ 		display_mask = (DE_MASTER_IRQ_CONTROL | DE_GSE_IVB |
+ 				DE_PCH_EVENT_IVB | DE_PLANEC_FLIP_DONE_IVB |
+ 				DE_PLANEB_FLIP_DONE_IVB |
+-				DE_PLANEA_FLIP_DONE_IVB | DE_AUX_CHANNEL_A_IVB |
+-				DE_ERR_INT_IVB);
++				DE_PLANEA_FLIP_DONE_IVB | DE_AUX_CHANNEL_A_IVB);
+ 		extra_mask = (DE_PIPEC_VBLANK_IVB | DE_PIPEB_VBLANK_IVB |
+-			      DE_PIPEA_VBLANK_IVB);
++			      DE_PIPEA_VBLANK_IVB | DE_ERR_INT_IVB);
+ 
+ 		I915_WRITE(GEN7_ERR_INT, I915_READ(GEN7_ERR_INT));
+ 	} else {
+ 		display_mask = (DE_MASTER_IRQ_CONTROL | DE_GSE | DE_PCH_EVENT |
+ 				DE_PLANEA_FLIP_DONE | DE_PLANEB_FLIP_DONE |
+ 				DE_AUX_CHANNEL_A |
+-				DE_PIPEB_FIFO_UNDERRUN | DE_PIPEA_FIFO_UNDERRUN |
+ 				DE_PIPEB_CRC_DONE | DE_PIPEA_CRC_DONE |
+ 				DE_POISON);
+-		extra_mask = DE_PIPEA_VBLANK | DE_PIPEB_VBLANK | DE_PCU_EVENT;
++		extra_mask = DE_PIPEA_VBLANK | DE_PIPEB_VBLANK | DE_PCU_EVENT |
++				DE_PIPEB_FIFO_UNDERRUN | DE_PIPEA_FIFO_UNDERRUN;
+ 	}
+ 
+ 	dev_priv->irq_mask = ~display_mask;
+@@ -2952,9 +2950,9 @@ static void gen8_de_irq_postinstall(stru
+ 	struct drm_device *dev = dev_priv->dev;
+ 	uint32_t de_pipe_masked = GEN8_PIPE_FLIP_DONE |
+ 		GEN8_PIPE_CDCLK_CRC_DONE |
+-		GEN8_PIPE_FIFO_UNDERRUN |
+ 		GEN8_DE_PIPE_IRQ_FAULT_ERRORS;
+-	uint32_t de_pipe_enables = de_pipe_masked | GEN8_PIPE_VBLANK;
++	uint32_t de_pipe_enables = de_pipe_masked | GEN8_PIPE_VBLANK |
++		GEN8_PIPE_FIFO_UNDERRUN;
+ 	int pipe;
+ 	dev_priv->de_irq_mask[PIPE_A] = ~de_pipe_masked;
+ 	dev_priv->de_irq_mask[PIPE_B] = ~de_pipe_masked;
 
 
