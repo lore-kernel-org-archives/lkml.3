@@ -1,96 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443AbaC1KSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:18:33 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:54822 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751055AbaC1KSa convert rfc822-to-8bit (ORCPT
+	id S1751722AbaC1KTy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:19:54 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:64714 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126AbaC1KTv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:18:30 -0400
-Date: Fri, 28 Mar 2014 11:18:05 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <linux-mtd@lists.infradead.org>, Shawn Guo <shawn.guo@freescale.com>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140328111805.76b6513d@ipc1.ka-ro>
-In-Reply-To: <53354A46.9040807@freescale.com>
-References: <1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
-	<20140324095902.GB11377@localhost>
-	<20140326095156.3e5585b8@ipc1.ka-ro>
-	<5332AEE7.2040402@freescale.com>
-	<20140326125502.0e8d0657@ipc1.ka-ro>
-	<20140327095956.GA29623@localhost>
-	<20140327132109.06258526@ipc1.ka-ro>
-	<5334D9F7.2030001@freescale.com>
-	<20140328091646.1ce03f90@ipc1.ka-ro>
-	<53353524.9020605@freescale.com>
-	<20140328090023.GB17250@pengutronix.de>
-	<53354057.6030004@freescale.com>
-	<20140328103147.3fdadfd7@ipc1.ka-ro>
-	<53354A46.9040807@freescale.com>
-Organization: Ka-Ro electronics GmbH
+	Fri, 28 Mar 2014 06:19:51 -0400
+X-AuditID: cbfee61a-b7fb26d00000724f-42-53354cc5af7b
+Date: Fri, 28 Mar 2014 11:19:43 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "srivatsa.bhat@linux.vnet.ibm.com" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
+        "svaidy@linux.vnet.ibm.com" <svaidy@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cpufreq: create another field .flags in
+ cpufreq_frequency_table
+Message-id: <20140328111943.272d0bea@amdc2363>
+In-reply-to: <b5bc276cdd34b039de2aa640ec0bb5dff195f832.1395996386.git.viresh.kumar@linaro.org>
+References: <78187ea173460c871eef31432ec2a80ec657fe30.1395643393.git.viresh.kumar@linaro.org>
+ <b5bc276cdd34b039de2aa640ec0bb5dff195f832.1395996386.git.viresh.kumar@linaro.org>
+Organization: SPRC Poland
 X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jQd1jPqbBBjNeslk8bfrBbvFj1QdW
+	i/eHnjFbXN41h83ic+8RRoszpy+xWlz+ep3ZouXjeiaLjV89HDg97lzbw+bx4NBmFo/b/x4z
+	e2y52s7i8XmTXABrFJdNSmpOZllqkb5dAlfGsUNP2AqOCVZMfrKGuYGxiaeLkZNDQsBE4siG
+	SawQtpjEhXvr2UBsIYHpjBLtL5Ug7F+MEteX1YDYLAKqEnuOTwarYRPQk/h89ylTFyMHh4iA
+	lsTLm6ldjFwczAK3mCV6bp5iBYkLC4RJTJ1pBVLOC1T+aP9csFWcAgkSM7fuZwGpFxLYzCjx
+	dP1psAS/gKRE+78fzBD32Emc+7SBHaJZUOLH5HssIDYz0K7N25pYIWx5ic1r3jJPYBSchaRs
+	FpKyWUjKFjAyr2IUTS1ILihOSs811CtOzC0uzUvXS87P3cQIjoZnUjsYVzZYHGIU4GBU4uF1
+	sDAJFmJNLCuuzD3EKMHBrCTCu8TWNFiINyWxsiq1KD++qDQntfgQozQHi5I474FW60AhgfTE
+	ktTs1NSC1CKYLBMHp1QD4+IG9sVssub/bvSFbay5lpHE5KBgvXJSh5l22me+T1VLJkZkHChQ
+	v8G8Ja3wq6lJSXXAPKGoDTqJN1x4nBPCDqzm9vwZ1fnFNkLkKN82+zp3nU7hj99r2ozsGq6c
+	mjBd4f1Fhn6BzU41rR0FFRrdWy8wLrya2Phuosnu7uPrE/5LV7/1kfZSYinOSDTUYi4qTgQA
+	ZcwT1IICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Viresh,
 
-Huang Shijie wrote:
-> 于 2014年03月28日 17:31, Lothar Waßmann 写道:
-> > Hi,
-> >
-> > Huang Shijie wrote:
-> >> 于 2014年03月28日 17:00, Sascha Hauer 写道:
-> >>> - disables swapping of BB marks in the FCB the ROM won't swap bytes.
-> >> We can not disable the swapping in the FCB in the imx28.
-> >> The DISBBM bit in the FCB does _NOT_ exit in the imx28's FCB.
-> >>
-> > The Linux kernel does not have any business with the FCB, so it is
-> > completely irrelevant for Linux whether byte swapping can be disabled
-> > in the FCB or not.
-> >
-> But the gpmi is relevant to the ROM.
-> the gpmi driver should keep consistency with the ROM.
+> diff --git a/drivers/cpufreq/exynos4x12-cpufreq.c
+> b/drivers/cpufreq/exynos4x12-cpufreq.c index 7c11ace..8c4c6a5 100644
+> --- a/drivers/cpufreq/exynos4x12-cpufreq.c
+> +++ b/drivers/cpufreq/exynos4x12-cpufreq.c
+> @@ -30,21 +30,21 @@ static unsigned int exynos4x12_volt_table[] = {
+>  };
 > 
-> I do not object you add the swapping optional the gpmi driver(since it's 
-> ok for imx50/imx6q/imx6sx),
-> i just object that you enable this feature for imx28.
+>  static struct cpufreq_frequency_table exynos4x12_freq_table[] = {
+> -       {CPUFREQ_BOOST_FREQ, 1500 * 1000},
+> -       {L1, 1400 * 1000},
+> -       {L2, 1300 * 1000},
+> -       {L3, 1200 * 1000},
+> -       {L4, 1100 * 1000},
+> -       {L5, 1000 * 1000},
+> -       {L6,  900 * 1000},
+> -       {L7,  800 * 1000},
+> -       {L8,  700 * 1000},
+> -       {L9,  600 * 1000},
+> -       {L10, 500 * 1000},
+> -       {L11, 400 * 1000},
+> -       {L12, 300 * 1000},
+> -       {L13, 200 * 1000},
+> -       {0, CPUFREQ_TABLE_END},
+> +       {CPUFREQ_BOOST_FREQ, 0, 1500 * 1000},
+> +       {0, L1, 1400 * 1000},
+> +       {0, L2, 1300 * 1000},
+> +       {0, L3, 1200 * 1000},
+> +       {0, L4, 1100 * 1000},
+> +       {0, L5, 1000 * 1000},
+> +       {0, L6,  900 * 1000},
+> +       {0, L7,  800 * 1000},
+> +       {0, L8,  700 * 1000},
+> +       {0, L9,  600 * 1000},
+> +       {0, L10, 500 * 1000},
+> +       {0, L11, 400 * 1000},
+> +       {0, L12, 300 * 1000},
+> +       {0, L13, 200 * 1000},
+> +       {0, 0, CPUFREQ_TABLE_END},
+>  };
+
+Looks correct for me.
+
+One little remark - since cpufreq_frequency_tables are defined as
+static it seems like we don't need to explicitly specify the 0, for
+flags field.
+
+Something like {, L13, 200 * 1000}, shall be enough.
+
+> +/* Special Values of .flags field */
+> +#define CPUFREQ_BOOST_FREQ     0x1
+
+Maybe (1 << 0) to explicitly show that those are flags.
+
 > 
-We are talking about a Linux Kernel Driver here, not about a flashtool
-for i.MX28.
-It is a valid usecase for Linux not being able to write the bootloader,
-so there is no reason to disallow this feature in the driver code.
-Since it is a DT option it can be trivially switched on and off without
-having to change anything in the kernel.
+>  struct cpufreq_frequency_table {
+> +       unsigned int    flags;
+>         unsigned int    driver_data; /* driver specific data, not
 
+The driver_data shall be changed to int. However I suppose that it will
+be done at separate patch.
 
-Lothar Waßmann
+> used by core */ unsigned int    frequency; /* kHz - doesn't need to
+> be in ascending
+>                                     * order */
+
 -- 
-___________________________________________________________
+Best regards,
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+Lukasz Majewski
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
