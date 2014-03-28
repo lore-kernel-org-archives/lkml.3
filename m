@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaC1SyN (ORCPT <rfc822;w@1wt.eu>);
+	id S1752765AbaC1Sy0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:54:26 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:39746 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628AbaC1SyN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 14:54:13 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45937 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462AbaC1SyK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 14:54:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,752,1389772800"; 
-   d="scan'208";a="482304478"
-From: Andi Kleen <andi@firstfloor.org>
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>,
-        linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 16/28] ktap: add runtime/amalg.c
-References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
-	<1396014469-5937-17-git-send-email-jovi.zhangwei@gmail.com>
-Date: Fri, 28 Mar 2014 11:52:43 -0700
-In-Reply-To: <1396014469-5937-17-git-send-email-jovi.zhangwei@gmail.com> (Jovi
-	Zhangwei's message of "Fri, 28 Mar 2014 09:47:37 -0400")
-Message-ID: <878urunojo.fsf@tassilo.jf.intel.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+Date: Fri, 28 Mar 2014 14:54:10 -0400 (EDT)
+Message-Id: <20140328.145410.1817326821928803131.davem@davemloft.net>
+To: dh.herrmann@gmail.com
+Cc: netdev@vger.kernel.org, teg@jklm.no, johannes@sipsolutions.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 11:54:12 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jovi Zhangwei <jovi.zhangwei@gmail.com> writes:
+From: David Herrmann <dh.herrmann@gmail.com>
+Date: Wed, 26 Mar 2014 14:05:13 +0100
 
-> Use amalgamation build make ktapvm.ko much smaller.
->
-> No amalgamation build in x86_64:
-> ktapvm.ko: 2.4M
->
-> amalgamation build in x86_64:
-> ktapvm.ko: 1.1M
->
-> User can set use amalgamation build or not in Makefile.
+> The main use-case is to allow udev to skip applying reliable ifnames to virtual
+> devices. For instance, if wifi-P2P devices are created, wpas already provides a
+> suitable naming-policy and udev shouldn't touch these devices. Same is true for
+> other virtual devices.
 
-This seems dubious. Is that due to debug information?
+This makes no sense at all.
 
-[if yes new enough toolchain can fix that]
+If udev should avoid applying names to wifi-P2P devices, that policy can
+be instituted completely inside of udev.  There is no need whatsoever
+for kernel support.
 
-If it's due to code something is seriously wrong, 
-perhaps in your inlines.
+udev can look at the device type, and policies can be defined that key
+off of that device type, entirely in userspace.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only
+I'm not applying this patch series, sorry.
