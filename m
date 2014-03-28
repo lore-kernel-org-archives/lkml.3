@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933AbaC1Rrd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:47:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51318 "EHLO
+	id S1753972AbaC1Rr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:47:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51315 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074AbaC1Ra6 (ORCPT
+	with ESMTP id S1753061AbaC1Ra6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:30:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
-        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.13 01/46] HID: hidraw: fix warning destroying hidraw device files after parent
-Date: Fri, 28 Mar 2014 10:31:45 -0700
-Message-Id: <20140328173134.831298277@linuxfoundation.org>
+        Helge Deller <deller@gmx.de>
+Subject: [PATCH 3.13 08/46] partly revert commit 8a10bc9: parisc/sti_console: prefer Linux fonts over built-in ROM fonts
+Date: Fri, 28 Mar 2014 10:31:52 -0700
+Message-Id: <20140328173135.768522838@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,79 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+From: Helge Deller <deller@gmx.de>
 
-commit 47587fc098451c2100dc1fb618855fc2e2d937af upstream.
+commit a2fb4d782c61f77480e586578eeb4dfd27d134ea upstream.
 
-I noticed that after hot unplugging a Logitech unifying receiver
-(drivers/hid/hid-logitech-dj.c) the kernel would occasionally spew a
-stack trace similar to this:
+STI console is used on parisc and m68k HP machines. This patch partly reverts
+my previous commit and as such restores the fonts for the m68k machines.
 
-usb 1-1.1.2: USB disconnect, device number 7
-WARNING: CPU: 0 PID: 2865 at fs/sysfs/group.c:216 device_del+0x40/0x1b0()
-sysfs group ffffffff8187fa20 not found for kobject 'hidraw0'
-[...]
-CPU: 0 PID: 2865 Comm: upowerd Tainted: G        W 3.14.0-rc4 #7
-Hardware name: LENOVO 7783PN4/        , BIOS 9HKT43AUS 07/11/2011
- 0000000000000009 ffffffff814cd684 ffff880427ccfdf8 ffffffff810616e7
- ffff88041ec61800 ffff880427ccfe48 ffff88041e444d80 ffff880426fab8e8
- ffff880429359960 ffffffff8106174c ffffffff81714b98 0000000000000028
-Call Trace:
- [<ffffffff814cd684>] ? dump_stack+0x41/0x51
- [<ffffffff810616e7>] ? warn_slowpath_common+0x77/0x90
- [<ffffffff8106174c>] ? warn_slowpath_fmt+0x4c/0x50
- [<ffffffff81374fd0>] ? device_del+0x40/0x1b0
- [<ffffffff8137516f>] ? device_unregister+0x2f/0x50
- [<ffffffff813751fa>] ? device_destroy+0x3a/0x40
- [<ffffffffa03ca245>] ? drop_ref+0x55/0x120 [hid]
- [<ffffffffa03ca3e6>] ? hidraw_release+0x96/0xb0 [hid]
- [<ffffffff811929da>] ? __fput+0xca/0x210
- [<ffffffff8107fe17>] ? task_work_run+0x97/0xd0
- [<ffffffff810139a9>] ? do_notify_resume+0x69/0xa0
- [<ffffffff814dbd22>] ? int_signal+0x12/0x17
----[ end trace 63f4a46f6566d737 ]---
-
-During device removal hid_disconnect() is called via hid_hw_stop() to
-stop the device and free all its resources, including the sysfs
-files. The problem is that if a user space process, such as upowerd,
-holds a reference to a hidraw file the corresponding sysfs files will
-be kept around (drop_ref() does not call device_destroy() if the open
-counter is not 0) and it will be usb_disconnect() who, by calling
-device_del() for the USB device, will indirectly remove the sysfs
-files of the hidraw device (sysfs_remove_dir() is recursive these
-days). Because of this, by the time user space releases the last
-reference to the hidraw file and drop_ref() tries to destroy the
-device the sysfs files are already gone and the kernel will print
-the warning above.
-
-Fix this by calling device_destroy() at USB disconnect time.
-
-Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Helge Deller <deller@gmx.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hidraw.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ lib/fonts/Kconfig |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -313,13 +313,13 @@ static void drop_ref(struct hidraw *hidr
- 			hid_hw_close(hidraw->hid);
- 			wake_up_interruptible(&hidraw->wait);
- 		}
-+		device_destroy(hidraw_class,
-+			       MKDEV(hidraw_major, hidraw->minor));
- 	} else {
- 		--hidraw->open;
- 	}
- 	if (!hidraw->open) {
- 		if (!hidraw->exist) {
--			device_destroy(hidraw_class,
--					MKDEV(hidraw_major, hidraw->minor));
- 			hidraw_table[hidraw->minor] = NULL;
- 			kfree(hidraw);
- 		} else {
+--- a/lib/fonts/Kconfig
++++ b/lib/fonts/Kconfig
+@@ -9,7 +9,7 @@ if FONT_SUPPORT
+ 
+ config FONTS
+ 	bool "Select compiled-in fonts"
+-	depends on FRAMEBUFFER_CONSOLE
++	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
+ 	help
+ 	  Say Y here if you would like to use fonts other than the default
+ 	  your frame buffer console usually use.
+@@ -22,7 +22,7 @@ config FONTS
+ 
+ config FONT_8x8
+ 	bool "VGA 8x8 font" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
++	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
+ 	default y if !SPARC && !FONTS
+ 	help
+ 	  This is the "high resolution" font for the VGA frame buffer (the one
+@@ -45,7 +45,7 @@ config FONT_8x16
+ 
+ config FONT_6x11
+ 	bool "Mac console 6x11 font (not supported by all drivers)" if FONTS
+-	depends on FRAMEBUFFER_CONSOLE
++	depends on FRAMEBUFFER_CONSOLE || STI_CONSOLE
+ 	default y if !SPARC && !FONTS && MAC
+ 	help
+ 	  Small console font with Macintosh-style high-half glyphs.  Some Mac
 
 
