@@ -1,135 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751458AbaC1Mg2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 08:36:28 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:59817 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149AbaC1Mg0 (ORCPT
+	id S1751740AbaC1Mgk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 08:36:40 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:3498 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149AbaC1Mgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 08:36:26 -0400
+	Fri, 28 Mar 2014 08:36:38 -0400
+From: Liu Hua <sdu.liu@huawei.com>
+To: <mingo@kernel.org>, <rob@landley.net>
+CC: <peterz@infradead.org>, <riel@redhat.com>, <akpm@linux-foundation.org>,
+        <lizefan@huawei.com>, <wangnan0@huawei.com>, <peifeiyue@huawei.com>,
+        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <liusdu@126.com>, Liu Hua <sdu.liu@huawei.com>,
+        <stable@vger.kernel.org.#.3.4+>
+Subject: [PATCH v3] hung_task : check the value of "sysctl_hung_task_timeout_sec"
+Date: Fri, 28 Mar 2014 20:30:08 +0800
+Message-ID: <1396009808-66019-1-git-send-email-sdu.liu@huawei.com>
+X-Mailer: git-send-email 1.9.0
 MIME-Version: 1.0
-In-Reply-To: <20140327222605.GB16495@medulla.variantweb.net>
-References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
- <20140327222605.GB16495@medulla.variantweb.net>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Fri, 28 Mar 2014 08:36:04 -0400
-X-Google-Sender-Auth: m2_83uinr6ohOpnUz0c8pHH2f7Q
-Message-ID: <CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
-Subject: Re: Adding compression before/above swapcache
-To: Seth Jennings <sjennings@variantweb.net>
-Cc: Hugh Dickins <hughd@google.com>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 27, 2014 at 6:26 PM, Seth Jennings <sjennings@variantweb.net> wrote:
-> On Wed, Mar 26, 2014 at 04:28:27PM -0400, Dan Streetman wrote:
->> I'd like some feedback on how possible/useful, or not, it might be to
->> add compression into the page handling code before pages are added to
->> the swapcache.  My thought is that adding a compressed cache at that
->> point may have (at least) two advantages over the existing page
->> compression, zswap and zram, which are both in the swap path.
->>
->> 1) Both zswap and zram are limited in the amount of memory that they
->> can compress/store:
->> -zswap is limited both in the amount of pre-compressed pages, by the
->> total amount of swap configured in the system, and post-compressed
->> pages, by its max_pool_percentage parameter.  These limitations aren't
->> necessarily a bad thing, just requirements for the user (or distro
->> setup tool, etc) to correctly configure them.  And for optimal
->> operation, they need to coordinate; for example, with the default
->> post-compressed 20% of memory zswap's configured to use, the amount of
->> swap in the system must be at least 40% of system memory (if/when
->> zswap is changed to use zsmalloc that number would need to increase).
->> The point being, there is a clear possibility of misconfiguration, or
->> even a simple lack of enough disk space for actual swap, that could
->> artificially reduce the amount of total memory zswap is able to
->> compress.  Additionally, most of that real disk swap is wasted space -
->> all the pages stored compressed in zswap aren't actually written on
->> the disk.
->> -zram is limited only by its pre-compressed size, and of course the
->> amount of actual system memory it can use for compressed storage.  If
->> using without dm-cache, this could allow essentially unlimited
->> compression until no more compressed pages can be stored; however that
->> requires the zram device to be configured as larger than the actual
->> system memory.  If using with dm-cache, it may not be obvious what the
->> optimal zram size is.
->>
->> Pre-swapcache compression would theoretically require no user
->> configuration, and the amount of compressed pages would be unlimited
->> (until there is no more room to store compressed pages).
->
-> Yes, these are limitations of the current designs.
->
->>
->> 2) Both zswap and zram (with dm-cache) write uncompressed pages to disk:
->> -zswap rejects any pages being sent to swap that don't compress well
->> enough, and they're passed on to the swap disk in uncompressed form.
->> Also, once zswap is full it starts uncompressing its old compressed
->> pages and writing them back to the swap disk.
->> -zram, with dm-cache, can pass pages on to the swap disk, but IIUC
->> those pages must be uncompressed first, and then written in compressed
->> form on disk.  (Please correct me here if that is wrong).
->
-> Yes, again.
->
->>
->> A compressed cache that comes before the swap cache would be able to
->> push pages from its compressed storage to the swap disk, that contain
->> multiple compressed pages (and/or parts of compressed pages, if
->> overlapping page boundries).  I think that would be able to,
->> theoretically at least, improve overall read/write times from a
->> pre-compressed perspective, simply because less actual data would be
->> transferred.  Also, less actual swap disk space would be
->> used/required, which on systems with a very large amount of system
->> memory may be beneficial.
->
-> In theory that could be good.
->
-> However, there are a lot of missing details about how this could
-> actually be done.  Of the top of my head, the reason we choose hook
-> into the swap path is because it does all the work in both the page
-> selection, being reclaimed from the end of the inactive anon LRU, and
-> all the work of unmapping the page from the page table and replacing
-> it with a swap entry.  In order to do the unmapping, the page must
-> already be in the swap cache.
->
-> So I guess I'm not quite sure how you would do this. What did you have
-> in mind?
+As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+watchdog will return immediately without sleep and with print :
 
-Well my general idea was to modify shrink_page_list() so that instead
-of calling add_to_swap() and then pageout(), anonymous pages would be
-added to a compressed cache.  I haven't worked out all the specific
-details, but I am initially thinking that the compressed cache could
-simply repurpose incoming pages to use as the compressed cache storage
-(using its own page mapping, similar to swap page mapping), and then
-add_to_swap() the storage pages when the compressed cache gets to a
-certain size.  Pages that don't compress well could just bypass the
-compressed cache, and get sent the current route directly to
-add_to_swap().
+[  205.452934] schedule_timeout: wrong timeout value ffffffffffffff83
 
+and then the funtion watchdog will call schedule_timeout_interruptible
+again and again. The screen will be filled with
+	"schedule_timeout: wrong timeout value ffffffffffffff83"
 
->
-> Seth
->
->>
->>
->> Additionally, a couple other random possible benefits:
->> -like zswap but unlike zram, a pre-swapcache compressed cache would be
->> able to select which pages to store compressed, either based on poor
->> compression results or some other criteria - possibly userspace could
->> madvise that certain pages were or weren't likely compressible.
->> -while zram and zswap are only able to compress and store pages that
->> are passed to them by zswapd or direct reclaim, a pre-swap compressed
->> cache wouldn't necessarily have to wait until the low watermark is
->> reached.
->>
->> Any feedback would be greatly appreciated!
+This patch does some check and correction in sysctl, to let the
+function schedule_timeout_interruptible allways get the valid parameter.
+
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Cc: stable@vger.kernel.org # 3.4+
+---
+ Documentation/sysctl/kernel.txt | 1 +
+ kernel/sysctl.c                 | 6 ++++++
+ 2 files changed, 7 insertions(+)
+
+diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
+index e55124e..855d9b3 100644
+--- a/Documentation/sysctl/kernel.txt
++++ b/Documentation/sysctl/kernel.txt
+@@ -317,6 +317,7 @@ for more than this value report a warning.
+ This file shows up if CONFIG_DETECT_HUNG_TASK is enabled.
+ 
+ 0: means infinite timeout - no checking done.
++Possible values to set are in range {0..LONG_MAX/HZ}.
+ 
+ ==============================================================
+ 
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 49e13e1..aae21e8 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -144,6 +144,11 @@ static int min_percpu_pagelist_fract = 8;
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
+ 
++/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
++#ifdef CONFIG_DETECT_HUNG_TASK
++static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
++#endif
++
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+ #endif
+@@ -995,6 +1000,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dohung_task_timeout_secs,
++		.extra2		= &hung_task_timeout_max,
+ 	},
+ 	{
+ 		.procname	= "hung_task_warnings",
+-- 
+1.9.0
+
