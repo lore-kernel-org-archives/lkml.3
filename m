@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556AbaC1RnU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:43:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51370 "EHLO
+	id S1753601AbaC1RoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:44:08 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51361 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978AbaC1RbH (ORCPT
+	with ESMTP id S1753130AbaC1RbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:07 -0400
+	Fri, 28 Mar 2014 13:31:06 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Jan Seiffert <kaffeemonster@googlemail.com>,
-        Eric Dumazet <edumazet@google.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.13 21/46] x86: bpf_jit: support negative offsets
-Date: Fri, 28 Mar 2014 10:32:05 -0700
-Message-Id: <20140328173137.532148179@linuxfoundation.org>
+        Ben Peddell <klightspeed@killerwolves.net>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: [PATCH 3.13 19/46] ARM: 7941/2: Fix incorrect FDT initrd parameter override
+Date: Fri, 28 Mar 2014 10:32:03 -0700
+Message-Id: <20140328173137.262946975@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -29,40 +28,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexei Starovoitov <ast@plumgrid.com>
+From: Ben Peddell <klightspeed@killerwolves.net>
 
-commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
+commit 4c235cb9e35407bdb4a2debeef4dc8721e8f91f2 upstream.
 
-Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
-but it couldn't be working, since at the time of the execution
-of LD+ABS or LD+IND instructions via call into
-bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
-had junk value instead of access size in bytes (1 or 2 or 4).
+Commit 65939301acdb (arm: set initrd_start/initrd_end for fdt scan)
+caused the FDT initrd_start and initrd_end to override the
+phys_initrd_start and phys_initrd_size set by the initrd= kernel
+parameter.  With this patch initrd_start and initrd_end will be
+overridden if phys_initrd_start and phys_initrd_size are set by the
+kernel initrd= parameter.
 
-Store size into %edx instead of %ecx (what original commit intended to do)
+Fixes: 65939301acdb (arm: set initrd_start/initrd_end for fdt scan)
 
-Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Jan Seiffert <kaffeemonster@googlemail.com>
-Cc: Eric Dumazet <edumazet@google.com>
-Acked-by: Eric Dumazet <edumazet@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ben Peddell <klightspeed@killerwolves.net>
+Acked-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/net/bpf_jit.S |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/mm/init.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/arch/x86/net/bpf_jit.S
-+++ b/arch/x86/net/bpf_jit.S
-@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
- 	push	%r9;						\
- 	push	SKBDATA;					\
- /* rsi already has offset */					\
--	mov	$SIZE,%ecx;	/* size */			\
-+	mov	$SIZE,%edx;	/* size */			\
- 	call	bpf_internal_load_pointer_neg_helper;		\
- 	test	%rax,%rax;					\
- 	pop	SKBDATA;					\
+--- a/arch/arm/mm/init.c
++++ b/arch/arm/mm/init.c
+@@ -345,10 +345,11 @@ void __init arm_memblock_init(struct mem
+ #endif
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* FDT scan will populate initrd_start */
+-	if (initrd_start) {
++	if (initrd_start && !phys_initrd_size) {
+ 		phys_initrd_start = __virt_to_phys(initrd_start);
+ 		phys_initrd_size = initrd_end - initrd_start;
+ 	}
++	initrd_start = initrd_end = 0;
+ 	if (phys_initrd_size &&
+ 	    !memblock_is_region_memory(phys_initrd_start, phys_initrd_size)) {
+ 		pr_err("INITRD: 0x%08llx+0x%08lx is not a memory region - disabling initrd\n",
 
 
