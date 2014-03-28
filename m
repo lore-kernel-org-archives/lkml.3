@@ -1,59 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751385AbaC1XAF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 19:00:05 -0400
-Received: from smtprelay0195.hostedemail.com ([216.40.44.195]:50205 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751116AbaC1XAD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 19:00:03 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:599:973:988:989:1260:1261:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3868:3871:3872:3873:3874:4250:4321:4605:5007:7652:10004:10400:10848:11026:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ducks92_5759953a7320e
-X-Filterd-Recvd-Size: 1935
-Message-ID: <1396047598.31134.37.camel@joe-AO722>
-Subject: Re: Staging:et131x: change memcpy()  ether_addr_copy()
-From: Joe Perches <joe@perches.com>
-To: paulmcquad <paulmcquad@gmail.com>
-Cc: gregkh@linuxfoundation.org, gamerh2o@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>
-Date: Fri, 28 Mar 2014 15:59:58 -0700
-In-Reply-To: <5335F74A.9020507@gmail.com>
-References: <5335F74A.9020507@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751294AbaC1XRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 19:17:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43411 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750864AbaC1XRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 19:17:08 -0400
+Date: Fri, 28 Mar 2014 16:17:06 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: YongHwan Ki <kyhw@afoi.co.kr>
+cc: rydberg@euromail.se, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO.,
+  LTD.
+In-Reply-To: <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
+Message-ID: <alpine.LNX.2.00.1403281615300.16202@pobox.suse.cz>
+References: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr> <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz> <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 22:27 +0000, paulmcquad wrote:
-> replace memcpy() with ether_addr_copy()
-> make checkpatch.pl clean
+On Wed, 26 Mar 2014, YongHwan Ki wrote:
 
-broken.
+> Sorry, I woud like to add the AFO defines in the Linux Kernel.
+> No afo defines exists in the current kernel tree.
+> I correctly changed the log for adding the afo defines.
+> 
+> Kernel Version : linux-3.14.rc7
+> Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
+> 
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7m/drivers/hid/hid-core.c
+> --- ./drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
+> +++ ../linux-3.14-rc7m/drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
+> @@ -1881,6 +1881,8 @@ static const struct hid_device_id hid_ha
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
+>  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
+> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
+>  
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
+>  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-ids.h ../linux-3.14-rc7m/drivers/hid/hid-ids.h
+> --- ./drivers/hid/hid-ids.h	2014-03-17 10:51:24.000000000 +0900
+> +++ ../linux-3.14-rc7m/drivers/hid/hid-ids.h	2014-03-21 17:30:34.478959555 +0900
+> @@ -960,5 +960,9 @@
+>  #define USB_VENDOR_ID_PRIMAX	0x0461
+>  #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
+>  
+> +#define USB_VENDOR_ID_AFO		0x2576
+> +#define USB_DEVICE_ID_AFO_TCM		0x0003
+> +#define USB_DEVICE_ID_AFO_BL		0x0005
+> +#define USB_DEVICE_ID_AFO_THM		0x0011
+>  
+>  #endif
+> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-multitouch.c ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c
+> --- ./drivers/hid/hid-multitouch.c	2014-03-17 10:51:24.000000000 +0900
+> +++ ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c	2014-03-21 17:45:25.946933088 +0900
+> @@ -1395,6 +1395,15 @@ static const struct hid_device_id mt_dev
+>  	{  .driver_data = MT_CLS_WIN_8,
+>  		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
+>  			HID_ANY_ID, HID_ANY_ID) },
+> +
+> +	/* AFO MultiTouch device */
+> +	{  .driver_data = MT_CLS_SERIAL,
+> +		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
+> +			USB_DEVICE_ID_AFO_TCM) },
+> +	{  .driver_data = MT_CLS_SERIAL,
+> +		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
+> +			USB_DEVICE_ID_AFO_THM) },
+> +
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(hid, mt_devices);
+> Binary files ./kernel/x509_certificate_list and ../linux-3.14-rc7m/kernel/x509_certificate_list differ
+> diff -uprN -X Documentation/dontdiff ./lib/oid_registry_data.c ../linux-3.14-rc7m/lib/oid_registry_data.c
+> --- ./lib/oid_registry_data.c	2014-03-21 18:45:37.598825862 +0900
+> +++ ../linux-3.14-rc7m/lib/oid_registry_data.c	2014-03-24 21:43:59.826812763 +0900
+> @@ -1,5 +1,5 @@
+>  /*
+> - * Automatically generated by /usr/src/linux-3.14-rc7/lib/build_OID_registry.  Do not edit
+> + * Automatically generated by /usr/src/linux-3.14-rc7m/lib/build_OID_registry.  Do not edit
 
-You at least need to change this definition:
-drivers/staging/et131x/et131x.c:        static const u8 default_mac[] = { 0x00, 0x05, 0x3d, 0x00, 0x02, 0x00 };
-and add __aligned(2) to it to make sure
-that the address is appropriately aligned.
+Please remove this hunk, it has nothing to do with the patchset.
 
-> diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-[]
-> @@ -3770,7 +3770,7 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
-[]
->      /* Set the MAC address to a default */
-> -    memcpy(adapter->addr, default_mac, ETH_ALEN);
-> +    ether_addr_copy(adapter->addr, default_mac, ETH_ALEN);
-[]
-> @@ -4337,7 +4337,7 @@ static void et131x_multicast(struct net_device *netdev)
->      netdev_for_each_mc_addr(ha, netdev) {
->          if (i == NIC_MAX_MCAST_LIST)
->              break;
-> -        memcpy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
-> +    ether_addr_copy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
+>   */
+>  
+>  static const unsigned short oid_index[OID__NR + 1] = {
+> diff -uprN -X Documentation/dontdiff ./signing_key.priv ../linux-3.14-rc7m/signing_key.priv
+> --- ./signing_key.priv	2014-03-21 17:24:11.874970914 +0900
+> +++ ../linux-3.14-rc7m/signing_key.priv	2014-03-24 20:22:01.946958769 +0900
+> @@ -1,52 +1,52 @@
+>  -----BEGIN PRIVATE KEY-----
 
-bad indentation too
+Again, I don't think you want to be sending this out :)
 
+Thanks,
 
+-- 
+Jiri Kosina
+SUSE Labs
