@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752643AbaC1Rac (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:32 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51134 "EHLO
+	id S1753180AbaC1SHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:07:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51151 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaC1Ra2 (ORCPT
+	with ESMTP id S1752619AbaC1Rab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:28 -0400
+	Fri, 28 Mar 2014 13:30:31 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rob Herring <rob.herring@calxeda.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ian Campbell <ian.campbell@citrix.com>
-Subject: [PATCH 3.4 08/13] ARM: move outer_cache declaration out of ifdef
-Date: Fri, 28 Mar 2014 10:31:58 -0700
-Message-Id: <20140328173054.178191858@linuxfoundation.org>
+        Jan Kiszka <jan.kiszka@siemens.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.4 11/13] KVM: VMX: fix use after free of vmx->loaded_vmcs
+Date: Fri, 28 Mar 2014 10:32:01 -0700
+Message-Id: <20140328173054.566787119@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
 References: <20140328173053.049244535@linuxfoundation.org>
@@ -28,36 +28,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Rob Herring <rob.herring@calxeda.com>
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
-commit 0b53c11d533a8f6688d73fad0baf67dd08ec1b90 upstream.
+commit 26a865f4aa8e66a6d94958de7656f7f1b03c6c56 upstream.
 
-Move the outer_cache declaration of the CONFIG_OUTER_CACHE ifdef so that
-outer_cache can be used inside IS_ENABLED condition.
+After free_loaded_vmcs executes, the "loaded_vmcs" structure
+is kfreed, and now vmx->loaded_vmcs points to a kfreed area.
+Subsequent free_loaded_vmcs then attempts to manipulate
+vmx->loaded_vmcs.
 
-Signed-off-by: Rob Herring <rob.herring@calxeda.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Switch the order to avoid the problem.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=1047892
+
+Reviewed-by: Jan Kiszka <jan.kiszka@siemens.com>
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/include/asm/outercache.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kvm/vmx.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/include/asm/outercache.h
-+++ b/arch/arm/include/asm/outercache.h
-@@ -37,10 +37,10 @@ struct outer_cache_fns {
- 	void (*resume)(void);
- };
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -6281,8 +6281,8 @@ static void vmx_free_vcpu(struct kvm_vcp
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
  
--#ifdef CONFIG_OUTER_CACHE
--
- extern struct outer_cache_fns outer_cache;
- 
-+#ifdef CONFIG_OUTER_CACHE
-+
- static inline void outer_inv_range(phys_addr_t start, phys_addr_t end)
- {
- 	if (outer_cache.inv_range)
+ 	free_vpid(vmx);
+-	free_nested(vmx);
+ 	free_loaded_vmcs(vmx->loaded_vmcs);
++	free_nested(vmx);
+ 	kfree(vmx->guest_msrs);
+ 	kvm_vcpu_uninit(vcpu);
+ 	kmem_cache_free(kvm_vcpu_cache, vmx);
 
 
