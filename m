@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751723AbaC1Ivv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 04:51:51 -0400
-Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:4429 "EHLO
-	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751664AbaC1Ivq (ORCPT
+	id S1751832AbaC1Ixp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 04:53:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:26332 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951AbaC1Ixm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 04:51:46 -0400
-Message-ID: <5335380F.9070809@xs4all.nl>
-Date: Fri, 28 Mar 2014 09:51:27 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Fri, 28 Mar 2014 04:53:42 -0400
+Message-ID: <5335384A.2000000@huawei.com>
+Date: Fri, 28 Mar 2014 16:52:26 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        linux-media@vger.kernel.org
-CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Fengguang Wu <fengguang.wu@intel.com>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Roland Scheidegger <rscheidegger_lists@hispeed.ch>
-Subject: Re: [PATCH 2/2] usb: gadget: uvc: Set the vb2 queue timestamp flags
-References: <20140323001018.GA11963@localhost> <1395588754-20587-1-git-send-email-laurent.pinchart@ideasonboard.com> <1395588754-20587-3-git-send-email-laurent.pinchart@ideasonboard.com>
-In-Reply-To: <1395588754-20587-3-git-send-email-laurent.pinchart@ideasonboard.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: [PATCH v3 1/4] kmemleak: free internal objects only if there're no
+ leaks to be reported
+Content-Type: text/plain; charset="GB2312"
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03/23/2014 04:32 PM, Laurent Pinchart wrote:
-> The vb2 queue timestamp_flags field must be set by drivers, as enforced
-> by a WARN_ON in vb2_queue_init. The UVC gadget driver failed to do so.
-> This resulted in the following warning.
-> 
-> [    2.104371] g_webcam gadget: uvc_function_bind
-> [    2.105567] ------------[ cut here ]------------
-> [    2.105567] ------------[ cut here ]------------
-> [    2.106779] WARNING: CPU: 0 PID: 1 at drivers/media/v4l2-core/videobuf2-core.c:2207 vb2_queue_init+0xa3/0x113()
-> 
-> Fix it.
-> 
-> Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-> Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Currently if you disabling kmemleak after stopping kmemleak thread,
+kmemleak objects will be freed and so you won't be able to check
+previously reported leaks.
 
-Reviewed-by: Hans Verkuil <hans.verkuil@cisco.com>
+With this patch, kmemleak objects won't be freed if there're leaks
+that can be reported.
 
-Regards,
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+---
+ mm/kmemleak.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-	Hans
-
-> ---
->  drivers/usb/gadget/uvc_queue.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/usb/gadget/uvc_queue.c b/drivers/usb/gadget/uvc_queue.c
-> index d4561ba..4611e9c 100644
-> --- a/drivers/usb/gadget/uvc_queue.c
-> +++ b/drivers/usb/gadget/uvc_queue.c
-> @@ -136,6 +136,8 @@ static int uvc_queue_init(struct uvc_video_queue *queue,
->  	queue->queue.buf_struct_size = sizeof(struct uvc_buffer);
->  	queue->queue.ops = &uvc_queue_qops;
->  	queue->queue.mem_ops = &vb2_vmalloc_memops;
-> +	queue->queue.timestamp_flags = V4L2_BUF_FLAG_TIMESTAMP_MONOTONIC
-> +				     | V4L2_BUF_FLAG_TSTAMP_SRC_EOF;
->  	ret = vb2_queue_init(&queue->queue);
->  	if (ret)
->  		return ret;
-> 
-
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 31f01c5..be7ecc0 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -218,7 +218,8 @@ static int kmemleak_stack_scan = 1;
+ static DEFINE_MUTEX(scan_mutex);
+ /* setting kmemleak=on, will set this var, skipping the disable */
+ static int kmemleak_skip_disable;
+-
++/* If there're leaks that can be reported */
++static bool kmemleak_has_leaks;
+ 
+ /*
+  * Early object allocation/freeing logging. Kmemleak is initialized after the
+@@ -1382,9 +1383,12 @@ static void kmemleak_scan(void)
+ 	}
+ 	rcu_read_unlock();
+ 
+-	if (new_leaks)
++	if (new_leaks) {
++		kmemleak_has_leaks = true;
++
+ 		pr_info("%d new suspected memory leaks (see "
+ 			"/sys/kernel/debug/kmemleak)\n", new_leaks);
++	}
+ 
+ }
+ 
+@@ -1592,6 +1596,8 @@ static void kmemleak_clear(void)
+ 		spin_unlock_irqrestore(&object->lock, flags);
+ 	}
+ 	rcu_read_unlock();
++
++	kmemleak_has_leaks = false;
+ }
+ 
+ /*
+@@ -1685,12 +1691,11 @@ static const struct file_operations kmemleak_fops = {
+ static void kmemleak_do_cleanup(struct work_struct *work)
+ {
+ 	struct kmemleak_object *object;
+-	bool cleanup = scan_thread == NULL;
+ 
+ 	mutex_lock(&scan_mutex);
+ 	stop_scan_thread();
+ 
+-	if (cleanup) {
++	if (!kmemleak_has_leaks) {
+ 		rcu_read_lock();
+ 		list_for_each_entry_rcu(object, &object_list, object_list)
+ 			delete_object_full(object->pointer);
+-- 
+1.8.0.2
