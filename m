@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910AbaC1LwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 07:52:12 -0400
-Received: from mail1.ethionet.et ([213.55.96.134]:56152 "EHLO mx2.ironport.et"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751045AbaC1LwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 07:52:11 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvMIADJhNVMKmgkG/2dsb2JhbAA8HQYKgmIBAYEkgwq/WQEJJYEOdIIYAQEDBAEBSAlUBQ8NBAEBAQwIHlKFSwEBASo0FIEaAQEFBgEBF5JplASIDQiCQyk1gQYRgR8YlR4fQoZ+F4EljHQBCgQBAgEGDAlFCAEFB4FoZBOBOgEDgSyGRIFchg+PZ4hDghaCRQsBgUk+A1UBTwEBAwICHRx3
-X-IronPort-AV: E=Sophos;i="4.97,750,1389733200"; 
-   d="scan'208";a="28441879"
-Date: Fri, 28 Mar 2014 15:03:17 +0300 (EAT)
-From: Admin <sorenie@ethionet.et>
-Reply-To: Admin <Adim.offices@webname.com>
-Message-ID: <32405656.1740381396008197317.JavaMail.root@lgh-mail-b-3.etcmailserver.com.et>
-Subject: Helpdesk Support Center
+	id S1752033AbaC1Lw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 07:52:56 -0400
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:64413 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750761AbaC1Lwy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 07:52:54 -0400
+From: Madoka Komatsubara <m-komatsubara@ab.jp.nec.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+CC: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        Hiroshi Baba <h-baba@ax.jp.nec.com>
+Subject: Unable to receive multicast packet on VF
+Thread-Topic: Unable to receive multicast packet on VF
+Thread-Index: Ac9KeKSflRJoEdc0T8ah/zzTQlagLw==
+Date: Fri, 28 Mar 2014 11:49:05 +0000
+Message-ID: <9DE5760509B7974286F38D93BF31DD62C7D0B8@BPXM13GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.8.69]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=GBK
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.154.3.4]
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
 
-Dear Account User,
+We would like to use multicast packet on the guest with Intel 82599EB SR-IOV.
+However, the document says that adding the multicast MAC address to the VF 
+is allowed during PF initialization only. (Please refer to the URL below.)
+It means that we couldn't handle dynamically allocated multicast address.
 
-This message is from the help desk support center. Be informed that your mail box
-has exceeded the storage limit set by your administrator/database, you are currently
-running out of context and you may not be able to send or receive some new mail
-until you re-validate your mailbox.
+On the other hand,
+>From the data sheet, 82599EB has Multicast Promiscuous mode.
+We could enable it on PF and all multicast packets are delivered to every VF.
+That doesn't seem good, because each guest has to handle unnecessary packet.
 
-To prevent your email account from been closed, re-validate your mailbox below to
-enable us increase the storage limit:
+Isn't it good to have a feature to add specific multicast address to VF?
+Does anyone know that issue or the solution?
 
-User Name:
-User Email:
-Email Password:
-Web-mail Login:
 
-Your account shall remain active after you have successfully confirmed your account
-details.Thank you for your swift response to this notification we apologize for any
-inconvenience.
 
-We appreciate your continued help and support.
+<http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/82599-10-gbe-controller-datasheet.pdf>
+ page585
+ section 8.2.3.7.7
+ "This table should be initialized by software before transmit and receive are enabled."
 
 Regards,
-Help desk Support Center.
+Madoka Komatsubara
