@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753111AbaC1RbA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51295 "EHLO
+	id S1753244AbaC1RpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:45:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51332 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975AbaC1Ray (ORCPT
+	with ESMTP id S1753114AbaC1RbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:54 -0400
+	Fri, 28 Mar 2014 13:31:00 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rodrigo Vivi <rodrigo.vivi@gmail.com>,
-        Kenneth Graunke <kenneth.w.graunke@intel.com>,
-        Art Runyan <arthur.j.runyan@intel.com>,
-        "Kumar, Kiran S" <kiran.s.kumar@intel.com>,
-        Ben Widawsky <ben@bwidawsk.net>, Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 3.13 04/46] drm/i915: Fix PSR programming
-Date: Fri, 28 Mar 2014 10:31:48 -0700
-Message-Id: <20140328173135.233702392@linuxfoundation.org>
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: [PATCH 3.13 12/46] media: dw2102: some missing unlocks on error
+Date: Fri, 28 Mar 2014 10:31:56 -0700
+Message-Id: <20140328173136.300371578@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -30,47 +27,205 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Widawsky <benjamin.widawsky@intel.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 24bd9bf54d45d28089251cdf62bf14323d1aa827 upstream.
+commit 324ed533bf0b23c309b805272c4ffcc5d51493a6 upstream.
 
-| has a higher precedence than ?. Therefore, the calculation doesn't do
-at all what you would expect. Thanks to Ken for convincing me that this
-was indeed the issue. Send me back to C programmer school, please.
+We recently introduced some new error paths but the unlocks are missing.
+Fixes: 0065a79a8698 ('[media] dw2102: Don't use dynamic static allocation')
 
-I'm sort of surprised PSR was continuing to work for people. It should
-be broken IMO (and it was broken for me, but I had assumed it never
-worked).
-
-Regression from:
-commit ed8546ac1f99b850879f07b1e9b06b42fb0a36d9
-Author: Ben Widawsky <benjamin.widawsky@intel.com>
-Date:   Mon Nov 4 22:45:05 2013 -0800
-
-    drm/i915/bdw: Support eDP PSR
-
-Cc: Rodrigo Vivi <rodrigo.vivi@gmail.com>
-Cc: Kenneth Graunke <kenneth.w.graunke@intel.com>
-Cc: Art Runyan <arthur.j.runyan@intel.com>
-Reported-by: "Kumar, Kiran S" <kiran.s.kumar@intel.com>
-Signed-off-by: Ben Widawsky <ben@bwidawsk.net>
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/i915/intel_dp.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/usb/dvb-usb/dw2102.c |   52 +++++++++++++++++++++++++------------
+ 1 file changed, 36 insertions(+), 16 deletions(-)
 
---- a/drivers/gpu/drm/i915/intel_dp.c
-+++ b/drivers/gpu/drm/i915/intel_dp.c
-@@ -1634,7 +1634,7 @@ static void intel_edp_psr_enable_source(
- 		val |= EDP_PSR_LINK_DISABLE;
+--- a/drivers/media/usb/dvb-usb/dw2102.c
++++ b/drivers/media/usb/dvb-usb/dw2102.c
+@@ -301,6 +301,7 @@ static int dw2102_serit_i2c_transfer(str
+ static int dw2102_earda_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
++	int ret;
  
- 	I915_WRITE(EDP_PSR_CTL(dev), val |
--		   IS_BROADWELL(dev) ? 0 : link_entry_time |
-+		   (IS_BROADWELL(dev) ? 0 : link_entry_time) |
- 		   max_sleep_time << EDP_PSR_MAX_SLEEP_TIME_SHIFT |
- 		   idle_frames << EDP_PSR_IDLE_FRAME_SHIFT |
- 		   EDP_PSR_ENABLE);
+ 	if (!d)
+ 		return -ENODEV;
+@@ -316,7 +317,8 @@ static int dw2102_earda_i2c_transfer(str
+ 		if (2 + msg[1].len > sizeof(ibuf)) {
+ 			warn("i2c rd: len=%d is too big!\n",
+ 			     msg[1].len);
+-			return -EOPNOTSUPP;
++			ret = -EOPNOTSUPP;
++			goto unlock;
+ 		}
+ 
+ 		obuf[0] = msg[0].addr << 1;
+@@ -340,7 +342,8 @@ static int dw2102_earda_i2c_transfer(str
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[1].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 
+ 			obuf[0] = msg[0].addr << 1;
+@@ -357,7 +360,8 @@ static int dw2102_earda_i2c_transfer(str
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[1].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 
+ 			obuf[0] = msg[0].addr << 1;
+@@ -386,15 +390,17 @@ static int dw2102_earda_i2c_transfer(str
+ 
+ 		break;
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int dw2104_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[], int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
+-	int len, i, j;
++	int len, i, j, ret;
+ 
+ 	if (!d)
+ 		return -ENODEV;
+@@ -430,7 +436,8 @@ static int dw2104_i2c_transfer(struct i2
+ 				if (2 + msg[j].len > sizeof(ibuf)) {
+ 					warn("i2c rd: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				dw210x_op_rw(d->udev, 0xc3,
+@@ -466,7 +473,8 @@ static int dw2104_i2c_transfer(struct i2
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				obuf[0] = msg[j].addr << 1;
+@@ -481,15 +489,18 @@ static int dw2104_i2c_transfer(struct i2
+ 		}
+ 
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int dw3101_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+ 								int num)
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
++	int ret;
+ 	int i;
+ 
+ 	if (!d)
+@@ -506,7 +517,8 @@ static int dw3101_i2c_transfer(struct i2
+ 		if (2 + msg[1].len > sizeof(ibuf)) {
+ 			warn("i2c rd: len=%d is too big!\n",
+ 			     msg[1].len);
+-			return -EOPNOTSUPP;
++			ret = -EOPNOTSUPP;
++			goto unlock;
+ 		}
+ 		obuf[0] = msg[0].addr << 1;
+ 		obuf[1] = msg[0].len;
+@@ -530,7 +542,8 @@ static int dw3101_i2c_transfer(struct i2
+ 			if (2 + msg[0].len > sizeof(obuf)) {
+ 				warn("i2c wr: len=%d is too big!\n",
+ 				     msg[0].len);
+-				return -EOPNOTSUPP;
++				ret = -EOPNOTSUPP;
++				goto unlock;
+ 			}
+ 			obuf[0] = msg[0].addr << 1;
+ 			obuf[1] = msg[0].len;
+@@ -556,9 +569,11 @@ static int dw3101_i2c_transfer(struct i2
+ 				msg[i].flags == 0 ? ">>>" : "<<<");
+ 		debug_dump(msg[i].buf, msg[i].len, deb_xfer);
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int s6x0_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
+@@ -566,7 +581,7 @@ static int s6x0_i2c_transfer(struct i2c_
+ {
+ 	struct dvb_usb_device *d = i2c_get_adapdata(adap);
+ 	struct usb_device *udev;
+-	int len, i, j;
++	int len, i, j, ret;
+ 
+ 	if (!d)
+ 		return -ENODEV;
+@@ -618,7 +633,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (msg[j].len > sizeof(ibuf)) {
+ 					warn("i2c rd: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				dw210x_op_rw(d->udev, 0x91, 0, 0,
+@@ -652,7 +668,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 
+ 				obuf[0] = msg[j + 1].len;
+@@ -671,7 +688,8 @@ static int s6x0_i2c_transfer(struct i2c_
+ 				if (2 + msg[j].len > sizeof(obuf)) {
+ 					warn("i2c wr: len=%d is too big!\n",
+ 					     msg[j].len);
+-					return -EOPNOTSUPP;
++					ret = -EOPNOTSUPP;
++					goto unlock;
+ 				}
+ 				obuf[0] = msg[j].len + 1;
+ 				obuf[1] = (msg[j].addr << 1);
+@@ -685,9 +703,11 @@ static int s6x0_i2c_transfer(struct i2c_
+ 		}
+ 		}
+ 	}
++	ret = num;
+ 
++unlock:
+ 	mutex_unlock(&d->i2c_mutex);
+-	return num;
++	return ret;
+ }
+ 
+ static int su3000_i2c_transfer(struct i2c_adapter *adap, struct i2c_msg msg[],
 
 
