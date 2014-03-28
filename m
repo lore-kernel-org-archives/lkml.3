@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaC1RgC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:36:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51440 "EHLO
+	id S1753543AbaC1Rga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:36:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51420 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaC1RbU (ORCPT
+	with ESMTP id S1753260AbaC1RbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:31:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.13 37/46] KVM: x86: handle invalid root_hpa everywhere
-Date: Fri, 28 Mar 2014 10:32:21 -0700
-Message-Id: <20140328173139.705997067@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 31/46] powerpc/eeh: Handle multiple EEH errors
+Date: Fri, 28 Mar 2014 10:32:15 -0700
+Message-Id: <20140328173138.889267879@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -27,77 +27,318 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcelo Tosatti <mtosatti@redhat.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 37f6a4e237303549c8676dfe1fd1991ceab512eb upstream.
+commit 7e4e7867b1e551b7b8f326da3604c47332972bc6 upstream.
 
-Rom Freiman <rom@stratoscale.com> notes other code paths vulnerable to
-bug fixed by 989c6b34f6a9480e397b.
+For one PCI error relevant OPAL event, we possibly have multiple
+EEH errors for that. For example, multiple frozen PEs detected on
+different PHBs. Unfortunately, we didn't cover the case. The patch
+enumarates the return value from eeh_ops::next_error() and change
+eeh_handle_special_event() and eeh_ops::next_error() to handle all
+existing EEH errors.
 
-Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+As Ben pointed out, we needn't list_for_each_entry_safe() since we
+are not deleting any PHB from the hose_list and the EEH serialized
+lock should be held while purging EEH events. The patch covers those
+suggestions as well.
+
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kvm/mmu.c         |    9 +++++++++
- arch/x86/kvm/paging_tmpl.h |    8 ++++++++
- 2 files changed, 17 insertions(+)
+ arch/powerpc/include/asm/eeh.h            |   10 ++
+ arch/powerpc/kernel/eeh_driver.c          |  150 +++++++++++++++---------------
+ arch/powerpc/platforms/powernv/eeh-ioda.c |   39 ++++---
+ 3 files changed, 112 insertions(+), 87 deletions(-)
 
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2832,6 +2832,9 @@ static bool fast_page_fault(struct kvm_v
- 	bool ret = false;
- 	u64 spte = 0ull;
+--- a/arch/powerpc/include/asm/eeh.h
++++ b/arch/powerpc/include/asm/eeh.h
+@@ -117,6 +117,16 @@ static inline struct pci_dev *eeh_dev_to
+ 	return edev ? edev->pdev : NULL;
+ }
  
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return false;
++/* Return values from eeh_ops::next_error */
++enum {
++	EEH_NEXT_ERR_NONE = 0,
++	EEH_NEXT_ERR_INF,
++	EEH_NEXT_ERR_FROZEN_PE,
++	EEH_NEXT_ERR_FENCED_PHB,
++	EEH_NEXT_ERR_DEAD_PHB,
++	EEH_NEXT_ERR_DEAD_IOC
++};
 +
- 	if (!page_fault_can_be_fast(error_code))
- 		return false;
+ /*
+  * The struct is used to trace the registered EEH operation
+  * callback functions. Actually, those operation callback
+--- a/arch/powerpc/kernel/eeh_driver.c
++++ b/arch/powerpc/kernel/eeh_driver.c
+@@ -626,84 +626,90 @@ static void eeh_handle_special_event(voi
+ {
+ 	struct eeh_pe *pe, *phb_pe;
+ 	struct pci_bus *bus;
+-	struct pci_controller *hose, *tmp;
++	struct pci_controller *hose;
+ 	unsigned long flags;
+-	int rc = 0;
++	int rc;
  
-@@ -3227,6 +3230,9 @@ static u64 walk_shadow_page_get_mmio_spt
- 	struct kvm_shadow_walk_iterator iterator;
- 	u64 spte = 0ull;
+-	/*
+-	 * The return value from next_error() has been classified as follows.
+-	 * It might be good to enumerate them. However, next_error() is only
+-	 * supported by PowerNV platform for now. So it would be fine to use
+-	 * integer directly:
+-	 *
+-	 * 4 - Dead IOC           3 - Dead PHB
+-	 * 2 - Fenced PHB         1 - Frozen PE
+-	 * 0 - No error found
+-	 *
+-	 */
+-	rc = eeh_ops->next_error(&pe);
+-	if (rc <= 0)
+-		return;
+-
+-	switch (rc) {
+-	case 4:
+-		/* Mark all PHBs in dead state */
+-		eeh_serialize_lock(&flags);
+-		list_for_each_entry_safe(hose, tmp,
+-				&hose_list, list_node) {
+-			phb_pe = eeh_phb_pe_get(hose);
+-			if (!phb_pe) continue;
  
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return spte;
+-			eeh_pe_state_mark(phb_pe,
+-				EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
++	do {
++		rc = eeh_ops->next_error(&pe);
 +
- 	walk_shadow_page_lockless_begin(vcpu);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte)
- 		if (!is_shadow_present_pte(spte))
-@@ -4513,6 +4519,9 @@ int kvm_mmu_get_spte_hierarchy(struct kv
- 	u64 spte;
- 	int nr_sptes = 0;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		return nr_sptes;
++		switch (rc) {
++		case EEH_NEXT_ERR_DEAD_IOC:
++			/* Mark all PHBs in dead state */
++			eeh_serialize_lock(&flags);
 +
- 	walk_shadow_page_lockless_begin(vcpu);
- 	for_each_shadow_entry_lockless(vcpu, addr, iterator, spte) {
- 		sptes[iterator.level-1] = spte;
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -569,6 +569,9 @@ static int FNAME(fetch)(struct kvm_vcpu
- 	if (FNAME(gpte_changed)(vcpu, gw, top_level))
- 		goto out_gpte_changed;
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
-+		goto out_gpte_changed;
++			/* Purge all events */
++			eeh_remove_event(NULL);
 +
- 	for (shadow_walk_init(&it, vcpu, addr);
- 	     shadow_walk_okay(&it) && it.level > gw->level;
- 	     shadow_walk_next(&it)) {
-@@ -820,6 +823,11 @@ static void FNAME(invlpg)(struct kvm_vcp
- 	 */
- 	mmu_topup_memory_caches(vcpu);
- 
-+	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa)) {
-+		WARN_ON(1);
-+		return;
-+	}
++			list_for_each_entry(hose, &hose_list, list_node) {
++				phb_pe = eeh_phb_pe_get(hose);
++				if (!phb_pe) continue;
 +
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	for_each_shadow_entry(vcpu, gva, iterator) {
- 		level = iterator.level;
++				eeh_pe_state_mark(phb_pe,
++					EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
++			}
++
++			eeh_serialize_unlock(flags);
++
++			break;
++		case EEH_NEXT_ERR_FROZEN_PE:
++		case EEH_NEXT_ERR_FENCED_PHB:
++		case EEH_NEXT_ERR_DEAD_PHB:
++			/* Mark the PE in fenced state */
++			eeh_serialize_lock(&flags);
++
++			/* Purge all events of the PHB */
++			eeh_remove_event(pe);
++
++			if (rc == EEH_NEXT_ERR_DEAD_PHB)
++				eeh_pe_state_mark(pe,
++					EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
++			else
++				eeh_pe_state_mark(pe,
++					EEH_PE_ISOLATED | EEH_PE_RECOVERING);
++
++			eeh_serialize_unlock(flags);
++
++			break;
++		case EEH_NEXT_ERR_NONE:
++			return;
++		default:
++			pr_warn("%s: Invalid value %d from next_error()\n",
++				__func__, rc);
++			return;
+ 		}
+-		eeh_serialize_unlock(flags);
+ 
+-		/* Purge all events */
+-		eeh_remove_event(NULL);
+-		break;
+-	case 3:
+-	case 2:
+-	case 1:
+-		/* Mark the PE in fenced state */
+-		eeh_serialize_lock(&flags);
+-		if (rc == 3)
+-			eeh_pe_state_mark(pe,
+-				EEH_PE_ISOLATED | EEH_PE_PHB_DEAD);
+-		else
+-			eeh_pe_state_mark(pe,
+-				EEH_PE_ISOLATED | EEH_PE_RECOVERING);
+-		eeh_serialize_unlock(flags);
+-
+-		/* Purge all events of the PHB */
+-		eeh_remove_event(pe);
+-		break;
+-	default:
+-		pr_err("%s: Invalid value %d from next_error()\n",
+-		       __func__, rc);
+-		return;
+-	}
+-
+-	/*
+-	 * For fenced PHB and frozen PE, it's handled as normal
+-	 * event. We have to remove the affected PHBs for dead
+-	 * PHB and IOC
+-	 */
+-	if (rc == 2 || rc == 1)
+-		eeh_handle_normal_event(pe);
+-	else {
+-		list_for_each_entry_safe(hose, tmp,
+-			&hose_list, list_node) {
+-			phb_pe = eeh_phb_pe_get(hose);
+-			if (!phb_pe || !(phb_pe->state & EEH_PE_PHB_DEAD))
+-				continue;
+-
+-			bus = eeh_pe_bus_get(phb_pe);
+-			/* Notify all devices that they're about to go down. */
+-			eeh_pe_dev_traverse(pe, eeh_report_failure, NULL);
+-			pcibios_remove_pci_devices(bus);
++		/*
++		 * For fenced PHB and frozen PE, it's handled as normal
++		 * event. We have to remove the affected PHBs for dead
++		 * PHB and IOC
++		 */
++		if (rc == EEH_NEXT_ERR_FROZEN_PE ||
++		    rc == EEH_NEXT_ERR_FENCED_PHB) {
++			eeh_handle_normal_event(pe);
++		} else {
++			list_for_each_entry(hose, &hose_list, list_node) {
++				phb_pe = eeh_phb_pe_get(hose);
++				if (!phb_pe ||
++				    !(phb_pe->state & EEH_PE_PHB_DEAD))
++					continue;
++
++				/* Notify all devices to be down */
++				bus = eeh_pe_bus_get(phb_pe);
++				eeh_pe_dev_traverse(pe,
++					eeh_report_failure, NULL);
++				pcibios_remove_pci_devices(bus);
++			}
+ 		}
+-	}
++
++		/*
++		 * If we have detected dead IOC, we needn't proceed
++		 * any more since all PHBs would have been removed
++		 */
++		if (rc == EEH_NEXT_ERR_DEAD_IOC)
++			break;
++	} while (rc != EEH_NEXT_ERR_NONE);
+ }
+ 
+ /**
+--- a/arch/powerpc/platforms/powernv/eeh-ioda.c
++++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
+@@ -718,12 +718,12 @@ static int ioda_eeh_get_pe(struct pci_co
+  */
+ static int ioda_eeh_next_error(struct eeh_pe **pe)
+ {
+-	struct pci_controller *hose, *tmp;
++	struct pci_controller *hose;
+ 	struct pnv_phb *phb;
+ 	u64 frozen_pe_no;
+ 	u16 err_type, severity;
+ 	long rc;
+-	int ret = 1;
++	int ret = EEH_NEXT_ERR_NONE;
+ 
+ 	/*
+ 	 * While running here, it's safe to purge the event queue.
+@@ -733,7 +733,7 @@ static int ioda_eeh_next_error(struct ee
+ 	eeh_remove_event(NULL);
+ 	opal_notifier_update_evt(OPAL_EVENT_PCI_ERROR, 0x0ul);
+ 
+-	list_for_each_entry_safe(hose, tmp, &hose_list, list_node) {
++	list_for_each_entry(hose, &hose_list, list_node) {
+ 		/*
+ 		 * If the subordinate PCI buses of the PHB has been
+ 		 * removed, we needn't take care of it any more.
+@@ -772,19 +772,19 @@ static int ioda_eeh_next_error(struct ee
+ 		switch (err_type) {
+ 		case OPAL_EEH_IOC_ERROR:
+ 			if (severity == OPAL_EEH_SEV_IOC_DEAD) {
+-				list_for_each_entry_safe(hose, tmp,
+-						&hose_list, list_node) {
++				list_for_each_entry(hose, &hose_list,
++						    list_node) {
+ 					phb = hose->private_data;
+ 					phb->eeh_state |= PNV_EEH_STATE_REMOVED;
+ 				}
+ 
+ 				pr_err("EEH: dead IOC detected\n");
+-				ret = 4;
+-				goto out;
++				ret = EEH_NEXT_ERR_DEAD_IOC;
+ 			} else if (severity == OPAL_EEH_SEV_INF) {
+ 				pr_info("EEH: IOC informative error "
+ 					"detected\n");
+ 				ioda_eeh_hub_diag(hose);
++				ret = EEH_NEXT_ERR_NONE;
+ 			}
+ 
+ 			break;
+@@ -796,21 +796,20 @@ static int ioda_eeh_next_error(struct ee
+ 				pr_err("EEH: dead PHB#%x detected\n",
+ 					hose->global_number);
+ 				phb->eeh_state |= PNV_EEH_STATE_REMOVED;
+-				ret = 3;
+-				goto out;
++				ret = EEH_NEXT_ERR_DEAD_PHB;
+ 			} else if (severity == OPAL_EEH_SEV_PHB_FENCED) {
+ 				if (ioda_eeh_get_phb_pe(hose, pe))
+ 					break;
+ 
+ 				pr_err("EEH: fenced PHB#%x detected\n",
+ 					hose->global_number);
+-				ret = 2;
+-				goto out;
++				ret = EEH_NEXT_ERR_FENCED_PHB;
+ 			} else if (severity == OPAL_EEH_SEV_INF) {
+ 				pr_info("EEH: PHB#%x informative error "
+ 					"detected\n",
+ 					hose->global_number);
+ 				ioda_eeh_phb_diag(hose);
++				ret = EEH_NEXT_ERR_NONE;
+ 			}
+ 
+ 			break;
+@@ -820,13 +819,23 @@ static int ioda_eeh_next_error(struct ee
+ 
+ 			pr_err("EEH: Frozen PE#%x on PHB#%x detected\n",
+ 				(*pe)->addr, (*pe)->phb->global_number);
+-			ret = 1;
+-			goto out;
++			ret = EEH_NEXT_ERR_FROZEN_PE;
++			break;
++		default:
++			pr_warn("%s: Unexpected error type %d\n",
++				__func__, err_type);
+ 		}
++
++		/*
++		 * If we have no errors on the specific PHB or only
++		 * informative error there, we continue poking it.
++		 * Otherwise, we need actions to be taken by upper
++		 * layer.
++		 */
++		if (ret > EEH_NEXT_ERR_INF)
++			break;
+ 	}
+ 
+-	ret = 0;
+-out:
+ 	return ret;
+ }
+ 
 
 
