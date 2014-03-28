@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753390AbaC1Rb3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:31:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51483 "EHLO
+	id S1753405AbaC1Rbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:31:49 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753337AbaC1Rb0 (ORCPT
+	with ESMTP id S1753230AbaC1Rb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:26 -0400
+	Fri, 28 Mar 2014 13:31:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ilya Dryomov <ilya.dryomov@inktank.com>, Sage Weil <sage@inktank.com>
-Subject: [PATCH 3.13 44/46] libceph: rename ceph_msg::front_max to front_alloc_len
-Date: Fri, 28 Mar 2014 10:32:28 -0700
-Message-Id: <20140328173140.664166392@linuxfoundation.org>
+        Jason Gerecke <killertofu@gmail.com>,
+        Chris Bagwell <chris@cnpbagwell.com>, Ping Cheng <pingc@wacom.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.13 40/46] Input: wacom - add support for three new Intuos devices
+Date: Fri, 28 Mar 2014 10:32:24 -0700
+Message-Id: <20140328173140.116349422@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,93 +29,211 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ilya Dryomov <ilya.dryomov@inktank.com>
+From: Ping Cheng <pinglinux@gmail.com>
 
-commit 3cea4c3071d4e55e9d7356efe9d0ebf92f0c2204 upstream.
+commit b5fd2a3e92ca5c8c1f3c20d31ac5daed3ec4d604 upstream.
 
-Rename front_max field of struct ceph_msg to front_alloc_len to make
-its purpose more clear.
+Two tablets in this series support both pen and touch. One (Intuos S)
+only supports pen. This patch also updates the driver to process wireless
+devices that do not support touch interface.
 
-Signed-off-by: Ilya Dryomov <ilya.dryomov@inktank.com>
-Reviewed-by: Sage Weil <sage@inktank.com>
+Tested-by: Jason Gerecke <killertofu@gmail.com>
+Reviewed-by: Chris Bagwell <chris@cnpbagwell.com>
+Signed-off-by: Ping Cheng <pingc@wacom.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ceph/messenger.h |    2 +-
- net/ceph/messenger.c           |    6 +++---
- net/ceph/mon_client.c          |    8 ++++----
- 3 files changed, 8 insertions(+), 8 deletions(-)
+ drivers/input/tablet/wacom_sys.c |    6 +--
+ drivers/input/tablet/wacom_wac.c |   61 +++++++++++++++++++++++++++++----------
+ drivers/input/tablet/wacom_wac.h |    2 +
+ 3 files changed, 51 insertions(+), 18 deletions(-)
 
---- a/include/linux/ceph/messenger.h
-+++ b/include/linux/ceph/messenger.h
-@@ -157,7 +157,7 @@ struct ceph_msg {
- 	bool front_is_vmalloc;
- 	bool more_to_follow;
- 	bool needs_out_seq;
--	int front_max;
-+	int front_alloc_len;
- 	unsigned long ack_stamp;        /* tx: when we were acked */
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -1202,7 +1202,8 @@ static void wacom_wireless_work(struct w
+ 			goto fail;
  
- 	struct ceph_msgpool *pool;
---- a/net/ceph/messenger.c
-+++ b/net/ceph/messenger.c
-@@ -3126,7 +3126,7 @@ struct ceph_msg *ceph_msg_new(int type,
- 	INIT_LIST_HEAD(&m->data);
+ 		/* Touch interface */
+-		if (wacom_wac1->features.touch_max) {
++		if (wacom_wac1->features.touch_max ||
++		    wacom_wac1->features.type == INTUOSHT) {
+ 			wacom_wac2->features =
+ 				*((struct wacom_features *)id->driver_info);
+ 			wacom_wac2->features.pktlen = WACOM_PKGLEN_BBTOUCH3;
+@@ -1325,7 +1326,7 @@ static int wacom_probe(struct usb_interf
+ 	 * HID descriptor. If this is the touch interface (wMaxPacketSize
+ 	 * of WACOM_PKGLEN_BBTOUCH3), override the table values.
+ 	 */
+-	if (features->type >= INTUOS5S && features->type <= INTUOSPL) {
++	if (features->type >= INTUOS5S && features->type <= INTUOSHT) {
+ 		if (endpoint->wMaxPacketSize == WACOM_PKGLEN_BBTOUCH3) {
+ 			features->device_type = BTN_TOOL_FINGER;
+ 			features->pktlen = WACOM_PKGLEN_BBTOUCH3;
+@@ -1395,7 +1396,6 @@ static int wacom_probe(struct usb_interf
+ 			goto fail5;
+ 		}
+ 	}
+-
+ 	return 0;
  
- 	/* front */
--	m->front_max = front_len;
-+	m->front_alloc_len = front_len;
- 	if (front_len) {
- 		if (front_len > PAGE_CACHE_SIZE) {
- 			m->front.iov_base = __vmalloc(front_len, flags,
-@@ -3301,8 +3301,8 @@ EXPORT_SYMBOL(ceph_msg_last_put);
- 
- void ceph_msg_dump(struct ceph_msg *msg)
+  fail5: wacom_destroy_leds(wacom);
+--- a/drivers/input/tablet/wacom_wac.c
++++ b/drivers/input/tablet/wacom_wac.c
+@@ -1176,10 +1176,16 @@ static void wacom_bpt3_touch_msg(struct
+ static void wacom_bpt3_button_msg(struct wacom_wac *wacom, unsigned char *data)
  {
--	pr_debug("msg_dump %p (front_max %d length %zd)\n", msg,
--		 msg->front_max, msg->data_length);
-+	pr_debug("msg_dump %p (front_alloc_len %d length %zd)\n", msg,
-+		 msg->front_alloc_len, msg->data_length);
- 	print_hex_dump(KERN_DEBUG, "header: ",
- 		       DUMP_PREFIX_OFFSET, 16, 1,
- 		       &msg->hdr, sizeof(msg->hdr), true);
---- a/net/ceph/mon_client.c
-+++ b/net/ceph/mon_client.c
-@@ -152,7 +152,7 @@ static int __open_session(struct ceph_mo
- 		/* initiatiate authentication handshake */
- 		ret = ceph_auth_build_hello(monc->auth,
- 					    monc->m_auth->front.iov_base,
--					    monc->m_auth->front_max);
-+					    monc->m_auth->front_alloc_len);
- 		__send_prepared_auth_request(monc, ret);
- 	} else {
- 		dout("open_session mon%d already open\n", monc->cur_mon);
-@@ -196,7 +196,7 @@ static void __send_subscribe(struct ceph
- 		int num;
+ 	struct input_dev *input = wacom->input;
++	struct wacom_features *features = &wacom->features;
  
- 		p = msg->front.iov_base;
--		end = p + msg->front_max;
-+		end = p + msg->front_alloc_len;
+-	input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
++	if (features->type == INTUOSHT) {
++		input_report_key(input, BTN_LEFT, (data[1] & 0x02) != 0);
++		input_report_key(input, BTN_BACK, (data[1] & 0x08) != 0);
++	} else {
++		input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
++		input_report_key(input, BTN_LEFT, (data[1] & 0x08) != 0);
++	}
+ 	input_report_key(input, BTN_FORWARD, (data[1] & 0x04) != 0);
+-	input_report_key(input, BTN_BACK, (data[1] & 0x02) != 0);
+ 	input_report_key(input, BTN_RIGHT, (data[1] & 0x01) != 0);
+ }
  
- 		num = 1 + !!monc->want_next_osdmap + !!monc->want_mdsmap;
- 		ceph_encode_32(&p, num);
-@@ -897,7 +897,7 @@ static void handle_auth_reply(struct cep
- 	ret = ceph_handle_auth_reply(monc->auth, msg->front.iov_base,
- 				     msg->front.iov_len,
- 				     monc->m_auth->front.iov_base,
--				     monc->m_auth->front_max);
-+				     monc->m_auth->front_alloc_len);
- 	if (ret < 0) {
- 		monc->client->auth_err = ret;
- 		wake_up_all(&monc->client->auth_wq);
-@@ -939,7 +939,7 @@ static int __validate_auth(struct ceph_m
+@@ -1217,7 +1223,7 @@ static int wacom_bpt_pen(struct wacom_wa
+ 	unsigned char *data = wacom->data;
+ 	int prox = 0, x = 0, y = 0, p = 0, d = 0, pen = 0, btn1 = 0, btn2 = 0;
+ 
+-	if (data[0] != 0x02)
++	if (data[0] != WACOM_REPORT_PENABLED)
+ 	    return 0;
+ 
+ 	prox = (data[1] & 0x20) == 0x20;
+@@ -1297,7 +1303,7 @@ static int wacom_wireless_irq(struct wac
+ 	unsigned char *data = wacom->data;
+ 	int connected;
+ 
+-	if (len != WACOM_PKGLEN_WIRELESS || data[0] != 0x80)
++	if (len != WACOM_PKGLEN_WIRELESS || data[0] != WACOM_REPORT_WL)
  		return 0;
  
- 	ret = ceph_build_auth(monc->auth, monc->m_auth->front.iov_base,
--			      monc->m_auth->front_max);
-+			      monc->m_auth->front_alloc_len);
- 	if (ret <= 0)
- 		return ret; /* either an error, or no need to authenticate */
- 	__send_prepared_auth_request(monc, ret);
+ 	connected = data[1] & 0x01;
+@@ -1391,6 +1397,7 @@ void wacom_wac_irq(struct wacom_wac *wac
+ 		break;
+ 
+ 	case BAMBOO_PT:
++	case INTUOSHT:
+ 		sync = wacom_bpt_irq(wacom_wac, len);
+ 		break;
+ 
+@@ -1459,7 +1466,7 @@ void wacom_setup_device_quirks(struct wa
+ 
+ 	/* these device have multiple inputs */
+ 	if (features->type >= WIRELESS ||
+-	    (features->type >= INTUOS5S && features->type <= INTUOSPL) ||
++	    (features->type >= INTUOS5S && features->type <= INTUOSHT) ||
+ 	    (features->oVid && features->oPid))
+ 		features->quirks |= WACOM_QUIRK_MULTI_INPUT;
+ 
+@@ -1771,33 +1778,43 @@ int wacom_setup_input_capabilities(struc
+ 		__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
+ 		break;
+ 
++	case INTUOSHT:
+ 	case BAMBOO_PT:
+ 		__clear_bit(ABS_MISC, input_dev->absbit);
+ 
+-		__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
+-
+ 		if (features->device_type == BTN_TOOL_FINGER) {
+-			unsigned int flags = INPUT_MT_POINTER;
+ 
+ 			__set_bit(BTN_LEFT, input_dev->keybit);
+ 			__set_bit(BTN_FORWARD, input_dev->keybit);
+ 			__set_bit(BTN_BACK, input_dev->keybit);
+ 			__set_bit(BTN_RIGHT, input_dev->keybit);
+ 
+-			if (features->pktlen == WACOM_PKGLEN_BBTOUCH3) {
+-				input_set_abs_params(input_dev,
++			if (features->touch_max) {
++				/* touch interface */
++				unsigned int flags = INPUT_MT_POINTER;
++
++				__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
++				if (features->pktlen == WACOM_PKGLEN_BBTOUCH3) {
++					input_set_abs_params(input_dev,
+ 						     ABS_MT_TOUCH_MAJOR,
+ 						     0, features->x_max, 0, 0);
+-				input_set_abs_params(input_dev,
++					input_set_abs_params(input_dev,
+ 						     ABS_MT_TOUCH_MINOR,
+ 						     0, features->y_max, 0, 0);
++				} else {
++					__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
++					__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
++					flags = 0;
++				}
++				input_mt_init_slots(input_dev, features->touch_max, flags);
+ 			} else {
+-				__set_bit(BTN_TOOL_FINGER, input_dev->keybit);
+-				__set_bit(BTN_TOOL_DOUBLETAP, input_dev->keybit);
+-				flags = 0;
++				/* buttons/keys only interface */
++				__clear_bit(ABS_X, input_dev->absbit);
++				__clear_bit(ABS_Y, input_dev->absbit);
++				__clear_bit(BTN_TOUCH, input_dev->keybit);
+ 			}
+-			input_mt_init_slots(input_dev, features->touch_max, flags);
+ 		} else if (features->device_type == BTN_TOOL_PEN) {
++			__set_bit(INPUT_PROP_POINTER, input_dev->propbit);
+ 			__set_bit(BTN_TOOL_RUBBER, input_dev->keybit);
+ 			__set_bit(BTN_TOOL_PEN, input_dev->keybit);
+ 			__set_bit(BTN_STYLUS, input_dev->keybit);
+@@ -2200,6 +2217,17 @@ static const struct wacom_features wacom
+ static const struct wacom_features wacom_features_0x301 =
+ 	{ "Wacom Bamboo One M",    WACOM_PKGLEN_BBPEN,    21648, 13530, 1023,
+ 	  31, BAMBOO_PT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
++static const struct wacom_features wacom_features_0x302 =
++	{ "Wacom Intuos PT S",     WACOM_PKGLEN_BBPEN,    15200,  9500, 1023,
++	  31, INTUOSHT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
++	  .touch_max = 16 };
++static const struct wacom_features wacom_features_0x303 =
++	{ "Wacom Intuos PT M",     WACOM_PKGLEN_BBPEN,    21600, 13500, 1023,
++	  31, INTUOSHT, WACOM_INTUOS_RES, WACOM_INTUOS_RES,
++	  .touch_max = 16 };
++static const struct wacom_features wacom_features_0x30E =
++	{ "Wacom Intuos S",        WACOM_PKGLEN_BBPEN,    15200,  9500, 1023,
++	  31, INTUOSHT, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
+ static const struct wacom_features wacom_features_0x6004 =
+ 	{ "ISD-V4",               WACOM_PKGLEN_GRAPHIRE,  12800,  8000,  255,
+ 	  0, TABLETPC, WACOM_INTUOS_RES, WACOM_INTUOS_RES };
+@@ -2337,6 +2365,9 @@ const struct usb_device_id wacom_ids[] =
+ 	{ USB_DEVICE_WACOM(0x10F) },
+ 	{ USB_DEVICE_WACOM(0x300) },
+ 	{ USB_DEVICE_WACOM(0x301) },
++	{ USB_DEVICE_DETAILED(0x302, USB_CLASS_HID, 0, 0) },
++	{ USB_DEVICE_DETAILED(0x303, USB_CLASS_HID, 0, 0) },
++	{ USB_DEVICE_DETAILED(0x30E, USB_CLASS_HID, 0, 0) },
+ 	{ USB_DEVICE_WACOM(0x304) },
+ 	{ USB_DEVICE_DETAILED(0x314, USB_CLASS_HID, 0, 0) },
+ 	{ USB_DEVICE_DETAILED(0x315, USB_CLASS_HID, 0, 0) },
+--- a/drivers/input/tablet/wacom_wac.h
++++ b/drivers/input/tablet/wacom_wac.h
+@@ -54,6 +54,7 @@
+ #define WACOM_REPORT_TPCST		16
+ #define WACOM_REPORT_TPC1FGE		18
+ #define WACOM_REPORT_24HDT		1
++#define WACOM_REPORT_WL			128
+ 
+ /* device quirks */
+ #define WACOM_QUIRK_MULTI_INPUT		0x0001
+@@ -81,6 +82,7 @@ enum {
+ 	INTUOSPS,
+ 	INTUOSPM,
+ 	INTUOSPL,
++	INTUOSHT,
+ 	WACOM_21UX2,
+ 	WACOM_22HD,
+ 	DTK,
 
 
