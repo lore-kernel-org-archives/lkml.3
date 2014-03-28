@@ -1,174 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751185AbaC1GeE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 02:34:04 -0400
-Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:34576
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751006AbaC1GeC (ORCPT
+	id S1751208AbaC1Gp3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 02:45:29 -0400
+Received: from mx0a-0016f401.pphosted.com ([67.231.148.174]:55328 "EHLO
+	mx0a-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751024AbaC1Gp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 02:34:02 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: -5
-X-BigFish: VS-5(zzbb2dI98dI9371I936eI1432Id799hzz1f42h2148h208ch1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6hzz1de098h8275bh1de097hz2dh2a8h839h93fhd25he5bhf0ah1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h1765h18e1h190ch1946h19b4h19c3h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1f5fh1fe8h1ff5h209eh22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh1155h)
-Message-ID: <533517C1.8080208@freescale.com>
-Date: Fri, 28 Mar 2014 14:33:37 +0800
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
+	Fri, 28 Mar 2014 02:45:28 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: John Stultz <john.stultz@linaro.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 27 Mar 2014 23:45:23 -0700
+Subject: RE: [PATCH] printk: add sleep time into timestamp
+Thread-Topic: [PATCH] printk: add sleep time into timestamp
+Thread-Index: Ac9KNFc3bsWE1K8gQ2yVaN+9aqDXyQAD8u8A
+Message-ID: <175CCF5F49938B4D99B2E3EF7F558EBE550559A27C@SC-VEXCH4.marvell.com>
+References: <1395908241-6392-1-git-send-email-zhangwm@marvell.com>
+ <CANcMJZCG7CT_rOShK7jGo3xVZ0MiRD-jUJE=FCTW68tv88g-Bw@mail.gmail.com>
+In-Reply-To: <CANcMJZCG7CT_rOShK7jGo3xVZ0MiRD-jUJE=FCTW68tv88g-Bw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: Vinod Koul <vkoul@infradead.org>
-CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <scottwood@freescale.com>,
-        <LeoLi@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] DMA: Freescale: use spin_lock_bh instead of spin_lock_irqsave
-References: <1389851246-8564-1-git-send-email-hongbo.zhang@freescale.com>	 <1389851246-8564-7-git-send-email-hongbo.zhang@freescale.com> <1395817294.6569.2.camel@vkoul-udesk3>
-In-Reply-To: <1395817294.6569.2.camel@vkoul-udesk3>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.87,1.0.14,0.0.0000
+ definitions=2014-03-28_03:2014-03-27,2014-03-28,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1403270194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s2S6k9cN010266
 
+John,
+ 
+> -----Original Message-----
+> From: johnstul.lkml@gmail.com [mailto:johnstul.lkml@gmail.com] On Behalf
+> Of John Stultz
+> Sent: 2014Äê3ÔÂ28ÈÕ 11:18
+> To: Neil Zhang
+> Cc: Andrew Morton; Linux Kernel Mailing List
+> Subject: Re: [PATCH] printk: add sleep time into timestamp
+> 
+> On Thu, Mar 27, 2014 at 1:17 AM, Neil Zhang <zhangwm@marvell.com>
+> wrote:
+> > Add sleep time into timestamp to reflect the actual time since
+> > sched_clock will be stopped during suspend.
+> 
+> So why is this change necessary?
+> 
+> Further, since the sleep time may be updated a bit late in the resume cycle (in
+> many cases we cannot access the RTC until irqs are enabled back on), you may
+> see messages that show pre-suspend times when really they occur after we
+> resume (but before the sleep time is incremented).
+> 
+Thanks for the comments.
+Yes, the sleep time will be update in RTC and the print in the resume procedure still w/o the sleep time.
+But I think the messages are not too much at this stage. 
 
-On 03/26/2014 03:01 PM, Vinod Koul wrote:
-> On Thu, 2014-01-16 at 13:47 +0800, hongbo.zhang@freescale.com wrote:
->> From: Hongbo Zhang <hongbo.zhang@freescale.com>
->>
->> The usage of spin_lock_irqsave() is a stronger locking mechanism than is
->> required throughout the driver. The minimum locking required should be used
->> instead. Interrupts will be turned off and context will be saved, it is
->> unnecessary to use irqsave.
->>
->> This patch changes all instances of spin_lock_irqsave() to spin_lock_bh(). All
->> manipulation of protected fields is done using tasklet context or weaker, which
->> makes spin_lock_bh() the correct choice.
->>
->> Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
->> Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
->> ---
->>   drivers/dma/fsldma.c |   25 ++++++++++---------------
->>   1 file changed, 10 insertions(+), 15 deletions(-)
->>
->> diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
->> index bbace54..437794e 100644
->> --- a/drivers/dma/fsldma.c
->> +++ b/drivers/dma/fsldma.c
->> @@ -396,10 +396,9 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
->>   	struct fsldma_chan *chan = to_fsl_chan(tx->chan);
->>   	struct fsl_desc_sw *desc = tx_to_fsl_desc(tx);
->>   	struct fsl_desc_sw *child;
->> -	unsigned long flags;
->>   	dma_cookie_t cookie = -EINVAL;
->>   
->> -	spin_lock_irqsave(&chan->desc_lock, flags);
->> +	spin_lock_bh(&chan->desc_lock);
->>   
->>   	/*
->>   	 * assign cookies to all of the software descriptors
->> @@ -412,7 +411,7 @@ static dma_cookie_t fsl_dma_tx_submit(struct dma_async_tx_descriptor *tx)
->>   	/* put this transaction onto the tail of the pending queue */
->>   	append_ld_queue(chan, desc);
->>   
->> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
->> +	spin_unlock_bh(&chan->desc_lock);
->>   
->>   	return cookie;
->>   }
->> @@ -731,15 +730,14 @@ static void fsldma_free_desc_list_reverse(struct fsldma_chan *chan,
->>   static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
->>   {
->>   	struct fsldma_chan *chan = to_fsl_chan(dchan);
->> -	unsigned long flags;
->>   
->>   	chan_dbg(chan, "free all channel resources\n");
->> -	spin_lock_irqsave(&chan->desc_lock, flags);
->> +	spin_lock_bh(&chan->desc_lock);
->>   	fsldma_cleanup_descriptors(chan);
->>   	fsldma_free_desc_list(chan, &chan->ld_pending);
->>   	fsldma_free_desc_list(chan, &chan->ld_running);
->>   	fsldma_free_desc_list(chan, &chan->ld_completed);
->> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
->> +	spin_unlock_bh(&chan->desc_lock);
->>   
->>   	dma_pool_destroy(chan->desc_pool);
->>   	chan->desc_pool = NULL;
->> @@ -958,7 +956,6 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->>   {
->>   	struct dma_slave_config *config;
->>   	struct fsldma_chan *chan;
->> -	unsigned long flags;
->>   	int size;
->>   
->>   	if (!dchan)
->> @@ -968,7 +965,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->>   
->>   	switch (cmd) {
->>   	case DMA_TERMINATE_ALL:
->> -		spin_lock_irqsave(&chan->desc_lock, flags);
->> +		spin_lock_bh(&chan->desc_lock);
->>   
->>   		/* Halt the DMA engine */
->>   		dma_halt(chan);
->> @@ -979,7 +976,7 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->>   		fsldma_free_desc_list(chan, &chan->ld_completed);
->>   		chan->idle = true;
->>   
->> -		spin_unlock_irqrestore(&chan->desc_lock, flags);
->> +		spin_unlock_bh(&chan->desc_lock);
->>   		return 0;
->>   
->>   	case DMA_SLAVE_CONFIG:
->> @@ -1021,11 +1018,10 @@ static int fsl_dma_device_control(struct dma_chan *dchan,
->>   static void fsl_dma_memcpy_issue_pending(struct dma_chan *dchan)
->>   {
->>   	struct fsldma_chan *chan = to_fsl_chan(dchan);
->> -	unsigned long flags;
->>   
->> -	spin_lock_irqsave(&chan->desc_lock, flags);
->> +	spin_lock_bh(&chan->desc_lock);
->>   	fsl_chan_xfer_ld_queue(chan);
->> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
->> +	spin_unlock_bh(&chan->desc_lock);
->>   }
->>   
->>   /**
->> @@ -1124,11 +1120,10 @@ static irqreturn_t fsldma_chan_irq(int irq, void *data)
->>   static void dma_do_tasklet(unsigned long data)
->>   {
->>   	struct fsldma_chan *chan = (struct fsldma_chan *)data;
->> -	unsigned long flags;
->>   
->>   	chan_dbg(chan, "tasklet entry\n");
->>   
->> -	spin_lock_irqsave(&chan->desc_lock, flags);
->> +	spin_lock_bh(&chan->desc_lock);
-> okay here is the problem :(
->
-> You moved to _bh variant. So if you grab the lock in rest of the code
-> and irq gets triggered then here we will be spinning to grab the lock.
-> So effectively you made right locking solution into deadlock situation!
+> More comments below....
+> 
+> > This patch depends on the following patch.
+> > timekeeping: check params before use them
+> >
+> > Signed-off-by: Neil Zhang <zhangwm@marvell.com>
+> > ---
+> >  kernel/printk/printk.c |   15 +++++++++++++--
+> >  1 file changed, 13 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c index
+> > 4dae9cb..2dc6145 100644
+> > --- a/kernel/printk/printk.c
+> > +++ b/kernel/printk/printk.c
+> > @@ -250,6 +250,17 @@ static char __log_buf[__LOG_BUF_LEN]
+> > __aligned(LOG_ALIGN);  static char *log_buf = __log_buf;  static u32
+> > log_buf_len = __LOG_BUF_LEN;
+> >
+> > +static u64 print_clock(void)
+> > +{
+> > +       struct timespec ts;
+> > +       u64 ts_nsec = local_clock();
+> > +
+> > +       get_xtime_and_monotonic_and_sleep_offset(NULL, NULL, &ts);
+> 
+> So this will cause deadlocks anytime we print from the timekeeping core, since
+> we may hold a write on the timekeeper lock, and this patch makes every printk
+> try to take a read-lock on the timekeeper lock.
+> 
+Sorry, I don't quite understand why it will cause deadlock.
+Yes, it will take a read-lock, but it should not be expensive.
 
-If the rest code grabs lock by spin_lock_bh(), and if irq raised, the 
-tasklet could not be executed because it has been disabled by the _bh 
-variant function.
-Right?
+> I'd suggest you use monotonic_to_bootbased() here instead of hacking up this
+> hrtimer specific interface, but even so, right now that call doesn't take the
+> timekeeper lock, but probably should, so its not a good long term plan.
 
->>   
->>   	/* the hardware is now idle and ready for more */
->>   	chan->idle = true;
->> @@ -1136,7 +1131,7 @@ static void dma_do_tasklet(unsigned long data)
->>   	/* Run all cleanup for descriptors which have been completed */
->>   	fsldma_cleanup_descriptors(chan);
->>   
->> -	spin_unlock_irqrestore(&chan->desc_lock, flags);
->> +	spin_unlock_bh(&chan->desc_lock);
->>   
->>   	chan_dbg(chan, "tasklet exit\n");
->>   }
->
+It maybe doable, or whether we can add another function to only return sleep time.
+Then no read-lock is needed.
 
+> 
+> I'm still not convinced this change needs to be done, but a  better solution
+> here would be to add infrastructure that when the sleep time is updated we
+> update an offset that the is adding to the local_clock() however, you probably
+> want to be careful since you don't want sleep time in normal
+> local_clock/sched_clock calls since it would mess up scheduling.
+> 
+Sometimes we need to compare the kernel log with user space log, 
+so it would be convenient to add the sleep time into kernel timestamp.
 
+> thanks
+> -john
 
+Best Regards,
+Neil Zhang
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
