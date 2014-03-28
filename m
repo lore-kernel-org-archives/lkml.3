@@ -1,47 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751313AbaC1KME (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 06:12:04 -0400
-Received: from baptiste.telenet-ops.be ([195.130.132.51]:35109 "EHLO
-	baptiste.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750951AbaC1KMD (ORCPT
+	id S1751774AbaC1KNi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 06:13:38 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:37443 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751320AbaC1KNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 06:12:03 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>,
-        Karsten Keil <isdn@linux-pingi.de>
-Subject: [PATCH trivial 2/3] isdn: Grammar /is uses/ is used/
-Date: Fri, 28 Mar 2014 11:11:38 +0100
-Message-Id: <1396001499-17638-2-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396001499-17638-1-git-send-email-geert@linux-m68k.org>
-References: <1396001499-17638-1-git-send-email-geert@linux-m68k.org>
+	Fri, 28 Mar 2014 06:13:37 -0400
+Date: Fri, 28 Mar 2014 10:13:15 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Li Zefan <lizefan@huawei.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Subject: Re: [PATCH v3 2/4] kmemleak: allow freeing internal objects after
+ kmemleak was disabled
+Message-ID: <20140328101315.GB21330@arm.com>
+References: <5335384A.2000000@huawei.com>
+ <5335387E.2050005@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5335387E.2050005@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert+renesas@glider.be>
+More nitpicks ;)
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Karsten Keil <isdn@linux-pingi.de>
----
- drivers/isdn/i4l/isdn_net.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+On Fri, Mar 28, 2014 at 08:53:18AM +0000, Li Zefan wrote:
+> diff --git a/Documentation/kmemleak.txt b/Documentation/kmemleak.txt
+> index 6dc8013..a7e6a06 100644
+> --- a/Documentation/kmemleak.txt
+> +++ b/Documentation/kmemleak.txt
+> @@ -51,7 +51,8 @@ Memory scanning parameters can be modified at run-time by writing to the
+>  		  (default 600, 0 to stop the automatic scanning)
+>    scan		- trigger a memory scan
+>    clear		- clear list of current memory leak suspects, done by
+> -		  marking all current reported unreferenced objects grey
+> +		  marking all current reported unreferenced objects grey.
+> +		  Or free all kmemleak objects if kmemleak has been disabled.
 
-diff --git a/drivers/isdn/i4l/isdn_net.c b/drivers/isdn/i4l/isdn_net.c
-index d9aebbc510cc..7b2b40477185 100644
---- a/drivers/isdn/i4l/isdn_net.c
-+++ b/drivers/isdn/i4l/isdn_net.c
-@@ -58,7 +58,7 @@
-  * About SOFTNET:
-  * Most of the changes were pretty obvious and basically done by HE already.
-  *
-- * One problem of the isdn net device code is that is uses struct net_device
-+ * One problem of the isdn net device code is that it uses struct net_device
-  * for masters and slaves. However, only master interface are registered to
-  * the network layer, and therefore, it only makes sense to call netif_*
-  * functions on them.
--- 
-1.7.9.5
+Comma after "unreferenced objects grey" and lower-case "or free ..."
 
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index be7ecc0..6631df8 100644
+[...]
+> @@ -1690,17 +1711,16 @@ static const struct file_operations kmemleak_fops = {
+>   */
+>  static void kmemleak_do_cleanup(struct work_struct *work)
+>  {
+> -	struct kmemleak_object *object;
+> -
+>  	mutex_lock(&scan_mutex);
+>  	stop_scan_thread();
+>  
+> -	if (!kmemleak_has_leaks) {
+> -		rcu_read_lock();
+> -		list_for_each_entry_rcu(object, &object_list, object_list)
+> -			delete_object_full(object->pointer);
+> -		rcu_read_unlock();
+> -	}
+> +	if (!kmemleak_has_leaks)
+> +		__kmemleak_do_cleanup();
+> +	else
+> +		pr_info("Disable kmemleak without freeing internal objects, "
+> +			"so you may still check information on memory leaks. "
+> +			"You may reclaim memory by writing \"clear\" to "
+> +			"/sys/kernel/debug/kmemleak\n");
+
+Alternative text:
+
+		pr_info("Kmemleak disabled without freeing internal data. "
+			"Reclaim the memory with \"echo clear > /sys/kernel/debug/kmemleak\"\n");
+
+(I'm wouldn't bother with long lines in printk strings)
+
+Otherwise:
+
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+
+Thanks.
