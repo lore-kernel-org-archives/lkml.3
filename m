@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaC1NzO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:55:14 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:63369 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbaC1NzG (ORCPT
+	id S1752704AbaC1Nzi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:55:38 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:51214 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbaC1Nze (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:55:06 -0400
+	Fri, 28 Mar 2014 09:55:34 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH 14/28] ktap: add runtime/kp_events.[c|h]
-Date: Fri, 28 Mar 2014 09:47:35 -0400
-Message-Id: <1396014469-5937-15-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH 15/28] ktap: add built-in functions and library (runtime/lib_*.c)
+Date: Fri, 28 Mar 2014 09:47:36 -0400
+Message-Id: <1396014469-5937-16-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -24,66 +24,634 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kp_events.c handle ktap events management(registry, destroy, event callback)
+ktap register built-in functions and library into table.
 
-This file is core event management interface between ktap and kernel.
+1). Built-in functions(lib_base,c):
 
-Exposed functions:
-1). kp_events_init/kp_events_exit
+print, printf, print_hist, pairs, len, delete, stack,
+print_trace_clock, num_cpus, arch, kernel_v, kernel_string,
+user_string, stringof, ipof, gettimeofday_ns, gettimeofday_us,
+gettimeofday_ms, gettimeofday_s, curr_taskinfo, in_iowait,
+in_interrupt, exit.
 
-2). kp_event_create_kprobe
-        create kprobe event, for example:
-                kdebug.kprobe("SyS_futex", function () {})
+2). Ansi library(lib_ansi.c):
 
-3). kp_event_create_tracepoint
-        create tracepoint event, for example"
-                kdebug.tracepoint("sys_futex_enter", function () {})
+ansi.clear_screen
+ansi.set_color
+ansi.set_color2
+ansi.set_color3
+ansi.reset_color
+ansi.new_line
 
-4). kp_event_create
-        create perf backend event, for example:
-                trace sched:sched_switch { print(argstr) }
+3). kdebug library(lib_kdebug.c):
 
-        It call kernel function 'perf_event_create_kernel_counter' to
-        register event(tracepoint/kprobe/uprobe)
+kdebug.trace_by_id
+kdebug.trace_end
+kdebug.tracepoint
+kdebug.kprobe
 
-5). kp_event_getarg
-        get argument of event, from arg0 to arg9,
-        only can be called in probe context.
-                trace sched:sched_switch { print(arg0, arg1) }
+4). net library(lib_net.c):
 
-6). kp_event_stringify/kp_event_tostr
-        stringify argstr, sometimes if store argstr as key to table,
-        then it need to stringify firstly, like below:
-                var s={} trace sched:sched_switch { s[argstr] += 1 }
-        (This is quite rare usage, but ktap support it)
+net.ip_sock_saddr
+net.ip_sock_daddr
+net.format_ip_addr
 
-Note:
-Why ktap support 'kdebug.kprobe' and 'kdebug.tracepoint' when
-it already support perf backend event(trace xxx {})?
+5). table library(lib_table.c):
 
-Because benchmark shows raw kprobe and tracpoint interface is faster
-than perf backed tracing, nearly 10+%, it's more fair to compare
-with Systemtap by raw tracing syntax, not perf backend tracing.
+table.new
 
-perf backend tracing have a long code path before reach ktap callback,
-and it need to copy event buffer firstly.
+6). timer library(lib_timer.c):
+
+timer.profile
+timer.tick
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- tools/ktap/runtime/kp_events.c | 832 +++++++++++++++++++++++++++++++++++++++++
- tools/ktap/runtime/kp_events.h |  71 ++++
- 2 files changed, 903 insertions(+)
- create mode 100644 tools/ktap/runtime/kp_events.c
- create mode 100644 tools/ktap/runtime/kp_events.h
+ tools/ktap/runtime/lib_ansi.c   | 142 ++++++++++++++
+ tools/ktap/runtime/lib_base.c   | 409 ++++++++++++++++++++++++++++++++++++++++
+ tools/ktap/runtime/lib_kdebug.c | 198 +++++++++++++++++++
+ tools/ktap/runtime/lib_net.c    | 107 +++++++++++
+ tools/ktap/runtime/lib_table.c  |  58 ++++++
+ tools/ktap/runtime/lib_timer.c  | 210 +++++++++++++++++++++
+ 6 files changed, 1124 insertions(+)
+ create mode 100644 tools/ktap/runtime/lib_ansi.c
+ create mode 100644 tools/ktap/runtime/lib_base.c
+ create mode 100644 tools/ktap/runtime/lib_kdebug.c
+ create mode 100644 tools/ktap/runtime/lib_net.c
+ create mode 100644 tools/ktap/runtime/lib_table.c
+ create mode 100644 tools/ktap/runtime/lib_timer.c
 
-diff --git a/tools/ktap/runtime/kp_events.c b/tools/ktap/runtime/kp_events.c
+diff --git a/tools/ktap/runtime/lib_ansi.c b/tools/ktap/runtime/lib_ansi.c
 new file mode 100644
-index 0000000..b008626
+index 0000000..e690b2b
 --- /dev/null
-+++ b/tools/ktap/runtime/kp_events.c
-@@ -0,0 +1,832 @@
++++ b/tools/ktap/runtime/lib_ansi.c
+@@ -0,0 +1,142 @@
 +/*
-+ * kp_events.c - ktap events management (registry, destroy, event callback)
++ * lib_ansi.c - ANSI escape sequences library
++ *
++ * http://en.wikipedia.org/wiki/ANSI_escape_code
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_vm.h"
++
++/**
++ * function ansi.clear_screen - Move cursor to top left and clear screen.
++ *
++ * Description: Sends ansi code for moving cursor to top left and then the
++ * ansi code for clearing the screen from the cursor position to the end.
++ */
++
++static int kplib_ansi_clear_screen(ktap_state_t *ks)
++{
++	kp_printf(ks, "\033[1;1H\033[J");
++	return 0;
++}
++
++/**
++ * function ansi.set_color - Set the ansi Select Graphic Rendition mode.
++ * @fg: Foreground color to set.
++ *
++ * Description: Sends ansi code for Select Graphic Rendition mode for the
++ * given forground color. Black (30), Blue (34), Green (32), Cyan (36),
++ * Red (31), Purple (35), Brown (33), Light Gray (37).
++ */
++
++static int kplib_ansi_set_color(ktap_state_t *ks)
++{
++	int fg = kp_arg_checknumber(ks, 1);
++
++	kp_printf(ks, "\033[%dm", fg);
++	return 0;
++}
++
++/**
++ * function ansi.set_color2 - Set the ansi Select Graphic Rendition mode.
++ * @fg: Foreground color to set.
++ * @bg: Background color to set.
++ *
++ * Description: Sends ansi code for Select Graphic Rendition mode for the
++ * given forground color, Black (30), Blue (34), Green (32), Cyan (36),
++ * Red (31), Purple (35), Brown (33), Light Gray (37) and the given
++ * background color, Black (40), Red (41), Green (42), Yellow (43),
++ * Blue (44), Magenta (45), Cyan (46), White (47).
++ */
++static int kplib_ansi_set_color2(ktap_state_t *ks)
++{
++	int fg = kp_arg_checknumber(ks, 1);
++	int bg = kp_arg_checknumber(ks, 2);
++	
++	kp_printf(ks, "\033[%d;%dm", fg, bg);
++	return 0;
++}
++
++/**
++ * function ansi.set_color3 - Set the ansi Select Graphic Rendition mode.
++ * @fg: Foreground color to set.
++ * @bg: Background color to set.
++ * @attr: Color attribute to set.
++ *
++ * Description: Sends ansi code for Select Graphic Rendition mode for the
++ * given forground color, Black (30), Blue (34), Green (32), Cyan (36),
++ * Red (31), Purple (35), Brown (33), Light Gray (37), the given
++ * background color, Black (40), Red (41), Green (42), Yellow (43),
++ * Blue (44), Magenta (45), Cyan (46), White (47) and the color attribute
++ * All attributes off (0), Intensity Bold (1), Underline Single (4),
++ * Blink Slow (5), Blink Rapid (6), Image Negative (7).
++ */
++static int kplib_ansi_set_color3(ktap_state_t *ks)
++{
++	int fg = kp_arg_checknumber(ks, 1);
++	int bg = kp_arg_checknumber(ks, 2);
++	int attr = kp_arg_checknumber(ks, 3);
++
++	if (attr)
++		kp_printf(ks, "\033[%d;%d;%dm", fg, bg, attr);
++	else
++		kp_printf(ks, "\033[%d;%dm", fg, bg);
++	
++	return 0;
++}
++
++/**
++ * function ansi.reset_color - Resets Select Graphic Rendition mode.
++ *
++ * Description: Sends ansi code to reset foreground, background and color
++ * attribute to default values.
++ */
++static int kplib_ansi_reset_color(ktap_state_t *ks)
++{
++	kp_printf(ks, "\033[0;0m");
++	return 0;
++}
++
++/**
++ * function ansi.new_line - Move cursor to new line.
++ *
++ * Description: Sends ansi code new line.
++ */
++static int kplib_ansi_new_line (ktap_state_t *ks)
++{
++	kp_printf(ks, "\12");
++	return 0;
++}
++
++static const ktap_libfunc_t ansi_lib_funcs[] = {
++	{"clear_screen", kplib_ansi_clear_screen},
++	{"set_color", kplib_ansi_set_color},
++	{"set_color2", kplib_ansi_set_color2},
++	{"set_color3", kplib_ansi_set_color3},
++	{"reset_color", kplib_ansi_reset_color},
++	{"new_line", kplib_ansi_new_line},
++	{NULL}
++};
++
++int kp_lib_init_ansi(ktap_state_t *ks)
++{
++	return kp_vm_register_lib(ks, "ansi", ansi_lib_funcs); 
++}
+diff --git a/tools/ktap/runtime/lib_base.c b/tools/ktap/runtime/lib_base.c
+new file mode 100644
+index 0000000..0294134
+--- /dev/null
++++ b/tools/ktap/runtime/lib_base.c
+@@ -0,0 +1,409 @@
++/*
++ * lib_base.c - base library
++ *
++ * Caveat: all kernel funtion called by ktap library have to be lock free,
++ * otherwise system will deadlock.
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/version.h>
++#include <linux/hardirq.h>
++#include <linux/module.h>
++#include <linux/kallsyms.h>
++#include <linux/sched.h>
++#include <linux/uaccess.h>
++#include <linux/utsname.h>
++#include <linux/time.h>
++#include <linux/clocksource.h>
++#include <linux/ring_buffer.h>
++#include <linux/stacktrace.h>
++#include <linux/cred.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 5, 0)
++#include <linux/uidgid.h>
++#endif
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_obj.h"
++#include "kp_str.h"
++#include "kp_tab.h"
++#include "kp_transport.h"
++#include "kp_events.h"
++#include "kp_vm.h"
++
++static int kplib_print(ktap_state_t *ks)
++{
++	int i;
++	int n = kp_arg_nr(ks);
++
++	for (i = 1; i <= n; i++) {
++		ktap_val_t *arg = kp_arg(ks, i);
++		if (i > 1)
++			kp_puts(ks, "\t");
++		kp_obj_show(ks, arg);
++	}
++
++	kp_puts(ks, "\n");
++	return 0;
++}
++
++/* don't engage with intern string in printf, use buffer directly */
++static int kplib_printf(ktap_state_t *ks)
++{
++	struct trace_seq *seq;
++
++	preempt_disable_notrace();
++
++	seq = kp_this_cpu_print_buffer(ks);
++	trace_seq_init(seq);
++
++	if (kp_str_fmt(ks, seq))
++		goto out;
++
++	seq->buffer[seq->len] = '\0';
++	kp_transport_write(ks, seq->buffer, seq->len + 1);
++
++ out:
++	preempt_enable_notrace();
++	return 0;
++}
++
++#define HISTOGRAM_DEFAULT_TOP_NUM	20
++
++static int kplib_print_hist(ktap_state_t *ks)
++{
++	int n ;
++
++	kp_arg_check(ks, 1, KTAP_TTAB);
++	n = kp_arg_checkoptnumber(ks, 2, HISTOGRAM_DEFAULT_TOP_NUM);
++
++	n = min(n, 1000);
++	n = max(n, HISTOGRAM_DEFAULT_TOP_NUM);
++
++	kp_tab_print_hist(ks, hvalue(kp_arg(ks, 1)), n);
++
++	return 0;
++}
++
++static int kplib_pairs(ktap_state_t *ks)
++{
++	kp_arg_check(ks, 1, KTAP_TTAB);
++
++	set_cfunc(ks->top++, (ktap_cfunction)kp_tab_next);
++	set_table(ks->top++, hvalue(kp_arg(ks, 1)));
++	set_nil(ks->top++);
++	return 3;
++}
++
++static int kplib_len(ktap_state_t *ks)
++{
++	int len = kp_obj_len(ks, kp_arg(ks, 1));
++
++	if (len < 0)
++		return -1;
++
++	set_number(ks->top, len);
++	incr_top(ks);
++	return 1;
++}
++
++static int kplib_delete(ktap_state_t *ks)
++{
++	kp_arg_check(ks, 1, KTAP_TTAB);
++	kp_tab_clear(hvalue(kp_arg(ks, 1)));
++	return 0;
++}
++
++#ifdef CONFIG_STACKTRACE
++static int kplib_stack(ktap_state_t *ks)
++{
++	uint16_t skip, depth = 10;
++
++	depth = kp_arg_checkoptnumber(ks, 1, 10); /* default as 10 */
++	depth = min_t(uint16_t, depth, KP_MAX_STACK_DEPTH);
++	skip = kp_arg_checkoptnumber(ks, 2, 10); /* default as 10 */
++
++	set_kstack(ks->top, depth, skip);
++	incr_top(ks);
++	return 1;
++}
++#else
++static int kplib_stack(ktap_state_t *ks)
++{
++	kp_error(ks, "Please enable CONFIG_STACKTRACE before call stack()\n");
++	return -1;
++}
++#endif
++
++
++extern unsigned long long ns2usecs(cycle_t nsec);
++static int kplib_print_trace_clock(ktap_state_t *ks)
++{
++	unsigned long long t;
++	unsigned long secs, usec_rem;
++	u64 timestamp;
++
++	/* use ring buffer's timestamp */
++	timestamp = ring_buffer_time_stamp(G(ks)->buffer, smp_processor_id());
++
++	t = ns2usecs(timestamp);
++	usec_rem = do_div(t, USEC_PER_SEC);
++	secs = (unsigned long)t;
++
++	kp_printf(ks, "%5lu.%06lu\n", secs, usec_rem);
++	return 0;
++}
++
++static int kplib_num_cpus(ktap_state_t *ks)
++{
++	set_number(ks->top, num_online_cpus());
++	incr_top(ks);
++	return 1;
++}
++
++/* TODO: intern string firstly */
++static int kplib_arch(ktap_state_t *ks)
++{
++	ktap_str_t *ts = kp_str_newz(ks, utsname()->machine);
++	if (unlikely(!ts))
++		return -1;
++
++	set_string(ks->top, ts);
++	incr_top(ks);
++	return 1;
++}
++
++/* TODO: intern string firstly */
++static int kplib_kernel_v(ktap_state_t *ks)
++{
++	ktap_str_t *ts = kp_str_newz(ks, utsname()->release);
++	if (unlikely(!ts))
++		return -1;
++
++	set_string(ks->top, ts);
++	incr_top(ks);
++	return 1;
++}
++
++static int kplib_kernel_string(ktap_state_t *ks)
++{
++	unsigned long addr = kp_arg_checknumber(ks, 1);
++	char str[256] = {0};
++	ktap_str_t *ts;
++	char *ret;
++
++	ret = strncpy((void *)str, (const void *)addr, 256);
++	(void) &ret;  /* Silence compiler warning. */
++	str[255] = '\0';
++
++	ts = kp_str_newz(ks, str);
++	if (unlikely(!ts))
++		return -1;
++
++	set_string(ks->top, ts);
++	incr_top(ks);
++	return 1;
++}
++
++static int kplib_user_string(ktap_state_t *ks)
++{
++	unsigned long addr = kp_arg_checknumber(ks, 1);
++	char str[256] = {0};
++	ktap_str_t *ts;
++	int ret;
++
++	pagefault_disable();
++	ret = __copy_from_user_inatomic((void *)str, (const void *)addr, 256);
++	(void) &ret;  /* Silence compiler warning. */
++	pagefault_enable();
++	str[255] = '\0';
++
++	ts = kp_str_newz(ks, str);
++	if (unlikely(!ts))
++		return -1;
++
++	set_string(ks->top, ts);
++	incr_top(ks);
++	return 1;
++}
++
++static int kplib_stringof(ktap_state_t *ks)
++{
++	ktap_val_t *v = kp_arg(ks, 1);
++	const ktap_str_t *ts = NULL;
++
++	if (itype(v) == KTAP_TEVENTSTR) {
++		ts = kp_event_stringify(ks);
++	} else if (itype(v) == KTAP_TKIP) {
++		char str[KSYM_SYMBOL_LEN];
++
++		SPRINT_SYMBOL(str, nvalue(v));
++		ts = kp_str_newz(ks, str);
++	}
++
++	if (unlikely(!ts))
++		return -1;
++
++	set_string(ks->top++, ts);
++	return 1;
++}
++
++static int kplib_ipof(ktap_state_t *ks)
++{
++	unsigned long addr = kp_arg_checknumber(ks, 1);
++
++	set_ip(ks->top++, addr);
++	return 1;
++}
++
++static int kplib_gettimeofday_ns(ktap_state_t *ks)
++{
++	set_number(ks->top, gettimeofday_ns());
++	incr_top(ks);
++
++	return 1;
++}
++
++static int kplib_gettimeofday_us(ktap_state_t *ks)
++{
++	set_number(ks->top, gettimeofday_ns() / NSEC_PER_USEC);
++	incr_top(ks);
++
++	return 1;
++}
++
++static int kplib_gettimeofday_ms(ktap_state_t *ks)
++{
++	set_number(ks->top, gettimeofday_ns() / NSEC_PER_MSEC);
++	incr_top(ks);
++
++	return 1;
++}
++
++static int kplib_gettimeofday_s(ktap_state_t *ks)
++{
++	set_number(ks->top, gettimeofday_ns() / NSEC_PER_SEC);
++	incr_top(ks);
++
++	return 1;
++}
++
++/*
++ * use gdb to get field offset of struct task_struct, for example:
++ *
++ * gdb vmlinux
++ * (gdb)p &(((struct task_struct *)0).prio)
++ */
++static int kplib_curr_taskinfo(ktap_state_t *ks)
++{
++	int offset = kp_arg_checknumber(ks, 1);
++	int fetch_bytes  = kp_arg_checkoptnumber(ks, 2, 4); /* fetch 4 bytes */
++
++	if (offset >= sizeof(struct task_struct)) {
++		set_nil(ks->top++);
++		kp_error(ks, "access out of bound value of task_struct\n");
++		return 1;
++	}
++
++#define RET_VALUE ((unsigned long)current + offset)
++
++	switch (fetch_bytes) {
++	case 4:
++		set_number(ks->top, *(unsigned int *)RET_VALUE);
++		break;
++	case 8:
++		set_number(ks->top, *(unsigned long *)RET_VALUE);
++		break;
++	default:
++		kp_error(ks, "unsupported fetch bytes in curr_task_info\n");
++		set_nil(ks->top);
++		break;
++	}
++
++#undef RET_VALUE
++
++	incr_top(ks);
++	return 1;
++}
++
++/*
++ * This built-in function mainly purpose scripts/schedule/schedtimes.kp
++ */
++static int kplib_in_iowait(ktap_state_t *ks)
++{
++	set_number(ks->top, current->in_iowait);
++	incr_top(ks);
++
++	return 1;
++}
++
++static int kplib_in_interrupt(ktap_state_t *ks)
++{
++	int ret = in_interrupt();
++
++	set_number(ks->top, ret);
++	incr_top(ks);
++	return 1;
++}
++
++static int kplib_exit(ktap_state_t *ks)
++{
++	kp_vm_try_to_exit(ks);
++
++	/* do not execute bytecode any more in this thread */
++	return -1;
++}
++
++static const ktap_libfunc_t base_lib_funcs[] = {
++	{"print", kplib_print},
++	{"printf", kplib_printf},
++	{"print_hist", kplib_print_hist},
++
++	{"pairs", kplib_pairs},
++	{"len", kplib_len},
++	{"delete", kplib_delete},
++
++	{"stack", kplib_stack},
++	{"print_trace_clock", kplib_print_trace_clock},
++
++	{"num_cpus", kplib_num_cpus},
++	{"arch", kplib_arch},
++	{"kernel_v", kplib_kernel_v},
++	{"kernel_string", kplib_kernel_string},
++	{"user_string", kplib_user_string},
++	{"stringof", kplib_stringof},
++	{"ipof", kplib_ipof},
++
++	{"gettimeofday_ns", kplib_gettimeofday_ns},
++	{"gettimeofday_us", kplib_gettimeofday_us},
++	{"gettimeofday_ms", kplib_gettimeofday_ms},
++	{"gettimeofday_s", kplib_gettimeofday_s},
++
++	{"curr_taskinfo", kplib_curr_taskinfo},
++
++	{"in_iowait", kplib_in_iowait},
++	{"in_interrupt", kplib_in_interrupt},
++
++	{"exit", kplib_exit},
++	{NULL}
++};
++
++int kp_lib_init_base(ktap_state_t *ks)
++{
++	return kp_vm_register_lib(ks, NULL, base_lib_funcs); 
++}
+diff --git a/tools/ktap/runtime/lib_kdebug.c b/tools/ktap/runtime/lib_kdebug.c
+new file mode 100644
+index 0000000..430537e
+--- /dev/null
++++ b/tools/ktap/runtime/lib_kdebug.c
+@@ -0,0 +1,198 @@
++/*
++ * lib_kdebug.c - kdebug library support for ktap
 + *
 + * This file is part of ktap by Jovi Zhangwei.
 + *
@@ -107,7 +675,7 @@ index 0000000..b008626
 +#include <linux/ctype.h>
 +#include <linux/slab.h>
 +#include <linux/version.h>
-+#include <asm/syscall.h>
++#include <linux/ftrace_event.h>
 +#include "../include/ktap_types.h"
 +#include "ktap.h"
 +#include "kp_obj.h"
@@ -116,881 +684,563 @@ index 0000000..b008626
 +#include "kp_vm.h"
 +#include "kp_events.h"
 +
-+const char *kp_event_tostr(ktap_state_t *ks)
-+{
-+	struct ktap_event_data *e = ks->current_event;
-+	struct ftrace_event_call *call;
-+	struct trace_iterator *iter;
-+	struct trace_event *ev;
-+	enum print_line_t ret = TRACE_TYPE_NO_CONSUME;
-+	static const char *dummy_msg = "argstr_not_available";
-+
-+	/* need to check current context is vaild tracing context */
-+	if (!ks->current_event) {
-+		kp_error(ks, "cannot stringify event str in invalid context\n");
-+		return NULL;
-+	}
-+
-+	/*check if stringified before */
-+	if (ks->current_event->argstr)
-+		return getstr(ks->current_event->argstr);
-+
-+	/* timer event and raw tracepoint don't have associated argstr */
-+	if (e->event->type == KTAP_EVENT_TYPE_PERF && e->event->perf->tp_event)
-+		call = e->event->perf->tp_event;
-+	else
-+		return dummy_msg;
-+
-+	/* Simulate the iterator */
-+
-+	/*
-+	 * use temp percpu buffer as trace_iterator
-+	 * we cannot use same print_buffer because we may called from printf.
-+	 */
-+	iter = kp_this_cpu_temp_buffer(ks);
-+
-+	trace_seq_init(&iter->seq);
-+	iter->ent = e->data->raw->data;
-+
-+	ev = &(call->event);
-+	if (ev)
-+		ret = ev->funcs->trace(iter, 0, ev);
-+
-+	if (ret != TRACE_TYPE_NO_CONSUME) {
-+		struct trace_seq *s = &iter->seq;
-+		int len = s->len >= PAGE_SIZE ? PAGE_SIZE - 1 : s->len;
-+
-+		s->buffer[len] = '\0';
-+		return &s->buffer[0];
-+	}
-+
-+	return dummy_msg;
-+}
-+
-+/* return string repr of 'argstr' */
-+const ktap_str_t *kp_event_stringify(ktap_state_t *ks)
-+{
-+	const char *str;
-+	ktap_str_t *ts;
-+
-+	/*check if stringified before */
-+	if (ks->current_event->argstr)
-+		return ks->current_event->argstr;
-+
-+	str = kp_event_tostr(ks);
-+	if (!str)
-+		return NULL;
-+
-+	ts = kp_str_newz(ks, str);
-+	ks->current_event->argstr = ts;
-+	return ts;
-+}
-+
-+/*
-+ * This definition should keep update with kernel/trace/trace.h
-+ * TODO: export this struct in kernel 
++/**
++ * function kdebug.trace_by_id
++ *
++ * @uaddr: userspace address refer to ktap_eventdesc_t
++ * @closure
 + */
-+struct ftrace_event_field {
-+	struct list_head        link;
-+	const char              *name;
-+	const char              *type;
-+	int                     filter_type;
-+	int                     offset;
-+	int                     size;
-+	int                     is_signed;
++static int kplib_kdebug_trace_by_id(ktap_state_t *ks)
++{
++	unsigned long uaddr = kp_arg_checknumber(ks, 1);
++	ktap_func_t *fn = kp_arg_checkfunction(ks, 2);
++	struct task_struct *task = G(ks)->trace_task;
++	ktap_eventdesc_t eventsdesc;
++	char *filter = NULL;
++	int *id_arr;
++	int ret, i;
++
++	if (G(ks)->mainthread != ks) {
++		kp_error(ks,
++		    "kdebug.trace_by_id only can be called in mainthread\n");
++		return -1;
++	}
++
++	/* kdebug.trace_by_id cannot be called in trace_end state */
++	if (G(ks)->state != KTAP_RUNNING) {
++		kp_error(ks,
++		    "kdebug.trace_by_id only can be called in RUNNING state\n");
++		return -1;
++	}
++
++	/* copy ktap_eventdesc_t from userspace */
++	ret = copy_from_user(&eventsdesc, (void *)uaddr,
++			     sizeof(ktap_eventdesc_t));
++	if (ret < 0)
++		return -1;
++
++	if (eventsdesc.filter) {
++		int len;
++
++		len = strlen_user(eventsdesc.filter);
++		if (len > 0x1000)
++			return -1;
++
++		filter = kmalloc(len + 1, GFP_KERNEL);
++		if (!filter)
++			return -1;
++
++		/* copy filter string from userspace */
++		if (strncpy_from_user(filter, eventsdesc.filter, len) < 0) {
++			kfree(filter);
++			return -1;
++		}
++	}
++
++	id_arr = kmalloc(eventsdesc.nr * sizeof(int), GFP_KERNEL);
++	if (!id_arr) {
++		kfree(filter);
++		return -1;
++	}
++
++	/* copy all event id from userspace */
++	ret = copy_from_user(id_arr, eventsdesc.id_arr,
++			     eventsdesc.nr * sizeof(int));
++	if (ret < 0) {
++		kfree(filter);
++		kfree(id_arr);
++		return -1;
++	}
++
++	fn = clvalue(kp_arg(ks, 2));
++
++	for (i = 0; i < eventsdesc.nr; i++) {
++		struct perf_event_attr attr;
++
++		cond_resched();
++
++		if (signal_pending(current)) {
++			flush_signals(current);
++			kfree(filter);
++			kfree(id_arr);
++			return -1;
++		}
++
++		memset(&attr, 0, sizeof(attr));
++		attr.type = PERF_TYPE_TRACEPOINT;	
++		attr.config = id_arr[i];
++		attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
++				   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
++		attr.sample_period = 1;
++		attr.size = sizeof(attr);
++		attr.disabled = 0;
++
++		/* register event one by one */
++		ret = kp_event_create(ks, &attr, task, filter, fn);
++		if (ret < 0)
++			break;
++	}
++
++	kfree(filter);
++	kfree(id_arr);
++	return 0;
++}
++
++static int kplib_kdebug_trace_end(ktap_state_t *ks)
++{
++	/* trace_end_closure will be called when ktap main thread exit */
++	G(ks)->trace_end_closure = kp_arg_checkfunction(ks, 1);
++	return 0;
++}
++
++static int kplib_kdebug_tracepoint(ktap_state_t *ks)
++{
++	const char *event_name = kp_arg_checkstring(ks, 1);
++	ktap_func_t *fn = kp_arg_checkfunction(ks, 2);
++
++	if (G(ks)->mainthread != ks) {
++		kp_error(ks,
++		    "kdebug.tracepoint only can be called in mainthread\n");
++		return -1;
++	}
++
++	/* kdebug.tracepoint cannot be called in trace_end state */
++	if (G(ks)->state != KTAP_RUNNING) {
++		kp_error(ks,
++		    "kdebug.tracepoint only can be called in RUNNING state\n");
++		return -1;
++	}
++
++	return kp_event_create_tracepoint(ks, event_name, fn);
++}
++
++static int kplib_kdebug_kprobe(ktap_state_t *ks)
++{
++	const char *event_name = kp_arg_checkstring(ks, 1);
++	ktap_func_t *fn = kp_arg_checkfunction(ks, 2);
++
++	if (G(ks)->mainthread != ks) {
++		kp_error(ks,
++		    "kdebug.kprobe only can be called in mainthread\n");
++		return -1;
++	}
++
++	/* kdebug.kprobe cannot be called in trace_end state */
++	if (G(ks)->state != KTAP_RUNNING) {
++		kp_error(ks,
++		    "kdebug.kprobe only can be called in RUNNING state\n");
++		return -1;
++	}
++
++	return kp_event_create_kprobe(ks, event_name, fn);
++}
++static const ktap_libfunc_t kdebug_lib_funcs[] = {
++	{"trace_by_id", kplib_kdebug_trace_by_id},
++	{"trace_end", kplib_kdebug_trace_end},
++
++	{"tracepoint", kplib_kdebug_tracepoint},
++	{"kprobe", kplib_kdebug_kprobe},
++	{NULL}
 +};
 +
-+static struct list_head *get_fields(struct ftrace_event_call *event_call)
++int kp_lib_init_kdebug(ktap_state_t *ks)
 +{
-+	if (!event_call->class->get_fields)
-+		return &event_call->class->fields;
-+	return event_call->class->get_fields(event_call);
++	return kp_vm_register_lib(ks, "kdebug", kdebug_lib_funcs);
 +}
 +
-+void kp_event_getarg(ktap_state_t *ks, ktap_val_t *ra, int idx)
+diff --git a/tools/ktap/runtime/lib_net.c b/tools/ktap/runtime/lib_net.c
+new file mode 100644
+index 0000000..0103d14
+--- /dev/null
++++ b/tools/ktap/runtime/lib_net.c
+@@ -0,0 +1,107 @@
++/*
++ * lib_base.c - base library
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <net/inet_sock.h>
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_obj.h"
++#include "kp_str.h"
++#include "kp_vm.h"
++
++/**
++ * Return the source IP address for a given sock
++ */
++static int kplib_net_ip_sock_saddr(ktap_state_t *ks)
 +{
-+	struct ktap_event_data *e = ks->current_event;
-+	struct ktap_event *event = e->event;
-+	struct ktap_event_field *event_fields = &event->fields[idx];
++	struct inet_sock *isk;
++	int family;
 +
-+	switch (event_fields->type)  {
-+	case KTAP_EVENT_FIELD_TYPE_INT: {
-+		struct trace_entry *entry = e->data->raw->data;
-+		void *value = (unsigned char *)entry + event_fields->offset;
-+		int n = *(int *)value;
-+		set_number(ra, n);
-+		return;
-+		}
-+	case KTAP_EVENT_FIELD_TYPE_LONG: {
-+		struct trace_entry *entry = e->data->raw->data;
-+		void *value = (unsigned char *)entry + event_fields->offset;
-+		long n = *(long *)value;
-+		set_number(ra, n);
-+		return;
-+		}
-+	case KTAP_EVENT_FIELD_TYPE_STRING: {
-+		struct trace_entry *entry = e->data->raw->data;
-+		ktap_str_t *ts;
-+		void *value = (unsigned char *)entry + event_fields->offset;
-+		ts = kp_str_newz(ks, (char *)value);
-+		if (ts)
-+			set_string(ra, ts);
-+		else
-+			set_nil(ra);
-+		return;
-+		}
-+	case KTAP_EVENT_FIELD_TYPE_CONST: {
-+		set_number(ra, (ktap_number)event_fields->offset);
-+		return;
-+		}
-+	case KTAP_EVENT_FIELD_TYPE_REGESTER: {
-+		unsigned long *reg = (unsigned long *)((u8 *)e->regs +
-+					event_fields->offset);
-+		set_number(ra, *reg);
-+		return;
-+		}
-+	case KTAP_EVENT_FIELD_TYPE_NIL:
-+		set_nil(ra);
-+		return;
-+	case KTAP_EVENT_FIELD_TYPE_INVALID:
-+		kp_error(ks, "the field type is not supported yet\n");
-+		set_nil(ra);
-+		return;
-+	}
-+}
++	/* TODO: need to validate the address firstly */	
 +
-+/* init all fields of event, for quick arg1..arg9 access */
-+static int init_event_fields(ktap_state_t *ks, struct ktap_event *event)
-+{
-+	struct ftrace_event_call *event_call = event->perf->tp_event; 
-+	struct ktap_event_field *event_fields = &event->fields[0];
-+	struct ftrace_event_field *field;
-+	struct list_head *head;
-+	int idx = 0, n = 0;
++	isk = (struct inet_sock *)kp_arg_checknumber(ks, 1);
++	family = isk->sk.__sk_common.skc_family;
 +
-+	/* only init fields for tracepoint, not timer event */
-+	if (!event_call)
-+		return 0;
-+
-+	/* intern probename */
-+	event->name = kp_str_newz(ks, event_call->name);
-+	if (unlikely(!event->name))
-+		return -ENOMEM;
-+
-+	head = get_fields(event_call);
-+	list_for_each_entry_reverse(field, head, link) {
-+		if (n++ == 9) {
-+			/*
-+			 * For some events have fields more than 9, just ignore
-+			 * those rest fields at present.
-+			 *
-+			 * TODO: support access all fields in tracepoint event
-+			 *
-+			 * Examples: mce:mce_record, ext4:ext4_writepages, ...
-+			 */
-+			return 0;
-+		}
-+
-+		event_fields[idx].offset = field->offset;
-+
-+		if (field->size == 4) {
-+			event_fields[idx].type = KTAP_EVENT_FIELD_TYPE_INT;
-+			idx++;
-+			continue;
-+		} else if (field->size == 8) {
-+			event_fields[idx].type = KTAP_EVENT_FIELD_TYPE_LONG;
-+			idx++;
-+			continue;
-+		}
-+		if (!strncmp(field->type, "char", 4)) {
-+			event_fields[idx].type = KTAP_EVENT_FIELD_TYPE_STRING;
-+			idx++;
-+			continue;
-+		}
-+
-+		/* TODO: add more type check */
-+		event_fields[idx++].type = KTAP_EVENT_FIELD_TYPE_INVALID;
++	if (family == AF_INET) {
++		set_number(ks->top, isk->inet_rcv_saddr);
++	} else {
++		kp_error(ks, "ip_sock_saddr only support ipv4 now\n");
++		set_nil(ks->top);
 +	}
 +
-+	/* init all rest fields as NIL */
-+	while (idx < 9)
-+		event_fields[idx++].type = KTAP_EVENT_FIELD_TYPE_NIL;
-+
-+	return 0;
-+}
-+
-+static inline void call_probe_closure(ktap_state_t *mainthread,
-+				      ktap_func_t *fn,
-+				      struct ktap_event_data *e, int rctx)
-+{
-+	ktap_state_t *ks;
-+	ktap_val_t *func;
-+
-+	ks = kp_vm_new_thread(mainthread, rctx);
-+	set_func(ks->top, fn);
-+	func = ks->top;
 +	incr_top(ks);
-+
-+	ks->current_event = e;
-+
-+	kp_vm_call(ks, func, 0);
-+
-+	ks->current_event = NULL;
-+	kp_vm_exit_thread(ks);
++	return 1;
 +}
 +
-+/*
-+ * Callback tracing function for perf event subsystem.
-+ *
-+ * make ktap reentrant, don't disable irq in callback function,
-+ * same as perf and ftrace. to make reentrant, we need some
-+ * percpu data to be context isolation(irq/sirq/nmi/process)
-+ *
-+ * The recursion checking in here is mainly purpose for avoiding
-+ * corrupt ktap_state_t with timer closure callback. For tracepoint
-+ * recusion, perf core already handle it.
-+ *
-+ * Note tracepoint handler is calling with rcu_read_lock.
++/**
++ * Return the destination IP address for a given sock
 + */
-+static void perf_callback(struct perf_event *perf_event,
-+			   struct perf_sample_data *data,
-+			   struct pt_regs *regs)
++static int kplib_net_ip_sock_daddr(ktap_state_t *ks)
 +{
-+	struct ktap_event *event;
-+	struct ktap_event_data e;
++	struct inet_sock *isk;
++	int family;
++
++	/* TODO: need to validate the address firstly */	
++
++	isk = (struct inet_sock *)kp_arg_checknumber(ks, 1);
++	family = isk->sk.__sk_common.skc_family;
++
++	if (family == AF_INET) {
++		set_number(ks->top, isk->inet_daddr);
++	} else {
++		kp_error(ks, "ip_sock_daddr only support ipv4 now\n");
++		set_nil(ks->top);
++	}
++
++	incr_top(ks);
++	return 1;
++
++}
++
++/**
++ * Returns a string representation for an IP address
++ */
++static int kplib_net_format_ip_addr(ktap_state_t *ks)
++{
++	__be32 ip = (__be32)kp_arg_checknumber(ks, 1);
++	ktap_str_t *ts;
++	char ipstr[32];
++
++	snprintf(ipstr, 32, "%pI4", &ip);
++	ts = kp_str_newz(ks, ipstr);
++	if (ts) {
++		set_string(ks->top, kp_str_newz(ks, ipstr));
++		incr_top(ks);
++		return 1;
++	} else
++		return -1;
++}
++
++static const ktap_libfunc_t net_lib_funcs[] = {
++	{"ip_sock_saddr", kplib_net_ip_sock_saddr},
++	{"ip_sock_daddr", kplib_net_ip_sock_daddr},
++	{"format_ip_addr", kplib_net_format_ip_addr},
++	{NULL}
++};
++
++int kp_lib_init_net(ktap_state_t *ks)
++{
++	return kp_vm_register_lib(ks, "net", net_lib_funcs); 
++}
+diff --git a/tools/ktap/runtime/lib_table.c b/tools/ktap/runtime/lib_table.c
+new file mode 100644
+index 0000000..5c00f83
+--- /dev/null
++++ b/tools/ktap/runtime/lib_table.c
+@@ -0,0 +1,58 @@
++/*
++ * lib_table.c - Table library
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/ctype.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/sched.h>
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_obj.h"
++#include "kp_vm.h"
++#include "kp_tab.h"
++
++static int kplib_table_new(ktap_state_t *ks)
++{
++	int narr = kp_arg_checkoptnumber(ks, 1, 0);
++	int nrec = kp_arg_checkoptnumber(ks, 2, 0);
++	ktap_tab_t *h;
++
++	h = kp_tab_new_ah(ks, narr, nrec);
++	if (!h) {
++		set_nil(ks->top);
++	} else {
++		set_table(ks->top, h);
++	}
++
++	incr_top(ks);
++	return 1;
++}
++
++static const ktap_libfunc_t table_lib_funcs[] = {
++	{"new",	kplib_table_new},
++	{NULL}
++};
++
++int kp_lib_init_table(ktap_state_t *ks)
++{
++	return kp_vm_register_lib(ks, "table", table_lib_funcs);
++}
++
+diff --git a/tools/ktap/runtime/lib_timer.c b/tools/ktap/runtime/lib_timer.c
+new file mode 100644
+index 0000000..3f160ef
+--- /dev/null
++++ b/tools/ktap/runtime/lib_timer.c
+@@ -0,0 +1,210 @@
++/*
++ * lib_timer.c - timer library support for ktap
++ *
++ * This file is part of ktap by Jovi Zhangwei.
++ *
++ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * ktap is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * ktap is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++#include <linux/ctype.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/sched.h>
++#include "../include/ktap_types.h"
++#include "ktap.h"
++#include "kp_obj.h"
++#include "kp_vm.h"
++#include "kp_events.h"
++
++struct ktap_hrtimer {
++	struct hrtimer timer;
++	ktap_state_t *ks;
++	ktap_func_t *fn;
++	u64 ns;
++	struct list_head list;
++};
++
++/*
++ * Currently ktap disallow tracing event in timer callback closure,
++ * that will corrupt ktap_state_t and ktap stack, because timer closure
++ * and event closure use same irq percpu ktap_state_t and stack.
++ * We can use a different percpu ktap_state_t and stack for timer purpuse,
++ * but that's don't bring any big value with cost on memory consuming.
++ *
++ * So just simply disable tracing in timer closure,
++ * get_recursion_context()/put_recursion_context() is used for this purpose.
++ */
++static enum hrtimer_restart hrtimer_ktap_fn(struct hrtimer *timer)
++{
++	struct ktap_hrtimer *t;
 +	ktap_state_t *ks;
 +	int rctx;
 +
-+	event = perf_event->overflow_handler_context;
-+	ks = event->ks;
++	rcu_read_lock_sched_notrace();
 +
-+	if (unlikely(ks->stop))
-+		return;
++	t = container_of(timer, struct ktap_hrtimer, timer);
++	rctx = get_recursion_context(t->ks);
 +
-+	rctx = get_recursion_context(ks);
-+	if (unlikely(rctx < 0))
-+		return;
++	ks = kp_vm_new_thread(t->ks, rctx);
++	set_func(ks->top, t->fn);
++	incr_top(ks);
++	kp_vm_call(ks, ks->top - 1, 0);
++	kp_vm_exit_thread(ks);
 +
-+	e.event = event;
-+	e.data = data;
-+	e.regs = regs;
-+	e.argstr = NULL;
-+
-+	call_probe_closure(ks, event->fn, &e, rctx);
++	hrtimer_add_expires_ns(timer, t->ns);
 +
 +	put_recursion_context(ks, rctx);
++	rcu_read_unlock_sched_notrace();
++
++	return HRTIMER_RESTART;
 +}
 +
-+/*
-+ * Generic ktap event creation function (based on perf callback)
-+ * purpose for tracepoints/kprobe/uprobe/profile-timer/hw_breakpoint/pmu.
-+ */
-+int kp_event_create(ktap_state_t *ks, struct perf_event_attr *attr,
-+		    struct task_struct *task, const char *filter,
-+		    ktap_func_t *fn)
++static int set_tick_timer(ktap_state_t *ks, u64 period, ktap_func_t *fn)
 +{
-+	struct ktap_event *event;
-+	struct perf_event *perf_event;
-+	void *callback = perf_callback;
-+	int cpu, ret;
++	struct ktap_hrtimer *t;
 +
-+	if (G(ks)->parm->dry_run)
-+		callback = NULL;
++	t = kp_malloc(ks, sizeof(*t));
++	if (unlikely(!t))
++		return -ENOMEM;
++	t->ks = ks;
++	t->fn = fn;
++	t->ns = period;
 +
-+	/*
-+	 * don't tracing until ktap_wait, the reason is:
-+	 * 1). some event may hit before apply filter
-+	 * 2). more simple to manage tracing thread
-+	 * 3). avoid race with mainthread.
-+	 *
-+	 * Another way to do this is make attr.disabled as 1, then use
-+	 * perf_event_enable after filter apply, however, perf_event_enable
-+	 * was not exported in kernel older than 3.3, so we drop this method.
-+	 */
-+	ks->stop = 1;
++	INIT_LIST_HEAD(&t->list);
++	list_add(&t->list, &(G(ks)->timers));
 +
-+	for_each_cpu(cpu, G(ks)->cpumask) {
-+		event = kzalloc(sizeof(struct ktap_event), GFP_KERNEL);
-+		if (!event)
-+			return -ENOMEM;
-+
-+		event->type = KTAP_EVENT_TYPE_PERF;
-+		event->ks = ks;
-+		event->fn = fn;
-+		perf_event = perf_event_create_kernel_counter(attr, cpu, task,
-+							      callback, event);
-+		if (IS_ERR(perf_event)) {
-+			int err = PTR_ERR(perf_event);
-+			kp_error(ks, "unable register perf event: "
-+				     "[cpu: %d; id: %d; err: %d]\n",
-+				     cpu, attr->config, err);
-+			kfree(event);
-+			return err;
-+		}
-+
-+		if (attr->type == PERF_TYPE_TRACEPOINT) {
-+			const char *name = perf_event->tp_event->name;
-+			kp_verbose_printf(ks, "enable perf event: "
-+					      "[cpu: %d; id: %d; name: %s; "
-+					      "filter: %s; pid: %d]\n",
-+					      cpu, attr->config, name, filter,
-+					      task ? task_tgid_vnr(task) : -1);
-+		} else if (attr->type == PERF_TYPE_SOFTWARE &&
-+			 attr->config == PERF_COUNT_SW_CPU_CLOCK) {
-+			kp_verbose_printf(ks, "enable profile event: "
-+					      "[cpu: %d; sample_period: %d]\n",
-+					      cpu, attr->sample_period);
-+		} else {
-+			kp_verbose_printf(ks, "unknown perf event type\n");
-+		}
-+
-+		event->perf = perf_event;
-+		INIT_LIST_HEAD(&event->list);
-+		list_add_tail(&event->list, &G(ks)->events_head);
-+
-+		if (init_event_fields(ks, event)) {
-+			kp_error(ks, "unable init event fields id %d\n",
-+					attr->config);
-+			perf_event_release_kernel(event->perf);
-+			list_del(&event->list);
-+			kfree(event);
-+			return ret;
-+		}
-+
-+		if (!filter)
-+			continue;
-+
-+		ret = kp_ftrace_profile_set_filter(perf_event, attr->config,
-+						   filter);
-+		if (ret) {
-+			kp_error(ks, "unable set event filter: "
-+				     "[id: %d; filter: %s; ret: %d]\n",
-+				     attr->config, filter, ret);
-+			perf_event_release_kernel(event->perf);
-+			list_del(&event->list);
-+			kfree(event);
-+			return ret;
-+		}
-+	}
++	hrtimer_init(&t->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	t->timer.function = hrtimer_ktap_fn;
++	hrtimer_start(&t->timer, ns_to_ktime(period), HRTIMER_MODE_REL);
 +
 +	return 0;
 +}
 +
-+/*
-+ * Ignore function proto in here, just use first argument.
-+ */
-+static void probe_callback(void *__data)
++static int set_profile_timer(ktap_state_t *ks, u64 period, ktap_func_t *fn)
 +{
-+	struct ktap_event *event = __data;
-+	ktap_state_t *ks = event->ks;
-+	struct ktap_event_data e;
-+	struct pt_regs regs; /* pt_regs maybe is large for stack */
-+	int rctx;
++	struct perf_event_attr attr;
 +
-+	if (unlikely(ks->stop))
-+		return;
++	memset(&attr, 0, sizeof(attr));
++	attr.type = PERF_TYPE_SOFTWARE;
++	attr.config = PERF_COUNT_SW_CPU_CLOCK;
++	attr.sample_type = PERF_SAMPLE_RAW | PERF_SAMPLE_TIME |
++			   PERF_SAMPLE_CPU | PERF_SAMPLE_PERIOD;
++	attr.sample_period = period;
++	attr.size = sizeof(attr);
++	attr.disabled = 0;
 +
-+	rctx = get_recursion_context(ks);
-+	if (unlikely(rctx < 0))
-+		return;
-+
-+	perf_fetch_caller_regs(&regs);
-+
-+	e.event = event;
-+	e.regs = &regs;
-+	e.argstr = NULL;
-+
-+	call_probe_closure(ks, event->fn, &e, rctx);
-+
-+	put_recursion_context(ks, rctx);
++	return kp_event_create(ks, &attr, NULL, NULL, fn);
 +}
 +
-+/*
-+ * syscall events handling
-+ */
-+
-+static DEFINE_MUTEX(syscall_trace_lock);
-+static DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
-+static DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
-+static int sys_refcount_enter;
-+static int sys_refcount_exit;
-+
-+static int get_syscall_num(const char *name)
++static int do_tick_profile(ktap_state_t *ks, int is_tick)
 +{
-+	int i;
++	const char *str = kp_arg_checkstring(ks, 1);
++	ktap_func_t *fn = kp_arg_checkfunction(ks, 2);
++	const char *tmp;
++	char interval_str[32] = {0};
++	char suffix[10] = {0};
++	int i = 0, ret, n;
++	int factor;
 +
-+	for (i = 0; i < NR_syscalls; i++) {
-+		if (syscalls_metadata[i] &&
-+		    !strcmp(name, syscalls_metadata[i]->name + 4))
-+			return i;
-+	}
++	tmp = str;
++	while (isdigit(*tmp))
++		tmp++;
++
++	strncpy(interval_str, str, tmp - str);
++	if (kstrtoint(interval_str, 10, &n))
++		goto error;
++
++	strncpy(suffix, tmp, 9);
++	while (suffix[i] != ' ' && suffix[i] != '\0')
++		i++;
++
++	suffix[i] = '\0';
++
++	if (!strcmp(suffix, "s") || !strcmp(suffix, "sec"))
++		factor = NSEC_PER_SEC;
++	else if (!strcmp(suffix, "ms") || !strcmp(suffix, "msec"))
++		factor = NSEC_PER_MSEC;
++	else if (!strcmp(suffix, "us") || !strcmp(suffix, "usec"))
++		factor = NSEC_PER_USEC;
++	else
++		goto error;
++
++	if (is_tick)
++		ret = set_tick_timer(ks, (u64)factor * n, fn);
++	else
++		ret = set_profile_timer(ks, (u64)factor * n, fn);
++
++	return ret;
++
++ error:
++	kp_error(ks, "cannot parse timer interval: %s\n", str);
 +	return -1;
 +}
 +
-+static void trace_syscall_enter(void *data, struct pt_regs *regs, long id)
++/*
++ * tick-n probes fire on only one CPU per interval.
++ * valid time suffixes: sec/s, msec/ms, usec/us
++ */
++static int kplib_timer_tick(ktap_state_t *ks)
 +{
-+	struct ktap_event *event = data;
-+	ktap_state_t *ks = event->ks;
-+	struct ktap_event_data e;
-+	int syscall_nr;
-+	int rctx;
-+
-+	if (unlikely(ks->stop))
-+		return;
-+
-+	syscall_nr = syscall_get_nr(current, regs);
-+	if (unlikely(syscall_nr < 0))
-+		return;
-+	if (!test_bit(syscall_nr, enabled_enter_syscalls))
-+		return;
-+
-+	rctx = get_recursion_context(ks);
-+	if (unlikely(rctx < 0))
-+		return;
-+
-+	e.event = event;
-+	e.regs = regs;
-+	e.argstr = NULL;
-+
-+	call_probe_closure(ks, event->fn, &e, rctx);
-+
-+	put_recursion_context(ks, rctx);
-+}
-+
-+static void trace_syscall_exit(void *data, struct pt_regs *regs, long id)
-+{
-+	struct ktap_event *event = data;
-+	ktap_state_t *ks = event->ks;
-+	struct ktap_event_data e;
-+	int syscall_nr;
-+	int rctx;
-+
-+	syscall_nr = syscall_get_nr(current, regs);
-+	if (unlikely(syscall_nr < 0))
-+		return;
-+	if (!test_bit(syscall_nr, enabled_exit_syscalls))
-+		return;
-+
-+	if (unlikely(ks->stop))
-+		return;
-+
-+	rctx = get_recursion_context(ks);
-+	if (unlikely(rctx < 0))
-+		return;
-+
-+	e.event = event;
-+	e.regs = regs;
-+	e.argstr = NULL;
-+
-+	call_probe_closure(ks, event->fn, &e, rctx);
-+
-+	put_recursion_context(ks, rctx);
-+}
-+
-+/* called in dry-run mode, purpose for compare overhead with normal vm call */
-+static void dry_run_callback(void *data, struct pt_regs *regs, long id)
-+{
-+
-+}
-+
-+static void init_syscall_event_fields(struct ktap_event *event, int is_enter)
-+{
-+	struct ftrace_event_call *event_call;
-+	struct ktap_event_field *event_fields = &event->fields[0];
-+	struct syscall_metadata *meta = syscalls_metadata[event->syscall_nr];
-+	int idx = 0;
-+
-+	event_call = is_enter ? meta->enter_event : meta->exit_event;
-+
-+	event_fields[0].type = KTAP_EVENT_FIELD_TYPE_CONST;
-+	event_fields[0].offset = event->syscall_nr;
-+
-+	if (!is_enter) {
-+#ifdef CONFIG_X86_64
-+		event_fields[1].type = KTAP_EVENT_FIELD_TYPE_REGESTER;
-+		event_fields[1].offset = offsetof(struct pt_regs, ax);
-+#endif
-+		return;
-+	}
-+
-+	while (idx++ < meta->nb_args) {
-+		event_fields[idx].type = KTAP_EVENT_FIELD_TYPE_REGESTER;
-+#ifdef CONFIG_X86_64
-+		switch (idx) {
-+		case 1:
-+			event_fields[idx].offset = offsetof(struct pt_regs, di);
-+			break;
-+		case 2:
-+			event_fields[idx].offset = offsetof(struct pt_regs, si);
-+			break;
-+		case 3:
-+			event_fields[idx].offset = offsetof(struct pt_regs, dx);
-+			break;
-+		case 4:
-+			event_fields[idx].offset =
-+						offsetof(struct pt_regs, r10);
-+			break;
-+		case 5:
-+			event_fields[idx].offset = offsetof(struct pt_regs, r8);
-+			break;
-+		case 6:
-+			event_fields[idx].offset = offsetof(struct pt_regs, r9);
-+			break;
-+		}
-+#else
-+#error "don't support syscall tracepoint event register access in this arch, "
-+	"use 'trace syscalls:* {}' instead"
-+#endif
-+	}
-+
-+	/* init all rest fields as NIL */
-+	while (idx < 9)
-+		event_fields[idx++].type = KTAP_EVENT_FIELD_TYPE_NIL;
-+}
-+
-+static int syscall_event_register(ktap_state_t *ks, const char *event_name,
-+				  struct ktap_event *event)
-+{
-+	int syscall_nr = 0, is_enter = 0;
-+	void *callback = NULL;
-+	int ret = 0;
-+
-+	if (!strncmp(event_name, "sys_enter_", 10)) {
-+		is_enter = 1;
-+		event->type = KTAP_EVENT_TYPE_SYSCALL_ENTER;
-+		syscall_nr = get_syscall_num(event_name + 10);
-+		callback = trace_syscall_enter;
-+	} else if (!strncmp(event_name, "sys_exit_", 9)) {
-+		is_enter = 0;
-+		event->type = KTAP_EVENT_TYPE_SYSCALL_EXIT;
-+		syscall_nr = get_syscall_num(event_name + 9);
-+		callback = trace_syscall_exit;
-+	}
-+	
-+	if (G(ks)->parm->dry_run)
-+		callback = dry_run_callback;
-+
-+	if (syscall_nr < 0)
++	/* timer.tick cannot be called in trace_end state */
++	if (G(ks)->state != KTAP_RUNNING) {
++		kp_error(ks,
++			 "timer.tick only can be called in RUNNING state\n");
 +		return -1;
-+
-+	event->syscall_nr = syscall_nr;
-+
-+	init_syscall_event_fields(event, is_enter);
-+
-+	mutex_lock(&syscall_trace_lock);
-+	if (is_enter) {
-+		if (!sys_refcount_enter)
-+			ret = register_trace_sys_enter(callback, event);
-+		if (!ret) {
-+			set_bit(syscall_nr, enabled_enter_syscalls);
-+			sys_refcount_enter++;
-+		}
-+	} else {
-+		if (!sys_refcount_exit)
-+			ret = register_trace_sys_exit(callback, event);
-+		if (!ret) {
-+			set_bit(syscall_nr, enabled_exit_syscalls);
-+			sys_refcount_exit++;
-+		}
 +	}
-+	mutex_unlock(&syscall_trace_lock);
 +
-+	return ret;
-+}
-+
-+static int syscall_event_unregister(ktap_state_t *ks, struct ktap_event *event)
-+{
-+	int ret = 0;
-+	void *callback;
-+	
-+	if (event->type == KTAP_EVENT_TYPE_SYSCALL_ENTER)
-+		callback = trace_syscall_enter;
-+	else
-+		callback = trace_syscall_exit;
-+
-+	if (G(ks)->parm->dry_run)
-+		callback = dry_run_callback;
-+
-+	mutex_lock(&syscall_trace_lock);
-+	if (event->type == KTAP_EVENT_TYPE_SYSCALL_ENTER) {
-+		sys_refcount_enter--;
-+        	clear_bit(event->syscall_nr, enabled_enter_syscalls);
-+        	if (!sys_refcount_enter)
-+                	unregister_trace_sys_enter(callback, event);
-+	} else {
-+		sys_refcount_exit--;
-+        	clear_bit(event->syscall_nr, enabled_exit_syscalls);
-+        	if (!sys_refcount_exit)
-+                	unregister_trace_sys_exit(callback, event);
-+	}
-+	mutex_unlock(&syscall_trace_lock);
-+
-+	return ret;
++	return do_tick_profile(ks, 1);
 +}
 +
 +/*
-+ * Register tracepoint event directly, not based on perf callback
-+ *
-+ * This tracing method would be more faster than perf callback,
-+ * because it won't need to write trace data into any temp buffer,
-+ * and code path is much shorter than perf callback.
++ * A profile-n probe fires every fixed interval on every CPU
++ * valid time suffixes: sec/s, msec/ms, usec/us
 + */
-+int kp_event_create_tracepoint(ktap_state_t *ks, const char *event_name,
-+			       ktap_func_t *fn)
++static int kplib_timer_profile(ktap_state_t *ks)
 +{
-+	struct ktap_event *event;
-+	void *callback = probe_callback;
-+	int is_syscall = 0;
-+	int ret;
-+
-+	if (G(ks)->parm->dry_run)
-+		callback = NULL;
-+
-+	if (!strncmp(event_name, "sys_enter_", 10) ||
-+	    !strncmp(event_name, "sys_exit_", 9))
-+		is_syscall = 1;
-+
-+	event = kzalloc(sizeof(struct ktap_event), GFP_KERNEL);
-+	if (!event)
-+		return -ENOMEM;
-+
-+	event->ks = ks;
-+	event->fn = fn;
-+	event->name = kp_str_newz(ks, event_name);
-+	if (unlikely(!event->name)) {
-+		kfree(event);
-+		return -ENOMEM;
++	/* timer.profile cannot be called in trace_end state */
++	if (G(ks)->state != KTAP_RUNNING) {
++		kp_error(ks,
++			 "timer.profile only can be called in RUNNING state\n");
++		return -1;
 +	}
 +
-+	INIT_LIST_HEAD(&event->list);
-+	list_add_tail(&event->list, &G(ks)->events_head);
-+
-+	if (is_syscall) {
-+		ret = syscall_event_register(ks, event_name, event);
-+	} else {
-+		event->type = KTAP_EVENT_TYPE_TRACEPOINT;
-+		ret = tracepoint_probe_register(event_name, callback, event);
-+	}
-+
-+	if (ret) {
-+		kp_error(ks, "register tracepoint %s failed, ret: %d\n",
-+				event_name, ret);
-+		list_del(&event->list);
-+		kfree(event);
-+		return ret;
-+	}
-+	return 0;
++	return do_tick_profile(ks, 0);
 +}
 +
-+/* kprobe handler */
-+static int __kprobes pre_handler_kprobe(struct kprobe *p, struct pt_regs *regs)
++void kp_exit_timers(ktap_state_t *ks)
 +{
-+	struct ktap_event *event = container_of(p, struct ktap_event, kp);
-+	ktap_state_t *ks = event->ks;
-+	struct ktap_event_data e;
-+	int rctx;
++	struct ktap_hrtimer *t, *tmp;
++	struct list_head *timers_list = &(G(ks)->timers);
 +
-+	if (unlikely(ks->stop))
-+		return 0;
-+
-+	rctx = get_recursion_context(ks);
-+	if (unlikely(rctx < 0))
-+		return 0;
-+
-+	e.event = event;
-+	e.regs = regs;
-+	e.argstr = NULL;
-+
-+	call_probe_closure(ks, event->fn, &e, rctx);
-+
-+	put_recursion_context(ks, rctx);
-+	return 0;
-+}
-+
-+/*
-+ * Register kprobe event directly, not based on perf callback
-+ *
-+ * This tracing method would be more faster than perf callback,
-+ * because it won't need to write trace data into any temp buffer,
-+ * and code path is much shorter than perf callback.
-+ */
-+int kp_event_create_kprobe(ktap_state_t *ks, const char *event_name,
-+			   ktap_func_t *fn)
-+{
-+	struct ktap_event *event;
-+	void *callback = pre_handler_kprobe;
-+	int ret;
-+
-+	if (G(ks)->parm->dry_run)
-+		callback = NULL;
-+
-+	event = kzalloc(sizeof(struct ktap_event), GFP_KERNEL);
-+	if (!event)
-+		return -ENOMEM;
-+
-+	event->ks = ks;
-+	event->fn = fn;
-+	event->name = kp_str_newz(ks, event_name);
-+	if (unlikely(!event->name)) {
-+		kfree(event);
-+		return -ENOMEM;
-+	}
-+
-+	INIT_LIST_HEAD(&event->list);
-+	list_add_tail(&event->list, &G(ks)->events_head);
-+
-+	event->type = KTAP_EVENT_TYPE_KPROBE;
-+
-+	event->kp.symbol_name = event_name;
-+	event->kp.pre_handler = callback;
-+	ret = register_kprobe(&event->kp);
-+	if (ret) {
-+		kp_error(ks, "register kprobe event %s failed, ret: %d\n",
-+				event_name, ret);
-+		list_del(&event->list);
-+		kfree(event);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+
-+static void events_destroy(ktap_state_t *ks)
-+{
-+	struct ktap_event *event;
-+	struct list_head *tmp, *pos;
-+	struct list_head *head = &G(ks)->events_head;
-+
-+	list_for_each(pos, head) {
-+		event = container_of(pos, struct ktap_event,
-+					   list);
-+		if (event->type == KTAP_EVENT_TYPE_PERF)
-+			perf_event_release_kernel(event->perf);
-+		else if (event->type == KTAP_EVENT_TYPE_TRACEPOINT)
-+			tracepoint_probe_unregister(getstr(event->name),
-+						    probe_callback, event);
-+		else if (event->type == KTAP_EVENT_TYPE_SYSCALL_ENTER ||
-+			 event->type == KTAP_EVENT_TYPE_SYSCALL_EXIT )
-+			syscall_event_unregister(ks, event);
-+		else if (event->type == KTAP_EVENT_TYPE_KPROBE)
-+			unregister_kprobe(&event->kp);
-+        }
-+       	/*
-+	 * Ensure our callback won't be called anymore. The buffers
-+	 * will be freed after that.
-+	 */
-+	tracepoint_synchronize_unregister();
-+
-+	list_for_each_safe(pos, tmp, head) {
-+		event = container_of(pos, struct ktap_event,
-+					   list);
-+		list_del(&event->list);
-+		kfree(event);
++	list_for_each_entry_safe(t, tmp, timers_list, list) {
++		hrtimer_cancel(&t->timer);
++		kp_free(ks, t);
 +	}
 +}
 +
-+void kp_events_exit(ktap_state_t *ks)
-+{
-+	if (!G(ks)->trace_enabled)
-+		return;
-+
-+	events_destroy(ks);
-+
-+	/* call trace_end_closure after all event unregistered */
-+	if ((G(ks)->state != KTAP_ERROR) && G(ks)->trace_end_closure) {
-+		G(ks)->state = KTAP_TRACE_END;
-+		set_func(ks->top, G(ks)->trace_end_closure);
-+		incr_top(ks);
-+		kp_vm_call(ks, ks->top - 1, 0);
-+		G(ks)->trace_end_closure = NULL;
-+	}
-+
-+	G(ks)->trace_enabled = 0;
-+}
-+
-+int kp_events_init(ktap_state_t *ks)
-+{
-+	G(ks)->trace_enabled = 1;
-+	return 0;
-+}
-+
-diff --git a/tools/ktap/runtime/kp_events.h b/tools/ktap/runtime/kp_events.h
-new file mode 100644
-index 0000000..b24f723
---- /dev/null
-+++ b/tools/ktap/runtime/kp_events.h
-@@ -0,0 +1,71 @@
-+#ifndef __KTAP_EVENTS_H__
-+#define __KTAP_EVENTS_H__
-+
-+#include <linux/ftrace_event.h>
-+#include <trace/syscall.h>
-+#include <trace/events/syscalls.h>
-+#include <linux/syscalls.h>
-+#include <linux/kprobes.h>
-+
-+enum KTAP_EVENT_FIELD_TYPE {
-+	KTAP_EVENT_FIELD_TYPE_INVALID = 0, /* arg type not support yet */
-+
-+	KTAP_EVENT_FIELD_TYPE_INT,
-+	KTAP_EVENT_FIELD_TYPE_LONG,
-+	KTAP_EVENT_FIELD_TYPE_STRING,
-+
-+	KTAP_EVENT_FIELD_TYPE_REGESTER,
-+	KTAP_EVENT_FIELD_TYPE_CONST,
-+	KTAP_EVENT_FIELD_TYPE_NIL /* arg not exist */
++static const ktap_libfunc_t timer_lib_funcs[] = {
++	{"profile",	kplib_timer_profile},
++	{"tick",	kplib_timer_tick},
++	{NULL}
 +};
 +
-+struct ktap_event_field {
-+	enum KTAP_EVENT_FIELD_TYPE type;
-+	int offset;
-+};
++int kp_lib_init_timer(ktap_state_t *ks)
++{
++	return kp_vm_register_lib(ks, "timer", timer_lib_funcs);
++}
 +
-+enum KTAP_EVENT_TYPE {
-+	KTAP_EVENT_TYPE_PERF,
-+	KTAP_EVENT_TYPE_TRACEPOINT,
-+	KTAP_EVENT_TYPE_SYSCALL_ENTER,
-+	KTAP_EVENT_TYPE_SYSCALL_EXIT,
-+	KTAP_EVENT_TYPE_KPROBE,
-+};
-+
-+struct ktap_event {
-+	struct list_head list;
-+	int type;
-+	ktap_state_t *ks;
-+	ktap_func_t *fn;
-+	struct perf_event *perf;
-+	int syscall_nr; /* for syscall event */
-+	struct ktap_event_field fields[9]; /* arg1..arg9 */
-+	ktap_str_t *name; /* intern probename string */
-+
-+	struct kprobe kp; /* kprobe event */
-+};
-+
-+/* this structure allocate on stack */
-+struct ktap_event_data {
-+	struct ktap_event *event;
-+	struct perf_sample_data *data;
-+	struct pt_regs *regs;
-+	ktap_str_t *argstr; /* for cache argstr intern string */
-+};
-+
-+int kp_events_init(ktap_state_t *ks);
-+void kp_events_exit(ktap_state_t *ks);
-+
-+int kp_event_create(ktap_state_t *ks, struct perf_event_attr *attr,
-+		    struct task_struct *task, const char *filter,
-+		    ktap_func_t *fn);
-+int kp_event_create_tracepoint(ktap_state_t *ks, const char *event_name,
-+			       ktap_func_t *fn);
-+
-+int kp_event_create_kprobe(ktap_state_t *ks, const char *event_name,
-+			   ktap_func_t *fn);
-+void kp_event_getarg(ktap_state_t *ks, ktap_val_t *ra, int idx);
-+const char *kp_event_tostr(ktap_state_t *ks);
-+const ktap_str_t *kp_event_stringify(ktap_state_t *ks);
-+
-+#endif /* __KTAP_EVENTS_H__ */
 -- 
 1.8.1.4
 
