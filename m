@@ -1,88 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751320AbaC1W12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 18:27:28 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:33982 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751010AbaC1W11 (ORCPT
+	id S1751523AbaC1Wce (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 18:32:34 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54153 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751454AbaC1Wcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 18:27:27 -0400
-Message-ID: <5335F74A.9020507@gmail.com>
-Date: Fri, 28 Mar 2014 22:27:22 +0000
-From: paulmcquad <paulmcquad@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: gregkh@linuxfoundation.org, gamerh2o@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Staging:et131x: change memcpy()  ether_addr_copy()
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 28 Mar 2014 18:32:33 -0400
+Date: Fri, 28 Mar 2014 15:32:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Djalal Harouni <tixxdz@opendz.org>
+Cc: linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>, Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: Re: [PATCH v2 1/2] procfs: make /proc/*/{stack,syscall,personality}
+ 0400
+Message-Id: <20140328153231.93bcad089d9ccc670ee6cc17@linux-foundation.org>
+In-Reply-To: <1395495460-7652-2-git-send-email-tixxdz@opendz.org>
+References: <1395495460-7652-1-git-send-email-tixxdz@opendz.org>
+	<1395495460-7652-2-git-send-email-tixxdz@opendz.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 63f3c8948d5264ab22695502b201ff50edb9028d Mon Sep 17 00:00:00 2001
-From: Paul McQuade <paulmcquad@gmail.com>
-Date: Fri, 28 Mar 2014 22:16:22 +0000
-Subject: [PATCH] Staging:et131x: change memcpy()  ether_addr_copy()
+On Sat, 22 Mar 2014 14:37:39 +0100 Djalal Harouni <tixxdz@opendz.org> wrote:
 
-replace memcpy() with ether_addr_copy()
-make checkpatch.pl clean
+> These procfs files contain sensitive information and currently their
+> mode is 0444. Change this to 0400, so the VFS will be able to block
+> unprivileged processes from getting file descriptors on arbitrary
+> privileged /proc/*/{stack,syscall,personality} files.
+> 
+> This reduces the scope of ASLR leaking and bypasses by protecting
+> already running processes.
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Sigh.  Why on earth did we make these 444 in the first place.
+
+There is risk of breakage here.  Probably anyone who is using these
+files and who observes such breakage is a sophisticated user who
+understands the reasons and knows how to make the tools work again. 
+There's only one way to find out :(
+
+I can't remember why we even added /proc/pid/syscall - the changelog
+doesn't give a rationale (this is regrettably common).
+
+Now for a six-year-late code review:
+
+- How the heck can target==current in task_current_syscall()?
+
+- Less talk, more action:
+
+From: Andrew Morton <akpm@linux-foundation.org>
+Subject: lib/syscall.c: unexport task_current_syscall()
+
+It is only used by procfs and procfs cannot be a module.
+
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 ---
- drivers/staging/et131x/et131x.c | 10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/et131x/et131x.c b/drivers/staging/et131x/et131x.c
-index e516bb6..a35d3c8 100644
---- a/drivers/staging/et131x/et131x.c
-+++ b/drivers/staging/et131x/et131x.c
-@@ -3523,7 +3523,7 @@ static int et131x_pci_init(struct et131x_adapter *adapter,
-             goto err_out;
-         }
-     }
--    memcpy(adapter->addr, adapter->rom_addr, ETH_ALEN);
-+    ether_addr_copy(adapter->addr, adapter->rom_addr, ETH_ALEN);
- out:
-     return rc;
- err_out:
-@@ -3770,7 +3770,7 @@ static struct et131x_adapter *et131x_adapter_init(struct net_device *netdev,
-     adapter->registry_jumbo_packet = 1514;    /* 1514-9216 */
+ lib/syscall.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff -puN lib/syscall.c~a lib/syscall.c
+--- a/lib/syscall.c~a
++++ a/lib/syscall.c
+@@ -72,4 +72,3 @@ int task_current_syscall(struct task_str
  
-     /* Set the MAC address to a default */
--    memcpy(adapter->addr, default_mac, ETH_ALEN);
-+    ether_addr_copy(adapter->addr, default_mac, ETH_ALEN);
- 
-     return adapter;
+ 	return 0;
  }
-@@ -4337,7 +4337,7 @@ static void et131x_multicast(struct net_device *netdev)
-     netdev_for_each_mc_addr(ha, netdev) {
-         if (i == NIC_MAX_MCAST_LIST)
-             break;
--        memcpy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
-+    ether_addr_copy(adapter->multicast_list[i++], ha->addr, ETH_ALEN);
-     }
-     adapter->multicast_addr_count = i;
- 
-@@ -4473,7 +4473,7 @@ static int et131x_change_mtu(struct net_device *netdev, int new_mtu)
-     et131x_init_send(adapter);
- 
-     et131x_hwaddr_init(adapter);
--    memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
-+    ether_addr_copy(netdev->dev_addr, adapter->addr, ETH_ALEN);
- 
-     /* Init the device with the new settings */
-     et131x_adapter_setup(adapter);
-@@ -4644,7 +4644,7 @@ static int et131x_pci_setup(struct pci_dev *pdev,
-     INIT_WORK(&adapter->task, et131x_isr_handler);
- 
-     /* Copy address into the net_device struct */
--    memcpy(netdev->dev_addr, adapter->addr, ETH_ALEN);
-+    ether_addr_copy(netdev->dev_addr, adapter->addr, ETH_ALEN);
- 
-     /* Init variable for counting how long we do not have link status */
-     adapter->boot_coma = 0;
--- 
-1.8.3.2
+-EXPORT_SYMBOL_GPL(task_current_syscall);
+_
 
