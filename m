@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753725AbaC1Rzv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:55:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51194 "EHLO
+	id S1753804AbaC1R4R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:56:17 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51190 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752752AbaC1Rak (ORCPT
+	with ESMTP id S1752736AbaC1Raj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:40 -0400
+	Fri, 28 Mar 2014 13:30:39 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Sage Weil <sage@inktank.com>, Josh Durgin <josh.durgin@inktank.com>
-Subject: [PATCH 3.10 07/22] libceph: resend all writes after the osdmap loses the full flag
-Date: Fri, 28 Mar 2014 10:31:59 -0700
-Message-Id: <20140328173110.411299850@linuxfoundation.org>
+Subject: [PATCH 3.10 06/22] libceph: block I/O when PAUSE or FULL osd map flags are set
+Date: Fri, 28 Mar 2014 10:31:58 -0700
+Message-Id: <20140328173110.275180456@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -28,122 +28,119 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Josh Durgin <josh.durgin@inktank.com>
 
-commit 9a1ea2dbff11547a8e664f143c1ffefc586a577a upstream.
+commit d29adb34a94715174c88ca93e8aba955850c9bde upstream.
 
-With the current full handling, there is a race between osds and
-clients getting the first map marked full. If the osd wins, it will
-return -ENOSPC to any writes, but the client may already have writes
-in flight. This results in the client getting the error and
-propagating it up the stack. For rbd, the block layer turns this into
-EIO, which can cause corruption in filesystems above it.
+The PAUSEWR and PAUSERD flags are meant to stop the cluster from
+processing writes and reads, respectively. The FULL flag is set when
+the cluster determines that it is out of space, and will no longer
+process writes.  PAUSEWR and PAUSERD are purely client-side settings
+already implemented in userspace clients. The osd does nothing special
+with these flags.
 
-To avoid this race, osds are being changed to drop writes that came
-from clients with an osdmap older than the last osdmap marked full.
-In order for this to work, clients must resend all writes after they
-encounter a full -> not full transition in the osdmap. osds will wait
-for an updated map instead of processing a request from a client with
-a newer map, so resent writes will not be dropped by the osd unless
-there is another not full -> full transition.
+When the FULL flag is set, however, the osd responds to all writes
+with -ENOSPC. For cephfs, this makes sense, but for rbd the block
+layer translates this into EIO.  If a cluster goes from full to
+non-full quickly, a filesystem on top of rbd will not behave well,
+since some writes succeed while others get EIO.
 
-This approach requires both osds and clients to be fixed to avoid the
-race. Old clients talking to osds with this fix may hang instead of
-returning EIO and potentially corrupting an fs. New clients talking to
-old osds have the same behavior as before if they encounter this race.
+Fix this by blocking any writes when the FULL flag is set in the osd
+client. This is the same strategy used by userspace, so apply it by
+default.  A follow-on patch makes this configurable.
 
-Fixes: http://tracker.ceph.com/issues/6938
+__map_request() is called to re-target osd requests in case the
+available osds changed.  Add a paused field to a ceph_osd_request, and
+set it whenever an appropriate osd map flag is set.  Avoid queueing
+paused requests in __map_request(), but force them to be resent if
+they become unpaused.
+
+Also subscribe to the next osd map from the monitor if any of these
+flags are set, so paused requests can be unblocked as soon as
+possible.
+
+Fixes: http://tracker.ceph.com/issues/6079
 
 Reviewed-by: Sage Weil <sage@inktank.com>
 Signed-off-by: Josh Durgin <josh.durgin@inktank.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/ceph/osd_client.c |   28 ++++++++++++++++++++++------
- 1 file changed, 22 insertions(+), 6 deletions(-)
+ include/linux/ceph/osd_client.h |    1 +
+ net/ceph/osd_client.c           |   29 +++++++++++++++++++++++++++--
+ 2 files changed, 28 insertions(+), 2 deletions(-)
 
+--- a/include/linux/ceph/osd_client.h
++++ b/include/linux/ceph/osd_client.h
+@@ -138,6 +138,7 @@ struct ceph_osd_request {
+ 	__le64           *r_request_pool;
+ 	void             *r_request_pgid;
+ 	__le32           *r_request_attempts;
++	bool              r_paused;
+ 	struct ceph_eversion *r_request_reassert_version;
+ 
+ 	int               r_result;
 --- a/net/ceph/osd_client.c
 +++ b/net/ceph/osd_client.c
-@@ -1629,14 +1629,17 @@ static void reset_changed_osds(struct ce
-  *
-  * Caller should hold map_sem for read.
-  */
--static void kick_requests(struct ceph_osd_client *osdc, int force_resend)
-+static void kick_requests(struct ceph_osd_client *osdc, bool force_resend,
-+			  bool force_resend_writes)
- {
- 	struct ceph_osd_request *req, *nreq;
- 	struct rb_node *p;
- 	int needmap = 0;
- 	int err;
-+	bool force_resend_req;
+@@ -1225,6 +1225,22 @@ void ceph_osdc_set_request_linger(struct
+ EXPORT_SYMBOL(ceph_osdc_set_request_linger);
  
--	dout("kick_requests %s\n", force_resend ? " (force resend)" : "");
-+	dout("kick_requests %s %s\n", force_resend ? " (force resend)" : "",
-+		force_resend_writes ? " (force resend writes)" : "");
- 	mutex_lock(&osdc->request_mutex);
- 	for (p = rb_first(&osdc->requests); p; ) {
- 		req = rb_entry(p, struct ceph_osd_request, r_node);
-@@ -1661,7 +1664,10 @@ static void kick_requests(struct ceph_os
- 			continue;
- 		}
- 
--		err = __map_request(osdc, req, force_resend);
-+		force_resend_req = force_resend ||
-+			(force_resend_writes &&
-+				req->r_flags & CEPH_OSD_FLAG_WRITE);
-+		err = __map_request(osdc, req, force_resend_req);
- 		if (err < 0)
- 			continue;  /* error */
- 		if (req->r_osd == NULL) {
-@@ -1681,7 +1687,8 @@ static void kick_requests(struct ceph_os
- 				 r_linger_item) {
- 		dout("linger req=%p req->r_osd=%p\n", req, req->r_osd);
- 
--		err = __map_request(osdc, req, force_resend);
-+		err = __map_request(osdc, req,
-+				    force_resend || force_resend_writes);
- 		dout("__map_request returned %d\n", err);
- 		if (err == 0)
- 			continue;  /* no change and no osd was specified */
-@@ -1723,6 +1730,7 @@ void ceph_osdc_handle_map(struct ceph_os
- 	struct ceph_osdmap *newmap = NULL, *oldmap;
- 	int err;
- 	struct ceph_fsid fsid;
-+	bool was_full;
- 
- 	dout("handle_map have %u\n", osdc->osdmap ? osdc->osdmap->epoch : 0);
- 	p = msg->front.iov_base;
-@@ -1736,6 +1744,8 @@ void ceph_osdc_handle_map(struct ceph_os
- 
- 	down_write(&osdc->map_sem);
- 
-+	was_full = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
+ /*
++ * Returns whether a request should be blocked from being sent
++ * based on the current osdmap and osd_client settings.
++ *
++ * Caller should hold map_sem for read.
++ */
++static bool __req_should_be_paused(struct ceph_osd_client *osdc,
++				   struct ceph_osd_request *req)
++{
++	bool pauserd = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_PAUSERD);
++	bool pausewr = ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_PAUSEWR) ||
++		ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL);
++	return (req->r_flags & CEPH_OSD_FLAG_READ && pauserd) ||
++		(req->r_flags & CEPH_OSD_FLAG_WRITE && pausewr);
++}
 +
- 	/* incremental maps */
- 	ceph_decode_32_safe(&p, end, nr_maps, bad);
- 	dout(" %d inc maps\n", nr_maps);
-@@ -1760,7 +1770,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 				ceph_osdmap_destroy(osdc->osdmap);
- 				osdc->osdmap = newmap;
- 			}
--			kick_requests(osdc, 0);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, 0, was_full);
- 		} else {
- 			dout("ignoring incremental map %u len %d\n",
- 			     epoch, maplen);
-@@ -1803,7 +1816,10 @@ void ceph_osdc_handle_map(struct ceph_os
- 					skipped_map = 1;
- 				ceph_osdmap_destroy(oldmap);
- 			}
--			kick_requests(osdc, skipped_map);
-+			was_full = was_full ||
-+				ceph_osdmap_flag(osdc->osdmap,
-+						 CEPH_OSDMAP_FULL);
-+			kick_requests(osdc, skipped_map, was_full);
- 		}
- 		p += maplen;
- 		nr_maps--;
++/*
+  * Pick an osd (the first 'up' osd in the pg), allocate the osd struct
+  * (as needed), and set the request r_osd appropriately.  If there is
+  * no up osd, set r_osd to NULL.  Move the request to the appropriate list
+@@ -1241,6 +1257,7 @@ static int __map_request(struct ceph_osd
+ 	int acting[CEPH_PG_MAX_SIZE];
+ 	int o = -1, num = 0;
+ 	int err;
++	bool was_paused;
+ 
+ 	dout("map_request %p tid %lld\n", req, req->r_tid);
+ 	err = ceph_calc_ceph_pg(&pgid, req->r_oid, osdc->osdmap,
+@@ -1257,12 +1274,18 @@ static int __map_request(struct ceph_osd
+ 		num = err;
+ 	}
+ 
++	was_paused = req->r_paused;
++	req->r_paused = __req_should_be_paused(osdc, req);
++	if (was_paused && !req->r_paused)
++		force_resend = 1;
++
+ 	if ((!force_resend &&
+ 	     req->r_osd && req->r_osd->o_osd == o &&
+ 	     req->r_sent >= req->r_osd->o_incarnation &&
+ 	     req->r_num_pg_osds == num &&
+ 	     memcmp(req->r_pg_osds, acting, sizeof(acting[0])*num) == 0) ||
+-	    (req->r_osd == NULL && o == -1))
++	    (req->r_osd == NULL && o == -1) ||
++	    req->r_paused)
+ 		return 0;  /* no change */
+ 
+ 	dout("map_request tid %llu pgid %lld.%x osd%d (was osd%d)\n",
+@@ -1797,7 +1820,9 @@ done:
+ 	 * we find out when we are no longer full and stop returning
+ 	 * ENOSPC.
+ 	 */
+-	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL))
++	if (ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_FULL) ||
++		ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_PAUSERD) ||
++		ceph_osdmap_flag(osdc->osdmap, CEPH_OSDMAP_PAUSEWR))
+ 		ceph_monc_request_next_osdmap(&osdc->client->monc);
+ 
+ 	mutex_lock(&osdc->request_mutex);
 
 
