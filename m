@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754431AbaC1SJi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 14:09:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51121 "EHLO
+	id S1754374AbaC1SJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:09:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbaC1RaN (ORCPT
+	with ESMTP id S1752495AbaC1RaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:13 -0400
+	Fri, 28 Mar 2014 13:30:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.4 06/13] p54: clamp properly instead of just truncating
-Date: Fri, 28 Mar 2014 10:31:56 -0700
-Message-Id: <20140328173053.917264555@linuxfoundation.org>
+        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
+Subject: [PATCH 3.4 05/13] deb-pkg: Fix cross-building linux-headers package
+Date: Fri, 28 Mar 2014 10:31:55 -0700
+Message-Id: <20140328173053.795953403@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
 References: <20140328173053.049244535@linuxfoundation.org>
@@ -27,32 +26,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Ben Hutchings <ben@decadent.org.uk>
 
-commit 608cfbe4abaf76e9d732efd7ed1cfa3998163d91 upstream.
+commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
 
-The call to clamp_t() first truncates the variable signed 8 bit and as a
-result, the actual clamp is a no-op.
+builddeb generates a control file that says the linux-headers package
+can only be built for the build system primary architecture.  This
+breaks cross-building configurations.  We should use $debarch for this
+instead.
 
-Fixes: 0d78156eef1d ('p54: improve site survey')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Since $debarch is not yet set when generating the control file, set
+Architecture: any and use control file variables to fill in the
+description.
+
+Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
+Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Signed-off-by: Michal Marek <mmarek@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/p54/txrx.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ scripts/package/builddeb |    9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/p54/txrx.c
-+++ b/drivers/net/wireless/p54/txrx.c
-@@ -583,7 +583,7 @@ static void p54_rx_stats(struct p54_comm
- 	chan = priv->curchan;
- 	if (chan) {
- 		struct survey_info *survey = &priv->survey[chan->hw_value];
--		survey->noise = clamp_t(s8, priv->noise, -128, 127);
-+		survey->noise = clamp(priv->noise, -128, 127);
- 		survey->channel_time = priv->survey_raw.active;
- 		survey->channel_time_tx = priv->survey_raw.tx;
- 		survey->channel_time_busy = priv->survey_raw.tx +
+--- a/scripts/package/builddeb
++++ b/scripts/package/builddeb
+@@ -62,7 +62,7 @@ create_package() {
+ 	fi
+ 
+ 	# Create the package
+-	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
++	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
+ 	dpkg --build "$pdir" ..
+ }
+ 
+@@ -252,15 +252,14 @@ mkdir -p "$destdir"
+ (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
+ ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
+ rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
+-arch=$(dpkg --print-architecture)
+ 
+ cat <<EOF >> debian/control
+ 
+ Package: $kernel_headers_packagename
+ Provides: linux-headers, linux-headers-2.6
+-Architecture: $arch
+-Description: Linux kernel headers for $KERNELRELEASE on $arch
+- This package provides kernel header files for $KERNELRELEASE on $arch
++Architecture: any
++Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
++ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
+  .
+  This is useful for people who need to build external modules
+ EOF
 
 
