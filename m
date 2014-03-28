@@ -1,95 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbaC1Tg4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 15:36:56 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:48988 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026AbaC1Tgz (ORCPT
+	id S1752828AbaC1ThX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 15:37:23 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:51364 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701AbaC1ThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 15:36:55 -0400
-Date: Fri, 28 Mar 2014 12:36:50 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 3.14-rc8
-Message-ID: <20140328193650.GB20950@core.coreip.homeip.net>
+	Fri, 28 Mar 2014 15:37:19 -0400
+Date: Fri, 28 Mar 2014 12:37:33 -0700
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Mark Salter <msalter@redhat.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        kvm@vger.kernel.org, kvmarm@lists.cs.columbia.edu
+Subject: Re: [PATCH] arm: KVM: fix possible misalignment of PGDs and bounce
+ page
+Message-ID: <20140328193733.GL25519@cbox>
+References: <1396016719-13807-1-git-send-email-msalter@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zhXaljGHf11kAtnf"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1396016719-13807-1-git-send-email-msalter@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 28, 2014 at 10:25:19AM -0400, Mark Salter wrote:
+> The kvm/mmu code shared by arm and arm64 uses kalloc() to allocate
+> a bounce page (if hypervisor init code crosses page boundary) and
+> hypervisor PGDs. The problem is that kalloc() does not guarantee
+> the proper alignment. In the case of the bounce page, the page sized
+> buffer allocated may also cross a page boundary negating the purpose
+> and leading to a hang during kvm initialization. Likewise the PGDs
+> allocated may not meet the minimum alignment requirements of the
+> underlying MMU. This patch uses __get_free_page() to guarantee the
+> worst case alignment needs of the bounce page and PGDs on both arm
+> and arm64.
+> 
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> ---
+>  arch/arm/kvm/mmu.c | 15 +++++++++------
+>  1 file changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+> index 7789857..575d790 100644
+> --- a/arch/arm/kvm/mmu.c
+> +++ b/arch/arm/kvm/mmu.c
+> @@ -42,6 +42,8 @@ static unsigned long hyp_idmap_start;
+>  static unsigned long hyp_idmap_end;
+>  static phys_addr_t hyp_idmap_vector;
+>  
+> +#define pgd_order get_order(PTRS_PER_PGD * sizeof(pgd_t))
+> +
+>  #define kvm_pmd_huge(_x)	(pmd_huge(_x) || pmd_trans_huge(_x))
+>  
+>  static void kvm_tlb_flush_vmid_ipa(struct kvm *kvm, phys_addr_t ipa)
+> @@ -199,14 +201,14 @@ void free_boot_hyp_pgd(void)
+>  	if (boot_hyp_pgd) {
+>  		unmap_range(NULL, boot_hyp_pgd, hyp_idmap_start, PAGE_SIZE);
+>  		unmap_range(NULL, boot_hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+> -		kfree(boot_hyp_pgd);
+> +		free_pages((unsigned long)boot_hyp_pgd, pgd_order);
+>  		boot_hyp_pgd = NULL;
+>  	}
+>  
+>  	if (hyp_pgd)
+>  		unmap_range(NULL, hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+>  
+> -	kfree(init_bounce_page);
+> +	free_page((unsigned long)init_bounce_page);
+>  	init_bounce_page = NULL;
+>  
+>  	mutex_unlock(&kvm_hyp_pgd_mutex);
+> @@ -236,7 +238,7 @@ void free_hyp_pgds(void)
+>  		for (addr = VMALLOC_START; is_vmalloc_addr((void*)addr); addr += PGDIR_SIZE)
+>  			unmap_range(NULL, hyp_pgd, KERN_TO_HYP(addr), PGDIR_SIZE);
+>  
+> -		kfree(hyp_pgd);
+> +		free_pages((unsigned long)hyp_pgd, pgd_order);
+>  		hyp_pgd = NULL;
+>  	}
+>  
+> @@ -930,7 +932,7 @@ int kvm_mmu_init(void)
+>  		size_t len = __hyp_idmap_text_end - __hyp_idmap_text_start;
+>  		phys_addr_t phys_base;
+>  
+> -		init_bounce_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
+> +		init_bounce_page = (void *)__get_free_page(GFP_KERNEL);
+>  		if (!init_bounce_page) {
+>  			kvm_err("Couldn't allocate HYP init bounce page\n");
+>  			err = -ENOMEM;
+> @@ -956,8 +958,9 @@ int kvm_mmu_init(void)
+>  			 (unsigned long)phys_base);
+>  	}
+>  
+> -	hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
+> -	boot_hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
+> +	hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
+> +	boot_hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
+> +
+>  	if (!hyp_pgd || !boot_hyp_pgd) {
+>  		kvm_err("Hyp mode PGD not allocated\n");
+>  		err = -ENOMEM;
+> -- 
+> 1.8.5.3
+> 
+This looks right to me.  Funnily enough I seem to remember a discussion
+from when we originally merged this code where someone (maybe me) argued
+that kmalloc() would align to the size of the allocation, but I don't
+see anything backing this up at this point.
 
---zhXaljGHf11kAtnf
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+So:
 
-Hi Linus,
+Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
 
-Please pull from:
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem. You will get updates to
-Synaptics touchpad to better cope with devices in Lenovo laptops, and a
-couple more fixes.
-
-Changelog:
----------
-
-Anthony Olech (1):
-      Input: da9052_onkey - use correct register bit for key status
-
-Benjamin Tissoires (1):
-      Input: synaptics - add manual min/max quirk
-
-Hans de Goede (2):
-      Input: cypress_ps2 - don't report as a button pads
-      Input: synaptics - add manual min/max quirk for ThinkPad X240
-
-Jean-Francois Dagenais (1):
-      Input: adp5588-keys - get value from data out when dir is out
-
-
-Diffstat:
---------
-
- drivers/input/keyboard/adp5588-keys.c | 12 +++++++-
- drivers/input/misc/da9052_onkey.c     | 29 +++++++++---------
- drivers/input/mouse/cypress_ps2.c     |  1 -
- drivers/input/mouse/synaptics.c       | 55 +++++++++++++++++++++++++++++++=
-++++
- 4 files changed, 82 insertions(+), 15 deletions(-)
-
---=20
-Dmitry
-
-
---zhXaljGHf11kAtnf
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTNc9SAAoJEH70+W8r6ZYqMRIQAJNS9uBQks83bojkmwLrF/aC
-hcKTHgviP85qy9yVOCnE79UT7RHV/9VQIcIX2nq/pZDnXGnSlX0KylPfd3gEd41f
-iilJYJ45wQdlxjItGusvQJApvEfdksdcu3De6uGdUXpkS6aAMTku2ULVCxga332T
-sIbn0SsHyKqpDrNPPrtddppI31KIYjW+lxvEeBlS3ticJ5S3SS6VFgPrh1F44NrV
-ik6ZeF/wBj9vpV5CH703luCAxktL6freTwvwiIy3u6RAXmDN5i4h073sUHHgAPX4
-IgOAeitHqdf/dEtt2J6s6EGejbVip+feYCHVZ/yh9Pbv2TdBJu/P6CMoV2z8ZLI8
-wKKPnHO1jmPSJ7LedJ2WYsImyIvzGDDeXsP+dNgyg/udLsCBGCxWhltyGRLSiLW9
-hzxmUzrUA5Sezfli5Y3d7Sm1u37gtyCgRAh1FnjPNUQbl10CIuhL/GMhSfOvgOaf
-/5q8jXfHB9l/Y7spVXydxTC0Bjr/v/0Tw6gNmyik80zMUOM/luJ0wXA7izQlkY2D
-peEKTRW5/149/upKkx1n0AbJcBBRpOjPLEtHP+CJi7NO892hWwNAfka8M4T9jUfL
-ZvRLiAkGP6z1Gb1SSsrfGC+4QNtwV7UJqT5FDyPfTv6Iug7TLxv/iqoKaDwDPsAi
-9FX6hfohOkf99rILgCsb
-=mGgL
------END PGP SIGNATURE-----
-
---zhXaljGHf11kAtnf--
+If Marc agrees I can queue this for -rc1.
