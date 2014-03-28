@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603AbaC1RaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51102 "EHLO
+	id S1753056AbaC1Ra5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:30:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51285 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaC1RaK (ORCPT
+	with ESMTP id S1751697AbaC1Rax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:10 -0400
+	Fri, 28 Mar 2014 13:30:53 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
         Vinod Koul <vinod.koul@intel.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.4 01/13] ALSA: compress: Pass through return value of open ops callback
-Date: Fri, 28 Mar 2014 10:31:51 -0700
-Message-Id: <20140328173053.261419370@linuxfoundation.org>
+Subject: [PATCH 3.13 02/46] ALSA: compress: Pass through return value of open ops callback
+Date: Fri, 28 Mar 2014 10:31:46 -0700
+Message-Id: <20140328173134.961094820@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
-References: <20140328173053.049244535@linuxfoundation.org>
+In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
+References: <20140328173134.630198216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
