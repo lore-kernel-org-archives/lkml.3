@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752990AbaC1N6X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:58:23 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48978 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaC1N6R (ORCPT
+	id S1753025AbaC1N63 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:58:29 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:65512 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752996AbaC1N6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:58:17 -0400
+	Fri, 28 Mar 2014 09:58:25 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.org>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH 27/28] ktap: add vim syntax file
-Date: Fri, 28 Mar 2014 09:47:48 -0400
-Message-Id: <1396014469-5937-28-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH 28/28] ktap: add COPYRIGHT file
+Date: Fri, 28 Mar 2014 09:47:49 -0400
+Message-Id: <1396014469-5937-29-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -24,137 +24,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make ktap script looks more beautiful.
+ktap is based on laujit and lua, so carry they copyright notices
+and MIT license in ktap tree.
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- tools/ktap/vim/ftdetect/ktap.vim |   3 ++
- tools/ktap/vim/syntax/ktap.vim   | 106 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+)
- create mode 100644 tools/ktap/vim/ftdetect/ktap.vim
- create mode 100644 tools/ktap/vim/syntax/ktap.vim
+ tools/ktap/COPYRIGHT | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
+ create mode 100644 tools/ktap/COPYRIGHT
 
-diff --git a/tools/ktap/vim/ftdetect/ktap.vim b/tools/ktap/vim/ftdetect/ktap.vim
+diff --git a/tools/ktap/COPYRIGHT b/tools/ktap/COPYRIGHT
 new file mode 100644
-index 0000000..439f54c
+index 0000000..9552521
 --- /dev/null
-+++ b/tools/ktap/vim/ftdetect/ktap.vim
-@@ -0,0 +1,3 @@
-+augroup filetype
-+  au BufNewFile,BufRead *.kp   set filetype=ktap
-+augroup end
-diff --git a/tools/ktap/vim/syntax/ktap.vim b/tools/ktap/vim/syntax/ktap.vim
-new file mode 100644
-index 0000000..a375b79
---- /dev/null
-+++ b/tools/ktap/vim/syntax/ktap.vim
-@@ -0,0 +1,106 @@
-+" Vim syntax file
-+" Language:     ktap
-+" Maintainer:	Jovi Zhangwei <jovi.zhangwei@gmail.com>
-+" First Author:	Jovi Zhangwei <jovi.zhangwei@gmail.com>
-+" Last Change:	2013 Dec 19
++++ b/tools/ktap/COPYRIGHT
+@@ -0,0 +1,63 @@
 +
-+" For version 5.x: Clear all syntax items
-+" For version 6.x: Quit when a syntax file was already loaded
-+if version < 600
-+  syn clear
-+elseif exists("b:current_syntax")
-+  finish
-+endif
++Copyright (C) 2012-2014, Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++All rights reserved.
 +
-+setlocal iskeyword=@,48-57,_,$
++Licensed under the GPL License, Version 2.0
 +
-+syn keyword ktapStatement break continue return
-+syn keyword ktapRepeat while for in
-+syn keyword ktapConditional if else elseif
-+syn keyword ktapDeclaration trace trace_end
-+syn keyword ktapIdentifier var
-+syn keyword ktapFunction function
-+syn match   ktapBraces "[{}\[\]]"
-+syn match   ktapParens "[()]"
-+syn keyword ktapReserved argstr probename arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
-+syn keyword ktapReserved cpu pid tid uid execname
++===============================================================================
 +
++* ktap code is based on luajit(compiler & bytecode), so carry luajit
++  copyright notices in below. 
 +
-+syn region ktapTraceDec start="\<trace\>"lc=5 end="{"me=s-1 contains=ktapString,ktapNumber
-+syn region ktapTraceDec start="\<trace_end\>"lc=9 end="{"me=s-1 contains=ktapString,ktapNumber
-+syn match ktapTrace contained "\<\w\+\>" containedin=ktapTraceDec
++LuaJIT -- a Just-In-Time Compiler for Lua. http://luajit.org/
 +
-+syn region ktapFuncDec start="\<function\>"lc=8 end=":\|("me=s-1 contains=ktapString,ktapNumber
-+syn match ktapFuncCall contained "\<\w\+\ze\(\s\|\n\)*("
-+syn match ktapFunc contained "\<\w\+\>" containedin=ktapFuncDec,ktapFuncCall
++Copyright (C) 2005-2014 Mike Pall.
 +
-+syn match ktapStat contained "@\<\w\+\ze\(\s\|\n\)*("
++Permission is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
 +
-+" decimal number
-+syn match ktapNumber "\<\d\+\>"
-+" octal number
-+syn match ktapNumber "\<0\o\+\>" contains=ktapOctalZero
-+" Flag the first zero of an octal number as something special
-+syn match ktapOctalZero contained "\<0"
-+" flag an octal number with wrong digits
-+syn match ktapOctalError "\<0\o*[89]\d*"
-+" hex number
-+syn match ktapNumber "\<0x\x\+\>"
-+" numeric arguments
-+syn match ktapNumber "\<\$\d\+\>"
-+syn match ktapNumber "\<\$#"
++The above copyright notice and this permission notice shall be included in
++all copies or substantial portions of the Software.
 +
-+syn region ktapString oneline start=+"+ skip=+\\"+ end=+"+ 
-+" string arguments
-+syn match ktapString "@\d\+\>"
-+syn match ktapString "@#"
-+syn region ktapString2 matchgroup=ktapString start="\[\z(=*\)\[" end="\]\z1\]" contains=@Spell
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
++THE SOFTWARE.
 +
-+" syn keyword ktapTodo contained TODO FIXME XXX
++[ MIT license: http://www.opensource.org/licenses/mit-license.php ]
 +
-+syn match ktapComment "#.*"
++===============================================================================
 +
-+" treat ^#! as special
-+syn match ktapSharpBang "^#!.*"
++* Some ktap code is based on lua programming language initially,
++  so carry lua own copyright notices and license terms:
++  (lua's MIT license is compatible with GPL.
++   ktap can redistribute as GPL v2, without violate with lua license,
++   this was confirmed with official lua team)
 +
++Copyright (C) 1994~2013 Lua.org, PUC-Rio.
++ 
++Permissiossion is hereby granted, free of charge, to any person obtaining a copy
++of this software and associated documentation files (the "Software"), to deal
++in the Software without restriction, including without limitation the rights
++to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
++copies of the Software, and to permit persons to whom the Software is
++furnished to do so, subject to the following conditions:
 +
-+syn keyword ktapFunc printf print print_hist stack
-+syn keyword ktapFunc gettimeofday_us
-+syn keyword ktapFunc pairs
++The above copyright notice and this permission notice shall be included in all
++copies or substantial portions of the Software.
 +
++THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++SOFTWARE.
 +
-+" Define the default highlighting.
-+" For version 5.7 and earlier: only when not done already
-+" For version 5.8 and later: only when an item doesn't have highlighting yet
-+if version >= 508 || !exists("did_lua_syntax_inits")
-+  if version < 508
-+    let did_lua_syntax_inits = 1
-+    command -nargs=+ HiLink hi link <args>
-+  else
-+    command -nargs=+ HiLink hi def link <args>
-+  endif
-+
-+  HiLink ktapNumber		Number
-+  HiLink ktapOctalZero		PreProc " c.vim does it this way...
-+  HiLink ktapOctalError		Error
-+  HiLink ktapString		String
-+  HiLink ktapString2		String
-+  HiLink ktapTodo		Todo
-+  HiLink ktapComment		Comment
-+  HiLink ktapSharpBang		PreProc
-+  HiLink ktapStatement		Statement
-+  HiLink ktapConditional	Conditional
-+  HiLink ktapRepeat		Repeat
-+  HiLink ktapTrace		Function
-+  HiLink ktapFunc		Function
-+  HiLink ktapStat		Function
-+  HiLink ktapFunction		Function
-+  HiLink ktapBraces		Function
-+  HiLink ktapDeclaration	Typedef
-+  HiLink ktapIdentifier		Identifier
-+  HiLink ktapReserved		Keyword
-+
-+  delcommand HiLink
-+endif
-+
-+let b:current_syntax = "ktap"
 -- 
 1.8.1.4
 
