@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752079AbaC1QcD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 12:32:03 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:36355 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaC1Qb6 (ORCPT
+	id S1752153AbaC1QiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 12:38:00 -0400
+Received: from www.linutronix.de ([62.245.132.108]:50943 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaC1Qh6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 12:31:58 -0400
-Date: Fri, 28 Mar 2014 09:31:54 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: Fugang Duan <B38611@freescale.com>, Grant Likely <grant.likely@linaro.org>,
-        Henrik Rydberg <rydberg@euromail.se>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, Kumar Gala <galak@codeaurora.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Rob Herring <robh+dt@kernel.org>, Rob Landley <rob@landley.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Simon Budig <simon.budig@kernelconcepts.de>,
-        Daniel Wagener <daniel.wagener@kernelconcepts.de>
-Subject: Re: [PATCHv6 0/5] Input: edt-ft5x06: Add DT support
-Message-ID: <20140328163154.GE22658@core.coreip.homeip.net>
-References: <1395323075-12146-1-git-send-email-LW@KARO-electronics.de>
- <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
+	Fri, 28 Mar 2014 12:37:58 -0400
+Date: Fri, 28 Mar 2014 17:37:53 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-rt-users@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, Zhangwei <jovi.zhangwei@huawei.com>
+Subject: Re: [BUGREPORT] Tasklet scheduled issue in Linux 3.4.x-rt
+Message-ID: <20140328163753.GB14842@linutronix.de>
+References: <53144A57.4040204@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1395673870-29435-1-git-send-email-LW@KARO-electronics.de>
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <53144A57.4040204@huawei.com>
+X-Key-Id: 97C4700B
+X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 04:11:05PM +0100, Lothar Waßmann wrote:
-> Changes wrt. v1:
-> addressed the comments from Jingoo Han and Mark Rutland
-> - added another patch to convert the driver to use devm_* functions
-> - removed sysfs reference from bindings documentation
-> - changed '_' to '-' in property name
-> - added 'edt,' prefix to properties names
-> - added sanity check for parameters read from DT
-> - cleaned up the gpio handling code
-> 
-> Changes wrt. v2:
-> - fixed the devm_* messup reported by Dmitry Torokhov
-> - added unit for report-rate property to the binding doc
-> - added separate patch to fix the reset delays
-> 
-> Changes wrt: v3:
-> - removed patches that have already been applied in the mean time
-> - ignore touchdown events, since those may report bad coordinates
-> - added support for a new firmware version
-> 
-> Changes wrt: v4:
-> - removed some empty lines in the cleanup patch
-> - addressed comments by Mark Rutland concerning the binding doc
-> - use of_property_read_u32() instead of of_property_get()
-> - dropped the 'report_rate' property
-> - addressed comments by Fugang Duan
-> - added Daniel Wagener and myself to the Copyright header in the
->   source file
-> - use msleep() rather than mdelay() for the reset/wake pin timing
-> 
-> Changes wrt: v5:
-> - added missing '&' to parameter of of_property_read_u32()
-> 
+* Yijing Wang | 2014-03-03 17:24:39 [+0800]:
 
-Applied, thank you.
+>[2012-03-26 18:55:43][  929.252312] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
+>[2012-03-27 03:41:06][ 3647.886005] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
+>[2012-03-27 03:42:04][ 3705.434418] WARNING: at kernel/softirq.c:799 __tasklet_action+0xae/0x1a0()
 
--- 
-Dmitry
+>FC card hardware  -------> FC driver interrupt handler  --------->tasklet_schedule(fc driver tasklet) ------->tasklet running, call function process FC IO data.
+>                        here will disable FC card interrupt                                                     here will enable FC card interrupt again
+
+This looks okay.
+
+>We found the tasklet state is 0x1(mean state is TASKLET_STATE_SCHED),count is 0, before we call tasklet_schedule().
+>So the new tasklet can not add to CPU list.
+>
+>And I also add some dynamic debug in __tasklet_action(); after the issue occur, I open the dynamic debug.
+>After we force the hardware reset to interrupt OS, we never found the FC driver tasklet running in dmesg(I identify the tasklet by its data).
+>I guess the FC tasklet is not in CPU global tasklet list.
+You guess correct.
+
+>I hope somebody can help to look at it. If I missing something, let me know.
+
+The tasklet is always added to the local cpu, never cross. That list is
+always accessed with interrupts off.
+With TASKLET_STATE_SCHED set, the next step is to add the task let to
+the CPU's tasklet list. This isn't done if TASKLET_STATE_RUN is already
+set which means __tasklet_action() is already busy serving the tasklet.
+In that case it clears TASKLET_STATE_SCHED and invokes the tasklet
+again.
+After looking at it for a while I must say I have no idea how you
+managed to keep TASKLET_STATE_SCHED set. Further, each time
+TASKLET_STATE_RUN is cleared it is always with a cmpxchg() down to zero
+which means TASKLET_STATE_SCHED is removed earlier.
+That said, triggerring the warning at 773 is the first thing that went
+wrong. After it has been added to the list, the TASKLET_STATE_RUN is
+cleared again. I have no idea how it managed to remain still on except
+that __tasklet_common_schedule() is invoked which is protected by the
+SCHED bitâ€¦
+
+>Thanks!
+>Yijing.
+
+Sebastian
