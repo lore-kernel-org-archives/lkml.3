@@ -1,105 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaC1XRL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 19:17:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43411 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750864AbaC1XRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 19:17:08 -0400
-Date: Fri, 28 Mar 2014 16:17:06 -0700 (PDT)
-From: Jiri Kosina <jkosina@suse.cz>
-To: YongHwan Ki <kyhw@afoi.co.kr>
-cc: rydberg@euromail.se, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] Add VID/PID for HID-type Multi-Touch Module of AFO CO.,
-  LTD.
-In-Reply-To: <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
-Message-ID: <alpine.LNX.2.00.1403281615300.16202@pobox.suse.cz>
-References: <006101cf4812$c3ac1680$4b044380$@afoi.co.kr> <alpine.LNX.2.00.1403251156260.17500@pobox.suse.cz> <003a01cf488c$ab9c4400$02d4cc00$@afoi.co.kr>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751467AbaC1XTu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 19:19:50 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:59737 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751324AbaC1XTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 19:19:48 -0400
+X-Sasl-enc: eJEJAvRlWzAy6aTSpsyFuduBU9ZUdE1h/Hyi3sYgunOm 1396048786
+Message-ID: <53360393.2030108@imap.cc>
+Date: Sat, 29 Mar 2014 00:19:47 +0100
+From: Tilman Schmidt <tilman@imap.cc>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Julia Lawall <Julia.Lawall@lip6.fr>
+CC: Karsten Keil <isdn@linux-pingi.de>, tglx@linutronix.de,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/7] isdn: replace del_timer by del_timer_sync
+References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr> <1395869625-15209-2-git-send-email-Julia.Lawall@lip6.fr>
+In-Reply-To: <1395869625-15209-2-git-send-email-Julia.Lawall@lip6.fr>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014, YongHwan Ki wrote:
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-> Sorry, I woud like to add the AFO defines in the Linux Kernel.
-> No afo defines exists in the current kernel tree.
-> I correctly changed the log for adding the afo defines.
+Am 26.03.2014 22:33, schrieb Julia Lawall:
+> From: Julia Lawall <Julia.Lawall@lip6.fr>
 > 
-> Kernel Version : linux-3.14.rc7
-> Signed-off-by: Yonghwan Ki <kyhw@afoi.co.kr>
-> 
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-core.c ../linux-3.14-rc7m/drivers/hid/hid-core.c
-> --- ./drivers/hid/hid-core.c	2014-03-17 10:51:24.000000000 +0900
-> +++ ../linux-3.14-rc7m/drivers/hid/hid-core.c	2014-03-21 17:41:51.846939444 +0900
-> @@ -1881,6 +1881,8 @@ static const struct hid_device_id hid_ha
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_TCM) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_AFO, USB_DEVICE_ID_AFO_THM) },
->  
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_MICROSOFT, USB_DEVICE_ID_MS_PRESENTER_8K_BT) },
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_NINTENDO, USB_DEVICE_ID_NINTENDO_WIIMOTE) },
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-ids.h ../linux-3.14-rc7m/drivers/hid/hid-ids.h
-> --- ./drivers/hid/hid-ids.h	2014-03-17 10:51:24.000000000 +0900
-> +++ ../linux-3.14-rc7m/drivers/hid/hid-ids.h	2014-03-21 17:30:34.478959555 +0900
-> @@ -960,5 +960,9 @@
->  #define USB_VENDOR_ID_PRIMAX	0x0461
->  #define USB_DEVICE_ID_PRIMAX_KEYBOARD	0x4e05
->  
-> +#define USB_VENDOR_ID_AFO		0x2576
-> +#define USB_DEVICE_ID_AFO_TCM		0x0003
-> +#define USB_DEVICE_ID_AFO_BL		0x0005
-> +#define USB_DEVICE_ID_AFO_THM		0x0011
->  
->  #endif
-> diff -uprN -X Documentation/dontdiff ./drivers/hid/hid-multitouch.c ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c
-> --- ./drivers/hid/hid-multitouch.c	2014-03-17 10:51:24.000000000 +0900
-> +++ ../linux-3.14-rc7m/drivers/hid/hid-multitouch.c	2014-03-21 17:45:25.946933088 +0900
-> @@ -1395,6 +1395,15 @@ static const struct hid_device_id mt_dev
->  	{  .driver_data = MT_CLS_WIN_8,
->  		HID_DEVICE(HID_BUS_ANY, HID_GROUP_MULTITOUCH_WIN_8,
->  			HID_ANY_ID, HID_ANY_ID) },
-> +
-> +	/* AFO MultiTouch device */
-> +	{  .driver_data = MT_CLS_SERIAL,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-> +			USB_DEVICE_ID_AFO_TCM) },
-> +	{  .driver_data = MT_CLS_SERIAL,
-> +		HID_USB_DEVICE(USB_VENDOR_ID_AFO,
-> +			USB_DEVICE_ID_AFO_THM) },
-> +
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(hid, mt_devices);
-> Binary files ./kernel/x509_certificate_list and ../linux-3.14-rc7m/kernel/x509_certificate_list differ
-> diff -uprN -X Documentation/dontdiff ./lib/oid_registry_data.c ../linux-3.14-rc7m/lib/oid_registry_data.c
-> --- ./lib/oid_registry_data.c	2014-03-21 18:45:37.598825862 +0900
-> +++ ../linux-3.14-rc7m/lib/oid_registry_data.c	2014-03-24 21:43:59.826812763 +0900
-> @@ -1,5 +1,5 @@
->  /*
-> - * Automatically generated by /usr/src/linux-3.14-rc7/lib/build_OID_registry.  Do not edit
-> + * Automatically generated by /usr/src/linux-3.14-rc7m/lib/build_OID_registry.  Do not edit
+> Use del_timer_sync to ensure that the timer is stopped on all CPUs
+> before the driver exists.
 
-Please remove this hunk, it has nothing to do with the patchset.
+Surely you meant "exits"?
 
->   */
->  
->  static const unsigned short oid_index[OID__NR + 1] = {
-> diff -uprN -X Documentation/dontdiff ./signing_key.priv ../linux-3.14-rc7m/signing_key.priv
-> --- ./signing_key.priv	2014-03-21 17:24:11.874970914 +0900
-> +++ ../linux-3.14-rc7m/signing_key.priv	2014-03-24 20:22:01.946958769 +0900
-> @@ -1,52 +1,52 @@
->  -----BEGIN PRIVATE KEY-----
+Regards,
+Tilman
 
-Again, I don't think you want to be sending this out :)
+- -- 
+Tilman Schmidt                              E-Mail: tilman@imap.cc
+Bonn, Germany
+Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
+Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (MingW32)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+iEYEARECAAYFAlM2A5IACgkQQ3+did9BuFtuMACfarliJdOkqLmJJvRqbcM5eCFd
+CWwAn3FuQ+juOeo2EgM8e1JBTjlHhG3o
+=a90K
+-----END PGP SIGNATURE-----
