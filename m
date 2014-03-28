@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaC1Opc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:45:32 -0400
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:45112 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbaC1Op2 (ORCPT
+	id S1752215AbaC1OsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:48:01 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:64214 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313AbaC1OsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:45:28 -0400
-Date: Fri, 28 Mar 2014 09:45:23 -0500
-From: Clark Williams <clark.williams@gmail.com>
-To: RT <linux-rt-users@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?B?S2xlaW5lLUv2?= =?ISO-8859-1?B?bmln?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Gary Robertson <gary.robertson@linaro.org>,
-        Mike Holmes <mike.holmes@linaro.org>,
-        Anders Roxell <anders.roxell@linaro.org>,
-        John Kacur <jkacur@gmail.com>
-Subject: rt-tests 0.88 released
-Message-ID: <20140328094523.7c9e040c@sluggy>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	Fri, 28 Mar 2014 10:48:00 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_/6K+QPWev35RVU+iXeTw4yNC"; protocol="application/pgp-signature"
+In-Reply-To: <533587FD.7000006@redhat.com>
+References: <CALZtONDiOdYSSu02Eo78F4UL5OLTsk-9MR1hePc-XnSujRuvfw@mail.gmail.com>
+ <20140327222605.GB16495@medulla.variantweb.net> <CALZtONDBNzL_S+UUxKgvNjEYu49eM5Fc2yJ37dJ8E+PEK+C7qg@mail.gmail.com>
+ <533587FD.7000006@redhat.com>
+From: Dan Streetman <ddstreet@ieee.org>
+Date: Fri, 28 Mar 2014 10:47:38 -0400
+X-Google-Sender-Auth: ljsKhRks4F9RSYXIZtpt5d14yPo
+Message-ID: <CALZtONA=v+3_+6qEvyY0SruT=aGxAfV_N5fsHvLMJKFp4Stnww@mail.gmail.com>
+Subject: Re: Adding compression before/above swapcache
+To: Rik van Riel <riel@redhat.com>
+Cc: Seth Jennings <sjennings@variantweb.net>, Hugh Dickins <hughd@google.com>,
+        Mel Gorman <mgorman@suse.de>, Michal Hocko <mhocko@suse.cz>,
+        Bob Liu <bob.liu@oracle.com>, Minchan Kim <minchan@kernel.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/6K+QPWev35RVU+iXeTw4yNC
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Fri, Mar 28, 2014 at 10:32 AM, Rik van Riel <riel@redhat.com> wrote:
+> On 03/28/2014 08:36 AM, Dan Streetman wrote:
+>
+>> Well my general idea was to modify shrink_page_list() so that instead
+>> of calling add_to_swap() and then pageout(), anonymous pages would be
+>> added to a compressed cache.  I haven't worked out all the specific
+>> details, but I am initially thinking that the compressed cache could
+>> simply repurpose incoming pages to use as the compressed cache storage
+>> (using its own page mapping, similar to swap page mapping), and then
+>> add_to_swap() the storage pages when the compressed cache gets to a
+>> certain size.  Pages that don't compress well could just bypass the
+>> compressed cache, and get sent the current route directly to
+>> add_to_swap().
+>
+>
+> That sounds a lot like what zswap does. How is your
+> proposal different?
 
-I just pushed v0.88 of rt-tests up to kernel.org. This release has a
-set of fixes for ARM systems from:
+Two main ways:
+1) it's above swap, so it would still work without any real swap.
+2) compressed pages could be written to swap disk.
 
-Uwe Kleine-K=F6nig <u.kleine-koenig@pengutronix.de>:
-  - cyclictest: Fix tracemark output when the latency threshold is hit
-    on ARM
+Essentially, the two existing memory compression approaches are both
+tied to swap.  But, AFAIK there's no reason that memory compression
+has to be tied to swap.  So my approach uncouples it.
 
-Gary S. Robertson <gary.robertson@linaro.org>:
-  - cyclictest: Restore CPU affinity function for non-NUMA builds
-  - cyclictest: Don't offer --numa option when unavailable
+>
+> And, is there an easier way to implement that difference? :)
 
-You can pull it with git from here:
+I'm hoping that it wouldn't actually be too complex.  But that's part
+of why I emailed for feedback before digging into a prototype... :-)
 
-git://git.kernel.org/pub/scm/linux/kernel/git/clrkwllms/rt-tests.git
 
-branch master or tag v0.88
-
-Tarballs available at:
-
-https://www.kernel.org/pub/linux/kernel/people/clrkwllms/
-
-Questions, comments, snide remarks all welcome (well, some more than
-others).=20
-
-Clark
-
---Sig_/6K+QPWev35RVU+iXeTw4yNC
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTNYsDAAoJEEersVlSw9Nz+gEQAJxpRiR8xsqaiTYvgu4mC9g7
-fW7d3ZtERkvdVqPt9YRh3x6CdmQs5QGRoYcJOpknioohWr1WBUKqOmRD8D62IfDP
-nzqEpfOMIuChyUdr5h0I/g+5L7//WjC1LS05hUyOWXl0l1LTGv1AOqtoEIe2u7FD
-SMlvK00Y65V7VIrHXRy3B089dKWF3bDi0GRLX4Qwv9zYKj+QbrZbgRhRGyboEJgT
-7okn7Ym0/VxHp4q3r4bxobWQ0nK+taoB1fJEHznBTxB/O/M3ceHpM0OzLLwhiv8W
-6E90yG69olJZUofg0med5qpzDvbVHwXdiOzCcOpvC+Atcki2d+pybBbKLOBjWAWZ
-hLhcnWa1FPFwEHDIK+3yy9PqCT3TPIjoeadYsqavHbQyMmyUGAkIehgv4l2B+Uwd
-yrdrT1vyfGtNwJISsLLPDHPVsfNz5PJgX6jfzNQM/JNOtocairZ6At/z6lRHPtem
-ry3t1oZMQx1ojURsGdX1qnuexp6CRHaWJR7nYADz4MImwxuQ1ydKI5Bm/TDI+tnD
-iY+vMGJAWhl9eSgdgye7vScBYaqBkPJABofW6rFkqOo+v2XGX70lMxQB1Kwycg6A
-LVbm68TKIElk4ZtY5ToDeT689FLxO/LUgciUD0fj3TYhe++jfWXDYRFdvBekTgdW
-XwpGJf66dJqidYuGiqGq
-=9zbX
------END PGP SIGNATURE-----
-
---Sig_/6K+QPWev35RVU+iXeTw4yNC--
+>
+>
