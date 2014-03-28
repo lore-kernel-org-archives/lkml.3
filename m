@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaC2PY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:24:27 -0400
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:44125 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663AbaC2PYU (ORCPT
+	id S1752153AbaC2PYm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:24:42 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:35060 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862AbaC2PYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:24:20 -0400
+	Sat, 29 Mar 2014 11:24:35 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 07/29] ktap: add kernel module main entry(kernel/trace/ktap/ktap.[c|h])
-Date: Fri, 28 Mar 2014 10:45:02 -0400
-Message-Id: <1396017924-7754-8-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 08/29] ktap: add bytecode reader(kernel/trace/ktap/kp_bcread.[c|h])
+Date: Fri, 28 Mar 2014 10:45:03 -0400
+Message-Id: <1396017924-7754-9-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -25,39 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ktap.c is ktapvm kernel module main entry,
-it init ktap kernel module, create 'ktap' debugfs directory.
+Exposed function:
+ktap_proto_t *kp_bcread(ktap_state_t *ks, unsigned char *buff, int len)
 
-Userspace tool send ioctl command to '/sys/kernel/debug/ktap/ktapvm' file,
-to control ktap runtime.
-
-It will read bytecode trunk, validate and execute bytecode.
-
-kp_vm_new_state
-    kp_bcread
-        kp_vm_validate_code
-            kp_vm_call_proto
+Function kp_bcread read bytecode from buff, and return
+ktap top-level function prototype.
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- kernel/trace/ktap/ktap.c | 255 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/trace/ktap/ktap.h | 176 ++++++++++++++++++++++++++++++++
- 2 files changed, 431 insertions(+)
- create mode 100644 kernel/trace/ktap/ktap.c
- create mode 100644 kernel/trace/ktap/ktap.h
+ kernel/trace/ktap/kp_bcread.c | 429 ++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/ktap/kp_bcread.h |   6 +
+ 2 files changed, 435 insertions(+)
+ create mode 100644 kernel/trace/ktap/kp_bcread.c
+ create mode 100644 kernel/trace/ktap/kp_bcread.h
 
-diff --git a/kernel/trace/ktap/ktap.c b/kernel/trace/ktap/ktap.c
+diff --git a/kernel/trace/ktap/kp_bcread.c b/kernel/trace/ktap/kp_bcread.c
 new file mode 100644
-index 0000000..855af09
+index 0000000..b51b622
 --- /dev/null
-+++ b/kernel/trace/ktap/ktap.c
-@@ -0,0 +1,255 @@
++++ b/kernel/trace/ktap/kp_bcread.c
+@@ -0,0 +1,429 @@
 +/*
-+ * ktap.c - ktapvm kernel module main entry
++ * Bytecode reader.
 + *
 + * This file is part of ktap by Jovi Zhangwei.
 + *
 + * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
++ *
++ * Adapted from luajit and lua interpreter.
++ * Copyright (C) 2005-2014 Mike Pall.
++ * Copyright (C) 1994-2008 Lua.org, PUC-Rio.
 + *
 + * ktap is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -73,422 +70,422 @@ index 0000000..855af09
 + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
 +
-+/*
-+ * this file is the first file to be compile, add CONFIG_ checking in here.
-+ * See Requirements in doc/tutorial.md
-+ */
-+
-+#include <linux/version.h>
-+#include <linux/module.h>
-+#include <linux/errno.h>
-+#include <linux/file.h>
-+#include <linux/slab.h>
-+#include <linux/fcntl.h>
-+#include <linux/sched.h>
-+#include <linux/poll.h>
-+#include <linux/anon_inodes.h>
-+#include <linux/debugfs.h>
-+#include <linux/vmalloc.h>
 +#include <uapi/ktap/ktap_types.h>
++#include <uapi/ktap/ktap_bc.h>
++#include <uapi/ktap/ktap_err.h>
 +#include "ktap.h"
-+#include "kp_bcread.h"
++#include "kp_obj.h"
 +#include "kp_vm.h"
++#include "kp_str.h"
++#include "kp_tab.h"
 +
-+/* 
-+ * gettimeofday_ns: common helper function
-+ * TODO: make getnstimeofday safe called in probe context, there have
-+ * seq lock in getnstimeofday.
-+ * (Systemtap fix this by introduce its own timekeeping code)
-+ */
-+long gettimeofday_ns(void)
-+{
-+	struct timespec now;
 +
-+	getnstimeofday(&now);
-+	return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
-+}
-+
-+static int load_trunk(ktap_option_t *parm, unsigned long **buff)
-+{
-+	unsigned long *vmstart;
-+
-+	if (parm->trunk_len > 4096)
-+		return -EINVAL;
-+
-+	vmstart = vmalloc(parm->trunk_len);
-+	if (!vmstart)
-+		return -ENOMEM;
-+
-+	if (copy_from_user(vmstart, (void __user *)parm->trunk,
-+			   parm->trunk_len)) {
-+		vfree(vmstart);
-+		return -EFAULT;
-+	}
-+
-+	*buff = vmstart;
-+	return 0;
-+}
-+
-+static struct dentry *kp_dir_dentry;
-+
-+/* Ktap Main Entry */
-+static int ktap_main(struct file *file, ktap_option_t *parm)
-+{
-+	unsigned long *buff = NULL;
++/* Context for bytecode reader. */
++typedef struct BCReadCtx {
 +	ktap_state_t *ks;
++	int flags;
++	char *start;
++	char *p;
++	char *pe;
++	ktap_str_t *chunkname;
++	ktap_val_t *savetop;
++} BCReadCtx;
++
++
++#define bcread_flags(ctx)	(ctx)->flags
++#define bcread_swap(ctx) \
++	((bcread_flags(ctx) & BCDUMP_F_BE) != KP_BE*BCDUMP_F_BE)
++#define bcread_oldtop(ctx)		(ctx)->savetop
++#define bcread_savetop(ctx)	(ctx)->savetop = (ctx)->ks->top;
++
++static inline uint32_t bswap(uint32_t x)
++{
++	return (uint32_t)__builtin_bswap32((int32_t)x);
++}
++
++/* -- Input buffer handling ----------------------------------------------- */
++
++/* Throw reader error. */
++static void bcread_error(BCReadCtx *ctx, ErrMsg em)
++{
++	kp_error(ctx->ks, "%s\n", err2msg(em));
++}
++
++/* Return memory block from buffer. */
++static inline uint8_t *bcread_mem(BCReadCtx *ctx, int len)
++{
++	uint8_t *p = (uint8_t *)ctx->p;
++	ctx->p += len;
++	kp_assert(ctx->p <= ctx->pe);
++	return p;
++}
++
++/* Copy memory block from buffer. */
++static void bcread_block(BCReadCtx *ctx, void *q, int len)
++{
++	memcpy(q, bcread_mem(ctx, len), len);
++}
++
++/* Read byte from buffer. */
++static inline uint32_t bcread_byte(BCReadCtx *ctx)
++{
++	kp_assert(ctx->p < ctx->pe);
++	return (uint32_t)(uint8_t)*ctx->p++;
++}
++
++/* Read ULEB128 value from buffer. */
++static inline uint32_t bcread_uint32(BCReadCtx *ctx)
++{
++	uint32_t v;
++	bcread_block(ctx, &v, sizeof(uint32_t));
++	kp_assert(ctx->p <= ctx->pe);
++	return v;
++}
++
++/* -- Bytecode reader ----------------------------------------------------- */
++
++/* Read debug info of a prototype. */
++static void bcread_dbg(BCReadCtx *ctx, ktap_proto_t *pt, int sizedbg)
++{
++	void *lineinfo = (void *)proto_lineinfo(pt);
++
++	bcread_block(ctx, lineinfo, sizedbg);
++	/* Swap lineinfo if the endianess differs. */
++	if (bcread_swap(ctx) && pt->numline >= 256) {
++		int i, n = pt->sizebc-1;
++		if (pt->numline < 65536) {
++			uint16_t *p = (uint16_t *)lineinfo;
++			for (i = 0; i < n; i++)
++				p[i] = (uint16_t)((p[i] >> 8)|(p[i] << 8));
++		} else {
++			uint32_t *p = (uint32_t *)lineinfo;
++			for (i = 0; i < n; i++)
++				p[i] = bswap(p[i]);
++		}
++	}
++}
++
++/* Find pointer to varinfo. */
++static const void *bcread_varinfo(ktap_proto_t *pt)
++{
++	const uint8_t *p = proto_uvinfo(pt);
++	int n = pt->sizeuv;
++	if (n)
++		while (*p++ || --n) ;
++	return p;
++}
++
++/* Read a single constant key/value of a template table. */
++static int bcread_ktabk(BCReadCtx *ctx, ktap_val_t *o)
++{
++	int tp = bcread_uint32(ctx);
++	if (tp >= BCDUMP_KTAB_STR) {
++		int len = tp - BCDUMP_KTAB_STR;
++		const char *p = (const char *)bcread_mem(ctx, len);
++		ktap_str_t *ts = kp_str_new(ctx->ks, p, len);
++		if (unlikely(!ts))
++			return -ENOMEM;
++
++		set_string(o, ts);
++	} else if (tp == BCDUMP_KTAB_NUM) {
++		set_number(o, *(ktap_number *)bcread_mem(ctx,
++					sizeof(ktap_number)));
++	} else {
++ 		kp_assert(tp <= BCDUMP_KTAB_TRUE);
++		setitype(o, ~tp);
++	}
++	return 0;
++}
++
++/* Read a template table. */
++static ktap_tab_t *bcread_ktab(BCReadCtx *ctx)
++{
++	int narray = bcread_uint32(ctx);
++	int nhash = bcread_uint32(ctx);
++
++	ktap_tab_t *t = kp_tab_new(ctx->ks, narray, hsize2hbits(nhash));
++	if (!t)
++		return NULL;
++
++	if (narray) {  /* Read array entries. */
++		int i;
++		ktap_val_t *o = t->array;
++		for (i = 0; i < narray; i++, o++) 
++			if (bcread_ktabk(ctx, o))
++				return NULL;
++	}
++	if (nhash) {  /* Read hash entries. */
++		int i;
++		for (i = 0; i < nhash; i++) {
++			ktap_val_t key;
++			ktap_val_t val;
++			if (bcread_ktabk(ctx, &key))
++				return NULL;
++			kp_assert(!is_nil(&key));
++			if (bcread_ktabk(ctx, &val))
++				return NULL;
++			kp_tab_set(ctx->ks, t, &key, &val);
++		}
++	}
++	return t;
++}
++
++/* Read GC constants(string, table, child proto) of a prototype. */
++static int bcread_kgc(BCReadCtx *ctx, ktap_proto_t *pt, int sizekgc)
++{
++	ktap_obj_t **kr = (ktap_obj_t **)pt->k - (ptrdiff_t)sizekgc;
++	int i;
++
++	for (i = 0; i < sizekgc; i++, kr++) {
++		int tp = bcread_uint32(ctx);
++		if (tp >= BCDUMP_KGC_STR) {
++			int len = tp - BCDUMP_KGC_STR;
++			const char *p = (const char *)bcread_mem(ctx, len);
++			*kr =(ktap_obj_t *)kp_str_new(ctx->ks, p, len);
++			if (unlikely(!*kr))
++				return -1;
++		} else if (tp == BCDUMP_KGC_TAB) {
++			*kr = (ktap_obj_t *)bcread_ktab(ctx);
++			if (unlikely(!*kr))
++				return -1;
++		} else if (tp == BCDUMP_KGC_CHILD){
++			ktap_state_t *ks = ctx->ks;
++			if (ks->top <= bcread_oldtop(ctx)) {
++				bcread_error(ctx, KP_ERR_BCBAD);
++				return -1;
++			}
++			ks->top--;
++			*kr = (ktap_obj_t *)ptvalue(ks->top);
++		} else {
++			bcread_error(ctx, KP_ERR_BCBAD);
++			return -1;
++		}
++	}
++
++	return 0;
++}
++
++/* Read number constants of a prototype. */
++static void bcread_knum(BCReadCtx *ctx, ktap_proto_t *pt, int sizekn)
++{
++	int i;
++	ktap_val_t *o = pt->k;
++
++	for (i = 0; i < sizekn; i++, o++) {
++		set_number(o, *(ktap_number *)bcread_mem(ctx,
++					sizeof(ktap_number)));
++	}
++}
++
++/* Read bytecode instructions. */
++static void bcread_bytecode(BCReadCtx *ctx, ktap_proto_t *pt, int sizebc)
++{
++	BCIns *bc = proto_bc(pt);
++	bc[0] = BCINS_AD((pt->flags & PROTO_VARARG) ? BC_FUNCV : BC_FUNCF,
++			  pt->framesize, 0);
++	bcread_block(ctx, bc+1, (sizebc-1)*(int)sizeof(BCIns));
++	/* Swap bytecode instructions if the endianess differs. */
++	if (bcread_swap(ctx)) {
++		int i;
++		for (i = 1; i < sizebc; i++) bc[i] = bswap(bc[i]);
++	}
++}
++
++/* Read upvalue refs. */
++static void bcread_uv(BCReadCtx *ctx, ktap_proto_t *pt, int sizeuv)
++{
++	if (sizeuv) {
++		uint16_t *uv = proto_uv(pt);
++		bcread_block(ctx, uv, sizeuv*2);
++		/* Swap upvalue refs if the endianess differs. */
++		if (bcread_swap(ctx)) {
++			int i;
++			for (i = 0; i < sizeuv; i++)
++				uv[i] = (uint16_t)((uv[i] >> 8)|(uv[i] << 8));
++		}
++	}
++}
++
++/* Read a prototype. */
++static ktap_proto_t *bcread_proto(BCReadCtx *ctx)
++{
 +	ktap_proto_t *pt;
-+	long start_time, delta_time;
-+	int ret;
++	int framesize, numparams, flags;
++	int sizeuv, sizekgc, sizekn, sizebc, sizept;
++	int ofsk, ofsuv, ofsdbg;
++	int sizedbg = 0;
++	BCLine firstline = 0, numline = 0;
 +
-+	start_time = gettimeofday_ns();
-+
-+	ks = kp_vm_new_state(parm, kp_dir_dentry);
-+	if (unlikely(!ks))
-+		return -ENOEXEC;
-+
-+	file->private_data = ks;
-+
-+	ret = load_trunk(parm, &buff);
-+	if (ret) {
-+		kp_error(ks, "cannot load file\n");
-+		goto out;
++	/* Read prototype header. */
++	flags = bcread_byte(ctx);
++	numparams = bcread_byte(ctx);
++	framesize = bcread_byte(ctx);
++	sizeuv = bcread_byte(ctx);
++	sizekgc = bcread_uint32(ctx);
++	sizekn = bcread_uint32(ctx);
++	sizebc = bcread_uint32(ctx) + 1;
++	if (!(bcread_flags(ctx) & BCDUMP_F_STRIP)) {
++		sizedbg = bcread_uint32(ctx);
++		if (sizedbg) {
++			firstline = bcread_uint32(ctx);
++			numline = bcread_uint32(ctx);
++		}
 +	}
 +
-+	pt = kp_bcread(ks, (unsigned char *)buff, parm->trunk_len);
++	/* Calculate total size of prototype including all colocated arrays. */
++	sizept = (int)sizeof(ktap_proto_t) + sizebc * (int)sizeof(BCIns) +
++			sizekgc * (int)sizeof(ktap_obj_t *);
++	sizept = (sizept + (int)sizeof(ktap_val_t)-1) &
++			~((int)sizeof(ktap_val_t)-1);
++	ofsk = sizept; sizept += sizekn*(int)sizeof(ktap_val_t);
++	ofsuv = sizept; sizept += ((sizeuv+1)&~1)*2;
++	ofsdbg = sizept; sizept += sizedbg;
 +
-+	vfree(buff);
++	/* Allocate prototype object and initialize its fields. */
++	pt = (ktap_proto_t *)kp_obj_new(ctx->ks, (int)sizept);
++	pt->gct = ~KTAP_TPROTO;
++	pt->numparams = (uint8_t)numparams;
++	pt->framesize = (uint8_t)framesize;
++	pt->sizebc = sizebc;
++	pt->k = (char *)pt + ofsk;
++	pt->uv = (char *)pt + ofsuv;
++	pt->sizekgc = 0;  /* Set to zero until fully initialized. */
++	pt->sizekn = sizekn;
++	pt->sizept = sizept;
++	pt->sizeuv = (uint8_t)sizeuv;
++	pt->flags = (uint8_t)flags;
++	pt->chunkname = ctx->chunkname;
 +
-+	if (pt) {
-+		/* validate byte code */
-+		if (kp_vm_validate_code(ks, pt, ks->stack))
-+			goto out;
++	/* Close potentially uninitialized gap between bc and kgc. */
++	*(uint32_t *)((char *)pt + ofsk - sizeof(ktap_obj_t *)*(sizekgc+1))
++									= 0;
 +
-+		delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
-+		kp_verbose_printf(ks, "booting time: %d (us)\n", delta_time);
++	/* Read bytecode instructions and upvalue refs. */
++	bcread_bytecode(ctx, pt, sizebc);
++	bcread_uv(ctx, pt, sizeuv);
 +
-+		/* enter vm */
-+		kp_vm_call_proto(ks, pt);
++	/* Read constants. */
++	if (bcread_kgc(ctx, pt, sizekgc))
++		return NULL;
++	pt->sizekgc = sizekgc;
++	bcread_knum(ctx, pt, sizekn);
++
++	/* Read and initialize debug info. */
++	pt->firstline = firstline;
++	pt->numline = numline;
++	if (sizedbg) {
++		int sizeli = (sizebc-1) << (numline < 256 ? 0 :
++					numline < 65536 ? 1 : 2);
++		pt->lineinfo = (char *)pt + ofsdbg;
++		pt->uvinfo = (char *)pt + ofsdbg + sizeli;
++		bcread_dbg(ctx, pt, sizedbg);
++		pt->varinfo = (void *)bcread_varinfo(pt);
++	} else {
++		pt->lineinfo = NULL;
++		pt->uvinfo = NULL;
++		pt->varinfo = NULL;
 +	}
-+
-+ out:
-+	kp_vm_exit(ks);
-+	return ret;
++	return pt;
 +}
 +
-+static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
++/* Read and check header of bytecode dump. */
++static int bcread_header(BCReadCtx *ctx)
 +{
-+	ktap_option_t parm;
++	uint32_t flags;
 +
-+	switch (cmd) {
-+	case KTAP_CMD_IOC_RUN:
-+		/* must be root to run ktap script (at least for now) */
-+		if (!capable(CAP_SYS_ADMIN))
-+			return -EACCES;
++	if (bcread_byte(ctx) != BCDUMP_HEAD1 ||
++		bcread_byte(ctx) != BCDUMP_HEAD2 ||
++		bcread_byte(ctx) != BCDUMP_HEAD3 ||
++		bcread_byte(ctx) != BCDUMP_VERSION)
++		return -1;
 +
-+		if (copy_from_user(&parm, (void __user *)arg,
-+				   sizeof(ktap_option_t)))
-+			return -EFAULT;
++	bcread_flags(ctx) = flags = bcread_byte(ctx);
 +
-+		return ktap_main(file, &parm);
-+	default:
-+		return -EINVAL;
-+	};
++	if ((flags & ~(BCDUMP_F_KNOWN)) != 0)
++		return -1;
 +
-+        return 0;
-+}
-+
-+static const struct file_operations ktap_fops = {
-+	.llseek                 = no_llseek,
-+	.unlocked_ioctl         = ktap_ioctl,
-+};
-+
-+static long ktapvm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-+{
-+	int new_fd, err;
-+	struct file *new_file;
-+
-+	new_fd = get_unused_fd();
-+	if (new_fd < 0)
-+		return new_fd;
-+
-+	new_file = anon_inode_getfile("[ktap]", &ktap_fops, NULL, O_RDWR);
-+	if (IS_ERR(new_file)) {
-+		err = PTR_ERR(new_file);
-+		put_unused_fd(new_fd);
-+		return err;
-+	}
-+
-+	file->private_data = NULL;
-+	fd_install(new_fd, new_file);
-+	return new_fd;
-+}
-+
-+static const struct file_operations ktapvm_fops = {
-+	.owner  = THIS_MODULE,
-+	.unlocked_ioctl         = ktapvm_ioctl,
-+};
-+
-+int (*kp_ftrace_profile_set_filter)(struct perf_event *event, int event_id,
-+				    const char *filter_str);
-+
-+struct syscall_metadata **syscalls_metadata;
-+
-+/*TODO: kill this function in future */
-+static int __init init_dummy_kernel_functions(void)
-+{
-+	unsigned long *addr;
-+
-+	/*
-+	 * ktap need symbol ftrace_profile_set_filter to set event filter, 
-+	 * export it in future. 
-+	 */
-+#ifdef CONFIG_PPC64
-+	kp_ftrace_profile_set_filter =
-+		(void *)kallsyms_lookup_name(".ftrace_profile_set_filter");
-+#else
-+	kp_ftrace_profile_set_filter =
-+		(void *)kallsyms_lookup_name("ftrace_profile_set_filter");
-+#endif
-+	if (!kp_ftrace_profile_set_filter) {
-+		pr_err("ktap: cannot lookup ftrace_profile_set_filter "
-+			"in kallsyms\n");
++	if ((flags & BCDUMP_F_FFI)) {
 +		return -1;
 +	}
 +
-+	/* use syscalls_metadata for syscall event handling */
-+	addr = (void *)kallsyms_lookup_name("syscalls_metadata");
-+	if (!addr) {
-+		pr_err("ktap: cannot lookup syscalls_metadata in kallsyms\n");
-+		return -1;
++	if ((flags & BCDUMP_F_STRIP)) {
++		ctx->chunkname = kp_str_newz(ctx->ks, "striped");
++	} else {
++		int len = bcread_uint32(ctx);
++		ctx->chunkname = kp_str_new(ctx->ks,
++				(const char *)bcread_mem(ctx, len), len);
 +	}
 +
-+	syscalls_metadata = (struct syscall_metadata **)*addr;
-+	return 0;
-+}
-+
-+static int __init init_ktap(void)
-+{
-+	struct dentry *ktapvm_dentry;
-+
-+	if (init_dummy_kernel_functions())
++	if (unlikely(!ctx->chunkname))
 +		return -1;
-+
-+	kp_dir_dentry = debugfs_create_dir("ktap", NULL);
-+	if (!kp_dir_dentry) {
-+		pr_err("ktap: debugfs_create_dir failed\n");
-+		return -1;
-+	}
-+
-+	ktapvm_dentry = debugfs_create_file("ktapvm", 0444, kp_dir_dentry, NULL,
-+					    &ktapvm_fops);
-+
-+	if (!ktapvm_dentry) {
-+		pr_err("ktapvm: cannot create ktapvm file\n");
-+		debugfs_remove_recursive(kp_dir_dentry);
-+		return -1;
-+	}
 +
 +	return 0;
 +}
 +
-+static void __exit exit_ktap(void)
++/* Read a bytecode dump. */
++ktap_proto_t *kp_bcread(ktap_state_t *ks, unsigned char *buff, int len)
 +{
-+	debugfs_remove_recursive(kp_dir_dentry);
++	BCReadCtx ctx;
++
++	ctx.ks = ks;
++	ctx.p = buff;
++	ctx.pe = buff + len;
++
++	ctx.start = buff;
++
++	bcread_savetop(&ctx);
++	/* Check for a valid bytecode dump header. */
++	if (bcread_header(&ctx)) {
++		bcread_error(&ctx, KP_ERR_BCFMT);
++		return NULL;
++	}
++
++	for (;;) {  /* Process all prototypes in the bytecode dump. */
++		ktap_proto_t *pt;
++		int len;
++		const char *startp;
++		/* Read length. */
++		if (ctx.p < ctx.pe && ctx.p[0] == 0) {  /* Shortcut EOF. */
++			ctx.p++;
++			break;
++		}
++		len = bcread_uint32(&ctx);
++		if (!len)
++			break;  /* EOF */
++		startp = ctx.p;
++		pt = bcread_proto(&ctx);
++		if (!pt)
++			return NULL;
++		if (ctx.p != startp + len) {
++			bcread_error(&ctx, KP_ERR_BCBAD);
++			return NULL;
++		}
++		set_proto(ks->top, pt);
++		incr_top(ks);
++	}
++	if ((int32_t)(2*(uint32_t)(ctx.pe - ctx.p)) > 0 ||
++			ks->top-1 != bcread_oldtop(&ctx)) {
++		bcread_error(&ctx, KP_ERR_BCBAD);
++		return NULL;
++	}
++
++	/* Pop off last prototype. */
++	ks->top--;
++	return ptvalue(ks->top);
 +}
 +
-+module_init(init_ktap);
-+module_exit(exit_ktap);
-+
-+MODULE_AUTHOR("Jovi Zhangwei <jovi.zhangwei@gmail.com>");
-+MODULE_DESCRIPTION("ktap");
-+MODULE_LICENSE("GPL");
-+
-+int kp_max_loop_count = 100000;
-+module_param_named(max_loop_count, kp_max_loop_count, int, S_IRUGO | S_IWUSR);
-+MODULE_PARM_DESC(max_loop_count, "max loop execution count");
-+
-diff --git a/kernel/trace/ktap/ktap.h b/kernel/trace/ktap/ktap.h
+diff --git a/kernel/trace/ktap/kp_bcread.h b/kernel/trace/ktap/kp_bcread.h
 new file mode 100644
-index 0000000..90d1468
+index 0000000..ea2dde2
 --- /dev/null
-+++ b/kernel/trace/ktap/ktap.h
-@@ -0,0 +1,176 @@
-+#ifndef __KTAP_H__
-+#define __KTAP_H__
++++ b/kernel/trace/ktap/kp_bcread.h
+@@ -0,0 +1,6 @@
++#ifndef __KTAP_BCREAD_H__
++#define __KTAP_BCREAD_H__
 +
-+#include <linux/version.h>
-+#include <linux/hardirq.h>
-+#include <linux/trace_seq.h>
++ktap_proto_t *kp_bcread(ktap_state_t *ks, unsigned char *buff, int len);
 +
-+/* for built-in library C function register */
-+typedef struct ktap_libfunc {
-+        const char *name; /* function name */
-+        ktap_cfunction func; /* function pointer */
-+} ktap_libfunc_t;
-+
-+long gettimeofday_ns(void); /* common helper function */
-+int kp_lib_init_base(ktap_state_t *ks);
-+int kp_lib_init_kdebug(ktap_state_t *ks);
-+int kp_lib_init_timer(ktap_state_t *ks);
-+int kp_lib_init_table(ktap_state_t *ks);
-+int kp_lib_init_ansi(ktap_state_t *ks);
-+int kp_lib_init_net(ktap_state_t *ks);
-+
-+void kp_exit_timers(ktap_state_t *ks);
-+void kp_freeupval(ktap_state_t *ks, ktap_upval_t *uv);
-+
-+extern int (*kp_ftrace_profile_set_filter)(struct perf_event *event,
-+					   int event_id,
-+					   const char *filter_str);
-+
-+extern struct syscall_metadata **syscalls_metadata;
-+
-+/* get from kernel/trace/trace.h */
-+static __always_inline int trace_get_context_bit(void)
-+{
-+	int bit;
-+
-+	if (in_interrupt()) {
-+		if (in_nmi())
-+			bit = 0;
-+		else if (in_irq())
-+			bit = 1;
-+		else
-+			bit = 2;
-+	} else
-+		bit = 3;
-+
-+	return bit;
-+}
-+
-+static __always_inline int get_recursion_context(ktap_state_t *ks)
-+{
-+	int rctx = trace_get_context_bit();
-+	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
-+
-+	if (*val)
-+		return -1;
-+
-+	*val = true;
-+	return rctx;
-+}
-+
-+static inline void put_recursion_context(ktap_state_t *ks, int rctx)
-+{
-+	int *val = __this_cpu_ptr(G(ks)->recursion_context[rctx]);
-+	*val = false;
-+}
-+
-+static inline void *kp_this_cpu_state(ktap_state_t *ks, int rctx)
-+{
-+	return this_cpu_ptr(G(ks)->percpu_state[rctx]);
-+}
-+
-+static inline void *kp_this_cpu_print_buffer(ktap_state_t *ks)
-+{
-+	return this_cpu_ptr(G(ks)->percpu_print_buffer[trace_get_context_bit()]);
-+}
-+
-+static inline void *kp_this_cpu_temp_buffer(ktap_state_t *ks)
-+{
-+	return this_cpu_ptr(G(ks)->percpu_temp_buffer[trace_get_context_bit()]);
-+}
-+
-+#define kp_verbose_printf(ks, ...) \
-+	if (G(ks)->parm->verbose)	\
-+		kp_printf(ks, "[verbose] "__VA_ARGS__);
-+
-+/* argument operation macro */
-+#define kp_arg(ks, idx)	((ks)->func + (idx))
-+#define kp_arg_nr(ks)	((int)(ks->top - (ks->func + 1)))
-+
-+#define kp_arg_check(ks, idx, type)				\
-+	do {							\
-+		if (unlikely(itype(kp_arg(ks, idx)) != type)) {	\
-+			kp_error(ks, "wrong type of argument %d\n", idx);\
-+			return -1;				\
-+		}						\
-+	} while (0)
-+
-+#define kp_arg_checkstring(ks, idx)				\
-+	({							\
-+		ktap_val_t *o = kp_arg(ks, idx);		\
-+		if (unlikely(!is_string(o))) {			\
-+			kp_error(ks, "wrong type of argument %d\n", idx); \
-+			return -1;				\
-+		}						\
-+		svalue(o);					\
-+	})
-+
-+#define kp_arg_checkfunction(ks, idx)				\
-+	({							\
-+		ktap_val_t *o = kp_arg(ks, idx);		\
-+		if (unlikely(!is_function(o))) {			\
-+			kp_error(ks, "wrong type of argument %d\n", idx); \
-+			return -1;				\
-+		}						\
-+		clvalue(o);					\
-+	})
-+
-+#define kp_arg_checknumber(ks, idx)				\
-+	({							\
-+		ktap_val_t *o = kp_arg(ks, idx);		\
-+		if (unlikely(!is_number(o))) {			\
-+			kp_error(ks, "wrong type of argument %d\n", idx); \
-+			return -1;				\
-+		}						\
-+		nvalue(o);					\
-+	})
-+
-+#define kp_arg_checkoptnumber(ks, idx, def)			\
-+	({							\
-+		ktap_number n;					\
-+		if (idx > kp_arg_nr(ks)) {				\
-+			n = def;				\
-+		} else {					\
-+			ktap_val_t *o = kp_arg(ks, idx);	\
-+			if (unlikely(!is_number(o))) {		\
-+				kp_error(ks, "wrong type of argument %d\n", \
-+					     idx);		\
-+				return -1;			\
-+			}					\
-+			n = nvalue(o);				\
-+		}						\
-+		n;						\
-+	})
-+
-+#define kp_error(ks, args...)			\
-+	do {					\
-+		kp_printf(ks, "error: "args);	\
-+		kp_vm_try_to_exit(ks);		\
-+		G(ks)->state = KTAP_ERROR;	\
-+	} while(0)
-+
-+
-+#define SPRINT_SYMBOL	sprint_symbol_no_offset
-+
-+extern int kp_max_loop_count;
-+
-+void kp_printf(ktap_state_t *ks, const char *fmt, ...);
-+void __kp_puts(ktap_state_t *ks, const char *str);
-+void __kp_bputs(ktap_state_t *ks, const char *str);
-+
-+#define kp_puts(ks, str) ({						\
-+	static const char *trace_printk_fmt				\
-+		__attribute__((section("__trace_printk_fmt"))) =	\
-+		__builtin_constant_p(str) ? str : NULL;			\
-+									\
-+	if (__builtin_constant_p(str))					\
-+		__kp_bputs(ks, trace_printk_fmt);		\
-+	else								\
-+		__kp_puts(ks, str);		\
-+})
-+
-+#define err2msg(em)     (kp_err_allmsg+(int)(em))
-+extern const char *kp_err_allmsg;
-+
-+#endif /* __KTAP_H__ */
-+
++#endif /* __KTAP_BCREAD_H__ */
 -- 
 1.8.1.4
 
