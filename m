@@ -1,300 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751516AbaC1I40 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 04:56:26 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:27895 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243AbaC1I4W (ORCPT
+	id S1751370AbaC1I6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 04:58:47 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:59937 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750901AbaC1I6n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 04:56:22 -0400
-Message-ID: <5335389C.7020407@huawei.com>
-Date: Fri, 28 Mar 2014 16:53:48 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Fri, 28 Mar 2014 04:58:43 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s2S8vhm3017738, This message is accepted by code: ctloc85258
+Message-ID: <53353981.7050302@realtek.com>
+Date: Fri, 28 Mar 2014 16:57:37 +0800
+From: Roger <rogerable@realtek.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: [PATCH v3 4/4] kmemleak: change some global variables to int
-References: <5335384A.2000000@huawei.com>
-In-Reply-To: <5335384A.2000000@huawei.com>
-Content-Type: text/plain; charset="GB2312"
+To: Oliver Neukum <oneukum@suse.de>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
+        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
+        <micky_ching@realsil.com.cn>
+Subject: Re: [PATCH v5 1/3] mfd: Add realtek USB card reader driver
+References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>		 <1395744293-24398-2-git-send-email-rogerable@realtek.com>	 <201403280231.s2S2VP8X017745@rtits1.realtek.com>	 <5334ED70.6050309@realtek.com> <1395995486.9520.2.camel@linux-fkkt.site>
+In-Reply-To: <1395995486.9520.2.camel@linux-fkkt.site>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+X-Originating-IP: [172.21.81.189]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They don't have to be atomic_t, because they are simple boolean
-toggles.
 
-Acked-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
----
- mm/kmemleak.c | 80 +++++++++++++++++++++++++++++------------------------------
- 1 file changed, 40 insertions(+), 40 deletions(-)
+On 03/28/2014 04:31 PM, Oliver Neukum wrote:
+> On Fri, 2014-03-28 at 11:33 +0800, Roger wrote:
+>> On 03/26/2014 10:36 PM, Oliver Neukum wrote:
+>>> On Tue, 2014-03-25 at 18:44 +0800, rogerable@realtek.com wrote:
+>>>> From: Roger Tseng <rogerable@realtek.com>
+>
+>>>> +	if (ret)
+>>>> +		goto out_init_fail;
+>>>> +
+>>>> +	/* initialize USB SG transfer timer */
+>>>> +	init_timer(&ucr->sg_timer);
+>>>> +	setup_timer(&ucr->sg_timer, rtsx_usb_sg_timed_out, (unsigned long) ucr);
+>>>> +#ifdef CONFIG_PM
+>>>> +	intf->needs_remote_wakeup = 1;
+>>>
+>>> Why?
+>> Our reader supports remote wake-up from card slot event(insertion,
+>> removal). It should be enabled to let the driver be able to detect the
+>> newly inserted card.
+>
+> Interesting. This capability has been lacking for a long time.
+> That is cool hardware. Are you sure the upper layers implement
+> the event infrastructure so that devices are not polled?
+>
+Polling is still necessary because USB essentially doesn't support 
+interrupt.
 
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index c496dca..4faef18 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -192,15 +192,15 @@ static struct kmem_cache *object_cache;
- static struct kmem_cache *scan_area_cache;
- 
- /* set if tracing memory operations is enabled */
--static atomic_t kmemleak_enabled = ATOMIC_INIT(0);
-+static int kmemleak_enabled;
- /* set in the late_initcall if there were no errors */
--static atomic_t kmemleak_initialized = ATOMIC_INIT(0);
-+static int kmemleak_initialized;
- /* enables or disables early logging of the memory operations */
--static atomic_t kmemleak_early_log = ATOMIC_INIT(1);
-+static int kmemleak_early_log = 1;
- /* set if a kmemleak warning was issued */
--static atomic_t kmemleak_warning = ATOMIC_INIT(0);
-+static int kmemleak_warning;
- /* set if a fatal kmemleak error has occurred */
--static atomic_t kmemleak_error = ATOMIC_INIT(0);
-+static int kmemleak_error;
- 
- /* minimum and maximum address that may be valid pointers */
- static unsigned long min_addr = ULONG_MAX;
-@@ -268,7 +268,7 @@ static void kmemleak_disable(void);
- #define kmemleak_warn(x...)	do {		\
- 	pr_warning(x);				\
- 	dump_stack();				\
--	atomic_set(&kmemleak_warning, 1);	\
-+	kmemleak_warning = 1;			\
- } while (0)
- 
- /*
-@@ -806,7 +806,7 @@ static void __init log_early(int op_type, const void *ptr, size_t size,
- 	unsigned long flags;
- 	struct early_log *log;
- 
--	if (atomic_read(&kmemleak_error)) {
-+	if (kmemleak_error) {
- 		/* kmemleak stopped recording, just count the requests */
- 		crt_early_log++;
- 		return;
-@@ -841,7 +841,7 @@ static void early_alloc(struct early_log *log)
- 	unsigned long flags;
- 	int i;
- 
--	if (!atomic_read(&kmemleak_enabled) || !log->ptr || IS_ERR(log->ptr))
-+	if (!kmemleak_enabled || !log->ptr || IS_ERR(log->ptr))
- 		return;
- 
- 	/*
-@@ -894,9 +894,9 @@ void __ref kmemleak_alloc(const void *ptr, size_t size, int min_count,
- {
- 	pr_debug("%s(0x%p, %zu, %d)\n", __func__, ptr, size, min_count);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		create_object((unsigned long)ptr, size, min_count, gfp);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_ALLOC, ptr, size, min_count);
- }
- EXPORT_SYMBOL_GPL(kmemleak_alloc);
-@@ -920,11 +920,11 @@ void __ref kmemleak_alloc_percpu(const void __percpu *ptr, size_t size)
- 	 * Percpu allocations are only scanned and not reported as leaks
- 	 * (min_count is set to 0).
- 	 */
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		for_each_possible_cpu(cpu)
- 			create_object((unsigned long)per_cpu_ptr(ptr, cpu),
- 				      size, 0, GFP_KERNEL);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_ALLOC_PERCPU, ptr, size, 0);
- }
- EXPORT_SYMBOL_GPL(kmemleak_alloc_percpu);
-@@ -940,9 +940,9 @@ void __ref kmemleak_free(const void *ptr)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		delete_object_full((unsigned long)ptr);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_FREE, ptr, 0, 0);
- }
- EXPORT_SYMBOL_GPL(kmemleak_free);
-@@ -960,9 +960,9 @@ void __ref kmemleak_free_part(const void *ptr, size_t size)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		delete_object_part((unsigned long)ptr, size);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_FREE_PART, ptr, size, 0);
- }
- EXPORT_SYMBOL_GPL(kmemleak_free_part);
-@@ -980,11 +980,11 @@ void __ref kmemleak_free_percpu(const void __percpu *ptr)
- 
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		for_each_possible_cpu(cpu)
- 			delete_object_full((unsigned long)per_cpu_ptr(ptr,
- 								      cpu));
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_FREE_PERCPU, ptr, 0, 0);
- }
- EXPORT_SYMBOL_GPL(kmemleak_free_percpu);
-@@ -1000,9 +1000,9 @@ void __ref kmemleak_not_leak(const void *ptr)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		make_gray_object((unsigned long)ptr);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_NOT_LEAK, ptr, 0, 0);
- }
- EXPORT_SYMBOL(kmemleak_not_leak);
-@@ -1020,9 +1020,9 @@ void __ref kmemleak_ignore(const void *ptr)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		make_black_object((unsigned long)ptr);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_IGNORE, ptr, 0, 0);
- }
- EXPORT_SYMBOL(kmemleak_ignore);
-@@ -1042,9 +1042,9 @@ void __ref kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && size && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && size && !IS_ERR(ptr))
- 		add_scan_area((unsigned long)ptr, size, gfp);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_SCAN_AREA, ptr, size, 0);
- }
- EXPORT_SYMBOL(kmemleak_scan_area);
-@@ -1062,9 +1062,9 @@ void __ref kmemleak_no_scan(const void *ptr)
- {
- 	pr_debug("%s(0x%p)\n", __func__, ptr);
- 
--	if (atomic_read(&kmemleak_enabled) && ptr && !IS_ERR(ptr))
-+	if (kmemleak_enabled && ptr && !IS_ERR(ptr))
- 		object_no_scan((unsigned long)ptr);
--	else if (atomic_read(&kmemleak_early_log))
-+	else if (kmemleak_early_log)
- 		log_early(KMEMLEAK_NO_SCAN, ptr, 0, 0);
- }
- EXPORT_SYMBOL(kmemleak_no_scan);
-@@ -1089,7 +1089,7 @@ static bool update_checksum(struct kmemleak_object *object)
-  */
- static int scan_should_stop(void)
- {
--	if (!atomic_read(&kmemleak_enabled))
-+	if (!kmemleak_enabled)
- 		return 1;
- 
- 	/*
-@@ -1630,14 +1630,14 @@ static ssize_t kmemleak_write(struct file *file, const char __user *user_buf,
- 		return ret;
- 
- 	if (strncmp(buf, "clear", 5) == 0) {
--		if (atomic_read(&kmemleak_enabled))
-+		if (kmemleak_enabled)
- 			kmemleak_clear();
- 		else
- 			__kmemleak_do_cleanup();
- 		goto out;
- 	}
- 
--	if (!atomic_read(&kmemleak_enabled)) {
-+	if (!kmemleak_enabled) {
- 		ret = -EBUSY;
- 		goto out;
- 	}
-@@ -1728,14 +1728,14 @@ static DECLARE_WORK(cleanup_work, kmemleak_do_cleanup);
- static void kmemleak_disable(void)
- {
- 	/* atomically check whether it was already invoked */
--	if (atomic_cmpxchg(&kmemleak_error, 0, 1))
-+	if (cmpxchg(&kmemleak_error, 0, 1))
- 		return;
- 
- 	/* stop any memory operation tracing */
--	atomic_set(&kmemleak_enabled, 0);
-+	kmemleak_enabled = 0;
- 
- 	/* check whether it is too early for a kernel thread */
--	if (atomic_read(&kmemleak_initialized))
-+	if (kmemleak_initialized)
- 		schedule_work(&cleanup_work);
- 
- 	pr_info("Kernel memory leak detector disabled\n");
-@@ -1777,9 +1777,10 @@ void __init kmemleak_init(void)
- 	int i;
- 	unsigned long flags;
- 
-+	kmemleak_early_log = 0;
-+
- #ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
- 	if (!kmemleak_skip_disable) {
--		atomic_set(&kmemleak_early_log, 0);
- 		kmemleak_disable();
- 		return;
- 	}
-@@ -1797,12 +1798,11 @@ void __init kmemleak_init(void)
- 
- 	/* the kernel is still in UP mode, so disabling the IRQs is enough */
- 	local_irq_save(flags);
--	atomic_set(&kmemleak_early_log, 0);
--	if (atomic_read(&kmemleak_error)) {
-+	if (kmemleak_error) {
- 		local_irq_restore(flags);
- 		return;
- 	} else
--		atomic_set(&kmemleak_enabled, 1);
-+		kmemleak_enabled = 1;
- 	local_irq_restore(flags);
- 
- 	/*
-@@ -1846,9 +1846,9 @@ void __init kmemleak_init(void)
- 				      log->op_type);
- 		}
- 
--		if (atomic_read(&kmemleak_warning)) {
-+		if (kmemleak_warning) {
- 			print_log_trace(log);
--			atomic_set(&kmemleak_warning, 0);
-+			kmemleak_warning = 0;
- 		}
- 	}
- }
-@@ -1860,9 +1860,9 @@ static int __init kmemleak_late_init(void)
- {
- 	struct dentry *dentry;
- 
--	atomic_set(&kmemleak_initialized, 1);
-+	kmemleak_initialized = 1;
- 
--	if (atomic_read(&kmemleak_error)) {
-+	if (kmemleak_error) {
- 		/*
- 		 * Some error occurred and kmemleak was disabled. There is a
- 		 * small chance that kmemleak_disable() was called immediately
--- 
-1.8.0.2
+However, if remote wake-up is not enabled or supported, the device will 
+have to be resumed every time when polling and then suspended right away 
+if there isn't a new card. This should consume more power than the 
+designed behavior: suspending device while card removed, taking failed 
+polls as no-card, and card being successfully polled after 
+insertion-triggered remote wake-up.
 
+>> The LED is not in a permanent cut-off state after here. It is called to
+>> guarantee the LED is off during suspend to save more power. It could be
+>> lit up in the card host drivers(e.g. rtsx_usb_sdmmc.c) anytime whenever
+>> necessary.
+>>
+>> This has been asked may times. I'm considering putting some comment in
+>> next revision.
+>
+> Good idea.
+>
+> 	Regards
+> 		Oliver
+
+Best regards,
+Roger Tseng
