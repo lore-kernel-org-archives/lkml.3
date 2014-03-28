@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753658AbaC1Rix (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:38:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51429 "EHLO
+	id S1753699AbaC1RjS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:39:18 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51425 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237AbaC1RbS (ORCPT
+	with ESMTP id S1753234AbaC1RbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:31:18 -0400
+	Fri, 28 Mar 2014 13:31:17 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.13 25/46] deb-pkg: Fix building for MIPS big-endian or ARM OABI
-Date: Fri, 28 Mar 2014 10:32:09 -0700
-Message-Id: <20140328173138.052732499@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 32/46] powerpc/powernv: Dump PHB diag-data immediately
+Date: Fri, 28 Mar 2014 10:32:16 -0700
+Message-Id: <20140328173139.045806269@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,45 +27,184 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit c5e318f67eebbad491615a752c51dbfde7dc3d78 upstream.
+commit 947166043732b69878123bf31f51933ad0316080 upstream.
 
-These commands will mysteriously fail:
+The PHB diag-data is important to help locating the root cause for
+EEH errors such as frozen PE or fenced PHB. However, the EEH core
+enables IO path by clearing part of HW registers before collecting
+this data causing it to be corrupted.
 
-$ make ARCH=arm versatile_defconfig
-[...]
-$ make ARCH=arm deb-pkg
-[...]
-make[1]: *** [deb-pkg] Error 1
-make: *** [deb-pkg] Error 2
+This patch fixes this by dumping the PHB diag-data immediately when
+frozen/fenced state on PE or PHB is detected for the first time in
+eeh_ops::get_state() or next_error() backend.
 
-The Debian architecture selection for these kernel architectures does
-'grep FOO=y $KCONFIG_CONFIG && echo bar', and after 'set -e' this
-aborts the script if grep does not find the given config symbol.
-
-Fixes: 10f26fa64200 ('build, deb-pkg: select userland architecture based on UTS_MACHINE')
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+CC: <stable@vger.kernel.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/powerpc/platforms/powernv/eeh-ioda.c |   99 +++++++++++++-----------------
+ 1 file changed, 43 insertions(+), 56 deletions(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -41,9 +41,9 @@ create_package() {
- 	parisc*)
- 		debarch=hppa ;;
- 	mips*)
--		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el) ;;
-+		debarch=mips$(grep -q CPU_LITTLE_ENDIAN=y $KCONFIG_CONFIG && echo el || true) ;;
- 	arm*)
--		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el) ;;
-+		debarch=arm$(grep -q CONFIG_AEABI=y $KCONFIG_CONFIG && echo el || true) ;;
- 	*)
- 		echo "" >&2
- 		echo "** ** **  WARNING  ** ** **" >&2
+--- a/arch/powerpc/platforms/powernv/eeh-ioda.c
++++ b/arch/powerpc/platforms/powernv/eeh-ioda.c
+@@ -114,6 +114,7 @@ DEFINE_SIMPLE_ATTRIBUTE(ioda_eeh_inbB_db
+ 			ioda_eeh_inbB_dbgfs_set, "0x%llx\n");
+ #endif /* CONFIG_DEBUG_FS */
+ 
++
+ /**
+  * ioda_eeh_post_init - Chip dependent post initialization
+  * @hose: PCI controller
+@@ -221,6 +222,22 @@ static int ioda_eeh_set_option(struct ee
+ 	return ret;
+ }
+ 
++static void ioda_eeh_phb_diag(struct pci_controller *hose)
++{
++	struct pnv_phb *phb = hose->private_data;
++	long rc;
++
++	rc = opal_pci_get_phb_diag_data2(phb->opal_id, phb->diag.blob,
++					 PNV_PCI_DIAG_BUF_SIZE);
++	if (rc != OPAL_SUCCESS) {
++		pr_warning("%s: Failed to get diag-data for PHB#%x (%ld)\n",
++			    __func__, hose->global_number, rc);
++		return;
++	}
++
++	pnv_pci_dump_phb_diag_data(hose, phb->diag.blob);
++}
++
+ /**
+  * ioda_eeh_get_state - Retrieve the state of PE
+  * @pe: EEH PE
+@@ -272,6 +289,9 @@ static int ioda_eeh_get_state(struct eeh
+ 			result |= EEH_STATE_DMA_ACTIVE;
+ 			result |= EEH_STATE_MMIO_ENABLED;
+ 			result |= EEH_STATE_DMA_ENABLED;
++		} else if (!(pe->state & EEH_PE_ISOLATED)) {
++			eeh_pe_state_mark(pe, EEH_PE_ISOLATED);
++			ioda_eeh_phb_diag(hose);
+ 		}
+ 
+ 		return result;
+@@ -315,6 +335,15 @@ static int ioda_eeh_get_state(struct eeh
+ 			   __func__, fstate, hose->global_number, pe_no);
+ 	}
+ 
++	/* Dump PHB diag-data for frozen PE */
++	if (result != EEH_STATE_NOT_SUPPORT &&
++	    (result & (EEH_STATE_MMIO_ACTIVE | EEH_STATE_DMA_ACTIVE)) !=
++	    (EEH_STATE_MMIO_ACTIVE | EEH_STATE_DMA_ACTIVE) &&
++	    !(pe->state & EEH_PE_ISOLATED)) {
++		eeh_pe_state_mark(pe, EEH_PE_ISOLATED);
++		ioda_eeh_phb_diag(hose);
++	}
++
+ 	return result;
+ }
+ 
+@@ -530,45 +559,6 @@ static int ioda_eeh_reset(struct eeh_pe
+ }
+ 
+ /**
+- * ioda_eeh_get_log - Retrieve error log
+- * @pe: EEH PE
+- * @severity: Severity level of the log
+- * @drv_log: buffer to store the log
+- * @len: space of the log buffer
+- *
+- * The function is used to retrieve error log from P7IOC.
+- */
+-static int ioda_eeh_get_log(struct eeh_pe *pe, int severity,
+-			    char *drv_log, unsigned long len)
+-{
+-	s64 ret;
+-	unsigned long flags;
+-	struct pci_controller *hose = pe->phb;
+-	struct pnv_phb *phb = hose->private_data;
+-
+-	spin_lock_irqsave(&phb->lock, flags);
+-
+-	ret = opal_pci_get_phb_diag_data2(phb->opal_id,
+-			phb->diag.blob, PNV_PCI_DIAG_BUF_SIZE);
+-	if (ret) {
+-		spin_unlock_irqrestore(&phb->lock, flags);
+-		pr_warning("%s: Can't get log for PHB#%x-PE#%x (%lld)\n",
+-			   __func__, hose->global_number, pe->addr, ret);
+-		return -EIO;
+-	}
+-
+-	/*
+-	 * FIXME: We probably need log the error in somewhere.
+-	 * Lets make it up in future.
+-	 */
+-	/* pr_info("%s", phb->diag.blob); */
+-
+-	spin_unlock_irqrestore(&phb->lock, flags);
+-
+-	return 0;
+-}
+-
+-/**
+  * ioda_eeh_configure_bridge - Configure the PCI bridges for the indicated PE
+  * @pe: EEH PE
+  *
+@@ -649,22 +639,6 @@ static void ioda_eeh_hub_diag(struct pci
+ 	}
+ }
+ 
+-static void ioda_eeh_phb_diag(struct pci_controller *hose)
+-{
+-	struct pnv_phb *phb = hose->private_data;
+-	long rc;
+-
+-	rc = opal_pci_get_phb_diag_data2(phb->opal_id, phb->diag.blob,
+-					 PNV_PCI_DIAG_BUF_SIZE);
+-	if (rc != OPAL_SUCCESS) {
+-		pr_warning("%s: Failed to get diag-data for PHB#%x (%ld)\n",
+-			    __func__, hose->global_number, rc);
+-		return;
+-	}
+-
+-	pnv_pci_dump_phb_diag_data(hose, phb->diag.blob);
+-}
+-
+ static int ioda_eeh_get_phb_pe(struct pci_controller *hose,
+ 			       struct eeh_pe **pe)
+ {
+@@ -827,6 +801,20 @@ static int ioda_eeh_next_error(struct ee
+ 		}
+ 
+ 		/*
++		 * EEH core will try recover from fenced PHB or
++		 * frozen PE. In the time for frozen PE, EEH core
++		 * enable IO path for that before collecting logs,
++		 * but it ruins the site. So we have to dump the
++		 * log in advance here.
++		 */
++		if ((ret == EEH_NEXT_ERR_FROZEN_PE  ||
++		    ret == EEH_NEXT_ERR_FENCED_PHB) &&
++		    !((*pe)->state & EEH_PE_ISOLATED)) {
++			eeh_pe_state_mark(*pe, EEH_PE_ISOLATED);
++			ioda_eeh_phb_diag(hose);
++		}
++
++		/*
+ 		 * If we have no errors on the specific PHB or only
+ 		 * informative error there, we continue poking it.
+ 		 * Otherwise, we need actions to be taken by upper
+@@ -844,7 +832,6 @@ struct pnv_eeh_ops ioda_eeh_ops = {
+ 	.set_option		= ioda_eeh_set_option,
+ 	.get_state		= ioda_eeh_get_state,
+ 	.reset			= ioda_eeh_reset,
+-	.get_log		= ioda_eeh_get_log,
+ 	.configure_bridge	= ioda_eeh_configure_bridge,
+ 	.next_error		= ioda_eeh_next_error
+ };
 
 
