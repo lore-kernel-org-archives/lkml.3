@@ -1,117 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679AbaC1Rad (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51130 "EHLO
+	id S1753845AbaC1SGa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:06:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51166 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845AbaC1Ra2 (ORCPT
+	with ESMTP id S1752682AbaC1Rag (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:28 -0400
+	Fri, 28 Mar 2014 13:30:36 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean Delvare <jdelvare@suse.de>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Doug Thompson <dougthompson@xmission.com>,
-        Borislav Petkov <bp@suse.de>
-Subject: [PATCH 3.4 07/13] i7300_edac: Fix device reference count
-Date: Fri, 28 Mar 2014 10:31:57 -0700
-Message-Id: <20140328173054.048010910@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: [PATCH 3.10 00/22] 3.10.35-stable review
+Date: Fri, 28 Mar 2014 10:31:52 -0700
+Message-Id: <20140328173109.378288825@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
-References: <20140328173053.049244535@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+This is the start of the stable review cycle for the 3.10.35 release.
+There are 22 patches in this series, all will be posted as a response
+to this one.  If anyone has any issues with these being applied, please
+let me know.
 
-------------------
+Responses should be made by Sun Mar 30 17:30:55 UTC 2014.
+Anything received after that time might be too late.
 
-From: Jean Delvare <jdelvare@suse.de>
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.35-rc1.gz
+and the diffstat can be found below.
 
-commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
+thanks,
 
-pci_get_device() decrements the reference count of "from" (last
-argument) so when we break off the loop successfully we have only one
-device reference - and we don't know which device we have. If we want
-a reference to each device, we must take them explicitly and let
-the pci_get_device() walk complete to avoid duplicate references.
+greg k-h
 
-This is serious, as over-putting device references will cause
-the device to eventually disappear. Without this fix, the kernel
-crashes after a few insmod/rmmod cycles.
+-------------
+Pseudo-Shortlog of commits:
 
-Tested on an Intel S7000FC4UR system with a 7300 chipset.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+    Linux 3.10.35-rc1
 
-Signed-off-by: Jean Delvare <jdelvare@suse.de>
-Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Cc: Doug Thompson <dougthompson@xmission.com>
-Cc: stable@vger.kernel.org
-Signed-off-by: Borislav Petkov <bp@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Gerald Schaefer <gerald.schaefer@de.ibm.com>
+    sched/autogroup: Fix race with task_groups list
 
----
- drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
- 1 file changed, 20 insertions(+), 18 deletions(-)
+Michele Baldessari <michele@acksyn.org>
+    e100: Fix "disabling already-disabled device" warning
 
---- a/drivers/edac/i7300_edac.c
-+++ b/drivers/edac/i7300_edac.c
-@@ -962,33 +962,35 @@ static int __devinit i7300_get_devices(s
- 
- 	/* Attempt to 'get' the MCH register we want */
- 	pdev = NULL;
--	while (!pvt->pci_dev_16_1_fsb_addr_map ||
--	       !pvt->pci_dev_16_2_fsb_err_regs) {
--		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
--				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
--		if (!pdev) {
--			/* End of list, leave */
--			i7300_printk(KERN_ERR,
--				"'system address,Process Bus' "
--				"device not found:"
--				"vendor 0x%x device 0x%x ERR funcs "
--				"(broken BIOS?)\n",
--				PCI_VENDOR_ID_INTEL,
--				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
--			goto error;
--		}
--
-+	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
-+				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
-+				      pdev))) {
- 		/* Store device 16 funcs 1 and 2 */
- 		switch (PCI_FUNC(pdev->devfn)) {
- 		case 1:
--			pvt->pci_dev_16_1_fsb_addr_map = pdev;
-+			if (!pvt->pci_dev_16_1_fsb_addr_map)
-+				pvt->pci_dev_16_1_fsb_addr_map =
-+							pci_dev_get(pdev);
- 			break;
- 		case 2:
--			pvt->pci_dev_16_2_fsb_err_regs = pdev;
-+			if (!pvt->pci_dev_16_2_fsb_err_regs)
-+				pvt->pci_dev_16_2_fsb_err_regs =
-+							pci_dev_get(pdev);
- 			break;
- 		}
- 	}
- 
-+	if (!pvt->pci_dev_16_1_fsb_addr_map ||
-+	    !pvt->pci_dev_16_2_fsb_err_regs) {
-+		/* At least one device was not found */
-+		i7300_printk(KERN_ERR,
-+			"'system address,Process Bus' device not found:"
-+			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
-+			PCI_VENDOR_ID_INTEL,
-+			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
-+		goto error;
-+	}
-+
- 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
- 		pci_name(pvt->pci_dev_16_0_fsb_ctlr),
- 		pvt->pci_dev_16_0_fsb_ctlr->vendor,
+Sarah Sharp <sarah.a.sharp@linux.intel.com>
+    xhci: Fix resume issues on Renesas chips in Samsung laptops
+
+Ping Cheng <pinglinux@gmail.com>
+    Input: wacom - make sure touch_max is set for touch devices
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: VMX: fix use after free of vmx->loaded_vmcs
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: x86: handle invalid root_hpa everywhere
+
+Marcelo Tosatti <mtosatti@redhat.com>
+    KVM: MMU: handle invalid root_hpa at __direct_map
+
+Hans de Goede <hdegoede@redhat.com>
+    Input: elantech - improve clickpad detection
+
+Rob Herring <rob.herring@calxeda.com>
+    ARM: highbank: avoid L2 cache smc calls when PL310 is not present
+
+Rob Herring <rob.herring@calxeda.com>
+    ARM: move outer_cache declaration out of ifdef
+
+Markus Pargmann <mpa@pengutronix.de>
+    regulator: core: Replace direct ops->disable usage
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    p54: clamp properly instead of just truncating
+
+Ben Hutchings <ben@decadent.org.uk>
+    deb-pkg: Fix cross-building linux-headers package
+
+Alexei Starovoitov <ast@plumgrid.com>
+    x86: bpf_jit: support negative offsets
+
+Stephen Warren <swarren@nvidia.com>
+    ASoC: max98090: make REVISION_ID readable
+
+Josh Durgin <josh.durgin@inktank.com>
+    libceph: resend all writes after the osdmap loses the full flag
+
+Josh Durgin <josh.durgin@inktank.com>
+    libceph: block I/O when PAUSE or FULL osd map flags are set
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: cx18: check for allocation failure in cx18_read_eeprom()
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: dw2102: some missing unlocks on error
+
+Dan Carpenter <dan.carpenter@oracle.com>
+    media: cxusb: unlock on error in cxusb_i2c_xfer()
+
+Vaibhav Nagarnaik <vnagarnaik@google.com>
+    tracing: Fix array size mismatch in format string
+
+Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+    ALSA: compress: Pass through return value of open ops callback
+
+
+-------------
+
+Diffstat:
+
+ Makefile                             |  4 +--
+ arch/arm/include/asm/outercache.h    |  4 +--
+ arch/arm/mach-highbank/highbank.c    | 13 ++++----
+ arch/x86/kvm/mmu.c                   | 12 ++++++++
+ arch/x86/kvm/paging_tmpl.h           |  8 +++++
+ arch/x86/kvm/vmx.c                   |  2 +-
+ arch/x86/net/bpf_jit.S               |  2 +-
+ drivers/input/mouse/elantech.c       | 45 ++++++++++++++++++++++++++--
+ drivers/input/tablet/wacom_sys.c     |  7 +++--
+ drivers/media/pci/cx18/cx18-driver.c |  5 +++-
+ drivers/media/usb/dvb-usb/cxusb.c    | 21 +++++++++----
+ drivers/media/usb/dvb-usb/dw2102.c   | 52 ++++++++++++++++++++++----------
+ drivers/net/ethernet/intel/e100.c    |  2 +-
+ drivers/net/wireless/p54/txrx.c      |  2 +-
+ drivers/regulator/core.c             | 34 ++++++++-------------
+ drivers/usb/host/xhci-pci.c          |  5 ++++
+ include/linux/ceph/osd_client.h      |  1 +
+ include/linux/ftrace_event.h         |  4 ---
+ include/trace/ftrace.h               |  7 ++---
+ kernel/sched/auto_group.c            |  3 +-
+ kernel/trace/trace_events.c          |  6 ----
+ kernel/trace/trace_export.c          |  7 ++---
+ net/ceph/osd_client.c                | 57 +++++++++++++++++++++++++++++++-----
+ scripts/package/builddeb             |  9 +++---
+ sound/core/compress_offload.c        |  2 +-
+ sound/soc/codecs/max98090.c          |  1 +
+ 26 files changed, 216 insertions(+), 99 deletions(-)
 
 
