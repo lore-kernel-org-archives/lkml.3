@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752868AbaC1Rar (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51206 "EHLO
+	id S1753687AbaC1Rxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:53:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51239 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752782AbaC1Ral (ORCPT
+	with ESMTP id S1752842AbaC1Raq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:41 -0400
+	Fri, 28 Mar 2014 13:30:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Michal Marek <mmarek@suse.cz>
-Subject: [PATCH 3.10 10/22] deb-pkg: Fix cross-building linux-headers package
-Date: Fri, 28 Mar 2014 10:32:02 -0700
-Message-Id: <20140328173110.815823059@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Jan Seiffert <kaffeemonster@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.10 09/22] x86: bpf_jit: support negative offsets
+Date: Fri, 28 Mar 2014 10:32:01 -0700
+Message-Id: <20140328173110.675888408@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
 References: <20140328173109.378288825@linuxfoundation.org>
@@ -26,58 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit f8ce239dfc7ba9add41d9ecdc5e7810738f839fa upstream.
+commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
 
-builddeb generates a control file that says the linux-headers package
-can only be built for the build system primary architecture.  This
-breaks cross-building configurations.  We should use $debarch for this
-instead.
+Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
+but it couldn't be working, since at the time of the execution
+of LD+ABS or LD+IND instructions via call into
+bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
+had junk value instead of access size in bytes (1 or 2 or 4).
 
-Since $debarch is not yet set when generating the control file, set
-Architecture: any and use control file variables to fill in the
-description.
+Store size into %edx instead of %ecx (what original commit intended to do)
 
-Fixes: cd8d60a20a45 ('kbuild: create linux-headers package in deb-pkg')
-Reported-and-tested-by: "Niew, Sh." <shniew@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/package/builddeb |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ arch/x86/net/bpf_jit.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/scripts/package/builddeb
-+++ b/scripts/package/builddeb
-@@ -62,7 +62,7 @@ create_package() {
- 	fi
- 
- 	# Create the package
--	dpkg-gencontrol -isp $forcearch -p$pname -P"$pdir"
-+	dpkg-gencontrol -isp $forcearch -Vkernel:debarch="${debarch:-$(dpkg --print-architecture)}" -p$pname -P"$pdir"
- 	dpkg --build "$pdir" ..
- }
- 
-@@ -252,15 +252,14 @@ mkdir -p "$destdir"
- (cd $objtree; tar -c -f - -T "$objtree/debian/hdrobjfiles") | (cd $destdir; tar -xf -)
- ln -sf "/usr/src/linux-headers-$version" "$kernel_headers_dir/lib/modules/$version/build"
- rm -f "$objtree/debian/hdrsrcfiles" "$objtree/debian/hdrobjfiles"
--arch=$(dpkg --print-architecture)
- 
- cat <<EOF >> debian/control
- 
- Package: $kernel_headers_packagename
- Provides: linux-headers, linux-headers-2.6
--Architecture: $arch
--Description: Linux kernel headers for $KERNELRELEASE on $arch
-- This package provides kernel header files for $KERNELRELEASE on $arch
-+Architecture: any
-+Description: Linux kernel headers for $KERNELRELEASE on \${kernel:debarch}
-+ This package provides kernel header files for $KERNELRELEASE on \${kernel:debarch}
-  .
-  This is useful for people who need to build external modules
- EOF
+--- a/arch/x86/net/bpf_jit.S
++++ b/arch/x86/net/bpf_jit.S
+@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
+ 	push	%r9;						\
+ 	push	SKBDATA;					\
+ /* rsi already has offset */					\
+-	mov	$SIZE,%ecx;	/* size */			\
++	mov	$SIZE,%edx;	/* size */			\
+ 	call	bpf_internal_load_pointer_neg_helper;		\
+ 	test	%rax,%rax;					\
+ 	pop	SKBDATA;					\
 
 
