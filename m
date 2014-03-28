@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751249AbaC1G7U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 02:59:20 -0400
-Received: from mga09.intel.com ([134.134.136.24]:41351 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750987AbaC1G7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 02:59:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,749,1389772800"; 
-   d="scan'208";a="481949491"
-Date: Fri, 28 Mar 2014 07:00:22 +0800
-From: Yuyang Du <yuyang.du@intel.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@redhat.com" <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "morten.rasmussen@arm.com" <morten.rasmussen@arm.com>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Cox, Alan" <alan.cox@intel.com>
-Subject: Re: [RFC II] Splitting scheduler into two halves
-Message-ID: <20140327230022.GA27225@intel.com>
-References: <20140326183721.GC24116@intel.com>
- <1395896233.5512.45.camel@marge.simpson.net>
- <20140327072511.GA2555@gmail.com>
- <20140327221320.GA26843@intel.com>
- <1395989431.4877.19.camel@marge.simpson.net>
+	id S1751285AbaC1HBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 03:01:40 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46777 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946AbaC1HBi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 03:01:38 -0400
+Date: Fri, 28 Mar 2014 08:01:36 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>, dtor@mail.ru,
+        linux-input@vger.kernel.org, jkosina@suse.cz
+Cc: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, jslaby@suse.cz,
+        Richard Purdie <rpurdie@rpsys.net>,
+        LKML <linux-kernel@vger.kernel.org>, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>, Greg KH <greg@kroah.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: 8 months to review a patch (was Re: [PATCH] Route kbd LEDs through
+ the generic LEDs layer)
+Message-ID: <20140328070136.GA15953@amd.pavel.ucw.cz>
+References: <20110102103210.GA25662@core.coreip.homeip.net>
+ <20110102225741.GX5480@const.famille.thibault.fr>
+ <20110112182702.GA9168@core.coreip.homeip.net>
+ <20111114040613.GA4992@type.famille.thibault.fr>
+ <20121221003449.GA6999@type.youpi.perso.aquilenet.fr>
+ <20130713093552.GU8252@type>
+ <20130715091230.GA8786@amd.pavel.ucw.cz>
+ <CAHYPw2H94ej=FdqHAxXpyZt+34TwK1Qj7LWP_bMro-v3JREisg@mail.gmail.com>
+ <20140316101946.GJ6436@type.youpi.perso.aquilenet.fr>
+ <CAHYPw2EAgjdcNATy0d6DhbT9qHAHJLda7gsLrnSJ7F4Cj=a-JQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1395989431.4877.19.camel@marge.simpson.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAHYPw2EAgjdcNATy0d6DhbT9qHAHJLda7gsLrnSJ7F4Cj=a-JQ@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 07:50:31AM +0100, Mike Galbraith wrote:
-> On Fri, 2014-03-28 at 06:13 +0800, Yuyang Du wrote:
-> 
-> > Spitting does feel brutal...
-> 
-> FWIW, "split" stuck hard in my gullet because task placement is core
+On Thu 2014-03-27 02:08:17, Pali Rohár wrote:
+> 2014-03-16 11:19 GMT+01:00 Samuel Thibault <samuel.thibault@ens-lyon.org>:
+> > Pali Rohár, le Sun 16 Mar 2014 11:16:25 +0100, a écrit :
+> >> Hello, what happened with this patch? Is there any problem with accepting it?
+> >
+> > Dmitry finding time to review it, I guess.
 
-Oh, sorry for that, :)
+> Dmitry, can you look and review this patch?
 
-> fastpath mission.  If the fastpath could afford to and did task
-> placement perfectly, task placement EDC (if you will) mechanisms would
-> not exist.
+Dmitry, what happened to you, are you there? This patch is like 8
+months old, and not too scary, either. Can you at least pinpoint some
+typos in it, or run in through the checkpatch?
 
-Sometimes, we have to if not get to.
+If Dmitry does not respond, what are the next steps. Greg, could you
+just take the patch? Linus?
 
-Yuyang
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
