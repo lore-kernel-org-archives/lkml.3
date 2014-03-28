@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaC1SIZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 14:08:25 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:62515 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753088AbaC1SIR (ORCPT
+	id S1754009AbaC1SIH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:08:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51144 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752607AbaC1Raa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 14:08:17 -0400
-Message-ID: <1396030095.12610.343.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Jiri Pirko <jiri@resnulli.us>, David Decotigny <decot@googlers.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Weilong Chen <chenweilong@huawei.com>, Amir Vadai <amirv@mellanox.com>,
-        Michael Dalton <mwdalton@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, Tejun Heo <tj@kernel.org>
-Date: Fri, 28 Mar 2014 11:08:15 -0700
-In-Reply-To: <CAGVrzcbVwaEiSn6irSeBwJCk8QsVizNfWO2ZhMxJN8chymo_LQ@mail.gmail.com>
-References: <cover.1395980768.git.decot@googlers.com>
-	 <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
-	 <20140328062537.GA2805@minipsycho.orion>
-	 <CAGVrzcZEuTCN0gtQ6pOSgT_3cd3Z8Z4OP2jn0QOD-QHbyPsAiA@mail.gmail.com>
-	 <1396028776.12610.341.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <CAGVrzcbVwaEiSn6irSeBwJCk8QsVizNfWO2ZhMxJN8chymo_LQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Fri, 28 Mar 2014 13:30:30 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Josh Boyer <jwboyer@fedoraproject.org>
+Subject: [PATCH 3.4 10/13] KVM: MMU: handle invalid root_hpa at __direct_map
+Date: Fri, 28 Mar 2014 10:32:00 -0700
+Message-Id: <20140328173054.448665049@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
+References: <20140328173053.049244535@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 10:59 -0700, Florian Fainelli wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> What I meant is that this sort of information most likely is already
-> part of some sort of machine health check that runs periodically,
-> which probably collects gazillions of other metrics. Whether the link
-> flapping information comes from sysfs or was maintained by a small
-> script which counts link UP/DOWN events from 'ip monitor link' and
-> outputs this into a file boils down to the same thing: the information
-> is available to some degree.
+------------------
 
-Yeah, I am not sure such a daemon runs on my netgear/OpenWrt router ;)
+From: Marcelo Tosatti <mtosatti@redhat.com>
 
+commit 989c6b34f6a9480e397b170cc62237e89bf4fdb9 upstream.
+
+It is possible for __direct_map to be called on invalid root_hpa
+(-1), two examples:
+
+1) try_async_pf -> can_do_async_pf
+    -> vmx_interrupt_allowed -> nested_vmx_vmexit
+2) vmx_handle_exit -> vmx_interrupt_allowed -> nested_vmx_vmexit
+
+Then to load_vmcs12_host_state and kvm_mmu_reset_context.
+
+Check for this possibility, let fault exception be regenerated.
+
+BZ: https://bugzilla.redhat.com/show_bug.cgi?id=924916
+
+Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ arch/x86/kvm/mmu.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2451,6 +2451,9 @@ static int __direct_map(struct kvm_vcpu
+ 	int emulate = 0;
+ 	gfn_t pseudo_gfn;
+ 
++	if (!VALID_PAGE(vcpu->arch.mmu.root_hpa))
++		return 0;
++
+ 	for_each_shadow_entry(vcpu, (u64)gfn << PAGE_SHIFT, iterator) {
+ 		if (iterator.level == level) {
+ 			unsigned pte_access = ACC_ALL;
 
 
