@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249AbaC2PZE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:25:04 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:54028 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752205AbaC2PY4 (ORCPT
+	id S1752307AbaC2PZM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:25:12 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55429 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752246AbaC2PZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:24:56 -0400
+	Sat, 29 Mar 2014 11:25:08 -0400
 From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
 Cc: linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Andi Kleen <andi@firstfloor.org>,
         Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 10/29] ktap: add string handling code(kernel/trace/ktap/kp_[str|mempool].[c|h])
-Date: Fri, 28 Mar 2014 10:45:05 -0400
-Message-Id: <1396017924-7754-11-git-send-email-jovi.zhangwei@gmail.com>
+Subject: [PATCH v2 11/29] ktap: add table handling code(kernel/trace/ktap/kp_tab.[c|h])
+Date: Fri, 28 Mar 2014 10:45:06 -0400
+Message-Id: <1396017924-7754-12-git-send-email-jovi.zhangwei@gmail.com>
 X-Mailer: git-send-email 1.8.1.4
 In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
 References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
@@ -25,163 +25,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ktap table is associative array, you can put any key value into
+table and store any type value, for example:
+
+var s = {}
+s[1] = 1  <-- store number key and number value
+s["key"] = "value"  <-- store string key and string value
+s["key2"] = 1    <--- store string key and number value
+
 Exposed functions:
 
-1). kp_str_new:
-        Return a interned string, failure if out of memory
-        or exceed max string number(default 9999).
-        It allocate memory from mempool, not kmalloc, because we
-        don't want dynamic allocate string in probe context.
+1). kp_tab_new
+        return a new allocated table
+2). kp_tab_dup
+        return a new allocated table with template table.
+3). kp_tab_free
+        free a table
+4). kp_tab_clear
+        clear entires of a table, not delete ktap_tab_t structure.
+5). kp_tab_getint/kp_tab_setint/kp_tab_incrint
+        get/set/inc with a int key
+6). kp_tab_getstr/kp_tab_setstr/kp_tab_incrstr
+        get/set/inc with a string key
+7). kp_tab_get/kp_tab_set/kp_tab_incr
+        get/set/inc with a key(variable type)
+8). kp_tab_next
+        table iterator
+9). kp_tab_len
+        return length of a table
+10).kp_tab_print_hist
+        print histogram of a table(value must be number)
 
-2). kp_str_resize:
-        Initizate interned hash table g->strhash.
+All table operation is protect by spinlock.
+Table cannot be resize, ktap runtime will report error once table
+overflow.
 
-3). kp_str_fmt:
-        Return a format string, called from 'printf' built-in function.
+ktap table performance is good, benchmark show that ktap table
+operation performance is better than systemtap, especially
+for string key(because all string is interned in ktap).
 
-4). kp_mempool_init/kp_mempool_destroy/kp_mempool_alloc
-        mempool is only service for string allocation currently.
-
-All string in ktap is interned, it means ktap keeps
-a single copy for any string. Whenever a new string appears, ktap
-checks whether it already has a copy of that string and, if so,
-reuses that copy. Internalization makes operations like string
-comparison and table indexing very fast, but it slows down string creation.
+Note table is not aggregation in Systemtap and Dtrace, aggregation
+use percpu buffer. ktap will introduce aggregation soon with
+Dtrace aggregation syntax.
 
 Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
 ---
- kernel/trace/ktap/kp_mempool.c |  94 +++++++++++
- kernel/trace/ktap/kp_mempool.h |   8 +
- kernel/trace/ktap/kp_str.c     | 360 +++++++++++++++++++++++++++++++++++++++++
- kernel/trace/ktap/kp_str.h     |  13 ++
- 4 files changed, 475 insertions(+)
- create mode 100644 kernel/trace/ktap/kp_mempool.c
- create mode 100644 kernel/trace/ktap/kp_mempool.h
- create mode 100644 kernel/trace/ktap/kp_str.c
- create mode 100644 kernel/trace/ktap/kp_str.h
+ kernel/trace/ktap/kp_tab.c | 842 +++++++++++++++++++++++++++++++++++++++++++++
+ kernel/trace/ktap/kp_tab.h |  59 ++++
+ 2 files changed, 901 insertions(+)
+ create mode 100644 kernel/trace/ktap/kp_tab.c
+ create mode 100644 kernel/trace/ktap/kp_tab.h
 
-diff --git a/kernel/trace/ktap/kp_mempool.c b/kernel/trace/ktap/kp_mempool.c
+diff --git a/kernel/trace/ktap/kp_tab.c b/kernel/trace/ktap/kp_tab.c
 new file mode 100644
-index 0000000..37fb8e4
+index 0000000..2d37dfe
 --- /dev/null
-+++ b/kernel/trace/ktap/kp_mempool.c
-@@ -0,0 +1,94 @@
++++ b/kernel/trace/ktap/kp_tab.c
+@@ -0,0 +1,842 @@
 +/*
-+ * kp_mempool.c - ktap memory pool, service for string allocation
-+ *
-+ * This file is part of ktap by Jovi Zhangwei.
-+ *
-+ * Copyright (C) 2012-2014 Jovi Zhangwei <jovi.zhangwei@gmail.com>.
-+ *
-+ * ktap is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * ktap is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ */
-+
-+#include <uapi/ktap/ktap_types.h>
-+#include "kp_obj.h"
-+#include "kp_str.h"
-+
-+#include <linux/ctype.h>
-+#include <linux/module.h>
-+#include "ktap.h"
-+
-+
-+/*
-+ * allocate memory from mempool, the allocated memory will be free
-+ * util ktap exit.
-+ * TODO: lock-free allocation
-+ */
-+void *kp_mempool_alloc(ktap_state_t *ks, int size)
-+{
-+	ktap_global_state_t *g = G(ks);
-+	void *mempool = g->mempool;
-+	void *freepos = g->mp_freepos;
-+	void *addr;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	arch_spin_lock(&g->mp_lock);
-+
-+	if (unlikely((unsigned long)((char *)freepos + size)) >
-+		     (unsigned long)((char *)mempool + g->mp_size)) {
-+		addr = NULL;
-+		goto out;
-+	}
-+
-+	addr = freepos;
-+	g->mp_freepos = (char *)freepos + size;
-+ out:
-+
-+	arch_spin_unlock(&g->mp_lock);
-+	local_irq_restore(flags);
-+	return addr;
-+}
-+
-+/*
-+ * destroy mempool.
-+ */
-+void kp_mempool_destroy(ktap_state_t *ks)
-+{
-+	ktap_global_state_t *g = G(ks);
-+
-+	if (!g->mempool)
-+		return;
-+
-+	vfree(g->mempool);
-+	g->mempool = NULL;
-+	g->mp_freepos = NULL;
-+	g->mp_size = 0;
-+}
-+
-+/*
-+ * pre-allocate size Kbytes memory pool.
-+ */
-+int kp_mempool_init(ktap_state_t *ks, int size)
-+{
-+	ktap_global_state_t *g = G(ks);
-+
-+	g->mempool = vmalloc(size * 1024);
-+	if (!g->mempool)
-+		return -ENOMEM;
-+
-+	g->mp_freepos = g->mempool;
-+	g->mp_size = size * 1024;
-+	g->mp_lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
-+	return 0;
-+}
-+
-diff --git a/kernel/trace/ktap/kp_mempool.h b/kernel/trace/ktap/kp_mempool.h
-new file mode 100644
-index 0000000..3eabf5e
---- /dev/null
-+++ b/kernel/trace/ktap/kp_mempool.h
-@@ -0,0 +1,8 @@
-+#ifndef __KTAP_MEMPOOL_H__
-+#define __KTAP_MEMPOOL_H__
-+
-+void *kp_mempool_alloc(ktap_state_t *ks, int size);
-+void kp_mempool_destroy(ktap_state_t *ks);
-+int kp_mempool_init(ktap_state_t *ks, int size);
-+
-+#endif /* __KTAP_MEMPOOL_H__ */
-diff --git a/kernel/trace/ktap/kp_str.c b/kernel/trace/ktap/kp_str.c
-new file mode 100644
-index 0000000..9d2e741
---- /dev/null
-+++ b/kernel/trace/ktap/kp_str.c
-@@ -0,0 +1,360 @@
-+/*
-+ * kp_str.c - ktap string data struction manipulation
++ * kp_tab.c - Table handling.
 + *
 + * This file is part of ktap by Jovi Zhangwei.
 + *
@@ -205,360 +107,888 @@ index 0000000..9d2e741
 + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + */
 +
-+#include <uapi/ktap/ktap_types.h>
-+#include "kp_obj.h"
-+#include "kp_str.h"
-+#include "kp_mempool.h"
-+
-+#include <linux/ctype.h>
++#include <linux/spinlock.h>
 +#include <linux/module.h>
 +#include <linux/kallsyms.h>
++#include <linux/slab.h>
++#include <linux/sort.h>
++#include <uapi/ktap/ktap_types.h>
 +#include "ktap.h"
-+#include "kp_transport.h"
 +#include "kp_vm.h"
++#include "kp_obj.h"
++#include "kp_str.h"
 +#include "kp_events.h"
++#include "kp_tab.h"
 +
-+/* Fast string data comparison. Caveat: unaligned access to 1st string! */
-+static __always_inline int str_fastcmp(const char *a, const char *b, int len)
++#define tab_lock_init(t)						\
++	do {								\
++		(t)->lock = (arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;	\
++	} while (0)
++#define tab_lock(t)						\
++	do {								\
++		local_irq_save(flags);					\
++		arch_spin_lock(&(t)->lock);				\
++	} while (0)
++#define tab_unlock(t)						\
++	do {								\
++		arch_spin_unlock(&(t)->lock);				\
++		local_irq_restore(flags);				\
++	} while (0)
++
++
++const ktap_val_t kp_niltv = { {NULL}, {KTAP_TNIL} } ;
++#define niltv  (&kp_niltv)
++
++/* -- Object hashing ------------------------------------------------------ */
++
++/* Hash values are masked with the table hash mask and used as an index. */
++static __always_inline
++ktap_node_t *hashmask(const ktap_tab_t *t, uint32_t hash)
 +{
-+	int i = 0;
-+
-+	kp_assert(len > 0);
-+	kp_assert((((uintptr_t)a + len - 1)&(PAGE_SIZE - 1)) <= PAGE_SIZE - 4);
-+
-+	do {  /* Note: innocuous access up to end of string + 3. */
-+		uint32_t v = *(uint32_t *)(a + i) ^ *(const uint32_t *)(b + i);
-+		if (v) {
-+			i -= len;
-+#if KP_LE
-+			return (int32_t)i >= -3 ? (v << (32 + (i << 3))) : 1;
-+#else
-+			return (int32_t)i >= -3 ? (v >> (32 + (i << 3))) : 1;
-+#endif
-+		}
-+		i += 4;
-+	} while (i < len);
-+	return 0;
++	ktap_node_t *n = t->node;
++	return &n[hash & t->hmask];
 +}
 +
++/* String hashes are precomputed when they are interned. */
++#define hashstr(t, s)		hashmask(t, (s)->hash)
 +
-+//TODO: change hash algo
++#define hashlohi(t, lo, hi)	hashmask((t), hashrot((lo), (hi)))
++#define hashnum(t, o)		hashlohi((t), (o)->val.n & 0xffffffff, 0)
++#define hashgcref(t, o)		hashlohi((t),	\
++				((unsigned long)(o)->val.gc & 0xffffffff), \
++				((unsigned long)(o)->val.gc & 0xffffffff) + HASH_BIAS)
 +
-+#define STRING_HASHLIMIT	5
-+static __always_inline unsigned int kp_str_hash(const char *str, size_t len)
++
++/* Hash an arbitrary key and return its anchor position in the hash table. */
++static ktap_node_t *hashkey(const ktap_tab_t *t, const ktap_val_t *key)
 +{
-+	unsigned int h = 201236 ^ len;
-+	size_t step = (len >> STRING_HASHLIMIT) + 1;
-+	size_t l1;
-+
-+	for (l1 = len; l1 >= step; l1 -= step)
-+		h = h ^ ((h<<5) + (h>>2) + (u8)(str[l1 - 1]));
-+
-+	return h;
++	kp_assert(!tvisint(key));
++	if (is_string(key))
++		return hashstr(t, rawtsvalue(key));
++	else if (is_number(key))
++		return hashnum(t, key);
++	else if (is_bool(key))
++		return hashmask(t, boolvalue(key));
++	else
++		return hashgcref(t, key);
 +}
 +
++/* -- Table creation and destruction -------------------------------------- */
 +
-+/*
-+ * resizes the string table
-+ */
-+int kp_str_resize(ktap_state_t *ks, int newmask)
++/* Create new hash part for table. */
++static __always_inline
++int newhpart(ktap_state_t *ks, ktap_tab_t *t, uint32_t hbits)
 +{
-+	ktap_global_state_t *g = G(ks);
-+	ktap_str_t **newhash;
++	uint32_t hsize;
++	ktap_node_t *node;
++	kp_assert(hbits != 0);
 +
-+	newhash = kp_zalloc(ks, (newmask + 1) * sizeof(ktap_str_t *));
-+	if (!newhash)
++	if (hbits > KP_MAX_HBITS) {
++		kp_error(ks, "table overflow\n");
++		return -1;
++	}
++	hsize = 1u << hbits;
++	node = vmalloc(hsize * sizeof(ktap_node_t));
++	if (!node)
 +		return -ENOMEM;
++	t->freetop = &node[hsize];
++	t->node = node;
++	t->hmask = hsize-1;
 +
-+	g->strmask = newmask;
-+	g->strhash = newhash;
 +	return 0;
 +}
 +
 +/*
-+ * Intern a string and return string object.
++ * Q: Why all of these copies of t->hmask, t->node etc. to local variables?
++ * A: Because alias analysis for C is _really_ tough.
++ *    Even state-of-the-art C compilers won't produce good code without this.
 + */
-+ktap_str_t *kp_str_new(ktap_state_t *ks, const char *str, size_t len)
++
++/* Clear hash part of table. */
++static __always_inline void clearhpart(ktap_tab_t *t)
 +{
-+	ktap_global_state_t *g = G(ks);
-+	ktap_str_t *s;
-+	ktap_obj_t *o;
-+	unsigned int h = kp_str_hash(str, len);
++	uint32_t i, hmask = t->hmask;
++	ktap_node_t *node = t->node;
++	kp_assert(t->hmask != 0);
++
++	for (i = 0; i <= hmask; i++) {
++		ktap_node_t *n = &node[i];
++		n->next = NULL;
++		set_nil(&n->key);
++		set_nil(&n->val);
++	}
++
++	t->hnum = 0;
++}
++
++/* Clear array part of table. */
++static __always_inline void clearapart(ktap_tab_t *t)
++{
++	uint32_t i, asize = t->asize;
++	ktap_val_t *array = t->array;
++	for (i = 0; i < asize; i++)
++		set_nil(&array[i]);
++}
++
++/* Create a new table. Note: the slots are not initialized (yet). */
++static ktap_tab_t *newtab(ktap_state_t *ks, uint32_t asize, uint32_t hbits)
++{
++	ktap_tab_t *t;
++ 
++	t = (ktap_tab_t *)kp_obj_new(ks, sizeof(ktap_tab_t));
++	t->gct = ~KTAP_TTAB;
++	t->array = NULL;
++	t->asize = 0;  /* In case the array allocation fails. */
++	t->hmask = 0;
++
++	tab_lock_init(t);
++
++	if (asize > 0) {
++		if (asize > KP_MAX_ASIZE) {
++			kp_error(ks, "table overflow\n");
++			return NULL;
++		}
++
++		t->array = vmalloc(asize * sizeof(ktap_val_t));
++		if (!t->array)
++			return NULL;
++		t->asize = asize;
++	}
++	if (hbits)
++		if (newhpart(ks, t, hbits)) {
++			vfree(t->array);
++			return NULL;		
++		}
++	return t;
++}
++
++/* Create a new table.
++ *
++ * The array size is non-inclusive. E.g. asize=128 creates array slots
++ * for 0..127, but not for 128. If you need slots 1..128, pass asize=129
++ * (slot 0 is wasted in this case).
++ *
++ * The hash size is given in hash bits. hbits=0 means no hash part.
++ * hbits=1 creates 2 hash slots, hbits=2 creates 4 hash slots and so on.
++ */
++ktap_tab_t *kp_tab_new(ktap_state_t *ks, uint32_t asize, uint32_t hbits)
++{
++	ktap_tab_t *t = newtab(ks, asize, hbits);
++	if (!t)
++		return NULL;
++
++	clearapart(t);
++	if (t->hmask > 0)
++		clearhpart(t);
++	return t;
++}
++
++#define TABLE_NARR_ENTRIES	255 /* PAGE_SIZE / sizeof(ktap_value) - 1 */
++#define TABLE_NREC_ENTRIES	2048 /* (PAGE_SIZE * 20) / sizeof(ktap_tnode)*/
++
++ktap_tab_t *kp_tab_new_ah(ktap_state_t *ks, int32_t a, int32_t h)
++{
++	if (a == 0 && h == 0) {
++		a = TABLE_NARR_ENTRIES;
++		h = TABLE_NREC_ENTRIES;
++	}
++
++	return kp_tab_new(ks, (uint32_t)(a > 0 ? a+1 : 0), hsize2hbits(h));
++}
++
++/* Duplicate a table. */
++ktap_tab_t *kp_tab_dup(ktap_state_t *ks, const ktap_tab_t *kt)
++{
++	ktap_tab_t *t;
++	uint32_t asize, hmask;
++	int i;
++
++	/* allocate default table size */
++	t = kp_tab_new_ah(ks, 0, 0);
++	if (!t)
++		return NULL;
++
++	asize = kt->asize;
++	if (asize > 0) {
++		ktap_val_t *array = t->array;
++		ktap_val_t *karray = kt->array;
++		if (asize < 64) {
++			/* An inlined loop beats memcpy for < 512 bytes. */
++			uint32_t i;
++			for (i = 0; i < asize; i++)
++				set_obj(&array[i], &karray[i]);
++		} else {
++			memcpy(array, karray, asize*sizeof(ktap_val_t));
++		}
++	}
++
++	hmask = kt->hmask;
++	for (i = 0; i <= hmask; i++) {
++		ktap_node_t *knode = &kt->node[i];
++		if (is_nil(&knode->key))
++			continue;
++		kp_tab_set(ks, t, &knode->key, &knode->val);
++	}
++	return t;
++}
++
++/* Clear a table. */
++void kp_tab_clear(ktap_tab_t *t)
++{
++	clearapart(t);
++	if (t->hmask > 0) {
++		ktap_node_t *node = t->node;
++		t->freetop = &node[t->hmask+1];
++		clearhpart(t);
++	}
++}
++
++/* Free a table. */
++void kp_tab_free(ktap_state_t *ks, ktap_tab_t *t)
++{
++	if (t->hmask > 0)
++		vfree(t->node);
++	if (t->asize > 0)
++		vfree(t->array);
++	kp_free(ks, t);
++}
++
++/* -- Table getters ------------------------------------------------------- */
++
++static const ktap_val_t *tab_getinth(ktap_tab_t *t, uint32_t key)
++{
++	ktap_val_t k;
++	ktap_node_t *n;
++
++	set_number(&k, (ktap_number)key);
++	n = hashnum(t, &k);
++	do {
++		if (is_number(&n->key) && nvalue(&n->key) == key) {
++			return &n->val;
++		}
++	} while ((n = n->next));
++	return niltv;
++}
++
++static __always_inline
++const ktap_val_t *tab_getint(ktap_tab_t *t, uint32_t key)
++{
++	return ((key < t->asize) ? arrayslot(t, key) :
++				   tab_getinth(t, key));
++}
++
++void kp_tab_getint(ktap_tab_t *t, uint32_t key, ktap_val_t *val)
++{
 +	unsigned long flags;
 +
-+	if (len >= KP_MAX_STR)
-+		return NULL;
++	tab_lock(t);
++	set_obj(val, tab_getint(t, key));
++	tab_unlock(t);
++}
 +
-+	local_irq_save(flags);
-+	arch_spin_lock(&g->str_lock);
++static const ktap_val_t *tab_getstr(ktap_tab_t *t, ktap_str_t *key)
++{
++	ktap_node_t *n = hashstr(t, key);
++	do {
++		if (is_string(&n->key) && rawtsvalue(&n->key) == key)
++			return &n->val;
++	} while ((n = n->next));
++	return niltv;
++}
 +
-+	o = (ktap_obj_t *)g->strhash[h & g->strmask];
-+	if (likely((((uintptr_t)str+len-1) & (PAGE_SIZE-1)) <= PAGE_SIZE-4)) {
-+		while (o != NULL) {
-+			ktap_str_t *sx = (ktap_str_t *)o;
-+			if (sx->len == len &&
-+			    !str_fastcmp(str, getstr(sx), len)) {
-+				arch_spin_unlock(&g->str_lock);
-+				local_irq_restore(flags);
-+				return sx; /* Return existing string. */
-+			}
-+			o = gch(o)->nextgc;
++void kp_tab_getstr(ktap_tab_t *t, ktap_str_t *key, ktap_val_t *val)
++{
++	unsigned long flags;
++
++	tab_lock(t);
++	set_obj(val,  tab_getstr(t, key));
++	tab_unlock(t);
++}
++
++static const ktap_val_t *tab_get(ktap_state_t *ks, ktap_tab_t *t,
++				 const ktap_val_t *key)
++{
++	if (is_string(key)) {
++		return tab_getstr(t, rawtsvalue(key));
++	} else if (is_number(key)) {
++		ktap_number nk = nvalue(key);
++		uint32_t k = (uint32_t)nk;
++		if (nk == (ktap_number)k) {
++			return tab_getint(t, k);
++		} else {
++			goto genlookup;	/* Else use the generic lookup. */
 +		}
-+	} else { /* Slow path: end of string is too close to a page boundary */
-+		while (o != NULL) {
-+			ktap_str_t *sx = (ktap_str_t *)o;
-+			if (sx->len == len &&
-+			    !memcmp(str, getstr(sx), len)) {
-+				arch_spin_unlock(&g->str_lock);
-+				local_irq_restore(flags);
-+				return sx; /* Return existing string. */
++	} else if (is_eventstr(key)) {
++		const ktap_str_t *ts;
++
++		if (!ks->current_event) {
++			kp_error(ks,
++			"cannot stringify event str in invalid context\n");
++			return niltv;
++		}
++
++		ts = kp_event_stringify(ks);
++		if (!ts)
++			return niltv;
++
++		return tab_getstr(t, rawtsvalue(key));
++	} else if (!is_nil(key)) {
++		ktap_node_t *n;
++ genlookup:
++		n = hashkey(t, key);
++		do {
++			if (kp_obj_equal(&n->key, key))
++				return &n->val;
++		} while ((n = n->next));
++	}
++	return niltv;
++}
++
++void kp_tab_get(ktap_state_t *ks, ktap_tab_t *t, const ktap_val_t *key,
++		ktap_val_t *val)
++{
++	unsigned long flags;
++
++	tab_lock(t);
++	set_obj(val, tab_get(ks, t, key));
++	tab_unlock(t);
++}
++
++/* -- Table setters ------------------------------------------------------- */
++
++/* Insert new key. Use Brent's variation to optimize the chain length. */
++static ktap_val_t *kp_tab_newkey(ktap_state_t *ks, ktap_tab_t *t,
++				 const ktap_val_t *key)
++{
++	ktap_node_t *n = hashkey(t, key);
++
++	if (!is_nil(&n->val) || t->hmask == 0) {
++		ktap_node_t *nodebase = t->node;
++		ktap_node_t *collide, *freenode = t->freetop;
++
++		kp_assert(freenode >= nodebase &&
++			  freenode <= nodebase+t->hmask+1);
++		do {
++			if (freenode == nodebase) {  /* No free node found? */
++				kp_error(ks, "table overflow\n");
++				return NULL;
 +			}
-+			o = gch(o)->nextgc;
++		} while (!is_nil(&(--freenode)->key));
++
++		t->freetop = freenode;
++		collide = hashkey(t, &n->key);
++		if (collide != n) {  /* Colliding node not the main node? */
++			while (collide->next != n)
++				/* Find predecessor. */
++				collide = collide->next;
++			collide->next = freenode;  /* Relink chain. */
++ 			/* Copy colliding node into free node and
++			 * free main node. */
++			freenode->val = n->val;
++			freenode->key = n->key;
++			freenode->next = n->next;
++			n->next = NULL;
++			set_nil(&n->val);
++			/* Rechain pseudo-resurrected string keys with
++			 * colliding hashes. */
++			while (freenode->next) {
++				ktap_node_t *nn = freenode->next;
++				if (is_string(&nn->key) && !is_nil(&nn->val) &&
++					hashstr(t, rawtsvalue(&nn->key)) == n) {
++					freenode->next = nn->next;
++					nn->next = n->next;
++					n->next = nn;
++				} else {
++					freenode = nn;
++				}
++			}
++		} else {  /* Otherwise use free node. */
++			freenode->next = n->next;  /* Insert into chain. */
++			n->next = freenode;
++			n = freenode;
 +		}
 +	}
++	set_obj(&n->key, key);
++	t->hnum++;
++	return &n->val;
++}
 +
-+	/* create a new string, allocate it from mempool, not use kmalloc. */
-+	s = kp_mempool_alloc(ks, sizeof(ktap_str_t) + len + 1);
-+	if (unlikely(!s))
++static ktap_val_t *tab_setinth(ktap_state_t *ks, ktap_tab_t *t, uint32_t key)
++{
++	ktap_val_t k;
++	ktap_node_t *n;
++
++	set_number(&k, (ktap_number)key);
++	n = hashnum(t, &k);
++	do {
++		if (is_number(&n->key) && nvalue(&n->key) == key)
++			return &n->val;
++	} while ((n = n->next));
++	return kp_tab_newkey(ks, t, &k);
++}
++
++static __always_inline
++ktap_val_t *tab_setint(ktap_state_t *ks, ktap_tab_t *t, uint32_t key)
++{
++	return ((key < t->asize) ? arrayslot(t, key) :
++				   tab_setinth(ks, t, key));
++}
++
++void kp_tab_setint(ktap_state_t *ks, ktap_tab_t *t,
++		   uint32_t key, const ktap_val_t *val)
++{
++	ktap_val_t *v;
++	unsigned long flags;
++
++	tab_lock(t);
++	v = tab_setint(ks, t, key);
++	if (likely(v))
++		set_obj(v, val);
++	tab_unlock(t);
++}
++
++void kp_tab_incrint(ktap_state_t *ks, ktap_tab_t *t, uint32_t key,
++		    ktap_number n)
++{
++	ktap_val_t *v;
++	unsigned long flags;
++
++	tab_lock(t);
++	v = tab_setint(ks, t, key);
++	if (unlikely(!v))
 +		goto out;
-+	s->gct = ~KTAP_TSTR;
-+	s->len = len;
-+	s->hash = h;
-+	s->reserved = 0;
-+	memcpy(s + 1, str, len);
-+	((char *)(s + 1))[len] = '\0';  /* ending 0 */
 +
-+	/* Add it to string hash table */
-+	h &= g->strmask;
-+	s->nextgc = (ktap_obj_t *)g->strhash[h];
-+	g->strhash[h] = s;
-+	if (g->strnum++ > KP_MAX_STRNUM) {
-+		kp_error(ks, "exceed max string number %d\n", KP_MAX_STRNUM);
-+		s = NULL;
-+	}
++	if (likely(is_number(v)))
++		set_number(v, nvalue(v) + n);
++	else if (is_nil(v))
++		set_number(v, n);
++	else
++		kp_error(ks, "use '+=' operator on non-number value\n");
 +
 + out:
-+	arch_spin_unlock(&g->str_lock);
-+	local_irq_restore(flags);
-+	return s; /* Return newly interned string. */
++	tab_unlock(t);
 +}
 +
-+void kp_str_freeall(ktap_state_t *ks)
++static ktap_val_t *tab_setstr(ktap_state_t *ks, ktap_tab_t *t,
++			      const ktap_str_t *key)
 +{
-+	/* don't need to free string in here, it will handled by mempool */
-+	kp_free(ks, G(ks)->strhash);
++	ktap_val_t k;
++	ktap_node_t *n = hashstr(t, key);
++	do {
++		if (is_string(&n->key) && rawtsvalue(&n->key) == key)
++			return &n->val;
++	} while ((n = n->next));
++	set_string(&k, key);
++	return kp_tab_newkey(ks, t, &k);
 +}
 +
-+/* kp_str_fmt - printf implementation */
-+
-+/* macro to `unsign' a character */
-+#define uchar(c)	((unsigned char)(c))
-+
-+#define L_ESC		'%'
-+
-+/* valid flags in a format specification */
-+#define FLAGS	"-+ #0"
-+
-+#define INTFRMLEN	"ll"
-+#define INTFRM_T	long long
-+
-+/*
-+ * maximum size of each format specification (such as '%-099.99d')
-+ * (+10 accounts for %99.99x plus margin of error)
-+ */
-+#define MAX_FORMAT	(sizeof(FLAGS) + sizeof(INTFRMLEN) + 10)
-+
-+static const char *scanformat(ktap_state_t *ks, const char *strfrmt, char *form)
++void kp_tab_setstr(ktap_state_t *ks, ktap_tab_t *t, const ktap_str_t *key,
++		   const ktap_val_t *val)
 +{
-+	const char *p = strfrmt;
-+	while (*p != '\0' && strchr(FLAGS, *p) != NULL)
-+		p++;  /* skip flags */
++	ktap_val_t *v;
++	unsigned long flags;
 +
-+	if ((size_t)(p - strfrmt) >= sizeof(FLAGS)/sizeof(char)) {
-+		kp_error(ks, "invalid format (repeated flags)\n");
++	tab_lock(t);
++	v = tab_setstr(ks, t, key);
++	if (likely(v))
++		set_obj(v, val);
++	tab_unlock(t);
++}
++
++void kp_tab_incrstr(ktap_state_t *ks, ktap_tab_t *t, const ktap_str_t *key,
++		    ktap_number n)
++{
++	ktap_val_t *v;
++	unsigned long flags;
++
++	tab_lock(t);
++	v = tab_setstr(ks, t, key);
++	if (unlikely(!v))
++		goto out;
++
++	if (likely(is_number(v)))
++		set_number(v, nvalue(v) + n);
++	else if (is_nil(v))
++		set_number(v, n);
++	else
++		kp_error(ks, "use '+=' operator on non-number value\n");
++ out:
++	tab_unlock(t);
++}
++
++static ktap_val_t *tab_set(ktap_state_t *ks, ktap_tab_t *t,
++			   const ktap_val_t *key)
++{
++	ktap_node_t *n;
++
++	if (is_string(key)) {
++		return tab_setstr(ks, t, rawtsvalue(key));
++	} else if (is_number(key)) {
++		ktap_number nk = nvalue(key);
++		uint32_t k = (ktap_number)nk;
++		if (nk == (ktap_number)k)
++			return tab_setint(ks, t, k);
++	} else if (itype(key) == KTAP_TKSTACK) {
++		/* change stack into string */
++		ktap_str_t *bt = kp_obj_kstack2str(ks, key->val.stack.depth,
++						       key->val.stack.skip);
++		if (!bt)
++			return NULL;
++		return tab_setstr(ks, t, bt);
++	} else if (is_eventstr(key)) {
++		const ktap_str_t *ts;
++
++		if (!ks->current_event) {
++			kp_error(ks,
++			"cannot stringify event str in invalid context\n");
++			return NULL;
++		}
++
++		ts = kp_event_stringify(ks);
++		if (!ts)
++			return NULL;
++
++		return tab_setstr(ks, t, ts);
++		/* Else use the generic lookup. */
++	} else if (is_nil(key)) {
++		kp_error(ks, "table nil index\n");
 +		return NULL;
 +	}
++	n = hashkey(t, key);
++	do {
++		if (kp_obj_equal(&n->key, key))
++			return &n->val;
++	} while ((n = n->next));
++	return kp_tab_newkey(ks, t, key);
++}
 +
-+	if (isdigit(uchar(*p)))
-+		p++;  /* skip width */
++void kp_tab_set(ktap_state_t *ks, ktap_tab_t *t,
++		const ktap_val_t *key, const ktap_val_t *val)
++{
++	ktap_val_t *v;
++	unsigned long flags;
 +
-+	if (isdigit(uchar(*p)))
-+		p++;  /* (2 digits at most) */
++	tab_lock(t);
++	v = tab_set(ks, t, key);
++	if (likely(v))
++		set_obj(v, val);
++	tab_unlock(t);
++}
 +
-+	if (*p == '.') {
-+		p++;
-+		if (isdigit(uchar(*p)))
-+			p++;  /* skip precision */
-+		if (isdigit(uchar(*p)))
-+			p++;  /* (2 digits at most) */
++void kp_tab_incr(ktap_state_t *ks, ktap_tab_t *t, ktap_val_t *key,
++		 ktap_number n)
++{
++	ktap_val_t *v;
++	unsigned long flags;
++
++	tab_lock(t);
++	v = tab_set(ks, t, key);
++	if (unlikely(!v))
++		goto out;
++
++	if (likely(is_number(v)))
++		set_number(v, nvalue(v) + n);
++	else if (is_nil(v))
++		set_number(v, n);
++	else
++		kp_error(ks, "use '+=' operator on non-number value\n");
++ out:
++	tab_unlock(t);
++}
++
++
++/* -- Table traversal ----------------------------------------------------- */
++
++/* Get the traversal index of a key. */
++static uint32_t keyindex(ktap_state_t *ks, ktap_tab_t *t,
++			 const ktap_val_t *key)
++{
++	if (is_number(key)) {
++		ktap_number nk = nvalue(key);
++		uint32_t k = (uint32_t)nk;
++		/* Array key indexes: [0..t->asize-1] */
++		if ((uint32_t)k < t->asize && nk == (ktap_number)k)
++			return (uint32_t)k;
 +	}
 +
-+	if (isdigit(uchar(*p))) {
-+		kp_error(ks, "invalid format (width or precision too long)\n");
-+		return NULL;
++	if (!is_nil(key)) {
++		ktap_node_t *n = hashkey(t, key);
++		do {
++			if (kp_obj_equal(&n->key, key))
++				return t->asize + (uint32_t)(n - (t->node));
++			/* Hash key indexes: [t->asize..t->asize+t->nmask] */
++		} while ((n = n->next));
++		kp_error(ks, "table next index\n");
++		return 0;  /* unreachable */
++	}
++	return ~0u;  /* A nil key starts the traversal. */
++}
++
++/* Advance to the next step in a table traversal. */
++int kp_tab_next(ktap_state_t *ks, ktap_tab_t *t, ktap_val_t *key)
++{
++	unsigned long flags;
++	uint32_t i;
++
++	tab_lock(t);
++	i = keyindex(ks, t, key);  /* Find predecessor key index. */
++
++	/* First traverse the array keys. */
++	for (i++; i < t->asize; i++)
++ 		if (!is_nil(arrayslot(t, i))) {
++			set_number(key, i);
++			set_obj(key + 1, arrayslot(t, i));
++			tab_unlock(t);
++			return 1;
++		}
++	/* Then traverse the hash keys. */
++	for (i -= t->asize; i <= t->hmask; i++) {
++		ktap_node_t *n = &t->node[i];
++		if (!is_nil(&n->val)) {
++			set_obj(key, &n->key);
++			set_obj(key + 1, &n->val);
++			tab_unlock(t);
++			return 1;
++		}
++	}
++	tab_unlock(t);
++	return 0;  /* End of traversal. */
++}
++
++/* -- Table length calculation -------------------------------------------- */
++
++int kp_tab_len(ktap_state_t *ks, ktap_tab_t *t)
++{
++	unsigned long flags;
++	int i, len = 0;
++
++	tab_lock(t);
++	for (i = 0; i < t->asize; i++) {
++		ktap_val_t *v = &t->array[i];
++
++		if (is_nil(v))
++			continue;
++		len++;
 +	}
 +
-+	*(form++) = '%';
-+	memcpy(form, strfrmt, (p - strfrmt + 1) * sizeof(char));
-+	form += p - strfrmt + 1;
-+	*form = '\0';
-+	return p;
++	for (i = 0; i <= t->hmask; i++) {
++		ktap_node_t *n = &t->node[i];
++
++		if (is_nil(&n->key))
++			continue;
++
++		len++;
++	}
++	tab_unlock(t);
++	return len;
 +}
 +
-+
-+/*
-+ * add length modifier into formats
-+ */
-+static void addlenmod(char *form, const char *lenmod)
++static void string_convert(char *output, const char *input)
 +{
-+	size_t l = strlen(form);
-+	size_t lm = strlen(lenmod);
-+	char spec = form[l - 1];
-+
-+	strcpy(form + l - 1, lenmod);
-+	form[l + lm - 1] = spec;
-+	form[l + lm] = '\0';
++	if (strlen(input) > 32) {
++		strncpy(output, input, 32-4);
++		memset(output + 32-4, '.', 3);
++	} else
++		memcpy(output, input, strlen(input));
 +}
 +
++typedef struct ktap_node2 {
++	ktap_val_t key;
++	ktap_val_t val;
++} ktap_node2_t;
 +
-+static void arg_error(ktap_state_t *ks, int narg, const char *extramsg)
++static int hist_record_cmp(const void *i, const void *j)
 +{
-+	kp_error(ks, "bad argument #%d: (%s)\n", narg, extramsg);
++	ktap_number n1 = nvalue(&((const ktap_node2_t *)i)->val);
++	ktap_number n2 = nvalue(&((const ktap_node2_t *)j)->val);
++
++	if (n1 == n2)
++		return 0;
++	else if (n1 < n2)
++		return 1;
++	else
++		return -1;
 +}
 +
-+int kp_str_fmt(ktap_state_t *ks, struct trace_seq *seq)
++/* todo: make histdump to be faster, just need to sort n entries, not all */
++
++/* print_hist: key should be number/string/ip, value must be number */
++static void tab_histdump(ktap_state_t *ks, ktap_tab_t *t, int shownums)
 +{
-+	int arg = 1;
-+	size_t sfl;
-+	ktap_val_t *arg_fmt = kp_arg(ks, 1);
-+	int argnum = kp_arg_nr(ks);
-+	const char *strfrmt, *strfrmt_end;
++	long start_time, delta_time;
++	uint32_t i, asize = t->asize;
++	ktap_val_t *array = t->array;
++	uint32_t hmask = t->hmask;
++	ktap_node_t *node = t->node;
++	ktap_node2_t *sort_mem;
++	char dist_str[39];
++	int total = 0, sum = 0;
 +
-+	strfrmt = svalue(arg_fmt);
-+	sfl = rawtsvalue(arg_fmt)->len;
-+	strfrmt_end = strfrmt + sfl;
++	start_time = gettimeofday_ns();
 +
-+	while (strfrmt < strfrmt_end) {
-+		if (*strfrmt != L_ESC)
-+			trace_seq_putc(seq, *strfrmt++);
-+		else if (*++strfrmt == L_ESC)
-+			trace_seq_putc(seq, *strfrmt++);
-+		else { /* format item */
-+			char form[MAX_FORMAT];
++	sort_mem = kmalloc((t->asize + t->hnum) * sizeof(ktap_node2_t),
++				GFP_KERNEL);
++	if (!sort_mem)
++		return;
 +
-+			if (++arg > argnum) {
-+				arg_error(ks, arg, "no value");
-+				return -1;
++	/* copy all values in table into sort_mem. */
++	for (i = 0; i < asize; i++) {
++		ktap_val_t *val = &array[i];
++		if (is_nil(val))
++			continue;
++
++		if (!is_number(val)) {
++			kp_error(ks, "print_hist only can print number\n");
++			goto out;
++		}
++
++		set_number(&sort_mem[total].key, i);
++		set_obj(&sort_mem[total].val, val);
++		sum += nvalue(val);
++		total++;
++	}
++
++	for (i = 0; i <= hmask; i++) {
++		ktap_node_t *n = &node[i];
++		ktap_val_t *val = &n->val;
++
++		if (is_nil(val))
++			continue;
++
++		if (!is_number(val)) {
++			kp_error(ks, "print_hist only can print number\n");
++			goto out;
++		}
++
++		set_obj(&sort_mem[total].key, &n->key);
++		set_obj(&sort_mem[total].val, val);
++		sum += nvalue(val);
++		total++;
++	}
++
++	/* sort */
++	sort(sort_mem, total, sizeof(ktap_node2_t), hist_record_cmp, NULL);
++
++	dist_str[sizeof(dist_str) - 1] = '\0';
++
++	for (i = 0; i < total; i++) {
++		ktap_val_t *key = &sort_mem[i].key;
++		ktap_number num = nvalue(&sort_mem[i].val);
++		int ratio;
++
++		if (!--shownums)
++			break;
++
++		memset(dist_str, ' ', sizeof(dist_str) - 1);
++		ratio = (num * (sizeof(dist_str) - 1)) / sum;
++		memset(dist_str, '@', ratio);
++
++		if (is_string(key)) {
++			//char buf[32] = {0};
++
++			//string_convert(buf, svalue(key));
++			if (rawtsvalue(key)->len > 32) {
++				kp_puts(ks, svalue(key));
++				kp_printf(ks, "%s\n%d\n\n", dist_str, num);
++			} else {
++				kp_printf(ks, "%31s |%s%-7d\n", svalue(key),
++								dist_str, num);
 +			}
++		} else if (is_number(key)) {
++			kp_printf(ks, "%31d |%s%-7d\n", nvalue(key),
++						dist_str, num);
++		} else if (is_kip(key)) {
++			char str[KSYM_SYMBOL_LEN];
++			char buf[32] = {0};
 +
-+			strfrmt = scanformat(ks, strfrmt, form);
-+			switch (*strfrmt++) {
-+			case 'c':
-+				kp_arg_checknumber(ks, arg);
-+
-+				trace_seq_printf(seq, form,
-+						 nvalue(kp_arg(ks, arg)));
-+				break;
-+			case 'd':  case 'i': {
-+				ktap_number n;
-+				INTFRM_T ni;
-+
-+				kp_arg_checknumber(ks, arg);
-+
-+				n = nvalue(kp_arg(ks, arg));
-+				ni = (INTFRM_T)n;
-+				addlenmod(form, INTFRMLEN);
-+				trace_seq_printf(seq, form, ni);
-+				break;
-+			}
-+			case 'p': {
-+				char str[KSYM_SYMBOL_LEN];
-+
-+				kp_arg_checknumber(ks, arg);
-+
-+				SPRINT_SYMBOL(str, nvalue(kp_arg(ks, arg)));
-+				_trace_seq_puts(seq, str);
-+				break;
-+			}
-+			case 'o':  case 'u':  case 'x':  case 'X': {
-+				ktap_number n;
-+				unsigned INTFRM_T ni;
-+
-+				kp_arg_checknumber(ks, arg);
-+
-+				n = nvalue(kp_arg(ks, arg));
-+				ni = (unsigned INTFRM_T)n;
-+				addlenmod(form, INTFRMLEN);
-+				trace_seq_printf(seq, form, ni);
-+				break;
-+			}
-+			case 's': {
-+				ktap_val_t *v = kp_arg(ks, arg);
-+				const char *s;
-+				size_t l;
-+
-+				if (is_nil(v)) {
-+					_trace_seq_puts(seq, "nil");
-+					return 0;
-+				}
-+
-+				if (is_eventstr(v)) {
-+					const char *str = kp_event_tostr(ks);
-+					if (!str)
-+						return  -1;
-+					_trace_seq_puts(seq,
-+						kp_event_tostr(ks));
-+					return 0;
-+				}
-+
-+				kp_arg_checkstring(ks, arg);
-+
-+				s = svalue(v);
-+				l = rawtsvalue(v)->len;
-+				if (!strchr(form, '.') && l >= 100) {
-+					/*
-+					 * no precision and string is too long
-+					 * to be formatted;
-+					 * keep original string
-+					 */
-+					_trace_seq_puts(seq, s);
-+					break;
-+				} else {
-+					trace_seq_printf(seq, form, s);
-+					break;
-+				}
-+			}
-+			default: /* also treat cases `pnLlh' */
-+				kp_error(ks, "invalid option " KTAP_QL("%%%c")
-+					     " to " KTAP_QL("format"),
-+					     *(strfrmt - 1));
-+				return -1;
-+			}
++			SPRINT_SYMBOL(str, nvalue(key));
++			string_convert(buf, str);
++			kp_printf(ks, "%31s |%s%-7d\n", buf, dist_str, num);
 +		}
 +	}
 +
-+	return 0;
++	if (!shownums && total)
++		kp_printf(ks, "%31s |\n", "...");
++
++ out:
++	kfree(sort_mem);
++
++	delta_time = (gettimeofday_ns() - start_time) / NSEC_PER_USEC;
++	kp_verbose_printf(ks, "tab_histdump time: %d (us)\n", delta_time);
 +}
 +
-diff --git a/kernel/trace/ktap/kp_str.h b/kernel/trace/ktap/kp_str.h
++#define DISTRIBUTION_STR "------------- Distribution -------------"
++void kp_tab_print_hist(ktap_state_t *ks, ktap_tab_t *t, int n)
++{
++	kp_printf(ks, "%31s%s%s\n", "value ", DISTRIBUTION_STR, " count");
++	tab_histdump(ks, t, n);
++}
++
+diff --git a/kernel/trace/ktap/kp_tab.h b/kernel/trace/ktap/kp_tab.h
 new file mode 100644
-index 0000000..4510e4a
+index 0000000..2a7576d
 --- /dev/null
-+++ b/kernel/trace/ktap/kp_str.h
-@@ -0,0 +1,13 @@
-+#ifndef __KTAP_STR_H__
-+#define __KTAP_STR_H__
++++ b/kernel/trace/ktap/kp_tab.h
+@@ -0,0 +1,59 @@
++#ifndef __KTAP_TAB_H__
++#define __KTAP_TAB_H__
 +
-+int kp_str_resize(ktap_state_t *ks, int newmask);
-+void kp_str_freeall(ktap_state_t *ks);
-+ktap_str_t * kp_str_new(ktap_state_t *ks, const char *str, size_t len);
++/* Hash constants. Tuned using a brute force search. */
++#define HASH_BIAS       (-0x04c11db7)
++#define HASH_ROT1       14
++#define HASH_ROT2       5
++#define HASH_ROT3       13
 +
-+#define kp_str_newz(ks, s)	(kp_str_new(ks, s, strlen(s)))
++/* Every half-decent C compiler transforms this into a rotate instruction. */
++#define kp_rol(x, n)    (((x)<<(n)) | ((x)>>(-(int)(n)&(8*sizeof(x)-1))))
++#define kp_ror(x, n)    (((x)<<(-(int)(n)&(8*sizeof(x)-1))) | ((x)>>(n)))
 +
-+#include <linux/trace_seq.h>
-+int kp_str_fmt(ktap_state_t *ks, struct trace_seq *seq);
++/* Scramble the bits of numbers and pointers. */
++static __always_inline uint32_t hashrot(uint32_t lo, uint32_t hi)
++{
++	/* Prefer variant that compiles well for a 2-operand CPU. */
++	lo ^= hi; hi = kp_rol(hi, HASH_ROT1);
++	lo -= hi; hi = kp_rol(hi, HASH_ROT2);
++	hi ^= lo; hi -= kp_rol(lo, HASH_ROT3);
++	return hi;
++}
 +
-+#endif /* __KTAP_STR_H__ */
++
++#define FLS(x)       ((uint32_t)(__builtin_clz(x)^31))
++#define hsize2hbits(s)  ((s) ? ((s)==1 ? 1 : 1+FLS((uint32_t)((s)-1))) : 0)
++
++#define arrayslot(t, i)         (&(t)->array[(i)])
++
++void kp_tab_set(ktap_state_t *ks, ktap_tab_t *t, const ktap_val_t *key,
++		const ktap_val_t *val);
++void kp_tab_setstr(ktap_state_t *ks, ktap_tab_t *t,
++		   const ktap_str_t *key, const ktap_val_t *val);
++void kp_tab_incrstr(ktap_state_t *ks, ktap_tab_t *t, const ktap_str_t *key,
++		    ktap_number n);
++void kp_tab_get(ktap_state_t *ks, ktap_tab_t *t, const ktap_val_t *key,
++		ktap_val_t *val);
++void kp_tab_getstr(ktap_tab_t *t, ktap_str_t *key, ktap_val_t *val);
++
++void kp_tab_getint(ktap_tab_t *t, uint32_t key, ktap_val_t *val);
++void kp_tab_setint(ktap_state_t *ks, ktap_tab_t *t,
++		   uint32_t key, const ktap_val_t *val);
++void kp_tab_incrint(ktap_state_t *ks, ktap_tab_t *t, uint32_t key,
++		    ktap_number n);
++ktap_tab_t *kp_tab_new(ktap_state_t *ks, uint32_t asize, uint32_t hbits);
++ktap_tab_t *kp_tab_new_ah(ktap_state_t *ks, int32_t a, int32_t h);
++ktap_tab_t *kp_tab_dup(ktap_state_t *ks, const ktap_tab_t *kt);
++
++void kp_tab_free(ktap_state_t *ks, ktap_tab_t *t);
++int kp_tab_len(ktap_state_t *ks, ktap_tab_t *t);
++void kp_tab_dump(ktap_state_t *ks, ktap_tab_t *t);
++void kp_tab_clear(ktap_tab_t *t);
++void kp_tab_print_hist(ktap_state_t *ks, ktap_tab_t *t, int n);
++int kp_tab_next(ktap_state_t *ks, ktap_tab_t *t, StkId key);
++int kp_tab_sort_next(ktap_state_t *ks, ktap_tab_t *t, StkId key);
++void kp_tab_sort(ktap_state_t *ks, ktap_tab_t *t, ktap_func_t *cmp_func);
++void kp_tab_incr(ktap_state_t *ks, ktap_tab_t *t, ktap_val_t *key,
++		ktap_number n);
++#endif /* __KTAP_TAB_H__ */
 -- 
 1.8.1.4
 
