@@ -1,111 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbaC1Pef (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 11:34:35 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:40159 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921AbaC1P3d (ORCPT
+	id S1752433AbaC1PgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 11:36:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46167 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751224AbaC1PgL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 11:29:33 -0400
-X-AuditID: cbfee61a-b7fb26d00000724f-da-5335955ce450
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-To: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>
-Subject: [PATCH/RFC v2 3/8] Documentation: leds: Add description of flash mode
-Date: Fri, 28 Mar 2014 16:29:00 +0100
-Message-id: <1396020545-15727-4-git-send-email-j.anaszewski@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1396020545-15727-1-git-send-email-j.anaszewski@samsung.com>
-References: <1396020545-15727-1-git-send-email-j.anaszewski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t9jQd2YqabBBk9mCFvcWneO1eLozolM
-	FvOPAFm9V58zWpxtesNucXnXHDaLrW/WMVr0bNjKarF711NWi8Nv2lkduDx2zrrL7rFn/g9W
-	j74tqxg9Pm+SC2CJ4rJJSc3JLEst0rdL4Mo4+WIlW8F9uYo5h5vYGhj7JbsYOTkkBEwkjk1Z
-	ywhhi0lcuLeerYuRi0NIYDqjxNN3x5khnE4miRN7N7KBVLEJGEr8fPGaCcQWESiXmDb1ERNI
-	EbPAPkaJTdNAOjg5hAX8JKYdW8fexcjBwSKgKvHulQxImFfAQ+LTmrXMIGEJAQWJOZNsQMKc
-	Ap4St1+0gx0hBFTyZc5J9gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBAfaM6kd
-	jCsbLA4xCnAwKvHwCrSaBguxJpYVV+YeYpTgYFYS4c2aCBTiTUmsrEotyo8vKs1JLT7EKM3B
-	oiTOe6DVOlBIID2xJDU7NbUgtQgmy8TBKdXA2GR+5X9u86/TN3rubNhTMeWbkWm9vHT1HBWW
-	A5dk/1xZ/Lm2jskk3NRZbn54Is/Mt7x8jxI0p7wJEpqtWGmnfHdRCbeEIgdnWfxShoVpCyeE
-	MTj3xk6a+vZv5d/V6TPXnj+SFiRSd7dBO7bp2hvLOZHt6hXbl4nO/v1H6mPLOdnKU0ee+0wu
-	U2Ipzkg01GIuKk4EAIYqNXswAgAA
+	Fri, 28 Mar 2014 11:36:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,751,1389772800"; 
+   d="scan'208";a="501741177"
+From: "Chen, Jet" <jet.chen@intel.com>
+To: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: akpm <akpm@linux-foundation.org>, "Wu, Fengguang" <fengguang.wu@intel.com>
+Subject: RE: [PATCH linux-next v2] ufs: sb mutex merge + mutex_destroy: fix
+Thread-Topic: [PATCH linux-next v2] ufs: sb mutex merge + mutex_destroy: fix
+Thread-Index: AQHPSg1K2ZP8VT1O+kaJDN0GuiT0g5r2oX5w
+Date: Fri, 28 Mar 2014 15:35:24 +0000
+Message-ID: <EFD6DBD752D5C44BAF4AE4BE140985E010D4C92D@SHSMSX104.ccr.corp.intel.com>
+References: <20140327233831.c32f99a8fbabb31a5e37e598@skynet.be>
+In-Reply-To: <20140327233831.c32f99a8fbabb31a5e37e598@skynet.be>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Bryan Wu <cooloney@gmail.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>
+Hi Fabian,
+
+I helped to test your patch on our LKP system. Your patch fixes the boot failure issue. Thank you for your work.
+
+Thanks,
+-Jet 
+
+-----Original Message-----
+From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Fabian Frederick
+Sent: Friday, March 28, 2014 6:39 AM
+To: linux-kernel
+Cc: akpm; Wu, Fengguang
+Subject: [PATCH linux-next v2] ufs: sb mutex merge + mutex_destroy: fix
+
+mutex_destroy was also called when trying to mount volume in read/write without write support enabled.
+
+Reported by Fengguang Wu.
+
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- Documentation/leds/leds-class.txt |   52 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 52 insertions(+)
+v2: failed_noreadwrite is only used with CONFIG_UFS_FS_WRITE
+    -> add ifndef
 
-diff --git a/Documentation/leds/leds-class.txt b/Documentation/leds/leds-class.txt
-index 62261c0..ea50d27 100644
---- a/Documentation/leds/leds-class.txt
-+++ b/Documentation/leds/leds-class.txt
-@@ -8,6 +8,58 @@ LED is defined in max_brightness file. The brightness file will set the brightne
- of the LED (taking a value 0-max_brightness). Most LEDs don't have hardware
- brightness support so will just be turned on for non-zero brightness settings.
+ fs/ufs/super.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c index d05cf89..432baa1 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -798,7 +798,7 @@ static int ufs_fill_super(struct super_block *sb, void *data, int silent)
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+ 		printk("ufs was compiled with read-only support, "
+ 		"can't be mounted as read-write\n");
+-		goto failed;
++		goto failed_noreadwrite;
+ 	}
+ #endif
+ 	mutex_init(&sbi->mutex);
+@@ -1255,10 +1255,14 @@ magic_found:
+ 	return 0;
  
-+Some LED devices support two modes - torch and flash. In order to enable
-+support for flash LEDs the CONFIG_LEDS_CLASS_FLASH symbol must be defined
-+in the kernel config. A flash LED driver must initialize the "flash" field
-+of the led_classdev structure (see <linux/leds_flash.h>) to enable flash
-+related features of the LED subsystem for the driver.
+ failed:
++	mutex_destroy(&sbi->mutex);
 +
-+There are seven sysfs attributes dedicated specifically to the flash LED devices:
-+
-+	- flash_brightness - flash LED brightness in milliampers (RW)
-+	- max_flash_brightness - maximum available flash LED brightness (RO)
-+	- flash_timeout - flash strobe duration in milliseconds (RW)
-+	- max_flash_timeout - maximum available flash strobe duration (RO)
-+	- flash_strobe - flash strobe state (RW)
-+	- flash_fault - bitmask of flash faults that may have occured, possible
-+			flags are:
-+		* 0x01 - flash controller voltage to the flash LED has exceeded
-+			 the limit specific to the flash controller
-+		* 0x02 - the flash strobe was still on when the timeout set by
-+			 the user has expired; not all flash controllers may set
-+			 this in all such conditions
-+		* 0x04 - the flash controller has overheated
-+		* 0x08 - the short circuit protection of the flash controller
-+			 has been triggered
-+		* 0x10 - current in the LED power supply has exceeded the limit
-+			 specific to the flash controller
-+		* 0x40 - flash controller voltage to the flash LED has been below
-+			 the minimum limit specific to the flash
-+		* 0x80 - the input voltage of the flash controller is below
-+			 the limit under which strobing the flash at full current
-+			 will not be possible. The condition persists until this
-+			 flag is no longer set
-+		* 0x100 - the temperature of the LED has exceeded its allowed
-+			  upper limit
-+	- hw_triggered - some devices expose dedicated hardware pins for
-+			 triggering a flash LED - the attribute allows to set
-+			 this mode (RW)
-+
-+The LED subsystem driver can be controlled also from the level of
-+the VideoForLinux2 subsystem. In order to enable this the CONFIG_V4L2_FLASH
-+symbol has to be defined in the kernel config. The driver must
-+initialize v4l2_flash_ctrl_config structure and pass it to the v4l2_flash_init
-+function. On remove v4l2_flash_release has to be called (see <media/v4l2-flash.h>).
-+After proper initialization V4L2 Flash sub-device is created. The sub-device
-+must be registered by a V4L2 video device to become available for the user
-+space. This is accomplished with use of asynchronous sub-device registration
-+mechanism (see <media/v4l2-async.h>).
-+A V4l2 Flash sub-device exposes a number of V4L2 controls.
-+When the V4L2_CID_FLASH_LED_MODE control is set to V4L2_FLASH_LED_MODE_TORCH
-+or V4L2_FLASH_LED_MODE_FLASH the LED subsystem sysfs interface becomes
-+unavailable. The interface can be unlocked by setting the mode back
-+to V4L2_FLASH_LED_MODE_NONE.
-+
- The class also introduces the optional concept of an LED trigger. A trigger
- is a kernel based source of led events. Triggers can either be simple or
- complex. A simple trigger isn't configurable and is designed to slot into
--- 
-1.7.9.5
++#ifndef CONFIG_UFS_FS_WRITE
++failed_noreadwrite:
++#endif
+ 	if (ubh)
+ 		ubh_brelse_uspi (uspi);
+ 	kfree (uspi);
+-	mutex_destroy(&sbi->mutex);
+ 	kfree(sbi);
+ 	sb->s_fs_info = NULL;
+ 	UFSD("EXIT (FAILED)\n");
+--
+1.8.4.5
 
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in the body of a message to majordomo@vger.kernel.org More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
