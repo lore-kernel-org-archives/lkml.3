@@ -1,246 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079AbaC1Ra7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:30:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51279 "EHLO
+	id S1753933AbaC1Rrd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:47:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51318 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaC1Raw (ORCPT
+	with ESMTP id S1753074AbaC1Ra6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:52 -0400
+	Fri, 28 Mar 2014 13:30:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.13 00/46] 3.13.8-stable review
-Date: Fri, 28 Mar 2014 10:31:44 -0700
-Message-Id: <20140328173134.630198216@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>,
+        David Herrmann <dh.herrmann@gmail.com>, Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.13 01/46] HID: hidraw: fix warning destroying hidraw device files after parent
+Date: Fri, 28 Mar 2014 10:31:45 -0700
+Message-Id: <20140328173134.831298277@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
+References: <20140328173134.630198216@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.13.8 release.
-There are 46 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sun Mar 30 17:31:14 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.8-rc1.gz
-and the diffstat can be found below.
+From: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
 
-thanks,
+commit 47587fc098451c2100dc1fb618855fc2e2d937af upstream.
 
-greg k-h
+I noticed that after hot unplugging a Logitech unifying receiver
+(drivers/hid/hid-logitech-dj.c) the kernel would occasionally spew a
+stack trace similar to this:
 
--------------
-Pseudo-Shortlog of commits:
+usb 1-1.1.2: USB disconnect, device number 7
+WARNING: CPU: 0 PID: 2865 at fs/sysfs/group.c:216 device_del+0x40/0x1b0()
+sysfs group ffffffff8187fa20 not found for kobject 'hidraw0'
+[...]
+CPU: 0 PID: 2865 Comm: upowerd Tainted: G        W 3.14.0-rc4 #7
+Hardware name: LENOVO 7783PN4/        , BIOS 9HKT43AUS 07/11/2011
+ 0000000000000009 ffffffff814cd684 ffff880427ccfdf8 ffffffff810616e7
+ ffff88041ec61800 ffff880427ccfe48 ffff88041e444d80 ffff880426fab8e8
+ ffff880429359960 ffffffff8106174c ffffffff81714b98 0000000000000028
+Call Trace:
+ [<ffffffff814cd684>] ? dump_stack+0x41/0x51
+ [<ffffffff810616e7>] ? warn_slowpath_common+0x77/0x90
+ [<ffffffff8106174c>] ? warn_slowpath_fmt+0x4c/0x50
+ [<ffffffff81374fd0>] ? device_del+0x40/0x1b0
+ [<ffffffff8137516f>] ? device_unregister+0x2f/0x50
+ [<ffffffff813751fa>] ? device_destroy+0x3a/0x40
+ [<ffffffffa03ca245>] ? drop_ref+0x55/0x120 [hid]
+ [<ffffffffa03ca3e6>] ? hidraw_release+0x96/0xb0 [hid]
+ [<ffffffff811929da>] ? __fput+0xca/0x210
+ [<ffffffff8107fe17>] ? task_work_run+0x97/0xd0
+ [<ffffffff810139a9>] ? do_notify_resume+0x69/0xa0
+ [<ffffffff814dbd22>] ? int_signal+0x12/0x17
+---[ end trace 63f4a46f6566d737 ]---
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.13.8-rc1
+During device removal hid_disconnect() is called via hid_hw_stop() to
+stop the device and free all its resources, including the sysfs
+files. The problem is that if a user space process, such as upowerd,
+holds a reference to a hidraw file the corresponding sysfs files will
+be kept around (drop_ref() does not call device_destroy() if the open
+counter is not 0) and it will be usb_disconnect() who, by calling
+device_del() for the USB device, will indirectly remove the sysfs
+files of the hidraw device (sysfs_remove_dir() is recursive these
+days). Because of this, by the time user space releases the last
+reference to the hidraw file and drop_ref() tries to destroy the
+device the sysfs files are already gone and the kernel will print
+the warning above.
 
-Ilya Dryomov <ilya.dryomov@inktank.com>
-    libceph: fix preallocation check in get_reply()
+Fix this by calling device_destroy() at USB disconnect time.
 
-Ilya Dryomov <ilya.dryomov@inktank.com>
-    libceph: rename front to front_len in get_reply()
+Signed-off-by: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Ilya Dryomov <ilya.dryomov@inktank.com>
-    libceph: rename ceph_msg::front_max to front_alloc_len
+---
+ drivers/hid/hidraw.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Michele Baldessari <michele@acksyn.org>
-    e100: Fix "disabling already-disabled device" warning
-
-Sarah Sharp <sarah.a.sharp@linux.intel.com>
-    xhci: Fix resume issues on Renesas chips in Samsung laptops
-
-Ping Cheng <pinglinux@gmail.com>
-    Input: wacom - add reporting of SW_MUTE_DEVICE events
-
-Ping Cheng <pinglinux@gmail.com>
-    Input: wacom - add support for three new Intuos devices
-
-Ping Cheng <pinglinux@gmail.com>
-    Input: wacom - make sure touch_max is set for touch devices
-
-Marcelo Tosatti <mtosatti@redhat.com>
-    KVM: VMX: fix use after free of vmx->loaded_vmcs
-
-Marcelo Tosatti <mtosatti@redhat.com>
-    KVM: x86: handle invalid root_hpa everywhere
-
-Marcelo Tosatti <mtosatti@redhat.com>
-    KVM: MMU: handle invalid root_hpa at __direct_map
-
-Hans de Goede <hdegoede@redhat.com>
-    Input: elantech - improve clickpad detection
-
-Dave Jones <davej@redhat.com>
-    fs/proc/proc_devtree.c: remove empty /proc/device-tree when no openfirmware exists.
-
-Gavin Shan <shangw@linux.vnet.ibm.com>
-    powerpc/powernv: Refactor PHB diag-data dump
-
-Gavin Shan <shangw@linux.vnet.ibm.com>
-    powerpc/powernv: Dump PHB diag-data immediately
-
-Gavin Shan <shangw@linux.vnet.ibm.com>
-    powerpc/eeh: Handle multiple EEH errors
-
-Gavin Shan <shangw@linux.vnet.ibm.com>
-    powerpc/powernv: Move PHB-diag dump functions around
-
-Markus Pargmann <mpa@pengutronix.de>
-    regulator: core: Replace direct ops->disable usage
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    p54: clamp properly instead of just truncating
-
-Guenter Roeck <linux@roeck-us.net>
-    MIPS: Fix build error seen in some configurations
-
-Ben Hutchings <ben@decadent.org.uk>
-    deb-pkg: Fix cross-building linux-headers package
-
-Ben Hutchings <ben@decadent.org.uk>
-    deb-pkg: Fix building for MIPS big-endian or ARM OABI
-
-Peter Zijlstra <peterz@infradead.org>
-    perf tools: Fix AAAAARGH64 memory barriers
-
-Russell King <rmk+kernel@arm.linux.org.uk>
-    Fix uses of dma_max_pfn() when converting to a limiting address
-
-Linus Torvalds <torvalds@linux-foundation.org>
-    printk: fix syslog() overflowing user buffer
-
-Alexei Starovoitov <ast@plumgrid.com>
-    x86: bpf_jit: support negative offsets
-
-Trond Myklebust <trond.myklebust@primarydata.com>
-    SUNRPC: Fix a pipe_version reference leak
-
-Ben Peddell <klightspeed@killerwolves.net>
-    ARM: 7941/2: Fix incorrect FDT initrd parameter override
-
-Ben Hutchings <bhutchings@solarflare.com>
-    sfc: Use the correct maximum TX DMA ring size for SFC9100
-
-Peter Zijlstra <peterz@infradead.org>
-    stop_machine: Fix^2 race between stop_two_cpus() and stop_cpus()
-
-Stephen Warren <swarren@nvidia.com>
-    ASoC: max98090: make REVISION_ID readable
-
-Josh Durgin <josh.durgin@inktank.com>
-    libceph: resend all writes after the osdmap loses the full flag
-
-Josh Durgin <josh.durgin@inktank.com>
-    libceph: block I/O when PAUSE or FULL osd map flags are set
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    media: cx18: check for allocation failure in cx18_read_eeprom()
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    media: dw2102: some missing unlocks on error
-
-Dan Carpenter <dan.carpenter@oracle.com>
-    media: cxusb: unlock on error in cxusb_i2c_xfer()
-
-Trond Myklebust <trond.myklebust@primarydata.com>
-    NFSv4: Use the correct net namespace in nfs4_update_server
-
-Christian Riesch <christian.riesch@omicron.at>
-    net: davinci_emac: Replace devm_request_irq with request_irq
-
-Helge Deller <deller@gmx.de>
-    partly revert commit 8a10bc9: parisc/sti_console: prefer Linux fonts over built-in ROM fonts
-
-Vaibhav Nagarnaik <vnagarnaik@google.com>
-    tracing: Fix array size mismatch in format string
-
-Chris Wilson <chris@chris-wilson.co.uk>
-    drm/i915: Disable stolen memory when DMAR is active
-
-Daniel Vetter <daniel.vetter@ffwll.ch>
-    drm/i915: Don't enable display error interrupts from the start
-
-Ben Widawsky <benjamin.widawsky@intel.com>
-    drm/i915: Fix PSR programming
-
-Stefan Agner <stefan@agner.ch>
-    clocksource: vf_pit_timer: use complement for sched_clock reading
-
-Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-    ALSA: compress: Pass through return value of open ops callback
-
-Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-    HID: hidraw: fix warning destroying hidraw device files after parent
-
-
--------------
-
-Diffstat:
-
- Makefile                                  |   4 +-
- arch/arm/mm/init.c                        |   3 +-
- arch/mips/include/asm/syscall.h           |   2 +-
- arch/powerpc/include/asm/eeh.h            |  10 ++
- arch/powerpc/kernel/eeh_driver.c          | 150 ++++++++--------
- arch/powerpc/platforms/powernv/eeh-ioda.c | 283 +++++++-----------------------
- arch/powerpc/platforms/powernv/pci.c      | 226 ++++++++++++++++++------
- arch/powerpc/platforms/powernv/pci.h      |   3 +
- arch/x86/kvm/mmu.c                        |  12 ++
- arch/x86/kvm/paging_tmpl.h                |   8 +
- arch/x86/kvm/vmx.c                        |   2 +-
- arch/x86/net/bpf_jit.S                    |   2 +-
- drivers/clocksource/vf_pit_timer.c        |   2 +-
- drivers/gpu/drm/i915/i915_gem_stolen.c    |   7 +
- drivers/gpu/drm/i915/i915_irq.c           |  18 +-
- drivers/gpu/drm/i915/intel_dp.c           |   2 +-
- drivers/hid/hidraw.c                      |   4 +-
- drivers/input/mouse/elantech.c            |  45 ++++-
- drivers/input/tablet/wacom_sys.c          |  23 ++-
- drivers/input/tablet/wacom_wac.c          |  89 ++++++++--
- drivers/input/tablet/wacom_wac.h          |   7 +
- drivers/media/pci/cx18/cx18-driver.c      |   5 +-
- drivers/media/usb/dvb-usb/cxusb.c         |  21 ++-
- drivers/media/usb/dvb-usb/dw2102.c        |  52 ++++--
- drivers/mmc/card/queue.c                  |   2 +-
- drivers/net/ethernet/intel/e100.c         |   2 +-
- drivers/net/ethernet/sfc/efx.h            |   3 +
- drivers/net/ethernet/sfc/ethtool.c        |   4 +-
- drivers/net/ethernet/ti/davinci_emac.c    |  25 ++-
- drivers/net/wireless/p54/txrx.c           |   2 +-
- drivers/regulator/core.c                  |  34 ++--
- drivers/scsi/scsi_lib.c                   |   2 +-
- drivers/usb/host/xhci-pci.c               |   5 +
- fs/nfs/internal.h                         |   3 +-
- fs/nfs/nfs4client.c                       |   7 +-
- fs/nfs/nfs4namespace.c                    |  12 +-
- fs/proc/proc_devtree.c                    |   1 +
- include/linux/ceph/messenger.h            |   2 +-
- include/linux/ceph/osd_client.h           |   1 +
- include/linux/ftrace_event.h              |   4 -
- include/trace/ftrace.h                    |   7 +-
- kernel/printk/printk.c                    |   2 -
- kernel/stop_machine.c                     |   2 +-
- kernel/trace/trace_events.c               |   6 -
- kernel/trace/trace_export.c               |   7 +-
- lib/fonts/Kconfig                         |   6 +-
- net/ceph/messenger.c                      |   7 +-
- net/ceph/mon_client.c                     |   8 +-
- net/ceph/osd_client.c                     |  66 +++++--
- net/sunrpc/auth_gss/auth_gss.c            |   4 +-
- scripts/package/builddeb                  |  13 +-
- sound/core/compress_offload.c             |   2 +-
- sound/soc/codecs/max98090.c               |   1 +
- tools/perf/perf.h                         |   4 +-
- 54 files changed, 713 insertions(+), 511 deletions(-)
+--- a/drivers/hid/hidraw.c
++++ b/drivers/hid/hidraw.c
+@@ -313,13 +313,13 @@ static void drop_ref(struct hidraw *hidr
+ 			hid_hw_close(hidraw->hid);
+ 			wake_up_interruptible(&hidraw->wait);
+ 		}
++		device_destroy(hidraw_class,
++			       MKDEV(hidraw_major, hidraw->minor));
+ 	} else {
+ 		--hidraw->open;
+ 	}
+ 	if (!hidraw->open) {
+ 		if (!hidraw->exist) {
+-			device_destroy(hidraw_class,
+-					MKDEV(hidraw_major, hidraw->minor));
+ 			hidraw_table[hidraw->minor] = NULL;
+ 			kfree(hidraw);
+ 		} else {
 
 
