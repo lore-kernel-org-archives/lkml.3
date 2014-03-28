@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbaC1SLG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 14:11:06 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51114 "EHLO
+	id S1753062AbaC1SLE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 14:11:04 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51118 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaC1RaM (ORCPT
+	with ESMTP id S1752536AbaC1RaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:30:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Andreas Sturmlechner <andreas.sturmlechner@gmail.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
-        Jianguo Wu <wujianguo@huawei.com>,
-        Andres Bertens <abertensu@yahoo.com>,
-        Ben Hutchings <ben@decadent.org.uk>
-Subject: [PATCH 3.4 03/13] iwlwifi: Complete backport of "iwlwifi: always copy first 16 bytes of commands"
-Date: Fri, 28 Mar 2014 10:31:53 -0700
-Message-Id: <20140328173053.522583654@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Jan Seiffert <kaffeemonster@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.4 04/13] x86: bpf_jit: support negative offsets
+Date: Fri, 28 Mar 2014 10:31:54 -0700
+Message-Id: <20140328173053.660558137@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
 References: <20140328173053.049244535@linuxfoundation.org>
@@ -31,45 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ben Hutchings <ben@decadent.org.uk>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-Linux 3.4.83 included an incomplete backport of commit
-8a964f44e01ad3bbc208c3e80d931ba91b9ea786 ('iwlwifi: always copy first
-16 bytes of commands') which causes a regression for this driver.
-This is the missing piece.
+commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
 
-Reported-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-Cc: Johannes Berg <johannes.berg@intel.com>
-Cc: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>
-Cc: Andres Bertens <abertensu@yahoo.com>
-Tested-by: Andreas Sturmlechner <andreas.sturmlechner@gmail.com>
-Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
+but it couldn't be working, since at the time of the execution
+of LD+ABS or LD+IND instructions via call into
+bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
+had junk value instead of access size in bytes (1 or 2 or 4).
+
+Store size into %edx instead of %ecx (what original commit intended to do)
+
+Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c |    7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/net/bpf_jit.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-trans-pcie-tx.c
-@@ -825,14 +825,15 @@ static int iwl_enqueue_hcmd(struct iwl_t
- 	trace_idx = 1;
- #endif
- 
-+	/* map the remaining (adjusted) nocopy/dup fragments */
- 	for (i = 0; i < IWL_MAX_CMD_TFDS; i++) {
--		if (!cmd->len[i])
-+		if (!cmdlen[i])
- 			continue;
- 		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
- 			continue;
- 		phys_addr = dma_map_single(trans->dev,
--					   (void *)cmd->data[i],
--					   cmd->len[i], DMA_BIDIRECTIONAL);
-+					   (void *)cmddata[i],
-+					   cmdlen[i], DMA_BIDIRECTIONAL);
- 		if (dma_mapping_error(trans->dev, phys_addr)) {
- 			iwlagn_unmap_tfd(trans, out_meta,
- 					 &txq->tfds[q->write_ptr],
+--- a/arch/x86/net/bpf_jit.S
++++ b/arch/x86/net/bpf_jit.S
+@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
+ 	push	%r9;						\
+ 	push	SKBDATA;					\
+ /* rsi already has offset */					\
+-	mov	$SIZE,%ecx;	/* size */			\
++	mov	$SIZE,%edx;	/* size */			\
+ 	call	bpf_internal_load_pointer_neg_helper;		\
+ 	test	%rax,%rax;					\
+ 	pop	SKBDATA;					\
 
 
