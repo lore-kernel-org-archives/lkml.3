@@ -1,115 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752238AbaC1Emj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 00:42:39 -0400
-Received: from mail-vc0-f202.google.com ([209.85.220.202]:43666 "EHLO
-	mail-vc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751419AbaC1Emi (ORCPT
+	id S1752525AbaC1FA0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 01:00:26 -0400
+Received: from 81.95.159.215-static.reverse.softlayer.com ([81.95.159.215]:56644
+	"EHLO demimalaysia.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816AbaC1FAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 00:42:38 -0400
-From: David Decotigny <decot@googlers.com>
-To: "David S. Miller" <davem@davemloft.net>,
-        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Eric Dumazet <edumazet@google.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Weilong Chen <chenweilong@huawei.com>, Jiri Pirko <jiri@resnulli.us>,
-        Amir Vadai <amirv@mellanox.com>, Michael Dalton <mwdalton@google.com>,
-        David Decotigny <decot@googlers.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>, Tejun Heo <tj@kernel.org>
-Subject: [PATCH v1] net-sysfs: expose number of link up/down transitions
-Date: Thu, 27 Mar 2014 21:35:00 -0700
-Message-Id: <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <cover.1395980768.git.decot@googlers.com>
-References: <cover.1395980768.git.decot@googlers.com>
+	Fri, 28 Mar 2014 01:00:25 -0400
+Date: Thu, 27 Mar 2014 23:25:34 -0500
+From: Demi Malaysia <demimalaysiaku@demimalaysia.info>
+To: deminegara@demimalaysia.info
+Subject: Bila KHALID Sabotaj ANWAR - Siapa TOP BRASS Yang Ganggu Kerajaan
+ Negeri?
+Message-ID: <20140328042534.GA23111@demimalaysia.info>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - demimalaysia.info
+X-AntiAbuse: Original Domain - demimalaysia.info
+X-AntiAbuse: Originator/Caller UID/GID - [500 500] / [47 12]
+X-AntiAbuse: Sender Address Domain - demimalaysia.info
+X-Get-Message-Sender-Via: demimalaysia.info: authenticated_id: demimala/primary_hostname/system user
+X-Source: /usr/bin/mutt
+X-Source-Args: mutt deminegara -s Bila KHALID Sabotaj ANWAR - Siapa TOP BRASS Yang Ganggu Kerajaan Negeri? 
+X-Source-Dir: demimalaysia.info:/server-blast
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tested:
-  grep . /sys/class/net/*/count_link_*
-  + ip link set dev X down/up
+Assalamualaikum Saudara-Saudari,
 
-Signed-off-by: David Decotigny <decot@googlers.com>
----
- include/linux/netdevice.h |  4 ++++
- net/core/net-sysfs.c      | 18 ++++++++++++++++++
- net/sched/sch_generic.c   |  2 ++
- 3 files changed, 24 insertions(+)
+He has just concluded the water takeover with the federal government
+without even referring to or, at the very least, informing the party
+leaders of his intent.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 4b6d12c..cf52869 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -1315,6 +1315,10 @@ struct net_device {
- 					     * Do not use this in drivers.
- 					     */
- 
-+	/* Stats to monitor link on/off, flapping */
-+	atomic_t		count_link_up;
-+	atomic_t		count_link_down;
-+
- #ifdef CONFIG_WIRELESS_EXT
- 	/* List of functions to handle Wireless Extensions (instead of ioctl).
- 	 * See <net/iw_handler.h> for details. Jean II */
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index daed9a6..a65ac54 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -253,6 +253,22 @@ static ssize_t operstate_show(struct device *dev,
- }
- static DEVICE_ATTR_RO(operstate);
- 
-+static ssize_t count_link_up_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	struct net_device *netdev = to_net_dev(dev);
-+	return sprintf(buf, fmt_dec, atomic_read(&netdev->count_link_up));
-+}
-+
-+static ssize_t count_link_down_show(struct device *dev,
-+				    struct device_attribute *attr, char *buf)
-+{
-+	struct net_device *netdev = to_net_dev(dev);
-+	return sprintf(buf, fmt_dec, atomic_read(&netdev->count_link_down));
-+}
-+static DEVICE_ATTR_RO(count_link_up);
-+static DEVICE_ATTR_RO(count_link_down);
-+
- /* read-write attributes */
- 
- static int change_mtu(struct net_device *net, unsigned long new_mtu)
-@@ -386,6 +402,8 @@ static struct attribute *net_class_attrs[] = {
- 	&dev_attr_duplex.attr,
- 	&dev_attr_dormant.attr,
- 	&dev_attr_operstate.attr,
-+	&dev_attr_count_link_up.attr,
-+	&dev_attr_count_link_down.attr,
- 	&dev_attr_ifalias.attr,
- 	&dev_attr_carrier.attr,
- 	&dev_attr_mtu.attr,
-diff --git a/net/sched/sch_generic.c b/net/sched/sch_generic.c
-index e82e43b..2d06943 100644
---- a/net/sched/sch_generic.c
-+++ b/net/sched/sch_generic.c
-@@ -310,6 +310,7 @@ void netif_carrier_on(struct net_device *dev)
- 	if (test_and_clear_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
- 		if (dev->reg_state == NETREG_UNINITIALIZED)
- 			return;
-+		atomic_inc(&dev->count_link_up);
- 		linkwatch_fire_event(dev);
- 		if (netif_running(dev))
- 			__netdev_watchdog_up(dev);
-@@ -328,6 +329,7 @@ void netif_carrier_off(struct net_device *dev)
- 	if (!test_and_set_bit(__LINK_STATE_NOCARRIER, &dev->state)) {
- 		if (dev->reg_state == NETREG_UNINITIALIZED)
- 			return;
-+		atomic_inc(&dev->count_link_down);
- 		linkwatch_fire_event(dev);
- 	}
- }
--- 
-1.9.1.423.g4596e3a
+This even left Anwar red-faced when asked by reporters.
 
+However, Khalid is not bothered by what Anwar or other leaders in the party think of him.
+
+Selanjutnya, sila layari... http://gelagatanwar.wordpress.com.
+
+Wassalam.
+
+Gelagat
