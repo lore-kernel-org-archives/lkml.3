@@ -1,94 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaC1Vfm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:35:42 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55073 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752017AbaC1Vfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:35:40 -0400
-Message-ID: <1396042027.11529.24.camel@pasglop>
-Subject: Re: [PATCH] powerpc/irq: Remove HAVE_IRQ_EXIT_ON_IRQ_STACK feature
- at powerpc platform
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Kevin Hao <haokexin@gmail.com>
-Cc: Dongsheng Wang <dongsheng.wang@freescale.com>, fweisbec@gmail.com,
-        James Hogan <james.hogan@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <peterz@infradead.org>, Helge Deller <deller@gmx.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@au1.ibm.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        jason.jin@freescale.com, scottwood@freescale.com,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Date: Sat, 29 Mar 2014 08:27:07 +1100
-In-Reply-To: <20140328081827.GB2176@pek-khao-d1.corp.ad.wrs.com>
-References: <1395992312-23035-1-git-send-email-dongsheng.wang@freescale.com>
-	 <20140328081827.GB2176@pek-khao-d1.corp.ad.wrs.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
+	id S1753299AbaC1Vik (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:38:40 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:41131 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680AbaC1Vii (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 17:38:38 -0400
+Date: Fri, 28 Mar 2014 17:38:35 -0400 (EDT)
+Message-Id: <20140328.173835.768770272285036750.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 14:38:37 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 16:18 +0800, Kevin Hao wrote:
 
->     powerpc: Set the correct ksp_limit on ppc32 when switching to irq stack
->    
+1) We've discovered a common error in several networking drivers, they
+   put VLAN offload features into ->vlan_features, which would suggest
+   that they support offloading 2 or more levels of VLAN encapsulation.
+   Not only do these devices not do that, but we don't have the
+   infrastructure yet to handle that at all.
 
-Kevin. It looks like it was applied to 3.14 and sent to 3.12 stable but
-not 3.13 ... can you fix that up ?
+   Fixes from Vlad Yasevich.
 
-Cheers,
-Ben.
+2) Fix tcpdump crash with bridging and vlans, also from Vlad.
 
->     Guenter Roeck has got the following call trace on a p2020 board:
->       Kernel stack overflow in process eb3e5a00, r1=eb79df90
->       CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
->       task: eb3e5a00 ti: c0616000 task.ti: ef440000
->       NIP: c003a420 LR: c003a410 CTR: c0017518
->       REGS: eb79dee0 TRAP: 0901   Not tainted (3.13.0-rc8-juniper-00146-g19eca00)
->       MSR: 00029000 <CE,EE,ME>  CR: 24008444  XER: 00000000
->       GPR00: c003a410 eb79df90 eb3e5a00 00000000 eb05d900 00000001 65d87646 00000000
->       GPR08: 00000000 020b8000 00000000 00000000 44008442
->       NIP [c003a420] __do_softirq+0x94/0x1ec
->       LR [c003a410] __do_softirq+0x84/0x1ec
->       Call Trace:
->       [eb79df90] [c003a410] __do_softirq+0x84/0x1ec (unreliable)
->       [eb79dfe0] [c003a970] irq_exit+0xbc/0xc8
->       [eb79dff0] [c000cc1c] call_do_irq+0x24/0x3c
->       [ef441f20] [c00046a8] do_IRQ+0x8c/0xf8
->       [ef441f40] [c000e7f4] ret_from_except+0x0/0x18
->       --- Exception: 501 at 0xfcda524
->           LR = 0x10024900
->       Instruction dump:
->       7c781b78 3b40000a 3a73b040 543c0024 3a800000 3b3913a0 7ef5bb78 48201bf9
->       5463103a 7d3b182e 7e89b92e 7c008146 <3ba00000> 7e7e9b78 48000014 57fff87f
->       Kernel panic - not syncing: kernel stack overflow
->       CPU: 0 PID: 2838 Comm: ssh Not tainted 3.13.0-rc8-juniper-00146-g19eca00 #4
->       Call Trace:
->     
->     The reason is that we have used the wrong register to calculate the
->     ksp_limit in commit cbc9565ee826 (powerpc: Remove ksp_limit on ppc64).
->     Just fix it.
->     
->     As suggested by Benjamin Herrenschmidt, also add the C prototype of the
->     function in the comment in order to avoid such kind of errors in the
->     future.
->     
->     Cc: stable@vger.kernel.org # 3.12
->     Reported-by: Guenter Roeck <linux@roeck-us.net>
->     Tested-by: Guenter Roeck <linux@roeck-us.net>
->     Signed-off-by: Kevin Hao <haokexin@gmail.com>
->     Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> 
-> Thanks,
-> Kevin
+3) Some MAINTAINERS updates for random32 and bonding.
+
+4) Fix late reseeds of prandom generator, from Sasha Levin.
+
+5) Bridge doesn't handle stacked vlans properly, fix from Toshiaki
+   Makita.
+
+6) Fix deadlock in openvswitch, from Flavio Leitner.
+
+7) get_timewait4_sock() doesn't report delay times correctly, fix
+   from Eric Dumazet.
+
+8) Duplicate address detection and addrconf verification need to
+   run in contexts where RTNL can be obtained.  Move them to run
+   from a workqueue.  From Hannes Frederic Sowa.
+
+9) Fix route refcount leaking in ip tunnels, from Pravin B Shelar.
+
+10) Don't return -EINTR from non-blocking recvmsg() on AF_UNIX
+    sockets, from Eric Dumazet.
+
+Please pull, thanks a lot!
+
+The following changes since commit 632b06aa2842b12c6d6a510ec080fb6ebdb38ea5:
+
+  Merge branch 'nfsd-next' of git://linux-nfs.org/~bfields/linux (2014-03-25 15:24:11 -0700)
+
+are available in the git repository at:
 
 
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to 5f2feca20e0f4878fa16787bd50fcd82fb365be7:
+
+  Merge branch 'vlan_offloads' (2014-03-28 17:17:16 -0400)
+
+----------------------------------------------------------------
+
+David S. Miller (2):
+      Merge branch 'mvneta'
+      Merge branch 'vlan_offloads'
+
+Eric Dumazet (2):
+      net: unix: non blocking recvmsg() should not return -EINTR
+      tcp: fix get_timewait4_sock() delay computation on 64bit
+
+Flavio Leitner (1):
+      openvswitch: fix a possible deadlock and lockdep warning
+
+Hannes Frederic Sowa (1):
+      ipv6: move DAD and addrconf_verify processing to workqueue
+
+Jason Wang (1):
+      virtio-net: correct error handling of virtqueue_kick()
+
+Jay Vosburgh (1):
+      MAINTAINERS: bonding: change email address
+
+Michael S. Tsirkin (2):
+      vhost: fix total length when packets are too short
+      vhost: validate vhost_get_vq_desc return value
+
+Oliver Neukum (1):
+      usbnet: include wait queue head in device structure
+
+Pravin B Shelar (1):
+      ip_tunnel: Fix dst ref-count.
+
+Sasha Levin (2):
+      random32: assign to network folks in MAINTAINERS
+      random32: avoid attempt to late reseed if in the middle of seeding
+
+Thomas Petazzoni (3):
+      net: mvneta: rename MVNETA_GMAC2_PSC_ENABLE to MVNETA_GMAC2_PCS_ENABLE
+      net: mvneta: fix usage as a module on RGMII configurations
+      net: mvneta: use devm_ioremap_resource() instead of of_iomap()
+
+Toshiaki Makita (2):
+      bridge: Fix inabillity to retrieve vlan tags when tx offload is disabled
+      bridge: Fix handling stacked vlan tags
+
+Veaceslav Falico (1):
+      MAINTAINERS: bonding: change email address
+
+Vlad Yasevich (8):
+      tg3: Do not include vlan acceleration features in vlan_features
+      vlan: Set hard_header_len according to available acceleration
+      net: Account for all vlan headers in skb_mac_gso_segment
+      bridge: Fix crash with vlan filtering and tcpdump
+      qlge: Do not propaged vlan tag offloads to vlans
+      ifb: Remove vlan acceleration from vlan_features
+      veth: Turn off vlan rx acceleration in vlan_features
+      vlan: Warn the user if lowerdev has bad vlan features.
+
+Wei Yang (1):
+      net/mlx4_core: pass pci_device_id.driver_data to __mlx4_init_one during reset
+
+Zoltan Kiss (1):
+      core, nfqueue, openvswitch: Orphan frags in skb_zerocopy and handle errors
+
+ MAINTAINERS                                  |   5 ++-
+ drivers/net/ethernet/broadcom/tg3.c          |   5 +--
+ drivers/net/ethernet/marvell/mvneta.c        |  60 +++++++++-----------------
+ drivers/net/ethernet/mellanox/mlx4/main.c    |   6 ++-
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c |   4 +-
+ drivers/net/ifb.c                            |   3 +-
+ drivers/net/usb/usbnet.c                     |  33 ++++++++------
+ drivers/net/veth.c                           |   5 ++-
+ drivers/net/virtio_net.c                     |   6 +--
+ drivers/vhost/net.c                          |  20 ++++++++-
+ include/linux/netdev_features.h              |   7 +++
+ include/linux/netdevice.h                    |   2 +-
+ include/linux/skbuff.h                       |   4 +-
+ include/linux/usb/usbnet.h                   |   2 +-
+ include/net/if_inet6.h                       |   4 +-
+ lib/random32.c                               |  13 +++++-
+ net/8021q/vlan.c                             |   4 +-
+ net/8021q/vlan_dev.c                         |   6 ++-
+ net/bridge/br_device.c                       |   6 +--
+ net/bridge/br_input.c                        |  11 ++---
+ net/bridge/br_vlan.c                         |  44 +++++++++++--------
+ net/core/dev.c                               |  13 ++++--
+ net/core/skbuff.c                            |  30 +++++++++----
+ net/ipv4/gre_demux.c                         |   8 ++++
+ net/ipv4/ip_tunnel.c                         |   3 --
+ net/ipv4/ip_tunnel_core.c                    |   1 +
+ net/ipv4/tcp_ipv4.c                          |   2 +-
+ net/ipv6/addrconf.c                          | 193 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------
+ net/netfilter/nfnetlink_queue_core.c         |   9 +++-
+ net/openvswitch/datapath.c                   |   6 ++-
+ net/openvswitch/flow.c                       |  26 +++--------
+ net/unix/af_unix.c                           |  17 +++++---
+ 32 files changed, 363 insertions(+), 195 deletions(-)
