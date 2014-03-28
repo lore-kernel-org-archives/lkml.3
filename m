@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbaC1Rdv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:33:51 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51467 "EHLO
+	id S1753494AbaC1ReW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:34:22 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51463 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753310AbaC1RbX (ORCPT
+	with ESMTP id S1751759AbaC1RbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:31:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Jason Gerecke <killertofu@gmail.com>, Ping Cheng <pingc@wacom.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Josh Boyer <jwboyer@fedoraproject.org>
-Subject: [PATCH 3.13 41/46] Input: wacom - add reporting of SW_MUTE_DEVICE events
-Date: Fri, 28 Mar 2014 10:32:25 -0700
-Message-Id: <20140328173140.256834425@linuxfoundation.org>
+        Gavin Shan <shangw@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 3.13 33/46] powerpc/powernv: Refactor PHB diag-data dump
+Date: Fri, 28 Mar 2014 10:32:17 -0700
+Message-Id: <20140328173139.162706602@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -29,150 +27,286 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ping Cheng <pinglinux@gmail.com>
+From: Gavin Shan <shangw@linux.vnet.ibm.com>
 
-commit 961794a00eab03f4344b7d5e825e8e789e55da87 upstream.
+commit af87d2fe95444d107e0c0cf0ba7e20e6716a7bfd upstream.
 
-New Intuos series models added a hardware switch to turn touch
-data on/off. The state of the switch is reported periodically
-from the tablet. To report the state the driver will emit SW_MUTE_DEVICE
-events.
+As Ben suggested, the patch prints PHB diag-data with multiple
+fields in one line and omits the line if the fields of that
+line are all zero.
 
-Reviewed_by: Chris Bagwell <chris@cnpbagwell.com>
-Acked-by: Peter Hutterer <peter.hutterer@who-t.net>
-Tested-by: Jason Gerecke <killertofu@gmail.com>
-Signed-off-by: Ping Cheng <pingc@wacom.com>
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
+With the patch applied, the PHB3 diag-data dump looks like:
+
+PHB3 PHB#3 Diag-data (Version: 1)
+
+  brdgCtl:     00000002
+  RootSts:     0000000f 00400000 b0830008 00100147 00002000
+  nFir:        0000000000000000 0030006e00000000 0000000000000000
+  PhbSts:      0000001c00000000 0000000000000000
+  Lem:         0000000000100000 42498e327f502eae 0000000000000000
+  InAErr:      8000000000000000 8000000000000000 0402030000000000 0000000000000000
+  PE[  8] A/B: 8480002b00000000 8000000000000000
+
+[ The current diag data is so big that it overflows the printk
+  buffer pretty quickly in cases when we get a handful of errors
+  at once which can happen. --BenH
+]
+
+Signed-off-by: Gavin Shan <shangw@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/input/tablet/wacom_sys.c |   12 ++++++++++++
- drivers/input/tablet/wacom_wac.c |   30 +++++++++++++++++++++++++++---
- drivers/input/tablet/wacom_wac.h |    5 +++++
- 3 files changed, 44 insertions(+), 3 deletions(-)
+ arch/powerpc/platforms/powernv/pci.c |  220 +++++++++++++++++++----------------
+ 1 file changed, 125 insertions(+), 95 deletions(-)
 
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -1197,6 +1197,8 @@ static void wacom_wireless_work(struct w
- 		wacom_wac1->features.device_type = BTN_TOOL_PEN;
- 		snprintf(wacom_wac1->name, WACOM_NAME_MAX, "%s (WL) Pen",
- 			 wacom_wac1->features.name);
-+		wacom_wac1->shared->touch_max = wacom_wac1->features.touch_max;
-+		wacom_wac1->shared->type = wacom_wac1->features.type;
- 		error = wacom_register_input(wacom1);
- 		if (error)
- 			goto fail;
-@@ -1218,6 +1220,10 @@ static void wacom_wireless_work(struct w
- 			error = wacom_register_input(wacom2);
- 			if (error)
- 				goto fail;
-+
-+			if (wacom_wac1->features.type == INTUOSHT &&
-+			    wacom_wac1->features.touch_max)
-+				wacom_wac->shared->touch_input = wacom_wac2->input;
- 		}
+--- a/arch/powerpc/platforms/powernv/pci.c
++++ b/arch/powerpc/platforms/powernv/pci.c
+@@ -134,57 +134,72 @@ static void pnv_pci_dump_p7ioc_diag_data
+ 	pr_info("P7IOC PHB#%d Diag-data (Version: %d)\n\n",
+ 		hose->global_number, common->version);
  
- 		error = wacom_initialize_battery(wacom);
-@@ -1396,6 +1402,12 @@ static int wacom_probe(struct usb_interf
- 			goto fail5;
- 		}
+-	pr_info("  brdgCtl:              %08x\n", data->brdgCtl);
+-
+-	pr_info("  portStatusReg:        %08x\n", data->portStatusReg);
+-	pr_info("  rootCmplxStatus:      %08x\n", data->rootCmplxStatus);
+-	pr_info("  busAgentStatus:       %08x\n", data->busAgentStatus);
+-
+-	pr_info("  deviceStatus:         %08x\n", data->deviceStatus);
+-	pr_info("  slotStatus:           %08x\n", data->slotStatus);
+-	pr_info("  linkStatus:           %08x\n", data->linkStatus);
+-	pr_info("  devCmdStatus:         %08x\n", data->devCmdStatus);
+-	pr_info("  devSecStatus:         %08x\n", data->devSecStatus);
+-
+-	pr_info("  rootErrorStatus:      %08x\n", data->rootErrorStatus);
+-	pr_info("  uncorrErrorStatus:    %08x\n", data->uncorrErrorStatus);
+-	pr_info("  corrErrorStatus:      %08x\n", data->corrErrorStatus);
+-	pr_info("  tlpHdr1:              %08x\n", data->tlpHdr1);
+-	pr_info("  tlpHdr2:              %08x\n", data->tlpHdr2);
+-	pr_info("  tlpHdr3:              %08x\n", data->tlpHdr3);
+-	pr_info("  tlpHdr4:              %08x\n", data->tlpHdr4);
+-	pr_info("  sourceId:             %08x\n", data->sourceId);
+-	pr_info("  errorClass:           %016llx\n", data->errorClass);
+-	pr_info("  correlator:           %016llx\n", data->correlator);
+-	pr_info("  p7iocPlssr:           %016llx\n", data->p7iocPlssr);
+-	pr_info("  p7iocCsr:             %016llx\n", data->p7iocCsr);
+-	pr_info("  lemFir:               %016llx\n", data->lemFir);
+-	pr_info("  lemErrorMask:         %016llx\n", data->lemErrorMask);
+-	pr_info("  lemWOF:               %016llx\n", data->lemWOF);
+-	pr_info("  phbErrorStatus:       %016llx\n", data->phbErrorStatus);
+-	pr_info("  phbFirstErrorStatus:  %016llx\n", data->phbFirstErrorStatus);
+-	pr_info("  phbErrorLog0:         %016llx\n", data->phbErrorLog0);
+-	pr_info("  phbErrorLog1:         %016llx\n", data->phbErrorLog1);
+-	pr_info("  mmioErrorStatus:      %016llx\n", data->mmioErrorStatus);
+-	pr_info("  mmioFirstErrorStatus: %016llx\n", data->mmioFirstErrorStatus);
+-	pr_info("  mmioErrorLog0:        %016llx\n", data->mmioErrorLog0);
+-	pr_info("  mmioErrorLog1:        %016llx\n", data->mmioErrorLog1);
+-	pr_info("  dma0ErrorStatus:      %016llx\n", data->dma0ErrorStatus);
+-	pr_info("  dma0FirstErrorStatus: %016llx\n", data->dma0FirstErrorStatus);
+-	pr_info("  dma0ErrorLog0:        %016llx\n", data->dma0ErrorLog0);
+-	pr_info("  dma0ErrorLog1:        %016llx\n", data->dma0ErrorLog1);
+-	pr_info("  dma1ErrorStatus:      %016llx\n", data->dma1ErrorStatus);
+-	pr_info("  dma1FirstErrorStatus: %016llx\n", data->dma1FirstErrorStatus);
+-	pr_info("  dma1ErrorLog0:        %016llx\n", data->dma1ErrorLog0);
+-	pr_info("  dma1ErrorLog1:        %016llx\n", data->dma1ErrorLog1);
++	if (data->brdgCtl)
++		pr_info("  brdgCtl:     %08x\n",
++			data->brdgCtl);
++	if (data->portStatusReg || data->rootCmplxStatus ||
++	    data->busAgentStatus)
++		pr_info("  UtlSts:      %08x %08x %08x\n",
++			data->portStatusReg, data->rootCmplxStatus,
++			data->busAgentStatus);
++	if (data->deviceStatus || data->slotStatus   ||
++	    data->linkStatus   || data->devCmdStatus ||
++	    data->devSecStatus)
++		pr_info("  RootSts:     %08x %08x %08x %08x %08x\n",
++			data->deviceStatus, data->slotStatus,
++			data->linkStatus, data->devCmdStatus,
++			data->devSecStatus);
++	if (data->rootErrorStatus   || data->uncorrErrorStatus ||
++	    data->corrErrorStatus)
++		pr_info("  RootErrSts:  %08x %08x %08x\n",
++			data->rootErrorStatus, data->uncorrErrorStatus,
++			data->corrErrorStatus);
++	if (data->tlpHdr1 || data->tlpHdr2 ||
++	    data->tlpHdr3 || data->tlpHdr4)
++		pr_info("  RootErrLog:  %08x %08x %08x %08x\n",
++			data->tlpHdr1, data->tlpHdr2,
++			data->tlpHdr3, data->tlpHdr4);
++	if (data->sourceId || data->errorClass ||
++	    data->correlator)
++		pr_info("  RootErrLog1: %08x %016llx %016llx\n",
++			data->sourceId, data->errorClass,
++			data->correlator);
++	if (data->p7iocPlssr || data->p7iocCsr)
++		pr_info("  PhbSts:      %016llx %016llx\n",
++			data->p7iocPlssr, data->p7iocCsr);
++	if (data->lemFir || data->lemErrorMask ||
++	    data->lemWOF)
++		pr_info("  Lem:         %016llx %016llx %016llx\n",
++			data->lemFir, data->lemErrorMask,
++			data->lemWOF);
++	if (data->phbErrorStatus || data->phbFirstErrorStatus ||
++	    data->phbErrorLog0   || data->phbErrorLog1)
++		pr_info("  PhbErr:      %016llx %016llx %016llx %016llx\n",
++			data->phbErrorStatus, data->phbFirstErrorStatus,
++			data->phbErrorLog0, data->phbErrorLog1);
++	if (data->mmioErrorStatus || data->mmioFirstErrorStatus ||
++	    data->mmioErrorLog0   || data->mmioErrorLog1)
++		pr_info("  OutErr:      %016llx %016llx %016llx %016llx\n",
++			data->mmioErrorStatus, data->mmioFirstErrorStatus,
++			data->mmioErrorLog0, data->mmioErrorLog1);
++	if (data->dma0ErrorStatus || data->dma0FirstErrorStatus ||
++	    data->dma0ErrorLog0   || data->dma0ErrorLog1)
++		pr_info("  InAErr:      %016llx %016llx %016llx %016llx\n",
++			data->dma0ErrorStatus, data->dma0FirstErrorStatus,
++			data->dma0ErrorLog0, data->dma0ErrorLog1);
++	if (data->dma1ErrorStatus || data->dma1FirstErrorStatus ||
++	    data->dma1ErrorLog0   || data->dma1ErrorLog1)
++		pr_info("  InBErr:      %016llx %016llx %016llx %016llx\n",
++			data->dma1ErrorStatus, data->dma1FirstErrorStatus,
++			data->dma1ErrorLog0, data->dma1ErrorLog1);
+ 
+ 	for (i = 0; i < OPAL_P7IOC_NUM_PEST_REGS; i++) {
+ 		if ((data->pestA[i] >> 63) == 0 &&
+ 		    (data->pestB[i] >> 63) == 0)
+ 			continue;
+ 
+-		pr_info("  PE[%3d] PESTA:        %016llx\n", i, data->pestA[i]);
+-		pr_info("          PESTB:        %016llx\n", data->pestB[i]);
++		pr_info("  PE[%3d] A/B: %016llx %016llx\n",
++			i, data->pestA[i], data->pestB[i]);
  	}
-+
-+	if (wacom_wac->features.type == INTUOSHT && wacom_wac->features.touch_max) {
-+		if (wacom_wac->features.device_type == BTN_TOOL_FINGER)
-+			wacom_wac->shared->touch_input = wacom_wac->input;
-+	}
-+
- 	return 0;
+ }
  
-  fail5: wacom_destroy_leds(wacom);
---- a/drivers/input/tablet/wacom_wac.c
-+++ b/drivers/input/tablet/wacom_wac.c
-@@ -1219,13 +1219,23 @@ static int wacom_bpt3_touch(struct wacom
+@@ -197,62 +212,77 @@ static void pnv_pci_dump_phb3_diag_data(
+ 	data = (struct OpalIoPhb3ErrorData*)common;
+ 	pr_info("PHB3 PHB#%d Diag-data (Version: %d)\n\n",
+ 		hose->global_number, common->version);
+-
+-	pr_info("  brdgCtl:              %08x\n", data->brdgCtl);
+-
+-	pr_info("  portStatusReg:        %08x\n", data->portStatusReg);
+-	pr_info("  rootCmplxStatus:      %08x\n", data->rootCmplxStatus);
+-	pr_info("  busAgentStatus:       %08x\n", data->busAgentStatus);
+-
+-	pr_info("  deviceStatus:         %08x\n", data->deviceStatus);
+-	pr_info("  slotStatus:           %08x\n", data->slotStatus);
+-	pr_info("  linkStatus:           %08x\n", data->linkStatus);
+-	pr_info("  devCmdStatus:         %08x\n", data->devCmdStatus);
+-	pr_info("  devSecStatus:         %08x\n", data->devSecStatus);
+-
+-	pr_info("  rootErrorStatus:      %08x\n", data->rootErrorStatus);
+-	pr_info("  uncorrErrorStatus:    %08x\n", data->uncorrErrorStatus);
+-	pr_info("  corrErrorStatus:      %08x\n", data->corrErrorStatus);
+-	pr_info("  tlpHdr1:              %08x\n", data->tlpHdr1);
+-	pr_info("  tlpHdr2:              %08x\n", data->tlpHdr2);
+-	pr_info("  tlpHdr3:              %08x\n", data->tlpHdr3);
+-	pr_info("  tlpHdr4:              %08x\n", data->tlpHdr4);
+-	pr_info("  sourceId:             %08x\n", data->sourceId);
+-	pr_info("  errorClass:           %016llx\n", data->errorClass);
+-	pr_info("  correlator:           %016llx\n", data->correlator);
+-
+-	pr_info("  nFir:                 %016llx\n", data->nFir);
+-	pr_info("  nFirMask:             %016llx\n", data->nFirMask);
+-	pr_info("  nFirWOF:              %016llx\n", data->nFirWOF);
+-	pr_info("  PhbPlssr:             %016llx\n", data->phbPlssr);
+-	pr_info("  PhbCsr:               %016llx\n", data->phbCsr);
+-	pr_info("  lemFir:               %016llx\n", data->lemFir);
+-	pr_info("  lemErrorMask:         %016llx\n", data->lemErrorMask);
+-	pr_info("  lemWOF:               %016llx\n", data->lemWOF);
+-	pr_info("  phbErrorStatus:       %016llx\n", data->phbErrorStatus);
+-	pr_info("  phbFirstErrorStatus:  %016llx\n", data->phbFirstErrorStatus);
+-	pr_info("  phbErrorLog0:         %016llx\n", data->phbErrorLog0);
+-	pr_info("  phbErrorLog1:         %016llx\n", data->phbErrorLog1);
+-	pr_info("  mmioErrorStatus:      %016llx\n", data->mmioErrorStatus);
+-	pr_info("  mmioFirstErrorStatus: %016llx\n", data->mmioFirstErrorStatus);
+-	pr_info("  mmioErrorLog0:        %016llx\n", data->mmioErrorLog0);
+-	pr_info("  mmioErrorLog1:        %016llx\n", data->mmioErrorLog1);
+-	pr_info("  dma0ErrorStatus:      %016llx\n", data->dma0ErrorStatus);
+-	pr_info("  dma0FirstErrorStatus: %016llx\n", data->dma0FirstErrorStatus);
+-	pr_info("  dma0ErrorLog0:        %016llx\n", data->dma0ErrorLog0);
+-	pr_info("  dma0ErrorLog1:        %016llx\n", data->dma0ErrorLog1);
+-	pr_info("  dma1ErrorStatus:      %016llx\n", data->dma1ErrorStatus);
+-	pr_info("  dma1FirstErrorStatus: %016llx\n", data->dma1FirstErrorStatus);
+-	pr_info("  dma1ErrorLog0:        %016llx\n", data->dma1ErrorLog0);
+-	pr_info("  dma1ErrorLog1:        %016llx\n", data->dma1ErrorLog1);
++	if (data->brdgCtl)
++		pr_info("  brdgCtl:     %08x\n",
++			data->brdgCtl);
++	if (data->portStatusReg || data->rootCmplxStatus ||
++	    data->busAgentStatus)
++		pr_info("  UtlSts:      %08x %08x %08x\n",
++			data->portStatusReg, data->rootCmplxStatus,
++			data->busAgentStatus);
++	if (data->deviceStatus || data->slotStatus   ||
++	    data->linkStatus   || data->devCmdStatus ||
++	    data->devSecStatus)
++		pr_info("  RootSts:     %08x %08x %08x %08x %08x\n",
++			data->deviceStatus, data->slotStatus,
++			data->linkStatus, data->devCmdStatus,
++			data->devSecStatus);
++	if (data->rootErrorStatus || data->uncorrErrorStatus ||
++	    data->corrErrorStatus)
++		pr_info("  RootErrSts:  %08x %08x %08x\n",
++			data->rootErrorStatus, data->uncorrErrorStatus,
++			data->corrErrorStatus);
++	if (data->tlpHdr1 || data->tlpHdr2 ||
++	    data->tlpHdr3 || data->tlpHdr4)
++		pr_info("  RootErrLog:  %08x %08x %08x %08x\n",
++			data->tlpHdr1, data->tlpHdr2,
++			data->tlpHdr3, data->tlpHdr4);
++	if (data->sourceId || data->errorClass ||
++	    data->correlator)
++		pr_info("  RootErrLog1: %08x %016llx %016llx\n",
++			data->sourceId, data->errorClass,
++			data->correlator);
++	if (data->nFir || data->nFirMask ||
++	    data->nFirWOF)
++		pr_info("  nFir:        %016llx %016llx %016llx\n",
++			data->nFir, data->nFirMask,
++			data->nFirWOF);
++	if (data->phbPlssr || data->phbCsr)
++		pr_info("  PhbSts:      %016llx %016llx\n",
++			data->phbPlssr, data->phbCsr);
++	if (data->lemFir || data->lemErrorMask ||
++	    data->lemWOF)
++		pr_info("  Lem:         %016llx %016llx %016llx\n",
++			data->lemFir, data->lemErrorMask,
++			data->lemWOF);
++	if (data->phbErrorStatus || data->phbFirstErrorStatus ||
++	    data->phbErrorLog0   || data->phbErrorLog1)
++		pr_info("  PhbErr:      %016llx %016llx %016llx %016llx\n",
++			data->phbErrorStatus, data->phbFirstErrorStatus,
++			data->phbErrorLog0, data->phbErrorLog1);
++	if (data->mmioErrorStatus || data->mmioFirstErrorStatus ||
++	    data->mmioErrorLog0   || data->mmioErrorLog1)
++		pr_info("  OutErr:      %016llx %016llx %016llx %016llx\n",
++			data->mmioErrorStatus, data->mmioFirstErrorStatus,
++			data->mmioErrorLog0, data->mmioErrorLog1);
++	if (data->dma0ErrorStatus || data->dma0FirstErrorStatus ||
++	    data->dma0ErrorLog0   || data->dma0ErrorLog1)
++		pr_info("  InAErr:      %016llx %016llx %016llx %016llx\n",
++			data->dma0ErrorStatus, data->dma0FirstErrorStatus,
++			data->dma0ErrorLog0, data->dma0ErrorLog1);
++	if (data->dma1ErrorStatus || data->dma1FirstErrorStatus ||
++	    data->dma1ErrorLog0   || data->dma1ErrorLog1)
++		pr_info("  InBErr:      %016llx %016llx %016llx %016llx\n",
++			data->dma1ErrorStatus, data->dma1FirstErrorStatus,
++			data->dma1ErrorLog0, data->dma1ErrorLog1);
  
- static int wacom_bpt_pen(struct wacom_wac *wacom)
- {
-+	struct wacom_features *features = &wacom->features;
- 	struct input_dev *input = wacom->input;
- 	unsigned char *data = wacom->data;
- 	int prox = 0, x = 0, y = 0, p = 0, d = 0, pen = 0, btn1 = 0, btn2 = 0;
+ 	for (i = 0; i < OPAL_PHB3_NUM_PEST_REGS; i++) {
+ 		if ((data->pestA[i] >> 63) == 0 &&
+ 		    (data->pestB[i] >> 63) == 0)
+ 			continue;
  
--	if (data[0] != WACOM_REPORT_PENABLED)
-+	if (data[0] != WACOM_REPORT_PENABLED && data[0] != WACOM_REPORT_USB)
- 	    return 0;
+-		pr_info("  PE[%3d] PESTA:        %016llx\n", i, data->pestA[i]);
+-		pr_info("          PESTB:        %016llx\n", data->pestB[i]);
++		pr_info("  PE[%3d] A/B: %016llx %016llx\n",
++			i, data->pestA[i], data->pestB[i]);
+ 	}
+ }
  
-+	if (data[0] == WACOM_REPORT_USB) {
-+		if (features->type == INTUOSHT && features->touch_max) {
-+			input_report_switch(wacom->shared->touch_input,
-+					    SW_MUTE_DEVICE, data[8] & 0x40);
-+			input_sync(wacom->shared->touch_input);
-+		}
-+		return 0;
-+	}
-+
- 	prox = (data[1] & 0x20) == 0x20;
- 
- 	/*
-@@ -1258,8 +1268,8 @@ static int wacom_bpt_pen(struct wacom_wa
- 		 * touching and applying pressure; do not report negative
- 		 * distance.
- 		 */
--		if (data[8] <= wacom->features.distance_max)
--			d = wacom->features.distance_max - data[8];
-+		if (data[8] <= features->distance_max)
-+			d = features->distance_max - data[8];
- 
- 		pen = data[1] & 0x01;
- 		btn1 = data[1] & 0x02;
-@@ -1310,6 +1320,13 @@ static int wacom_wireless_irq(struct wac
- 	if (connected) {
- 		int pid, battery;
- 
-+		if ((wacom->shared->type == INTUOSHT) &&
-+				wacom->shared->touch_max) {
-+			input_report_switch(wacom->shared->touch_input,
-+					SW_MUTE_DEVICE, data[5] & 0x40);
-+			input_sync(wacom->shared->touch_input);
-+		}
-+
- 		pid = get_unaligned_be16(&data[6]);
- 		battery = data[5] & 0x3f;
- 		if (wacom->pid != pid) {
-@@ -1779,6 +1796,13 @@ int wacom_setup_input_capabilities(struc
- 		break;
- 
- 	case INTUOSHT:
-+		if (features->touch_max &&
-+		    features->device_type == BTN_TOOL_FINGER) {
-+			input_dev->evbit[0] |= BIT_MASK(EV_SW);
-+			__set_bit(SW_MUTE_DEVICE, input_dev->swbit);
-+		}
-+		/* fall through */
-+
- 	case BAMBOO_PT:
- 		__clear_bit(ABS_MISC, input_dev->absbit);
- 
---- a/drivers/input/tablet/wacom_wac.h
-+++ b/drivers/input/tablet/wacom_wac.h
-@@ -55,6 +55,7 @@
- #define WACOM_REPORT_TPC1FGE		18
- #define WACOM_REPORT_24HDT		1
- #define WACOM_REPORT_WL			128
-+#define WACOM_REPORT_USB		192
- 
- /* device quirks */
- #define WACOM_QUIRK_MULTI_INPUT		0x0001
-@@ -131,6 +132,10 @@ struct wacom_features {
- struct wacom_shared {
- 	bool stylus_in_proximity;
- 	bool touch_down;
-+	/* for wireless device to access USB interfaces */
-+	unsigned touch_max;
-+	int type;
-+	struct input_dev *touch_input;
- };
- 
- struct wacom_wac {
 
 
