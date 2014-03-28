@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752111AbaC1Ncy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 09:32:54 -0400
-Received: from mail-oa0-f44.google.com ([209.85.219.44]:56011 "EHLO
-	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaC1Ncw (ORCPT
+	id S1751874AbaC1Nl5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 09:41:57 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:36456 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290AbaC1Nlz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 09:32:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <1396013356.31134.27.camel@joe-AO722>
-References: <b5bc276cdd34b039de2aa640ec0bb5dff195f832.1395996386.git.viresh.kumar@linaro.org>
-	<f6aa622dc5acfd3ab9b1360973c0d15b3972c6b6.1396001532.git.viresh.kumar@linaro.org>
-	<1396013356.31134.27.camel@joe-AO722>
-Date: Fri, 28 Mar 2014 19:02:52 +0530
-Message-ID: <CAKohpo=TrJk1A1VYJEohEPH_OHOodq2HPoqDDi-fyhnbDfU4Ag@mail.gmail.com>
-Subject: Re: [PATCH] cpufreq: use kzalloc() to allocate memory for cpufreq_frequency_table
+	Fri, 28 Mar 2014 09:41:55 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Joe Perches <joe@perches.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
-        "ego@linux.vnet.ibm.com" <ego@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: rjw@rjwysocki.net
+Cc: linaro-kernel@lists.linaro.org, cpufreq@vger.kernel.org,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        srivatsa.bhat@linux.vnet.ibm.com, ego@linux.vnet.ibm.com,
+        svaidy@linux.vnet.ibm.com, l.majewski@samsung.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 1/4] cpufreq: ia64: don't set .driver_data to index
+Date: Fri, 28 Mar 2014 19:11:44 +0530
+Message-Id: <57f831e4e1d45b7d81bc4cf4a94946db57360366.1396013927.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 March 2014 18:59, Joe Perches <joe@perches.com> wrote:
-> There seems to be some sort of bug fix in the
-> patch at the very end too?
+.driver_data field is only required to be filled if drivers want to preserve
+some data in there which they can use according to the value of .frequency
+field. But this driver isn't using this field at all, but just setting it equal
+to the index value. Which isn't required. Fix it.
 
-I have mentioned that in the log:
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+V1->V2: No Change
 
-Along with that we also remove use of .driver_data from SPEAr driver as it
-doesn't use it at all. Also, writing zero to .driver_data is not required for
-powernow-k8 as it is already zero.
+Hi Rafael,
 
-> Perhaps a better fix would be to use kcalloc for
-> all the allocs with a multiply.
+To avoid confusion I am sending all related cpufreq patches again.
 
-That would make the change very big now as there are lots of drivers
-which are already using kzalloc() and so wouldn't like to do that in this
-patch atleast..
+ drivers/cpufreq/ia64-acpi-cpufreq.c | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/cpufreq/ia64-acpi-cpufreq.c b/drivers/cpufreq/ia64-acpi-cpufreq.c
+index a22b5d1..beb191b 100644
+--- a/drivers/cpufreq/ia64-acpi-cpufreq.c
++++ b/drivers/cpufreq/ia64-acpi-cpufreq.c
+@@ -275,7 +275,6 @@ acpi_cpufreq_cpu_init (
+ 	/* table init */
+ 	for (i = 0; i <= data->acpi_data.state_count; i++)
+ 	{
+-		data->freq_table[i].driver_data = i;
+ 		if (i < data->acpi_data.state_count) {
+ 			data->freq_table[i].frequency =
+ 			      data->acpi_data.states[i].core_frequency * 1000;
+-- 
+1.7.12.rc2.18.g61b472e
+
