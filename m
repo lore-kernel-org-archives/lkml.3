@@ -1,94 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaC1WkV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 18:40:21 -0400
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:47587 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068AbaC1WkS (ORCPT
+	id S1751431AbaC1WnF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 18:43:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54180 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751068AbaC1WnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 18:40:18 -0400
-MIME-Version: 1.0
-X-Originating-IP: [84.208.52.246]
-In-Reply-To: <20140328.172107.16072208664321602.davem@davemloft.net>
-References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
- <20140328.145410.1817326821928803131.davem@davemloft.net> <CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
- <20140328.172107.16072208664321602.davem@davemloft.net>
-From: Tom Gundersen <teg@jklm.no>
-Date: Fri, 28 Mar 2014 23:39:57 +0100
-Message-ID: <CAG-2HqVQ-MAZgsZAkykvVtbtYgDA3bfJA5rEqpdX5vBqPTjLJg@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
-To: David Miller <davem@davemloft.net>
-Cc: David Herrmann <dh.herrmann@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 28 Mar 2014 18:43:02 -0400
+Date: Fri, 28 Mar 2014 15:43:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        "fengguang.wu" <fengguang.wu@intel.com>,
+        "Chen, Jet" <jet.chen@intel.com>
+Subject: Re: [PATCH linux-next v2] ufs: sb mutex merge + mutex_destroy: fix
+Message-Id: <20140328154301.c25c495a8fcfd510ba2bf019@linux-foundation.org>
+In-Reply-To: <20140327233831.c32f99a8fbabb31a5e37e598@skynet.be>
+References: <20140327233831.c32f99a8fbabb31a5e37e598@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 10:21 PM, David Miller <davem@davemloft.net> wrote:
-> From: Tom Gundersen <teg@jklm.no>
-> Date: Fri, 28 Mar 2014 21:51:53 +0100
->
->> On Fri, Mar 28, 2014 at 7:54 PM, David Miller <davem@davemloft.net> wrote:
->>> From: David Herrmann <dh.herrmann@gmail.com>
->>> Date: Wed, 26 Mar 2014 14:05:13 +0100
->>>
->>>> The main use-case is to allow udev to skip applying reliable ifnames to virtual
->>>> devices. For instance, if wifi-P2P devices are created, wpas already provides a
->>>> suitable naming-policy and udev shouldn't touch these devices. Same is true for
->>>> other virtual devices.
->>>
->>> This makes no sense at all.
->>>
->>> If udev should avoid applying names to wifi-P2P devices, that policy can
->>> be instituted completely inside of udev.  There is no need whatsoever
->>> for kernel support.
->>>
->>> udev can look at the device type, and policies can be defined that key
->>> off of that device type, entirely in userspace.
->>
->> Doing this in userspace sounds really wrong and fragile.
->>
->> In the case of wifi-P2P we could make it work, but for every type of
->> device that is added to the kernel which is named from userspace, we
->> would have to play catch-up in udev (and even after we do, new kernels
->> on old userspace will never work in the expected way).
->
-> Chronically we are finding hackish ways for seperate components in
-> userspace to coordinate their actions.
->
-> You're right, doing this for every device type for every single attribute
-> that might better.... sucks.
->
-> What's really needed is generic ways for seperate userspace components
-> to coordinate with eachother on issues like this.
+On Thu, 27 Mar 2014 23:38:31 +0100 Fabian Frederick <fabf@skynet.be> wrote:
 
-You mean coordinate with each other in userspace? If so, I still don't
-see how this can ever be anything else than fragile. It will depend on
-each userspace component actually opting in to whatever scheme we
-devise, and does so correctly.
+> mutex_destroy was also called when trying to mount volume in read/write
+> without write support enabled.
+> 
+> --- a/fs/ufs/super.c
+> +++ b/fs/ufs/super.c
+> @@ -798,7 +798,7 @@ static int ufs_fill_super(struct super_block *sb, void *data, int silent)
+>  	if (!(sb->s_flags & MS_RDONLY)) {
+>  		printk("ufs was compiled with read-only support, "
+>  		"can't be mounted as read-write\n");
+> -		goto failed;
+> +		goto failed_noreadwrite;
+>  	}
+>  #endif
+>  	mutex_init(&sbi->mutex);
+> @@ -1255,10 +1255,14 @@ magic_found:
+>  	return 0;
+>  
+>  failed:
+> +	mutex_destroy(&sbi->mutex);
+> +
+> +#ifndef CONFIG_UFS_FS_WRITE
+> +failed_noreadwrite:
+> +#endif
+>  	if (ubh)
+>  		ubh_brelse_uspi (uspi);
+>  	kfree (uspi);
+> -	mutex_destroy(&sbi->mutex);
+>  	kfree(sbi);
+>  	sb->s_fs_info = NULL;
+>  	UFSD("EXIT (FAILED)\n");
 
-The kernel is the only one who can know where the names came from in a
-reliable way (no matter how crappy the userspace component who
-originally created or renamed the devices is).
+Ugly.  Wht don't we perform the check before we've allocated anything
+so we can simply return?
 
-In udev we can ensure that what we do ourselves is sane, and we are
-happy to trust that what the kernel does is sane (and that the info it
-exposes to us is correct). However, we cannot really rely on each of
-the myriad of different components who may in various ways
-create/rename netdevs will manage to correctly hook into some
-synchronisation mechanism.
+And it should return -EROFS, not -EINVAL.
 
-Given that the kernel already has all the necessary info, and that the
-patch to expose it is so trivial, and that it is absolutely not clear
-at all that this can even be done in userspace (let alone being done
-in a sane way), I still struggle to see the reason for rejecting the
-patch...
+--- a/fs/ufs/super.c~ufs-sb-mutex-merge-mutex_destroy-fix-v2-fix
++++ a/fs/ufs/super.c
+@@ -785,6 +785,14 @@ static int ufs_fill_super(struct super_b
+ 	flags = 0;
+ 	
+ 	UFSD("ENTER\n");
++
++#ifndef CONFIG_UFS_FS_WRITE
++	if (!(sb->s_flags & MS_RDONLY)) {
++		printk("ufs was compiled with read-only support, "
++		       "can't be mounted as read-write\n");
++		return -EROFS;
++	}
++#endif
+ 		
+ 	sbi = kzalloc(sizeof(struct ufs_sb_info), GFP_KERNEL);
+ 	if (!sbi)
+@@ -794,13 +802,6 @@ static int ufs_fill_super(struct super_b
+ 
+ 	UFSD("flag %u\n", (int)(sb->s_flags & MS_RDONLY));
+ 	
+-#ifndef CONFIG_UFS_FS_WRITE
+-	if (!(sb->s_flags & MS_RDONLY)) {
+-		printk("ufs was compiled with read-only support, "
+-		"can't be mounted as read-write\n");
+-		goto failed_noreadwrite;
+-	}
+-#endif
+ 	mutex_init(&sbi->mutex);
+ 	spin_lock_init(&sbi->work_lock);
+ 	INIT_DELAYED_WORK(&sbi->sync_work, delayed_sync_fs);
+@@ -1256,10 +1257,6 @@ magic_found:
+ 
+ failed:
+ 	mutex_destroy(&sbi->mutex);
+-
+-#ifndef CONFIG_UFS_FS_WRITE
+-failed_noreadwrite:
+-#endif
+ 	if (ubh)
+ 		ubh_brelse_uspi (uspi);
+ 	kfree (uspi);
+_
 
-Or am I missing some obvious way we can solve this in userspace?
-
-Cheers,
-
-Tom
