@@ -1,45 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517AbaC1OLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:11:16 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:48801 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751311AbaC1OLP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:11:15 -0400
-Date: Fri, 28 Mar 2014 17:11:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Neil Armstrong <superna9999@gmail.com>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Archana kumari <archanakumari959@gmail.com>,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] Staging: netlogic: long lines in xlr_net.c
-Message-ID: <20140328141105.GI6991@mwanda>
-References: <53357C65.8050400@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53357C65.8050400@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+	id S1751714AbaC1O0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:26:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54022 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751311AbaC1O0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 10:26:08 -0400
+From: Mark Salter <msalter@redhat.com>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Mark Salter <msalter@redhat.com>
+Subject: [PATCH] arm: KVM: fix possible misalignment of PGDs and bounce page
+Date: Fri, 28 Mar 2014 10:25:19 -0400
+Message-Id: <1396016719-13807-1-git-send-email-msalter@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 02:43:01PM +0100, Neil Armstrong wrote:
-> checkpatch script returns the following warning:
-> WARNING: line over 80 characters
-> 310: FILE: drivers/staging/netlogic/xlr_net.c:310:
-> +               void *accel_priv, select_queue_fallback_t fallback)
-> 
-> This patch fixes the coding style issue.
-> 
-> Signed-off-by: Neil Armstrong <superna9999@gmail.com>
+The kvm/mmu code shared by arm and arm64 uses kalloc() to allocate
+a bounce page (if hypervisor init code crosses page boundary) and
+hypervisor PGDs. The problem is that kalloc() does not guarantee
+the proper alignment. In the case of the bounce page, the page sized
+buffer allocated may also cross a page boundary negating the purpose
+and leading to a hang during kvm initialization. Likewise the PGDs
+allocated may not meet the minimum alignment requirements of the
+underlying MMU. This patch uses __get_free_page() to guarantee the
+worst case alignment needs of the bounce page and PGDs on both arm
+and arm64.
 
-Heh.  Looks ok this time but it doesn't apply to linux-next.  Someone
-already sent this patch.  Sorry about that.
+Signed-off-by: Mark Salter <msalter@redhat.com>
+---
+ arch/arm/kvm/mmu.c | 15 +++++++++------
+ 1 file changed, 9 insertions(+), 6 deletions(-)
 
-regards,
-dan carpenter
+diff --git a/arch/arm/kvm/mmu.c b/arch/arm/kvm/mmu.c
+index 7789857..575d790 100644
+--- a/arch/arm/kvm/mmu.c
++++ b/arch/arm/kvm/mmu.c
+@@ -42,6 +42,8 @@ static unsigned long hyp_idmap_start;
+ static unsigned long hyp_idmap_end;
+ static phys_addr_t hyp_idmap_vector;
+ 
++#define pgd_order get_order(PTRS_PER_PGD * sizeof(pgd_t))
++
+ #define kvm_pmd_huge(_x)	(pmd_huge(_x) || pmd_trans_huge(_x))
+ 
+ static void kvm_tlb_flush_vmid_ipa(struct kvm *kvm, phys_addr_t ipa)
+@@ -199,14 +201,14 @@ void free_boot_hyp_pgd(void)
+ 	if (boot_hyp_pgd) {
+ 		unmap_range(NULL, boot_hyp_pgd, hyp_idmap_start, PAGE_SIZE);
+ 		unmap_range(NULL, boot_hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+-		kfree(boot_hyp_pgd);
++		free_pages((unsigned long)boot_hyp_pgd, pgd_order);
+ 		boot_hyp_pgd = NULL;
+ 	}
+ 
+ 	if (hyp_pgd)
+ 		unmap_range(NULL, hyp_pgd, TRAMPOLINE_VA, PAGE_SIZE);
+ 
+-	kfree(init_bounce_page);
++	free_page((unsigned long)init_bounce_page);
+ 	init_bounce_page = NULL;
+ 
+ 	mutex_unlock(&kvm_hyp_pgd_mutex);
+@@ -236,7 +238,7 @@ void free_hyp_pgds(void)
+ 		for (addr = VMALLOC_START; is_vmalloc_addr((void*)addr); addr += PGDIR_SIZE)
+ 			unmap_range(NULL, hyp_pgd, KERN_TO_HYP(addr), PGDIR_SIZE);
+ 
+-		kfree(hyp_pgd);
++		free_pages((unsigned long)hyp_pgd, pgd_order);
+ 		hyp_pgd = NULL;
+ 	}
+ 
+@@ -930,7 +932,7 @@ int kvm_mmu_init(void)
+ 		size_t len = __hyp_idmap_text_end - __hyp_idmap_text_start;
+ 		phys_addr_t phys_base;
+ 
+-		init_bounce_page = kmalloc(PAGE_SIZE, GFP_KERNEL);
++		init_bounce_page = (void *)__get_free_page(GFP_KERNEL);
+ 		if (!init_bounce_page) {
+ 			kvm_err("Couldn't allocate HYP init bounce page\n");
+ 			err = -ENOMEM;
+@@ -956,8 +958,9 @@ int kvm_mmu_init(void)
+ 			 (unsigned long)phys_base);
+ 	}
+ 
+-	hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
+-	boot_hyp_pgd = kzalloc(PTRS_PER_PGD * sizeof(pgd_t), GFP_KERNEL);
++	hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
++	boot_hyp_pgd = (pgd_t *)__get_free_pages(GFP_KERNEL | __GFP_ZERO, pgd_order);
++
+ 	if (!hyp_pgd || !boot_hyp_pgd) {
+ 		kvm_err("Hyp mode PGD not allocated\n");
+ 		err = -ENOMEM;
+-- 
+1.8.5.3
 
