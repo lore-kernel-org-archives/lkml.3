@@ -1,162 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbaC1R6e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:58:34 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51172 "EHLO
+	id S1752679AbaC1Rad (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:30:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51130 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752686AbaC1Rag (ORCPT
+	with ESMTP id S1751845AbaC1Ra2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 13:30:36 -0400
+	Fri, 28 Mar 2014 13:30:28 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Laurent Chavey <chavey@google.com>,
-        Vaibhav Nagarnaik <vnagarnaik@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH 3.10 02/22] tracing: Fix array size mismatch in format string
-Date: Fri, 28 Mar 2014 10:31:54 -0700
-Message-Id: <20140328173109.725537017@linuxfoundation.org>
+        Jean Delvare <jdelvare@suse.de>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Borislav Petkov <bp@suse.de>
+Subject: [PATCH 3.4 07/13] i7300_edac: Fix device reference count
+Date: Fri, 28 Mar 2014 10:31:57 -0700
+Message-Id: <20140328173054.048010910@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140328173109.378288825@linuxfoundation.org>
-References: <20140328173109.378288825@linuxfoundation.org>
+In-Reply-To: <20140328173053.049244535@linuxfoundation.org>
+References: <20140328173053.049244535@linuxfoundation.org>
 User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vaibhav Nagarnaik <vnagarnaik@google.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-commit 87291347c49dc40aa339f587b209618201c2e527 upstream.
+commit 75135da0d68419ef8a925f4c1d5f63d8046e314d upstream.
 
-In event format strings, the array size is reported in two locations.
-One in array subscript and then via the "size:" attribute. The values
-reported there have a mismatch.
+pci_get_device() decrements the reference count of "from" (last
+argument) so when we break off the loop successfully we have only one
+device reference - and we don't know which device we have. If we want
+a reference to each device, we must take them explicitly and let
+the pci_get_device() walk complete to avoid duplicate references.
 
-For e.g., in sched:sched_switch the prev_comm and next_comm character
-arrays have subscript values as [32] where as the actual field size is
-16.
+This is serious, as over-putting device references will cause
+the device to eventually disappear. Without this fix, the kernel
+crashes after a few insmod/rmmod cycles.
 
-name: sched_switch
-ID: 301
-format:
-        field:unsigned short common_type;       offset:0;       size:2; signed:0;
-        field:unsigned char common_flags;       offset:2;       size:1; signed:0;
-        field:unsigned char common_preempt_count;       offset:3;       size:1;signed:0;
-        field:int common_pid;   offset:4;       size:4; signed:1;
+Tested on an Intel S7000FC4UR system with a 7300 chipset.
 
-        field:char prev_comm[32];       offset:8;       size:16;        signed:1;
-        field:pid_t prev_pid;   offset:24;      size:4; signed:1;
-        field:int prev_prio;    offset:28;      size:4; signed:1;
-        field:long prev_state;  offset:32;      size:8; signed:1;
-        field:char next_comm[32];       offset:40;      size:16;        signed:1;
-        field:pid_t next_pid;   offset:56;      size:4; signed:1;
-        field:int next_prio;    offset:60;      size:4; signed:1;
-
-After bisection, the following commit was blamed:
-92edca0 tracing: Use direct field, type and system names
-
-This commit removes the duplication of strings for field->name and
-field->type assuming that all the strings passed in
-__trace_define_field() are immutable. This is not true for arrays, where
-the type string is created in event_storage variable and field->type for
-all array fields points to event_storage.
-
-Use __stringify() to create a string constant for the type string.
-
-Also, get rid of event_storage and event_storage_mutex that are not
-needed anymore.
-
-also, an added benefit is that this reduces the overhead of events a bit more:
-
-   text    data     bss     dec     hex filename
-8424787 2036472 1302528 11763787         b3804b vmlinux
-8420814 2036408 1302528 11759750         b37086 vmlinux.patched
-
-Link: http://lkml.kernel.org/r/1392349908-29685-1-git-send-email-vnagarnaik@google.com
-
-Cc: Laurent Chavey <chavey@google.com>
-Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Link: http://lkml.kernel.org/r/20140224111656.09bbb7ed@endymion.delvare
+Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Cc: Doug Thompson <dougthompson@xmission.com>
+Cc: stable@vger.kernel.org
+Signed-off-by: Borislav Petkov <bp@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/linux/ftrace_event.h |    4 ----
- include/trace/ftrace.h       |    7 ++-----
- kernel/trace/trace_events.c  |    6 ------
- kernel/trace/trace_export.c  |    7 ++-----
- 4 files changed, 4 insertions(+), 20 deletions(-)
+ drivers/edac/i7300_edac.c |   38 ++++++++++++++++++++------------------
+ 1 file changed, 20 insertions(+), 18 deletions(-)
 
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -325,10 +325,6 @@ enum {
- 	FILTER_TRACE_FN,
- };
+--- a/drivers/edac/i7300_edac.c
++++ b/drivers/edac/i7300_edac.c
+@@ -962,33 +962,35 @@ static int __devinit i7300_get_devices(s
  
--#define EVENT_STORAGE_SIZE 128
--extern struct mutex event_storage_mutex;
--extern char event_storage[EVENT_STORAGE_SIZE];
+ 	/* Attempt to 'get' the MCH register we want */
+ 	pdev = NULL;
+-	while (!pvt->pci_dev_16_1_fsb_addr_map ||
+-	       !pvt->pci_dev_16_2_fsb_err_regs) {
+-		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR, pdev);
+-		if (!pdev) {
+-			/* End of list, leave */
+-			i7300_printk(KERN_ERR,
+-				"'system address,Process Bus' "
+-				"device not found:"
+-				"vendor 0x%x device 0x%x ERR funcs "
+-				"(broken BIOS?)\n",
+-				PCI_VENDOR_ID_INTEL,
+-				PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
+-			goto error;
+-		}
 -
- extern int trace_event_raw_init(struct ftrace_event_call *call);
- extern int trace_define_field(struct ftrace_event_call *call, const char *type,
- 			      const char *name, int offset, int size,
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -299,15 +299,12 @@ static struct trace_event_functions ftra
- #undef __array
- #define __array(type, item, len)					\
- 	do {								\
--		mutex_lock(&event_storage_mutex);			\
-+		char *type_str = #type"["__stringify(len)"]";		\
- 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
--		snprintf(event_storage, sizeof(event_storage),		\
--			 "%s[%d]", #type, len);				\
--		ret = trace_define_field(event_call, event_storage, #item, \
-+		ret = trace_define_field(event_call, type_str, #item,	\
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
- 				 is_signed_type(type), FILTER_OTHER);	\
--		mutex_unlock(&event_storage_mutex);			\
- 		if (ret)						\
- 			return ret;					\
- 	} while (0);
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -27,12 +27,6 @@
++	while ((pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
++				      PCI_DEVICE_ID_INTEL_I7300_MCH_ERR,
++				      pdev))) {
+ 		/* Store device 16 funcs 1 and 2 */
+ 		switch (PCI_FUNC(pdev->devfn)) {
+ 		case 1:
+-			pvt->pci_dev_16_1_fsb_addr_map = pdev;
++			if (!pvt->pci_dev_16_1_fsb_addr_map)
++				pvt->pci_dev_16_1_fsb_addr_map =
++							pci_dev_get(pdev);
+ 			break;
+ 		case 2:
+-			pvt->pci_dev_16_2_fsb_err_regs = pdev;
++			if (!pvt->pci_dev_16_2_fsb_err_regs)
++				pvt->pci_dev_16_2_fsb_err_regs =
++							pci_dev_get(pdev);
+ 			break;
+ 		}
+ 	}
  
- DEFINE_MUTEX(event_mutex);
- 
--DEFINE_MUTEX(event_storage_mutex);
--EXPORT_SYMBOL_GPL(event_storage_mutex);
--
--char event_storage[EVENT_STORAGE_SIZE];
--EXPORT_SYMBOL_GPL(event_storage);
--
- LIST_HEAD(ftrace_events);
- static LIST_HEAD(ftrace_common_fields);
- 
---- a/kernel/trace/trace_export.c
-+++ b/kernel/trace/trace_export.c
-@@ -95,15 +95,12 @@ static void __always_unused ____ftrace_c
- #undef __array
- #define __array(type, item, len)					\
- 	do {								\
-+		char *type_str = #type"["__stringify(len)"]";		\
- 		BUILD_BUG_ON(len > MAX_FILTER_STR_VAL);			\
--		mutex_lock(&event_storage_mutex);			\
--		snprintf(event_storage, sizeof(event_storage),		\
--			 "%s[%d]", #type, len);				\
--		ret = trace_define_field(event_call, event_storage, #item, \
-+		ret = trace_define_field(event_call, type_str, #item,	\
- 				 offsetof(typeof(field), item),		\
- 				 sizeof(field.item),			\
- 				 is_signed_type(type), filter_type);	\
--		mutex_unlock(&event_storage_mutex);			\
- 		if (ret)						\
- 			return ret;					\
- 	} while (0);
++	if (!pvt->pci_dev_16_1_fsb_addr_map ||
++	    !pvt->pci_dev_16_2_fsb_err_regs) {
++		/* At least one device was not found */
++		i7300_printk(KERN_ERR,
++			"'system address,Process Bus' device not found:"
++			"vendor 0x%x device 0x%x ERR funcs (broken BIOS?)\n",
++			PCI_VENDOR_ID_INTEL,
++			PCI_DEVICE_ID_INTEL_I7300_MCH_ERR);
++		goto error;
++	}
++
+ 	debugf1("System Address, processor bus- PCI Bus ID: %s  %x:%x\n",
+ 		pci_name(pvt->pci_dev_16_0_fsb_ctlr),
+ 		pvt->pci_dev_16_0_fsb_ctlr->vendor,
 
 
