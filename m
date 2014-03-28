@@ -1,86 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752159AbaC1OyN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 10:54:13 -0400
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:65210 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751948AbaC1OyM (ORCPT
+	id S1752226AbaC1O5N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 10:57:13 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54291 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751858AbaC1O5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 10:54:12 -0400
+	Fri, 28 Mar 2014 10:57:10 -0400
+Message-ID: <53358DBF.4080808@linux.vnet.ibm.com>
+Date: Fri, 28 Mar 2014 09:57:03 -0500
+From: Nathan Fontenot <nfont@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <20130827123827.GB5855@x1.alien8.de>
-References: <1377180807-12758-1-git-send-email-rric@kernel.org>
-	<20130824093826.GB28383@pd.tnic>
-	<20130827122721.GF15884@rric.localhost>
-	<20130827123827.GB5855@x1.alien8.de>
-Date: Fri, 28 Mar 2014 15:54:11 +0100
-Message-ID: <CAFrcx1kdVQmNETtUoLJNdtMbzZ4bPSxHq8R-PwOdd=vEu6L9Zw@mail.gmail.com>
-Subject: Re: [PATCH v3 00/12] perf, persistent: Add persistent events
-From: Jean Pihet <jean.pihet@linaro.org>
-To: Borislav Petkov <bp@alien8.de>, Peter Zijlstra <peterz@infradead.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Robert Richter <rric@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Greg Kurz <gkurz@linux.vnet.ibm.com>, benh@kernel.crashing.org
+CC: linux-kernel@vger.kernel.org, paulus@samba.org, anton@samba.org,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] powerpc/le: enable RTAS events support
+References: <20140328073344.26823.32931.stgit@bahia.local>
+In-Reply-To: <20140328073344.26823.32931.stgit@bahia.local>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14032814-1542-0000-0000-000000B30940
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Greg,
 
-Now that the feature is resurfacing, I would like to take over the
-task for persistent events.
-What is the status of the series, is it close to acceptance?
+There is one more place that needs fixing up, in mobility_rtas_call(),
+and handle_rtas_event() in arch/powerpc/platforms/pseries/mobility.c.
 
-AFAICS the patch RFC 12/12 was under discussion, mainly about the
-naming of the ioctls (latest e-mail is in favor of CLAIM/UNCLAIM).
+This relates to rtas event handling for PRRN notifications, we need to
+convert the scope variable (PRRN notifications re-use the extended log
+length field) when read from the rtas event in handle_rtas_event(), then
+convert it back to big endian in mobility_rtas_call().
 
-Any thoughts?
+The double conversion seems yucky but mobility_rtas_call can be called
+other places where the scope variable is not originally big endian.
 
-Let me rebase the code against the latest mainline and re-start the discussion.
+-Nathan
 
-Thread: https://lkml.org/lkml/2013/8/22/306
-RFC 12/12: https://lkml.org/lkml/2013/8/27/264
+On 03/28/2014 02:33 AM, Greg Kurz wrote:
+> The current kernel code assumes big endian and parses RTAS events all
+> wrong. The most visible effect is that we cannot honor EPOW events,
+> meaning, for example, we cannot shut down a guest properly from the
+> hypervisor.
+> 
+> This patch fixes that.
+> 
+> Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/include/asm/rtas.h      |   46 ++++++++++++++++++++++++++++++++++
+>  arch/powerpc/kernel/rtas.c           |   11 ++++----
+>  arch/powerpc/kernel/rtasd.c          |    8 ++++--
+>  arch/powerpc/platforms/pseries/ras.c |    3 +-
+>  4 files changed, 59 insertions(+), 9 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
+> index 9bd52c6..8bb99d0 100644
+> --- a/arch/powerpc/include/asm/rtas.h
+> +++ b/arch/powerpc/include/asm/rtas.h
+> @@ -150,15 +150,37 @@ struct rtas_suspend_me_data {
+>  #define RTAS_VECTOR_EXTERNAL_INTERRUPT	0x500
+>  
+>  struct rtas_error_log {
+> +#ifdef __BIG_ENDIAN__
+> +	/* Byte 0 */
+>  	unsigned long version:8;		/* Architectural version */
+> +	/* Byte 1 */
+>  	unsigned long severity:3;		/* Severity level of error */
+>  	unsigned long disposition:2;		/* Degree of recovery */
+>  	unsigned long extended:1;		/* extended log present? */
+>  	unsigned long /* reserved */ :2;	/* Reserved for future use */
+> +	/* Byte 2 */
+>  	unsigned long initiator:4;		/* Initiator of event */
+>  	unsigned long target:4;			/* Target of failed operation */
+> +	/* Byte 3 */
+>  	unsigned long type:8;			/* General event or error*/
+> +	/* Byte 4 */
+>  	unsigned long extended_log_length:32;	/* length in bytes */
+> +#else
+> +	/* Byte 0 */
+> +	unsigned long version:8;
+> +	/* Byte 1 */
+> +	unsigned long :2;
+> +	unsigned long extended:1;
+> +	unsigned long disposition:2;
+> +	unsigned long severity:3;
+> +	unsigned long target:4;
+> +	/* Byte 2 */
+> +	unsigned long initiator:4;
+> +	/* Byte 3 */
+> +	unsigned long type:8;
+> +	/* Byte 4 */
+> +	unsigned long extended_log_length:32;
+> +#endif
+>  	unsigned char buffer[1];		/* Start of extended log */
+>  						/* Variable length.      */
+>  };
+> @@ -171,6 +193,7 @@ struct rtas_error_log {
+>   * from "buffer" field of struct rtas_error_log defined above.
+>   */
+>  struct rtas_ext_event_log_v6 {
+> +#ifdef __BIG_ENDIAN__
+>  	/* Byte 0 */
+>  	uint32_t log_valid:1;		/* 1:Log valid */
+>  	uint32_t unrecoverable_error:1;	/* 1:Unrecoverable error */
+> @@ -200,6 +223,29 @@ struct rtas_ext_event_log_v6 {
+>  	uint32_t company_id;		/* Company ID of the company	*/
+>  					/* that defines the format for	*/
+>  					/* the vendor specific log type	*/
+> +#else
+> +	/* Byte 0 */
+> +	uint32_t :1;
+> +	uint32_t big_endian:1;
+> +	uint32_t new_log:1;
+> +	uint32_t predictive_error:1;
+> +	uint32_t degraded_operation:1;
+> +	uint32_t recoverable_error:1;
+> +	uint32_t unrecoverable_error:1;
+> +	uint32_t log_valid:1;
+> +	/* Byte 1 */
+> +	uint32_t :8;
+> +	/* Byte 2 */
+> +	uint32_t log_format:4;
+> +	uint32_t :3;
+> +	uint32_t powerpc_format:1;
+> +	/* Byte 3 */
+> +	uint32_t :8;
+> +	/* Byte 4-11 */
+> +	uint8_t reserved[8];
+> +	/* Byte 12-15 */
+> +	uint32_t company_id;
+> +#endif
+>  	/* Byte 16-end of log */
+>  	uint8_t vendor_log[1];		/* Start of vendor specific log	*/
+>  					/* Variable length.		*/
+> diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
+> index f386296..e18ab12 100644
+> --- a/arch/powerpc/kernel/rtas.c
+> +++ b/arch/powerpc/kernel/rtas.c
+> @@ -993,21 +993,22 @@ struct pseries_errorlog *get_pseries_errorlog(struct rtas_error_log *log,
+>  		(struct rtas_ext_event_log_v6 *)log->buffer;
+>  	struct pseries_errorlog *sect;
+>  	unsigned char *p, *log_end;
+> +	uint32_t extended_log_length = be32_to_cpu(log->extended_log_length);
+>  
+>  	/* Check that we understand the format */
+> -	if (log->extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
+> +	if (extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
+>  	    ext_log->log_format != RTAS_V6EXT_LOG_FORMAT_EVENT_LOG ||
+> -	    ext_log->company_id != RTAS_V6EXT_COMPANY_ID_IBM)
+> +	    be32_to_cpu(ext_log->company_id) != RTAS_V6EXT_COMPANY_ID_IBM)
+>  		return NULL;
+>  
+> -	log_end = log->buffer + log->extended_log_length;
+> +	log_end = log->buffer + extended_log_length;
+>  	p = ext_log->vendor_log;
+>  
+>  	while (p < log_end) {
+>  		sect = (struct pseries_errorlog *)p;
+> -		if (sect->id == section_id)
+> +		if (be16_to_cpu(sect->id) == section_id)
+>  			return sect;
+> -		p += sect->length;
+> +		p += be16_to_cpu(sect->length);
+>  	}
+>  
+>  	return NULL;
+> diff --git a/arch/powerpc/kernel/rtasd.c b/arch/powerpc/kernel/rtasd.c
+> index 1130c53..1987825 100644
+> --- a/arch/powerpc/kernel/rtasd.c
+> +++ b/arch/powerpc/kernel/rtasd.c
+> @@ -159,14 +159,16 @@ static int log_rtas_len(char * buf)
+>  {
+>  	int len;
+>  	struct rtas_error_log *err;
+> +	uint32_t extended_log_length;
+>  
+>  	/* rtas fixed header */
+>  	len = 8;
+>  	err = (struct rtas_error_log *)buf;
+> -	if (err->extended && err->extended_log_length) {
+> +	extended_log_length = be32_to_cpu(err->extended_log_length);
+> +	if (err->extended && extended_log_length) {
+>  
+>  		/* extended header */
+> -		len += err->extended_log_length;
+> +		len += extended_log_length;
+>  	}
+>  
+>  	if (rtas_error_log_max == 0)
+> @@ -298,7 +300,7 @@ static void handle_rtas_event(const struct rtas_error_log *log)
+>  		 * the scope for calling rtas update-nodes.
+>  		 */
+>  		if (prrn_is_enabled())
+> -			prrn_schedule_update(log->extended_log_length);
+> +			prrn_schedule_update(be32_to_cpu(log->extended_log_length));
+>  	}
+>  
+>  	return;
+> diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
+> index 721c058..39e7557 100644
+> --- a/arch/powerpc/platforms/pseries/ras.c
+> +++ b/arch/powerpc/platforms/pseries/ras.c
+> @@ -306,7 +306,8 @@ static struct rtas_error_log *fwnmi_get_errinfo(struct pt_regs *regs)
+>  	} else {
+>  		int len;
+>  
+> -		len = max_t(int, 8+h->extended_log_length, RTAS_ERROR_LOG_MAX);
+> +		len = max_t(int, 8+be32_to_cpu(h->extended_log_length),
+> +			    RTAS_ERROR_LOG_MAX);
+>  		memset(global_mce_data_buf, 0, RTAS_ERROR_LOG_MAX);
+>  		memcpy(global_mce_data_buf, h, len);
+>  		errhdr = (struct rtas_error_log *)global_mce_data_buf;
+> 
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> 
 
-Regards,
-Jean
-
-On 27 August 2013 14:38, Borislav Petkov <bp@alien8.de> wrote:
-> On Tue, Aug 27, 2013 at 02:27:21PM +0200, Robert Richter wrote:
->> > > There are ioctl functions to control persistent events that can be
->> > > used to detach or attach an event to or from a process. The
->> > > PERF_EVENT_IOC_DETACH ioctl call makes an event persistent.
->> >
->> > Yeah, we probably want to abstract this a step further by allowing
->> > to attach/detach fds to/from events. Then "persistent" is only one
->> > incarnation of us always detaching from the event during its lifetime.
->> >
->> > If we close an event while it is attached, it gets destroyed - i.e.,
->> > current functionality, etc. See the other thread.
->>
->> I don't know what you mean here exactly, please explain.
->
-> Basically that detaching an event shouldn't make it persistent
-> explicitly - it simply continues running in the background. When we
-> reattach to it and die with the event attached, then it gets destroyed
-> too.
->
-> Which means, we can have arbitrary life periods of events, persistency
-> being only a special case of it.
->
-> IOW, as long as an event is detached in the background, it counts.
-> When something attaches to it and that something exits, the event gets
-> destroyed too, as part of the process teardown.
->
-> And this is probably the most generic way to look at it.
->
-> --
-> Regards/Gruss,
-> Boris.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
