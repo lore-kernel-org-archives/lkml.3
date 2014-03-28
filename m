@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753633AbaC1RnW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 13:43:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51366 "EHLO
+	id S1753556AbaC1RnU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 13:43:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:51370 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753146AbaC1RbH (ORCPT
+	with ESMTP id S1752978AbaC1RbH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 Mar 2014 13:31:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Trond Myklebust <trond.myklebust@primarydata.com>
-Subject: [PATCH 3.13 20/46] SUNRPC: Fix a pipe_version reference leak
-Date: Fri, 28 Mar 2014 10:32:04 -0700
-Message-Id: <20140328173137.402111439@linuxfoundation.org>
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Jan Seiffert <kaffeemonster@googlemail.com>,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 21/46] x86: bpf_jit: support negative offsets
+Date: Fri, 28 Mar 2014 10:32:05 -0700
+Message-Id: <20140328173137.532148179@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140328173134.630198216@linuxfoundation.org>
 References: <20140328173134.630198216@linuxfoundation.org>
@@ -26,37 +29,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Trond Myklebust <trond.myklebust@primarydata.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
 
-commit e9776d0f4adee8877145672f6416b06b57f2dc27 upstream.
+commit fdfaf64e75397567257e1051931f9a3377360665 upstream.
 
-In gss_alloc_msg(), if the call to gss_encode_v1_msg() fails, we
-want to release the reference to the pipe_version that was obtained
-earlier in the function.
+Commit a998d4342337 claimed to introduce negative offset support to x86 jit,
+but it couldn't be working, since at the time of the execution
+of LD+ABS or LD+IND instructions via call into
+bpf_internal_load_pointer_neg_helper() the %edx (3rd argument of this func)
+had junk value instead of access size in bytes (1 or 2 or 4).
 
-Fixes: 9d3a2260f0f4b (SUNRPC: Fix buffer overflow checking in...)
-Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Store size into %edx instead of %ecx (what original commit intended to do)
+
+Fixes: a998d4342337 ("bpf jit: Let the x86 jit handle negative offsets")
+Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
+Cc: Jan Seiffert <kaffeemonster@googlemail.com>
+Cc: Eric Dumazet <edumazet@google.com>
+Acked-by: Eric Dumazet <edumazet@google.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/sunrpc/auth_gss/auth_gss.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/x86/net/bpf_jit.S |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/net/sunrpc/auth_gss/auth_gss.c
-+++ b/net/sunrpc/auth_gss/auth_gss.c
-@@ -500,10 +500,12 @@ gss_alloc_msg(struct gss_auth *gss_auth,
- 	default:
- 		err = gss_encode_v1_msg(gss_msg, service_name, gss_auth->target_name);
- 		if (err)
--			goto err_free_msg;
-+			goto err_put_pipe_version;
- 	};
- 	kref_get(&gss_auth->kref);
- 	return gss_msg;
-+err_put_pipe_version:
-+	put_pipe_version(gss_auth->net);
- err_free_msg:
- 	kfree(gss_msg);
- err:
+--- a/arch/x86/net/bpf_jit.S
++++ b/arch/x86/net/bpf_jit.S
+@@ -140,7 +140,7 @@ bpf_slow_path_byte_msh:
+ 	push	%r9;						\
+ 	push	SKBDATA;					\
+ /* rsi already has offset */					\
+-	mov	$SIZE,%ecx;	/* size */			\
++	mov	$SIZE,%edx;	/* size */			\
+ 	call	bpf_internal_load_pointer_neg_helper;		\
+ 	test	%rax,%rax;					\
+ 	pop	SKBDATA;					\
 
 
