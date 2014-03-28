@@ -1,137 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751735AbaC1MEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 08:04:04 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:53860 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbaC1MD5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 08:03:57 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: levex@linux.com, lars@metafoo.de, andriy.shevchenko@linux.intel.com,
-        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH v7 1/2] dma: Add Xilinx Video DMA DT Binding Documentation
-Date: Fri, 28 Mar 2014 17:33:41 +0530
-Message-Id: <1396008222-7058-2-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1396008222-7058-1-git-send-email-sthokal@xilinx.com>
-References: <1396008222-7058-1-git-send-email-sthokal@xilinx.com>
+	id S1752013AbaC1MEh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 08:04:37 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:18532 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751262AbaC1MEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 08:04:34 -0400
+X-IronPort-AV: E=Sophos;i="4.97,750,1389715200"; 
+   d="scan'208,223";a="9785344"
+Message-ID: <5335661E.7030408@cn.fujitsu.com>
+Date: Fri, 28 Mar 2014 20:07:58 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] workqueue: fix possible race condition when rescuer VS
+ pwq-release
+References: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1395937212-4103-1-git-send-email-laijs@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/28 20:01:22,
+	Serialize by Router on mailserver/fnst(Release 8.5.3|September 15, 2011) at
+ 2014/03/28 20:01:22,
+	Serialize complete at 2014/03/28 20:01:22
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device-tree binding documentation of Xilinx Video DMA Engine
+>From 11af0cd0306309f0deaf3326cc26d3e7e517e3d1 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Fri, 28 Mar 2014 00:20:12 +0800
+Subject: [PATCH] workqueue: fix possible race condition when rescuer VS
+ pwq-release
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+There is a race condition between rescuer_thread() and
+pwq_unbound_release_workfn().
+
+The works of the @pwq may be processed by some other workers,
+and @pwq is scheduled to release(due to its wq's attr is changed)
+before the rescuer starts to process. In this case
+pwq_unbound_release_workfn() will corrupt wq->maydays list,
+and rescuer_thead() will access to corrupted data.
+
+Using get_unbound_pwq() when send_mayday() will keep @pwq's lifetime
+and avoid the race condition.
+
+Changed from V1:
+	1) Introduce get_unbound_pwq() for beter readibility. Since
+	   get_pwq() is considerred no-op for percpu workqueue,
+	   so the patch are the same behavior in functionality.
+	2) More precise comments.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 ---
-Changes in v7:
-None
+ kernel/workqueue.c |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
 
-Changes in v6:
-None
-
-Changes in v5:
-None
-
-Changes in v4:
-None
-
-Changes in v3:
-None
-
-Changes in v2:
-- Removed device-id DT property, as suggested by Arnd Bergmann
-- Properly documented DT bindings as suggested by Arnd Bergmann
----
- .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++++++++++++++++++++
- 1 file changed, 75 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-
-diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-new file mode 100644
-index 0000000..ab8be1a
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-@@ -0,0 +1,75 @@
-+Xilinx AXI VDMA engine, it does transfers between memory and video devices.
-+It can be configured to have one channel or two channels. If configured
-+as two channels, one is to transmit to the video device and another is
-+to receive from the video device.
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 0c74979..d845bdd 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1050,6 +1050,12 @@ static void get_pwq(struct pool_workqueue *pwq)
+ 	pwq->refcnt++;
+ }
+ 
++static inline void get_unbound_pwq(struct pool_workqueue *pwq)
++{
++	if (pwq->wq->flags & WQ_UNBOUND)
++		get_pwq(pwq);
++}
 +
-+Required properties:
-+- compatible: Should be "xlnx,axi-vdma-1.00.a"
-+- #dma-cells: Should be <1>, see "dmas" property below
-+- reg: Should contain VDMA registers location and length.
-+- xlnx,num-fstores: Should be the number of framebuffers as configured in h/w.
-+- dma-channel child node: Should have atleast one channel and can have upto
-+	two channels per device. This node specifies the properties of each
-+	DMA channel (see child node properties below).
+ /**
+  * put_pwq - put a pool_workqueue reference
+  * @pwq: pool_workqueue to put
+@@ -1075,6 +1081,12 @@ static void put_pwq(struct pool_workqueue *pwq)
+ 	schedule_work(&pwq->unbound_release_work);
+ }
+ 
++static inline void put_unbound_pwq(struct pool_workqueue *pwq)
++{
++	if (pwq->wq->flags & WQ_UNBOUND)
++		put_pwq(pwq);
++}
 +
-+Optional properties:
-+- xlnx,include-sg: Tells whether configured for Scatter-mode in
-+	the hardware.
-+- xlnx,flush-fsync: Tells whether which channel to Flush on Frame sync.
-+	It takes following values:
-+	{1}, flush both channels
-+	{2}, flush mm2s channel
-+	{3}, flush s2mm channel
+ /**
+  * put_pwq_unlocked - put_pwq() with surrounding pool lock/unlock
+  * @pwq: pool_workqueue to put (can be %NULL)
+@@ -1908,6 +1920,19 @@ static void send_mayday(struct work_struct *work)
+ 
+ 	/* mayday mayday mayday */
+ 	if (list_empty(&pwq->mayday_node)) {
++		/*
++		 * A pwq of an unbound wq may be released before wq's
++		 * destruction when the wq's attr is changed. In this case,
++		 * pwq_unbound_release_workfn() may execute earlier before
++		 * rescuer_thread() and corrupt wq->maydays list.
++		 *
++		 * get_unbound_pwq() keeps the unbound pwq until the rescuer
++		 * processes it and protects the pwq from being scheduled to
++		 * release when someone else processes all the works before
++		 * the rescuer starts to process.
++		 */
++		get_unbound_pwq(pwq);
 +
-+Required child node properties:
-+- compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
-+	"xlnx,axi-vdma-s2mm-channel".
-+- interrupts: Should contain per channel VDMA interrupts.
-+- xlnx,data-width: Should contain the stream data width, take values
-+	{32,64...1024}.
-+
-+Option child node properties:
-+- xlnx,include-dre: Tells whether hardware is configured for Data
-+	Realignment Engine.
-+- xlnx,genlock-mode: Tells whether Genlock synchronization is
-+	enabled/disabled in hardware.
-+
-+Example:
-+++++++++
-+
-+axi_vdma_0: axivdma@40030000 {
-+	compatible = "xlnx,axi-vdma-1.00.a";
-+	#dma_cells = <1>;
-+	reg = < 0x40030000 0x10000 >;
-+	xlnx,num-fstores = <0x8>;
-+	xlnx,flush-fsync = <0x1>;
-+	dma-channel@40030000 {
-+		compatible = "xlnx,axi-vdma-mm2s-channel";
-+		interrupts = < 0 54 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+	dma-channel@40030030 {
-+		compatible = "xlnx,axi-vdma-s2mm-channel";
-+		interrupts = < 0 53 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+} ;
-+
-+
-+* DMA client
-+
-+Required properties:
-+- dmas: a list of <[Video DMA device phandle] [Channel ID]> pairs,
-+	where Channel ID is '0' for write/tx and '1' for read/rx
-+	channel.
-+- dma-names: a list of DMA channel names, one per "dmas" entry
-+
-+Example:
-+++++++++
-+
-+vdmatest_0: vdmatest@0 {
-+	compatible ="xlnx,axi-vdma-test-1.00.a";
-+	dmas = <&axi_vdma_0 0
-+		&axi_vdma_0 1>;
-+	dma-names = "vdma0", "vdma1";
-+} ;
+ 		list_add_tail(&pwq->mayday_node, &wq->maydays);
+ 		wake_up_process(wq->rescuer->task);
+ 	}
+@@ -2424,6 +2449,7 @@ repeat:
+ 		/* migrate to the target cpu if possible */
+ 		worker_maybe_bind_and_lock(pool);
+ 		rescuer->pool = pool;
++		put_unbound_pwq(pwq);
+ 
+ 		/*
+ 		 * Slurp in all works issued via this workqueue and
+@@ -4318,6 +4344,10 @@ void destroy_workqueue(struct workqueue_struct *wq)
+ 		/*
+ 		 * The base ref is never dropped on per-cpu pwqs.  Directly
+ 		 * free the pwqs and wq.
++		 *
++		 * The wq->maydays list maybe still have some pwqs linked,
++		 * but it is safe to free them all together since the rescuer
++		 * is stopped.
+ 		 */
+ 		free_percpu(wq->cpu_pwqs);
+ 		kfree(wq);
 -- 
-1.7.9.5
+1.7.4.4
 
