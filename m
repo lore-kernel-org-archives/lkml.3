@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbaC1FA0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 01:00:26 -0400
-Received: from 81.95.159.215-static.reverse.softlayer.com ([81.95.159.215]:56644
-	"EHLO demimalaysia.info" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbaC1FAZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 01:00:25 -0400
-Date: Thu, 27 Mar 2014 23:25:34 -0500
-From: Demi Malaysia <demimalaysiaku@demimalaysia.info>
-To: deminegara@demimalaysia.info
-Subject: Bila KHALID Sabotaj ANWAR - Siapa TOP BRASS Yang Ganggu Kerajaan
- Negeri?
-Message-ID: <20140328042534.GA23111@demimalaysia.info>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - demimalaysia.info
-X-AntiAbuse: Original Domain - demimalaysia.info
-X-AntiAbuse: Originator/Caller UID/GID - [500 500] / [47 12]
-X-AntiAbuse: Sender Address Domain - demimalaysia.info
-X-Get-Message-Sender-Via: demimalaysia.info: authenticated_id: demimala/primary_hostname/system user
-X-Source: /usr/bin/mutt
-X-Source-Args: mutt deminegara -s Bila KHALID Sabotaj ANWAR - Siapa TOP BRASS Yang Ganggu Kerajaan Negeri? 
-X-Source-Dir: demimalaysia.info:/server-blast
+	id S1752627AbaC1FRf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 01:17:35 -0400
+Received: from ozlabs.org ([203.10.76.45]:44104 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751069AbaC1FRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 01:17:33 -0400
+Date: Fri, 28 Mar 2014 16:17:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Decotigny <decot@googlers.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Jamal Hadi Salim <jhs@mojatatu.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Eric Dumazet <edumazet@google.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Weilong Chen <chenweilong@huawei.com>, Jiri Pirko <jiri@resnulli.us>,
+        Amir Vadai <amirv@mellanox.com>, Michael Dalton <mwdalton@google.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH v1] net-sysfs: expose number of link up/down transitions
+Message-Id: <20140328161725.e044dd9417cae3020068f350@canb.auug.org.au>
+In-Reply-To: <cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
+References: <cover.1395980768.git.decot@googlers.com>
+	<cc4b88e880d31d8d71a5c8872a64c9d665cd097e.1395980768.git.decot@googlers.com>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.22; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Fri__28_Mar_2014_16_17_25_+1100_TZFtd7YsdaL53_up"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Assalamualaikum Saudara-Saudari,
+--Signature=_Fri__28_Mar_2014_16_17_25_+1100_TZFtd7YsdaL53_up
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-He has just concluded the water takeover with the federal government
-without even referring to or, at the very least, informing the party
-leaders of his intent.
+Hi David,
 
-This even left Anwar red-faced when asked by reporters.
+On Thu, 27 Mar 2014 21:35:00 -0700 David Decotigny <decot@googlers.com> wro=
+te:
+>
+> Tested:
+>   grep . /sys/class/net/*/count_link_*
+>   + ip link set dev X down/up
+>=20
+> Signed-off-by: David Decotigny <decot@googlers.com>
 
-However, Khalid is not bothered by what Anwar or other leaders in the party think of him.
+It is not a very enlightening commit message.  You should tell us why we
+should add this to the kernel.
 
-Selanjutnya, sila layari... http://gelagatanwar.wordpress.com.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Wassalam.
+--Signature=_Fri__28_Mar_2014_16_17_25_+1100_TZFtd7YsdaL53_up
+Content-Type: application/pgp-signature
 
-Gelagat
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTNQXoAAoJEMDTa8Ir7ZwVrGkP/0Sw6YC2nHd10f6E4dfHE146
+2hBS5ZGZqBJMlrbIXBvBO8BobyTGR0CU8AhD8yQeoQOFqC0+bdDbYg3Hb706LNNl
+kmGOtr2pGX01GUOtELU408c+aVBBPvjajaaKgIrexfKKyhIhFC9Ike/TPPShWX5c
+1qHj2+CtqfWK+Ep/3twNXOTpHcpNW3GEO1SOvldwWIRu6iSvcabqzVfCoZe4CRJl
+nFLzuI2TeHEGKjno60K46tFuea9ia3DiQNOPoV8bHz9TmCtn02AAlM2ISSKSj8NB
+SbGD8+3tc5Dgx8tlDZS0Wp0sOf4/+37HgiKNyWWNCdHnsnKN1J3pm4PkumDgNvLb
+Ergv5hOQ6uCnWxbmZdXBk6nV/xtrEAVdh+oPU6l9d1rnsTxYLcjrJTRlpkLT38kD
+uwNOeZZA54IxQLv4rJat78bWr8rEaQh5SQ3cuj4wfp56V0sclsMnDuRTqUiB7TAs
+AxC/1PrxLfZwVfuxCW8F4qEZ7WMXDYOCrjP2urP+NR2tC/1MS5a64JVeXtNLkMM0
+O5TdWqHyYVN9jlMhuT8q+/HOdn2NnGC2DSmvz65rw77pSuh4RHaSBg+snwdfNwmO
+PS/dLhs9dO/el/n8NN5183lh4K2E863iacqPdiFPcaeVgJTUMMxvankQ6YrVirIR
+3TJCVpoaobM5Cuf15kBZ
+=OsAu
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__28_Mar_2014_16_17_25_+1100_TZFtd7YsdaL53_up--
