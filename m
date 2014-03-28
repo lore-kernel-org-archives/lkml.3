@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752926AbaC1VC0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 17:02:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40849 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760AbaC1VCZ (ORCPT
+	id S1753136AbaC1VDq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 17:03:46 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:43853 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753062AbaC1VDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 17:02:25 -0400
-Date: Fri, 28 Mar 2014 17:02:22 -0400 (EDT)
-Message-Id: <20140328.170222.346040641241669437.davem@davemloft.net>
-To: dh.herrmann@gmail.com
-Cc: netdev@vger.kernel.org, teg@jklm.no, johannes@sipsolutions.net,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CANq1E4TxaNnZoqfw5DiifAhk28hVq5HJJMd07ZDFAjdc68nKKg@mail.gmail.com>
-References: <1395839117-20090-1-git-send-email-dh.herrmann@gmail.com>
-	<20140328.145410.1817326821928803131.davem@davemloft.net>
-	<CANq1E4TxaNnZoqfw5DiifAhk28hVq5HJJMd07ZDFAjdc68nKKg@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Fri, 28 Mar 2014 17:03:43 -0400
+Message-ID: <5335E3AC.8080401@infradead.org>
+Date: Fri, 28 Mar 2014 14:03:40 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, Or Gerlitz <ogerlitz@mellanox.com>,
+        Roi Dayan <roid@mellanox.com>, linux-rdma@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>
+Subject: [PATCH -next] infiniband: fix iser_verbs.c format warning
+References: <20140328180950.322d12920ce31e0ad3dace59@canb.auug.org.au>
+In-Reply-To: <20140328180950.322d12920ce31e0ad3dace59@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 14:02:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Herrmann <dh.herrmann@gmail.com>
-Date: Fri, 28 Mar 2014 20:34:47 +0100
+From: Randy Dunlap <rdunlap@infradead.org>
 
-> However, as mentioned in the discussions on v1, there're more
-> use-cases than that. Imagine a 3rd party initrd renames a
-> network-device early, if udev runs in the main system, we would rename
-> the device again. If we could detect the rename via NET_NAME_RENAMED,
-> we wouldn't break such setups. The only reason to rename devices in
-> udev is to get reliable names. If someone else already renamed a
-> device, we always expect them to provide better names than we do, so
-> udev should only touch devices that have kernel-enumerated names.
-> Of course, this can be fixed by requiring all the initrd developers to
-> somehow tag devices as already renamed. But this would replicate
-> information that the kernel already has.
+Fix pr_err (printk) format warning:
 
-You want to use the kernel to facilitate communication between two
-userland components.
+drivers/infiniband/ulp/iser/iser_verbs.c:1181:4: warning: format '%lx' expects argument of type 'long unsigned int', but argument 3 has type 'sector_t' [-Wformat]
 
-Imagine if we had to do that for everything.
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+Cc:	Or Gerlitz <ogerlitz@mellanox.com>
+Cc:	Roi Dayan <roid@mellanox.com>
+Cc:	linux-rdma@vger.kernel.org
+---
+ drivers/infiniband/ulp/iser/iser_verbs.c |    5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-Really, it's not a good reason, sorry.
+--- linux-next-20140328.orig/drivers/infiniband/ulp/iser/iser_verbs.c
++++ linux-next-20140328/drivers/infiniband/ulp/iser/iser_verbs.c
+@@ -1178,9 +1178,10 @@ u8 iser_check_task_pi_status(struct iscs
+ 			do_div(sector_off, sector_size + 8);
+ 			*sector = scsi_get_lba(iser_task->sc) + sector_off;
+ 
+-			pr_err("PI error found type %d at sector %lx "
++			pr_err("PI error found type %d at sector %llx "
+ 			       "expected %x vs actual %x\n",
+-			       mr_status.sig_err.err_type, *sector,
++			       mr_status.sig_err.err_type,
++			       (unsigned long long)*sector,
+ 			       mr_status.sig_err.expected,
+ 			       mr_status.sig_err.actual);
+ 
