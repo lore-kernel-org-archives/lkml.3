@@ -1,202 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaC1Hd4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 03:33:56 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:58382 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751660AbaC1Hdx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 03:33:53 -0400
-Subject: [PATCH] powerpc/le: enable RTAS events support
-To: benh@kernel.crashing.org
-From: Greg Kurz <gkurz@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, tony@bakeyournoodle.com, paulus@samba.org,
-        anton@samba.org, nfont@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Date: Fri, 28 Mar 2014 08:33:45 +0100
-Message-ID: <20140328073344.26823.32931.stgit@bahia.local>
-User-Agent: StGit/0.16
+	id S1751376AbaC1HiJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 03:38:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34775 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751099AbaC1HiH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 03:38:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,749,1389772800"; 
+   d="scan'208";a="508827790"
+Date: Fri, 28 Mar 2014 15:37:18 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: tglx@linutronix.de, mingo@elte.hu, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, John Stultz <john.stultz@linaro.org>,
+        Clemens Ladisch <clemens@ladisch.de>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140328073718.GA12762@feng-snb>
+References: <1395975316-4795-1-git-send-email-feng.tang@intel.com>
+ <20140328071716.GC30107@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14032807-3548-0000-0000-0000088B4E9B
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140328071716.GC30107@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current kernel code assumes big endian and parses RTAS events all
-wrong. The most visible effect is that we cannot honor EPOW events,
-meaning, for example, we cannot shut down a guest properly from the
-hypervisor.
+Hi Ingo,
 
-This patch fixes that.
+Thanks for reviewing this
 
-Signed-off-by: Greg Kurz <gkurz@linux.vnet.ibm.com>
----
- arch/powerpc/include/asm/rtas.h      |   46 ++++++++++++++++++++++++++++++++++
- arch/powerpc/kernel/rtas.c           |   11 ++++----
- arch/powerpc/kernel/rtasd.c          |    8 ++++--
- arch/powerpc/platforms/pseries/ras.c |    3 +-
- 4 files changed, 59 insertions(+), 9 deletions(-)
+On Fri, Mar 28, 2014 at 08:17:16AM +0100, Ingo Molnar wrote:
+> 
+> * Feng Tang <feng.tang@intel.com> wrote:
+> 
+> > On many new phone/tablet platforms like Baytrail/Merrifield etc, the 
+> > HPET are either defeatured or has some problem to be used as a 
+> > reliable timer. As these platforms also have X86_64, we should not 
+> > make HPET_TIMER default y for all X86_64.
+> 
+> NAK!
+> 
+> If the HPET is unreliable on a specific platform then any of the 
+> following solutions would address the problem (in order of 
+> preference):
+> 
+>  - the hardware should not expose it. Why waste silicon on something 
+>    that does not work?
+> 
+>  - or the firmware should not expose it. Why expose something that 
+>    does not work?
 
-diff --git a/arch/powerpc/include/asm/rtas.h b/arch/powerpc/include/asm/rtas.h
-index 9bd52c6..8bb99d0 100644
---- a/arch/powerpc/include/asm/rtas.h
-+++ b/arch/powerpc/include/asm/rtas.h
-@@ -150,15 +150,37 @@ struct rtas_suspend_me_data {
- #define RTAS_VECTOR_EXTERNAL_INTERRUPT	0x500
- 
- struct rtas_error_log {
-+#ifdef __BIG_ENDIAN__
-+	/* Byte 0 */
- 	unsigned long version:8;		/* Architectural version */
-+	/* Byte 1 */
- 	unsigned long severity:3;		/* Severity level of error */
- 	unsigned long disposition:2;		/* Degree of recovery */
- 	unsigned long extended:1;		/* extended log present? */
- 	unsigned long /* reserved */ :2;	/* Reserved for future use */
-+	/* Byte 2 */
- 	unsigned long initiator:4;		/* Initiator of event */
- 	unsigned long target:4;			/* Target of failed operation */
-+	/* Byte 3 */
- 	unsigned long type:8;			/* General event or error*/
-+	/* Byte 4 */
- 	unsigned long extended_log_length:32;	/* length in bytes */
-+#else
-+	/* Byte 0 */
-+	unsigned long version:8;
-+	/* Byte 1 */
-+	unsigned long :2;
-+	unsigned long extended:1;
-+	unsigned long disposition:2;
-+	unsigned long severity:3;
-+	unsigned long target:4;
-+	/* Byte 2 */
-+	unsigned long initiator:4;
-+	/* Byte 3 */
-+	unsigned long type:8;
-+	/* Byte 4 */
-+	unsigned long extended_log_length:32;
-+#endif
- 	unsigned char buffer[1];		/* Start of extended log */
- 						/* Variable length.      */
- };
-@@ -171,6 +193,7 @@ struct rtas_error_log {
-  * from "buffer" field of struct rtas_error_log defined above.
-  */
- struct rtas_ext_event_log_v6 {
-+#ifdef __BIG_ENDIAN__
- 	/* Byte 0 */
- 	uint32_t log_valid:1;		/* 1:Log valid */
- 	uint32_t unrecoverable_error:1;	/* 1:Unrecoverable error */
-@@ -200,6 +223,29 @@ struct rtas_ext_event_log_v6 {
- 	uint32_t company_id;		/* Company ID of the company	*/
- 					/* that defines the format for	*/
- 					/* the vendor specific log type	*/
-+#else
-+	/* Byte 0 */
-+	uint32_t :1;
-+	uint32_t big_endian:1;
-+	uint32_t new_log:1;
-+	uint32_t predictive_error:1;
-+	uint32_t degraded_operation:1;
-+	uint32_t recoverable_error:1;
-+	uint32_t unrecoverable_error:1;
-+	uint32_t log_valid:1;
-+	/* Byte 1 */
-+	uint32_t :8;
-+	/* Byte 2 */
-+	uint32_t log_format:4;
-+	uint32_t :3;
-+	uint32_t powerpc_format:1;
-+	/* Byte 3 */
-+	uint32_t :8;
-+	/* Byte 4-11 */
-+	uint8_t reserved[8];
-+	/* Byte 12-15 */
-+	uint32_t company_id;
-+#endif
- 	/* Byte 16-end of log */
- 	uint8_t vendor_log[1];		/* Start of vendor specific log	*/
- 					/* Variable length.		*/
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index f386296..e18ab12 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -993,21 +993,22 @@ struct pseries_errorlog *get_pseries_errorlog(struct rtas_error_log *log,
- 		(struct rtas_ext_event_log_v6 *)log->buffer;
- 	struct pseries_errorlog *sect;
- 	unsigned char *p, *log_end;
-+	uint32_t extended_log_length = be32_to_cpu(log->extended_log_length);
- 
- 	/* Check that we understand the format */
--	if (log->extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
-+	if (extended_log_length < sizeof(struct rtas_ext_event_log_v6) ||
- 	    ext_log->log_format != RTAS_V6EXT_LOG_FORMAT_EVENT_LOG ||
--	    ext_log->company_id != RTAS_V6EXT_COMPANY_ID_IBM)
-+	    be32_to_cpu(ext_log->company_id) != RTAS_V6EXT_COMPANY_ID_IBM)
- 		return NULL;
- 
--	log_end = log->buffer + log->extended_log_length;
-+	log_end = log->buffer + extended_log_length;
- 	p = ext_log->vendor_log;
- 
- 	while (p < log_end) {
- 		sect = (struct pseries_errorlog *)p;
--		if (sect->id == section_id)
-+		if (be16_to_cpu(sect->id) == section_id)
- 			return sect;
--		p += sect->length;
-+		p += be16_to_cpu(sect->length);
- 	}
- 
- 	return NULL;
-diff --git a/arch/powerpc/kernel/rtasd.c b/arch/powerpc/kernel/rtasd.c
-index 1130c53..1987825 100644
---- a/arch/powerpc/kernel/rtasd.c
-+++ b/arch/powerpc/kernel/rtasd.c
-@@ -159,14 +159,16 @@ static int log_rtas_len(char * buf)
- {
- 	int len;
- 	struct rtas_error_log *err;
-+	uint32_t extended_log_length;
- 
- 	/* rtas fixed header */
- 	len = 8;
- 	err = (struct rtas_error_log *)buf;
--	if (err->extended && err->extended_log_length) {
-+	extended_log_length = be32_to_cpu(err->extended_log_length);
-+	if (err->extended && extended_log_length) {
- 
- 		/* extended header */
--		len += err->extended_log_length;
-+		len += extended_log_length;
- 	}
- 
- 	if (rtas_error_log_max == 0)
-@@ -298,7 +300,7 @@ static void handle_rtas_event(const struct rtas_error_log *log)
- 		 * the scope for calling rtas update-nodes.
- 		 */
- 		if (prrn_is_enabled())
--			prrn_schedule_update(log->extended_log_length);
-+			prrn_schedule_update(be32_to_cpu(log->extended_log_length));
- 	}
- 
- 	return;
-diff --git a/arch/powerpc/platforms/pseries/ras.c b/arch/powerpc/platforms/pseries/ras.c
-index 721c058..39e7557 100644
---- a/arch/powerpc/platforms/pseries/ras.c
-+++ b/arch/powerpc/platforms/pseries/ras.c
-@@ -306,7 +306,8 @@ static struct rtas_error_log *fwnmi_get_errinfo(struct pt_regs *regs)
- 	} else {
- 		int len;
- 
--		len = max_t(int, 8+h->extended_log_length, RTAS_ERROR_LOG_MAX);
-+		len = max_t(int, 8+be32_to_cpu(h->extended_log_length),
-+			    RTAS_ERROR_LOG_MAX);
- 		memset(global_mce_data_buf, 0, RTAS_ERROR_LOG_MAX);
- 		memcpy(global_mce_data_buf, h, len);
- 		errhdr = (struct rtas_error_log *)global_mce_data_buf;
+Agreed, I've raised problem to BIOS vendor, but the response is very slow,
+and those hardware/BIOS may already hit the market as a product.
+
+> 
+>  - or the kernel should have a quirk to reliably disable it. Why 
+>    should we crash or misbehave if a driver is built into the
+>    kernel?
+
+I thought about this before, HPET doesn't have PCI ID like stuff, only
+thing I can think of to identify them may be the CPU family/ID. 
+Runtime check the reliability of HPET may be difficult, as we don't
+know if the 8254 or the TSC are the golden timer to check HPET.
+
+Thanks,
+Feng
 
