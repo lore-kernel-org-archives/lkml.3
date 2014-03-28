@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751636AbaC1HYe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 03:24:34 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:9840 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751081AbaC1HYc (ORCPT
+	id S1751440AbaC1Hag (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 03:30:36 -0400
+Received: from atl4mhob14.myregisteredsite.com ([209.17.115.52]:35265 "EHLO
+	atl4mhob14.myregisteredsite.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750955AbaC1Hae (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 03:24:32 -0400
-Message-ID: <5335232B.70401@huawei.com>
-Date: Fri, 28 Mar 2014 15:22:19 +0800
-From: Li Zefan <lizefan@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Sasha Levin <sasha.levin@oracle.com>, LKML <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Subject: [PATCH 2/2] cgroup: remove useless argument from cgroup_exit()
-References: <53352243.80805@huawei.com>
-In-Reply-To: <53352243.80805@huawei.com>
-Content-Type: text/plain; charset="GB2312"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.18.230]
-X-CFilter-Loop: Reflected
+	Fri, 28 Mar 2014 03:30:34 -0400
+X-TCPREMOTEIP: 88.159.208.100
+X-Authenticated-UID: mike@milosoftware.com
+From: Mike Looijmans <mike.looijmans@topic.nl>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, gdjakov@mm-sol.com,
+        Mike Looijmans <mike.looijmans@topic.nl>
+Subject: [PATCH] sdhci: Forward EPROBE_DEFER on vmmc and vqmmc regulators
+Date: Fri, 28 Mar 2014 08:30:16 +0100
+Message-Id: <1395991817-3503-1-git-send-email-mike.looijmans@topic.nl>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
+References: <1394201923-27345-1-git-send-email-mike.looijmans@topic.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+If vmmc or vqmmc regulators are controlled by an I2C device, the
+request for the regulator is likely to fail because the I2C bus has
+not been probed yet. The sdhci then incorrectly assumes that the user
+never wanted to use a regulator anyway and continues without ever
+enabling or configuring the required regulator.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
+To solve this, when a required voltage regulator returns
+EPROBE_DEFER, signalling that the regulator exists but is not
+available yet, forward this error to the probe method instead
+of simply assuming that the user never wanted to use a regulator
+anyway.
+
+Tested on a custom board that has an I2C regulator for one of the sdhcis
+and no regulators at all for the other. This patch enables such a system
+to work correctly.
+
+v2: Changed "%d" into "%ld" for PTR_ERR value.
 ---
- include/linux/cgroup.h | 4 ++--
- kernel/cgroup.c        | 5 ++---
- kernel/exit.c          | 2 +-
- 3 files changed, 5 insertions(+), 6 deletions(-)
+ drivers/mmc/host/sdhci.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index acbb9a4..13ffb06 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -33,7 +33,7 @@ extern int cgroup_init_early(void);
- extern int cgroup_init(void);
- extern void cgroup_fork(struct task_struct *p);
- extern void cgroup_post_fork(struct task_struct *p);
--extern void cgroup_exit(struct task_struct *p, int run_callbacks);
-+extern void cgroup_exit(struct task_struct *p);
- extern int cgroupstats_build(struct cgroupstats *stats,
- 				struct dentry *dentry);
- 
-@@ -848,7 +848,7 @@ static inline int cgroup_init_early(void) { return 0; }
- static inline int cgroup_init(void) { return 0; }
- static inline void cgroup_fork(struct task_struct *p) {}
- static inline void cgroup_post_fork(struct task_struct *p) {}
--static inline void cgroup_exit(struct task_struct *p, int callbacks) {}
-+static inline void cgroup_exit(struct task_struct *p) {}
- 
- static inline int cgroupstats_build(struct cgroupstats *stats,
- 					struct dentry *dentry)
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index a53dbc6..775a90d 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4324,7 +4324,6 @@ void cgroup_post_fork(struct task_struct *child)
- /**
-  * cgroup_exit - detach cgroup from exiting task
-  * @tsk: pointer to task_struct of exiting process
-- * @run_callback: run exit callbacks?
-  *
-  * Description: Detach cgroup from @tsk and release it.
-  *
-@@ -4341,7 +4340,7 @@ void cgroup_post_fork(struct task_struct *child)
-  * init_css_set refcnting.  init_css_set never goes away and we can't race
-  * with migration path - PF_EXITING is visible to migration path.
-  */
--void cgroup_exit(struct task_struct *tsk, int run_callbacks)
-+void cgroup_exit(struct task_struct *tsk)
- {
- 	struct cgroup_subsys *ss;
- 	struct css_set *cset;
-@@ -4363,7 +4362,7 @@ void cgroup_exit(struct task_struct *tsk, int run_callbacks)
- 	cset = task_css_set(tsk);
- 	RCU_INIT_POINTER(tsk->cgroups, &init_css_set);
- 
--	if (run_callbacks && need_forkexit_callback) {
-+	if (need_forkexit_callback) {
- 		/* see cgroup_post_fork() for details */
- 		for_each_subsys(ss, i) {
- 			if (ss->exit) {
-diff --git a/kernel/exit.c b/kernel/exit.c
-index c3af836..c2ae892 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -797,7 +797,7 @@ void do_exit(long code)
- 	 */
- 	perf_event_exit_task(tsk);
- 
--	cgroup_exit(tsk, 1);
-+	cgroup_exit(tsk);
- 
- 	if (group_dead)
- 		disassociate_ctty(1);
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 34aef81..de601f5 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2972,6 +2972,8 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
+ 	if (IS_ERR_OR_NULL(host->vqmmc)) {
+ 		if (PTR_ERR(host->vqmmc) < 0) {
++			if (PTR_ERR(host->vqmmc) == -EPROBE_DEFER)
++				return -EPROBE_DEFER;
+ 			pr_info("%s: no vqmmc regulator found\n",
+ 				mmc_hostname(mmc));
+ 			host->vqmmc = NULL;
+@@ -3048,8 +3050,10 @@ int sdhci_add_host(struct sdhci_host *host)
+ 	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
+ 	if (IS_ERR_OR_NULL(host->vmmc)) {
+ 		if (PTR_ERR(host->vmmc) < 0) {
+-			pr_info("%s: no vmmc regulator found\n",
+-				mmc_hostname(mmc));
++			if (PTR_ERR(host->vmmc) == -EPROBE_DEFER)
++				return -EPROBE_DEFER;
++			pr_info("%s: no vmmc regulator found (%ld)\n",
++				mmc_hostname(mmc), PTR_ERR(host->vmmc));
+ 			host->vmmc = NULL;
+ 		}
+ 	}
 -- 
-1.8.0.2
+1.7.9.5
 
