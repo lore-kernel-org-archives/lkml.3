@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752693AbaC1UDc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 16:03:32 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:40373 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752496AbaC1UDb (ORCPT
+	id S1752743AbaC1UIj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 16:08:39 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:62964 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149AbaC1UIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 16:03:31 -0400
-Date: Fri, 28 Mar 2014 16:03:28 -0400 (EDT)
-Message-Id: <20140328.160328.580812868196852483.davem@davemloft.net>
-To: sasha.levin@oracle.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        hannes@stressinduktion.org, tytso@mit.edu, dborkman@redhat.com
-Subject: Re: [PATCH] random32: assign to network folks in MAINTAINERS
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1395900095-15254-1-git-send-email-sasha.levin@oracle.com>
-References: <1395900095-15254-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 28 Mar 2014 13:03:30 -0700 (PDT)
+	Fri, 28 Mar 2014 16:08:37 -0400
+MIME-Version: 1.0
+Reply-To: daniel.mclellan@hotmail.com
+Date: Fri, 28 Mar 2014 16:08:36 -0400
+Message-ID: <CAEigmK-pY+9XF4V-KRZrbiO8GY5Fs6scE+Ehm1zc5T8V2RiB9g@mail.gmail.com>
+Subject: eboot.c regression allows boot, from v3.7 on- no boot with UEFI, only
+ legacy, bisect results
+From: Daniel McLellan <daniel.mclellan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: matt.fleming@intel.com, mjg@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sasha Levin <sasha.levin@oracle.com>
-Date: Thu, 27 Mar 2014 02:01:34 -0400
+System: Hewlett-Packard product: HP EliteBook 2570p
+CPU~Dual core Intel Core i7-3520M CPU (-HT-MCP-)
+Kernel: 3.12.4-2-hplove x86_64 (64 bit) Desktop: Enlightenment 0.18.99.18202
+Distro: Arch Linux
 
-> lib/random32.c was split out of the network code and is de-facto
-> still maintained by the almighty net/ gods.
-> 
-> Make it a bit more official so that people who aren't aware of
-> that know where to send their patches.
-> 
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
 
-Applied.
+I believe this issue is common to only a few iterations of ivy bridge
+
+https://bbs.archlinux.org/viewtopic.php?id=156670
+https://bugs.archlinux.org/task/33745?project=1
+
+I had been patching eboot.c to v3.7 with the attached
+efi_hp_boot.patch, but due to the recent changes in eboot.c (in v3.13)
+I decided to bisect, and identified the following:
+
+# first bad commit: [dd5fc854de5fd37adfcef8a366cd21a55aa01d3d] EFI:
+Stash ROMs if they're not in the PCI BAR
+
+My next step is diffing the eboot.c from v3.13.
+
+or would a better path be to check for ivy bridge?
