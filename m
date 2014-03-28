@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751631AbaC1JC2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 05:02:28 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:54748 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750901AbaC1JCY convert rfc822-to-8bit (ORCPT
+	id S1751231AbaC1JIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 05:08:46 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:49262 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750865AbaC1JIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 05:02:24 -0400
-Date: Fri, 28 Mar 2014 10:01:58 +0100
-From: Lothar =?UTF-8?B?V2HDn21hbm4=?= <LW@KARO-electronics.de>
-To: Huang Shijie <b32955@freescale.com>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        <linux-mtd@lists.infradead.org>, Shawn Guo <shawn.guo@freescale.com>,
-        Rob Landley <rob@landley.net>, Kumar Gala <galak@codeaurora.org>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCHv2 1/1] mtd: gpmi: make blockmark swapping optional
-Message-ID: <20140328100158.042a3d68@ipc1.ka-ro>
-In-Reply-To: <53353524.9020605@freescale.com>
-References: <532BCFCC.4080205@freescale.com>
-	<1395399017-19005-1-git-send-email-LW@KARO-electronics.de>
-	<20140324095902.GB11377@localhost>
-	<20140326095156.3e5585b8@ipc1.ka-ro>
-	<5332AEE7.2040402@freescale.com>
-	<20140326125502.0e8d0657@ipc1.ka-ro>
-	<20140327095956.GA29623@localhost>
-	<20140327132109.06258526@ipc1.ka-ro>
-	<5334D9F7.2030001@freescale.com>
-	<20140328091646.1ce03f90@ipc1.ka-ro>
-	<53353524.9020605@freescale.com>
-Organization: Ka-Ro electronics GmbH
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 Mar 2014 05:08:45 -0400
+From: Zheng Li <zheng.x.li@oracle.com>
+To: netdev@vger.kernel.org, fubar@us.ibm.com, andy@greyhouse.net
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net, joe.jin@oracle.com,
+        zheng.x.li@oracle.com
+Subject: [PATCH] bonding: Inactive slaves should keep inactive flag's value to 1
+Date: Fri, 28 Mar 2014 17:22:09 +0800
+Message-Id: <1395998529-5937-1-git-send-email-zheng.x.li@oracle.com>
+X-Mailer: git-send-email 1.7.6.5
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+In bond mode tlb and alb, inactive slaves should keep inactive flag to 1 to
+refuse to receive broadcast packets. Now, active slave send broadcast packets
+(for example ARP requests) which will arrive inactive slaves on same host from
+switch, but inactive slave's inactive flag is zero that cause bridge receive the
+broadcast packets to produce a wrong entry in forward table. Typical situation
+is domu send some ARP request which go out from dom0 bond's active slave, then
+the ARP broadcast request packets go back to inactive slave from switch, because
+the inactive slave's inactive flag is zero, kernel will receive the packets and
+pass them to bridge that cause dom0's bridge map domu's MAC address to port of
+bond, bridge should map domu's MAC to port of vif.
 
-Huang Shijie wrote:
-> 于 2014年03月28日 16:16, Lothar Waßmann 写道:
-> > Still there is no need for the Linux NAND driver to be able to read or
-> > write partitions in a format that the Boot ROM can understand. Thus it
-> If you do not use the NAND boot, there really no need to do so.
->
-There is no need for the ROM code to access any other partition than
-the bootloader itself. Thus Linux can perfectly well be booted from
-NAND without any byte swapping.
+Signed-off-by: Zheng Li <zheng.x.li@oracle.com>
+---
+ drivers/net/bonding/bond_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> Since you need the NAND boot, we should enable the swapping for imx28.
->
-Why? There is no need for Linux to do any swapping when not accessing
-the bootloader partition.
-
-> > is perfectly legal to allow disregarding the BB marks and solely rely on
-> > a flash based BBT.
-> >
-> The BB mark is in the page 0 of a NAND block. But the swapping can occur 
-> in _each_ page of
-> a NAND block, _NOT_ only the page 0.
-> 
-> I think you are confusing at these two things.
-> 
-No, I'm not confusing anything. The swapping in any other page than
-page 0 is completely useless. Thus, when there is no need to recognize
-the BB markers, there in no need to do any swapping too.
-
-
-Lothar Waßmann
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index e5628fc..f97d72e 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -3058,7 +3058,7 @@ static int bond_open(struct net_device *bond_dev)
+ 	if (bond_has_slaves(bond)) {
+ 		read_lock(&bond->curr_slave_lock);
+ 		bond_for_each_slave(bond, slave, iter) {
+-			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP)
++			if ((bond->params.mode == BOND_MODE_ACTIVEBACKUP || bond_is_lb(bond))
+ 				&& (slave != bond->curr_active_slave)) {
+ 				bond_set_slave_inactive_flags(slave,
+ 							      BOND_SLAVE_NOTIFY_NOW);
 -- 
-___________________________________________________________
+1.7.6.5
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
