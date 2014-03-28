@@ -1,160 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204AbaC1IaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 04:30:00 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46086 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752109AbaC1I36 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 04:29:58 -0400
-Date: Fri, 28 Mar 2014 01:29:50 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Cc: Christopher Heiny <cheiny@synaptics.com>,
-        Andrew Duggan <aduggan@synaptics.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Stephen Chandler Paul <thatslyude@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>
-Subject: Re: [PATCH] Input: synaptics add manual min/max quirk
-Message-ID: <20140328082949.GJ22093@core.coreip.homeip.net>
-References: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1394207364-4235-1-git-send-email-benjamin.tissoires@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752261AbaC1Ibb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 04:31:31 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53633 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153AbaC1Ib3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 04:31:29 -0400
+Message-ID: <1395995486.9520.2.camel@linux-fkkt.site>
+Subject: Re: [PATCH v5 1/3] mfd: Add realtek USB card reader driver
+From: Oliver Neukum <oneukum@suse.de>
+To: Roger <rogerable@realtek.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Chris Ball <chris@printf.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org, wei_wang@realsil.com.cn,
+        micky_ching@realsil.com.cn
+Date: Fri, 28 Mar 2014 09:31:26 +0100
+In-Reply-To: <5334ED70.6050309@realtek.com>
+References: <1395744293-24398-1-git-send-email-rogerable@realtek.com>
+		 <1395744293-24398-2-git-send-email-rogerable@realtek.com>
+	 <201403280231.s2S2VP8X017745@rtits1.realtek.com>
+	 <5334ED70.6050309@realtek.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 07, 2014 at 10:49:24AM -0500, Benjamin Tissoires wrote:
-> The new Lenovo Haswell series (-40's) contains a new Synaptics touchpad.
-> However, these new Synaptics devices report bad axis ranges.
-> Under Windows, it is not a problem because the Windows driver uses RMI4
-> over SMBus to talk to the device. Under Linux, we are using the PS/2
-> fallback interface and it occurs the reported ranges are wrong.
+On Fri, 2014-03-28 at 11:33 +0800, Roger wrote:
+> On 03/26/2014 10:36 PM, Oliver Neukum wrote:
+> > On Tue, 2014-03-25 at 18:44 +0800, rogerable@realtek.com wrote:
+> >> From: Roger Tseng <rogerable@realtek.com>
+
+> >> +	if (ret)
+> >> +		goto out_init_fail;
+> >> +
+> >> +	/* initialize USB SG transfer timer */
+> >> +	init_timer(&ucr->sg_timer);
+> >> +	setup_timer(&ucr->sg_timer, rtsx_usb_sg_timed_out, (unsigned long) ucr);
+> >> +#ifdef CONFIG_PM
+> >> +	intf->needs_remote_wakeup = 1;
+> >
+> > Why?
+> Our reader supports remote wake-up from card slot event(insertion, 
+> removal). It should be enabled to let the driver be able to detect the 
+> newly inserted card.
+
+Interesting. This capability has been lacking for a long time.
+That is cool hardware. Are you sure the upper layers implement
+the event infrastructure so that devices are not polled?
+
+> The LED is not in a permanent cut-off state after here. It is called to 
+> guarantee the LED is off during suspend to save more power. It could be 
+> lit up in the card host drivers(e.g. rtsx_usb_sdmmc.c) anytime whenever 
+> necessary.
 > 
-> Of course, it would be too easy to have only one range for the whole
-> series, each touchpad seems to be calibrated in a different way.
-> 
-> We can not use SMBus to get the actual range because I suspect the firmware
-> will switch into the SMBus mode and stop talking through PS/2 (this is the
-> case for hybrid HID over I2C / PS/2 Synaptics touchpads).
-> 
-> So as a temporary solution (until RMI4 land into upstream), start a new
-> list of quirks with the min/max manually set.
-> 
-> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-> CC: stable@vger.kernel.org
+> This has been asked may times. I'm considering putting some comment in 
+> next revision.
+
+Good idea.
+
+	Regards
+		Oliver
 
 
-Applied, thank you.
-
-> ---
-> 
-> Hi Dmitry,
-> 
-> Well, this work is part of a (big) attempt to support the new touchpads
-> Lenovo put in its latest series.
-> Those new laptops have lost the buttons associated to the trackstick and are
-> what we call "clickpad".
-> Things would be easy if:
-> 1. the PS/2 firmware did not lied about the actual range of the axis
-> 2. on some install (mine) the DMI matching in udev would not have been broken
-> 3. we did not have to fix a lot of stuff in Xorg / libinput / wayland
-> 
-> This patch fixes 1.
-> 
-> Matthew Garrett fixed 2. -> https://patchwork.kernel.org/patch/3704401/
-> 
-> 3. is heavily working as shown by this tracker bug: https://bugs.freedesktop.org/show_bug.cgi?id=73158
-> 
-> I put the 'stable' marker, feel free to remove it if you don't think it should
-> be there, but I really think this should also be backported to have something
-> working in current distros.
-> 
-> Cheers,
-> Benjamin
-> 
->  drivers/input/mouse/synaptics.c | 43 +++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 43 insertions(+)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index 26386f9..ff6a4cf 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -67,6 +67,8 @@
->  #define X_MAX_POSITIVE 8176
->  #define Y_MAX_POSITIVE 8176
->  
-> +static int *quirk_min_max = NULL;
-> +
->  /*****************************************************************************
->   *	Stuff we need even when we do not want native Synaptics support
->   ****************************************************************************/
-> @@ -302,6 +304,13 @@ static int synaptics_resolution(struct psmouse *psmouse)
->  		}
->  	}
->  
-> +	if (quirk_min_max) {
-> +		priv->x_min = quirk_min_max[0];
-> +		priv->x_max = quirk_min_max[1];
-> +		priv->y_min = quirk_min_max[2];
-> +		priv->y_max = quirk_min_max[3];
-> +	}
-> +
->  	return 0;
->  }
->  
-> @@ -1485,10 +1494,44 @@ static const struct dmi_system_id olpc_dmi_table[] __initconst = {
->  	{ }
->  };
->  
-> +static const struct dmi_system_id min_max_dmi_table[] __initconst = {
-> +#if defined(CONFIG_DMI)
-> +	{
-> +		/* Lenovo ThinkPad Helix */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad Helix"),
-> +		},
-> +		.driver_data = (int []){1024, 5052, 2258, 4832},
-> +	},
-> +	{
-> +		/* Lenovo ThinkPad T440s */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T440"),
-> +		},
-> +		.driver_data = (int []){1024, 5112, 2024, 4832},
-> +	},
-> +	{
-> +		/* Lenovo ThinkPad T540p */
-> +		.matches = {
-> +			DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
-> +			DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T540"),
-> +		},
-> +		.driver_data = (int []){1024, 5056, 2058, 4832},
-> +	},
-> +#endif
-> +	{ }
-> +};
-> +
->  void __init synaptics_module_init(void)
->  {
-> +	const struct dmi_system_id *min_max_dmi;
->  	impaired_toshiba_kbc = dmi_check_system(toshiba_dmi_table);
->  	broken_olpc_ec = dmi_check_system(olpc_dmi_table);
-> +	min_max_dmi = dmi_first_match(min_max_dmi_table);
-> +	if (min_max_dmi)
-> +		quirk_min_max = (int *)min_max_dmi->driver_data;
->  }
->  
->  static int __synaptics_init(struct psmouse *psmouse, bool absolute_mode)
-> -- 
-> 1.8.5.3
-> 
-
--- 
-Dmitry
