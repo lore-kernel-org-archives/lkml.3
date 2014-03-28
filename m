@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752162AbaC1Lmp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 07:42:45 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:53262 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751049AbaC1Lmj (ORCPT
+	id S1752194AbaC1Lmu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 07:42:50 -0400
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:59572 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049AbaC1Lmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 07:42:39 -0400
+	Fri, 28 Mar 2014 07:42:47 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
         fweisbec@gmail.com, linaro-networking@linaro.org,
         Arvind.Chauhan@arm.com, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 07/16] hrtimer: remove 'base' parameter from hrtimer_{enqueue_}reprogram()
-Date: Fri, 28 Mar 2014 17:11:26 +0530
-Message-Id: <b102337f493080849eaaea486fdc51003ff06303.1396006658.git.viresh.kumar@linaro.org>
+Subject: [PATCH 08/16] hrtimer: make switch_hrtimer_base() return void
+Date: Fri, 28 Mar 2014 17:11:27 +0530
+Message-Id: <d43b5d11a1d15aab34e51fc6adbdbd140ca62518.1396006658.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1396006658.git.viresh.kumar@linaro.org>
 References: <cover.1396006658.git.viresh.kumar@linaro.org>
@@ -24,65 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-clock 'base' can be obtained easily by doing timer->base and hrtimer_reprogram()
-& hrtimer_enqueue_reprogram() never gets anything else than timer->base as its
-parameter. And so these routines doesn't require this parameter. Remove it.
+switch_hrtimer_base() always sets timer->base to the right base and so the
+caller can obtain it easily. So, this routine doesn't need to return anything.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- kernel/hrtimer.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ kernel/hrtimer.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index d6724b5..98a73d9 100644
+index 98a73d9..d98c1ec 100644
 --- a/kernel/hrtimer.c
 +++ b/kernel/hrtimer.c
-@@ -584,11 +584,10 @@ hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
-  *
-  * Called with interrupts disabled and base->cpu_base.lock held
+@@ -194,8 +194,7 @@ hrtimer_check_target(struct hrtimer *timer, struct hrtimer_clock_base *new_base)
+ /*
+  * Switch the timer base to the current CPU when possible.
   */
--static int hrtimer_reprogram(struct hrtimer *timer,
--			     struct hrtimer_clock_base *base)
-+static int hrtimer_reprogram(struct hrtimer *timer)
+-static inline struct hrtimer_clock_base *
+-switch_hrtimer_base(struct hrtimer *timer, int pinned)
++static inline void switch_hrtimer_base(struct hrtimer *timer, int pinned)
  {
- 	struct hrtimer_cpu_base *cpu_base = &__get_cpu_var(hrtimer_bases);
--	ktime_t expires = hrtimer_get_monoexpires(timer, base);
-+	ktime_t expires = hrtimer_get_monoexpires(timer, timer->base);
- 	int res;
+ 	struct hrtimer_clock_base *new_base, *base = timer->base;
+ 	struct hrtimer_cpu_base *new_cpu_base;
+@@ -217,7 +216,7 @@ again:
+ 		 * the timer is enqueued.
+ 		 */
+ 		if (unlikely(hrtimer_callback_running(timer)))
+-			return base;
++			return;
  
- 	WARN_ON_ONCE(hrtimer_get_expires_tv64(timer) < 0);
-@@ -648,10 +647,9 @@ static inline void hrtimer_init_hres(struct hrtimer_cpu_base *base)
-  * check happens. The timer gets enqueued into the rbtree. The reprogramming
-  * and expiry check is done in the hrtimer_interrupt or in the softirq.
-  */
--static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base)
-+static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer)
- {
--	return base->cpu_base->hres_active && hrtimer_reprogram(timer, base);
-+	return timer->base->cpu_base->hres_active && hrtimer_reprogram(timer);
+ 		/* See the comment in lock_timer_base() */
+ 		timer->base = NULL;
+@@ -233,7 +232,6 @@ again:
+ 		}
+ 		timer->base = new_base;
+ 	}
+-	return new_base;
  }
  
- static inline ktime_t hrtimer_update_base(struct hrtimer_cpu_base *base)
-@@ -730,8 +728,7 @@ static void clock_was_set_delayed(void)
- static inline int hrtimer_hres_active(void) { return 0; }
- static inline int hrtimer_is_hres_enabled(void) { return 0; }
- static inline int hrtimer_switch_to_hres(void) { return 0; }
--static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer,
--					    struct hrtimer_clock_base *base)
-+static inline int hrtimer_enqueue_reprogram(struct hrtimer *timer)
- {
- 	return 0;
+ #else /* CONFIG_SMP */
+@@ -248,7 +246,7 @@ lock_hrtimer_base(const struct hrtimer *timer, unsigned long *flags)
+ 	return base;
  }
-@@ -984,7 +981,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
- 	 * XXX send_remote_softirq() ?
- 	 */
- 	if (leftmost && new_base->cpu_base == &__get_cpu_var(hrtimer_bases)
--		&& hrtimer_enqueue_reprogram(timer, new_base)) {
-+		&& hrtimer_enqueue_reprogram(timer)) {
- 		if (wakeup) {
- 			/*
- 			 * We need to drop cpu_base->lock to avoid a
+ 
+-# define switch_hrtimer_base(t, p)	(t->base)
++static inline void switch_hrtimer_base(struct hrtimer *timer, int pinned) {}
+ 
+ #endif	/* !CONFIG_SMP */
+ 
+@@ -952,7 +950,8 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 	ret = remove_hrtimer(timer);
+ 
+ 	/* Switch the timer base, if necessary: */
+-	new_base = switch_hrtimer_base(timer, mode & HRTIMER_MODE_PINNED);
++	switch_hrtimer_base(timer, mode & HRTIMER_MODE_PINNED);
++	new_base = timer->base;
+ 
+ 	if (mode & HRTIMER_MODE_REL) {
+ 		tim = ktime_add_safe(tim, new_base->get_time());
 -- 
 1.7.12.rc2.18.g61b472e
 
