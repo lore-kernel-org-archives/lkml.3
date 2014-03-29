@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751625AbaC1XxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 19:53:21 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:57780 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaC1XxT (ORCPT
+	id S1751518AbaC2AAW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 20:00:22 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:40404 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbaC2AAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 19:53:19 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [RFC 0/5] of: Automatic console registration cleanups
-To: Rob Herring <robherring2@gmail.com>, Olof Johansson <olof@lixom.net>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Rob Herring <rob.herring@linaro.org>
-In-Reply-To: <CAL_JsqKFO+OSz83f=XdyKgCqByUvHe7qLzgn5QLU1x1V1A5Fng@mail.gmail.com>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org> < 20140328185653.GB26433@quad.lixom.net> < CAL_JsqKFO+OSz83f=XdyKgCqByUvHe7qLzgn5QLU1x1V1A5Fng@mail.gmail.com>
-Date: Fri, 28 Mar 2014 16:53:15 -0700
-Message-Id: <20140328235316.079E0C41FF4@trevor.secretlab.ca>
+	Fri, 28 Mar 2014 20:00:18 -0400
+Date: Fri, 28 Mar 2014 20:00:13 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: LKML <linux-kernel@vger.kernel.org>, mingo@elte.hu,
+        Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Alex Shi <alex.shi@linaro.org>,
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Morten Rasmussen <morten.rasmussen@arm.com>
+Subject: Re: [RFC PATCHC 1/3] cpuidle: encapsulate power info in a separate
+ structure
+In-Reply-To: <CAKnoXLz13V-xd7Vi9ahF02tT86jshGmzPAL5C0_mvcnpZB=ExQ@mail.gmail.com>
+Message-ID: <alpine.LFD.2.11.1403281950450.1571@knanqh.ubzr>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-2-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1403281356220.1571@knanqh.ubzr> <CAKnoXLz13V-xd7Vi9ahF02tT86jshGmzPAL5C0_mvcnpZB=ExQ@mail.gmail.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 Mar 2014 14:19:23 -0500, Rob Herring <robherring2@gmail.com> wrote:
-> On Fri, Mar 28, 2014 at 1:56 PM, Olof Johansson <olof@lixom.net> wrote:
-> > On Fri, Mar 28, 2014 at 09:08:00AM -0700, Grant Likely wrote:
-> >> Hi all,
-> >>
-> >> This is a series that I've been playing with over the last few days to
-> >> clean up the selection of default console devices when using the device
-> >> tree. The device tree defines a way of specifying the console by using a
-> >> "stdout-path" property in the /chosen node, but very few drivers
-> >> actually attempt to use that data, and so for most platforms there needs
-> >> to be a "console=" line in the command line if a serial port is intended
-> >> to be used as the console.
-> >>
-> >> With this series, if there is a /chosen/stdout-path property, and if
-> >> that property points to a serial port node, then when the serial driver
-> >> registers the port, the core uart_add_one_port() function will notice
-> >> and if no console= argument was provided then add it as a preferred
-> >> console.
-> >>
-> >> I've not tested this very extensively yet, but I want to get some
-> >> feedback before I go further.
-> >>
-> >> The one downside with this approach is that it doesn't do anything for
-> >> early console setup. That still needs to be added on a per-driver basis,
-> >> but at least it shouldn't conflict with this approach.
+On Fri, 28 Mar 2014, Daniel Lezcano wrote:
+
+> Hi Nicolas,
 > 
-> I'm working on the early aspect. I've got things working with either
-> command line (which I sent out recently) and with parsing the FDT
-> (which I haven't sent out yet).
+> thanks for reviewing the patchset.
+> 
+> On 03/28/2014 07:17 PM, Nicolas Pitre wrote:
+> > On Fri, 28 Mar 2014, Daniel Lezcano wrote:
+> >
+> >> The scheduler needs some information from cpuidle to know the timing for a
+> >> specific idle state a cpu is.
+> >>
+> >> This patch creates a separate structure to group the cpuidle power info in
+> >> order to share it with the scheduler. It improves the encapsulation of the
+> >> code.
+> >
+> > Having cpuidle_power as a structure name, or worse, 'power' as a struct
+> > member, is a really bad choice.
+> 
+> Yes, I was asking myself if this name was a good choice or not. I
+> assumed 'power' could have been a good name because 'target_residency'
+> is a time conversion of the power needed to enter this state.
 
-Oooh, I missed that. I'll take a look through the series and comment.
+Still, that's something the casual reviewer might not know.
 
-g.
+And we ought to be careful when talking about power as well.  By 
+definition, power means energy transferred per unit of time.  Sometimes 
+we tend to say 'power' when we actually mean 'energy'.  With more "power 
+aware" work going into the scheduler, it is better to disambiguate those 
+terms.
+
+> > Amongst the fields this struct
+> > contains, only 1 out of 3 is about power.  The word "power" is already
+> > abused quite significantly to mean too many different things already.
+> >
+> > I'd suggest something inspired by your own patch log message i.e.
+> > 'struct cpuidle_info' instead, and use 'info' as a field name within
+> > struct cpuidle_state.  Having 'params" instead of "info" could be a good
+> > alternative too, although slightly longer.
+> 
+> Hmm 'info' or 'param' sound too vague. What about:
+> 
+> cpuidle_attr
+> or
+> cpuidle_property
+
+As you wish.  As long as it isn't 'power'.
+
+
+Nicolas
