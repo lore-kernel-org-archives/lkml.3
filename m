@@ -1,77 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751425AbaC2EXT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 00:23:19 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:34682 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbaC2EXR (ORCPT
+	id S1751432AbaC2Eou (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 00:44:50 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:40720 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbaC2Eoq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 00:23:17 -0400
+	Sat, 29 Mar 2014 00:44:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <14017949.8501396063313587.JavaMail.weblogic@epml02>
-References: <14017949.8501396063313587.JavaMail.weblogic@epml02>
-Date: Fri, 28 Mar 2014 21:23:17 -0700
-Message-ID: <CAM_iQpVwimkp4f5afZZ+16bupMJ-dE2zPrrTJA2EF5-SPZksRQ@mail.gmail.com>
-Subject: Re: latest 3.14.0-rc8+ : "INFO: inconsistent lock state "
-From: Cong Wang <xiyou.wangcong@gmail.com>
-To: jongman.heo@samsung.com
-Cc: linux-net@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <CACRpkdbU35xG1QtagB+9e9vxvehf1UQFaF4PikJhsPNAMw=D1Q@mail.gmail.com>
+References: <1395933906-2268-1-git-send-email-harinik@xilinx.com>
+	<CACRpkdbU35xG1QtagB+9e9vxvehf1UQFaF4PikJhsPNAMw=D1Q@mail.gmail.com>
+Date: Sat, 29 Mar 2014 10:14:45 +0530
+Message-ID: <CAFcVECJsEp_s2V5=oK_UJahGRUpWYWMCxTMxqdpX+O0qebP41A@mail.gmail.com>
+Subject: Re: [PATCH 1/2] GPIO: Add driver for Zynq GPIO controller
+From: Harini Katakam <harinikatakamlinux@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        michals@xilinx.com, Ulf Hansson <ulf.hansson@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 8:21 PM, Jongman Heo <jongman.heo@samsung.com> wrote:
->
-> Hi, guys,
->
-> With today's linus git tree, I got following messages;
->
-> [   97.426196] =================================
-> [   97.426198] [ INFO: inconsistent lock state ]
-> [   97.426221] 3.14.0-rc8+ #45 Tainted: G        W
-> [   97.426224] ---------------------------------
-> [   97.426227] inconsistent {IN-SOFTIRQ-W} -> {SOFTIRQ-ON-W} usage.
-> [   97.426229] kworker/7:1/101 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> [   97.426231]  (&addrconf_stats->syncp.seq){+.?...}, at: [<c0ac9c81>] mld_send_initial_cr.part.30+0x81/0xa0
-> [   97.426255] {IN-SOFTIRQ-W} state was registered at:
-> [   97.426258]   [<c04a8514>] __lock_acquire+0x414/0x18e0
-> [   97.426265]   [<c04a9a78>] lock_acquire+0x98/0x120
-> [   97.426268]   [<c0ac91cf>] mld_sendpack+0xdf/0x5b0
-> [   97.426270]   [<c0acaaf1>] mld_ifc_timer_expire+0x191/0x2c0
-> [   97.426272]   [<c0465a35>] call_timer_fn+0x75/0x160
-> [   97.426276]   [<c0466762>] run_timer_softirq+0x192/0x230
-> [   97.426281]   [<c045fcbb>] __do_softirq+0xfb/0x2b0
-> [   97.426286] irq event stamp: 33365
-> [   97.426289] hardirqs last  enabled at (33365): [<c045ffcb>] __local_bh_enable_ip+0x6b/0xc0
-> [   97.426292] hardirqs last disabled at (33363): [<c045fd05>] __do_softirq+0x145/0x2b0
-> [   97.426294] softirqs last  enabled at (33364): [<c045fd64>] __do_softirq+0x1a4/0x2b0
-> [   97.426297] softirqs last disabled at (33341): [<c0414335>] do_softirq_own_stack+0x35/0x40
-> [   97.426303]
-> other info that might help us debug this:
-> [   97.426305]  Possible unsafe locking scenario:
->
-> [   97.426306]        CPU0
-> [   97.426307]        ----
-> [   97.426308]   lock(&addrconf_stats->syncp.seq);
-> [   97.426310]   <Interrupt>
-> [   97.426311]     lock(&addrconf_stats->syncp.seq);
-> [   97.426313]
->  *** DEADLOCK ***
+Hi Linus,
 
-Does the following patch help?
+On Sat, Mar 29, 2014 at 3:20 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Mar 27, 2014 at 4:25 PM, Harini Katakam <harinik@xilinx.com> wrote:
+>
+>> Add support for GPIO controller used by Xilinx Zynq
+>>
+>> Signed-off-by: Harini Katakam <harinik@xilinx.com>
+>
+> This will not be integrated before v3.16 so we have some time to
+> think things over.
+>
+>> +config GPIO_ZYNQ
+>> +       bool "Xilinx ZYNQ GPIO support"
+>> +       depends on ARCH_ZYNQ
+>> +       select GENERIC_IRQ_CHIP
+>
+> I think that rather than selecting GENERIC_IRQ_CHIP,
+> select my new GPIOLIB_IRQCHIP and use the new helpers
+> gpiochip_irqchip_add() and gpiochip_set_chained_irqchip().
+>
+> Look in drivers/gpio/gpio-pl061.c for example usage.
+>
+> This is available in the "devel" or "for-next" branch of my
+> gpio tree at
+> https://git.kernel.org/cgit/linux/kernel/git/linusw/linux-gpio.git/
+>
 
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index e1e4735..74a774a 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1588,7 +1588,7 @@ static void mld_sendpack(struct sk_buff *skb)
+OK.
 
-        rcu_read_lock();
-        idev = __in6_dev_get(skb->dev);
--       IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUT, skb->len);
-+       IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUT, skb->len);
+<snip>
+>> +/* Read/Write access to the GPIO PS registers */
+>> +static inline u32 zynq_gpio_readreg(void __iomem *offset)
+>> +{
+>> +       return readl_relaxed(offset);
+>> +}
+>> +
+>> +static inline void zynq_gpio_writereg(void __iomem *offset, u32 val)
+>> +{
+>> +       writel_relaxed(val, offset);
+>> +}
+>
+> I think this is unnecessary and confusing indirection.
+> Just use the readl_relaxed/writel_relaxed functions directly in
+> the code.
+>
 
-        payload_len = (skb_tail_pointer(skb) - skb_network_header(skb)) -
-                sizeof(*pip6);
+This is just to be flexible.
+
+<snip>
+>> +                       if (!(int_sts & 1))
+>> +                               continue;
+>> +                       gpio_irq_desc = irq_to_desc(gpio_irq);
+>> +                       BUG_ON(!gpio_irq_desc);
+>> +                       chip = irq_desc_get_chip(gpio_irq_desc);
+>> +                       BUG_ON(!chip);
+>> +                       chip->irq_ack(&gpio_irq_desc->irq_data);
+>> +
+>> +                       /* call the pin specific handler */
+>> +                       generic_handle_irq(gpio_irq);
+>> +               }
+>> +               /* shift to first virtual irq of next bank */
+>> +               gpio_irq = gpio->irq_base + zynq_gpio_pin_table[bank_num] + 1;
+>
+> This is also pretty convoluted. Are you sure you don't want to
+> implement one gpiochip per bank instead? I guess the final "+1"
+> means there is actually one IRQ per bank even?
+>
+
+There is only one IRQ for all four banks.
+I will try to make this logic and other places in the driver you pointed out,
+less convoluted.
+The handling is (very) slightly different for the upper two banks and
+lower two banks.
+
+<snip>
+>> +static const struct dev_pm_ops zynq_gpio_dev_pm_ops = {
+>> +       SET_SYSTEM_SLEEP_PM_OPS(zynq_gpio_suspend, zynq_gpio_resume)
+>> +       SET_RUNTIME_PM_OPS(zynq_gpio_runtime_suspend, zynq_gpio_runtime_resume,
+>> +                          zynq_gpio_idle)
+>> +};
+>
+> Is this runtime PM implementation aligned with Ulf Hansson's recent
+> new helpers to simplify suspend+runtime PM coexistance?
+>
+
+I'm sorry i just looked at them -
+pm_runtime_force_suspend/resume are not used here.
+
+>> +       chip->dbg_show = NULL;
+>> +       chip->base = 0;         /* default pin base */
+>
+> The GPIO numberspace is not the same as the pin number space.
+> This is only going to work if you have no other GPIO controllers
+> on your system. Use -1 as base so you get dynamic allocation
+> of a GPIO number range instead.
+>
+> Make sure to use the new descriptor API for defining and accessing
+> GPIOs in all drivers and it will not matter which base you get.
+> (Good eh? :-)
+>
+> As it appears you're using device tree, it is all transparent and
+> you need not worry.
+>
+
+OK.
+
+<snip>
+
+Thanks for the review!
+
+Regards,
+Harini
