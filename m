@@ -1,81 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaC2RLG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 13:11:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12468 "EHLO mx1.redhat.com"
+	id S1752227AbaC2RLT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 13:11:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50996 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751609AbaC2RLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 13:11:02 -0400
-Date: Sat, 29 Mar 2014 18:10:47 +0100
+	id S1751609AbaC2RLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 13:11:15 -0400
+Date: Sat, 29 Mar 2014 18:10:18 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Don Zickus <dzickus@redhat.com>
 Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
-        jmario@redhat.com, fowles@inreach.com, Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: [PATCH 2/4] perf, kmem: Utilize the new generic cpunode_map
-Message-ID: <20140329171047.GC2022@krava.redhat.com>
-References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
- <1395689577-214654-3-git-send-email-dzickus@redhat.com>
+        jmario@redhat.com, fowles@inreach.com, peterz@infradead.org,
+        eranian@google.com, andi.kleen@intel.com
+Subject: Re: [PATCH 05/15 V3] perf, c2c: Rework setup code to prepare for
+ features
+Message-ID: <20140329171018.GA2022@krava.redhat.com>
+References: <1395689826-215033-1-git-send-email-dzickus@redhat.com>
+ <1395689826-215033-6-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395689577-214654-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1395689826-215033-6-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 24, 2014 at 03:32:55PM -0400, Don Zickus wrote:
-> Use the previous patch implementation of cpunode_map for builtin-kmem.c
-> Should not be any functional difference.
-> 
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
->  tools/perf/builtin-kmem.c | 78 ++---------------------------------------------
->  1 file changed, 3 insertions(+), 75 deletions(-)
-> 
-> diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-> index 929462a..a61783a 100644
-> --- a/tools/perf/builtin-kmem.c
-> +++ b/tools/perf/builtin-kmem.c
-> @@ -14,6 +14,7 @@
->  #include "util/parse-options.h"
->  #include "util/trace-event.h"
->  #include "util/data.h"
-> +#include "util/cpumap.h"
->  
->  #include "util/debug.h"
->  
-> @@ -31,9 +32,6 @@ static int			caller_lines = -1;
->  
->  static bool			raw_ip;
->  
-> -static int			*cpunode_map;
-> -static int			max_cpu_num;
-> -
->  struct alloc_stat {
->  	u64	call_site;
->  	u64	ptr;
-> @@ -55,76 +53,6 @@ static struct rb_root root_caller_sorted;
->  static unsigned long total_requested, total_allocated;
->  static unsigned long nr_allocs, nr_cross_allocs;
->  
-> -#define PATH_SYS_NODE	"/sys/devices/system/node"
-> -
-> -static int init_cpunode_map(void)
-> -{
-> -	FILE *fp;
-> -	int i, err = -1;
-> -
-> -	fp = fopen("/sys/devices/system/cpu/kernel_max", "r");
+On Mon, Mar 24, 2014 at 03:36:56PM -0400, Don Zickus wrote:
 
-so the factored code from previous patches now reads
-the max_cpu_num value from:
-  /sys/devices/system/cpu/possible
+SNIP
 
-is this intentional?
+>  
+>  static int perf_c2c__process_load_store(struct perf_c2c *c2c,
+> +					struct addr_location *al,
+>  					struct perf_sample *sample,
+> -					struct addr_location *al)
+> +					struct perf_evsel *evsel)
+>  {
+> -	if (c2c->raw_records)
+> -		perf_sample__fprintf(sample, ' ', "raw input", al, stdout);
+> +	struct mem_info *mi;
+> +
+> +	mi = sample__resolve_mem(sample, al);
+> +	if (!mi)
+> +		return -ENOMEM;
 
-I think we want to have separate patches for code changes
-and for changing the file with some comment.
+perhaps not directly related to this patchset, but I needed
+attached patch to get resolved data in .bss (static), which
+for some reason happened to be located in executable segment
+
+I wonder why we need this VARIABLE/FUNCTION separation at all,
+I think Arnaldo told me some archs could have same addresses
+for data and functions.. will check ;-)
 
 jirka
+
+---
+diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+index d9d86c6..be6d7cf 100644
+--- a/tools/perf/util/machine.c
++++ b/tools/perf/util/machine.c
+@@ -1220,6 +1220,10 @@ static void ip__resolve_data(struct machine *machine, struct thread *thread,
+ 
+ 	thread__find_addr_location(thread, machine, m, MAP__VARIABLE, addr,
+ 				   &al);
++	if (!al.map)
++		thread__find_addr_location(thread, machine, m, MAP__FUNCTION, addr,
++					   &al);
++
+ 	ams->addr = addr;
+ 	ams->al_addr = al.addr;
+ 	ams->sym = al.sym;
