@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753154AbaC2SqD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 14:46:03 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:41011 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753130AbaC2SqA (ORCPT
+	id S1753172AbaC2SrK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 14:47:10 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:45330 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752498AbaC2SrI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 14:46:00 -0400
-Date: Sun, 30 Mar 2014 00:16:25 +0530
+	Sat, 29 Mar 2014 14:47:08 -0400
+Date: Sun, 30 Mar 2014 00:17:33 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
-Cc: Jayamohan Kallickal <jayamohan.kallickal@emulex.com>,
+Cc: Neela Syam Kolli <megaraidlinux@lsi.com>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         linux-scsi@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 50/55] scsi: Mark function and macro definition as static in
- be2iscsi/be_main.c
-Message-ID: <c4a13888f1c3462834fd2d015b627230d996bfa3.1396114898.git.rashika.kheria@gmail.com>
+Subject: [PATCH 51/55] scsi: Move prototype declaration to header file
+ megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c
+Message-ID: <c3ef8857a4533ed6282301f74cec5a4b42e75944.1396114898.git.rashika.kheria@gmail.com>
 References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -27,86 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in be2iscsi/be_main.c because they are not used
-outside this file. Also, add static keyword to the macro definition to
-ensure prototype of functions as defined.
+Move prototype declarations of functions to header file
+megaraid/megaraid_sas_fusion.h from megaraid/megaraid_sas_base.c because
+they are used by more than one file.
 
-This eliminates the following warning in be2iscsi/be_main.c:
-drivers/scsi/be2iscsi/be_main.c:153:1: warning: no previous prototype for ‘beiscsi_log_enable_disp’ [-Wmissing-prototypes]
-drivers/scsi/be2iscsi/be_main.c:153:1: warning: no previous prototype for ‘beiscsi_log_enable_change’ [-Wmissing-prototypes]
-drivers/scsi/be2iscsi/be_main.c:153:1: warning: no previous prototype for ‘beiscsi_log_enable_store’ [-Wmissing-prototypes]
-drivers/scsi/be2iscsi/be_main.c:153:1: warning: no previous prototype for ‘beiscsi_log_enable_init’ [-Wmissing-prototypes]
-drivers/scsi/be2iscsi/be_main.c:4843:5: warning: no previous prototype for ‘beiscsi_iotask_v2’ [-Wmissing-prototypes]
-drivers/scsi/be2iscsi/be_main.c:5181:6: warning: no previous prototype for ‘beiscsi_hba_attrs_init’ [-Wmissing-prototypes]
+This eliminates the following type of warnings in
+megaraid/megaraid_sas_fusion.c:
+drivers/scsi/megaraid/megaraid_sas_fusion.c:2170:1: warning: no previous prototype for ‘megasas_release_fusion’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/scsi/be2iscsi/be_main.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas_base.c   |   13 -------------
+ drivers/scsi/megaraid/megaraid_sas_fusion.h |   14 ++++++++++++++
+ 2 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/scsi/be2iscsi/be_main.c b/drivers/scsi/be2iscsi/be_main.c
-index 1f37505..d9d0087 100644
---- a/drivers/scsi/be2iscsi/be_main.c
-+++ b/drivers/scsi/be2iscsi/be_main.c
-@@ -61,7 +61,7 @@ MODULE_PARM_DESC(be_max_phys_size,
- 		"memory that can be allocated. Range is 16 - 128");
+diff --git a/drivers/scsi/megaraid/megaraid_sas_base.c b/drivers/scsi/megaraid/megaraid_sas_base.c
+index 9768deee..0ad386b 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_base.c
++++ b/drivers/scsi/megaraid/megaraid_sas_base.c
+@@ -160,21 +160,8 @@ u32
+ megasas_build_and_issue_cmd(struct megasas_instance *instance,
+ 			    struct scsi_cmnd *scmd);
+ static void megasas_complete_cmd_dpc(unsigned long instance_addr);
+-void
+-megasas_release_fusion(struct megasas_instance *instance);
+-int
+-megasas_ioc_init_fusion(struct megasas_instance *instance);
+-void
+-megasas_free_cmds_fusion(struct megasas_instance *instance);
+-u8
+-megasas_get_map_info(struct megasas_instance *instance);
+-int
+-megasas_sync_map_info(struct megasas_instance *instance);
+ int
+ wait_and_poll(struct megasas_instance *instance, struct megasas_cmd *cmd);
+-void megasas_reset_reply_desc(struct megasas_instance *instance);
+-int megasas_reset_fusion(struct Scsi_Host *shost);
+-void megasas_fusion_ocr_wq(struct work_struct *work);
  
- #define beiscsi_disp_param(_name)\
--ssize_t	\
-+static ssize_t	\
- beiscsi_##_name##_disp(struct device *dev,\
- 			struct device_attribute *attrib, char *buf)	\
- {	\
-@@ -74,7 +74,7 @@ beiscsi_##_name##_disp(struct device *dev,\
- }
+ static void
+ megasas_issue_dcmd(struct megasas_instance *instance, struct megasas_cmd *cmd)
+diff --git a/drivers/scsi/megaraid/megaraid_sas_fusion.h b/drivers/scsi/megaraid/megaraid_sas_fusion.h
+index 35a5139..01e5ab3 100644
+--- a/drivers/scsi/megaraid/megaraid_sas_fusion.h
++++ b/drivers/scsi/megaraid/megaraid_sas_fusion.h
+@@ -760,4 +760,18 @@ union desc_value {
+ 	} u;
+ };
  
- #define beiscsi_change_param(_name, _minval, _maxval, _defaval)\
--int \
-+static int \
- beiscsi_##_name##_change(struct beiscsi_hba *phba, uint32_t val)\
- {\
- 	if (val >= _minval && val <= _maxval) {\
-@@ -93,7 +93,7 @@ beiscsi_##_name##_change(struct beiscsi_hba *phba, uint32_t val)\
- }
- 
- #define beiscsi_store_param(_name)  \
--ssize_t \
-+static ssize_t \
- beiscsi_##_name##_store(struct device *dev,\
- 			 struct device_attribute *attr, const char *buf,\
- 			 size_t count) \
-@@ -112,7 +112,7 @@ beiscsi_##_name##_store(struct device *dev,\
- }
- 
- #define beiscsi_init_param(_name, _minval, _maxval, _defval) \
--int \
-+static int \
- beiscsi_##_name##_init(struct beiscsi_hba *phba, uint32_t val) \
- { \
- 	if (val >= _minval && val <= _maxval) {\
-@@ -4840,9 +4840,9 @@ free_hndls:
- 	io_task->cmd_bhs = NULL;
- 	return -ENOMEM;
- }
--int beiscsi_iotask_v2(struct iscsi_task *task, struct scatterlist *sg,
--		       unsigned int num_sg, unsigned int xferlen,
--		       unsigned int writedir)
-+static int beiscsi_iotask_v2(struct iscsi_task *task, struct scatterlist *sg,
-+			     unsigned int num_sg, unsigned int xferlen,
-+			     unsigned int writedir)
- {
- 
- 	struct beiscsi_io_task *io_task = task->dd_data;
-@@ -5178,7 +5178,7 @@ static int beiscsi_bsg_request(struct bsg_job *job)
- 	return rc;
- }
- 
--void beiscsi_hba_attrs_init(struct beiscsi_hba *phba)
-+static void beiscsi_hba_attrs_init(struct beiscsi_hba *phba)
- {
- 	/* Set the logging parameter */
- 	beiscsi_log_enable_init(phba, beiscsi_log_enable);
++void
++megasas_release_fusion(struct megasas_instance *instance);
++int
++megasas_ioc_init_fusion(struct megasas_instance *instance);
++void
++megasas_free_cmds_fusion(struct megasas_instance *instance);
++u8
++megasas_get_map_info(struct megasas_instance *instance);
++int
++megasas_sync_map_info(struct megasas_instance *instance);
++void megasas_reset_reply_desc(struct megasas_instance *instance);
++int megasas_reset_fusion(struct Scsi_Host *shost);
++void megasas_fusion_ocr_wq(struct work_struct *work);
++
+ #endif /* _MEGARAID_SAS_FUSION_H_ */
 -- 
 1.7.9.5
 
