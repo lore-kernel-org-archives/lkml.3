@@ -1,103 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751294AbaC2Ghe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 02:37:34 -0400
-Received: from szxga02-in.huawei.com ([119.145.14.65]:40195 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910AbaC2Ghd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 02:37:33 -0400
-Message-ID: <533669C7.0@huawei.com>
-Date: Sat, 29 Mar 2014 14:35:51 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
-MIME-Version: 1.0
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>,
-        "Li Zefan" <lizefan@huawei.com>, Zhangwei <jovi.zhangwei@huawei.com>
-Subject: Re: [BUGREPORT] Tasklet scheduled issue in Linux 3.4.x-rt
-References: <53144A57.4040204@huawei.com> <20140328163753.GB14842@linutronix.de>
-In-Reply-To: <20140328163753.GB14842@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+	id S1751221AbaC2Gnu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 02:43:50 -0400
+Received: from plane.gmane.org ([80.91.229.3]:57775 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbaC2Gns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 02:43:48 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alex Elsayed <eternaleye@gmail.com>
+Subject: Re: Thoughts on credential switching
+Date: Fri, 28 Mar 2014 23:43:34 -0700
+Message-ID: <lh5q27$8nq$2@ger.gmane.org>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com> <20140326194847.0e994d0b@ipyr.poochiereds.net> <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com> <20140326202535.7d9b6f78@ipyr.poochiereds.net> <20140327070802.124fb34c@ipyr.poochiereds.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: c-50-132-41-203.hsd1.wa.comcast.net
+User-Agent: KNode/4.12
+Cc: linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-   Thanks for your reply and help to look at it, thanks!
+Jeff Layton wrote:
 
-I also check the tasklet state machine changes, and didn't find
-clue for this issue. So I Temporarily reverted Ingo's patch, without
-this patch, my test is ok.
+> On Wed, 26 Mar 2014 20:25:35 -0700
+> Jeff Layton <jlayton@redhat.com> wrote:
+> 
+>> On Wed, 26 Mar 2014 20:05:16 -0700
+>> Andy Lutomirski <luto@amacapital.net> wrote:
+>> 
+>> > On Wed, Mar 26, 2014 at 7:48 PM, Jeff Layton <jlayton@redhat.com>
+>> > wrote:
+>> > > On Wed, 26 Mar 2014 17:23:24 -0700
+>> > > Andy Lutomirski <luto@amacapital.net> wrote:
+>> > >
+>> > >> Hi various people who care about user-space NFS servers and/or
+>> > >> security-relevant APIs.
+>> > >>
+>> > >> I propose the following set of new syscalls:
+>> > >>
+>> > >> int credfd_create(unsigned int flags): returns a new credfd that
+>> > >> corresponds to current's creds.
+>> > >>
+>> > >> int credfd_activate(int fd, unsigned int flags): Change current's
+>> > >> creds to match the creds stored in fd.  To be clear, this changes
+>> > >> both the "subjective" and "objective" (aka real_cred and cred)
+>> > >> because there aren't any real semantics for what happens when
+>> > >> userspace code runs with real_cred != cred.
+>> > >>
+>> > >> Rules:
+>> > >>
+>> > >>  - credfd_activate fails (-EINVAL) if fd is not a credfd.
+>> > >>  - credfd_activate fails (-EPERM) if the fd's userns doesn't
+>> > >> match current's userns.  credfd_activate is not intended to be a
+>> > >> substitute for setns.
+>> > >>  - credfd_activate will fail (-EPERM) if LSM does not allow the
+>> > >> switch.  This probably needs to be a new selinux action --
+>> > >> dyntransition is too restrictive.
+>> > >>
+>> > >>
+>> > >> Optional:
+>> > >>  - credfd_create always sets cloexec, because the alternative is
+>> > >> silly.
+>> > >>  - credfd_activate fails (-EINVAL) if dumpable.  This is because
+>> > >> we don't want a privileged daemon to be ptraced while
+>> > >> impersonating someone else.
+>> > >>  - optional: both credfd_create and credfd_activate fail if
+>> > >> !ns_capable(CAP_SYS_ADMIN) or perhaps !capable(CAP_SETUID).
+>> > >>
+>> > >> The first question: does this solve Ganesha's problem?
+>> > >>
+>> > >> The second question: is this safe?  I can see two major concerns.
+>> > >> The bigger concern is that having these syscalls available will
+>> > >> allow users to exploit things that were previously secure.  For
+>> > >> example, maybe some configuration assumes that a task running as
+>> > >> uid==1 can't switch to uid==2, even with uid 2's consent.
+>> > >> Similar issues happen with capabilities.  If CAP_SYS_ADMIN is not
+>> > >> required, then this is no longer really true.
+>> > >>
+>> > >> Alternatively, something running as uid == 0 with heavy
+>> > >> capability restrictions in a mount namespace (but not a uid
+>> > >> namespace) could pass a credfd out of the namespace.  This could
+>> > >> break things like Docker pretty badly.  CAP_SYS_ADMIN guards
+>> > >> against this to some extent.  But I think that Docker is already
+>> > >> totally screwed if a Docker root task can receive an O_DIRECTORY
+>> > >> or O_PATH fd out of the container, so it's not entirely clear
+>> > >> that the situation is any worse, even without requiring
+>> > >> CAP_SYS_ADMIN.
+>> > >>
+>> > >> The second concern is that it may be difficult to use this
+>> > >> correctly. There's a reason that real_cred and cred exist, but
+>> > >> it's not really well set up for being used.
+>> > >>
+>> > >> As a simple way to stay safe, Ganesha could only use credfds that
+>> > >> have real_uid == 0.
+>> > >>
+>> > >> --Andy
+>> > >
+>> > >
+>> > > I still don't quite grok why having this special credfd_create
+>> > > call buys you anything over simply doing what Al had originally
+>> > > suggested -- switch creds using all of the different syscalls and
+>> > > then simply caching that in a "normal" fd:
+>> > >
+>> > >     fd = open("/dev/null", O_PATH...);
+>> > >
+>> > > ...it seems to me that the credfd_activate call will still need to
+>> > > do the same permission checking that all of the individual
+>> > > set*id() calls require (and all of the other stuff like changing
+>> > > selinux contexts, etc).
+>> > >
+>> > > IOW, this fd is just a "handle" for passing around a struct cred,
+>> > > but I don't see why having access to that handle would allow you
+>> > > to do something you couldn't already do anyway.
+>> > >
+>> > > Am I missing something obvious here?
+>> > 
+>> > Not really.  I think I didn't adequately explain a piece of this.
+>> > 
+>> > I think that what you're suggesting is for an fd to encode a set of
+>> > credentials but not to grant permission to use those credentials.
+>> > So switch_creds(fd) is more or less the same thing as
+>> > switch_creds(ruid, euid, suid, rgid, egid, sgid, groups, mac
+>> > label, ...).  switch_creds needs to verify that the caller can
+>> > dyntransition to the label, set all the ids, etc., but it avoids
+>> > allocating anything and running RCU callbacks.
+>> > 
+>> > The trouble with this is that the verification needed is complicated
+>> > and expensive.  And I think that my proposal is potentially more
+>> > useful.
+>> > 
+>> 
+>> Is it really though? My understanding of the problem was that it was
+>> the syscall (context switching) overhead + having to do a bunch of RCU
+>> critical stuff that was the problem. If we can do all of this in the
+>> context of a single RCU critical section, isn't that still a win?
+>> 
+>> As to the complicated part...maybe but it doesn't seem like it would
+>> have to be. We could simply return -EINVAL or something if the old
+>> struct cred doesn't have fields that match the ones we're replacing
+>> and that we don't expect to see changed.
+>> 
+>> > A credfd is like a struct cred, but possession of a credfd carries
+>> > the permission to use those credentials.  So, for example,
+>> > credfd_activate to switch to a given uid might work even if
+>> > setresuid to that uid would be disallowed.  But, for this to be
+>> > secure, the act of giving someone a credfd needs to be explicit.
+>> > Programs implicitly send other programs their credentials by means
+>> > of f_cred all the time, and they don't expect to allow the receiver
+>> > to impersonate them.
+>> > 
+>> 
+>> Eek!
+>> 
+>> Passing around permission to use the credential in conjunction with
+>> the credentials themselves sounds a lot more dangerous to me.
+>> 
+>> My preference would be that we don't add anything that potentially
+>> gives you privileges to do something you couldn't do already with
+>> existing syscalls. That doesn't seem to be necessary for the intended
+>> use case anyway. When it comes to security, I think we need to err on
+>> the side of caution than try to shortcut it for performance.
+>> 
+>> > credfd has other uses.  A file server, for example, could actually
+>> > delegate creation of the credfds to a separate process, and that
+>> > process could validate that the request is for a credfd that the
+>> > file server really should be able to obtain.  This would enable that
+>> > process to make sure that the user in question has actually
+>> > authenticated itself, so a file server compromise could only attack
+>> > users who connect instead of attacking any user on the system.  This
+>> > is an argument against requiring CAP_SYS_ADMIN to use
+>> > credfd_activate.
+>> > 
+>> > I'm less confident in whether capabilities should be needed to use
+>> > credfd_create.
+>> > 
+>> > Is that clearer and/or more convincing?
+>> > 
+>> 
+>> My worry would be that you could then compromise the process doing
+>> this credfd creation and trick it into passing around credentials that
+>> aren't what are expected.
+>> 
+>> Another possibility could some kernel bug allow you to frob the creds
+>> that are attached to an existing fd after they've been "vetted" for
+>> use.
+>> 
+>> So yeah, I think I better understand what you're proposing (and thanks
+>> for explaining it), but I'm not convinced that it's really a safe
+>> idea.
+>> 
+> 
+> I had some time to think about this last night...
+> 
+> While using a fd to pass around credentials is convenient, the danger
+> is that it's pretty opaque. You have a fd that you know has creds
+> attached to it, but it's hard to be certain what is going to change.
+> 
+> Perhaps we can use the flags field for that. So, assuming we have a fd
+> with the creds attached, we could do something like:
+> 
+>     err = switch_creds(fd, SC_FSUID|SC_FSGID|SC_GROUPS);
+> 
+> ...then the switch_creds syscall could be set up to fail if the new
+> credentials had other fields that didn't match those in the current
+> task credentials. So if (for instance) the cred->euid were
+> different between the two, the above could fail with -EINVAL or
+> something.
+> 
+> Yes, that means that we need to check this stuff on every switch_creds
+> call, but I don't think it'll be that expensive.
+> 
 
-commit 0d9f73fc1e7270a3f8709c59c913408153d9d9f8
-Author: Ingo Molnar <mingo@elte.hu>
-Date:   Tue Nov 29 20:18:22 2011 -0500
+If creating a credfd populates a bitmap in the same manner (I suspect 
+_creating_ credfds might be somewhat less of a hot-path) then it would come 
+down to
 
-    tasklet: Prevent tasklets from going into infinite spin in RT
-
-Because this patch does not exist in the latest Linus kernel, so I
-have not reported this issue to kernel bugzilla.
-
-Finally, I would like to thank you again.
-
-Thanks!
-Yijing.
-
-
-On 2014/3/29 0:37, Sebastian Andrzej Siewior wrote:
-> * Yijing Wang | 2014-03-03 17:24:39 [+0800]:
-> 
->> [2012-03-26 18:55:43][  929.252312] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
->> [2012-03-27 03:41:06][ 3647.886005] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
->> [2012-03-27 03:42:04][ 3705.434418] WARNING: at kernel/softirq.c:799 __tasklet_action+0xae/0x1a0()
-> 
->> FC card hardware  -------> FC driver interrupt handler  --------->tasklet_schedule(fc driver tasklet) ------->tasklet running, call function process FC IO data.
->>                        here will disable FC card interrupt                                                     here will enable FC card interrupt again
-> 
-> This looks okay.
-> 
->> We found the tasklet state is 0x1(mean state is TASKLET_STATE_SCHED),count is 0, before we call tasklet_schedule().
->> So the new tasklet can not add to CPU list.
->>
->> And I also add some dynamic debug in __tasklet_action(); after the issue occur, I open the dynamic debug.
->> After we force the hardware reset to interrupt OS, we never found the FC driver tasklet running in dmesg(I identify the tasklet by its data).
->> I guess the FC tasklet is not in CPU global tasklet list.
-> You guess correct.
-> 
->> I hope somebody can help to look at it. If I missing something, let me know.
-> 
-> The tasklet is always added to the local cpu, never cross. That list is
-> always accessed with interrupts off.
-> With TASKLET_STATE_SCHED set, the next step is to add the task let to
-> the CPU's tasklet list. This isn't done if TASKLET_STATE_RUN is already
-> set which means __tasklet_action() is already busy serving the tasklet.
-> In that case it clears TASKLET_STATE_SCHED and invokes the tasklet
-> again.
-> After looking at it for a while I must say I have no idea how you
-> managed to keep TASKLET_STATE_SCHED set. Further, each time
-> TASKLET_STATE_RUN is cleared it is always with a cmpxchg() down to zero
-> which means TASKLET_STATE_SCHED is removed earlier.
-> That said, triggerring the warning at 773 is the first thing that went
-> wrong. After it has been added to the list, the TASKLET_STATE_RUN is
-> cleared again. I have no idea how it managed to remain still on except
-> that __tasklet_common_schedule() is invoked which is protected by the
-> SCHED bit…
-> 
->> Thanks!
->> Yijing.
-> 
-> Sebastian
-> 
-> .
-> 
-
-
--- 
-Thanks!
-Yijing
+if (credfd_fields & ~flags) goto unexpected_cred_field;
 
