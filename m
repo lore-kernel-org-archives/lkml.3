@@ -1,78 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752538AbaC2UiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 16:38:17 -0400
-Received: from mga11.intel.com ([192.55.52.93]:29045 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394AbaC2Uhk convert rfc822-to-8bit (ORCPT
+	id S1752137AbaC2Uzx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 16:55:53 -0400
+Received: from palahniuk.acksyn.org ([5.9.7.26]:43407 "EHLO
+	palahniuk.acksyn.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbaC2Uzv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 16:37:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,757,1389772800"; 
-   d="scan'208";a="509663676"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Topic: 3.0 -> 3.10 regression? poweroff instead of reboot?
-Thread-Index: AQHPS0iuvgiDnehMNEeghRTCX5Z79Jr4hhDw
-Date: Sat, 29 Mar 2014 20:37:35 +0000
-Message-ID: <5B8DA87D05A7694D9FA63FD143655C1B1AFAD3D0@HASMSX106.ger.corp.intel.com>
-References: <20140310145530.GA27230@pcnci.linuxbox.cz>
- <20140329121550.GA5878@nik-comp.linuxbox.cz>
-In-Reply-To: <20140329121550.GA5878@nik-comp.linuxbox.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.184.70.12]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Sat, 29 Mar 2014 16:55:51 -0400
+From: Michele Baldessari <michele@acksyn.org>
+To: Johan Hovold <jhovold@gmail.com>
+Cc: Michele Baldessari <michele@acksyn.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes serial cards
+Date: Sat, 29 Mar 2014 20:55:11 +0000
+Message-Id: <1396126512-25372-1-git-send-email-michele@acksyn.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (CC Tomas Winkler)
-> 
-> So finally I got some time to look deeper into this, and the problem
-> might not be regression after all.. It is caused by mei_me module,
-> blacklisting it "fixes it" for me.
-> 
-> So for me it's kinda of solution, although I guess MEI related people
-> might be interested in it..
-> 
-> If I could be of any help, please let me know - at least I've got hardware
-> on which I can reproduce the problem..
-> 
-> BR
-> 
-> nik
-> 
-> 
-> On Mon, Mar 10, 2014 at 03:55:30PM +0100, Nikola Ciprich wrote:
-> > Hi,
-> >
-> > after installing new server, we've noticed weird behaviour: when box is
-> > about to reboot, it powers off instead. This was with 3.10.33, downgrading
-> > to 3.0.101 seems to fix this problem. I didn't have time to play with it today
-> > and box had to be shipped today, so it'll take few days before I'll have chance
-> > for further research, but I wanted to ask whether somebody has met similar
-> > problem and what I should check first?
-> >
-> > The system is x86_64 centos 6, HW is supermicro x9sci-ln4f.
-> >
-> > Any help appreciated
-> >
-> > When I have chance to put my hands on this box again, I'll try
-> > latest kernel and I can also do bisect, if needed.
-> >
-> > BR
-> >
-> > nik
+Custom VID/PIDs for Brainboxes cards as reported in
+https://bugzilla.redhat.com/show_bug.cgi?id=1071914
 
-If this is a server platform can you please try this patch https://lkml.org/lkml/2014/3/25/396
+Signed-off-by: Michele Baldessari <michele@acksyn.org>
+---
+ drivers/usb/serial/ftdi_sio.c     | 34 ++++++++++++++++++++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h | 38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 72 insertions(+)
 
-Thanks
-Tomas
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 44ab12986805..ccfa3c55212c 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -909,6 +909,40 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
+ 	/* Cressi Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
++	/* Brainbox Devices */
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
++	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
+ 	{ }					/* Terminating entry */
+ };
+ 
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index e599fbfcde5f..84d351e70f9c 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1326,3 +1326,41 @@
+  * Manufacturer: Cressi
+  */
+ #define FTDI_CRESSI_PID		0x87d0
++
++/*
++ * Product: Brainboxes devices
++ * Manufacturer: Brainboxes
++ */
++#define BRAINBOXES_VID			0x05d1
++#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
++#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
++#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
++#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
++#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
++#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
++#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
++#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
++#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
++#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
++#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
++#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
++#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
++#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
++#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
++#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
++#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
++#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
++#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
++#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
++#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
+-- 
+1.9.0
 
