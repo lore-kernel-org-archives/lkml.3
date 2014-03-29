@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbaC2Uzx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 16:55:53 -0400
-Received: from palahniuk.acksyn.org ([5.9.7.26]:43407 "EHLO
-	palahniuk.acksyn.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbaC2Uzv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 16:55:51 -0400
-From: Michele Baldessari <michele@acksyn.org>
-To: Johan Hovold <jhovold@gmail.com>
-Cc: Michele Baldessari <michele@acksyn.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: serial: ftdi_sio: add id for Brainboxes serial cards
-Date: Sat, 29 Mar 2014 20:55:11 +0000
-Message-Id: <1396126512-25372-1-git-send-email-michele@acksyn.org>
-X-Mailer: git-send-email 1.9.0
+	id S1752399AbaC2VQq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 17:16:46 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54223 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751984AbaC2VQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 17:16:44 -0400
+Message-ID: <1396127783.11529.55.camel@pasglop>
+Subject: Re: [RFC 1/5] of: Add support for ePAPR "stdout-path" property
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@linaro.org>
+Date: Sun, 30 Mar 2014 08:16:23 +1100
+In-Reply-To: <CAL_Jsq+xTeocLtS9GFWLCkoV+USACma+w0=O_ysekvTGhYVhZg@mail.gmail.com>
+References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
+	 <1396022885-6102-2-git-send-email-grant.likely@linaro.org>
+	 <1396042396.11529.27.camel@pasglop>
+	 <CAL_Jsq+xTeocLtS9GFWLCkoV+USACma+w0=O_ysekvTGhYVhZg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.11.90 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Custom VID/PIDs for Brainboxes cards as reported in
-https://bugzilla.redhat.com/show_bug.cgi?id=1071914
+On Fri, 2014-03-28 at 16:56 -0500, Rob Herring wrote:
 
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
----
- drivers/usb/serial/ftdi_sio.c     | 34 ++++++++++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h | 38 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 72 insertions(+)
+> I'm working on getting just that working. See my series for "generic
+> earlycon". I'm working on cleaning up the FDT part still, but have
+> something functional. The "hardest" part with FDT is doing the address
+> translation for serial devices, but I just stole that from u-boot.
+> 
+> > Right now, I have this explicit config option to hard wire "early debug"
+> > but there are a few cases of field bugs that can happen in early init
+> > code which I'd like to see logged properly on those systems, and early
+> > debug isn't suitable for field use...
+> 
+> We have the same issue with multi-platform ARM kernels.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 44ab12986805..ccfa3c55212c 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -909,6 +909,40 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	/* Cressi Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-+	/* Brainbox Devices */
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
- 	{ }					/* Terminating entry */
- };
- 
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index e599fbfcde5f..84d351e70f9c 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1326,3 +1326,41 @@
-  * Manufacturer: Cressi
-  */
- #define FTDI_CRESSI_PID		0x87d0
-+
-+/*
-+ * Product: Brainboxes devices
-+ * Manufacturer: Brainboxes
-+ */
-+#define BRAINBOXES_VID			0x05d1
-+#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
-+#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
-+#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
-+#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
-+#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
-+#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
-+#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
-+#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
-+#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
-+#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
-+#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
-+#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
-+#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
-+#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
-+#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
--- 
-1.9.0
+Ah excellent, I'll keep an eye on it !
+
+Cheers,
+Ben.
+
 
