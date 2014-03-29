@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752878AbaC2SLm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 14:11:42 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:64281 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752365AbaC2SLj (ORCPT
+	id S1752203AbaC2SNE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 14:13:04 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:49255 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751663AbaC2SNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 14:11:39 -0400
-Date: Sat, 29 Mar 2014 23:42:04 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: James Smart <james.smart@emulex.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 26/55] scsi: Mark function as static in lpfc/lpfc_bsg.c
-Message-ID: <a9d15b00d960134818a399665442070030e9458f.1396114898.git.rashika.kheria@gmail.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+	Sat, 29 Mar 2014 14:13:01 -0400
+Date: Sat, 29 Mar 2014 14:12:58 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexandre Demers <alexandre.f.demers@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to
+ kern_mount() sysfs from sysfs_init()" prevents system from booting correctly
+Message-ID: <20140329181258.GF5553@htj.dyndns.org>
+References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com>
+ <20140314140804.GG12613@htj.dyndns.org>
+ <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com>
+ <20140317201346.GE17373@mtj.dyndns.org>
+ <5327AAA8.2080703@gmail.com>
+ <53322777.3030703@gmail.com>
+ <20140326131800.GA7171@htj.dyndns.org>
+ <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+In-Reply-To: <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function as static in lpfc/lpfc_bsg.c because it is not used
-outside this file.
+Hello, Alexander.
 
-This eliminates the following warning in lpfc/lpfc_bsg.c:
-drivers/scsi/lpfc/lpfc_bsg.c:3348:1: warning: no previous prototype for ‘lpfc_bsg_issue_mbox_cmpl’ [-Wmissing-prototypes]
+On Thu, Mar 27, 2014 at 01:47:53PM -0400, Alexandre Demers wrote:
+> I'll do my best, but I just don't have enough time right now for
+> everything I have to do at home and dig this bug. I may be able to
+> look at it in the next couple of days though, or it may go somewhere
+> next week... That being said, I tried yesterday to have a better idea
+> and I thank you for the "ScrLck" trick, I didn't know that it was
+> working. Nevertheless I didn't find anything.
+>
+> It seems as if the transition from the temporary kernel's fs to the
+> hard disk's fs is not done correctly. If I boot with a working kernel
+> after that, I can't find any trace of where it was trying to copy the
+> files or of any partition being full. Could it be filling the RAM
+> until it reaches its maximum capacity (16GB to fill before hitting the
+> limit and throwing the errors)? That would explain at least why it
+> takes so much time before the flood of errors begins...
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/scsi/lpfc/lpfc_bsg.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+That could definitely be the case.  I'd really like to get to the
+bottom of it.  It's really curious that there aren't more people
+reporting the same problem.  Can you please try whether the following
+patch makes the regression go away?
 
-diff --git a/drivers/scsi/lpfc/lpfc_bsg.c b/drivers/scsi/lpfc/lpfc_bsg.c
-index 82134d2..4735de5 100644
---- a/drivers/scsi/lpfc/lpfc_bsg.c
-+++ b/drivers/scsi/lpfc/lpfc_bsg.c
-@@ -3344,7 +3344,7 @@ job_error:
-  * will wake up thread waiting on the wait queue pointed by context1
-  * of the mailbox.
-  **/
--void
-+static void
- lpfc_bsg_issue_mbox_cmpl(struct lpfc_hba *phba, LPFC_MBOXQ_t *pmboxq)
- {
- 	struct bsg_job_data *dd_data;
--- 
-1.7.9.5
+Thanks!
 
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index a66ad61..a3223e2 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -75,5 +75,7 @@ int __init sysfs_init(void)
+ 		return err;
+ 	}
+ 
++	WARN_ON(IS_ERR(kern_mount(&sysfs_fs_type)));
++
+ 	return 0;
+ }
