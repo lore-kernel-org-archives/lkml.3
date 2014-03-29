@@ -1,96 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaC2Hbd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 03:31:33 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:48876 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852AbaC2Hbc (ORCPT
+	id S1751444AbaC2Hc1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 03:32:27 -0400
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:44276 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751372AbaC2HcN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 03:31:32 -0400
-X-AuditID: cbfee61b-b7f456d000006dfd-97-533676d19256
-From: Chao Yu <chao2.yu@samsung.com>
-To: ??? <jaegeuk.kim@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [f2fs-dev] [PATCH] f2fs: fix error path when fail to read inline data
-Date: Sat, 29 Mar 2014 15:30:40 +0800
-Message-id: <000101cf4b20$e4765270$ad62f750$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9LHoRwP637GPA+RcKKhJHOyzw3yw==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQd1LZWbBBjensFtc3/WXyeLSIneL
-	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXHx1Vy2gnU8Fa37
-	vrI2MD7k7GLk5JAQMJHYN382E4QtJnHh3nq2LkYuDiGB6YwSLw+dZIdwfjBK3GpfDFbFJqAi
-	sbzjP5gtIqAoseH9BnYQm1kgU+Je0wxmEFtYwE+i6fhHRhCbRUBV4nrDZ7AaXgFLiZuLJ0HZ
-	ghI/Jt9jgejVkli/8zgThC0vsXnNW2aIixQkdpx9zQixS0+iY243VI24xMYjt1gmMArMQjJq
-	FpJRs5CMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4FB+Jr2DcVWDxSFGAQ5G
-	JR5egVbTYCHWxLLiytxDjBIczEoivJmmZsFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcK
-	CaQnlqRmp6YWpBbBZJk4OKUaGFecNrl6+sKniCdZe+rWH7pZs39DVcy9xJjDGuuUzO3V3auZ
-	L2cqHUq1dgwXlJi3qTx9e6vqYqNVnOt62D95XZLXmWf9TnLlqh75p1MvTHb9ySk9t9SeeV/9
-	qtjV3/xsivWN+XaHL9+o8O2QeWf4fadTjpcXRd5V0ZpvufSVrbPssqd9k20yypRYijMSDbWY
-	i4oTAcW2XDhhAgAA
+	Sat, 29 Mar 2014 03:32:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <87ha6inp7g.fsf@tassilo.jf.intel.com>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+	<1396014469-5937-8-git-send-email-jovi.zhangwei@gmail.com>
+	<87ha6inp7g.fsf@tassilo.jf.intel.com>
+Date: Sat, 29 Mar 2014 15:32:12 +0800
+Message-ID: <CAGdX0WFMXejHjhy5sVkVuQvNwE8MevEuAsDbkAZCb35mJj07zQ@mail.gmail.com>
+Subject: Re: [PATCH 07/28] ktap: add runtime/ktap.[c|h]
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We should unlock page in ->readpage() path and also should unlock & release page
-in error path of ->write_begin() to avoid deadlock or memory leak.
-So let's add release code to fix the problem when we fail to read inline data.
+Hi Andi,
 
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
----
- fs/f2fs/data.c   |   14 ++++++++++----
- fs/f2fs/inline.c |    4 +++-
- 2 files changed, 13 insertions(+), 5 deletions(-)
+On Sat, Mar 29, 2014 at 2:38 AM, Andi Kleen <andi@firstfloor.org> wrote:
+> Jovi Zhangwei <jovi.zhangwei@gmail.com> writes:
+>
+> Quick review of the file.
+>
+>> +#include <linux/version.h>
+>> +#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 1, 0)
+>> +#error "Currently ktap don't support kernel older than 3.1"
+>> +#endif
+>> +
+>> +#if !CONFIG_EVENT_TRACING
+>> +#error "Please enable CONFIG_EVENT_TRACING before compile ktap"
+>> +#endif
+>> +
+>> +#if !CONFIG_PERF_EVENTS
+>> +#error "Please enable CONFIG_PERF_EVENTS before compile ktap"
+>> +#endif
+>
+> This should be all in Kconfig
+>
+Will do.
 
-diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
-index 598bfa6..45abd60 100644
---- a/fs/f2fs/data.c
-+++ b/fs/f2fs/data.c
-@@ -942,13 +942,19 @@ inline_data:
- 	if (dn.data_blkaddr == NEW_ADDR) {
- 		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
- 	} else {
--		if (f2fs_has_inline_data(inode))
-+		if (f2fs_has_inline_data(inode)) {
- 			err = f2fs_read_inline_data(inode, page);
--		else
-+			if (err) {
-+				page_cache_release(page);
-+				return err;
-+			}
-+		} else {
- 			err = f2fs_submit_page_bio(sbi, page, dn.data_blkaddr,
- 							READ_SYNC);
--		if (err)
--			return err;
-+			if (err)
-+				return err;
-+		}
-+
- 		lock_page(page);
- 		if (unlikely(!PageUptodate(page))) {
- 			f2fs_put_page(page, 1);
-diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
-index 31ee5b1..383db1f 100644
---- a/fs/f2fs/inline.c
-+++ b/fs/f2fs/inline.c
-@@ -45,8 +45,10 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
- 	}
- 
- 	ipage = get_node_page(sbi, inode->i_ino);
--	if (IS_ERR(ipage))
-+	if (IS_ERR(ipage)) {
-+		unlock_page(page);
- 		return PTR_ERR(ipage);
-+	}
- 
- 	zero_user_segment(page, MAX_INLINE_DATA, PAGE_CACHE_SIZE);
- 
--- 
-1.7.9.5
+>> +/* common helper function */
+>> +long gettimeofday_ns(void)
+>> +{
+>> +     struct timespec now;
+>> +
+>> +     getnstimeofday(&now);
+>> +     return now.tv_sec * NSEC_PER_SEC + now.tv_nsec;
+>> +}
+>
+> This is ktime_get()
+>
+> Or more likely you want something like trace_clock(), otherwise
+> you may have problems on systems not using TSC.
+>
+I now find that function would not be safe to called from probe context,
+because it have seq lock in it, I will add a TODO tag in there.
 
+(It seems Systemtap fix this issue by introduce its own time keeping logic)
 
+Like as you said, we may also need other cheap timestamp for tracing,
+might trace_clock suit my need.
+
+>> +
+>> +static int load_trunk(ktap_option_t *parm, unsigned long **buff)
+>> +{
+>> +     int ret;
+>> +     unsigned long *vmstart;
+>> +
+>> +     vmstart = vmalloc(parm->trunk_len);
+>> +     if (!vmstart)
+>> +             return -ENOMEM;
+>> +
+>> +     ret = copy_from_user(vmstart, (void __user *)parm->trunk,
+>> +                          parm->trunk_len);
+>
+> Needs unsigned length check if supplied from user space.
+>
+>> +     if (ret < 0) {
+>> +             vfree(vmstart);
+>> +             return -EFAULT;
+>> +     }
+>> +
+>> +     *buff = vmstart;
+>> +     return 0;
+>> +}
+>> +
+>> +static struct dentry *kp_dir_dentry;
+>
+> What lock protects that?
+>
+This dentry would not change after insmod ktapvm.ko, so don't need any lock.
+
+>> +static long ktap_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>> +{
+>> +     ktap_option_t parm;
+>> +     int ret;
+>> +
+>> +     switch (cmd) {
+>> +     case KTAP_CMD_IOC_VERSION:
+>> +             print_version();
+>
+> This seems odd. Should return the version instead?
+>
+Yes, deleted.
+>
+>> +             return 0;
+>> +     case KTAP_CMD_IOC_RUN:
+>> +             /*
+>> +              * must be root to run ktap script (at least for now)
+>> +              *
+>> +              * TODO: check perf_paranoid sysctl and allow non-root user
+>> +              * to use ktap for tracing process(like uprobe) ?
+>
+> This would need ensuring first that there is no possible way to crash
+> the kernel. Probably very hard.
+>
+I agree it's hard to let non-root user to use these dynamic tracing tool,
+I will remove this comment to avoid confusion after we find a solution.
+
+>> +              */
+>> +             if (!capable(CAP_SYS_ADMIN))
+>> +                     return -EACCES;
+>> +
+>> +             ret = copy_from_user(&parm, (void __user *)arg,
+>> +                                  sizeof(ktap_option_t));
+>> +             if (ret < 0)
+>> +                     return -EFAULT;
+>
+> The check is wrong, it should be != 0
+>
+Fixed.
+
+>> +struct syscall_metadata **syscalls_metadata;
+>> +
+>> +/*TODO: kill this function in future */
+>> +static int __init init_dummy_kernel_functions(void)
+>> +{
+>> +     unsigned long *addr;
+>> +
+>> +     /*
+>> +      * ktap need symbol ftrace_profile_set_filter to set event filter,
+>> +      * export it in future.
+>
+> Obviously you need to fix that. Just export the symbols.
+>
+Yeah, will do after kernel community decide to merge ktap. :)
+
+>> +
+>> +extern struct syscall_metadata **syscalls_metadata;
+>> +
+>> +/* get from kernel/trace/trace.h */
+>
+> Use that version instead.
+>
+Same as above.
+
+>> +static __always_inline int trace_get_context_bit(void)
+>> +{
+>> +     int bit;
+>> +
+>> +     if (in_interrupt()) {
+>> +             if (in_nmi())
+>> +                     bit = 0;
+>> +             else if (in_irq())
+>> +                     bit = 1;
+>> +             else
+>> +                     bit = 2;
+>> +     } else
+>> +             bit = 3;
+>> +
+>> +     return bit;
+>> +}
+>
+>
+
+Thanks for your review.
+
+Jovi
