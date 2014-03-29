@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753893AbaCaK0v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 06:26:51 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:50774 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753814AbaCaK0u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 Mar 2014 06:26:50 -0400
-Date: Mon, 31 Mar 2014 07:26:44 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antti Palosaari <crope@iki.fi>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-Message-ID: <20140331072644.64897935@infradead.org>
-In-Reply-To: <20140331130107.93488407b1f13f9d64679979@canb.auug.org.au>
-References: <20140331130107.93488407b1f13f9d64679979@canb.auug.org.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1754077AbaCaK2R (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 06:28:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45241 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753914AbaCaK2O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 Mar 2014 06:28:14 -0400
+Date: Sat, 29 Mar 2014 17:22:16 +0100
+From: Jan Kara <jack@suse.cz>
+To: Matthew Wilcox <matthew.r.wilcox@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, willy@linux.intel.com
+Subject: Re: [PATCH v7 03/22] axonram: Fix bug in direct_access
+Message-ID: <20140329162216.GC1211@quack.suse.cz>
+References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
+ <e3ede380dd37d3cae604ee20198e568c9eb4fa00.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e3ede380dd37d3cae604ee20198e568c9eb4fa00.1395591795.git.matthew.r.wilcox@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Sun 23-03-14 15:08:29, Matthew Wilcox wrote:
+> The 'pfn' returned by axonram was completely bogus, and has been since
+> 2008.
+  Maybe time to drop the driver instead? When noone noticed for 6 years, it
+seems pretty much dead... Or is there some possibility the driver can get
+reused for new HW?
 
-Em Mon, 31 Mar 2014 13:01:07 +1100
-Stephen Rothwell <sfr@canb.auug.org.au> escreveu:
+  Anyway the patch looks correct so feel free to add:
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-> Hi Mauro,
-> 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/media/usb/em28xx/em28xx-dvb.c: In function 'em28xx_dvb_resume':
-> drivers/media/usb/em28xx/em28xx-dvb.c:1645:7: error: 'client' undeclared (first use in this function)
->    if (client) {
->        ^
-> 
-> Caused by commit 37571b163c15 ("[media] em28xx-dvb: fix PCTV 461e tuner
-> I2C binding").  Basic build testing is a good idea :-(
-
-Yeah, sorry for that. The affected patch came from another branch,
-but one of the hunks got incorrectly merged. I'm applying a fix for
-it in a few.
+								Honza
 
 > 
-> I have used the v4v-dvb tree from next-20140328 for today.
-
-Thanks!
-Mauro
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+> ---
+>  arch/powerpc/sysdev/axonram.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/powerpc/sysdev/axonram.c b/arch/powerpc/sysdev/axonram.c
+> index 47b6b9f..830edc8 100644
+> --- a/arch/powerpc/sysdev/axonram.c
+> +++ b/arch/powerpc/sysdev/axonram.c
+> @@ -156,7 +156,7 @@ axon_ram_direct_access(struct block_device *device, sector_t sector,
+>  	}
+>  
+>  	*kaddr = (void *)(bank->ph_addr + offset);
+> -	*pfn = virt_to_phys(kaddr) >> PAGE_SHIFT;
+> +	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.9.0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
