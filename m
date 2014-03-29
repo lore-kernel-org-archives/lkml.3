@@ -1,572 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbaC2RG1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 13:06:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41140 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751604AbaC2RGY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 13:06:24 -0400
-Date: Sat, 29 Mar 2014 14:05:58 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
-Cc: linux-mtd@lists.infradead.org, devicetree@vger.kernel.org,
-        Francois.Bedard@synopsys.com,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        linux-kernel@vger.kernel.org, grant.likely@linaro.org,
-        dwmw2@infradead.org, Brian Norris <computersforpeace@gmail.com>
-Subject: Re: [PATCH] axs_nand - add driver for NAND controller used on
- Synopsys AXS dev boards
-Message-ID: <20140329170558.GA464@arch.cereza>
-References: <1394626349-16024-1-git-send-email-abrodkin@synopsys.com>
+	id S1751999AbaC2RKr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 13:10:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751609AbaC2RKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 13:10:46 -0400
+Date: Sat, 29 Mar 2014 18:10:33 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@ghostprotocols.net, LKML <linux-kernel@vger.kernel.org>,
+        jmario@redhat.com, fowles@inreach.com
+Subject: Re: [PATCH 1/4] perf: Allow ability to map cpus to nodes easily
+Message-ID: <20140329171033.GB2022@krava.redhat.com>
+References: <1395689577-214654-1-git-send-email-dzickus@redhat.com>
+ <1395689577-214654-2-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1394626349-16024-1-git-send-email-abrodkin@synopsys.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1395689577-214654-2-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey,
-
-I'm Ccing Brian Norris, who's co-maintaining MTD now (although he probably
-has this on his queue anyway).
-
-On Mar 12, Alexey Brodkin wrote:
-> Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
+On Mon, Mar 24, 2014 at 03:32:54PM -0400, Don Zickus wrote:
+> This patch figures out the max number of cpus and nodes that are on the
+> system and creates a map of cpu to node.  This allows us to provide a cpu
+> and quickly get the node associated with it.
 > 
-> Cc: Vineet Gupta <vgupta@synopsys.com>
+> It was mostly copied from builtin-kmem.c and tweaked slightly to use less memory
+> (use possible cpus instead of max).  It also calculates the max number of nodes.
+> 
+> V3: simplify function names
+
+some nits below, but I think Arnaldo should
+see/check the namespace ;-)
+
+thanks,
+jirka
+
+> 
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
 > ---
->  Documentation/devicetree/bindings/mtd/axs-nand.txt |  17 +
->  drivers/mtd/nand/Kconfig                           |   6 +
->  drivers/mtd/nand/Makefile                          |   1 +
->  drivers/mtd/nand/axs_nand.c                        | 412 +++++++++++++++++++++
->  4 files changed, 436 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mtd/axs-nand.txt
->  create mode 100644 drivers/mtd/nand/axs_nand.c
+>  tools/perf/util/cpumap.c | 139 +++++++++++++++++++++++++++++++++++++++++++++++
+>  tools/perf/util/cpumap.h |  35 ++++++++++++
+>  2 files changed, 174 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/mtd/axs-nand.txt b/Documentation/devicetree/bindings/mtd/axs-nand.txt
-> new file mode 100644
-> index 0000000..aab5873
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mtd/axs-nand.txt
-> @@ -0,0 +1,17 @@
-> +* Synopsys AXS NAND controller
+> diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
+> index 7fe4994..2eb528e 100644
+> --- a/tools/perf/util/cpumap.c
+> +++ b/tools/perf/util/cpumap.c
+> @@ -317,3 +317,142 @@ int cpu_map__build_core_map(struct cpu_map *cpus, struct cpu_map **corep)
+>  {
+>  	return cpu_map__build_map(cpus, corep, cpu_map__get_core);
+>  }
 > +
-> +Required properties:
-> +  - compatible: must be "snps,axs-nand"
-> +  - reg: physical base address and size of the registers map
-> +
-> +The device tree may optionally contain sub-nodes describing partitions of the
-> +address space. See partition.txt for more detail.
-> +
-> +Examples:
-> +
-> +nand: nand@0x16000 {
-
-It seems it's better to name the node as "flash", as I was recently
-advised:
-
-https://www.mail-archive.com/devicetree@vger.kernel.org/msg18763.html
-
-> +	#address-cells = <1>;
-> +	#size-cells = <1>;
-> +	compatible = "snps,axs-nand";
-> +	reg = < 0x16000 0x200 >;
-> +};
-> diff --git a/drivers/mtd/nand/Kconfig b/drivers/mtd/nand/Kconfig
-> index 93ae6a6..3661822 100644
-> --- a/drivers/mtd/nand/Kconfig
-> +++ b/drivers/mtd/nand/Kconfig
-> @@ -510,4 +510,10 @@ config MTD_NAND_XWAY
->  	  Enables support for NAND Flash chips on Lantiq XWAY SoCs. NAND is attached
->  	  to the External Bus Unit (EBU).
->  
-> +config MTD_NAND_AXS
-> +	tristate "Support for NAND on Synopsys AXS development board"
-> +	help
-> +	  Enables support for NAND Flash chips on Synopsys AXS development
-> +	  boards.
-> +
->  endif # MTD_NAND
-> diff --git a/drivers/mtd/nand/Makefile b/drivers/mtd/nand/Makefile
-> index 542b568..635a918 100644
-> --- a/drivers/mtd/nand/Makefile
-> +++ b/drivers/mtd/nand/Makefile
-> @@ -49,5 +49,6 @@ obj-$(CONFIG_MTD_NAND_JZ4740)		+= jz4740_nand.o
->  obj-$(CONFIG_MTD_NAND_GPMI_NAND)	+= gpmi-nand/
->  obj-$(CONFIG_MTD_NAND_XWAY)		+= xway_nand.o
->  obj-$(CONFIG_MTD_NAND_BCM47XXNFLASH)	+= bcm47xxnflash/
-> +obj-$(CONFIG_MTD_NAND_AXS)		+= axs_nand.o
->  
->  nand-objs := nand_base.o nand_bbt.o
-> diff --git a/drivers/mtd/nand/axs_nand.c b/drivers/mtd/nand/axs_nand.c
-> new file mode 100644
-> index 0000000..1c87bf0
-> --- /dev/null
-> +++ b/drivers/mtd/nand/axs_nand.c
-> @@ -0,0 +1,412 @@
-> +/*
-> + * Copyright (C) 2014 Synopsys, Inc. (www.synopsys.com)
-> + *
-> + * Driver for NAND controller on Synopsys AXS development board.
-> + *
-> + * This file is subject to the terms and conditions of the GNU General Public
-> + * License v2. See the file COPYING in the main directory of this archive for
-> + * more details.
-> + */
-> +
-> +#include <linux/dma-mapping.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/mtd/mtd.h>
-> +#include <linux/mtd/nand.h>
-> +#include <linux/mtd/partitions.h>
-> +#include <linux/of_address.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/io.h>
-> +
-> +/*
-> + * There's an issue with DMA'd data if data buffer is cached.
-> + * So to make NAND storage available for now we'll map data buffer in
-> + * uncached memory.
-> + *
-> + * As soon as issue with cached buffer is resolved following define to be
-> + * removed as well as sources it enables.
-> + */
-> +#define DATA_BUFFER_UNCACHED
-> +
-> +#define BUS_WIDTH	8		/* AXI data bus width in bytes	*/
-> +
-> +/* DMA buffer descriptor masks */
-> +#define BD_STAT_OWN			(1 << 31)
-> +#define BD_STAT_BD_FIRST		(1 << 3)
-> +#define BD_STAT_BD_LAST			(1 << 2)
-> +#define BD_SIZES_BUFFER1_MASK		0xfff
-> +
-> +#define BD_STAT_BD_COMPLETE	(BD_STAT_BD_FIRST | BD_STAT_BD_LAST)
-> +
-> +/* Controller command types */
-> +#define B_CT_ADDRESS	(0x0 << 16)	/* Address operation		*/
-> +#define B_CT_COMMAND	(0x1 << 16)	/* Command operation		*/
-> +#define B_CT_WRITE	(0x2 << 16)	/* Write operation		*/
-
-> +#define B_CT_READ	(0x3 << 16)	/* Write operation		*/
-> +
-^^^
-Typo here?
-
-> +/* Controller command options */
-> +#define B_WFR		(1 << 19)	/* 1b - Wait for ready		*/
-> +#define B_LC		(1 << 18)	/* 1b - Last cycle		*/
-> +#define B_IWC		(1 << 13)	/* 1b - Interrupt when complete	*/
-> +
-> +enum {
-> +	NAND_ISR_DATAREQUIRED = 0,
-> +	NAND_ISR_TXUNDERFLOW,
-> +	NAND_ISR_TXOVERFLOW,
-> +	NAND_ISR_DATAAVAILABLE,
-> +	NAND_ISR_RXUNDERFLOW,
-> +	NAND_ISR_RXOVERFLOW,
-> +	NAND_ISR_TXDMACOMPLETE,
-> +	NAND_ISR_RXDMACOMPLETE,
-> +	NAND_ISR_DESCRIPTORUNAVAILABLE,
-> +	NAND_ISR_CMDDONE,
-> +	NAND_ISR_CMDAVAILABLE,
-> +	NAND_ISR_CMDERROR,
-> +	NAND_ISR_DATATRANSFEROVER,
-> +	NAND_ISR_NONE
-> +};
-> +
-> +enum {
-> +	AC_FIFO = 0,		/* Address and command fifo */
-> +	IDMAC_BDADDR = 0x18,	/* IDMAC descriptor list base address */
-> +	INT_STATUS = 0x118,	/* Interrupt status register */
-> +	INT_CLR_STATUS = 0x120	/* Interrupt clear status register */
-> +};
-> +
-> +#define AXS_BUF_SIZE	(PAGE_ALIGN(NAND_MAX_PAGESIZE + NAND_MAX_OOBSIZE))
-> +
-> +struct asx_nand_bd {
-> +	__le32 status;		/* DES0 */
-> +	__le32 sizes;		/* DES1 */
-> +	dma_addr_t buffer_ptr0;	/* DES2 */
-> +	dma_addr_t buffer_ptr1;	/* DES3 */
-> +};
-> +
-> +struct axs_nand_host {
-> +	struct nand_chip	nand_chip;
-> +	struct mtd_info		mtd;
-> +	void __iomem		*io_base;
-> +	struct device		*dev;
-> +	struct asx_nand_bd	*bd;	/* Buffer descriptor */
-> +	dma_addr_t		bd_dma;	/* DMA handle for buffer descriptor */
-> +	uint8_t			*db;	/* Data buffer */
-> +	dma_addr_t		db_dma;	/* DMA handle for data buffer */
-> +};
-> +
-> +/**
-> + * reg_set - Sets register with provided value.
-> + * @host:	Pointer to private data structure.
-> + * @reg:	Register offset from base address.
-> + * @value:	Value to set in register.
-> + */
-> +static inline void reg_set(struct axs_nand_host *host, int reg, int value)
+> +/* setup simple routines to easily access node numbers given a cpu number */
+> +static int __set_max_num(FILE *fp, int *max)
 > +{
-> +	iowrite32(value, host->io_base + reg);
-> +}
+> +	int num;
+> +	char buf[256];
 > +
-> +/**
-> + * reg_get - Gets value of specified register.
-> + * @priv:	Pointer to private data structure.
-> + * @reg:	Register offset from base address.
-> + *
-> + * returns:	Value of requested register.
-> + */
-> +static inline unsigned int reg_get(struct axs_nand_host *host, int reg)
-> +{
-> +	return ioread32(host->io_base + reg);
-> +}
+> +	num = fread(&buf, 1, sizeof(buf), fp);
+> +	if (!num)
+> +		return -1;
 > +
-> +/**
-> + * xplorer_nand_write_buf - write buffer to chip
-> + * @mtd:	MTD device structure
-> + * @buf:	Data buffer
-> + * @len:	Number of bytes to write
-> + *
-> + * returns:	1 if requested flag is set, otherwise 0
-
-Hm.. this documentation seems wrong.
-
-> + */
-> +static unsigned int axs_flag_is_set(struct axs_nand_host *host, int flag)
-> +{
-> +	unsigned int reg = reg_get(host, INT_STATUS);
+> +	buf[num] = '\0';
 > +
-> +	if (reg & (1 << flag)) {
-> +		reg_set(host, INT_CLR_STATUS, 1 << flag);
-
-Hm... so you clear the flag as well? How about chosing a different name
-for the function (axs_flag_clear_set() or something)?
-
-> +		return 1;
+> +	/* start on the right, to find highest node num */
+> +	while (--num) {
+> +		if ((buf[num] == ',') || (buf[num] == '-')) {
+> +			num++;
+> +			break;
+> +		}
 > +	}
+> +	if (sscanf(&buf[num], "%d", max) < 1)
+> +		return -1;
+> +
+> +	/* convert from 0-based to 1-based */
+> +	(*max)++;
 > +
 > +	return 0;
 > +}
 > +
-> +/**
-> + * axs_nand_write_buf - write buffer to chip
-> + * @mtd:	MTD device structure
-> + * @buf:	Data buffer
-> + * @len:	Number of bytes to write
-> + */
-> +static void axs_nand_write_buf(struct mtd_info *mtd,
-> +		const uint8_t *buf, int len)
+> +/* Determine highest possible cpu in the system for sparse allocation */
+> +static void set_max_cpu_num(void)
 > +{
-> +	struct nand_chip *this = mtd->priv;
-> +	struct axs_nand_host *host = this->priv;
+> +	FILE *fp;
+> +	int ret = -1;
 > +
-> +	memcpy(host->db, buf, len);
-> +#ifndef DATA_BUFFER_UNCACHED
-> +	dma_sync_single_for_device(host->dev, host->db_dma, len, DMA_TO_DEVICE);
-> +#endif
+> +	/* set up default */
+> +	max_cpu_num = 4096;
 > +
-> +	/* Setup buffer descriptor */
-> +	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
-> +	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
-> +				      BD_SIZES_BUFFER1_MASK);
-> +	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
-> +	host->bd->buffer_ptr1 = 0;
-> +
-> +	/* Issue "write" command */
-> +	reg_set(host, AC_FIFO, B_CT_WRITE | B_WFR | B_IWC | B_LC | (len - 1));
-> +
-> +	/* Wait for NAND command and DMA to complete */
-> +	while (!axs_flag_is_set(host, NAND_ISR_CMDDONE))
-> +		;
-> +	while (!axs_flag_is_set(host, NAND_ISR_TXDMACOMPLETE))
-> +		;
-
-Just a suggestion: isn't a bit dangerous to have these endless loops?
-I'd rather add some timeout to bail and print some error, but I'm sure
-you know better.
-
-> +}
-> +
-> +/**
-> + * axs_nand_read_buf -  read chip data into buffer
-> + * @mtd:	MTD device structure
-> + * @buf:	Buffer to store data
-> + * @len:	Number of bytes to read
-> + */
-> +static void axs_nand_read_buf(struct mtd_info *mtd, uint8_t *buf, int len)
-> +{
-> +	struct nand_chip *this = mtd->priv;
-> +	struct axs_nand_host *host = this->priv;
-> +
-> +	/* Setup buffer descriptor */
-> +	host->bd->status = BD_STAT_OWN | BD_STAT_BD_COMPLETE;
-> +	host->bd->sizes = cpu_to_le32(ALIGN(len, BUS_WIDTH) &
-> +				      BD_SIZES_BUFFER1_MASK);
-> +	host->bd->buffer_ptr0 = cpu_to_le32(host->db_dma);
-> +	host->bd->buffer_ptr1 = 0;
-> +
-> +	/* Issue "read" command */
-> +	reg_set(host, AC_FIFO, B_CT_READ | B_WFR | B_IWC | B_LC | (len - 1));
-> +
-> +	/* Wait for NAND command and DMA to complete */
-> +	while (!axs_flag_is_set(host, NAND_ISR_CMDDONE))
-> +		;
-> +	while (!axs_flag_is_set(host, NAND_ISR_RXDMACOMPLETE))
-> +		;
-
-Ditto.
-
-> +
-> +#ifndef DATA_BUFFER_UNCACHED
-> +	dma_sync_single_for_cpu(host->dev, host->db_dma, len, DMA_FROM_DEVICE);
-> +#endif
-> +	if (buf != host->db)
-> +		memcpy(buf, host->db, len);
-> +}
-> +
-> +/**
-> + * axs_nand_read_byte - read one byte from the chip
-> + * @mtd:	MTD device structure
-> + *
-> + * returns:	read data byte
-> + */
-> +static uint8_t axs_nand_read_byte(struct mtd_info *mtd)
-> +{
-> +	struct nand_chip *this = mtd->priv;
-> +	struct axs_nand_host *host = this->priv;
-> +
-> +	axs_nand_read_buf(mtd, host->db, sizeof(uint8_t));
-> +	return (uint8_t)host->db[0];
-> +}
-> +
-> +/**
-> + * axs_nand_read_word - read one word from the chip
-> + * @mtd:	MTD device structure
-> + *
-> + * returns:	read data word
-> + */
-> +static uint16_t axs_nand_read_word(struct mtd_info *mtd)
-> +{
-> +	struct nand_chip *this = mtd->priv;
-> +	struct axs_nand_host *host = this->priv;
-> +
-> +	axs_nand_read_buf(mtd, host->db, sizeof(uint16_t));
-> +	return (uint16_t)host->db[0];
-> +}
-> +
-> +/**
-> + * Hardware specific access to control-lines
-> + * @mtd:	MTD device structure
-> + * @cmd:	NAND command
-> + * @ctrl:	NAND control options
-> + */
-> +static void axs_nand_cmd_ctrl(struct mtd_info *mtd, int cmd,
-> +		unsigned int ctrl)
-> +{
-> +	struct nand_chip *nand_chip = mtd->priv;
-> +	struct axs_nand_host *host = nand_chip->priv;
-> +
-> +	if (cmd == NAND_CMD_NONE)
-> +		return;
-> +
-> +	cmd = cmd & 0xff;
-> +
-> +	switch (ctrl & (NAND_ALE | NAND_CLE)) {
-> +	/* Address */
-> +	case NAND_ALE:
-> +		cmd |= B_CT_ADDRESS;
-> +		break;
-> +
-> +	/* Command */
-> +	case NAND_CLE:
-> +		cmd |= B_CT_COMMAND | B_WFR;
-> +
-> +		break;
-> +
-> +	default:
-> +		dev_err(host->dev, "Unknown ctrl %#x\n", ctrl);
-> +		BUG_ON(1);
-
-Hm... do you really need to call BUG(). I suggest that you read the
-big warning about this in include/asm-generic/bug.h.
-
-> +	}
-> +
-> +	reg_set(host, AC_FIFO, cmd | B_LC);
-> +	while (!axs_flag_is_set(host, NAND_ISR_CMDDONE))
-> +		;
-
-Another endless loops...
-
-> +}
-> +
-> +static int axs_nand_probe(struct platform_device *pdev)
-> +{
-> +	struct mtd_part_parser_data ppdata;
-> +	struct nand_chip *nand_chip;
-> +	struct axs_nand_host *host;
-> +	struct resource res_regs;
-> +	struct mtd_info *mtd;
-> +	int err;
-> +
-> +	if (!pdev->dev.of_node)
-> +		return -ENODEV;
-> +
-> +	/* Get registers base address from device tree */
-> +	err = of_address_to_resource(pdev->dev.of_node, 0, &res_regs);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Failed to retrieve registers base from device tree\n");
-> +		return -ENODEV;
-> +	}
-> +
-> +	/* Allocate memory for the device structure (and zero it) */
-> +	host = kzalloc(sizeof(struct axs_nand_host), GFP_KERNEL);
-> +	if (!host) {
-> +		dev_err(&pdev->dev, "Failed to allocate device structure.\n");
-
-You don't need to print an OOM message.
-
-> +		return -ENOMEM;
-> +	}
-> +
-> +	host->io_base = devm_ioremap_resource(&pdev->dev, &res_regs);
-> +	if (IS_ERR(host->io_base)) {
-> +		err = PTR_ERR(host->io_base);
+> +	/* get the highest possible cpu number for a sparse allocation */
+> +	fp = fopen("/sys/devices/system/cpu/possible", "r");
+> +	if (!fp)
 > +		goto out;
-> +	}
-> +	dev_dbg(&pdev->dev, "Registers base address is 0x%p\n", host->io_base);
 > +
-> +	host->bd = dmam_alloc_coherent(&pdev->dev, sizeof(struct asx_nand_bd),
-> +				       &host->bd_dma, GFP_KERNEL);
-
-Managed DMA alloc? Nice, I just learned something new! :-)
-
-> +	if (!host->bd) {
-> +		dev_err(&pdev->dev, "Failed to allocate buffer descriptor\n");
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
+> +	ret = __set_max_num(fp, &max_cpu_num);
 > +
-> +	memset(host->bd, 0, sizeof(struct asx_nand_bd));
+> +	fclose(fp);
 > +
-> +#ifdef DATA_BUFFER_UNCACHED
-> +	host->db = dmam_alloc_coherent(&pdev->dev, AXS_BUF_SIZE,
-> +#else
-> +	host->db = dmam_alloc_noncoherent(&pdev->dev, AXS_BUF_SIZE,
-> +#endif
-> +				       &host->db_dma, GFP_KERNEL);
-> +	if (!host->db) {
-> +		dev_err(&pdev->dev, "Failed to allocate data buffer\n");
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
-> +	dev_dbg(&pdev->dev, "Data buffer mapped @ %p, DMA @ %x\n", host->db,
-> +		host->db_dma);
-> +
-> +	mtd = &host->mtd;
-> +	nand_chip = &host->nand_chip;
-> +	host->dev = &pdev->dev;
-> +
-> +	nand_chip->priv = host;
-> +	mtd->priv = nand_chip;
-> +	mtd->name = "axs_nand";
-> +	mtd->owner = THIS_MODULE;
-> +	mtd->dev.parent = &pdev->dev;
-> +	ppdata.of_node = pdev->dev.of_node;
-> +
-> +	nand_chip->cmd_ctrl = axs_nand_cmd_ctrl;
-> +	nand_chip->read_byte = axs_nand_read_byte;
-> +	nand_chip->read_word = axs_nand_read_word;
-> +	nand_chip->write_buf = axs_nand_write_buf;
-> +	nand_chip->read_buf = axs_nand_read_buf;
-> +	nand_chip->ecc.mode = NAND_ECC_SOFT;
-> +
-> +	dev_set_drvdata(&pdev->dev, host);
-> +
-> +	reg_set(host, IDMAC_BDADDR, host->bd_dma);
-> +
-> +	if (nand_scan_ident(mtd, 1, NULL)) {
-> +		err = -ENXIO;
-> +		goto out1;
-> +	}
-> +
-> +	if (nand_scan_tail(mtd)) {
-> +		err = -ENXIO;
-> +		goto out1;
-> +	}
-> +
-
-I guess you can replace the nand_scan_ident() + nand_scan_tail(), with
-nand_scan(). Or maybe you have a reason for this?
-
-> +	err = mtd_device_parse_register(mtd, NULL, &ppdata, NULL, 0);
-> +	if (!err)
-> +		return err;
-> +
-> +	nand_release(mtd);
-> +
-> +out1:
-> +	dev_set_drvdata(&pdev->dev, NULL);
 > +out:
-> +	kfree(host);
-> +	return err;
+> +	if (ret)
+> +		pr_err("Failed to read max cpus, using default of %d\n",
+> +			max_cpu_num);
+> +	return;
 > +}
 > +
-> +static int axs_nand_remove(struct platform_device *ofdev)
+> +/* Determine highest possible node in the system for sparse allocation */
+> +static void set_max_node_num(void)
 > +{
-> +	struct axs_nand_host *host = dev_get_drvdata(&ofdev->dev);
-> +	struct mtd_info *mtd = &host->mtd;
+> +	FILE *fp;
+> +	int ret = -1;
 > +
-> +	nand_release(mtd);
-> +	dev_set_drvdata(&ofdev->dev, NULL);
-> +	iounmap(host->io_base);
-
-This unmap is not needed, since you're using managed (devm) ioremap.
-
-> +	kfree(host);
+> +	/* set up default */
+> +	max_node_num = 8;
 > +
+> +	/* get the highest possible cpu number for a sparse allocation */
+> +	fp = fopen("/sys/devices/system/node/possible", "r");
+> +	if (!fp)
+> +		goto out;
+
+any reason why not put fopen/fclose into __set_max_num ?
+
+also looks like 'get_max_num' would fit better for __set_max_num ;-)
+
+> +
+> +	ret = __set_max_num(fp, &max_node_num);
+> +
+> +	fclose(fp);
+> +	
+
+^^^ whitespace
+
+> +out:
+> +	if (ret)
+> +		pr_err("Failed to read max nodes, using default of %d\n",
+> +			max_node_num);
+> +	return;
+> +}
+> +
+> +static int init_cpunode_map(void)
+> +{
+> +	int i;
+> +
+> +	set_max_cpu_num();
+> +	set_max_node_num();
+> +
+> +	cpunode_map = calloc(max_cpu_num, sizeof(int));
+> +	if (!cpunode_map) {
+> +		pr_err("%s: calloc failed\n", __func__);
+> +		goto out;
+> +	}
+> +
+> +	for (i = 0; i < max_cpu_num; i++)
+> +		cpunode_map[i] = -1;
+> +
+> +	return 0;
+> +out:
+> +	return -1;
+> +}
+> +
+> +#define PATH_SYS_NODE   "/sys/devices/system/node"
+> +
+> +int cpu__setup_cpunode_map(void)
+> +{
+> +	struct dirent *dent1, *dent2;
+> +	DIR *dir1, *dir2;
+> +	unsigned int cpu, mem;
+> +	char buf[PATH_MAX];
+> +
+> +	/* initialize globals */
+> +	if (init_cpunode_map())
+> +		return -1;
+> +
+> +	dir1 = opendir(PATH_SYS_NODE);
+> +	if (!dir1)
+> +		return 0;
+> +
+> +	/* walk tree and setup map */
+> +	while ((dent1 = readdir(dir1)) != NULL) {
+> +		if (dent1->d_type != DT_DIR ||
+> +		    sscanf(dent1->d_name, "node%u", &mem) < 1)
+> +			continue;
+> +
+> +		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
+> +		dir2 = opendir(buf);
+> +		if (!dir2)
+> +			continue;
+> +		while ((dent2 = readdir(dir2)) != NULL) {
+> +			if (dent2->d_type != DT_LNK ||
+> +			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
+> +				continue;
+> +			cpunode_map[cpu] = mem;
+> +		}
+> +		closedir(dir2);
+> +	}
+> +	closedir(dir1);
 > +	return 0;
 > +}
 > +
-> +static const struct of_device_id axs_nand_dt_ids[] = {
-> +	{ .compatible = "snps,axs-nand", },
-> +	{ /* Sentinel */ }
-> +};
+
+^^^ white space
+
+> diff --git a/tools/perf/util/cpumap.h b/tools/perf/util/cpumap.h
+> index b123bb9..ce3c5a0 100644
+> --- a/tools/perf/util/cpumap.h
+> +++ b/tools/perf/util/cpumap.h
+> @@ -4,6 +4,9 @@
+>  #include <stdio.h>
+>  #include <stdbool.h>
+>  
+> +#include "perf.h"
+> +#include "util/debug.h"
 > +
-> +MODULE_DEVICE_TABLE(of, axs_nand_match);
+>  struct cpu_map {
+>  	int nr;
+>  	int map[];
+> @@ -46,4 +49,36 @@ static inline bool cpu_map__empty(const struct cpu_map *map)
+>  	return map ? map->map[0] == -1 : true;
+>  }
+>  
+> +int max_cpu_num;
+> +int max_node_num;
+> +int *cpunode_map;
 > +
-> +static struct platform_driver axs_nand_driver = {
-> +	.probe		= axs_nand_probe,
-> +	.remove		= axs_nand_remove,
-> +	.driver = {
-> +		.name = "asx-nand",
-> +		.owner = THIS_MODULE,
-> +		.of_match_table = axs_nand_dt_ids,
-> +	},
-> +};
+> +int cpu__setup_cpunode_map(void);
 > +
-> +module_platform_driver(axs_nand_driver);
+> +static inline int cpu__max_node(void)
+> +{
+> +	if (unlikely(!max_node_num))
+> +		pr_debug("cpu_map not initiailzed\n");
+
+typo: initialized
+
 > +
-> +MODULE_AUTHOR("Alexey Brodkin <abrodkin@synopsys.com>");
-> +MODULE_DESCRIPTION("NAND driver for Synopsys AXS development board");
-> +MODULE_LICENSE("GPL");
+> +	return max_node_num;
+> +}
+> +
+> +static inline int cpu__max_cpu(void)
+> +{
+> +	if (unlikely(!max_cpu_num))
+> +		pr_debug("cpu_map not initiailzed\n");
+
+ditto
+
+> +
+> +	return max_cpu_num;
+> +}
+> +
+> +static inline int cpu__get_node(int cpu)
+> +{
+> +	if (unlikely(cpunode_map == NULL)) {
+> +		pr_debug("cpu_map not initialized\n");
+
+ditto
+
+> +		return -1;
+> +	}
+> +
+> +	return cpunode_map[cpu];
+> +}
+> +
+>  #endif /* __PERF_CPUMAP_H */
 > -- 
-> 1.8.5.3
+> 1.7.11.7
 > 
-
-If you fix all this you can add my:
-
-Reviewed-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
