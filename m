@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751725AbaC2B00 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 21:26:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55247 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612AbaC2B0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 21:26:25 -0400
-Date: Fri, 28 Mar 2014 18:28:19 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 00/46] 3.13.8-stable review
-Message-ID: <20140329012819.GB14131@kroah.com>
-References: <20140328173134.630198216@linuxfoundation.org>
- <53361DEC.4030306@roeck-us.net>
+	id S1751709AbaC2Bmr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 21:42:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44346 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539AbaC2Bmq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 Mar 2014 21:42:46 -0400
+Date: Fri, 28 Mar 2014 18:42:44 -0700 (PDT)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        ohering@suse.com, benjamin.tissoires@redhat.com, dh.herrmann@gmail.com
+Subject: Re: [PATCH 1/1] Drivers: hid: hid-hyperv: Implement a stub 
+ raw_request() entry point
+In-Reply-To: <1396053687-21421-1-git-send-email-kys@microsoft.com>
+Message-ID: <alpine.LNX.2.00.1403281842100.16202@pobox.suse.cz>
+References: <1396053687-21421-1-git-send-email-kys@microsoft.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53361DEC.4030306@roeck-us.net>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 06:12:12PM -0700, Guenter Roeck wrote:
-> On 03/28/2014 10:31 AM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.13.8 release.
-> > There are 46 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Sun Mar 30 17:31:14 UTC 2014.
-> > Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 126 pass: 120 skipped: 4 fail: 2
-> 
-> qemu tests all passed.
-> 
-> Builds powerpc:mpc85xx_defconfig and powerpc:mpc85xx_smp_defconfig
-> are still failing. Upstream (-rc8) still has the same problem.
-> Results are therefore as expected.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
+On Fri, 28 Mar 2014, K. Y. Srinivasan wrote:
 
-Wonderful, thanks for testing all 3 of these releases and letting me
-know.
+> commit 3c86726cfe38952f0366f86acfbbb025813ec1c2
+> Author: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> Date:   Thu Feb 20 15:24:49 2014 -0500
+> 
+>     HID: make .raw_request mandatory
+> 
+>     SET_REPORT and GET_REPORT are mandatory in the HID specification.
+>     Make the corresponding API in hid-core mandatory too, which removes the
+>     need to test against it in some various places.
+> 
+>     Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+>     Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+>     Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> 
+> Made .raw_request mandatory and broke the Hyper-V mouse driver. This patch
+> fixes the problem.
+> 
+> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> ---
+>  drivers/hid/hid-hyperv.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-hyperv.c b/drivers/hid/hid-hyperv.c
+> index c24908f..89a9234 100644
+> --- a/drivers/hid/hid-hyperv.c
+> +++ b/drivers/hid/hid-hyperv.c
+> @@ -460,12 +460,22 @@ static void mousevsc_hid_stop(struct hid_device *hid)
+>  {
+>  }
+>  
+> +static int mousevsc_hid_raw_request(struct hid_device *hid,
+> +				    unsigned char report_num,
+> +				    __u8 buf, size_t len,
 
-greg k-h
+This should be __u8 *buf. I have fixed that and applied.
+
+-- 
+Jiri Kosina
+SUSE Labs
