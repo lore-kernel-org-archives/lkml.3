@@ -1,82 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751774AbaC2BUj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 21:20:39 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:54864 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaC2BUi (ORCPT
+	id S1751725AbaC2B00 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 21:26:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55247 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751612AbaC2B0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 21:20:38 -0400
-Date: Sat, 29 Mar 2014 09:20:21 +0800
-From: Kevin Hao <haokexin@gmail.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Dongsheng Wang <dongsheng.wang@freescale.com>, fweisbec@gmail.com,
-        James Hogan <james.hogan@imgtec.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Peter Zijlstra <peterz@infradead.org>, Helge Deller <deller@gmx.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@au1.ibm.com>,
-        "James E.J. Bottomley" <jejb@parisc-linux.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        jason.jin@freescale.com, scottwood@freescale.com,
-        Thomas Gleixner <tglx@linutronix.de>, linuxppc-dev@lists.ozlabs.org,
-        Ingo Molnar <mingo@kernel.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH] powerpc/irq: Remove HAVE_IRQ_EXIT_ON_IRQ_STACK feature
- at powerpc platform
-Message-ID: <20140329012020.GA29172@pek-khao-d1.corp.ad.wrs.com>
-References: <1395992312-23035-1-git-send-email-dongsheng.wang@freescale.com>
- <20140328081827.GB2176@pek-khao-d1.corp.ad.wrs.com>
- <1396042027.11529.24.camel@pasglop>
+	Fri, 28 Mar 2014 21:26:25 -0400
+Date: Fri, 28 Mar 2014 18:28:19 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/46] 3.13.8-stable review
+Message-ID: <20140329012819.GB14131@kroah.com>
+References: <20140328173134.630198216@linuxfoundation.org>
+ <53361DEC.4030306@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oyUTqETQ0mS9luUI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396042027.11529.24.camel@pasglop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53361DEC.4030306@roeck-us.net>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Mar 28, 2014 at 06:12:12PM -0700, Guenter Roeck wrote:
+> On 03/28/2014 10:31 AM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.13.8 release.
+> > There are 46 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Sun Mar 30 17:31:14 UTC 2014.
+> > Anything received after that time might be too late.
+> >
+> 
+> Build results:
+> 	total: 126 pass: 120 skipped: 4 fail: 2
+> 
+> qemu tests all passed.
+> 
+> Builds powerpc:mpc85xx_defconfig and powerpc:mpc85xx_smp_defconfig
+> are still failing. Upstream (-rc8) still has the same problem.
+> Results are therefore as expected.
+> 
+> Details are available at http://server.roeck-us.net:8010/builders.
 
---oyUTqETQ0mS9luUI
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Wonderful, thanks for testing all 3 of these releases and letting me
+know.
 
-On Sat, Mar 29, 2014 at 08:27:07AM +1100, Benjamin Herrenschmidt wrote:
-> On Fri, 2014-03-28 at 16:18 +0800, Kevin Hao wrote:
->=20
-> >     powerpc: Set the correct ksp_limit on ppc32 when switching to irq s=
-tack
-> >   =20
->=20
-> Kevin. It looks like it was applied to 3.14 and sent to 3.12 stable but
-> not 3.13 ... can you fix that up ?
-
-It was already merged into 3.13 stable since 3.13.6:
-  https://lkml.org/lkml/2014/3/4/787
-
-I guess that Dongsheng didn't use the latest 3.13 stable tree.
-
-Thanks,
-Kevin
-
---oyUTqETQ0mS9luUI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQEcBAEBAgAGBQJTNh/UAAoJEJNY7TDerrFxhLQH/10fMDmiShY7Kqgz2DV+GiJa
-FyVtaoVPpdbylfH+rEaCZYfInCIxeShMsuj9OWo4e8fBOyvBDV/SSNY6/eIDs3aA
-a8/BZgaIaGko8aFi5SYr1tatfOpOEXc7ki0Eu4doKvcldmD974v7BBhDMOusLwek
-+9x2WaM+n1GWKiRwiOxkplka4enelBZ9N32eSUKVX/t9wKka4mWV+OzBeXmi9R0+
-tBVade7RphMJy2k63YC6WSDdp1gFq9CV0ZXz2FUy+lw8JJrwJll4Uy7TwI2O+N6p
-IWA5lRhesuwihZOpqE/QlmO+YUCru1ZCl7bTHhfeR2sahsM8+XQ4LVuJUvp+btM=
-=tler
------END PGP SIGNATURE-----
-
---oyUTqETQ0mS9luUI--
+greg k-h
