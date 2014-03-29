@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751655AbaC2JwP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 05:52:15 -0400
-Received: from mail-yk0-f176.google.com ([209.85.160.176]:51761 "EHLO
-	mail-yk0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327AbaC2JwN (ORCPT
+	id S1751751AbaC2JxG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 05:53:06 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:50867 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751417AbaC2JxD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 05:52:13 -0400
+	Sat, 29 Mar 2014 05:53:03 -0400
+Message-ID: <533697F8.5000903@gmail.com>
+Date: Sat, 29 Mar 2014 10:52:56 +0100
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-Originating-IP: [84.208.52.246]
-In-Reply-To: <20140328.214254.1620280677250220442.davem@davemloft.net>
-References: <CAG-2HqVJPrTWXtuvDkU6MvfNj0MXfNuBMmdoKWtSd5kToZ3mMQ@mail.gmail.com>
- <20140328.172107.16072208664321602.davem@davemloft.net> <CAG-2HqVQ-MAZgsZAkykvVtbtYgDA3bfJA5rEqpdX5vBqPTjLJg@mail.gmail.com>
- <20140328.214254.1620280677250220442.davem@davemloft.net>
-From: Tom Gundersen <teg@jklm.no>
-Date: Sat, 29 Mar 2014 10:46:02 +0100
-Message-ID: <CAG-2HqWQsLPaaHxMFn5Bha0BGKSAVZV9n87KTCsbQ1ewktzZvA@mail.gmail.com>
-Subject: Re: [PATCH v5 0/4] Provide netdev naming-policy via sysfs
-To: David Miller <davem@davemloft.net>
-Cc: David Herrmann <dh.herrmann@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org
+CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Rob Landley <rob@landley.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Subject: Re: [RFC PATCH v2 03/10] ARM: at91: introduce OLD_IRQ_AT91 Kconfig
+ option
+References: <1396029548-10928-1-git-send-email-b.brezillon.dev@gmail.com> <1396029548-10928-4-git-send-email-b.brezillon.dev@gmail.com> <20140329100639.5ea454bc@skate> <7407417.cSDunZuEhW@wuerfel>
+In-Reply-To: <7407417.cSDunZuEhW@wuerfel>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 2:42 AM, David Miller <davem@davemloft.net> wrote:
-> From: Tom Gundersen <teg@jklm.no>
-> Date: Fri, 28 Mar 2014 23:39:57 +0100
+Le 29/03/2014 10:12, Arnd Bergmann a écrit :
+> On Saturday 29 March 2014 10:06:39 Thomas Petazzoni wrote:
+>> Dear Boris BREZILLON,
+>>
+>> On Fri, 28 Mar 2014 18:59:01 +0100, Boris BREZILLON wrote:
+>>
+>>> +config OLD_IRQ_AT91
+>>> +     bool
+>>> +     default false
+>> I don't think "default false" is a valid Kconfig construct. It could be
+>> "default n", but that's useless since "default n" is the default
+>> behavior. So I believe you can simply get rid of that line.
+
+I'll fix it for the next version.
+
+> I think the above is syntactically correct, but it would be highly confusing in
+> anyone ever does
 >
->> You mean coordinate with each other in userspace? If so, I still don't
->> see how this can ever be anything else than fragile. It will depend on
->> each userspace component actually opting in to whatever scheme we
->> devise, and does so correctly.
+> config false
+> 	def_bool y
 >
-> Isn't that essentially what dbus is?
+> ;-)
 >
-> A way for seperate userland components to coordinate their
-> activities?
+> Aside from that, these three have completely identical meaning:
+>
+> config OLD_IRQ_AT91
+> 	bool
+>
+> config OLD_IRQ_AT91
+> 	def_bool n
+>
+> config OLD_IRQ_AT91
+> 	bool
+> 	default n
+>
+> 	Arnd
+>
+>
+Thanks for the detailled explanation :-).
 
-The protocol is not the problem. The issue is that this information
-only exists reliably in the kernel, so we need to get it from there
-somehow.
+Best Regards,
 
-> I just simply don't like all of these ramdom keys getting
-> added all over the place to guide udev behavior wrt. some
-> other entity.
-
-Well, in this case udev is sort of doing a bit of the kernel's work,
-and it needs some information from the kernel to do it reliably.
-Another approach would be for the kernel to just assign predictable
-interface names to devices to begin with and we would never have to
-touch them. You have all the information so that would be relatively
-easy.
-
-The issue I see with that is that there are several ways to generate
-predictable names, and the user may want to chose between them, so
-this is arguably policy that should not be in the kernel. If you don't
-think that's a problem, I'd be happy to submit a patch to move all
-this logic from udev to the kernel, just let me know how you see it.
-
-Cheers,
-
-Tom
+Boris
