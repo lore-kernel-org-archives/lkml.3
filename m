@@ -1,112 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbaCaK2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 Mar 2014 06:28:16 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45237 "EHLO mx2.suse.de"
+	id S1753999AbaCaK2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 Mar 2014 06:28:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45232 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753907AbaCaK2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753779AbaCaK2N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 Mar 2014 06:28:13 -0400
-Date: Sat, 29 Mar 2014 16:57:24 +0100
+Date: Sat, 29 Mar 2014 17:30:28 +0100
 From: Jan Kara <jack@suse.cz>
 To: Matthew Wilcox <matthew.r.wilcox@intel.com>
 Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org, willy@linux.intel.com
-Subject: Re: [PATCH v7 01/22] Fix XIP fault vs truncate race
-Message-ID: <20140329155724.GB1211@quack.suse.cz>
+Subject: Re: [PATCH v7 04/22] Change direct_access calling convention
+Message-ID: <20140329163028.GD1211@quack.suse.cz>
 References: <cover.1395591795.git.matthew.r.wilcox@intel.com>
- <59d73a58d4cfbe190a16ce912bb2776d9cc95447.1395591795.git.matthew.r.wilcox@intel.com>
+ <214af2a38d840d0b8e983d39d03711d1292bc2d6.1395591795.git.matthew.r.wilcox@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <59d73a58d4cfbe190a16ce912bb2776d9cc95447.1395591795.git.matthew.r.wilcox@intel.com>
+In-Reply-To: <214af2a38d840d0b8e983d39d03711d1292bc2d6.1395591795.git.matthew.r.wilcox@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 23-03-14 15:08:27, Matthew Wilcox wrote:
-> Pagecache faults recheck i_size after taking the page lock to ensure that
-> the fault didn't race against a truncate.  We don't have a page to lock
-> in the XIP case, so use the i_mmap_mutex instead.  It is locked in the
-> truncate path in unmap_mapping_range() after updating i_size.  So while
-> we hold it in the fault path, we are guaranteed that either i_size has
-> already been updated in the truncate path, or that the truncate will
-> subsequently call zap_page_range_single() and so remove the mapping we
-> have just inserted.
+On Sun 23-03-14 15:08:30, Matthew Wilcox wrote:
+> In order to support accesses to larger chunks of memory, pass in a
+> 'size' parameter (counted in bytes), and return the amount available at
+> that address.
 > 
-> There is a window of time in which i_size has been reduced and the
-> thread has a mapping to a page which will be removed from the file,
-> but this is harmless as the page will not be allocated to a different
-> purpose before the thread's access to it is revoked.
-  The patch looks good. You can add:
+> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
+  Two minor nits below. Other than that you can add:
 Reviewed-by: Jan Kara <jack@suse.cz>
 
-								Honza
-
-> Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
 > ---
->  mm/filemap_xip.c | 24 ++++++++++++++++++++++--
->  1 file changed, 22 insertions(+), 2 deletions(-)
+>  Documentation/filesystems/xip.txt | 15 +++++++++------
+>  arch/powerpc/sysdev/axonram.c     |  6 +++---
+>  drivers/block/brd.c               |  8 +++++---
+>  drivers/s390/block/dcssblk.c      | 19 ++++++++++---------
+>  fs/ext2/xip.c                     | 30 +++++++++++++-----------------
+>  include/linux/blkdev.h            |  4 ++--
+>  6 files changed, 42 insertions(+), 40 deletions(-)
 > 
-> diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-> index d8d9fe3..c8d23e9 100644
-> --- a/mm/filemap_xip.c
-> +++ b/mm/filemap_xip.c
-> @@ -260,8 +260,17 @@ again:
->  		__xip_unmap(mapping, vmf->pgoff);
+...
+> diff --git a/drivers/block/brd.c b/drivers/block/brd.c
+> index e73b85c..00da60d 100644
+> --- a/drivers/block/brd.c
+> +++ b/drivers/block/brd.c
+> @@ -361,8 +361,8 @@ out:
+>  }
 >  
->  found:
-> +		/* We must recheck i_size under i_mmap_mutex */
-> +		mutex_lock(&mapping->i_mmap_mutex);
-> +		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-> +							PAGE_CACHE_SHIFT;
-> +		if (unlikely(vmf->pgoff >= size)) {
-> +			mutex_unlock(&mapping->i_mmap_mutex);
-> +			return VM_FAULT_SIGBUS;
-> +		}
->  		err = vm_insert_mixed(vma, (unsigned long)vmf->virtual_address,
->  							xip_pfn);
-> +		mutex_unlock(&mapping->i_mmap_mutex);
->  		if (err == -ENOMEM)
->  			return VM_FAULT_OOM;
->  		/*
-> @@ -285,16 +294,27 @@ found:
->  		}
->  		if (error != -ENODATA)
->  			goto out;
-> +
-> +		/* We must recheck i_size under i_mmap_mutex */
-> +		mutex_lock(&mapping->i_mmap_mutex);
-> +		size = (i_size_read(inode) + PAGE_CACHE_SIZE - 1) >>
-> +							PAGE_CACHE_SHIFT;
-> +		if (unlikely(vmf->pgoff >= size)) {
-> +			ret = VM_FAULT_SIGBUS;
-> +			goto unlock;
-> +		}
->  		/* not shared and writable, use xip_sparse_page() */
->  		page = xip_sparse_page();
->  		if (!page)
-> -			goto out;
-> +			goto unlock;
->  		err = vm_insert_page(vma, (unsigned long)vmf->virtual_address,
->  							page);
->  		if (err == -ENOMEM)
-> -			goto out;
-> +			goto unlock;
+>  #ifdef CONFIG_BLK_DEV_XIP
+> -static int brd_direct_access(struct block_device *bdev, sector_t sector,
+> -			void **kaddr, unsigned long *pfn)
+> +static long brd_direct_access(struct block_device *bdev, sector_t sector,
+> +			void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct brd_device *brd = bdev->bd_disk->private_data;
+>  	struct page *page;
+> @@ -379,7 +379,9 @@ static int brd_direct_access(struct block_device *bdev, sector_t sector,
+>  	*kaddr = page_address(page);
+>  	*pfn = page_to_pfn(page);
 >  
->  		ret = VM_FAULT_NOPAGE;
-> +unlock:
-> +		mutex_unlock(&mapping->i_mmap_mutex);
->  out:
->  		write_seqcount_end(&xip_sparse_seq);
->  		mutex_unlock(&xip_sparse_mutex);
-> -- 
-> 1.9.0
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> -	return 0;
+> +	/* Could optimistically check to see if the next page in the
+> +	 * file is mapped to the next page of physical RAM */
+> +	return PAGE_SIZE;
+  This should be min_t(long, PAGE_SIZE, size), shouldn't it?
+
+>  }
+>  #endif
+>  
+> diff --git a/drivers/s390/block/dcssblk.c b/drivers/s390/block/dcssblk.c
+> index ebf41e2..da914b2 100644
+> --- a/drivers/s390/block/dcssblk.c
+> +++ b/drivers/s390/block/dcssblk.c
+> @@ -28,8 +28,8 @@
+>  static int dcssblk_open(struct block_device *bdev, fmode_t mode);
+>  static void dcssblk_release(struct gendisk *disk, fmode_t mode);
+>  static void dcssblk_make_request(struct request_queue *q, struct bio *bio);
+> -static int dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+> -				 void **kaddr, unsigned long *pfn);
+> +static long dcssblk_direct_access(struct block_device *bdev, sector_t secnum,
+> +				 void **kaddr, unsigned long *pfn, long size);
+>  
+>  static char dcssblk_segments[DCSSBLK_PARM_LEN] = "\0";
+>  
+> @@ -866,25 +866,26 @@ fail:
+>  	bio_io_error(bio);
+>  }
+>  
+> -static int
+> +static long
+>  dcssblk_direct_access (struct block_device *bdev, sector_t secnum,
+> -			void **kaddr, unsigned long *pfn)
+> +			void **kaddr, unsigned long *pfn, long size)
+>  {
+>  	struct dcssblk_dev_info *dev_info;
+> -	unsigned long pgoff;
+> +	unsigned long offset, dev_sz;
+>  
+>  	dev_info = bdev->bd_disk->private_data;
+>  	if (!dev_info)
+>  		return -ENODEV;
+> +	dev_sz = dev_info->end - dev_info->start;
+>  	if (secnum % (PAGE_SIZE/512))
+>  		return -EINVAL;
+> -	pgoff = secnum / (PAGE_SIZE / 512);
+> -	if ((pgoff+1)*PAGE_SIZE-1 > dev_info->end - dev_info->start)
+> +	offset = secnum * 512;
+> +	if (offset > dev_sz)
+>  		return -ERANGE;
+> -	*kaddr = (void *) (dev_info->start+pgoff*PAGE_SIZE);
+> +	*kaddr = (void *) (dev_info->start + offset);
+>  	*pfn = virt_to_phys(*kaddr) >> PAGE_SHIFT;
+>  
+> -	return 0;
+> +	return min_t(unsigned long, size, dev_sz - offset);
+                     ^^^ Why unsigned? Everything seems to be long...
+
+								Honza
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
