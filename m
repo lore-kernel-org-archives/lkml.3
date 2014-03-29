@@ -1,165 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752721AbaC2THk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 15:07:40 -0400
-Received: from libra.uberspace.de ([95.143.172.171]:46663 "HELO
-	libra.uberspace.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752080AbaC2THj (ORCPT
+	id S1752922AbaC2TJP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 15:09:15 -0400
+Received: from mailrelay008.isp.belgacom.be ([195.238.6.174]:9233 "EHLO
+	mailrelay008.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752536AbaC2TJN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 15:07:39 -0400
-Date: Sat, 29 Mar 2014 20:05:46 +0100
-From: Matthias Beyer <mail@beyermatthias.de>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [BUG] 3.14-rc6 at mousedev_open_device+0x77/0x100
-Message-ID: <20140329190546.GE4617@fu.192.168.200.1>
-Reply-To: Matthias Beyer <mail@beyermatthias.de>
-References: <1513450.PT1cqDJBLI@grover>
- <20140329111535.GA4275@fu.192.168.200.1>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="TD8GDToEDw0WLGOL"
-Content-Disposition: inline
-In-Reply-To: <20140329111535.GA4275@fu.192.168.200.1>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 29 Mar 2014 15:09:13 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AlIGAOQZN1NbsF/9/2dsb2JhbABZgwbEH4ESF3SCUxMcGgkYgQIkE4d9AdFTjjFOhD8EjlSJeQGKXIdZgzE8
+Date: Sat, 29 Mar 2014 20:09:10 +0100
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, linux-mm@kvack.org
+Subject: [PATCH v2] mm/readahead.c: inline ra_submit
+Message-Id: <20140329200910.35212c0b8890199b578ba175@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+f9acc8c7b35a ("readahead: sanify file_ra_state names")
+left ra_submit with a single function call.
 
---TD8GDToEDw0WLGOL
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Move ra_submit to internal.h and inline it to save some stack.
+Thanks to Andrew Morton for commenting different versions.
 
-Hi,
+Suggested-by: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ include/linux/mm.h |  3 ---
+ mm/internal.h      | 15 +++++++++++++++
+ mm/readahead.c     | 21 +++------------------
+ 3 files changed, 18 insertions(+), 21 deletions(-)
 
-I want to add that my suspend is broken too. And I don't know if this has
-any to do with the reported issues.
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index c1b7414..c8ecf29 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1847,9 +1847,6 @@ void page_cache_async_readahead(struct address_space *mapping,
+ 				unsigned long size);
+ 
+ unsigned long max_sane_readahead(unsigned long nr);
+-unsigned long ra_submit(struct file_ra_state *ra,
+-			struct address_space *mapping,
+-			struct file *filp);
+ 
+ /* Generic expand stack which grows the stack according to GROWS{UP,DOWN} */
+ extern int expand_stack(struct vm_area_struct *vma, unsigned long address);
+diff --git a/mm/internal.h b/mm/internal.h
+index 29e1e76..51f309c 100644
+--- a/mm/internal.h
++++ b/mm/internal.h
+@@ -11,6 +11,7 @@
+ #ifndef __MM_INTERNAL_H
+ #define __MM_INTERNAL_H
+ 
++#include <linux/fs.h>
+ #include <linux/mm.h>
+ 
+ void free_pgtables(struct mmu_gather *tlb, struct vm_area_struct *start_vma,
+@@ -21,6 +22,20 @@ static inline void set_page_count(struct page *page, int v)
+ 	atomic_set(&page->_count, v);
+ }
+ 
++extern int __do_page_cache_readahead(struct address_space *mapping,
++		struct file *filp, pgoff_t offset, unsigned long nr_to_read,
++		unsigned long lookahead_size);
++
++/*
++ * Submit IO for the read-ahead request in file_ra_state.
++ */
++static inline unsigned long ra_submit(struct file_ra_state *ra,
++		struct address_space *mapping, struct file *filp)
++{
++	return __do_page_cache_readahead(mapping, filp,
++					ra->start, ra->size, ra->async_size);
++}
++
+ /*
+  * Turn a non-refcounted page (->_count == 0) into refcounted with
+  * a count of one.
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 0de2360..4d9f4c2 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -8,9 +8,7 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <linux/fs.h>
+ #include <linux/gfp.h>
+-#include <linux/mm.h>
+ #include <linux/export.h>
+ #include <linux/blkdev.h>
+ #include <linux/backing-dev.h>
+@@ -20,6 +18,8 @@
+ #include <linux/syscalls.h>
+ #include <linux/file.h>
+ 
++#include "internal.h"
++
+ /*
+  * Initialise a struct file's readahead state.  Assumes that the caller has
+  * memset *ra to zero.
+@@ -149,8 +149,7 @@ out:
+  *
+  * Returns the number of pages requested, or the maximum amount of I/O allowed.
+  */
+-static int
+-__do_page_cache_readahead(struct address_space *mapping, struct file *filp,
++int __do_page_cache_readahead(struct address_space *mapping, struct file *filp,
+ 			pgoff_t offset, unsigned long nr_to_read,
+ 			unsigned long lookahead_size)
+ {
+@@ -244,20 +243,6 @@ unsigned long max_sane_readahead(unsigned long nr)
+ }
+ 
+ /*
+- * Submit IO for the read-ahead request in file_ra_state.
+- */
+-unsigned long ra_submit(struct file_ra_state *ra,
+-		       struct address_space *mapping, struct file *filp)
+-{
+-	int actual;
+-
+-	actual = __do_page_cache_readahead(mapping, filp,
+-					ra->start, ra->size, ra->async_size);
+-
+-	return actual;
+-}
+-
+-/*
+  * Set the initial window size, round to next power of 2 and square
+  * for small size, x 4 for medium, and x 2 for large
+  * for 128k (32 page) max ra
+-- 
+1.8.4.5
 
-On 29-03-2014 12:15:35, Matthias Beyer wrote:
-> Hi,
->=20
-> I got this error with 3.13.7, which I just installed:
->=20
-> ---
->=20
-> M=E4r 29 11:53:05 fu kernel: BUG: unable to handle kernel NULL pointer de=
-reference at           (null)
-> M=E4r 29 11:53:05 fu kernel: IP: [<ffffffffa01f8317>] mousedev_open_devic=
-e+0x77/0x100 [mousedev]
-> M=E4r 29 11:53:05 fu kernel: PGD 400853067 PUD 400852067 PMD 0=20
-> M=E4r 29 11:53:05 fu kernel: Oops: 0000 [#1] PREEMPT SMP=20
-> M=E4r 29 11:53:05 fu kernel: Modules linked in: mousedev(+) btusb bluetoo=
-th intel_rapl x86_pkg_temp_thermal intel_powerclamp coretemp kvm_intel kvm =
-btrfs iTCO_wdt iTCO_vendor_support snd_hda_codec_hdmi snd_hda_codec_conexan=
-t raid6_pq libcrc32c xor nls_cp437 vfat fat arc4 iwldvm mac80211 microcode =
-evdev pcspkr psmouse se
-> M=E4r 29 11:53:05 fu kernel:  crc32c_intel ghash_clmulni_intel aesni_inte=
-l aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd ehci_pci sdhci_pci=
- ehci_hcd sdhci scsi_mod mmc_core usbcore usb_common i8042 serio
-> M=E4r 29 11:53:05 fu kernel: CPU: 2 PID: 764 Comm: acpid Tainted: G      =
-     O 3.13.7-1-ARCH #1
-> M=E4r 29 11:53:05 fu kernel: Hardware name: LENOVO 4290A11/4290A11, BIOS =
-8DET66WW (1.36 ) 10/22/2012
-> M=E4r 29 11:53:05 fu kernel: task: ffff8804068c2400 ti: ffff88007fc62000 =
-task.ti: ffff88007fc62000
-> M=E4r 29 11:53:05 fu kernel: RIP: 0010:[<ffffffffa01f8317>]  [<ffffffffa0=
-1f8317>] mousedev_open_device+0x77/0x100 [mousedev]
-> M=E4r 29 11:53:05 fu kernel: RSP: 0018:ffff88007fc63c10  EFLAGS: 00010202
-> M=E4r 29 11:53:05 fu kernel: RAX: 0000000000000000 RBX: ffff880406ded000 =
-RCX: ffff880406ded068
-> M=E4r 29 11:53:05 fu kernel: RDX: 0000000000000000 RSI: 0000000000000000 =
-RDI: 0000000000000246
-> M=E4r 29 11:53:05 fu kernel: RBP: ffff88007fc63c28 R08: 0000000000000000 =
-R09: ffff88040d803600
-> M=E4r 29 11:53:05 fu kernel: R10: 0000000000000000 R11: 0000000000000004 =
-R12: 0000000000000000
-> M=E4r 29 11:53:05 fu kernel: R13: ffff880406ded080 R14: ffff880400607238 =
-R15: ffff880405e16f00
-> M=E4r 29 11:53:05 fu kernel: FS:  00007f0469f18700(0000) GS:ffff88041e280=
-000(0000) knlGS:0000000000000000
-> M=E4r 29 11:53:05 fu kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 00000000800=
-50033
-> M=E4r 29 11:53:05 fu kernel: CR2: 0000000000000000 CR3: 00000000d9926000 =
-CR4: 00000000000407e0
-> M=E4r 29 11:53:05 fu kernel: Stack:
-> M=E4r 29 11:53:05 fu kernel:  ffff880405c7fa00 ffff880406ded000 ffff88040=
-6ded078 ffff88007fc63c60
-> M=E4r 29 11:53:05 fu kernel:  ffffffffa01f90cc ffff880406ded348 ffff88040=
-0607238 ffff880405e16f00
-> M=E4r 29 11:53:05 fu kernel:  ffffffffa01f9e80 ffff880405e16f10 ffff88007=
-fc63c98 ffffffff811a843f
-> M=E4r 29 11:53:05 fu kernel: Call Trace:
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffffa01f90cc>] mousedev_open+0xcc/0x1=
-50 [mousedev]
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a843f>] chrdev_open+0x9f/0x1d0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a1ad7>] do_dentry_open+0x1b7/0=
-x2c0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811aeeb1>] ? __inode_permission+0=
-x41/0xb0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a83a0>] ? cdev_put+0x30/0x30
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a1ef1>] finish_open+0x31/0x40
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811b1ce2>] do_last+0x572/0xe90
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811af1a6>] ? link_path_walk+0x236=
-/0x8d0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff81135cf3>] ? unlock_page+0x23/0x30
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811b26bb>] path_openat+0xbb/0x6b0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff81161084>] ? handle_mm_fault+0x26=
-4/0xed0
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811b3dca>] do_filp_open+0x3a/0x90
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811c0677>] ? __alloc_fd+0xa7/0x130
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a30c4>] do_sys_open+0x124/0x220
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff811a31de>] SyS_open+0x1e/0x20
-> M=E4r 29 11:53:05 fu kernel:  [<ffffffff81521b6d>] system_call_fastpath+0=
-x1a/0x1f
-> M=E4r 29 11:53:05 fu kernel: Code: e0 05 32 e1 5b 44 89 e0 41 5c 41 5d 5d=
- c3 66 0f 1f 44 00 00 4c 89 ef 41 bc ed ff ff ff e8 c2 05 32 e1 eb e0 48 8b=
- 15 c9 21 00 00 <8b> 02 8d 48 01 85 c0 89 0a 75 c6 48 8b 05 37 1f 00 00 48 =
-3d 60=20
-> M=E4r 29 11:53:05 fu kernel: RIP  [<ffffffffa01f8317>] mousedev_open_devi=
-ce+0x77/0x100 [mousedev]
-> M=E4r 29 11:53:05 fu kernel:  RSP <ffff88007fc63c10>
-> M=E4r 29 11:53:05 fu kernel: CR2: 0000000000000000
-> M=E4r 29 11:53:05 fu kernel: ---[ end trace cea09d6c5d332dfc ]---
->=20
-> ---
->=20
-> I am on Archlinux, on a Thinkpad x220, if that matters. I will also
-> write a message to the bugtracker as soon as my email addr gets
-> verified.
->=20
-> Regards!
->=20
-
-
---=20
-Mit freundlichen Gr=FC=DFen,
-Kind regards,
-Matthias Beyer
-
-Proudly sent with mutt.
-Happily signed with gnupg.
-
---TD8GDToEDw0WLGOL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTNxmKAAoJEJi+S08gyg+UOH8P/Rg7+Py88kDWWWIyfZWns2fO
-blQdnok1nG0KugAEHIueZKfFdq1XwksS00dl05zhPM6GpUWWxKv2pv72HeyNxgr6
-dY2WZMhx60nCauw+Xy71bAjzmMBRctLifqAuMM0vz22Fac5cHedLtlNbuQy4ag3k
-GKmR4ieRBOjhCSs9P2M6eRrWMB8t3IexIzPKIW1oF5bL1eGF+qRCmRahLop2xF36
-E7g0NDQciIc8IW3wZ4jD4/kPBKjji+yUUHNiAjMM6+LccwanrtTymjzEkOWPqdYM
-IDlzwY0dMQrXioJrxPdfR5Zw795HzfO09WnnNyE7x57jUi3c4/QR8FEnsP8UQQ6A
-WJFjN5YC62rS4yjbEqSuhbaSij6p4LUgpMx9C/XfzbtKWkdZXOXpR4x+hbimR4ej
-pC0NiWdbUtEJKXuUM+LW2IiynZt/oxFNlDMHqRY7+AEyZw2VX7cueYWKxtLoFnDF
-l7V7z1V+4Pnh7A8ErFZdHlnku3acN4DTxFRGM0D/bZF7srAvFDZMsg/28WFKd1V0
-Jdgv3VcmryjCVk9zcf/ztlvBCAZHX3D57qaa4yQkxa9UnRqJudsNPxwUkBxAUeER
-ObsMM0iSe0A8z10GmbggYFZVzq56bz9ldE1Lcf3b47IQmDwvB0budnzqN3TcrKll
-F8Lkqfy/bjy3gDwWQK9v
-=o0tX
------END PGP SIGNATURE-----
-
---TD8GDToEDw0WLGOL--
