@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274AbaC2G22 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 02:28:28 -0400
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:42087
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750722AbaC2G21 (ORCPT
+	id S1751294AbaC2Ghe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 02:37:34 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:40195 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750910AbaC2Ghd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 02:28:27 -0400
-X-IronPort-AV: E=Sophos;i="4.97,755,1389740400"; 
-   d="scan'208";a="54584140"
-Date: Sat, 29 Mar 2014 07:28:22 +0100 (CET)
-From: Julia Lawall <julia.lawall@lip6.fr>
-X-X-Sender: jll@localhost6.localdomain6
-To: Tilman Schmidt <tilman@imap.cc>
-cc: Julia Lawall <Julia.Lawall@lip6.fr>, Karsten Keil <isdn@linux-pingi.de>,
-        tglx@linutronix.de, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] isdn: replace del_timer by del_timer_sync
-In-Reply-To: <53360393.2030108@imap.cc>
-Message-ID: <alpine.DEB.2.02.1403290728100.2480@localhost6.localdomain6>
-References: <1395869625-15209-1-git-send-email-Julia.Lawall@lip6.fr> <1395869625-15209-2-git-send-email-Julia.Lawall@lip6.fr> <53360393.2030108@imap.cc>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Sat, 29 Mar 2014 02:37:33 -0400
+Message-ID: <533669C7.0@huawei.com>
+Date: Sat, 29 Mar 2014 14:35:51 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1288733107-1396074505=:2480"
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+CC: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-rt-users@vger.kernel.org>,
+        "Li Zefan" <lizefan@huawei.com>, Zhangwei <jovi.zhangwei@huawei.com>
+Subject: Re: [BUGREPORT] Tasklet scheduled issue in Linux 3.4.x-rt
+References: <53144A57.4040204@huawei.com> <20140328163753.GB14842@linutronix.de>
+In-Reply-To: <20140328163753.GB14842@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi Sebastian,
+   Thanks for your reply and help to look at it, thanks!
 
---8323328-1288733107-1396074505=:2480
-Content-Type: TEXT/PLAIN; charset=iso-8859-15
-Content-Transfer-Encoding: 8BIT
+I also check the tasklet state machine changes, and didn't find
+clue for this issue. So I Temporarily reverted Ingo's patch, without
+this patch, my test is ok.
+
+commit 0d9f73fc1e7270a3f8709c59c913408153d9d9f8
+Author: Ingo Molnar <mingo@elte.hu>
+Date:   Tue Nov 29 20:18:22 2011 -0500
+
+    tasklet: Prevent tasklets from going into infinite spin in RT
+
+Because this patch does not exist in the latest Linus kernel, so I
+have not reported this issue to kernel bugzilla.
+
+Finally, I would like to thank you again.
+
+Thanks!
+Yijing.
 
 
-
-On Sat, 29 Mar 2014, Tilman Schmidt wrote:
-
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
+On 2014/3/29 0:37, Sebastian Andrzej Siewior wrote:
+> * Yijing Wang | 2014-03-03 17:24:39 [+0800]:
 > 
-> Am 26.03.2014 22:33, schrieb Julia Lawall:
-> > From: Julia Lawall <Julia.Lawall@lip6.fr>
-> > 
-> > Use del_timer_sync to ensure that the timer is stopped on all CPUs
-> > before the driver exists.
+>> [2012-03-26 18:55:43][  929.252312] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
+>> [2012-03-27 03:41:06][ 3647.886005] WARNING: at kernel/softirq.c:773 __tasklet_action+0x51/0x1a0()
+>> [2012-03-27 03:42:04][ 3705.434418] WARNING: at kernel/softirq.c:799 __tasklet_action+0xae/0x1a0()
 > 
-> Surely you meant "exits"?
+>> FC card hardware  -------> FC driver interrupt handler  --------->tasklet_schedule(fc driver tasklet) ------->tasklet running, call function process FC IO data.
+>>                        here will disable FC card interrupt                                                     here will enable FC card interrupt again
+> 
+> This looks okay.
+> 
+>> We found the tasklet state is 0x1(mean state is TASKLET_STATE_SCHED),count is 0, before we call tasklet_schedule().
+>> So the new tasklet can not add to CPU list.
+>>
+>> And I also add some dynamic debug in __tasklet_action(); after the issue occur, I open the dynamic debug.
+>> After we force the hardware reset to interrupt OS, we never found the FC driver tasklet running in dmesg(I identify the tasklet by its data).
+>> I guess the FC tasklet is not in CPU global tasklet list.
+> You guess correct.
+> 
+>> I hope somebody can help to look at it. If I missing something, let me know.
+> 
+> The tasklet is always added to the local cpu, never cross. That list is
+> always accessed with interrupts off.
+> With TASKLET_STATE_SCHED set, the next step is to add the task let to
+> the CPU's tasklet list. This isn't done if TASKLET_STATE_RUN is already
+> set which means __tasklet_action() is already busy serving the tasklet.
+> In that case it clears TASKLET_STATE_SCHED and invokes the tasklet
+> again.
+> After looking at it for a while I must say I have no idea how you
+> managed to keep TASKLET_STATE_SCHED set. Further, each time
+> TASKLET_STATE_RUN is cleared it is always with a cmpxchg() down to zero
+> which means TASKLET_STATE_SCHED is removed earlier.
+> That said, triggerring the warning at 773 is the first thing that went
+> wrong. After it has been added to the list, the TASKLET_STATE_RUN is
+> cleared again. I have no idea how it managed to remain still on except
+> that __tasklet_common_schedule() is invoked which is protected by the
+> SCHED bitâ€¦
+> 
+>> Thanks!
+>> Yijing.
+> 
+> Sebastian
+> 
+> .
+> 
 
-Yes.
 
-julia
+-- 
+Thanks!
+Yijing
 
-> 
-> Regards,
-> Tilman
-> 
-> - -- 
-> Tilman Schmidt                              E-Mail: tilman@imap.cc
-> Bonn, Germany
-> Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-> Ungeöffnet mindestens haltbar bis: (siehe Rückseite)
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v2.0.22 (MingW32)
-> Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-> 
-> iEYEARECAAYFAlM2A5IACgkQQ3+did9BuFtuMACfarliJdOkqLmJJvRqbcM5eCFd
-> CWwAn3FuQ+juOeo2EgM8e1JBTjlHhG3o
-> =a90K
-> -----END PGP SIGNATURE-----
-> 
---8323328-1288733107-1396074505=:2480--
