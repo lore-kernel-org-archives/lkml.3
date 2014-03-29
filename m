@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751878AbaC2Oqh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 10:46:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554AbaC2Oqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 10:46:35 -0400
-Date: Sat, 29 Mar 2014 11:46:07 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Zhanghailiang <zhang.zhanghailiang@huawei.com>
-Cc: "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
-        zhang yanying <zhuangyanying@huawei.com>
-Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
- problem?
-Message-ID: <20140329144607.GA20316@amt.cnet>
-References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+	id S1751862AbaC2Oy2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 10:54:28 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:47033 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523AbaC2Oy0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 10:54:26 -0400
+X-Auth-Info: hO5lFTM6yrxd+WS9IoSJBmqkFH2F4oKepigNqXwAE74=
+From: Andreas Schwab <schwab@linux-m68k.org>
+To: Struan Bartlett <struan.bartlett@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Support for netconsole as default tty/console?
+References: <CAOte+=YgX=0dahqCS6-=yBLHnTjoJtii3Ycx4mhrj9SqNADZzg@mail.gmail.com>
+X-Yow: RHAPSODY in Glue!
+Date: Sat, 29 Mar 2014 15:54:24 +0100
+In-Reply-To: <CAOte+=YgX=0dahqCS6-=yBLHnTjoJtii3Ycx4mhrj9SqNADZzg@mail.gmail.com>
+	(Struan Bartlett's message of "Sat, 29 Mar 2014 13:22:21 +0100")
+Message-ID: <87r45lqcm7.fsf@igel.home>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 08:47:27AM +0000, Zhanghailiang wrote:
-> Hi,
-> I found when Guest is idle, VDSO pvclock may increase host consumption.
-> We can calcutate as follow, Correct me if I am wrong.
->       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
-> In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
-> In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call. 
-> When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
-> Both Host and Guest is linux-3.13.6.
-> So, whether the host cpu consumption is a problem?
+Struan Bartlett <struan.bartlett@gmail.com> writes:
 
-Hi,
+> Adding console=netconsole to the command line does not appear to have
+> the desired effect. I am not sure if this is because netconsole,
+> unlike the serial console, does not provide a tty. Can anyone advise
+> if this understanding is correct? If so, is there an independent
+> solution to this problem?
 
-How many percents out of the total CPU cycles are 225,000 cycles, for your
-CPU ?
+It should not be hard to add a tty driver to netconsole, there are many
+examples to borrow from.
 
+Andreas.
+
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
