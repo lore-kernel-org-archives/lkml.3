@@ -1,55 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaC2UBE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 16:01:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52162 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751878AbaC2UAt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 16:00:49 -0400
-Message-ID: <5337266F.4030407@suse.cz>
-Date: Sat, 29 Mar 2014 21:00:47 +0100
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-CC: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] kbuild: unconditionally clobber include/linux/version.h
- on distclean
-References: <1392326938-14405-1-git-send-email-paul.gortmaker@windriver.com>
-In-Reply-To: <1392326938-14405-1-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset=ISO-8859-2
+	id S1752203AbaC2UOt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 16:14:49 -0400
+Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:34159 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751929AbaC2UOs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 16:14:48 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3872:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12296:12346:12517:12519:12555:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wire61_ca21c3e0c24a
+X-Filterd-Recvd-Size: 2678
+Message-ID: <1396124085.10606.18.camel@joe-AO722>
+Subject: [PATCH] checkpatch: Expand parenthesis alignment test to
+ declarations, functions and assignments
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Sat, 29 Mar 2014 13:14:45 -0700
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne 13.2.2014 22:28, Paul Gortmaker napsal(a):
-> As of v3.7, the UAPI changes relocated headers around such that the
-> kernel version header lived in a new place.
-> 
-> If a person is bisecting and if you go back to pre-UAPI days,
-> you will create an include/linux/version.h  -- then if you checkout a
-> post-UAPI kernel, and even run "make distclean" it still won't delete
-> that old version file.  So you get a situation like this:
-> 
-> $ grep -R LINUX_VERSION_CODE include/
-> include/generated/uapi/linux/version.h:#define LINUX_VERSION_CODE 200192
-> include/linux/version.h:#define LINUX_VERSION_CODE 132646
-> 
-> The value in that second line is representative of a v2.6.38 version.
-> And it will be sourced/used, hence leading to strange behaviours, such
-> as drivers/staging content (which typically hasn't been purged of version
-> ifdefs) failing to build.
-> 
-> Since it is a subtle mode of failure, lets always clobber the old
-> file when doing a distclean.
-> 
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: David Howells <dhowells@redhat.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Currently the parenthesis alignment test works only on
+misalignments of if statements like
 
-Applied to kbuild.git, sorry for the delay. I'm curious how long will it
-take until somebody posts a cleanup patch removing the obsolete
-include/linux/version.h reference...
+	if (foo(bar,
+			baz)
 
-Michal
+Expand the test to find misalignments like:
+
+static inline int foo(int bar,
+			int baz)
+
+and
+
+	foo(bar,
+			baz);
+
+and
+
+	foo = bar(baz,
+			qux);
+
+Expand the $Inline keyword for __inline and __inline__ too.
+Add $Inline to $Declare so it also matches "static inline <foo>".
+
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ scripts/checkpatch.pl | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index 889929d..1e63973 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -281,7 +281,7 @@ our $Attribute	= qr{
+ 			__weak
+ 		  }x;
+ our $Modifier;
+-our $Inline	= qr{inline|__always_inline|noinline};
++our $Inline	= qr{inline|__always_inline|noinline|__inline|__inline__};
+ our $Member	= qr{->$Ident|\.$Ident|\[[^]]*\]};
+ our $Lval	= qr{$Ident(?:$Member)*};
+ 
+@@ -435,7 +435,7 @@ sub build_types {
+ 			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
+ 			(?:\s+$Inline|\s+$Modifier)*
+ 		  }x;
+-	$Declare	= qr{(?:$Storage\s+)?$Type};
++	$Declare	= qr{(?:$Storage\s+(?:$Inline\s+)?)?$Type};
+ }
+ build_types();
+ 
+@@ -1613,7 +1613,7 @@ sub pos_last_openparen {
+ 		}
+ 	}
+ 
+-	return $last_openparen + 1;
++	my $ts = length(expand_tabs(substr($line, 0, $last_openparen))) + 1;
+ }
+ 
+ sub process {
+@@ -2200,7 +2200,7 @@ sub process {
+ 
+ # check multi-line statement indentation matches previous line
+ 		if ($^V && $^V ge 5.10.0 &&
+-		    $prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
++		    $prevline =~ /^\+([ \t]*)((?:$c90_Keywords(?:\s+if)\s*)|(?:$Declare\s*)?(?:$Ident|\(\s*\*\s*$Ident\s*\))\s*|$Ident\s*=\s*$Ident\s*)\(.*(\&\&|\|\||,)\s*$/) {
+ 			$prevline =~ /^\+(\t*)(.*)$/;
+ 			my $oldindent = $1;
+ 			my $rest = $2;
+
+
