@@ -1,51 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752399AbaC2VQq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 17:16:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54223 "EHLO gate.crashing.org"
+	id S1752572AbaC2Vbd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 17:31:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52631 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751984AbaC2VQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 17:16:44 -0400
-Message-ID: <1396127783.11529.55.camel@pasglop>
-Subject: Re: [RFC 1/5] of: Add support for ePAPR "stdout-path" property
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>, Rob Herring <rob.herring@linaro.org>
-Date: Sun, 30 Mar 2014 08:16:23 +1100
-In-Reply-To: <CAL_Jsq+xTeocLtS9GFWLCkoV+USACma+w0=O_ysekvTGhYVhZg@mail.gmail.com>
-References: <1396022885-6102-1-git-send-email-grant.likely@linaro.org>
-	 <1396022885-6102-2-git-send-email-grant.likely@linaro.org>
-	 <1396042396.11529.27.camel@pasglop>
-	 <CAL_Jsq+xTeocLtS9GFWLCkoV+USACma+w0=O_ysekvTGhYVhZg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.11.90 
-Mime-Version: 1.0
+	id S1752007AbaC2Vbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 17:31:31 -0400
+Message-ID: <53373BB0.9060403@suse.cz>
+Date: Sat, 29 Mar 2014 22:31:28 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Jason Cooper <jason@lakedaemon.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "Yann E . MORIN" <yann.morin.1998@free.fr>,
+        Rusty Russell <rusty@rustcorp.com.au>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V2] scripts: objdiff: detect object code changes between
+ two commits
+References: <1395627288-19975-1-git-send-email-jason@lakedaemon.net>
+In-Reply-To: <1395627288-19975-1-git-send-email-jason@lakedaemon.net>
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-03-28 at 16:56 -0500, Rob Herring wrote:
-
-> I'm working on getting just that working. See my series for "generic
-> earlycon". I'm working on cleaning up the FDT part still, but have
-> something functional. The "hardest" part with FDT is doing the address
-> translation for serial devices, but I just stole that from u-boot.
+Dne 24.3.2014 03:14, Jason Cooper napsal(a):
 > 
-> > Right now, I have this explicit config option to hard wire "early debug"
-> > but there are a few cases of field bugs that can happen in early init
-> > code which I'd like to see logged properly on those systems, and early
-> > debug isn't suitable for field use...
-> 
-> We have the same issue with multi-platform ARM kernels.
+> objdiff can be used in conjunction with a git rebase to confirm that
+> each commit made no changes to the resulting object code.  It has the
+> same return values as diff(1).
 
-Ah excellent, I'll keep an eye on it !
-
-Cheers,
-Ben.
+This looks nice. Just a few comments below:
 
 
+> +# usage example:
+> +#
+> +# $ git checkout COMMIT_A
+> +# $ <your fancy build command here>
+> +# $ ./scripts/objdiff record path/to/*.o
+> +#
+> +# $ git checkout COMMIT_B
+> +# $ <your fancy build command here>
+> +# $ ./scripts/objdiff record path/to/*.o
+> +#
+> +# $ ./scripts/objdiff diff COMMIT_A COMMIT_B
+> +# $
+> +
+> +# And to clean up (everything is in /tmp/objdiff-*)
+> +# $ ./scripts/objdiff clean all
+
+Can you change it to use some path in the source tree, like .tmp_objdiff
+or so? Then you can have make distclean remove it and you can avoid the
+fixed paths in /tmp.
+
+
+> +		# force rebuild
+> +		rm -f "$f"
+
+Is this working around some kbuild bug, or is it more a "just in case?"
+One usually assumes that "record" is a readonly operation and can be
+repeated.
+
+Thanks,
+Michal
