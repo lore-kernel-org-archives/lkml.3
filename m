@@ -1,99 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751953AbaC2OdZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 10:33:25 -0400
-Received: from mail-ve0-f170.google.com ([209.85.128.170]:37766 "EHLO
-	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751554AbaC2OdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 10:33:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140329001732.BECE2C41FF4@trevor.secretlab.ca>
-References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
-	<CAL_JsqKjGjyYypwneCmNc1qeKe0ZOG9gz3QSJ37-HwHXKu3iRA@mail.gmail.com>
-	<20140329001732.BECE2C41FF4@trevor.secretlab.ca>
-Date: Sat, 29 Mar 2014 09:33:22 -0500
-Message-ID: <CAL_JsqKAtiPXsP6fotT8FSTyy+8SJW5Cg2QKLBnL7Ya6KyKCog@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Generic serial earlycon
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	id S1751878AbaC2Oqh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 10:46:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751554AbaC2Oqf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 10:46:35 -0400
+Date: Sat, 29 Mar 2014 11:46:07 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Zhanghailiang <zhang.zhanghailiang@huawei.com>
+Cc: "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Zhouxiangjiu <zhouxiangjiu@huawei.com>,
+        zhang yanying <zhuangyanying@huawei.com>
+Subject: Re: VDSO pvclock may increase host cpu consumption, is this a
+ problem?
+Message-ID: <20140329144607.GA20316@amt.cnet>
+References: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <D1BD20B5DB34024DA951CEEE6C4C59985961AD4E@szxema505-mbs.china.huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 7:17 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> On Sat, 22 Mar 2014 09:14:31 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> On Sat, Mar 22, 2014 at 4:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
->> > On Friday 21 March 2014, Rob Herring wrote:
->> >> From: Rob Herring <robh@kernel.org>
->> >>
->> >> This started out as an attempt to add arm64's earlyprintk support to ARM
->> >> in order to get an earlier, runtime setup console on multi-platform
->> >> kernels. The first issue was needing the fixmap support which
->> >> conveniently Mark Salter was working on and is mostly in place now. Like
->> >> many things on ARM and arm64 now, it then became where do I put the now
->> >> common, shared code. After digging more into various early console/printk
->> >> support, it turns out the 8250_early.c setup code was the best starting
->> >> point.
->> >>
->> >> This is based on Mark Salter's fixmap support currently in linux-next.
->> >> This is tested on arm64 and ARM with pl011 and 8250. The ARM support
->> >> also requires fixmap and fixed mapping support which are not yet in place.
->> >> I have some patches in my tree to support fixmap, but they need some more
->> >> work. Fortunately, once fixmap is in place, it is just a Kconfig option
->> >> to enable earlycon support on ARM. A git tree is available here[1].
->> >>
->> >> Based on this series, I would like to add support for doing earlycon
->> >> setup using DT.
->> >
->> > Hi Rob,
->> >
->> > I like this series a lot, great work!
->> >
->> > I would consider the DT parsing support essential here, we should not
->> > merge the patches until that is done as well, because I don't want
->> > to see users pass earlycon command line options in DT when they can
->> > use the established "linux,stdout-path" property instead. I would
->> > expect that in almost every case in which we are booting using DT
->> > today, we can just use linux,stdout-path to locate the device that
->> > the boot loader has already set up and start usign it.
->>
->> I think this series stands on its own. It is largely refactoring
->> existing code and supporting existing command line options (arm64 just
->> changes from earlyprintk= to earlycon=). There will be cases where
->> changing the kernel command line is the only way to setup the
->> earlycon. Also, I think we would still want the kernel command line to
->> control whether or not we enable the earlycon (i.e. earlycon=dt).
->> There's not a standard way for how bootloaders would decide to set
->> "linux,stdout-path" or not.
->
-> I agree. I really like this series and I don't think it needs to wait
-> for DT parsing.
->
-> Another issue is that the earlycon assumes the port is already set up,
-> but the /chosen/stdout-path binding doesn't guarantee that. We'll have
-> to make sure the kernel knows when it is valid to use
-> /chosen/stdout-path before enabling an early console.
+On Sat, Mar 29, 2014 at 08:47:27AM +0000, Zhanghailiang wrote:
+> Hi,
+> I found when Guest is idle, VDSO pvclock may increase host consumption.
+> We can calcutate as follow, Correct me if I am wrong.
+>       (Host)250 * update_pvclock_gtod = 1500 * gettimeofday(Guest)
+> In Host, VDSO pvclock introduce a notifier chain, pvclock_gtod_chain in timekeeping.c. It consume nearly 900 cycles per call. So in consideration of 250 Hz, it may consume 225,000 cycles per second, even no VM is created.
+> In Guest, gettimeofday consumes 220 cycles per call with VDSO pvclock. If the no-kvmclock-vsyscall is configured, gettimeofday consumes 370 cycles per call. The feature decrease 150 cycles consumption per call. 
+> When call gettimeofday 1500 times,it decrease 225,000 cycles,equal to the host consumption.
+> Both Host and Guest is linux-3.13.6.
+> So, whether the host cpu consumption is a problem?
 
-It's driver dependent whether the port setup is done in the earlycon
-driver or not. The 8250 driver does port setup while the pl011 driver
-does not. We could add setup to the pl011 or checks that it is setup
-already, but then it would not work with SBSA compliant UARTs.
+Hi,
 
-I don't think we want to enable earlycon solely if stdout-path is set.
-My plan here is that adding "earlycon" with no parameters to the
-command line enables DT based setup of earlycon. That doesn't really
-solve the issue with setup, but does limit it to a developer's feature
-at least.
+How many percents out of the total CPU cycles are 225,000 cycles, for your
+CPU ?
 
-Rob
