@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaC2UPu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 16:15:50 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:47224 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271AbaC2UPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 16:15:45 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>
-Cc: Stefani Seibold <stefani@seibold.net>,
+	id S1752275AbaC2Uh2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 16:37:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52325 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751959AbaC2UhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 Mar 2014 16:37:25 -0400
+Message-ID: <53372F03.9010803@suse.cz>
+Date: Sat, 29 Mar 2014 21:37:23 +0100
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Peter Senna Tschudin <peter.senna@gmail.com>
+CC: Bernd Petrovitsch <bernd@petrovitsch.priv.at>,
+        Julia Lawall <Julia.Lawall@lip6.fr>,
+        Gilles Muller <Gilles.Muller@lip6.fr>,
+        Nicolas Palix <nicolas.palix@imag.fr>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH] x86: Fix the symbol versions on the 32-bit vDSO
-Date: Sat, 29 Mar 2014 13:15:35 -0700
-Message-Id: <0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.0
+        "cocci@systeme.lip6.fr" <cocci@systeme.lip6.fr>,
+        Andreea Bernat <bernat.ada@gmail.com>,
+        Ezequiel Garcia <elezegarcia@gmail.com>,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Coccicheck: Remove memcpy to struct assignment test
+References: <1395177092-3023-1-git-send-email-peter.senna@gmail.com> <1395230578.12633.21.camel@thorin> <CA+MoWDoSYu-aSp39vBe7DmayH2iqagHNYP9BC7LefajMXk+FnQ@mail.gmail.com> <1395237927.12633.29.camel@thorin> <20140319164855.GB27142@kroah.com>
+In-Reply-To: <20140319164855.GB27142@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new symbols provide the same API as the 64-bit variants, so they
-should have the same symbol version name.  This can't break
-userspace, since these symbols are new for 32-bit Linux.
+Dne 19.3.2014 17:48, Greg Kroah-Hartman napsal(a):
+>>>> On Die, 2014-03-18 at 22:11 +0100, Peter Senna Tschudin wrote:
+>>>>> The Coccinelle script scripts/coccinelle/misc/memcpy-assign.cocci look
+>>>>> for opportunities to replace a call to memcpy by a struct assignment.
+>>>>> This patch removes memcpy-assign.cocci as it is not clear that this
+>>>>> convention has an impact on the generated code.
+[...]
+> Can someone please just remove the check from the kernel as I'm getting
+> tired of rejecting patches that do this...
 
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- arch/x86/vdso/vdso32/vdso32.lds.S | 10 +++++++---
- 1 file changed, 7 insertions(+), 3 deletions(-)
+I just applied Peter's revert to kbuild.git#misc.
 
-diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S b/arch/x86/vdso/vdso32/vdso32.lds.S
-index 28c4607..aadb8b9 100644
---- a/arch/x86/vdso/vdso32/vdso32.lds.S
-+++ b/arch/x86/vdso/vdso32/vdso32.lds.S
-@@ -23,14 +23,18 @@ ENTRY(__kernel_vsyscall);
-  */
- VERSION
- {
-+	LINUX_2.6 {
-+	global:
-+		__vdso_clock_gettime;
-+		__vdso_gettimeofday;
-+		__vdso_time;
-+	};
-+
- 	LINUX_2.5 {
- 	global:
- 		__kernel_vsyscall;
- 		__kernel_sigreturn;
- 		__kernel_rt_sigreturn;
--		__vdso_clock_gettime;
--		__vdso_gettimeofday;
--		__vdso_time;
- 	local: *;
- 	};
- }
--- 
-1.9.0
+Michal
 
