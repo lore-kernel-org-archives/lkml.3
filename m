@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaC2Sfe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 14:35:34 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:52362 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984AbaC2Sfc (ORCPT
+	id S1752908AbaC2Sh3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 14:37:29 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:36497 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752613AbaC2Sh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 14:35:32 -0400
-Date: Sun, 30 Mar 2014 00:05:56 +0530
+	Sat, 29 Mar 2014 14:37:27 -0400
+Date: Sun, 30 Mar 2014 00:07:52 +0530
 From: Rashika Kheria <rashika.kheria@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mike Christie <michaelc@cs.wisc.edu>,
         "James E.J. Bottomley" <JBottomley@parallels.com>,
         open-iscsi@googlegroups.com, linux-scsi@vger.kernel.org,
         josh@joshtriplett.org
-Subject: [PATCH 43/55] scsi: Mark function as static in scsi_transport_iscsi.c
-Message-ID: <eef277e596edf0e016d18543fe1638148c775ff8.1396114898.git.rashika.kheria@gmail.com>
+Subject: [PATCH 44/55] scsi: Mark function as static in scsi/libiscsi.c
+Message-ID: <eee20bd6ca50408da98bda77cf40180ba084c3e7.1396114898.git.rashika.kheria@gmail.com>
 References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -27,36 +27,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function as static in scsi_transport_iscsi.c because it is not used
-outside this file. Also, unexport the function since it's only used in
-this file.
+Mark function as static in libiscsi.c because it is not used outside
+this file. Also, unexport the function because it is used only in this
+file.
 
-This eliminates the following warning in scsi_transport_iscsi.c:
-drivers/scsi/scsi_transport_iscsi.c:1325:5: warning: no previous prototype for ‘iscsi_is_flashnode_conn_dev’ [-Wmissing-prototypes]
+This eliminates the following warning in libiscsi.c:
+drivers/scsi/libiscsi.c:2386:5: warning: no previous prototype for ‘iscsi_eh_target_reset’ [-Wmissing-prototypes]
 
 Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
 Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/scsi/scsi_transport_iscsi.c |    3 +--
+ drivers/scsi/libiscsi.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/scsi/scsi_transport_iscsi.c b/drivers/scsi/scsi_transport_iscsi.c
-index fd8ffe6..5b6185e 100644
---- a/drivers/scsi/scsi_transport_iscsi.c
-+++ b/drivers/scsi/scsi_transport_iscsi.c
-@@ -1322,11 +1322,10 @@ EXPORT_SYMBOL_GPL(iscsi_create_flashnode_conn);
-  *  1 on success
-  *  0 on failure
+diff --git a/drivers/scsi/libiscsi.c b/drivers/scsi/libiscsi.c
+index 4046241..3afc7b6 100644
+--- a/drivers/scsi/libiscsi.c
++++ b/drivers/scsi/libiscsi.c
+@@ -2383,7 +2383,7 @@ static void iscsi_prep_tgt_reset_pdu(struct scsi_cmnd *sc, struct iscsi_tm *hdr)
+  *
+  * This will attempt to send a warm target reset.
   */
--int iscsi_is_flashnode_conn_dev(struct device *dev, void *data)
-+static int iscsi_is_flashnode_conn_dev(struct device *dev, void *data)
+-int iscsi_eh_target_reset(struct scsi_cmnd *sc)
++static int iscsi_eh_target_reset(struct scsi_cmnd *sc)
  {
- 	return dev->bus == &iscsi_flashnode_bus;
+ 	struct iscsi_cls_session *cls_session;
+ 	struct iscsi_session *session;
+@@ -2455,7 +2455,6 @@ done:
+ 	mutex_unlock(&session->eh_mutex);
+ 	return rc;
  }
--EXPORT_SYMBOL_GPL(iscsi_is_flashnode_conn_dev);
+-EXPORT_SYMBOL_GPL(iscsi_eh_target_reset);
  
- static int iscsi_destroy_flashnode_conn(struct iscsi_bus_flash_conn *fnode_conn)
- {
+ /**
+  * iscsi_eh_recover_target - reset target and possibly the session
 -- 
 1.7.9.5
 
