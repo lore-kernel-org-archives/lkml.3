@@ -1,29 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751722AbaC2NI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 09:08:56 -0400
-Received: from exsmtp04.agrinet.ch ([81.221.254.203]:39980 "EHLO
-	exsmtp04.agrinet.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751303AbaC2NIz (ORCPT
+	id S1751775AbaC2NKt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 09:10:49 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:61509 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbaC2NKq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 09:08:55 -0400
-X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 Mar 2014 09:08:54 EDT
-X-IMP-FROM: _________<joel@weedlight.ch>
-X-IMP-AUTH_USERNAME: <joel@weedlight.ch>
-X-Original-IP: 178.192.189.9
-Message-ID: <1396098192.3516.0.camel@debian>
-Subject: kernel freeze
-From: =?ISO-8859-1?Q?Jo=EBl_Kr=E4hemann?= <joel@weedlight.ch>
-To: linux-kernel@vger.kernel.org
-Date: Sat, 29 Mar 2014 14:03:12 +0100
-Content-Type: text/plain
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 29 Mar 2014 09:10:46 -0400
+Date: Sat, 29 Mar 2014 09:10:42 -0400
+From: Tejun Heo <tj@kernel.org>
+To: paulmcquad <paulmcquad@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: [PATCH] Subject: ata: libata  Fixed Coding style & tabs
+Message-ID: <20140329131042.GA5553@htj.dyndns.org>
+References: <5335B9BA.3070408@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5335B9BA.3070408@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-https://sourceforge.net/p/ags/blog/2014/03/warning-freezed-gnulinux/
+Hello, Paul.
 
+On Fri, Mar 28, 2014 at 06:04:42PM +0000, paulmcquad wrote:
+> From 718d05b6aae57da1a990e38b99a4e3d880717d77 Mon Sep 17 00:00:00 2001
+> From: Paul McQuade <paulmcquad@gmail.com>
+> Date: Fri, 28 Mar 2014 17:58:02 +0000
+> Subject: [PATCH] Subject: ata: libata  Fixed Coding style & tabs
+> 
+> Made files below checkpatch.pl clean.
 
+I don't think I'm gonna apply the patch.  This type of mass whitespace
+cleanups tend to cause conflicts without making anything substantially
+better.  I'd much prefer to localized style cleanups when code
+close-by is being changed.  Big ones are fine if they're accompanied
+by large actual changes too.
+
+Thanks.
+
+-- 
+tejun
