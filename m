@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbaC2UOt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 16:14:49 -0400
-Received: from smtprelay0024.hostedemail.com ([216.40.44.24]:34159 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751929AbaC2UOs (ORCPT
+	id S1752441AbaC2UPu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 16:15:50 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:47224 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752271AbaC2UPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 16:14:48 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::,RULES_HIT:41:355:379:541:800:960:973:982:988:989:1260:1261:1277:1311:1313:1314:1345:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2197:2198:2199:2200:2393:2559:2562:2828:3138:3139:3140:3141:3142:3353:3653:3865:3866:3867:3868:3872:4321:5007:7652:10004:10400:10848:11026:11658:11914:12043:12296:12346:12517:12519:12555:13069:13255:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wire61_ca21c3e0c24a
-X-Filterd-Recvd-Size: 2678
-Message-ID: <1396124085.10606.18.camel@joe-AO722>
-Subject: [PATCH] checkpatch: Expand parenthesis alignment test to
- declarations, functions and assignments
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andy Whitcroft <apw@canonical.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Sat, 29 Mar 2014 13:14:45 -0700
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Sat, 29 Mar 2014 16:15:45 -0400
+From: Andy Lutomirski <luto@amacapital.net>
+To: "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>
+Cc: Stefani Seibold <stefani@seibold.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH] x86: Fix the symbol versions on the 32-bit vDSO
+Date: Sat, 29 Mar 2014 13:15:35 -0700
+Message-Id: <0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently the parenthesis alignment test works only on
-misalignments of if statements like
+The new symbols provide the same API as the 64-bit variants, so they
+should have the same symbol version name.  This can't break
+userspace, since these symbols are new for 32-bit Linux.
 
-	if (foo(bar,
-			baz)
-
-Expand the test to find misalignments like:
-
-static inline int foo(int bar,
-			int baz)
-
-and
-
-	foo(bar,
-			baz);
-
-and
-
-	foo = bar(baz,
-			qux);
-
-Expand the $Inline keyword for __inline and __inline__ too.
-Add $Inline to $Declare so it also matches "static inline <foo>".
-
-Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 ---
- scripts/checkpatch.pl | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ arch/x86/vdso/vdso32/vdso32.lds.S | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index 889929d..1e63973 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -281,7 +281,7 @@ our $Attribute	= qr{
- 			__weak
- 		  }x;
- our $Modifier;
--our $Inline	= qr{inline|__always_inline|noinline};
-+our $Inline	= qr{inline|__always_inline|noinline|__inline|__inline__};
- our $Member	= qr{->$Ident|\.$Ident|\[[^]]*\]};
- our $Lval	= qr{$Ident(?:$Member)*};
- 
-@@ -435,7 +435,7 @@ sub build_types {
- 			(?:(?:\s|\*|\[\])+\s*const|(?:\s|\*|\[\])+|(?:\s*\[\s*\])+)?
- 			(?:\s+$Inline|\s+$Modifier)*
- 		  }x;
--	$Declare	= qr{(?:$Storage\s+)?$Type};
-+	$Declare	= qr{(?:$Storage\s+(?:$Inline\s+)?)?$Type};
+diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S b/arch/x86/vdso/vdso32/vdso32.lds.S
+index 28c4607..aadb8b9 100644
+--- a/arch/x86/vdso/vdso32/vdso32.lds.S
++++ b/arch/x86/vdso/vdso32/vdso32.lds.S
+@@ -23,14 +23,18 @@ ENTRY(__kernel_vsyscall);
+  */
+ VERSION
+ {
++	LINUX_2.6 {
++	global:
++		__vdso_clock_gettime;
++		__vdso_gettimeofday;
++		__vdso_time;
++	};
++
+ 	LINUX_2.5 {
+ 	global:
+ 		__kernel_vsyscall;
+ 		__kernel_sigreturn;
+ 		__kernel_rt_sigreturn;
+-		__vdso_clock_gettime;
+-		__vdso_gettimeofday;
+-		__vdso_time;
+ 	local: *;
+ 	};
  }
- build_types();
- 
-@@ -1613,7 +1613,7 @@ sub pos_last_openparen {
- 		}
- 	}
- 
--	return $last_openparen + 1;
-+	my $ts = length(expand_tabs(substr($line, 0, $last_openparen))) + 1;
- }
- 
- sub process {
-@@ -2200,7 +2200,7 @@ sub process {
- 
- # check multi-line statement indentation matches previous line
- 		if ($^V && $^V ge 5.10.0 &&
--		    $prevline =~ /^\+(\t*)(if \(|$Ident\().*(\&\&|\|\||,)\s*$/) {
-+		    $prevline =~ /^\+([ \t]*)((?:$c90_Keywords(?:\s+if)\s*)|(?:$Declare\s*)?(?:$Ident|\(\s*\*\s*$Ident\s*\))\s*|$Ident\s*=\s*$Ident\s*)\(.*(\&\&|\|\||,)\s*$/) {
- 			$prevline =~ /^\+(\t*)(.*)$/;
- 			my $oldindent = $1;
- 			my $rest = $2;
-
+-- 
+1.9.0
 
