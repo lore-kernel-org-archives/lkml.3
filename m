@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbaC2O3X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 10:29:23 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35611 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690AbaC2O2x (ORCPT
+	id S1751953AbaC2OdZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 10:33:25 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:37766 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751554AbaC2OdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 10:28:53 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] block: fix SG_[GS]ET_RESERVED_SIZE ioctl when max_sectors is huge
-Date: Sat, 29 Mar 2014 23:28:42 +0900
-Message-Id: <1396103322-3519-2-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1396103322-3519-1-git-send-email-akinobu.mita@gmail.com>
-References: <1396103322-3519-1-git-send-email-akinobu.mita@gmail.com>
+	Sat, 29 Mar 2014 10:33:23 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140329001732.BECE2C41FF4@trevor.secretlab.ca>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com>
+	<CAL_JsqKjGjyYypwneCmNc1qeKe0ZOG9gz3QSJ37-HwHXKu3iRA@mail.gmail.com>
+	<20140329001732.BECE2C41FF4@trevor.secretlab.ca>
+Date: Sat, 29 Mar 2014 09:33:22 -0500
+Message-ID: <CAL_JsqKAtiPXsP6fotT8FSTyy+8SJW5Cg2QKLBnL7Ya6KyKCog@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Generic serial earlycon
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>, "x86@kernel.org" <x86@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SG_GET_RESERVED_SIZE and SG_SET_RESERVED_SIZE ioctls access a reserved
-buffer in bytes as int type.  The value needs to be capped at the request
-queue's max_sectors.  But integer overflow is not correctly handled in
-the calculation when converting max_sectors from sectors to bytes.
+On Fri, Mar 28, 2014 at 7:17 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> On Sat, 22 Mar 2014 09:14:31 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> On Sat, Mar 22, 2014 at 4:54 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> > On Friday 21 March 2014, Rob Herring wrote:
+>> >> From: Rob Herring <robh@kernel.org>
+>> >>
+>> >> This started out as an attempt to add arm64's earlyprintk support to ARM
+>> >> in order to get an earlier, runtime setup console on multi-platform
+>> >> kernels. The first issue was needing the fixmap support which
+>> >> conveniently Mark Salter was working on and is mostly in place now. Like
+>> >> many things on ARM and arm64 now, it then became where do I put the now
+>> >> common, shared code. After digging more into various early console/printk
+>> >> support, it turns out the 8250_early.c setup code was the best starting
+>> >> point.
+>> >>
+>> >> This is based on Mark Salter's fixmap support currently in linux-next.
+>> >> This is tested on arm64 and ARM with pl011 and 8250. The ARM support
+>> >> also requires fixmap and fixed mapping support which are not yet in place.
+>> >> I have some patches in my tree to support fixmap, but they need some more
+>> >> work. Fortunately, once fixmap is in place, it is just a Kconfig option
+>> >> to enable earlycon support on ARM. A git tree is available here[1].
+>> >>
+>> >> Based on this series, I would like to add support for doing earlycon
+>> >> setup using DT.
+>> >
+>> > Hi Rob,
+>> >
+>> > I like this series a lot, great work!
+>> >
+>> > I would consider the DT parsing support essential here, we should not
+>> > merge the patches until that is done as well, because I don't want
+>> > to see users pass earlycon command line options in DT when they can
+>> > use the established "linux,stdout-path" property instead. I would
+>> > expect that in almost every case in which we are booting using DT
+>> > today, we can just use linux,stdout-path to locate the device that
+>> > the boot loader has already set up and start usign it.
+>>
+>> I think this series stands on its own. It is largely refactoring
+>> existing code and supporting existing command line options (arm64 just
+>> changes from earlyprintk= to earlycon=). There will be cases where
+>> changing the kernel command line is the only way to setup the
+>> earlycon. Also, I think we would still want the kernel command line to
+>> control whether or not we enable the earlycon (i.e. earlycon=dt).
+>> There's not a standard way for how bootloaders would decide to set
+>> "linux,stdout-path" or not.
+>
+> I agree. I really like this series and I don't think it needs to wait
+> for DT parsing.
+>
+> Another issue is that the earlycon assumes the port is already set up,
+> but the /chosen/stdout-path binding doesn't guarantee that. We'll have
+> to make sure the kernel knows when it is valid to use
+> /chosen/stdout-path before enabling an early console.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>
----
- block/scsi_ioctl.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+It's driver dependent whether the port setup is done in the earlycon
+driver or not. The 8250 driver does port setup while the pl011 driver
+does not. We could add setup to the pl011 or checks that it is setup
+already, but then it would not work with SBSA compliant UARTs.
 
-diff --git a/block/scsi_ioctl.c b/block/scsi_ioctl.c
-index 2648797..6174bba 100644
---- a/block/scsi_ioctl.c
-+++ b/block/scsi_ioctl.c
-@@ -82,9 +82,18 @@ static int sg_set_timeout(struct request_queue *q, int __user *p)
- 	return err;
- }
- 
-+static int max_sectors_bytes(struct request_queue *q)
-+{
-+	unsigned int max_sectors = queue_max_sectors(q);
-+
-+	max_sectors = min_t(unsigned int, max_sectors, INT_MAX >> 9);
-+
-+	return max_sectors << 9;
-+}
-+
- static int sg_get_reserved_size(struct request_queue *q, int __user *p)
- {
--	unsigned val = min(q->sg_reserved_size, queue_max_sectors(q) << 9);
-+	int val = min_t(int, q->sg_reserved_size, max_sectors_bytes(q));
- 
- 	return put_user(val, p);
- }
-@@ -98,10 +107,8 @@ static int sg_set_reserved_size(struct request_queue *q, int __user *p)
- 
- 	if (size < 0)
- 		return -EINVAL;
--	if (size > (queue_max_sectors(q) << 9))
--		size = queue_max_sectors(q) << 9;
- 
--	q->sg_reserved_size = size;
-+	q->sg_reserved_size = min(size, max_sectors_bytes(q));
- 	return 0;
- }
- 
--- 
-1.8.3.2
+I don't think we want to enable earlycon solely if stdout-path is set.
+My plan here is that adding "earlycon" with no parameters to the
+command line enables DT based setup of earlycon. That doesn't really
+solve the issue with setup, but does limit it to a developer's feature
+at least.
 
+Rob
