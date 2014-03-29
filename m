@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaC2Sn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 14:43:58 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:54184 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752064AbaC2Sn4 (ORCPT
+	id S1753052AbaC2SoL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 14:44:11 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:61938 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752946AbaC2SoF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 14:43:56 -0400
-Date: Sun, 30 Mar 2014 00:14:21 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 48/55] scsi: Mark function as static in scsi_debug.c
-Message-ID: <bb4a36afee7dd2ac6d2cc58e557876f198cadae1.1396114898.git.rashika.kheria@gmail.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+	Sat, 29 Mar 2014 14:44:05 -0400
+Date: Sat, 29 Mar 2014 19:44:01 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        John Stultz <john.stultz@linaro.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] timer fix
+Message-ID: <20140329184401.GA27245@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark function as static in scsi_debug.c because it is not used outside
-this file.
+Linus,
 
-This eliminates the following warning in scsi_debug.c:
-drivers/scsi/scsi_debug.c:1910:6: warning: no previous prototype for ‘dump_sector’ [-Wmissing-prototypes]
+Please pull the latest timers-urgent-for-linus git tree from:
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
----
- drivers/scsi/scsi_debug.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git timers-urgent-for-linus
 
-diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
-index 2decc64..356b548 100644
---- a/drivers/scsi/scsi_debug.c
-+++ b/drivers/scsi/scsi_debug.c
-@@ -1907,7 +1907,7 @@ static int resp_read(struct scsi_cmnd *SCpnt, unsigned long long lba,
- 	return 0;
+   # HEAD: cab5e127eef040399902caa8e1510795583fa03a time: Revert to calling clock_was_set_delayed() while in irq context
+
+A late breaking fix from John. (The bug fixed has a hard lockup 
+potential, but that was not observed, warnings were.)
+
+ Thanks,
+
+	Ingo
+
+------------------>
+John Stultz (1):
+      time: Revert to calling clock_was_set_delayed() while in irq context
+
+
+ kernel/time/timekeeping.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 0aa4ce8..5b40279 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -1435,7 +1435,8 @@ void update_wall_time(void)
+ out:
+ 	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+ 	if (clock_set)
+-		clock_was_set();
++		/* Have to call _delayed version, since in irq context*/
++		clock_was_set_delayed();
  }
  
--void dump_sector(unsigned char *buf, int len)
-+static void dump_sector(unsigned char *buf, int len)
- {
- 	int i, j;
- 
--- 
-1.7.9.5
-
+ /**
