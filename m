@@ -1,161 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886AbaC2P24 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 11:28:56 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:51684 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752085AbaC2P2V (ORCPT
+	id S1752307AbaC2Pa3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 11:30:29 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:64835 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbaC2PaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 11:28:21 -0400
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Subject: [PATCH v2 28/29] ktap: add vim syntax file(tools/ktap/vim/*)
-Date: Fri, 28 Mar 2014 10:45:23 -0400
-Message-Id: <1396017924-7754-29-git-send-email-jovi.zhangwei@gmail.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
-References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
+	Sat, 29 Mar 2014 11:30:24 -0400
+From: Srikanth Thokala <sthokal@xilinx.com>
+To: dan.j.williams@intel.com, vinod.koul@intel.com, michal.simek@xilinx.com,
+        grant.likely@linaro.org, robh+dt@kernel.org
+Cc: lars@metafoo.de, andriy.shevchenko@linux.intel.com,
+        jaswinder.singh@linaro.org, dmaengine@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Srikanth Thokala <sthokal@xilinx.com>
+Subject: [PATCH 1/2] dma: Add Xilinx AXI DMA DT Binding Documentation
+Date: Sat, 29 Mar 2014 20:58:39 +0530
+Message-Id: <1396106920-19015-1-git-send-email-sthokal@xilinx.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To make ktap script looks more beautiful.
+Device-tree binding documentation of Xilinx DMA Engine
 
-Signed-off-by: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
 ---
- tools/ktap/vim/ftdetect/ktap.vim |   3 ++
- tools/ktap/vim/syntax/ktap.vim   | 106 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+)
- create mode 100644 tools/ktap/vim/ftdetect/ktap.vim
- create mode 100644 tools/ktap/vim/syntax/ktap.vim
+ .../devicetree/bindings/dma/xilinx/xilinx_dma.txt  |   65 ++++++++++++++++++++
+ 1 file changed, 65 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
 
-diff --git a/tools/ktap/vim/ftdetect/ktap.vim b/tools/ktap/vim/ftdetect/ktap.vim
+diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
 new file mode 100644
-index 0000000..439f54c
+index 0000000..18e8bcc
 --- /dev/null
-+++ b/tools/ktap/vim/ftdetect/ktap.vim
-@@ -0,0 +1,3 @@
-+augroup filetype
-+  au BufNewFile,BufRead *.kp   set filetype=ktap
-+augroup end
-diff --git a/tools/ktap/vim/syntax/ktap.vim b/tools/ktap/vim/syntax/ktap.vim
-new file mode 100644
-index 0000000..a375b79
---- /dev/null
-+++ b/tools/ktap/vim/syntax/ktap.vim
-@@ -0,0 +1,106 @@
-+" Vim syntax file
-+" Language:     ktap
-+" Maintainer:	Jovi Zhangwei <jovi.zhangwei@gmail.com>
-+" First Author:	Jovi Zhangwei <jovi.zhangwei@gmail.com>
-+" Last Change:	2013 Dec 19
++++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_dma.txt
+@@ -0,0 +1,65 @@
++Xilinx AXI DMA engine, it does transfers between memory and AXI4 stream
++target devices. It can be configured to have one channel or two channels.
++If configured as two channels, one is to transmit to the device and another
++is to receive from the device.
 +
-+" For version 5.x: Clear all syntax items
-+" For version 6.x: Quit when a syntax file was already loaded
-+if version < 600
-+  syn clear
-+elseif exists("b:current_syntax")
-+  finish
-+endif
++Required properties:
++- compatible: Should be "xlnx,axi-dma-1.00.a"
++- #dma-cells: Should be <1>, see "dmas" property below
++- reg: Should contain DMA registers location and length.
++- dma-channel child node: Should have atleast one channel and can have upto
++	two channels per device. This node specifies the properties of each
++	DMA channel (see child node properties below).
 +
-+setlocal iskeyword=@,48-57,_,$
++Optional properties:
++- xlnx,include-sg: Tells whether configured for Scatter-mode in
++	the hardware.
 +
-+syn keyword ktapStatement break continue return
-+syn keyword ktapRepeat while for in
-+syn keyword ktapConditional if else elseif
-+syn keyword ktapDeclaration trace trace_end
-+syn keyword ktapIdentifier var
-+syn keyword ktapFunction function
-+syn match   ktapBraces "[{}\[\]]"
-+syn match   ktapParens "[()]"
-+syn keyword ktapReserved argstr probename arg0 arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9
-+syn keyword ktapReserved cpu pid tid uid execname
++Required child node properties:
++- compatible: It should be either "xlnx,axi-dma-mm2s-channel" or
++	"xlnx,axi-dma-s2mm-channel".
++- interrupts: Should contain per channel DMA interrupts.
++- xlnx,data-width: Should contain the stream data width, take values
++	{32,64...1024}.
 +
++Option child node properties:
++- xlnx,include-dre: Tells whether hardware is configured for Data
++	Realignment Engine.
 +
-+syn region ktapTraceDec start="\<trace\>"lc=5 end="{"me=s-1 contains=ktapString,ktapNumber
-+syn region ktapTraceDec start="\<trace_end\>"lc=9 end="{"me=s-1 contains=ktapString,ktapNumber
-+syn match ktapTrace contained "\<\w\+\>" containedin=ktapTraceDec
++Example:
++++++++++
 +
-+syn region ktapFuncDec start="\<function\>"lc=8 end=":\|("me=s-1 contains=ktapString,ktapNumber
-+syn match ktapFuncCall contained "\<\w\+\ze\(\s\|\n\)*("
-+syn match ktapFunc contained "\<\w\+\>" containedin=ktapFuncDec,ktapFuncCall
-+
-+syn match ktapStat contained "@\<\w\+\ze\(\s\|\n\)*("
-+
-+" decimal number
-+syn match ktapNumber "\<\d\+\>"
-+" octal number
-+syn match ktapNumber "\<0\o\+\>" contains=ktapOctalZero
-+" Flag the first zero of an octal number as something special
-+syn match ktapOctalZero contained "\<0"
-+" flag an octal number with wrong digits
-+syn match ktapOctalError "\<0\o*[89]\d*"
-+" hex number
-+syn match ktapNumber "\<0x\x\+\>"
-+" numeric arguments
-+syn match ktapNumber "\<\$\d\+\>"
-+syn match ktapNumber "\<\$#"
-+
-+syn region ktapString oneline start=+"+ skip=+\\"+ end=+"+ 
-+" string arguments
-+syn match ktapString "@\d\+\>"
-+syn match ktapString "@#"
-+syn region ktapString2 matchgroup=ktapString start="\[\z(=*\)\[" end="\]\z1\]" contains=@Spell
-+
-+" syn keyword ktapTodo contained TODO FIXME XXX
-+
-+syn match ktapComment "#.*"
-+
-+" treat ^#! as special
-+syn match ktapSharpBang "^#!.*"
++axi_dma_0: axidma@40400000 {
++	compatible = "xlnx,axi-dma-1.00.a";
++	#dma_cells = <1>;
++	reg = < 0x40400000 0x10000 >;
++	dma-channel@40400000 {
++		compatible = "xlnx,axi-dma-mm2s-channel";
++		interrupts = < 0 59 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++	dma-channel@40400030 {
++		compatible = "xlnx,axi-dma-s2mm-channel";
++		interrupts = < 0 58 4 >;
++		xlnx,datawidth = <0x40>;
++	} ;
++} ;
 +
 +
-+syn keyword ktapFunc printf print print_hist stack
-+syn keyword ktapFunc gettimeofday_us
-+syn keyword ktapFunc pairs
++* DMA client
 +
++Required properties:
++- dmas: a list of <[DMA device phandle] [Channel ID]> pairs,
++	where Channel ID is '0' for write/tx and '1' for read/rx
++	channel.
++- dma-names: a list of DMA channel names, one per "dmas" entry
 +
-+" Define the default highlighting.
-+" For version 5.7 and earlier: only when not done already
-+" For version 5.8 and later: only when an item doesn't have highlighting yet
-+if version >= 508 || !exists("did_lua_syntax_inits")
-+  if version < 508
-+    let did_lua_syntax_inits = 1
-+    command -nargs=+ HiLink hi link <args>
-+  else
-+    command -nargs=+ HiLink hi def link <args>
-+  endif
++Example:
++++++++++
 +
-+  HiLink ktapNumber		Number
-+  HiLink ktapOctalZero		PreProc " c.vim does it this way...
-+  HiLink ktapOctalError		Error
-+  HiLink ktapString		String
-+  HiLink ktapString2		String
-+  HiLink ktapTodo		Todo
-+  HiLink ktapComment		Comment
-+  HiLink ktapSharpBang		PreProc
-+  HiLink ktapStatement		Statement
-+  HiLink ktapConditional	Conditional
-+  HiLink ktapRepeat		Repeat
-+  HiLink ktapTrace		Function
-+  HiLink ktapFunc		Function
-+  HiLink ktapStat		Function
-+  HiLink ktapFunction		Function
-+  HiLink ktapBraces		Function
-+  HiLink ktapDeclaration	Typedef
-+  HiLink ktapIdentifier		Identifier
-+  HiLink ktapReserved		Keyword
-+
-+  delcommand HiLink
-+endif
-+
-+let b:current_syntax = "ktap"
++dmatest_0: dmatest@0 {
++	compatible ="xlnx,axi-dma-test-1.00.a";
++	dmas = <&axi_dma_0 0
++		&axi_dma_0 1>;
++	dma-names = "dma0", "dma1";
++} ;
 -- 
-1.8.1.4
+1.7.9.5
 
