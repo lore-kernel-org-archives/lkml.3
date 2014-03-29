@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204AbaC2HLv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 03:11:51 -0400
-Received: from mail-yk0-f177.google.com ([209.85.160.177]:62919 "EHLO
-	mail-yk0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbaC2HLt (ORCPT
+	id S1751327AbaC2Hbd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 03:31:33 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:48876 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750852AbaC2Hbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 03:11:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAOULuOaeBPpuiYc_Aru+awBDf=Ahbok-UjgY9o7gfO4VMctoqg@mail.gmail.com>
-References: <CAOULuOY5eryuH1KgaqiuGXyYiQd2h=TZoPe2M2+juts9XuzW6Q@mail.gmail.com>
-	<CAE9FiQXmO_sSCnd-0NvXKmyeLP0m4XGRRkAgqSiMkfeTcvXs+A@mail.gmail.com>
-	<CAOULuOaeBPpuiYc_Aru+awBDf=Ahbok-UjgY9o7gfO4VMctoqg@mail.gmail.com>
-Date: Sat, 29 Mar 2014 00:11:48 -0700
-X-Google-Sender-Auth: MEM6g4zf149lZ_hwo4zgugEU4IU
-Message-ID: <CAE9FiQWpprkp_dzviD8wRpqosJq5Oe+8UTwhL87fbzFm3OknUw@mail.gmail.com>
-Subject: Re: BAR 14: can't assign mem (size 0x200000)
-From: Yinghai Lu <yinghai@kernel.org>
-To: Parag Warudkar <parag.lkml@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 29 Mar 2014 03:31:32 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-97-533676d19256
+From: Chao Yu <chao2.yu@samsung.com>
+To: ??? <jaegeuk.kim@samsung.com>
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [f2fs-dev] [PATCH] f2fs: fix error path when fail to read inline data
+Date: Sat, 29 Mar 2014 15:30:40 +0800
+Message-id: <000101cf4b20$e4765270$ad62f750$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: Ac9LHoRwP637GPA+RcKKhJHOyzw3yw==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrHLMWRmVeSWpSXmKPExsVy+t9jQd1LZWbBBjensFtc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlXHx1Vy2gnU8Fa37
+	vrI2MD7k7GLk5JAQMJHYN382E4QtJnHh3nq2LkYuDiGB6YwSLw+dZIdwfjBK3GpfDFbFJqAi
+	sbzjP5gtIqAoseH9BnYQm1kgU+Je0wxmEFtYwE+i6fhHRhCbRUBV4nrDZ7AaXgFLiZuLJ0HZ
+	ghI/Jt9jgejVkli/8zgThC0vsXnNW2aIixQkdpx9zQixS0+iY243VI24xMYjt1gmMArMQjJq
+	FpJRs5CMmoWkZQEjyypG0dSC5ILipPRcI73ixNzi0rx0veT83E2M4FB+Jr2DcVWDxSFGAQ5G
+	JR5egVbTYCHWxLLiytxDjBIczEoivJmmZsFCvCmJlVWpRfnxRaU5qcWHGKU5WJTEeQ+2WgcK
+	CaQnlqRmp6YWpBbBZJk4OKUaGFecNrl6+sKniCdZe+rWH7pZs39DVcy9xJjDGuuUzO3V3auZ
+	L2cqHUq1dgwXlJi3qTx9e6vqYqNVnOt62D95XZLXmWf9TnLlqh75p1MvTHb9ySk9t9SeeV/9
+	qtjV3/xsivWN+XaHL9+o8O2QeWf4fadTjpcXRd5V0ZpvufSVrbPssqd9k20yypRYijMSDbWY
+	i4oTAcW2XDhhAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 6:55 PM, Parag Warudkar <parag.lkml@gmail.com> wrote:
->> Can you send out whole boot log (include init booting and from resume) and
->> lspci -tv and lspci -vvxxxx ?
->
-> lspci -tv
-> -----------
-> ~# lspci -tv
-> -[0000:00]-+-00.0  Intel Corporation Xeon E3-1200 v3 Processor DRAM Controller
->            +-02.0  Intel Corporation Xeon E3-1200 v3 Processor
-> Integrated Graphics Controller
->            +-03.0  Intel Corporation Xeon E3-1200 v3/4th Gen Core
-> Processor HD Audio Controller
->            +-14.0  Intel Corporation 8 Series/C220 Series Chipset
-> Family USB xHCI
->            +-16.0  Intel Corporation 8 Series/C220 Series Chipset
-> Family MEI Controller #1
->            +-16.3  Intel Corporation 8 Series/C220 Series Chipset
-> Family KT Controller
->            +-19.0  Intel Corporation Ethernet Connection I217-LM
->            +-1a.0  Intel Corporation 8 Series/C220 Series Chipset
-> Family USB EHCI #2
->            +-1b.0  Intel Corporation 8 Series/C220 Series Chipset High
-> Definition Audio Controller
->            +-1c.0-[01]--
->            +-1c.3-[02-03]----00.0-[03]--
->            +-1c.4-[04-3c]--
->            +-1d.0  Intel Corporation 8 Series/C220 Series Chipset
-> Family USB EHCI #1
->            +-1f.0  Intel Corporation C226 Series Chipset Family Server
-> Advanced SKU LPC Controller
->            +-1f.2  Intel Corporation 8 Series/C220 Series Chipset
-> Family 6-port SATA Controller 1 [AHCI mode]
->            \-1f.3  Intel Corporation 8 Series/C220 Series Chipset
-> Family SMBus Controller
->
-> lspci -vvxxxx and dmesg output are kind of big, so attached.
+We should unlock page in ->readpage() path and also should unlock & release page
+in error path of ->write_begin() to avoid deadlock or memory leak.
+So let's add release code to fix the problem when we fail to read inline data.
 
-Hi, Parag,
+Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+---
+ fs/f2fs/data.c   |   14 ++++++++++----
+ fs/f2fs/inline.c |    4 +++-
+ 2 files changed, 13 insertions(+), 5 deletions(-)
 
-For the boot path, kernel is right.
-BIOS does not assign resource for
-00:1c.0, (io, mmio, mmio pref), 00:1c.3(io, mmio, mmio pref), 00:1c.4 (io).
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+index 598bfa6..45abd60 100644
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -942,13 +942,19 @@ inline_data:
+ 	if (dn.data_blkaddr == NEW_ADDR) {
+ 		zero_user_segment(page, 0, PAGE_CACHE_SIZE);
+ 	} else {
+-		if (f2fs_has_inline_data(inode))
++		if (f2fs_has_inline_data(inode)) {
+ 			err = f2fs_read_inline_data(inode, page);
+-		else
++			if (err) {
++				page_cache_release(page);
++				return err;
++			}
++		} else {
+ 			err = f2fs_submit_page_bio(sbi, page, dn.data_blkaddr,
+ 							READ_SYNC);
+-		if (err)
+-			return err;
++			if (err)
++				return err;
++		}
++
+ 		lock_page(page);
+ 		if (unlikely(!PageUptodate(page))) {
+ 			f2fs_put_page(page, 1);
+diff --git a/fs/f2fs/inline.c b/fs/f2fs/inline.c
+index 31ee5b1..383db1f 100644
+--- a/fs/f2fs/inline.c
++++ b/fs/f2fs/inline.c
+@@ -45,8 +45,10 @@ int f2fs_read_inline_data(struct inode *inode, struct page *page)
+ 	}
+ 
+ 	ipage = get_node_page(sbi, inode->i_ino);
+-	if (IS_ERR(ipage))
++	if (IS_ERR(ipage)) {
++		unlock_page(page);
+ 		return PTR_ERR(ipage);
++	}
+ 
+ 	zero_user_segment(page, MAX_INLINE_DATA, PAGE_CACHE_SIZE);
+ 
+-- 
+1.7.9.5
 
-but 00:1c.0 00:1c.4 support hotplug either in acpiphp or pcie slot cap.
 
-[    0.263398] acpiphp: Slot [1] registered
-[    0.263405] pci 0000:00:1c.0: PCI bridge to [bus 01]
-[    0.263884] acpiphp: Slot [1-1] registered
-[    0.263891] pci 0000:00:1c.4: PCI bridge to [bus 04-3c]
-
-so kernel assign new resource to them.
-
-[    0.281764] pci 0000:00:1c.0: BAR 14: assigned [mem 0x9f200000-0x9f3fffff]
-[    0.281768] pci 0000:00:1c.0: BAR 15: assigned [mem
-0x9f400000-0x9f5fffff 64bit pref]
-[    0.281770] pci 0000:00:1c.0: BAR 13: assigned [io  0x2000-0x2fff]
-[    0.281771] pci 0000:00:1c.4: BAR 13: assigned [io  0x3000-0x3fff]
-
-but 00:1c.3 ==> 02:00.0 (bus 03) does not support hotplug.
-so kernel does not assign resource 00:1c.3.
-
-Later during resuming, kernel try to assign resource 02:00.0 but it will fail
-as parent bridge 00:1c.3 has no resource.
-(Not sure how pci_configure_slot get called with this resume path).
-
-so you will have
-
-[11548.934659] pci 0000:02:00.0: BAR 14: can't assign mem (size 0x200000)
-[11548.934661] pci 0000:02:00.0: BAR 15: can't assign mem pref (size 0x200000)
-[11548.934662] pci 0000:02:00.0: BAR 13: can't assign io (size 0x1000)
-[11548.934664] pci 0000:02:00.0: BAR 14: can't assign mem (size 0x200000)
-[11548.934666] pci 0000:02:00.0: BAR 15: can't assign mem pref (size 0x200000)
-[11548.934667] pci 0000:02:00.0: BAR 13: can't assign io (size 0x1000)
