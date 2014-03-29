@@ -1,67 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386AbaC2Rpm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 13:45:42 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:59492 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaC2Rpk (ORCPT
+	id S1752475AbaC2RqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 13:46:14 -0400
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:37249 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752425AbaC2RqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 13:45:40 -0400
-Date: Sat, 29 Mar 2014 23:16:05 +0530
-From: Rashika Kheria <rashika.kheria@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Anil Gurumurthy <agurumur@brocade.com>,
-        Vijaya Mohan Guvva <vmohan@brocade.com>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, josh@joshtriplett.org
-Subject: [PATCH 04/55] scsi: Mark function as static in bfa/bfad_attr.c
-Message-ID: <2578f45ed96f8d4eb6af5b4d96e14208fb55a0b1.1396114897.git.rashika.kheria@gmail.com>
-References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+	Sat, 29 Mar 2014 13:46:12 -0400
+Message-ID: <533706DF.90406@gmail.com>
+Date: Sat, 29 Mar 2014 17:46:07 +0000
+From: paulmcquad <paulmcquad@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        gregkh@linuxfoundation.org, hsweeten@visionengravers.com,
+        abbotti@mev.co.uk
+Subject: [PATCH] Staging: comedi: Line indentation
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark functions as static in bfa/bfad_attr.c because they are not used
-outside this file.
+>From df22d80899d343314d212e1750dc6ae2a54fa364 Mon Sep 17 00:00:00 2001
+From: Paul McQuade <paulmcquad@gmail.com>
+Date: Sat, 29 Mar 2014 17:37:38 +0000
+Subject: [PATCH] Staging: comedi: Line indentation
 
-This eliminates the following warning in bfa/bfad_attr.c:
-drivers/scsi/bfa/bfad_attr.c:446:1: warning: no previous prototype for ‘bfad_im_issue_fc_host_lip’ [-Wmissing-prototypes]
-drivers/scsi/bfa/bfad_attr.c:574:1: warning: no previous prototype for ‘bfad_im_vport_set_symbolic_name’ [-Wmissing-prototypes]
+Fix line format in comedidev.h
 
-Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
 ---
- drivers/scsi/bfa/bfad_attr.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/staging/comedi/comedidev.h | 32 ++++++++++++++++----------------
+ 1 file changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/scsi/bfa/bfad_attr.c b/drivers/scsi/bfa/bfad_attr.c
-index 40be670..9937ce3 100644
---- a/drivers/scsi/bfa/bfad_attr.c
-+++ b/drivers/scsi/bfa/bfad_attr.c
-@@ -442,7 +442,7 @@ bfad_im_vport_create(struct fc_vport *fc_vport, bool disable)
- 	return status;
- }
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index f82bd42..588e9e7 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -61,29 +61,29 @@ struct comedi_subdevice {
  
--int
-+static int
- bfad_im_issue_fc_host_lip(struct Scsi_Host *shost)
- {
- 	struct bfad_im_port_s *im_port =
-@@ -570,7 +570,7 @@ bfad_im_vport_disable(struct fc_vport *fc_vport, bool disable)
- 	return 0;
- }
+     unsigned int *chanlist;    /* driver-owned chanlist (not used) */
  
--void
-+static void
- bfad_im_vport_set_symbolic_name(struct fc_vport *fc_vport)
- {
- 	struct bfad_vport_s *vport = (struct bfad_vport_s *)fc_vport->dd_data;
+-    int (*insn_read) (struct comedi_device *, struct comedi_subdevice *,
++    int (*insn_read)(struct comedi_device *, struct comedi_subdevice *,
+               struct comedi_insn *, unsigned int *);
+-    int (*insn_write) (struct comedi_device *, struct comedi_subdevice *,
++    int (*insn_write)(struct comedi_device *, struct comedi_subdevice *,
+                struct comedi_insn *, unsigned int *);
+-    int (*insn_bits) (struct comedi_device *, struct comedi_subdevice *,
++    int (*insn_bits)(struct comedi_device *, struct comedi_subdevice *,
+               struct comedi_insn *, unsigned int *);
+-    int (*insn_config) (struct comedi_device *, struct comedi_subdevice *,
++    int (*insn_config)(struct comedi_device *, struct comedi_subdevice *,
+                 struct comedi_insn *, unsigned int *);
+ 
+-    int (*do_cmd) (struct comedi_device *, struct comedi_subdevice *);
+-    int (*do_cmdtest) (struct comedi_device *, struct comedi_subdevice *,
++    int (*do_cmd)(struct comedi_device *, struct comedi_subdevice *);
++    int (*do_cmdtest)(struct comedi_device *, struct comedi_subdevice *,
+                struct comedi_cmd *);
+-    int (*poll) (struct comedi_device *, struct comedi_subdevice *);
+-    int (*cancel) (struct comedi_device *, struct comedi_subdevice *);
++    int (*poll)(struct comedi_device *, struct comedi_subdevice *);
++    int (*cancel)(struct comedi_device *, struct comedi_subdevice *);
+     /* int (*do_lock)(struct comedi_device *, struct comedi_subdevice *); */
+     /* int (*do_unlock)(struct comedi_device *, \
+             struct comedi_subdevice *); */
+ 
+     /* called when the buffer changes */
+-    int (*buf_change) (struct comedi_device *dev,
++    int (*buf_change)(struct comedi_device *dev,
+                struct comedi_subdevice *s, unsigned long new_size);
+ 
+-    void (*munge) (struct comedi_device *dev, struct comedi_subdevice *s,
++    void (*munge)(struct comedi_device *dev, struct comedi_subdevice *s,
+                void *data, unsigned int num_bytes,
+                unsigned int start_chan_index);
+     enum dma_data_direction async_dma_dir;
+@@ -146,7 +146,7 @@ struct comedi_async {
+ 
+     unsigned int cb_mask;
+ 
+-    int (*inttrig) (struct comedi_device *dev, struct comedi_subdevice *s,
++    int (*inttrig)(struct comedi_device *dev, struct comedi_subdevice *s,
+             unsigned int x);
+ };
+ 
+@@ -155,9 +155,9 @@ struct comedi_driver {
+ 
+     const char *driver_name;
+     struct module *module;
+-    int (*attach) (struct comedi_device *, struct comedi_devconfig *);
+-    void (*detach) (struct comedi_device *);
+-    int (*auto_attach) (struct comedi_device *, unsigned long);
++    int (*attach)(struct comedi_device *, struct comedi_devconfig *);
++    void (*detach)(struct comedi_device *);
++    int (*auto_attach)(struct comedi_device *, unsigned long);
+ 
+     /* number of elements in board_name and board_id arrays */
+     unsigned int num_names;
+@@ -202,8 +202,8 @@ struct comedi_device {
+ 
+     struct fasync_struct *async_queue;
+ 
+-    int (*open) (struct comedi_device *dev);
+-    void (*close) (struct comedi_device *dev);
++    int (*open)(struct comedi_device *dev);
++    void (*close)(struct comedi_device *dev);
+ };
+ 
+ static inline const void *comedi_board(const struct comedi_device *dev)
 -- 
-1.7.9.5
+1.8.3.2
 
