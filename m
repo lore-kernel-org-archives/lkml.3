@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752825AbaC2SIp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 14:08:45 -0400
-Received: from mail-we0-f181.google.com ([74.125.82.181]:42197 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaC2SIo (ORCPT
+	id S1752850AbaC2SJe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 14:09:34 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:37559 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752437AbaC2SJa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 14:08:44 -0400
-Message-ID: <53370C28.4020604@gmail.com>
-Date: Sat, 29 Mar 2014 18:08:40 +0000
-From: paulmcquad <paulmcquad@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 29 Mar 2014 14:09:30 -0400
+Date: Sat, 29 Mar 2014 23:39:56 +0530
+From: Rashika Kheria <rashika.kheria@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: James Smart <james.smart@emulex.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, josh@joshtriplett.org
+Subject: [PATCH 24/55] scsi: Mark functions as static in lpfc/lpfc_init.c
+Message-ID: <7f50765644282cbfddc041620b3ada882eaa6524.1396114898.git.rashika.kheria@gmail.com>
+References: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org, arnd@arndb.de,
-        gregkh@linuxfoundation.org, jake.champlin.27@gmail.com
-Subject: [PATCH] Staging: panel: Unnecessary space
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5fd6fa49a592043459f75ed83a72f8c1ed9ddc13.1396114897.git.rashika.kheria@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 411c46d97c06fba1e45312342fa1618eef8429cd Mon Sep 17 00:00:00 2001
-From: Paul McQuade <paulmcquad@gmail.com>
-Date: Sat, 29 Mar 2014 18:01:19 +0000
-Subject: [PATCH] Staging: panel: Unnecessary space
+Mark functions as static in lpfc/lpfc_init.c because they are not used
+outside this file.
 
-Removed space after function pointer name
+This eliminates the following warning in lpfc/lpfc_init.c:
+drivers/scsi/lpfc/lpfc_init.c:652:1: warning: no previous prototype for ‘lpfc_hba_init_link’ [-Wmissing-prototypes]
+drivers/scsi/lpfc/lpfc_init.c:753:1: warning: no previous prototype for ‘lpfc_hba_down_link’ [-Wmissing-prototypes]
+drivers/scsi/lpfc/lpfc_init.c:3434:1: warning: no previous prototype for ‘lpfc_sli4_fcf_redisc_wait_tmo’ [-Wmissing-prototypes]
 
-Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
+Signed-off-by: Rashika Kheria <rashika.kheria@gmail.com>
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 ---
- drivers/staging/panel/panel.c | 18 +++++++++---------
- 1 file changed, 9 insertions(+), 9 deletions(-)
+ drivers/scsi/lpfc/lpfc_init.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index ec4b1fd..35e00f0 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -171,8 +171,8 @@ struct logical_input {
- 
-     union {
-         struct {    /* valid when type == INPUT_TYPE_STD */
--            void (*press_fct) (int);
--            void (*release_fct) (int);
-+            void (*press_fct)(int);
-+            void (*release_fct)(int);
-             int press_data;
-             int release_data;
-         } std;
-@@ -417,9 +417,9 @@ static char lcd_must_clear;
- static char lcd_left_shift;
- static char init_in_progress;
- 
--static void (*lcd_write_cmd) (int);
--static void (*lcd_write_data) (int);
--static void (*lcd_clear_fast) (void);
-+static void (*lcd_write_cmd)(int);
-+static void (*lcd_write_data)(int);
-+static void (*lcd_clear_fast)(void);
- 
- static DEFINE_SPINLOCK(pprt_lock);
- static struct timer_list scan_timer;
-@@ -2017,9 +2017,9 @@ static struct logical_input *panel_bind_key(const char *name, const char *press,
-  * be bound.
-  */
- static struct logical_input *panel_bind_callback(char *name,
--                         void (*press_fct) (int),
-+                         void (*press_fct)(int),
-                          int press_data,
--                         void (*release_fct) (int),
-+                         void (*release_fct)(int),
-                          int release_data)
+diff --git a/drivers/scsi/lpfc/lpfc_init.c b/drivers/scsi/lpfc/lpfc_init.c
+index 68c94cc..508c7b9 100644
+--- a/drivers/scsi/lpfc/lpfc_init.c
++++ b/drivers/scsi/lpfc/lpfc_init.c
+@@ -648,7 +648,7 @@ lpfc_config_port_post(struct lpfc_hba *phba)
+  *		0 - success
+  *		Any other value - error
+  **/
+-int
++static int
+ lpfc_hba_init_link(struct lpfc_hba *phba, uint32_t flag)
  {
-     struct logical_input *callback;
+ 	return lpfc_hba_init_link_fc_topology(phba, phba->cfg_topology, flag);
+@@ -749,7 +749,7 @@ lpfc_hba_init_link_fc_topology(struct lpfc_hba *phba, uint32_t fc_topology,
+  *		0 - success
+  *		Any other value - error
+  **/
+-int
++static int
+ lpfc_hba_down_link(struct lpfc_hba *phba, uint32_t flag)
+ {
+ 	LPFC_MBOXQ_t *pmb;
+@@ -3430,7 +3430,7 @@ lpfc_fcf_redisc_wait_start_timer(struct lpfc_hba *phba)
+  * list, and then worker thread shall be waked up for processing from the
+  * worker thread context.
+  **/
+-void
++static void
+ lpfc_sli4_fcf_redisc_wait_tmo(unsigned long ptr)
+ {
+ 	struct lpfc_hba *phba = (struct lpfc_hba *)ptr;
 -- 
-1.8.3.2
+1.7.9.5
 
