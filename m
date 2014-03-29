@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751903AbaC2BqE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 Mar 2014 21:46:04 -0400
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62901 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751868AbaC2BqC (ORCPT
+	id S1751663AbaC2CPT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 Mar 2014 22:15:19 -0400
+Received: from scmgateway.kultur.gov.tr ([212.174.179.204]:10790 "HELO
+	scmgateway.kultur.gov.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751026AbaC2CPR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 Mar 2014 21:46:02 -0400
+	Fri, 28 Mar 2014 22:15:17 -0400
+X-Greylist: delayed 448 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 Mar 2014 22:15:16 EDT
+From: =?iso-8859-9?Q?Antalya_=DDl_Halk_Ktp=2E?= 
+	<kutuphane07@kulturturizm.gov.tr>
+To: =?iso-8859-9?Q?Antalya_=DDl_Halk_Ktp=2E?= 
+	<kutuphane07@kulturturizm.gov.tr>
+Subject: YNT: NEWS
+Thread-Topic: NEWS
+Thread-Index: Ac9K8RyWjWh2xsnwREWpr9XVHQ2UhQAABpe6
+Date: Sat, 29 Mar 2014 01:57:12 +0000
+Message-ID: <D28AA501643FF0499EF7933FAA95DC5B38FE6572@KTBEXCDAG1.kultur.gov.tr>
+References: <D28AA501643FF0499EF7933FAA95DC5B38FE654A@KTBEXCDAG1.kultur.gov.tr>
+In-Reply-To: <D28AA501643FF0499EF7933FAA95DC5B38FE654A@KTBEXCDAG1.kultur.gov.tr>
+Accept-Language: tr-TR, en-US
+Content-Language: tr-TR
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [41.203.67.144]
+Content-Type: text/plain; charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20140328160853.GB1041@kroah.com>
-References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
-	<20140328160853.GB1041@kroah.com>
-Date: Sat, 29 Mar 2014 09:46:01 +0800
-Message-ID: <CAGdX0WFW+O8ktJP4a_ympoF=ziZd8CPKKrBEW4C-rkOUky-nzQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 00/28] ktap: A lightweight dynamic tracing tool for Linux
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Mar 29, 2014 at 12:08 AM, Greg Kroah-Hartman
-<gregkh@linuxfoundation.org> wrote:
-> On Fri, Mar 28, 2014 at 09:47:21AM -0400, Jovi Zhangwei wrote:
->> Hi All,
->>
->> The following set of patches add ktap tracing tool.
->
-> Yeah!
->
-> Thanks for putting this patch set together, it looks good.
->
-> But, why hide the kernel portions of ktap in the tools/ directory?  Is
-> that ok with everyone else?  I don't expect to see kernel code burried
-> in that directory, so any kernel API changes that might happen, might
-> not get propagated into that location.
->
-Reasonable, I will try to put kernel module side into kernel/trace/ktap
-directory in next version.
 
-There have some duplicated code with kernel/trace/*.c, then maybe
-we can integrate it if ktap location more closer with ftrace.
 
-Thanks for this suggestion.
+________________________________
+Kimden: Antalya Ýl Halk Ktp.
+Gönderildi: 29 Mart 2014 Cumartesi 03:49
+Kime: Antalya Ýl Halk Ktp.
+Konu: NEWS
 
-Jovi
+Charity Money Donation to You, Contact the Donator direct E-mail Now [ p.white001@live.com<mailto:p.white001@live.com> ]  for more info.
