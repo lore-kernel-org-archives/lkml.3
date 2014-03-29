@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516AbaC2WIe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 Mar 2014 18:08:34 -0400
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:45995 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaC2WId (ORCPT
+	id S1752346AbaC2WU6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 Mar 2014 18:20:58 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:51092 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaC2WU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 Mar 2014 18:08:33 -0400
-Message-ID: <5337445E.3080903@gmail.com>
-Date: Sat, 29 Mar 2014 18:08:30 -0400
-From: Alexandre Demers <alexandre.f.demers@gmail.com>
-Reply-To: alexandre.f.demers@gmail.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [Regression, bisected 9e30cc] "sysfs, kernfs: no need to kern_mount()
- sysfs from sysfs_init()" prevents system from booting correctly
-References: <CAPEhTTFP3N-ReasmgL5n82mve8p8M3crqmaMvzV+F2p5JCSRbQ@mail.gmail.com> <20140314140804.GG12613@htj.dyndns.org> <CAPEhTTG3kCDk2V9dbCB5mATKt2nyVj9iiv9g5MTOEbqYrpPefg@mail.gmail.com> <20140317201346.GE17373@mtj.dyndns.org> <5327AAA8.2080703@gmail.com> <53322777.3030703@gmail.com> <20140326131800.GA7171@htj.dyndns.org> <CAPEhTTGyA7SjedwL8Mv-ZDEY_doucW3thPr==xyOemm3+Vp=Cg@mail.gmail.com> <20140329181258.GF5553@htj.dyndns.org>
-In-Reply-To: <20140329181258.GF5553@htj.dyndns.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Sat, 29 Mar 2014 18:20:56 -0400
+Date: Sat, 29 Mar 2014 18:20:54 -0400 (EDT)
+Message-Id: <20140329.182054.1947915200276978934.davem@davemloft.net>
+To: B45475@freescale.com
+Cc: linuxppc-dev@lists.ozlabs.org, netdev@vger.kernel.org,
+        B07421@freescale.com, linux-kernel@vger.kernel.org,
+        mugunthanvnm@ti.com, zonque@gmail.com, helmut.schaa@googlemail.com,
+        R63061@freescale.com
+Subject: Re: [PATCH v2] phy/at8031: enable at8031 to work on interrupt mode
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1395992381-23094-1-git-send-email-B45475@freescale.com>
+References: <1395992381-23094-1-git-send-email-B45475@freescale.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sat, 29 Mar 2014 15:20:56 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That fixes the problem, I'm now running 3.14-rc8 with your patch 
-applied.
+From: Zhao Qiang <B45475@freescale.com>
+Date: Fri, 28 Mar 2014 15:39:41 +0800
 
-Alexandre Demers
+> The at8031 can work on polling mode and interrupt mode.
+> Add ack_interrupt and config intr funcs to enable
+> interrupt mode for it.
+> 
+> Signed-off-by: Zhao Qiang <B45475@freescale.com>
+> ---
+> changes for v2:
+> 	- when interrupt is not enabled, write 0 to interrupt enbale register
+> 	- delete a inner parens not needed
 
-On Sat 29 Mar 2014 02:12:58 PM EDT, Tejun Heo wrote:
-> Hello, Alexander.
->
-> On Thu, Mar 27, 2014 at 01:47:53PM -0400, Alexandre Demers wrote:
->> I'll do my best, but I just don't have enough time right now for
->> everything I have to do at home and dig this bug. I may be able to
->> look at it in the next couple of days though, or it may go somewhere
->> next week... That being said, I tried yesterday to have a better idea
->> and I thank you for the "ScrLck" trick, I didn't know that it was
->> working. Nevertheless I didn't find anything.
->>
->> It seems as if the transition from the temporary kernel's fs to the
->> hard disk's fs is not done correctly. If I boot with a working kernel
->> after that, I can't find any trace of where it was trying to copy the
->> files or of any partition being full. Could it be filling the RAM
->> until it reaches its maximum capacity (16GB to fill before hitting the
->> limit and throwing the errors)? That would explain at least why it
->> takes so much time before the flood of errors begins...
->
-> That could definitely be the case.  I'd really like to get to the
-> bottom of it.  It's really curious that there aren't more people
-> reporting the same problem.  Can you please try whether the following
-> patch makes the regression go away?
->
-> Thanks!
->
-> diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-> index a66ad61..a3223e2 100644
-> --- a/fs/sysfs/mount.c
-> +++ b/fs/sysfs/mount.c
-> @@ -75,5 +75,7 @@ int __init sysfs_init(void)
->   		return err;
->   	}
->
-> +	WARN_ON(IS_ERR(kern_mount(&sysfs_fs_type)));
-> +
->   	return 0;
->   }
+Applied to net-next, thanks.
