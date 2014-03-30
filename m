@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182AbaCaAK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:10:58 -0400
+	id S1755343AbaCaALd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:11:33 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753970AbaC3Xme (ORCPT
+	by vger.kernel.org with ESMTP id S1753842AbaC3Xmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:34 -0400
+	Sun, 30 Mar 2014 19:42:32 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
@@ -14,13 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Christian =?UTF-8?Q?K=C3=B6nig?=" <christian.koenig@amd.com>,
-        "Alex Deucher" <alexander.deucher@amd.com>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Joerg Dorchain" <joerg@dorchain.net>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.603349164@decadent.org.uk>
+Message-ID: <lsq.1396221815.300213677@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 023/200] drm/radeon: warn users when hw_i2c is enabled
- (v2)
+Subject: [PATCH 3.2 144/200] USB: ftdi_sio: add Cressi Leonardo PID
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,34 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Joerg Dorchain <joerg@dorchain.net>
 
-commit d195178297de9a91246519dbfa98952b70f9a9b6 upstream.
+commit 6dbd46c849e071e6afc1e0cad489b0175bca9318 upstream.
 
-The hw i2c engines are disabled by default as the
-current implementation is still experimental.  Print
-a warning when users enable it so that it's obvious
-when the option is enabled.
+Hello,
 
-v2: check for non-0 rather than 1
+the following patch adds an entry for the PID of a Cressi Leonardo
+diving computer interface to kernel 3.13.0.
+It is detected as FT232RL.
+Works with subsurface.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+Signed-off-by: Joerg Dorchain <joerg@dorchain.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/gpu/drm/radeon/radeon_i2c.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/drivers/gpu/drm/radeon/radeon_i2c.c
-+++ b/drivers/gpu/drm/radeon/radeon_i2c.c
-@@ -998,6 +998,9 @@ void radeon_i2c_destroy(struct radeon_i2
- /* Add the default buses */
- void radeon_i2c_init(struct radeon_device *rdev)
- {
-+	if (radeon_hw_i2c)
-+		DRM_INFO("hw_i2c forced on, you may experience display detection problems!\n");
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -918,6 +918,8 @@ static struct usb_device_id id_table_com
+ 	/* Crucible Devices */
+ 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
++	/* Cressi Devices */
++	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
+ 	{ },					/* Optional parameter entry */
+ 	{ }					/* Terminating entry */
+ };
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1320,3 +1320,9 @@
+  * Manufacturer: Smart GSM Team
+  */
+ #define FTDI_Z3X_PID		0x0011
 +
- 	if (rdev->is_atom_bios)
- 		radeon_atombios_i2c_init(rdev);
- 	else
++/*
++ * Product: Cressi PC Interface
++ * Manufacturer: Cressi
++ */
++#define FTDI_CRESSI_PID		0x87d0
 
