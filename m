@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038AbaC3Xvb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:51:31 -0400
+	id S1754729AbaC3Xnm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:43:42 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754703AbaC3Xno (ORCPT
+	by vger.kernel.org with ESMTP id S1754703AbaC3Xnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:44 -0400
+	Sun, 30 Mar 2014 19:43:39 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
-        "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Jan Kara" <jack@suse.cz>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.98126324@decadent.org.uk>
+Message-ID: <lsq.1396221815.401350620@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 146/200] ASoC: sta32x: Fix wrong enum for limiter2
- release rate
+Subject: [PATCH 3.2 138/200] quota: Fix race between dqput() and
+ dquot_scan_active()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,41 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Jan Kara <jack@suse.cz>
 
-commit b3619b288b621e63f66908045f48495869a996a6 upstream.
+commit 1362f4ea20fa63688ba6026e586d9746ff13a846 upstream.
 
-There is a typo in the Limiter2 Release Rate control, a wrong enum for
-Limiter1 is assigned.  It must point to Limiter2.
-Spotted by a compile warning:
+Currently last dqput() can race with dquot_scan_active() causing it to
+call callback for an already deactivated dquot. The race is as follows:
 
-In file included from sound/soc/codecs/sta32x.c:34:0:
-sound/soc/codecs/sta32x.c:223:29: warning: ‘sta32x_limiter2_release_rate_enum’ defined but not used [-Wunused-variable]
- static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-                             ^
-include/sound/soc.h:275:18: note: in definition of macro ‘SOC_ENUM_DOUBLE_DECL’
-  struct soc_enum name = SOC_ENUM_DOUBLE(xreg, xshift_l, xshift_r, \
-                  ^
-sound/soc/codecs/sta32x.c:223:8: note: in expansion of macro ‘SOC_ENUM_SINGLE_DECL’
- static SOC_ENUM_SINGLE_DECL(sta32x_limiter2_release_rate_enum,
-        ^
+CPU1					CPU2
+  dqput()
+    spin_lock(&dq_list_lock);
+    if (atomic_read(&dquot->dq_count) > 1) {
+     - not taken
+    if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
+      spin_unlock(&dq_list_lock);
+      ->release_dquot(dquot);
+        if (atomic_read(&dquot->dq_count) > 1)
+         - not taken
+					  dquot_scan_active()
+					    spin_lock(&dq_list_lock);
+					    if (!test_bit(DQ_ACTIVE_B, &dquot->dq_flags))
+					     - not taken
+					    atomic_inc(&dquot->dq_count);
+					    spin_unlock(&dq_list_lock);
+        - proceeds to release dquot
+					    ret = fn(dquot, priv);
+					     - called for inactive dquot
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+Fix the problem by making sure possible ->release_dquot() is finished by
+the time we call the callback and new calls to it will notice reference
+dquot_scan_active() has taken and bail out.
+
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/soc/codecs/sta32x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/quota/dquot.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
 
---- a/sound/soc/codecs/sta32x.c
-+++ b/sound/soc/codecs/sta32x.c
-@@ -350,7 +350,7 @@ SOC_SINGLE_TLV("Treble Tone Control", ST
- SOC_ENUM("Limiter1 Attack Rate (dB/ms)", sta32x_limiter1_attack_rate_enum),
- SOC_ENUM("Limiter2 Attack Rate (dB/ms)", sta32x_limiter2_attack_rate_enum),
- SOC_ENUM("Limiter1 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
--SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter1_release_rate_enum),
-+SOC_ENUM("Limiter2 Release Rate (dB/ms)", sta32x_limiter2_release_rate_enum),
- 
- /* depending on mode, the attack/release thresholds have
-  * two different enum definitions; provide both
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -580,9 +580,17 @@ int dquot_scan_active(struct super_block
+ 		dqstats_inc(DQST_LOOKUPS);
+ 		dqput(old_dquot);
+ 		old_dquot = dquot;
+-		ret = fn(dquot, priv);
+-		if (ret < 0)
+-			goto out;
++		/*
++		 * ->release_dquot() can be racing with us. Our reference
++		 * protects us from new calls to it so just wait for any
++		 * outstanding call and recheck the DQ_ACTIVE_B after that.
++		 */
++		wait_on_dquot(dquot);
++		if (test_bit(DQ_ACTIVE_B, &dquot->dq_flags)) {
++			ret = fn(dquot, priv);
++			if (ret < 0)
++				goto out;
++		}
+ 		spin_lock(&dq_list_lock);
+ 		/* We are safe to continue now because our dquot could not
+ 		 * be moved out of the inuse list while we hold the reference */
 
