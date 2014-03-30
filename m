@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaCaAOE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:14:04 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36407 "EHLO
+	id S1754608AbaCaAOx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:14:53 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36397 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753052AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753041AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,18 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Grant Likely" <grant.likely@linaro.org>,
-        "Rob Herring" <rob.herring@calxeda.com>,
-        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
+CC: akpm@linux-foundation.org,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "Johannes Weiner" <jweiner@redhat.com>,
+        "Rik van Riel" <riel@redhat.com>,
+        "Larry Woodman" <lwoodman@redhat.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.33465135@decadent.org.uk>
+Message-ID: <lsq.1396221815.222415279@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 082/200] of: Fix address decoding on Bimini and js2x
- machines
+Subject: [PATCH 3.2 090/200] mm: __set_page_dirty_nobuffers() uses
+ spin_lock_irqsave() instead of spin_lock_irq()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,45 +37,85 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-commit 6dd18e4684f3d188277bbbc27545248487472108 upstream.
+commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
 
- Commit:
+During aio stress test, we observed the following lockdep warning.  This
+mean AIO+numa_balancing is currently deadlockable.
 
-  e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7
-  of/address: Handle #address-cells > 2 specially
+The problem is, aio_migratepage disable interrupt, but
+__set_page_dirty_nobuffers unintentionally enable it again.
 
-broke real time clock access on Bimini, js2x, and similar powerpc
-machines using the "maple" platform. That code was indirectly relying
-on the old (broken) behaviour of the translation for the hypertransport
-to ISA bridge.
+Generally, all helper function should use spin_lock_irqsave() instead of
+spin_lock_irq() because they don't know caller at all.
 
-This fixes it by treating hypertransport as a PCI bus
+   other info that might help us debug this:
+    Possible unsafe locking scenario:
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Acked-by: Rob Herring <rob.herring@calxeda.com>
-Signed-off-by: Grant Likely <grant.likely@linaro.org>
+          CPU0
+          ----
+     lock(&(&ctx->completion_lock)->rlock);
+     <Interrupt>
+       lock(&(&ctx->completion_lock)->rlock);
+
+    *** DEADLOCK ***
+
+      dump_stack+0x19/0x1b
+      print_usage_bug+0x1f7/0x208
+      mark_lock+0x21d/0x2a0
+      mark_held_locks+0xb9/0x140
+      trace_hardirqs_on_caller+0x105/0x1d0
+      trace_hardirqs_on+0xd/0x10
+      _raw_spin_unlock_irq+0x2c/0x50
+      __set_page_dirty_nobuffers+0x8c/0xf0
+      migrate_page_copy+0x434/0x540
+      aio_migratepage+0xb1/0x140
+      move_to_new_page+0x7d/0x230
+      migrate_pages+0x5e5/0x700
+      migrate_misplaced_page+0xbc/0xf0
+      do_numa_page+0x102/0x190
+      handle_pte_fault+0x241/0x970
+      handle_mm_fault+0x265/0x370
+      __do_page_fault+0x172/0x5a0
+      do_page_fault+0x1a/0x70
+      page_fault+0x28/0x30
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Larry Woodman <lwoodman@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Johannes Weiner <jweiner@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/of/address.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ mm/page-writeback.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
---- a/drivers/of/address.c
-+++ b/drivers/of/address.c
-@@ -97,8 +97,12 @@ static unsigned int of_bus_default_get_f
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1776,11 +1776,12 @@ int __set_page_dirty_nobuffers(struct pa
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+ 		struct address_space *mapping2;
++		unsigned long flags;
  
- static int of_bus_pci_match(struct device_node *np)
- {
--	/* "vci" is for the /chaos bridge on 1st-gen PCI powermacs */
--	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
-+	/*
-+	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
-+	 * "ht" is hypertransport
-+	 */
-+	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
-+		!strcmp(np->type, "ht");
- }
+ 		if (!mapping)
+ 			return 1;
  
- static void of_bus_pci_count_cells(struct device_node *np,
+-		spin_lock_irq(&mapping->tree_lock);
++		spin_lock_irqsave(&mapping->tree_lock, flags);
+ 		mapping2 = page_mapping(page);
+ 		if (mapping2) { /* Race with truncate? */
+ 			BUG_ON(mapping2 != mapping);
+@@ -1789,7 +1790,7 @@ int __set_page_dirty_nobuffers(struct pa
+ 			radix_tree_tag_set(&mapping->page_tree,
+ 				page_index(page), PAGECACHE_TAG_DIRTY);
+ 		}
+-		spin_unlock_irq(&mapping->tree_lock);
++		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+ 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
 
