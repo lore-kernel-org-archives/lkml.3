@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754608AbaCaAOx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:14:53 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36397 "EHLO
+	id S1754478AbaCaAOu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:14:50 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36399 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753041AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753045AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -14,17 +14,12 @@ MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
 CC: akpm@linux-foundation.org,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "KOSAKI Motohiro" <kosaki.motohiro@jp.fujitsu.com>,
-        "David Rientjes" <rientjes@google.com>,
-        "Johannes Weiner" <jweiner@redhat.com>,
-        "Rik van Riel" <riel@redhat.com>,
-        "Larry Woodman" <lwoodman@redhat.com>
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Ulrich Hahn" <uhahn@eanco.de>, "Johan Hovold" <johan@hovold.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.222415279@decadent.org.uk>
+Message-ID: <lsq.1396221815.651263966@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 090/200] mm: __set_page_dirty_nobuffers() uses
- spin_lock_irqsave() instead of spin_lock_irq()
+Subject: [PATCH 3.2 085/200] USB: ftdi_sio: add Tagsys RFID Reader IDs
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -37,85 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Ulrich Hahn <uhahn@eanco.de>
 
-commit a85d9df1ea1d23682a0ed1e100e6965006595d06 upstream.
+commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
 
-During aio stress test, we observed the following lockdep warning.  This
-mean AIO+numa_balancing is currently deadlockable.
+Adding two more IDs to the ftdi_sio usb serial driver.
+It now connects Tagsys RFID readers.
+There might be more IDs out there for other Tagsys models.
 
-The problem is, aio_migratepage disable interrupt, but
-__set_page_dirty_nobuffers unintentionally enable it again.
-
-Generally, all helper function should use spin_lock_irqsave() instead of
-spin_lock_irq() because they don't know caller at all.
-
-   other info that might help us debug this:
-    Possible unsafe locking scenario:
-
-          CPU0
-          ----
-     lock(&(&ctx->completion_lock)->rlock);
-     <Interrupt>
-       lock(&(&ctx->completion_lock)->rlock);
-
-    *** DEADLOCK ***
-
-      dump_stack+0x19/0x1b
-      print_usage_bug+0x1f7/0x208
-      mark_lock+0x21d/0x2a0
-      mark_held_locks+0xb9/0x140
-      trace_hardirqs_on_caller+0x105/0x1d0
-      trace_hardirqs_on+0xd/0x10
-      _raw_spin_unlock_irq+0x2c/0x50
-      __set_page_dirty_nobuffers+0x8c/0xf0
-      migrate_page_copy+0x434/0x540
-      aio_migratepage+0xb1/0x140
-      move_to_new_page+0x7d/0x230
-      migrate_pages+0x5e5/0x700
-      migrate_misplaced_page+0xbc/0xf0
-      do_numa_page+0x102/0x190
-      handle_pte_fault+0x241/0x970
-      handle_mm_fault+0x265/0x370
-      __do_page_fault+0x172/0x5a0
-      do_page_fault+0x1a/0x70
-      page_fault+0x28/0x30
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Larry Woodman <lwoodman@redhat.com>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Johannes Weiner <jweiner@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
+Cc: Johan Hovold <johan@hovold.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/page-writeback.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     | 2 ++
+ drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
+ 2 files changed, 8 insertions(+)
 
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1776,11 +1776,12 @@ int __set_page_dirty_nobuffers(struct pa
- 	if (!TestSetPageDirty(page)) {
- 		struct address_space *mapping = page_mapping(page);
- 		struct address_space *mapping2;
-+		unsigned long flags;
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -203,6 +203,8 @@ static struct usb_device_id id_table_com
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
+ 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
++	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -364,6 +364,12 @@
+ /* Sprog II (Andrew Crosland's SprogII DCC interface) */
+ #define FTDI_SPROG_II		0xF0C8
  
- 		if (!mapping)
- 			return 1;
++/*
++ * Two of the Tagsys RFID Readers
++ */
++#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
++#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
++
+ /* an infrared receiver for user access control with IR tags */
+ #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
  
--		spin_lock_irq(&mapping->tree_lock);
-+		spin_lock_irqsave(&mapping->tree_lock, flags);
- 		mapping2 = page_mapping(page);
- 		if (mapping2) { /* Race with truncate? */
- 			BUG_ON(mapping2 != mapping);
-@@ -1789,7 +1790,7 @@ int __set_page_dirty_nobuffers(struct pa
- 			radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 		}
--		spin_unlock_irq(&mapping->tree_lock);
-+		spin_unlock_irqrestore(&mapping->tree_lock, flags);
- 		if (mapping->host) {
- 			/* !PageAnon && !swapper_space */
- 			__mark_inode_dirty(mapping->host, I_DIRTY_PAGES);
 
