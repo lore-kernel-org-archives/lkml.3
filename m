@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754668AbaCaAAl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:00:41 -0400
+	id S1755026AbaCaABA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:01:00 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754517AbaC3XnP (ORCPT
+	by vger.kernel.org with ESMTP id S1753392AbaC3XnN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:15 -0400
+	Sun, 30 Mar 2014 19:43:13 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Will Deacon" <will.deacon@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>,
-        "Albin Tonnerre" <Albin.Tonnerre@arm.com>
+CC: akpm@linux-foundation.org, "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Eric Dumazet" <eric.dumazet@gmail.com>,
+        "David Rientjes" <rientjes@google.com>,
+        "Cong Wang" <cwang@twopensource.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.228256947@decadent.org.uk>
+Message-ID: <lsq.1396221815.286800043@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 098/200] ARM: 7953/1: mm: ensure TLB invalidation is
- complete before enabling MMU
+Subject: [PATCH 3.2 100/200] fs/file.c:fdtable: avoid triggering OOMs from
+ alloc_fdmem
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,64 +35,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit bae0ca2bc550d1ec6a118fb8f2696f18c4da3d8e upstream.
+commit 96c7a2ff21501691587e1ae969b83cbec8b78e08 upstream.
 
-During __v{6,7}_setup, we invalidate the TLBs since we are about to
-enable the MMU on return to head.S. Unfortunately, without a subsequent
-dsb instruction, the invalidation is not guaranteed to have completed by
-the time we write to the sctlr, potentially exposing us to junk/stale
-translations cached in the TLB.
+Recently due to a spike in connections per second memcached on 3
+separate boxes triggered the OOM killer from accept.  At the time the
+OOM killer was triggered there was 4GB out of 36GB free in zone 1.  The
+problem was that alloc_fdtable was allocating an order 3 page (32KiB) to
+hold a bitmap, and there was sufficient fragmentation that the largest
+page available was 8KiB.
 
-This patch reworks the init functions so that the dsb used to ensure
-completion of cache/predictor maintenance is also used to ensure
-completion of the TLB invalidation.
+I find the logic that PAGE_ALLOC_COSTLY_ORDER can't fail pretty dubious
+but I do agree that order 3 allocations are very likely to succeed.
 
-Reported-by: Albin Tonnerre <Albin.Tonnerre@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
+There are always pathologies where order > 0 allocations can fail when
+there are copious amounts of free memory available.  Using the pigeon
+hole principle it is easy to show that it requires 1 page more than 50%
+of the pages being free to guarantee an order 1 (8KiB) allocation will
+succeed, 1 page more than 75% of the pages being free to guarantee an
+order 2 (16KiB) allocation will succeed and 1 page more than 87.5% of
+the pages being free to guarantee an order 3 allocate will succeed.
+
+A server churning memory with a lot of small requests and replies like
+memcached is a common case that if anything can will skew the odds
+against large pages being available.
+
+Therefore let's not give external applications a practical way to kill
+linux server applications, and specify __GFP_NORETRY to the kmalloc in
+alloc_fdmem.  Unless I am misreading the code and by the time the code
+reaches should_alloc_retry in __alloc_pages_slowpath (where
+__GFP_NORETRY becomes signification).  We have already tried everything
+reasonable to allocate a page and the only thing left to do is wait.  So
+not waiting and falling back to vmalloc immediately seems like the
+reasonable thing to do even if there wasn't a chance of triggering the
+OOM killer.
+
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Cong Wang <cwang@twopensource.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/mm/proc-v6.S | 3 ++-
- arch/arm/mm/proc-v7.S | 2 +-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ fs/file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mm/proc-v6.S
-+++ b/arch/arm/mm/proc-v6.S
-@@ -199,7 +199,6 @@ __v6_setup:
- 	mcr	p15, 0, r0, c7, c14, 0		@ clean+invalidate D cache
- 	mcr	p15, 0, r0, c7, c5, 0		@ invalidate I cache
- 	mcr	p15, 0, r0, c7, c15, 0		@ clean+invalidate cache
--	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r0, c8, c7, 0		@ invalidate I + D TLBs
- 	mcr	p15, 0, r0, c2, c0, 2		@ TTB control register
-@@ -209,6 +208,8 @@ __v6_setup:
- 	ALT_UP(orr	r8, r8, #TTB_FLAGS_UP)
- 	mcr	p15, 0, r8, c2, c0, 1		@ load TTB1
- #endif /* CONFIG_MMU */
-+	mcr	p15, 0, r0, c7, c10, 4		@ drain write buffer and
-+						@ complete invalidations
- 	adr	r5, v6_crval
- 	ldmia	r5, {r5, r6}
- #ifdef CONFIG_CPU_ENDIAN_BE8
---- a/arch/arm/mm/proc-v7.S
-+++ b/arch/arm/mm/proc-v7.S
-@@ -368,7 +368,6 @@ __v7_setup:
- 
- 3:	mov	r10, #0
- 	mcr	p15, 0, r10, c7, c5, 0		@ I+BTB cache invalidate
--	dsb
- #ifdef CONFIG_MMU
- 	mcr	p15, 0, r10, c8, c7, 0		@ invalidate I + D TLBs
- 	mcr	p15, 0, r10, c2, c0, 2		@ TTB control register
-@@ -382,6 +381,7 @@ __v7_setup:
- 	mcr	p15, 0, r5, c10, c2, 0		@ write PRRR
- 	mcr	p15, 0, r6, c10, c2, 1		@ write NMRR
- #endif
-+	dsb					@ Complete invalidations
- #ifndef CONFIG_ARM_THUMBEE
- 	mrc	p15, 0, r0, c0, c1, 0		@ read ID_PFR0 for ThumbEE
- 	and	r0, r0, #(0xf << 12)		@ ThumbEE enabled field
+--- a/fs/file.c
++++ b/fs/file.c
+@@ -47,7 +47,7 @@ static void *alloc_fdmem(unsigned int si
+ 	 * vmalloc() if the allocation size will be considered "large" by the VM.
+ 	 */
+ 	if (size <= (PAGE_SIZE << PAGE_ALLOC_COSTLY_ORDER)) {
+-		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN);
++		void *data = kmalloc(size, GFP_KERNEL|__GFP_NOWARN|__GFP_NORETRY);
+ 		if (data != NULL)
+ 			return data;
+ 	}
 
