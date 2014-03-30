@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752469AbaC3HYK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 03:24:10 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:36244 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbaC3HYI (ORCPT
+	id S1752903AbaC3H06 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 03:26:58 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:41147 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752562AbaC3H05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 03:24:08 -0400
-Message-ID: <1396164244.28950.15.camel@marge.simpson.net>
-Subject: [PATCH] sched: update_rq_clock() must skip ONE update
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 30 Mar 2014 09:24:04 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Sun, 30 Mar 2014 03:26:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140329170445.GD31707@kroah.com>
+References: <1396014469-5937-1-git-send-email-jovi.zhangwei@gmail.com>
+	<1396014469-5937-8-git-send-email-jovi.zhangwei@gmail.com>
+	<87ha6inp7g.fsf@tassilo.jf.intel.com>
+	<CAGdX0WFMXejHjhy5sVkVuQvNwE8MevEuAsDbkAZCb35mJj07zQ@mail.gmail.com>
+	<20140329170445.GD31707@kroah.com>
+Date: Sun, 30 Mar 2014 15:26:56 +0800
+Message-ID: <CAGdX0WG7U97P-1VK539R2wWjr+5sqJ=TkHwr4xs74MzqPE4NdA@mail.gmail.com>
+Subject: Re: [PATCH 07/28] ktap: add runtime/ktap.[c|h]
+From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-NEWSFLASH: Wimpy latent scheduler buglet turns axe-murderer...
+On Sun, Mar 30, 2014 at 1:04 AM, Greg Kroah-Hartman
+<gregkh@linuxfoundation.org> wrote:
+> On Sat, Mar 29, 2014 at 03:32:12PM +0800, Jovi Zhangwei wrote:
+>> >> +struct syscall_metadata **syscalls_metadata;
+>> >> +
+>> >> +/*TODO: kill this function in future */
+>> >> +static int __init init_dummy_kernel_functions(void)
+>> >> +{
+>> >> +     unsigned long *addr;
+>> >> +
+>> >> +     /*
+>> >> +      * ktap need symbol ftrace_profile_set_filter to set event filter,
+>> >> +      * export it in future.
+>> >
+>> > Obviously you need to fix that. Just export the symbols.
+>> >
+>> Yeah, will do after kernel community decide to merge ktap. :)
+>
+> We already said we wanted it merged, so please send patches that do it
+> properly, by exporting the needed symbols as part of the patch series.
+>
+Sure, I will fix it in next version.
 
-Root cause being us staying in kernel for weeks at a time during boot:
+Thanks.
 
-Subverting ftrace, we see below that updates _can_ be skipped for AGES,
-which can make very bad things happen.  It's supposed to skip ONE, as an
-optimization. not lord knows how many.  Here we see we've been skipping
-since 4915630446, resulting in the watchdog being credited with a 137ms
-delta_exec.  Bogus, and..
-
-        modprobe-134   [000]     5.027903: update_rq_clock <-scheduler_tick
-        modprobe-134   [000]     5.037857: update_rq_clock <-scheduler_tick
-        modprobe-134   [000]     5.037864: update_rq_clock <-enqueue_task
-        modprobe-134   [000]     5.037866: enqueue_task_watchdog: WATCHDOG/0 enqueue 4915630446
-        modprobe-134   [000]     5.044965: update_rq_clock <-scheduler_tick
-        modprobe-134   [000]     5.046275: update_rq_clock <-scheduler_tick
-        modprobe-134   [000]     5.050274: update_rq_clock <-scheduler_tick
-        modprobe-134   [000]     5.052862: update_rq_clock <-dequeue_task
-        modprobe-134   [000]     5.052866: pick_next_task_watchdog: WATCHDOG/0 select 4915630446
-      watchdog/0-7     [000]     5.052868: finish_task_switch: WATCHDOG/0 runs 5052867644
-      watchdog/0-7     [000]     5.052869: watchdog: WATCHDOG/0 DELAYED 137238048 max: 137238048
-      watchdog/0-7     [000]     5.052872: update_rq_clock <-dequeue_task
-      watchdog/0-7     [000]     5.052873: dequeue_task_watchdog: WATCHDOG/0 dequeue 5052872018
-      watchdog/0-7     [000]     5.052874: put_prev_task_watchdog: WATCHDOG/0 STOP trace : delta_exec 137241572 sum_exec 137254287
-
-..delta_exec was sufficient in a NOPREEMPT kernel on zillion disk box
-that disk discovery combined with swsusp wanting to find out if it needs
-to resume, that the featherweight watchdog was credited with delta_exec
-HUGE enough to be incapacitated by the rt throttle long enough for the
-hard lockup detector to trigger.
-
-Throttled watchdog is bad juju, led to -ENOBOOT for IO beast.
-
-Cc: <stable@vger.kernel.org>
-Signed-off-by: 	Mike Galbraith <umgwanakikbuti@gmail.com>
----
- kernel/sched/core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -118,7 +118,7 @@ void update_rq_clock(struct rq *rq)
- {
- 	s64 delta;
- 
--	if (rq->skip_clock_update > 0)
-+	if (rq->skip_clock_update-- > 0)
- 		return;
- 
- 	delta = sched_clock_cpu(cpu_of(rq)) - rq->clock;
-
-
+Jovi
