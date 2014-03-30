@@ -1,173 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbaC3Nfw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 09:35:52 -0400
-Received: from mail-bk0-f54.google.com ([209.85.214.54]:59049 "EHLO
-	mail-bk0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaC3Nfv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 09:35:51 -0400
-From: Mathias Krause <minipli@googlemail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        PaX Team <pageexec@freemail.hu>, Nadia Derbey <Nadia.Derbey@bull.net>
-Subject: [PATCH] ipc: constify ipc_ops
-Date: Sun, 30 Mar 2014 15:35:38 +0200
-Message-Id: <1396186538-3378-1-git-send-email-minipli@googlemail.com>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751919AbaC3OKA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 10:10:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21649 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750967AbaC3OJ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 10:09:59 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Subject: [PATCH 1/3] x86: microcode: report if CPU has up-to-date microcode
+Date: Sun, 30 Mar 2014 16:09:32 +0200
+Message-Id: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to recreate the very same ipc_ops structure on every
-kernel entry for msgget/semget/shmget. Just declare it static and be
-done with it.
-While at it, constify it as we don't modify the structure at runtime.
+Before this change, successful microcode uploads clearly
+indicate that it was done:
 
-Found in the PaX patch, written by the PaX Team.
+microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x1a
+microcode: CPU1 updated to revision 0x29, date = 2013-06-12
 
-Cc: PaX Team <pageexec@freemail.hu>
-Cc: Nadia Derbey <Nadia.Derbey@bull.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
+whereas if microcode was not uploaded, it is not clear why:
+
+microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x29
+(nothing more)
+
+So, what was it? No microcode file? No microcode for this sig/pf?
+CPU already has microcode with this (or newer) revision?
+
+In practice, it means that I need to ask people to provide me
+with more information ("do you have microcode package installed?
+which version is it?" etc).
+
+This change adds a message which covers "CPU is up-to-date" and
+"no microcode for your CPU in this file" cases:
+
+microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x29
+microcode: CPU rev 0x29 is same or newer than 0x29 in microcode data
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 ---
- ipc/msg.c  |    9 ++++-----
- ipc/sem.c  |   10 +++++-----
- ipc/shm.c  |   10 +++++-----
- ipc/util.c |    8 ++++----
- ipc/util.h |    2 +-
- 5 files changed, 19 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/microcode_intel.h      |  2 +-
+ arch/x86/kernel/cpu/microcode/intel.c       |  4 ++--
+ arch/x86/kernel/cpu/microcode/intel_early.c |  2 +-
+ arch/x86/kernel/cpu/microcode/intel_lib.c   | 18 +++++++++++++++---
+ 4 files changed, 19 insertions(+), 7 deletions(-)
 
-diff --git a/ipc/msg.c b/ipc/msg.c
-index 649853105a..35e4018de5 100644
---- a/ipc/msg.c
-+++ b/ipc/msg.c
-@@ -306,15 +306,14 @@ static inline int msg_security(struct kern_ipc_perm *ipcp, int msgflg)
- SYSCALL_DEFINE2(msgget, key_t, key, int, msgflg)
- {
- 	struct ipc_namespace *ns;
--	struct ipc_ops msg_ops;
-+	static const struct ipc_ops msg_ops = {
-+		.getnew = newque,
-+		.associate = msg_security,
-+	};
- 	struct ipc_params msg_params;
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index 9067166..f64ccfd 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -57,7 +57,7 @@ struct extended_sigtable {
+ #define exttable_size(et) ((et)->count * EXT_SIGNATURE_SIZE + EXT_HEADER_SIZE)
  
- 	ns = current->nsproxy->ipc_ns;
+ extern int
+-get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev);
++get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev, bool report_old);
+ extern int microcode_sanity_check(void *mc, int print_err);
+ extern int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev);
+ extern int
+diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
+index a276fa7..ef8b17c 100644
+--- a/arch/x86/kernel/cpu/microcode/intel.c
++++ b/arch/x86/kernel/cpu/microcode/intel.c
+@@ -124,7 +124,7 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
+ 	cpf = cpu_sig.pf;
+ 	crev = cpu_sig.rev;
  
--	msg_ops.getnew = newque;
--	msg_ops.associate = msg_security;
--	msg_ops.more_checks = NULL;
--
- 	msg_params.key = key;
- 	msg_params.flg = msgflg;
+-	return get_matching_microcode(csig, cpf, mc_intel, crev);
++	return get_matching_microcode(csig, cpf, mc_intel, crev, /*report_old:*/ 1);
+ }
  
-diff --git a/ipc/sem.c b/ipc/sem.c
-index bee5554173..3fcbc96abe 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -564,7 +564,11 @@ static inline int sem_more_checks(struct kern_ipc_perm *ipcp,
- SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
- {
- 	struct ipc_namespace *ns;
--	struct ipc_ops sem_ops;
-+	static const struct ipc_ops sem_ops = {
-+		.getnew = newary,
-+		.associate = sem_security,
-+		.more_checks = sem_more_checks,
-+	};
- 	struct ipc_params sem_params;
+ int apply_microcode(int cpu)
+@@ -221,7 +221,7 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
  
- 	ns = current->nsproxy->ipc_ns;
-@@ -572,10 +576,6 @@ SYSCALL_DEFINE3(semget, key_t, key, int, nsems, int, semflg)
- 	if (nsems < 0 || nsems > ns->sc_semmsl)
- 		return -EINVAL;
+ 		csig = uci->cpu_sig.sig;
+ 		cpf = uci->cpu_sig.pf;
+-		if (get_matching_microcode(csig, cpf, mc, new_rev)) {
++		if (get_matching_microcode(csig, cpf, mc, new_rev, /*report_old:*/ 1)) {
+ 			vfree(new_mc);
+ 			new_rev = mc_header.rev;
+ 			new_mc  = mc;
+diff --git a/arch/x86/kernel/cpu/microcode/intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
+index 18f7391..3a2ad0a 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_early.c
++++ b/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -53,7 +53,7 @@ generic_load_microcode_early(struct microcode_intel **mc_saved_p,
  
--	sem_ops.getnew = newary;
--	sem_ops.associate = sem_security;
--	sem_ops.more_checks = sem_more_checks;
--
- 	sem_params.key = key;
- 	sem_params.flg = semflg;
- 	sem_params.u.nsems = nsems;
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 76459616a7..b54c93f6d1 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -609,15 +609,15 @@ static inline int shm_more_checks(struct kern_ipc_perm *ipcp,
- SYSCALL_DEFINE3(shmget, key_t, key, size_t, size, int, shmflg)
- {
- 	struct ipc_namespace *ns;
--	struct ipc_ops shm_ops;
-+	static const struct ipc_ops shm_ops = {
-+		.getnew = newseg,
-+		.associate = shm_security,
-+		.more_checks = shm_more_checks,
-+	};
- 	struct ipc_params shm_params;
- 
- 	ns = current->nsproxy->ipc_ns;
- 
--	shm_ops.getnew = newseg;
--	shm_ops.associate = shm_security;
--	shm_ops.more_checks = shm_more_checks;
--
- 	shm_params.key = key;
- 	shm_params.flg = shmflg;
- 	shm_params.u.size = size;
-diff --git a/ipc/util.c b/ipc/util.c
-index e1b4c6db8a..314ebeb3d7 100644
---- a/ipc/util.c
-+++ b/ipc/util.c
-@@ -317,7 +317,7 @@ int ipc_addid(struct ipc_ids *ids, struct kern_ipc_perm *new, int size)
-  * when the key is IPC_PRIVATE.
+ 		mc_header = (struct microcode_header_intel *)ucode_ptr;
+ 		mc_size = get_totalsize(mc_header);
+-		if (get_matching_microcode(csig, cpf, ucode_ptr, new_rev)) {
++		if (get_matching_microcode(csig, cpf, ucode_ptr, new_rev, /*report_old:*/ 0)) {
+ 			new_rev = mc_header->rev;
+ 			new_mc  = ucode_ptr;
+ 		}
+diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
+index ce69320..e8c02cb 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_lib.c
++++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
+@@ -162,13 +162,25 @@ int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev)
+  * return 0 - no update found
+  * return 1 - found update
   */
- static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
--		struct ipc_ops *ops, struct ipc_params *params)
-+		const struct ipc_ops *ops, struct ipc_params *params)
+-int get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev)
++int get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev, bool report_old)
  {
- 	int err;
+ 	struct microcode_header_intel *mc_header = mc;
  
-@@ -344,7 +344,7 @@ static int ipcget_new(struct ipc_namespace *ns, struct ipc_ids *ids,
-  */
- static int ipc_check_perms(struct ipc_namespace *ns,
- 			   struct kern_ipc_perm *ipcp,
--			   struct ipc_ops *ops,
-+			   const struct ipc_ops *ops,
- 			   struct ipc_params *params)
- {
- 	int err;
-@@ -375,7 +375,7 @@ static int ipc_check_perms(struct ipc_namespace *ns,
-  * On success, the ipc id is returned.
-  */
- static int ipcget_public(struct ipc_namespace *ns, struct ipc_ids *ids,
--		struct ipc_ops *ops, struct ipc_params *params)
-+		const struct ipc_ops *ops, struct ipc_params *params)
- {
- 	struct kern_ipc_perm *ipcp;
- 	int flg = params->flg;
-@@ -678,7 +678,7 @@ out:
-  * Common routine called by sys_msgget(), sys_semget() and sys_shmget().
-  */
- int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
--			struct ipc_ops *ops, struct ipc_params *params)
-+			const struct ipc_ops *ops, struct ipc_params *params)
- {
- 	if (params->key == IPC_PRIVATE)
- 		return ipcget_new(ns, ids, ops, params);
-diff --git a/ipc/util.h b/ipc/util.h
-index 9c47d6f6c7..e1153ad574 100644
---- a/ipc/util.h
-+++ b/ipc/util.h
-@@ -201,7 +201,7 @@ static inline bool ipc_valid_object(struct kern_ipc_perm *perm)
+-	if (!update_match_revision(mc_header, rev))
++	if (!update_match_revision(mc_header, rev)) {
++		if (report_old)
++			pr_info("microcode: CPU rev 0x%x is same or newer"
++				" than 0x%x in microcode data\n",
++				rev, mc_header->rev);
+ 		return 0;
++	}
++
++	if (!get_matching_sig(csig, cpf, mc, rev)) {
++		if (report_old)
++			pr_info("microcode: no microcode with"
++				" sig=0x%x, pf=0x%x found\n", csig, cpf);
++		return 0;
++	}
  
- struct kern_ipc_perm *ipc_obtain_object_check(struct ipc_ids *ids, int id);
- int ipcget(struct ipc_namespace *ns, struct ipc_ids *ids,
--			struct ipc_ops *ops, struct ipc_params *params);
-+			const struct ipc_ops *ops, struct ipc_params *params);
- void free_ipcs(struct ipc_namespace *ns, struct ipc_ids *ids,
- 		void (*free)(struct ipc_namespace *, struct kern_ipc_perm *));
- #endif
+-	return get_matching_sig(csig, cpf, mc, rev);
++	return 1;
+ }
+ EXPORT_SYMBOL_GPL(get_matching_microcode);
 -- 
-1.7.10.4
+1.8.1.4
 
