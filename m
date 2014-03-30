@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753562AbaCaAOA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:14:00 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36413 "EHLO
+	id S1753754AbaCaAOE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:14:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36407 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753053AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753052AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <sgruszka@redhat.com>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Grant Likely" <grant.likely@linaro.org>,
+        "Rob Herring" <rob.herring@calxeda.com>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.884707261@decadent.org.uk>
+Message-ID: <lsq.1396221815.33465135@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 136/200] ath9k: protect tid->sched check
+Subject: [PATCH 3.2 082/200] of: Fix address decoding on Bimini and js2x
+ machines
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,71 +33,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-commit 21f8aaee0c62708654988ce092838aa7df4d25d8 upstream.
+commit 6dd18e4684f3d188277bbbc27545248487472108 upstream.
 
-We check tid->sched without a lock taken on ath_tx_aggr_sleep(). That
-is race condition which can result of doing list_del(&tid->list) twice
-(second time with poisoned list node) and cause crash like shown below:
+ Commit:
 
-[424271.637220] BUG: unable to handle kernel paging request at 00100104
-[424271.637328] IP: [<f90fc072>] ath_tx_aggr_sleep+0x62/0xe0 [ath9k]
-...
-[424271.639953] Call Trace:
-[424271.639998]  [<f90f6900>] ? ath9k_get_survey+0x110/0x110 [ath9k]
-[424271.640083]  [<f90f6942>] ath9k_sta_notify+0x42/0x50 [ath9k]
-[424271.640177]  [<f809cfef>] sta_ps_start+0x8f/0x1c0 [mac80211]
-[424271.640258]  [<c10f730e>] ? free_compound_page+0x2e/0x40
-[424271.640346]  [<f809e915>] ieee80211_rx_handlers+0x9d5/0x2340 [mac80211]
-[424271.640437]  [<c112f048>] ? kmem_cache_free+0x1d8/0x1f0
-[424271.640510]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640578]  [<c10fc23c>] ? put_page+0x2c/0x40
-[424271.640640]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640706]  [<c1345a84>] ? kfree_skbmem+0x34/0x90
-[424271.640787]  [<f809dde3>] ? ieee80211_rx_handlers_result+0x73/0x1d0 [mac80211]
-[424271.640897]  [<f80a07a0>] ieee80211_prepare_and_rx_handle+0x520/0xad0 [mac80211]
-[424271.641009]  [<f809e22d>] ? ieee80211_rx_handlers+0x2ed/0x2340 [mac80211]
-[424271.641104]  [<c13846ce>] ? ip_output+0x7e/0xd0
-[424271.641182]  [<f80a1057>] ieee80211_rx+0x307/0x7c0 [mac80211]
-[424271.641266]  [<f90fa6ee>] ath_rx_tasklet+0x88e/0xf70 [ath9k]
-[424271.641358]  [<f80a0f2c>] ? ieee80211_rx+0x1dc/0x7c0 [mac80211]
-[424271.641445]  [<f90f82db>] ath9k_tasklet+0xcb/0x130 [ath9k]
+  e38c0a1fbc5803cbacdaac0557c70ac8ca5152e7
+  of/address: Handle #address-cells > 2 specially
 
-Bug report:
-https://bugzilla.kernel.org/show_bug.cgi?id=70551
+broke real time clock access on Bimini, js2x, and similar powerpc
+machines using the "maple" platform. That code was indirectly relying
+on the old (broken) behaviour of the translation for the hypertransport
+to ISA bridge.
 
-Reported-and-tested-by: Max Sydorenko <maxim.stargazer@gmail.com>
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2:
- - Adjust context
- - Use spin_unlock_bh() directly]
+This fixes it by treating hypertransport as a PCI bus
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Acked-by: Rob Herring <rob.herring@calxeda.com>
+Signed-off-by: Grant Likely <grant.likely@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/of/address.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1176,14 +1176,16 @@ void ath_tx_aggr_sleep(struct ieee80211_
- 	for (tidno = 0, tid = &an->tid[tidno];
- 	     tidno < WME_NUM_TID; tidno++, tid++) {
+--- a/drivers/of/address.c
++++ b/drivers/of/address.c
+@@ -97,8 +97,12 @@ static unsigned int of_bus_default_get_f
  
--		if (!tid->sched)
--			continue;
--
- 		ac = tid->ac;
- 		txq = ac->txq;
+ static int of_bus_pci_match(struct device_node *np)
+ {
+-	/* "vci" is for the /chaos bridge on 1st-gen PCI powermacs */
+-	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci");
++	/*
++	 * "vci" is for the /chaos bridge on 1st-gen PCI powermacs
++	 * "ht" is hypertransport
++	 */
++	return !strcmp(np->type, "pci") || !strcmp(np->type, "vci") ||
++		!strcmp(np->type, "ht");
+ }
  
- 		spin_lock_bh(&txq->axq_lock);
- 
-+		if (!tid->sched) {
-+			spin_unlock_bh(&txq->axq_lock);
-+			continue;
-+		}
-+
- 		buffered = !skb_queue_empty(&tid->buf_q);
- 
- 		tid->sched = false;
+ static void of_bus_pci_count_cells(struct device_node *np,
 
