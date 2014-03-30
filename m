@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaC3NcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 09:32:08 -0400
-Received: from mail-bk0-f43.google.com ([209.85.214.43]:62251 "EHLO
-	mail-bk0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518AbaC3NcG (ORCPT
+	id S1752222AbaC3Neb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 09:34:31 -0400
+Received: from mail-bk0-f50.google.com ([209.85.214.50]:58703 "EHLO
+	mail-bk0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751998AbaC3Nea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 09:32:06 -0400
+	Sun, 30 Mar 2014 09:34:30 -0400
 From: Mathias Krause <minipli@googlemail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
-        PaX Team <pageexec@freemail.hu>
-Subject: [PATCH] ftrace: Statically initialize pm notifier block
-Date: Sun, 30 Mar 2014 15:31:50 +0200
-Message-Id: <1396186310-3156-1-git-send-email-minipli@googlemail.com>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Mathias Krause <minipli@googlemail.com>,
+        PaX Team <pageexec@freemail.hu>, Felipe Balbi <balbi@ti.com>,
+        Anton Vorontsov <anton@enomsg.org>
+Subject: [PATCH 2/2] pda_power: Unregister USB notifier in pda_power_remove()
+Date: Sun, 30 Mar 2014 15:34:15 +0200
+Message-Id: <1396186455-3276-3-git-send-email-minipli@googlemail.com>
 X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
+References: <1396186455-3276-1-git-send-email-minipli@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of initializing the pm notifier block in register_ftrace_graph(),
-initialize it statically. This safes us some code.
+If we've registered a notifier in pda_power_probe() we must deregister
+it in pda_power_remove() to not let it work on stale data like, e.g.,
+the charger timer.
 
-Found in the PaX patch, written by the PaX Team.
-
-Cc: PaX Team <pageexec@freemail.hu>
+Cc: Felipe Balbi <balbi@ti.com>
+Cc: Anton Vorontsov <anton@enomsg.org>
 Signed-off-by: Mathias Krause <minipli@googlemail.com>
 ---
- kernel/trace/ftrace.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/power/pda_power.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index cd7f76d1eb..a4d74eb000 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4909,7 +4909,6 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
+diff --git a/drivers/power/pda_power.c b/drivers/power/pda_power.c
+index 87a963d0a8..aba23d6848 100644
+--- a/drivers/power/pda_power.c
++++ b/drivers/power/pda_power.c
+@@ -430,6 +430,11 @@ static int pda_power_remove(struct platform_device *pdev)
+ 	if (pdata->is_ac_online && ac_irq)
+ 		free_irq(ac_irq->start, &pda_psy_ac);
  
- static int ftrace_graph_active;
--static struct notifier_block ftrace_suspend_notifier;
- 
- int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
- {
-@@ -5086,6 +5085,10 @@ static void update_function_graph_func(void)
- 		ftrace_graph_entry = ftrace_graph_entry_test;
- }
- 
-+static struct notifier_block ftrace_suspend_notifier = {
-+	.notifier_call = ftrace_suspend_notifier_call,
-+};
++#if IS_ENABLED(CONFIG_USB_PHY)
++	if (!IS_ERR_OR_NULL(transceiver) && pdata->use_otg_notifier)
++		usb_unregister_notifier(transceiver, &otg_nb);
++#endif
 +
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -5099,7 +5102,6 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 		goto out;
- 	}
- 
--	ftrace_suspend_notifier.notifier_call = ftrace_suspend_notifier_call;
- 	register_pm_notifier(&ftrace_suspend_notifier);
- 
- 	ftrace_graph_active++;
+ 	if (polling)
+ 		del_timer_sync(&polling_timer);
+ 	del_timer_sync(&charger_timer);
 -- 
 1.7.10.4
 
