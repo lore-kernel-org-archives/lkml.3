@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753615AbaC3X31 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:29:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36587 "EHLO
+	id S1753658AbaC3X3c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:29:32 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36598 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753190AbaC3XZG (ORCPT
+	by vger.kernel.org with ESMTP id S1753195AbaC3XZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Martijn de Gouw" <martijn.de.gouw@prodrive.nl>,
-        "Steve French" <sfrench@us.ibm.com>,
-        "Jeff Layton" <jlayton@redhat.com>,
-        "Joseph Salisbury" <joseph.salisbury@canonical.com>
+CC: akpm@linux-foundation.org, "Johan Hovold" <jhovold@gmail.com>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.242588925@decadent.org.uk>
+Message-ID: <lsq.1396221815.265916470@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 192/200] cifs: set MAY_SIGN when sec=krb5
+Subject: [PATCH 3.2 019/200] USB: cypress_m8: fix ring-indicator detection
+ and reporting
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,37 +32,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martijn de Gouw <martijn.de.gouw@prodrive.nl>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit 0b7bc84000d71f3647ca33ab1bf5bd928535c846 upstream.
+commit 440ebadeae9298d7de3d4d105342691841ec88d0 upstream.
 
-Setting this secFlg allows usage of dfs where some servers require
-signing and others don't.
+Fix ring-indicator (RI) status-bit definition, which was defined as CTS,
+effectively preventing RI-changes from being detected while reporting
+false RI status.
 
-Signed-off-by: Martijn de Gouw <martijn.de.gouw@prodrive.nl>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
-[Joseph Salisbury: This backport was done so including mainline commit
-8830d7e07a5e38bc47650a7554b7c1cfd49902bf is not needed.]
-BugLink: http://bugs.launchpad.net/bugs/1285723
-Signed-off-by: Joseph Salisbury <joseph.salisbury@canonical.com>
+This bug predates git.
+
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/cifs/connect.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/usb/serial/cypress_m8.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 56c152d..49d6e21 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -1113,7 +1113,8 @@ cifs_parse_mount_options(const char *mountdata, const char *devname,
- 				cERROR(1, "Krb5 cifs privacy not supported");
- 				goto cifs_parse_mount_err;
- 			} else if (strnicmp(value, "krb5", 4) == 0) {
--				vol->secFlg |= CIFSSEC_MAY_KRB5;
-+				vol->secFlg |= CIFSSEC_MAY_KRB5 | 
-+					CIFSSEC_MAY_SIGN;
- 			} else if (strnicmp(value, "ntlmsspi", 8) == 0) {
- 				vol->secFlg |= CIFSSEC_MAY_NTLMSSP |
- 					CIFSSEC_MUST_SIGN;
+--- a/drivers/usb/serial/cypress_m8.h
++++ b/drivers/usb/serial/cypress_m8.h
+@@ -63,7 +63,7 @@
+ #define UART_DSR	0x20	/* data set ready - flow control - device to host */
+ #define CONTROL_RTS	0x10	/* request to send - flow control - host to device */
+ #define UART_CTS	0x10	/* clear to send - flow control - device to host */
+-#define UART_RI		0x10	/* ring indicator - modem - device to host */
++#define UART_RI		0x80	/* ring indicator - modem - device to host */
+ #define UART_CD		0x40	/* carrier detect - modem - device to host */
+ #define CYP_ERROR	0x08	/* received from input report - device to host */
+ /* Note - the below has nothing to do with the "feature report" reset */
 
