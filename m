@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753204AbaC3JUJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 05:20:09 -0400
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:56159 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaC3JUH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 05:20:07 -0400
+	id S1753214AbaC3JXK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 05:23:10 -0400
+Received: from mail.tomasu.net ([192.241.222.217]:44894 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752612AbaC3JXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 05:23:08 -0400
+X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 Mar 2014 05:23:08 EDT
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+To: LKML <linux-kernel@vger.kernel.org>
+Reply-To: thomas@fjellstrom.ca
+Subject: turbo on lenovo w530 causing over-temp warnings
+Date: Sun, 30 Mar 2014 03:13:57 -0600
+Message-ID: <2113542.FNB0FtJayJ@balsa>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-In-Reply-To: <20140330035009.GB22728@two.firstfloor.org>
-References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
-	<1396017924-7754-11-git-send-email-jovi.zhangwei@gmail.com>
-	<20140330035009.GB22728@two.firstfloor.org>
-Date: Sun, 30 Mar 2014 17:12:51 +0800
-Message-ID: <CAGdX0WHK-EhGYHELxr-H_A+w1ZDWWhDpxsvB+=grMgFNpFsZ4g@mail.gmail.com>
-Subject: Re: [PATCH v2 10/29] ktap: add string handling code(kernel/trace/ktap/kp_[str|mempool].[c|h])
-From: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 11:50 AM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> It's not clear to me why a kernel script language needs
-> all that complicated string interning code.
->
-> What kind of scripts would create as many strings that
-> it would be worth it?
->
-> I think it would be better to replace it with a really
-> simple non interning dynamic string type.
->
-Basically I think string interning is very useful in ktap, and
-the implementation is not complicated(kp_str_new function
-is very simple).
+I have a lenovo w530 laptop with an intel i7-3720QM processor, and when 
+running something with high cpu use causes the cpu to be put into the highest 
+turbo mode and stays there as long as the core is being used. It doesn't scale 
+back to the real max frequency once temperatures rise.
 
-String interning will make string comparison and table index
-extremely fast, just pointer equality, no strcmp. table index
-is heavily used in these dynamic tracing tool ktap/stap/dtrace.
+I've had my laptop shut itself down after a few minutes due to a thermal 
+warning a few times. I was attempting to try the latest stable stock (non 
+debian) kernel to see if maybe it was a weird distro config issue (it happens), 
+but as I was compiling the kernel, CPU temps hit 90c, and were climbing after 
+only a few minutes. If I had let it go longer, I am 100% sure it would have 
+shut itself off again.
 
-String interning make there don't need to copy whole string
-each time when use string key in associative array(table)
-(stap/dtrace need copy it), and don't need to compute
-string hash every time when use string table key.
-(Things became more easily if need to support multi-key
-table, ktap don't need to pre-allocate string in table)
+I just tried seeing what would happen if I just ran a straight up make on the 
+kernel with no -j option. So only one core at a time would be pegged, and it 
+caused all 4 cores to spike to 3.4Ghz+ and stay there till I killed the job.
 
-See test/benchmark/cmp_table.sh, that script compare
-table operation between ktap with stap, the result is very
-inspiring, ktap table operation overhead is quite lower than
-stap, especially when use constant string key.
+Is this a known problem? Is there something obvious I've missed?
 
-But I agree with you partly, because in some cases we don't
-want/need to interning all string, for example:
-    trace xxx:yyy {
-        var str = cast("char *", arg1)
-        print(str)
-    }
+I've been trying to find relevant info online about this, but a lot of it is 
+fairly old and references the intel_pstep driver causing tubo to be stuck on 
+100% of the time. In my case its only stuck at full turbo while there is a 
+certain amount of cpu use. It does drop back if nothing is running.
 
-In above case, arg1 is a long kernel string, and no table insert,
-so definitely no need to interned, so we need to add
-KTAP_TRAWSTR to represent these values.
-
-The simplicity design of ktap make it very flexible to support
-different kind of value type. :)
+Currently running kernel is the debian 3.13.7-1 kernel from sid. I will 
+attempt to try the stock latest stable, as well as the latest rc, but I won't 
+be able to get around to both till tomorrow.
 
 Thanks.
 
-Jovi
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
