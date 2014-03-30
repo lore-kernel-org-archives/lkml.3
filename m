@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586AbaCaAab (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:30:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36255 "EHLO
+	id S1754484AbaCaAa2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:30:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36261 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752883AbaC3XY7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752886AbaC3XY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:24:59 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Li Zefan" <lizefan@huawei.com>,
-        "Wanpeng Li" <liwanp@linux.vnet.ibm.com>,
-        "Pekka Enberg" <penberg@kernel.org>,
-        "Christoph Lameter" <cl@linux.com>
+CC: akpm@linux-foundation.org, robert.hodaszi@digi.com,
+        "Peter Chen" <peter.chen@freescale.com>,
+        "Marc Kleine-Budde" <mkl@pengutronix.de>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Alan Stern" <stern@rowland.harvard.edu>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.223795276@decadent.org.uk>
+Message-ID: <lsq.1396221815.477396739@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 014/200] slub: Fix calculation of cpu slabs
+Subject: [PATCH 3.2 038/200] usb: ehci: add freescale imx28 special write
+ register method
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,52 +35,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Peter Chen <peter.chen@freescale.com>
 
-commit 8afb1474db4701d1ab80cd8251137a3260e6913e upstream.
+commit feffe09f510c475df082546815f9e4a573f6a233 upstream.
 
-  /sys/kernel/slab/:t-0000048 # cat cpu_slabs
-  231 N0=16 N1=215
-  /sys/kernel/slab/:t-0000048 # cat slabs
-  145 N0=36 N1=109
+According to Freescale imx28 Errata, "ENGR119653 USB: ARM to USB
+register error issue", All USB register write operations must
+use the ARM SWP instruction. So, we implement a special ehci_write
+for imx28.
 
-See, the number of slabs is smaller than that of cpu slabs.
+Discussion for it at below:
+http://marc.info/?l=linux-usb&m=137996395529294&w=2
 
-The bug was introduced by commit 49e2258586b423684f03c278149ab46d8f8b6700
-("slub: per cpu cache for partial pages").
+Without this patcheset, imx28 works unstable at high AHB bus loading.
+If the bus loading is not high, the imx28 usb can work well at the most
+of time. There is a IC errata for this problem, usually, we consider
+IC errata is a problem not a new feature, and this workaround is needed
+for that, so we need to add them to stable tree 3.11+.
 
-We should use page->pages instead of page->pobjects when calculating
-the number of cpu partial slabs. This also fixes the mapping of slabs
-and nodes.
-
-As there's no variable storing the number of total/active objects in
-cpu partial slabs, and we don't have user interfaces requiring those
-statistics, I just add WARN_ON for those cases.
-
-Acked-by: Christoph Lameter <cl@linux.com>
-Reviewed-by: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Signed-off-by: Pekka Enberg <penberg@kernel.org>
+Cc: robert.hodaszi@digi.com
+Signed-off-by: Peter Chen <peter.chen@freescale.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Tested-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[bwh: Backported to 3.2:adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- mm/slub.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/usb/host/ehci.h | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
 
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -4483,7 +4483,13 @@ static ssize_t show_slab_objects(struct
- 			page = c->partial;
+--- a/drivers/usb/host/ehci.h
++++ b/drivers/usb/host/ehci.h
+@@ -147,6 +147,7 @@ struct ehci_hcd {			/* one per controlle
+ 	unsigned		use_dummy_qh:1;	/* AMD Frame List table quirk*/
+ 	unsigned		has_synopsys_hc_bug:1; /* Synopsys HC */
+ 	unsigned		frame_index_bug:1; /* MosChip (AKA NetMos) */
++	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
  
- 			if (page) {
--				x = page->pobjects;
-+				node = page_to_nid(page);
-+				if (flags & SO_TOTAL)
-+					WARN_ON_ONCE(1);
-+				else if (flags & SO_OBJECTS)
-+					WARN_ON_ONCE(1);
-+				else
-+					x = page->pages;
- 				total += x;
- 				nodes[node] += x;
- 			}
+ 	/* required for usb32 quirk */
+ 	#define OHCI_CTRL_HCFS          (3 << 6)
+@@ -654,6 +655,18 @@ static inline unsigned int ehci_readl(co
+ #endif
+ }
+ 
++#ifdef CONFIG_SOC_IMX28
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++	__asm__ ("swp %0, %0, [%1]" : : "r"(val), "r"(addr));
++}
++#else
++static inline void imx28_ehci_writel(const unsigned int val,
++		volatile __u32 __iomem *addr)
++{
++}
++#endif
+ static inline void ehci_writel(const struct ehci_hcd *ehci,
+ 		const unsigned int val, __u32 __iomem *regs)
+ {
+@@ -662,7 +675,10 @@ static inline void ehci_writel(const str
+ 		writel_be(val, regs) :
+ 		writel(val, regs);
+ #else
+-	writel(val, regs);
++	if (ehci->imx28_write_fix)
++		imx28_ehci_writel(val, regs);
++	else
++		writel(val, regs);
+ #endif
+ }
+ 
 
