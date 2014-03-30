@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaCaADS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:03:18 -0400
+	id S1754894AbaCaAD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:03:57 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754472AbaC3XnE (ORCPT
+	by vger.kernel.org with ESMTP id S1753727AbaC3Xm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:04 -0400
+	Sun, 30 Mar 2014 19:42:59 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Alan Stern" <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Moritz Moeller-Herrmann" <moritz-kernel@moeller-herrmann.de>
+CC: akpm@linux-foundation.org, "Matthew Thode" <mthode@mthode.org>,
+        "Paul Moore" <pmoore@redhat.com>,
+        "Stephen Smalley" <sds@tycho.nsa.gov>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.416857749@decadent.org.uk>
+Message-ID: <lsq.1396221815.700002586@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 079/200] usb-storage: add unusual-devs entry for
- BlackBerry 9000
+Subject: [PATCH 3.2 084/200] SELinux:  Fix kernel BUG on empty security
+ contexts.
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,36 +33,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Stephen Smalley <sds@tycho.nsa.gov>
 
-commit c5637e5119c43452a00e27c274356b072263ecbb upstream.
+commit 2172fa709ab32ca60e86179dc67d0857be8e2c98 upstream.
 
-This patch adds an unusual-devs entry for the BlackBerry 9000.  This
-fixes Bugzilla #22442.
+Setting an empty security context (length=0) on a file will
+lead to incorrectly dereferencing the type and other fields
+of the security context structure, yielding a kernel BUG.
+As a zero-length security context is never valid, just reject
+all such security contexts whether coming from userspace
+via setxattr or coming from the filesystem upon a getxattr
+request by SELinux.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Tested-by: Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Setting a security context value (empty or otherwise) unknown to
+SELinux in the first place is only possible for a root process
+(CAP_MAC_ADMIN), and, if running SELinux in enforcing mode, only
+if the corresponding SELinux mac_admin permission is also granted
+to the domain by policy.  In Fedora policies, this is only allowed for
+specific domains such as livecd for setting down security contexts
+that are not defined in the build host policy.
+
+Reproducer:
+su
+setenforce 0
+touch foo
+setfattr -n security.selinux foo
+
+Caveat:
+Relabeling or removing foo after doing the above may not be possible
+without booting with SELinux disabled.  Any subsequent access to foo
+after doing the above will also trigger the BUG.
+
+BUG output from Matthew Thode:
+[  473.893141] ------------[ cut here ]------------
+[  473.962110] kernel BUG at security/selinux/ss/services.c:654!
+[  473.995314] invalid opcode: 0000 [#6] SMP
+[  474.027196] Modules linked in:
+[  474.058118] CPU: 0 PID: 8138 Comm: ls Tainted: G      D   I
+3.13.0-grsec #1
+[  474.116637] Hardware name: Supermicro X8ST3/X8ST3, BIOS 2.0
+07/29/10
+[  474.149768] task: ffff8805f50cd010 ti: ffff8805f50cd488 task.ti:
+ffff8805f50cd488
+[  474.183707] RIP: 0010:[<ffffffff814681c7>]  [<ffffffff814681c7>]
+context_struct_compute_av+0xce/0x308
+[  474.219954] RSP: 0018:ffff8805c0ac3c38  EFLAGS: 00010246
+[  474.252253] RAX: 0000000000000000 RBX: ffff8805c0ac3d94 RCX:
+0000000000000100
+[  474.287018] RDX: ffff8805e8aac000 RSI: 00000000ffffffff RDI:
+ffff8805e8aaa000
+[  474.321199] RBP: ffff8805c0ac3cb8 R08: 0000000000000010 R09:
+0000000000000006
+[  474.357446] R10: 0000000000000000 R11: ffff8805c567a000 R12:
+0000000000000006
+[  474.419191] R13: ffff8805c2b74e88 R14: 00000000000001da R15:
+0000000000000000
+[  474.453816] FS:  00007f2e75220800(0000) GS:ffff88061fc00000(0000)
+knlGS:0000000000000000
+[  474.489254] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  474.522215] CR2: 00007f2e74716090 CR3: 00000005c085e000 CR4:
+00000000000207f0
+[  474.556058] Stack:
+[  474.584325]  ffff8805c0ac3c98 ffffffff811b549b ffff8805c0ac3c98
+ffff8805f1190a40
+[  474.618913]  ffff8805a6202f08 ffff8805c2b74e88 00068800d0464990
+ffff8805e8aac860
+[  474.653955]  ffff8805c0ac3cb8 000700068113833a ffff880606c75060
+ffff8805c0ac3d94
+[  474.690461] Call Trace:
+[  474.723779]  [<ffffffff811b549b>] ? lookup_fast+0x1cd/0x22a
+[  474.778049]  [<ffffffff81468824>] security_compute_av+0xf4/0x20b
+[  474.811398]  [<ffffffff8196f419>] avc_compute_av+0x2a/0x179
+[  474.843813]  [<ffffffff8145727b>] avc_has_perm+0x45/0xf4
+[  474.875694]  [<ffffffff81457d0e>] inode_has_perm+0x2a/0x31
+[  474.907370]  [<ffffffff81457e76>] selinux_inode_getattr+0x3c/0x3e
+[  474.938726]  [<ffffffff81455cf6>] security_inode_getattr+0x1b/0x22
+[  474.970036]  [<ffffffff811b057d>] vfs_getattr+0x19/0x2d
+[  475.000618]  [<ffffffff811b05e5>] vfs_fstatat+0x54/0x91
+[  475.030402]  [<ffffffff811b063b>] vfs_lstat+0x19/0x1b
+[  475.061097]  [<ffffffff811b077e>] SyS_newlstat+0x15/0x30
+[  475.094595]  [<ffffffff8113c5c1>] ? __audit_syscall_entry+0xa1/0xc3
+[  475.148405]  [<ffffffff8197791e>] system_call_fastpath+0x16/0x1b
+[  475.179201] Code: 00 48 85 c0 48 89 45 b8 75 02 0f 0b 48 8b 45 a0 48
+8b 3d 45 d0 b6 00 8b 40 08 89 c6 ff ce e8 d1 b0 06 00 48 85 c0 49 89 c7
+75 02 <0f> 0b 48 8b 45 b8 4c 8b 28 eb 1e 49 8d 7d 08 be 80 01 00 00 e8
+[  475.255884] RIP  [<ffffffff814681c7>]
+context_struct_compute_av+0xce/0x308
+[  475.296120]  RSP <ffff8805c0ac3c38>
+[  475.328734] ---[ end trace f076482e9d754adc ]---
+
+Reported-by:  Matthew Thode <mthode@mthode.org>
+Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+Signed-off-by: Paul Moore <pmoore@redhat.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/storage/unusual_devs.h | 7 +++++++
- 1 file changed, 7 insertions(+)
+ security/selinux/ss/services.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/usb/storage/unusual_devs.h
-+++ b/drivers/usb/storage/unusual_devs.h
-@@ -1441,6 +1441,13 @@ UNUSUAL_DEV( 0x0f88, 0x042e, 0x0100, 0x0
- 		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
- 		US_FL_FIX_CAPACITY ),
+--- a/security/selinux/ss/services.c
++++ b/security/selinux/ss/services.c
+@@ -1229,6 +1229,10 @@ static int security_context_to_sid_core(
+ 	struct context context;
+ 	int rc = 0;
  
-+/* Reported by Moritz Moeller-Herrmann <moritz-kernel@moeller-herrmann.de> */
-+UNUSUAL_DEV(  0x0fca, 0x8004, 0x0201, 0x0201,
-+		"Research In Motion",
-+		"BlackBerry Bold 9000",
-+		USB_SC_DEVICE, USB_PR_DEVICE, NULL,
-+		US_FL_MAX_SECTORS_64 ),
++	/* An empty security context is never valid. */
++	if (!scontext_len)
++		return -EINVAL;
 +
- /* Reported by Michael Stattmann <michael@stattmann.com> */
- UNUSUAL_DEV(  0x0fce, 0xd008, 0x0000, 0x0000,
- 		"Sony Ericsson",
+ 	if (!ss_initialized) {
+ 		int i;
+ 
 
