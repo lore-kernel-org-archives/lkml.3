@@ -1,110 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751749AbaC3O6t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 10:58:49 -0400
-Received: from mail-pa0-f54.google.com ([209.85.220.54]:36809 "EHLO
-	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaC3O6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 10:58:45 -0400
-From: Conrad Meyer <cemeyer@uw.edu>
-To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Conrad Meyer <cse.cem@gmail.com>
-Subject: [PATCH] fs: ext4: Sign-extend tv_sec after ORing in epoch bits
-Date: Sun, 30 Mar 2014 07:58:34 -0700
-Message-Id: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
-X-Mailer: git-send-email 1.9.0
+	id S1751795AbaC3PGu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 11:06:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751025AbaC3PGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 11:06:48 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
+        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
+        Prarit Bhargava <prarit@redhat.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Subject: [PATCH 3/3] x86: microcode: remove unused parameter and redundant variable
+Date: Sun, 30 Mar 2014 16:09:34 +0200
+Message-Id: <1396188574-2067-3-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
+References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes kernel.org bug #23732.
+Two trivial cleanups:
 
-Background: ext4 stores time as a 34-bit quantity; 2 bits in some extra
-bits unneeded for nanoseconds in the inode, and 32 bits in the seconds
-field.
+get_matching_sig()'s rev parameter is unused and can be removed.
 
-On systems with 64-bit time_t, the EXT4_*INODE_GET_XTIME() code
-incorrectly sign-extended the low 32-bits of the seconds quantity before
-ORing in the 2 "epoch" bits from nanoseconds.
+In apply_microcode(), cpu == cpu_num always. Merge them. Move BUG check
+before all other operations so that function call does not interfere
+with register scheduling, saving a few bytes of code.
 
-This patch ORs in the 2 higher bits, then sign extends the 34-bit signed
-number to 64 bits.
-
-Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 ---
-Patch against next-20140328.
+ arch/x86/include/asm/microcode_intel.h      |  2 +-
+ arch/x86/kernel/cpu/microcode/intel.c       | 16 ++++++++--------
+ arch/x86/kernel/cpu/microcode/intel_early.c |  2 +-
+ arch/x86/kernel/cpu/microcode/intel_lib.c   |  4 ++--
+ 4 files changed, 12 insertions(+), 12 deletions(-)
 
-Note, the on-disk format has always been written correctly. It was just
-interpreted incorrectly.
-
-Repro:
-Before:
-$ touch -d 2038-01-31 test-123
-$ sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
-$ ls -ld test-123
-drwxrwxr-x 2 cmeyer cmeyer 4096 Dec 25  1901 test-123
-
-After:
-$ ls -ld test-123
-drwxrwxr-x 2 cmeyer cmeyer 4096 Jan 31  2038 test-123
-
-Thanks!
----
- fs/ext4/ext4.h | 14 ++++++++++++--
- 1 file changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
-index f4f889e..07ee03d 100644
---- a/fs/ext4/ext4.h
-+++ b/fs/ext4/ext4.h
-@@ -710,6 +710,8 @@ struct move_extent {
- #define EXT4_EPOCH_BITS 2
- #define EXT4_EPOCH_MASK ((1 << EXT4_EPOCH_BITS) - 1)
- #define EXT4_NSEC_MASK  (~0UL << EXT4_EPOCH_BITS)
-+#define EXT4_EPOCH_SIGN (((1UL << (EXT4_EPOCH_BITS - 1)) << 16) << 16)
-+#define EXT4_SIGN_EXT   (~((((1UL << EXT4_EPOCH_BITS) << 16) << 16) - 1))
+diff --git a/arch/x86/include/asm/microcode_intel.h b/arch/x86/include/asm/microcode_intel.h
+index f64ccfd..e27eba4 100644
+--- a/arch/x86/include/asm/microcode_intel.h
++++ b/arch/x86/include/asm/microcode_intel.h
+@@ -59,7 +59,7 @@ struct extended_sigtable {
+ extern int
+ get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev, bool report_old);
+ extern int microcode_sanity_check(void *mc, int print_err);
+-extern int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev);
++extern int get_matching_sig(unsigned int csig, int cpf, void *mc);
+ extern int
+ update_match_revision(struct microcode_header_intel *mc_header, int rev);
  
- /*
-  * Extended fields will fit into an inode if the filesystem was formatted
-@@ -761,19 +763,23 @@ do {									       \
+diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
+index 9ce22b0..a37f179 100644
+--- a/arch/x86/kernel/cpu/microcode/intel.c
++++ b/arch/x86/kernel/cpu/microcode/intel.c
+@@ -127,19 +127,19 @@ static int get_matching_mc(struct microcode_intel *mc_intel, int cpu)
+ 	return get_matching_microcode(csig, cpf, mc_intel, crev, /*report_old:*/ 1);
+ }
  
- #define EXT4_INODE_GET_XTIME(xtime, inode, raw_inode)			       \
- do {									       \
--	(inode)->xtime.tv_sec = (signed)le32_to_cpu((raw_inode)->xtime);       \
-+	(inode)->xtime.tv_sec = (__u64)le32_to_cpu((raw_inode)->xtime);	       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, EXT4_I(inode), xtime ## _extra))     \
- 		ext4_decode_extra_time(&(inode)->xtime,			       \
- 				       raw_inode->xtime ## _extra);	       \
- 	else								       \
- 		(inode)->xtime.tv_nsec = 0;				       \
-+	if (sizeof((inode)->xtime.tv_sec) > 4) {			       \
-+		if ((inode)->xtime.tv_sec & EXT4_EPOCH_SIGN)		       \
-+			(inode)->xtime.tv_sec |= EXT4_SIGN_EXT;		       \
-+	}								       \
- } while (0)
+-int apply_microcode(int cpu)
++int apply_microcode(int cpu_num)
+ {
+ 	struct microcode_intel *mc_intel;
+ 	struct ucode_cpu_info *uci;
+ 	unsigned int val[2];
+-	int cpu_num = raw_smp_processor_id();
+-	struct cpuinfo_x86 *c = &cpu_data(cpu_num);
+-
+-	uci = ucode_cpu_info + cpu;
+-	mc_intel = uci->mc;
++	struct cpuinfo_x86 *c;
  
- #define EXT4_EINODE_GET_XTIME(xtime, einode, raw_inode)			       \
- do {									       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
- 		(einode)->xtime.tv_sec = 				       \
--			(signed)le32_to_cpu((raw_inode)->xtime);	       \
-+			(__u64)le32_to_cpu((raw_inode)->xtime);		       \
- 	else								       \
- 		(einode)->xtime.tv_sec = 0;				       \
- 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
-@@ -781,6 +787,10 @@ do {									       \
- 				       raw_inode->xtime ## _extra);	       \
- 	else								       \
- 		(einode)->xtime.tv_nsec = 0;				       \
-+	if (sizeof((einode)->xtime.tv_sec) > 4) {			       \
-+		if ((einode)->xtime.tv_sec & EXT4_EPOCH_SIGN)		       \
-+			(einode)->xtime.tv_sec |= EXT4_SIGN_EXT;	       \
-+	}								       \
- } while (0)
+ 	/* We should bind the task to the CPU */
+-	BUG_ON(cpu_num != cpu);
++	BUG_ON(cpu_num != raw_smp_processor_id());
++
++	c = &cpu_data(cpu_num);
++	uci = ucode_cpu_info + cpu_num;
++	mc_intel = uci->mc;
  
- #define i_disk_version osd1.linux1.l_i_version
+ 	if (mc_intel == NULL)
+ 		return 0;
+@@ -149,7 +149,7 @@ int apply_microcode(int cpu)
+ 	 * microcode patch in mc_intel when it is newer than the one on this
+ 	 * CPU.
+ 	 */
+-	if (get_matching_mc(mc_intel, cpu) == 0)
++	if (get_matching_mc(mc_intel, cpu_num) == 0)
+ 		return 0;
+ 
+ 	/* write microcode via MSR 0x79 */
+diff --git a/arch/x86/kernel/cpu/microcode/intel_early.c b/arch/x86/kernel/cpu/microcode/intel_early.c
+index 3a2ad0a..14b120b 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_early.c
++++ b/arch/x86/kernel/cpu/microcode/intel_early.c
+@@ -276,7 +276,7 @@ static void _save_mc(struct microcode_intel **mc_saved, u8 *ucode_ptr,
+ 		pf = mc_saved_header->pf;
+ 		new_rev = mc_header->rev;
+ 
+-		if (get_matching_sig(sig, pf, ucode_ptr, new_rev)) {
++		if (get_matching_sig(sig, pf, ucode_ptr)) {
+ 			found = 1;
+ 			if (update_match_revision(mc_header, new_rev)) {
+ 				/*
+diff --git a/arch/x86/kernel/cpu/microcode/intel_lib.c b/arch/x86/kernel/cpu/microcode/intel_lib.c
+index e8c02cb..eeec94b 100644
+--- a/arch/x86/kernel/cpu/microcode/intel_lib.c
++++ b/arch/x86/kernel/cpu/microcode/intel_lib.c
+@@ -131,7 +131,7 @@ EXPORT_SYMBOL_GPL(microcode_sanity_check);
+  * return 0 - no update found
+  * return 1 - found update
+  */
+-int get_matching_sig(unsigned int csig, int cpf, void *mc, int rev)
++int get_matching_sig(unsigned int csig, int cpf, void *mc)
+ {
+ 	struct microcode_header_intel *mc_header = mc;
+ 	struct extended_sigtable *ext_header;
+@@ -174,7 +174,7 @@ int get_matching_microcode(unsigned int csig, int cpf, void *mc, int rev, bool r
+ 		return 0;
+ 	}
+ 
+-	if (!get_matching_sig(csig, cpf, mc, rev)) {
++	if (!get_matching_sig(csig, cpf, mc)) {
+ 		if (report_old)
+ 			pr_info("microcode: no microcode with"
+ 				" sig=0x%x, pf=0x%x found\n", csig, cpf);
 -- 
-1.9.0
+1.8.1.4
 
