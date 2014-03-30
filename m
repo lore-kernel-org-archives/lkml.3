@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaC3XVO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:21:14 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56571 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752557AbaC3XVM (ORCPT
+	id S1753292AbaC3XZM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:25:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36210 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752775AbaC3XY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:21:12 -0400
-Date: Mon, 31 Mar 2014 00:21:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] vfs fixes
-Message-ID: <20140330232110.GN18016@ZenIV.linux.org.uk>
-References: <CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
- <20140323164526.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
- <CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
- <CA+55aFxvACwdNuswQsTENWdmRnjKR_LgThtnAVTBQ91gvDpWvg@mail.gmail.com>
- <CA+icZUWD7NekSyNa2Keg=+teDCGg-Ttc5Xb4wfKA-56FMwGSeg@mail.gmail.com>
- <CA+55aFwKqDzNCd1wQYZqKXb3DDj2bHYjHCYjDAkWJwPhuvR17A@mail.gmail.com>
- <20140330203307.GL18016@ZenIV.linux.org.uk>
- <20140330205537.GM18016@ZenIV.linux.org.uk>
- <CA+55aFw5WjjHPP0SZo8fZefG5_S4F=-V_oa0HV4sm+G167-4iA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Sun, 30 Mar 2014 19:24:58 -0400
+Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
-In-Reply-To: <CA+55aFw5WjjHPP0SZo8fZefG5_S4F=-V_oa0HV4sm+G167-4iA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+From: Ben Hutchings <ben@decadent.org.uk>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
+CC: akpm@linux-foundation.org, "Larry Finger" <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>
+Date: Mon, 31 Mar 2014 00:23:35 +0100
+Message-ID: <lsq.1396221815.266259668@decadent.org.uk>
+X-Mailer: LinuxStableQueue (scripts by bwh)
+Subject: [PATCH 3.2 001/200] rtlwifi: Set the link state
+In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 03:39:33PM -0700, Linus Torvalds wrote:
-> On Sun, Mar 30, 2014 at 1:55 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> >
-> > Commit ID of that branch should be 7fc5aaa083922420e2dec5d985420cb5f959b1ce;
-> > diffs are the same as what sat there since last Sunday, commit messages
-> > got updated a bit.
-> 
-> Ugh. You have apparently rebased the parts that I already pulled too,
-> which is annoying and causes duplicate commits.
+3.2.56-rc1 review patch.  If anyone has any objections, please let me know.
 
-Sorry, I'd only noticed your pull after sending that...  Missing commits
-on top of linux.git#master are in vfs.git#for-linus-2, so if you prefer
-to grab them from there, it's
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs.git for-linus-2
+------------------
 
-Shortlog:
-Al Viro (4):
-      resizable namespace.c hashes
-      keep shadowed vfsmounts together
-      don't bother with propagate_mnt() unless the target is shared
-      switch mnt_hash to hlist
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-Diffstat:
- fs/mount.h     |    4 +--
- fs/namespace.c |  177 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------------------
- fs/pnode.c     |   26 +++++++++------
- fs/pnode.h     |    4 +--
- 4 files changed, 134 insertions(+), 77 deletions(-)
+commit 619ce76f8bb850b57032501a39f26aa6c6731c70 upstream.
+
+The present code fails to set the linked state when an interface is
+added.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/net/wireless/rtlwifi/core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/net/wireless/rtlwifi/core.c
++++ b/drivers/net/wireless/rtlwifi/core.c
+@@ -131,6 +131,7 @@ static int rtl_op_add_interface(struct i
+ 					rtlpriv->cfg->maps
+ 					[RTL_IBSS_INT_MASKS]);
+ 		}
++		mac->link_state = MAC80211_LINKED;
+ 		break;
+ 	case NL80211_IFTYPE_ADHOC:
+ 		RT_TRACE(rtlpriv, COMP_MAC80211, DBG_LOUD,
 
