@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243AbaCaAEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:04:46 -0400
+	id S1755253AbaCaAFV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:05:21 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754430AbaC3Xmy (ORCPT
+	by vger.kernel.org with ESMTP id S1754425AbaC3Xmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:54 -0400
+	Sun, 30 Mar 2014 19:42:53 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Brown" <broonie@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "David Sterba" <dsterba@suse.cz>,
+        "Chris Mason" <clm@fb.com>, "Josef Bacik" <jbacik@fb.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.480066253@decadent.org.uk>
+Message-ID: <lsq.1396221815.210796680@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 058/200] ACPI / init: Flag use of ACPI and ACPI idioms
- for power supplies to regulator API
+Subject: [PATCH 3.2 057/200] btrfs: restrict snapshotting to own subvolumes
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,64 +31,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mark Brown <broonie@linaro.org>
+From: David Sterba <dsterba@suse.cz>
 
-commit 49a12877d2777cadcb838981c3c4f5a424aef310 upstream.
+commit d024206133ce21936b3d5780359afc00247655b7 upstream.
 
-There is currently no facility in ACPI to express the hookup of voltage
-regulators, the expectation is that the regulators that exist in the
-system will be handled transparently by firmware if they need software
-control at all. This means that if for some reason the regulator API is
-enabled on such a system it should assume that any supplies that devices
-need are provided by the system at all relevant times without any software
-intervention.
+Currently, any user can snapshot any subvolume if the path is accessible and
+thus indirectly create and keep files he does not own under his direcotries.
+This is not possible with traditional directories.
 
-Tell the regulator core to make this assumption by calling
-regulator_has_full_constraints(). Do this as soon as we know we are using
-ACPI so that the information is available to the regulator core as early
-as possible. This will cause the regulator core to pretend that there is
-an always on regulator supplying any supply that is requested but that has
-not otherwise been mapped which is the behaviour expected on a system with
-ACPI.
+In security context, a user can snapshot root filesystem and pin any
+potentially buggy binaries, even if the updates are applied.
 
-Should the ability to specify regulators be added in future revisions of
-ACPI then once we have support for ACPI mappings in the kernel the same
-assumptions will apply. It is also likely that systems will default to a
-mode of operation which does not require any interpretation of these
-mappings in order to be compatible with existing operating system releases
-so it should remain safe to make these assumptions even if the mappings
-exist but are not supported by the kernel.
+All the snapshots are visible to the administrator, so it's possible to
+verify if there are suspicious snapshots.
 
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Another more practical problem is that any user can pin the space used
+by eg. root and cause ENOSPC.
+
+Original report:
+https://bugs.launchpad.net/ubuntu/+source/apparmor/+bug/484786
+
+Signed-off-by: David Sterba <dsterba@suse.cz>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
+[bwh: Backported to 3.2:
+ - Adjust context
+ - Use the same cleanup code for success and error cases, as done
+   upstream in commit ecd188159efa
+   ('switch btrfs_ioctl_snap_create_transid() to fget_light()')]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/bus.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
---- a/drivers/acpi/bus.c
-+++ b/drivers/acpi/bus.c
-@@ -33,6 +33,7 @@
- #include <linux/proc_fs.h>
- #include <linux/acpi.h>
- #include <linux/slab.h>
-+#include <linux/regulator/machine.h>
- #ifdef CONFIG_X86
- #include <asm/mpspec.h>
- #endif
-@@ -917,6 +918,14 @@ void __init acpi_early_init(void)
- 		goto error0;
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1327,12 +1327,17 @@ static noinline int btrfs_ioctl_snap_cre
+ 			printk(KERN_INFO "btrfs: Snapshot src from "
+ 			       "another FS\n");
+ 			ret = -EINVAL;
+-			fput(src_file);
+-			goto out;
++		} else if (!inode_owner_or_capable(src_inode)) {
++			/*
++			 * Subvolume creation is not restricted, but snapshots
++			 * are limited to own subvolumes only
++			 */
++			ret = -EPERM;
++		} else {
++			ret = btrfs_mksubvol(&file->f_path, name, namelen,
++					     BTRFS_I(src_inode)->root,
++					     transid, readonly);
+ 		}
+-		ret = btrfs_mksubvol(&file->f_path, name, namelen,
+-				     BTRFS_I(src_inode)->root,
+-				     transid, readonly);
+ 		fput(src_file);
  	}
- 
-+	/*
-+	 * If the system is using ACPI then we can be reasonably
-+	 * confident that any regulators are managed by the firmware
-+	 * so tell the regulator core it has everything it needs to
-+	 * know.
-+	 */
-+	regulator_has_full_constraints();
-+
- 	return;
- 
-       error0:
+ out:
 
