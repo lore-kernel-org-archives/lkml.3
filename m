@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbaCaAWL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:22:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36308 "EHLO
+	id S1755296AbaCaAWH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:22:07 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36315 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752952AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752951AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Paolo Bonzini" <pbonzini@redhat.com>,
-        "Dan Carpenter" <dan.carpenter@oracle.com>
+CC: akpm@linux-foundation.org, "Dave Young" <dyoung@redhat.com>,
+        "Matt Fleming" <matt.fleming@intel.com>,
+        "Borislav Petkov" <bp@suse.de>, "Toshi Kani" <toshi.kani@hp.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.489391107@decadent.org.uk>
+Message-ID: <lsq.1396221815.444261984@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 062/200] KVM: return an error code in kvm_vm_ioctl_register_coalesced_mmio()
+Subject: [PATCH 3.2 012/200] x86/efi: Fix off-by-one bug in EFI Boot
+ Services reservation
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,43 +33,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Dave Young <dyoung@redhat.com>
 
-commit aac5c4226e7136c331ed384c25d5560204da10a0 upstream.
+commit a7f84f03f660d93574ac88835d056c0d6468aebe upstream.
 
-If kvm_io_bus_register_dev() fails then it returns success but it should
-return an error code.
+Current code check boot service region with kernel text region by:
+start+size >= __pa_symbol(_text)
+The end of the above region should be start + size - 1 instead.
 
-I also did a little cleanup like removing an impossible NULL test.
+I see this problem in ovmf + Fedora 19 grub boot:
+text start: 1000000 md start: 800000 md size: 800000
 
-Fixes: 2b3c246a682c ('KVM: Make coalesced mmio use a device per zone')
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Dave Young <dyoung@redhat.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Acked-by: Toshi Kani <toshi.kani@hp.com>
+Tested-by: Toshi Kani <toshi.kani@hp.com>
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+[bwh: Backported to 3.2: s/__pa_symbol/virt_to_phys/]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- virt/kvm/coalesced_mmio.c | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ arch/x86/platform/efi/efi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/virt/kvm/coalesced_mmio.c
-+++ b/virt/kvm/coalesced_mmio.c
-@@ -148,17 +148,13 @@ int kvm_vm_ioctl_register_coalesced_mmio
- 	list_add_tail(&dev->list, &kvm->coalesced_zones);
- 	mutex_unlock(&kvm->slots_lock);
- 
--	return ret;
-+	return 0;
- 
- out_free_dev:
- 	mutex_unlock(&kvm->slots_lock);
--
- 	kfree(dev);
- 
--	if (dev == NULL)
--		return -ENXIO;
--
--	return 0;
-+	return ret;
- }
- 
- int kvm_vm_ioctl_unregister_coalesced_mmio(struct kvm *kvm,
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -424,7 +424,7 @@ void __init efi_reserve_boot_services(vo
+ 		 * - Not within any part of the kernel
+ 		 * - Not the bios reserved area
+ 		*/
+-		if ((start+size >= virt_to_phys(_text)
++		if ((start + size > virt_to_phys(_text)
+ 				&& start <= virt_to_phys(_end)) ||
+ 			!e820_all_mapped(start, start+size, E820_RAM) ||
+ 			memblock_x86_check_reserved_size(&start, &size,
 
