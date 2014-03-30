@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752401AbaC3RT7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 13:19:59 -0400
-Received: from one.firstfloor.org ([193.170.194.197]:32899 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751950AbaC3RT6 (ORCPT
+	id S1752278AbaC3R30 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 13:29:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33395 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaC3R3Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 13:19:58 -0400
-Date: Sun, 30 Mar 2014 19:19:57 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH v2 10/29] ktap: add string handling
- code(kernel/trace/ktap/kp_[str|mempool].[c|h])
-Message-ID: <20140330171957.GF22728@two.firstfloor.org>
-References: <1396017924-7754-1-git-send-email-jovi.zhangwei@gmail.com>
- <1396017924-7754-11-git-send-email-jovi.zhangwei@gmail.com>
- <20140330035009.GB22728@two.firstfloor.org>
- <CAGdX0WHK-EhGYHELxr-H_A+w1ZDWWhDpxsvB+=grMgFNpFsZ4g@mail.gmail.com>
+	Sun, 30 Mar 2014 13:29:24 -0400
+Date: Sun, 30 Mar 2014 10:28:27 -0700
+From: tip-bot for Andy Lutomirski <tipbot@zytor.com>
+Message-ID: <tip-37c975545ec63320789962bf307f000f08fabd48@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, luto@amacapital.net, hpa@zytor.com,
+        mingo@kernel.org, stefani@seibold.net, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, luto@amacapital.net,
+        linux-kernel@vger.kernel.org, stefani@seibold.net, tglx@linutronix.de
+In-Reply-To: <0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net>
+References: <0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/vdso] x86, vdso:
+  Fix the symbol versions on the 32-bit vDSO
+Git-Commit-ID: 37c975545ec63320789962bf307f000f08fabd48
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <CAGdX0WHK-EhGYHELxr-H_A+w1ZDWWhDpxsvB+=grMgFNpFsZ4g@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> See test/benchmark/cmp_table.sh, that script compare
+Commit-ID:  37c975545ec63320789962bf307f000f08fabd48
+Gitweb:     http://git.kernel.org/tip/37c975545ec63320789962bf307f000f08fabd48
+Author:     Andy Lutomirski <luto@amacapital.net>
+AuthorDate: Sat, 29 Mar 2014 13:15:35 -0700
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Sun, 30 Mar 2014 10:08:38 -0700
 
-Is that a realistic tracing scenario?
+x86, vdso: Fix the symbol versions on the 32-bit vDSO
 
-> table operation between ktap with stap, the result is very
-> inspiring, ktap table operation overhead is quite lower than
-> stap, especially when use constant string key.
+The new symbols provide the same API as the 64-bit variants, so they
+should have the same symbol version name.  This can't break
+userspace, since these symbols are new for 32-bit Linux.
 
-Ok fair enough.
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Cc: Stefani Seibold <stefani@seibold.net>
+Link: http://lkml.kernel.org/r/0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/vdso/vdso32/vdso32.lds.S | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
 
-> 
-> But I agree with you partly, because in some cases we don't
-> want/need to interning all string, for example:
->     trace xxx:yyy {
->         var str = cast("char *", arg1)
->         print(str)
->     }
-> 
-> In above case, arg1 is a long kernel string, and no table insert,
-> so definitely no need to interned, so we need to add
-> KTAP_TRAWSTR to represent these values.
-
-Please don't make it more complicated. If there's a good rationale
-for interning it' ok to use always.
-
-It would be better to find ways to simplify things.
-
--Andi
+diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S b/arch/x86/vdso/vdso32/vdso32.lds.S
+index 28c4607..aadb8b9 100644
+--- a/arch/x86/vdso/vdso32/vdso32.lds.S
++++ b/arch/x86/vdso/vdso32/vdso32.lds.S
+@@ -23,14 +23,18 @@ ENTRY(__kernel_vsyscall);
+  */
+ VERSION
+ {
++	LINUX_2.6 {
++	global:
++		__vdso_clock_gettime;
++		__vdso_gettimeofday;
++		__vdso_time;
++	};
++
+ 	LINUX_2.5 {
+ 	global:
+ 		__kernel_vsyscall;
+ 		__kernel_sigreturn;
+ 		__kernel_rt_sigreturn;
+-		__vdso_clock_gettime;
+-		__vdso_gettimeofday;
+-		__vdso_time;
+ 	local: *;
+ 	};
+ }
