@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647AbaC3Xna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:43:30 -0400
+	id S1754859AbaC3XoA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:44:00 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754574AbaC3XnX (ORCPT
+	by vger.kernel.org with ESMTP id S1753487AbaC3Xnw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:23 -0400
+	Sun, 30 Mar 2014 19:43:52 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
-        "Dennis Dalessandro" <dennis.dalessandro@intel.com>,
-        "Mike Marciniszyn" <mike.marciniszyn@intel.com>
+CC: akpm@linux-foundation.org, "Mahesh Salgaonkar" <mahesh@linux.vnet.ibm.com>,
+        "Benjamin Herrenschmidt" <benh@kernel.crashing.org>,
+        "Laurent Dufour" <ldufour@linux.vnet.ibm.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.673923623@decadent.org.uk>
+Message-ID: <lsq.1396221815.169184599@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 116/200] IB/qib: Add missing serdes init sequence
+Subject: [PATCH 3.2 154/200] powerpc/crashdump : Fix page frame number
+ check in copy_oldmem_page
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,36 +33,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
+From: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 
-commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
+commit f5295bd8ea8a65dc5eac608b151386314cb978f1 upstream.
 
-Research has shown that commit a77fcf895046 ("IB/qib: Use a single
-txselect module parameter for serdes tuning") missed a key serdes init
-sequence.
+In copy_oldmem_page, the current check using max_pfn and min_low_pfn to
+decide if the page is backed or not, is not valid when the memory layout is
+not continuous.
 
-This patch add that sequence.
+This happens when running as a QEMU/KVM guest, where RTAS is mapped higher
+in the memory. In that case max_pfn points to the end of RTAS, and a hole
+between the end of the kdump kernel and RTAS is not backed by PTEs. As a
+consequence, the kdump kernel is crashing in copy_oldmem_page when accessing
+in a direct way the pages in that hole.
 
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+This fix relies on the memblock's service memblock_is_region_memory to
+check if the read page is part or not of the directly accessible memory.
+
+Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Tested-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/infiniband/hw/qib/qib_iba7322.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/kernel/crash_dump.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
---- a/drivers/infiniband/hw/qib/qib_iba7322.c
-+++ b/drivers/infiniband/hw/qib/qib_iba7322.c
-@@ -2279,6 +2279,11 @@ static int qib_7322_bringup_serdes(struc
- 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
- 	qib_write_kreg(dd, kr_scratch, 0ULL);
+--- a/arch/powerpc/kernel/crash_dump.c
++++ b/arch/powerpc/kernel/crash_dump.c
+@@ -108,17 +108,19 @@ ssize_t copy_oldmem_page(unsigned long p
+ 			size_t csize, unsigned long offset, int userbuf)
+ {
+ 	void  *vaddr;
++	phys_addr_t paddr;
  
-+	/* ensure previous Tx parameters are not still forced */
-+	qib_write_kreg_port(ppd, krp_tx_deemph_override,
-+		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
-+		reset_tx_deemphasis_override));
-+
- 	if (qib_compat_ddr_negotiate) {
- 		ppd->cpspec->ibdeltainprog = 1;
- 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
+ 	if (!csize)
+ 		return 0;
+ 
+ 	csize = min_t(size_t, csize, PAGE_SIZE);
++	paddr = pfn << PAGE_SHIFT;
+ 
+-	if ((min_low_pfn < pfn) && (pfn < max_pfn)) {
+-		vaddr = __va(pfn << PAGE_SHIFT);
++	if (memblock_is_region_memory(paddr, csize)) {
++		vaddr = __va(paddr);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 	} else {
+-		vaddr = __ioremap(pfn << PAGE_SHIFT, PAGE_SIZE, 0);
++		vaddr = __ioremap(paddr, PAGE_SIZE, 0);
+ 		csize = copy_oldmem_vaddr(vaddr, buf, csize, offset, userbuf);
+ 		iounmap(vaddr);
+ 	}
 
