@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaCaA0v (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:26:51 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36276 "EHLO
+	id S1753784AbaCaA0r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:26:47 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36288 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752908AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752682AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Boaz Harrosh" <bharrosh@panasas.com>
+CC: akpm@linux-foundation.org,
+        "Trond Myklebust" <trond.myklebust@primarydata.com>,
+        "J Bruce Fields" <bfields@fieldses.org>,
+        "Trond Myklebust" <Trond.Myklebust@netapp.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.109463315@decadent.org.uk>
+Message-ID: <lsq.1396221815.605304690@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 052/200] ore: Fix wrong math in allocation of per
- device BIO
+Subject: [PATCH 3.2 003/200] NFSv4: OPEN must handle the NFS4ERR_IO return
+ code correctly
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,130 +34,95 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Boaz Harrosh <bharrosh@panasas.com>
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
 
-commit aad560b7f63b495f48a7232fd086c5913a676e6f upstream.
+commit c7848f69ec4a8c03732cde5c949bd2aa711a9f4b upstream.
 
-At IO preparation we calculate the max pages at each device and
-allocate a BIO per device of that size. The calculation was wrong
-on some unaligned corner cases offset/length combination and would
-make prepare return with -ENOMEM. This would be bad for pnfs-objects
-that would in that case IO through MDS. And fatal for exofs were it
-would fail writes with EIO.
+decode_op_hdr() cannot distinguish between an XDR decoding error and
+the perfectly valid errorcode NFS4ERR_IO. This is normally not a
+problem, but for the particular case of OPEN, we need to be able
+to increment the NFSv4 open sequence id when the server returns
+a valid response.
 
-Fix it by doing the proper math, that will work in all cases. (I
-ran a test with all possible offset/length combinations this time
-round).
-
-Also when reading we do not need to allocate for the parity units
-since we jump over them.
-
-Also lower the max_io_length to take into account the parity pages
-so not to allocate BIOs bigger than PAGE_SIZE
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+Reported-by: J Bruce Fields <bfields@fieldses.org>
+Link: http://lkml.kernel.org/r/20131204210356.GA19452@fieldses.org
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/exofs/ore.c         | 37 +++++++++++++++++++++++++------------
- include/scsi/osd_ore.h |  1 +
- 2 files changed, 26 insertions(+), 12 deletions(-)
+ fs/nfs/nfs4xdr.c | 47 +++++++++++++++++++++++++++++++----------------
+ 1 file changed, 31 insertions(+), 16 deletions(-)
 
---- a/fs/exofs/ore.c
-+++ b/fs/exofs/ore.c
-@@ -103,7 +103,7 @@ int ore_verify_layout(unsigned total_com
- 
- 	layout->max_io_length =
- 		(BIO_MAX_PAGES_KMALLOC * PAGE_SIZE - layout->stripe_unit) *
--							layout->group_width;
-+					(layout->group_width - layout->parity);
- 	if (layout->parity) {
- 		unsigned stripe_length =
- 				(layout->group_width - layout->parity) *
-@@ -286,7 +286,8 @@ int  ore_get_rw_state(struct ore_layout
- 	if (length) {
- 		ore_calc_stripe_info(layout, offset, length, &ios->si);
- 		ios->length = ios->si.length;
--		ios->nr_pages = (ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
-+		ios->nr_pages = ((ios->offset & (PAGE_SIZE - 1)) +
-+				 ios->length + PAGE_SIZE - 1) / PAGE_SIZE;
- 		if (layout->parity)
- 			_ore_post_alloc_raid_stuff(ios);
- 	}
-@@ -536,6 +537,7 @@ void ore_calc_stripe_info(struct ore_lay
- 	u64	H = LmodS - G * T;
- 
- 	u32	N = div_u64(H, U);
-+	u32	Nlast;
- 
- 	/* "H - (N * U)" is just "H % U" so it's bound to u32 */
- 	u32	C = (u32)(H - (N * U)) / stripe_unit + G * group_width;
-@@ -568,6 +570,10 @@ void ore_calc_stripe_info(struct ore_lay
- 	si->length = T - H;
- 	if (si->length > length)
- 		si->length = length;
-+
-+	Nlast = div_u64(H + si->length + U - 1, U);
-+	si->maxdevUnits = Nlast - N;
-+
- 	si->M = M;
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -3056,7 +3056,8 @@ out_overflow:
+ 	return -EIO;
  }
- EXPORT_SYMBOL(ore_calc_stripe_info);
-@@ -583,13 +589,16 @@ int _ore_add_stripe_unit(struct ore_io_s
- 	int ret;
  
- 	if (per_dev->bio == NULL) {
--		unsigned pages_in_stripe = ios->layout->group_width *
--					(ios->layout->stripe_unit / PAGE_SIZE);
--		unsigned nr_pages = ios->nr_pages * ios->layout->group_width /
--					(ios->layout->group_width -
--					 ios->layout->parity);
--		unsigned bio_size = (nr_pages + pages_in_stripe) /
--					ios->layout->group_width;
-+		unsigned bio_size;
+-static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++static bool __decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected,
++		int *nfs_retval)
+ {
+ 	__be32 *p;
+ 	uint32_t opnum;
+@@ -3066,19 +3067,32 @@ static int decode_op_hdr(struct xdr_stre
+ 	if (unlikely(!p))
+ 		goto out_overflow;
+ 	opnum = be32_to_cpup(p++);
+-	if (opnum != expected) {
+-		dprintk("nfs: Server returned operation"
+-			" %d but we issued a request for %d\n",
+-				opnum, expected);
+-		return -EIO;
+-	}
++	if (unlikely(opnum != expected))
++		goto out_bad_operation;
+ 	nfserr = be32_to_cpup(p);
+-	if (nfserr != NFS_OK)
+-		return nfs4_stat_to_errno(nfserr);
+-	return 0;
++	if (nfserr == NFS_OK)
++		*nfs_retval = 0;
++	else
++		*nfs_retval = nfs4_stat_to_errno(nfserr);
++	return true;
++out_bad_operation:
++	dprintk("nfs: Server returned operation"
++		" %d but we issued a request for %d\n",
++			opnum, expected);
++	*nfs_retval = -EREMOTEIO;
++	return false;
+ out_overflow:
+ 	print_overflow_msg(__func__, xdr);
+-	return -EIO;
++	*nfs_retval = -EIO;
++	return false;
++}
 +
-+		if (!ios->reading) {
-+			bio_size = ios->si.maxdevUnits;
-+		} else {
-+			bio_size = (ios->si.maxdevUnits + 1) *
-+			     (ios->layout->group_width - ios->layout->parity) /
-+			     ios->layout->group_width;
-+		}
-+		bio_size *= (ios->layout->stripe_unit / PAGE_SIZE);
++static int decode_op_hdr(struct xdr_stream *xdr, enum nfs_opnum4 expected)
++{
++	int retval;
++
++	__decode_op_hdr(xdr, expected, &retval);
++	return retval;
+ }
  
- 		per_dev->bio = bio_kmalloc(GFP_KERNEL, bio_size);
- 		if (unlikely(!per_dev->bio)) {
-@@ -609,8 +618,12 @@ int _ore_add_stripe_unit(struct ore_io_s
- 		added_len = bio_add_pc_page(q, per_dev->bio, pages[pg],
- 					    pglen, pgbase);
- 		if (unlikely(pglen != added_len)) {
--			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=%u\n",
--				   per_dev->bio->bi_vcnt);
-+			/* If bi_vcnt == bi_max then this is a SW BUG */
-+			ORE_DBGMSG("Failed bio_add_pc_page bi_vcnt=0x%x "
-+				   "bi_max=0x%x BIO_MAX=0x%x cur_len=0x%x\n",
-+				   per_dev->bio->bi_vcnt,
-+				   per_dev->bio->bi_max_vecs,
-+				   BIO_MAX_PAGES_KMALLOC, cur_len);
- 			ret = -ENOMEM;
- 			goto out;
- 		}
-@@ -1099,7 +1112,7 @@ int ore_truncate(struct ore_layout *layo
- 		size_attr->attr = g_attr_logical_length;
- 		size_attr->attr.val_ptr = &size_attr->newsize;
+ /* Dummy routine */
+@@ -4744,11 +4758,12 @@ static int decode_open(struct xdr_stream
+ 	uint32_t savewords, bmlen, i;
+ 	int status;
  
--		ORE_DBGMSG("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
-+		ORE_DBGMSG2("trunc(0x%llx) obj_offset=0x%llx dev=%d\n",
- 			     _LLU(oc->comps->obj.id), _LLU(obj_size), i);
- 		ret = _truncate_mirrors(ios, i * ios->layout->mirrors_p1,
- 					&size_attr->attr);
---- a/include/scsi/osd_ore.h
-+++ b/include/scsi/osd_ore.h
-@@ -101,6 +101,7 @@ struct ore_striping_info {
- 	unsigned unit_off;
- 	unsigned cur_pg;
- 	unsigned cur_comp;
-+	unsigned maxdevUnits;
- };
+-	status = decode_op_hdr(xdr, OP_OPEN);
+-	if (status != -EIO)
+-		nfs_increment_open_seqid(status, res->seqid);
+-	if (!status)
+-		status = decode_stateid(xdr, &res->stateid);
++	if (!__decode_op_hdr(xdr, OP_OPEN, &status))
++		return status;
++	nfs_increment_open_seqid(status, res->seqid);
++	if (status)
++		return status;
++	status = decode_stateid(xdr, &res->stateid);
+ 	if (unlikely(status))
+ 		return status;
  
- struct ore_io_state;
 
