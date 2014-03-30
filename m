@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754313AbaCaAOr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:14:47 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36408 "EHLO
+	id S1754884AbaCaAQk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:16:40 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36386 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753048AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753027AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Aaron Lu" <aaron.lu@intel.com>,
-        "Hans de Goede" <hdegoede@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+CC: akpm@linux-foundation.org, "Neil Brown" <neilb@suse.com>,
+        "Trond Myklebust" <trond.myklebust@primarydata.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.230873611@decadent.org.uk>
+Message-ID: <lsq.1396221815.551465051@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 132/200] ACPI / video: Filter the _BCL table for
- duplicate brightness values
+Subject: [PATCH 3.2 101/200] SUNRPC: Fix races in xs_nospace()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,72 +31,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit bd8ba20597f0cfef3ef65c3fd2aa92ab23d4c8e1 upstream.
+commit 06ea0bfe6e6043cb56a78935a19f6f8ebc636226 upstream.
 
-Some devices have duplicate entries in there brightness levels table, ie
-on my Dell Latitude E6430 the table looks like this:
+When a send failure occurs due to the socket being out of buffer space,
+we call xs_nospace() in order to have the RPC task wait until the
+socket has drained enough to make it worth while trying again.
+The current patch fixes a race in which the socket is drained before
+we get round to setting up the machinery in xs_nospace(), and which
+is reported to cause hangs.
 
-[    3.686060] acpi backlight index   0, val 80
-[    3.686095] acpi backlight index   1, val 50
-[    3.686122] acpi backlight index   2, val 5
-[    3.686147] acpi backlight index   3, val 5
-[    3.686172] acpi backlight index   4, val 5
-[    3.686197] acpi backlight index   5, val 5
-[    3.686223] acpi backlight index   6, val 5
-[    3.686248] acpi backlight index   7, val 5
-[    3.686273] acpi backlight index   8, val 6
-[    3.686332] acpi backlight index   9, val 7
-[    3.686356] acpi backlight index  10, val 8
-[    3.686380] acpi backlight index  11, val 9
-etc.
-
-Notice that brightness values 0-5 are all mapped to 5. This means that
-if userspace writes any value between 0 and 5 to the brightness sysfs attribute
-and then reads it, it will always return 0, which is somewhat unexpected.
-
-This is a problem for ie gnome-settings-daemon, which uses read-modify-write
-logic when the users presses the brightness up or down keys. This is done
-this way to take brightness changes from other sources into account.
-
-On this specific laptop what happens once the brightness has been set to 0,
-is that gsd reads 0, adds 5, writes 5, and on the next brightness up key press
-again reads 0, so things get stuck at the lowest brightness setting.
-
-Filtering out the duplicate table entries, makes any write to brightness
-read back as the written value as one would expect, fixing this.
-
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Reviewed-by: Aaron Lu <aaron.lu@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Link: http://lkml.kernel.org/r/20140210170315.33dfc621@notabene.brown
+Fixes: a9a6b52ee1ba (SUNRPC: Don't start the retransmission timer...)
+Reported-by: Neil Brown <neilb@suse.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/acpi/video.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ net/sunrpc/xprtsock.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
---- a/drivers/acpi/video.c
-+++ b/drivers/acpi/video.c
-@@ -646,6 +646,7 @@ acpi_video_init_brightness(struct acpi_v
- 	union acpi_object *o;
- 	struct acpi_video_device_brightness *br = NULL;
- 	int result = -EINVAL;
-+	u32 value;
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -501,6 +501,7 @@ static int xs_nospace(struct rpc_task *t
+ 	struct rpc_rqst *req = task->tk_rqstp;
+ 	struct rpc_xprt *xprt = req->rq_xprt;
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	struct sock *sk = transport->inet;
+ 	int ret = -EAGAIN;
  
- 	if (!ACPI_SUCCESS(acpi_video_device_lcd_query_levels(device, &obj))) {
- 		ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Could not query available "
-@@ -676,7 +677,12 @@ acpi_video_init_brightness(struct acpi_v
- 			printk(KERN_ERR PREFIX "Invalid data\n");
- 			continue;
+ 	dprintk("RPC: %5u xmit incomplete (%u left of %u)\n",
+@@ -518,7 +519,7 @@ static int xs_nospace(struct rpc_task *t
+ 			 * window size
+ 			 */
+ 			set_bit(SOCK_NOSPACE, &transport->sock->flags);
+-			transport->inet->sk_write_pending++;
++			sk->sk_write_pending++;
+ 			/* ...and wait for more buffer space */
+ 			xprt_wait_for_buffer_space(task, xs_nospace_callback);
  		}
--		br->levels[count] = (u32) o->integer.value;
-+		value = (u32) o->integer.value;
-+		/* Skip duplicate entries */
-+		if (count > 2 && br->levels[count - 1] == value)
-+			continue;
-+
-+		br->levels[count] = value;
+@@ -528,6 +529,9 @@ static int xs_nospace(struct rpc_task *t
+ 	}
  
- 		if (br->levels[count] > max_level)
- 			max_level = br->levels[count];
+ 	spin_unlock_bh(&xprt->transport_lock);
++
++	/* Race breaker in case memory is freed before above code is called */
++	sk->sk_write_space(sk);
+ 	return ret;
+ }
+ 
 
