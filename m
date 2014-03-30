@@ -1,48 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165AbaC3UdM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 16:33:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56439 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaC3UdK (ORCPT
+	id S1752305AbaC3Udz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 16:33:55 -0400
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:37189 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188AbaC3Udy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 16:33:10 -0400
-Date: Sun, 30 Mar 2014 21:33:07 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: [git pull] vfs fixes
-Message-ID: <20140330203307.GL18016@ZenIV.linux.org.uk>
-References: <20140323071601.GH18016@ZenIV.linux.org.uk>
- <CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
- <20140323164526.GJ18016@ZenIV.linux.org.uk>
- <CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
- <CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
- <CA+55aFxvACwdNuswQsTENWdmRnjKR_LgThtnAVTBQ91gvDpWvg@mail.gmail.com>
- <CA+icZUWD7NekSyNa2Keg=+teDCGg-Ttc5Xb4wfKA-56FMwGSeg@mail.gmail.com>
- <CA+55aFwKqDzNCd1wQYZqKXb3DDj2bHYjHCYjDAkWJwPhuvR17A@mail.gmail.com>
+	Sun, 30 Mar 2014 16:33:54 -0400
+Date: Sun, 30 Mar 2014 16:33:30 -0400
+From: Jerome Glisse <j.glisse@gmail.com>
+To: Haggai Eran <haggaie@mellanox.com>
+Cc: Andrea Arcangeli <aarcange@redhat.com>,
+        Mike Rapoport <mike.rapoport@ravellosystems.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Izik Eidus <izik.eidus@ravellosystems.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Or Gerlitz <ogerlitz@mellanox.com>, Sagi Grimberg <sagig@mellanox.com>,
+        Shachar Raindel <raindel@mellanox.com>
+Subject: Re: [PATCH] mm/mmu_notifier: restore set_pte_at_notify semantics
+Message-ID: <20140330203328.GA4859@gmail.com>
+References: <1389778834-21200-1-git-send-email-mike.rapoport@ravellosystems.com>
+ <20140122131046.GF14193@redhat.com>
+ <52DFCF2B.1010603@mellanox.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <CA+55aFwKqDzNCd1wQYZqKXb3DDj2bHYjHCYjDAkWJwPhuvR17A@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <52DFCF2B.1010603@mellanox.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 01:55:51PM -0700, Linus Torvalds wrote:
-> On Wed, Mar 26, 2014 at 9:36 AM, Sedat Dilek <sedat.dilek@gmail.com> wrote:
-> >
-> > Looking at [1] you did not pull-in the new changes.
-> > Are you waiting for a new pull-request?
+On Wed, Jan 22, 2014 at 04:01:15PM +0200, Haggai Eran wrote:
+> On 22/01/2014 15:10, Andrea Arcangeli wrote:
+> > On Wed, Jan 15, 2014 at 11:40:34AM +0200, Mike Rapoport wrote:
+> >> Commit 6bdb913f0a70a4dfb7f066fb15e2d6f960701d00 (mm: wrap calls to
+> >> set_pte_at_notify with invalidate_range_start and invalidate_range_end)
+> >> breaks semantics of set_pte_at_notify. When calls to set_pte_at_notify
+> >> are wrapped with mmu_notifier_invalidate_range_start and
+> >> mmu_notifier_invalidate_range_end, KVM zaps pte during
+> >> mmu_notifier_invalidate_range_start callback and set_pte_at_notify has
+> >> no spte to update and therefore it's called for nothing.
+> >>
+> >> As Andrea suggested (1), the problem is resolved by calling
+> >> mmu_notifier_invalidate_page after PT lock has been released and only
+> >> for mmu_notifiers that do not implement change_ptr callback.
+> >>
+> >> (1) http://thread.gmane.org/gmane.linux.kernel.mm/111710/focus=111711
+> >>
+> >> Reported-by: Izik Eidus <izik.eidus@ravellosystems.com>
+> >> Signed-off-by: Mike Rapoport <mike.rapoport@ravellosystems.com>
+> >> Cc: Andrea Arcangeli <aarcange@redhat.com>
+> >> Cc: Haggai Eran <haggaie@mellanox.com>
+> >> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> ---
+> >>  include/linux/mmu_notifier.h | 31 ++++++++++++++++++++++++++-----
+> >>  kernel/events/uprobes.c      | 12 ++++++------
+> >>  mm/ksm.c                     | 15 +++++----------
+> >>  mm/memory.c                  | 14 +++++---------
+> >>  mm/mmu_notifier.c            | 24 ++++++++++++++++++++++--
+> >>  5 files changed, 64 insertions(+), 32 deletions(-)
+> > 
+> > Reviewed-by: Andrea Arcangeli <aarcange@redhat.com>
+> > 
 > 
-> Yeah, with the top commit updated, I'd like to make sure I get the right pull.
+> Hi Andrea, Mike,
+> 
+> Did you get a chance to consider the scenario I wrote about in the other
+> thread?
+> 
+> I'm worried about the following scenario:
+> 
+> Given a read-only page, suppose one host thread (thread 1) writes to
+> that page, and performs COW, but before it calls the
+> mmu_notifier_invalidate_page_if_missing_change_pte function another host
+> thread (thread 2) writes to the same page (this time without a page
+> fault). Then we have a valid entry in the secondary page table to a
+> stale page, and someone (thread 3) may read stale data from there.
+> 
+> Here's a diagram that shows this scenario:
+> 
+> Thread 1                                | Thread 2        | Thread 3
+> ========================================================================
+> do_wp_page(page 1)                      |                 |
+>   ...                                   |                 |
+>   set_pte_at_notify                     |                 |
+>   ...                                   | write to page 1 |
+>                                         |                 | stale access
+>   pte_unmap_unlock                      |                 |
+>   invalidate_page_if_missing_change_pte |                 |
+> 
+> This is currently prevented by the use of the range start and range end
+> notifiers.
+> 
+> Do you agree that this scenario is possible with the new patch, or am I
+> missing something?
+> 
 
-Will do in a few.  Sorry about delay (and even more about the reasons for it -
-the lack of sleep from redeye flight was to be expected, of course, but catching
-stomach flu was not ;-/)
+I believe you are right, but of all the upstream user of the mmu_notifier
+API only xen would suffer from this ie any user that do not have a proper
+change_pte callback can see the bogus scenario you describe above.
 
-Al, finally back to life and digging himself from under ~5e3 mails in l-k
-mailbox...
+The issue i see is with user that want to/or might sleep when they are
+invalidation the secondary page table. The issue being that change_pte is
+call with the cpu page table locked (well at least for the affected pmd).
+
+I would rather keep the invalidate_range_start/end bracket around change_pte
+and invalidate page. I think we can fix the kvm regression by other means.
+
+Cheers,
+Jérôme
+
+
+> Regards,
+> Haggai
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
