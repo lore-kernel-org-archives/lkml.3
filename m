@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107AbaC3Xlg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:41:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36401 "EHLO
+	id S1754030AbaC3Xle (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:41:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36431 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753051AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1753072AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Olivier Langlois" <olivier@trillion01.com>,
-        "Larry Finger" <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>
+CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.380384568@decadent.org.uk>
+Message-ID: <lsq.1396221815.528546130@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 113/200] rtlwifi: rtl8192ce: Fix too long disable of IRQs
+Subject: [PATCH 3.2 160/200] ALSA: usb-audio: Add quirk for Logitech
+ Webcam C500
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,117 +31,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Olivier Langlois <olivier@trillion01.com>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 upstream.
+commit e805ca8b0a9b6c91099c0eaa4b160a1196a4ae25 upstream.
 
-rtl8192ce is disabling for too long the local interrupts during hw initiatialisation when performing scans
+Logitech C500 (046d:0807) needs the same workaround like other
+Logitech Webcams.
 
-The observable symptoms in dmesg can be:
-
-- underruns from ALSA playback
-- clock freezes (tstamps do not change for several dmesg entries until irqs are finaly reenabled):
-
-[  250.817669] rtlwifi:rtl_op_config():<0-0-0> 0x100
-[  250.817685] rtl8192ce:_rtl92ce_phy_set_rf_power_state():<0-1-0> IPS Set eRf nic enable
-[  250.817732] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817796] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.817910] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818024] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818139] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818253] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818367] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:18051d59:11
-[  250.818472] rtl8192ce:_rtl92ce_init_mac():<0-1-0> reg0xec:98053f15:10
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtl8192c_common:rtl92c_download_fw():<0-1-0> Firmware Version(49), Signature(0x88c1),Size(32)
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> PairwiseEncAlgorithm = 0 GroupEncAlgorithm = 0
-[  250.818472] rtl8192ce:rtl92ce_enable_hw_security_config():<0-1-0> The SECR-value cc
-[  250.818472] rtl8192c_common:rtl92c_dm_check_txpower_tracking_thermal_meter():<0-1-0> Schedule TxPowerTracking direct call!!
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> rtl92c_dm_txpower_tracking_callback_thermalmeter
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial pathA ele_d reg0xc80 = 0x40000000, ofdm_index=0xc
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Initial reg0xa24 = 0x90e1317, cck_index=0xc, ch14 0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> Readback Thermal Meter = 0xe pre thermal meter 0xf eeprom_thermalmeter 0xf delta 0x1 delta_lck 0x0 delta_iqk 0x0
-[  250.818472] rtl8192c_common:rtl92c_dm_txpower_tracking_callback_thermalmeter():<0-1-0> <===
-[  250.818472] rtl8192c_common:rtl92c_dm_initialize_txpower_tracking_thermalmeter():<0-1-0> pMgntInfo->txpower_tracking = 1
-[  250.818472] rtl8192ce:rtl92ce_led_control():<0-1-0> ledaction 3
-[  250.818472] rtl8192ce:rtl92ce_sw_led_on():<0-1-0> LedAddr:4E ledpin=1
-[  250.818472] rtlwifi:rtl_ips_nic_on():<0-1-0> before spin_unlock_irqrestore
-[  251.154656] PCM: Lost interrupts? [Q]-0 (stream=0, delta=15903, new_hw_ptr=293408, old_hw_ptr=277505)
-
-The exact code flow that causes that is:
-
-1. wpa_supplicant send a start_scan request to the nl80211 driver
-2. mac80211 module call rtl_op_config with IEEE80211_CONF_CHANGE_IDLE
-3.   rtl_ips_nic_on is called which disable local irqs
-4.     rtl92c_phy_set_rf_power_state() is called
-5.       rtl_ps_enable_nic() is called and hw_init()is executed and then the interrupts on the device are enabled
-
-A good solution could be to refactor the code to avoid calling rtl92ce_hw_init() with the irqs disabled
-but a quick and dirty solution that has proven to work is
-to reenable the irqs during the function rtl92ce_hw_init().
-
-I think that it is safe doing so since the device interrupt will only be enabled after the init function succeed.
-
-Signed-off-by: Olivier Langlois <olivier@trillion01.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[bwh: Backported to 3.2: adjust context]
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/net/wireless/rtlwifi/rtl8192ce/hw.c | 18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192ce/hw.c
-@@ -905,14 +905,26 @@ int rtl92ce_hw_init(struct ieee80211_hw
- 	bool is92c;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -831,6 +831,7 @@ static void volume_control_quirks(struct
+ 		}
+ 		break;
  
- 	rtlpci->being_init_adapter = true;
-+
-+	/* Since this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl92ce_init_mac(hw);
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, ("Init MAC failed\n"));
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 
- 	err = rtl92c_download_fw(hw);
-@@ -922,7 +934,7 @@ int rtl92ce_hw_init(struct ieee80211_hw
- 			  "without FW now..\n"));
- 		err = 1;
- 		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -985,6 +997,8 @@ int rtl92ce_hw_init(struct ieee80211_hw
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, ("under 1.5V\n"));
- 	}
- 	rtl92c_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpci->being_init_adapter = false;
- 	return err;
- }
++	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
 
