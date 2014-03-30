@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753803AbaC3XkC (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:40:02 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36452 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753076AbaC3XZD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753078AbaC3XZD (ORCPT <rfc822;w@1wt.eu>);
 	Sun, 30 Mar 2014 19:25:03 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36203 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752557AbaC3XY6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 19:24:58 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
-        "Anton Blanchard" <anton@samba.org>
+CC: akpm@linux-foundation.org, "Maximilian Attems" <maks@stro.at>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Sebastian Andrzej Siewior" <bigeasy@linutronix.de>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.365740697@decadent.org.uk>
+Message-ID: <lsq.1396221815.1132591@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 164/200] net: unix socket code abuses csum_partial
+Subject: [PATCH 3.2 005/200] parport: parport_pc: remove double PCI ID for
+ NetMos
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,79 +33,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Anton Blanchard <anton@samba.org>
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
-commit 0a13404dd3bf4ea870e3d96270b5a382edca85c0 upstream.
+commit d6a484520c5572a4170fa915109ccfc0c38f5008 upstream.
 
-The unix socket code is using the result of csum_partial to
-hash into a lookup table:
+In commit 85747f ("PATCH] parport: add NetMOS 9805 support") Max added
+the PCI ID for NetMOS 9805 based on a Debian bug report from 2k4 which
+was at the v2.4.26 time frame. The patch made into 2.6.14.
+Shortly before that patch akpm merged commit 296d3c783b ("[PATCH] Support
+NetMOS based PCI cards providing serial and parallel ports") which made
+into v2.6.9-rc1.
+Now we have two different entries for the same PCI id.
+I have here the NetMos 9805 which claims to support SPP/EPP/ECP mode.
+This patch takes Max's entry for titan_1284p1 (base != -1 specifies the
+ioport for ECP mode) and replaces akpm's entry for netmos_9805 which
+specified -1 (=none). Both share the same PCI-ID (my card has subsystem
+0x1000 / 0x0020 so it should match PCI_ANY).
 
-	unix_hash_fold(csum_partial(sunaddr, len, 0));
+While here I also drop the entry for titan_1284p2 which is the same as
+netmos_9815.
 
-csum_partial is only guaranteed to produce something that can be
-folded into a checksum, as its prototype explains:
-
- * returns a 32-bit number suitable for feeding into itself
- * or csum_tcpudp_magic
-
-The 32bit value should not be used directly.
-
-Depending on the alignment, the ppc64 csum_partial will return
-different 32bit partial checksums that will fold into the same
-16bit checksum.
-
-This difference causes the following testcase (courtesy of
-Gustavo) to sometimes fail:
-
-#include <sys/socket.h>
-#include <stdio.h>
-
-int main()
-{
-	int fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	int i = 1;
-	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &i, 4);
-
-	struct sockaddr addr;
-	addr.sa_family = AF_LOCAL;
-	bind(fd, &addr, 2);
-
-	listen(fd, 128);
-
-	struct sockaddr_storage ss;
-	socklen_t sslen = (socklen_t)sizeof(ss);
-	getsockname(fd, (struct sockaddr*)&ss, &sslen);
-
-	fd = socket(PF_LOCAL, SOCK_STREAM|SOCK_CLOEXEC, 0);
-
-	if (connect(fd, (struct sockaddr*)&ss, sslen) == -1){
-		perror(NULL);
-		return 1;
-	}
-	printf("OK\n");
-	return 0;
-}
-
-As suggested by davem, fix this by using csum_fold to fold the
-partial 32bit checksum into a 16bit checksum before using it.
-
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[bwh: Backported to 3.2: adjust context]
+Cc: Maximilian Attems <maks@stro.at>
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -149,8 +149,8 @@ static inline void unix_set_secdata(stru
- 
- static inline unsigned unix_hash_fold(__wsum n)
- {
--	unsigned hash = (__force unsigned)n;
--	hash ^= hash>>16;
-+	unsigned int hash = (__force unsigned int)csum_fold(n);
-+
- 	hash ^= hash>>8;
- 	return hash&(UNIX_HASH_SIZE-1);
- }
+ drivers/parport/parport_pc.c | 10 ++--------
+ 1 file changed, 2 insertions(+), 8 deletions(-)
+
+--- a/drivers/parport/parport_pc.c
++++ b/drivers/parport/parport_pc.c
+@@ -2875,8 +2875,6 @@ enum parport_pc_pci_cards {
+ 	syba_2p_epp,
+ 	syba_1p_ecp,
+ 	titan_010l,
+-	titan_1284p1,
+-	titan_1284p2,
+ 	avlab_1p,
+ 	avlab_2p,
+ 	oxsemi_952,
+@@ -2935,8 +2933,6 @@ static struct parport_pc_pci {
+ 	/* syba_2p_epp AP138B */	{ 2, { { 0, 0x078 }, { 0, 0x178 }, } },
+ 	/* syba_1p_ecp W83787 */	{ 1, { { 0, 0x078 }, } },
+ 	/* titan_010l */		{ 1, { { 3, -1 }, } },
+-	/* titan_1284p1 */              { 1, { { 0, 1 }, } },
+-	/* titan_1284p2 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* avlab_1p		*/	{ 1, { { 0, 1}, } },
+ 	/* avlab_2p		*/	{ 2, { { 0, 1}, { 2, 3 },} },
+ 	/* The Oxford Semi cards are unusual: 954 doesn't support ECP,
+@@ -2952,8 +2948,8 @@ static struct parport_pc_pci {
+ 	/* netmos_9705 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9715 */               { 2, { { 0, 1 }, { 2, 3 },} },
+ 	/* netmos_9755 */               { 2, { { 0, 1 }, { 2, 3 },} },
+-	/* netmos_9805 */               { 1, { { 0, -1 }, } },
+-	/* netmos_9815 */               { 2, { { 0, -1 }, { 2, -1 }, } },
++	/* netmos_9805 */		{ 1, { { 0, 1 }, } },
++	/* netmos_9815 */		{ 2, { { 0, 1 }, { 2, 3 }, } },
+ 	/* netmos_9901 */               { 1, { { 0, -1 }, } },
+ 	/* netmos_9865 */               { 1, { { 0, -1 }, } },
+ 	/* quatech_sppxp100 */		{ 1, { { 0, 1 }, } },
+@@ -2997,8 +2993,6 @@ static const struct pci_device_id parpor
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, syba_1p_ecp },
+ 	{ PCI_VENDOR_ID_TITAN, PCI_DEVICE_ID_TITAN_010L,
+ 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, titan_010l },
+-	{ 0x9710, 0x9805, 0x1000, 0x0010, 0, 0, titan_1284p1 },
+-	{ 0x9710, 0x9815, 0x1000, 0x0020, 0, 0, titan_1284p2 },
+ 	/* PCI_VENDOR_ID_AVLAB/Intek21 has another bunch of cards ...*/
+ 	/* AFAVLAB_TK9902 */
+ 	{ 0x14db, 0x2120, PCI_ANY_ID, PCI_ANY_ID, 0, 0, avlab_1p},
 
