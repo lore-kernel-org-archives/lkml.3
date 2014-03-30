@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaC3Xns (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:43:48 -0400
+	id S1755017AbaC3Xtz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:49:55 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754701AbaC3Xni (ORCPT
+	by vger.kernel.org with ESMTP id S1754760AbaC3Xnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:38 -0400
+	Sun, 30 Mar 2014 19:43:47 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "=?UTF-8?q?=D0=90=D0=BB=D0=B5=D0=BA=D1=81=D0=B5=D0=B9=20=D0=9A=D1=80?=
-	=?UTF-8?q?=D0=B0=D0=BC=D0=B0=D1=80=D0=B5=D0=BD=D0=BA=D0=BE?=" 
-	<alexeyk13@yandex.ru>
+CC: akpm@linux-foundation.org, "Xiaoming Wang" <xiaoming.wang@intel.com>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Chuansheng Liu" <chuansheng.liu@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.144166963@decadent.org.uk>
+Message-ID: <lsq.1396221815.241895700@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 143/200] USB: serial: ftdi_sio: add id for Z3X Box device
+Subject: [PATCH 3.2 148/200] genirq: Remove racy waitqueue_active check
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -34,42 +32,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Алексей Крамаренко
- <alexeyk13@yandex.ru>
+From: Chuansheng Liu <chuansheng.liu@intel.com>
 
-commit e1466ad5b1aeda303f9282463d55798d2eda218c upstream.
+commit c685689fd24d310343ac33942e9a54a974ae9c43 upstream.
 
-Custom VID/PID for Z3X Box device, popular tool for cellphone flashing.
+We hit one rare case below:
 
-Signed-off-by: Alexey E. Kramarenko <alexeyk13@yandex.ru>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[bwh: Backported to 3.2: adjust context]
+T1 calling disable_irq(), but hanging at synchronize_irq()
+always;
+The corresponding irq thread is in sleeping state;
+And all CPUs are in idle state;
+
+After analysis, we found there is one possible scenerio which
+causes T1 is waiting there forever:
+CPU0                                       CPU1
+ synchronize_irq()
+  wait_event()
+    spin_lock()
+                                           atomic_dec_and_test(&threads_active)
+      insert the __wait into queue
+    spin_unlock()
+                                           if(waitqueue_active)
+    atomic_read(&threads_active)
+                                             wake_up()
+
+Here after inserted the __wait into queue on CPU0, and before
+test if queue is empty on CPU1, there is no barrier, it maybe
+cause it is not visible for CPU1 immediately, although CPU0 has
+updated the queue list.
+It is similar for CPU0 atomic_read() threads_active also.
+
+So we'd need one smp_mb() before waitqueue_active.that, but removing
+the waitqueue_active() check solves it as wel l and it makes
+things simple and clear.
+
+Signed-off-by: Chuansheng Liu <chuansheng.liu@intel.com>
+Cc: Xiaoming Wang <xiaoming.wang@intel.com>
+Link: http://lkml.kernel.org/r/1393212590-32543-1-git-send-email-chuansheng.liu@intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[bwh: Backported to 3.2: The corresponding check is in irq_thread()]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     | 1 +
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 7 insertions(+)
-
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -917,6 +917,7 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_LUMEL_PD12_PID) },
- 	/* Crucible Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CT_COMET_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1314,3 +1314,9 @@
-  * Manufacturer: Crucible Technologies
-  */
- #define FTDI_CT_COMET_PID	0x8e08
-+
-+/*
-+ * Product: Z3X Box
-+ * Manufacturer: Smart GSM Team
-+ */
-+#define FTDI_Z3X_PID		0x0011
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -819,7 +819,7 @@ static int irq_thread(void *data)
+ 
+ 		wake = atomic_dec_and_test(&desc->threads_active);
+ 
+-		if (wake && waitqueue_active(&desc->wait_for_threads))
++		if (wake)
+ 			wake_up(&desc->wait_for_threads);
+ 	}
+ 
 
