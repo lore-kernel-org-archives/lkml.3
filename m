@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754464AbaC3XnA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:43:00 -0400
+	id S1754647AbaC3Xna (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:43:30 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754452AbaC3Xmz (ORCPT
+	by vger.kernel.org with ESMTP id S1754574AbaC3XnX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:55 -0400
+	Sun, 30 Mar 2014 19:43:23 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Martin Schwidefsky" <schwidefsky@de.ibm.com>,
-        "Michael Holzheu" <holzheu@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Roland Dreier" <roland@purestorage.com>,
+        "Dennis Dalessandro" <dennis.dalessandro@intel.com>,
+        "Mike Marciniszyn" <mike.marciniszyn@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.381582723@decadent.org.uk>
+Message-ID: <lsq.1396221815.673923623@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 074/200] s390/dump: Fix dump memory detection
+Subject: [PATCH 3.2 116/200] IB/qib: Add missing serdes init sequence
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,60 +32,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit d7736ff5be31edaa4fe5ab62810c64529a24b149 upstream.
+commit 2f75e12c4457a9b3d042c0a0d748fa198dc2ffaf upstream.
 
-Dumps created by kdump or zfcpdump can contain invalid memory holes when
-dumping z/VM systems that have memory pressure.
+Research has shown that commit a77fcf895046 ("IB/qib: Use a single
+txselect module parameter for serdes tuning") missed a key serdes init
+sequence.
 
-For example:
+This patch add that sequence.
 
-   # zgetdump -i /proc/vmcore.
-   Memory map:
-   0000000000000000 - 0000000000bfffff (12 MB)
-   0000000000e00000 - 00000000014fffff (7 MB)
-   000000000bd00000 - 00000000f3bfffff (3711 MB)
-
-The memory detection function find_memory_chunks() issues tprot to
-find valid memory chunks. In case of CMM it can happen that pages are
-marked as unstable via set_page_unstable() in arch_free_page().
-If z/VM has released that pages, tprot returns -EFAULT and indicates
-a memory hole.
-
-So fix this and switch off CMM in case of kdump or zfcpdump.
-
-Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/mm/page-states.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/infiniband/hw/qib/qib_iba7322.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/arch/s390/mm/page-states.c
-+++ b/arch/s390/mm/page-states.c
-@@ -12,6 +12,8 @@
- #include <linux/mm.h>
- #include <linux/gfp.h>
- #include <linux/init.h>
-+#include <asm/setup.h>
-+#include <asm/ipl.h>
+--- a/drivers/infiniband/hw/qib/qib_iba7322.c
++++ b/drivers/infiniband/hw/qib/qib_iba7322.c
+@@ -2279,6 +2279,11 @@ static int qib_7322_bringup_serdes(struc
+ 	qib_write_kreg_port(ppd, krp_ibcctrl_a, ppd->cpspec->ibcctrl_a);
+ 	qib_write_kreg(dd, kr_scratch, 0ULL);
  
- #define ESSA_SET_STABLE		1
- #define ESSA_SET_UNUSED		2
-@@ -41,6 +43,14 @@ void __init cmma_init(void)
- 
- 	if (!cmma_flag)
- 		return;
-+	/*
-+	 * Disable CMM for dump, otherwise  the tprot based memory
-+	 * detection can fail because of unstable pages.
-+	 */
-+	if (OLDMEM_BASE || ipl_info.type == IPL_TYPE_FCP_DUMP) {
-+		cmma_flag = 0;
-+		return;
-+	}
- 	asm volatile(
- 		"       .insn rrf,0xb9ab0000,%1,%1,0,0\n"
- 		"0:     la      %0,0\n"
++	/* ensure previous Tx parameters are not still forced */
++	qib_write_kreg_port(ppd, krp_tx_deemph_override,
++		SYM_MASK(IBSD_TX_DEEMPHASIS_OVERRIDE_0,
++		reset_tx_deemphasis_override));
++
+ 	if (qib_compat_ddr_negotiate) {
+ 		ppd->cpspec->ibdeltainprog = 1;
+ 		ppd->cpspec->ibsymsnap = read_7322_creg32_port(ppd,
 
