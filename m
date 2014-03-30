@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbaC3XH7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:07:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20930 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752643AbaC3XH6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:07:58 -0400
-Message-ID: <1396220874.6974.5.camel@localhost>
-Subject: [PATCH for v3.14] AUDIT: Allow login in non-init namespaces
-From: Eric Paris <eparis@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-audit@redhat.com, rgb@redhat.com
-Date: Sun, 30 Mar 2014 19:07:54 -0400
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752958AbaC3XJB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:09:01 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:10926 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752855AbaC3XI5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 19:08:57 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, tglx@linutronix.de
+Cc: peterz@infradead.org, davidlohr@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] futex: add plist_del + atomic_dec helper
+Date: Sun, 30 Mar 2014 16:08:48 -0700
+Message-Id: <1396220928-4426-3-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
+References: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It its possible to configure your PAM stack to refuse login if
-audit messages (about the login) were unable to be sent.  This is common
-in many distros and thus normal configuration of many containers. The
-PAM modules determine if audit is enabled/disabled in the kernel based
-on the return value from sending an audit message on the netlink socket.
-If userspace gets back ECONNREFUSED it believes audit is disabled in the
-kernel.  If it gets any other error else it refuses to let the login
-proceed.
+When removing a waiter from the plist, we always decrement the
+hb waiters to reflect such logic. Add an unqueue_waiter() helper,
+thus preventing any future changes that might not do so.
 
-Just about ever since the introduction of namespaces the kernel audit
-subsystem has returned EPERM if the task sending a message was not in
-the init user or pid namespace.  So many forms of containers have never
-worked if audit was enabled in the kernel.
+For the enqueuing, this isn't worth it since we will increment the
+hb waiters before doing the plist_add().
 
-BUT if the container was not in net_init then the kernel network code
-would send ECONNREFUSED (instead of the audit code sending EPERM).  Thus
-by pure accident/dumb luck/bug if an admin configured the PAM stack to
-reject all logins that didn't talk to audit, but then ran the login
-untility in the non-init_net namespace, it would work!!  Clearly this
-was a bug, but it is a bug some people expected.
-
-With the introduction of network namespace support in 3.14-rc1 the two
-bugs stopped cancelling each other out.  Now, containers in the
-non-init_net namespace refused to let users log in (just like PAM was
-configfured!)  Obviously some people were not happy that what used to
-let users log in, now didn't!
-
-This fix is kinda hacky.  We return ECONNREFUSED for all non-init
-relevant namespaces.  That means that not only will the old broken
-non-init_net setups continue to work, now the broken non-init_pid or
-non-init_user setups will 'work'.  They don't really work, since audit
-isn't logging things.  But it's what most users want.
-
-In 3.15 we should have patches to support not only the non-init_net
-(3.14) namespace but also the non-init_pid and non-init_user namespace.
-So all will be right in the world.  This just opens the doors wide open
-on 3.14 and hopefully makes users happy, if not the audit system...
-
-Reported-by: Andre Tomt <andre@tomt.net>
-Reported-by: Adam Richter <adam_richter2004@yahoo.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
 ---
- kernel/audit.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ kernel/futex.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 3392d3e..95a20f3 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -608,9 +608,19 @@ static int audit_netlink_ok(struct sk_buff *skb, u16 msg_type)
- 	int err = 0;
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 395e285..b9ef521 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -291,6 +291,13 @@ static inline int hb_waiters_pending(struct futex_hash_bucket *hb)
+ #endif
+ }
  
- 	/* Only support the initial namespaces for now. */
-+	/*
-+	 * We return ECONNREFUSED because it tricks userspace into thinking
-+	 * that audit was not configured into the kernel.  Lots of users
-+	 * configure their PAM stack (because that's what the distro does)
-+	 * to reject login if unable to send messages to audit.  If we return
-+	 * ECONNREFUSED the PAM stack thinks the kernel does not have audit
-+	 * configured in and will let login proceed.  If we return EPERM
-+	 * userspace will reject all logins.  This should be removed when we
-+	 * support non init namespaces!!
-+	 */
- 	if ((current_user_ns() != &init_user_ns) ||
- 	    (task_active_pid_ns(current) != &init_pid_ns))
--		return -EPERM;
-+		return -ECONNREFUSED;
++static inline void unqueue_waiter(struct futex_q *q,
++				  struct futex_hash_bucket *hb)
++{
++	plist_del(&q->list, &hb->chain);
++	hb_waiters_dec(hb);
++}
++
+ /*
+  * We hash on the keys returned from get_futex_key (see below).
+  */
+@@ -972,8 +979,7 @@ static void __unqueue_futex(struct futex_q *q)
+ 		return;
  
- 	switch (msg_type) {
- 	case AUDIT_LIST:
+ 	hb = container_of(q->lock_ptr, struct futex_hash_bucket, lock);
+-	plist_del(&q->list, &hb->chain);
+-	hb_waiters_dec(hb);
++	unqueue_waiter(q, hb);
+ }
+ 
+ /*
+@@ -1276,8 +1282,7 @@ void requeue_futex(struct futex_q *q, struct futex_hash_bucket *hb1,
+ 	 * requeue.
+ 	 */
+ 	if (likely(&hb1->chain != &hb2->chain)) {
+-		plist_del(&q->list, &hb1->chain);
+-		hb_waiters_dec(hb1);
++		unqueue_waiter(q, hb1);
+ 		plist_add(&q->list, &hb2->chain);
+ 		hb_waiters_inc(hb2);
+ 		q->lock_ptr = &hb2->lock;
+@@ -2375,8 +2380,7 @@ int handle_early_requeue_pi_wakeup(struct futex_hash_bucket *hb,
+ 		 * We were woken prior to requeue by a timeout or a signal.
+ 		 * Unqueue the futex_q and determine which it was.
+ 		 */
+-		plist_del(&q->list, &hb->chain);
+-		hb_waiters_dec(hb);
++		unqueue_waiter(q, hb);
+ 
+ 		/* Handle spurious wakeups gracefully */
+ 		ret = -EWOULDBLOCK;
 -- 
-1.8.5.3
-
-
+1.8.1.4
 
