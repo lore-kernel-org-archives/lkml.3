@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942AbaC3S4c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 14:56:32 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:53571 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751620AbaC3S43 (ORCPT
+	id S1751904AbaC3TBR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 15:01:17 -0400
+Received: from www84.your-server.de ([213.133.104.84]:57643 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750882AbaC3TBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 14:56:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140330130328.GB7172@thunk.org>
-References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com>
- <20140326194847.0e994d0b@ipyr.poochiereds.net> <CALCETrUVDQmeNwRTjk2XVsHV3TnmwwC6NcbtBBWRg_K6-W8L3g@mail.gmail.com>
- <20140326202535.7d9b6f78@ipyr.poochiereds.net> <20140327070802.124fb34c@ipyr.poochiereds.net>
- <20140330130328.GB7172@thunk.org>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 30 Mar 2014 11:56:08 -0700
-Message-ID: <CALCETrXYFaAP70KYEKGb7Gbwe+km_aJcxmm2B59DncSc-XPtgw@mail.gmail.com>
-Subject: Re: Thoughts on credential switching
-To: "Theodore Ts'o" <tytso@mit.edu>, Jeff Layton <jlayton@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>, Jim Lieb <jlieb@panasas.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Kees Cook <keescook@chromium.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        bfields@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 30 Mar 2014 15:01:16 -0400
+Message-ID: <1396206040.9781.1.camel@vger.seibold.net>
+Subject: Re: [PATCH] x86: Fix the symbol versions on the 32-bit vDSO
+From: Stefani Seibold <stefani@seibold.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 30 Mar 2014 21:00:40 +0200
+In-Reply-To: <70a0dc4b-14d4-4684-9da8-b162a0303c17@email.android.com>
+References: <0a869bce03d25619565b1eee7d69a4fd15fd203a.1396124118.git.luto@amacapital.net>
+	 <1396161217.32686.1.camel@vger.seibold.net>
+	 <70a0dc4b-14d4-4684-9da8-b162a0303c17@email.android.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 6:03 AM, Theodore Ts'o <tytso@mit.edu> wrote:
-> On Thu, Mar 27, 2014 at 07:08:02AM -0700, Jeff Layton wrote:
->> I had some time to think about this last night...
->>
->> While using a fd to pass around credentials is convenient, the danger
->> is that it's pretty opaque. You have a fd that you know has creds
->> attached to it, but it's hard to be certain what is going to change.
->
-> I don't think that's a particularly tough problem.  In general, the fd
-> isn't something that you would want to pass around, and so the process
-> which generated it will know exactly what it contained.
->
->> Perhaps we can use the flags field for that. So, assuming we have a fd
->> with the creds attached, we could do something like:
->>
->>     err = switch_creds(fd, SC_FSUID|SC_FSGID|SC_GROUPS);
->>
->> ...then the switch_creds syscall could be set up to fail if the new
->> credentials had other fields that didn't match those in the current
->> task credentials. So if (for instance) the cred->euid were
->> different between the two, the above could fail with -EINVAL or
->> something.
->
-> Huh?  The whole *point* is that the creds value will be different, of
-> course they won't match!  I would think this would be over
-> complicating the interface.
->
->
-> A couple of other things.  What I would suggest is that we create a
-> few new fd flags, to join FD_CLOEXEC:
->
-> FD_NOPROCFS     disallow being able to open the inode via /proc/<pid>/fd
->                 (but in the case of a creds fd, for bonus points, the
->                 target of the pseudo-symlink could be something like:
->                 "uid: 15806 gid: 100: grps: 27, 50" to aid in debugging
->                 a userspace file server).  This also answers Jeff's concern
->                 if for some reason --- I don't know how --- a process
->                 doesn't know what the contents of the creds fd that
->                 it created itself.
->
-> FD_NOPASSFD     disallow being able to pass the fd via a unix domain socket
->
-> FD_LOCKFLAGS    if this bit is set, disallow any further changes of FD_CLOEXEC,
->                 FD_NOPROCFS, FD_NOPASSFD, and FD_LOCKFLAGS flags.
->
-> Some of the functionality requested by the folks suggesting the "SEAL"
-> API would also be covered by these fd flags.
->
-> In order to solve some potential race concerns, a credsfd must be
-> created with FD_CLOEXEC and FD_NOPROCFS enabled.
+I think it is in review. I still wait for the confirmation of my assign
+form.
 
-It might be nice to try to coordinate this with the Capsicum people,
-who are doing something along these lines.  They even have tentative
-Linux patches.
+Am Sonntag, den 30.03.2014, 09:59 -0700 schrieb H. Peter Anvin:
+> Has your glibc patch been accepted upstream yet? I'm assuming not, in which case this is a legitimate patch.
+> 
+> On March 29, 2014 11:33:37 PM PDT, Stefani Seibold <stefani@seibold.net> wrote:
+> >Am Samstag, den 29.03.2014, 13:15 -0700 schrieb Andy Lutomirski:
+> >> The new symbols provide the same API as the 64-bit variants, so they
+> >> should have the same symbol version name.  This can't break
+> >> userspace, since these symbols are new for 32-bit Linux.
+> >> 
+> >
+> >This breaks my glibc patch... What is the benefit for doing this in
+> >that
+> >way?
+> >
+> >> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> >> ---
+> >>  arch/x86/vdso/vdso32/vdso32.lds.S | 10 +++++++---
+> >>  1 file changed, 7 insertions(+), 3 deletions(-)
+> >> 
+> >> diff --git a/arch/x86/vdso/vdso32/vdso32.lds.S
+> >b/arch/x86/vdso/vdso32/vdso32.lds.S
+> >> index 28c4607..aadb8b9 100644
+> >> --- a/arch/x86/vdso/vdso32/vdso32.lds.S
+> >> +++ b/arch/x86/vdso/vdso32/vdso32.lds.S
+> >> @@ -23,14 +23,18 @@ ENTRY(__kernel_vsyscall);
+> >>   */
+> >>  VERSION
+> >>  {
+> >> +	LINUX_2.6 {
+> >> +	global:
+> >> +		__vdso_clock_gettime;
+> >> +		__vdso_gettimeofday;
+> >> +		__vdso_time;
+> >> +	};
+> >> +
+> >>  	LINUX_2.5 {
+> >>  	global:
+> >>  		__kernel_vsyscall;
+> >>  		__kernel_sigreturn;
+> >>  		__kernel_rt_sigreturn;
+> >> -		__vdso_clock_gettime;
+> >> -		__vdso_gettimeofday;
+> >> -		__vdso_time;
+> >>  	local: *;
+> >>  	};
+> >>  }
+> 
 
---Andy
+
