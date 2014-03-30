@@ -1,353 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaC3E1C (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 00:27:02 -0400
-Received: from magic.merlins.org ([209.81.13.136]:41808 "EHLO
-	mail1.merlins.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939AbaC3E07 (ORCPT
+	id S1751882AbaC3GMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 02:12:34 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:19722 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751222AbaC3GMc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 00:26:59 -0400
-Date: Sat, 29 Mar 2014 21:26:55 -0700
-From: Marc MERLIN <marc@merlins.org>
-To: yuxiangl@marvell.com, kewei@marvell.com, jgarzik@pobox.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: btrfs-rmw-2: page allocation failure: order:1, mode:0x8020
-Message-ID: <20140330042655.GB19277@merlins.org>
-References: <20140320054129.GS6143@merlins.org>
+	Sun, 30 Mar 2014 02:12:32 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Sat, 29 Mar 2014 23:06:10 -0700
+From: Arun Shamanna Lakshmi <aruns@nvidia.com>
+To: Lars-Peter Clausen <lars@metafoo.de>, Songhee Baek <sbaek@nvidia.com>
+CC: "'lgirdwood@gmail.com'" <lgirdwood@gmail.com>,
+        "'broonie@kernel.org'" <broonie@kernel.org>,
+        "'swarren@wwwdotorg.org'" <swarren@wwwdotorg.org>,
+        "'alsa-devel@alsa-project.org'" <alsa-devel@alsa-project.org>,
+        "'tiwai@suse.de'" <tiwai@suse.de>,
+        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Date: Sat, 29 Mar 2014 23:12:30 -0700
+Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Topic: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+Thread-Index: Ac9LPPk4yDIpYEmuTxG4wQ0MT0bwRgAnYfgQ
+Message-ID: <781A12BB53C15A4BB37291FDE08C03F3A05CC6A11A@HQMAIL02.nvidia.com>
+References: <1395792156-4178-1-git-send-email-aruns@nvidia.com>
+ <53332CC7.6060800@metafoo.de>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB319B2@HQMAIL02.nvidia.com>
+ <5333ED3A.7040908@metafoo.de>
+ <5571431004A69147BCABABE4E097D66BA3EFF70CFC@HQMAIL02.nvidia.com>
+ <D6C615D3E4730340AE82D5BD856631C0A26CB31F48@HQMAIL02.nvidia.com>
+ <5336A619.5030007@metafoo.de>
+In-Reply-To: <5336A619.5030007@metafoo.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140320054129.GS6143@merlins.org>
-X-Sysadmin: BOFH
-X-URL: http://marc.merlins.org/
-User-Agent: Mutt/1.5.13 (2006-08-11)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: marc@merlins.org
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+linux-kernel since I got no answer.
 
-Hi,
+> -----Original Message-----
+> From: Lars-Peter Clausen [mailto:lars@metafoo.de]
+> Sent: Saturday, March 29, 2014 3:53 AM
+> To: Songhee Baek
+> Cc: Arun Shamanna Lakshmi; 'lgirdwood@gmail.com'; 'broonie@kernel.org';
+> 'swarren@wwwdotorg.org'; 'alsa-devel@alsa-project.org'; 'tiwai@suse.de';
+> 'linux-kernel@vger.kernel.org'
+> Subject: Re: [alsa-devel] [PATCH] ASoC: Add support for multi register mux
+> 
+> On 03/29/2014 03:30 AM, Songhee Baek wrote:
+> >> -----Original Message-----
+> >> From: Songhee Baek
+> >> Sent: Friday, March 28, 2014 11:10 AM
+> >> To: 'Lars-Peter Clausen'
+> >> Cc: Arun Shamanna Lakshmi; 'lgirdwood@gmail.com';
+> >> 'broonie@kernel.org'; 'swarren@wwwdotorg.org';
+> >> 'alsa-devel@alsa-project.org'; 'tiwai@suse.de'; 'linux-
+> kernel@vger.kernel.org'
+> >> Subject: RE: [alsa-devel] [PATCH] ASoC: Add support for multi
+> >> register mux
+> >>
+> >>
+> >>>> On 03/26/2014 11:41 PM, Songhee Baek wrote:
+> >>>>>> On 03/26/2014 01:02 AM, Arun Shamanna Lakshmi wrote:
+> >>>>>>
+> >>>>>> The way you describe this it seems to me that a value array for
+> >>>>>> this kind of mux would look like.
+> >>>>>>
+> >>>>>> 0x00000000, 0x00000000, 0x00000001 0x00000000, 0x00000000,
+> >>>>>> 0x00000002 0x00000000, 0x00000000, 0x00000003 0x00000000,
+> >>>>>> 0x00000000, 0x00000004 0x00000000, 0x00000000, 0x00000008 ...
+> >>>>>>
+> >>>>>> That seems to be extremely tedious. If the MUX uses a one hot
+> >>>>>> encoding how about storing the index of the bit in the values
+> >>>>>> array and use (1 << value) when writing the value to the register?
+> >>>>>
+> >>>>> If we store the index of the bit, the value will be duplicated for
+> >>>>> each
+> >>>> registers inputs since register has 0 to 31bits to shift, then we
+> >>>> need to decode the index to interpret value for which registers to
+> >>>> set. If we need to interpret the decoded value of index, it is
+> >>>> better to have custom put/get function in our driver, isn't it?
+> >>>>>
+> >>>>
+> >>>> I'm not sure I understand. If you use (val / 32) to pick the
+> >>>> register and (val %
+> >>>> 32) to pick the bit in the register this should work just fine.
+> >>>> Maybe I'm missing something. Do you have a real world code example
+> >>>> of of the this type of enum is used?
+> >>>>
+> >>>
+> >>> I can use val/32 and val%32 for this multi register mux.
+> >>
+> > With this logic, put function would be easy however get function
+> > becomes tedious due to looping on each bit per register for 3 of them in our
+> case. Rather, it would be easy to identify a unique MUX_OFFSET to distinguish
+> between the 3 registers as shown in the code below.
+> 
+> I'm not sure I understand how that MUX_OFFSET would work. To get the
+> selected mux output you can use the ffs instruction.
+> 
+> foreach(reg) {
+> 	reg_val = read(reg) & mask;
+> 	if (reg_val != 0) {
+> 		val = __ffs(reg_val);
+> 		break;
+> 	}
+> }
+> 
 
-I see you are maintainers of/contributors to drivers/scsi/mvsas
+There are 2 options to do this. The first option is what you specified above, in which case I think we cannot share get and put functions as they use the reg_val directly inside snd_soc_enum_val_to_item API (not the bit position being set). If we change to bit position like above, then the current users of these APIs should also change their soc_enum value table. And, the second option being the one that we proposed.
 
-The btrfs folks pointed out that the problem below is due to the MVS driver,
-namely:
-----------------------------------------------------------------------------
-From: Chris Mason <clm@fb.com>
+That being said, MUX_OFFSET which is the second option works in the following way. We know that reg_val is a power of 2 (2^0  to 2^31) which is one hot code. This method adds a unique offset for this reg_val for each incremental register that we want to set (say 2^n + MUX_OFFSET(reg_id)) inside get function and does the reverse of it in put function. For current users of only one register, it doesn't change anything as we use reg_val.
 
-This is an order 1 atomic allocation from the mvs driver, we really
-should not be depending on that to get IO done.  A quick search and it
-looks like we're allocating MVS_SLOT_BUF_SZ (8192) bytes.
+> 	if (e->reg[0] != SND_SOC_NOPM) {
+> 		for (reg_idx = 0; reg_idx < e->num_regs; reg_idx++) {
+> 	    		reg_val = snd_soc_read(codec, e->reg[reg_idx]);
+> 			val = (reg_val >> e->shift_l) & e->mask[reg_idx];
+> 			if (val) {
+> 				val += MULTI_MUX_INPUT_OFFSET(reg_idx);
+> 				break;
+> 			}
+> 		}
+> 	} else {
+> 		reg_val = dapm_kcontrol_get_value(kcontrol);
+> 		val = (reg_val >> e->shift_l) & e->mask[0];
+> 	}
 
-You could try bumping the lowmem reserves.
+Both the options are the same. The first one adds 32 or 64 to the bit position to identify uniquely for each register and the other adds a MUX_OFFSET to reg_val to achieve the same. The only advantage of the latter being that we can share the code with get_enum_double and put_enum_double which has been our goal since the beginning of this discussion (as we share the soc_enum struct)
 
--chris
-----------------------------------------------------------------------------
+We have tested the second option to work well for our use case. Please let us know what works for you and we will make the necessary changes quickly.
 
-Would you be able to modify the driver to avoid these low memory problems?
-
-Thanks,
-Marc
-
-
------ Forwarded message from Marc MERLIN <marc@merlins.org> -----
-
-From: Marc MERLIN <marc@merlins.org>
-To: linux-btrfs@vger.kernel.org
-
-My server died last night during a btrfs send/receive to a btrfs radi5 array
-
-Here are the logs. Is this anything known or with a possible workaround?
-
-Thanks,
-Marc
-
-btrfs-rmw-2: page allocation failure: order:1, mode:0x8020
-CPU: 1 PID: 12499 Comm: btrfs-rmw-2 Not tainted 3.14.0-rc5-amd64-i915-preempt-20140216c #1
-Hardware name: System manufacturer P5KC/P5KC, BIOS 0502    05/24/2007
- 0000000000000000 ffff88000549d780 ffffffff816090b3 0000000000000000
- ffff88000549d808 ffffffff811037b0 00000001fffffffe ffff88007ff7ce00
- 0000000000000000 0000000200000000 0000003000000000 ffff88007ff7ce00
-Call Trace:
- [<ffffffff816090b3>] dump_stack+0x4e/0x7a
- [<ffffffff811037b0>] warn_alloc_failed+0x111/0x125
- [<ffffffff81106cb2>] __alloc_pages_nodemask+0x707/0x854
- [<ffffffff81014650>] ? dma_generic_alloc_coherent+0xa7/0x11c
- [<ffffffff81014650>] dma_generic_alloc_coherent+0xa7/0x11c
- [<ffffffff811354e8>] dma_pool_alloc+0x10a/0x1cb
- [<ffffffffa0084aa0>] mvs_task_prep+0x192/0xa42 [mvsas]
- [<ffffffff812f9fa2>] ? blkg_path.isra.80.constprop.90+0x17/0x38
- [<ffffffff8114069b>] ? ____cache_alloc+0x1c/0x29b
- [<ffffffffa00853ad>] mvs_task_exec.isra.9+0x5d/0xc9 [mvsas]
- [<ffffffffa0085a76>] mvs_queue_command+0x3d/0x29b [mvsas]
- [<ffffffff8114118d>] ? kmem_cache_alloc+0xe3/0x161
- [<ffffffffa0064d1c>] sas_ata_qc_issue+0x1cd/0x235 [libsas]
- [<ffffffff814a9598>] ata_qc_issue+0x291/0x2f1
- [<ffffffff814af413>] ? ata_scsiop_mode_sense+0x29c/0x29c
- [<ffffffff814b049e>] __ata_scsi_queuecmd+0x184/0x1e0
- [<ffffffff814b05a5>] ata_sas_queuecmd+0x31/0x4d
- [<ffffffffa00637ba>] sas_queuecommand+0x98/0x1fe [libsas]
- [<ffffffff8148fdee>] scsi_dispatch_cmd+0x14f/0x22e
- [<ffffffff814964da>] scsi_request_fn+0x4da/0x507
- [<ffffffff812e512c>] ? blk_recount_segments+0x1e/0x2e
- [<ffffffff812e01a3>] __blk_run_queue_uncond+0x22/0x2b
- [<ffffffff812e01c5>] __blk_run_queue+0x19/0x1b
- [<ffffffff812e1c74>] blk_queue_bio+0x23f/0x256
- [<ffffffff812df92c>] generic_make_request+0x9c/0xdb
- [<ffffffff812dfa7d>] submit_bio+0x112/0x131
- [<ffffffff8128274c>] rmw_work+0x112/0x162
- [<ffffffff8125073f>] worker_loop+0x168/0x4d8
- [<ffffffff812505d7>] ? btrfs_queue_worker+0x283/0x283
- [<ffffffff8106bc56>] kthread+0xae/0xb6
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
- [<ffffffff816153fc>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
-Mem-Info:
-Node 0 DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Node 0 DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 171
-CPU    1: hi:  186, btch:  31 usd: 190
-active_anon:17298 inactive_anon:21061 isolated_anon:0
- active_file:67491 inactive_file:94189 isolated_file:32
- unevictable:1260 dirty:38914 writeback:49596 unstable:0
- free:15999 slab_reclaimable:8198 slab_unreclaimable:9741
- mapped:12981 shmem:1661 pagetables:2711 bounce:0
- free_cma:0
-Node 0 DMA free:8084kB min:348kB low:432kB high:520kB active_anon:360kB inactive_anon:764kB active_file:288kB inactive_file:2040kB unevictable:100kB isolated(anon):0kB isolated(file):0kB present:15976kB managed:15892kB mlocked:100kB dirty:0kB writeback:1272kB mapped:252kB shmem:8kB slab_reclaimable:168kB slab_unreclaimable:336kB kernel_stack:88kB pagetables:128kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 1987 1987 1987
-Node 0 DMA32 free:56080kB min:44704kB low:55880kB high:67056kB active_anon:68832kB inactive_anon:83480kB active_file:269676kB inactive_file:374588kB unevictable:4940kB isolated(anon):0kB isolated(file):128kB present:2080256kB managed:2039064kB mlocked:4940kB dirty:155668kB writeback:197112kB mapped:51672kB shmem:6636kB slab_reclaimable:32624kB slab_unreclaimable:38628kB kernel_stack:2912kB pagetables:10716kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:32 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-Node 0 DMA: 85*4kB (UEM) 22*8kB (UEM) 62*16kB (UEM) 6*32kB (UM) 2*64kB (UE) 5*128kB (UEM) 6*256kB (UEM) 4*512kB (EM) 0*1024kB 1*2048kB (R) 0*4096kB = 8100kB
-Node 0 DMA32: 13004*4kB (M) 16*8kB (M) 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 1*4096kB (R) = 56240kB
-Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
-164139 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 9255932kB
-Total swap = 9255932kB
-524058 pages RAM
-0 pages HighMem/MovableOnly
-10298 pages reserved
-0 pages hwpoisoned
-mvsas 0000:01:00.0: mvsas prep failed[0]!
-btrfs-rmw-2: page allocation failure: order:1, mode:0x8020
-CPU: 1 PID: 12499 Comm: btrfs-rmw-2 Not tainted 3.14.0-rc5-amd64-i915-preempt-20140216c #1
-Hardware name: System manufacturer P5KC/P5KC, BIOS 0502    05/24/2007
- 0000000000000000 ffff88000549d690 ffffffff816090b3 0000000000000000
- ffff88000549d718 ffffffff811037b0 00000001fffffffe ffff88000549d6c8
- ffffffff8160e9c4 0000000200000000 0000003000000000 ffff88007ff7ce00
-Call Trace:
- [<ffffffff816090b3>] dump_stack+0x4e/0x7a
- [<ffffffff811037b0>] warn_alloc_failed+0x111/0x125
- [<ffffffff8160e9c4>] ? _raw_spin_trylock+0x20/0x50
- [<ffffffff81106cb2>] __alloc_pages_nodemask+0x707/0x854
- [<ffffffff81093ce9>] ? console_unlock+0x2f6/0x302
- [<ffffffff81014650>] dma_generic_alloc_coherent+0xa7/0x11c
- [<ffffffff811354e8>] dma_pool_alloc+0x10a/0x1cb
- [<ffffffffa0084aa0>] mvs_task_prep+0x192/0xa42 [mvsas]
- [<ffffffff811063d7>] ? get_page_from_freelist+0x549/0x71d
- [<ffffffff8114069b>] ? ____cache_alloc+0x1c/0x29b
- [<ffffffffa00853ad>] mvs_task_exec.isra.9+0x5d/0xc9 [mvsas]
- [<ffffffffa0085a76>] mvs_queue_command+0x3d/0x29b [mvsas]
- [<ffffffff8114118d>] ? kmem_cache_alloc+0xe3/0x161
- [<ffffffffa0064d1c>] sas_ata_qc_issue+0x1cd/0x235 [libsas]
- [<ffffffff814a9598>] ata_qc_issue+0x291/0x2f1
- [<ffffffff814af413>] ? ata_scsiop_mode_sense+0x29c/0x29c
- [<ffffffff814b049e>] __ata_scsi_queuecmd+0x184/0x1e0
- [<ffffffff814b05a5>] ata_sas_queuecmd+0x31/0x4d
- [<ffffffffa00637ba>] sas_queuecommand+0x98/0x1fe [libsas]
- [<ffffffff8148fdee>] scsi_dispatch_cmd+0x14f/0x22e
- [<ffffffff814964da>] scsi_request_fn+0x4da/0x507
- [<ffffffff812e01a3>] __blk_run_queue_uncond+0x22/0x2b
- [<ffffffff812e01c5>] __blk_run_queue+0x19/0x1b
- [<ffffffff812fc16d>] cfq_insert_request+0x391/0x3b5
- [<ffffffff812e002f>] ? perf_trace_block_rq_with_error+0x45/0x14f
- [<ffffffff812e512c>] ? blk_recount_segments+0x1e/0x2e
- [<ffffffff812dc08c>] __elv_add_request+0x1fc/0x276
- [<ffffffff812e1c6c>] blk_queue_bio+0x237/0x256
- [<ffffffff812df92c>] generic_make_request+0x9c/0xdb
- [<ffffffff812dfa7d>] submit_bio+0x112/0x131
- [<ffffffff8128274c>] rmw_work+0x112/0x162
- [<ffffffff8125073f>] worker_loop+0x168/0x4d8
- [<ffffffff812505d7>] ? btrfs_queue_worker+0x283/0x283
- [<ffffffff8106bc56>] kthread+0xae/0xb6
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
- [<ffffffff816153fc>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
-Mem-Info:
-Node 0 DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Node 0 DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 179
-CPU    1: hi:  186, btch:  31 usd: 213
-active_anon:17298 inactive_anon:21061 isolated_anon:0
- active_file:67491 inactive_file:93709 isolated_file:32
- unevictable:1260 dirty:38914 writeback:49627 unstable:0
- free:16338 slab_reclaimable:8198 slab_unreclaimable:9741
- mapped:12981 shmem:1661 pagetables:2711 bounce:0
- free_cma:0
-Node 0 DMA free:8084kB min:348kB low:432kB high:520kB active_anon:360kB inactive_anon:764kB active_file:288kB inactive_file:2040kB unevictable:100kB isolated(anon):0kB isolated(file):0kB present:15976kB managed:15892kB mlocked:100kB dirty:0kB writeback:1272kB mapped:252kB shmem:8kB slab_reclaimable:168kB slab_unreclaimable:336kB kernel_stack:88kB pagetables:128kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 1987 1987 1987
-Node 0 DMA32 free:57352kB min:44704kB low:55880kB high:67056kB active_anon:68832kB inactive_anon:83480kB active_file:269676kB inactive_file:372680kB unevictable:4940kB isolated(anon):0kB isolated(file):116kB present:2080256kB managed:2039064kB mlocked:4940kB dirty:155668kB writeback:197236kB mapped:51672kB shmem:6636kB slab_reclaimable:32624kB slab_unreclaimable:38628kB kernel_stack:2912kB pagetables:10716kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:29 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-Node 0 DMA: 85*4kB (UEM) 22*8kB (UEM) 62*16kB (UEM) 6*32kB (UM) 2*64kB (UE) 5*128kB (UEM) 6*256kB (UEM) 4*512kB (EM) 0*1024kB 1*2048kB (R) 0*4096kB = 8100kB
-Node 0 DMA32: 13283*4kB (M) 16*8kB (M) 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 1*4096kB (R) = 57356kB
-Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
-163658 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 9255932kB
-Total swap = 9255932kB
-524058 pages RAM
-0 pages HighMem/MovableOnly
-10298 pages reserved
-0 pages hwpoisoned
-mvsas 0000:01:00.0: mvsas prep failed[0]!
-btrfs-rmw-2: page allocation failure: order:1, mode:0x8020
-CPU: 1 PID: 12499 Comm: btrfs-rmw-2 Not tainted 3.14.0-rc5-amd64-i915-preempt-20140216c #1
-Hardware name: System manufacturer P5KC/P5KC, BIOS 0502    05/24/2007
- 0000000000000000 ffff88000549d780 ffffffff816090b3 0000000000000000
- ffff88000549d808 ffffffff811037b0 00000001fffffffe ffff880000000000
- 0000000000000046 0000000200000000 0000003000000000 ffff88007ff7ce00
-Call Trace:
- [<ffffffff816090b3>] dump_stack+0x4e/0x7a
- [<ffffffff811037b0>] warn_alloc_failed+0x111/0x125
- [<ffffffff81106cb2>] __alloc_pages_nodemask+0x707/0x854
- [<ffffffff811063d7>] ? get_page_from_freelist+0x549/0x71d
- [<ffffffff81014650>] dma_generic_alloc_coherent+0xa7/0x11c
- [<ffffffff811354e8>] dma_pool_alloc+0x10a/0x1cb
- [<ffffffffa0084aa0>] mvs_task_prep+0x192/0xa42 [mvsas]
- [<ffffffff8114069b>] ? ____cache_alloc+0x1c/0x29b
- [<ffffffffa00853ad>] mvs_task_exec.isra.9+0x5d/0xc9 [mvsas]
- [<ffffffffa0085a76>] mvs_queue_command+0x3d/0x29b [mvsas]
- [<ffffffff8114118d>] ? kmem_cache_alloc+0xe3/0x161
- [<ffffffffa0064d1c>] sas_ata_qc_issue+0x1cd/0x235 [libsas]
- [<ffffffff814a9598>] ata_qc_issue+0x291/0x2f1
- [<ffffffff814af413>] ? ata_scsiop_mode_sense+0x29c/0x29c
- [<ffffffff814b049e>] __ata_scsi_queuecmd+0x184/0x1e0
- [<ffffffff814b05a5>] ata_sas_queuecmd+0x31/0x4d
- [<ffffffffa00637ba>] sas_queuecommand+0x98/0x1fe [libsas]
- [<ffffffff8148fdee>] scsi_dispatch_cmd+0x14f/0x22e
- [<ffffffff814964da>] scsi_request_fn+0x4da/0x507
- [<ffffffff812e512c>] ? blk_recount_segments+0x1e/0x2e
- [<ffffffff812e01a3>] __blk_run_queue_uncond+0x22/0x2b
- [<ffffffff812e01c5>] __blk_run_queue+0x19/0x1b
- [<ffffffff812e1c74>] blk_queue_bio+0x23f/0x256
- [<ffffffff812df92c>] generic_make_request+0x9c/0xdb
- [<ffffffff812dfa7d>] submit_bio+0x112/0x131
- [<ffffffff8128274c>] rmw_work+0x112/0x162
- [<ffffffff8125073f>] worker_loop+0x168/0x4d8
- [<ffffffff812505d7>] ? btrfs_queue_worker+0x283/0x283
- [<ffffffff8106bc56>] kthread+0xae/0xb6
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
- [<ffffffff816153fc>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
-Mem-Info:
-Node 0 DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Node 0 DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 169
-CPU    1: hi:  186, btch:  31 usd: 185
-active_anon:17298 inactive_anon:21061 isolated_anon:0
- active_file:67491 inactive_file:93277 isolated_file:32
- unevictable:1260 dirty:38914 writeback:49627 unstable:0
- free:16250 slab_reclaimable:8198 slab_unreclaimable:9762
- mapped:12981 shmem:1661 pagetables:2711 bounce:0
- free_cma:0
-Node 0 DMA free:8080kB min:348kB low:432kB high:520kB active_anon:360kB inactive_anon:764kB active_file:288kB inactive_file:1980kB unevictable:100kB isolated(anon):0kB isolated(file):0kB present:15976kB managed:15892kB mlocked:100kB dirty:0kB writeback:1272kB mapped:252kB shmem:8kB slab_reclaimable:168kB slab_unreclaimable:336kB kernel_stack:88kB pagetables:128kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 1987 1987 1987
-Node 0 DMA32 free:56920kB min:44704kB low:55880kB high:67056kB active_anon:68832kB inactive_anon:83480kB active_file:269676kB inactive_file:371128kB unevictable:4940kB isolated(anon):0kB isolated(file):128kB present:2080256kB managed:2039064kB mlocked:4940kB dirty:155668kB writeback:197236kB mapped:51672kB shmem:6636kB slab_reclaimable:32624kB slab_unreclaimable:38712kB kernel_stack:2912kB pagetables:10716kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:160 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-Node 0 DMA: 86*4kB (UEM) 19*8kB (UEM) 62*16kB (UEM) 6*32kB (UM) 2*64kB (UE) 5*128kB (UEM) 6*256kB (UEM) 4*512kB (EM) 0*1024kB 1*2048kB (R) 0*4096kB = 8080kB
-Node 0 DMA32: 13210*4kB (M) 6*8kB (M) 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 1*4096kB (R) = 56984kB
-Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
-163317 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 9255932kB
-Total swap = 9255932kB
-524058 pages RAM
-0 pages HighMem/MovableOnly
-10298 pages reserved
-0 pages hwpoisoned
-mvsas 0000:01:00.0: mvsas prep failed[0]!
-btrfs-rmw-2: page allocation failure: order:1, mode:0x8020
-CPU: 1 PID: 12499 Comm: btrfs-rmw-2 Not tainted 3.14.0-rc5-amd64-i915-preempt-20140216c #1
-Hardware name: System manufacturer P5KC/P5KC, BIOS 0502    05/24/2007
- 0000000000000000 ffff88000549d780 ffffffff816090b3 0000000000000000
- ffff88000549d808 ffffffff811037b0 00000001fffffffe ffffffff00000029
- ffffffff81e8fe40 0000000200000000 0000003000000000 ffff88007ff7ce00
-Call Trace:
- [<ffffffff816090b3>] dump_stack+0x4e/0x7a
- [<ffffffff811037b0>] warn_alloc_failed+0x111/0x125
- [<ffffffff81106cb2>] __alloc_pages_nodemask+0x707/0x854
- [<ffffffff81014650>] dma_generic_alloc_coherent+0xa7/0x11c
- [<ffffffff811354e8>] dma_pool_alloc+0x10a/0x1cb
- [<ffffffffa0084aa0>] mvs_task_prep+0x192/0xa42 [mvsas]
- [<ffffffff8114069b>] ? ____cache_alloc+0x1c/0x29b
- [<ffffffffa00853ad>] mvs_task_exec.isra.9+0x5d/0xc9 [mvsas]
- [<ffffffffa0085a76>] mvs_queue_command+0x3d/0x29b [mvsas]
- [<ffffffff8114118d>] ? kmem_cache_alloc+0xe3/0x161
- [<ffffffffa0064d1c>] sas_ata_qc_issue+0x1cd/0x235 [libsas]
- [<ffffffff814a9598>] ata_qc_issue+0x291/0x2f1
- [<ffffffff814af413>] ? ata_scsiop_mode_sense+0x29c/0x29c
- [<ffffffff814b049e>] __ata_scsi_queuecmd+0x184/0x1e0
- [<ffffffff814b05a5>] ata_sas_queuecmd+0x31/0x4d
- [<ffffffffa00637ba>] sas_queuecommand+0x98/0x1fe [libsas]
- [<ffffffff8148fdee>] scsi_dispatch_cmd+0x14f/0x22e
- [<ffffffff814964da>] scsi_request_fn+0x4da/0x507
- [<ffffffff812e512c>] ? blk_recount_segments+0x1e/0x2e
- [<ffffffff812e01a3>] __blk_run_queue_uncond+0x22/0x2b
- [<ffffffff812e01c5>] __blk_run_queue+0x19/0x1b
- [<ffffffff812e1c74>] blk_queue_bio+0x23f/0x256
- [<ffffffff812df92c>] generic_make_request+0x9c/0xdb
- [<ffffffff812dfa7d>] submit_bio+0x112/0x131
- [<ffffffff8128274c>] rmw_work+0x112/0x162
- [<ffffffff8125073f>] worker_loop+0x168/0x4d8
- [<ffffffff812505d7>] ? btrfs_queue_worker+0x283/0x283
- [<ffffffff8106bc56>] kthread+0xae/0xb6
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
- [<ffffffff816153fc>] ret_from_fork+0x7c/0xb0
- [<ffffffff8106bba8>] ? __kthread_parkme+0x61/0x61
-Mem-Info:
-Node 0 DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-CPU    1: hi:    0, btch:   1 usd:   0
-Node 0 DMA32 per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 169
-CPU    1: hi:  186, btch:  31 usd: 185
-active_anon:17298 inactive_anon:21061 isolated_anon:0
- active_file:67491 inactive_file:93298 isolated_file:0
- unevictable:1260 dirty:38914 writeback:49627 unstable:0
- free:16250 slab_reclaimable:8198 slab_unreclaimable:9762
- mapped:12981 shmem:1661 pagetables:2711 bounce:0
- free_cma:0
-Node 0 DMA free:8080kB min:348kB low:432kB high:520kB active_anon:360kB inactive_anon:764kB active_file:288kB inactive_file:1980kB unevictable:100kB isolated(anon):0kB isolated(file):0kB present:15976kB managed:15892kB mlocked:100kB dirty:0kB writeback:1272kB mapped:252kB shmem:8kB slab_reclaimable:168kB slab_unreclaimable:336kB kernel_stack:88kB pagetables:128kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 1987 1987 1987
-Node 0 DMA32 free:56920kB min:44704kB low:55880kB high:67056kB active_anon:68832kB inactive_anon:83480kB active_file:269676kB inactive_file:371212kB unevictable:4940kB isolated(anon):0kB isolated(file):0kB present:2080256kB managed:2039064kB mlocked:4940kB dirty:155668kB writeback:197236kB mapped:51672kB shmem:6636kB slab_reclaimable:32624kB slab_unreclaimable:38712kB kernel_stack:2912kB pagetables:10716kB unstable:0kB bounce:0kB free_cma:0kB writeback_tmp:0kB pages_scanned:544 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-Node 0 DMA: 86*4kB (UEM) 19*8kB (UEM) 62*16kB (UEM) 6*32kB (UM) 2*64kB (UE) 5*128kB (UEM) 6*256kB (UEM) 4*512kB (EM) 0*1024kB 1*2048kB (R) 0*4096kB = 8080kB
-Node 0 DMA32: 13210*4kB (M) 6*8kB (M) 0*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 1*4096kB (R) = 56984kB
-Node 0 hugepages_total=0 hugepages_free=0 hugepages_surp=0 hugepages_size=2048kB
-163317 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 9255932kB
-Total swap = 9255932kB
-524058 pages RAM
-0 pages HighMem/MovableOnly
-10298 pages reserved
-0 pages hwpoisoned
-
--- 
-"A mouse is a device used to point at the xterm you want to type in" - A.S.R.
-Microsoft is to operating systems ....
-                                      .... what McDonalds is to gourmet cooking
-Home page: http://marc.merlins.org/  
+- Arun
