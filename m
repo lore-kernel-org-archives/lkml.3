@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752585AbaC3V2J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 17:28:09 -0400
-Received: from ducie-dc1.codethink.co.uk ([185.25.241.215]:48113 "EHLO
-	ducie-dc1.codethink.co.uk" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752092AbaC3V2H (ORCPT
+	id S1752657AbaC3Vbh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 17:31:37 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:51122 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092AbaC3Vbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 17:28:07 -0400
-Message-ID: <53388C63.6080006@codethink.co.uk>
-Date: Sun, 30 Mar 2014 22:28:03 +0100
-From: Ben Dooks <ben.dooks@codethink.co.uk>
-Organization: Codethink Limited.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.3.0
+	Sun, 30 Mar 2014 17:31:35 -0400
+Message-ID: <53388D35.8080902@lwfinger.net>
+Date: Sun, 30 Mar 2014 16:31:33 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-CC: linux-media@vger.kernel.org, Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        linux-kernel@vger.kernel.org, magnus.damm@opensource.se,
-        linux-sh@vger.kernel.org, linux-kernel@lists.codethink.co.uk
-Subject: Re: [PATCH 5/5] rcar_vin: add devicetree support
-References: <1394197299-17528-1-git-send-email-ben.dooks@codethink.co.uk> <1394197299-17528-6-git-send-email-ben.dooks@codethink.co.uk> <Pine.LNX.4.64.1403081148050.18310@axis700.grange> <Pine.LNX.4.64.1403302303490.12008@axis700.grange> <5338890A.2050607@codethink.co.uk> <Pine.LNX.4.64.1403302316480.12008@axis700.grange>
-In-Reply-To: <Pine.LNX.4.64.1403302316480.12008@axis700.grange>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        Herton Ronaldo Krzesinski <herton@canonical.com>,
+        Hin-Tak Leung <htl10@users.sourceforge.net>
+CC: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ldv-project@linuxtesting.org
+Subject: Re: [PATCH] rtl8187: fix use after free on failure path in rtl8187_probe()
+References: <1396038375-18122-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1396038375-18122-1-git-send-email-khoroshilov@ispras.ru>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30/03/14 22:17, Guennadi Liakhovetski wrote:
-> On Sun, 30 Mar 2014, Ben Dooks wrote:
+On 03/28/2014 03:26 PM, Alexey Khoroshilov wrote:
+> If allocation of io_dmabuf fails, rtl8187_probe() calls usb_put_dev(udev)
+> while usb_get_dev(udev) is not called yet. As a result refcnt is decremented
+> incorrectly and usb_dev can be used after memory deallocation.
 >
->> On 30/03/14 22:04, Guennadi Liakhovetski wrote:
->>> Hi Ben,
->>>
->>> Since I never received a reply to this my query, I consider this your
->>> patch series suspended.
->>>
->>> Thanks
->>> Guennadi
->>
->> I meant to send out a patch series for the of probe for soc_camera.
->> The actual rcar_vin does not need much to support async probe, it is
->> just the soc_camera that needs sorting.
+> Found by Linux Driver Verification project (linuxtesting.org).
 >
-> But without that soc-camera DT support your patches are non-functional,
-> right?
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
 
-They're not much use. I've sent the soc-camera patch out now for
-review. I will sort out sending patches for the async device changes
-for the device(s) on the lager board as soon as I can get some time
-to re-test.
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
 
--- 
-Ben Dooks				http://www.codethink.co.uk/
-Senior Engineer				Codethink - Providing Genius
+Thanks,
+
+Larry
+
+>   drivers/net/wireless/rtl818x/rtl8187/dev.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rtl818x/rtl8187/dev.c b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+> index fd78df813a85..d7f540a9dc9b 100644
+> --- a/drivers/net/wireless/rtl818x/rtl8187/dev.c
+> +++ b/drivers/net/wireless/rtl818x/rtl8187/dev.c
+> @@ -1636,10 +1636,10 @@ static int rtl8187_probe(struct usb_interface *intf,
+>
+>    err_free_dmabuf:
+>   	kfree(priv->io_dmabuf);
+> - err_free_dev:
+> -	ieee80211_free_hw(dev);
+>   	usb_set_intfdata(intf, NULL);
+>   	usb_put_dev(udev);
+> + err_free_dev:
+> +	ieee80211_free_hw(dev);
+>   	return err;
+>   }
+>
+>
+
