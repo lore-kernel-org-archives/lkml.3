@@ -1,45 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695AbaC3Wjg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 18:39:36 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:61959 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408AbaC3Wjf (ORCPT
+	id S1752758AbaC3W5S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 18:57:18 -0400
+Received: from mail.tomasu.net ([192.241.222.217]:46144 "EHLO mail.tomasu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752532AbaC3W5R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 18:39:35 -0400
+	Sun, 30 Mar 2014 18:57:17 -0400
+From: Thomas Fjellstrom <thomas@fjellstrom.ca>
+To: Marc Burkhardt <marc@marc.ngoe.de>
+Reply-To: thomas@fjellstrom.ca
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: turbo on lenovo w530 causing over-temp warnings
+Date: Sun, 30 Mar 2014 16:57:15 -0600
+Message-ID: <4819075.C0MTBkDfgh@balsa>
+User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <7286ed3d-6e07-4276-9f43-1b51eca23d18@email.android.com>
+References: <2113542.FNB0FtJayJ@balsa> <7286ed3d-6e07-4276-9f43-1b51eca23d18@email.android.com>
 MIME-Version: 1.0
-In-Reply-To: <20140330205537.GM18016@ZenIV.linux.org.uk>
-References: <20140323071601.GH18016@ZenIV.linux.org.uk>
-	<CA+55aFw=1TcAtk-0tFp7rP-8c2dv8ap4tr-RKiMsULWEC=i0qA@mail.gmail.com>
-	<20140323164526.GJ18016@ZenIV.linux.org.uk>
-	<CA+55aFxK8+Fm3gbTyxnpy_AWJKtoJdOPsYV9-vbnOTchO=DKAw@mail.gmail.com>
-	<CA+icZUXoTVbZhopEhwQfxRF0ka1x6J3SmA9YHarN1UWA6QGCBw@mail.gmail.com>
-	<CA+55aFxvACwdNuswQsTENWdmRnjKR_LgThtnAVTBQ91gvDpWvg@mail.gmail.com>
-	<CA+icZUWD7NekSyNa2Keg=+teDCGg-Ttc5Xb4wfKA-56FMwGSeg@mail.gmail.com>
-	<CA+55aFwKqDzNCd1wQYZqKXb3DDj2bHYjHCYjDAkWJwPhuvR17A@mail.gmail.com>
-	<20140330203307.GL18016@ZenIV.linux.org.uk>
-	<20140330205537.GM18016@ZenIV.linux.org.uk>
-Date: Sun, 30 Mar 2014 15:39:33 -0700
-X-Google-Sender-Auth: G22bXLkvDEyU-SKQXHfIiv9_CTQ
-Message-ID: <CA+55aFw5WjjHPP0SZo8fZefG5_S4F=-V_oa0HV4sm+G167-4iA@mail.gmail.com>
-Subject: Re: [git pull] vfs fixes
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Sedat Dilek <sedat.dilek@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 1:55 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
->
-> Commit ID of that branch should be 7fc5aaa083922420e2dec5d985420cb5f959b1ce;
-> diffs are the same as what sat there since last Sunday, commit messages
-> got updated a bit.
+I've just installed mcelog, if it'll help me figure out what is going on I'll 
+try it. But the actual reboots come from an actual thermal alert, I've seen 
+them appear in the console just before the machine shuts off. It seems at 
+around 100-110c, something (lmsensors? Kernel?) will 'shutdown -h now', which 
+totally makes sense. What doesn't make sense is why is it even reaching that 
+temperature to begin with.
 
-Ugh. You have apparently rebased the parts that I already pulled too,
-which is annoying and causes duplicate commits.
+I was under the impression that the intel Turbo tech automatically (ie: in 
+cpu) throttle back to a lower boost clock when certain thermal targets are 
+hit. It doesn't seem to be doing that very well. At best it limits all 4 cores 
+to 3.4Ghz, instead of occasionally hitting 3.6Ghz. Even 3.4Ghz is way too high 
+when all 4 cores are pegged.
 
-             Linus
+On Sun 30 Mar 2014 12:45:32 PM Marc Burkhardt wrote:
+> Have you configured to catch 'Machine Check Exceptions' / MCE?
+> 
+> Regards,
+> Marc
+> 
+> On 30. März 2014 11:13:57 MESZ, Thomas Fjellstrom <thomas@fjellstrom.ca> 
+wrote:
+> >I have a lenovo w530 laptop with an intel i7-3720QM processor, and when
+> >
+> >running something with high cpu use causes the cpu to be put into the
+> >highest
+> >turbo mode and stays there as long as the core is being used. It
+> >doesn't scale
+> >back to the real max frequency once temperatures rise.
+> >
+> >I've had my laptop shut itself down after a few minutes due to a
+> >thermal
+> >warning a few times. I was attempting to try the latest stable stock
+> >(non
+> >debian) kernel to see if maybe it was a weird distro config issue (it
+> >happens),
+> >but as I was compiling the kernel, CPU temps hit 90c, and were climbing
+> >after
+> >only a few minutes. If I had let it go longer, I am 100% sure it would
+> >have
+> >shut itself off again.
+> >
+> >I just tried seeing what would happen if I just ran a straight up make
+> >on the
+> >kernel with no -j option. So only one core at a time would be pegged,
+> >and it
+> >caused all 4 cores to spike to 3.4Ghz+ and stay there till I killed the
+> >job.
+> >
+> >Is this a known problem? Is there something obvious I've missed?
+> >
+> >I've been trying to find relevant info online about this, but a lot of
+> >it is
+> >fairly old and references the intel_pstep driver causing tubo to be
+> >stuck on
+> >100% of the time. In my case its only stuck at full turbo while there
+> >is a
+> >certain amount of cpu use. It does drop back if nothing is running.
+> >
+> >Currently running kernel is the debian 3.13.7-1 kernel from sid. I will
+> >
+> >attempt to try the stock latest stable, as well as the latest rc, but I
+> >won't
+> >be able to get around to both till tomorrow.
+> >
+> >Thanks.
+
+-- 
+Thomas Fjellstrom
+thomas@fjellstrom.ca
