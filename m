@@ -1,37 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752128AbaC3QYk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 12:24:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:37177 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751613AbaC3QYj (ORCPT
+	id S1752054AbaC3Qix (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 12:38:53 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:32584 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaC3Qiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 12:24:39 -0400
-Date: Sun, 30 Mar 2014 09:26:41 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: Alexandre Demers <alexandre.f.demers@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH driver-core-next] sysfs: restore in-kernel mount of sysfs
-Message-ID: <20140330162641.GA5539@kroah.com>
-References: <20140330123036.GA8942@htj.dyndns.org>
- <20140330131309.GE8942@htj.dyndns.org>
+	Sun, 30 Mar 2014 12:38:52 -0400
+Message-ID: <53384857.9030900@oracle.com>
+Date: Sun, 30 Mar 2014 12:37:43 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140330131309.GE8942@htj.dyndns.org>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        paulus@samba.org, acme@ghostprotocols.net
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: perf: WARNING: CPU: 0 PID: 16043 at kernel/events/core.c:5659
+References: <530B50B6.1070705@oracle.com>
+In-Reply-To: <530B50B6.1070705@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Mar 30, 2014 at 09:13:09AM -0400, Tejun Heo wrote:
-> Oops, this is not for driver-core-next but driver-core-linus.
+Ping?
 
-It's _really_ late in the release cycle for something like this, can I
-add it to 3.15-rc1 and if people are seeing issues, backport it to
-3.14-stable?
+On 02/24/2014 09:01 AM, Sasha Levin wrote:
+> Hi all,
+>
+> While fuzzing with trinity inside a KVM tools guest running latest -next kernel I've stumbled on the following warning:
+>
+> [ 1399.472224] WARNING: CPU: 0 PID: 16043 at kernel/events/core.c:5659 perf_swevent_add+0x158/0x190()
+> [ 1399.473458] Modules linked in:
+> [ 1399.473880] CPU: 0 PID: 16043 Comm: trinity-c164 Tainted: G        W 3.14.0-rc3-next-20140221-sasha-01594-gd494348 #34
+> [ 1399.475232]  000000000000161b ffff880488af1c70 ffffffff84383938 ffffffff8549cd88
+> [ 1399.476314]  0000000000000000 ffff880488af1cb0 ffffffff8113ad07 0000000000000001
+> [ 1399.477325]  ffff880488bae618 00000000001d1ea0 ffff880054400000 0000000000000007
+> [ 1399.478383] Call Trace:
+> [ 1399.478720]  [<lib/dump_stack.c:52>] dump_stack+0x52/0x7f
+> [ 1399.479499]  [<kernel/panic.c:417>] warn_slowpath_common+0x87/0xb0
+> [ 1399.480159]  [<kernel/panic.c:451>] warn_slowpath_null+0x15/0x20
+> [ 1399.480159]  [<kernel/events/core.c:5659>] perf_swevent_add+0x158/0x190
+> [ 1399.480159]  [<kernel/events/core.c:1689>] event_sched_in+0xd0/0x1c0
+> [ 1399.480159]  [<kernel/events/core.c:1730>] group_sched_in+0x4c/0x180
+> [ 1399.480159]  [<kernel/events/core.c:2423 kernel/events/core.c:2480>] ctx_sched_in+0x176/0x300
+> [ 1399.480159]  [<kernel/events/core.c:2493 kernel/events/core.c:1841>] perf_event_sched_in+0x45/0xa0
+> [ 1399.480159]  [<kernel/events/core.c:2519>] perf_event_context_sched_in+0x8d/0xc0
+> [ 1399.480159]  [<kernel/sched/cputime.c:392>] ? vtime_common_task_switch+0x2d/0x40
+> [ 1399.480159]  [<kernel/events/core.c:2611>] __perf_event_task_sched_in+0x4c/0x1c0
+> [ 1399.480159]  [<include/linux/perf_event.h:679 kernel/sched/core.c:2147>] finish_task_switch+0x65/0x160
+> [ 1399.480159]  [<kernel/sched/core.c:2721>] __schedule+0x793/0x840
+> [ 1399.480159]  [<include/linux/spinlock_api_smp.h:152 kernel/locking/spinlock.c:183>] ? _raw_spin_unlock+0x41/0x50
+> [ 1399.480159]  [<kernel/sched/core.c:2751>] schedule+0x65/0x70
+> [ 1399.480159]  [<arch/x86/include/asm/atomic.h:26 include/linux/jump_label.h:148 include/linux/context_tracking_state.h:27 include/linux/context_tracking.h:20 kernel/sched/core.c:2765>] schedule_user+0x1d/0x40
+> [ 1399.480159]  [<arch/x86/kernel/entry_64.S:1080>] retint_careful+0x19/0x3c
+>
+>
+> Thanks,
+> Sasha
 
-thanks,
-
-greg k-h
