@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755186AbaC3X4S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:56:18 -0400
+	id S1755161AbaC3X4R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:56:17 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754600AbaC3Xn0 (ORCPT
+	by vger.kernel.org with ESMTP id S1753426AbaC3Xn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:43:26 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Mark Rutland" <mark.rutland@arm.com>,
-        "Will Deacon" <will.deacon@arm.com>,
-        "Russell King" <rmk+kernel@arm.linux.org.uk>
+CC: akpm@linux-foundation.org, "Levente Kurusa" <levex@linux.com>,
+        "Tejun Heo" <tj@kernel.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.424665253@decadent.org.uk>
+Message-ID: <lsq.1396221815.770893551@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 099/200] ARM: 7955/1: spinlock: ensure we have a
- compiler barrier before sev
+Subject: [PATCH 3.2 125/200] ahci: disable NCQ on Samsung pci-e SSDs on
+ macbooks
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,59 +32,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Will Deacon <will.deacon@arm.com>
+From: Levente Kurusa <levex@linux.com>
 
-commit 7c8746a9eb287642deaad0e7c2cdf482dce5e4be upstream.
+commit 67809f85d31eac600f6b28defa5386c9d2a13b1d upstream.
 
-When unlocking a spinlock, we require the following, strictly ordered
-sequence of events:
+Samsung's pci-e SSDs with device ID 0x1600 which are found on some
+macbooks time out on NCQ commands.  Blacklist NCQ on the device so
+that the affected machines can at least boot.
 
-	<barrier>	/* dmb */
-	<unlock>
-	<barrier>	/* dsb */
-	<sev>
-
-Whilst the code does indeed reflect this in terms of the architecture,
-the final <barrier> + <sev> have been contracted into a single inline
-asm without a "memory" clobber, therefore the compiler is at liberty to
-reorder the unlock to the end of the above sequence. In such a case,
-a waiting CPU may be woken up before the lock has been unlocked, leading
-to extremely poor performance.
-
-This patch reworks the dsb_sev() function to make use of the dsb()
-macro and ensure ordering against the unlock.
-
-Reported-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Russell King <rmk+kernel@arm.linux.org.uk>
-[bwh: Backported to 3.2: 'ishst' variant is not used here]
+Original-patch-by: Levente Kurusa <levex@linux.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=60731
+[bwh: Backported to 3.2: adjust context]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/arm/include/asm/spinlock.h | 15 +++------------
- 1 file changed, 3 insertions(+), 12 deletions(-)
+ drivers/ata/ahci.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/arch/arm/include/asm/spinlock.h
-+++ b/arch/arm/include/asm/spinlock.h
-@@ -44,18 +44,9 @@
+--- a/drivers/ata/ahci.c
++++ b/drivers/ata/ahci.c
+@@ -61,6 +61,7 @@ enum board_ids {
+ 	/* board IDs by feature in alphabetical order */
+ 	board_ahci,
+ 	board_ahci_ign_iferr,
++	board_ahci_noncq,
+ 	board_ahci_nosntf,
+ 	board_ahci_yes_fbs,
  
- static inline void dsb_sev(void)
- {
--#if __LINUX_ARM_ARCH__ >= 7
--	__asm__ __volatile__ (
--		"dsb\n"
--		SEV
--	);
--#else
--	__asm__ __volatile__ (
--		"mcr p15, 0, %0, c7, c10, 4\n"
--		SEV
--		: : "r" (0)
--	);
--#endif
+@@ -123,6 +124,13 @@ static const struct ata_port_info ahci_p
+ 		.udma_mask	= ATA_UDMA6,
+ 		.port_ops	= &ahci_ops,
+ 	},
++	[board_ahci_noncq] = {
++		AHCI_HFLAGS	(AHCI_HFLAG_NO_NCQ),
++		.flags		= AHCI_FLAG_COMMON,
++		.pio_mask	= ATA_PIO4,
++		.udma_mask	= ATA_UDMA6,
++		.port_ops	= &ahci_ops,
++	},
+ 	[board_ahci_nosntf] =
+ 	{
+ 		AHCI_HFLAGS	(AHCI_HFLAG_NO_SNTF),
+@@ -458,6 +466,12 @@ static const struct pci_device_id ahci_p
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0611), board_ahci },	/* ASM1061 */
+ 	{ PCI_VDEVICE(ASMEDIA, 0x0612), board_ahci },	/* ASM1062 */
+ 
++	/*
++	 * Samsung SSDs found on some macbooks.  NCQ times out.
++	 * https://bugzilla.kernel.org/show_bug.cgi?id=60731
++	 */
++	{ PCI_VDEVICE(SAMSUNG, 0x1600), board_ahci_noncq },
 +
-+	dsb();
-+	__asm__(SEV);
- }
+ 	/* Enmotus */
+ 	{ PCI_DEVICE(0x1c44, 0x8000), board_ahci },
  
- /*
 
