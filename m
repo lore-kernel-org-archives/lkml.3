@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755496AbaCaAW0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:22:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36292 "EHLO
+	id S1755479AbaCaAWX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:22:23 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36290 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752932AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752933AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Krzysztof Kozlowski" <k.kozlowski@samsung.com>
+CC: akpm@linux-foundation.org, "Johannes Weiner" <hannes@cmpxchg.org>,
+        "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "David Rientjes" <rientjes@google.com>,
+        "Michal Hocko" <mhocko@suse.cz>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.122452167@decadent.org.uk>
+Message-ID: <lsq.1396221815.82329646@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 071/200] power: max17040: Fix NULL pointer dereference
- when there is no platform_data
+Subject: [PATCH 3.2 068/200] mm, oom: base root bonus on current usage
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,85 +33,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: David Rientjes <rientjes@google.com>
 
-commit ac323d8d807060f7c95a685a9fe861e7b6300993 upstream.
+commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
 
-Fix NULL pointer dereference of "chip->pdata" if platform_data was not
-supplied to the driver.
+A 3% of system memory bonus is sometimes too excessive in comparison to
+other processes.
 
-The driver during probe stored the pointer to the platform_data:
-	chip->pdata = client->dev.platform_data;
-Later it was dereferenced in max17040_get_online() and
-max17040_get_status().
+With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
+killer tries to avoid killing privileged tasks by subtracting 3% of
+overall memory (system or cgroup) from their per-task consumption.  But
+as a result, all root tasks that consume less than 3% of overall memory
+are considered equal, and so it only takes 33+ privileged tasks pushing
+the system out of memory for the OOM killer to do something stupid and
+kill dhclient or other root-owned processes.  For example, on a 32G
+machine it can't tell the difference between the 1M agetty and the 10G
+fork bomb member.
 
-If platform_data was not supplied, the NULL pointer exception would
-happen:
+The changelog describes this 3% boost as the equivalent to the global
+overcommit limit being 3% higher for privileged tasks, but this is not
+the same as discounting 3% of overall memory from _every privileged task
+individually_ during OOM selection.
 
-[    6.626094] Unable to handle kernel  of a at virtual address 00000000
-[    6.628557] pgd = c0004000
-[    6.632868] [00000000] *pgd=66262564
-[    6.634636] Unable to handle kernel paging request at virtual address e6262000
-[    6.642014] pgd = de468000
-[    6.644700] [e6262000] *pgd=00000000
-[    6.648265] Internal error: Oops: 5 [#1] PREEMPT SMP ARM
-[    6.653552] Modules linked in:
-[    6.656598] CPU: 0 PID: 31 Comm: kworker/0:1 Not tainted 3.10.14-02717-gc58b4b4 #505
-[    6.664334] Workqueue: events max17040_work
-[    6.668488] task: dfa11b80 ti: df9f6000 task.ti: df9f6000
-[    6.673873] PC is at show_pte+0x80/0xb8
-[    6.677687] LR is at show_pte+0x3c/0xb8
-[    6.681503] pc : [<c001b7b8>]    lr : [<c001b774>]    psr: 600f0113
-[    6.681503] sp : df9f7d58  ip : 600f0113  fp : 00000009
-[    6.692965] r10: 00000000  r9 : 00000000  r8 : dfa11b80
-[    6.698171] r7 : df9f7ea0  r6 : e6262000  r5 : 00000000  r4 : 00000000
-[    6.704680] r3 : 00000000  r2 : e6262000  r1 : 600f0193  r0 : c05b3750
-[    6.711194] Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-[    6.718485] Control: 10c53c7d  Table: 5e46806a  DAC: 00000015
-[    6.724218] Process kworker/0:1 (pid: 31, stack limit = 0xdf9f6238)
-[    6.730465] Stack: (0xdf9f7d58 to 0xdf9f8000)
-[    6.914325] [<c001b7b8>] (show_pte+0x80/0xb8) from [<c047107c>] (__do_kernel_fault.part.9+0x44/0x74)
-[    6.923425] [<c047107c>] (__do_kernel_fault.part.9+0x44/0x74) from [<c001bb7c>] (do_page_fault+0x2c4/0x360)
-[    6.933144] [<c001bb7c>] (do_page_fault+0x2c4/0x360) from [<c0008400>] (do_DataAbort+0x34/0x9c)
-[    6.941825] [<c0008400>] (do_DataAbort+0x34/0x9c) from [<c000e5d8>] (__dabt_svc+0x38/0x60)
-[    6.950058] Exception stack(0xdf9f7ea0 to 0xdf9f7ee8)
-[    6.955099] 7ea0: df0c1790 00000000 00000002 00000000 df0c1794 df0c1790 df0c1790 00000042
-[    6.963271] 7ec0: df0c1794 00000001 00000000 00000009 00000000 df9f7ee8 c0306268 c0306270
-[    6.971419] 7ee0: a00f0113 ffffffff
-[    6.974902] [<c000e5d8>] (__dabt_svc+0x38/0x60) from [<c0306270>] (max17040_work+0x8c/0x144)
-[    6.983317] [<c0306270>] (max17040_work+0x8c/0x144) from [<c003f364>] (process_one_work+0x138/0x440)
-[    6.992429] [<c003f364>] (process_one_work+0x138/0x440) from [<c003fa64>] (worker_thread+0x134/0x3b8)
-[    7.001628] [<c003fa64>] (worker_thread+0x134/0x3b8) from [<c00454bc>] (kthread+0xa4/0xb0)
-[    7.009875] [<c00454bc>] (kthread+0xa4/0xb0) from [<c000eb28>] (ret_from_fork+0x14/0x2c)
-[    7.017943] Code: e1a03005 e2422480 e0826104 e59f002c (e7922104)
-[    7.024017] ---[ end trace 73bc7006b9cc5c79 ]---
+Replace the 3% of system memory bonus with a 3% of current memory usage
+bonus.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Fixes: c6f4a42de60b981dd210de01cd3e575835e3158e
+By giving root tasks a bonus that is proportional to their actual size,
+they remain comparable even when relatively small.  In the example
+above, the OOM killer will discount the 1M agetty's 256 badness points
+down to 179, and the 10G fork bomb's 262144 points down to 183500 points
+and make the right choice, instead of discounting both to 0 and killing
+agetty because it's first in the task list.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+Reported-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Michal Hocko <mhocko@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[bwh: Backported to 3.2: existing code changes 'points' directly rather
+ than using 'adj' variable]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/power/max17040_battery.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ Documentation/filesystems/proc.txt | 4 ++--
+ mm/oom_kill.c                      | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/power/max17040_battery.c
-+++ b/drivers/power/max17040_battery.c
-@@ -148,7 +148,7 @@ static void max17040_get_online(struct i
- {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -1293,8 +1293,8 @@ may allocate from based on an estimation
+ For example, if a task is using all allowed memory, its badness score will be
+ 1000.  If it is using half of its allowed memory, its score will be 500.
  
--	if (chip->pdata->battery_online)
-+	if (chip->pdata && chip->pdata->battery_online)
- 		chip->online = chip->pdata->battery_online();
- 	else
- 		chip->online = 1;
-@@ -158,7 +158,8 @@ static void max17040_get_status(struct i
- {
- 	struct max17040_chip *chip = i2c_get_clientdata(client);
+-There is an additional factor included in the badness score: root
+-processes are given 3% extra memory over other tasks.
++There is an additional factor included in the badness score: the current memory
++and swap usage is discounted by 3% for root processes.
  
--	if (!chip->pdata->charger_online || !chip->pdata->charger_enable) {
-+	if (!chip->pdata || !chip->pdata->charger_online
-+			|| !chip->pdata->charger_enable) {
- 		chip->status = POWER_SUPPLY_STATUS_UNKNOWN;
- 		return;
- 	}
+ The amount of "allowed" memory depends on the context in which the oom killer
+ was called.  If it is due to the memory assigned to the allocating task's cpuset
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -213,7 +213,7 @@ unsigned int oom_badness(struct task_str
+ 	 * implementation used by LSMs.
+ 	 */
+ 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
+-		points -= 30;
++		points -= (points * 3) / 100;
+ 
+ 	/*
+ 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
 
