@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaCaAOu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:14:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36399 "EHLO
+	id S1754430AbaCaAOt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:14:49 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36396 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753045AbaC3XZC (ORCPT
+	by vger.kernel.org with ESMTP id S1752695AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Ulrich Hahn" <uhahn@eanco.de>, "Johan Hovold" <johan@hovold.com>
+CC: akpm@linux-foundation.org, "Vinod Koul" <vinod.koul@intel.com>,
+        "Dan Carpenter" <dan.carpenter@oracle.com>,
+        "Linus Walleij" <linus.walleij@linaro.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.651263966@decadent.org.uk>
+Message-ID: <lsq.1396221815.639724549@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 085/200] USB: ftdi_sio: add Tagsys RFID Reader IDs
+Subject: [PATCH 3.2 120/200] dma: ste_dma40: don't dereference free:d
+ descriptor
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,47 +33,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ulrich Hahn <uhahn@eanco.de>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-commit 76f24e3f39a1a94bab0d54e98899d64abcd9f69c upstream.
+commit e9baa9d9d520fb0e24cca671e430689de2d4a4b2 upstream.
 
-Adding two more IDs to the ftdi_sio usb serial driver.
-It now connects Tagsys RFID readers.
-There might be more IDs out there for other Tagsys models.
+It appears that in the DMA40 driver the DMA tasklet will very
+often dereference memory for a descriptor just free:d from the
+DMA40 slab. Nothing happens because no other part of the driver
+has yet had a chance to claim this memory, but it's really
+nasty to dereference free:d memory, so let's check the flag
+before the descriptor is free and store it in a bool variable.
 
-Signed-off-by: Ulrich Hahn <uhahn@eanco.de>
-Cc: Johan Hovold <johan@hovold.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Vinod Koul <vinod.koul@intel.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/serial/ftdi_sio.c     | 2 ++
- drivers/usb/serial/ftdi_sio_ids.h | 6 ++++++
- 2 files changed, 8 insertions(+)
+ drivers/dma/ste_dma40.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -203,6 +203,8 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_IOBOARD_PID) },
- 	{ USB_DEVICE(INTERBIOMETRICS_VID, INTERBIOMETRICS_MINI_IOBOARD_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_SPROG_II) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_LP101_PID) },
-+	{ USB_DEVICE(FTDI_VID, FTDI_TAGSYS_P200X_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_LENZ_LIUSB_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_632_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_XF_634_PID) },
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -364,6 +364,12 @@
- /* Sprog II (Andrew Crosland's SprogII DCC interface) */
- #define FTDI_SPROG_II		0xF0C8
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -1202,6 +1202,7 @@ static void dma_tasklet(unsigned long da
+ 	struct d40_chan *d40c = (struct d40_chan *) data;
+ 	struct d40_desc *d40d;
+ 	unsigned long flags;
++	bool callback_active;
+ 	dma_async_tx_callback callback;
+ 	void *callback_param;
  
-+/*
-+ * Two of the Tagsys RFID Readers
-+ */
-+#define FTDI_TAGSYS_LP101_PID	0xF0E9	/* Tagsys L-P101 RFID*/
-+#define FTDI_TAGSYS_P200X_PID	0xF0EE	/* Tagsys Medio P200x RFID*/
-+
- /* an infrared receiver for user access control with IR tags */
- #define FTDI_PIEGROUP_PID	0xF208	/* Product Id */
+@@ -1225,6 +1226,7 @@ static void dma_tasklet(unsigned long da
+ 	}
  
+ 	/* Callback to client */
++	callback_active = !!(d40d->txd.flags & DMA_PREP_INTERRUPT);
+ 	callback = d40d->txd.callback;
+ 	callback_param = d40d->txd.callback_param;
+ 
+@@ -1249,7 +1251,7 @@ static void dma_tasklet(unsigned long da
+ 
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 
+-	if (callback && (d40d->txd.flags & DMA_PREP_INTERRUPT))
++	if (callback_active && callback)
+ 		callback(callback_param);
+ 
+ 	return;
 
