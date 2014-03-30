@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321AbaCaALb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:11:31 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
+	id S1754185AbaC3Xll (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:41:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36424 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753957AbaC3Xmd (ORCPT
+	by vger.kernel.org with ESMTP id S1753063AbaC3XZC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:42:33 -0400
+	Sun, 30 Mar 2014 19:25:02 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Eric Paris" <eparis@redhat.com>,
-        "Tetsuo Handa" <penguin-kernel@I-love.SAKURA.ne.jp>,
-        "Paul Moore" <pmoore@redhat.com>
+CC: akpm@linux-foundation.org, "Ralf Baechle" <ralf@linux-mips.org>,
+        "James Rodriguez" <jamesr@juniper.net>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.616209265@decadent.org.uk>
+Message-ID: <lsq.1396221815.542911354@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 022/200] SELinux: Fix memory leak upon loading policy
+Subject: [PATCH 3.2 114/200] MIPS: Fix potencial corruption
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,77 +31,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+From: Ralf Baechle <ralf@linux-mips.org>
 
-commit 8ed814602876bec9bad2649ca17f34b499357a1c upstream.
+commit a16dad7763420a3b46cff1e703a9070827796cfc upstream.
 
-Hello.
+Normally r4k_dma_cache_inv should only ever be called with cacheline
+aligned addresses.  If however, it isn't there is the theoretical
+possibility of data corruption.  There is no correct way of handling this
+and anyway, it should only happen if the DMA API is used incorrectly
+so drop
 
-I got below leak with linux-3.10.0-54.0.1.el7.x86_64 .
+There is a different corruption scenario with these CACHE instructions
+removed but again there is no way of handling this correctly and it can
+be triggered only through incorrect use of the DMA API.
 
-[  681.903890] kmemleak: 5538 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+So just get rid of the complexity.
 
-Below is a patch, but I don't know whether we need special handing for undoing
-ebitmap_set_bit() call.
-----------
->>From fe97527a90fe95e2239dfbaa7558f0ed559c0992 Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Mon, 6 Jan 2014 16:30:21 +0900
-Subject: [PATCH] SELinux: Fix memory leak upon loading policy
-
-Commit 2463c26d "SELinux: put name based create rules in a hashtable" did not
-check return value from hashtab_insert() in filename_trans_read(). It leaks
-memory if hashtab_insert() returns error.
-
-  unreferenced object 0xffff88005c9160d0 (size 8):
-    comm "systemd", pid 1, jiffies 4294688674 (age 235.265s)
-    hex dump (first 8 bytes):
-      57 0b 00 00 6b 6b 6b a5                          W...kkk.
-    backtrace:
-      [<ffffffff816604ae>] kmemleak_alloc+0x4e/0xb0
-      [<ffffffff811cba5e>] kmem_cache_alloc_trace+0x12e/0x360
-      [<ffffffff812aec5d>] policydb_read+0xd1d/0xf70
-      [<ffffffff812b345c>] security_load_policy+0x6c/0x500
-      [<ffffffff812a623c>] sel_write_load+0xac/0x750
-      [<ffffffff811eb680>] vfs_write+0xc0/0x1f0
-      [<ffffffff811ec08c>] SyS_write+0x4c/0xa0
-      [<ffffffff81690419>] system_call_fastpath+0x16/0x1b
-      [<ffffffffffffffff>] 0xffffffffffffffff
-
-However, we should not return EEXIST error to the caller, or the systemd will
-show below message and the boot sequence freezes.
-
-  systemd[1]: Failed to load SELinux policy. Freezing.
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Eric Paris <eparis@redhat.com>
-Signed-off-by: Paul Moore <pmoore@redhat.com>
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+Reported-by: James Rodriguez <jamesr@juniper.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- security/selinux/ss/policydb.c | 14 +++++++++++++-
- 1 file changed, 13 insertions(+), 1 deletion(-)
+ arch/mips/mm/c-r4k.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1914,7 +1914,19 @@ static int filename_trans_read(struct po
- 		if (rc)
- 			goto out;
- 
--		hashtab_insert(p->filename_trans, ft, otype);
-+		rc = hashtab_insert(p->filename_trans, ft, otype);
-+		if (rc) {
-+			/*
-+			 * Do not return -EEXIST to the caller, or the system
-+			 * will not boot.
-+			 */
-+			if (rc != -EEXIST)
-+				goto out;
-+			/* But free memory to avoid memory leak. */
-+			kfree(ft);
-+			kfree(name);
-+			kfree(otype);
-+		}
+--- a/arch/mips/mm/c-r4k.c
++++ b/arch/mips/mm/c-r4k.c
+@@ -633,9 +633,6 @@ static void r4k_dma_cache_inv(unsigned l
+ 		if (size >= scache_size)
+ 			r4k_blast_scache();
+ 		else {
+-			unsigned long lsize = cpu_scache_line_size();
+-			unsigned long almask = ~(lsize - 1);
+-
+ 			/*
+ 			 * There is no clearly documented alignment requirement
+ 			 * for the cache instruction on MIPS processors and
+@@ -644,9 +641,6 @@ static void r4k_dma_cache_inv(unsigned l
+ 			 * hit ops with insufficient alignment.  Solved by
+ 			 * aligning the address to cache line size.
+ 			 */
+-			cache_op(Hit_Writeback_Inv_SD, addr & almask);
+-			cache_op(Hit_Writeback_Inv_SD,
+-				 (addr + size - 1) & almask);
+ 			blast_inv_scache_range(addr, addr + size);
+ 		}
+ 		__sync();
+@@ -656,12 +650,7 @@ static void r4k_dma_cache_inv(unsigned l
+ 	if (cpu_has_safe_index_cacheops && size >= dcache_size) {
+ 		r4k_blast_dcache();
+ 	} else {
+-		unsigned long lsize = cpu_dcache_line_size();
+-		unsigned long almask = ~(lsize - 1);
+-
+ 		R4600_HIT_CACHEOP_WAR_IMPL;
+-		cache_op(Hit_Writeback_Inv_D, addr & almask);
+-		cache_op(Hit_Writeback_Inv_D, (addr + size - 1)  & almask);
+ 		blast_inv_dcache_range(addr, addr + size);
  	}
- 	hash_eval(p->filename_trans, "filenametr");
- 	return 0;
+ 
 
