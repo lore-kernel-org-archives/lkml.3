@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753483AbaC3X1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:27:35 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36606 "EHLO
+	id S1753454AbaC3X1e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:27:34 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36603 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753209AbaC3XZG (ORCPT
+	by vger.kernel.org with ESMTP id S1753204AbaC3XZG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:06 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Kamal Mostafa" <kamal@canonical.com>,
-        "Mikulas Patocka" <mikulas@artax.karlin.mff.cuni.cz>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Steven Rostedt" <rostedt@goodmis.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.398936511@decadent.org.uk>
+Message-ID: <lsq.1396221815.123882954@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 182/200] hpfs: remember free space
+Subject: [PATCH 3.2 184/200] ftrace: Have function graph only trace based
+ on global_ops filters
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,233 +33,183 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
+From: Steven Rostedt <rostedt@goodmis.org>
 
-commit 2cbe5c76fc5e38e9af4b709593146e4b8272b69e upstream.
+commit 23a8e8441a0a74dd612edf81dc89d1600bc0a3d1 upstream.
 
-Previously, hpfs scanned all bitmaps each time the user asked for free
-space using statfs.  This patch changes it so that hpfs scans the
-bitmaps only once, remembes the free space and on next invocation of
-statfs it returns the value instantly.
+Doing some different tests, I discovered that function graph tracing, when
+filtered via the set_ftrace_filter and set_ftrace_notrace files, does
+not always keep with them if another function ftrace_ops is registered
+to trace functions.
 
-New versions of wine are hammering on the statfs syscall very heavily,
-making some games unplayable when they're stored on hpfs, with load
-times in minutes.
+The reason is that function graph just happens to trace all functions
+that the function tracer enables. When there was only one user of
+function tracing, the function graph tracer did not need to worry about
+being called by functions that it did not want to trace. But now that there
+are other users, this becomes a problem.
 
-This should be backported to the stable kernels because it fixes
-user-visible problem (excessive level load times in wine).
+For example, one just needs to do the following:
 
-Signed-off-by: Mikulas Patocka <mikulas@artax.karlin.mff.cuni.cz>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ kamal: backport to 3.8 (no hpfs_prefetch_bitmap) ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+ # cd /sys/kernel/debug/tracing
+ # echo schedule > set_ftrace_filter
+ # echo function_graph > current_tracer
+ # cat trace
+[..]
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)    <idle>-0    =>   rcu_pre-7
+ ------------------------------------------
+
+ 0) ! 2980.314 us |  }
+ 0)               |  schedule() {
+ ------------------------------------------
+ 0)   rcu_pre-7    =>    <idle>-0
+ ------------------------------------------
+
+ 0) + 20.701 us   |  }
+
+ # echo 1 > /proc/sys/kernel/stack_tracer_enabled
+ # cat trace
+[..]
+ 1) + 20.825 us   |      }
+ 1) + 21.651 us   |    }
+ 1) + 30.924 us   |  } /* SyS_ioctl */
+ 1)               |  do_page_fault() {
+ 1)               |    __do_page_fault() {
+ 1)   0.274 us    |      down_read_trylock();
+ 1)   0.098 us    |      find_vma();
+ 1)               |      handle_mm_fault() {
+ 1)               |        _raw_spin_lock() {
+ 1)   0.102 us    |          preempt_count_add();
+ 1)   0.097 us    |          do_raw_spin_lock();
+ 1)   2.173 us    |        }
+ 1)               |        do_wp_page() {
+ 1)   0.079 us    |          vm_normal_page();
+ 1)   0.086 us    |          reuse_swap_page();
+ 1)   0.076 us    |          page_move_anon_rmap();
+ 1)               |          unlock_page() {
+ 1)   0.082 us    |            page_waitqueue();
+ 1)   0.086 us    |            __wake_up_bit();
+ 1)   1.801 us    |          }
+ 1)   0.075 us    |          ptep_set_access_flags();
+ 1)               |          _raw_spin_unlock() {
+ 1)   0.098 us    |            do_raw_spin_unlock();
+ 1)   0.105 us    |            preempt_count_sub();
+ 1)   1.884 us    |          }
+ 1)   9.149 us    |        }
+ 1) + 13.083 us   |      }
+ 1)   0.146 us    |      up_read();
+
+When the stack tracer was enabled, it enabled all functions to be traced, which
+now the function graph tracer also traces. This is a side effect that should
+not occur.
+
+To fix this a test is added when the function tracing is changed, as well as when
+the graph tracer is enabled, to see if anything other than the ftrace global_ops
+function tracer is enabled. If so, then the graph tracer calls a test trampoline
+that will look at the function that is being traced and compare it with the
+filters defined by the global_ops.
+
+As an optimization, if there's no other function tracers registered, or if
+the only registered function tracers also use the global ops, the function
+graph infrastructure will call the registered function graph callback directly
+and not go through the test trampoline.
+
+Fixes: d2d45c7a03a2 "tracing: Have stack_tracer use a separate list of functions"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- fs/hpfs/alloc.c   | 66 +++++++++++++++++++++++++++++++++++++++++++++++++++++--
- fs/hpfs/hpfs_fn.h |  2 +-
- fs/hpfs/super.c   | 32 ++++++++++++++++++++-------
- 3 files changed, 89 insertions(+), 11 deletions(-)
+ kernel/trace/ftrace.c | 45 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 44 insertions(+), 1 deletion(-)
 
---- a/fs/hpfs/alloc.c
-+++ b/fs/hpfs/alloc.c
-@@ -8,6 +8,58 @@
- 
- #include "hpfs_fn.h"
- 
-+static void hpfs_claim_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free)) {
-+			hpfs_error(s, "free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free--;
-+	}
-+}
-+
-+static void hpfs_claim_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free >= sbi->sb_fs_size)) {
-+			hpfs_error(s, "free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free = -1;
-+			return;
-+		}
-+		sbi->sb_n_free++;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_alloc(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(!sbi->sb_n_free_dnodes)) {
-+			hpfs_error(s, "dirband free count underflow, allocating sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes--;
-+	}
-+}
-+
-+static void hpfs_claim_dirband_free(struct super_block *s, secno sec)
-+{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes != (unsigned)-1) {
-+		if (unlikely(sbi->sb_n_free_dnodes >= sbi->sb_dirband_size / 4)) {
-+			hpfs_error(s, "dirband free count overflow, freeing sector %08x", sec);
-+			sbi->sb_n_free_dnodes = -1;
-+			return;
-+		}
-+		sbi->sb_n_free_dnodes++;
-+	}
-+}
-+
- /*
-  * Check if a sector is allocated in bitmap
-  * This is really slow. Turned on only if chk==2
-@@ -203,9 +255,15 @@ secno hpfs_alloc_sector(struct super_blo
- 	}
- 	sec = 0;
- 	ret:
-+	if (sec) {
-+		i = 0;
-+		do
-+			hpfs_claim_alloc(s, sec + i);
-+		while (unlikely(++i < n));
-+	}
- 	if (sec && f_p) {
- 		for (i = 0; i < forward; i++) {
--			if (!hpfs_alloc_if_possible(s, sec + i + 1)) {
-+			if (!hpfs_alloc_if_possible(s, sec + n + i)) {
- 				hpfs_error(s, "Prealloc doesn't work! Wanted %d, allocated at %08x, can't allocate %d", forward, sec, i);
- 				sec = 0;
- 				break;
-@@ -228,6 +286,7 @@ static secno alloc_in_dirband(struct sup
- 	nr >>= 2;
- 	sec = alloc_in_bmp(s, (~0x3fff) | nr, 1, 0);
- 	if (!sec) return 0;
-+	hpfs_claim_dirband_alloc(s, sec);
- 	return ((sec & 0x3fff) << 2) + sbi->sb_dirband_start;
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -190,6 +190,12 @@ static void update_global_ops(void)
+ 	global_ops.func = func;
  }
  
-@@ -242,6 +301,7 @@ int hpfs_alloc_if_possible(struct super_
- 		bmp[(sec & 0x3fff) >> 5] &= cpu_to_le32(~(1 << (sec & 0x1f)));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_alloc(s, sec);
- 		return 1;
- 	}
- 	hpfs_brelse4(&qbh);
-@@ -275,6 +335,7 @@ void hpfs_free_sectors(struct super_bloc
- 		return;
- 	}
- 	bmp[(sec & 0x3fff) >> 5] |= cpu_to_le32(1 << (sec & 0x1f));
-+	hpfs_claim_free(s, sec);
- 	if (!--n) {
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-@@ -359,6 +420,7 @@ void hpfs_free_dnode(struct super_block
- 		bmp[ssec >> 5] |= cpu_to_le32(1 << (ssec & 0x1f));
- 		hpfs_mark_4buffers_dirty(&qbh);
- 		hpfs_brelse4(&qbh);
-+		hpfs_claim_dirband_free(s, dno);
- 	}
- }
- 
-@@ -366,7 +428,7 @@ struct dnode *hpfs_alloc_dnode(struct su
- 			 dnode_secno *dno, struct quad_buffer_head *qbh)
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++static void update_function_graph_func(void);
++#else
++static inline void update_function_graph_func(void) { }
++#endif
++
+ static void update_ftrace_function(void)
  {
- 	struct dnode *d;
--	if (hpfs_count_one_bitmap(s, hpfs_sb(s)->sb_dmap) > FREE_DNODES_ADD) {
-+	if (hpfs_get_free_dnodes(s) > FREE_DNODES_ADD) {
- 		if (!(*dno = alloc_in_dirband(s, near)))
- 			if (!(*dno = hpfs_alloc_sector(s, near, 4, 0))) return NULL;
- 	} else {
---- a/fs/hpfs/hpfs_fn.h
-+++ b/fs/hpfs/hpfs_fn.h
-@@ -314,7 +314,7 @@ static inline struct hpfs_sb_info *hpfs_
- __printf(2, 3)
- void hpfs_error(struct super_block *, const char *, ...);
- int hpfs_stop_cycles(struct super_block *, int, int *, int *, char *);
--unsigned hpfs_count_one_bitmap(struct super_block *, secno);
-+unsigned hpfs_get_free_dnodes(struct super_block *);
- 
- /*
-  * local time (HPFS) to GMT (Unix)
---- a/fs/hpfs/super.c
-+++ b/fs/hpfs/super.c
-@@ -115,7 +115,7 @@ static void hpfs_put_super(struct super_
- 	kfree(sbi);
- }
- 
--unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
-+static unsigned hpfs_count_one_bitmap(struct super_block *s, secno secno)
+ 	ftrace_func_t func;
+@@ -237,6 +243,8 @@ static int remove_ftrace_ops(struct ftra
  {
- 	struct quad_buffer_head qbh;
- 	unsigned long *bits;
-@@ -123,7 +123,7 @@ unsigned hpfs_count_one_bitmap(struct su
+ 	struct ftrace_ops **p;
  
- 	bits = hpfs_map_4sectors(s, secno, &qbh, 4);
- 	if (!bits)
--		return 0;
-+		return (unsigned)-1;
- 	count = bitmap_weight(bits, 2048 * BITS_PER_BYTE);
- 	hpfs_brelse4(&qbh);
- 	return count;
-@@ -134,29 +134,45 @@ static unsigned count_bitmaps(struct sup
- 	unsigned n, count, n_bands;
- 	n_bands = (hpfs_sb(s)->sb_fs_size + 0x3fff) >> 14;
- 	count = 0;
--	for (n = 0; n < n_bands; n++)
--		count += hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+	for (n = 0; n < n_bands; n++) {
-+		unsigned c;
-+		c = hpfs_count_one_bitmap(s, le32_to_cpu(hpfs_sb(s)->sb_bmp_dir[n]));
-+		if (c != (unsigned)-1)
-+			count += c;
-+	}
- 	return count;
- }
++	update_function_graph_func();
++
+ 	/*
+ 	 * If we are removing the last function, then simply point
+ 	 * to the ftrace_stub.
+@@ -4067,6 +4075,7 @@ int ftrace_graph_entry_stub(struct ftrac
+ trace_func_graph_ret_t ftrace_graph_return =
+ 			(trace_func_graph_ret_t)ftrace_stub;
+ trace_func_graph_ent_t ftrace_graph_entry = ftrace_graph_entry_stub;
++static trace_func_graph_ent_t __ftrace_graph_entry = ftrace_graph_entry_stub;
  
-+unsigned hpfs_get_free_dnodes(struct super_block *s)
+ /* Try to assign a return stack array on FTRACE_RETSTACK_ALLOC_SIZE tasks. */
+ static int alloc_retstack_tasklist(struct ftrace_ret_stack **ret_stack_list)
+@@ -4207,6 +4216,30 @@ static struct ftrace_ops fgraph_ops __re
+ 	.flags		= FTRACE_OPS_FL_GLOBAL,
+ };
+ 
++static int ftrace_graph_entry_test(struct ftrace_graph_ent *trace)
 +{
-+	struct hpfs_sb_info *sbi = hpfs_sb(s);
-+	if (sbi->sb_n_free_dnodes == (unsigned)-1) {
-+		unsigned c = hpfs_count_one_bitmap(s, sbi->sb_dmap);
-+		if (c == (unsigned)-1)
-+			return 0;
-+		sbi->sb_n_free_dnodes = c;
-+	}
-+	return sbi->sb_n_free_dnodes;
++	if (!ftrace_ops_test(&global_ops, trace->func))
++		return 0;
++	return __ftrace_graph_entry(trace);
 +}
 +
- static int hpfs_statfs(struct dentry *dentry, struct kstatfs *buf)
++/*
++ * The function graph tracer should only trace the functions defined
++ * by set_ftrace_filter and set_ftrace_notrace. If another function
++ * tracer ops is registered, the graph tracer requires testing the
++ * function against the global ops, and not just trace any function
++ * that any ftrace_ops registered.
++ */
++static void update_function_graph_func(void)
++{
++	if (ftrace_ops_list == &ftrace_list_end ||
++	    (ftrace_ops_list == &global_ops &&
++	     global_ops.next == &ftrace_list_end))
++		ftrace_graph_entry = __ftrace_graph_entry;
++	else
++		ftrace_graph_entry = ftrace_graph_entry_test;
++}
++
+ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
+ 			trace_func_graph_ent_t entryfunc)
  {
- 	struct super_block *s = dentry->d_sb;
- 	struct hpfs_sb_info *sbi = hpfs_sb(s);
- 	u64 id = huge_encode_dev(s->s_bdev->bd_dev);
-+
- 	hpfs_lock(s);
+@@ -4231,7 +4264,16 @@ int register_ftrace_graph(trace_func_gra
+ 	}
  
--	/*if (sbi->sb_n_free == -1) {*/
-+	if (sbi->sb_n_free == (unsigned)-1)
- 		sbi->sb_n_free = count_bitmaps(s);
--		sbi->sb_n_free_dnodes = hpfs_count_one_bitmap(s, sbi->sb_dmap);
--	/*}*/
+ 	ftrace_graph_return = retfunc;
+-	ftrace_graph_entry = entryfunc;
 +
- 	buf->f_type = s->s_magic;
- 	buf->f_bsize = 512;
- 	buf->f_blocks = sbi->sb_fs_size;
- 	buf->f_bfree = sbi->sb_n_free;
- 	buf->f_bavail = sbi->sb_n_free;
- 	buf->f_files = sbi->sb_dirband_size / 4;
--	buf->f_ffree = sbi->sb_n_free_dnodes;
-+	buf->f_ffree = hpfs_get_free_dnodes(s);
- 	buf->f_fsid.val[0] = (u32)id;
- 	buf->f_fsid.val[1] = (u32)(id >> 32);
- 	buf->f_namelen = 254;
++	/*
++	 * Update the indirect function to the entryfunc, and the
++	 * function that gets called to the entry_test first. Then
++	 * call the update fgraph entry function to determine if
++	 * the entryfunc should be called directly or not.
++	 */
++	__ftrace_graph_entry = entryfunc;
++	ftrace_graph_entry = ftrace_graph_entry_test;
++	update_function_graph_func();
+ 
+ 	ret = ftrace_startup(&fgraph_ops, FTRACE_START_FUNC_RET);
+ 
+@@ -4250,6 +4292,7 @@ void unregister_ftrace_graph(void)
+ 	ftrace_graph_active--;
+ 	ftrace_graph_return = (trace_func_graph_ret_t)ftrace_stub;
+ 	ftrace_graph_entry = ftrace_graph_entry_stub;
++	__ftrace_graph_entry = ftrace_graph_entry_stub;
+ 	ftrace_shutdown(&fgraph_ops, FTRACE_STOP_FUNC_RET);
+ 	unregister_pm_notifier(&ftrace_suspend_notifier);
+ 	unregister_trace_sched_switch(ftrace_graph_probe_sched_switch, NULL);
 
