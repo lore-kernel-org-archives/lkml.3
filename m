@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755204AbaCaAUG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:20:06 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36329 "EHLO
+	id S1755156AbaCaAUE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:20:04 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36338 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752981AbaC3XZB (ORCPT
+	by vger.kernel.org with ESMTP id S1752989AbaC3XZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:01 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Herbert Xu" <herbert@gondor.apana.org.au>,
-        "Harald Freudenberger" <freude@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Andy Grover" <agrover@redhat.com>,
+        "Nicholas Bellinger" <nab@linux-iscsi.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.960621823@decadent.org.uk>
+Message-ID: <lsq.1396221815.877163044@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 066/200] crypto: s390 - fix des and des3_ede cbc
- concurrency issue
+Subject: [PATCH 3.2 063/200] target/iscsi: Fix network portal creation race
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,113 +31,148 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Harald Freudenberger <freude@linux.vnet.ibm.com>
+From: Andy Grover <agrover@redhat.com>
 
-commit adc3fcf1552b6e406d172fd9690bbd1395053d13 upstream.
+commit ee291e63293146db64668e8d65eb35c97e8324f4 upstream.
 
-In s390 des and des3_ede cbc mode the iv value is not protected
-against concurrency access and modifications from another running
-en/decrypt operation which is using the very same tfm struct
-instance. This fix copies the iv to the local stack before
-the crypto operation and stores the value back when done.
+When creating network portals rapidly, such as when restoring a
+configuration, LIO's code to reuse existing portals can return a false
+negative if the thread hasn't run yet and set np_thread_state to
+ISCSI_NP_THREAD_ACTIVE. This causes an error in the network stack
+when attempting to bind to the same address/port.
 
-Signed-off-by: Harald Freudenberger <freude@linux.vnet.ibm.com>
-Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+This patch sets NP_THREAD_ACTIVE before the np is placed on g_np_list,
+so even if the thread hasn't run yet, iscsit_get_np will return the
+existing np.
+
+Also, convert np_lock -> np_mutex + hold across adding new net portal
+to g_np_list to prevent a race where two threads may attempt to create
+the same network portal, resulting in one of them failing.
+
+(nab: Add missing mutex_unlocks in iscsit_add_np failure paths)
+(DanC: Fix incorrect spin_unlock -> spin_unlock_bh)
+
+Signed-off-by: Andy Grover <agrover@redhat.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/s390/crypto/des_s390.c | 26 ++++++++++++++------------
- 1 file changed, 14 insertions(+), 12 deletions(-)
+ drivers/target/iscsi/iscsi_target.c | 34 +++++++++++++++++++++-------------
+ 1 file changed, 21 insertions(+), 13 deletions(-)
 
---- a/arch/s390/crypto/des_s390.c
-+++ b/arch/s390/crypto/des_s390.c
-@@ -106,29 +106,35 @@ static int ecb_desall_crypt(struct blkci
+--- a/drivers/target/iscsi/iscsi_target.c
++++ b/drivers/target/iscsi/iscsi_target.c
+@@ -50,7 +50,7 @@
+ static LIST_HEAD(g_tiqn_list);
+ static LIST_HEAD(g_np_list);
+ static DEFINE_SPINLOCK(tiqn_lock);
+-static DEFINE_SPINLOCK(np_lock);
++static DEFINE_MUTEX(np_lock);
+ 
+ static struct idr tiqn_idr;
+ struct idr sess_idr;
+@@ -262,6 +262,9 @@ int iscsit_deaccess_np(struct iscsi_np *
+ 	return 0;
  }
  
- static int cbc_desall_crypt(struct blkcipher_desc *desc, long func,
--			    u8 *iv, struct blkcipher_walk *walk)
-+			    struct blkcipher_walk *walk)
- {
-+	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	int ret = blkcipher_walk_virt(desc, walk);
- 	unsigned int nbytes = walk->nbytes;
-+	struct {
-+		u8 iv[DES_BLOCK_SIZE];
-+		u8 key[DES3_KEY_SIZE];
-+	} param;
++/*
++ * Called with mutex np_lock held
++ */
+ static struct iscsi_np *iscsit_get_np(
+ 	struct __kernel_sockaddr_storage *sockaddr,
+ 	int network_transport)
+@@ -272,11 +275,10 @@ static struct iscsi_np *iscsit_get_np(
+ 	int ip_match = 0;
+ 	u16 port;
  
- 	if (!nbytes)
- 		goto out;
+-	spin_lock_bh(&np_lock);
+ 	list_for_each_entry(np, &g_np_list, np_list) {
+-		spin_lock(&np->np_thread_lock);
++		spin_lock_bh(&np->np_thread_lock);
+ 		if (np->np_thread_state != ISCSI_NP_THREAD_ACTIVE) {
+-			spin_unlock(&np->np_thread_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			continue;
+ 		}
  
--	memcpy(iv, walk->iv, DES_BLOCK_SIZE);
-+	memcpy(param.iv, walk->iv, DES_BLOCK_SIZE);
-+	memcpy(param.key, ctx->key, DES3_KEY_SIZE);
- 	do {
- 		/* only use complete blocks */
- 		unsigned int n = nbytes & ~(DES_BLOCK_SIZE - 1);
- 		u8 *out = walk->dst.virt.addr;
- 		u8 *in = walk->src.virt.addr;
+@@ -309,13 +311,11 @@ static struct iscsi_np *iscsit_get_np(
+ 			 * while iscsi_tpg_add_network_portal() is called.
+ 			 */
+ 			np->np_exports++;
+-			spin_unlock(&np->np_thread_lock);
+-			spin_unlock_bh(&np_lock);
++			spin_unlock_bh(&np->np_thread_lock);
+ 			return np;
+ 		}
+-		spin_unlock(&np->np_thread_lock);
++		spin_unlock_bh(&np->np_thread_lock);
+ 	}
+-	spin_unlock_bh(&np_lock);
  
--		ret = crypt_s390_kmc(func, iv, out, in, n);
-+		ret = crypt_s390_kmc(func, &param, out, in, n);
- 		if (ret < 0 || ret != n)
- 			return -EIO;
- 
- 		nbytes &= DES_BLOCK_SIZE - 1;
- 		ret = blkcipher_walk_done(desc, walk, nbytes);
- 	} while ((nbytes = walk->nbytes));
--	memcpy(walk->iv, iv, DES_BLOCK_SIZE);
-+	memcpy(walk->iv, param.iv, DES_BLOCK_SIZE);
- 
- out:
- 	return ret;
-@@ -181,22 +187,20 @@ static int cbc_des_encrypt(struct blkcip
- 			   struct scatterlist *dst, struct scatterlist *src,
- 			   unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
- 
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_DEA_ENCRYPT, &walk);
+ 	return NULL;
  }
+@@ -329,16 +329,22 @@ struct iscsi_np *iscsit_add_np(
+ 	struct sockaddr_in6 *sock_in6;
+ 	struct iscsi_np *np;
+ 	int ret;
++
++	mutex_lock(&np_lock);
++
+ 	/*
+ 	 * Locate the existing struct iscsi_np if already active..
+ 	 */
+ 	np = iscsit_get_np(sockaddr, network_transport);
+-	if (np)
++	if (np) {
++		mutex_unlock(&np_lock);
+ 		return np;
++	}
  
- static int cbc_des_decrypt(struct blkcipher_desc *desc,
- 			   struct scatterlist *dst, struct scatterlist *src,
- 			   unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
+ 	np = kzalloc(sizeof(struct iscsi_np), GFP_KERNEL);
+ 	if (!np) {
+ 		pr_err("Unable to allocate memory for struct iscsi_np\n");
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(-ENOMEM);
+ 	}
  
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_DEA_DECRYPT, &walk);
- }
+@@ -361,6 +367,7 @@ struct iscsi_np *iscsit_add_np(
+ 	ret = iscsi_target_setup_login_socket(np, sockaddr);
+ 	if (ret != 0) {
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
  
- static struct crypto_alg cbc_des_alg = {
-@@ -333,22 +337,20 @@ static int cbc_des3_encrypt(struct blkci
- 			    struct scatterlist *dst, struct scatterlist *src,
- 			    unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
+@@ -369,6 +376,7 @@ struct iscsi_np *iscsit_add_np(
+ 		pr_err("Unable to create kthread: iscsi_np\n");
+ 		ret = PTR_ERR(np->np_thread);
+ 		kfree(np);
++		mutex_unlock(&np_lock);
+ 		return ERR_PTR(ret);
+ 	}
+ 	/*
+@@ -379,10 +387,10 @@ struct iscsi_np *iscsit_add_np(
+ 	 * point because iscsi_np has not been added to g_np_list yet.
+ 	 */
+ 	np->np_exports = 1;
++	np->np_thread_state = ISCSI_NP_THREAD_ACTIVE;
  
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_TDEA_192_ENCRYPT, &walk);
- }
+-	spin_lock_bh(&np_lock);
+ 	list_add_tail(&np->np_list, &g_np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
  
- static int cbc_des3_decrypt(struct blkcipher_desc *desc,
- 			    struct scatterlist *dst, struct scatterlist *src,
- 			    unsigned int nbytes)
- {
--	struct s390_des_ctx *ctx = crypto_blkcipher_ctx(desc->tfm);
- 	struct blkcipher_walk walk;
+ 	pr_debug("CORE[0] - Added Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
+@@ -453,9 +461,9 @@ int iscsit_del_np(struct iscsi_np *np)
+ 	}
+ 	iscsit_del_np_comm(np);
  
- 	blkcipher_walk_init(&walk, dst, src, nbytes);
--	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, ctx->iv, &walk);
-+	return cbc_desall_crypt(desc, KMC_TDEA_192_DECRYPT, &walk);
- }
+-	spin_lock_bh(&np_lock);
++	mutex_lock(&np_lock);
+ 	list_del(&np->np_list);
+-	spin_unlock_bh(&np_lock);
++	mutex_unlock(&np_lock);
  
- static struct crypto_alg cbc_des3_alg = {
+ 	pr_debug("CORE[0] - Removed Network Portal: %s:%hu on %s\n",
+ 		np->np_ip, np->np_port, (np->np_network_transport == ISCSI_TCP) ?
 
