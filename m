@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754849AbaCaAeg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:34:36 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36220 "EHLO
+	id S1754098AbaCaAed (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:34:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36222 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752804AbaC3XY6 (ORCPT
+	by vger.kernel.org with ESMTP id S1752811AbaC3XY6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:24:58 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,13 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>,
-        "Alexander Aristov" <aristov.alexander@gmail.com>
+CC: akpm@linux-foundation.org,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "Larry Finger" <Larry.Finger@lwfinger.net>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.905779574@decadent.org.uk>
+Message-ID: <lsq.1396221815.205030587@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 020/200] ALSA: rme9652: fix a missing comma in
- channel_map_9636_ds[]
+Subject: [PATCH 3.2 030/200] staging: r8712u: Set device type to wlan
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -32,30 +32,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 770bd4bf2e664939a9dacd3d26ec9ff7a3933210 upstream.
+commit 3a21f00a5002b14e4aab52aef59d33ed28468a13 upstream.
 
-The lack of comma leads to the wrong channel for an SPDIF channel.
-Unfortunately this wasn't caught by compiler because it's still a
-valid expression.
+The latest version of NetworkManager does not recognize the device as wireless
+without this change.
 
-Reported-by: Alexander Aristov <aristov.alexander@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/rme9652/rme9652.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8712/usb_intf.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/sound/pci/rme9652/rme9652.c
-+++ b/sound/pci/rme9652/rme9652.c
-@@ -285,7 +285,7 @@ static char channel_map_9636_ds[26] = {
- 	/* ADAT channels are remapped */
- 	1, 3, 5, 7, 9, 11, 13, 15,
- 	/* channels 8 and 9 are S/PDIF */
--	24, 25
-+	24, 25,
- 	/* others don't exist */
- 	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
- };
+--- a/drivers/staging/rtl8712/usb_intf.c
++++ b/drivers/staging/rtl8712/usb_intf.c
+@@ -363,6 +363,10 @@ static u8 key_2char2num(u8 hch, u8 lch)
+ 	return (hex_to_bin(hch) << 4) | hex_to_bin(lch);
+ }
+ 
++static const struct device_type wlan_type = {
++	.name = "wlan",
++};
++
+ /*
+  * drv_init() - a device potentially for us
+  *
+@@ -398,6 +402,7 @@ static int r871xu_drv_init(struct usb_in
+ 	padapter->pusb_intf = pusb_intf;
+ 	usb_set_intfdata(pusb_intf, pnetdev);
+ 	SET_NETDEV_DEV(pnetdev, &pusb_intf->dev);
++	pnetdev->dev.type = &wlan_type;
+ 	/* step 2. */
+ 	padapter->dvobj_init = &r8712_usb_dvobj_init;
+ 	padapter->dvobj_deinit = &r8712_usb_dvobj_deinit;
 
