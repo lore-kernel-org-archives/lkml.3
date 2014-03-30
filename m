@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751668AbaC3Ohy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 10:37:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750967AbaC3Ohx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 10:37:53 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: "H. Peter Anvin" <hpa@linux.intel.com>, Borislav Petkov <bp@suse.de>,
-        Jacob Shin <jacob.shin@amd.com>, Jeff Layton <jlayton@redhat.com>,
-        Prarit Bhargava <prarit@redhat.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>
-Subject: [PATCH 2/3] x86: microcode: report if no microcode file was found
-Date: Sun, 30 Mar 2014 16:09:33 +0200
-Message-Id: <1396188574-2067-2-git-send-email-dvlasenk@redhat.com>
-In-Reply-To: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
-References: <1396188574-2067-1-git-send-email-dvlasenk@redhat.com>
+	id S1751749AbaC3O6t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 10:58:49 -0400
+Received: from mail-pa0-f54.google.com ([209.85.220.54]:36809 "EHLO
+	mail-pa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751294AbaC3O6p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 Mar 2014 10:58:45 -0400
+From: Conrad Meyer <cemeyer@uw.edu>
+To: "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Conrad Meyer <cse.cem@gmail.com>
+Subject: [PATCH] fs: ext4: Sign-extend tv_sec after ORing in epoch bits
+Date: Sun, 30 Mar 2014 07:58:34 -0700
+Message-Id: <1396191514-19081-1-git-send-email-cse.cem@gmail.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this change, successful microcode uploads clearly
-indicate that it was done:
+Fixes kernel.org bug #23732.
 
-microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x1a
-microcode: CPU1 updated to revision 0x29, date = 2013-06-12
+Background: ext4 stores time as a 34-bit quantity; 2 bits in some extra
+bits unneeded for nanoseconds in the inode, and 32 bits in the seconds
+field.
 
-whereas if microcode was not uploaded, it is not clear why:
+On systems with 64-bit time_t, the EXT4_*INODE_GET_XTIME() code
+incorrectly sign-extended the low 32-bits of the seconds quantity before
+ORing in the 2 "epoch" bits from nanoseconds.
 
-microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x29
-(nothing more)
+This patch ORs in the 2 higher bits, then sign extends the 34-bit signed
+number to 64 bits.
 
-So, what was it? No microcode file? No microcode for this sig/pf?
-CPU already has microcode with this (or newer) revision?
-
-In practice, it means that I heed to ask people to provide me
-with more information ("do you have microcode package installed?
-which version is it?").
-
-This change upgrades existing message from pr_debug to pr_info,
-which covers "no microcode file" case:
-
-microcode: CPU1 sig=0x206a7, pf=0x10, revision=0x29
-microcode: data file intel-ucode/06-2a-07 load failed
-
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Signed-off-by: Conrad Meyer <cse.cem@gmail.com>
 ---
- arch/x86/kernel/cpu/microcode/intel.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Patch against next-20140328.
 
-diff --git a/arch/x86/kernel/cpu/microcode/intel.c b/arch/x86/kernel/cpu/microcode/intel.c
-index ef8b17c..9ce22b0 100644
---- a/arch/x86/kernel/cpu/microcode/intel.c
-+++ b/arch/x86/kernel/cpu/microcode/intel.c
-@@ -279,7 +279,7 @@ static enum ucode_state request_microcode_fw(int cpu, struct device *device,
- 		c->x86, c->x86_model, c->x86_mask);
+Note, the on-disk format has always been written correctly. It was just
+interpreted incorrectly.
+
+Repro:
+Before:
+$ touch -d 2038-01-31 test-123
+$ sudo sh -c "echo 3 > /proc/sys/vm/drop_caches"
+$ ls -ld test-123
+drwxrwxr-x 2 cmeyer cmeyer 4096 Dec 25  1901 test-123
+
+After:
+$ ls -ld test-123
+drwxrwxr-x 2 cmeyer cmeyer 4096 Jan 31  2038 test-123
+
+Thanks!
+---
+ fs/ext4/ext4.h | 14 ++++++++++++--
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+index f4f889e..07ee03d 100644
+--- a/fs/ext4/ext4.h
++++ b/fs/ext4/ext4.h
+@@ -710,6 +710,8 @@ struct move_extent {
+ #define EXT4_EPOCH_BITS 2
+ #define EXT4_EPOCH_MASK ((1 << EXT4_EPOCH_BITS) - 1)
+ #define EXT4_NSEC_MASK  (~0UL << EXT4_EPOCH_BITS)
++#define EXT4_EPOCH_SIGN (((1UL << (EXT4_EPOCH_BITS - 1)) << 16) << 16)
++#define EXT4_SIGN_EXT   (~((((1UL << EXT4_EPOCH_BITS) << 16) << 16) - 1))
  
- 	if (request_firmware_direct(&firmware, name, device)) {
--		pr_debug("data file %s load failed\n", name);
-+		pr_info("data file %s load failed\n", name);
- 		return UCODE_NFOUND;
- 	}
+ /*
+  * Extended fields will fit into an inode if the filesystem was formatted
+@@ -761,19 +763,23 @@ do {									       \
  
+ #define EXT4_INODE_GET_XTIME(xtime, inode, raw_inode)			       \
+ do {									       \
+-	(inode)->xtime.tv_sec = (signed)le32_to_cpu((raw_inode)->xtime);       \
++	(inode)->xtime.tv_sec = (__u64)le32_to_cpu((raw_inode)->xtime);	       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, EXT4_I(inode), xtime ## _extra))     \
+ 		ext4_decode_extra_time(&(inode)->xtime,			       \
+ 				       raw_inode->xtime ## _extra);	       \
+ 	else								       \
+ 		(inode)->xtime.tv_nsec = 0;				       \
++	if (sizeof((inode)->xtime.tv_sec) > 4) {			       \
++		if ((inode)->xtime.tv_sec & EXT4_EPOCH_SIGN)		       \
++			(inode)->xtime.tv_sec |= EXT4_SIGN_EXT;		       \
++	}								       \
+ } while (0)
+ 
+ #define EXT4_EINODE_GET_XTIME(xtime, einode, raw_inode)			       \
+ do {									       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime))		       \
+ 		(einode)->xtime.tv_sec = 				       \
+-			(signed)le32_to_cpu((raw_inode)->xtime);	       \
++			(__u64)le32_to_cpu((raw_inode)->xtime);		       \
+ 	else								       \
+ 		(einode)->xtime.tv_sec = 0;				       \
+ 	if (EXT4_FITS_IN_INODE(raw_inode, einode, xtime ## _extra))	       \
+@@ -781,6 +787,10 @@ do {									       \
+ 				       raw_inode->xtime ## _extra);	       \
+ 	else								       \
+ 		(einode)->xtime.tv_nsec = 0;				       \
++	if (sizeof((einode)->xtime.tv_sec) > 4) {			       \
++		if ((einode)->xtime.tv_sec & EXT4_EPOCH_SIGN)		       \
++			(einode)->xtime.tv_sec |= EXT4_SIGN_EXT;	       \
++	}								       \
+ } while (0)
+ 
+ #define i_disk_version osd1.linux1.l_i_version
 -- 
-1.8.1.4
+1.9.0
 
