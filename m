@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691AbaC3XgR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:36:17 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36485 "EHLO
+	id S1753632AbaC3XgP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:36:15 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36488 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753122AbaC3XZE (ORCPT
+	by vger.kernel.org with ESMTP id S1753118AbaC3XZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,15 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Guilherme Amadio" <guilherme.amadio@gmail.com>,
-        "Nicholas" <arealityfarbetween@googlemail.com>,
-        "Michele Baldessari" <michele@acksyn.org>, "Tejun Heo" <tj@kernel.org>
+CC: akpm@linux-foundation.org, "Maciej Patelczyk" <maciej.patelczyk@intel.com>,
+        "James Bottomley" <JBottomley@Parallels.com>,
+        "Dan Williams" <dan.j.williams@intel.com>,
+        "Lukasz Dorau" <lukasz.dorau@intel.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.958913102@decadent.org.uk>
+Message-ID: <lsq.1396221815.85696577@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 166/200] libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
- for Seagate Momentus SpinPoint M8 (2BA30001)
+Subject: [PATCH 3.2 170/200] [SCSI] isci: correct erroneous
+ for_each_isci_host macro
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,34 +34,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michele Baldessari <michele@acksyn.org>
+From: Lukasz Dorau <lukasz.dorau@intel.com>
 
-commit b28a613e9138e4b3a64649bd60b13436f4b4b49b upstream.
+commit c59053a23d586675c25d789a7494adfdc02fba57 upstream.
 
-Via commit 87809942d3fa "libata: add ATA_HORKAGE_BROKEN_FPDMA_AA quirk
-for Seagate Momentus SpinPoint M8" we added a quirk for disks named
-"ST1000LM024 HN-M101MBB" with firmware revision "2AR10001".
+In the first place, the loop 'for' in the macro 'for_each_isci_host'
+(drivers/scsi/isci/host.h:314) is incorrect, because it accesses
+the 3rd element of 2 element array. After the 2nd iteration it executes
+the instruction:
+        ihost = to_pci_info(pdev)->hosts[2]
+(while the size of the 'hosts' array equals 2) and reads an
+out of range element.
 
-As reported on https://bugzilla.redhat.com/show_bug.cgi?id=1073901,
-we need to also add firmware revision 2BA30001 as it is broken as well.
+In the second place, this loop is incorrectly optimized by GCC v4.8
+(see http://marc.info/?l=linux-kernel&m=138998871911336&w=2).
+As a result, on platforms with two SCU controllers,
+the loop is executed more times than it can be (for i=0,1 and 2).
+It causes kernel panic during entering the S3 state
+and the following oops after 'rmmod isci':
 
-Reported-by: Nicholas <arealityfarbetween@googlemail.com>
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
-Tested-by: Guilherme Amadio <guilherme.amadio@gmail.com>
-Signed-off-by: Tejun Heo <tj@kernel.org>
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Oops: 0000 [#1] SMP
+RIP: 0010:[<ffffffff8131360b>]  [<ffffffff8131360b>] __list_add+0x1b/0xc0
+Call Trace:
+  [<ffffffff81661b84>] __mutex_lock_slowpath+0x114/0x1b0
+  [<ffffffff81661c3f>] mutex_lock+0x1f/0x30
+  [<ffffffffa03e97cb>] sas_disable_events+0x1b/0x50 [libsas]
+  [<ffffffffa03e9818>] sas_unregister_ha+0x18/0x60 [libsas]
+  [<ffffffffa040316e>] isci_unregister+0x1e/0x40 [isci]
+  [<ffffffffa0403efd>] isci_pci_remove+0x5d/0x100 [isci]
+  [<ffffffff813391cb>] pci_device_remove+0x3b/0xb0
+  [<ffffffff813fbf7f>] __device_release_driver+0x7f/0xf0
+  [<ffffffff813fc8f8>] driver_detach+0xa8/0xb0
+  [<ffffffff813fbb8b>] bus_remove_driver+0x9b/0x120
+  [<ffffffff813fcf2c>] driver_unregister+0x2c/0x50
+  [<ffffffff813381f3>] pci_unregister_driver+0x23/0x80
+  [<ffffffffa04152f8>] isci_exit+0x10/0x1e [isci]
+  [<ffffffff810d199b>] SyS_delete_module+0x16b/0x2d0
+  [<ffffffff81012a21>] ? do_notify_resume+0x61/0xa0
+  [<ffffffff8166ce29>] system_call_fastpath+0x16/0x1b
+
+The loop has been corrected.
+This patch fixes kernel panic during entering the S3 state
+and the above oops.
+
+Signed-off-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Reviewed-by: Maciej Patelczyk <maciej.patelczyk@intel.com>
+Tested-by: Lukasz Dorau <lukasz.dorau@intel.com>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: James Bottomley <JBottomley@Parallels.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/ata/libata-core.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/scsi/isci/host.h | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4109,6 +4109,7 @@ static const struct ata_blacklist_entry
+--- a/drivers/scsi/isci/host.h
++++ b/drivers/scsi/isci/host.h
+@@ -309,9 +309,8 @@ static inline struct isci_pci_info *to_p
+ }
  
- 	/* Seagate Momentus SpinPoint M8 seem to have FPMDA_AA issues */
- 	{ "ST1000LM024 HN-M101MBB", "2AR10001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
-+	{ "ST1000LM024 HN-M101MBB", "2BA30001",	ATA_HORKAGE_BROKEN_FPDMA_AA },
+ #define for_each_isci_host(id, ihost, pdev) \
+-	for (id = 0, ihost = to_pci_info(pdev)->hosts[id]; \
+-	     id < ARRAY_SIZE(to_pci_info(pdev)->hosts) && ihost; \
+-	     ihost = to_pci_info(pdev)->hosts[++id])
++	for (id = 0; id < SCI_MAX_CONTROLLERS && \
++	     (ihost = to_pci_info(pdev)->hosts[id]); id++)
  
- 	/* Blacklist entries taken from Silicon Image 3124/3132
- 	   Windows driver .inf file - also several Linux problem reports */
+ static inline enum isci_status isci_host_get_state(struct isci_host *isci_host)
+ {
 
