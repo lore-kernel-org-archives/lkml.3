@@ -1,255 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005AbaC3XJI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:09:08 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:53503 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752967AbaC3XJE (ORCPT
+	id S1752911AbaC3XI7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:08:59 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:16461 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752643AbaC3XI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:09:04 -0400
-Date: Sun, 30 Mar 2014 16:08:56 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: fweisbec@gmail.com, mathieu.desnoyers@efficios.com, peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Promela/spin model for NO_HZ_FULL_SYSIDLE code
-Message-ID: <20140330230856.GA21498@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14033023-0928-0000-0000-000000C965AD
+	Sun, 30 Mar 2014 19:08:57 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: mingo@kernel.org, tglx@linutronix.de
+Cc: peterz@infradead.org, davidlohr@hp.com, aswin@hp.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] futex: update comments for ordering guarantees
+Date: Sun, 30 Mar 2014 16:08:47 -0700
+Message-Id: <1396220928-4426-2-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
+References: <1396220928-4426-1-git-send-email-davidlohr@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For whatever it is worth, the following model claims safety and progress
-for the sysidle state machine.
+Commit 11d4616bd07f (futex: revert back to the explicit waiter counting code)
+was a late fix that changed the way we account for waiters on a futex. However,
+it made the general documentation we have regarding this topic slightly stale.
 
-Thoughts?
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ kernel/futex.c | 19 +++++++++++--------
+ 1 file changed, 11 insertions(+), 8 deletions(-)
 
-							Thanx, Paul
-
-------------------------------------------------------------------------
-sysidle.sh
-------------------------------------------------------------------------
-spin -a sysidle.spin
-cc -DNP -o pan pan.c
-# Fair scheduling to focus progress checks in timekeeper.
-./pan -f -l -m1280000 -w22
-
-------------------------------------------------------------------------
-sysidle.spin
-------------------------------------------------------------------------
-/*
- * Promela model for CONFIG_NO_HZ_FULL_SYSIDLE=y in the Linux kernel.
- * This model assumes that the dyntick-idle bit manipulation works based
- * on long usage, and substitutes a per-thread boolean "am_busy[]" array
- * for the Linux kernel's dyntick-idle masks.  The focus of this model
- * is therefore on the state machine itself.  Checks for both safety and
- * forward progress.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, you can access it online at
- * http://www.gnu.org/licenses/gpl-2.0.html.
- *
- * Copyright IBM Corporation, 2014
- *
- * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
- */
-
-#define NUM_WORKERS 3
-
-byte wakeup_timekeeper = 0; /* Models rcu_kick_nohz_cpu(). */
-
-#define RCU_SYSIDLE_NOT		0	/* Some CPU is not idle. */
-#define RCU_SYSIDLE_SHORT	1	/* All CPUs idle for brief period. */
-#define RCU_SYSIDLE_LONG	2	/* All CPUs idle for long enough. */
-#define RCU_SYSIDLE_FULL	3	/* All CPUs idle, ready for sysidle. */
-#define RCU_SYSIDLE_FULL_NOTED	4	/* Actually entered sysidle state. */
-
-byte full_sysidle_state = RCU_SYSIDLE_NOT;
-
-byte am_busy[NUM_WORKERS];  /* Busy is similar to "not dyntick-idle". */
-byte am_setup[NUM_WORKERS]; /* Setup means timekeeper knows I am not idle. */
-
-/*
- * Non-timekeeping CPU going into and out of dyntick-idle state.
- */
-proctype worker(byte me)
-{
-	byte oldstate;
-
-	do
-	:: 1 ->
-		/* Go idle. */
-		am_setup[me] = 0;
-		am_busy[me] = 0;
-
-		/* Dyntick-idle in the following loop. */
-		do
-		:: 1 -> skip;
-		:: 1 -> break;
-		od;
-
-		/* Exit idle loop, model getting out of dyntick idle state. */
-		am_busy[me] = 1;
-
-		/* Get state out of full-system idle states. */
-		atomic {
-			oldstate = full_sysidle_state;
-			if
-			:: oldstate > RCU_SYSIDLE_SHORT ->
-				full_sysidle_state = RCU_SYSIDLE_NOT;
-			:: else -> skip;
-			fi;
-		}
-
-		/* If needed, wake up the timekeeper. */
-		if
-		:: oldstate == RCU_SYSIDLE_FULL_NOTED ->
-			wakeup_timekeeper = 1;
-		:: else -> skip;
-		fi;
-
-		/* Mark ourselves fully awake and operational. */
-		am_setup[me] = 1;
-
-		/* We are fully awake, so timekeeper must not be asleep. */
-		assert(full_sysidle_state < RCU_SYSIDLE_FULL);
-
-		/* Running in kernel in the following loop. */
-		do
-		:: 1 -> skip;
-		:: 1 -> break;
-		od;
-	od
-}
-
-/*
- * Are all the workers in dyntick-idle state?
- */
-#define check_idle() \
-	i = 0; \
-	idle = 1; \
-	do \
-	:: i < NUM_WORKERS -> \
-		if \
-		:: am_busy[i] == 1 -> idle = 0; \
-		:: else -> skip; \
-		fi; \
-		i++; \
-	:: i >= NUM_WORKERS -> break; \
-	od
-
-/*
- * Timekeeping CPU.
- */
-proctype timekeeper()
-{
-	byte i;
-	byte idle;
-	byte curstate;
-	byte newstate;
-
-	do
-	:: 1 ->
-		/* Capture current state. */
-		check_idle();
-		curstate = full_sysidle_state;
-		newstate = curstate;
-
-		/* Check for acceptance state. */
-		if
-		:: idle == 0 ->
-progress_idle:
-			skip;
-		:: curstate == RCU_SYSIDLE_NOT ->
-progress_idle_reset:
-			skip;
-		:: else -> skip;
-		fi;
-
-		/* Manage state... */
-		if
-		:: idle == 1 && curstate < RCU_SYSIDLE_FULL_NOTED ->
-			/* Idle, advance to next state. */
-			atomic {
-				if
-				:: full_sysidle_state == curstate ->
-					newstate = curstate + 1;
-					full_sysidle_state = newstate;
-				:: else -> skip;
-				fi;
-			}
-		:: idle == 0 && full_sysidle_state >= RCU_SYSIDLE_LONG ->
-			/* Non-idle and state advanced, revert to base state. */
-			full_sysidle_state = RCU_SYSIDLE_NOT;
-		:: else -> skip;
-		fi;
-
-		/* If in RCU_SYSIDLE_FULL_NOTED, wait to be awakened. */
-		do
-		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 1 ->
-			assert(0); /* Should never get here. */
-		:: newstate != RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 0 ->
-			break;
-		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 1 ->
-progress_full_system_idle_1:
-			assert(full_sysidle_state == RCU_SYSIDLE_NOT);
-		   	wakeup_timekeeper = 0;
-			break;
-		:: newstate == RCU_SYSIDLE_FULL_NOTED &&
-		   wakeup_timekeeper == 0 ->
-progress_full_system_idle_2:
-
-			/* We are asleep, so all workers better be idle. */
-			atomic {
-				i = 0;
-				idle = 1;
-				do
-				:: i < NUM_WORKERS ->
-					if
-					:: am_setup[i] -> idle = 0;
-					:: else -> skip;
-					fi;
-					i++;
-				:: i >= NUM_WORKERS -> break;
-				od;
-				assert(idle == 1 ||
-				       full_sysidle_state < RCU_SYSIDLE_FULL);
-			}
-		od;
-		assert(full_sysidle_state <= RCU_SYSIDLE_FULL_NOTED);
-	od;
-}
-
-init {
-	byte i = 0;
-
-	do
-	:: i < NUM_WORKERS ->
-		am_busy[i] = 1;
-		am_setup[i] = 1;
-		run worker(i);
-		i++;
-	:: i >= NUM_WORKERS -> break;
-	od;
-	run timekeeper();
-}
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 08ec814..395e285 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -119,7 +119,7 @@
+  * sys_futex(WAIT, futex, val);
+  *   futex_wait(futex, val);
+  *
+- *   waiters++;
++ *   waiters++; (a)
+  *   mb(); (A) <-- paired with -.
+  *                              |
+  *   lock(hash_bucket(futex));  |
+@@ -134,15 +134,14 @@
+  *     queue();
+  *     unlock(hash_bucket(futex));
+  *     schedule();                         if (waiters)
+- *                                           lock(hash_bucket(futex));
+- *                                           wake_waiters(futex);
++ *   else                                    lock(hash_bucket(futex));
++ *     waiters--; (b)                        wake_waiters(futex);
+  *                                           unlock(hash_bucket(futex));
+  *
+- * Where (A) orders the waiters increment and the futex value read -- this
+- * is guaranteed by the head counter in the hb spinlock; and where (B)
+- * orders the write to futex and the waiters read -- this is done by the
+- * barriers in get_futex_key_refs(), through either ihold or atomic_inc,
+- * depending on the futex type.
++ * Where (A) orders the waiters increment and the futex value read and
++ * where (B) orders the write to futex and the waiters read -- this is
++ * done by the barriers in get_futex_key_refs(), through either ihold
++ * or atomic_inc, depending on the futex type.
+  *
+  * This yields the following case (where X:=waiters, Y:=futex):
+  *
+@@ -155,6 +154,10 @@
+  * Which guarantees that x==0 && y==0 is impossible; which translates back into
+  * the guarantee that we cannot both miss the futex variable change and the
+  * enqueue.
++ *
++ * Note that a new waiter is accounted for in (a) even when it is possible that
++ * the wait call can return error, in which case we backtrack from it in (b).
++ * Refer to the comment in queue_lock().
+  */
+ 
+ int __read_mostly futex_cmpxchg_enabled;
+-- 
+1.8.1.4
 
