@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755457AbaCaAcO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:32:14 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36228 "EHLO
+	id S1755331AbaCaAcM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:32:12 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36231 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752824AbaC3XY7 (ORCPT
+	by vger.kernel.org with ESMTP id S1752825AbaC3XY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:24:59 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,12 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Takashi Iwai" <tiwai@suse.de>
+CC: akpm@linux-foundation.org, "Patrick Boettcher" <pboettcher@kernellabs.com>,
+        "Mauro Carvalho Chehab" <m.chehab@samsung.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.211531714@decadent.org.uk>
+Message-ID: <lsq.1396221815.542029060@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 031/200] ALSA: Enable CONFIG_ZONE_DMA for smaller PCI
- DMA masks
+Subject: [PATCH 3.2 009/200] [media] dib8000: make 32 bits read atomic
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,120 +31,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Mauro Carvalho Chehab <m.chehab@samsung.com>
 
-commit 80ab8eae70e51d578ebbeb228e0f7a562471b8b7 upstream.
+commit 5ac64ba12aca3bef18e61c866583155a3bbf81c4 upstream.
 
-The PCI devices with DMA masks smaller than 32bit should enable
-CONFIG_ZONE_DMA.  Since the recent change of page allocator, page
-allocations via dma_alloc_coherent() with the limited DMA mask bits
-may fail more frequently, ended up with no available buffers, when
-CONFIG_ZONE_DMA isn't enabled.  With CONFIG_ZONE_DMA, the system has
-much more chance to obtain such pages.
+As the dvb-frontend kthread can be called anytime, it can race
+with some get status ioctl. So, it seems better to avoid one to
+race with the other while reading a 32 bits register.
+I can't see any other reason for having a mutex there at I2C, except
+to provide such kind of protection, as the I2C core already has a
+mutex to protect I2C transfers.
 
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=68221
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Note: instead of this approach, it could eventually remove the dib8000
+specific mutex for it, and either group the 4 ops into one xfer or
+to manually control the I2C mutex. The main advantage of the current
+approach is that the changes are smaller and more puntual.
+
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Acked-by: Patrick Boettcher <pboettcher@kernellabs.com>
+[bwh: Backported to 3.2: adjust filename]
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/Kconfig | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ drivers/media/dvb/frontends/dib8000.c | 33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
---- a/sound/pci/Kconfig
-+++ b/sound/pci/Kconfig
-@@ -30,6 +30,7 @@ config SND_ALS300
- 	select SND_PCM
- 	select SND_AC97_CODEC
- 	select SND_OPL3_LIB
-+	select ZONE_DMA
- 	help
- 	  Say 'Y' or 'M' to include support for Avance Logic ALS300/ALS300+
+--- a/drivers/media/dvb/frontends/dib8000.c
++++ b/drivers/media/dvb/frontends/dib8000.c
+@@ -114,15 +114,10 @@ static u16 dib8000_i2c_read16(struct i2c
+ 	return ret;
+ }
  
-@@ -54,6 +55,7 @@ config SND_ALI5451
- 	tristate "ALi M5451 PCI Audio Controller"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the integrated AC97 sound
- 	  device on motherboards using the ALi M5451 Audio Controller
-@@ -158,6 +160,7 @@ config SND_AZT3328
- 	select SND_PCM
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for Aztech AZF3328 (PCI168)
- 	  soundcards.
-@@ -463,6 +466,7 @@ config SND_EMU10K1
- 	select SND_HWDEP
- 	select SND_RAWMIDI
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y to include support for Sound Blaster PCI 512, Live!,
- 	  Audigy and E-mu APS (partially supported) soundcards.
-@@ -478,6 +482,7 @@ config SND_EMU10K1X
- 	tristate "Emu10k1X (Dell OEM Version)"
- 	select SND_AC97_CODEC
- 	select SND_RAWMIDI
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the Dell OEM version of the
- 	  Sound Blaster Live!.
-@@ -511,6 +516,7 @@ config SND_ES1938
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Solo-1
- 	  (ES1938, ES1946, ES1969) chips.
-@@ -522,6 +528,7 @@ config SND_ES1968
- 	tristate "ESS ES1968/1978 (Maestro-1/2/2E)"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro
- 	  1/2/2E chips.
-@@ -602,6 +609,7 @@ config SND_ICE1712
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
- 	select BITREVERSE
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the
- 	  ICE1712 (Envy24) chip.
-@@ -688,6 +696,7 @@ config SND_LX6464ES
- config SND_MAESTRO3
- 	tristate "ESS Allegro/Maestro3"
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on ESS Maestro 3
- 	  (Allegro) chips.
-@@ -782,6 +791,7 @@ config SND_SIS7019
- 	tristate "SiS 7019 Audio Accelerator"
- 	depends on X86 && !X86_64
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for the SiS 7019 Audio Accelerator.
+-static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++static u16 __dib8000_read_word(struct dib8000_state *state, u16 reg)
+ {
+ 	u16 ret;
  
-@@ -793,6 +803,7 @@ config SND_SONICVIBES
- 	select SND_OPL3_LIB
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on the S3
- 	  SonicVibes chip.
-@@ -804,6 +815,7 @@ config SND_TRIDENT
- 	tristate "Trident 4D-Wave DX/NX; SiS 7018"
- 	select SND_MPU401_UART
- 	select SND_AC97_CODEC
-+	select ZONE_DMA
- 	help
- 	  Say Y here to include support for soundcards based on Trident
- 	  4D-Wave DX/NX or SiS 7018 chips.
+-	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
+-		dprintk("could not acquire lock");
+-		return 0;
+-	}
+-
+ 	state->i2c_write_buffer[0] = reg >> 8;
+ 	state->i2c_write_buffer[1] = reg & 0xff;
+ 
+@@ -140,6 +135,21 @@ static u16 dib8000_read_word(struct dib8
+ 		dprintk("i2c read error on %d", reg);
+ 
+ 	ret = (state->i2c_read_buffer[0] << 8) | state->i2c_read_buffer[1];
++
++	return ret;
++}
++
++static u16 dib8000_read_word(struct dib8000_state *state, u16 reg)
++{
++	u16 ret;
++
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	ret = __dib8000_read_word(state, reg);
++
+ 	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ret;
+@@ -149,8 +159,15 @@ static u32 dib8000_read32(struct dib8000
+ {
+ 	u16 rw[2];
+ 
+-	rw[0] = dib8000_read_word(state, reg + 0);
+-	rw[1] = dib8000_read_word(state, reg + 1);
++	if (mutex_lock_interruptible(&state->i2c_buffer_lock) < 0) {
++		dprintk("could not acquire lock");
++		return 0;
++	}
++
++	rw[0] = __dib8000_read_word(state, reg + 0);
++	rw[1] = __dib8000_read_word(state, reg + 1);
++
++	mutex_unlock(&state->i2c_buffer_lock);
+ 
+ 	return ((rw[0] << 16) | (rw[1]));
+ }
 
