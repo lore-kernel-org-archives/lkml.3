@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479AbaCaAWX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 20:22:23 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36290 "EHLO
+	id S1755459AbaCaAWV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 20:22:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36300 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752933AbaC3XZA (ORCPT
+	by vger.kernel.org with ESMTP id S1752937AbaC3XZA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:00 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "David Rientjes" <rientjes@google.com>,
-        "Michal Hocko" <mhocko@suse.cz>
+CC: akpm@linux-foundation.org, "Borislav Petkov" <bp@suse.de>,
+        "Borislav Petkov" <bp@alien8.de>,
+        "Brecht Machiels" <brecht@mos6581.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        "Rabin Vincent" <rabin.vincent@stericsson.com>,
+        "John Stultz" <john.stultz@linaro.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.82329646@decadent.org.uk>
+Message-ID: <lsq.1396221815.364237028@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 068/200] mm, oom: base root bonus on current usage
+Subject: [PATCH 3.2 013/200] rtc-cmos: Add an alarm disable quirk
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,74 +35,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Rientjes <rientjes@google.com>
+From: Borislav Petkov <bp@alien8.de>
 
-commit 778c14affaf94a9e4953179d3e13a544ccce7707 upstream.
+commit d5a1c7e3fc38d9c7d629e1e47f32f863acbdec3d upstream.
 
-A 3% of system memory bonus is sometimes too excessive in comparison to
-other processes.
+41c7f7424259f ("rtc: Disable the alarm in the hardware (v2)") added the
+functionality to disable the RTC wake alarm when shutting down the box.
 
-With commit a63d83f427fb ("oom: badness heuristic rewrite"), the OOM
-killer tries to avoid killing privileged tasks by subtracting 3% of
-overall memory (system or cgroup) from their per-task consumption.  But
-as a result, all root tasks that consume less than 3% of overall memory
-are considered equal, and so it only takes 33+ privileged tasks pushing
-the system out of memory for the OOM killer to do something stupid and
-kill dhclient or other root-owned processes.  For example, on a 32G
-machine it can't tell the difference between the 1M agetty and the 10G
-fork bomb member.
+However, there are at least two b0rked BIOSes we know about:
 
-The changelog describes this 3% boost as the equivalent to the global
-overcommit limit being 3% higher for privileged tasks, but this is not
-the same as discounting 3% of overall memory from _every privileged task
-individually_ during OOM selection.
+https://bugzilla.novell.com/show_bug.cgi?id=812592
+https://bugzilla.novell.com/show_bug.cgi?id=805740
 
-Replace the 3% of system memory bonus with a 3% of current memory usage
-bonus.
+where, when wakeup alarm is enabled in the BIOS, the machine reboots
+automatically right after shutdown, regardless of what wakeup time is
+programmed.
 
-By giving root tasks a bonus that is proportional to their actual size,
-they remain comparable even when relatively small.  In the example
-above, the OOM killer will discount the 1M agetty's 256 badness points
-down to 179, and the 10G fork bomb's 262144 points down to 183500 points
-and make the right choice, instead of discounting both to 0 and killing
-agetty because it's first in the task list.
+Bisecting the issue lead to this patch so disable its functionality with
+a DMI quirk only for those boxes.
 
-Signed-off-by: David Rientjes <rientjes@google.com>
-Reported-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[bwh: Backported to 3.2: existing code changes 'points' directly rather
- than using 'adj' variable]
+Cc: Brecht Machiels <brecht@mos6581.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: John Stultz <john.stultz@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
+Signed-off-by: Borislav Petkov <bp@suse.de>
+[jstultz: Changed variable name for clarity, added extra dmi entry]
+Tested-by: Brecht Machiels <brecht@mos6581.org>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- Documentation/filesystems/proc.txt | 4 ++--
- mm/oom_kill.c                      | 2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/rtc/rtc-cmos.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 51 insertions(+), 1 deletion(-)
 
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -1293,8 +1293,8 @@ may allocate from based on an estimation
- For example, if a task is using all allowed memory, its badness score will be
- 1000.  If it is using half of its allowed memory, its score will be 500.
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -34,11 +34,11 @@
+ #include <linux/interrupt.h>
+ #include <linux/spinlock.h>
+ #include <linux/platform_device.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/log2.h>
+ #include <linux/pm.h>
+ #include <linux/of.h>
+ #include <linux/of_platform.h>
++#include <linux/dmi.h>
  
--There is an additional factor included in the badness score: root
--processes are given 3% extra memory over other tasks.
-+There is an additional factor included in the badness score: the current memory
-+and swap usage is discounted by 3% for root processes.
+ /* this is for "generic access to PC-style RTC" using CMOS_READ/CMOS_WRITE */
+ #include <asm-generic/rtc.h>
+@@ -377,6 +377,51 @@ static int cmos_set_alarm(struct device
+ 	return 0;
+ }
  
- The amount of "allowed" memory depends on the context in which the oom killer
- was called.  If it is due to the memory assigned to the allocating task's cpuset
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -213,7 +213,7 @@ unsigned int oom_badness(struct task_str
- 	 * implementation used by LSMs.
- 	 */
- 	if (has_capability_noaudit(p, CAP_SYS_ADMIN))
--		points -= 30;
-+		points -= (points * 3) / 100;
++/*
++ * Do not disable RTC alarm on shutdown - workaround for b0rked BIOSes.
++ */
++static bool alarm_disable_quirk;
++
++static int __init set_alarm_disable_quirk(const struct dmi_system_id *id)
++{
++	alarm_disable_quirk = true;
++	pr_info("rtc-cmos: BIOS has alarm-disable quirk. ");
++	pr_info("RTC alarms disabled\n");
++	return 0;
++}
++
++static const struct dmi_system_id rtc_quirks[] __initconst = {
++	/* https://bugzilla.novell.com/show_bug.cgi?id=805740 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "IBM Truman",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "4852570"),
++		},
++	},
++	/* https://bugzilla.novell.com/show_bug.cgi?id=812592 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Gigabyte GA-990XA-UD3",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR,
++					"Gigabyte Technology Co., Ltd."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "GA-990XA-UD3"),
++		},
++	},
++	/* http://permalink.gmane.org/gmane.linux.kernel/1604474 */
++	{
++		.callback = set_alarm_disable_quirk,
++		.ident    = "Toshiba Satellite L300",
++		.matches  = {
++			DMI_MATCH(DMI_SYS_VENDOR, "TOSHIBA"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "Satellite L300"),
++		},
++	},
++	{}
++};
++
+ static int cmos_alarm_irq_enable(struct device *dev, unsigned int enabled)
+ {
+ 	struct cmos_rtc	*cmos = dev_get_drvdata(dev);
+@@ -385,6 +430,9 @@ static int cmos_alarm_irq_enable(struct
+ 	if (!is_valid_irq(cmos->irq))
+ 		return -EINVAL;
  
- 	/*
- 	 * /proc/pid/oom_score_adj ranges from -1000 to +1000 such that it may
++	if (alarm_disable_quirk)
++		return 0;
++
+ 	spin_lock_irqsave(&rtc_lock, flags);
+ 
+ 	if (enabled)
+@@ -1166,6 +1214,8 @@ static int __init cmos_init(void)
+ 			platform_driver_registered = true;
+ 	}
+ 
++	dmi_check_system(rtc_quirks);
++
+ 	if (retval == 0)
+ 		return 0;
+ 
 
