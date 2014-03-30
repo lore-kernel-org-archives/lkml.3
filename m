@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753820AbaC3Xba (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:31:30 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36539 "EHLO
+	id S1753799AbaC3Xb2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:31:28 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36556 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753148AbaC3XZF (ORCPT
+	by vger.kernel.org with ESMTP id S1753154AbaC3XZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:05 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,12 +13,16 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Roman Volkov" <v1ron@mail.ru>,
-        "Clemens Ladisch" <clemens@ladisch.de>
+CC: akpm@linux-foundation.org, "David S. Miller" <davem@davemloft.net>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        "Rusty Russell" <rusty@rustcorp.com.au>,
+        "Jason Wang" <jasowang@redhat.com>,
+        "Sridhar Samudrala" <sri@us.ibm.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.14156929@decadent.org.uk>
+Message-ID: <lsq.1396221815.477378866@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 195/200] ALSA: oxygen: Xonar DG(X): modify DAC routing
+Subject: [PATCH 3.2 197/200] virtio-net: alloc big buffers also when guest
+ can receive  UFO
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -31,38 +35,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Jason Wang <jasowang@redhat.com>
 
-commit 1f91ecc14deea9461aca93273d78871ec4d98fcd upstream.
+[ Upstream commit 0e7ede80d929ff0f830c44a543daa1acd590c749 ]
 
-When selecting the audio output destinations (headphones, FP headphones,
-multichannel output), unnecessary I2S channels are digitally muted to
-avoid invalid signal levels on the other outputs.
+We should alloc big buffers also when guest can receive UFO
+packets to let the big packets fit into guest rx buffer.
 
-Signed-off-by: Roman Volkov <v1ron@mail.ru>
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Fixes 5c5167515d80f78f6bb538492c423adcae31ad65
+(virtio-net: Allow UFO feature to be set and advertised.)
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <sri@us.ibm.com>
+Signed-off-by: Jason Wang <jasowang@redhat.com>
+Acked-by: Michael S. Tsirkin <mst@redhat.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- sound/pci/oxygen/xonar_dg.c |   10 ++++++++++
- 1 file changed, 10 insertions(+)
+ drivers/net/virtio_net.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/sound/pci/oxygen/xonar_dg.c
-+++ b/sound/pci/oxygen/xonar_dg.c
-@@ -294,6 +294,16 @@ static int output_switch_put(struct snd_
- 		oxygen_write16_masked(chip, OXYGEN_GPIO_DATA,
- 				      data->output_sel == 1 ? GPIO_HP_REAR : 0,
- 				      GPIO_HP_REAR);
-+		oxygen_write8_masked(chip, OXYGEN_PLAY_ROUTING,
-+				     data->output_sel == 0 ?
-+				     OXYGEN_PLAY_MUTE01 :
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67,
-+				     OXYGEN_PLAY_MUTE01 |
-+				     OXYGEN_PLAY_MUTE23 |
-+				     OXYGEN_PLAY_MUTE45 |
-+				     OXYGEN_PLAY_MUTE67);
- 	}
- 	mutex_unlock(&chip->mutex);
- 	return changed;
+diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
+index 43a6a11..f13a673 100644
+--- a/drivers/net/virtio_net.c
++++ b/drivers/net/virtio_net.c
+@@ -1029,7 +1029,8 @@ static int virtnet_probe(struct virtio_device *vdev)
+ 	/* If we can receive ANY GSO packets, we must allocate large ones. */
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO4) ||
+ 	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_TSO6) ||
+-	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN))
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_ECN) ||
++	    virtio_has_feature(vdev, VIRTIO_NET_F_GUEST_UFO))
+ 		vi->big_packets = true;
+ 
+ 	if (virtio_has_feature(vdev, VIRTIO_NET_F_MRG_RXBUF))
 
