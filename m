@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754871AbaC3XvF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:51:05 -0400
+	id S1755057AbaC3Xvd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:51:33 -0400
 Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37332 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754732AbaC3Xno (ORCPT
+	by vger.kernel.org with ESMTP id S1754730AbaC3Xnn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 Mar 2014 19:43:44 -0400
+	Sun, 30 Mar 2014 19:43:43 -0400
 Content-Type: text/plain; charset="UTF-8"
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Stanislaw Gruszka" <sgruszka@redhat.com>,
-        "Alan Stern" <stern@rowland.harvard.edu>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
+CC: akpm@linux-foundation.org, "Steven Rostedt" <rostedt@goodmis.org>,
+        "Stephane Eranian" <eranian@google.com>,
+        "Peter Zijlstra" <peterz@infradead.org>,
+        "Dave Jones" <davej@redhat.com>, "Paul Mackerras" <paulus@samba.org>,
+        "Ingo Molnar" <mingo@kernel.org>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.728409301@decadent.org.uk>
+Message-ID: <lsq.1396221815.167296263@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 145/200] usb: ehci: fix deadlock when threadirqs
- option is used
+Subject: [PATCH 3.2 150/200] perf/x86: Fix event scheduling
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,59 +34,114 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislaw Gruszka <sgruszka@redhat.com>
+From: Peter Zijlstra <peterz@infradead.org>
 
-commit a1227f3c1030e96ebc51d677d2f636268845c5fb upstream.
+commit 26e61e8939b1fe8729572dabe9a9e97d930dd4f6 upstream.
 
-ehci_irq() and ehci_hrtimer_func() can deadlock on ehci->lock when
-threadirqs option is used. To prevent the deadlock use
-spin_lock_irqsave() in ehci_irq().
+Vince "Super Tester" Weaver reported a new round of syscall fuzzing (Trinity) failures,
+with perf WARN_ON()s triggering. He also provided traces of the failures.
 
-This change can be reverted when hrtimer callbacks become threaded.
+This is I think the relevant bit:
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_disable: x86_pmu_disable
+	>    pec_1076_warn-2804  [000] d...   147.926153: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926156: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926158: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926159: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926160: x86_pmu_state: n_events: 1, n_added: 0, n_txn: 1
+	>    pec_1076_warn-2804  [000] d...   147.926161: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926162: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926163: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926166: collect_events: Adding event: 1 (ffff880119ec8800)
+
+So we add the insn:p event (fd[23]).
+
+At this point we should have:
+
+  n_events = 2, n_added = 1, n_txn = 1
+
+	>    pec_1076_warn-2804  [000] d...   147.926170: collect_events: Adding event: 0 (ffff8800c9e01800)
+	>    pec_1076_warn-2804  [000] d...   147.926172: collect_events: Adding event: 4 (ffff8800cbab2c00)
+
+We try and add the {BP,cycles,br_insn} group (fd[3], fd[4], fd[15]).
+These events are 0:cycles and 4:br_insn, the BP event isn't x86_pmu so
+that's not visible.
+
+	group_sched_in()
+	  pmu->start_txn() /* nop - BP pmu */
+	  event_sched_in()
+	     event->pmu->add()
+
+So here we should end up with:
+
+  0: n_events = 3, n_added = 2, n_txn = 2
+  4: n_events = 4, n_added = 3, n_txn = 3
+
+But seeing the below state on x86_pmu_enable(), the must have failed,
+because the 0 and 4 events aren't there anymore.
+
+Looking at group_sched_in(), since the BP is the leader, its
+event_sched_in() must have succeeded, for otherwise we would not have
+seen the sibling adds.
+
+But since neither 0 or 4 are in the below state; their event_sched_in()
+must have failed; but I don't see why, the complete state: 0,0,1:p,4
+fits perfectly fine on a core2.
+
+However, since we try and schedule 4 it means the 0 event must have
+succeeded!  Therefore the 4 event must have failed, its failure will
+have put group_sched_in() into the fail path, which will call:
+
+	event_sched_out()
+	  event->pmu->del()
+
+on 0 and the BP event.
+
+Now x86_pmu_del() will reduce n_events; but it will not reduce n_added;
+giving what we see below:
+
+ n_event = 2, n_added = 2, n_txn = 2
+
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_enable: x86_pmu_enable
+	>    pec_1076_warn-2804  [000] d...   147.926177: x86_pmu_state: Events: {
+	>    pec_1076_warn-2804  [000] d...   147.926179: x86_pmu_state:   0: state: .R config: ffffffffffffffff (          (null))
+	>    pec_1076_warn-2804  [000] d...   147.926181: x86_pmu_state:   33: state: AR config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926182: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: n_events: 2, n_added: 2, n_txn: 2
+	>    pec_1076_warn-2804  [000] d...   147.926184: x86_pmu_state: Assignment: {
+	>    pec_1076_warn-2804  [000] d...   147.926186: x86_pmu_state:   0->33 tag: 1 config: 0 (ffff88011ac99800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state:   1->0 tag: 1 config: 1 (ffff880119ec8800)
+	>    pec_1076_warn-2804  [000] d...   147.926188: x86_pmu_state: }
+	>    pec_1076_warn-2804  [000] d...   147.926190: x86_pmu_enable: S0: hwc->idx: 33, hwc->last_cpu: 0, hwc->last_tag: 1 hwc->state: 0
+
+So the problem is that x86_pmu_del(), when called from a
+group_sched_in() that fails (for whatever reason), and without x86_pmu
+TXN support (because the leader is !x86_pmu), will corrupt the n_added
+state.
+
+Reported-and-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Dave Jones <davej@redhat.com>
+Link: http://lkml.kernel.org/r/20140221150312.GF3104@twins.programming.kicks-ass.net
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/host/ehci-hcd.c | 13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -807,8 +807,15 @@ static irqreturn_t ehci_irq (struct usb_
- 	struct ehci_hcd		*ehci = hcd_to_ehci (hcd);
- 	u32			status, masked_status, pcd_status = 0, cmd;
- 	int			bh;
-+	unsigned long		flags;
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -971,6 +971,9 @@ static void x86_pmu_del(struct perf_even
+ 	for (i = 0; i < cpuc->n_events; i++) {
+ 		if (event == cpuc->event_list[i]) {
  
--	spin_lock (&ehci->lock);
-+	/*
-+	 * For threadirqs option we use spin_lock_irqsave() variant to prevent
-+	 * deadlock with ehci hrtimer callback, because hrtimer callbacks run
-+	 * in interrupt context even when threadirqs is specified. We can go
-+	 * back to spin_lock() variant when hrtimer callbacks become threaded.
-+	 */
-+	spin_lock_irqsave(&ehci->lock, flags);
++			if (i >= cpuc->n_events - cpuc->n_added)
++				--cpuc->n_added;
++
+ 			if (x86_pmu.put_event_constraints)
+ 				x86_pmu.put_event_constraints(cpuc, event);
  
- 	status = ehci_readl(ehci, &ehci->regs->status);
- 
-@@ -826,7 +833,7 @@ static irqreturn_t ehci_irq (struct usb_
- 
- 	/* Shared IRQ? */
- 	if (!masked_status || unlikely(ehci->rh_state == EHCI_RH_HALTED)) {
--		spin_unlock(&ehci->lock);
-+		spin_unlock_irqrestore(&ehci->lock, flags);
- 		return IRQ_NONE;
- 	}
- 
-@@ -929,7 +936,7 @@ dead:
- 
- 	if (bh)
- 		ehci_work (ehci);
--	spin_unlock (&ehci->lock);
-+	spin_unlock_irqrestore(&ehci->lock, flags);
- 	if (pcd_status)
- 		usb_hcd_poll_rh_status(hcd);
- 	return IRQ_HANDLED;
 
