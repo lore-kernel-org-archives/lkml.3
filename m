@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753530AbaC3XgL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:36:11 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36480 "EHLO
+	id S1753428AbaC3XgJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:36:09 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36495 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753123AbaC3XZE (ORCPT
+	by vger.kernel.org with ESMTP id S1753125AbaC3XZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,17 +13,14 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org, "Peter Zijlstra" <peterz@infradead.org>,
-        "Ingo Molnar" <mingo@kernel.org>,
-        "Paul E. McKenney" <paulmck@us.ibm.com>, "Tejun Heo" <tj@kernel.org>,
-        "Steven Rostedt" <rostedt@goodmis.org>, "Jiri Olsa" <jolsa@redhat.com>,
-        "Frederic Weisbecker" <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+CC: akpm@linux-foundation.org, "Oleg Nesterov" <oleg@redhat.com>,
+        "NeilBrown" <neilb@suse.de>,
+        "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        linux-raid@vger.kernel.org
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.23182856@decadent.org.uk>
+Message-ID: <lsq.1396221815.398470322@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 034/200] ftrace: Use schedule_on_each_cpu() as a heavy
- synchronize_sched()
+Subject: [PATCH 3.2 108/200] md/raid5: Fix CPU hotplug callback registration
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -36,89 +33,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 7614c3dc74733dff4b0e774f7a894b9ea6ec508c upstream.
+commit 789b5e0315284463617e106baad360cb9e8db3ac upstream.
 
-The function tracer uses preempt_disable/enable_notrace() for
-synchronization between reading registered ftrace_ops and unregistering
-them.
+Subsystems that want to register CPU hotplug callbacks, as well as perform
+initialization for the CPUs that are already online, often do it as shown
+below:
 
-Most of the ftrace_ops are global permanent structures that do not
-require this synchronization. That is, ops may be added and removed from
-the hlist but are never freed, and wont hurt if a synchronization is
-missed.
+	get_online_cpus();
 
-But this is not true for dynamically created ftrace_ops or control_ops,
-which are used by the perf function tracing.
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
 
-The problem here is that the function tracer can be used to trace
-kernel/user context switches as well as going to and from idle.
-Basically, it can be used to trace blind spots of the RCU subsystem.
-This means that even though preempt_disable() is done, a
-synchronize_sched() will ignore CPUs that haven't made it out of user
-space or idle. These can include functions that are being traced just
-before entering or exiting the kernel sections.
+	register_cpu_notifier(&foobar_cpu_notifier);
 
-To implement the RCU synchronization, instead of using
-synchronize_sched() the use of schedule_on_each_cpu() is performed. This
-means that when a dynamically allocated ftrace_ops, or a control ops is
-being unregistered, all CPUs must be touched and execute a ftrace_sync()
-stub function via the work queues. This will rip CPUs out from idle or
-in dynamic tick mode. This only happens when a user disables perf
-function tracing or other dynamically allocated function tracers, but it
-allows us to continue to debug RCU and context tracking with function
-tracing.
+	put_online_cpus();
 
-Link: http://lkml.kernel.org/r/1369785676.15552.55.camel@gandalf.local.home
+This is wrong, since it is prone to ABBA deadlocks involving the
+cpu_add_remove_lock and the cpu_hotplug.lock (when running concurrently
+with CPU hotplug operations).
 
-Cc: "Paul E. McKenney" <paulmck@us.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-[bwh: Backported to 3.2: drop change for control ops]
+Interestingly, the raid5 code can actually prevent double initialization and
+hence can use the following simplified form of callback registration:
+
+	register_cpu_notifier(&foobar_cpu_notifier);
+
+	get_online_cpus();
+
+	for_each_online_cpu(cpu)
+		init_cpu(cpu);
+
+	put_online_cpus();
+
+A hotplug operation that occurs between registering the notifier and calling
+get_online_cpus(), won't disrupt anything, because the code takes care to
+perform the memory allocations only once.
+
+So reorganize the code in raid5 this way to fix the deadlock with callback
+registration.
+
+Cc: linux-raid@vger.kernel.org
+Fixes: 36d1c6476be51101778882897b315bd928c8c7b5
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+[Srivatsa: Fixed the unregister_cpu_notifier() deadlock, added the
+free_scratch_buffer() helper to condense code further and wrote the changelog.]
+Signed-off-by: Srivatsa S. Bhat <srivatsa.bhat@linux.vnet.ibm.com>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- kernel/trace/ftrace.c | 23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
+ drivers/md/raid5.c | 90 ++++++++++++++++++++++++++----------------------------
+ 1 file changed, 44 insertions(+), 46 deletions(-)
 
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -283,6 +283,17 @@ static int __register_ftrace_function(st
- 	return 0;
+--- a/drivers/md/raid5.c
++++ b/drivers/md/raid5.c
+@@ -4450,23 +4450,43 @@ raid5_size(struct mddev *mddev, sector_t
+ 	return sectors * (raid_disks - conf->max_degraded);
  }
  
-+static void ftrace_sync(struct work_struct *work)
++static void free_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
 +{
-+	/*
-+	 * This function is just a stub to implement a hard force
-+	 * of synchronize_sched(). This requires synchronizing
-+	 * tasks even in userspace and idle.
-+	 *
-+	 * Yes, function tracing is rude.
-+	 */
++	safe_put_page(percpu->spare_page);
++	kfree(percpu->scribble);
++	percpu->spare_page = NULL;
++	percpu->scribble = NULL;
 +}
 +
- static int __unregister_ftrace_function(struct ftrace_ops *ops)
- {
- 	int ret;
-@@ -311,9 +322,13 @@ static int __unregister_ftrace_function(
- 	/*
- 	 * Dynamic ops may be freed, we must make sure that all
- 	 * callers are done before leaving this function.
-+	 *
-+	 * Again, normal synchronize_sched() is not good enough.
-+	 * We need to do a hard force of sched synchronization.
- 	 */
- 	if (ops->flags & FTRACE_OPS_FL_DYNAMIC)
--		synchronize_sched();
-+		schedule_on_each_cpu(ftrace_sync);
++static int alloc_scratch_buffer(struct r5conf *conf, struct raid5_percpu *percpu)
++{
++	if (conf->level == 6 && !percpu->spare_page)
++		percpu->spare_page = alloc_page(GFP_KERNEL);
++	if (!percpu->scribble)
++		percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
 +
++	if (!percpu->scribble || (conf->level == 6 && !percpu->spare_page)) {
++		free_scratch_buffer(conf, percpu);
++		return -ENOMEM;
++	}
++
++	return 0;
++}
++
+ static void raid5_free_percpu(struct r5conf *conf)
+ {
+-	struct raid5_percpu *percpu;
+ 	unsigned long cpu;
  
- 	return 0;
- }
+ 	if (!conf->percpu)
+ 		return;
+ 
+-	get_online_cpus();
+-	for_each_possible_cpu(cpu) {
+-		percpu = per_cpu_ptr(conf->percpu, cpu);
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
+-	}
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	unregister_cpu_notifier(&conf->cpu_notify);
+ #endif
++
++	get_online_cpus();
++	for_each_possible_cpu(cpu)
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 	put_online_cpus();
+ 
+ 	free_percpu(conf->percpu);
+@@ -4492,15 +4512,7 @@ static int raid456_cpu_notify(struct not
+ 	switch (action) {
+ 	case CPU_UP_PREPARE:
+ 	case CPU_UP_PREPARE_FROZEN:
+-		if (conf->level == 6 && !percpu->spare_page)
+-			percpu->spare_page = alloc_page(GFP_KERNEL);
+-		if (!percpu->scribble)
+-			percpu->scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-
+-		if (!percpu->scribble ||
+-		    (conf->level == 6 && !percpu->spare_page)) {
+-			safe_put_page(percpu->spare_page);
+-			kfree(percpu->scribble);
++		if (alloc_scratch_buffer(conf, percpu)) {
+ 			pr_err("%s: failed memory allocation for cpu%ld\n",
+ 			       __func__, cpu);
+ 			return notifier_from_errno(-ENOMEM);
+@@ -4508,10 +4520,7 @@ static int raid456_cpu_notify(struct not
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+-		safe_put_page(percpu->spare_page);
+-		kfree(percpu->scribble);
+-		percpu->spare_page = NULL;
+-		percpu->scribble = NULL;
++		free_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
+ 		break;
+ 	default:
+ 		break;
+@@ -4523,40 +4532,29 @@ static int raid456_cpu_notify(struct not
+ static int raid5_alloc_percpu(struct r5conf *conf)
+ {
+ 	unsigned long cpu;
+-	struct page *spare_page;
+-	struct raid5_percpu __percpu *allcpus;
+-	void *scribble;
+-	int err;
++	int err = 0;
+ 
+-	allcpus = alloc_percpu(struct raid5_percpu);
+-	if (!allcpus)
++	conf->percpu = alloc_percpu(struct raid5_percpu);
++	if (!conf->percpu)
+ 		return -ENOMEM;
+-	conf->percpu = allcpus;
++
++#ifdef CONFIG_HOTPLUG_CPU
++	conf->cpu_notify.notifier_call = raid456_cpu_notify;
++	conf->cpu_notify.priority = 0;
++	err = register_cpu_notifier(&conf->cpu_notify);
++	if (err)
++		return err;
++#endif
+ 
+ 	get_online_cpus();
+-	err = 0;
+ 	for_each_present_cpu(cpu) {
+-		if (conf->level == 6) {
+-			spare_page = alloc_page(GFP_KERNEL);
+-			if (!spare_page) {
+-				err = -ENOMEM;
+-				break;
+-			}
+-			per_cpu_ptr(conf->percpu, cpu)->spare_page = spare_page;
+-		}
+-		scribble = kmalloc(conf->scribble_len, GFP_KERNEL);
+-		if (!scribble) {
+-			err = -ENOMEM;
++		err = alloc_scratch_buffer(conf, per_cpu_ptr(conf->percpu, cpu));
++		if (err) {
++			pr_err("%s: failed memory allocation for cpu%ld\n",
++			       __func__, cpu);
+ 			break;
+ 		}
+-		per_cpu_ptr(conf->percpu, cpu)->scribble = scribble;
+ 	}
+-#ifdef CONFIG_HOTPLUG_CPU
+-	conf->cpu_notify.notifier_call = raid456_cpu_notify;
+-	conf->cpu_notify.priority = 0;
+-	if (err == 0)
+-		err = register_cpu_notifier(&conf->cpu_notify);
+-#endif
+ 	put_online_cpus();
+ 
+ 	return err;
 
