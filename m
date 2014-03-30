@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754093AbaC3XgZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 Mar 2014 19:36:25 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36478 "EHLO
+	id S1754074AbaC3XgY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 Mar 2014 19:36:24 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:36474 "EHLO
 	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753102AbaC3XZE (ORCPT
+	by vger.kernel.org with ESMTP id S1753112AbaC3XZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 30 Mar 2014 19:25:04 -0400
 Content-Type: text/plain; charset="UTF-8"
@@ -13,14 +13,13 @@ Content-Transfer-Encoding: 8bit
 MIME-Version: 1.0
 From: Ben Hutchings <ben@decadent.org.uk>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org
-CC: akpm@linux-foundation.org,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        "Julius Werner" <jwerner@chromium.org>
+CC: akpm@linux-foundation.org, "Helge Deller" <deller@gmx.de>,
+        "Trond Myklebust" <Trond.Myklebust@netapp.com>
 Date: Mon, 31 Mar 2014 00:23:35 +0100
-Message-ID: <lsq.1396221815.656422235@decadent.org.uk>
+Message-ID: <lsq.1396221815.932897957@decadent.org.uk>
 X-Mailer: LinuxStableQueue (scripts by bwh)
-Subject: [PATCH 3.2 167/200] usb: Add device quirk for Logitech HD Pro
- Webcams C920 and C930e
+Subject: [PATCH 3.2 179/200] nfs: fix do_div() warning by instead using
+ sector_div()
 In-Reply-To: <lsq.1396221814.369444335@decadent.org.uk>
 X-SA-Exim-Connect-IP: 192.168.4.249
 X-SA-Exim-Mail-From: ben@decadent.org.uk
@@ -33,38 +32,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Julius Werner <jwerner@chromium.org>
+From: Helge Deller <deller@gmx.de>
 
-commit e0429362ab15c46ea4d64c3f8c9e0933e48a143a upstream.
+commit 3873d064b8538686bbbd4b858dc8a07db1f7f43a upstream.
 
-We've encountered a rare issue when enumerating two Logitech webcams
-after a reboot that doesn't power cycle the USB ports. They are spewing
-random data (possibly some leftover UVC buffers) on the second
-(full-sized) Get Configuration request of the enumeration phase. Since
-the data is random this can potentially cause all kinds of odd behavior,
-and since it occasionally happens multiple times (after the kernel
-issues another reset due to the garbled configuration descriptor), it is
-not always recoverable. Set the USB_DELAY_INIT quirk that seems to work
-around the issue.
+When compiling a 32bit kernel with CONFIG_LBDAF=n the compiler complains like
+shown below.  Fix this warning by instead using sector_div() which is provided
+by the kernel.h header file.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+fs/nfs/blocklayout/extents.c: In function ‘normalize’:
+include/asm-generic/div64.h:43:28: warning: comparison of distinct pointer types lacks a cast [enabled by default]
+fs/nfs/blocklayout/extents.c:47:13: note: in expansion of macro ‘do_div’
+nfs/blocklayout/extents.c:47:2: warning: right shift count >= width of type [enabled by default]
+fs/nfs/blocklayout/extents.c:47:2: warning: passing argument 1 of ‘__div64_32’ from incompatible pointer type [enabled by default]
+include/asm-generic/div64.h:35:17: note: expected ‘uint64_t *’ but argument is of type ‘sector_t *’
+extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
+
+Signed-off-by: Helge Deller <deller@gmx.de>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/usb/core/quirks.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
---- a/drivers/usb/core/quirks.c
-+++ b/drivers/usb/core/quirks.c
-@@ -46,6 +46,10 @@ static const struct usb_device_id usb_qu
- 	/* Microsoft LifeCam-VX700 v2.0 */
- 	{ USB_DEVICE(0x045e, 0x0770), .driver_info = USB_QUIRK_RESET_RESUME },
+--- a/fs/nfs/blocklayout/extents.c
++++ b/fs/nfs/blocklayout/extents.c
+@@ -44,7 +44,7 @@
+ static inline sector_t normalize(sector_t s, int base)
+ {
+ 	sector_t tmp = s; /* Since do_div modifies its argument */
+-	return s - do_div(tmp, base);
++	return s - sector_div(tmp, base);
+ }
  
-+	/* Logitech HD Pro Webcams C920 and C930e */
-+	{ USB_DEVICE(0x046d, 0x082d), .driver_info = USB_QUIRK_DELAY_INIT },
-+	{ USB_DEVICE(0x046d, 0x0843), .driver_info = USB_QUIRK_DELAY_INIT },
-+
- 	/* Logitech Quickcam Fusion */
- 	{ USB_DEVICE(0x046d, 0x08c1), .driver_info = USB_QUIRK_RESET_RESUME },
- 
+ static inline sector_t normalize_up(sector_t s, int base)
 
